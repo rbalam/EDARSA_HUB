@@ -679,7 +679,7 @@ WITH InventarioInicial AS (
     INNER JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
     LEFT JOIN Fisico FI ON FI.Pr_Cve_Producto = P.Pr_Cve_Producto 
         AND FI.Fi_Folio = '{folio_inicial}'
-        AND FI.Al_Cve_Almacen = '{almacen}'
+        AND FI.Al_Cve_Almacen IN (SELECT Al_Cve_Almacen FROM Almacen WHERE Al_Descripcion LIKE '%{almacen}%')
     WHERE P.Es_Cve_Estado <> 'BA'
 ),
 Ventas AS (
@@ -690,7 +690,7 @@ Ventas AS (
     LEFT JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
     INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
     WHERE venta.Es_Cve_Estado <> 'CA'
-        AND venta.Al_Cve_Almacen = '{almacen}'
+        AND venta.Al_Cve_Almacen IN (SELECT Al_Cve_Almacen FROM Almacen WHERE Al_Descripcion LIKE '%{almacen}%')
         AND sucursal.Sc_Descripcion LIKE '%{sucursal}%'
         AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
     GROUP BY Producto_Kit.Pk_Producto
@@ -704,7 +704,7 @@ Ventas AS (
     INNER JOIN producto ON producto.Pr_Cve_Producto = VENTA.Pr_Cve_Producto
     INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
     WHERE venta.Es_Cve_Estado <> 'CA'
-        AND venta.Al_Cve_Almacen = '{almacen}'
+        AND venta.Al_Cve_Almacen IN (SELECT Al_Cve_Almacen FROM Almacen WHERE Al_Descripcion LIKE '%{almacen}%')
         AND sucursal.Sc_Descripcion LIKE '%{sucursal}%'
         AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
     GROUP BY VENTA.Pr_Cve_Producto
@@ -728,7 +728,7 @@ Movimientos AS (
     INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
     INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
     WHERE M.Es_Cve_Estado <> 'CA'
-        AND M.Al_Cve_Almacen = '{almacen}'
+        AND M.Al_Cve_Almacen IN (SELECT Al_Cve_Almacen FROM Almacen WHERE Al_Descripcion LIKE '%{almacen}%')
         AND S.Sc_Descripcion LIKE '%{sucursal}%'
         AND M.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
     GROUP BY M.Pr_Cve_Producto
@@ -740,7 +740,7 @@ InventarioFinal AS (
         ISNULL(FI.Fi_Costo_Importe, 0) as Inv_Final_Costo
     FROM Fisico FI
     WHERE FI.Fi_Folio = '{folio_final}'
-        AND FI.Al_Cve_Almacen = '{almacen}'
+        AND FI.Al_Cve_Almacen IN (SELECT Al_Cve_Almacen FROM Almacen WHERE Al_Descripcion LIKE '%{almacen}%')
 )
 SELECT 
     II.Categoria,
