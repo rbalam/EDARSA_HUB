@@ -192,10 +192,14 @@ def test_sql_connection(host: str, port: int, database: str, username: str, pass
 
 def execute_sql_query(host: str, port: int, database: str, username: str, password: str, query: str) -> List[Dict]:
     try:
-        conn = pymssql.connect(server=host, port=port, user=username, password=password, database=database)
+        logging.info(f"Conectando a SQL Server: {host}:{port}/{database}")
+        conn = pymssql.connect(server=host, port=port, user=username, password=password, database=database, timeout=30)
         cursor = conn.cursor(as_dict=True)
+        logging.info("Conexión establecida, ejecutando query...")
         cursor.execute(query)
+        logging.info("Query ejecutada, obteniendo resultados...")
         results = cursor.fetchall()
+        logging.info(f"Resultados obtenidos: {len(results)} registros")
         conn.close()
         
         # Convert datetime objects to strings
