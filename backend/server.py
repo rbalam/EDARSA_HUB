@@ -664,143 +664,109 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     
     try:
         if server['system_type'] == 'MPRO':
-            # Query para obtener el análisis completo
+            logging.info(f"Generando análisis de inventario: {sucursal} - {almacen}")
+            logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
+            logging.info(f"Folios: {folio_inicial} a {folio_final}")
+            
+            # Query simplificada y optimizada
             query = f"""
-WITH InventarioInicial AS (
-    SELECT 
-        P.Pr_Cve_Producto as Codigo,
-        P.Pr_Descripcion as Producto,
-        F.Fm_Descripcion as Familia,
-        SF.Sf_Descripcion as SubFamilia,
-        C.Ct_Descripcion as Categoria,
-        P.Pr_Unidad_Control_1 as Unidad,
-        P.Pr_ultimo_costo as Costo_Unitario,
-        ISNULL(FI.Fi_Cantidad_Control_1, 0) as Inv_Inicial_Cantidad,
-        ISNULL(FI.Fi_Costo_Importe, 0) as Inv_Inicial_Costo
-    FROM Producto P
-    INNER JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
-    INNER JOIN SubFamilia SF ON SF.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
-    INNER JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
-    LEFT JOIN Fisico FI ON FI.Pr_Cve_Producto = P.Pr_Cve_Producto 
-        AND FI.Fi_Folio = '{folio_inicial}'
-        AND FI.Al_Cve_Almacen IN (SELECT Al_Cve_Almacen FROM Almacen WHERE Al_Descripcion LIKE '%{almacen}%')
-    WHERE P.Es_Cve_Estado <> 'BA'
-),
-Ventas AS (
-    SELECT 
-        Producto_Kit.Pk_Producto as Codigo,
-        SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as Cantidad_Vendida
-    FROM venta
-    LEFT JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
-    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
-    WHERE venta.Es_Cve_Estado <> 'CA'
-        AND venta.Al_Cve_Almacen IN (SELECT Al_Cve_Almacen FROM Almacen WHERE Al_Descripcion LIKE '%{almacen}%')
-        AND sucursal.Sc_Descripcion LIKE '%{sucursal}%'
-        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
-    GROUP BY Producto_Kit.Pk_Producto
+-- Primero obtenemos el código del almacén para filtrar más eficientemente
+DECLARE @AlmacenCodigo VARCHAR(20)
+SELECT TOP 1 @AlmacenCodigo = Al_Cve_Almacen 
+FROM Almacen 
+WHERE Al_Descripcion LIKE '%{almacen}%'
+
+-- Inventario Inicial con filtro directo
+SELECT 
+    P.Pr_Cve_Producto as Codigo,
+    P.Pr_Descripcion as Producto,
+    F.Fm_Descripcion as Familia,
+    SF.Sf_Descripcion as SubFamilia,
+    C.Ct_Descripcion as Categoria,
+    P.Pr_Unidad_Control_1 as Unidad,
+    P.Pr_ultimo_costo as Costo_Unitario,
     
-    UNION ALL
+    -- Inventario Inicial
+    ISNULL(FI.Fi_Cantidad_Control_1, 0) as Inv_Inicial_Cantidad,
     
-    SELECT 
-        VENTA.Pr_Cve_Producto as Codigo,
-        SUM(venta.Vn_Cantidad_Control_1) as Cantidad_Vendida
-    FROM venta
-    INNER JOIN producto ON producto.Pr_Cve_Producto = VENTA.Pr_Cve_Producto
-    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
-    WHERE venta.Es_Cve_Estado <> 'CA'
-        AND venta.Al_Cve_Almacen IN (SELECT Al_Cve_Almacen FROM Almacen WHERE Al_Descripcion LIKE '%{almacen}%')
-        AND sucursal.Sc_Descripcion LIKE '%{sucursal}%'
-        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
-    GROUP BY VENTA.Pr_Cve_Producto
-),
-VentasAgrupadas AS (
-    SELECT 
-        Codigo,
-        SUM(Cantidad_Vendida) as Total_Ventas
-    FROM Ventas
-    GROUP BY Codigo
-),
-Movimientos AS (
-    SELECT 
-        M.Pr_Cve_Producto as Codigo,
-        SUM(CASE 
+    -- Ventas (solo productos con kits)
+    ISNULL((
+        SELECT SUM(V.Vn_Cantidad_1 * PK.Pk_Cantidad)
+        FROM venta V
+        LEFT JOIN producto_kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto AND PK.Pk_Producto = P.Pr_Cve_Producto
+        INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
+        WHERE V.Es_Cve_Estado <> 'CA'
+            AND V.Al_Cve_Almacen = @AlmacenCodigo
+            AND S.Sc_Descripcion LIKE '%{sucursal}%'
+            AND V.Vn_Fecha >= '{fecha_ini}' AND V.Vn_Fecha <= '{fecha_fin}'
+    ), 0) as Ventas_Kit,
+    
+    -- Ventas directas
+    ISNULL((
+        SELECT SUM(V.Vn_Cantidad_Control_1)
+        FROM venta V
+        INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
+        WHERE V.Pr_Cve_Producto = P.Pr_Cve_Producto
+            AND V.Es_Cve_Estado <> 'CA'
+            AND V.Al_Cve_Almacen = @AlmacenCodigo
+            AND S.Sc_Descripcion LIKE '%{sucursal}%'
+            AND V.Vn_Fecha >= '{fecha_ini}' AND V.Vn_Fecha <= '{fecha_fin}'
+    ), 0) as Ventas_Directas,
+    
+    -- Movimientos con filtro de fechas directo
+    ISNULL((
+        SELECT SUM(CASE 
             WHEN TM.Tm_Tipo = '+' THEN M.Mv_Cantidad_Control_1
             WHEN TM.Tm_Tipo = '-' THEN -M.Mv_Cantidad_Control_1
             ELSE 0
-        END) as Total_Movimientos
-    FROM Movimiento M
-    INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
-    INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
-    WHERE M.Es_Cve_Estado <> 'CA'
-        AND M.Al_Cve_Almacen IN (SELECT Al_Cve_Almacen FROM Almacen WHERE Al_Descripcion LIKE '%{almacen}%')
-        AND S.Sc_Descripcion LIKE '%{sucursal}%'
-        AND M.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
-    GROUP BY M.Pr_Cve_Producto
-),
-InventarioFinal AS (
-    SELECT 
-        FI.Pr_Cve_Producto as Codigo,
-        ISNULL(FI.Fi_Cantidad_Control_1, 0) as Inv_Final_Cantidad,
-        ISNULL(FI.Fi_Costo_Importe, 0) as Inv_Final_Costo
-    FROM Fisico FI
-    WHERE FI.Fi_Folio = '{folio_final}'
-        AND FI.Al_Cve_Almacen IN (SELECT Al_Cve_Almacen FROM Almacen WHERE Al_Descripcion LIKE '%{almacen}%')
-)
-SELECT 
-    II.Categoria,
-    II.Familia,
-    II.SubFamilia,
-    II.Codigo,
-    II.Producto,
-    II.Unidad,
-    II.Costo_Unitario,
-    
-    -- Inventario Inicial
-    II.Inv_Inicial_Cantidad,
-    II.Inv_Inicial_Costo,
-    
-    -- Movimientos
-    ISNULL(M.Total_Movimientos, 0) as Movimientos,
-    ISNULL(M.Total_Movimientos, 0) * II.Costo_Unitario as Movimientos_Costo,
-    
-    -- Ventas
-    ISNULL(V.Total_Ventas, 0) as Ventas,
-    ISNULL(V.Total_Ventas, 0) * II.Costo_Unitario as Ventas_Costo,
-    
-    -- Inventario Teórico
-    (II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0)) as Inv_Teorico_Cantidad,
-    (II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0)) * II.Costo_Unitario as Inv_Teorico_Costo,
+        END)
+        FROM Movimiento M
+        INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
+        INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
+        WHERE M.Pr_Cve_Producto = P.Pr_Cve_Producto
+            AND M.Es_Cve_Estado <> 'CA'
+            AND M.Al_Cve_Almacen = @AlmacenCodigo
+            AND S.Sc_Descripcion LIKE '%{sucursal}%'
+            AND M.Mv_Fecha >= '{fecha_ini}' AND M.Mv_Fecha <= '{fecha_fin}'
+    ), 0) as Movimientos,
     
     -- Inventario Final
-    ISNULL(IFI.Inv_Final_Cantidad, 0) as Inv_Final_Cantidad,
-    ISNULL(IFI.Inv_Final_Costo, 0) as Inv_Final_Costo,
+    ISNULL(FF.Fi_Cantidad_Control_1, 0) as Inv_Final_Cantidad
     
-    -- Diferencias
-    ((II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0)) - ISNULL(IFI.Inv_Final_Cantidad, 0)) as Diferencia_Cantidad,
-    (((II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0)) - ISNULL(IFI.Inv_Final_Cantidad, 0)) * II.Costo_Unitario) as Diferencia_Costo,
-    
-    -- Porcentaje de diferencia
-    CASE 
-        WHEN (II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0)) > 0 
-        THEN (((II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0)) - ISNULL(IFI.Inv_Final_Cantidad, 0)) / 
-              (II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0))) * 100
-        ELSE 0
-    END as Diferencia_Porcentaje
+FROM Producto P
+INNER JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
+INNER JOIN SubFamilia SF ON SF.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
+INNER JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
+LEFT JOIN Fisico FI ON FI.Pr_Cve_Producto = P.Pr_Cve_Producto 
+    AND FI.Fi_Folio = '{folio_inicial}'
+    AND FI.Al_Cve_Almacen = @AlmacenCodigo
+LEFT JOIN Fisico FF ON FF.Pr_Cve_Producto = P.Pr_Cve_Producto
+    AND FF.Fi_Folio = '{folio_final}'
+    AND FF.Al_Cve_Almacen = @AlmacenCodigo
 
-FROM InventarioInicial II
-LEFT JOIN VentasAgrupadas V ON V.Codigo = II.Codigo
-LEFT JOIN Movimientos M ON M.Codigo = II.Codigo
-LEFT JOIN InventarioFinal IFI ON IFI.Codigo = II.Codigo
+WHERE P.Es_Cve_Estado <> 'BA'
+    AND (
+        FI.Fi_Cantidad_Control_1 IS NOT NULL OR 
+        FF.Fi_Cantidad_Control_1 IS NOT NULL OR
+        EXISTS (
+            SELECT 1 FROM venta V 
+            WHERE V.Pr_Cve_Producto = P.Pr_Cve_Producto 
+                AND V.Vn_Fecha >= '{fecha_ini}' AND V.Vn_Fecha <= '{fecha_fin}'
+                AND V.Al_Cve_Almacen = @AlmacenCodigo
+        ) OR
+        EXISTS (
+            SELECT 1 FROM Movimiento M 
+            WHERE M.Pr_Cve_Producto = P.Pr_Cve_Producto 
+                AND M.Mv_Fecha >= '{fecha_ini}' AND M.Mv_Fecha <= '{fecha_fin}'
+                AND M.Al_Cve_Almacen = @AlmacenCodigo
+        )
+    )
 
-WHERE (
-    II.Inv_Inicial_Cantidad <> 0 OR 
-    ISNULL(V.Total_Ventas, 0) <> 0 OR 
-    ISNULL(M.Total_Movimientos, 0) <> 0 OR 
-    ISNULL(IFI.Inv_Final_Cantidad, 0) <> 0
-)
-
-ORDER BY II.Familia, II.SubFamilia, II.Producto
+ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
             """
+            
+            logging.info("Ejecutando consulta simplificada...")
+            
         else:
             raise HTTPException(status_code=400, detail="Sistema no soportado para análisis completo")
         
@@ -814,7 +780,53 @@ ORDER BY II.Familia, II.SubFamilia, II.Producto
             query
         )
         
-        return {"data": results, "count": len(results)}
+        logging.info(f"Consulta completada. Procesando {len(results)} productos...")
+        
+        # Procesar resultados y calcular diferencias
+        processed_results = []
+        for row in results:
+            ventas_total = float(row.get('Ventas_Kit', 0) or 0) + float(row.get('Ventas_Directas', 0) or 0)
+            movimientos = float(row.get('Movimientos', 0) or 0)
+            inv_inicial = float(row.get('Inv_Inicial_Cantidad', 0) or 0)
+            inv_final = float(row.get('Inv_Final_Cantidad', 0) or 0)
+            costo = float(row.get('Costo_Unitario', 0) or 0)
+            
+            # Calcular inventario teórico
+            inv_teorico = inv_inicial + movimientos - ventas_total
+            
+            # Calcular diferencias
+            diferencia_cantidad = inv_teorico - inv_final
+            diferencia_costo = diferencia_cantidad * costo
+            diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico > 0 else 0
+            
+            processed_row = {
+                'Categoria': row.get('Categoria'),
+                'Familia': row.get('Familia'),
+                'SubFamilia': row.get('SubFamilia'),
+                'Codigo': row.get('Codigo'),
+                'Producto': row.get('Producto'),
+                'Unidad': row.get('Unidad'),
+                'Costo_Unitario': round(costo, 2),
+                'Inv_Inicial_Cantidad': round(inv_inicial, 2),
+                'Inv_Inicial_Costo': round(inv_inicial * costo, 2),
+                'Movimientos': round(movimientos, 2),
+                'Movimientos_Costo': round(movimientos * costo, 2),
+                'Ventas': round(ventas_total, 2),
+                'Ventas_Costo': round(ventas_total * costo, 2),
+                'Inv_Teorico_Cantidad': round(inv_teorico, 2),
+                'Inv_Teorico_Costo': round(inv_teorico * costo, 2),
+                'Inv_Final_Cantidad': round(inv_final, 2),
+                'Inv_Final_Costo': round(inv_final * costo, 2),
+                'Diferencia_Cantidad': round(diferencia_cantidad, 2),
+                'Diferencia_Costo': round(diferencia_costo, 2),
+                'Diferencia_Porcentaje': round(diferencia_porcentaje, 2)
+            }
+            
+            processed_results.append(processed_row)
+        
+        logging.info(f"Análisis completado: {len(processed_results)} productos procesados")
+        
+        return {"data": processed_results, "count": len(processed_results)}
         
     except Exception as e:
         logging.error(f"Error en análisis de inventario: {str(e)}")
