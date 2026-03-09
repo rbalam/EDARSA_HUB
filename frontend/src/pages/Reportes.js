@@ -15,13 +15,20 @@ import 'jspdf-autotable';
 
 const Reportes = () => {
   const [servers, setServers] = useState([]);
+  const [sucursales, setSucursales] = useState([]);
+  const [almacenes, setAlmacenes] = useState([]);
+  const [inventarios, setInventarios] = useState([]);
   const [reportData, setReportData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     server_id: '',
     query_type: 'ventas',
+    sucursal_id: '',
     sucursal: '',
+    almacen_id: '',
     almacen: '',
+    inventario_inicial: '',
+    inventario_final: '',
     fecha_ini: '',
     fecha_fin: ''
   });
@@ -30,12 +37,68 @@ const Reportes = () => {
     loadServers();
   }, []);
 
+  useEffect(() => {
+    if (filters.server_id) {
+      loadSucursales();
+    }
+  }, [filters.server_id]);
+
+  useEffect(() => {
+    if (filters.server_id && filters.sucursal_id) {
+      loadAlmacenes();
+      loadInventarios();
+    }
+  }, [filters.server_id, filters.sucursal_id]);
+
+  useEffect(() => {
+    if (filters.server_id && filters.almacen_id) {
+      loadInventarios();
+    }
+  }, [filters.almacen_id]);
+
   const loadServers = async () => {
     try {
       const response = await api.get('/servers');
       setServers(response.data);
     } catch (error) {
       toast.error('Error al cargar servidores');
+    }
+  };
+
+  const loadSucursales = async () => {
+    try {
+      const response = await api.get(`/servers/${filters.server_id}/sucursales`);
+      setSucursales(response.data);
+    } catch (error) {
+      console.error('Error al cargar sucursales:', error);
+      setSucursales([]);
+    }
+  };
+
+  const loadAlmacenes = async () => {
+    try {
+      const response = await api.get(`/servers/${filters.server_id}/almacenes`, {
+        params: { sucursal_id: filters.sucursal_id }
+      });
+      setAlmacenes(response.data);
+    } catch (error) {
+      console.error('Error al cargar almacenes:', error);
+      setAlmacenes([]);
+    }
+  };
+
+  const loadInventarios = async () => {
+    try {
+      const response = await api.get(`/servers/${filters.server_id}/inventarios`, {
+        params: { 
+          sucursal_id: filters.sucursal_id,
+          almacen_id: filters.almacen_id
+        }
+      });
+      setInventarios(response.data);
+    } catch (error) {
+      console.error('Error al cargar inventarios:', error);
+      setInventarios([]);
     }
   };
 
@@ -65,6 +128,32 @@ const Reportes = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSucursalChange = (value) => {
+    const sucursal = sucursales.find(s => s.id === value);
+    setFilters({
+      ...filters, 
+      sucursal_id: value,
+      sucursal: sucursal?.nombre || '',
+      almacen_id: '',
+      almacen: '',
+      inventario_inicial: '',
+      inventario_final: ''
+    });
+    setAlmacenes([]);
+    setInventarios([]);
+  };
+
+  const handleAlmacenChange = (value) => {
+    const almacen = almacenes.find(a => a.id === value);
+    setFilters({
+      ...filters, 
+      almacen_id: value,
+      almacen: almacen?.nombre || '',
+      inventario_inicial: '',
+      inventario_final: ''
+    });
   };
 
   const handleExportExcel = () => {
@@ -145,7 +234,7 @@ const Reportes = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Servidor</Label>
-              <Select value={filters.server_id} onValueChange={(value) => setFilters({...filters, server_id: value})}>
+              <Select value={filters.server_id} onValueChange={(value) => setFilters({...filters, server_id: value, sucursal_id: '', almacen_id: '', sucursal: '', almacen: ''})}>
                 <SelectTrigger data-testid="server-select">
                   <SelectValue placeholder="Selecciona un servidor" />
                 </SelectTrigger>
@@ -176,22 +265,82 @@ const Reportes = () => {
 
             <div className="space-y-2">
               <Label>Sucursal</Label>
-              <Input
-                value={filters.sucursal}
-                onChange={(e) => setFilters({...filters, sucursal: e.target.value})}
-                placeholder="Nombre de sucursal"
-                data-testid="sucursal-input"
-              />
+              <Select 
+                value={filters.sucursal_id} 
+                onValueChange={handleSucursalChange}
+                disabled={!filters.server_id || sucursales.length === 0}
+              >
+                <SelectTrigger data-testid="sucursal-select">
+                  <SelectValue placeholder={!filters.server_id ? "Selecciona servidor primero" : "Selecciona una sucursal"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {sucursales.map((sucursal) => (
+                    <SelectItem key={sucursal.id} value={sucursal.id}>
+                      {sucursal.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
               <Label>Almacén</Label>
-              <Input
-                value={filters.almacen}
-                onChange={(e) => setFilters({...filters, almacen: e.target.value})}
-                placeholder="Nombre de almacén"
-                data-testid="almacen-input"
-              />
+              <Select 
+                value={filters.almacen_id} 
+                onValueChange={handleAlmacenChange}
+                disabled={!filters.sucursal_id || almacenes.length === 0}
+              >
+                <SelectTrigger data-testid="almacen-select">
+                  <SelectValue placeholder={!filters.sucursal_id ? "Selecciona sucursal primero" : "Selecciona un almacén"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {almacenes.map((almacen) => (
+                    <SelectItem key={almacen.id} value={almacen.id}>
+                      {almacen.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Inventario Inicial</Label>
+              <Select 
+                value={filters.inventario_inicial} 
+                onValueChange={(value) => setFilters({...filters, inventario_inicial: value})}
+                disabled={!filters.almacen_id || inventarios.length === 0}
+              >
+                <SelectTrigger data-testid="inventario-inicial-select">
+                  <SelectValue placeholder={!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario inicial"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {inventarios.map((inv) => (
+                    <SelectItem key={inv.folio} value={inv.folio}>
+                      Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString() : 'Sin fecha'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Inventario Final</Label>
+              <Select 
+                value={filters.inventario_final} 
+                onValueChange={(value) => setFilters({...filters, inventario_final: value})}
+                disabled={!filters.almacen_id || inventarios.length === 0}
+              >
+                <SelectTrigger data-testid="inventario-final-select">
+                  <SelectValue placeholder={!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario final"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {inventarios.map((inv) => (
+                    <SelectItem key={inv.folio} value={inv.folio}>
+                      Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString() : 'Sin fecha'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

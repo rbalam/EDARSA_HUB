@@ -484,6 +484,116 @@ async def delete_query(query_id: str, current_user: Dict = Depends(get_current_u
 
 # ============= REPORTS =============
 
+@api_router.get("/servers/{server_id}/sucursales")
+async def get_sucursales(server_id: str, current_user: Dict = Depends(get_current_user)):
+    """Obtiene la lista de sucursales desde SQL Server"""
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        if server['system_type'] == 'MPRO':
+            query = "SELECT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal WHERE Es_Cve_Estado <> 'BA'"
+        else:
+            # Query genérica para otros sistemas
+            query = "SELECT DISTINCT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal"
+        
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            query
+        )
+        return results
+    except Exception as e:
+        logging.error(f"Error obteniendo sucursales: {str(e)}")
+        return []
+
+@api_router.get("/servers/{server_id}/almacenes")
+async def get_almacenes(server_id: str, sucursal_id: Optional[str] = None, current_user: Dict = Depends(get_current_user)):
+    """Obtiene la lista de almacenes desde SQL Server"""
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        if server['system_type'] == 'MPRO':
+            if sucursal_id:
+                query = f"SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Sc_Cve_Sucursal = '{sucursal_id}' AND Es_Cve_Estado <> 'BA'"
+            else:
+                query = "SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Es_Cve_Estado <> 'BA'"
+        else:
+            # Query genérica para otros sistemas
+            if sucursal_id:
+                query = f"SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Sc_Cve_Sucursal = '{sucursal_id}'"
+            else:
+                query = "SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen"
+        
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            query
+        )
+        return results
+    except Exception as e:
+        logging.error(f"Error obteniendo almacenes: {str(e)}")
+        return []
+
+@api_router.get("/servers/{server_id}/inventarios")
+async def get_inventarios_list(
+    server_id: str, 
+    sucursal_id: Optional[str] = None,
+    almacen_id: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Obtiene la lista de inventarios físicos disponibles"""
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        if server['system_type'] == 'MPRO':
+            where_clause = "WHERE F.Es_Cve_Estado not in ('BA')"
+            if sucursal_id:
+                where_clause += f" AND F.Sc_Cve_Sucursal = '{sucursal_id}'"
+            if almacen_id:
+                where_clause += f" AND F.Al_Cve_Almacen = '{almacen_id}'"
+            
+            query = f"""
+                SELECT DISTINCT 
+                    F.Fi_Folio as folio,
+                    F.fi_fecha as fecha,
+                    F.Sc_Cve_Sucursal as sucursal_id,
+                    S.Sc_Descripcion as sucursal,
+                    F.Al_Cve_Almacen as almacen_id,
+                    A.Al_Descripcion as almacen
+                FROM Fisico F
+                INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
+                INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND F.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
+                {where_clause}
+                ORDER BY F.fi_fecha DESC
+            """
+        else:
+            query = "SELECT DISTINCT Fi_Folio as folio, fi_fecha as fecha FROM Fisico"
+        
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            query
+        )
+        return results
+    except Exception as e:
+        logging.error(f"Error obteniendo inventarios: {str(e)}")
+        return []
+
 @api_router.post("/reports/inventory")
 async def generate_inventory_report(report_params: Dict, current_user: Dict = Depends(get_current_user)):
     server_id = report_params.get('server_id')
