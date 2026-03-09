@@ -582,7 +582,7 @@ const Reportes = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reportData.slice(0, 100).map((row, idx) => (
+                  {reportData.slice(0, 2000).map((row, idx) => (
                     <TableRow key={idx} className="hover:bg-zinc-50/50">
                       {Object.entries(row).map(([key, value], cellIdx) => {
                         // Special formatting for analysis report
@@ -625,9 +625,9 @@ const Reportes = () => {
                 </TableBody>
               </Table>
             </div>
-            {reportData.length > 100 && (
+            {reportData.length > 2000 && (
               <p className="text-sm text-zinc-600 mt-4 text-center">
-                Mostrando 100 de {reportData.length} registros. Exporta para ver todos.
+                Mostrando 2000 de {reportData.length} registros. Exporta para ver todos.
               </p>
             )}
           </CardContent>

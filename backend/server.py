@@ -668,7 +668,7 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
             logging.info(f"Folios: {folio_inicial} a {folio_final}")
             
-            # Query simplificada y optimizada con LIMIT
+            # Query simplificada y optimizada con LIMIT de 2000 registros
             query = f"""
 -- Primero obtenemos el código del almacén
 DECLARE @AlmacenCodigo VARCHAR(20)
@@ -676,8 +676,8 @@ SELECT TOP 1 @AlmacenCodigo = Al_Cve_Almacen
 FROM Almacen 
 WHERE Al_Descripcion LIKE '%{almacen}%'
 
--- Consulta con TOP 500 para ser más rápida
-SELECT TOP 500
+-- Consulta con TOP 2000 para cubrir 1000-1500 productos típicos
+SELECT TOP 2000
     P.Pr_Cve_Producto as Codigo,
     P.Pr_Descripcion as Producto,
     F.Fm_Descripcion as Familia,
@@ -756,7 +756,7 @@ WHERE P.Es_Cve_Estado <> 'BA'
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
             """
             
-            logging.info("Ejecutando consulta simplificada (TOP 500)...")
+            logging.info("Ejecutando consulta simplificada (TOP 2000)...")
             
         else:
             raise HTTPException(status_code=400, detail="Sistema no soportado para análisis completo")
