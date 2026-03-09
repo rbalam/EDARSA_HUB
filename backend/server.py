@@ -193,7 +193,7 @@ def test_sql_connection(host: str, port: int, database: str, username: str, pass
 def execute_sql_query(host: str, port: int, database: str, username: str, password: str, query: str) -> List[Dict]:
     try:
         logging.info(f"Conectando a SQL Server: {host}:{port}/{database}")
-        conn = pymssql.connect(server=host, port=port, user=username, password=password, database=database, timeout=30)
+        conn = pymssql.connect(server=host, port=port, user=username, password=password, database=database, timeout=120, login_timeout=30)
         cursor = conn.cursor(as_dict=True)
         logging.info("Conexión establecida, ejecutando query...")
         cursor.execute(query)
@@ -668,16 +668,16 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
             logging.info(f"Folios: {folio_inicial} a {folio_final}")
             
-            # Query simplificada y optimizada
+            # Query simplificada y optimizada con LIMIT
             query = f"""
--- Primero obtenemos el código del almacén para filtrar más eficientemente
+-- Primero obtenemos el código del almacén
 DECLARE @AlmacenCodigo VARCHAR(20)
 SELECT TOP 1 @AlmacenCodigo = Al_Cve_Almacen 
 FROM Almacen 
 WHERE Al_Descripcion LIKE '%{almacen}%'
 
--- Inventario Inicial con filtro directo
-SELECT 
+-- Consulta con TOP 500 para ser más rápida
+SELECT TOP 500
     P.Pr_Cve_Producto as Codigo,
     P.Pr_Descripcion as Producto,
     F.Fm_Descripcion as Familia,
@@ -689,19 +689,20 @@ SELECT
     -- Inventario Inicial
     ISNULL(FI.Fi_Cantidad_Control_1, 0) as Inv_Inicial_Cantidad,
     
-    -- Ventas (solo productos con kits)
+    -- Ventas con kits (subconsulta simple)
     ISNULL((
-        SELECT SUM(V.Vn_Cantidad_1 * PK.Pk_Cantidad)
+        SELECT SUM(V.Vn_Cantidad_1 * ISNULL(PK.Pk_Cantidad, 0))
         FROM venta V
         LEFT JOIN producto_kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto AND PK.Pk_Producto = P.Pr_Cve_Producto
         INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
         WHERE V.Es_Cve_Estado <> 'CA'
             AND V.Al_Cve_Almacen = @AlmacenCodigo
             AND S.Sc_Descripcion LIKE '%{sucursal}%'
-            AND V.Vn_Fecha >= '{fecha_ini}' AND V.Vn_Fecha <= '{fecha_fin}'
+            AND V.Vn_Fecha >= '{fecha_ini}' 
+            AND V.Vn_Fecha <= '{fecha_fin}'
     ), 0) as Ventas_Kit,
     
-    -- Ventas directas
+    -- Ventas directas (subconsulta simple)
     ISNULL((
         SELECT SUM(V.Vn_Cantidad_Control_1)
         FROM venta V
@@ -710,10 +711,11 @@ SELECT
             AND V.Es_Cve_Estado <> 'CA'
             AND V.Al_Cve_Almacen = @AlmacenCodigo
             AND S.Sc_Descripcion LIKE '%{sucursal}%'
-            AND V.Vn_Fecha >= '{fecha_ini}' AND V.Vn_Fecha <= '{fecha_fin}'
+            AND V.Vn_Fecha >= '{fecha_ini}' 
+            AND V.Vn_Fecha <= '{fecha_fin}'
     ), 0) as Ventas_Directas,
     
-    -- Movimientos con filtro de fechas directo
+    -- Movimientos (subconsulta simple)
     ISNULL((
         SELECT SUM(CASE 
             WHEN TM.Tm_Tipo = '+' THEN M.Mv_Cantidad_Control_1
@@ -727,7 +729,8 @@ SELECT
             AND M.Es_Cve_Estado <> 'CA'
             AND M.Al_Cve_Almacen = @AlmacenCodigo
             AND S.Sc_Descripcion LIKE '%{sucursal}%'
-            AND M.Mv_Fecha >= '{fecha_ini}' AND M.Mv_Fecha <= '{fecha_fin}'
+            AND M.Mv_Fecha >= '{fecha_ini}' 
+            AND M.Mv_Fecha <= '{fecha_fin}'
     ), 0) as Movimientos,
     
     -- Inventario Final
@@ -746,26 +749,14 @@ LEFT JOIN Fisico FF ON FF.Pr_Cve_Producto = P.Pr_Cve_Producto
 
 WHERE P.Es_Cve_Estado <> 'BA'
     AND (
-        FI.Fi_Cantidad_Control_1 IS NOT NULL OR 
-        FF.Fi_Cantidad_Control_1 IS NOT NULL OR
-        EXISTS (
-            SELECT 1 FROM venta V 
-            WHERE V.Pr_Cve_Producto = P.Pr_Cve_Producto 
-                AND V.Vn_Fecha >= '{fecha_ini}' AND V.Vn_Fecha <= '{fecha_fin}'
-                AND V.Al_Cve_Almacen = @AlmacenCodigo
-        ) OR
-        EXISTS (
-            SELECT 1 FROM Movimiento M 
-            WHERE M.Pr_Cve_Producto = P.Pr_Cve_Producto 
-                AND M.Mv_Fecha >= '{fecha_ini}' AND M.Mv_Fecha <= '{fecha_fin}'
-                AND M.Al_Cve_Almacen = @AlmacenCodigo
-        )
+        FI.Fi_Cantidad_Control_1 > 0 OR 
+        FF.Fi_Cantidad_Control_1 > 0
     )
 
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
             """
             
-            logging.info("Ejecutando consulta simplificada...")
+            logging.info("Ejecutando consulta simplificada (TOP 500)...")
             
         else:
             raise HTTPException(status_code=400, detail="Sistema no soportado para análisis completo")
