@@ -78,6 +78,7 @@ class Server(BaseModel):
     database: str
     username: str
     system_type: str  # "MPRO" o "SoftRestaurant"
+    date_calculation_method: str = "inventory_dates"  # Método para calcular fechas de ventas
     sucursales: List[str] = []  # IDs de sucursales
     active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -90,6 +91,7 @@ class ServerCreate(BaseModel):
     username: str
     password: str
     system_type: str
+    date_calculation_method: str = "inventory_dates"
     sucursales: List[str] = []
 
 class QueryTemplate(BaseModel):
@@ -551,7 +553,7 @@ async def get_inventarios_list(
     almacen_id: Optional[str] = None,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Obtiene la lista de inventarios físicos disponibles"""
+    """Obtiene la lista de inventarios físicos disponibles con sus fechas"""
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
@@ -567,7 +569,8 @@ async def get_inventarios_list(
             query = f"""
                 SELECT DISTINCT 
                     F.Fi_Folio as folio,
-                    F.fi_fecha as fecha,
+                    CONVERT(varchar, F.fi_fecha, 23) as fecha,
+                    CONVERT(varchar, F.fi_fecha, 120) as fecha_completa,
                     F.Sc_Cve_Sucursal as sucursal_id,
                     S.Sc_Descripcion as sucursal,
                     F.Al_Cve_Almacen as almacen_id,
@@ -579,7 +582,7 @@ async def get_inventarios_list(
                 ORDER BY F.fi_fecha DESC
             """
         else:
-            query = "SELECT DISTINCT Fi_Folio as folio, fi_fecha as fecha FROM Fisico"
+            query = "SELECT DISTINCT Fi_Folio as folio, CONVERT(varchar, fi_fecha, 23) as fecha, CONVERT(varchar, fi_fecha, 120) as fecha_completa FROM Fisico ORDER BY fi_fecha DESC"
         
         results = execute_sql_query(
             server['host'],

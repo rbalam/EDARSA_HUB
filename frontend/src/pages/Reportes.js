@@ -28,10 +28,14 @@ const Reportes = () => {
     almacen_id: '',
     almacen: '',
     inventario_inicial: '',
+    inventario_inicial_fecha: '',
     inventario_final: '',
+    inventario_final_fecha: '',
     fecha_ini: '',
     fecha_fin: ''
   });
+
+  const [selectedServer, setSelectedServer] = useState(null);
 
   useEffect(() => {
     loadServers();
@@ -40,8 +44,11 @@ const Reportes = () => {
   useEffect(() => {
     if (filters.server_id) {
       loadSucursales();
+      // Guardar el servidor seleccionado
+      const server = servers.find(s => s.id === filters.server_id);
+      setSelectedServer(server);
     }
-  }, [filters.server_id]);
+  }, [filters.server_id, servers]);
 
   useEffect(() => {
     if (filters.server_id && filters.sucursal_id) {
@@ -188,8 +195,80 @@ const Reportes = () => {
       almacen_id: value,
       almacen: almacen?.nombre || '',
       inventario_inicial: '',
-      inventario_final: ''
+      inventario_inicial_fecha: '',
+      inventario_final: '',
+      inventario_final_fecha: '',
+      fecha_ini: '',
+      fecha_fin: ''
     });
+  };
+
+  const calculateDates = (inicialFecha, finalFecha, systemType) => {
+    if (!inicialFecha || !finalFecha) return { fecha_ini: '', fecha_fin: '' };
+
+    let fecha_ini, fecha_fin;
+
+    if (systemType === 'MPRO') {
+      // Para MPRO: usar las fechas exactas de los inventarios
+      fecha_ini = inicialFecha.split(' ')[0]; // Solo fecha, sin hora
+      fecha_fin = finalFecha.split(' ')[0];
+    } else if (systemType === 'SoftRestaurant') {
+      // Para SoftRestaurant: fecha inicial + 1 segundo, fecha final - 1 segundo
+      const fechaInicialDate = new Date(inicialFecha);
+      const fechaFinalDate = new Date(finalFecha);
+      
+      fechaInicialDate.setSeconds(fechaInicialDate.getSeconds() + 1);
+      fechaFinalDate.setSeconds(fechaFinalDate.getSeconds() - 1);
+      
+      fecha_ini = fechaInicialDate.toISOString().slice(0, 19).replace('T', ' ');
+      fecha_fin = fechaFinalDate.toISOString().slice(0, 19).replace('T', ' ');
+    } else {
+      // Default: usar las fechas exactas
+      fecha_ini = inicialFecha.split(' ')[0];
+      fecha_fin = finalFecha.split(' ')[0];
+    }
+
+    return { fecha_ini, fecha_fin };
+  };
+
+  const handleInventarioInicialChange = (value) => {
+    const inventario = inventarios.find(inv => inv.folio === value);
+    const nuevaFechaInicial = inventario?.fecha_completa || inventario?.fecha || '';
+    
+    const newFilters = {
+      ...filters,
+      inventario_inicial: value,
+      inventario_inicial_fecha: nuevaFechaInicial
+    };
+
+    // Si ya hay inventario final, recalcular fechas
+    if (filters.inventario_final_fecha && selectedServer) {
+      const dates = calculateDates(nuevaFechaInicial, filters.inventario_final_fecha, selectedServer.system_type);
+      newFilters.fecha_ini = dates.fecha_ini;
+      newFilters.fecha_fin = dates.fecha_fin;
+    }
+
+    setFilters(newFilters);
+  };
+
+  const handleInventarioFinalChange = (value) => {
+    const inventario = inventarios.find(inv => inv.folio === value);
+    const nuevaFechaFinal = inventario?.fecha_completa || inventario?.fecha || '';
+    
+    const newFilters = {
+      ...filters,
+      inventario_final: value,
+      inventario_final_fecha: nuevaFechaFinal
+    };
+
+    // Si ya hay inventario inicial, recalcular fechas
+    if (filters.inventario_inicial_fecha && selectedServer) {
+      const dates = calculateDates(filters.inventario_inicial_fecha, nuevaFechaFinal, selectedServer.system_type);
+      newFilters.fecha_ini = dates.fecha_ini;
+      newFilters.fecha_fin = dates.fecha_fin;
+    }
+
+    setFilters(newFilters);
   };
 
   const handleExportExcel = () => {
@@ -358,7 +437,7 @@ const Reportes = () => {
               <Label>Inventario Inicial</Label>
               <Select 
                 value={filters.inventario_inicial} 
-                onValueChange={(value) => setFilters({...filters, inventario_inicial: value})}
+                onValueChange={handleInventarioInicialChange}
                 disabled={!filters.almacen_id || inventarios.length === 0}
               >
                 <SelectTrigger data-testid="inventario-inicial-select">
@@ -367,7 +446,7 @@ const Reportes = () => {
                 <SelectContent>
                   {inventarios.map((inv) => (
                     <SelectItem key={inv.folio} value={inv.folio}>
-                      Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString() : 'Sin fecha'}
+                      Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-MX') : 'Sin fecha'}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -378,7 +457,7 @@ const Reportes = () => {
               <Label>Inventario Final</Label>
               <Select 
                 value={filters.inventario_final} 
-                onValueChange={(value) => setFilters({...filters, inventario_final: value})}
+                onValueChange={handleInventarioFinalChange}
                 disabled={!filters.almacen_id || inventarios.length === 0}
               >
                 <SelectTrigger data-testid="inventario-final-select">
@@ -387,7 +466,7 @@ const Reportes = () => {
                 <SelectContent>
                   {inventarios.map((inv) => (
                     <SelectItem key={inv.folio} value={inv.folio}>
-                      Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString() : 'Sin fecha'}
+                      Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-MX') : 'Sin fecha'}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -395,21 +474,41 @@ const Reportes = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Fecha Inicio</Label>
+              <Label>
+                Fecha Inicio de Ventas 
+                {selectedServer && (
+                  <span className="text-xs text-zinc-500 ml-2">
+                    ({selectedServer.system_type === 'MPRO' ? 'Fecha inv. inicial' : 'Fecha inv. inicial + 1 seg'})
+                  </span>
+                )}
+              </Label>
               <Input
-                type="date"
+                type="text"
                 value={filters.fecha_ini}
-                onChange={(e) => setFilters({...filters, fecha_ini: e.target.value})}
+                readOnly
+                disabled
+                className="bg-zinc-50 cursor-not-allowed"
+                placeholder="Auto-calculado al seleccionar inventarios"
                 data-testid="fecha-inicio-input"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Fecha Fin</Label>
+              <Label>
+                Fecha Fin de Ventas
+                {selectedServer && (
+                  <span className="text-xs text-zinc-500 ml-2">
+                    ({selectedServer.system_type === 'MPRO' ? 'Fecha inv. final' : 'Fecha inv. final - 1 seg'})
+                  </span>
+                )}
+              </Label>
               <Input
-                type="date"
+                type="text"
                 value={filters.fecha_fin}
-                onChange={(e) => setFilters({...filters, fecha_fin: e.target.value})}
+                readOnly
+                disabled
+                className="bg-zinc-50 cursor-not-allowed"
+                placeholder="Auto-calculado al seleccionar inventarios"
                 data-testid="fecha-fin-input"
               />
             </div>

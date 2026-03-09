@@ -21,6 +21,7 @@ const Servidores = () => {
     username: '',
     password: '',
     system_type: 'MPRO',
+    date_calculation_method: 'inventory_dates',
     sucursales: []
   });
 
@@ -74,6 +75,7 @@ const Servidores = () => {
       username: '',
       password: '',
       system_type: 'MPRO',
+      date_calculation_method: 'inventory_dates',
       sucursales: []
     });
   };
@@ -136,6 +138,16 @@ const Servidores = () => {
                     <span className="text-zinc-600">Usuario:</span>
                     <span className="font-mono text-zinc-900">{server.username}</span>
                   </div>
+                  {server.system_type && (
+                    <div className="pt-2 border-t border-zinc-100">
+                      <p className="text-xs text-zinc-500 mb-1">Cálculo de fechas:</p>
+                      <p className="text-xs text-zinc-700">
+                        {server.system_type === 'MPRO' 
+                          ? '📅 Fechas exactas de inventarios' 
+                          : '⏱️ Fecha inv. ±1 segundo'}
+                      </p>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex gap-2 mt-4">
@@ -193,6 +205,13 @@ const Servidores = () => {
                     <SelectItem value="Otro">Otro</SelectItem>
                   </SelectContent>
                 </Select>
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mt-2">
+                  <p className="text-xs text-blue-900 font-medium mb-1">Cálculo automático de fechas de consumo:</p>
+                  <ul className="text-xs text-blue-800 space-y-1">
+                    <li>• <strong>MPRO:</strong> Usa fechas exactas de inventarios inicial y final</li>
+                    <li>• <strong>SoftRestaurant:</strong> Fecha inicial +1 seg, fecha final -1 seg</li>
+                  </ul>
+                </div>
               </div>
             </div>
 
