@@ -53,15 +53,14 @@ const Reportes = () => {
   useEffect(() => {
     if (filters.server_id && filters.sucursal_id) {
       loadAlmacenes();
-      loadInventarios();
     }
   }, [filters.server_id, filters.sucursal_id]);
 
   useEffect(() => {
-    if (filters.server_id && filters.almacen_id) {
+    if (filters.server_id && filters.sucursal_id && filters.almacen_id) {
       loadInventarios();
     }
-  }, [filters.almacen_id]);
+  }, [filters.server_id, filters.sucursal_id, filters.almacen_id]);
 
   const loadServers = async () => {
     try {

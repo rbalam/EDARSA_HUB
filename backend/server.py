@@ -567,7 +567,7 @@ async def get_inventarios_list(
                 where_clause += f" AND F.Al_Cve_Almacen = '{almacen_id}'"
             
             query = f"""
-                SELECT DISTINCT 
+                SELECT 
                     F.Fi_Folio as folio,
                     CONVERT(varchar, F.fi_fecha, 23) as fecha,
                     CONVERT(varchar, F.fi_fecha, 120) as fecha_completa,
@@ -579,10 +579,11 @@ async def get_inventarios_list(
                 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
                 INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND F.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
                 {where_clause}
+                GROUP BY F.Fi_Folio, F.fi_fecha, F.Sc_Cve_Sucursal, S.Sc_Descripcion, F.Al_Cve_Almacen, A.Al_Descripcion
                 ORDER BY F.fi_fecha DESC
             """
         else:
-            query = "SELECT DISTINCT Fi_Folio as folio, CONVERT(varchar, fi_fecha, 23) as fecha, CONVERT(varchar, fi_fecha, 120) as fecha_completa FROM Fisico ORDER BY fi_fecha DESC"
+            query = "SELECT Fi_Folio as folio, CONVERT(varchar, fi_fecha, 23) as fecha, CONVERT(varchar, fi_fecha, 120) as fecha_completa FROM Fisico GROUP BY Fi_Folio, fi_fecha ORDER BY fi_fecha DESC"
         
         results = execute_sql_query(
             server['host'],
