@@ -631,6 +631,187 @@ async def generate_inventory_report(report_params: Dict, current_user: Dict = De
     
     return {"data": results, "count": len(results)}
 
+@api_router.post("/reports/inventory-analysis")
+async def generate_inventory_analysis(report_params: Dict, current_user: Dict = Depends(get_current_user)):
+    """
+    Genera un análisis completo de inventario con:
+    - Inventario Inicial (folio inicial)
+    - Ventas (entre fechas)
+    - Movimientos (entre fechas)
+    - Inventario Final (folio final)
+    - Cálculo de diferencias
+    """
+    server_id = report_params.get('server_id')
+    sucursal = report_params.get('sucursal')
+    almacen = report_params.get('almacen')
+    fecha_ini = report_params.get('fecha_ini')
+    fecha_fin = report_params.get('fecha_fin')
+    folio_inicial = report_params.get('folio_inicial')
+    folio_final = report_params.get('folio_final')
+    
+    # Get server
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        if server['system_type'] == 'MPRO':
+            # Query para obtener el análisis completo
+            query = f"""
+WITH InventarioInicial AS (
+    SELECT 
+        P.Pr_Cve_Producto as Codigo,
+        P.Pr_Descripcion as Producto,
+        F.Fm_Descripcion as Familia,
+        SF.Sf_Descripcion as SubFamilia,
+        C.Ct_Descripcion as Categoria,
+        P.Pr_Unidad_Control_1 as Unidad,
+        P.Pr_ultimo_costo as Costo_Unitario,
+        ISNULL(FI.Fi_Cantidad_Control_1, 0) as Inv_Inicial_Cantidad,
+        ISNULL(FI.Fi_Costo_Importe, 0) as Inv_Inicial_Costo
+    FROM Producto P
+    INNER JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
+    INNER JOIN SubFamilia SF ON SF.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
+    INNER JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
+    LEFT JOIN Fisico FI ON FI.Pr_Cve_Producto = P.Pr_Cve_Producto 
+        AND FI.Fi_Folio = '{folio_inicial}'
+        AND FI.Al_Cve_Almacen = '{almacen}'
+    WHERE P.Es_Cve_Estado <> 'BA'
+),
+Ventas AS (
+    SELECT 
+        Producto_Kit.Pk_Producto as Codigo,
+        SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as Cantidad_Vendida
+    FROM venta
+    LEFT JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
+    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
+    WHERE venta.Es_Cve_Estado <> 'CA'
+        AND venta.Al_Cve_Almacen = '{almacen}'
+        AND sucursal.Sc_Descripcion LIKE '%{sucursal}%'
+        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
+    GROUP BY Producto_Kit.Pk_Producto
+    
+    UNION ALL
+    
+    SELECT 
+        VENTA.Pr_Cve_Producto as Codigo,
+        SUM(venta.Vn_Cantidad_Control_1) as Cantidad_Vendida
+    FROM venta
+    INNER JOIN producto ON producto.Pr_Cve_Producto = VENTA.Pr_Cve_Producto
+    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
+    WHERE venta.Es_Cve_Estado <> 'CA'
+        AND venta.Al_Cve_Almacen = '{almacen}'
+        AND sucursal.Sc_Descripcion LIKE '%{sucursal}%'
+        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
+    GROUP BY VENTA.Pr_Cve_Producto
+),
+VentasAgrupadas AS (
+    SELECT 
+        Codigo,
+        SUM(Cantidad_Vendida) as Total_Ventas
+    FROM Ventas
+    GROUP BY Codigo
+),
+Movimientos AS (
+    SELECT 
+        M.Pr_Cve_Producto as Codigo,
+        SUM(CASE 
+            WHEN TM.Tm_Tipo = '+' THEN M.Mv_Cantidad_Control_1
+            WHEN TM.Tm_Tipo = '-' THEN -M.Mv_Cantidad_Control_1
+            ELSE 0
+        END) as Total_Movimientos
+    FROM Movimiento M
+    INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
+    INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
+    WHERE M.Es_Cve_Estado <> 'CA'
+        AND M.Al_Cve_Almacen = '{almacen}'
+        AND S.Sc_Descripcion LIKE '%{sucursal}%'
+        AND M.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
+    GROUP BY M.Pr_Cve_Producto
+),
+InventarioFinal AS (
+    SELECT 
+        FI.Pr_Cve_Producto as Codigo,
+        ISNULL(FI.Fi_Cantidad_Control_1, 0) as Inv_Final_Cantidad,
+        ISNULL(FI.Fi_Costo_Importe, 0) as Inv_Final_Costo
+    FROM Fisico FI
+    WHERE FI.Fi_Folio = '{folio_final}'
+        AND FI.Al_Cve_Almacen = '{almacen}'
+)
+SELECT 
+    II.Categoria,
+    II.Familia,
+    II.SubFamilia,
+    II.Codigo,
+    II.Producto,
+    II.Unidad,
+    II.Costo_Unitario,
+    
+    -- Inventario Inicial
+    II.Inv_Inicial_Cantidad,
+    II.Inv_Inicial_Costo,
+    
+    -- Movimientos
+    ISNULL(M.Total_Movimientos, 0) as Movimientos,
+    ISNULL(M.Total_Movimientos, 0) * II.Costo_Unitario as Movimientos_Costo,
+    
+    -- Ventas
+    ISNULL(V.Total_Ventas, 0) as Ventas,
+    ISNULL(V.Total_Ventas, 0) * II.Costo_Unitario as Ventas_Costo,
+    
+    -- Inventario Teórico
+    (II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0)) as Inv_Teorico_Cantidad,
+    (II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0)) * II.Costo_Unitario as Inv_Teorico_Costo,
+    
+    -- Inventario Final
+    ISNULL(IFI.Inv_Final_Cantidad, 0) as Inv_Final_Cantidad,
+    ISNULL(IFI.Inv_Final_Costo, 0) as Inv_Final_Costo,
+    
+    -- Diferencias
+    ((II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0)) - ISNULL(IFI.Inv_Final_Cantidad, 0)) as Diferencia_Cantidad,
+    (((II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0)) - ISNULL(IFI.Inv_Final_Cantidad, 0)) * II.Costo_Unitario) as Diferencia_Costo,
+    
+    -- Porcentaje de diferencia
+    CASE 
+        WHEN (II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0)) > 0 
+        THEN (((II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0)) - ISNULL(IFI.Inv_Final_Cantidad, 0)) / 
+              (II.Inv_Inicial_Cantidad + ISNULL(M.Total_Movimientos, 0) - ISNULL(V.Total_Ventas, 0))) * 100
+        ELSE 0
+    END as Diferencia_Porcentaje
+
+FROM InventarioInicial II
+LEFT JOIN VentasAgrupadas V ON V.Codigo = II.Codigo
+LEFT JOIN Movimientos M ON M.Codigo = II.Codigo
+LEFT JOIN InventarioFinal IFI ON IFI.Codigo = II.Codigo
+
+WHERE (
+    II.Inv_Inicial_Cantidad <> 0 OR 
+    ISNULL(V.Total_Ventas, 0) <> 0 OR 
+    ISNULL(M.Total_Movimientos, 0) <> 0 OR 
+    ISNULL(IFI.Inv_Final_Cantidad, 0) <> 0
+)
+
+ORDER BY II.Familia, II.SubFamilia, II.Producto
+            """
+        else:
+            raise HTTPException(status_code=400, detail="Sistema no soportado para análisis completo")
+        
+        # Execute query
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            query
+        )
+        
+        return {"data": results, "count": len(results)}
+        
+    except Exception as e:
+        logging.error(f"Error en análisis de inventario: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generando análisis: {str(e)}")
+
 @api_router.post("/reports/export/excel")
 async def export_excel(data: Dict, current_user: Dict = Depends(get_current_user)):
     report_data = data.get('data', [])

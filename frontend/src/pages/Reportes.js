@@ -22,7 +22,7 @@ const Reportes = () => {
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     server_id: '',
-    query_type: 'ventas',
+    query_type: 'analisis', // Cambiar default a 'analisis'
     sucursal_id: '',
     sucursal: '',
     almacen_id: '',
@@ -108,18 +108,54 @@ const Reportes = () => {
       return;
     }
 
+    // Validar campos requeridos para análisis completo
+    if (filters.query_type === 'analisis') {
+      if (!filters.sucursal) {
+        toast.error('Selecciona una sucursal');
+        return;
+      }
+      if (!filters.almacen) {
+        toast.error('Selecciona un almacén');
+        return;
+      }
+      if (!filters.fecha_ini || !filters.fecha_fin) {
+        toast.error('Selecciona fechas de inicio y fin');
+        return;
+      }
+      if (!filters.inventario_inicial || !filters.inventario_final) {
+        toast.error('Selecciona inventario inicial y final');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      const response = await api.post('/reports/inventory', {
-        server_id: filters.server_id,
-        query_type: filters.query_type,
-        params: {
+      let response;
+      
+      if (filters.query_type === 'analisis') {
+        // Llamar al endpoint de análisis completo
+        response = await api.post('/reports/inventory-analysis', {
+          server_id: filters.server_id,
           sucursal: filters.sucursal,
           almacen: filters.almacen,
           fecha_ini: filters.fecha_ini,
-          fecha_fin: filters.fecha_fin
-        }
-      });
+          fecha_fin: filters.fecha_fin,
+          folio_inicial: filters.inventario_inicial,
+          folio_final: filters.inventario_final
+        });
+      } else {
+        // Llamar al endpoint normal de reportes
+        response = await api.post('/reports/inventory', {
+          server_id: filters.server_id,
+          query_type: filters.query_type,
+          params: {
+            sucursal: filters.sucursal,
+            almacen: filters.almacen,
+            fecha_ini: filters.fecha_ini,
+            fecha_fin: filters.fecha_fin
+          }
+        });
+      }
       
       setReportData(response.data.data);
       toast.success(`Reporte generado: ${response.data.count} registros`);
@@ -202,18 +238,32 @@ const Reportes = () => {
     toast.success('Reporte exportado a PDF');
   };
 
-  const calculateDifference = (row) => {
-    // Simplified calculation for display
-    if (row.cantidad) {
-      return Math.abs(parseFloat(row.cantidad) || 0);
-    }
-    return 0;
-  };
-
   const getDifferenceColor = (value) => {
     if (value > 0) return 'text-red-600';
     if (value < 0) return 'text-green-600';
     return 'text-zinc-600';
+  };
+
+  const getDifferenceIcon = (value) => {
+    if (value > 0) return <TrendingUp className="h-4 w-4 inline mr-1" />;
+    if (value < 0) return <TrendingDown className="h-4 w-4 inline mr-1" />;
+    return null;
+  };
+
+  const formatNumber = (num) => {
+    if (num === null || num === undefined) return '-';
+    return new Intl.NumberFormat('es-MX', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    }).format(num);
+  };
+
+  const formatCurrency = (num) => {
+    if (num === null || num === undefined) return '-';
+    return new Intl.NumberFormat('es-MX', { 
+      style: 'currency', 
+      currency: 'MXN' 
+    }).format(num);
   };
 
   return (
@@ -255,6 +305,7 @@ const Reportes = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="analisis">Análisis Completo de Inventario</SelectItem>
                   <SelectItem value="ventas">Ventas</SelectItem>
                   <SelectItem value="movimientos">Movimientos</SelectItem>
                   <SelectItem value="productos">Productos</SelectItem>
@@ -426,28 +477,59 @@ const Reportes = () => {
                 <TableHeader>
                   <TableRow className="bg-zinc-50">
                     {Object.keys(reportData[0]).map((key) => (
-                      <TableHead key={key} className="text-xs uppercase tracking-wider font-medium text-zinc-500">
-                        {key}
+                      <TableHead key={key} className="text-xs uppercase tracking-wider font-medium text-zinc-500 whitespace-nowrap">
+                        {key.replace(/_/g, ' ')}
                       </TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reportData.slice(0, 50).map((row, idx) => (
+                  {reportData.slice(0, 100).map((row, idx) => (
                     <TableRow key={idx} className="hover:bg-zinc-50/50">
-                      {Object.values(row).map((value, cellIdx) => (
-                        <TableCell key={cellIdx} className="text-sm font-data text-zinc-700">
-                          {value !== null && value !== undefined ? String(value) : '-'}
-                        </TableCell>
-                      ))}
+                      {Object.entries(row).map(([key, value], cellIdx) => {
+                        // Special formatting for analysis report
+                        const isDiferencia = key.toLowerCase().includes('diferencia');
+                        const isCosto = key.toLowerCase().includes('costo');
+                        const isPorcentaje = key.toLowerCase().includes('porcentaje');
+                        
+                        let displayValue = value;
+                        let className = "text-sm font-data text-zinc-700";
+                        
+                        if (isPorcentaje && value !== null && value !== undefined) {
+                          displayValue = `${formatNumber(value)}%`;
+                          className = `text-sm font-data font-semibold ${getDifferenceColor(parseFloat(value))}`;
+                        } else if (isCosto && value !== null && value !== undefined) {
+                          displayValue = formatCurrency(value);
+                        } else if ((key.toLowerCase().includes('cantidad') || key.toLowerCase().includes('ventas') || key.toLowerCase().includes('movimientos')) && value !== null && value !== undefined && typeof value === 'number') {
+                          displayValue = formatNumber(value);
+                        } else if (isDiferencia && value !== null && value !== undefined) {
+                          const numValue = parseFloat(value);
+                          displayValue = (
+                            <span className={`font-semibold ${getDifferenceColor(numValue)}`}>
+                              {getDifferenceIcon(numValue)}
+                              {isCosto ? formatCurrency(numValue) : formatNumber(numValue)}
+                            </span>
+                          );
+                        } else if (value === null || value === undefined) {
+                          displayValue = '-';
+                        } else {
+                          displayValue = String(value);
+                        }
+                        
+                        return (
+                          <TableCell key={cellIdx} className={className}>
+                            {displayValue}
+                          </TableCell>
+                        );
+                      })}
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-            {reportData.length > 50 && (
+            {reportData.length > 100 && (
               <p className="text-sm text-zinc-600 mt-4 text-center">
-                Mostrando 50 de {reportData.length} registros. Exporta para ver todos.
+                Mostrando 100 de {reportData.length} registros. Exporta para ver todos.
               </p>
             )}
           </CardContent>
