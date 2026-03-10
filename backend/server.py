@@ -80,6 +80,10 @@ class Server(BaseModel):
     system_type: str  # "MPRO" o "SoftRestaurant"
     date_calculation_method: str = "inventory_dates"  # Método para calcular fechas de ventas
     sucursales: List[str] = []  # IDs de sucursales
+    # Filtros configurables para consultas
+    tipos_movimiento: List[str] = []  # Códigos de tipos de movimiento a incluir
+    categorias: List[str] = []  # Códigos de categorías a incluir
+    departamentos: List[str] = []  # Códigos de departamentos a incluir
     active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -93,6 +97,9 @@ class ServerCreate(BaseModel):
     system_type: str
     date_calculation_method: str = "inventory_dates"
     sucursales: List[str] = []
+    tipos_movimiento: List[str] = []
+    categorias: List[str] = []
+    departamentos: List[str] = []
 
 class QueryTemplate(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -490,6 +497,125 @@ async def delete_query(query_id: str, current_user: Dict = Depends(get_current_u
 
 # ============= REPORTS =============
 
+@api_router.get("/servers/{server_id}/tipos-movimiento")
+async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_current_user)):
+    """Obtiene la lista de tipos de movimiento desde SQL Server"""
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        if server['system_type'] == 'MPRO':
+            query = """
+                SELECT 
+                    Tm_Cve_Tipo_Movimiento as codigo,
+                    Tm_Descripcion as descripcion,
+                    Tm_Tipo as tipo
+                FROM Tipo_Movimiento
+                WHERE Es_Cve_Estado <> 'BA'
+                ORDER BY Tm_Cve_Tipo_Movimiento
+            """
+        else:
+            query = """
+                SELECT 
+                    Tm_Cve_Tipo_Movimiento as codigo,
+                    Tm_Descripcion as descripcion,
+                    Tm_Tipo as tipo
+                FROM Tipo_Movimiento
+                ORDER BY Tm_Cve_Tipo_Movimiento
+            """
+        
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            query
+        )
+        return results
+    except Exception as e:
+        logging.error(f"Error obteniendo tipos de movimiento: {str(e)}")
+        return []
+
+@api_router.get("/servers/{server_id}/categorias")
+async def get_categorias(server_id: str, current_user: Dict = Depends(get_current_user)):
+    """Obtiene la lista de categorías desde SQL Server"""
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        if server['system_type'] == 'MPRO':
+            query = """
+                SELECT 
+                    Ct_Cve_Categoria as codigo,
+                    Ct_Descripcion as descripcion
+                FROM Categoria
+                WHERE Es_Cve_Estado <> 'BA'
+                ORDER BY Ct_Cve_Categoria
+            """
+        else:
+            query = """
+                SELECT 
+                    Ct_Cve_Categoria as codigo,
+                    Ct_Descripcion as descripcion
+                FROM Categoria
+                ORDER BY Ct_Cve_Categoria
+            """
+        
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            query
+        )
+        return results
+    except Exception as e:
+        logging.error(f"Error obteniendo categorías: {str(e)}")
+        return []
+
+@api_router.get("/servers/{server_id}/departamentos")
+async def get_departamentos(server_id: str, current_user: Dict = Depends(get_current_user)):
+    """Obtiene la lista de departamentos desde SQL Server"""
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        if server['system_type'] == 'MPRO':
+            query = """
+                SELECT 
+                    Dp_Cve_Departamento as codigo,
+                    Dp_Descripcion as descripcion
+                FROM Departamento
+                WHERE Es_Cve_Estado <> 'BA'
+                ORDER BY Dp_Cve_Departamento
+            """
+        else:
+            query = """
+                SELECT 
+                    Dp_Cve_Departamento as codigo,
+                    Dp_Descripcion as descripcion
+                FROM Departamento
+                ORDER BY Dp_Cve_Departamento
+            """
+        
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            query
+        )
+        return results
+    except Exception as e:
+        logging.error(f"Error obteniendo departamentos: {str(e)}")
+        return []
+
 @api_router.get("/servers/{server_id}/sucursales")
 async def get_sucursales(server_id: str, current_user: Dict = Depends(get_current_user)):
     """Obtiene la lista de sucursales desde SQL Server"""
@@ -648,6 +774,7 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     - Movimientos (entre fechas) - Con lógica especial de fechas para tipos 508/108
     - Inventario Final (folio final)
     - Cálculo de diferencias
+    Usa filtros configurables por servidor (tipos_movimiento, categorias, departamentos)
     """
     server_id = report_params.get('server_id')
     sucursal = report_params.get('sucursal')
@@ -668,92 +795,57 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
             logging.info(f"Folios: {folio_inicial} a {folio_final}")
             
-            # Consulta usando CTEs para mejor rendimiento y claridad
-            # Basada en las consultas originales de Power Query
-            query = f"""
--- Obtener código del almacén
-DECLARE @AlmacenCodigo VARCHAR(20)
-DECLARE @Sucursal VARCHAR(50) = '{sucursal}'
-DECLARE @FechaIni VARCHAR(20) = '{fecha_ini}'
-DECLARE @FechaFin VARCHAR(20) = '{fecha_fin}'
-
-SELECT TOP 1 @AlmacenCodigo = Al_Cve_Almacen 
+            # Obtener filtros configurados del servidor
+            tipos_movimiento = server.get('tipos_movimiento', [])
+            categorias = server.get('categorias', [])
+            departamentos = server.get('departamentos', [])
+            
+            logging.info(f"Filtros configurados - Tipos Mov: {len(tipos_movimiento)}, Categorias: {len(categorias)}, Departamentos: {len(departamentos)}")
+            
+            # Construir filtros SQL dinámicos
+            if tipos_movimiento:
+                tipos_mov_sql = ",".join([f"'{t}'" for t in tipos_movimiento])
+                filtro_tipos_mov = f"AND E.Tm_Cve_Tipo_Movimiento IN ({tipos_mov_sql})"
+            else:
+                # Si no hay configuración, no filtrar por tipo de movimiento
+                filtro_tipos_mov = ""
+            
+            if categorias:
+                categorias_sql = ",".join([f"'{c}'" for c in categorias])
+                filtro_categorias = f"AND producto.Ct_Cve_Categoria IN ({categorias_sql})"
+                filtro_categorias_p = f"AND P.Ct_Cve_Categoria IN ({categorias_sql})"
+            else:
+                filtro_categorias = ""
+                filtro_categorias_p = ""
+            
+            if departamentos:
+                departamentos_sql = ",".join([f"'{d}'" for d in departamentos])
+                filtro_departamentos = f"AND producto.Dp_Cve_Departamento IN ({departamentos_sql})"
+                filtro_departamentos_p = f"AND P.Dp_Cve_Departamento IN ({departamentos_sql})"
+            else:
+                filtro_departamentos = ""
+                filtro_departamentos_p = ""
+            
+            # ENFOQUE OPTIMIZADO: Ejecutar consultas separadas y combinar en Python
+            # Esto es más rápido que CTEs complejas con UNION ALL
+            
+            # 1. Obtener código del almacén
+            almacen_query = f"""
+SELECT TOP 1 Al_Cve_Almacen as codigo
 FROM Almacen 
 WHERE Al_Descripcion LIKE '%{almacen}%'
-
--- CTE para VENTAS (replica la consulta original con UNION ALL)
-;WITH Ventas_CTE AS (
-    -- Parte 1: Ventas de productos KIT (componentes)
-    SELECT 
-        Producto_Kit.Pk_Producto as Producto_Codigo,
-        SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as Cantidad
-    FROM venta
-    INNER JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
-    INNER JOIN producto ON producto.Pr_Cve_Producto = Producto_kit.Pk_Producto
-    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
-    WHERE sucursal.Sc_Descripcion LIKE '%' + @Sucursal + '%'
-        AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN @FechaIni AND @FechaFin + ' 23:59:59'
-        AND producto_kit.Pk_Producto IS NOT NULL
-        AND producto.Ct_Cve_Categoria IN ('0001','0002','0004')
-        AND producto.Dp_Cve_Departamento IN ('0003','0004','0007','0002')
-    GROUP BY Producto_Kit.Pk_Producto
-
-    UNION ALL
-
-    -- Parte 2: Ventas DIRECTAS (producto vendido tal cual)
-    SELECT 
-        venta.Pr_Cve_Producto as Producto_Codigo,
-        SUM(venta.Vn_Cantidad_Control_1) as Cantidad
-    FROM venta
-    INNER JOIN producto ON producto.Pr_Cve_Producto = venta.Pr_Cve_Producto
-    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
-    WHERE sucursal.Sc_Descripcion LIKE '%' + @Sucursal + '%'
-        AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN @FechaIni AND @FechaFin + ' 23:59:59'
-        AND producto.Ct_Cve_Categoria IN ('0001','0002','0004')
-        AND producto.Dp_Cve_Departamento IN ('0003','0004','0007','0002')
-    GROUP BY venta.Pr_Cve_Producto
-),
--- Agregar ventas por producto
-Ventas_Agregadas AS (
-    SELECT Producto_Codigo, SUM(Cantidad) as Total_Ventas
-    FROM Ventas_CTE
-    GROUP BY Producto_Codigo
-),
--- CTE para MOVIMIENTOS (con lógica especial de fechas para tipos 508/108)
-Movimientos_CTE AS (
-    SELECT 
-        E.Pr_Cve_Producto as Producto_Codigo,
-        SUM(CASE 
-            WHEN TM.Tm_Tipo = '+' THEN E.Mv_Cantidad_Control_1
-            WHEN TM.Tm_Tipo = '-' THEN -E.Mv_Cantidad_Control_1
-            ELSE 0
-        END) as Total_Movimientos
-    FROM Movimiento E
-    INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = E.Sc_Cve_Sucursal
-    INNER JOIN Almacen A ON A.Al_Cve_Almacen = E.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = S.Sc_Cve_Sucursal
-    INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
-    WHERE S.Sc_Descripcion LIKE '%' + @Sucursal + '%'
-        AND E.Es_Cve_Estado <> 'CA'
-        AND E.Tm_Cve_Tipo_Movimiento IN ('050','100','106','108','112','202','400','500','506','508','510','512')
-        AND (
-            CASE   
-                WHEN TM.Tm_Cve_Tipo_Movimiento IN('508','108') THEN 
-                    CASE WHEN E.Mv_Tabla = 'CONVERSION_PRODUCTO' THEN E.Mv_Fecha 
-                    ELSE COALESCE(
-                        (SELECT TOP 1 C.Co_Fecha FROM Conversion_Producto CN
-                         INNER JOIN COMPRA C ON C.Co_Folio = CN.Cp_Documento AND C.Pr_Cve_Producto = CN.Pr_Cve_Producto
-                         WHERE CN.Cp_Folio = E.Mv_Documento),
-                        E.Mv_Fecha)
-                    END
-                ELSE E.Mv_Fecha
-            END
-        ) BETWEEN @FechaIni AND @FechaFin + ' 23:59:59'
-    GROUP BY E.Pr_Cve_Producto
-)
-
--- Consulta principal
+"""
+            almacen_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], almacen_query
+            )
+            if not almacen_result:
+                raise HTTPException(status_code=404, detail="Almacén no encontrado")
+            almacen_codigo = almacen_result[0]['codigo']
+            logging.info(f"Código de almacén: {almacen_codigo}")
+            
+            # 2. Obtener productos con inventario inicial o final
+            productos_query = f"""
 SELECT TOP 2000
     P.Pr_Cve_Producto as Codigo,
     P.Pr_Descripcion as Producto,
@@ -762,111 +854,150 @@ SELECT TOP 2000
     C.Ct_Descripcion as Categoria,
     P.Pr_Unidad_Control_1 as Unidad,
     P.Pr_ultimo_costo as Costo_Unitario,
-    
-    -- Inventario Inicial
     ISNULL(FI.Fi_Cantidad_Control_1, 0) as Inv_Inicial_Cantidad,
-    
-    -- Ventas (de la CTE)
-    ISNULL(V.Total_Ventas, 0) as Ventas,
-    
-    -- Movimientos (de la CTE)
-    ISNULL(M.Total_Movimientos, 0) as Movimientos,
-    
-    -- Inventario Final
     ISNULL(FF.Fi_Cantidad_Control_1, 0) as Inv_Final_Cantidad
-    
 FROM Producto P
 INNER JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
 INNER JOIN SubFamilia SF ON SF.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
 INNER JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
 LEFT JOIN Fisico FI ON FI.Pr_Cve_Producto = P.Pr_Cve_Producto 
     AND FI.Fi_Folio = '{folio_inicial}'
-    AND FI.Al_Cve_Almacen = @AlmacenCodigo
+    AND FI.Al_Cve_Almacen = '{almacen_codigo}'
 LEFT JOIN Fisico FF ON FF.Pr_Cve_Producto = P.Pr_Cve_Producto
     AND FF.Fi_Folio = '{folio_final}'
-    AND FF.Al_Cve_Almacen = @AlmacenCodigo
-LEFT JOIN Ventas_Agregadas V ON V.Producto_Codigo = P.Pr_Cve_Producto
-LEFT JOIN Movimientos_CTE M ON M.Producto_Codigo = P.Pr_Cve_Producto
-
+    AND FF.Al_Cve_Almacen = '{almacen_codigo}'
 WHERE P.Es_Cve_Estado <> 'BA'
-    AND P.Ct_Cve_Categoria IN ('0001','0002','0004')
-    AND P.Dp_Cve_Departamento IN ('0003','0004','0007','0002')
-    AND (
-        FI.Fi_Cantidad_Control_1 > 0 OR 
-        FF.Fi_Cantidad_Control_1 > 0 OR
-        V.Total_Ventas > 0 OR
-        M.Total_Movimientos <> 0
-    )
-
+    {filtro_categorias_p}
+    {filtro_departamentos_p}
+    AND (FI.Fi_Cantidad_Control_1 > 0 OR FF.Fi_Cantidad_Control_1 > 0)
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
-            """
+"""
+            logging.info("Obteniendo productos con inventario...")
+            productos = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], productos_query
+            )
+            logging.info(f"Productos obtenidos: {len(productos)}")
             
-            logging.info("Ejecutando consulta con CTEs basada en consultas originales...")
+            # 3. Obtener ventas por producto (combinando kits y directas)
+            ventas_query = f"""
+SELECT Producto_Codigo, SUM(Cantidad) as Total_Ventas FROM (
+    -- Ventas de productos KIT
+    SELECT 
+        Producto_Kit.Pk_Producto as Producto_Codigo,
+        SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as Cantidad
+    FROM venta
+    INNER JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
+    INNER JOIN producto ON producto.Pr_Cve_Producto = Producto_kit.Pk_Producto
+    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
+    WHERE sucursal.Sc_Descripcion LIKE '%{sucursal}%'
+        AND venta.Es_Cve_Estado <> 'CA'
+        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+        AND producto_kit.Pk_Producto IS NOT NULL
+        {filtro_categorias}
+        {filtro_departamentos}
+    GROUP BY Producto_Kit.Pk_Producto
+    
+    UNION ALL
+    
+    -- Ventas DIRECTAS
+    SELECT 
+        venta.Pr_Cve_Producto as Producto_Codigo,
+        SUM(venta.Vn_Cantidad_Control_1) as Cantidad
+    FROM venta
+    INNER JOIN producto ON producto.Pr_Cve_Producto = venta.Pr_Cve_Producto
+    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
+    WHERE sucursal.Sc_Descripcion LIKE '%{sucursal}%'
+        AND venta.Es_Cve_Estado <> 'CA'
+        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+        {filtro_categorias}
+        {filtro_departamentos}
+    GROUP BY venta.Pr_Cve_Producto
+) AS VentasCombinadas
+GROUP BY Producto_Codigo
+"""
+            logging.info("Obteniendo ventas...")
+            ventas_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], ventas_query
+            )
+            ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
+            logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
+            
+            # 4. Obtener movimientos por producto
+            movimientos_query = f"""
+SELECT 
+    E.Pr_Cve_Producto as Producto_Codigo,
+    SUM(CASE 
+        WHEN TM.Tm_Tipo = '+' THEN E.Mv_Cantidad_Control_1
+        WHEN TM.Tm_Tipo = '-' THEN -E.Mv_Cantidad_Control_1
+        ELSE 0
+    END) as Total_Movimientos
+FROM Movimiento E
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = E.Sc_Cve_Sucursal
+INNER JOIN Almacen A ON A.Al_Cve_Almacen = E.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = S.Sc_Cve_Sucursal
+INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
+WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+    AND E.Es_Cve_Estado <> 'CA'
+    {filtro_tipos_mov}
+    AND E.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+GROUP BY E.Pr_Cve_Producto
+"""
+            logging.info("Obteniendo movimientos...")
+            movimientos_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], movimientos_query
+            )
+            movimientos_dict = {m['Producto_Codigo']: float(m['Total_Movimientos'] or 0) for m in movimientos_result}
+            logging.info(f"Movimientos obtenidos para {len(movimientos_dict)} productos")
+            
+            # 5. Combinar resultados
+            logging.info("Combinando resultados...")
+            results = []
+            for prod in productos:
+                codigo = prod['Codigo']
+                ventas_total = ventas_dict.get(codigo, 0)
+                movimientos = movimientos_dict.get(codigo, 0)
+                inv_inicial = float(prod.get('Inv_Inicial_Cantidad', 0) or 0)
+                inv_final = float(prod.get('Inv_Final_Cantidad', 0) or 0)
+                costo = float(prod.get('Costo_Unitario', 0) or 0)
+                
+                # Calcular inventario teórico: Inicial + Movimientos - Ventas
+                inv_teorico = inv_inicial + movimientos - ventas_total
+                
+                # Calcular diferencias: Teórico - Final
+                diferencia_cantidad = inv_teorico - inv_final
+                diferencia_costo = diferencia_cantidad * costo
+                diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
+                
+                results.append({
+                    'Categoria': prod.get('Categoria'),
+                    'Familia': prod.get('Familia'),
+                    'SubFamilia': prod.get('SubFamilia'),
+                    'Codigo': codigo,
+                    'Producto': prod.get('Producto'),
+                    'Unidad': prod.get('Unidad'),
+                    'Costo_Unitario': round(costo, 2),
+                    'Inv_Inicial_Cantidad': round(inv_inicial, 2),
+                    'Inv_Inicial_Costo': round(inv_inicial * costo, 2),
+                    'Movimientos': round(movimientos, 2),
+                    'Movimientos_Costo': round(movimientos * costo, 2),
+                    'Ventas': round(ventas_total, 2),
+                    'Ventas_Costo': round(ventas_total * costo, 2),
+                    'Inv_Teorico_Cantidad': round(inv_teorico, 2),
+                    'Inv_Teorico_Costo': round(inv_teorico * costo, 2),
+                    'Inv_Final_Cantidad': round(inv_final, 2),
+                    'Inv_Final_Costo': round(inv_final * costo, 2),
+                    'Diferencia_Cantidad': round(diferencia_cantidad, 2),
+                    'Diferencia_Costo': round(diferencia_costo, 2),
+                    'Diferencia_Porcentaje': round(diferencia_porcentaje, 2)
+                })
+            
+            logging.info(f"Análisis completado: {len(results)} productos procesados")
+            return {"data": results, "count": len(results)}
             
         else:
             raise HTTPException(status_code=400, detail="Sistema no soportado para análisis completo")
-        
-        # Execute query
-        results = execute_sql_query(
-            server['host'],
-            server['port'],
-            server['database'],
-            server['username'],
-            server['password'],
-            query
-        )
-        
-        logging.info(f"Consulta completada. Procesando {len(results)} productos...")
-        
-        # Log de muestra del primer producto para debugging
-        if len(results) > 0:
-            logging.info(f"Ejemplo de producto: {results[0]}")
-        
-        # Procesar resultados y calcular diferencias
-        processed_results = []
-        for row in results:
-            ventas_total = float(row.get('Ventas', 0) or 0)
-            movimientos = float(row.get('Movimientos', 0) or 0)
-            inv_inicial = float(row.get('Inv_Inicial_Cantidad', 0) or 0)
-            inv_final = float(row.get('Inv_Final_Cantidad', 0) or 0)
-            costo = float(row.get('Costo_Unitario', 0) or 0)
-            
-            # Calcular inventario teórico: Inicial + Movimientos - Ventas
-            inv_teorico = inv_inicial + movimientos - ventas_total
-            
-            # Calcular diferencias: Teórico - Final
-            diferencia_cantidad = inv_teorico - inv_final
-            diferencia_costo = diferencia_cantidad * costo
-            diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
-            
-            processed_row = {
-                'Categoria': row.get('Categoria'),
-                'Familia': row.get('Familia'),
-                'SubFamilia': row.get('SubFamilia'),
-                'Codigo': row.get('Codigo'),
-                'Producto': row.get('Producto'),
-                'Unidad': row.get('Unidad'),
-                'Costo_Unitario': round(costo, 2),
-                'Inv_Inicial_Cantidad': round(inv_inicial, 2),
-                'Inv_Inicial_Costo': round(inv_inicial * costo, 2),
-                'Movimientos': round(movimientos, 2),
-                'Movimientos_Costo': round(movimientos * costo, 2),
-                'Ventas': round(ventas_total, 2),
-                'Ventas_Costo': round(ventas_total * costo, 2),
-                'Inv_Teorico_Cantidad': round(inv_teorico, 2),
-                'Inv_Teorico_Costo': round(inv_teorico * costo, 2),
-                'Inv_Final_Cantidad': round(inv_final, 2),
-                'Inv_Final_Costo': round(inv_final * costo, 2),
-                'Diferencia_Cantidad': round(diferencia_cantidad, 2),
-                'Diferencia_Costo': round(diferencia_costo, 2),
-                'Diferencia_Porcentaje': round(diferencia_porcentaje, 2)
-            }
-            
-            processed_results.append(processed_row)
-        
-        logging.info(f"Análisis completado: {len(processed_results)} productos procesados")
-        
-        return {"data": processed_results, "count": len(processed_results)}
         
     except Exception as e:
         logging.error(f"Error en análisis de inventario: {str(e)}")

@@ -6,13 +6,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Database } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Servidores = () => {
   const [servers, setServers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [selectedServer, setSelectedServer] = useState(null);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionValid, setConnectionValid] = useState(false);
+  
+  // Listas de opciones desde SQL Server
+  const [tiposMovimiento, setTiposMovimiento] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [departamentos, setDepartamentos] = useState([]);
+  const [loadingOptions, setLoadingOptions] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
     host: '',
@@ -22,7 +35,17 @@ const Servidores = () => {
     password: '',
     system_type: 'MPRO',
     date_calculation_method: 'inventory_dates',
-    sucursales: []
+    sucursales: [],
+    tipos_movimiento: [],
+    categorias: [],
+    departamentos: []
+  });
+
+  // Estado para los filtros seleccionados en configuración
+  const [selectedFilters, setSelectedFilters] = useState({
+    tipos_movimiento: [],
+    categorias: [],
+    departamentos: []
   });
 
   useEffect(() => {
@@ -40,18 +63,128 @@ const Servidores = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const testConnection = async () => {
+    if (!formData.host || !formData.database || !formData.username || !formData.password) {
+      toast.error('Completa todos los campos de conexión');
+      return;
+    }
+    
+    setTestingConnection(true);
+    setConnectionValid(false);
     
     try {
-      await api.post('/servers', formData);
-      toast.success('Servidor agregado exitosamente');
+      // Intentar crear el servidor para probar la conexión
+      const response = await api.post('/servers', formData);
+      setConnectionValid(true);
+      toast.success('Conexión exitosa');
+      
+      // Guardar el servidor creado
+      const newServerId = response.data.id;
+      setSelectedServer({ ...response.data, id: newServerId });
+      
+      // Cargar las opciones de filtros
+      await loadFilterOptions(newServerId);
+      
       setDialogOpen(false);
-      resetForm();
+      loadServers();
+      
+      // Abrir el diálogo de configuración
+      setConfigDialogOpen(true);
+      
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error de conexión');
+      setConnectionValid(false);
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
+  const loadFilterOptions = async (serverId) => {
+    setLoadingOptions(true);
+    try {
+      const [tiposRes, categoriasRes, departamentosRes] = await Promise.all([
+        api.get(`/servers/${serverId}/tipos-movimiento`),
+        api.get(`/servers/${serverId}/categorias`),
+        api.get(`/servers/${serverId}/departamentos`)
+      ]);
+      
+      setTiposMovimiento(tiposRes.data);
+      setCategorias(categoriasRes.data);
+      setDepartamentos(departamentosRes.data);
+      
+      // Si el servidor ya tiene filtros configurados, cargarlos
+      const server = servers.find(s => s.id === serverId) || selectedServer;
+      if (server) {
+        setSelectedFilters({
+          tipos_movimiento: server.tipos_movimiento || [],
+          categorias: server.categorias || [],
+          departamentos: server.departamentos || []
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error cargando opciones de filtros:', error);
+      toast.error('Error al cargar opciones de filtros');
+    } finally {
+      setLoadingOptions(false);
+    }
+  };
+
+  const openConfigDialog = async (server) => {
+    setSelectedServer(server);
+    setSelectedFilters({
+      tipos_movimiento: server.tipos_movimiento || [],
+      categorias: server.categorias || [],
+      departamentos: server.departamentos || []
+    });
+    setConfigDialogOpen(true);
+    await loadFilterOptions(server.id);
+  };
+
+  const saveFilters = async () => {
+    if (!selectedServer) return;
+    
+    try {
+      await api.put(`/servers/${selectedServer.id}`, {
+        tipos_movimiento: selectedFilters.tipos_movimiento,
+        categorias: selectedFilters.categorias,
+        departamentos: selectedFilters.departamentos
+      });
+      
+      toast.success('Filtros guardados correctamente');
+      setConfigDialogOpen(false);
       loadServers();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error al agregar servidor');
+      toast.error('Error al guardar filtros');
     }
+  };
+
+  const toggleFilter = (type, codigo) => {
+    setSelectedFilters(prev => {
+      const current = prev[type] || [];
+      const isSelected = current.includes(codigo);
+      
+      return {
+        ...prev,
+        [type]: isSelected 
+          ? current.filter(c => c !== codigo)
+          : [...current, codigo]
+      };
+    });
+  };
+
+  const selectAll = (type, items) => {
+    setSelectedFilters(prev => ({
+      ...prev,
+      [type]: items.map(item => item.codigo)
+    }));
+  };
+
+  const deselectAll = (type) => {
+    setSelectedFilters(prev => ({
+      ...prev,
+      [type]: []
+    }));
   };
 
   const handleDelete = async (serverId) => {
@@ -76,8 +209,19 @@ const Servidores = () => {
       password: '',
       system_type: 'MPRO',
       date_calculation_method: 'inventory_dates',
-      sucursales: []
+      sucursales: [],
+      tipos_movimiento: [],
+      categorias: [],
+      departamentos: []
     });
+    setConnectionValid(false);
+  };
+
+  const getFilterCount = (server) => {
+    const tiposCount = server.tipos_movimiento?.length || 0;
+    const catCount = server.categorias?.length || 0;
+    const deptCount = server.departamentos?.length || 0;
+    return tiposCount + catCount + deptCount;
   };
 
   return (
@@ -90,7 +234,10 @@ const Servidores = () => {
           <p className="text-zinc-600 mt-1">Gestiona las conexiones a bases de datos</p>
         </div>
         <Button 
-          onClick={() => setDialogOpen(true)}
+          onClick={() => {
+            resetForm();
+            setDialogOpen(true);
+          }}
           className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
           data-testid="add-server-button"
         >
@@ -138,16 +285,29 @@ const Servidores = () => {
                     <span className="text-zinc-600">Usuario:</span>
                     <span className="font-mono text-zinc-900">{server.username}</span>
                   </div>
-                  {server.system_type && (
-                    <div className="pt-2 border-t border-zinc-100">
-                      <p className="text-xs text-zinc-500 mb-1">Cálculo de fechas:</p>
-                      <p className="text-xs text-zinc-700">
-                        {server.system_type === 'MPRO' 
-                          ? '📅 Fechas exactas de inventarios' 
-                          : '⏱️ Fecha inv. ±1 segundo'}
-                      </p>
+                  
+                  {/* Mostrar estado de filtros */}
+                  <div className="pt-2 border-t border-zinc-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-zinc-500">Filtros configurados:</span>
+                      <span className={`text-xs font-medium ${getFilterCount(server) > 0 ? 'text-green-600' : 'text-orange-500'}`}>
+                        {getFilterCount(server) > 0 ? `${getFilterCount(server)} activos` : 'Sin configurar'}
+                      </span>
                     </div>
-                  )}
+                    {getFilterCount(server) > 0 && (
+                      <div className="mt-1 text-xs text-zinc-600">
+                        <span className="inline-block bg-zinc-100 rounded px-1.5 py-0.5 mr-1">
+                          Mov: {server.tipos_movimiento?.length || 0}
+                        </span>
+                        <span className="inline-block bg-zinc-100 rounded px-1.5 py-0.5 mr-1">
+                          Cat: {server.categorias?.length || 0}
+                        </span>
+                        <span className="inline-block bg-zinc-100 rounded px-1.5 py-0.5">
+                          Dept: {server.departamentos?.length || 0}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="flex gap-2 mt-4">
@@ -155,11 +315,19 @@ const Servidores = () => {
                     variant="outline" 
                     size="sm" 
                     className="flex-1"
+                    onClick={() => openConfigDialog(server)}
+                    data-testid="config-server-button"
+                  >
+                    <Filter className="h-4 w-4 mr-1" />
+                    Configurar Filtros
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
                     onClick={() => handleDelete(server.id)}
                     data-testid="delete-server-button"
                   >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Eliminar
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
@@ -176,7 +344,7 @@ const Servidores = () => {
             <DialogDescription>Configura la conexión a un servidor SQL</DialogDescription>
           </DialogHeader>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre</Label>
@@ -205,13 +373,6 @@ const Servidores = () => {
                     <SelectItem value="Otro">Otro</SelectItem>
                   </SelectContent>
                 </Select>
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mt-2">
-                  <p className="text-xs text-blue-900 font-medium mb-1">Cálculo automático de fechas de consumo:</p>
-                  <ul className="text-xs text-blue-800 space-y-1">
-                    <li>• <strong>MPRO:</strong> Usa fechas exactas de inventarios inicial y final</li>
-                    <li>• <strong>SoftRestaurant:</strong> Fecha inicial +1 seg, fecha final -1 seg</li>
-                  </ul>
-                </div>
               </div>
             </div>
 
@@ -279,15 +440,221 @@ const Servidores = () => {
               </div>
             </div>
 
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+              <p className="text-xs text-blue-900 font-medium mb-1">Cálculo automático de fechas:</p>
+              <ul className="text-xs text-blue-800 space-y-1">
+                <li>• <strong>MPRO:</strong> Usa fechas exactas de inventarios inicial y final</li>
+                <li>• <strong>SoftRestaurant:</strong> Fecha inicial +1 seg, fecha final -1 seg</li>
+              </ul>
+            </div>
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800" data-testid="submit-server-button">
-                Agregar Servidor
+              <Button 
+                onClick={testConnection}
+                disabled={testingConnection}
+                className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800" 
+                data-testid="submit-server-button"
+              >
+                {testingConnection ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Conectando...
+                  </>
+                ) : (
+                  <>
+                    <Database className="h-4 w-4 mr-2" />
+                    Conectar y Configurar
+                  </>
+                )}
               </Button>
             </DialogFooter>
-          </form>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Configuration Dialog */}
+      <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Configurar Filtros - {selectedServer?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona los tipos de movimiento, categorías y departamentos que deseas incluir en los análisis de inventario
+            </DialogDescription>
+          </DialogHeader>
+          
+          {loadingOptions ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+              <span className="ml-2 text-zinc-600">Cargando opciones...</span>
+            </div>
+          ) : (
+            <Tabs defaultValue="tipos" className="flex-1 overflow-hidden flex flex-col">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="tipos" className="flex items-center gap-2">
+                  Tipos de Movimiento
+                  <span className="bg-zinc-200 text-zinc-700 text-xs px-1.5 py-0.5 rounded">
+                    {selectedFilters.tipos_movimiento.length}/{tiposMovimiento.length}
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger value="categorias" className="flex items-center gap-2">
+                  Categorías
+                  <span className="bg-zinc-200 text-zinc-700 text-xs px-1.5 py-0.5 rounded">
+                    {selectedFilters.categorias.length}/{categorias.length}
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger value="departamentos" className="flex items-center gap-2">
+                  Departamentos
+                  <span className="bg-zinc-200 text-zinc-700 text-xs px-1.5 py-0.5 rounded">
+                    {selectedFilters.departamentos.length}/{departamentos.length}
+                  </span>
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="tipos" className="flex-1 overflow-auto mt-4">
+                <div className="flex gap-2 mb-4">
+                  <Button size="sm" variant="outline" onClick={() => selectAll('tipos_movimiento', tiposMovimiento)}>
+                    Seleccionar todos
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => deselectAll('tipos_movimiento')}>
+                    Deseleccionar todos
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-2">
+                  {tiposMovimiento.map((tipo) => (
+                    <div 
+                      key={tipo.codigo} 
+                      className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedFilters.tipos_movimiento.includes(tipo.codigo)
+                          ? 'bg-blue-50 border-blue-300'
+                          : 'bg-white border-zinc-200 hover:border-zinc-300'
+                      }`}
+                      onClick={() => toggleFilter('tipos_movimiento', tipo.codigo)}
+                    >
+                      <Checkbox 
+                        checked={selectedFilters.tipos_movimiento.includes(tipo.codigo)}
+                        onCheckedChange={() => toggleFilter('tipos_movimiento', tipo.codigo)}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm bg-zinc-100 px-2 py-0.5 rounded">
+                            {tipo.codigo}
+                          </span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${
+                            (tipo.tipo === '+' || tipo.tipo === 'EN') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {(tipo.tipo === '+' || tipo.tipo === 'EN') ? 'Entrada' : 'Salida'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-zinc-700 mt-1">{tipo.descripcion}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="categorias" className="flex-1 overflow-auto mt-4">
+                <div className="flex gap-2 mb-4">
+                  <Button size="sm" variant="outline" onClick={() => selectAll('categorias', categorias)}>
+                    Seleccionar todos
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => deselectAll('categorias')}>
+                    Deseleccionar todos
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[400px] overflow-y-auto pr-2">
+                  {categorias.map((cat) => (
+                    <div 
+                      key={cat.codigo} 
+                      className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedFilters.categorias.includes(cat.codigo)
+                          ? 'bg-green-50 border-green-300'
+                          : 'bg-white border-zinc-200 hover:border-zinc-300'
+                      }`}
+                      onClick={() => toggleFilter('categorias', cat.codigo)}
+                    >
+                      <Checkbox 
+                        checked={selectedFilters.categorias.includes(cat.codigo)}
+                        onCheckedChange={() => toggleFilter('categorias', cat.codigo)}
+                      />
+                      <div className="flex-1">
+                        <span className="font-mono text-xs bg-zinc-100 px-2 py-0.5 rounded">
+                          {cat.codigo}
+                        </span>
+                        <p className="text-sm text-zinc-700 mt-1">{cat.descripcion}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="departamentos" className="flex-1 overflow-auto mt-4">
+                <div className="flex gap-2 mb-4">
+                  <Button size="sm" variant="outline" onClick={() => selectAll('departamentos', departamentos)}>
+                    Seleccionar todos
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => deselectAll('departamentos')}>
+                    Deseleccionar todos
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[400px] overflow-y-auto pr-2">
+                  {departamentos.map((dept) => (
+                    <div 
+                      key={dept.codigo} 
+                      className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedFilters.departamentos.includes(dept.codigo)
+                          ? 'bg-purple-50 border-purple-300'
+                          : 'bg-white border-zinc-200 hover:border-zinc-300'
+                      }`}
+                      onClick={() => toggleFilter('departamentos', dept.codigo)}
+                    >
+                      <Checkbox 
+                        checked={selectedFilters.departamentos.includes(dept.codigo)}
+                        onCheckedChange={() => toggleFilter('departamentos', dept.codigo)}
+                      />
+                      <div className="flex-1">
+                        <span className="font-mono text-xs bg-zinc-100 px-2 py-0.5 rounded">
+                          {dept.codigo}
+                        </span>
+                        <p className="text-sm text-zinc-700 mt-1">{dept.descripcion}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+
+          <DialogFooter className="mt-4 pt-4 border-t">
+            <div className="flex items-center justify-between w-full">
+              <div className="text-sm text-zinc-600">
+                <span className="font-medium">Resumen:</span>
+                <span className="ml-2">{selectedFilters.tipos_movimiento.length} tipos</span>
+                <span className="mx-1">•</span>
+                <span>{selectedFilters.categorias.length} categorías</span>
+                <span className="mx-1">•</span>
+                <span>{selectedFilters.departamentos.length} departamentos</span>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setConfigDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={saveFilters}
+                  className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
+                  data-testid="save-filters-button"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Guardar Configuración
+                </Button>
+              </div>
+            </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
