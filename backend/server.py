@@ -844,9 +844,10 @@ WHERE Al_Descripcion LIKE '%{almacen}%'
             almacen_codigo = almacen_result[0]['codigo']
             logging.info(f"Código de almacén: {almacen_codigo}")
             
-            # 2. Obtener productos con inventario inicial o final
+            # 2. Obtener TODOS los productos que cumplen los filtros de categoría/departamento
+            # Luego filtraremos solo los que tienen actividad (inventario, ventas o movimientos)
             productos_query = f"""
-SELECT TOP 2000
+SELECT TOP 3000
     P.Pr_Cve_Producto as Codigo,
     P.Pr_Descripcion as Producto,
     F.Fm_Descripcion as Familia,
@@ -869,7 +870,6 @@ LEFT JOIN Fisico FF ON FF.Pr_Cve_Producto = P.Pr_Cve_Producto
 WHERE P.Es_Cve_Estado <> 'BA'
     {filtro_categorias_p}
     {filtro_departamentos_p}
-    AND (FI.Fi_Cantidad_Control_1 > 0 OR FF.Fi_Cantidad_Control_1 > 0)
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
 """
             logging.info("Obteniendo productos con inventario...")
@@ -953,7 +953,7 @@ GROUP BY E.Pr_Cve_Producto
             movimientos_dict = {m['Producto_Codigo']: float(m['Total_Movimientos'] or 0) for m in movimientos_result}
             logging.info(f"Movimientos obtenidos para {len(movimientos_dict)} productos")
             
-            # 5. Combinar resultados
+            # 5. Combinar resultados - Solo incluir productos con actividad
             logging.info("Combinando resultados...")
             results = []
             for prod in productos:
@@ -963,6 +963,10 @@ GROUP BY E.Pr_Cve_Producto
                 inv_inicial = float(prod.get('Inv_Inicial_Cantidad', 0) or 0)
                 inv_final = float(prod.get('Inv_Final_Cantidad', 0) or 0)
                 costo = float(prod.get('Costo_Unitario', 0) or 0)
+                
+                # Solo incluir productos con alguna actividad
+                if inv_inicial == 0 and inv_final == 0 and ventas_total == 0 and movimientos == 0:
+                    continue
                 
                 # Calcular inventario teórico: Inicial + Movimientos - Ventas
                 inv_teorico = inv_inicial + movimientos - ventas_total
