@@ -276,15 +276,22 @@ const Reportes = () => {
       return;
     }
 
-    const worksheet = XLSX.utils.json_to_sheet(reportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte');
-    
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `reporte_inventario_${new Date().toISOString().split('T')[0]}.xlsx`);
-    
-    toast.success('Reporte exportado a Excel');
+    try {
+      const worksheet = XLSX.utils.json_to_sheet(reportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte');
+      
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const fileName = `reporte_inventario_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      saveAs(blob, fileName);
+      
+      toast.success(`Archivo "${fileName}" descargado correctamente. Revisa tu carpeta de Descargas.`);
+    } catch (error) {
+      console.error('Error al exportar Excel:', error);
+      toast.error('Error al exportar a Excel: ' + error.message);
+    }
   };
 
   const handleExportPDF = () => {
@@ -293,27 +300,54 @@ const Reportes = () => {
       return;
     }
 
-    const doc = new jsPDF('landscape');
-    
-    doc.setFontSize(18);
-    doc.text('Reporte de Inventario', 14, 20);
-    
-    doc.setFontSize(10);
-    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 28);
-    
-    const headers = Object.keys(reportData[0]);
-    const data = reportData.map(row => headers.map(header => row[header] || ''));
-    
-    autoTable(doc, {
-      head: [headers],
-      body: data,
-      startY: 35,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [24, 24, 27] }
-    });
-    
-    doc.save(`reporte_inventario_${new Date().toISOString().split('T')[0]}.pdf`);
-    toast.success('Reporte exportado a PDF');
+    try {
+      const doc = new jsPDF('landscape');
+      
+      doc.setFontSize(18);
+      doc.text('Reporte de Inventario', 14, 20);
+      
+      doc.setFontSize(10);
+      doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 28);
+      doc.text(`Sucursal: ${filters.sucursal}`, 14, 34);
+      doc.text(`Almacén: ${filters.almacen}`, 14, 40);
+      doc.text(`Período: ${filters.fecha_ini} a ${filters.fecha_fin}`, 14, 46);
+      
+      // Columnas más relevantes para el PDF
+      const columns = ['Codigo', 'Producto', 'Inv_Inicial_Cantidad', 'Movimientos', 'Ventas', 'Inv_Teorico_Cantidad', 'Inv_Final_Cantidad', 'Diferencia_Cantidad'];
+      const headers = ['Código', 'Producto', 'Inv. Inicial', 'Movimientos', 'Ventas', 'Inv. Teórico', 'Inv. Final', 'Diferencia'];
+      
+      const data = reportData.map(row => columns.map(col => {
+        const val = row[col];
+        if (typeof val === 'number') return val.toLocaleString('es-MX', { maximumFractionDigits: 2 });
+        return val || '';
+      }));
+      
+      autoTable(doc, {
+        head: [headers],
+        body: data,
+        startY: 52,
+        styles: { fontSize: 7, cellPadding: 2 },
+        headStyles: { fillColor: [24, 24, 27], fontSize: 8 },
+        columnStyles: {
+          0: { cellWidth: 25 },
+          1: { cellWidth: 60 },
+          2: { cellWidth: 25, halign: 'right' },
+          3: { cellWidth: 25, halign: 'right' },
+          4: { cellWidth: 25, halign: 'right' },
+          5: { cellWidth: 25, halign: 'right' },
+          6: { cellWidth: 25, halign: 'right' },
+          7: { cellWidth: 25, halign: 'right' }
+        }
+      });
+      
+      const fileName = `reporte_inventario_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+      toast.success(`Archivo "${fileName}" descargado correctamente. Revisa tu carpeta de Descargas.`);
+    } catch (error) {
+      console.error('Error al exportar PDF:', error);
+      toast.error('Error al exportar a PDF: ' + error.message);
+    }
   };
 
   const getDifferenceColor = (value) => {
