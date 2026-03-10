@@ -925,12 +925,13 @@ GROUP BY Producto_Codigo
             logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
             
             # 4. Obtener movimientos por producto
+            # Tm_Tipo puede ser 'EN' (entrada) o 'SA' (salida), o '+' y '-' en algunos sistemas
             movimientos_query = f"""
 SELECT 
     E.Pr_Cve_Producto as Producto_Codigo,
     SUM(CASE 
-        WHEN TM.Tm_Tipo = '+' THEN E.Mv_Cantidad_Control_1
-        WHEN TM.Tm_Tipo = '-' THEN -E.Mv_Cantidad_Control_1
+        WHEN TM.Tm_Tipo IN ('+', 'EN') THEN E.Mv_Cantidad_Control_1
+        WHEN TM.Tm_Tipo IN ('-', 'SA') THEN -E.Mv_Cantidad_Control_1
         ELSE 0
     END) as Total_Movimientos
 FROM Movimiento E
