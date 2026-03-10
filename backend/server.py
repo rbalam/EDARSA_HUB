@@ -25,6 +25,10 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Attachment
 import base64
 
+# Importar catálogos de consultas
+from catalogo.consultas_mpro import CONSULTAS_MPRO, ESTRUCTURA_TABLAS_MPRO
+from catalogo.consultas_softrestaurant import CONSULTAS_SOFTRESTAURANT, ESTRUCTURA_TABLAS_SOFTRESTAURANT
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -1093,6 +1097,160 @@ async def update_alert(alert_id: str, alert_data: Dict, current_user: Dict = Dep
 async def delete_alert(alert_id: str, current_user: Dict = Depends(get_current_user)):
     await db.alerts.update_one({"id": alert_id}, {"$set": {"active": False}})
     return {"message": "Alerta desactivada"}
+
+# ============= CATÁLOGO DE CONSULTAS =============
+
+@api_router.get("/catalogo/consultas")
+async def get_catalogo_consultas(system_type: str = None, current_user: Dict = Depends(get_current_user)):
+    """
+    Obtiene el catálogo completo de consultas disponibles.
+    Puede filtrar por tipo de sistema (MPRO o SoftRestaurant).
+    """
+    result = {}
+    
+    if system_type is None or system_type.upper() == "MPRO":
+        result["MPRO"] = {
+            nombre: {
+                "nombre": consulta["nombre"],
+                "descripcion": consulta["descripcion"],
+                "parametros": consulta["parametros"]
+            }
+            for nombre, consulta in CONSULTAS_MPRO.items()
+        }
+    
+    if system_type is None or system_type.upper() == "SOFTRESTAURANT":
+        result["SoftRestaurant"] = {
+            nombre: {
+                "nombre": consulta["nombre"],
+                "descripcion": consulta["descripcion"],
+                "parametros": consulta["parametros"]
+            }
+            for nombre, consulta in CONSULTAS_SOFTRESTAURANT.items()
+        }
+    
+    return result
+
+@api_router.get("/catalogo/estructura-tablas")
+async def get_estructura_tablas(system_type: str = None, current_user: Dict = Depends(get_current_user)):
+    """
+    Obtiene la estructura de las tablas principales.
+    Útil para entender la base de datos y crear consultas personalizadas.
+    """
+    result = {}
+    
+    if system_type is None or system_type.upper() == "MPRO":
+        result["MPRO"] = ESTRUCTURA_TABLAS_MPRO
+    
+    if system_type is None or system_type.upper() == "SOFTRESTAURANT":
+        result["SoftRestaurant"] = ESTRUCTURA_TABLAS_SOFTRESTAURANT
+    
+    return result
+
+@api_router.post("/catalogo/ejecutar-consulta")
+async def ejecutar_consulta_catalogo(params: Dict, current_user: Dict = Depends(get_current_user)):
+    """
+    Ejecuta una consulta del catálogo en un servidor específico.
+    
+    Parámetros:
+    - server_id: ID del servidor donde ejecutar
+    - consulta: Nombre de la consulta del catálogo (ej: "ventas", "productos", "proveedores")
+    - parametros: Diccionario con los parámetros requeridos por la consulta
+    """
+    server_id = params.get('server_id')
+    consulta_nombre = params.get('consulta')
+    parametros = params.get('parametros', {})
+    
+    # Obtener servidor
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    # Obtener consulta del catálogo según el tipo de sistema
+    if server['system_type'] == 'MPRO':
+        consultas = CONSULTAS_MPRO
+    elif server['system_type'] == 'SoftRestaurant':
+        consultas = CONSULTAS_SOFTRESTAURANT
+    else:
+        raise HTTPException(status_code=400, detail="Tipo de sistema no soportado")
+    
+    if consulta_nombre not in consultas:
+        raise HTTPException(status_code=404, detail=f"Consulta '{consulta_nombre}' no encontrada en el catálogo")
+    
+    consulta = consultas[consulta_nombre]
+    
+    try:
+        # Formatear la consulta con los parámetros
+        sql = consulta["sql"].format(**parametros)
+        
+        logging.info(f"Ejecutando consulta: {consulta_nombre}")
+        
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            sql
+        )
+        
+        return {
+            "consulta": consulta_nombre,
+            "descripcion": consulta["descripcion"],
+            "count": len(results),
+            "data": results
+        }
+        
+    except KeyError as e:
+        raise HTTPException(status_code=400, detail=f"Parámetro requerido faltante: {str(e)}")
+    except Exception as e:
+        logging.error(f"Error ejecutando consulta: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error ejecutando consulta: {str(e)}")
+
+@api_router.post("/catalogo/consulta-personalizada")
+async def ejecutar_consulta_personalizada(params: Dict, current_user: Dict = Depends(get_current_user)):
+    """
+    Ejecuta una consulta SQL personalizada en un servidor específico.
+    Solo para usuarios administradores.
+    
+    Parámetros:
+    - server_id: ID del servidor donde ejecutar
+    - sql: Consulta SQL a ejecutar
+    """
+    user_role = current_user.get('role', '').lower()
+    if user_role not in ['admin', 'administrador']:
+        raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar consultas personalizadas")
+    
+    server_id = params.get('server_id')
+    sql = params.get('sql')
+    
+    if not sql:
+        raise HTTPException(status_code=400, detail="SQL es requerido")
+    
+    # Obtener servidor
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        logging.info(f"Ejecutando consulta personalizada")
+        
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            sql
+        )
+        
+        return {
+            "count": len(results),
+            "data": results
+        }
+        
+    except Exception as e:
+        logging.error(f"Error ejecutando consulta personalizada: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 # ============= DEBUG ENDPOINT =============
 
