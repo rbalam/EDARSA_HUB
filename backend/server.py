@@ -676,15 +676,18 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
                 
             logging.info(f"Fechas con hora: {fecha_ini} a {fecha_fin}")
             
-            # Query simplificada y optimizada con LIMIT de 2000 registros
+            # Query simplificada con logging de debug
             query = f"""
--- Primero obtenemos el código del almacén
+-- Obtener código del almacén con logging
 DECLARE @AlmacenCodigo VARCHAR(20)
 SELECT TOP 1 @AlmacenCodigo = Al_Cve_Almacen 
 FROM Almacen 
 WHERE Al_Descripcion LIKE '%{almacen}%'
 
--- Consulta con TOP 2000 para cubrir 1000-1500 productos típicos
+-- Debug: mostrar el código obtenido
+SELECT @AlmacenCodigo as Debug_AlmacenCodigo
+
+-- Consulta principal con TOP 2000
 SELECT TOP 2000
     P.Pr_Cve_Producto as Codigo,
     P.Pr_Descripcion as Producto,
@@ -697,7 +700,10 @@ SELECT TOP 2000
     -- Inventario Inicial
     ISNULL(FI.Fi_Cantidad_Control_1, 0) as Inv_Inicial_Cantidad,
     
-    -- Ventas con kits (subconsulta simple)
+    -- Debug: código de almacén usado
+    @AlmacenCodigo as Debug_Almacen_Usado,
+    
+    -- Ventas con kits
     ISNULL((
         SELECT SUM(V.Vn_Cantidad_1 * ISNULL(PK.Pk_Cantidad, 0))
         FROM venta V
@@ -706,11 +712,11 @@ SELECT TOP 2000
         WHERE V.Es_Cve_Estado <> 'CA'
             AND V.Al_Cve_Almacen = @AlmacenCodigo
             AND S.Sc_Descripcion LIKE '%{sucursal}%'
-            AND V.Vn_Fecha >= '{fecha_ini}' 
-            AND V.Vn_Fecha <= '{fecha_fin}'
+            AND CAST(V.Vn_Fecha AS DATE) >= '{fecha_ini}'
+            AND CAST(V.Vn_Fecha AS DATE) <= '{fecha_fin}'
     ), 0) as Ventas_Kit,
     
-    -- Ventas directas (subconsulta simple)
+    -- Ventas directas
     ISNULL((
         SELECT SUM(V.Vn_Cantidad_Control_1)
         FROM venta V
@@ -719,11 +725,11 @@ SELECT TOP 2000
             AND V.Es_Cve_Estado <> 'CA'
             AND V.Al_Cve_Almacen = @AlmacenCodigo
             AND S.Sc_Descripcion LIKE '%{sucursal}%'
-            AND V.Vn_Fecha >= '{fecha_ini}' 
-            AND V.Vn_Fecha <= '{fecha_fin}'
+            AND CAST(V.Vn_Fecha AS DATE) >= '{fecha_ini}'
+            AND CAST(V.Vn_Fecha AS DATE) <= '{fecha_fin}'
     ), 0) as Ventas_Directas,
     
-    -- Movimientos (subconsulta simple)
+    -- Movimientos
     ISNULL((
         SELECT SUM(CASE 
             WHEN TM.Tm_Tipo = '+' THEN M.Mv_Cantidad_Control_1
@@ -737,8 +743,8 @@ SELECT TOP 2000
             AND M.Es_Cve_Estado <> 'CA'
             AND M.Al_Cve_Almacen = @AlmacenCodigo
             AND S.Sc_Descripcion LIKE '%{sucursal}%'
-            AND M.Mv_Fecha >= '{fecha_ini}' 
-            AND M.Mv_Fecha <= '{fecha_fin}'
+            AND CAST(M.Mv_Fecha AS DATE) >= '{fecha_ini}'
+            AND CAST(M.Mv_Fecha AS DATE) <= '{fecha_fin}'
     ), 0) as Movimientos,
     
     -- Inventario Final
@@ -764,7 +770,7 @@ WHERE P.Es_Cve_Estado <> 'BA'
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
             """
             
-            logging.info("Ejecutando consulta simplificada (TOP 2000)...")
+            logging.info("Ejecutando consulta con debug de almacén...")
             
         else:
             raise HTTPException(status_code=400, detail="Sistema no soportado para análisis completo")
