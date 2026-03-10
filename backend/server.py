@@ -644,8 +644,8 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     """
     Genera un análisis completo de inventario con:
     - Inventario Inicial (folio inicial)
-    - Ventas (entre fechas)
-    - Movimientos (entre fechas)
+    - Ventas (entre fechas) - Usando consulta original con UNION ALL
+    - Movimientos (entre fechas) - Con lógica especial de fechas para tipos 508/108
     - Inventario Final (folio final)
     - Cálculo de diferencias
     """
@@ -668,23 +668,92 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
             logging.info(f"Folios: {folio_inicial} a {folio_final}")
             
-            # Asegurarnos de que las fechas tengan el formato correcto con hora
-            if len(fecha_ini) == 10:  # Solo fecha YYYY-MM-DD
-                fecha_ini = fecha_ini + ' 00:00:00'
-            if len(fecha_fin) == 10:  # Solo fecha YYYY-MM-DD  
-                fecha_fin = fecha_fin + ' 23:59:59'
-                
-            logging.info(f"Fechas con hora: {fecha_ini} a {fecha_fin}")
-            
-            # Query simplificada con CAST en fechas
+            # Consulta usando CTEs para mejor rendimiento y claridad
+            # Basada en las consultas originales de Power Query
             query = f"""
 -- Obtener código del almacén
 DECLARE @AlmacenCodigo VARCHAR(20)
+DECLARE @Sucursal VARCHAR(50) = '{sucursal}'
+DECLARE @FechaIni VARCHAR(20) = '{fecha_ini}'
+DECLARE @FechaFin VARCHAR(20) = '{fecha_fin}'
+
 SELECT TOP 1 @AlmacenCodigo = Al_Cve_Almacen 
 FROM Almacen 
 WHERE Al_Descripcion LIKE '%{almacen}%'
 
--- Consulta principal con TOP 2000
+-- CTE para VENTAS (replica la consulta original con UNION ALL)
+;WITH Ventas_CTE AS (
+    -- Parte 1: Ventas de productos KIT (componentes)
+    SELECT 
+        Producto_Kit.Pk_Producto as Producto_Codigo,
+        SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as Cantidad
+    FROM venta
+    INNER JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
+    INNER JOIN producto ON producto.Pr_Cve_Producto = Producto_kit.Pk_Producto
+    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
+    WHERE sucursal.Sc_Descripcion LIKE '%' + @Sucursal + '%'
+        AND venta.Es_Cve_Estado <> 'CA'
+        AND venta.Vn_Fecha BETWEEN @FechaIni AND @FechaFin + ' 23:59:59'
+        AND producto_kit.Pk_Producto IS NOT NULL
+        AND producto.Ct_Cve_Categoria IN ('0001','0002','0004')
+        AND producto.Dp_Cve_Departamento IN ('0003','0004','0007','0002')
+    GROUP BY Producto_Kit.Pk_Producto
+
+    UNION ALL
+
+    -- Parte 2: Ventas DIRECTAS (producto vendido tal cual)
+    SELECT 
+        venta.Pr_Cve_Producto as Producto_Codigo,
+        SUM(venta.Vn_Cantidad_Control_1) as Cantidad
+    FROM venta
+    INNER JOIN producto ON producto.Pr_Cve_Producto = venta.Pr_Cve_Producto
+    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
+    WHERE sucursal.Sc_Descripcion LIKE '%' + @Sucursal + '%'
+        AND venta.Es_Cve_Estado <> 'CA'
+        AND venta.Vn_Fecha BETWEEN @FechaIni AND @FechaFin + ' 23:59:59'
+        AND producto.Ct_Cve_Categoria IN ('0001','0002','0004')
+        AND producto.Dp_Cve_Departamento IN ('0003','0004','0007','0002')
+    GROUP BY venta.Pr_Cve_Producto
+),
+-- Agregar ventas por producto
+Ventas_Agregadas AS (
+    SELECT Producto_Codigo, SUM(Cantidad) as Total_Ventas
+    FROM Ventas_CTE
+    GROUP BY Producto_Codigo
+),
+-- CTE para MOVIMIENTOS (con lógica especial de fechas para tipos 508/108)
+Movimientos_CTE AS (
+    SELECT 
+        E.Pr_Cve_Producto as Producto_Codigo,
+        SUM(CASE 
+            WHEN TM.Tm_Tipo = '+' THEN E.Mv_Cantidad_Control_1
+            WHEN TM.Tm_Tipo = '-' THEN -E.Mv_Cantidad_Control_1
+            ELSE 0
+        END) as Total_Movimientos
+    FROM Movimiento E
+    INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = E.Sc_Cve_Sucursal
+    INNER JOIN Almacen A ON A.Al_Cve_Almacen = E.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = S.Sc_Cve_Sucursal
+    INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
+    WHERE S.Sc_Descripcion LIKE '%' + @Sucursal + '%'
+        AND E.Es_Cve_Estado <> 'CA'
+        AND E.Tm_Cve_Tipo_Movimiento IN ('050','100','106','108','112','202','400','500','506','508','510','512')
+        AND (
+            CASE   
+                WHEN TM.Tm_Cve_Tipo_Movimiento IN('508','108') THEN 
+                    CASE WHEN E.Mv_Tabla = 'CONVERSION_PRODUCTO' THEN E.Mv_Fecha 
+                    ELSE COALESCE(
+                        (SELECT TOP 1 C.Co_Fecha FROM Conversion_Producto CN
+                         INNER JOIN COMPRA C ON C.Co_Folio = CN.Cp_Documento AND C.Pr_Cve_Producto = CN.Pr_Cve_Producto
+                         WHERE CN.Cp_Folio = E.Mv_Documento),
+                        E.Mv_Fecha)
+                    END
+                ELSE E.Mv_Fecha
+            END
+        ) BETWEEN @FechaIni AND @FechaFin + ' 23:59:59'
+    GROUP BY E.Pr_Cve_Producto
+)
+
+-- Consulta principal
 SELECT TOP 2000
     P.Pr_Cve_Producto as Codigo,
     P.Pr_Descripcion as Producto,
@@ -697,49 +766,11 @@ SELECT TOP 2000
     -- Inventario Inicial
     ISNULL(FI.Fi_Cantidad_Control_1, 0) as Inv_Inicial_Cantidad,
     
-    -- Ventas con kits - usando CAST para fechas
-    ISNULL((
-        SELECT SUM(V.Vn_Cantidad_1 * ISNULL(PK.Pk_Cantidad, 0))
-        FROM venta V
-        LEFT JOIN producto_kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto AND PK.Pk_Producto = P.Pr_Cve_Producto
-        INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
-        WHERE V.Es_Cve_Estado <> 'CA'
-            AND V.Al_Cve_Almacen = @AlmacenCodigo
-            AND S.Sc_Descripcion LIKE '%{sucursal}%'
-            AND CAST(V.Vn_Fecha AS DATE) >= '{fecha_ini}'
-            AND CAST(V.Vn_Fecha AS DATE) <= '{fecha_fin}'
-    ), 0) as Ventas_Kit,
+    -- Ventas (de la CTE)
+    ISNULL(V.Total_Ventas, 0) as Ventas,
     
-    -- Ventas directas - usando CAST para fechas
-    ISNULL((
-        SELECT SUM(V.Vn_Cantidad_Control_1)
-        FROM venta V
-        INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
-        WHERE V.Pr_Cve_Producto = P.Pr_Cve_Producto
-            AND V.Es_Cve_Estado <> 'CA'
-            AND V.Al_Cve_Almacen = @AlmacenCodigo
-            AND S.Sc_Descripcion LIKE '%{sucursal}%'
-            AND CAST(V.Vn_Fecha AS DATE) >= '{fecha_ini}'
-            AND CAST(V.Vn_Fecha AS DATE) <= '{fecha_fin}'
-    ), 0) as Ventas_Directas,
-    
-    -- Movimientos - usando CAST para fechas
-    ISNULL((
-        SELECT SUM(CASE 
-            WHEN TM.Tm_Tipo = '+' THEN M.Mv_Cantidad_Control_1
-            WHEN TM.Tm_Tipo = '-' THEN -M.Mv_Cantidad_Control_1
-            ELSE 0
-        END)
-        FROM Movimiento M
-        INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
-        INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
-        WHERE M.Pr_Cve_Producto = P.Pr_Cve_Producto
-            AND M.Es_Cve_Estado <> 'CA'
-            AND M.Al_Cve_Almacen = @AlmacenCodigo
-            AND S.Sc_Descripcion LIKE '%{sucursal}%'
-            AND CAST(M.Mv_Fecha AS DATE) >= '{fecha_ini}'
-            AND CAST(M.Mv_Fecha AS DATE) <= '{fecha_fin}'
-    ), 0) as Movimientos,
+    -- Movimientos (de la CTE)
+    ISNULL(M.Total_Movimientos, 0) as Movimientos,
     
     -- Inventario Final
     ISNULL(FF.Fi_Cantidad_Control_1, 0) as Inv_Final_Cantidad
@@ -754,17 +785,23 @@ LEFT JOIN Fisico FI ON FI.Pr_Cve_Producto = P.Pr_Cve_Producto
 LEFT JOIN Fisico FF ON FF.Pr_Cve_Producto = P.Pr_Cve_Producto
     AND FF.Fi_Folio = '{folio_final}'
     AND FF.Al_Cve_Almacen = @AlmacenCodigo
+LEFT JOIN Ventas_Agregadas V ON V.Producto_Codigo = P.Pr_Cve_Producto
+LEFT JOIN Movimientos_CTE M ON M.Producto_Codigo = P.Pr_Cve_Producto
 
 WHERE P.Es_Cve_Estado <> 'BA'
+    AND P.Ct_Cve_Categoria IN ('0001','0002','0004')
+    AND P.Dp_Cve_Departamento IN ('0003','0004','0007','0002')
     AND (
         FI.Fi_Cantidad_Control_1 > 0 OR 
-        FF.Fi_Cantidad_Control_1 > 0
+        FF.Fi_Cantidad_Control_1 > 0 OR
+        V.Total_Ventas > 0 OR
+        M.Total_Movimientos <> 0
     )
 
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
             """
             
-            logging.info("Ejecutando consulta con CAST en fechas (TOP 2000)...")
+            logging.info("Ejecutando consulta con CTEs basada en consultas originales...")
             
         else:
             raise HTTPException(status_code=400, detail="Sistema no soportado para análisis completo")
@@ -788,19 +825,19 @@ ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
         # Procesar resultados y calcular diferencias
         processed_results = []
         for row in results:
-            ventas_total = float(row.get('Ventas_Kit', 0) or 0) + float(row.get('Ventas_Directas', 0) or 0)
+            ventas_total = float(row.get('Ventas', 0) or 0)
             movimientos = float(row.get('Movimientos', 0) or 0)
             inv_inicial = float(row.get('Inv_Inicial_Cantidad', 0) or 0)
             inv_final = float(row.get('Inv_Final_Cantidad', 0) or 0)
             costo = float(row.get('Costo_Unitario', 0) or 0)
             
-            # Calcular inventario teórico
+            # Calcular inventario teórico: Inicial + Movimientos - Ventas
             inv_teorico = inv_inicial + movimientos - ventas_total
             
-            # Calcular diferencias
+            # Calcular diferencias: Teórico - Final
             diferencia_cantidad = inv_teorico - inv_final
             diferencia_costo = diferencia_cantidad * costo
-            diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico > 0 else 0
+            diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
             
             processed_row = {
                 'Categoria': row.get('Categoria'),
