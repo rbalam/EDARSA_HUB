@@ -10,8 +10,8 @@ import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown } from 'l
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const Reportes = () => {
   const [servers, setServers] = useState([]);
@@ -304,7 +304,7 @@ const Reportes = () => {
     const headers = Object.keys(reportData[0]);
     const data = reportData.map(row => headers.map(header => row[header] || ''));
     
-    doc.autoTable({
+    autoTable(doc, {
       head: [headers],
       body: data,
       startY: 35,
