@@ -676,16 +676,13 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
                 
             logging.info(f"Fechas con hora: {fecha_ini} a {fecha_fin}")
             
-            # Query simplificada con logging de debug
+            # Query simplificada con CAST en fechas
             query = f"""
--- Obtener código del almacén con logging
+-- Obtener código del almacén
 DECLARE @AlmacenCodigo VARCHAR(20)
 SELECT TOP 1 @AlmacenCodigo = Al_Cve_Almacen 
 FROM Almacen 
 WHERE Al_Descripcion LIKE '%{almacen}%'
-
--- Debug: mostrar el código obtenido
-SELECT @AlmacenCodigo as Debug_AlmacenCodigo
 
 -- Consulta principal con TOP 2000
 SELECT TOP 2000
@@ -700,10 +697,7 @@ SELECT TOP 2000
     -- Inventario Inicial
     ISNULL(FI.Fi_Cantidad_Control_1, 0) as Inv_Inicial_Cantidad,
     
-    -- Debug: código de almacén usado
-    @AlmacenCodigo as Debug_Almacen_Usado,
-    
-    -- Ventas con kits
+    -- Ventas con kits - usando CAST para fechas
     ISNULL((
         SELECT SUM(V.Vn_Cantidad_1 * ISNULL(PK.Pk_Cantidad, 0))
         FROM venta V
@@ -716,7 +710,7 @@ SELECT TOP 2000
             AND CAST(V.Vn_Fecha AS DATE) <= '{fecha_fin}'
     ), 0) as Ventas_Kit,
     
-    -- Ventas directas
+    -- Ventas directas - usando CAST para fechas
     ISNULL((
         SELECT SUM(V.Vn_Cantidad_Control_1)
         FROM venta V
@@ -729,7 +723,7 @@ SELECT TOP 2000
             AND CAST(V.Vn_Fecha AS DATE) <= '{fecha_fin}'
     ), 0) as Ventas_Directas,
     
-    -- Movimientos
+    -- Movimientos - usando CAST para fechas
     ISNULL((
         SELECT SUM(CASE 
             WHEN TM.Tm_Tipo = '+' THEN M.Mv_Cantidad_Control_1
@@ -770,7 +764,7 @@ WHERE P.Es_Cve_Estado <> 'BA'
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
             """
             
-            logging.info("Ejecutando consulta con debug de almacén...")
+            logging.info("Ejecutando consulta con CAST en fechas (TOP 2000)...")
             
         else:
             raise HTTPException(status_code=400, detail="Sistema no soportado para análisis completo")
