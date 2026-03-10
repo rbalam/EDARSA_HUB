@@ -920,6 +920,145 @@ async def delete_alert(alert_id: str, current_user: Dict = Depends(get_current_u
     await db.alerts.update_one({"id": alert_id}, {"$set": {"active": False}})
     return {"message": "Alerta desactivada"}
 
+# ============= DEBUG ENDPOINT =============
+
+@api_router.post("/debug/test-queries")
+async def debug_test_queries(params: Dict, current_user: Dict = Depends(get_current_user)):
+    """
+    Endpoint de depuración para probar subconsultas de ventas y movimientos
+    de forma aislada para un producto específico.
+    """
+    server_id = params.get('server_id')
+    sucursal = params.get('sucursal')
+    almacen_id = params.get('almacen_id')  # Código del almacén
+    fecha_ini = params.get('fecha_ini')
+    fecha_fin = params.get('fecha_fin')
+    producto_codigo = params.get('producto_codigo', '0000000546')  # Producto de prueba
+    
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    results = {
+        "parametros": {
+            "sucursal": sucursal,
+            "almacen_id": almacen_id,
+            "fecha_ini": fecha_ini,
+            "fecha_fin": fecha_fin,
+            "producto_codigo": producto_codigo
+        },
+        "ventas_kit": None,
+        "ventas_directas": None,
+        "movimientos": None,
+        "consultas_ejecutadas": {}
+    }
+    
+    try:
+        # 1. Probar consulta de VENTAS KIT (productos que son componentes de kits)
+        query_ventas_kit = f"""
+        SELECT 
+            '{producto_codigo}' as Producto_Buscado,
+            COUNT(*) as Total_Registros,
+            SUM(V.Vn_Cantidad_1 * PK.Pk_Cantidad) as Ventas_Kit_Total
+        FROM venta V
+        INNER JOIN producto_kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto 
+        INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
+        WHERE PK.Pk_Producto = '{producto_codigo}'
+            AND V.Es_Cve_Estado <> 'CA'
+            AND V.Al_Cve_Almacen = '{almacen_id}'
+            AND S.Sc_Descripcion LIKE '%{sucursal}%'
+            AND V.Vn_Fecha >= '{fecha_ini}'
+            AND V.Vn_Fecha <= '{fecha_fin} 23:59:59'
+        """
+        results["consultas_ejecutadas"]["ventas_kit"] = query_ventas_kit
+        
+        ventas_kit = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query_ventas_kit
+        )
+        results["ventas_kit"] = ventas_kit
+        
+        # 2. Probar consulta de VENTAS DIRECTAS (producto vendido directamente)
+        query_ventas_directas = f"""
+        SELECT 
+            '{producto_codigo}' as Producto_Buscado,
+            COUNT(*) as Total_Registros,
+            SUM(V.Vn_Cantidad_Control_1) as Ventas_Directas_Total
+        FROM venta V
+        INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
+        WHERE V.Pr_Cve_Producto = '{producto_codigo}'
+            AND V.Es_Cve_Estado <> 'CA'
+            AND V.Al_Cve_Almacen = '{almacen_id}'
+            AND S.Sc_Descripcion LIKE '%{sucursal}%'
+            AND V.Vn_Fecha >= '{fecha_ini}'
+            AND V.Vn_Fecha <= '{fecha_fin} 23:59:59'
+        """
+        results["consultas_ejecutadas"]["ventas_directas"] = query_ventas_directas
+        
+        ventas_directas = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query_ventas_directas
+        )
+        results["ventas_directas"] = ventas_directas
+        
+        # 3. Probar consulta de MOVIMIENTOS
+        query_movimientos = f"""
+        SELECT 
+            '{producto_codigo}' as Producto_Buscado,
+            COUNT(*) as Total_Registros,
+            SUM(CASE 
+                WHEN TM.Tm_Tipo = '+' THEN M.Mv_Cantidad_Control_1
+                WHEN TM.Tm_Tipo = '-' THEN -M.Mv_Cantidad_Control_1
+                ELSE 0
+            END) as Movimientos_Total
+        FROM Movimiento M
+        INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
+        INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
+        WHERE M.Pr_Cve_Producto = '{producto_codigo}'
+            AND M.Es_Cve_Estado <> 'CA'
+            AND M.Al_Cve_Almacen = '{almacen_id}'
+            AND S.Sc_Descripcion LIKE '%{sucursal}%'
+            AND M.Mv_Fecha >= '{fecha_ini}'
+            AND M.Mv_Fecha <= '{fecha_fin} 23:59:59'
+        """
+        results["consultas_ejecutadas"]["movimientos"] = query_movimientos
+        
+        movimientos = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query_movimientos
+        )
+        results["movimientos"] = movimientos
+        
+        # 4. Verificar que el producto existe en ventas
+        query_verificar = f"""
+        SELECT TOP 10
+            V.Pr_Cve_Producto,
+            V.Vn_Cantidad_1,
+            V.Vn_Cantidad_Control_1,
+            V.Vn_Fecha,
+            V.Al_Cve_Almacen,
+            S.Sc_Descripcion as Sucursal
+        FROM venta V
+        INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
+        WHERE V.Pr_Cve_Producto = '{producto_codigo}'
+            AND V.Es_Cve_Estado <> 'CA'
+        ORDER BY V.Vn_Fecha DESC
+        """
+        results["consultas_ejecutadas"]["verificar_ventas_producto"] = query_verificar
+        
+        verificar_ventas = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query_verificar
+        )
+        results["ventas_del_producto_ultimas_10"] = verificar_ventas
+        
+        return results
+        
+    except Exception as e:
+        logging.error(f"Error en debug: {str(e)}")
+        results["error"] = str(e)
+        return results
+
 # ============= DASHBOARD =============
 
 @api_router.get("/dashboard/metrics")
