@@ -924,7 +924,7 @@ GROUP BY Producto_Codigo
             ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
             logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
             
-            # 4. Obtener movimientos por producto
+            # 4. Obtener movimientos por producto FILTRADO POR ALMACÉN
             # Los valores de Mv_Cantidad_Control_1 ya incluyen el signo (positivo para entradas, negativo para salidas)
             # Solo sumamos directamente sin aplicar CASE por Tm_Tipo
             movimientos_query = f"""
@@ -939,6 +939,7 @@ INNER JOIN Producto P ON P.Pr_Cve_Producto = E.Pr_Cve_Producto
 INNER JOIN Familia FM ON FM.Fm_Cve_Familia = P.Fm_Cve_Familia
 INNER JOIN SubFamilia SB ON SB.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
 WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+    AND E.Al_Cve_Almacen = '{almacen_codigo}'
     AND E.Es_Cve_Estado <> 'CA'
     {filtro_tipos_mov}
     AND E.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
@@ -1096,6 +1097,7 @@ async def debug_test_queries(params: Dict, current_user: Dict = Depends(get_curr
     """Endpoint de depuración simplificado para probar consultas de un producto."""
     server_id = params.get('server_id')
     sucursal = params.get('sucursal')
+    almacen = params.get('almacen', '')  # Nombre del almacén para filtrar
     fecha_ini = params.get('fecha_ini')
     fecha_fin = params.get('fecha_fin')
     producto_codigo = params.get('producto_codigo', '0000000546')
@@ -1107,9 +1109,21 @@ async def debug_test_queries(params: Dict, current_user: Dict = Depends(get_curr
     results = {"parametros": params}
     
     try:
-        # Consulta simple de movimientos SIN la lógica compleja de fechas
-        # Los valores de Mv_Cantidad_Control_1 ya tienen el signo correcto
-        # Solo sumamos directamente sin aplicar CASE por Tm_Tipo
+        # Obtener código del almacén si se proporcionó nombre
+        almacen_codigo = None
+        if almacen:
+            almacen_query = f"SELECT TOP 1 Al_Cve_Almacen as codigo FROM Almacen WHERE Al_Descripcion LIKE '%{almacen}%'"
+            almacen_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], almacen_query
+            )
+            if almacen_result:
+                almacen_codigo = almacen_result[0]['codigo']
+                results["almacen_codigo"] = almacen_codigo
+        
+        # Consulta de movimientos CON filtro de almacén si se proporciona
+        filtro_almacen = f"AND E.Al_Cve_Almacen = '{almacen_codigo}'" if almacen_codigo else ""
+        
         query_mov_simple = f"""
 SELECT 
     COUNT(*) as Total_Registros,
@@ -1122,6 +1136,7 @@ WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
     AND E.Es_Cve_Estado <> 'CA'
     AND E.Tm_Cve_Tipo_Movimiento IN ('050','100','106','108','112','202','400','500','506','508','510','512')
     AND E.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+    {filtro_almacen}
 """
         mov_result = execute_sql_query(
             server['host'], server['port'], server['database'],
@@ -1164,16 +1179,19 @@ SELECT SUM(cantidad) as Total_Ventas FROM (
         )
         results["ventas"] = ventas_result
         
-        # Detalle de movimientos
+        # Detalle de movimientos CON ALMACÉN
         query_detalle = f"""
 SELECT TOP 10
     E.Mv_Fecha,
     TM.Tm_Cve_Tipo_Movimiento as Codigo,
     TM.Tm_Descripcion as Movimiento,
     TM.Tm_Tipo,
-    E.Mv_Cantidad_Control_1 as Cantidad
+    E.Mv_Cantidad_Control_1 as Cantidad,
+    A.Al_Descripcion as Almacen,
+    E.Al_Cve_Almacen as Almacen_Codigo
 FROM Movimiento E
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = E.Sc_Cve_Sucursal
+INNER JOIN Almacen A ON A.Al_Cve_Almacen = E.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = S.Sc_Cve_Sucursal
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
 WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
     AND E.Pr_Cve_Producto = '{producto_codigo}'
