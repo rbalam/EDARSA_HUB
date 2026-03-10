@@ -925,19 +925,19 @@ GROUP BY Producto_Codigo
             logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
             
             # 4. Obtener movimientos por producto
-            # Tm_Tipo puede ser 'EN' (entrada) o 'SA' (salida), o '+' y '-' en algunos sistemas
+            # Los valores de Mv_Cantidad_Control_1 ya incluyen el signo (positivo para entradas, negativo para salidas)
+            # Solo sumamos directamente sin aplicar CASE por Tm_Tipo
             movimientos_query = f"""
 SELECT 
     E.Pr_Cve_Producto as Producto_Codigo,
-    SUM(CASE 
-        WHEN TM.Tm_Tipo IN ('+', 'EN') THEN E.Mv_Cantidad_Control_1
-        WHEN TM.Tm_Tipo IN ('-', 'SA') THEN -E.Mv_Cantidad_Control_1
-        ELSE 0
-    END) as Total_Movimientos
+    SUM(E.Mv_Cantidad_Control_1) as Total_Movimientos
 FROM Movimiento E
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = E.Sc_Cve_Sucursal
 INNER JOIN Almacen A ON A.Al_Cve_Almacen = E.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = S.Sc_Cve_Sucursal
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
+INNER JOIN Producto P ON P.Pr_Cve_Producto = E.Pr_Cve_Producto
+INNER JOIN Familia FM ON FM.Fm_Cve_Familia = P.Fm_Cve_Familia
+INNER JOIN SubFamilia SB ON SB.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
 WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
     AND E.Es_Cve_Estado <> 'CA'
     {filtro_tipos_mov}
@@ -1093,133 +1093,138 @@ async def delete_alert(alert_id: str, current_user: Dict = Depends(get_current_u
 
 @api_router.post("/debug/test-queries")
 async def debug_test_queries(params: Dict, current_user: Dict = Depends(get_current_user)):
-    """
-    Endpoint de depuración para probar subconsultas de ventas y movimientos
-    de forma aislada para un producto específico.
-    """
+    """Endpoint de depuración simplificado para probar consultas de un producto."""
     server_id = params.get('server_id')
     sucursal = params.get('sucursal')
-    almacen_id = params.get('almacen_id')  # Código del almacén
     fecha_ini = params.get('fecha_ini')
     fecha_fin = params.get('fecha_fin')
-    producto_codigo = params.get('producto_codigo', '0000000546')  # Producto de prueba
+    producto_codigo = params.get('producto_codigo', '0000000546')
     
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
-    results = {
-        "parametros": {
-            "sucursal": sucursal,
-            "almacen_id": almacen_id,
-            "fecha_ini": fecha_ini,
-            "fecha_fin": fecha_fin,
-            "producto_codigo": producto_codigo
-        },
-        "ventas_kit": None,
-        "ventas_directas": None,
-        "movimientos": None,
-        "consultas_ejecutadas": {}
-    }
+    results = {"parametros": params}
     
     try:
-        # 1. Probar consulta de VENTAS KIT (productos que son componentes de kits)
-        query_ventas_kit = f"""
-        SELECT 
-            '{producto_codigo}' as Producto_Buscado,
-            COUNT(*) as Total_Registros,
-            SUM(V.Vn_Cantidad_1 * PK.Pk_Cantidad) as Ventas_Kit_Total
-        FROM venta V
-        INNER JOIN producto_kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto 
-        INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
-        WHERE PK.Pk_Producto = '{producto_codigo}'
-            AND V.Es_Cve_Estado <> 'CA'
-            AND V.Al_Cve_Almacen = '{almacen_id}'
-            AND S.Sc_Descripcion LIKE '%{sucursal}%'
-            AND V.Vn_Fecha >= '{fecha_ini}'
-            AND V.Vn_Fecha <= '{fecha_fin} 23:59:59'
-        """
-        results["consultas_ejecutadas"]["ventas_kit"] = query_ventas_kit
-        
-        ventas_kit = execute_sql_query(
+        # Consulta simple de movimientos SIN la lógica compleja de fechas
+        # Los valores de Mv_Cantidad_Control_1 ya tienen el signo correcto
+        # Solo sumamos directamente sin aplicar CASE por Tm_Tipo
+        query_mov_simple = f"""
+SELECT 
+    COUNT(*) as Total_Registros,
+    SUM(E.Mv_Cantidad_Control_1) as Movimientos_Neto
+FROM Movimiento E
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = E.Sc_Cve_Sucursal
+INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
+WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+    AND E.Pr_Cve_Producto = '{producto_codigo}'
+    AND E.Es_Cve_Estado <> 'CA'
+    AND E.Tm_Cve_Tipo_Movimiento IN ('050','100','106','108','112','202','400','500','506','508','510','512')
+    AND E.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+"""
+        mov_result = execute_sql_query(
             server['host'], server['port'], server['database'],
-            server['username'], server['password'], query_ventas_kit
+            server['username'], server['password'], query_mov_simple
         )
-        results["ventas_kit"] = ventas_kit
+        results["movimientos_simple"] = mov_result
         
-        # 2. Probar consulta de VENTAS DIRECTAS (producto vendido directamente)
-        query_ventas_directas = f"""
-        SELECT 
-            '{producto_codigo}' as Producto_Buscado,
-            COUNT(*) as Total_Registros,
-            SUM(V.Vn_Cantidad_Control_1) as Ventas_Directas_Total
-        FROM venta V
-        INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
-        WHERE V.Pr_Cve_Producto = '{producto_codigo}'
-            AND V.Es_Cve_Estado <> 'CA'
-            AND V.Al_Cve_Almacen = '{almacen_id}'
-            AND S.Sc_Descripcion LIKE '%{sucursal}%'
-            AND V.Vn_Fecha >= '{fecha_ini}'
-            AND V.Vn_Fecha <= '{fecha_fin} 23:59:59'
-        """
-        results["consultas_ejecutadas"]["ventas_directas"] = query_ventas_directas
-        
-        ventas_directas = execute_sql_query(
+        # Consulta de ventas combinada - Exacta a la original de Power Query
+        # IMPORTANTE: La consulta original NO filtra por categorías/departamentos específicamente
+        # sino que suma todas las ventas donde el producto aparece (ya sea como kit o directo)
+        query_ventas = f"""
+SELECT SUM(cantidad) as Total_Ventas FROM (
+    -- Ventas de productos KIT: cuando el producto es componente de otro
+    SELECT 
+        SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as cantidad
+    FROM venta
+    INNER JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
+    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
+    WHERE sucursal.Sc_Descripcion LIKE '%{sucursal}%'
+        AND venta.Es_Cve_Estado <> 'CA'
+        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+        AND Producto_Kit.Pk_Producto = '{producto_codigo}'
+    
+    UNION ALL
+    
+    -- Ventas DIRECTAS: cuando el producto se vende directamente
+    SELECT 
+        SUM(venta.Vn_Cantidad_Control_1) as cantidad
+    FROM venta
+    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
+    WHERE sucursal.Sc_Descripcion LIKE '%{sucursal}%'
+        AND venta.Es_Cve_Estado <> 'CA'
+        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+        AND venta.Pr_Cve_Producto = '{producto_codigo}'
+) AS VentasCombinadas
+"""
+        ventas_result = execute_sql_query(
             server['host'], server['port'], server['database'],
-            server['username'], server['password'], query_ventas_directas
+            server['username'], server['password'], query_ventas
         )
-        results["ventas_directas"] = ventas_directas
+        results["ventas"] = ventas_result
         
-        # 3. Probar consulta de MOVIMIENTOS
-        query_movimientos = f"""
-        SELECT 
-            '{producto_codigo}' as Producto_Buscado,
-            COUNT(*) as Total_Registros,
-            SUM(CASE 
-                WHEN TM.Tm_Tipo = '+' THEN M.Mv_Cantidad_Control_1
-                WHEN TM.Tm_Tipo = '-' THEN -M.Mv_Cantidad_Control_1
-                ELSE 0
-            END) as Movimientos_Total
-        FROM Movimiento M
-        INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
-        INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
-        WHERE M.Pr_Cve_Producto = '{producto_codigo}'
-            AND M.Es_Cve_Estado <> 'CA'
-            AND M.Al_Cve_Almacen = '{almacen_id}'
-            AND S.Sc_Descripcion LIKE '%{sucursal}%'
-            AND M.Mv_Fecha >= '{fecha_ini}'
-            AND M.Mv_Fecha <= '{fecha_fin} 23:59:59'
-        """
-        results["consultas_ejecutadas"]["movimientos"] = query_movimientos
-        
-        movimientos = execute_sql_query(
+        # Detalle de movimientos
+        query_detalle = f"""
+SELECT TOP 10
+    E.Mv_Fecha,
+    TM.Tm_Cve_Tipo_Movimiento as Codigo,
+    TM.Tm_Descripcion as Movimiento,
+    TM.Tm_Tipo,
+    E.Mv_Cantidad_Control_1 as Cantidad
+FROM Movimiento E
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = E.Sc_Cve_Sucursal
+INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
+WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+    AND E.Pr_Cve_Producto = '{producto_codigo}'
+    AND E.Es_Cve_Estado <> 'CA'
+    AND E.Tm_Cve_Tipo_Movimiento IN ('050','100','106','108','112','202','400','500','506','508','510','512')
+    AND E.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+ORDER BY E.Mv_Fecha DESC
+"""
+        detalle = execute_sql_query(
             server['host'], server['port'], server['database'],
-            server['username'], server['password'], query_movimientos
+            server['username'], server['password'], query_detalle
         )
-        results["movimientos"] = movimientos
+        results["detalle_movimientos"] = detalle
         
-        # 4. Verificar que el producto existe en ventas
-        query_verificar = f"""
-        SELECT TOP 10
-            V.Pr_Cve_Producto,
-            V.Vn_Cantidad_1,
-            V.Vn_Cantidad_Control_1,
-            V.Vn_Fecha,
-            V.Al_Cve_Almacen,
-            S.Sc_Descripcion as Sucursal
-        FROM venta V
-        INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
-        WHERE V.Pr_Cve_Producto = '{producto_codigo}'
-            AND V.Es_Cve_Estado <> 'CA'
-        ORDER BY V.Vn_Fecha DESC
-        """
-        results["consultas_ejecutadas"]["verificar_ventas_producto"] = query_verificar
-        
-        verificar_ventas = execute_sql_query(
+        # Detalle de ventas Kit
+        query_detalle_kit = f"""
+SELECT TOP 10 V.Vn_Folio, V.Vn_Fecha, V.Pr_Cve_Producto as Producto_Vendido, 
+    PK.Pk_Producto as Producto_Componente, V.Vn_Cantidad_1 as Qty_Venta, 
+    PK.Pk_Cantidad as Qty_Kit, V.Vn_Cantidad_1 * PK.Pk_Cantidad as Cantidad_Total
+FROM venta V
+INNER JOIN producto_kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto
+INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
+WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+    AND V.Es_Cve_Estado <> 'CA'
+    AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+    AND PK.Pk_Producto = '{producto_codigo}'
+ORDER BY V.Vn_Fecha DESC
+"""
+        detalle_kit = execute_sql_query(
             server['host'], server['port'], server['database'],
-            server['username'], server['password'], query_verificar
+            server['username'], server['password'], query_detalle_kit
         )
-        results["ventas_del_producto_ultimas_10"] = verificar_ventas
+        results["detalle_ventas_kit"] = detalle_kit
+        
+        # Detalle de ventas directas
+        query_detalle_directas = f"""
+SELECT TOP 10 V.Vn_Folio, V.Vn_Fecha, V.Pr_Cve_Producto, 
+    V.Vn_Cantidad_1, V.Vn_Cantidad_Control_1
+FROM venta V
+INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
+WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+    AND V.Es_Cve_Estado <> 'CA'
+    AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+    AND V.Pr_Cve_Producto = '{producto_codigo}'
+ORDER BY V.Vn_Fecha DESC
+"""
+        detalle_directas = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query_detalle_directas
+        )
+        results["detalle_ventas_directas"] = detalle_directas
         
         return results
         
