@@ -668,6 +668,14 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
             logging.info(f"Folios: {folio_inicial} a {folio_final}")
             
+            # Asegurarnos de que las fechas tengan el formato correcto con hora
+            if len(fecha_ini) == 10:  # Solo fecha YYYY-MM-DD
+                fecha_ini = fecha_ini + ' 00:00:00'
+            if len(fecha_fin) == 10:  # Solo fecha YYYY-MM-DD  
+                fecha_fin = fecha_fin + ' 23:59:59'
+                
+            logging.info(f"Fechas con hora: {fecha_ini} a {fecha_fin}")
+            
             # Query simplificada y optimizada con LIMIT de 2000 registros
             query = f"""
 -- Primero obtenemos el código del almacén
@@ -772,6 +780,10 @@ ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
         )
         
         logging.info(f"Consulta completada. Procesando {len(results)} productos...")
+        
+        # Log de muestra del primer producto para debugging
+        if len(results) > 0:
+            logging.info(f"Ejemplo de producto: {results[0]}")
         
         # Procesar resultados y calcular diferencias
         processed_results = []
