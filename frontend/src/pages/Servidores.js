@@ -8,14 +8,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import QueryConfigWizard from '@/components/QueryConfigWizard';
 
 const Servidores = () => {
   const [servers, setServers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [queryWizardOpen, setQueryWizardOpen] = useState(false);
   const [selectedServer, setSelectedServer] = useState(null);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionValid, setConnectionValid] = useState(false);
@@ -271,7 +274,7 @@ const Servidores = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-zinc-600">Host:</span>
-                    <span className="font-mono text-zinc-900">{server.host}</span>
+                    <span className="font-mono text-zinc-900 text-xs truncate max-w-[180px]">{server.host}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-zinc-600">Puerto:</span>
@@ -284,6 +287,24 @@ const Servidores = () => {
                   <div className="flex justify-between">
                     <span className="text-zinc-600">Usuario:</span>
                     <span className="font-mono text-zinc-900">{server.username}</span>
+                  </div>
+                  
+                  {/* Mostrar estado de consultas SQL */}
+                  <div className="pt-2 border-t border-zinc-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-zinc-500">Consultas SQL:</span>
+                      {server.queries_configured ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Configuradas
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          Pendientes
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Mostrar estado de filtros */}
@@ -310,25 +331,42 @@ const Servidores = () => {
                   </div>
                 </div>
                 
-                <div className="flex gap-2 mt-4">
+                <div className="flex flex-col gap-2 mt-4">
+                  {/* Botón principal: Configurar Consultas SQL */}
                   <Button 
-                    variant="outline" 
+                    variant={server.queries_configured ? "outline" : "default"}
                     size="sm" 
-                    className="flex-1"
-                    onClick={() => openConfigDialog(server)}
-                    data-testid="config-server-button"
+                    className={server.queries_configured ? "" : "bg-blue-600 hover:bg-blue-700 text-white"}
+                    onClick={() => {
+                      setSelectedServer(server);
+                      setQueryWizardOpen(true);
+                    }}
+                    data-testid="config-queries-button"
                   >
-                    <Filter className="h-4 w-4 mr-1" />
-                    Configurar Filtros
+                    <Code className="h-4 w-4 mr-1" />
+                    {server.queries_configured ? 'Editar Consultas SQL' : 'Configurar Consultas SQL'}
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDelete(server.id)}
-                    data-testid="delete-server-button"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => openConfigDialog(server)}
+                      data-testid="config-server-button"
+                    >
+                      <Filter className="h-4 w-4 mr-1" />
+                      Filtros
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDelete(server.id)}
+                      data-testid="delete-server-button"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -657,6 +695,14 @@ const Servidores = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Query Configuration Wizard */}
+      <QueryConfigWizard
+        open={queryWizardOpen}
+        onClose={() => setQueryWizardOpen(false)}
+        server={selectedServer}
+        onComplete={() => loadServers()}
+      />
     </div>
   );
 };

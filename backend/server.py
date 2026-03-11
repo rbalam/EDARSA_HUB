@@ -74,6 +74,13 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class ServerQueryConfig(BaseModel):
+    """Configuración de una consulta SQL para el servidor"""
+    sql: str = ""  # La consulta SQL
+    validated: bool = False  # Si ha sido validada exitosamente
+    last_validated: Optional[datetime] = None  # Última vez que se validó
+    validation_message: Optional[str] = None  # Mensaje de validación (error o éxito)
+
 class Server(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -82,13 +89,18 @@ class Server(BaseModel):
     port: int = 1433
     database: str
     username: str
-    system_type: str  # "MPRO" o "SoftRestaurant"
+    system_type: str  # "MPRO", "SoftRestaurant", "Otro"
     date_calculation_method: str = "inventory_dates"  # Método para calcular fechas de ventas
     sucursales: List[str] = []  # IDs de sucursales
     # Filtros configurables para consultas
     tipos_movimiento: List[str] = []  # Códigos de tipos de movimiento a incluir
     categorias: List[str] = []  # Códigos de categorías a incluir
     departamentos: List[str] = []  # Códigos de departamentos a incluir
+    # Consultas SQL personalizadas para el análisis de inventario
+    query_inventario: Optional[Dict] = None  # Consulta para obtener inventarios
+    query_ventas: Optional[Dict] = None  # Consulta para obtener ventas
+    query_movimientos: Optional[Dict] = None  # Consulta para obtener movimientos/entradas
+    queries_configured: bool = False  # Si todas las consultas están configuradas y validadas
     active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -105,6 +117,27 @@ class ServerCreate(BaseModel):
     tipos_movimiento: List[str] = []
     categorias: List[str] = []
     departamentos: List[str] = []
+    # Consultas SQL opcionales (se pueden configurar después)
+    query_inventario: Optional[Dict] = None
+    query_ventas: Optional[Dict] = None
+    query_movimientos: Optional[Dict] = None
+
+
+class QueryValidationRequest(BaseModel):
+    """Request para validar una consulta SQL"""
+    server_id: str
+    query_type: str  # "inventario", "ventas", "movimientos"
+    sql: str
+    
+class QueryValidationResponse(BaseModel):
+    """Response de validación de consulta"""
+    valid: bool
+    message: str
+    columns_found: List[str] = []
+    columns_required: List[str] = []
+    columns_missing: List[str] = []
+    sample_data: List[Dict] = []
+    row_count: int = 0
 
 class QueryTemplate(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -648,6 +681,311 @@ async def delete_query(query_id: str, current_user: Dict = Depends(get_current_u
     
     await db.queries.delete_one({"id": query_id})
     return {"message": "Consulta eliminada"}
+
+# ============= SERVER QUERY CONFIGURATION =============
+
+# Columnas requeridas para cada tipo de consulta
+REQUIRED_COLUMNS = {
+    "inventario": {
+        "required": ["codigo", "cantidad"],
+        "optional": ["descripcion", "fecha", "sucursal", "almacen", "costo", "unidad"],
+        "description": "Consulta de inventarios (inicial y final). Debe incluir código de producto y cantidad."
+    },
+    "ventas": {
+        "required": ["codigo", "cantidad"],
+        "optional": ["descripcion", "fecha", "precio", "sucursal", "almacen"],
+        "description": "Consulta de ventas del período. Debe incluir código de producto y cantidad vendida."
+    },
+    "movimientos": {
+        "required": ["codigo", "cantidad"],
+        "optional": ["descripcion", "fecha", "tipo_movimiento", "sucursal", "almacen", "referencia"],
+        "description": "Consulta de movimientos (entradas, traspasos, ajustes). Debe incluir código de producto y cantidad."
+    }
+}
+
+# Mapeo de alias de columnas (para flexibilidad)
+COLUMN_ALIASES = {
+    "codigo": ["codigo", "clave", "code", "producto_codigo", "codigo_producto", "idinsumo", "idproducto", "sku", "cve_producto", "pr_cve_producto"],
+    "cantidad": ["cantidad", "qty", "quantity", "existencia", "stock", "unidades", "cant"],
+    "descripcion": ["descripcion", "description", "nombre", "name", "producto", "producto_nombre"],
+    "fecha": ["fecha", "date", "fecha_movimiento", "fecha_venta", "fecha_inventario"],
+    "sucursal": ["sucursal", "branch", "tienda", "sucursal_id", "idsucursal"],
+    "almacen": ["almacen", "warehouse", "bodega", "almacen_id", "idalmacen"],
+    "costo": ["costo", "cost", "precio_costo", "costo_unitario"],
+    "precio": ["precio", "price", "precio_venta", "precio_unitario"],
+    "tipo_movimiento": ["tipo_movimiento", "tipo", "movement_type", "concepto", "idconcepto"],
+    "unidad": ["unidad", "unit", "unidad_medida"],
+    "referencia": ["referencia", "reference", "documento", "folio"]
+}
+
+
+def normalize_column_name(column: str) -> str:
+    """Normaliza el nombre de una columna buscando en los alias conocidos"""
+    column_lower = column.lower().strip()
+    for standard_name, aliases in COLUMN_ALIASES.items():
+        if column_lower in [a.lower() for a in aliases]:
+            return standard_name
+    return column_lower
+
+
+def validate_query_columns(columns: List[str], query_type: str) -> Dict:
+    """
+    Valida que las columnas de una consulta cumplan con los requisitos.
+    Retorna información sobre columnas encontradas, faltantes, etc.
+    """
+    required = REQUIRED_COLUMNS.get(query_type, {}).get("required", [])
+    optional = REQUIRED_COLUMNS.get(query_type, {}).get("optional", [])
+    
+    # Normalizar columnas encontradas
+    normalized_columns = {normalize_column_name(col): col for col in columns}
+    found_normalized = set(normalized_columns.keys())
+    
+    # Verificar columnas requeridas
+    columns_found = []
+    columns_missing = []
+    
+    for req_col in required:
+        if req_col in found_normalized:
+            columns_found.append({"standard": req_col, "actual": normalized_columns[req_col], "required": True})
+        else:
+            columns_missing.append(req_col)
+    
+    # Verificar columnas opcionales encontradas
+    for opt_col in optional:
+        if opt_col in found_normalized:
+            columns_found.append({"standard": opt_col, "actual": normalized_columns[opt_col], "required": False})
+    
+    return {
+        "valid": len(columns_missing) == 0,
+        "columns_found": columns_found,
+        "columns_missing": columns_missing,
+        "columns_required": required,
+        "columns_optional": optional,
+        "all_columns": columns
+    }
+
+
+@api_router.post("/servers/{server_id}/queries/validate")
+async def validate_server_query(
+    server_id: str, 
+    request: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Valida una consulta SQL para un servidor.
+    Ejecuta la consulta y verifica que devuelva las columnas necesarias.
+    """
+    query_type = request.get("query_type")  # "inventario", "ventas", "movimientos"
+    sql = request.get("sql", "").strip()
+    
+    if query_type not in REQUIRED_COLUMNS:
+        raise HTTPException(status_code=400, detail=f"Tipo de consulta inválido. Usa: {list(REQUIRED_COLUMNS.keys())}")
+    
+    if not sql:
+        raise HTTPException(status_code=400, detail="La consulta SQL es requerida")
+    
+    # Obtener servidor
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        # Ejecutar consulta con límite para validación
+        # Agregar TOP 10 si no existe para evitar traer muchos datos
+        sql_test = sql
+        if "TOP" not in sql.upper() and "LIMIT" not in sql.upper():
+            # Insertar TOP 10 después de SELECT
+            sql_test = sql.replace("SELECT", "SELECT TOP 10", 1).replace("select", "SELECT TOP 10", 1)
+        
+        logging.info(f"Validando consulta tipo '{query_type}' para servidor {server_id}")
+        
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            sql_test
+        )
+        
+        if not results:
+            return {
+                "valid": False,
+                "message": "La consulta no devolvió resultados. Verifica que haya datos en las tablas.",
+                "columns_found": [],
+                "columns_required": REQUIRED_COLUMNS[query_type]["required"],
+                "columns_missing": REQUIRED_COLUMNS[query_type]["required"],
+                "sample_data": [],
+                "row_count": 0
+            }
+        
+        # Obtener columnas de los resultados
+        columns = list(results[0].keys())
+        
+        # Validar columnas
+        validation = validate_query_columns(columns, query_type)
+        
+        if validation["valid"]:
+            message = f"✅ Consulta válida. Se encontraron todas las columnas requeridas."
+        else:
+            missing = ", ".join(validation["columns_missing"])
+            message = f"❌ Faltan columnas requeridas: {missing}. Revisa los alias permitidos en la documentación."
+        
+        return {
+            "valid": validation["valid"],
+            "message": message,
+            "columns_found": [c["actual"] for c in validation["columns_found"]],
+            "columns_mapping": validation["columns_found"],
+            "columns_required": validation["columns_required"],
+            "columns_missing": validation["columns_missing"],
+            "sample_data": results[:5],  # Solo muestra 5 registros de ejemplo
+            "row_count": len(results),
+            "description": REQUIRED_COLUMNS[query_type]["description"]
+        }
+        
+    except Exception as e:
+        logging.error(f"Error validando consulta: {str(e)}")
+        return {
+            "valid": False,
+            "message": f"Error al ejecutar la consulta: {str(e)}",
+            "columns_found": [],
+            "columns_required": REQUIRED_COLUMNS[query_type]["required"],
+            "columns_missing": REQUIRED_COLUMNS[query_type]["required"],
+            "sample_data": [],
+            "row_count": 0
+        }
+
+
+@api_router.put("/servers/{server_id}/queries/{query_type}")
+async def save_server_query(
+    server_id: str,
+    query_type: str,
+    request: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Guarda una consulta SQL validada para un servidor.
+    """
+    if query_type not in REQUIRED_COLUMNS:
+        raise HTTPException(status_code=400, detail=f"Tipo de consulta inválido. Usa: {list(REQUIRED_COLUMNS.keys())}")
+    
+    sql = request.get("sql", "").strip()
+    validated = request.get("validated", False)
+    
+    if not sql:
+        raise HTTPException(status_code=400, detail="La consulta SQL es requerida")
+    
+    # Verificar que el servidor existe
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    # Crear objeto de configuración de consulta
+    query_config = {
+        "sql": sql,
+        "validated": validated,
+        "last_validated": datetime.now(timezone.utc).isoformat() if validated else None,
+        "validation_message": "Validada correctamente" if validated else "Pendiente de validación"
+    }
+    
+    # Actualizar el servidor con la nueva consulta
+    field_name = f"query_{query_type}"
+    update_result = await db.servers.update_one(
+        {"id": server_id},
+        {"$set": {field_name: query_config}}
+    )
+    
+    # Verificar si todas las consultas están configuradas
+    updated_server = await db.servers.find_one({"id": server_id}, {"_id": 0})
+    all_configured = all([
+        updated_server.get("query_inventario", {}).get("validated", False),
+        updated_server.get("query_ventas", {}).get("validated", False),
+        updated_server.get("query_movimientos", {}).get("validated", False)
+    ])
+    
+    await db.servers.update_one(
+        {"id": server_id},
+        {"$set": {"queries_configured": all_configured}}
+    )
+    
+    return {
+        "message": f"Consulta de {query_type} guardada exitosamente",
+        "query_type": query_type,
+        "validated": validated,
+        "all_queries_configured": all_configured
+    }
+
+
+@api_router.get("/servers/{server_id}/queries")
+async def get_server_queries(server_id: str, current_user: Dict = Depends(get_current_user)):
+    """
+    Obtiene el estado de configuración de consultas de un servidor.
+    """
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    return {
+        "server_id": server_id,
+        "server_name": server.get("name"),
+        "system_type": server.get("system_type"),
+        "queries_configured": server.get("queries_configured", False),
+        "queries": {
+            "inventario": {
+                "configured": server.get("query_inventario") is not None,
+                "validated": server.get("query_inventario", {}).get("validated", False),
+                "sql": server.get("query_inventario", {}).get("sql", ""),
+                "last_validated": server.get("query_inventario", {}).get("last_validated"),
+                "description": REQUIRED_COLUMNS["inventario"]["description"],
+                "required_columns": REQUIRED_COLUMNS["inventario"]["required"],
+                "optional_columns": REQUIRED_COLUMNS["inventario"]["optional"]
+            },
+            "ventas": {
+                "configured": server.get("query_ventas") is not None,
+                "validated": server.get("query_ventas", {}).get("validated", False),
+                "sql": server.get("query_ventas", {}).get("sql", ""),
+                "last_validated": server.get("query_ventas", {}).get("last_validated"),
+                "description": REQUIRED_COLUMNS["ventas"]["description"],
+                "required_columns": REQUIRED_COLUMNS["ventas"]["required"],
+                "optional_columns": REQUIRED_COLUMNS["ventas"]["optional"]
+            },
+            "movimientos": {
+                "configured": server.get("query_movimientos") is not None,
+                "validated": server.get("query_movimientos", {}).get("validated", False),
+                "sql": server.get("query_movimientos", {}).get("sql", ""),
+                "last_validated": server.get("query_movimientos", {}).get("last_validated"),
+                "description": REQUIRED_COLUMNS["movimientos"]["description"],
+                "required_columns": REQUIRED_COLUMNS["movimientos"]["required"],
+                "optional_columns": REQUIRED_COLUMNS["movimientos"]["optional"]
+            }
+        },
+        "column_aliases": COLUMN_ALIASES
+    }
+
+
+@api_router.delete("/servers/{server_id}/queries/{query_type}")
+async def delete_server_query(
+    server_id: str,
+    query_type: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Elimina una consulta configurada de un servidor.
+    """
+    if query_type not in REQUIRED_COLUMNS:
+        raise HTTPException(status_code=400, detail=f"Tipo de consulta inválido")
+    
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    field_name = f"query_{query_type}"
+    await db.servers.update_one(
+        {"id": server_id},
+        {"$set": {field_name: None, "queries_configured": False}}
+    )
+    
+    return {"message": f"Consulta de {query_type} eliminada"}
 
 # ============= REPORTS =============
 

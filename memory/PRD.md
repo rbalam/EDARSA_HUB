@@ -18,10 +18,12 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 3. **Filtros Configurables**: Por tipos de movimiento, categorías y departamentos
 4. **Exportación**: Excel y PDF
 5. **Catálogo de Consultas**: Consultas SQL centralizadas y reutilizables
+6. **Configuración Flexible de Consultas SQL**: Asistente para configurar consultas personalizadas por servidor
 
 ### Sistemas Soportados
 - ManagmentPro (MPRO)
 - SoftRestaurant
+- Otros sistemas (configurables mediante consultas personalizadas)
 
 ## Arquitectura Técnica
 
@@ -35,21 +37,31 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 - `POST /api/auth/login` - Autenticación
 - `GET/POST /api/servers` - CRUD de servidores
 - `POST /api/reports/inventory-analysis` - Análisis de inventario
-- `GET /api/catalogo/consultas` - Catálogo de consultas
-- `POST /api/debug/test-connection` - Prueba de conexiones
+- `GET /api/servers/{id}/queries` - Estado de consultas configuradas
+- `POST /api/servers/{id}/queries/validate` - Validar consulta SQL
+- `PUT /api/servers/{id}/queries/{type}` - Guardar consulta validada
 
 ## Lo Implementado
+
+### 2025-03-11 - Asistente de Configuración de Consultas SQL
+- **Nuevo componente**: `QueryConfigWizard.js` - Asistente paso a paso para configurar consultas
+- **Características**:
+  - 3 pasos: Inventarios, Ventas, Movimientos/Entradas
+  - Validación en tiempo real de consultas SQL
+  - Verificación de columnas requeridas (`codigo`, `cantidad`)
+  - Mapeo flexible de alias de columnas (ej: `idinsumo` → `codigo`)
+  - Vista previa de datos de muestra
+  - Indicadores visuales de estado (verde=válido, rojo=error)
+  - Guardado de avance parcial (puede cerrar y continuar después)
+- **Backend**: 
+  - Nuevos endpoints para validar, guardar y consultar estado de queries
+  - Sistema de alias para reconocer diferentes nombres de columnas
+  - Modelo `ServerQueryConfig` para persistir consultas en MongoDB
 
 ### 2025-03-11 - Corrección de Conexión DDNS SoftRestaurant
 - **Problema**: Las conexiones con formato DDNS especial (`hostname,puerto\instancia`) fallaban con pymssql
 - **Solución**: Se integró la biblioteca `pytds` como conector principal con fallback a pymssql
-- **Función**: `parse_sql_server_host()` ahora maneja múltiples formatos de cadena de conexión:
-  - `hostname`
-  - `hostname,port`
-  - `hostname\instance`
-  - `hostname,port\instance`
-  - `hostname\instance,port`
-- **Resultado**: Conexión exitosa a `servercienfuegos.ddns.net,6669\nationalsoft`
+- **Función**: `parse_sql_server_host()` ahora maneja múltiples formatos de cadena de conexión
 
 ### Sesiones Anteriores
 - Corrección del cálculo de análisis de inventario (estrategia de consultas separadas + Pandas)
@@ -61,11 +73,12 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 
 ### P1 - Alta Prioridad
 - [ ] Verificar y corregir exportación Excel/PDF (no descarga archivos)
-- [ ] Poblar catálogo de consultas con queries para MPRO y SoftRestaurant
+- [ ] Integrar las consultas configuradas con el generador de reportes
 
 ### P2 - Media Prioridad
 - [ ] Agregar paginación al reporte de inventario
 - [ ] Eliminar endpoint de debug `/api/debug/test-queries`
+- [ ] Poblar catálogo de consultas con queries predefinidas para MPRO y SoftRestaurant
 
 ### P3 - Baja Prioridad / Futuro
 - [ ] Envío de reportes por correo electrónico
@@ -85,6 +98,16 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 - Base de datos: `softrestaurant95pro`
 
 ## Notas Técnicas
+
+### Configuración de Consultas SQL
+Cada servidor puede tener 3 consultas personalizadas:
+1. **Inventario**: Para obtener inventario inicial/final. Columnas requeridas: `codigo`, `cantidad`
+2. **Ventas**: Para obtener ventas del período. Columnas requeridas: `codigo`, `cantidad`
+3. **Movimientos**: Para obtener entradas/traspasos/ajustes. Columnas requeridas: `codigo`, `cantidad`
+
+El sistema reconoce alias comunes:
+- `codigo`: clave, code, idinsumo, idproducto, sku, pr_cve_producto
+- `cantidad`: qty, existencia, stock, unidades
 
 ### Conexiones SQL Server
 - `pytds` es más confiable para conexiones con DDNS y puertos no estándar
