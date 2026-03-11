@@ -14,6 +14,7 @@ from datetime import datetime, timezone, timedelta
 import bcrypt
 import jwt
 import pymssql
+import pytds  # Biblioteca alternativa para conexiones SQL Server problemáticas
 import io
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -192,37 +193,186 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 # ============= SQL SERVER FUNCTIONS =============
 
+def parse_sql_server_host(host: str, default_port: int = 1433) -> tuple:
+    """
+    Parsea cadenas de conexión SQL Server en varios formatos:
+    - hostname
+    - hostname,port
+    - hostname\instance
+    - hostname,port\instance
+    - hostname\instance,port
+    
+    Retorna: (hostname_only, port, instance)
+    - hostname_only: solo el hostname sin instancia
+    - port: puerto como entero
+    - instance: nombre de la instancia o None
+    """
+    import re
+    
+    # Remover espacios
+    host = host.strip()
+    port = default_port
+    instance = None
+    hostname = host
+    
+    # Caso 1: hostname,port\instance (ej: server.ddns.net,6669\nationalsoft)
+    match = re.match(r'^([^,\\]+),(\d+)\\(.+)$', host)
+    if match:
+        hostname = match.group(1)
+        port = int(match.group(2))
+        instance = match.group(3)
+        logging.info(f"Parsed DDNS format: hostname={hostname}, port={port}, instance={instance}")
+        return (hostname, port, instance)
+    
+    # Caso 2: hostname\instance,port (ej: server\instance,1433)
+    match = re.match(r'^([^,\\]+)\\([^,]+),(\d+)$', host)
+    if match:
+        hostname = match.group(1)
+        instance = match.group(2)
+        port = int(match.group(3))
+        logging.info(f"Parsed instance,port format: hostname={hostname}, instance={instance}, port={port}")
+        return (hostname, port, instance)
+    
+    # Caso 3: hostname\instance (ej: server\SQLEXPRESS)
+    match = re.match(r'^([^,\\]+)\\(.+)$', host)
+    if match:
+        hostname = match.group(1)
+        instance = match.group(2)
+        logging.info(f"Parsed instance format: hostname={hostname}, instance={instance}")
+        return (hostname, port, instance)
+    
+    # Caso 4: hostname,port (ej: server.com,1433)
+    match = re.match(r'^([^,\\]+),(\d+)$', host)
+    if match:
+        hostname = match.group(1)
+        port = int(match.group(2))
+        logging.info(f"Parsed host,port format: hostname={hostname}, port={port}")
+        return (hostname, port, None)
+    
+    # Caso 5: Solo hostname
+    logging.info(f"Using simple hostname: {host}")
+    return (host, port, None)
+
+
 def test_sql_connection(host: str, port: int, database: str, username: str, password: str) -> bool:
+    """
+    Prueba la conexión a SQL Server usando pytds (preferido) con fallback a pymssql.
+    """
+    hostname, parsed_port, instance = parse_sql_server_host(host, port)
+    logging.info(f"Testing connection to: hostname={hostname}, port={parsed_port}, instance={instance}, db={database}")
+    
+    # Primero intentar con pytds (mejor soporte para conexiones complejas)
     try:
-        conn = pymssql.connect(server=host, port=port, user=username, password=password, database=database)
+        logging.info("Intentando conexión con pytds...")
+        conn = pytds.connect(
+            server=hostname,
+            port=parsed_port,
+            database=database,
+            user=username,
+            password=password,
+            timeout=30,
+            login_timeout=30
+        )
         conn.close()
+        logging.info("Conexión exitosa con pytds")
         return True
-    except Exception as e:
-        logging.error(f"Error conectando a SQL Server: {str(e)}")
+    except Exception as pytds_error:
+        logging.warning(f"pytds falló: {str(pytds_error)}, intentando pymssql...")
+    
+    # Fallback a pymssql
+    try:
+        server_string = f"{hostname}\\{instance}" if instance else hostname
+        conn = pymssql.connect(
+            server=server_string, 
+            port=parsed_port, 
+            user=username, 
+            password=password, 
+            database=database
+        )
+        conn.close()
+        logging.info("Conexión exitosa con pymssql")
+        return True
+    except Exception as pymssql_error:
+        logging.error(f"pymssql también falló: {str(pymssql_error)}")
         return False
 
+
 def execute_sql_query(host: str, port: int, database: str, username: str, password: str, query: str) -> List[Dict]:
+    """
+    Ejecuta una consulta SQL usando pytds (preferido) con fallback a pymssql.
+    """
+    hostname, parsed_port, instance = parse_sql_server_host(host, port)
+    logging.info(f"Conectando a SQL Server: hostname={hostname}, port={parsed_port}, instance={instance}, db={database}")
+    
+    # Primero intentar con pytds
     try:
-        logging.info(f"Conectando a SQL Server: {host}:{port}/{database}")
-        conn = pymssql.connect(server=host, port=port, user=username, password=password, database=database, timeout=120, login_timeout=30)
-        cursor = conn.cursor(as_dict=True)
-        logging.info("Conexión establecida, ejecutando query...")
+        logging.info("Ejecutando query con pytds...")
+        conn = pytds.connect(
+            server=hostname,
+            port=parsed_port,
+            database=database,
+            user=username,
+            password=password,
+            timeout=120,
+            login_timeout=30
+        )
+        cursor = conn.cursor()
         cursor.execute(query)
-        logging.info("Query ejecutada, obteniendo resultados...")
+        
+        # Obtener nombres de columnas
+        columns = [desc[0] for desc in cursor.description] if cursor.description else []
+        rows = cursor.fetchall()
+        
+        # Convertir a lista de diccionarios
+        results = []
+        for row in rows:
+            row_dict = {}
+            for i, col in enumerate(columns):
+                value = row[i]
+                # Convertir datetime a string
+                if isinstance(value, datetime):
+                    value = value.isoformat()
+                row_dict[col] = value
+            results.append(row_dict)
+        
+        conn.close()
+        logging.info(f"Query exitosa con pytds: {len(results)} registros")
+        return results
+        
+    except Exception as pytds_error:
+        logging.warning(f"pytds falló: {str(pytds_error)}, intentando pymssql...")
+    
+    # Fallback a pymssql
+    try:
+        server_string = f"{hostname}\\{instance}" if instance else hostname
+        logging.info(f"Ejecutando query con pymssql en {server_string}:{parsed_port}...")
+        conn = pymssql.connect(
+            server=server_string, 
+            port=parsed_port, 
+            user=username, 
+            password=password, 
+            database=database, 
+            timeout=120, 
+            login_timeout=30
+        )
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute(query)
         results = cursor.fetchall()
-        logging.info(f"Resultados obtenidos: {len(results)} registros")
         conn.close()
         
-        # Convert datetime objects to strings
+        # Convertir datetime a string
         for row in results:
             for key, value in row.items():
                 if isinstance(value, datetime):
                     row[key] = value.isoformat()
         
+        logging.info(f"Query exitosa con pymssql: {len(results)} registros")
         return results
-    except Exception as e:
-        logging.error(f"Error ejecutando query: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error ejecutando consulta: {str(e)}")
+        
+    except Exception as pymssql_error:
+        error_msg = f"Error ejecutando consulta. pytds y pymssql fallaron: {str(pymssql_error)}"
+        logging.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
 
 # ============= EXPORT FUNCTIONS =============
 
@@ -1253,6 +1403,48 @@ async def ejecutar_consulta_personalizada(params: Dict, current_user: Dict = Dep
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 # ============= DEBUG ENDPOINT =============
+
+@api_router.post("/debug/test-connection")
+async def debug_test_connection(params: Dict, current_user: Dict = Depends(get_current_user)):
+    """
+    Endpoint de depuración para probar conexiones a servidores SQL directamente.
+    Permite probar cadenas de conexión especiales (DDNS, instancias, etc.)
+    """
+    host = params.get('host')
+    port = params.get('port', 1433)
+    database = params.get('database')
+    username = params.get('username')
+    password = params.get('password')
+    query = params.get('query', 'SELECT 1 AS test')
+    
+    if not all([host, database, username, password]):
+        raise HTTPException(status_code=400, detail="host, database, username y password son requeridos")
+    
+    hostname, parsed_port, instance = parse_sql_server_host(host, port)
+    parsed_info = {
+        "hostname": hostname,
+        "port": parsed_port,
+        "instance": instance,
+        "original_host": host
+    }
+    
+    try:
+        logging.info(f"DEBUG: Probando conexión a {host}")
+        results = execute_sql_query(host, port, database, username, password, query)
+        return {
+            "success": True,
+            "message": f"Conexión exitosa. {len(results)} registros obtenidos.",
+            "parsed_info": parsed_info,
+            "data": results[:10] if results else []  # Solo primeros 10 registros
+        }
+    except Exception as e:
+        logging.error(f"DEBUG: Error en conexión: {str(e)}")
+        return {
+            "success": False,
+            "message": str(e),
+            "parsed_info": parsed_info,
+            "data": []
+        }
 
 @api_router.post("/debug/test-queries")
 async def debug_test_queries(params: Dict, current_user: Dict = Depends(get_current_user)):
