@@ -73,12 +73,12 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 
 ### P1 - Alta Prioridad
 - [ ] Verificar y corregir exportación Excel/PDF (no descarga archivos)
-- [ ] Integrar las consultas configuradas con el generador de reportes
+- [ ] Integrar las consultas configuradas con el generador de reportes de análisis
 
 ### P2 - Media Prioridad
 - [ ] Agregar paginación al reporte de inventario
 - [ ] Eliminar endpoint de debug `/api/debug/test-queries`
-- [ ] Poblar catálogo de consultas con queries predefinidas para MPRO y SoftRestaurant
+- [ ] Configurar consultas SQL para servidor ManagmentPro
 
 ### P3 - Baja Prioridad / Futuro
 - [ ] Envío de reportes por correo electrónico

@@ -25,66 +25,91 @@ const QUERY_TYPES = [
     key: 'inventario',
     title: 'Inventarios',
     icon: Database,
-    description: 'Consulta para obtener el inventario inicial y final del período',
+    description: 'Consulta para obtener el inventario inicial y final del período. Debe devolver el stock de cada producto.',
+    requiredColumns: ['codigo', 'descripcion', 'cantidad'],
+    optionalColumns: ['fecha', 'sucursal', 'almacen', 'costo', 'unidad', 'grupo'],
     placeholder: `-- Ejemplo para SoftRestaurant:
 SELECT 
-    idinsumo as codigo,
-    descripcion,
-    existencia as cantidad
-FROM insumos
-WHERE idalmacen = @almacen
+    P.idproducto as Codigo,
+    P.descripcion as Descripcion,
+    P.existencia as Cantidad,
+    P.costo as Costo,
+    G.descripcion as Grupo
+FROM productos P
+LEFT JOIN grupos G ON G.idgrupo = P.idgrupo
+WHERE P.activo = 1
 
 -- Ejemplo para MPRO:
 SELECT 
-    Pr_Cve_Producto as codigo,
-    Pr_Descripcion as descripcion,
-    Fd_Cantidad as cantidad
-FROM FisicoDetalle
-WHERE Fi_Folio = @folio`
+    FD.Pr_Cve_Producto as Codigo,
+    P.Pr_Descripcion as Descripcion,
+    FD.Fd_Cantidad as Cantidad,
+    FD.Fd_Costo as Costo
+FROM FisicoDetalle FD
+INNER JOIN Producto P ON P.Pr_Cve_Producto = FD.Pr_Cve_Producto
+WHERE FD.Fi_Folio = @folio`
   },
   {
     key: 'ventas',
     title: 'Ventas',
     icon: ShoppingCart,
-    description: 'Consulta para obtener las ventas del período de análisis',
+    description: 'Consulta para obtener las ventas del período. Debe devolver los productos vendidos agrupados.',
+    requiredColumns: ['codigo', 'descripcion', 'cantidad'],
+    optionalColumns: ['fecha', 'precio', 'importe', 'sucursal', 'almacen'],
     placeholder: `-- Ejemplo para SoftRestaurant:
 SELECT 
-    idproducto as codigo,
-    SUM(cantidad) as cantidad
-FROM ventasdetalle v
-WHERE fecha BETWEEN @fecha_ini AND @fecha_fin
-GROUP BY idproducto
+    D.idproducto as Codigo,
+    P.descripcion as Descripcion,
+    SUM(D.cantidad) as Cantidad,
+    SUM(D.precio * D.cantidad) as Importe
+FROM cheqdet D
+INNER JOIN productos P ON P.idproducto = D.idproducto
+INNER JOIN cheques C ON C.folio = D.folio
+WHERE C.fecha BETWEEN @fecha_ini AND @fecha_fin
+    AND C.cancelado = 0
+GROUP BY D.idproducto, P.descripcion
 
 -- Ejemplo para MPRO:
 SELECT 
-    Pr_Cve_Producto as codigo,
-    SUM(Vd_Cantidad) as cantidad
-FROM VentaDetalle
-WHERE Vd_Fecha BETWEEN @fecha_ini AND @fecha_fin
-GROUP BY Pr_Cve_Producto`
+    VD.Pr_Cve_Producto as Codigo,
+    P.Pr_Descripcion as Descripcion,
+    SUM(VD.Vd_Cantidad) as Cantidad,
+    SUM(VD.Vd_Importe) as Importe
+FROM VentaDetalle VD
+INNER JOIN Producto P ON P.Pr_Cve_Producto = VD.Pr_Cve_Producto
+WHERE VD.Vd_Fecha BETWEEN @fecha_ini AND @fecha_fin
+GROUP BY VD.Pr_Cve_Producto, P.Pr_Descripcion`
   },
   {
     key: 'movimientos',
     title: 'Movimientos / Entradas',
     icon: ArrowLeftRight,
-    description: 'Consulta para obtener entradas, traspasos y ajustes del período',
-    placeholder: `-- Ejemplo para SoftRestaurant:
+    description: 'Consulta para obtener entradas, compras, traspasos y ajustes del período.',
+    requiredColumns: ['codigo', 'descripcion', 'cantidad'],
+    optionalColumns: ['fecha', 'tipo_movimiento', 'sucursal', 'almacen', 'costo'],
+    placeholder: `-- Ejemplo para SoftRestaurant (Compras):
 SELECT 
-    idinsumo as codigo,
-    SUM(cantidad) as cantidad,
-    idconcepto as tipo_movimiento
-FROM movimientos
-WHERE fecha BETWEEN @fecha_ini AND @fecha_fin
-GROUP BY idinsumo, idconcepto
+    CD.idproducto as Codigo,
+    P.descripcion as Descripcion,
+    SUM(CD.cantidad) as Cantidad,
+    'Compra' as Tipo_Movimiento
+FROM comprasdet CD
+INNER JOIN productos P ON P.idproducto = CD.idproducto
+INNER JOIN compras C ON C.idcompra = CD.idcompra
+WHERE C.fecha BETWEEN @fecha_ini AND @fecha_fin
+GROUP BY CD.idproducto, P.descripcion
 
 -- Ejemplo para MPRO:
 SELECT 
-    Pr_Cve_Producto as codigo,
-    SUM(Md_Cantidad) as cantidad,
-    Tm_Cve_TipoMov as tipo_movimiento
-FROM MovDetalle
-WHERE Md_Fecha BETWEEN @fecha_ini AND @fecha_fin
-GROUP BY Pr_Cve_Producto, Tm_Cve_TipoMov`
+    MD.Pr_Cve_Producto as Codigo,
+    P.Pr_Descripcion as Descripcion,
+    SUM(MD.Md_Cantidad) as Cantidad,
+    TM.Tm_Descripcion as Tipo_Movimiento
+FROM MovDetalle MD
+INNER JOIN Producto P ON P.Pr_Cve_Producto = MD.Pr_Cve_Producto
+INNER JOIN TipoMov TM ON TM.Tm_Cve_TipoMov = MD.Tm_Cve_TipoMov
+WHERE MD.Md_Fecha BETWEEN @fecha_ini AND @fecha_fin
+GROUP BY MD.Pr_Cve_Producto, P.Pr_Descripcion, TM.Tm_Descripcion`
   }
 ];
 
@@ -345,13 +370,30 @@ const QueryConfigWizard = ({ open, onClose, server, onComplete }) => {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <Info className="h-5 w-5 text-blue-500 mt-0.5" />
-                <div>
+                <div className="flex-1">
                   <h4 className="font-medium text-blue-900">{currentQuery.title}</h4>
                   <p className="text-sm text-blue-700 mt-1">{currentQuery.description}</p>
-                  <div className="mt-2 text-xs text-blue-600">
-                    <span className="font-medium">Columnas requeridas:</span>{' '}
-                    <code className="bg-blue-100 px-1 rounded">codigo</code>,{' '}
-                    <code className="bg-blue-100 px-1 rounded">cantidad</code>
+                  <div className="mt-3 space-y-2">
+                    <div className="text-xs">
+                      <span className="font-semibold text-blue-800">Columnas requeridas:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {currentQuery.requiredColumns.map((col, i) => (
+                          <code key={i} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">
+                            {col}
+                          </code>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-xs">
+                      <span className="font-medium text-blue-600">Columnas opcionales:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {currentQuery.optionalColumns.map((col, i) => (
+                          <code key={i} className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-200">
+                            {col}
+                          </code>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -687,35 +687,38 @@ async def delete_query(query_id: str, current_user: Dict = Depends(get_current_u
 # Columnas requeridas para cada tipo de consulta
 REQUIRED_COLUMNS = {
     "inventario": {
-        "required": ["codigo", "cantidad"],
-        "optional": ["descripcion", "fecha", "sucursal", "almacen", "costo", "unidad"],
-        "description": "Consulta de inventarios (inicial y final). Debe incluir código de producto y cantidad."
+        "required": ["codigo", "descripcion", "cantidad"],
+        "optional": ["fecha", "sucursal", "almacen", "costo", "unidad", "grupo", "categoria"],
+        "description": "Consulta de inventarios (inicial y final). Obtiene el stock de productos en una fecha determinada."
     },
     "ventas": {
-        "required": ["codigo", "cantidad"],
-        "optional": ["descripcion", "fecha", "precio", "sucursal", "almacen"],
-        "description": "Consulta de ventas del período. Debe incluir código de producto y cantidad vendida."
+        "required": ["codigo", "descripcion", "cantidad"],
+        "optional": ["fecha", "precio", "importe", "sucursal", "almacen", "folio"],
+        "description": "Consulta de ventas del período. Obtiene los productos vendidos entre dos fechas."
     },
     "movimientos": {
-        "required": ["codigo", "cantidad"],
-        "optional": ["descripcion", "fecha", "tipo_movimiento", "sucursal", "almacen", "referencia"],
-        "description": "Consulta de movimientos (entradas, traspasos, ajustes). Debe incluir código de producto y cantidad."
+        "required": ["codigo", "descripcion", "cantidad"],
+        "optional": ["fecha", "tipo_movimiento", "sucursal", "almacen", "referencia", "costo"],
+        "description": "Consulta de movimientos (entradas, compras, traspasos, ajustes). Obtiene las entradas de productos al inventario."
     }
 }
 
 # Mapeo de alias de columnas (para flexibilidad)
 COLUMN_ALIASES = {
     "codigo": ["codigo", "clave", "code", "producto_codigo", "codigo_producto", "idinsumo", "idproducto", "sku", "cve_producto", "pr_cve_producto"],
-    "cantidad": ["cantidad", "qty", "quantity", "existencia", "stock", "unidades", "cant"],
+    "cantidad": ["cantidad", "qty", "quantity", "existencia", "stock", "unidades", "cant", "movimiento_neto"],
     "descripcion": ["descripcion", "description", "nombre", "name", "producto", "producto_nombre"],
     "fecha": ["fecha", "date", "fecha_movimiento", "fecha_venta", "fecha_inventario"],
     "sucursal": ["sucursal", "branch", "tienda", "sucursal_id", "idsucursal"],
     "almacen": ["almacen", "warehouse", "bodega", "almacen_id", "idalmacen"],
-    "costo": ["costo", "cost", "precio_costo", "costo_unitario"],
+    "costo": ["costo", "cost", "precio_costo", "costo_unitario", "costo_promedio"],
     "precio": ["precio", "price", "precio_venta", "precio_unitario"],
+    "importe": ["importe", "total", "importe_total", "monto"],
     "tipo_movimiento": ["tipo_movimiento", "tipo", "movement_type", "concepto", "idconcepto"],
     "unidad": ["unidad", "unit", "unidad_medida"],
-    "referencia": ["referencia", "reference", "documento", "folio"]
+    "referencia": ["referencia", "reference", "documento", "folio"],
+    "grupo": ["grupo", "group", "categoria", "category", "idgrupo"],
+    "categoria": ["categoria", "category", "familia", "family"]
 }
 
 
