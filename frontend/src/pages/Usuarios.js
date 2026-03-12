@@ -16,6 +16,7 @@ const Usuarios = () => {
   const [servers, setServers] = useState([]);
   const [companyGroups, setCompanyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingPermissions, setLoadingPermissions] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -45,6 +46,7 @@ const Usuarios = () => {
     loadUsers();
     loadServers();
     loadCompanyGroups();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUsers = async () => {
@@ -65,10 +67,10 @@ const Usuarios = () => {
       const serversData = Array.isArray(response.data) ? response.data : [];
       setServers(serversData);
       
-      // Cargar almacenes y sucursales para cada servidor
+      // Cargar almacenes y sucursales para cada servidor de forma secuencial
       for (const server of serversData) {
-        loadWarehousesForServer(server.id);
-        loadSucursalesForServer(server.id);
+        await loadWarehousesForServer(server.id);
+        await loadSucursalesForServer(server.id);
       }
     } catch (error) {
       console.error('Error al cargar servidores:', error);
@@ -103,6 +105,7 @@ const Usuarios = () => {
     try {
       const response = await api.get(`/servers/${serverId}/sucursales`);
       const sucursales = Array.isArray(response.data) ? response.data : [];
+      console.log(`Sucursales cargadas para servidor ${serverId}:`, sucursales.length);
       setSucursalesMap(prev => ({
         ...prev,
         [serverId]: sucursales
@@ -138,7 +141,7 @@ const Usuarios = () => {
     }
   };
   
-  const handleOpenPermissions = (user) => {
+  const handleOpenPermissions = async (user) => {
     setSelectedUser(user);
     setPermissionsData({
       company_group: user.company_group || '',
@@ -147,6 +150,19 @@ const Usuarios = () => {
       allowed_sucursales: user.allowed_sucursales || {}
     });
     setPermissionsDialogOpen(true);
+    setLoadingPermissions(true);
+    
+    // Recargar sucursales y almacenes para todos los servidores
+    try {
+      for (const server of servers) {
+        await loadSucursalesForServer(server.id);
+        await loadWarehousesForServer(server.id);
+      }
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+    } finally {
+      setLoadingPermissions(false);
+    }
   };
   
   const handleSavePermissions = async () => {
@@ -499,13 +515,20 @@ const Usuarios = () => {
               <Label className="text-sm font-medium flex items-center gap-2">
                 <Server className="h-4 w-4" />
                 Acceso a Servidores, Sucursales y Almacenes
+                {loadingPermissions && (
+                  <span className="text-xs text-blue-500 ml-2">(Cargando datos...)</span>
+                )}
               </Label>
               
               {servers.length === 0 ? (
                 <p className="text-sm text-zinc-500">No hay servidores configurados</p>
               ) : (
                 <div className="space-y-4">
-                  {servers.map((server) => (
+                  {servers.map((server) => {
+                    const serverSucursales = sucursalesMap[server.id] || [];
+                    const serverWarehouses = warehousesMap[server.id] || [];
+                    
+                    return (
                     <div key={server.id} className="border border-zinc-200 rounded-lg p-4">
                       <div className="flex items-center gap-3 mb-3">
                         <Checkbox
@@ -518,18 +541,21 @@ const Usuarios = () => {
                           <Server className="h-4 w-4 text-zinc-600" />
                           <span className="font-medium">{server.name}</span>
                           <Badge variant="outline" className="text-xs">{server.system_type}</Badge>
+                          {serverSucursales.length > 0 && (
+                            <span className="text-xs text-purple-600">({serverSucursales.length} sucursales)</span>
+                          )}
                         </Label>
                       </div>
                       
-                      {/* Sucursales for this server */}
-                      {permissionsData.allowed_servers.includes(server.id) && sucursalesMap[server.id] && sucursalesMap[server.id].length > 0 && (
+                      {/* Sucursales for this server - mostrar siempre que el servidor esté seleccionado Y tenga sucursales */}
+                      {permissionsData.allowed_servers.includes(server.id) && serverSucursales.length > 0 && (
                         <div className="ml-7 mt-3 pt-3 border-t border-zinc-100">
                           <Label className="text-xs text-zinc-600 flex items-center gap-1 mb-2">
                             <Building2 className="h-3 w-3" />
                             Sucursales (deja vacío para acceso a todas)
                           </Label>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto bg-zinc-50 p-2 rounded">
-                            {sucursalesMap[server.id].map((sucursal) => (
+                            {serverSucursales.map((sucursal) => (
                               <div key={sucursal.id} className="flex items-center gap-2">
                                 <Checkbox
                                   id={`sucursal-${server.id}-${sucursal.id}`}
@@ -550,14 +576,14 @@ const Usuarios = () => {
                       )}
                       
                       {/* Warehouses for this server */}
-                      {permissionsData.allowed_servers.includes(server.id) && warehousesMap[server.id] && warehousesMap[server.id].length > 0 && (
+                      {permissionsData.allowed_servers.includes(server.id) && serverWarehouses.length > 0 && (
                         <div className="ml-7 mt-3 pt-3 border-t border-zinc-100">
                           <Label className="text-xs text-zinc-600 flex items-center gap-1 mb-2">
                             <Warehouse className="h-3 w-3" />
                             Almacenes específicos (deja vacío para acceso a todos)
                           </Label>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto bg-zinc-50 p-2 rounded">
-                            {warehousesMap[server.id].map((warehouse) => (
+                            {serverWarehouses.map((warehouse) => (
                               <div key={warehouse.codigo} className="flex items-center gap-2">
                                 <Checkbox
                                   id={`warehouse-${server.id}-${warehouse.codigo}`}
@@ -577,7 +603,8 @@ const Usuarios = () => {
                         </div>
                       )}
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               )}
             </div>
