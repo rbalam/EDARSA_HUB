@@ -416,16 +416,23 @@ const Reportes = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Servidor</Label>
-              <Select value={filters.server_id} onValueChange={(value) => setFilters({...filters, server_id: value, sucursal_id: '', almacen_id: '', sucursal: '', almacen: ''})}>
+              <Select 
+                value={filters.server_id || ""} 
+                onValueChange={(value) => setFilters({...filters, server_id: value, sucursal_id: '', almacen_id: '', sucursal: '', almacen: ''})}
+              >
                 <SelectTrigger data-testid="server-select">
                   <SelectValue placeholder="Selecciona un servidor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {servers.map((server) => (
-                    <SelectItem key={server.id} value={server.id}>
-                      {server.name} ({server.system_type})
-                    </SelectItem>
-                  ))}
+                  {servers.length === 0 ? (
+                    <SelectItem value="no-servers" disabled>No hay servidores disponibles</SelectItem>
+                  ) : (
+                    servers.map((server) => (
+                      <SelectItem key={server.id} value={server.id}>
+                        {server.name} ({server.system_type})
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -449,7 +456,7 @@ const Reportes = () => {
             <div className="space-y-2">
               <Label>Sucursal</Label>
               <Select 
-                value={filters.sucursal_id} 
+                value={filters.sucursal_id || ""} 
                 onValueChange={handleSucursalChange}
                 disabled={!filters.server_id || sucursales.length === 0}
               >
@@ -457,11 +464,15 @@ const Reportes = () => {
                   <SelectValue placeholder={!filters.server_id ? "Selecciona servidor primero" : "Selecciona una sucursal"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {sucursales.map((sucursal) => (
-                    <SelectItem key={sucursal.id} value={sucursal.id}>
-                      {sucursal.nombre}
-                    </SelectItem>
-                  ))}
+                  {sucursales.length === 0 ? (
+                    <SelectItem value="no-sucursales" disabled>No hay sucursales disponibles</SelectItem>
+                  ) : (
+                    sucursales.map((sucursal) => (
+                      <SelectItem key={sucursal.id} value={sucursal.id}>
+                        {sucursal.nombre}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -477,11 +488,15 @@ const Reportes = () => {
                   <SelectValue placeholder={!filters.sucursal_id ? "Selecciona sucursal primero" : "Selecciona un almacén"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {almacenes.map((almacen) => (
-                    <SelectItem key={almacen.id} value={almacen.id}>
-                      {almacen.nombre}
-                    </SelectItem>
-                  ))}
+                  {almacenes.length === 0 ? (
+                    <SelectItem value="no-almacenes" disabled>No hay almacenes disponibles</SelectItem>
+                  ) : (
+                    almacenes.map((almacen) => (
+                      <SelectItem key={almacen.id} value={almacen.id}>
+                        {almacen.nombre}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -489,7 +504,7 @@ const Reportes = () => {
             <div className="space-y-2">
               <Label>Inventario Inicial</Label>
               <Select 
-                value={filters.inventario_inicial} 
+                value={filters.inventario_inicial || ""} 
                 onValueChange={handleInventarioInicialChange}
                 disabled={!filters.almacen_id || inventarios.length === 0}
               >
@@ -497,11 +512,15 @@ const Reportes = () => {
                   <SelectValue placeholder={!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario inicial"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {inventarios.map((inv) => (
-                    <SelectItem key={inv.folio} value={inv.folio}>
-                      Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-MX') : 'Sin fecha'}
-                    </SelectItem>
-                  ))}
+                  {inventarios.length === 0 ? (
+                    <SelectItem value="no-inventarios" disabled>No hay inventarios disponibles</SelectItem>
+                  ) : (
+                    inventarios.map((inv) => (
+                      <SelectItem key={inv.folio} value={inv.folio}>
+                        Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-MX') : 'Sin fecha'}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -509,7 +528,7 @@ const Reportes = () => {
             <div className="space-y-2">
               <Label>Inventario Final</Label>
               <Select 
-                value={filters.inventario_final} 
+                value={filters.inventario_final || ""} 
                 onValueChange={handleInventarioFinalChange}
                 disabled={!filters.almacen_id || inventarios.length === 0}
               >
@@ -517,11 +536,15 @@ const Reportes = () => {
                   <SelectValue placeholder={!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario final"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {inventarios.map((inv) => (
-                    <SelectItem key={inv.folio} value={inv.folio}>
-                      Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-MX') : 'Sin fecha'}
-                    </SelectItem>
-                  ))}
+                  {inventarios.length === 0 ? (
+                    <SelectItem value="no-inventarios-final" disabled>No hay inventarios disponibles</SelectItem>
+                  ) : (
+                    inventarios.map((inv) => (
+                      <SelectItem key={`final-${inv.folio}`} value={inv.folio}>
+                        Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-MX') : 'Sin fecha'}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

@@ -805,6 +805,10 @@ async def update_user(user_id: str, user_data: Dict, current_user: Dict = Depend
     if current_user['role'] != 'Administrador':
         raise HTTPException(status_code=403, detail="No autorizado")
     
+    # Si hay password, hashearla
+    if 'password' in user_data:
+        user_data['password'] = hash_password(user_data['password'])
+    
     await db.users.update_one({"id": user_id}, {"$set": user_data})
     return {"message": "Usuario actualizado"}
 
@@ -2543,13 +2547,17 @@ async def get_dashboard_inventory_summary(
 async def get_dashboard_servers(current_user: Dict = Depends(get_current_user)):
     """
     Obtiene lista de servidores configurados para el selector del dashboard
+    Filtrado por permisos del usuario
     """
     servers = await db.servers.find(
         {"active": True, "queries_configured": True},
         {"_id": 0, "id": 1, "name": 1, "system_type": 1}
     ).to_list(100)
     
-    return servers
+    # Filtrar según permisos del usuario
+    filtered_servers = filter_servers_by_permissions(servers, current_user)
+    
+    return filtered_servers
 
 
 @api_router.get("/dashboard/metrics")
