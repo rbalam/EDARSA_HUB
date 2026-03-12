@@ -1010,15 +1010,18 @@ async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_
                 WHERE Es_Cve_Estado <> 'BA'
                 ORDER BY Tm_Cve_Tipo_Movimiento
             """
-        else:
+        elif server['system_type'] == 'SoftRestaurant':
+            # SoftRestaurant usa tabla 'conceptos' para tipos de movimiento
             query = """
                 SELECT 
-                    Tm_Cve_Tipo_Movimiento as codigo,
-                    Tm_Descripcion as descripcion,
-                    Tm_Tipo as tipo
-                FROM Tipo_Movimiento
-                ORDER BY Tm_Cve_Tipo_Movimiento
+                    idconcepto as codigo,
+                    descripcion,
+                    CASE WHEN tipo = 1 THEN 'EN' ELSE 'SA' END as tipo
+                FROM conceptos
+                ORDER BY idconcepto
             """
+        else:
+            return []
         
         results = execute_sql_query(
             server['host'],
@@ -1035,7 +1038,7 @@ async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_
 
 @api_router.get("/servers/{server_id}/categorias")
 async def get_categorias(server_id: str, current_user: Dict = Depends(get_current_user)):
-    """Obtiene la lista de categorías desde SQL Server"""
+    """Obtiene la lista de categorías/grupos desde SQL Server"""
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
@@ -1050,14 +1053,17 @@ async def get_categorias(server_id: str, current_user: Dict = Depends(get_curren
                 WHERE Es_Cve_Estado <> 'BA'
                 ORDER BY Ct_Cve_Categoria
             """
-        else:
+        elif server['system_type'] == 'SoftRestaurant':
+            # SoftRestaurant usa 'gruposi' para categorías de insumos
             query = """
                 SELECT 
-                    Ct_Cve_Categoria as codigo,
-                    Ct_Descripcion as descripcion
-                FROM Categoria
-                ORDER BY Ct_Cve_Categoria
+                    idgruposi as codigo,
+                    descripcion
+                FROM gruposi
+                ORDER BY descripcion
             """
+        else:
+            return []
         
         results = execute_sql_query(
             server['host'],
@@ -1074,7 +1080,7 @@ async def get_categorias(server_id: str, current_user: Dict = Depends(get_curren
 
 @api_router.get("/servers/{server_id}/departamentos")
 async def get_departamentos(server_id: str, current_user: Dict = Depends(get_current_user)):
-    """Obtiene la lista de departamentos desde SQL Server"""
+    """Obtiene la lista de departamentos/almacenes desde SQL Server"""
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
@@ -1089,14 +1095,17 @@ async def get_departamentos(server_id: str, current_user: Dict = Depends(get_cur
                 WHERE Es_Cve_Estado <> 'BA'
                 ORDER BY Dp_Cve_Departamento
             """
-        else:
+        elif server['system_type'] == 'SoftRestaurant':
+            # SoftRestaurant usa 'almacen' como departamentos
             query = """
                 SELECT 
-                    Dp_Cve_Departamento as codigo,
-                    Dp_Descripcion as descripcion
-                FROM Departamento
-                ORDER BY Dp_Cve_Departamento
+                    idalmacen as codigo,
+                    nombre as descripcion
+                FROM almacen
+                ORDER BY idalmacen
             """
+        else:
+            return []
         
         results = execute_sql_query(
             server['host'],
@@ -1948,12 +1957,24 @@ ORDER BY V.Vn_Fecha DESC
 
 # ============= DASHBOARD =============
 
-def get_dashboard_inventory_query_softrestaurant():
+def get_dashboard_inventory_query_softrestaurant(departamentos=None, categorias=None):
     """
     Consulta para obtener datos de inventario físico de SoftRestaurant
-    para el dashboard con análisis de diferencias
+    para el dashboard con análisis de diferencias.
+    Aplica filtros de departamentos (almacenes) y categorías (gruposi).
     """
-    return """
+    # Construir filtros
+    filtro_almacen = ""
+    if departamentos and len(departamentos) > 0:
+        almacenes_sql = ",".join([f"'{d}'" for d in departamentos])
+        filtro_almacen = f"AND INV.idalmacen1 IN ({almacenes_sql})"
+    
+    filtro_categoria = ""
+    if categorias and len(categorias) > 0:
+        categorias_sql = ",".join([f"'{c}'" for c in categorias])
+        filtro_categoria = f"AND COALESCE(IP.idgruposi, I.idgruposi) IN ({categorias_sql})"
+    
+    return f"""
     WITH InventariosMes AS (
         SELECT 
             idalmacen1 as idalmacen,
@@ -1965,6 +1986,7 @@ def get_dashboard_inventory_query_softrestaurant():
         WHERE cancelado = 0
             AND MONTH(fecha) = MONTH(GETDATE())
             AND YEAR(fecha) = YEAR(GETDATE())
+            {filtro_almacen.replace('INV.', '')}
         GROUP BY idalmacen1
     )
     SELECT 
@@ -1994,7 +2016,72 @@ def get_dashboard_inventory_query_softrestaurant():
     LEFT JOIN gruposi GS ON GS.idgruposi = COALESCE(IP.idgruposi, I.idgruposi)
     LEFT JOIN almacen ALM ON ALM.idalmacen = INV.idalmacen1
     WHERE INV.cancelado = 0
+    {filtro_almacen}
+    {filtro_categoria}
     ORDER BY INV.idalmacen1, INV.folio, DET.idpresentacion
+    """
+
+
+def get_dashboard_inventory_query_mpro(departamentos=None, categorias=None):
+    """
+    Consulta para obtener datos de inventario físico de MPRO
+    para el dashboard con análisis de diferencias.
+    Aplica filtros de departamentos y categorías.
+    """
+    # Construir filtros
+    filtro_departamento = ""
+    if departamentos and len(departamentos) > 0:
+        dept_sql = ",".join([f"'{d}'" for d in departamentos])
+        filtro_departamento = f"AND P.Dp_Cve_Departamento IN ({dept_sql})"
+    
+    filtro_categoria = ""
+    if categorias and len(categorias) > 0:
+        cat_sql = ",".join([f"'{c}'" for c in categorias])
+        filtro_categoria = f"AND P.Ct_Cve_Categoria IN ({cat_sql})"
+    
+    return f"""
+    WITH InventariosMes AS (
+        SELECT 
+            Al_Cve_Almacen as almacen,
+            MIN(Fi_Folio) as primer_folio,
+            MAX(Fi_Folio) as ultimo_folio,
+            MIN(Fi_Fecha) as primera_fecha,
+            MAX(Fi_Fecha) as ultima_fecha
+        FROM Fisico
+        WHERE Es_Cve_Estado <> 'CA'
+            AND MONTH(Fi_Fecha) = MONTH(GETDATE())
+            AND YEAR(Fi_Fecha) = YEAR(GETDATE())
+        GROUP BY Al_Cve_Almacen
+    )
+    SELECT 
+        F.Fi_Folio as folio,
+        F.Fi_Fecha as fecha,
+        F.Al_Cve_Almacen as idalmacen,
+        A.Al_Descripcion as almacen_nombre,
+        FD.Pr_Cve_Producto as codigo,
+        P.Pr_Descripcion as descripcion,
+        COALESCE(C.Ct_Descripcion, 'Sin Categoría') as grupo,
+        FD.Fd_Costo as costo_unitario,
+        FD.Fd_Cantidad as existencia_teorica,
+        FD.Fi_Cantidad_Control_1 as existencia_fisica,
+        (FD.Fi_Cantidad_Control_1 - FD.Fd_Cantidad) as diferencia,
+        ((FD.Fi_Cantidad_Control_1 - FD.Fd_Cantidad) * FD.Fd_Costo) as costo_diferencia,
+        CASE 
+            WHEN F.Fi_Folio = IM.primer_folio THEN 'INICIAL'
+            WHEN F.Fi_Folio = IM.ultimo_folio THEN 'FINAL'
+            ELSE 'INTERMEDIO'
+        END as tipo_inventario
+    FROM Fisico F
+    INNER JOIN FisicoDetalle FD ON FD.Fi_Folio = F.Fi_Folio
+    INNER JOIN InventariosMes IM ON IM.almacen = F.Al_Cve_Almacen 
+        AND (F.Fi_Folio = IM.primer_folio OR F.Fi_Folio = IM.ultimo_folio)
+    INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen
+    INNER JOIN Producto P ON P.Pr_Cve_Producto = FD.Pr_Cve_Producto
+    LEFT JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
+    WHERE F.Es_Cve_Estado <> 'CA'
+    {filtro_departamento}
+    {filtro_categoria}
+    ORDER BY F.Al_Cve_Almacen, F.Fi_Folio, FD.Pr_Cve_Producto
     """
 
 
@@ -2006,6 +2093,7 @@ async def get_dashboard_inventory_summary(
     """
     Obtiene resumen de inventarios para el dashboard.
     Incluye datos para gráficos de diferencias, top faltantes, etc.
+    Aplica los filtros configurados en el servidor (departamentos, categorías).
     """
     try:
         # Si no se especifica servidor, obtener el primero configurado del usuario
@@ -2023,11 +2111,19 @@ async def get_dashboard_inventory_summary(
                 "data": {}
             }
         
-        # Ejecutar consulta según el tipo de sistema
+        # Obtener filtros configurados
+        departamentos = server.get('departamentos', [])
+        categorias = server.get('categorias', [])
+        
+        logging.info(f"Dashboard - Servidor: {server['name']}, Sistema: {server['system_type']}")
+        logging.info(f"Filtros - Departamentos: {departamentos}, Categorías: {categorias}")
+        
+        # Ejecutar consulta según el tipo de sistema con filtros
         if server['system_type'] == 'SoftRestaurant':
-            query_sql = get_dashboard_inventory_query_softrestaurant()
+            query_sql = get_dashboard_inventory_query_softrestaurant(departamentos, categorias)
+        elif server['system_type'] == 'MPRO':
+            query_sql = get_dashboard_inventory_query_mpro(departamentos, categorias)
         else:
-            # Para MPRO u otros sistemas, usar consulta genérica o personalizada
             return {
                 "success": False,
                 "message": f"Dashboard no implementado para {server['system_type']}",

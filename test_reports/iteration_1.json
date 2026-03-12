@@ -1,0 +1,86 @@
+{
+  "summary": "Frontend testing completed for Sistema de Inventarios Dashboard. Dashboard works correctly with SoftRestaurant server showing KPIs, charts and data. MPRO server has a database table issue ('FisicoDetalle' not found). Servidores page displays correctly with server cards and Filtros dialog with 3 tabs.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "/api/dashboard/inventory-summary",
+        "issue": "MPRO server returns 500 error - Invalid object name 'FisicoDetalle'. The table does not exist in MPRO database schema.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_1.json"],
+  "action_items": [
+    "FIX CRITICAL: The MPRO dashboard query references 'FisicoDetalle' table which doesn't exist. Need to verify correct table name for MPRO inventory data (might be 'Fisico' or another table)"
+  ],
+  "critical_code_review_comments": [
+    "Backend function get_dashboard_inventory_query_mpro() uses 'FisicoDetalle' table which doesn't exist in MPRO database",
+    "Consider adding better error handling for SQL Server queries that return table not found errors"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "75%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "email": "admin@inventario.com",
+    "password": "admin123"
+  },
+  "seed_data_creation": "No seed data created - used existing servers",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "SoftRestaurant dashboard works fully. MPRO server has database table schema issue - the query needs to be fixed to use correct table names for MPRO system",
+  "features_tested": {
+    "dashboard_load_softrestaurant": {
+      "status": "PASS",
+      "details": "Dashboard loads correctly with Cienfuegos SoftRestaurant server"
+    },
+    "kpis_display": {
+      "status": "PASS",
+      "details": "KPIs displayed: Costo Diferencias (-$6,371,851), Faltantes (258), Sobrantes (310), Items Revisados (8,673), Con Diferencia (568), Precision (93.5%)"
+    },
+    "top_10_charts": {
+      "status": "PASS",
+      "details": "Top 10 Faltantes por Costo and Top 10 Faltantes por Cantidad charts render correctly with bar charts"
+    },
+    "server_selector": {
+      "status": "PASS",
+      "details": "Server selector dropdown works - can switch between ManagmentPro (MPRO) and Cienfuegos SoftRestaurant"
+    },
+    "servidores_page": {
+      "status": "PASS",
+      "details": "Servidores page shows 3 server cards with correct information (Host, Puerto, Base de Datos, Usuario, Consultas SQL status, Filtros status)"
+    },
+    "filtros_button": {
+      "status": "PASS",
+      "details": "Filtros button opens dialog with 3 tabs"
+    },
+    "filtros_dialog_tabs": {
+      "status": "PASS",
+      "details": "Dialog shows 3 tabs: Tipos Movimiento (0/30), Categorías (0/130), Departamentos (0/10) for SoftRestaurant"
+    },
+    "filtros_data_load": {
+      "status": "PASS",
+      "details": "Filter data loads correctly from backend APIs - tested endpoints return correct counts"
+    },
+    "dashboard_mpro": {
+      "status": "FAIL",
+      "details": "MPRO server dashboard returns error: Invalid object name 'FisicoDetalle'"
+    }
+  },
+  "api_tests": {
+    "/api/auth/login": "PASS - Returns token",
+    "/api/dashboard/servers-configured": "PASS - Returns 2 servers",
+    "/api/dashboard/inventory-summary?server_id=softrestaurant": "PASS - Returns KPIs and data",
+    "/api/dashboard/inventory-summary?server_id=mpro": "FAIL - 500 error (FisicoDetalle table not found)",
+    "/api/servers/{id}/tipos-movimiento": "PASS - Returns 30 types for SoftRestaurant",
+    "/api/servers/{id}/categorias": "PASS - Returns 130 categories for SoftRestaurant",
+    "/api/servers/{id}/departamentos": "PASS - Returns 10 departments for SoftRestaurant"
+  }
+}
