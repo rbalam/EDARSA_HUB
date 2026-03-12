@@ -19,6 +19,7 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 4. **Exportación**: Excel y PDF
 5. **Catálogo de Consultas**: Consultas SQL centralizadas y reutilizables
 6. **Configuración Flexible de Consultas SQL**: Asistente para configurar consultas personalizadas por servidor
+7. **Sistema de Permisos**: Asignación granular de acceso a servidores y almacenes por usuario
 
 ### Sistemas Soportados
 - ManagmentPro (MPRO)
@@ -28,73 +29,65 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 ## Arquitectura Técnica
 
 ### Stack
-- **Frontend**: React, TailwindCSS, Shadcn UI
+- **Frontend**: React, TailwindCSS, Shadcn UI, Recharts
 - **Backend**: FastAPI, Python
 - **Base de Datos**: MongoDB (configuración), SQL Server (datos de inventario)
 - **Bibliotecas SQL**: pytds (principal), pymssql (fallback)
 
 ### Endpoints Principales
 - `POST /api/auth/login` - Autenticación
-- `GET/POST /api/servers` - CRUD de servidores
+- `GET/POST /api/servers` - CRUD de servidores (filtrado por permisos)
 - `POST /api/reports/inventory-analysis` - Análisis de inventario
 - `GET /api/servers/{id}/queries` - Estado de consultas configuradas
 - `POST /api/servers/{id}/queries/validate` - Validar consulta SQL
 - `PUT /api/servers/{id}/queries/{type}` - Guardar consulta validada
+- `PUT /api/users/{id}/permissions` - Actualizar permisos de usuario
+- `GET /api/company-groups` - Obtener grupos de empresas
+
+### Modelo de Permisos
+```
+User {
+  company_group: string          // Grupo de empresa (ej: "Grupo Norte")
+  allowed_servers: string[]      // IDs de servidores permitidos
+  allowed_warehouses: {          // Almacenes específicos por servidor
+    [server_id]: string[]
+  }
+}
+```
 
 ## Lo Implementado
+
+### 2025-03-12 - Sistema de Permisos de Usuario (P0)
+- **Backend**: Nuevo modelo `UserPermissions` con campos `company_group`, `allowed_servers`, `allowed_warehouses`
+- **Backend**: Funciones de verificación `user_has_server_access()` y `user_has_warehouse_access()`
+- **Backend**: Filtrado automático de servidores en `GET /api/servers` según permisos
+- **Backend**: Nuevo endpoint `PUT /api/users/{id}/permissions` para actualizar permisos
+- **Backend**: Endpoint `GET /api/company-groups` para listar grupos de empresas
+- **Frontend**: Página de Usuarios rediseñada con botón "Permisos" para cada usuario
+- **Frontend**: Diálogo de permisos con selección de grupo, servidores y almacenes
+- **Frontend**: Checkboxes para asignar acceso a servidores específicos
+- **Testing**: 13/13 tests de backend pasados, sistema verificado funcionando
+
+### 2025-03-12 - Correcciones Menores
+- **Frontend (Reportes.js)**: Manejo defensivo de arrays null con `Array.isArray()`
+- **Frontend (Usuarios.js)**: Corregido bug de SelectItem con valor vacío (usar "none" en lugar de "")
 
 ### 2025-03-12 - Dashboard de Inventarios con Gráficos Interactivos
 - **Rediseño completo del Dashboard** con gráficos de análisis de inventarios
 - **KPIs en tiempo real**: Costo Diferencias, Faltantes, Sobrantes, Items Revisados, Precision
-- **Gráficos interactivos con Recharts y Zoom**:
-  - Top 10 Faltantes por Costo
-  - Top 10 Faltantes por Cantidad
-  - Comparativo Inicio vs Fin de Mes por Almacén
-  - Diferencias por Grupo/Categoría (pastel)
-  - Resumen Acumulado por Almacén (barras apiladas)
-- **Tabla detallada** por almacén con estado (OK/Atención/Crítico)
-- **Backend**: Endpoint `/api/dashboard/inventory-summary` con análisis usando Pandas
-- **Soporte para SoftRestaurant y MPRO** con consultas SQL específicas para cada sistema
-- **Filtros por servidor**: Los datos del dashboard respetan los filtros configurados (departamentos, categorías)
-
-### 2025-03-12 - Mejoras en Filtros de Servidores
-- **Endpoints actualizados** para SoftRestaurant:
-  - Tipos Movimiento: usa tabla `conceptos`
-  - Categorías: usa tabla `gruposi`  
-  - Departamentos: usa tabla `almacen`
-- **Los filtros se aplican** a las consultas del dashboard automáticamente
-
-### 2025-03-11 - Asistente de Configuración de Consultas SQL
-- **Nuevo componente**: `QueryConfigWizard.js` - Asistente paso a paso para configurar consultas
-- **Características**:
-  - 3 pasos: Inventarios, Ventas, Movimientos/Entradas
-  - Validación en tiempo real de consultas SQL
-  - Verificación de columnas requeridas (`codigo`, `cantidad`)
-  - Mapeo flexible de alias de columnas (ej: `idinsumo` → `codigo`)
-  - Vista previa de datos de muestra
-  - Indicadores visuales de estado (verde=válido, rojo=error)
-  - Guardado de avance parcial (puede cerrar y continuar después)
-- **Backend**: 
-  - Nuevos endpoints para validar, guardar y consultar estado de queries
-  - Sistema de alias para reconocer diferentes nombres de columnas
-  - Modelo `ServerQueryConfig` para persistir consultas en MongoDB
-
-### 2025-03-11 - Corrección de Conexión DDNS SoftRestaurant
-- **Problema**: Las conexiones con formato DDNS especial (`hostname,puerto\instancia`) fallaban con pymssql
-- **Solución**: Se integró la biblioteca `pytds` como conector principal con fallback a pymssql
-- **Función**: `parse_sql_server_host()` ahora maneja múltiples formatos de cadena de conexión
+- **Gráficos interactivos con Recharts y Zoom**
+- **Soporte para SoftRestaurant y MPRO**
 
 ### Sesiones Anteriores
-- Corrección del cálculo de análisis de inventario (estrategia de consultas separadas + Pandas)
+- Corrección de conexión DDNS con pytds
+- Asistente de configuración de consultas SQL
 - Implementación de filtros configurables por servidor
-- Creación del catálogo de consultas centralizado
-- Mejora de mensajes de feedback en exportación
+- Catálogo de consultas centralizado
 
 ## Pendiente / Backlog
 
 ### P1 - Alta Prioridad
-- [ ] Implementar dashboard para MPRO (actualmente solo funciona con SoftRestaurant)
-- [ ] Verificar y corregir exportación Excel/PDF (no descarga archivos)
+- [ ] Verificar y corregir exportación Excel/PDF (reporta éxito pero no descarga)
 
 ### P2 - Media Prioridad
 - [ ] Agregar paginación al reporte de inventario
@@ -103,44 +96,26 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 ### P3 - Baja Prioridad / Futuro
 - [ ] Envío de reportes por correo electrónico
 - [ ] Configuración por grupo de productos
-- [ ] Filtrar dashboard por permisos de usuario (sucursales específicas)
+- [ ] Filtrar dashboard por permisos de usuario (almacenes específicos)
 
 ## Credenciales de Prueba
 
 ### Aplicación
-- Email: `admin@inventario.com`
-- Password: `admin123`
+- **Admin**: `admin@inventario.com` / `admin123` (acceso completo)
+- **Test User**: `test@inventario.com` / `test123` (solo acceso a Cienfuegos)
 
-### MPRO (ManagmentPro)
-- Servidor: `54.39.104.176`
-- Puerto: `1433`
-- Base de datos: `CENTRAL2020`
-- Usuario: `HRLectura`
-- Password: `National09$`
-
-### SoftRestaurant (Cienfuegos)
-- Servidor: `servercienfuegos.ddns.net,6669\nationalsoft`
-- Usuario: `CFLectura`
-- Password: `National09`
-- Base de datos: `softrestaurant95pro`
-
-### SoftRestaurant (LA ESTELAR)
-- Servidor: `serverestelar.ddns.net,6669`
-- Usuario: `STLectura`
-- Password: `National09`
-- Base de datos: `softrestaurant12`
+### Servidores SQL
+- **ManagmentPro**: `54.39.104.176:1433`, DB: `CENTRAL2020`, User: `HRLectura`
+- **Cienfuegos**: `servercienfuegos.ddns.net,6669\nationalsoft`, DB: `softrestaurant95pro`
+- **LA ESTELAR**: `serverestelar.ddns.net,6669`, DB: `softrestaurant12`
 
 ## Notas Técnicas
 
-### Configuración de Consultas SQL
-Cada servidor puede tener 3 consultas personalizadas:
-1. **Inventario**: Para obtener inventario inicial/final. Columnas requeridas: `codigo`, `cantidad`
-2. **Ventas**: Para obtener ventas del período. Columnas requeridas: `codigo`, `cantidad`
-3. **Movimientos**: Para obtener entradas/traspasos/ajustes. Columnas requeridas: `codigo`, `cantidad`
-
-El sistema reconoce alias comunes:
-- `codigo`: clave, code, idinsumo, idproducto, sku, pr_cve_producto
-- `cantidad`: qty, existencia, stock, unidades
+### Sistema de Permisos
+- Administradores tienen acceso completo a todos los servidores
+- Usuarios normales solo ven servidores en su lista `allowed_servers`
+- Si `allowed_warehouses[server_id]` está vacío, tiene acceso a todos los almacenes del servidor
+- Si tiene almacenes específicos, solo ve esos almacenes
 
 ### Conexiones SQL Server
 - `pytds` es más confiable para conexiones con DDNS y puertos no estándar
