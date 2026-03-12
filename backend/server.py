@@ -2191,14 +2191,30 @@ async def get_dashboard_inventory_summary(
                 "data": {}
             }
         
-        results = execute_sql_query(
-            server['host'],
-            server['port'],
-            server['database'],
-            server['username'],
-            server['password'],
-            query_sql
-        )
+        try:
+            results = execute_sql_query(
+                server['host'],
+                server['port'],
+                server['database'],
+                server['username'],
+                server['password'],
+                query_sql
+            )
+        except Exception as query_error:
+            logging.error(f"Error en consulta dashboard: {str(query_error)}")
+            return {
+                "success": False,
+                "message": f"Error ejecutando consulta: {str(query_error)[:200]}",
+                "data": {
+                    "server_name": server['name'],
+                    "almacenes": [],
+                    "top_faltantes_costo": [],
+                    "top_faltantes_cantidad": [],
+                    "resumen_por_almacen": [],
+                    "resumen_por_grupo": [],
+                    "kpis": {}
+                }
+            }
         
         if not results:
             return {
