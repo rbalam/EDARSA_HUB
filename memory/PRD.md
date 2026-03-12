@@ -16,10 +16,10 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
    - `Inventario teórico = Inventario inicial + Movimientos - Ventas`
    - `Diferencias = Inventario teórico - Inventario final`
 3. **Filtros Configurables**: Por tipos de movimiento, categorías y departamentos
-4. **Exportación**: Excel y PDF
+4. **Exportación**: Excel (con formato profesional) y PDF
 5. **Catálogo de Consultas**: Consultas SQL centralizadas y reutilizables
 6. **Configuración Flexible de Consultas SQL**: Asistente para configurar consultas personalizadas por servidor
-7. **Sistema de Permisos**: Asignación granular de acceso a servidores y almacenes por usuario
+7. **Sistema de Permisos Granular**: Asignación de acceso a servidores, sucursales y almacenes por usuario
 
 ### Sistemas Soportados
 - ManagmentPro (MPRO)
@@ -33,14 +33,15 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 - **Backend**: FastAPI, Python
 - **Base de Datos**: MongoDB (configuración), SQL Server (datos de inventario)
 - **Bibliotecas SQL**: pytds (principal), pymssql (fallback)
+- **Excel**: openpyxl con estilos profesionales
 
 ### Endpoints Principales
 - `POST /api/auth/login` - Autenticación
 - `GET/POST /api/servers` - CRUD de servidores (filtrado por permisos)
+- `GET /api/servers/{id}/sucursales` - Lista de sucursales (filtrada por permisos)
 - `POST /api/reports/inventory-analysis` - Análisis de inventario
+- `POST /api/reports/export/excel` - Exportar Excel con formato
 - `GET /api/servers/{id}/queries` - Estado de consultas configuradas
-- `POST /api/servers/{id}/queries/validate` - Validar consulta SQL
-- `PUT /api/servers/{id}/queries/{type}` - Guardar consulta validada
 - `PUT /api/users/{id}/permissions` - Actualizar permisos de usuario
 - `GET /api/company-groups` - Obtener grupos de empresas
 
@@ -49,6 +50,9 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 User {
   company_group: string          // Grupo de empresa (ej: "Grupo Norte")
   allowed_servers: string[]      // IDs de servidores permitidos
+  allowed_sucursales: {          // Sucursales específicas por servidor
+    [server_id]: string[]
+  }
   allowed_warehouses: {          // Almacenes específicos por servidor
     [server_id]: string[]
   }
@@ -57,52 +61,50 @@ User {
 
 ## Lo Implementado
 
+### 2025-03-12 - Permisos de Sucursales y Excel con Formato
+- **Backend**: Nuevo campo `allowed_sucursales` en modelo User
+- **Backend**: Función `filter_sucursales_by_permissions()` filtra sucursales según usuario
+- **Backend**: Endpoint `/servers/{id}/sucursales` ahora filtra automáticamente
+- **Frontend**: Página de Usuarios con selección de sucursales por servidor
+- **Excel mejorado**:
+  - Encabezado con título, sucursal, almacén, folios, período y fecha
+  - Números con formato `#,##0.00` (2 decimales)
+  - Moneda con formato `$#,##0.00`
+  - Porcentajes con formato `0.00%`
+  - Datos ordenados por Categoría → Familia → SubFamilia
+  - Auto-filtro habilitado para filtrar en Excel
+  - Panel congelado para mantener encabezados visibles
+- **Testing**: 100% tests pasados (backend y frontend)
+
 ### 2025-03-12 - Sistema de Permisos de Usuario (P0)
-- **Backend**: Nuevo modelo `UserPermissions` con campos `company_group`, `allowed_servers`, `allowed_warehouses`
-- **Backend**: Funciones de verificación `user_has_server_access()` y `user_has_warehouse_access()`
-- **Backend**: Filtrado automático de servidores en `GET /api/servers` según permisos
-- **Backend**: Nuevo endpoint `PUT /api/users/{id}/permissions` para actualizar permisos
-- **Backend**: Endpoint `GET /api/company-groups` para listar grupos de empresas
-- **Frontend**: Página de Usuarios rediseñada con botón "Permisos" para cada usuario
-- **Frontend**: Diálogo de permisos con selección de grupo, servidores y almacenes
-- **Frontend**: Checkboxes para asignar acceso a servidores específicos
-- **Testing**: 13/13 tests de backend pasados, sistema verificado funcionando
-
-### 2025-03-12 - Correcciones Menores
-- **Frontend (Reportes.js)**: Manejo defensivo de arrays null con `Array.isArray()`
-- **Frontend (Usuarios.js)**: Corregido bug de SelectItem con valor vacío (usar "none" en lugar de "")
-
-### 2025-03-12 - Dashboard de Inventarios con Gráficos Interactivos
-- **Rediseño completo del Dashboard** con gráficos de análisis de inventarios
-- **KPIs en tiempo real**: Costo Diferencias, Faltantes, Sobrantes, Items Revisados, Precision
-- **Gráficos interactivos con Recharts y Zoom**
-- **Soporte para SoftRestaurant y MPRO**
+- **Backend**: Campos `company_group`, `allowed_servers`, `allowed_warehouses`
+- **Backend**: Filtrado automático de servidores en `GET /api/servers`
+- **Backend**: Endpoint `PUT /api/users/{id}/permissions`
+- **Frontend**: Diálogo de permisos con checkboxes para servidores/almacenes
 
 ### Sesiones Anteriores
 - Corrección de conexión DDNS con pytds
 - Asistente de configuración de consultas SQL
+- Dashboard con gráficos interactivos
 - Implementación de filtros configurables por servidor
 - Catálogo de consultas centralizado
 
 ## Pendiente / Backlog
-
-### P1 - Alta Prioridad
-- [ ] Verificar y corregir exportación Excel/PDF (reporta éxito pero no descarga)
 
 ### P2 - Media Prioridad
 - [ ] Agregar paginación al reporte de inventario
 - [ ] Integrar consultas configuradas con el reporte de análisis de inventario
 
 ### P3 - Baja Prioridad / Futuro
+- [ ] Exportación PDF mejorada con el mismo formato que Excel
 - [ ] Envío de reportes por correo electrónico
-- [ ] Configuración por grupo de productos
-- [ ] Filtrar dashboard por permisos de usuario (almacenes específicos)
+- [ ] Limpieza de endpoints de debug
 
 ## Credenciales de Prueba
 
 ### Aplicación
-- **Admin**: `admin@inventario.com` / `admin123` (acceso completo)
-- **Test User**: `test@inventario.com` / `test123` (solo acceso a Cienfuegos)
+- **Admin**: `admin@inventario.com` / `admin123` (acceso completo - ve 7 sucursales)
+- **Test User**: `test@inventario.com` / `test123` (solo sucursales 0021, 0022 de ManagmentPro)
 
 ### Servidores SQL
 - **ManagmentPro**: `54.39.104.176:1433`, DB: `CENTRAL2020`, User: `HRLectura`
@@ -112,12 +114,13 @@ User {
 ## Notas Técnicas
 
 ### Sistema de Permisos
-- Administradores tienen acceso completo a todos los servidores
-- Usuarios normales solo ven servidores en su lista `allowed_servers`
-- Si `allowed_warehouses[server_id]` está vacío, tiene acceso a todos los almacenes del servidor
-- Si tiene almacenes específicos, solo ve esos almacenes
+- Administradores tienen acceso completo a todos los servidores/sucursales
+- Usuarios normales solo ven servidores/sucursales en sus listas permitidas
+- Si `allowed_sucursales[server_id]` está vacío, tiene acceso a todas las sucursales
+- Si tiene sucursales específicas, solo ve esas sucursales en reportes
 
-### Conexiones SQL Server
-- `pytds` es más confiable para conexiones con DDNS y puertos no estándar
-- `pymssql` funciona bien para conexiones estándar pero falla con formatos complejos
-- Siempre usar el parser de host para manejar diferentes formatos de conexión
+### Formato Excel
+- Usa openpyxl con estilos profesionales
+- Detecta automáticamente columnas de porcentaje, moneda y números
+- Ordenamiento automático por jerarquía de categorías
+- Auto-filter permite filtrar datos sin macros
