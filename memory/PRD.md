@@ -54,6 +54,15 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
   - Resumen Acumulado por Almacén (barras apiladas)
 - **Tabla detallada** por almacén con estado (OK/Atención/Crítico)
 - **Backend**: Endpoint `/api/dashboard/inventory-summary` con análisis usando Pandas
+- **Soporte para SoftRestaurant y MPRO** con consultas SQL específicas para cada sistema
+- **Filtros por servidor**: Los datos del dashboard respetan los filtros configurados (departamentos, categorías)
+
+### 2025-03-12 - Mejoras en Filtros de Servidores
+- **Endpoints actualizados** para SoftRestaurant:
+  - Tipos Movimiento: usa tabla `conceptos`
+  - Categorías: usa tabla `gruposi`  
+  - Departamentos: usa tabla `almacen`
+- **Los filtros se aplican** a las consultas del dashboard automáticamente
 
 ### 2025-03-11 - Asistente de Configuración de Consultas SQL
 - **Nuevo componente**: `QueryConfigWizard.js` - Asistente paso a paso para configurar consultas
