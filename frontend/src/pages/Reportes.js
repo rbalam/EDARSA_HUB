@@ -271,27 +271,46 @@ const Reportes = () => {
     setFilters(newFilters);
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (reportData.length === 0) {
       toast.error('No hay datos para exportar');
       return;
     }
 
     try {
-      const worksheet = XLSX.utils.json_to_sheet(reportData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte');
+      toast.info('Generando Excel con formato...');
       
-      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const fileName = `reporte_inventario_${new Date().toISOString().split('T')[0]}.xlsx`;
+      // Preparar metadata para el encabezado
+      const metadata = {
+        sucursal: filters.sucursal,
+        almacen: filters.almacen,
+        folio_inicial: filters.inventario_inicial,
+        folio_final: filters.inventario_final,
+        fecha_ini: filters.fecha_ini,
+        fecha_fin: filters.fecha_fin
+      };
       
+      const fileName = `reporte_inventario_${filters.sucursal || 'general'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      // Llamar al backend para generar Excel con formato
+      const response = await api.post('/reports/export/excel', {
+        data: reportData,
+        filename: fileName,
+        metadata: metadata
+      }, {
+        responseType: 'blob'
+      });
+      
+      // Descargar el archivo
+      const blob = new Blob([response.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
       saveAs(blob, fileName);
       
       toast.success(`Archivo "${fileName}" descargado correctamente. Revisa tu carpeta de Descargas.`);
     } catch (error) {
       console.error('Error al exportar Excel:', error);
-      toast.error('Error al exportar a Excel: ' + error.message);
+      toast.error('Error al exportar a Excel: ' + (error.response?.data?.detail || error.message));
     }
   };
 
