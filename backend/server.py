@@ -2087,7 +2087,7 @@ def get_dashboard_inventory_query_mpro(departamentos=None, categorias=None):
     """
     Consulta para obtener datos de inventario físico de MPRO
     para el dashboard con análisis de diferencias.
-    Aplica filtros de departamentos y categorías.
+    Usa la tabla Fisico con sus columnas: Fi_Cantidad_1 (teórica), Fi_Cantidad_Control_1 (física)
     """
     # Construir filtros
     filtro_departamento = ""
@@ -2114,35 +2114,34 @@ def get_dashboard_inventory_query_mpro(departamentos=None, categorias=None):
             AND YEAR(Fi_Fecha) = YEAR(GETDATE())
         GROUP BY Al_Cve_Almacen
     )
-    SELECT 
+    SELECT TOP 5000
         F.Fi_Folio as folio,
         F.Fi_Fecha as fecha,
         F.Al_Cve_Almacen as idalmacen,
         A.Al_Descripcion as almacen_nombre,
-        FD.Pr_Cve_Producto as codigo,
+        F.Pr_Cve_Producto as codigo,
         P.Pr_Descripcion as descripcion,
         COALESCE(C.Ct_Descripcion, 'Sin Categoría') as grupo,
-        FD.Fd_Costo as costo_unitario,
-        FD.Fd_Cantidad as existencia_teorica,
-        FD.Fi_Cantidad_Control_1 as existencia_fisica,
-        (FD.Fi_Cantidad_Control_1 - FD.Fd_Cantidad) as diferencia,
-        ((FD.Fi_Cantidad_Control_1 - FD.Fd_Cantidad) * FD.Fd_Costo) as costo_diferencia,
+        F.Fi_Costo as costo_unitario,
+        F.Fi_Cantidad_1 as existencia_teorica,
+        F.Fi_Cantidad_Control_1 as existencia_fisica,
+        (F.Fi_Cantidad_Control_1 - F.Fi_Cantidad_1) as diferencia,
+        ((F.Fi_Cantidad_Control_1 - F.Fi_Cantidad_1) * F.Fi_Costo) as costo_diferencia,
         CASE 
             WHEN F.Fi_Folio = IM.primer_folio THEN 'INICIAL'
             WHEN F.Fi_Folio = IM.ultimo_folio THEN 'FINAL'
             ELSE 'INTERMEDIO'
         END as tipo_inventario
     FROM Fisico F
-    INNER JOIN FisicoDetalle FD ON FD.Fi_Folio = F.Fi_Folio
     INNER JOIN InventariosMes IM ON IM.almacen = F.Al_Cve_Almacen 
         AND (F.Fi_Folio = IM.primer_folio OR F.Fi_Folio = IM.ultimo_folio)
     INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen
-    INNER JOIN Producto P ON P.Pr_Cve_Producto = FD.Pr_Cve_Producto
+    INNER JOIN Producto P ON P.Pr_Cve_Producto = F.Pr_Cve_Producto
     LEFT JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
     WHERE F.Es_Cve_Estado <> 'CA'
     {filtro_departamento}
     {filtro_categoria}
-    ORDER BY F.Al_Cve_Almacen, F.Fi_Folio, FD.Pr_Cve_Producto
+    ORDER BY F.Al_Cve_Almacen, F.Fi_Folio, F.Pr_Cve_Producto
     """
 
 
