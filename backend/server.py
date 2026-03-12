@@ -53,12 +53,6 @@ class UserRole(BaseModel):
     name: str  # "Administrador", "Supervisor", "Usuario"
     permissions: List[str]
 
-class UserPermissions(BaseModel):
-    """Permisos detallados de un usuario"""
-    company_group: str = ""  # Grupo de empresas asignado
-    allowed_servers: List[str] = []  # IDs de servidores permitidos
-    allowed_warehouses: Dict[str, List[str]] = {}  # server_id -> [warehouse_ids]
-
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -66,11 +60,9 @@ class User(BaseModel):
     name: str
     role: str
     sucursales: List[str] = []  # IDs de sucursales asignadas (legacy)
-    # Nuevos campos de permisos
-    company_group: str = ""  # Grupo de empresas (ej: "Grupo Norte", "Grupo Sur")
-    allowed_servers: List[str] = []  # IDs de servidores a los que tiene acceso
-    allowed_warehouses: Dict[str, List[str]] = {}  # server_id -> [warehouse_ids] específicos
-    allowed_sucursales: Dict[str, List[str]] = {}  # server_id -> [sucursal_ids] específicos
+    allowed_servers: List[str] = []  # IDs de servidores permitidos
+    allowed_sucursales: Dict[str, List[str]] = {}  # server_id -> [sucursal_ids]
+    allowed_warehouses: Dict[str, List[str]] = {}  # server_id -> [warehouse_codes]
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     active: bool = True
 
@@ -80,10 +72,9 @@ class UserCreate(BaseModel):
     password: str
     role: str
     sucursales: List[str] = []
-    company_group: str = ""
     allowed_servers: List[str] = []
-    allowed_warehouses: Dict[str, List[str]] = {}
     allowed_sucursales: Dict[str, List[str]] = {}
+    allowed_warehouses: Dict[str, List[str]] = {}
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -238,76 +229,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     return user
-
-def user_has_server_access(user: Dict, server_id: str) -> bool:
-    """Verifica si un usuario tiene acceso a un servidor específico"""
-    # Los administradores tienen acceso a todo
-    if user.get('role') == 'Administrador':
-        return True
-    
-    # Si no tiene servidores permitidos configurados, no tiene acceso
-    allowed_servers = user.get('allowed_servers', [])
-    if not allowed_servers:
-        return False
-    
-    return server_id in allowed_servers
-
-def user_has_warehouse_access(user: Dict, server_id: str, warehouse_id: str) -> bool:
-    """Verifica si un usuario tiene acceso a un almacén específico"""
-    # Los administradores tienen acceso a todo
-    if user.get('role') == 'Administrador':
-        return True
-    
-    # Primero verificar acceso al servidor
-    if not user_has_server_access(user, server_id):
-        return False
-    
-    # Si tiene acceso al servidor pero no hay almacenes específicos configurados, tiene acceso a todos
-    allowed_warehouses = user.get('allowed_warehouses', {})
-    if server_id not in allowed_warehouses or not allowed_warehouses[server_id]:
-        return True
-    
-    return warehouse_id in allowed_warehouses[server_id]
-
-def user_has_sucursal_access(user: Dict, server_id: str, sucursal_id: str) -> bool:
-    """Verifica si un usuario tiene acceso a una sucursal específica"""
-    # Los administradores tienen acceso a todo
-    if user.get('role') == 'Administrador':
-        return True
-    
-    # Primero verificar acceso al servidor
-    if not user_has_server_access(user, server_id):
-        return False
-    
-    # Si tiene acceso al servidor pero no hay sucursales específicas configuradas, tiene acceso a todas
-    allowed_sucursales = user.get('allowed_sucursales', {})
-    if server_id not in allowed_sucursales or not allowed_sucursales[server_id]:
-        return True
-    
-    return sucursal_id in allowed_sucursales[server_id]
-
-def filter_sucursales_by_permissions(sucursales: List[Dict], user: Dict, server_id: str) -> List[Dict]:
-    """Filtra la lista de sucursales según los permisos del usuario"""
-    if user.get('role') == 'Administrador':
-        return sucursales
-    
-    allowed_sucursales = user.get('allowed_sucursales', {})
-    if server_id not in allowed_sucursales or not allowed_sucursales[server_id]:
-        return sucursales  # Sin restricción específica, ve todas
-    
-    allowed_ids = allowed_sucursales[server_id]
-    return [s for s in sucursales if s.get('id') in allowed_ids]
-
-def filter_servers_by_permissions(servers: List[Dict], user: Dict) -> List[Dict]:
-    """Filtra la lista de servidores según los permisos del usuario"""
-    if user.get('role') == 'Administrador':
-        return servers
-    
-    allowed = user.get('allowed_servers', [])
-    if not allowed:
-        return []
-    
-    return [s for s in servers if s.get('id') in allowed]
 
 # ============= SQL SERVER FUNCTIONS =============
 
@@ -494,17 +415,7 @@ def execute_sql_query(host: str, port: int, database: str, username: str, passwo
 
 # ============= EXPORT FUNCTIONS =============
 
-def generate_excel(data: List[Dict], filename: str = "reporte.xlsx", metadata: Dict = None) -> bytes:
-    """
-    Genera Excel con formato profesional:
-    - Encabezado con información del reporte
-    - Números a 2 decimales
-    - Porcentajes con símbolo %
-    - Agrupación por Categoría, Familia, SubFamilia
-    """
-    from openpyxl.utils import get_column_letter
-    from openpyxl.styles import Border, Side, NamedStyle
-    
+def generate_excel(data: List[Dict], filename: str = "reporte.xlsx") -> bytes:
     wb = Workbook()
     ws = wb.active
     ws.title = "Reporte de Inventario"
@@ -512,166 +423,36 @@ def generate_excel(data: List[Dict], filename: str = "reporte.xlsx", metadata: D
     if not data:
         return b''
     
-    current_row = 1
+    # Headers
+    headers = list(data[0].keys())
+    ws.append(headers)
     
-    # ============= ENCABEZADO DEL REPORTE =============
-    if metadata:
-        # Título
-        ws.merge_cells('A1:H1')
-        title_cell = ws['A1']
-        title_cell.value = "REPORTE DE ANÁLISIS DE INVENTARIO"
-        title_cell.font = Font(bold=True, size=16, color="18181b")
-        title_cell.alignment = Alignment(horizontal="center", vertical="center")
-        current_row = 2
-        
-        # Información del reporte
-        info_font = Font(bold=True, size=11)
-        value_font = Font(size=11)
-        
-        if metadata.get('sucursal'):
-            ws[f'A{current_row}'] = "Sucursal:"
-            ws[f'A{current_row}'].font = info_font
-            ws[f'B{current_row}'] = metadata.get('sucursal', '')
-            ws[f'B{current_row}'].font = value_font
-            current_row += 1
-            
-        if metadata.get('almacen'):
-            ws[f'A{current_row}'] = "Almacén:"
-            ws[f'A{current_row}'].font = info_font
-            ws[f'B{current_row}'] = metadata.get('almacen', '')
-            ws[f'B{current_row}'].font = value_font
-            current_row += 1
-            
-        if metadata.get('folio_inicial') and metadata.get('folio_final'):
-            ws[f'A{current_row}'] = "Folio Inicial:"
-            ws[f'A{current_row}'].font = info_font
-            ws[f'B{current_row}'] = metadata.get('folio_inicial', '')
-            ws[f'B{current_row}'].font = value_font
-            ws[f'C{current_row}'] = "Folio Final:"
-            ws[f'C{current_row}'].font = info_font
-            ws[f'D{current_row}'] = metadata.get('folio_final', '')
-            ws[f'D{current_row}'].font = value_font
-            current_row += 1
-            
-        if metadata.get('fecha_ini') and metadata.get('fecha_fin'):
-            ws[f'A{current_row}'] = "Período:"
-            ws[f'A{current_row}'].font = info_font
-            ws[f'B{current_row}'] = f"{metadata.get('fecha_ini', '')} a {metadata.get('fecha_fin', '')}"
-            ws[f'B{current_row}'].font = value_font
-            current_row += 1
-        
-        # Fecha de generación
-        ws[f'A{current_row}'] = "Generado:"
-        ws[f'A{current_row}'].font = info_font
-        ws[f'B{current_row}'] = datetime.now().strftime("%Y-%m-%d %H:%M")
-        ws[f'B{current_row}'].font = value_font
-        current_row += 2  # Espacio antes de datos
+    # Style headers
+    header_fill = PatternFill(start_color="18181b", end_color="18181b", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
     
-    # ============= ORDENAR DATOS POR CATEGORÍA, FAMILIA, SUBFAMILIA =============
-    sorted_data = sorted(data, key=lambda x: (
-        x.get('Categoria', '') or '',
-        x.get('Familia', '') or '',
-        x.get('SubFamilia', '') or '',
-        x.get('Producto', '') or ''
-    ))
-    
-    # ============= ENCABEZADOS DE COLUMNAS =============
-    headers = list(sorted_data[0].keys())
-    header_row = current_row
-    
-    # Escribir encabezados
     for col_num, header in enumerate(headers, 1):
-        cell = ws.cell(row=header_row, column=col_num)
-        cell.value = header.replace('_', ' ')
-        cell.fill = PatternFill(start_color="18181b", end_color="18181b", fill_type="solid")
-        cell.font = Font(color="FFFFFF", bold=True, size=10)
-        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell = ws.cell(row=1, column=col_num)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
     
-    current_row = header_row + 1
+    # Data rows
+    for row_data in data:
+        ws.append(list(row_data.values()))
     
-    # ============= DATOS CON FORMATO =============
-    # Identificar columnas numéricas y de porcentaje
-    numeric_cols = []
-    percentage_cols = []
-    currency_cols = []
-    
-    for idx, header in enumerate(headers):
-        header_lower = header.lower()
-        if 'porcentaje' in header_lower or 'porcent' in header_lower:
-            percentage_cols.append(idx + 1)
-        elif 'costo' in header_lower or 'precio' in header_lower or 'importe' in header_lower:
-            currency_cols.append(idx + 1)
-        elif any(x in header_lower for x in ['cantidad', 'ventas', 'movimientos', 'inicial', 'final', 'teorico', 'diferencia']):
-            numeric_cols.append(idx + 1)
-    
-    # Escribir datos
-    thin_border = Border(
-        left=Side(style='thin', color='E4E4E7'),
-        right=Side(style='thin', color='E4E4E7'),
-        top=Side(style='thin', color='E4E4E7'),
-        bottom=Side(style='thin', color='E4E4E7')
-    )
-    
-    for row_data in sorted_data:
-        for col_num, (key, value) in enumerate(row_data.items(), 1):
-            cell = ws.cell(row=current_row, column=col_num)
-            cell.border = thin_border
-            
-            if value is None:
-                cell.value = ""
-            elif col_num in percentage_cols:
-                # Formato porcentaje
-                try:
-                    cell.value = float(value) / 100 if abs(float(value)) < 100 else float(value) / 100
-                    cell.number_format = '0.00%'
-                except:
-                    cell.value = value
-            elif col_num in currency_cols:
-                # Formato moneda
-                try:
-                    cell.value = float(value)
-                    cell.number_format = '$#,##0.00'
-                except:
-                    cell.value = value
-            elif col_num in numeric_cols:
-                # Formato numérico 2 decimales
-                try:
-                    cell.value = float(value)
-                    cell.number_format = '#,##0.00'
-                except:
-                    cell.value = value
-            else:
-                cell.value = value
-            
-            # Alineación
-            if col_num in (percentage_cols + currency_cols + numeric_cols):
-                cell.alignment = Alignment(horizontal="right")
-            else:
-                cell.alignment = Alignment(horizontal="left")
-        
-        current_row += 1
-    
-    # ============= AJUSTAR ANCHO DE COLUMNAS =============
-    for col_num, header in enumerate(headers, 1):
-        col_letter = get_column_letter(col_num)
-        max_length = len(header) + 2
-        
-        for row in ws.iter_rows(min_row=header_row, max_row=current_row-1, min_col=col_num, max_col=col_num):
-            for cell in row:
-                try:
-                    cell_len = len(str(cell.value)) if cell.value else 0
-                    if cell_len > max_length:
-                        max_length = min(cell_len, 50)  # Max 50 caracteres
-                except:
-                    pass
-        
-        ws.column_dimensions[col_letter].width = max_length + 2
-    
-    # ============= HABILITAR FILTROS =============
-    ws.auto_filter.ref = f"A{header_row}:{get_column_letter(len(headers))}{current_row-1}"
-    
-    # ============= CONGELAR PANELES =============
-    ws.freeze_panes = f"A{header_row + 1}"
+    # Adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column = [cell for cell in column]
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(cell.value)
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column[0].column_letter].width = adjusted_width
     
     # Save to bytes
     output = io.BytesIO()
@@ -805,10 +586,6 @@ async def update_user(user_id: str, user_data: Dict, current_user: Dict = Depend
     if current_user['role'] != 'Administrador':
         raise HTTPException(status_code=403, detail="No autorizado")
     
-    # Si hay password, hashearla
-    if 'password' in user_data:
-        user_data['password'] = hash_password(user_data['password'])
-    
     await db.users.update_one({"id": user_id}, {"$set": user_data})
     return {"message": "Usuario actualizado"}
 
@@ -826,42 +603,49 @@ async def update_user_permissions(user_id: str, permissions: Dict, current_user:
     if current_user['role'] != 'Administrador':
         raise HTTPException(status_code=403, detail="No autorizado")
     
-    # Validar que el usuario existe
     user = await db.users.find_one({"id": user_id})
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     
-    # Solo actualizar campos de permisos permitidos
     update_data = {}
-    if 'company_group' in permissions:
-        update_data['company_group'] = permissions['company_group']
     if 'allowed_servers' in permissions:
         update_data['allowed_servers'] = permissions['allowed_servers']
-    if 'allowed_warehouses' in permissions:
-        update_data['allowed_warehouses'] = permissions['allowed_warehouses']
     if 'allowed_sucursales' in permissions:
         update_data['allowed_sucursales'] = permissions['allowed_sucursales']
+    if 'allowed_warehouses' in permissions:
+        update_data['allowed_warehouses'] = permissions['allowed_warehouses']
     
     if update_data:
         await db.users.update_one({"id": user_id}, {"$set": update_data})
     
-    return {"message": "Permisos actualizados", "updated_fields": list(update_data.keys())}
+    return {"message": "Permisos actualizados"}
 
-@api_router.get("/company-groups")
-async def get_company_groups(current_user: Dict = Depends(get_current_user)):
-    """Obtiene la lista de grupos de empresas disponibles"""
-    # Obtener grupos únicos de usuarios existentes
-    groups = await db.users.distinct("company_group")
-    # Filtrar vacíos y None
-    groups = [g for g in groups if g]
-    
-    # Agregar algunos grupos predefinidos si no existen
-    default_groups = ["Grupo Principal", "Grupo Norte", "Grupo Sur", "Grupo Centro"]
-    for dg in default_groups:
-        if dg not in groups:
-            groups.append(dg)
-    
-    return sorted(groups)
+# ============= PERMISSION HELPERS =============
+
+def user_has_server_access(user: Dict, server_id: str) -> bool:
+    """Verifica si un usuario tiene acceso a un servidor"""
+    if user.get('role') == 'Administrador':
+        return True
+    allowed = user.get('allowed_servers', [])
+    return server_id in allowed if allowed else False
+
+def filter_servers_by_permissions(servers: List[Dict], user: Dict) -> List[Dict]:
+    """Filtra servidores según permisos del usuario"""
+    if user.get('role') == 'Administrador':
+        return servers
+    allowed = user.get('allowed_servers', [])
+    if not allowed:
+        return []
+    return [s for s in servers if s.get('id') in allowed]
+
+def filter_sucursales_by_permissions(sucursales: List[Dict], user: Dict, server_id: str) -> List[Dict]:
+    """Filtra sucursales según permisos del usuario"""
+    if user.get('role') == 'Administrador':
+        return sucursales
+    allowed_suc = user.get('allowed_sucursales', {})
+    if server_id not in allowed_suc or not allowed_suc[server_id]:
+        return sucursales  # Sin restricción = ver todas
+    return [s for s in sucursales if s.get('id') in allowed_suc[server_id]]
 
 # ============= SERVERS =============
 
@@ -889,16 +673,14 @@ async def create_server(server_data: ServerCreate, current_user: Dict = Depends(
 @api_router.get("/servers", response_model=List[Server])
 async def get_servers(current_user: Dict = Depends(get_current_user)):
     servers = await db.servers.find({"active": True}, {"_id": 0, "password": 0}).to_list(1000)
-    # Filtrar según permisos del usuario
-    filtered_servers = filter_servers_by_permissions(servers, current_user)
-    return filtered_servers
+    # Filtrar según permisos
+    return filter_servers_by_permissions(servers, current_user)
 
 @api_router.get("/servers/{server_id}")
 async def get_server(server_id: str, current_user: Dict = Depends(get_current_user)):
-    # Verificar permiso de acceso
+    # Verificar permiso
     if not user_has_server_access(current_user, server_id):
-        raise HTTPException(status_code=403, detail="No tiene acceso a este servidor")
-    
+        raise HTTPException(status_code=403, detail="Sin acceso a este servidor")
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0, "password": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
@@ -1400,7 +1182,7 @@ async def get_departamentos(server_id: str, current_user: Dict = Depends(get_cur
 
 @api_router.get("/servers/{server_id}/sucursales")
 async def get_sucursales(server_id: str, current_user: Dict = Depends(get_current_user)):
-    """Obtiene la lista de sucursales desde SQL Server, filtradas por permisos del usuario"""
+    """Obtiene la lista de sucursales desde SQL Server, filtradas por permisos"""
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
@@ -1420,10 +1202,8 @@ async def get_sucursales(server_id: str, current_user: Dict = Depends(get_curren
             server['password'],
             query
         )
-        
-        # Filtrar sucursales según permisos del usuario
-        filtered_results = filter_sucursales_by_permissions(results, current_user, server_id)
-        return filtered_results
+        # Filtrar por permisos del usuario
+        return filter_sucursales_by_permissions(results, current_user, server_id)
     except Exception as e:
         logging.error(f"Error obteniendo sucursales: {str(e)}")
         return []
@@ -1798,9 +1578,8 @@ GROUP BY E.Pr_Cve_Producto
 async def export_excel(data: Dict, current_user: Dict = Depends(get_current_user)):
     report_data = data.get('data', [])
     filename = data.get('filename', 'reporte_inventario.xlsx')
-    metadata = data.get('metadata', None)  # Incluye sucursal, almacen, folios, fechas
     
-    excel_bytes = generate_excel(report_data, filename, metadata)
+    excel_bytes = generate_excel(report_data, filename)
     
     return StreamingResponse(
         io.BytesIO(excel_bytes),
@@ -2309,7 +2088,6 @@ def get_dashboard_inventory_query_mpro(departamentos=None, categorias=None):
     Consulta para obtener datos de inventario físico de MPRO
     para el dashboard con análisis de diferencias.
     Aplica filtros de departamentos y categorías.
-    Nota: En MPRO, la tabla Fisico contiene tanto el encabezado como el detalle.
     """
     # Construir filtros
     filtro_departamento = ""
@@ -2341,29 +2119,30 @@ def get_dashboard_inventory_query_mpro(departamentos=None, categorias=None):
         F.Fi_Fecha as fecha,
         F.Al_Cve_Almacen as idalmacen,
         A.Al_Descripcion as almacen_nombre,
-        F.Pr_Cve_Producto as codigo,
+        FD.Pr_Cve_Producto as codigo,
         P.Pr_Descripcion as descripcion,
         COALESCE(C.Ct_Descripcion, 'Sin Categoría') as grupo,
-        F.Fi_Costo as costo_unitario,
-        0 as existencia_teorica,
-        F.Fi_Cantidad_Control_1 as existencia_fisica,
-        F.Fi_Cantidad_Control_1 as diferencia,
-        (F.Fi_Cantidad_Control_1 * F.Fi_Costo) as costo_diferencia,
+        FD.Fd_Costo as costo_unitario,
+        FD.Fd_Cantidad as existencia_teorica,
+        FD.Fi_Cantidad_Control_1 as existencia_fisica,
+        (FD.Fi_Cantidad_Control_1 - FD.Fd_Cantidad) as diferencia,
+        ((FD.Fi_Cantidad_Control_1 - FD.Fd_Cantidad) * FD.Fd_Costo) as costo_diferencia,
         CASE 
             WHEN F.Fi_Folio = IM.primer_folio THEN 'INICIAL'
             WHEN F.Fi_Folio = IM.ultimo_folio THEN 'FINAL'
             ELSE 'INTERMEDIO'
         END as tipo_inventario
     FROM Fisico F
+    INNER JOIN FisicoDetalle FD ON FD.Fi_Folio = F.Fi_Folio
     INNER JOIN InventariosMes IM ON IM.almacen = F.Al_Cve_Almacen 
         AND (F.Fi_Folio = IM.primer_folio OR F.Fi_Folio = IM.ultimo_folio)
     INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen
-    INNER JOIN Producto P ON P.Pr_Cve_Producto = F.Pr_Cve_Producto
+    INNER JOIN Producto P ON P.Pr_Cve_Producto = FD.Pr_Cve_Producto
     LEFT JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
     WHERE F.Es_Cve_Estado <> 'CA'
     {filtro_departamento}
     {filtro_categoria}
-    ORDER BY F.Al_Cve_Almacen, F.Fi_Folio, F.Pr_Cve_Producto
+    ORDER BY F.Al_Cve_Almacen, F.Fi_Folio, FD.Pr_Cve_Producto
     """
 
 
@@ -2547,17 +2326,13 @@ async def get_dashboard_inventory_summary(
 async def get_dashboard_servers(current_user: Dict = Depends(get_current_user)):
     """
     Obtiene lista de servidores configurados para el selector del dashboard
-    Filtrado por permisos del usuario
     """
     servers = await db.servers.find(
         {"active": True, "queries_configured": True},
         {"_id": 0, "id": 1, "name": 1, "system_type": 1}
     ).to_list(100)
     
-    # Filtrar según permisos del usuario
-    filtered_servers = filter_servers_by_permissions(servers, current_user)
-    
-    return filtered_servers
+    return servers
 
 
 @api_router.get("/dashboard/metrics")
