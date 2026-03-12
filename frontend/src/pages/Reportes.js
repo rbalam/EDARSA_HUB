@@ -64,17 +64,27 @@ const Reportes = () => {
 
   const loadServers = async () => {
     try {
+      console.log('Cargando servidores...');
       const response = await api.get('/servers');
-      setServers(response.data);
+      console.log('Respuesta servers:', response.status, response.data);
+      const data = Array.isArray(response.data) ? response.data : [];
+      console.log('Servidores cargados:', data.length);
+      setServers(data);
+      if (data.length === 0) {
+        console.warn('No se recibieron servidores');
+      }
     } catch (error) {
-      toast.error('Error al cargar servidores');
+      console.error('Error al cargar servidores:', error.response?.status, error.response?.data);
+      toast.error('Error al cargar servidores: ' + (error.response?.data?.detail || error.message));
+      setServers([]);
     }
   };
 
   const loadSucursales = async () => {
     try {
       const response = await api.get(`/servers/${filters.server_id}/sucursales`);
-      setSucursales(response.data);
+      const data = Array.isArray(response.data) ? response.data : [];
+      setSucursales(data);
     } catch (error) {
       console.error('Error al cargar sucursales:', error);
       setSucursales([]);
@@ -395,17 +405,21 @@ const Reportes = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Servidor</Label>
+              <Label>Servidor {servers.length === 0 && <span className="text-red-500 text-xs">(Cargando...)</span>}</Label>
               <Select value={filters.server_id} onValueChange={(value) => setFilters({...filters, server_id: value, sucursal_id: '', almacen_id: '', sucursal: '', almacen: ''})}>
                 <SelectTrigger data-testid="server-select">
-                  <SelectValue placeholder="Selecciona un servidor" />
+                  <SelectValue placeholder={servers.length === 0 ? "Cargando servidores..." : "Selecciona un servidor"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {servers.map((server) => (
-                    <SelectItem key={server.id} value={server.id}>
-                      {server.name} ({server.system_type})
-                    </SelectItem>
-                  ))}
+                  {servers.length === 0 ? (
+                    <SelectItem value="loading" disabled>No hay servidores disponibles</SelectItem>
+                  ) : (
+                    servers.map((server) => (
+                      <SelectItem key={server.id} value={server.id}>
+                        {server.name} ({server.system_type})
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

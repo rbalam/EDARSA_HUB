@@ -631,12 +631,18 @@ def user_has_server_access(user: Dict, server_id: str) -> bool:
 
 def filter_servers_by_permissions(servers: List[Dict], user: Dict) -> List[Dict]:
     """Filtra servidores según permisos del usuario"""
-    if user.get('role') == 'Administrador':
+    role = user.get('role', '')
+    logging.info(f"filter_servers: role={role}, total_servers={len(servers)}")
+    if role == 'Administrador':
+        logging.info("Usuario es Admin, retornando todos los servidores")
         return servers
     allowed = user.get('allowed_servers', [])
     if not allowed:
+        logging.info("Usuario sin servidores asignados, retornando lista vacía")
         return []
-    return [s for s in servers if s.get('id') in allowed]
+    filtered = [s for s in servers if s.get('id') in allowed]
+    logging.info(f"Filtrado: {len(filtered)} servidores")
+    return filtered
 
 def filter_sucursales_by_permissions(sucursales: List[Dict], user: Dict, server_id: str) -> List[Dict]:
     """Filtra sucursales según permisos del usuario"""

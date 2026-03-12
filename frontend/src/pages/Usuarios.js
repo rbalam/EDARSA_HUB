@@ -112,6 +112,7 @@ const Usuarios = () => {
   };
 
   const openPermissionsDialog = async (user) => {
+    console.log('Abriendo permisos para:', user.name);
     setSelectedUser(user);
     setPermissionsData({
       allowed_servers: user.allowed_servers || [],
@@ -119,13 +120,14 @@ const Usuarios = () => {
       allowed_warehouses: user.allowed_warehouses || {}
     });
     
-    // Cargar sucursales y departamentos para todos los servidores
-    for (const server of servers) {
-      await loadSucursalesForServer(server.id);
-      await loadDepartamentosForServer(server.id);
-    }
-    
+    // Abrir el diálogo primero
     setPermissionsDialogOpen(true);
+    
+    // Luego cargar sucursales y departamentos en background
+    for (const server of servers) {
+      loadSucursalesForServer(server.id);
+      loadDepartamentosForServer(server.id);
+    }
   };
 
   const savePermissions = async () => {
