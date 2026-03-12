@@ -111,11 +111,24 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 - Email: `admin@inventario.com`
 - Password: `admin123`
 
+### MPRO (ManagmentPro)
+- Servidor: `54.39.104.176`
+- Puerto: `1433`
+- Base de datos: `CENTRAL2020`
+- Usuario: `HRLectura`
+- Password: `National09$`
+
 ### SoftRestaurant (Cienfuegos)
 - Servidor: `servercienfuegos.ddns.net,6669\nationalsoft`
 - Usuario: `CFLectura`
 - Password: `National09`
 - Base de datos: `softrestaurant95pro`
+
+### SoftRestaurant (LA ESTELAR)
+- Servidor: `serverestelar.ddns.net,6669`
+- Usuario: `STLectura`
+- Password: `National09`
+- Base de datos: `softrestaurant12`
 
 ## Notas Técnicas
 
