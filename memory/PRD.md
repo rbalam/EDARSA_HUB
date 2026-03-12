@@ -43,6 +43,18 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 
 ## Lo Implementado
 
+### 2025-03-12 - Dashboard de Inventarios con Gráficos Interactivos
+- **Rediseño completo del Dashboard** con gráficos de análisis de inventarios
+- **KPIs en tiempo real**: Costo Diferencias, Faltantes, Sobrantes, Items Revisados, Precision
+- **Gráficos interactivos con Recharts y Zoom**:
+  - Top 10 Faltantes por Costo
+  - Top 10 Faltantes por Cantidad
+  - Comparativo Inicio vs Fin de Mes por Almacén
+  - Diferencias por Grupo/Categoría (pastel)
+  - Resumen Acumulado por Almacén (barras apiladas)
+- **Tabla detallada** por almacén con estado (OK/Atención/Crítico)
+- **Backend**: Endpoint `/api/dashboard/inventory-summary` con análisis usando Pandas
+
 ### 2025-03-11 - Asistente de Configuración de Consultas SQL
 - **Nuevo componente**: `QueryConfigWizard.js` - Asistente paso a paso para configurar consultas
 - **Características**:
@@ -72,18 +84,17 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 ## Pendiente / Backlog
 
 ### P1 - Alta Prioridad
+- [ ] Implementar dashboard para MPRO (actualmente solo funciona con SoftRestaurant)
 - [ ] Verificar y corregir exportación Excel/PDF (no descarga archivos)
-- [ ] Integrar las consultas configuradas con el generador de reportes de análisis
 
 ### P2 - Media Prioridad
 - [ ] Agregar paginación al reporte de inventario
-- [ ] Eliminar endpoint de debug `/api/debug/test-queries`
-- [ ] Configurar consultas SQL para servidor ManagmentPro
+- [ ] Integrar consultas configuradas con el reporte de análisis de inventario
 
 ### P3 - Baja Prioridad / Futuro
 - [ ] Envío de reportes por correo electrónico
-- [ ] Gráficos para visualización de datos
 - [ ] Configuración por grupo de productos
+- [ ] Filtrar dashboard por permisos de usuario (sucursales específicas)
 
 ## Credenciales de Prueba
 

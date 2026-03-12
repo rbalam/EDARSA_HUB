@@ -1948,18 +1948,249 @@ ORDER BY V.Vn_Fecha DESC
 
 # ============= DASHBOARD =============
 
+def get_dashboard_inventory_query_softrestaurant():
+    """
+    Consulta para obtener datos de inventario físico de SoftRestaurant
+    para el dashboard con análisis de diferencias
+    """
+    return """
+    WITH InventariosMes AS (
+        SELECT 
+            idalmacen1 as idalmacen,
+            MIN(folio) as primer_folio,
+            MAX(folio) as ultimo_folio,
+            MIN(fecha) as primera_fecha,
+            MAX(fecha) as ultima_fecha
+        FROM invfisico
+        WHERE cancelado = 0
+            AND MONTH(fecha) = MONTH(GETDATE())
+            AND YEAR(fecha) = YEAR(GETDATE())
+        GROUP BY idalmacen1
+    )
+    SELECT 
+        INV.folio,
+        INV.fecha,
+        INV.idalmacen1 as idalmacen,
+        ALM.nombre as almacen_nombre,
+        DET.idpresentacion as codigo,
+        COALESCE(IP.descripcion, I.descripcion, DET.idpresentacion) as descripcion,
+        COALESCE(GS.descripcion, 'Sin Grupo') as grupo,
+        DET.costo as costo_unitario,
+        DET.existenciaalmacen1 as existencia_teorica,
+        DET.fisicoalmacen1 as existencia_fisica,
+        DET.diferenciaalmacen1 as diferencia,
+        (DET.diferenciaalmacen1 * DET.costo) as costo_diferencia,
+        CASE 
+            WHEN INV.folio = IM.primer_folio THEN 'INICIAL'
+            WHEN INV.folio = IM.ultimo_folio THEN 'FINAL'
+            ELSE 'INTERMEDIO'
+        END as tipo_inventario
+    FROM invfisico INV
+    INNER JOIN invfisicomovtos DET ON DET.folio = INV.folio
+    INNER JOIN InventariosMes IM ON IM.idalmacen = INV.idalmacen1 
+        AND (INV.folio = IM.primer_folio OR INV.folio = IM.ultimo_folio)
+    LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = DET.idpresentacion
+    LEFT JOIN insumos I ON I.idinsumo = RTRIM(DET.idinsumo)
+    LEFT JOIN gruposi GS ON GS.idgruposi = COALESCE(IP.idgruposi, I.idgruposi)
+    LEFT JOIN almacen ALM ON ALM.idalmacen = INV.idalmacen1
+    WHERE INV.cancelado = 0
+    ORDER BY INV.idalmacen1, INV.folio, DET.idpresentacion
+    """
+
+
+@api_router.get("/dashboard/inventory-summary")
+async def get_dashboard_inventory_summary(
+    server_id: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Obtiene resumen de inventarios para el dashboard.
+    Incluye datos para gráficos de diferencias, top faltantes, etc.
+    """
+    try:
+        # Si no se especifica servidor, obtener el primero configurado del usuario
+        query = {"active": True, "queries_configured": True}
+        
+        if server_id:
+            query["id"] = server_id
+        
+        server = await db.servers.find_one(query)
+        
+        if not server:
+            return {
+                "success": False,
+                "message": "No hay servidores configurados con consultas SQL",
+                "data": {}
+            }
+        
+        # Ejecutar consulta según el tipo de sistema
+        if server['system_type'] == 'SoftRestaurant':
+            query_sql = get_dashboard_inventory_query_softrestaurant()
+        else:
+            # Para MPRO u otros sistemas, usar consulta genérica o personalizada
+            return {
+                "success": False,
+                "message": f"Dashboard no implementado para {server['system_type']}",
+                "data": {}
+            }
+        
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            query_sql
+        )
+        
+        if not results:
+            return {
+                "success": True,
+                "message": "No hay datos de inventario para el mes actual",
+                "data": {
+                    "server_name": server['name'],
+                    "almacenes": [],
+                    "top_faltantes_costo": [],
+                    "top_faltantes_cantidad": [],
+                    "resumen_por_almacen": [],
+                    "resumen_por_grupo": [],
+                    "kpis": {}
+                }
+            }
+        
+        import pandas as pd
+        from decimal import Decimal
+        
+        # Convertir a DataFrame para análisis
+        df = pd.DataFrame(results)
+        
+        # Convertir Decimal a float
+        numeric_cols = ['costo_unitario', 'existencia_teorica', 'existencia_fisica', 'diferencia', 'costo_diferencia']
+        for col in numeric_cols:
+            if col in df.columns:
+                df[col] = df[col].apply(lambda x: float(x) if isinstance(x, Decimal) else x)
+        
+        # Separar inventarios inicial y final
+        df_inicial = df[df['tipo_inventario'] == 'INICIAL'].copy()
+        df_final = df[df['tipo_inventario'] == 'FINAL'].copy()
+        
+        # KPIs generales (basados en inventario final)
+        total_diferencia_costo = df_final['costo_diferencia'].sum() if 'costo_diferencia' in df_final.columns else 0
+        total_items_con_diferencia = len(df_final[df_final['diferencia'] != 0])
+        total_items = len(df_final)
+        precision = ((total_items - total_items_con_diferencia) / total_items * 100) if total_items > 0 else 0
+        
+        # Top 10 faltantes por costo (diferencia negativa = faltante)
+        df_faltantes = df_final[df_final['diferencia'] < 0].copy()
+        top_faltantes_costo = df_faltantes.nsmallest(10, 'costo_diferencia')[
+            ['codigo', 'descripcion', 'almacen_nombre', 'diferencia', 'costo_unitario', 'costo_diferencia']
+        ].to_dict('records')
+        
+        # Top 10 faltantes por cantidad
+        top_faltantes_cantidad = df_faltantes.nsmallest(10, 'diferencia')[
+            ['codigo', 'descripcion', 'almacen_nombre', 'diferencia', 'costo_unitario', 'costo_diferencia']
+        ].to_dict('records')
+        
+        # Resumen por almacén
+        resumen_almacen = df_final.groupby(['idalmacen', 'almacen_nombre']).agg({
+            'diferencia': 'sum',
+            'costo_diferencia': 'sum',
+            'codigo': 'count'
+        }).reset_index()
+        resumen_almacen.columns = ['idalmacen', 'almacen', 'total_diferencia', 'total_costo_diferencia', 'total_items']
+        resumen_almacen = resumen_almacen.to_dict('records')
+        
+        # Resumen por grupo/categoría
+        resumen_grupo = df_final.groupby('grupo').agg({
+            'diferencia': 'sum',
+            'costo_diferencia': 'sum',
+            'codigo': 'count'
+        }).reset_index()
+        resumen_grupo.columns = ['grupo', 'total_diferencia', 'total_costo_diferencia', 'total_items']
+        resumen_grupo = resumen_grupo.nsmallest(15, 'total_costo_diferencia').to_dict('records')
+        
+        # Comparativo inicial vs final por almacén
+        comparativo_almacen = []
+        almacenes = df['idalmacen'].unique()
+        for alm in almacenes:
+            df_alm_ini = df_inicial[df_inicial['idalmacen'] == alm]
+            df_alm_fin = df_final[df_final['idalmacen'] == alm]
+            
+            if len(df_alm_ini) > 0 or len(df_alm_fin) > 0:
+                alm_nombre = df_alm_fin['almacen_nombre'].iloc[0] if len(df_alm_fin) > 0 else df_alm_ini['almacen_nombre'].iloc[0]
+                comparativo_almacen.append({
+                    'almacen': alm,
+                    'almacen_nombre': alm_nombre,
+                    'diferencia_inicial': float(df_alm_ini['costo_diferencia'].sum()) if len(df_alm_ini) > 0 else 0,
+                    'diferencia_final': float(df_alm_fin['costo_diferencia'].sum()) if len(df_alm_fin) > 0 else 0,
+                    'items_inicial': len(df_alm_ini),
+                    'items_final': len(df_alm_fin),
+                    'fecha_inicial': str(df_alm_ini['fecha'].iloc[0]) if len(df_alm_ini) > 0 else None,
+                    'fecha_final': str(df_alm_fin['fecha'].iloc[0]) if len(df_alm_fin) > 0 else None
+                })
+        
+        # Obtener lista de almacenes únicos
+        almacenes_list = df[['idalmacen', 'almacen_nombre']].drop_duplicates().to_dict('records')
+        
+        return {
+            "success": True,
+            "message": "Datos obtenidos correctamente",
+            "data": {
+                "server_id": server['id'],
+                "server_name": server['name'],
+                "system_type": server['system_type'],
+                "almacenes": almacenes_list,
+                "kpis": {
+                    "total_diferencia_costo": round(total_diferencia_costo, 2),
+                    "total_items_con_diferencia": total_items_con_diferencia,
+                    "total_items": total_items,
+                    "precision_inventario": round(precision, 2),
+                    "total_faltantes": len(df_faltantes),
+                    "total_sobrantes": len(df_final[df_final['diferencia'] > 0])
+                },
+                "top_faltantes_costo": top_faltantes_costo,
+                "top_faltantes_cantidad": top_faltantes_cantidad,
+                "resumen_por_almacen": resumen_almacen,
+                "resumen_por_grupo": resumen_grupo,
+                "comparativo_almacen": comparativo_almacen
+            }
+        }
+        
+    except Exception as e:
+        logging.error(f"Error en dashboard inventory summary: {str(e)}")
+        return {
+            "success": False,
+            "message": f"Error: {str(e)}",
+            "data": {}
+        }
+
+
+@api_router.get("/dashboard/servers-configured")
+async def get_dashboard_servers(current_user: Dict = Depends(get_current_user)):
+    """
+    Obtiene lista de servidores configurados para el selector del dashboard
+    """
+    servers = await db.servers.find(
+        {"active": True, "queries_configured": True},
+        {"_id": 0, "id": 1, "name": 1, "system_type": 1}
+    ).to_list(100)
+    
+    return servers
+
+
 @api_router.get("/dashboard/metrics")
 async def get_dashboard_metrics(current_user: Dict = Depends(get_current_user)):
+    """Métricas básicas para el dashboard - mantenido por compatibilidad"""
     total_servers = await db.servers.count_documents({"active": True})
     total_users = await db.users.count_documents({"active": True})
     total_alerts = await db.alerts.count_documents({"active": True})
-    total_queries = await db.queries.count_documents({})
+    servers_configured = await db.servers.count_documents({"active": True, "queries_configured": True})
     
     return {
         "total_servers": total_servers,
         "total_users": total_users,
         "total_alerts": total_alerts,
-        "total_queries": total_queries
+        "servers_configured": servers_configured
     }
 
 app.include_router(api_router)
