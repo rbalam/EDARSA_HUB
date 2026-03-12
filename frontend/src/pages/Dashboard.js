@@ -92,16 +92,14 @@ const Dashboard = () => {
   const loadServers = async () => {
     try {
       const response = await api.get('/dashboard/servers-configured');
-      const serversData = Array.isArray(response.data) ? response.data : [];
-      setServers(serversData);
-      if (serversData.length > 0) {
-        setSelectedServer(serversData[0].id);
+      setServers(response.data);
+      if (response.data.length > 0) {
+        setSelectedServer(response.data[0].id);
       } else {
         setLoading(false);
       }
     } catch (error) {
       console.error('Error loading servers:', error);
-      setServers([]);
       setError('Error al cargar servidores');
       setLoading(false);
     }
@@ -228,20 +226,16 @@ const Dashboard = () => {
         </div>
         
         <div className="flex items-center gap-3">
-          <Select value={selectedServer || ""} onValueChange={setSelectedServer}>
+          <Select value={selectedServer} onValueChange={setSelectedServer}>
             <SelectTrigger className="w-[250px]" data-testid="server-selector">
               <SelectValue placeholder="Seleccionar servidor" />
             </SelectTrigger>
             <SelectContent>
-              {servers.length === 0 ? (
-                <SelectItem value="no-servers" disabled>No hay servidores disponibles</SelectItem>
-              ) : (
-                servers.map(server => (
-                  <SelectItem key={server.id} value={server.id}>
-                    {server.name} ({server.system_type})
-                  </SelectItem>
-                ))
-              )}
+              {servers.map(server => (
+                <SelectItem key={server.id} value={server.id}>
+                  {server.name} ({server.system_type})
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           

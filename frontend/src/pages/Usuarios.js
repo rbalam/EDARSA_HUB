@@ -16,7 +16,6 @@ const Usuarios = () => {
   const [servers, setServers] = useState([]);
   const [companyGroups, setCompanyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingPermissions, setLoadingPermissions] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -46,7 +45,6 @@ const Usuarios = () => {
     loadUsers();
     loadServers();
     loadCompanyGroups();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUsers = async () => {
@@ -67,10 +65,10 @@ const Usuarios = () => {
       const serversData = Array.isArray(response.data) ? response.data : [];
       setServers(serversData);
       
-      // Cargar almacenes y sucursales para cada servidor de forma secuencial
+      // Cargar almacenes y sucursales para cada servidor
       for (const server of serversData) {
-        await loadWarehousesForServer(server.id);
-        await loadSucursalesForServer(server.id);
+        loadWarehousesForServer(server.id);
+        loadSucursalesForServer(server.id);
       }
     } catch (error) {
       console.error('Error al cargar servidores:', error);
@@ -105,7 +103,6 @@ const Usuarios = () => {
     try {
       const response = await api.get(`/servers/${serverId}/sucursales`);
       const sucursales = Array.isArray(response.data) ? response.data : [];
-      console.log(`Sucursales cargadas para servidor ${serverId}:`, sucursales.length);
       setSucursalesMap(prev => ({
         ...prev,
         [serverId]: sucursales
@@ -141,7 +138,7 @@ const Usuarios = () => {
     }
   };
   
-  const handleOpenPermissions = async (user) => {
+  const handleOpenPermissions = (user) => {
     setSelectedUser(user);
     setPermissionsData({
       company_group: user.company_group || '',
@@ -150,19 +147,6 @@ const Usuarios = () => {
       allowed_sucursales: user.allowed_sucursales || {}
     });
     setPermissionsDialogOpen(true);
-    setLoadingPermissions(true);
-    
-    // Recargar sucursales y almacenes para todos los servidores
-    try {
-      for (const server of servers) {
-        await loadSucursalesForServer(server.id);
-        await loadWarehousesForServer(server.id);
-      }
-    } catch (error) {
-      console.error('Error al cargar datos:', error);
-    } finally {
-      setLoadingPermissions(false);
-    }
   };
   
   const handleSavePermissions = async () => {
@@ -273,12 +257,6 @@ const Usuarios = () => {
     return <User className="h-4 w-4" />;
   };
 
-  // Contar permisos del usuario
-  const countPermissions = (user) => {
-    const sucursalesCount = Object.values(user.allowed_sucursales || {}).reduce((acc, arr) => acc + (arr?.length || 0), 0);
-    return { sucursales: sucursalesCount };
-  };
-
   return (
     <div className="space-y-6" data-testid="usuarios-page">
       <div className="flex items-center justify-between">
@@ -304,96 +282,86 @@ const Usuarios = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {users.map((user) => {
-            const perms = countPermissions(user);
-            return (
-              <Card key={user.id} className="border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors" data-testid="user-card">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-zinc-100 p-2 rounded-lg">
-                        <User className="h-5 w-5 text-zinc-600" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg font-semibold">{user.name}</CardTitle>
-                        <p className="text-xs text-zinc-500 mt-1">{user.email}</p>
-                      </div>
+          {users.map((user) => (
+            <Card key={user.id} className="border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors" data-testid="user-card">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-zinc-100 p-2 rounded-lg">
+                      <User className="h-5 w-5 text-zinc-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-semibold">{user.name}</CardTitle>
+                      <p className="text-xs text-zinc-500 mt-1">{user.email}</p>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Badge className={`${getRoleBadge(user.role)} border`}>
-                        {getRoleIcon(user.role)}
-                        <span className="ml-1">{user.role}</span>
-                      </Badge>
-                    </div>
-                    
-                    <div className="text-sm">
-                      <span className="text-zinc-600">Estado:</span>
-                      <span className={`ml-2 font-medium ${user.active ? 'text-green-600' : 'text-red-600'}`}>
-                        {user.active ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </div>
-                    
-                    {user.company_group && (
-                      <div className="text-sm">
-                        <span className="text-zinc-600">Grupo:</span>
-                        <span className="ml-2 font-medium text-zinc-900">{user.company_group}</span>
-                      </div>
-                    )}
-                    
-                    {user.allowed_servers && user.allowed_servers.length > 0 && (
-                      <div className="text-sm">
-                        <span className="text-zinc-600">Servidores:</span>
-                        <span className="ml-2 font-medium text-blue-600">{user.allowed_servers.length} asignados</span>
-                      </div>
-                    )}
-
-                    {perms.sucursales > 0 && (
-                      <div className="text-sm">
-                        <span className="text-zinc-600">Sucursales:</span>
-                        <span className="ml-2 font-medium text-purple-600">{perms.sucursales} asignadas</span>
-                      </div>
-                    )}
-                    
-                    {user.role === 'Administrador' && (
-                      <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                        Acceso completo a todos los servidores
-                      </div>
-                    )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Badge className={`${getRoleBadge(user.role)} border`}>
+                      {getRoleIcon(user.role)}
+                      <span className="ml-1">{user.role}</span>
+                    </Badge>
                   </div>
                   
-                  <div className="flex gap-2 mt-4">
-                    {user.role !== 'Administrador' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => handleOpenPermissions(user)}
-                        data-testid="edit-permissions-button"
-                      >
-                        <Settings className="h-4 w-4 mr-1" />
-                        Permisos
-                      </Button>
-                    )}
+                  <div className="text-sm">
+                    <span className="text-zinc-600">Estado:</span>
+                    <span className={`ml-2 font-medium ${user.active ? 'text-green-600' : 'text-red-600'}`}>
+                      {user.active ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
+                  
+                  {user.company_group && (
+                    <div className="text-sm">
+                      <span className="text-zinc-600">Grupo:</span>
+                      <span className="ml-2 font-medium text-zinc-900">{user.company_group}</span>
+                    </div>
+                  )}
+                  
+                  {user.allowed_servers && user.allowed_servers.length > 0 && (
+                    <div className="text-sm">
+                      <span className="text-zinc-600">Servidores:</span>
+                      <span className="ml-2 font-medium text-blue-600">{user.allowed_servers.length} asignados</span>
+                    </div>
+                  )}
+                  
+                  {user.role === 'Administrador' && (
+                    <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                      Acceso completo a todos los servidores
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex gap-2 mt-4">
+                  {user.role !== 'Administrador' && (
                     <Button 
                       variant="outline" 
                       size="sm" 
                       className="flex-1"
-                      onClick={() => handleDelete(user.id)}
-                      disabled={user.role === 'Administrador' && users.filter(u => u.role === 'Administrador').length === 1}
-                      data-testid="delete-user-button"
+                      onClick={() => handleOpenPermissions(user)}
+                      data-testid="edit-permissions-button"
                     >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Eliminar
+                      <Settings className="h-4 w-4 mr-1" />
+                      Permisos
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleDelete(user.id)}
+                    disabled={user.role === 'Administrador' && users.filter(u => u.role === 'Administrador').length === 1}
+                    data-testid="delete-user-button"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Eliminar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 
@@ -479,11 +447,11 @@ const Usuarios = () => {
       
       {/* Permissions Dialog */}
       <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Configurar Permisos - {selectedUser?.name}</DialogTitle>
             <DialogDescription>
-              Define a qué servidores, sucursales y almacenes puede acceder este usuario
+              Define a qué servidores y almacenes puede acceder este usuario
             </DialogDescription>
           </DialogHeader>
           
@@ -510,25 +478,18 @@ const Usuarios = () => {
               </p>
             </div>
             
-            {/* Servers, Sucursales & Warehouses */}
+            {/* Servers & Warehouses */}
             <div className="space-y-4">
               <Label className="text-sm font-medium flex items-center gap-2">
                 <Server className="h-4 w-4" />
-                Acceso a Servidores, Sucursales y Almacenes
-                {loadingPermissions && (
-                  <span className="text-xs text-blue-500 ml-2">(Cargando datos...)</span>
-                )}
+                Acceso a Servidores
               </Label>
               
               {servers.length === 0 ? (
                 <p className="text-sm text-zinc-500">No hay servidores configurados</p>
               ) : (
                 <div className="space-y-4">
-                  {servers.map((server) => {
-                    const serverSucursales = sucursalesMap[server.id] || [];
-                    const serverWarehouses = warehousesMap[server.id] || [];
-                    
-                    return (
+                  {servers.map((server) => (
                     <div key={server.id} className="border border-zinc-200 rounded-lg p-4">
                       <div className="flex items-center gap-3 mb-3">
                         <Checkbox
@@ -541,21 +502,18 @@ const Usuarios = () => {
                           <Server className="h-4 w-4 text-zinc-600" />
                           <span className="font-medium">{server.name}</span>
                           <Badge variant="outline" className="text-xs">{server.system_type}</Badge>
-                          {serverSucursales.length > 0 && (
-                            <span className="text-xs text-purple-600">({serverSucursales.length} sucursales)</span>
-                          )}
                         </Label>
                       </div>
                       
-                      {/* Sucursales for this server - mostrar siempre que el servidor esté seleccionado Y tenga sucursales */}
-                      {permissionsData.allowed_servers.includes(server.id) && serverSucursales.length > 0 && (
+                      {/* Sucursales for this server */}
+                      {permissionsData.allowed_servers.includes(server.id) && sucursalesMap[server.id] && sucursalesMap[server.id].length > 0 && (
                         <div className="ml-7 mt-3 pt-3 border-t border-zinc-100">
                           <Label className="text-xs text-zinc-600 flex items-center gap-1 mb-2">
                             <Building2 className="h-3 w-3" />
                             Sucursales (deja vacío para acceso a todas)
                           </Label>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto bg-zinc-50 p-2 rounded">
-                            {serverSucursales.map((sucursal) => (
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto bg-purple-50 p-2 rounded">
+                            {sucursalesMap[server.id].map((sucursal) => (
                               <div key={sucursal.id} className="flex items-center gap-2">
                                 <Checkbox
                                   id={`sucursal-${server.id}-${sucursal.id}`}
@@ -576,14 +534,14 @@ const Usuarios = () => {
                       )}
                       
                       {/* Warehouses for this server */}
-                      {permissionsData.allowed_servers.includes(server.id) && serverWarehouses.length > 0 && (
+                      {permissionsData.allowed_servers.includes(server.id) && warehousesMap[server.id] && warehousesMap[server.id].length > 0 && (
                         <div className="ml-7 mt-3 pt-3 border-t border-zinc-100">
                           <Label className="text-xs text-zinc-600 flex items-center gap-1 mb-2">
                             <Warehouse className="h-3 w-3" />
                             Almacenes específicos (deja vacío para acceso a todos)
                           </Label>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto bg-zinc-50 p-2 rounded">
-                            {serverWarehouses.map((warehouse) => (
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                            {warehousesMap[server.id].map((warehouse) => (
                               <div key={warehouse.codigo} className="flex items-center gap-2">
                                 <Checkbox
                                   id={`warehouse-${server.id}-${warehouse.codigo}`}
@@ -603,8 +561,7 @@ const Usuarios = () => {
                         </div>
                       )}
                     </div>
-                  );
-                  })}
+                  ))}
                 </div>
               )}
             </div>
@@ -612,17 +569,12 @@ const Usuarios = () => {
             {/* Summary */}
             <div className="bg-zinc-50 rounded-lg p-4 space-y-2">
               <h4 className="text-sm font-medium text-zinc-700">Resumen de Permisos</h4>
-              <div className="text-sm text-zinc-600 space-y-1">
+              <div className="text-sm text-zinc-600">
                 <p>
                   <strong>Servidores:</strong> {permissionsData.allowed_servers.length === 0 
                     ? 'Ninguno (sin acceso)' 
                     : `${permissionsData.allowed_servers.length} servidor(es)`}
                 </p>
-                {Object.keys(permissionsData.allowed_sucursales).filter(k => permissionsData.allowed_sucursales[k]?.length > 0).length > 0 && (
-                  <p>
-                    <strong>Sucursales específicas:</strong> Configuradas para {Object.keys(permissionsData.allowed_sucursales).filter(k => permissionsData.allowed_sucursales[k]?.length > 0).length} servidor(es)
-                  </p>
-                )}
                 {Object.keys(permissionsData.allowed_warehouses).filter(k => permissionsData.allowed_warehouses[k]?.length > 0).length > 0 && (
                   <p>
                     <strong>Almacenes específicos:</strong> Configurados para {Object.keys(permissionsData.allowed_warehouses).filter(k => permissionsData.allowed_warehouses[k]?.length > 0).length} servidor(es)
