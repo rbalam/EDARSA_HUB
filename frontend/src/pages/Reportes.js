@@ -65,16 +65,17 @@ const Reportes = () => {
   const loadServers = async () => {
     try {
       const response = await api.get('/servers');
-      setServers(response.data);
+      setServers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       toast.error('Error al cargar servidores');
+      setServers([]);
     }
   };
 
   const loadSucursales = async () => {
     try {
       const response = await api.get(`/servers/${filters.server_id}/sucursales`);
-      setSucursales(response.data);
+      setSucursales(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error al cargar sucursales:', error);
       setSucursales([]);
@@ -86,7 +87,7 @@ const Reportes = () => {
       const response = await api.get(`/servers/${filters.server_id}/almacenes`, {
         params: { sucursal_id: filters.sucursal_id }
       });
-      setAlmacenes(response.data);
+      setAlmacenes(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error al cargar almacenes:', error);
       setAlmacenes([]);
@@ -101,7 +102,7 @@ const Reportes = () => {
           almacen_id: filters.almacen_id
         }
       });
-      setInventarios(response.data);
+      setInventarios(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error al cargar inventarios:', error);
       setInventarios([]);

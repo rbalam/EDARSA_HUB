@@ -53,13 +53,23 @@ class UserRole(BaseModel):
     name: str  # "Administrador", "Supervisor", "Usuario"
     permissions: List[str]
 
+class UserPermissions(BaseModel):
+    """Permisos detallados de un usuario"""
+    company_group: str = ""  # Grupo de empresas asignado
+    allowed_servers: List[str] = []  # IDs de servidores permitidos
+    allowed_warehouses: Dict[str, List[str]] = {}  # server_id -> [warehouse_ids]
+
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: EmailStr
     name: str
     role: str
-    sucursales: List[str] = []  # IDs de sucursales asignadas
+    sucursales: List[str] = []  # IDs de sucursales asignadas (legacy)
+    # Nuevos campos de permisos
+    company_group: str = ""  # Grupo de empresas (ej: "Grupo Norte", "Grupo Sur")
+    allowed_servers: List[str] = []  # IDs de servidores a los que tiene acceso
+    allowed_warehouses: Dict[str, List[str]] = {}  # server_id -> [warehouse_ids] específicos
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     active: bool = True
 
@@ -69,6 +79,9 @@ class UserCreate(BaseModel):
     password: str
     role: str
     sucursales: List[str] = []
+    company_group: str = ""
+    allowed_servers: List[str] = []
+    allowed_warehouses: Dict[str, List[str]] = {}
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -223,6 +236,47 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     return user
+
+def user_has_server_access(user: Dict, server_id: str) -> bool:
+    """Verifica si un usuario tiene acceso a un servidor específico"""
+    # Los administradores tienen acceso a todo
+    if user.get('role') == 'Administrador':
+        return True
+    
+    # Si no tiene servidores permitidos configurados, no tiene acceso
+    allowed_servers = user.get('allowed_servers', [])
+    if not allowed_servers:
+        return False
+    
+    return server_id in allowed_servers
+
+def user_has_warehouse_access(user: Dict, server_id: str, warehouse_id: str) -> bool:
+    """Verifica si un usuario tiene acceso a un almacén específico"""
+    # Los administradores tienen acceso a todo
+    if user.get('role') == 'Administrador':
+        return True
+    
+    # Primero verificar acceso al servidor
+    if not user_has_server_access(user, server_id):
+        return False
+    
+    # Si tiene acceso al servidor pero no hay almacenes específicos configurados, tiene acceso a todos
+    allowed_warehouses = user.get('allowed_warehouses', {})
+    if server_id not in allowed_warehouses or not allowed_warehouses[server_id]:
+        return True
+    
+    return warehouse_id in allowed_warehouses[server_id]
+
+def filter_servers_by_permissions(servers: List[Dict], user: Dict) -> List[Dict]:
+    """Filtra la lista de servidores según los permisos del usuario"""
+    if user.get('role') == 'Administrador':
+        return servers
+    
+    allowed = user.get('allowed_servers', [])
+    if not allowed:
+        return []
+    
+    return [s for s in servers if s.get('id') in allowed]
 
 # ============= SQL SERVER FUNCTIONS =============
 
@@ -591,6 +645,47 @@ async def delete_user(user_id: str, current_user: Dict = Depends(get_current_use
     await db.users.update_one({"id": user_id}, {"$set": {"active": False}})
     return {"message": "Usuario desactivado"}
 
+@api_router.put("/users/{user_id}/permissions")
+async def update_user_permissions(user_id: str, permissions: Dict, current_user: Dict = Depends(get_current_user)):
+    """Actualiza los permisos de un usuario"""
+    if current_user['role'] != 'Administrador':
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    # Validar que el usuario existe
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # Solo actualizar campos de permisos permitidos
+    update_data = {}
+    if 'company_group' in permissions:
+        update_data['company_group'] = permissions['company_group']
+    if 'allowed_servers' in permissions:
+        update_data['allowed_servers'] = permissions['allowed_servers']
+    if 'allowed_warehouses' in permissions:
+        update_data['allowed_warehouses'] = permissions['allowed_warehouses']
+    
+    if update_data:
+        await db.users.update_one({"id": user_id}, {"$set": update_data})
+    
+    return {"message": "Permisos actualizados", "updated_fields": list(update_data.keys())}
+
+@api_router.get("/company-groups")
+async def get_company_groups(current_user: Dict = Depends(get_current_user)):
+    """Obtiene la lista de grupos de empresas disponibles"""
+    # Obtener grupos únicos de usuarios existentes
+    groups = await db.users.distinct("company_group")
+    # Filtrar vacíos y None
+    groups = [g for g in groups if g]
+    
+    # Agregar algunos grupos predefinidos si no existen
+    default_groups = ["Grupo Principal", "Grupo Norte", "Grupo Sur", "Grupo Centro"]
+    for dg in default_groups:
+        if dg not in groups:
+            groups.append(dg)
+    
+    return sorted(groups)
+
 # ============= SERVERS =============
 
 @api_router.post("/servers")
@@ -617,10 +712,16 @@ async def create_server(server_data: ServerCreate, current_user: Dict = Depends(
 @api_router.get("/servers", response_model=List[Server])
 async def get_servers(current_user: Dict = Depends(get_current_user)):
     servers = await db.servers.find({"active": True}, {"_id": 0, "password": 0}).to_list(1000)
-    return servers
+    # Filtrar según permisos del usuario
+    filtered_servers = filter_servers_by_permissions(servers, current_user)
+    return filtered_servers
 
 @api_router.get("/servers/{server_id}")
 async def get_server(server_id: str, current_user: Dict = Depends(get_current_user)):
+    # Verificar permiso de acceso
+    if not user_has_server_access(current_user, server_id):
+        raise HTTPException(status_code=403, detail="No tiene acceso a este servidor")
+    
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0, "password": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")

@@ -7,33 +7,91 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, User, Shield, Eye } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Trash2, User, Shield, Eye, Settings, Server, Warehouse } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Usuarios = () => {
   const [users, setUsers] = useState([]);
+  const [servers, setServers] = useState([]);
+  const [companyGroups, setCompanyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [warehousesMap, setWarehousesMap] = useState({}); // server_id -> warehouses[]
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     role: 'Usuario',
-    sucursales: []
+    sucursales: [],
+    company_group: '',
+    allowed_servers: [],
+    allowed_warehouses: {}
+  });
+  
+  const [permissionsData, setPermissionsData] = useState({
+    company_group: '',
+    allowed_servers: [],
+    allowed_warehouses: {}
   });
 
   useEffect(() => {
     loadUsers();
+    loadServers();
+    loadCompanyGroups();
   }, []);
 
   const loadUsers = async () => {
     try {
       const response = await api.get('/users');
-      setUsers(response.data);
+      setUsers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       toast.error('Error al cargar usuarios');
+      setUsers([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadServers = async () => {
+    try {
+      const response = await api.get('/servers');
+      const serversData = Array.isArray(response.data) ? response.data : [];
+      setServers(serversData);
+      
+      // Cargar almacenes para cada servidor
+      for (const server of serversData) {
+        loadWarehousesForServer(server.id);
+      }
+    } catch (error) {
+      console.error('Error al cargar servidores:', error);
+      setServers([]);
+    }
+  };
+  
+  const loadCompanyGroups = async () => {
+    try {
+      const response = await api.get('/company-groups');
+      setCompanyGroups(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error al cargar grupos:', error);
+      setCompanyGroups(['Grupo Principal', 'Grupo Norte', 'Grupo Sur', 'Grupo Centro']);
+    }
+  };
+
+  const loadWarehousesForServer = async (serverId) => {
+    try {
+      const response = await api.get(`/servers/${serverId}/departamentos`);
+      const warehouses = Array.isArray(response.data) ? response.data : [];
+      setWarehousesMap(prev => ({
+        ...prev,
+        [serverId]: warehouses
+      }));
+    } catch (error) {
+      console.error(`Error al cargar almacenes para servidor ${serverId}:`, error);
     }
   };
 
@@ -62,6 +120,72 @@ const Usuarios = () => {
       toast.error('Error al eliminar usuario');
     }
   };
+  
+  const handleOpenPermissions = (user) => {
+    setSelectedUser(user);
+    setPermissionsData({
+      company_group: user.company_group || '',
+      allowed_servers: user.allowed_servers || [],
+      allowed_warehouses: user.allowed_warehouses || {}
+    });
+    setPermissionsDialogOpen(true);
+  };
+  
+  const handleSavePermissions = async () => {
+    if (!selectedUser) return;
+    
+    try {
+      await api.put(`/users/${selectedUser.id}/permissions`, permissionsData);
+      toast.success('Permisos actualizados correctamente');
+      setPermissionsDialogOpen(false);
+      loadUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al actualizar permisos');
+    }
+  };
+  
+  const toggleServerAccess = (serverId) => {
+    const currentServers = [...permissionsData.allowed_servers];
+    const index = currentServers.indexOf(serverId);
+    
+    if (index > -1) {
+      // Quitar servidor y sus almacenes
+      currentServers.splice(index, 1);
+      const newWarehouses = { ...permissionsData.allowed_warehouses };
+      delete newWarehouses[serverId];
+      setPermissionsData({
+        ...permissionsData,
+        allowed_servers: currentServers,
+        allowed_warehouses: newWarehouses
+      });
+    } else {
+      // Agregar servidor
+      setPermissionsData({
+        ...permissionsData,
+        allowed_servers: [...currentServers, serverId]
+      });
+    }
+  };
+  
+  const toggleWarehouseAccess = (serverId, warehouseId) => {
+    const currentWarehouses = permissionsData.allowed_warehouses[serverId] || [];
+    const index = currentWarehouses.indexOf(warehouseId);
+    
+    let newWarehouseList;
+    if (index > -1) {
+      newWarehouseList = currentWarehouses.filter(w => w !== warehouseId);
+    } else {
+      newWarehouseList = [...currentWarehouses, warehouseId];
+    }
+    
+    setPermissionsData({
+      ...permissionsData,
+      allowed_warehouses: {
+        ...permissionsData.allowed_warehouses,
+        [serverId]: newWarehouseList
+      }
+    });
+  };
 
   const resetForm = () => {
     setFormData({
@@ -69,7 +193,10 @@ const Usuarios = () => {
       email: '',
       password: '',
       role: 'Usuario',
-      sucursales: []
+      sucursales: [],
+      company_group: '',
+      allowed_servers: [],
+      allowed_warehouses: {}
     });
   };
 
@@ -95,7 +222,7 @@ const Usuarios = () => {
           <h1 className="text-3xl font-extrabold text-zinc-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Usuarios
           </h1>
-          <p className="text-zinc-600 mt-1">Gestiona los usuarios del sistema</p>
+          <p className="text-zinc-600 mt-1">Gestiona los usuarios y sus permisos</p>
         </div>
         <Button 
           onClick={() => setDialogOpen(true)}
@@ -144,17 +271,40 @@ const Usuarios = () => {
                     </span>
                   </div>
                   
-                  {user.sucursales && user.sucursales.length > 0 && (
+                  {user.company_group && (
                     <div className="text-sm">
-                      <span className="text-zinc-600">Sucursales:</span>
-                      <p className="font-mono text-xs text-zinc-900 mt-1">
-                        {user.sucursales.length} asignadas
-                      </p>
+                      <span className="text-zinc-600">Grupo:</span>
+                      <span className="ml-2 font-medium text-zinc-900">{user.company_group}</span>
+                    </div>
+                  )}
+                  
+                  {user.allowed_servers && user.allowed_servers.length > 0 && (
+                    <div className="text-sm">
+                      <span className="text-zinc-600">Servidores:</span>
+                      <span className="ml-2 font-medium text-blue-600">{user.allowed_servers.length} asignados</span>
+                    </div>
+                  )}
+                  
+                  {user.role === 'Administrador' && (
+                    <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                      Acceso completo a todos los servidores
                     </div>
                   )}
                 </div>
                 
                 <div className="flex gap-2 mt-4">
+                  {user.role !== 'Administrador' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleOpenPermissions(user)}
+                      data-testid="edit-permissions-button"
+                    >
+                      <Settings className="h-4 w-4 mr-1" />
+                      Permisos
+                    </Button>
+                  )}
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -250,6 +400,132 @@ const Usuarios = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Permissions Dialog */}
+      <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Configurar Permisos - {selectedUser?.name}</DialogTitle>
+            <DialogDescription>
+              Define a qué servidores y almacenes puede acceder este usuario
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Company Group */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Grupo de Empresa</Label>
+              <Select 
+                value={permissionsData.company_group || "none"} 
+                onValueChange={(value) => setPermissionsData({...permissionsData, company_group: value === "none" ? "" : value})}
+              >
+                <SelectTrigger data-testid="company-group-select">
+                  <SelectValue placeholder="Selecciona un grupo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin grupo asignado</SelectItem>
+                  {companyGroups.map((group) => (
+                    <SelectItem key={group} value={group}>{group}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-zinc-500">
+                Los grupos permiten organizar usuarios por empresa o región
+              </p>
+            </div>
+            
+            {/* Servers & Warehouses */}
+            <div className="space-y-4">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Server className="h-4 w-4" />
+                Acceso a Servidores
+              </Label>
+              
+              {servers.length === 0 ? (
+                <p className="text-sm text-zinc-500">No hay servidores configurados</p>
+              ) : (
+                <div className="space-y-4">
+                  {servers.map((server) => (
+                    <div key={server.id} className="border border-zinc-200 rounded-lg p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Checkbox
+                          id={`server-${server.id}`}
+                          checked={permissionsData.allowed_servers.includes(server.id)}
+                          onCheckedChange={() => toggleServerAccess(server.id)}
+                          data-testid={`server-checkbox-${server.id}`}
+                        />
+                        <Label htmlFor={`server-${server.id}`} className="cursor-pointer flex items-center gap-2">
+                          <Server className="h-4 w-4 text-zinc-600" />
+                          <span className="font-medium">{server.name}</span>
+                          <Badge variant="outline" className="text-xs">{server.system_type}</Badge>
+                        </Label>
+                      </div>
+                      
+                      {/* Warehouses for this server */}
+                      {permissionsData.allowed_servers.includes(server.id) && warehousesMap[server.id] && warehousesMap[server.id].length > 0 && (
+                        <div className="ml-7 mt-3 pt-3 border-t border-zinc-100">
+                          <Label className="text-xs text-zinc-600 flex items-center gap-1 mb-2">
+                            <Warehouse className="h-3 w-3" />
+                            Almacenes específicos (deja vacío para acceso a todos)
+                          </Label>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                            {warehousesMap[server.id].map((warehouse) => (
+                              <div key={warehouse.codigo} className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`warehouse-${server.id}-${warehouse.codigo}`}
+                                  checked={(permissionsData.allowed_warehouses[server.id] || []).includes(warehouse.codigo)}
+                                  onCheckedChange={() => toggleWarehouseAccess(server.id, warehouse.codigo)}
+                                  data-testid={`warehouse-checkbox-${warehouse.codigo}`}
+                                />
+                                <Label 
+                                  htmlFor={`warehouse-${server.id}-${warehouse.codigo}`} 
+                                  className="cursor-pointer text-xs text-zinc-700"
+                                >
+                                  {warehouse.descripcion || warehouse.codigo}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Summary */}
+            <div className="bg-zinc-50 rounded-lg p-4 space-y-2">
+              <h4 className="text-sm font-medium text-zinc-700">Resumen de Permisos</h4>
+              <div className="text-sm text-zinc-600">
+                <p>
+                  <strong>Servidores:</strong> {permissionsData.allowed_servers.length === 0 
+                    ? 'Ninguno (sin acceso)' 
+                    : `${permissionsData.allowed_servers.length} servidor(es)`}
+                </p>
+                {Object.keys(permissionsData.allowed_warehouses).filter(k => permissionsData.allowed_warehouses[k]?.length > 0).length > 0 && (
+                  <p>
+                    <strong>Almacenes específicos:</strong> Configurados para {Object.keys(permissionsData.allowed_warehouses).filter(k => permissionsData.allowed_warehouses[k]?.length > 0).length} servidor(es)
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setPermissionsDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleSavePermissions} 
+              className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
+              data-testid="save-permissions-button"
+            >
+              Guardar Permisos
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
