@@ -39,7 +39,8 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 - `POST /api/auth/login` - Autenticación
 - `GET/POST /api/servers` - CRUD de servidores (filtrado por permisos)
 - `GET /api/servers/{id}/sucursales` - Lista de sucursales (filtrada por permisos)
-- `POST /api/reports/inventory-analysis` - Análisis de inventario
+- `GET /api/servers/{id}/report-filters` - Obtiene categorías, familias, subfamilias para filtros
+- `POST /api/reports/inventory-analysis` - Análisis de inventario (acepta filtros: categorias, familias, subfamilias)
 - `POST /api/reports/export/excel` - Exportar Excel con formato
 - `GET /api/servers/{id}/queries` - Estado de consultas configuradas
 - `PUT /api/users/{id}/permissions` - Actualizar permisos de usuario
@@ -60,6 +61,19 @@ User {
 ```
 
 ## Lo Implementado
+
+### 2025-03-13 - Mejoras en Reporte de Análisis de Inventarios
+- **Backend**: Nuevo endpoint `GET /api/servers/{id}/report-filters` para obtener categorías, familias y subfamilias
+- **Backend**: El endpoint `POST /api/reports/inventory-analysis` ahora acepta filtros adicionales (categorias, familias, subfamilias)
+- **Backend**: Nuevas columnas en el resultado del análisis: `Valor_Real` y `Teorico`
+  - `Valor_Real = (Inv_Inicial + Movimientos - Inv_Final) * Costo`
+  - `Teorico = Ventas * Costo`
+- **Frontend**: Renombrado "Análisis Completo de Inventario" → "Análisis de Inventarios"
+- **Frontend**: Filtros multiselección de Categoría, Familia, SubFamilia (solo para MPRO)
+  - Componentes Popover con Checkbox para selección múltiple
+  - Tags de colores para mostrar filtros seleccionados
+  - Botón "Limpiar selección" en cada dropdown
+- **Testing**: 78% backend tests pasados (7/9), 100% frontend verificado
 
 ### 2025-03-12 - Permisos de Sucursales y Excel con Formato
 - **Backend**: Nuevo campo `allowed_sucursales` en modelo User
