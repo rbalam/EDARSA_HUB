@@ -64,6 +64,12 @@ User {
 
 ## Lo Implementado
 
+### 2025-03-13 - Optimización de Carga del Dashboard
+- **Dashboard NO carga datos automáticamente al iniciar sesión**
+- El usuario debe seleccionar manualmente un servidor para cargar los datos
+- Esto elimina el bloqueo al iniciar sesión que causaba timeouts
+- Nueva vista inicial con selector de servidor y mensaje informativo
+
 ### 2025-03-13 - Corrección de Ventas por Almacén (v2)
 - **Backend - Lógica de Ventas Corregida**:
   - **MPRO**: Solo almacenes con nombre que contenga "GENERAL", "CONSUMO" o "VENTA" muestran ventas

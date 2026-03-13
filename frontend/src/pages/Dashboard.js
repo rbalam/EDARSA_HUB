@@ -70,19 +70,20 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const Dashboard = () => {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Cambiado a false - no carga automáticamente
   const [refreshing, setRefreshing] = useState(false);
   const [servers, setServers] = useState([]);
   const [selectedServer, setSelectedServer] = useState('');
   const [dashboardData, setDashboardData] = useState(null);
   const [error, setError] = useState(null);
+  const [serversLoading, setServersLoading] = useState(true); // Nuevo estado para carga de servidores
 
-  // Cargar servidores configurados
+  // Cargar servidores configurados (sin cargar datos automáticamente)
   useEffect(() => {
     loadServers();
   }, []);
 
-  // Cargar datos cuando se selecciona un servidor
+  // Cargar datos SOLO cuando el usuario selecciona un servidor manualmente
   useEffect(() => {
     if (selectedServer) {
       loadDashboardData(selectedServer);
@@ -90,18 +91,19 @@ const Dashboard = () => {
   }, [selectedServer]);
 
   const loadServers = async () => {
+    setServersLoading(true);
     try {
       const response = await api.get('/dashboard/servers-configured');
       setServers(response.data);
-      if (response.data.length > 0) {
-        setSelectedServer(response.data[0].id);
-      } else {
-        setLoading(false);
-      }
+      // NO seleccionar automáticamente - dejar que el usuario elija
+      // if (response.data.length > 0) {
+      //   setSelectedServer(response.data[0].id);
+      // }
     } catch (error) {
       console.error('Error loading servers:', error);
       setError('Error al cargar servidores');
-      setLoading(false);
+    } finally {
+      setServersLoading(false);
     }
   };
 
@@ -131,8 +133,20 @@ const Dashboard = () => {
     }
   };
 
+  // Si todavía está cargando los servidores
+  if (serversLoading) {
+    return (
+      <div className="flex items-center justify-center h-96" data-testid="dashboard-loading">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-zinc-400 mx-auto mb-4" />
+          <p className="text-zinc-600">Cargando servidores...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Si no hay servidores configurados
-  if (!loading && servers.length === 0) {
+  if (servers.length === 0) {
     return (
       <div className="space-y-6" data-testid="dashboard-page">
         <div>
@@ -161,13 +175,67 @@ const Dashboard = () => {
     );
   }
 
-  // Loading state
+  // Si no hay servidor seleccionado - mostrar vista inicial
+  if (!selectedServer) {
+    return (
+      <div className="space-y-6" data-testid="dashboard-page">
+        <div>
+          <h1 className="text-3xl font-extrabold text-zinc-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            Dashboard de Inventarios
+          </h1>
+          <p className="text-zinc-600 mt-1">Analisis de diferencias de inventario</p>
+        </div>
+
+        {/* Selector de servidor */}
+        <Card className="border border-zinc-200">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Warehouse className="h-5 w-5" />
+              Selecciona un Servidor
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="max-w-md">
+              <Select value={selectedServer} onValueChange={setSelectedServer}>
+                <SelectTrigger data-testid="server-select">
+                  <SelectValue placeholder="Selecciona un servidor para ver los datos" />
+                </SelectTrigger>
+                <SelectContent>
+                  {servers.map((server) => (
+                    <SelectItem key={server.id} value={server.id}>
+                      {server.name} ({server.system_type})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-zinc-500 mt-2">
+                Selecciona un servidor para cargar los datos del dashboard
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-zinc-200 bg-zinc-50">
+          <CardContent className="p-12 text-center">
+            <BarChart3 className="h-16 w-16 text-zinc-300 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-zinc-600 mb-2">Selecciona un servidor</h2>
+            <p className="text-zinc-500">
+              Los gráficos y datos se mostrarán aquí una vez que selecciones un servidor
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Loading state mientras carga datos del servidor seleccionado
   if (loading && !dashboardData) {
     return (
       <div className="flex items-center justify-center h-96" data-testid="dashboard-loading">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-zinc-400 mx-auto mb-4" />
           <p className="text-zinc-600">Cargando datos de inventario...</p>
+          <p className="text-sm text-zinc-400 mt-2">Esto puede tardar unos segundos</p>
         </div>
       </div>
     );
