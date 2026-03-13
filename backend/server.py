@@ -1405,6 +1405,7 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     - Inventario Final (folio final)
     - Cálculo de diferencias
     Usa filtros configurables por servidor (tipos_movimiento, categorias, departamentos)
+    Acepta filtros adicionales del frontend (categorias, familias, subfamilias)
     """
     server_id = report_params.get('server_id')
     sucursal = report_params.get('sucursal')
@@ -1413,6 +1414,11 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     fecha_fin = report_params.get('fecha_fin')
     folio_inicial = report_params.get('folio_inicial')
     folio_final = report_params.get('folio_final')
+    
+    # Filtros adicionales del frontend
+    filtro_categorias_frontend = report_params.get('categorias', [])
+    filtro_familias_frontend = report_params.get('familias', [])
+    filtro_subfamilias_frontend = report_params.get('subfamilias', [])
     
     # Get server
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
@@ -1430,7 +1436,16 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             categorias = server.get('categorias', [])
             departamentos = server.get('departamentos', [])
             
+            # Combinar filtros del servidor con filtros del frontend
+            # Los filtros del frontend tienen prioridad si se especifican
+            if filtro_categorias_frontend:
+                categorias = filtro_categorias_frontend
+            if filtro_familias_frontend or filtro_subfamilias_frontend:
+                # Estos son filtros adicionales del frontend
+                pass
+            
             logging.info(f"Filtros configurados - Tipos Mov: {len(tipos_movimiento)}, Categorias: {len(categorias)}, Departamentos: {len(departamentos)}")
+            logging.info(f"Filtros frontend - Categorias: {len(filtro_categorias_frontend)}, Familias: {len(filtro_familias_frontend)}, SubFamilias: {len(filtro_subfamilias_frontend)}")
             
             # Construir filtros SQL dinámicos
             if tipos_movimiento:
@@ -1455,6 +1470,19 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             else:
                 filtro_departamentos = ""
                 filtro_departamentos_p = ""
+            
+            # Filtros adicionales para familia y subfamilia
+            if filtro_familias_frontend:
+                familias_sql = ",".join([f"'{f}'" for f in filtro_familias_frontend])
+                filtro_familias = f"AND P.Fm_Cve_Familia IN ({familias_sql})"
+            else:
+                filtro_familias = ""
+            
+            if filtro_subfamilias_frontend:
+                subfamilias_sql = ",".join([f"'{s}'" for s in filtro_subfamilias_frontend])
+                filtro_subfamilias = f"AND P.Sf_Cve_SubFamilia IN ({subfamilias_sql})"
+            else:
+                filtro_subfamilias = ""
             
             # ENFOQUE OPTIMIZADO: Ejecutar consultas separadas y combinar en Python
             # Esto es más rápido que CTEs complejas con UNION ALL
@@ -1500,6 +1528,8 @@ LEFT JOIN Fisico FF ON FF.Pr_Cve_Producto = P.Pr_Cve_Producto
 WHERE P.Es_Cve_Estado <> 'BA'
     {filtro_categorias_p}
     {filtro_departamentos_p}
+    {filtro_familias}
+    {filtro_subfamilias}
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
 """
             logging.info("Obteniendo productos con inventario...")
