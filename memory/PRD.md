@@ -41,6 +41,8 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 - `GET /api/servers/{id}/sucursales` - Lista de sucursales (filtrada por permisos)
 - `GET /api/servers/{id}/report-filters` - Obtiene categorías, familias, subfamilias para filtros
 - `POST /api/reports/inventory-analysis` - Análisis de inventario (acepta filtros: categorias, familias, subfamilias)
+- `POST /api/reports/movement-details` - Detalle de movimientos por producto
+- `POST /api/reports/sales-details` - Detalle de ventas por producto
 - `POST /api/reports/export/excel` - Exportar Excel con formato
 - `GET /api/servers/{id}/queries` - Estado de consultas configuradas
 - `PUT /api/users/{id}/permissions` - Actualizar permisos de usuario
@@ -61,6 +63,19 @@ User {
 ```
 
 ## Lo Implementado
+
+### 2025-03-13 - Corrección de Ventas por Almacén y Detalle de Movimientos
+- **Backend - Corrección Bug Ventas**:
+  - **MPRO**: Solo el almacén "GENERAL" muestra ventas, los demás almacenes muestran 0
+  - Se detecta automáticamente si el almacén contiene "GENERAL" en el nombre
+- **Backend - Nuevos Endpoints de Detalle**:
+  - `POST /api/reports/movement-details`: Detalle de movimientos (folio, fecha, cantidad, tipo, descripción)
+  - `POST /api/reports/sales-details`: Detalle de ventas (folio, fecha, cantidad, tipo venta, producto vendido)
+- **Frontend - Detalle de Movimientos/Ventas**:
+  - Columnas Movimientos y Ventas son clickeables cuando valor > 0 (ícono de ojo)
+  - Al hacer clic se abre un Dialog con el detalle completo
+  - Tabla con información de folio, fecha, cantidad, tipo de movimiento/venta
+- **Testing**: 100% backend tests pasados (9/9)
 
 ### 2025-03-13 - Mejoras en Reporte de Análisis de Inventarios
 - **Backend**: Nuevo endpoint `GET /api/servers/{id}/report-filters` para obtener categorías, familias y subfamilias
