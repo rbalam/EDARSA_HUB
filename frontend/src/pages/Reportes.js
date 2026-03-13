@@ -6,10 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, ChevronDown, X, Filter, Eye, Loader2 } from 'lucide-react';
+import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -25,7 +22,7 @@ const Reportes = () => {
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     server_id: '',
-    query_type: 'analisis',
+    query_type: 'analisis', // Cambiar default a 'analisis'
     sucursal_id: '',
     sucursal: '',
     almacen_id: '',
@@ -39,26 +36,6 @@ const Reportes = () => {
   });
 
   const [selectedServer, setSelectedServer] = useState(null);
-  
-  // Estados para filtros de categoría/familia/subfamilia
-  const [filterOptions, setFilterOptions] = useState({
-    categorias: [],
-    familias: [],
-    subfamilias: []
-  });
-  const [selectedCategorias, setSelectedCategorias] = useState([]);
-  const [selectedFamilias, setSelectedFamilias] = useState([]);
-  const [selectedSubfamilias, setSelectedSubfamilias] = useState([]);
-  const [loadingFilters, setLoadingFilters] = useState(false);
-
-  // Estados para el modal de detalle de movimientos/ventas
-  const [detailDialog, setDetailDialog] = useState({
-    open: false,
-    type: '', // 'movimientos' o 'ventas'
-    producto: null,
-    data: [],
-    loading: false
-  });
 
   useEffect(() => {
     loadServers();
@@ -67,32 +44,11 @@ const Reportes = () => {
   useEffect(() => {
     if (filters.server_id) {
       loadSucursales();
-      loadReportFilters();
       // Guardar el servidor seleccionado
       const server = servers.find(s => s.id === filters.server_id);
       setSelectedServer(server);
     }
   }, [filters.server_id, servers]);
-
-  // Cargar opciones de filtros (categorías, familias, subfamilias)
-  const loadReportFilters = async () => {
-    if (!filters.server_id) return;
-    
-    setLoadingFilters(true);
-    try {
-      const response = await api.get(`/servers/${filters.server_id}/report-filters`);
-      setFilterOptions({
-        categorias: response.data.categorias || [],
-        familias: response.data.familias || [],
-        subfamilias: response.data.subfamilias || []
-      });
-    } catch (error) {
-      console.error('Error al cargar filtros:', error);
-      setFilterOptions({ categorias: [], familias: [], subfamilias: [] });
-    } finally {
-      setLoadingFilters(false);
-    }
-  };
 
   useEffect(() => {
     if (filters.server_id && filters.sucursal_id) {
@@ -193,7 +149,7 @@ const Reportes = () => {
       let response;
       
       if (filters.query_type === 'analisis') {
-        // Llamar al endpoint de análisis completo con filtros adicionales
+        // Llamar al endpoint de análisis completo
         response = await api.post('/reports/inventory-analysis', {
           server_id: filters.server_id,
           sucursal: filters.sucursal,
@@ -201,11 +157,7 @@ const Reportes = () => {
           fecha_ini: filters.fecha_ini,
           fecha_fin: filters.fecha_fin,
           folio_inicial: filters.inventario_inicial,
-          folio_final: filters.inventario_final,
-          // Enviar filtros de categoría/familia/subfamilia
-          categorias: selectedCategorias,
-          familias: selectedFamilias,
-          subfamilias: selectedSubfamilias
+          folio_final: filters.inventario_final
         });
       } else {
         // Llamar al endpoint normal de reportes
@@ -436,86 +388,6 @@ const Reportes = () => {
     }).format(num);
   };
 
-  // Función para cargar el detalle de movimientos
-  const loadMovementDetails = async (producto) => {
-    setDetailDialog({
-      open: true,
-      type: 'movimientos',
-      producto: producto,
-      data: [],
-      loading: true
-    });
-
-    try {
-      const response = await api.post('/reports/movement-details', {
-        server_id: filters.server_id,
-        producto_codigo: producto.Codigo,
-        sucursal: filters.sucursal,
-        almacen: filters.almacen,
-        fecha_ini: filters.fecha_ini,
-        fecha_fin: filters.fecha_fin
-      });
-      
-      setDetailDialog(prev => ({
-        ...prev,
-        data: response.data.data,
-        loading: false
-      }));
-    } catch (error) {
-      console.error('Error al cargar detalle de movimientos:', error);
-      toast.error('Error al cargar detalle de movimientos');
-      setDetailDialog(prev => ({ ...prev, loading: false }));
-    }
-  };
-
-  // Función para cargar el detalle de ventas
-  const loadSalesDetails = async (producto) => {
-    setDetailDialog({
-      open: true,
-      type: 'ventas',
-      producto: producto,
-      data: [],
-      loading: true
-    });
-
-    try {
-      const response = await api.post('/reports/sales-details', {
-        server_id: filters.server_id,
-        producto_codigo: producto.Codigo,
-        sucursal: filters.sucursal,
-        fecha_ini: filters.fecha_ini,
-        fecha_fin: filters.fecha_fin
-      });
-      
-      setDetailDialog(prev => ({
-        ...prev,
-        data: response.data.data,
-        loading: false
-      }));
-    } catch (error) {
-      console.error('Error al cargar detalle de ventas:', error);
-      toast.error('Error al cargar detalle de ventas');
-      setDetailDialog(prev => ({ ...prev, loading: false }));
-    }
-  };
-
-  // Función para renderizar una celda clickeable
-  const renderClickableCell = (value, producto, type) => {
-    const numValue = parseFloat(value) || 0;
-    if (numValue === 0) return formatNumber(numValue);
-    
-    return (
-      <button
-        onClick={() => type === 'movimientos' ? loadMovementDetails(producto) : loadSalesDetails(producto)}
-        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-semibold flex items-center gap-1"
-        title={`Ver detalle de ${type}`}
-      >
-        <Eye className="h-3 w-3" />
-        {formatNumber(numValue)}
-      </button>
-    );
-  };
-
   return (
     <div className="space-y-6" data-testid="reportes-page">
       <div>
@@ -559,7 +431,7 @@ const Reportes = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="analisis">Análisis de Inventarios</SelectItem>
+                  <SelectItem value="analisis">Análisis Completo de Inventario</SelectItem>
                   <SelectItem value="ventas">Ventas</SelectItem>
                   <SelectItem value="movimientos">Movimientos</SelectItem>
                   <SelectItem value="productos">Productos</SelectItem>
@@ -689,225 +561,6 @@ const Reportes = () => {
             </div>
           </div>
 
-          {/* Filtros adicionales (Categoría, Familia, SubFamilia) - Solo para MPRO */}
-          {filters.query_type === 'analisis' && selectedServer?.system_type === 'MPRO' && (
-            <div className="mt-6 pt-4 border-t border-zinc-200">
-              <div className="flex items-center gap-2 mb-4">
-                <Filter className="h-4 w-4 text-zinc-500" />
-                <h3 className="text-sm font-semibold text-zinc-700">Filtros Adicionales (Opcional)</h3>
-                {loadingFilters && <span className="text-xs text-zinc-400">Cargando...</span>}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Multiselect Categorías */}
-                <div className="space-y-2">
-                  <Label>Categorías</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-between font-normal"
-                        data-testid="categorias-multiselect"
-                        disabled={filterOptions.categorias.length === 0}
-                      >
-                        <span className="truncate">
-                          {selectedCategorias.length === 0 
-                            ? 'Todas las categorías' 
-                            : `${selectedCategorias.length} seleccionada(s)`}
-                        </span>
-                        <ChevronDown className="h-4 w-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-2 max-h-64 overflow-y-auto">
-                      {selectedCategorias.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full mb-2 text-xs"
-                          onClick={() => setSelectedCategorias([])}
-                        >
-                          <X className="h-3 w-3 mr-1" /> Limpiar selección
-                        </Button>
-                      )}
-                      {filterOptions.categorias.map((cat) => (
-                        <div key={cat.id} className="flex items-center space-x-2 py-1.5 px-2 hover:bg-zinc-50 rounded">
-                          <Checkbox
-                            id={`cat-${cat.id}`}
-                            checked={selectedCategorias.includes(cat.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedCategorias([...selectedCategorias, cat.id]);
-                              } else {
-                                setSelectedCategorias(selectedCategorias.filter(c => c !== cat.id));
-                              }
-                            }}
-                          />
-                          <label htmlFor={`cat-${cat.id}`} className="text-sm cursor-pointer flex-1">
-                            {cat.nombre}
-                          </label>
-                        </div>
-                      ))}
-                      {filterOptions.categorias.length === 0 && (
-                        <p className="text-xs text-zinc-400 text-center py-2">No hay categorías disponibles</p>
-                      )}
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* Multiselect Familias */}
-                <div className="space-y-2">
-                  <Label>Familias</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-between font-normal"
-                        data-testid="familias-multiselect"
-                        disabled={filterOptions.familias.length === 0}
-                      >
-                        <span className="truncate">
-                          {selectedFamilias.length === 0 
-                            ? 'Todas las familias' 
-                            : `${selectedFamilias.length} seleccionada(s)`}
-                        </span>
-                        <ChevronDown className="h-4 w-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-2 max-h-64 overflow-y-auto">
-                      {selectedFamilias.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full mb-2 text-xs"
-                          onClick={() => setSelectedFamilias([])}
-                        >
-                          <X className="h-3 w-3 mr-1" /> Limpiar selección
-                        </Button>
-                      )}
-                      {filterOptions.familias.map((fam) => (
-                        <div key={fam.id} className="flex items-center space-x-2 py-1.5 px-2 hover:bg-zinc-50 rounded">
-                          <Checkbox
-                            id={`fam-${fam.id}`}
-                            checked={selectedFamilias.includes(fam.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedFamilias([...selectedFamilias, fam.id]);
-                              } else {
-                                setSelectedFamilias(selectedFamilias.filter(f => f !== fam.id));
-                              }
-                            }}
-                          />
-                          <label htmlFor={`fam-${fam.id}`} className="text-sm cursor-pointer flex-1">
-                            {fam.nombre}
-                          </label>
-                        </div>
-                      ))}
-                      {filterOptions.familias.length === 0 && (
-                        <p className="text-xs text-zinc-400 text-center py-2">No hay familias disponibles</p>
-                      )}
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* Multiselect SubFamilias */}
-                <div className="space-y-2">
-                  <Label>SubFamilias</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-between font-normal"
-                        data-testid="subfamilias-multiselect"
-                        disabled={filterOptions.subfamilias.length === 0}
-                      >
-                        <span className="truncate">
-                          {selectedSubfamilias.length === 0 
-                            ? 'Todas las subfamilias' 
-                            : `${selectedSubfamilias.length} seleccionada(s)`}
-                        </span>
-                        <ChevronDown className="h-4 w-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-2 max-h-64 overflow-y-auto">
-                      {selectedSubfamilias.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full mb-2 text-xs"
-                          onClick={() => setSelectedSubfamilias([])}
-                        >
-                          <X className="h-3 w-3 mr-1" /> Limpiar selección
-                        </Button>
-                      )}
-                      {filterOptions.subfamilias.map((sf) => (
-                        <div key={sf.id} className="flex items-center space-x-2 py-1.5 px-2 hover:bg-zinc-50 rounded">
-                          <Checkbox
-                            id={`sf-${sf.id}`}
-                            checked={selectedSubfamilias.includes(sf.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedSubfamilias([...selectedSubfamilias, sf.id]);
-                              } else {
-                                setSelectedSubfamilias(selectedSubfamilias.filter(s => s !== sf.id));
-                              }
-                            }}
-                          />
-                          <label htmlFor={`sf-${sf.id}`} className="text-sm cursor-pointer flex-1">
-                            {sf.nombre}
-                          </label>
-                        </div>
-                      ))}
-                      {filterOptions.subfamilias.length === 0 && (
-                        <p className="text-xs text-zinc-400 text-center py-2">No hay subfamilias disponibles</p>
-                      )}
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-              
-              {/* Resumen de filtros seleccionados */}
-              {(selectedCategorias.length > 0 || selectedFamilias.length > 0 || selectedSubfamilias.length > 0) && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {selectedCategorias.map(id => {
-                    const cat = filterOptions.categorias.find(c => c.id === id);
-                    return cat && (
-                      <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">
-                        {cat.nombre}
-                        <X 
-                          className="h-3 w-3 cursor-pointer hover:text-blue-900" 
-                          onClick={() => setSelectedCategorias(selectedCategorias.filter(c => c !== id))}
-                        />
-                      </span>
-                    );
-                  })}
-                  {selectedFamilias.map(id => {
-                    const fam = filterOptions.familias.find(f => f.id === id);
-                    return fam && (
-                      <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full">
-                        {fam.nombre}
-                        <X 
-                          className="h-3 w-3 cursor-pointer hover:text-green-900" 
-                          onClick={() => setSelectedFamilias(selectedFamilias.filter(f => f !== id))}
-                        />
-                      </span>
-                    );
-                  })}
-                  {selectedSubfamilias.map(id => {
-                    const sf = filterOptions.subfamilias.find(s => s.id === id);
-                    return sf && (
-                      <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full">
-                        {sf.nombre}
-                        <X 
-                          className="h-3 w-3 cursor-pointer hover:text-purple-900" 
-                          onClick={() => setSelectedSubfamilias(selectedSubfamilias.filter(s => s !== id))}
-                        />
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
           <div className="flex gap-2 mt-4">
             <Button 
               onClick={handleGenerateReport}
@@ -984,18 +637,11 @@ const Reportes = () => {
                         const isDiferencia = key.toLowerCase().includes('diferencia');
                         const isCosto = key.toLowerCase().includes('costo');
                         const isPorcentaje = key.toLowerCase().includes('porcentaje');
-                        const isMovimientos = key === 'Movimientos';
-                        const isVentas = key === 'Ventas';
                         
                         let displayValue = value;
                         let className = "text-sm font-data text-zinc-700";
                         
-                        // Columnas clickeables para ver detalle
-                        if (isMovimientos && value !== null && value !== undefined) {
-                          displayValue = renderClickableCell(value, row, 'movimientos');
-                        } else if (isVentas && value !== null && value !== undefined) {
-                          displayValue = renderClickableCell(value, row, 'ventas');
-                        } else if (isPorcentaje && value !== null && value !== undefined) {
+                        if (isPorcentaje && value !== null && value !== undefined) {
                           displayValue = `${formatNumber(value)}%`;
                           className = `text-sm font-data font-semibold ${getDifferenceColor(parseFloat(value))}`;
                         } else if (isCosto && value !== null && value !== undefined) {
@@ -1047,109 +693,6 @@ const Reportes = () => {
           </CardContent>
         </Card>
       )}
-
-      {/* Modal de Detalle de Movimientos/Ventas */}
-      <Dialog open={detailDialog.open} onOpenChange={(open) => setDetailDialog(prev => ({ ...prev, open }))}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold">
-              {detailDialog.type === 'movimientos' ? 'Detalle de Movimientos' : 'Detalle de Ventas'}
-            </DialogTitle>
-            <DialogDescription>
-              {detailDialog.producto && (
-                <span className="text-zinc-600">
-                  Producto: <strong>{detailDialog.producto.Codigo}</strong> - {detailDialog.producto.Producto}
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          {detailDialog.loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
-              <span className="ml-2 text-zinc-500">Cargando detalle...</span>
-            </div>
-          ) : detailDialog.data.length === 0 ? (
-            <div className="text-center py-8 text-zinc-500">
-              <AlertCircle className="h-8 w-8 mx-auto mb-2 text-zinc-400" />
-              <p>No se encontraron registros</p>
-            </div>
-          ) : (
-            <div className="rounded-md border border-zinc-200 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-zinc-50">
-                    {detailDialog.type === 'movimientos' ? (
-                      <>
-                        <TableHead className="text-xs uppercase font-medium">Folio</TableHead>
-                        <TableHead className="text-xs uppercase font-medium">Fecha</TableHead>
-                        <TableHead className="text-xs uppercase font-medium text-right">Cantidad</TableHead>
-                        <TableHead className="text-xs uppercase font-medium">Tipo</TableHead>
-                        <TableHead className="text-xs uppercase font-medium">Descripción</TableHead>
-                        <TableHead className="text-xs uppercase font-medium">Almacén</TableHead>
-                        <TableHead className="text-xs uppercase font-medium">Observaciones</TableHead>
-                      </>
-                    ) : (
-                      <>
-                        <TableHead className="text-xs uppercase font-medium">Folio</TableHead>
-                        <TableHead className="text-xs uppercase font-medium">Fecha</TableHead>
-                        <TableHead className="text-xs uppercase font-medium text-right">Cantidad</TableHead>
-                        <TableHead className="text-xs uppercase font-medium">Tipo</TableHead>
-                        <TableHead className="text-xs uppercase font-medium">Producto Vendido</TableHead>
-                        <TableHead className="text-xs uppercase font-medium text-right">Precio Unit.</TableHead>
-                        <TableHead className="text-xs uppercase font-medium">Sucursal</TableHead>
-                      </>
-                    )}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {detailDialog.data.map((item, idx) => (
-                    <TableRow key={idx} className="hover:bg-zinc-50/50">
-                      {detailDialog.type === 'movimientos' ? (
-                        <>
-                          <TableCell className="font-mono text-sm">{item.folio}</TableCell>
-                          <TableCell className="text-sm">{item.fecha}</TableCell>
-                          <TableCell className={`text-sm text-right font-semibold ${item.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatNumber(item.cantidad)}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.tipo_movimiento === 'Entrada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                              {item.tipo_movimiento}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-sm">{item.tipo_descripcion}</TableCell>
-                          <TableCell className="text-sm">{item.almacen}</TableCell>
-                          <TableCell className="text-sm text-zinc-500 max-w-xs truncate">{item.observaciones}</TableCell>
-                        </>
-                      ) : (
-                        <>
-                          <TableCell className="font-mono text-sm">{item.folio}</TableCell>
-                          <TableCell className="text-sm">{item.fecha}</TableCell>
-                          <TableCell className="text-sm text-right font-semibold">{formatNumber(item.cantidad)}</TableCell>
-                          <TableCell className="text-sm">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.tipo_venta === 'DIRECTA' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
-                              {item.tipo_venta}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-sm">{item.producto_vendido || item.producto}</TableCell>
-                          <TableCell className="text-sm text-right">{formatCurrency(item.precio_unitario)}</TableCell>
-                          <TableCell className="text-sm">{item.sucursal}</TableCell>
-                        </>
-                      )}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-          
-          {detailDialog.data.length > 0 && (
-            <div className="text-sm text-zinc-500 text-right mt-2">
-              Total: {detailDialog.data.length} registro(s)
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

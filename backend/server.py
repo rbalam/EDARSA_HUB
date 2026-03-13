@@ -1405,7 +1405,6 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     - Inventario Final (folio final)
     - Cálculo de diferencias
     Usa filtros configurables por servidor (tipos_movimiento, categorias, departamentos)
-    Acepta filtros adicionales del frontend (categorias, familias, subfamilias)
     """
     server_id = report_params.get('server_id')
     sucursal = report_params.get('sucursal')
@@ -1414,11 +1413,6 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     fecha_fin = report_params.get('fecha_fin')
     folio_inicial = report_params.get('folio_inicial')
     folio_final = report_params.get('folio_final')
-    
-    # Filtros adicionales del frontend
-    filtro_categorias_frontend = report_params.get('categorias', [])
-    filtro_familias_frontend = report_params.get('familias', [])
-    filtro_subfamilias_frontend = report_params.get('subfamilias', [])
     
     # Get server
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
@@ -1436,16 +1430,7 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             categorias = server.get('categorias', [])
             departamentos = server.get('departamentos', [])
             
-            # Combinar filtros del servidor con filtros del frontend
-            # Los filtros del frontend tienen prioridad si se especifican
-            if filtro_categorias_frontend:
-                categorias = filtro_categorias_frontend
-            if filtro_familias_frontend or filtro_subfamilias_frontend:
-                # Estos son filtros adicionales del frontend
-                pass
-            
             logging.info(f"Filtros configurados - Tipos Mov: {len(tipos_movimiento)}, Categorias: {len(categorias)}, Departamentos: {len(departamentos)}")
-            logging.info(f"Filtros frontend - Categorias: {len(filtro_categorias_frontend)}, Familias: {len(filtro_familias_frontend)}, SubFamilias: {len(filtro_subfamilias_frontend)}")
             
             # Construir filtros SQL dinámicos
             if tipos_movimiento:
@@ -1471,25 +1456,12 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
                 filtro_departamentos = ""
                 filtro_departamentos_p = ""
             
-            # Filtros adicionales para familia y subfamilia
-            if filtro_familias_frontend:
-                familias_sql = ",".join([f"'{f}'" for f in filtro_familias_frontend])
-                filtro_familias = f"AND P.Fm_Cve_Familia IN ({familias_sql})"
-            else:
-                filtro_familias = ""
-            
-            if filtro_subfamilias_frontend:
-                subfamilias_sql = ",".join([f"'{s}'" for s in filtro_subfamilias_frontend])
-                filtro_subfamilias = f"AND P.Sf_Cve_SubFamilia IN ({subfamilias_sql})"
-            else:
-                filtro_subfamilias = ""
-            
             # ENFOQUE OPTIMIZADO: Ejecutar consultas separadas y combinar en Python
             # Esto es más rápido que CTEs complejas con UNION ALL
             
-            # 1. Obtener código del almacén y verificar si es almacén GENERAL
+            # 1. Obtener código del almacén
             almacen_query = f"""
-SELECT TOP 1 Al_Cve_Almacen as codigo, Al_Descripcion as nombre
+SELECT TOP 1 Al_Cve_Almacen as codigo
 FROM Almacen 
 WHERE Al_Descripcion LIKE '%{almacen}%'
 """
@@ -1500,11 +1472,7 @@ WHERE Al_Descripcion LIKE '%{almacen}%'
             if not almacen_result:
                 raise HTTPException(status_code=404, detail="Almacén no encontrado")
             almacen_codigo = almacen_result[0]['codigo']
-            almacen_nombre = almacen_result[0]['nombre'].upper() if almacen_result[0]['nombre'] else ''
-            
-            # Determinar si es almacén GENERAL (único que tiene ventas en MPRO)
-            es_almacen_general = 'GENERAL' in almacen_nombre
-            logging.info(f"Código de almacén: {almacen_codigo}, Nombre: {almacen_nombre}, Es General: {es_almacen_general}")
+            logging.info(f"Código de almacén: {almacen_codigo}")
             
             # 2. Obtener TODOS los productos que cumplen los filtros de categoría/departamento
             # Luego filtraremos solo los que tienen actividad (inventario, ventas o movimientos)
@@ -1532,8 +1500,6 @@ LEFT JOIN Fisico FF ON FF.Pr_Cve_Producto = P.Pr_Cve_Producto
 WHERE P.Es_Cve_Estado <> 'BA'
     {filtro_categorias_p}
     {filtro_departamentos_p}
-    {filtro_familias}
-    {filtro_subfamilias}
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
 """
             logging.info("Obteniendo productos con inventario...")
@@ -1544,10 +1510,7 @@ ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
             logging.info(f"Productos obtenidos: {len(productos)}")
             
             # 3. Obtener ventas por producto (combinando kits y directas)
-            # IMPORTANTE: Solo el almacén GENERAL tiene ventas en MPRO
-            ventas_dict = {}
-            if es_almacen_general:
-                ventas_query = f"""
+            ventas_query = f"""
 SELECT Producto_Codigo, SUM(Cantidad) as Total_Ventas FROM (
     -- Ventas de productos KIT
     SELECT 
@@ -1583,15 +1546,13 @@ SELECT Producto_Codigo, SUM(Cantidad) as Total_Ventas FROM (
 ) AS VentasCombinadas
 GROUP BY Producto_Codigo
 """
-                logging.info("Obteniendo ventas (almacén GENERAL)...")
-                ventas_result = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], ventas_query
-                )
-                ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
-                logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
-            else:
-                logging.info(f"Almacén '{almacen_nombre}' NO es GENERAL - ventas = 0 para todos los productos")
+            logging.info("Obteniendo ventas...")
+            ventas_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], ventas_query
+            )
+            ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
+            logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
             
             # 4. Obtener movimientos por producto FILTRADO POR ALMACÉN
             # Los valores de Mv_Cantidad_Control_1 ya incluyen el signo (positivo para entradas, negativo para salidas)
@@ -1685,269 +1646,6 @@ GROUP BY E.Pr_Cve_Producto
     except Exception as e:
         logging.error(f"Error en análisis de inventario: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error generando análisis: {str(e)}")
-
-@api_router.post("/reports/movement-details")
-async def get_movement_details(params: Dict, current_user: Dict = Depends(get_current_user)):
-    """
-    Obtiene el detalle de los movimientos para un producto específico.
-    Devuelve: folio, fecha, cantidad, tipo de movimiento, descripción.
-    """
-    server_id = params.get('server_id')
-    producto_codigo = params.get('producto_codigo')
-    sucursal = params.get('sucursal')
-    almacen = params.get('almacen')
-    fecha_ini = params.get('fecha_ini')
-    fecha_fin = params.get('fecha_fin')
-    
-    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
-    try:
-        if server['system_type'] == 'MPRO':
-            # Obtener código del almacén
-            almacen_query = f"""
-SELECT TOP 1 Al_Cve_Almacen as codigo
-FROM Almacen 
-WHERE Al_Descripcion LIKE '%{almacen}%'
-"""
-            almacen_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], almacen_query
-            )
-            if not almacen_result:
-                raise HTTPException(status_code=404, detail="Almacén no encontrado")
-            almacen_codigo = almacen_result[0]['codigo']
-            
-            # Obtener filtros de tipos de movimiento configurados
-            tipos_movimiento = server.get('tipos_movimiento', [])
-            if tipos_movimiento:
-                tipos_mov_sql = ",".join([f"'{t}'" for t in tipos_movimiento])
-                filtro_tipos_mov = f"AND M.Tm_Cve_Tipo_Movimiento IN ({tipos_mov_sql})"
-            else:
-                filtro_tipos_mov = ""
-            
-            # Consulta detalle de movimientos
-            query = f"""
-SELECT 
-    M.Mv_Folio as Folio,
-    M.Mv_Fecha as Fecha,
-    M.Mv_Cantidad_Control_1 as Cantidad,
-    M.Tm_Cve_Tipo_Movimiento as Tipo_Codigo,
-    TM.Tm_Descripcion as Tipo_Descripcion,
-    TM.Tm_Tipo as Tipo_Movimiento,
-    P.Pr_Descripcion as Producto,
-    A.Al_Descripcion as Almacen,
-    '' as Observaciones
-FROM Movimiento M
-INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
-INNER JOIN Producto P ON P.Pr_Cve_Producto = M.Pr_Cve_Producto
-INNER JOIN Almacen A ON A.Al_Cve_Almacen = M.Al_Cve_Almacen
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
-WHERE M.Pr_Cve_Producto = '{producto_codigo}'
-    AND S.Sc_Descripcion LIKE '%{sucursal}%'
-    AND M.Al_Cve_Almacen = '{almacen_codigo}'
-    AND M.Es_Cve_Estado <> 'CA'
-    AND M.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-    {filtro_tipos_mov}
-ORDER BY M.Mv_Fecha DESC
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            
-            # Formatear resultados
-            movements = []
-            for row in result:
-                tipo_texto = 'Entrada' if row.get('Tipo_Movimiento') == 'E' else 'Salida'
-                movements.append({
-                    'folio': row.get('Folio'),
-                    'fecha': str(row.get('Fecha'))[:19] if row.get('Fecha') else '',
-                    'cantidad': float(row.get('Cantidad') or 0),
-                    'tipo_codigo': row.get('Tipo_Codigo'),
-                    'tipo_descripcion': row.get('Tipo_Descripcion'),
-                    'tipo_movimiento': tipo_texto,
-                    'producto': row.get('Producto'),
-                    'almacen': row.get('Almacen'),
-                    'observaciones': row.get('Observaciones') or ''
-                })
-            
-            return {"data": movements, "count": len(movements)}
-            
-        elif server['system_type'] == 'SoftRestaurant':
-            # Para SoftRestaurant - implementar según estructura de base de datos
-            query = f"""
-SELECT 
-    M.idmovimiento as Folio,
-    M.fecha as Fecha,
-    M.cantidad as Cantidad,
-    M.idtipomovimiento as Tipo_Codigo,
-    TM.nombre as Tipo_Descripcion,
-    I.descripcion as Producto,
-    A.nombre as Almacen,
-    M.observaciones as Observaciones
-FROM movimientosinventario M
-INNER JOIN tipomovimiento TM ON TM.idtipomovimiento = M.idtipomovimiento
-INNER JOIN insumos I ON I.idinsumo = M.idinsumo
-INNER JOIN almacenes A ON A.idalmacen = M.idalmacen
-WHERE M.idinsumo = '{producto_codigo}'
-    AND M.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-ORDER BY M.fecha DESC
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            
-            movements = []
-            for row in result:
-                movements.append({
-                    'folio': row.get('Folio'),
-                    'fecha': str(row.get('Fecha'))[:19] if row.get('Fecha') else '',
-                    'cantidad': float(row.get('Cantidad') or 0),
-                    'tipo_codigo': row.get('Tipo_Codigo'),
-                    'tipo_descripcion': row.get('Tipo_Descripcion'),
-                    'tipo_movimiento': '',
-                    'producto': row.get('Producto'),
-                    'almacen': row.get('Almacen'),
-                    'observaciones': row.get('Observaciones') or ''
-                })
-            
-            return {"data": movements, "count": len(movements)}
-        else:
-            return {"data": [], "count": 0}
-            
-    except Exception as e:
-        logging.error(f"Error obteniendo detalle de movimientos: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-@api_router.post("/reports/sales-details")
-async def get_sales_details(params: Dict, current_user: Dict = Depends(get_current_user)):
-    """
-    Obtiene el detalle de las ventas para un producto específico.
-    Devuelve: folio, fecha, cantidad, tipo de venta (directa/kit).
-    """
-    server_id = params.get('server_id')
-    producto_codigo = params.get('producto_codigo')
-    sucursal = params.get('sucursal')
-    fecha_ini = params.get('fecha_ini')
-    fecha_fin = params.get('fecha_fin')
-    
-    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
-    try:
-        if server['system_type'] == 'MPRO':
-            # Consulta detalle de ventas - combina ventas directas y de kits
-            query = f"""
-SELECT * FROM (
-    -- Ventas de productos KIT
-    SELECT 
-        V.Vn_Folio as Folio,
-        V.Vn_Fecha as Fecha,
-        (V.Vn_Cantidad_1 * PK.Pk_Cantidad) as Cantidad,
-        'KIT' as Tipo_Venta,
-        PV.Pr_Descripcion as Producto_Vendido,
-        P.Pr_Descripcion as Producto,
-        0 as Precio_Unitario,
-        S.Sc_Descripcion as Sucursal
-    FROM venta V
-    INNER JOIN producto_kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto
-    INNER JOIN producto P ON P.Pr_Cve_Producto = PK.Pk_Producto
-    INNER JOIN producto PV ON PV.Pr_Cve_Producto = V.Pr_Cve_Producto
-    INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
-    WHERE PK.Pk_Producto = '{producto_codigo}'
-        AND S.Sc_Descripcion LIKE '%{sucursal}%'
-        AND V.Es_Cve_Estado <> 'CA'
-        AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-    
-    UNION ALL
-    
-    -- Ventas DIRECTAS
-    SELECT 
-        V.Vn_Folio as Folio,
-        V.Vn_Fecha as Fecha,
-        V.Vn_Cantidad_Control_1 as Cantidad,
-        'DIRECTA' as Tipo_Venta,
-        P.Pr_Descripcion as Producto_Vendido,
-        P.Pr_Descripcion as Producto,
-        0 as Precio_Unitario,
-        S.Sc_Descripcion as Sucursal
-    FROM venta V
-    INNER JOIN producto P ON P.Pr_Cve_Producto = V.Pr_Cve_Producto
-    INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
-    WHERE V.Pr_Cve_Producto = '{producto_codigo}'
-        AND S.Sc_Descripcion LIKE '%{sucursal}%'
-        AND V.Es_Cve_Estado <> 'CA'
-        AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-) AS VentasDetalle
-ORDER BY Fecha DESC
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            
-            sales = []
-            for row in result:
-                sales.append({
-                    'folio': row.get('Folio'),
-                    'fecha': str(row.get('Fecha'))[:19] if row.get('Fecha') else '',
-                    'cantidad': float(row.get('Cantidad') or 0),
-                    'tipo_venta': row.get('Tipo_Venta'),
-                    'producto_vendido': row.get('Producto_Vendido'),
-                    'producto': row.get('Producto'),
-                    'precio_unitario': float(row.get('Precio_Unitario') or 0),
-                    'sucursal': row.get('Sucursal')
-                })
-            
-            return {"data": sales, "count": len(sales)}
-            
-        elif server['system_type'] == 'SoftRestaurant':
-            # Para SoftRestaurant - implementar según estructura
-            query = f"""
-SELECT 
-    VC.idventacuenta as Folio,
-    C.fecha as Fecha,
-    VC.cantidad as Cantidad,
-    'DIRECTA' as Tipo_Venta,
-    P.descripcion as Producto,
-    VC.precio as Precio_Unitario
-FROM ventascuentas VC
-INNER JOIN cuentas C ON C.idcuenta = VC.idcuenta
-INNER JOIN productos P ON P.idproducto = VC.idproducto
-WHERE VC.idproducto IN (
-    SELECT idproducto FROM insumos_productos WHERE idinsumo = '{producto_codigo}'
-)
-AND C.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-ORDER BY C.fecha DESC
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            
-            sales = []
-            for row in result:
-                sales.append({
-                    'folio': row.get('Folio'),
-                    'fecha': str(row.get('Fecha'))[:19] if row.get('Fecha') else '',
-                    'cantidad': float(row.get('Cantidad') or 0),
-                    'tipo_venta': row.get('Tipo_Venta'),
-                    'producto': row.get('Producto'),
-                    'precio_unitario': float(row.get('Precio_Unitario') or 0),
-                    'sucursal': ''
-                })
-            
-            return {"data": sales, "count": len(sales)}
-        else:
-            return {"data": [], "count": 0}
-            
-    except Exception as e:
-        logging.error(f"Error obteniendo detalle de ventas: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @api_router.post("/reports/export/excel")
 async def export_excel(data: Dict, current_user: Dict = Depends(get_current_user)):
