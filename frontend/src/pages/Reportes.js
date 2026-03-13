@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -22,7 +22,7 @@ const Reportes = () => {
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     server_id: '',
-    query_type: 'analisis', // Cambiar default a 'analisis'
+    query_type: 'analisis',
     sucursal_id: '',
     sucursal: '',
     almacen_id: '',
@@ -36,6 +36,15 @@ const Reportes = () => {
   });
 
   const [selectedServer, setSelectedServer] = useState(null);
+  
+  // Estado para el modal de detalle
+  const [detailModal, setDetailModal] = useState({
+    open: false,
+    type: '', // 'movimientos' o 'ventas'
+    producto: null,
+    data: [],
+    loading: false
+  });
 
   useEffect(() => {
     loadServers();
@@ -388,6 +397,80 @@ const Reportes = () => {
     }).format(num);
   };
 
+  // Función para cargar el detalle de movimientos
+  const loadMovementDetails = async (producto) => {
+    setDetailModal({
+      open: true,
+      type: 'movimientos',
+      producto: producto,
+      data: [],
+      loading: true
+    });
+
+    try {
+      const response = await api.post('/reports/movement-details', {
+        server_id: filters.server_id,
+        producto_codigo: producto.Codigo,
+        sucursal: filters.sucursal,
+        almacen: filters.almacen,
+        fecha_ini: filters.fecha_ini,
+        fecha_fin: filters.fecha_fin
+      });
+      
+      setDetailModal(prev => ({
+        ...prev,
+        data: response.data.data,
+        loading: false
+      }));
+    } catch (error) {
+      console.error('Error al cargar detalle de movimientos:', error);
+      toast.error('Error al cargar detalle de movimientos');
+      setDetailModal(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  // Función para cargar el detalle de ventas
+  const loadSalesDetails = async (producto) => {
+    setDetailModal({
+      open: true,
+      type: 'ventas',
+      producto: producto,
+      data: [],
+      loading: true
+    });
+
+    try {
+      const response = await api.post('/reports/sales-details', {
+        server_id: filters.server_id,
+        producto_codigo: producto.Codigo,
+        sucursal: filters.sucursal,
+        fecha_ini: filters.fecha_ini,
+        fecha_fin: filters.fecha_fin
+      });
+      
+      setDetailModal(prev => ({
+        ...prev,
+        data: response.data.data,
+        loading: false
+      }));
+    } catch (error) {
+      console.error('Error al cargar detalle de ventas:', error);
+      toast.error('Error al cargar detalle de ventas');
+      setDetailModal(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  // Cerrar modal
+  const closeDetailModal = () => {
+    setDetailModal({
+      open: false,
+      type: '',
+      producto: null,
+      data: [],
+      loading: false
+    });
+  };
+
   return (
     <div className="space-y-6" data-testid="reportes-page">
       <div>
@@ -618,6 +701,9 @@ const Reportes = () => {
             </div>
           </CardHeader>
           <CardContent>
+            <p className="text-xs text-zinc-500 mb-2 italic">
+              💡 Doble clic en las columnas Movimientos o Ventas para ver el detalle
+            </p>
             <div className="rounded-md border border-zinc-200 overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -637,11 +723,23 @@ const Reportes = () => {
                         const isDiferencia = key.toLowerCase().includes('diferencia');
                         const isCosto = key.toLowerCase().includes('costo');
                         const isPorcentaje = key.toLowerCase().includes('porcentaje');
+                        const isMovimientos = key === 'Movimientos';
+                        const isVentas = key === 'Ventas';
                         
                         let displayValue = value;
                         let className = "text-sm font-data text-zinc-700";
+                        let onDoubleClick = null;
                         
-                        if (isPorcentaje && value !== null && value !== undefined) {
+                        // Columnas clickeables para ver detalle
+                        if (isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                          onDoubleClick = () => loadMovementDetails(row);
+                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline";
+                          displayValue = formatNumber(value);
+                        } else if (isVentas && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                          onDoubleClick = () => loadSalesDetails(row);
+                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline";
+                          displayValue = formatNumber(value);
+                        } else if (isPorcentaje && value !== null && value !== undefined) {
                           displayValue = `${formatNumber(value)}%`;
                           className = `text-sm font-data font-semibold ${getDifferenceColor(parseFloat(value))}`;
                         } else if (isCosto && value !== null && value !== undefined) {
@@ -663,7 +761,12 @@ const Reportes = () => {
                         }
                         
                         return (
-                          <TableCell key={cellIdx} className={className}>
+                          <TableCell 
+                            key={cellIdx} 
+                            className={className}
+                            onDoubleClick={onDoubleClick}
+                            title={onDoubleClick ? 'Doble clic para ver detalle' : ''}
+                          >
                             {displayValue}
                           </TableCell>
                         );
@@ -692,6 +795,129 @@ const Reportes = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Modal de Detalle - Simple HTML/CSS sin Radix */}
+      {detailModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/50"
+            onClick={closeDetailModal}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {detailModal.type === 'movimientos' ? 'Detalle de Movimientos' : 'Detalle de Ventas'}
+                </h2>
+                {detailModal.producto && (
+                  <p className="text-sm text-zinc-600">
+                    Producto: <strong>{detailModal.producto.Codigo}</strong> - {detailModal.producto.Producto}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={closeDetailModal}
+                className="p-2 hover:bg-zinc-100 rounded-full"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            {/* Body */}
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              {detailModal.loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+                  <span className="ml-2 text-zinc-500">Cargando detalle...</span>
+                </div>
+              ) : detailModal.data.length === 0 ? (
+                <div className="text-center py-8 text-zinc-500">
+                  <AlertCircle className="h-8 w-8 mx-auto mb-2 text-zinc-400" />
+                  <p>No se encontraron registros</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-zinc-50">
+                        {detailModal.type === 'movimientos' ? (
+                          <>
+                            <TableHead className="text-xs uppercase font-medium">Folio</TableHead>
+                            <TableHead className="text-xs uppercase font-medium">Fecha</TableHead>
+                            <TableHead className="text-xs uppercase font-medium text-right">Cantidad</TableHead>
+                            <TableHead className="text-xs uppercase font-medium">Tipo</TableHead>
+                            <TableHead className="text-xs uppercase font-medium">Descripción</TableHead>
+                            <TableHead className="text-xs uppercase font-medium">Almacén</TableHead>
+                            <TableHead className="text-xs uppercase font-medium">Observaciones</TableHead>
+                          </>
+                        ) : (
+                          <>
+                            <TableHead className="text-xs uppercase font-medium">Folio</TableHead>
+                            <TableHead className="text-xs uppercase font-medium">Fecha</TableHead>
+                            <TableHead className="text-xs uppercase font-medium text-right">Cantidad</TableHead>
+                            <TableHead className="text-xs uppercase font-medium">Tipo</TableHead>
+                            <TableHead className="text-xs uppercase font-medium">Producto Vendido</TableHead>
+                            <TableHead className="text-xs uppercase font-medium text-right">Precio Unit.</TableHead>
+                            <TableHead className="text-xs uppercase font-medium">Sucursal</TableHead>
+                          </>
+                        )}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {detailModal.data.map((item, idx) => (
+                        <TableRow key={idx} className="hover:bg-zinc-50/50">
+                          {detailModal.type === 'movimientos' ? (
+                            <>
+                              <TableCell className="font-mono text-sm">{item.folio}</TableCell>
+                              <TableCell className="text-sm">{item.fecha}</TableCell>
+                              <TableCell className={`text-sm text-right font-semibold ${item.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatNumber(item.cantidad)}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.tipo_movimiento === 'Entrada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                  {item.tipo_movimiento}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-sm">{item.tipo_descripcion}</TableCell>
+                              <TableCell className="text-sm">{item.almacen}</TableCell>
+                              <TableCell className="text-sm text-zinc-500 max-w-xs truncate">{item.observaciones}</TableCell>
+                            </>
+                          ) : (
+                            <>
+                              <TableCell className="font-mono text-sm">{item.folio}</TableCell>
+                              <TableCell className="text-sm">{item.fecha}</TableCell>
+                              <TableCell className="text-sm text-right font-semibold">{formatNumber(item.cantidad)}</TableCell>
+                              <TableCell className="text-sm">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.tipo_venta === 'DIRECTA' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                                  {item.tipo_venta}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-sm">{item.producto_vendido || item.producto}</TableCell>
+                              <TableCell className="text-sm text-right">{formatCurrency(item.precio_unitario)}</TableCell>
+                              <TableCell className="text-sm">{item.sucursal}</TableCell>
+                            </>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+            
+            {/* Footer */}
+            {detailModal.data.length > 0 && (
+              <div className="p-4 border-t text-sm text-zinc-500 text-right">
+                Total: {detailModal.data.length} registro(s)
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
