@@ -1336,6 +1336,65 @@ async def generate_inventory_report(report_params: Dict, current_user: Dict = De
     
     return {"data": results, "count": len(results)}
 
+@api_router.get("/servers/{server_id}/report-filters")
+async def get_report_filters(server_id: str, current_user: Dict = Depends(get_current_user)):
+    """
+    Obtiene las opciones de filtros (categorías, familias, subfamilias) para el reporte de análisis.
+    Solo para MPRO por ahora.
+    """
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if server['system_type'] != 'MPRO':
+        return {"categorias": [], "familias": [], "subfamilias": []}
+    
+    try:
+        # Obtener categorías
+        categorias_query = """
+            SELECT DISTINCT Ct_Cve_Categoria as id, Ct_Descripcion as nombre 
+            FROM Categoria 
+            WHERE Es_Cve_Estado <> 'BA'
+            ORDER BY Ct_Descripcion
+        """
+        categorias = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], categorias_query
+        )
+        
+        # Obtener familias
+        familias_query = """
+            SELECT DISTINCT Fm_Cve_Familia as id, Fm_Descripcion as nombre 
+            FROM Familia 
+            WHERE Es_Cve_Estado <> 'BA'
+            ORDER BY Fm_Descripcion
+        """
+        familias = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], familias_query
+        )
+        
+        # Obtener subfamilias
+        subfamilias_query = """
+            SELECT DISTINCT Sf_Cve_SubFamilia as id, Sf_Descripcion as nombre 
+            FROM SubFamilia 
+            WHERE Es_Cve_Estado <> 'BA'
+            ORDER BY Sf_Descripcion
+        """
+        subfamilias = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], subfamilias_query
+        )
+        
+        return {
+            "categorias": categorias or [],
+            "familias": familias or [],
+            "subfamilias": subfamilias or []
+        }
+    except Exception as e:
+        logging.error(f"Error obteniendo filtros: {str(e)}")
+        return {"categorias": [], "familias": [], "subfamilias": []}
+
 @api_router.post("/reports/inventory-analysis")
 async def generate_inventory_analysis(report_params: Dict, current_user: Dict = Depends(get_current_user)):
     """
@@ -1547,6 +1606,12 @@ GROUP BY E.Pr_Cve_Producto
                 diferencia_costo = diferencia_cantidad * costo
                 diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
                 
+                # Nuevas columnas solicitadas
+                # Valor Real = (Inv_Inicial + Movimientos - Inv_Final) * Costo
+                valor_real = (inv_inicial + movimientos - inv_final) * costo
+                # Teórico = Ventas * Costo
+                teorico_ventas = ventas_total * costo
+                
                 results.append({
                     'Categoria': prod.get('Categoria'),
                     'Familia': prod.get('Familia'),
@@ -1567,7 +1632,9 @@ GROUP BY E.Pr_Cve_Producto
                     'Inv_Final_Costo': round(inv_final * costo, 2),
                     'Diferencia_Cantidad': round(diferencia_cantidad, 2),
                     'Diferencia_Costo': round(diferencia_costo, 2),
-                    'Diferencia_Porcentaje': round(diferencia_porcentaje, 2)
+                    'Diferencia_Porcentaje': round(diferencia_porcentaje, 2),
+                    'Valor_Real': round(valor_real, 2),
+                    'Teorico': round(teorico_ventas, 2)
                 })
             
             logging.info(f"Análisis completado: {len(results)} productos procesados")
@@ -2029,6 +2096,7 @@ def get_dashboard_inventory_query_softrestaurant(departamentos=None, categorias=
     Consulta para obtener datos de inventario físico de SoftRestaurant
     para el dashboard con análisis de diferencias.
     Aplica filtros de departamentos (almacenes) y categorías (gruposi).
+    Solo incluye productos inventariables.
     """
     # Construir filtros
     filtro_almacen = ""
@@ -2083,6 +2151,7 @@ def get_dashboard_inventory_query_softrestaurant(departamentos=None, categorias=
     LEFT JOIN gruposi GS ON GS.idgruposi = COALESCE(IP.idgruposi, I.idgruposi)
     LEFT JOIN almacen ALM ON ALM.idalmacen = INV.idalmacen1
     WHERE INV.cancelado = 0
+        AND COALESCE(I.esinventariable, 1) = 1
     {filtro_almacen}
     {filtro_categoria}
     ORDER BY INV.idalmacen1, INV.folio, DET.idpresentacion
@@ -2093,7 +2162,8 @@ def get_dashboard_inventory_query_mpro(departamentos=None, categorias=None):
     """
     Consulta para obtener datos de inventario físico de MPRO
     para el dashboard con análisis de diferencias.
-    Usa la tabla Fisico con sus columnas: Fi_Cantidad_1 (teórica), Fi_Cantidad_Control_1 (física)
+    - Inventario inicial = último inventario del mes ANTERIOR
+    - Inventario final = último inventario del mes ACTUAL
     """
     # Construir filtros
     filtro_departamento = ""
@@ -2107,13 +2177,22 @@ def get_dashboard_inventory_query_mpro(departamentos=None, categorias=None):
         filtro_categoria = f"AND P.Ct_Cve_Categoria IN ({cat_sql})"
     
     return f"""
-    WITH InventariosMes AS (
+    WITH InventarioMesAnterior AS (
+        -- Último inventario del mes anterior (INICIAL)
         SELECT 
             Al_Cve_Almacen as almacen,
-            MIN(Fi_Folio) as primer_folio,
-            MAX(Fi_Folio) as ultimo_folio,
-            MIN(Fi_Fecha) as primera_fecha,
-            MAX(Fi_Fecha) as ultima_fecha
+            MAX(Fi_Folio) as folio_inicial
+        FROM Fisico
+        WHERE Es_Cve_Estado <> 'CA'
+            AND MONTH(Fi_Fecha) = MONTH(DATEADD(MONTH, -1, GETDATE()))
+            AND YEAR(Fi_Fecha) = YEAR(DATEADD(MONTH, -1, GETDATE()))
+        GROUP BY Al_Cve_Almacen
+    ),
+    InventarioMesActual AS (
+        -- Último inventario del mes actual (FINAL)
+        SELECT 
+            Al_Cve_Almacen as almacen,
+            MAX(Fi_Folio) as folio_final
         FROM Fisico
         WHERE Es_Cve_Estado <> 'CA'
             AND MONTH(Fi_Fecha) = MONTH(GETDATE())
@@ -2134,17 +2213,18 @@ def get_dashboard_inventory_query_mpro(departamentos=None, categorias=None):
         (F.Fi_Cantidad_Control_1 - F.Fi_Cantidad_1) as diferencia,
         ((F.Fi_Cantidad_Control_1 - F.Fi_Cantidad_1) * F.Fi_Costo) as costo_diferencia,
         CASE 
-            WHEN F.Fi_Folio = IM.primer_folio THEN 'INICIAL'
-            WHEN F.Fi_Folio = IM.ultimo_folio THEN 'FINAL'
+            WHEN F.Fi_Folio = IMA.folio_inicial THEN 'INICIAL'
+            WHEN F.Fi_Folio = IMC.folio_final THEN 'FINAL'
             ELSE 'INTERMEDIO'
         END as tipo_inventario
     FROM Fisico F
-    INNER JOIN InventariosMes IM ON IM.almacen = F.Al_Cve_Almacen 
-        AND (F.Fi_Folio = IM.primer_folio OR F.Fi_Folio = IM.ultimo_folio)
+    LEFT JOIN InventarioMesAnterior IMA ON IMA.almacen = F.Al_Cve_Almacen
+    LEFT JOIN InventarioMesActual IMC ON IMC.almacen = F.Al_Cve_Almacen
     INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen
     INNER JOIN Producto P ON P.Pr_Cve_Producto = F.Pr_Cve_Producto
     LEFT JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
     WHERE F.Es_Cve_Estado <> 'CA'
+        AND (F.Fi_Folio = IMA.folio_inicial OR F.Fi_Folio = IMC.folio_final)
     {filtro_departamento}
     {filtro_categoria}
     ORDER BY F.Al_Cve_Almacen, F.Fi_Folio, F.Pr_Cve_Producto
