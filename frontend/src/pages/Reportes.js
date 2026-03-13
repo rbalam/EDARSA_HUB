@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, ChevronDown, X, Filter } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, ChevronDown, X, Filter, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -49,6 +50,15 @@ const Reportes = () => {
   const [selectedFamilias, setSelectedFamilias] = useState([]);
   const [selectedSubfamilias, setSelectedSubfamilias] = useState([]);
   const [loadingFilters, setLoadingFilters] = useState(false);
+
+  // Estados para el modal de detalle de movimientos/ventas
+  const [detailDialog, setDetailDialog] = useState({
+    open: false,
+    type: '', // 'movimientos' o 'ventas'
+    producto: null,
+    data: [],
+    loading: false
+  });
 
   useEffect(() => {
     loadServers();
@@ -424,6 +434,86 @@ const Reportes = () => {
       style: 'currency', 
       currency: 'MXN' 
     }).format(num);
+  };
+
+  // Función para cargar el detalle de movimientos
+  const loadMovementDetails = async (producto) => {
+    setDetailDialog({
+      open: true,
+      type: 'movimientos',
+      producto: producto,
+      data: [],
+      loading: true
+    });
+
+    try {
+      const response = await api.post('/reports/movement-details', {
+        server_id: filters.server_id,
+        producto_codigo: producto.Codigo,
+        sucursal: filters.sucursal,
+        almacen: filters.almacen,
+        fecha_ini: filters.fecha_ini,
+        fecha_fin: filters.fecha_fin
+      });
+      
+      setDetailDialog(prev => ({
+        ...prev,
+        data: response.data.data,
+        loading: false
+      }));
+    } catch (error) {
+      console.error('Error al cargar detalle de movimientos:', error);
+      toast.error('Error al cargar detalle de movimientos');
+      setDetailDialog(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  // Función para cargar el detalle de ventas
+  const loadSalesDetails = async (producto) => {
+    setDetailDialog({
+      open: true,
+      type: 'ventas',
+      producto: producto,
+      data: [],
+      loading: true
+    });
+
+    try {
+      const response = await api.post('/reports/sales-details', {
+        server_id: filters.server_id,
+        producto_codigo: producto.Codigo,
+        sucursal: filters.sucursal,
+        fecha_ini: filters.fecha_ini,
+        fecha_fin: filters.fecha_fin
+      });
+      
+      setDetailDialog(prev => ({
+        ...prev,
+        data: response.data.data,
+        loading: false
+      }));
+    } catch (error) {
+      console.error('Error al cargar detalle de ventas:', error);
+      toast.error('Error al cargar detalle de ventas');
+      setDetailDialog(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  // Función para renderizar una celda clickeable
+  const renderClickableCell = (value, producto, type) => {
+    const numValue = parseFloat(value) || 0;
+    if (numValue === 0) return formatNumber(numValue);
+    
+    return (
+      <button
+        onClick={() => type === 'movimientos' ? loadMovementDetails(producto) : loadSalesDetails(producto)}
+        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-semibold flex items-center gap-1"
+        title={`Ver detalle de ${type}`}
+      >
+        <Eye className="h-3 w-3" />
+        {formatNumber(numValue)}
+      </button>
+    );
   };
 
   return (
@@ -894,11 +984,18 @@ const Reportes = () => {
                         const isDiferencia = key.toLowerCase().includes('diferencia');
                         const isCosto = key.toLowerCase().includes('costo');
                         const isPorcentaje = key.toLowerCase().includes('porcentaje');
+                        const isMovimientos = key === 'Movimientos';
+                        const isVentas = key === 'Ventas';
                         
                         let displayValue = value;
                         let className = "text-sm font-data text-zinc-700";
                         
-                        if (isPorcentaje && value !== null && value !== undefined) {
+                        // Columnas clickeables para ver detalle
+                        if (isMovimientos && value !== null && value !== undefined) {
+                          displayValue = renderClickableCell(value, row, 'movimientos');
+                        } else if (isVentas && value !== null && value !== undefined) {
+                          displayValue = renderClickableCell(value, row, 'ventas');
+                        } else if (isPorcentaje && value !== null && value !== undefined) {
                           displayValue = `${formatNumber(value)}%`;
                           className = `text-sm font-data font-semibold ${getDifferenceColor(parseFloat(value))}`;
                         } else if (isCosto && value !== null && value !== undefined) {
@@ -950,6 +1047,109 @@ const Reportes = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modal de Detalle de Movimientos/Ventas */}
+      <Dialog open={detailDialog.open} onOpenChange={(open) => setDetailDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">
+              {detailDialog.type === 'movimientos' ? 'Detalle de Movimientos' : 'Detalle de Ventas'}
+            </DialogTitle>
+            <DialogDescription>
+              {detailDialog.producto && (
+                <span className="text-zinc-600">
+                  Producto: <strong>{detailDialog.producto.Codigo}</strong> - {detailDialog.producto.Producto}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailDialog.loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+              <span className="ml-2 text-zinc-500">Cargando detalle...</span>
+            </div>
+          ) : detailDialog.data.length === 0 ? (
+            <div className="text-center py-8 text-zinc-500">
+              <AlertCircle className="h-8 w-8 mx-auto mb-2 text-zinc-400" />
+              <p>No se encontraron registros</p>
+            </div>
+          ) : (
+            <div className="rounded-md border border-zinc-200 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-zinc-50">
+                    {detailDialog.type === 'movimientos' ? (
+                      <>
+                        <TableHead className="text-xs uppercase font-medium">Folio</TableHead>
+                        <TableHead className="text-xs uppercase font-medium">Fecha</TableHead>
+                        <TableHead className="text-xs uppercase font-medium text-right">Cantidad</TableHead>
+                        <TableHead className="text-xs uppercase font-medium">Tipo</TableHead>
+                        <TableHead className="text-xs uppercase font-medium">Descripción</TableHead>
+                        <TableHead className="text-xs uppercase font-medium">Almacén</TableHead>
+                        <TableHead className="text-xs uppercase font-medium">Observaciones</TableHead>
+                      </>
+                    ) : (
+                      <>
+                        <TableHead className="text-xs uppercase font-medium">Folio</TableHead>
+                        <TableHead className="text-xs uppercase font-medium">Fecha</TableHead>
+                        <TableHead className="text-xs uppercase font-medium text-right">Cantidad</TableHead>
+                        <TableHead className="text-xs uppercase font-medium">Tipo</TableHead>
+                        <TableHead className="text-xs uppercase font-medium">Producto Vendido</TableHead>
+                        <TableHead className="text-xs uppercase font-medium text-right">Precio Unit.</TableHead>
+                        <TableHead className="text-xs uppercase font-medium">Sucursal</TableHead>
+                      </>
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {detailDialog.data.map((item, idx) => (
+                    <TableRow key={idx} className="hover:bg-zinc-50/50">
+                      {detailDialog.type === 'movimientos' ? (
+                        <>
+                          <TableCell className="font-mono text-sm">{item.folio}</TableCell>
+                          <TableCell className="text-sm">{item.fecha}</TableCell>
+                          <TableCell className={`text-sm text-right font-semibold ${item.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatNumber(item.cantidad)}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.tipo_movimiento === 'Entrada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                              {item.tipo_movimiento}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-sm">{item.tipo_descripcion}</TableCell>
+                          <TableCell className="text-sm">{item.almacen}</TableCell>
+                          <TableCell className="text-sm text-zinc-500 max-w-xs truncate">{item.observaciones}</TableCell>
+                        </>
+                      ) : (
+                        <>
+                          <TableCell className="font-mono text-sm">{item.folio}</TableCell>
+                          <TableCell className="text-sm">{item.fecha}</TableCell>
+                          <TableCell className="text-sm text-right font-semibold">{formatNumber(item.cantidad)}</TableCell>
+                          <TableCell className="text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.tipo_venta === 'DIRECTA' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                              {item.tipo_venta}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-sm">{item.producto_vendido || item.producto}</TableCell>
+                          <TableCell className="text-sm text-right">{formatCurrency(item.precio_unitario)}</TableCell>
+                          <TableCell className="text-sm">{item.sucursal}</TableCell>
+                        </>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          
+          {detailDialog.data.length > 0 && (
+            <div className="text-sm text-zinc-500 text-right mt-2">
+              Total: {detailDialog.data.length} registro(s)
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
