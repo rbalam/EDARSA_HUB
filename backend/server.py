@@ -1726,8 +1726,7 @@ SELECT
     TM.Tm_Descripcion as Tipo_Descripcion,
     TM.Tm_Tipo as Tipo_Movimiento,
     P.Pr_Descripcion as Producto,
-    A.Al_Descripcion as Almacen,
-    M.Mv_Observaciones as Observaciones
+    A.Al_Descripcion as Almacen
 FROM Movimiento M
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
 INNER JOIN Producto P ON P.Pr_Cve_Producto = M.Pr_Cve_Producto
@@ -1759,7 +1758,7 @@ ORDER BY M.Mv_Fecha DESC
                     'tipo_movimiento': tipo_texto,
                     'producto': row.get('Producto'),
                     'almacen': row.get('Almacen'),
-                    'observaciones': row.get('Observaciones') or ''
+                    'observaciones': ''
                 })
             
             return {"data": movements, "count": len(movements)}
@@ -2442,7 +2441,6 @@ def get_dashboard_inventory_query_softrestaurant(departamentos=None, categorias=
     LEFT JOIN gruposi GS ON GS.idgruposi = COALESCE(IP.idgruposi, I.idgruposi)
     LEFT JOIN almacen ALM ON ALM.idalmacen = INV.idalmacen1
     WHERE INV.cancelado = 0
-        AND COALESCE(I.esinventariable, 1) = 1
     {filtro_almacen}
     {filtro_categoria}
     ORDER BY INV.idalmacen1, INV.folio, DET.idpresentacion

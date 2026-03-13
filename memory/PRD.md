@@ -64,6 +64,11 @@ User {
 
 ## Lo Implementado
 
+### 2025-03-13 - Correcciones Finales
+- **Backend - Corregido error SQL en detalle de movimientos**: Removida columna `Mv_Observaciones` que no existe en MPRO
+- **Backend - Corregido error SQL en Dashboard SoftRestaurant**: Removido filtro por columna `esinventariable` que no existe
+- **Frontend - Restaurados filtros multiselección**: Categorías, Familias, SubFamilias funcionando correctamente
+
 ### 2025-03-13 - Optimización de Carga del Dashboard
 - **Dashboard NO carga datos automáticamente al iniciar sesión**
 - El usuario debe seleccionar manualmente un servidor para cargar los datos

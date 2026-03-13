@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -46,6 +48,17 @@ const Reportes = () => {
     loading: false
   });
 
+  // Estados para filtros de categoría/familia/subfamilia
+  const [filterOptions, setFilterOptions] = useState({
+    categorias: [],
+    familias: [],
+    subfamilias: []
+  });
+  const [selectedCategorias, setSelectedCategorias] = useState([]);
+  const [selectedFamilias, setSelectedFamilias] = useState([]);
+  const [selectedSubfamilias, setSelectedSubfamilias] = useState([]);
+  const [loadingFilters, setLoadingFilters] = useState(false);
+
   useEffect(() => {
     loadServers();
   }, []);
@@ -53,11 +66,32 @@ const Reportes = () => {
   useEffect(() => {
     if (filters.server_id) {
       loadSucursales();
+      loadReportFilters();
       // Guardar el servidor seleccionado
       const server = servers.find(s => s.id === filters.server_id);
       setSelectedServer(server);
     }
   }, [filters.server_id, servers]);
+
+  // Cargar opciones de filtros (categorías, familias, subfamilias)
+  const loadReportFilters = async () => {
+    if (!filters.server_id) return;
+    
+    setLoadingFilters(true);
+    try {
+      const response = await api.get(`/servers/${filters.server_id}/report-filters`);
+      setFilterOptions({
+        categorias: response.data.categorias || [],
+        familias: response.data.familias || [],
+        subfamilias: response.data.subfamilias || []
+      });
+    } catch (error) {
+      console.error('Error al cargar filtros:', error);
+      setFilterOptions({ categorias: [], familias: [], subfamilias: [] });
+    } finally {
+      setLoadingFilters(false);
+    }
+  };
 
   useEffect(() => {
     if (filters.server_id && filters.sucursal_id) {
@@ -158,7 +192,7 @@ const Reportes = () => {
       let response;
       
       if (filters.query_type === 'analisis') {
-        // Llamar al endpoint de análisis completo
+        // Llamar al endpoint de análisis completo con filtros adicionales
         response = await api.post('/reports/inventory-analysis', {
           server_id: filters.server_id,
           sucursal: filters.sucursal,
@@ -166,7 +200,11 @@ const Reportes = () => {
           fecha_ini: filters.fecha_ini,
           fecha_fin: filters.fecha_fin,
           folio_inicial: filters.inventario_inicial,
-          folio_final: filters.inventario_final
+          folio_final: filters.inventario_final,
+          // Filtros adicionales
+          categorias: selectedCategorias,
+          familias: selectedFamilias,
+          subfamilias: selectedSubfamilias
         });
       } else {
         // Llamar al endpoint normal de reportes
@@ -643,6 +681,225 @@ const Reportes = () => {
               />
             </div>
           </div>
+
+          {/* Filtros adicionales (Categoría, Familia, SubFamilia) - Solo para MPRO */}
+          {filters.query_type === 'analisis' && selectedServer?.system_type === 'MPRO' && (
+            <div className="mt-6 pt-4 border-t border-zinc-200">
+              <div className="flex items-center gap-2 mb-4">
+                <Filter className="h-4 w-4 text-zinc-500" />
+                <h3 className="text-sm font-semibold text-zinc-700">Filtros Adicionales (Opcional)</h3>
+                {loadingFilters && <span className="text-xs text-zinc-400">Cargando...</span>}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Multiselect Categorías */}
+                <div className="space-y-2">
+                  <Label>Categorías</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-between font-normal"
+                        data-testid="categorias-multiselect"
+                        disabled={filterOptions.categorias.length === 0}
+                      >
+                        <span className="truncate">
+                          {selectedCategorias.length === 0 
+                            ? 'Todas las categorías' 
+                            : `${selectedCategorias.length} seleccionada(s)`}
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-2 max-h-64 overflow-y-auto">
+                      {selectedCategorias.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full mb-2 text-xs"
+                          onClick={() => setSelectedCategorias([])}
+                        >
+                          <X className="h-3 w-3 mr-1" /> Limpiar selección
+                        </Button>
+                      )}
+                      {filterOptions.categorias.map((cat) => (
+                        <div key={cat.id} className="flex items-center space-x-2 py-1.5 px-2 hover:bg-zinc-50 rounded">
+                          <Checkbox
+                            id={`cat-${cat.id}`}
+                            checked={selectedCategorias.includes(cat.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedCategorias([...selectedCategorias, cat.id]);
+                              } else {
+                                setSelectedCategorias(selectedCategorias.filter(c => c !== cat.id));
+                              }
+                            }}
+                          />
+                          <label htmlFor={`cat-${cat.id}`} className="text-sm cursor-pointer flex-1">
+                            {cat.nombre}
+                          </label>
+                        </div>
+                      ))}
+                      {filterOptions.categorias.length === 0 && (
+                        <p className="text-xs text-zinc-400 text-center py-2">No hay categorías disponibles</p>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Multiselect Familias */}
+                <div className="space-y-2">
+                  <Label>Familias</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-between font-normal"
+                        data-testid="familias-multiselect"
+                        disabled={filterOptions.familias.length === 0}
+                      >
+                        <span className="truncate">
+                          {selectedFamilias.length === 0 
+                            ? 'Todas las familias' 
+                            : `${selectedFamilias.length} seleccionada(s)`}
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-2 max-h-64 overflow-y-auto">
+                      {selectedFamilias.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full mb-2 text-xs"
+                          onClick={() => setSelectedFamilias([])}
+                        >
+                          <X className="h-3 w-3 mr-1" /> Limpiar selección
+                        </Button>
+                      )}
+                      {filterOptions.familias.map((fam) => (
+                        <div key={fam.id} className="flex items-center space-x-2 py-1.5 px-2 hover:bg-zinc-50 rounded">
+                          <Checkbox
+                            id={`fam-${fam.id}`}
+                            checked={selectedFamilias.includes(fam.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedFamilias([...selectedFamilias, fam.id]);
+                              } else {
+                                setSelectedFamilias(selectedFamilias.filter(f => f !== fam.id));
+                              }
+                            }}
+                          />
+                          <label htmlFor={`fam-${fam.id}`} className="text-sm cursor-pointer flex-1">
+                            {fam.nombre}
+                          </label>
+                        </div>
+                      ))}
+                      {filterOptions.familias.length === 0 && (
+                        <p className="text-xs text-zinc-400 text-center py-2">No hay familias disponibles</p>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Multiselect SubFamilias */}
+                <div className="space-y-2">
+                  <Label>SubFamilias</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-between font-normal"
+                        data-testid="subfamilias-multiselect"
+                        disabled={filterOptions.subfamilias.length === 0}
+                      >
+                        <span className="truncate">
+                          {selectedSubfamilias.length === 0 
+                            ? 'Todas las subfamilias' 
+                            : `${selectedSubfamilias.length} seleccionada(s)`}
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-2 max-h-64 overflow-y-auto">
+                      {selectedSubfamilias.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full mb-2 text-xs"
+                          onClick={() => setSelectedSubfamilias([])}
+                        >
+                          <X className="h-3 w-3 mr-1" /> Limpiar selección
+                        </Button>
+                      )}
+                      {filterOptions.subfamilias.map((sf) => (
+                        <div key={sf.id} className="flex items-center space-x-2 py-1.5 px-2 hover:bg-zinc-50 rounded">
+                          <Checkbox
+                            id={`sf-${sf.id}`}
+                            checked={selectedSubfamilias.includes(sf.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedSubfamilias([...selectedSubfamilias, sf.id]);
+                              } else {
+                                setSelectedSubfamilias(selectedSubfamilias.filter(s => s !== sf.id));
+                              }
+                            }}
+                          />
+                          <label htmlFor={`sf-${sf.id}`} className="text-sm cursor-pointer flex-1">
+                            {sf.nombre}
+                          </label>
+                        </div>
+                      ))}
+                      {filterOptions.subfamilias.length === 0 && (
+                        <p className="text-xs text-zinc-400 text-center py-2">No hay subfamilias disponibles</p>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+              
+              {/* Resumen de filtros seleccionados */}
+              {(selectedCategorias.length > 0 || selectedFamilias.length > 0 || selectedSubfamilias.length > 0) && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selectedCategorias.map(id => {
+                    const cat = filterOptions.categorias.find(c => c.id === id);
+                    return cat && (
+                      <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">
+                        {cat.nombre}
+                        <X 
+                          className="h-3 w-3 cursor-pointer hover:text-blue-900" 
+                          onClick={() => setSelectedCategorias(selectedCategorias.filter(c => c !== id))}
+                        />
+                      </span>
+                    );
+                  })}
+                  {selectedFamilias.map(id => {
+                    const fam = filterOptions.familias.find(f => f.id === id);
+                    return fam && (
+                      <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full">
+                        {fam.nombre}
+                        <X 
+                          className="h-3 w-3 cursor-pointer hover:text-green-900" 
+                          onClick={() => setSelectedFamilias(selectedFamilias.filter(f => f !== id))}
+                        />
+                      </span>
+                    );
+                  })}
+                  {selectedSubfamilias.map(id => {
+                    const sf = filterOptions.subfamilias.find(s => s.id === id);
+                    return sf && (
+                      <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full">
+                        {sf.nombre}
+                        <X 
+                          className="h-3 w-3 cursor-pointer hover:text-purple-900" 
+                          onClick={() => setSelectedSubfamilias(selectedSubfamilias.filter(s => s !== id))}
+                        />
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-2 mt-4">
             <Button 
