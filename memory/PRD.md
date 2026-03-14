@@ -9,78 +9,69 @@ Aplicación web para analizar inventarios de múltiples sucursales. Los datos se
 - **Frontend**: React, TailwindCSS, Shadcn UI, Recharts
 - **Backend**: FastAPI, Python
 - **Base de Datos**: MongoDB (configuración), SQL Server (datos de inventario)
-- **Bibliotecas SQL**: pytds (principal), pymssql (fallback)
+- **Bibliotecas SQL**: pytds (principal)
 
 ### Endpoints Principales
 - `POST /api/auth/login` - Autenticación
-- `GET/POST /api/servers` - CRUD de servidores
-- `GET /api/servers/{id}/almacenes-softrestaurant` - Lista de almacenes para SoftRestaurant
-- `GET /api/servers/{id}/inventarios` - Lista de inventarios físicos
-- `GET /api/servers/{id}/report-filters` - Obtiene filtros (categorías, familias, subfamilias)
 - `POST /api/reports/inventory-analysis` - Análisis de inventario principal
-- `POST /api/reports/movement-details` - Detalle de movimientos por producto
-- `POST /api/reports/sales-details` - Detalle de ventas por producto
-- `POST /api/reports/export/excel` - Exportar Excel
+- `GET /api/servers/{id}/almacenes-softrestaurant` - Lista de almacenes
+- `GET /api/servers/{id}/inventarios` - Lista de inventarios físicos
 
 ## Lo Implementado
 
-### 2026-03-14 - Soporte Completo para SoftRestaurant (Almacenes de Bodega y Consumo)
-**CORRECCIÓN CRÍTICA**: El reporte ahora funciona para AMBOS tipos de almacén en SoftRestaurant:
+### 2026-03-14 - Reporte SoftRestaurant Corregido (Basado en consultas Power BI)
 
-#### Almacén Tipo 1 (CONSUMO - ej. "100 PRODUCCION"):
-- Usa `idinsumo` directamente en `invfisicomovtos`
-- Movimientos desde tabla `movsinv`
-- Ventas calculadas desde `explosioninsumosdetalle` (si hay recetas configuradas)
+#### Lógica Correcta Implementada:
 
-#### Almacén Tipo 2 (BODEGA/PRESENTACIONES - ej. "001 BODEGA"):
-- Usa `idpresentacion` en `invfisicomovtos` → se relaciona con `insumospresentaciones` → `insumos`
-- Movimientos desde tabla `movtosalmacen`
-- NO tiene ventas (es almacén de almacenamiento, no consumo)
+**1. PRODUCTOS (Catálogo)**
+- UNION de INSUMOS inventariables (`insumosdetalle.inventariable = 1`) + PRESENTACIONES
+- Código con prefijo: `LEFT(clasificacion.descripcion,1) + RTRIM(LTRIM(id))`
+- Ejemplo: clasificación "ALIMENTOS" + idinsumo "100043" = **"A100043"**
 
-**Resultados Verificados:**
-- **001 BODEGA (folio 141 vs 149)**: 10,156 productos, 8,591 con costo, 3,794 con movimientos
-- **100 PRODUCCION (folio 143 vs 150)**: 124 productos, 32 con costo, 23 con movimientos
+**2. INVENTARIOS (invfisicomovtos)**
+- Una sola consulta que maneja AMBOS tipos:
+  - Si `idinsumo = ''` → Es PRESENTACIÓN, usa `idpresentacion`
+  - Si `idinsumo <> ''` → Es INSUMO, usa `idinsumo`
+- El código usa el mismo formato con prefijo de clasificación
 
-### 2026-03-14 - Correcciones SQL Previas
-- Columnas inexistentes eliminadas: `unidaddecompra`, `costounitario`
-- Tabla de movimientos corregida: `movimientosinventario` → `movsinv` (para consumo)
-- Problema de espacios en `idalmacen`: Agregado `RTRIM()` para comparaciones
-- Fechas auto-calculadas desde los folios de inventario seleccionados
+**3. MOVIMIENTOS**
+- UNION de dos tablas:
+  - `movsinv` → Para INSUMOS
+  - `movtosalmacen` → Para PRESENTACIONES
+- Ambas se consultan para TODOS los almacenes
 
-### Sesiones Anteriores
-- Dashboard sin carga automática (resuelve timeout en login)
-- Filtros multiselección (Clasificación, Grupos, SubGrupos para SoftRestaurant)
-- Modal de detalle con doble clic en Movimientos/Ventas
-- Sistema de permisos granular
-- Excel con formato profesional
+**4. VENTAS (Solo almacenes de consumo tipo=1)**
+- Usa `cheqdet` + `cheques` + `costos` + `recetasalmacenes`
+- Calcula consumos de insumos basado en recetas
+
+**5. ALMACENES**
+- `tipo = 1` → INSUMO (almacén de consumo, tiene ventas)
+- `tipo != 1` → PRESENTACIÓN (almacén de bodega, sin ventas)
+
+#### Resultados Verificados:
+- **001 BODEGA** (folio 141 vs 149): 1,524 productos únicos, 1,273 con costo, 333 con movimientos
+- **100 PRODUCCION** (folio 143 vs 150): 124 productos únicos, 46 con costo, 53 con movimientos
 
 ## Tablas de SoftRestaurant
 
 ### Catálogo
-- `insumos` - Catálogo de insumos (idinsumo, descripcion, unidad)
-- `insumospresentaciones` - Presentaciones de insumos (idinsumospresentaciones, idinsumo)
-- `insumosdetalle` - Detalle con costos (idinsumo, costo)
-- `gruposi` - Grupos de insumos (subfamilia)
-- `gruposiclasificacion` - Clasificación de grupos (familia)
+- `insumos` + `insumosdetalle` (filtrar `inventariable = 1`)
+- `insumospresentaciones` + `insumospresentacionesdetalle`
+- `gruposi` - Grupos de insumos
+- `gruposiclasificacion` - Clasificación de grupos (para prefijo del código)
 
 ### Inventario Físico
-- `invfisico` - Cabecera de inventarios (folio, fecha, idalmacen1)
-- `invfisicomovtos` - Detalle:
-  - Para consumo: usa `idinsumo`
-  - Para bodega: usa `idpresentacion` → `insumospresentaciones`
+- `invfisico` - Cabecera de inventarios
+- `invfisicomovtos` - Detalle (usa `idinsumo` o `idpresentacion` según el tipo)
 
 ### Movimientos
-- `movsinv` - Para almacenes de CONSUMO (tipo=1) con `idinsumo`
-- `movtosalmacen` - Para almacenes de BODEGA (tipo=2) con `idinsumospresentaciones`
+- `movsinv` - Para INSUMOS
+- `movtosalmacen` - Para PRESENTACIONES
 
-### Almacenes
-- `almacen` - Catálogo con campo `tipo`:
-  - 1 = Consumo (tiene ventas)
-  - 2 = Presentaciones/Bodega (sin ventas)
-
-### Ventas (para almacenes de consumo)
+### Ventas
 - `cheques` / `cheqdet` - Ventas de productos
-- `explosioninsumosdetalle` - Recetas (relaciona productos vendidos con insumos consumidos)
+- `costos` - Costos de recetas
+- `recetasalmacenes` - Relación producto-insumo-almacén
 
 ## Pendiente / Backlog
 
@@ -88,12 +79,11 @@ Aplicación web para analizar inventarios de múltiples sucursales. Los datos se
 - [ ] Corregir exportación a Excel/PDF (el archivo no se descarga)
 
 ### P2 - Media Prioridad
-- [ ] Paginación del reporte de inventario (10,000+ registros)
+- [ ] Paginación del reporte de inventario (1,500+ registros)
 
 ### P3 - Baja Prioridad / Futuro
 - [ ] Envío de reportes por correo electrónico
-- [ ] Modularización del backend (server.py tiene >3000 líneas)
-- [ ] Limpieza de endpoints de debug
+- [ ] Modularización del backend
 
 ## Credenciales de Prueba
 
@@ -101,5 +91,4 @@ Aplicación web para analizar inventarios de múltiples sucursales. Los datos se
 - **Admin**: `admin@inventario.com` / `admin123`
 
 ### Servidores SQL
-- **ManagmentPro**: `54.39.104.176:1433`, DB: `CENTRAL2020`
 - **LA ESTELAR**: `serverestelar.ddns.net,6669`, DB: `softrestaurant12`, User: `STLectura`

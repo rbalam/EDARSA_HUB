@@ -1872,135 +1872,153 @@ WHERE nombre LIKE '%{almacen}%'
                 sfs_sql = ",".join([f"'{s}'" for s in filtro_subfamilias_frontend])
                 filtro_subfamilia_sr = f"AND GS.idgruposi IN ({sfs_sql})"
             
-            # 2. Obtener productos con inventario inicial y final
-            # La consulta varía según el tipo de almacén:
-            # - Tipo 1 (Consumo): usa idinsumo en invfisicomovtos, movimientos en movsinv
-            # - Tipo 2/otros (Bodega): usa idpresentacion en invfisicomovtos, movimientos en movtosalmacen
+            # 2. Obtener productos (catálogo) con UNION de INSUMOS inventariables + PRESENTACIONES
+            # Basado en las consultas de Power BI del usuario
+            logging.info("Obteniendo catálogo de productos (INSUMOS inventariables + PRESENTACIONES)")
             
-            if es_almacen_consumo:
-                # ALMACÉN DE CONSUMO (tipo=1): usa idinsumo directamente
-                logging.info("Usando consulta para almacén de CONSUMO (idinsumo)")
-                productos_query = f"""
+            productos_query = f"""
+-- INSUMOS inventariables
 SELECT 
-    I.idinsumo as Codigo,
-    I.descripcion as Producto,
-    CASE GC.clasificacionventa 
-        WHEN 1 THEN 'ALIMENTOS'
-        WHEN 2 THEN 'BEBIDAS'
-        WHEN 3 THEN 'OTROS'
-        ELSE 'SIN CLASIFICAR'
-    END as Categoria,
-    ISNULL(GC.descripcion, 'Sin Grupo') as Familia,
-    ISNULL(GS.descripcion, 'Sin SubGrupo') as SubFamilia,
-    ISNULL(I.unidad, 'PZA') as Unidad,
-    ISNULL(ID.costo, ISNULL(COSTO_MOV.costo_promedio, 0)) as Costo_Unitario,
-    ISNULL(INV_INI.existenciaalmacen1, 0) as Inv_Inicial_Cantidad,
-    ISNULL(INV_FIN.existenciaalmacen1, 0) as Inv_Final_Cantidad
-FROM insumos I
-LEFT JOIN gruposi GS ON GS.idgruposi = I.idgruposi
-LEFT JOIN gruposiclasificacion GC ON GC.idgruposiclasificacion = GS.idgruposiclasificacion
-LEFT JOIN insumosdetalle ID ON ID.idinsumo = I.idinsumo
-LEFT JOIN (
-    SELECT RTRIM(DET.idinsumo) as idinsumo, DET.existenciaalmacen1
-    FROM invfisicomovtos DET
-    WHERE DET.folio = '{folio_inicial}' AND RTRIM(DET.idinsumo) <> ''
-) INV_INI ON INV_INI.idinsumo = I.idinsumo
-LEFT JOIN (
-    SELECT RTRIM(DET.idinsumo) as idinsumo, DET.existenciaalmacen1
-    FROM invfisicomovtos DET
-    WHERE DET.folio = '{folio_final}' AND RTRIM(DET.idinsumo) <> ''
-) INV_FIN ON INV_FIN.idinsumo = I.idinsumo
-LEFT JOIN (
-    SELECT idinsumo, AVG(costo) as costo_promedio
-    FROM movsinv
-    WHERE RTRIM(idalmacen) = '{almacen_id}' AND costo > 0
-    GROUP BY idinsumo
-) COSTO_MOV ON COSTO_MOV.idinsumo = I.idinsumo
-WHERE (INV_INI.existenciaalmacen1 IS NOT NULL OR INV_FIN.existenciaalmacen1 IS NOT NULL)
-    {filtro_categoria_sr}
-    {filtro_familia_sr}
-    {filtro_subfamilia_sr}
-ORDER BY GC.descripcion, GS.descripcion, I.descripcion
-"""
-            else:
-                # ALMACÉN DE BODEGA (tipo=2): usa idpresentacion -> insumospresentaciones -> insumos
-                logging.info("Usando consulta para almacén de BODEGA (idpresentacion)")
-                productos_query = f"""
+    'INSUMO' as TABLA,
+    gruposiclasificacion.descripcion as CATEGORIA,
+    gruposi.descripcion as GRUPO,
+    LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(insumos.idinsumo)) as CODIGO,
+    insumos.descripcion as DESCRIPCION,
+    insumos.unidad as UM,
+    ISNULL((SELECT TOP 1 RENDIMIENTO FROM insumospresentaciones WHERE insumospresentaciones.idinsumo = insumos.idinsumo), 0) as RENDIMIENTO,
+    IDET.costo as COSTO
+FROM insumos
+INNER JOIN insumosdetalle IDET ON IDET.idinsumo = insumos.idinsumo
+INNER JOIN gruposi ON gruposi.idgruposi = insumos.idgruposi
+INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = gruposi.idgruposiclasificacion
+WHERE LEFT(insumos.descripcion, 3) <> 'zzz'
+  AND IDET.inventariable = 1
+
+UNION ALL
+
+-- PRESENTACIONES
 SELECT 
-    I.idinsumo as Codigo,
-    I.descripcion as Producto,
-    CASE GC.clasificacionventa 
-        WHEN 1 THEN 'ALIMENTOS'
-        WHEN 2 THEN 'BEBIDAS'
-        WHEN 3 THEN 'OTROS'
-        ELSE 'SIN CLASIFICAR'
-    END as Categoria,
-    ISNULL(GC.descripcion, 'Sin Grupo') as Familia,
-    ISNULL(GS.descripcion, 'Sin SubGrupo') as SubFamilia,
-    ISNULL(I.unidad, 'PZA') as Unidad,
-    ISNULL(INV_INI.costo, ISNULL(INV_FIN.costo, 0)) as Costo_Unitario,
-    ISNULL(INV_INI.existenciaalmacen1, 0) as Inv_Inicial_Cantidad,
-    ISNULL(INV_FIN.existenciaalmacen1, 0) as Inv_Final_Cantidad,
-    INV_INI.idpresentacion as Presentacion_Ini,
-    INV_FIN.idpresentacion as Presentacion_Fin
-FROM insumos I
-LEFT JOIN gruposi GS ON GS.idgruposi = I.idgruposi
-LEFT JOIN gruposiclasificacion GC ON GC.idgruposiclasificacion = GS.idgruposiclasificacion
-LEFT JOIN (
-    SELECT IP.idinsumo, DET.existenciaalmacen1, DET.costo, RTRIM(DET.idpresentacion) as idpresentacion
-    FROM invfisicomovtos DET
-    INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = DET.idpresentacion
-    WHERE DET.folio = '{folio_inicial}'
-) INV_INI ON INV_INI.idinsumo = I.idinsumo
-LEFT JOIN (
-    SELECT IP.idinsumo, DET.existenciaalmacen1, DET.costo, RTRIM(DET.idpresentacion) as idpresentacion
-    FROM invfisicomovtos DET
-    INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = DET.idpresentacion
-    WHERE DET.folio = '{folio_final}'
-) INV_FIN ON INV_FIN.idinsumo = I.idinsumo
-WHERE (INV_INI.existenciaalmacen1 IS NOT NULL OR INV_FIN.existenciaalmacen1 IS NOT NULL)
-    {filtro_categoria_sr}
-    {filtro_familia_sr}
-    {filtro_subfamilia_sr}
-ORDER BY GC.descripcion, GS.descripcion, I.descripcion
+    'PRESENTACION' as TABLA,
+    gruposiclasificacion.descripcion as CATEGORIA,
+    GP.descripcion as GRUPO,
+    LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(INPRE.idinsumospresentaciones)) as CODIGO,
+    INPRE.descripcion as DESCRIPCION,
+    INSUMOS.unidad as UM,
+    ISNULL(INPRE.rendimiento, 0) as RENDIMIENTO,
+    INPRED.costo as COSTO
+FROM insumospresentaciones INPRE
+INNER JOIN gruposi GP ON GP.idgruposi = INPRE.idgruposi
+INNER JOIN insumospresentacionesdetalle INPRED ON INPRED.idinsumospresentaciones = INPRE.idinsumospresentaciones
+INNER JOIN insumos INSUMOS ON INSUMOS.idinsumo = INPRE.idinsumo
+INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = GP.idgruposiclasificacion
+WHERE LEFT(INPRE.descripcion, 3) <> 'zzz'
 """
-            productos = execute_sql_query(
+            
+            productos_result = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], productos_query
             )
-            logging.info(f"Productos obtenidos: {len(productos)}")
+            # Crear diccionario de productos por código
+            productos_dict = {p['CODIGO']: p for p in productos_result}
+            logging.info(f"Productos en catálogo: {len(productos_dict)}")
             
-            # 3. Obtener movimientos de inventario
-            # La tabla varía según el tipo de almacén:
-            # - Tipo 1 (Consumo): movsinv con idinsumo
-            # - Tipo 2 (Bodega): movtosalmacen con idinsumospresentaciones
+            # 3. Obtener inventarios (inicial y final) de invfisicomovtos
+            # La consulta maneja AMBOS tipos: si idinsumo='' usa idpresentacion, sino usa idinsumo
+            logging.info(f"Obteniendo inventarios de folios {folio_inicial} y {folio_final}")
             
-            if es_almacen_consumo:
-                # Almacén de CONSUMO: usa movsinv con idinsumo
-                logging.info("Obteniendo movimientos de movsinv (almacén de consumo)")
-                movimientos_query = f"""
+            inventarios_query = f"""
 SELECT 
-    M.idinsumo as Producto_Codigo,
-    SUM(CASE WHEN M.cantidad > 0 THEN M.cantidad ELSE 0 END) -
-    SUM(CASE WHEN M.cantidad < 0 THEN ABS(M.cantidad) ELSE 0 END) as Total_Movimientos
-FROM movsinv M
-WHERE RTRIM(M.idalmacen) = '{almacen_id}'
-    AND M.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-GROUP BY M.idinsumo
+    FMOV.folio,
+    CASE WHEN RTRIM(ISNULL(FMOV.idinsumo,'')) = '' THEN 'PRESENTACION' ELSE 'INSUMO' END as TIPO,
+    CASE 
+        WHEN RTRIM(ISNULL(FMOV.idinsumo,'')) = '' 
+        THEN LEFT(ISNULL(GC_PRES.descripcion,'X'),1) + RTRIM(LTRIM(FMOV.idpresentacion))
+        ELSE LEFT(ISNULL(GC_INS.descripcion,'X'),1) + RTRIM(LTRIM(FMOV.idinsumo))
+    END as CODIGO,
+    FMOV.costo,
+    FMOV.fisicoalmacen1 as EXISTENCIA,
+    CASE WHEN RTRIM(ISNULL(FMOV.idinsumo,'')) = '' THEN ISNULL(IP.rendimiento, 1) ELSE 1 END as RENDIMIENTO,
+    CASE WHEN RTRIM(ISNULL(FMOV.idinsumo,'')) = '' THEN I_PRES.unidad ELSE I_INS.unidad END as UNIDAD
+FROM invfisicomovtos FMOV
+INNER JOIN invfisico FISICO ON FISICO.folio = FMOV.folio
+INNER JOIN almacen AL ON AL.idalmacen = FISICO.idalmacen1
+-- JOINs para PRESENTACIONES (cuando idinsumo está vacío)
+LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = FMOV.idpresentacion
+LEFT JOIN gruposi GP_PRES ON GP_PRES.idgruposi = IP.idgruposi
+LEFT JOIN gruposiclasificacion GC_PRES ON GC_PRES.idgruposiclasificacion = GP_PRES.idgruposiclasificacion
+LEFT JOIN insumos I_PRES ON I_PRES.idinsumo = IP.idinsumo
+-- JOINs para INSUMOS (cuando idinsumo NO está vacío)
+LEFT JOIN insumos I_INS ON I_INS.idinsumo = FMOV.idinsumo
+LEFT JOIN gruposi GP_INS ON GP_INS.idgruposi = I_INS.idgruposi
+LEFT JOIN gruposiclasificacion GC_INS ON GC_INS.idgruposiclasificacion = GP_INS.idgruposiclasificacion
+WHERE FMOV.folio IN ({folio_inicial}, {folio_final})
+  AND AL.nombre LIKE '%{almacen}%'
+ORDER BY FMOV.folio, CODIGO
 """
-            else:
-                # Almacén de BODEGA: usa movtosalmacen con idinsumospresentaciones
-                logging.info("Obteniendo movimientos de movtosalmacen (almacén de bodega)")
-                movimientos_query = f"""
+            
+            inventarios_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], inventarios_query
+            )
+            
+            # Separar inventarios inicial y final
+            inv_inicial_dict = {}
+            inv_final_dict = {}
+            for inv in inventarios_result:
+                codigo = inv['CODIGO']
+                if str(inv['folio']) == str(folio_inicial):
+                    inv_inicial_dict[codigo] = {
+                        'existencia': float(inv['EXISTENCIA'] or 0),
+                        'costo': float(inv['costo'] or 0),
+                        'tipo': inv['TIPO']
+                    }
+                elif str(inv['folio']) == str(folio_final):
+                    inv_final_dict[codigo] = {
+                        'existencia': float(inv['EXISTENCIA'] or 0),
+                        'costo': float(inv['costo'] or 0),
+                        'tipo': inv['TIPO']
+                    }
+            
+            logging.info(f"Inventario inicial: {len(inv_inicial_dict)} productos, Final: {len(inv_final_dict)} productos")
+            
+            # 4. Obtener TODOS los códigos que aparecen en inventarios (inicial o final)
+            todos_codigos = set(inv_inicial_dict.keys()) | set(inv_final_dict.keys())
+            logging.info(f"Total códigos únicos en inventarios: {len(todos_codigos)}")
+            
+            # 5. Obtener movimientos - UNION de movsinv (INSUMOS) + movtosalmacen (PRESENTACIONES)
+            # Ambas tablas se consultan para TODOS los almacenes
+            logging.info(f"Obteniendo movimientos entre {fecha_ini} y {fecha_fin} para almacén {almacen_nombre}")
+            
+            movimientos_query = f"""
+-- MOVIMIENTOS DE INSUMOS (movsinv)
 SELECT 
-    IP.idinsumo as Producto_Codigo,
-    SUM(CASE WHEN M.cantidad > 0 THEN M.cantidad ELSE 0 END) -
-    SUM(CASE WHEN M.cantidad < 0 THEN ABS(M.cantidad) ELSE 0 END) as Total_Movimientos
-FROM movtosalmacen M
-INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = M.idinsumospresentaciones
-WHERE RTRIM(M.idalmacen) = '{almacen_id}'
-    AND M.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-GROUP BY IP.idinsumo
+    LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo)) as CODIGO,
+    SUM(movsinv.cantidad) as CANTIDAD
+FROM movsinv
+INNER JOIN insumos ON insumos.idinsumo = movsinv.idinsumo
+INNER JOIN gruposi GP ON GP.idgruposi = insumos.idgruposi
+INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = GP.idgruposiclasificacion
+LEFT JOIN almacen ON almacen.idalmacen = movsinv.idalmacen
+WHERE movsinv.idconcepto NOT IN ('')
+  AND movsinv.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+  AND almacen.nombre LIKE '%{almacen}%'
+GROUP BY LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo))
+
+UNION ALL
+
+-- MOVIMIENTOS DE PRESENTACIONES (movtosalmacen)
+SELECT 
+    LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones)) as CODIGO,
+    SUM(movtosalmacen.cantidad) as CANTIDAD
+FROM movtosalmacen
+INNER JOIN insumospresentaciones ON insumospresentaciones.idinsumospresentaciones = movtosalmacen.idinsumospresentaciones
+INNER JOIN gruposi ON gruposi.idgruposi = insumospresentaciones.idgruposi
+INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = gruposi.idgruposiclasificacion
+LEFT JOIN almacen ON almacen.idalmacen = movtosalmacen.idalmacen
+WHERE movtosalmacen.idconcepto NOT IN ('')
+  AND movtosalmacen.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+  AND almacen.nombre LIKE '%{almacen}%'
+GROUP BY LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
 """
             
             try:
@@ -2008,61 +2026,68 @@ GROUP BY IP.idinsumo
                     server['host'], server['port'], server['database'],
                     server['username'], server['password'], movimientos_query
                 )
-                movimientos_dict = {m['Producto_Codigo']: float(m['Total_Movimientos'] or 0) for m in movimientos_result}
+                movimientos_dict = {m['CODIGO']: float(m['CANTIDAD'] or 0) for m in movimientos_result}
                 logging.info(f"Movimientos obtenidos para {len(movimientos_dict)} productos")
             except Exception as e:
                 logging.warning(f"Error al obtener movimientos: {str(e)}, continuando con movimientos = 0")
                 movimientos_dict = {}
             
-            # 4. Obtener ventas SOLO si es almacén de consumo (tipo = 1)
+            # 6. Obtener ventas SOLO si es almacén de consumo (tipo = 1)
+            # Basado en la consulta de Power BI que usa recetasalmacenes + costos
             ventas_dict = {}
             if es_almacen_consumo:
                 logging.info("Obteniendo ventas (almacén de CONSUMO tipo=1)...")
-                # En SoftRestaurant, las ventas de insumos se calculan a través de las recetas
-                # Primero verificamos si hay recetas configuradas
-                try:
-                    recetas_check = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], 
-                        "SELECT COUNT(*) as total FROM explosioninsumosdetalle"
-                    )
-                    recetas_count = recetas_check[0]['total'] if recetas_check else 0
-                    
-                    if recetas_count == 0:
-                        logging.warning("No hay recetas configuradas en explosioninsumosdetalle - ventas de insumos no calculables")
-                        ventas_dict = {}
-                    else:
-                        # Usamos explosioninsumosdetalle para relacionar ventas de productos con insumos
-                        ventas_query = f"""
+                ventas_query = f"""
 SELECT 
-    EID.idinsumo as Producto_Codigo,
-    SUM(CD.cantidad * EID.cantidad) as Total_Ventas
-FROM cheqdet CD
-INNER JOIN cheques C ON C.folio = CD.foliodet
-INNER JOIN explosioninsumosdetalle EID ON EID.idproducto = CD.idproducto
-WHERE C.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
-    AND C.cancelado = 0
-GROUP BY EID.idinsumo
+    LEFT(GP.descripcion,1) + RTRIM(LTRIM(receta.idinsumo)) as CODIGO,
+    SUM(venta.cantidad * COSTOS.cantidad) as CONSUMIDO
+FROM cheqdet venta
+INNER JOIN cheques ON venta.foliodet = cheques.folio
+INNER JOIN costos ON costos.idproducto = venta.idproducto
+INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
+    AND RC.idinsumo = COSTOS.idinsumo 
+    AND cheques.idarearestaurant = RC.idarearestaurant 
+    AND cheques.idempresa = RC.idempresa
+INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
+INNER JOIN insumos receta ON receta.idinsumo = costos.idinsumo
+INNER JOIN gruposi Grupo ON Grupo.idgruposi = receta.idgruposi
+INNER JOIN gruposiclasificacion GP ON GP.idgruposiclasificacion = Grupo.idgruposiclasificacion
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.APERTURA BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+  AND cheques.cancelado = 0
+  AND AL.nombre LIKE '%{almacen}%'
+GROUP BY LEFT(GP.descripcion,1) + RTRIM(LTRIM(receta.idinsumo))
 """
-                        ventas_result = execute_sql_query(
-                            server['host'], server['port'], server['database'],
-                            server['username'], server['password'], ventas_query
-                        )
-                        ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
-                        logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
+                try:
+                    ventas_result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], ventas_query
+                    )
+                    ventas_dict = {v['CODIGO']: float(v['CONSUMIDO'] or 0) for v in ventas_result}
+                    logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
                 except Exception as e:
                     logging.warning(f"Error al obtener ventas: {str(e)}, continuando sin ventas")
                     ventas_dict = {}
             else:
                 logging.info(f"Almacén tipo {almacen_tipo} (NO es consumo) - ventas = 0 para todos los productos")
             
-            # 5. Combinar resultados
+            # 7. Combinar resultados - Solo productos que aparecen en inventarios
             results = []
-            for prod in productos:
-                codigo = prod.get('Codigo')
-                inv_inicial = float(prod.get('Inv_Inicial_Cantidad') or 0)
-                inv_final = float(prod.get('Inv_Final_Cantidad') or 0)
-                costo = float(prod.get('Costo_Unitario') or 0)
+            for codigo in todos_codigos:
+                # Obtener datos del catálogo de productos
+                prod_info = productos_dict.get(codigo, {})
+                
+                # Obtener datos de inventarios
+                inv_ini = inv_inicial_dict.get(codigo, {'existencia': 0, 'costo': 0, 'tipo': ''})
+                inv_fin = inv_final_dict.get(codigo, {'existencia': 0, 'costo': 0, 'tipo': ''})
+                
+                inv_inicial = inv_ini['existencia']
+                inv_final = inv_fin['existencia']
+                
+                # El costo viene del inventario o del catálogo
+                costo = inv_ini['costo'] or inv_fin['costo'] or float(prod_info.get('COSTO', 0) or 0)
+                
+                # Movimientos y ventas
                 movimientos = movimientos_dict.get(codigo, 0)
                 ventas_total = ventas_dict.get(codigo, 0)
                 
@@ -2074,32 +2099,38 @@ GROUP BY EID.idinsumo
                 valor_real = (inv_inicial + movimientos - inv_final) * costo
                 teorico_ventas = ventas_total * costo
                 
+                # Tipo del producto (INSUMO o PRESENTACION)
+                tipo_producto = inv_ini.get('tipo') or inv_fin.get('tipo') or prod_info.get('TABLA', '')
+                
                 results.append({
-                    'Categoria': prod.get('Categoria'),
-                    'Familia': prod.get('Familia'),
-                    'SubFamilia': prod.get('SubFamilia'),
+                    'Categoria': prod_info.get('CATEGORIA', 'Sin Categoría'),
+                    'Familia': prod_info.get('GRUPO', 'Sin Familia'),
+                    'SubFamilia': tipo_producto,  # Mostrar si es INSUMO o PRESENTACION
                     'Codigo': codigo,
-                    'Producto': prod.get('Producto'),
-                    'Unidad': prod.get('Unidad'),
-                    'Costo_Unitario': round(costo, 2),
-                    'Inv_Inicial_Cantidad': round(inv_inicial, 2),
+                    'Producto': prod_info.get('DESCRIPCION', f'Producto {codigo}'),
+                    'Unidad': prod_info.get('UM', 'PZA'),
+                    'Costo_Unitario': round(costo, 4),
+                    'Inv_Inicial_Cantidad': round(inv_inicial, 4),
                     'Inv_Inicial_Costo': round(inv_inicial * costo, 2),
-                    'Movimientos': round(movimientos, 2),
+                    'Movimientos': round(movimientos, 4),
                     'Movimientos_Costo': round(movimientos * costo, 2),
-                    'Ventas': round(ventas_total, 2),
+                    'Ventas': round(ventas_total, 4),
                     'Ventas_Costo': round(ventas_total * costo, 2),
-                    'Inv_Teorico_Cantidad': round(inv_teorico, 2),
+                    'Inv_Teorico_Cantidad': round(inv_teorico, 4),
                     'Inv_Teorico_Costo': round(inv_teorico * costo, 2),
-                    'Inv_Final_Cantidad': round(inv_final, 2),
+                    'Inv_Final_Cantidad': round(inv_final, 4),
                     'Inv_Final_Costo': round(inv_final * costo, 2),
-                    'Diferencia_Cantidad': round(diferencia_cantidad, 2),
+                    'Diferencia_Cantidad': round(diferencia_cantidad, 4),
                     'Diferencia_Costo': round(diferencia_costo, 2),
                     'Diferencia_Porcentaje': round(diferencia_porcentaje, 2),
                     'Valor_Real': round(valor_real, 2),
                     'Teorico': round(teorico_ventas, 2)
                 })
             
-            logging.info(f"Análisis SoftRestaurant completado: {len(results)} productos procesados")
+            # Ordenar por Categoría, Familia, Código
+            results.sort(key=lambda x: (x['Categoria'] or '', x['Familia'] or '', x['Codigo'] or ''))
+            
+            logging.info(f"Reporte SoftRestaurant generado: {len(results)} productos")
             return {"data": results, "count": len(results)}
         
         else:
