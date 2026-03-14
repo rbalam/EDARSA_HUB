@@ -1405,6 +1405,7 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     - Inventario Final (folio final)
     - Cálculo de diferencias
     Usa filtros configurables por servidor (tipos_movimiento, categorias, departamentos)
+    Acepta filtros adicionales del frontend (categorias, familias, subfamilias)
     """
     server_id = report_params.get('server_id')
     sucursal = report_params.get('sucursal')
@@ -1413,6 +1414,13 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     fecha_fin = report_params.get('fecha_fin')
     folio_inicial = report_params.get('folio_inicial')
     folio_final = report_params.get('folio_final')
+    
+    # Filtros adicionales del frontend
+    filtro_categorias_frontend = report_params.get('categorias', [])
+    filtro_familias_frontend = report_params.get('familias', [])
+    filtro_subfamilias_frontend = report_params.get('subfamilias', [])
+    
+    logging.info(f"Filtros recibidos del frontend - Categorias: {filtro_categorias_frontend}, Familias: {filtro_familias_frontend}, SubFamilias: {filtro_subfamilias_frontend}")
     
     # Get server
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
@@ -1427,10 +1435,13 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             
             # Obtener filtros configurados del servidor
             tipos_movimiento = server.get('tipos_movimiento', [])
-            categorias = server.get('categorias', [])
+            categorias_servidor = server.get('categorias', [])
             departamentos = server.get('departamentos', [])
             
-            logging.info(f"Filtros configurados - Tipos Mov: {len(tipos_movimiento)}, Categorias: {len(categorias)}, Departamentos: {len(departamentos)}")
+            # PRIORIDAD: Si el frontend envía filtros, usarlos. Si no, usar los del servidor.
+            categorias = filtro_categorias_frontend if filtro_categorias_frontend else categorias_servidor
+            
+            logging.info(f"Filtros finales - Tipos Mov: {len(tipos_movimiento)}, Categorias: {len(categorias)}, Departamentos: {len(departamentos)}")
             
             # Construir filtros SQL dinámicos
             if tipos_movimiento:
@@ -1455,6 +1466,19 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             else:
                 filtro_departamentos = ""
                 filtro_departamentos_p = ""
+            
+            # Filtros de familia y subfamilia del frontend
+            if filtro_familias_frontend:
+                familias_sql = ",".join([f"'{f}'" for f in filtro_familias_frontend])
+                filtro_familias_p = f"AND P.Fm_Cve_Familia IN ({familias_sql})"
+            else:
+                filtro_familias_p = ""
+            
+            if filtro_subfamilias_frontend:
+                subfamilias_sql = ",".join([f"'{s}'" for s in filtro_subfamilias_frontend])
+                filtro_subfamilias_p = f"AND P.Sf_Cve_SubFamilia IN ({subfamilias_sql})"
+            else:
+                filtro_subfamilias_p = ""
             
             # ENFOQUE OPTIMIZADO: Ejecutar consultas separadas y combinar en Python
             # Esto es más rápido que CTEs complejas con UNION ALL
@@ -1519,6 +1543,8 @@ LEFT JOIN Fisico FF ON FF.Pr_Cve_Producto = P.Pr_Cve_Producto
 WHERE P.Es_Cve_Estado <> 'BA'
     {filtro_categorias_p}
     {filtro_departamentos_p}
+    {filtro_familias_p}
+    {filtro_subfamilias_p}
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
 """
             logging.info("Obteniendo productos con inventario...")
@@ -1666,6 +1692,161 @@ GROUP BY E.Pr_Cve_Producto
             logging.info(f"Análisis completado: {len(results)} productos procesados")
             return {"data": results, "count": len(results)}
             
+        elif server['system_type'] == 'SoftRestaurant':
+            # Análisis de inventario para SoftRestaurant
+            logging.info(f"Generando análisis de inventario SoftRestaurant: {almacen}")
+            logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
+            logging.info(f"Folios: {folio_inicial} a {folio_final}")
+            
+            # 1. Obtener información del almacén incluyendo el TIPO
+            # TIPO = 1: Almacén de consumo (tiene ventas)
+            # TIPO = 2: Almacén de presentaciones (NO tiene ventas)
+            almacen_query = f"""
+SELECT TOP 1 
+    idalmacen as codigo,
+    nombre,
+    ISNULL(tipo, 1) as tipo
+FROM almacen
+WHERE nombre LIKE '%{almacen}%'
+"""
+            almacen_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], almacen_query
+            )
+            if not almacen_result:
+                raise HTTPException(status_code=404, detail="Almacén no encontrado")
+            
+            almacen_id = almacen_result[0]['codigo']
+            almacen_nombre = almacen_result[0]['nombre']
+            almacen_tipo = almacen_result[0]['tipo']
+            
+            # Determinar si el almacén tiene ventas
+            es_almacen_consumo = (almacen_tipo == 1)
+            logging.info(f"Almacén: {almacen_nombre}, ID: {almacen_id}, Tipo: {almacen_tipo}, Es Consumo (tiene ventas): {es_almacen_consumo}")
+            
+            # 2. Obtener productos con inventario inicial y final
+            productos_query = f"""
+SELECT 
+    I.idinsumo as Codigo,
+    I.descripcion as Producto,
+    ISNULL(GS.descripcion, 'Sin Grupo') as Categoria,
+    I.unidaddecompra as Unidad,
+    ISNULL(I.costounitario, 0) as Costo_Unitario,
+    ISNULL(INV_INI.existenciaalmacen1, 0) as Inv_Inicial_Cantidad,
+    ISNULL(INV_FIN.existenciaalmacen1, 0) as Inv_Final_Cantidad
+FROM insumos I
+LEFT JOIN gruposi GS ON GS.idgruposi = I.idgruposi
+LEFT JOIN (
+    SELECT DET.idinsumo, DET.existenciaalmacen1
+    FROM invfisicomovtos DET
+    WHERE DET.folio = '{folio_inicial}'
+) INV_INI ON INV_INI.idinsumo = I.idinsumo
+LEFT JOIN (
+    SELECT DET.idinsumo, DET.existenciaalmacen1
+    FROM invfisicomovtos DET
+    WHERE DET.folio = '{folio_final}'
+) INV_FIN ON INV_FIN.idinsumo = I.idinsumo
+WHERE (INV_INI.existenciaalmacen1 IS NOT NULL OR INV_FIN.existenciaalmacen1 IS NOT NULL)
+ORDER BY GS.descripcion, I.descripcion
+"""
+            productos = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], productos_query
+            )
+            logging.info(f"Productos obtenidos: {len(productos)}")
+            
+            # 3. Obtener movimientos de inventario
+            movimientos_query = f"""
+SELECT 
+    M.idinsumo as Producto_Codigo,
+    SUM(CASE WHEN M.cantidad > 0 THEN M.cantidad ELSE 0 END) -
+    SUM(CASE WHEN M.cantidad < 0 THEN ABS(M.cantidad) ELSE 0 END) as Total_Movimientos
+FROM movimientosinventario M
+WHERE M.idalmacen = '{almacen_id}'
+    AND M.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+GROUP BY M.idinsumo
+"""
+            movimientos_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], movimientos_query
+            )
+            movimientos_dict = {m['Producto_Codigo']: float(m['Total_Movimientos'] or 0) for m in movimientos_result}
+            logging.info(f"Movimientos obtenidos para {len(movimientos_dict)} productos")
+            
+            # 4. Obtener ventas SOLO si es almacén de consumo (tipo = 1)
+            ventas_dict = {}
+            if es_almacen_consumo:
+                logging.info("Obteniendo ventas (almacén de CONSUMO tipo=1)...")
+                ventas_query = f"""
+SELECT 
+    IP.idinsumo as Producto_Codigo,
+    SUM(VC.cantidad * ISNULL(IP.equivalencia, 1)) as Total_Ventas
+FROM ventascuentas VC
+INNER JOIN cuentas C ON C.idcuenta = VC.idcuenta
+INNER JOIN productos P ON P.idproducto = VC.idproducto
+INNER JOIN insumos_productos INP ON INP.idproducto = P.idproducto
+INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = INP.idinsumospresentaciones
+WHERE C.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+    AND C.cancelada = 0
+GROUP BY IP.idinsumo
+"""
+                try:
+                    ventas_result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], ventas_query
+                    )
+                    ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
+                    logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
+                except Exception as e:
+                    logging.warning(f"Error al obtener ventas: {str(e)}, continuando sin ventas")
+                    ventas_dict = {}
+            else:
+                logging.info(f"Almacén tipo {almacen_tipo} (NO es consumo) - ventas = 0 para todos los productos")
+            
+            # 5. Combinar resultados
+            results = []
+            for prod in productos:
+                codigo = prod.get('Codigo')
+                inv_inicial = float(prod.get('Inv_Inicial_Cantidad') or 0)
+                inv_final = float(prod.get('Inv_Final_Cantidad') or 0)
+                costo = float(prod.get('Costo_Unitario') or 0)
+                movimientos = movimientos_dict.get(codigo, 0)
+                ventas_total = ventas_dict.get(codigo, 0)
+                
+                # Cálculos
+                inv_teorico = inv_inicial + movimientos - ventas_total
+                diferencia_cantidad = inv_final - inv_teorico
+                diferencia_costo = diferencia_cantidad * costo
+                diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
+                valor_real = (inv_inicial + movimientos - inv_final) * costo
+                teorico_ventas = ventas_total * costo
+                
+                results.append({
+                    'Categoria': prod.get('Categoria'),
+                    'Codigo': codigo,
+                    'Producto': prod.get('Producto'),
+                    'Unidad': prod.get('Unidad'),
+                    'Costo_Unitario': round(costo, 2),
+                    'Inv_Inicial_Cantidad': round(inv_inicial, 2),
+                    'Inv_Inicial_Costo': round(inv_inicial * costo, 2),
+                    'Movimientos': round(movimientos, 2),
+                    'Movimientos_Costo': round(movimientos * costo, 2),
+                    'Ventas': round(ventas_total, 2),
+                    'Ventas_Costo': round(ventas_total * costo, 2),
+                    'Inv_Teorico_Cantidad': round(inv_teorico, 2),
+                    'Inv_Teorico_Costo': round(inv_teorico * costo, 2),
+                    'Inv_Final_Cantidad': round(inv_final, 2),
+                    'Inv_Final_Costo': round(inv_final * costo, 2),
+                    'Diferencia_Cantidad': round(diferencia_cantidad, 2),
+                    'Diferencia_Costo': round(diferencia_costo, 2),
+                    'Diferencia_Porcentaje': round(diferencia_porcentaje, 2),
+                    'Valor_Real': round(valor_real, 2),
+                    'Teorico': round(teorico_ventas, 2)
+                })
+            
+            logging.info(f"Análisis SoftRestaurant completado: {len(results)} productos procesados")
+            return {"data": results, "count": len(results)}
+        
         else:
             raise HTTPException(status_code=400, detail="Sistema no soportado para análisis completo")
         

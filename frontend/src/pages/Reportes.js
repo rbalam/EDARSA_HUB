@@ -192,6 +192,13 @@ const Reportes = () => {
       let response;
       
       if (filters.query_type === 'analisis') {
+        // Log para debugging
+        console.log('Filtros a enviar:', {
+          categorias: selectedCategorias,
+          familias: selectedFamilias,
+          subfamilias: selectedSubfamilias
+        });
+        
         // Llamar al endpoint de análisis completo con filtros adicionales
         response = await api.post('/reports/inventory-analysis', {
           server_id: filters.server_id,

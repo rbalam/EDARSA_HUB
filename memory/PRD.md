@@ -64,6 +64,13 @@ User {
 
 ## Lo Implementado
 
+### 2025-03-14 - Corrección de Filtros y Análisis SoftRestaurant
+- **Backend - Filtros de Categoría/Familia/SubFamilia CORREGIDOS**: Los filtros del frontend ahora se aplican correctamente a la consulta SQL
+- **Backend - Análisis de Inventario para SoftRestaurant**: Implementado con lógica de ventas según tipo de almacén
+  - **ALMACEN.TIPO = 1** (Consumo): Tiene ventas
+  - **ALMACEN.TIPO = 2** (Presentaciones): NO tiene ventas (ventas = 0)
+- **Frontend - Log de debugging agregado**: Muestra en consola qué filtros se envían al backend
+
 ### 2025-03-13 - Correcciones Finales
 - **Backend - Corregido error SQL en detalle de movimientos**: Removida columna `Mv_Observaciones` que no existe en MPRO
 - **Backend - Corregido error SQL en Dashboard SoftRestaurant**: Removido filtro por columna `esinventariable` que no existe
