@@ -1873,8 +1873,14 @@ WHERE nombre LIKE '%{almacen}%'
                 filtro_subfamilia_sr = f"AND GS.idgruposi IN ({sfs_sql})"
             
             # 2. Obtener productos con inventario inicial y final
-            # Incluye Categoria (clasificacionventa), Familia (gruposiclasificacion), SubFamilia (gruposi)
-            productos_query = f"""
+            # La consulta varía según el tipo de almacén:
+            # - Tipo 1 (Consumo): usa idinsumo en invfisicomovtos, movimientos en movsinv
+            # - Tipo 2/otros (Bodega): usa idpresentacion en invfisicomovtos, movimientos en movtosalmacen
+            
+            if es_almacen_consumo:
+                # ALMACÉN DE CONSUMO (tipo=1): usa idinsumo directamente
+                logging.info("Usando consulta para almacén de CONSUMO (idinsumo)")
+                productos_query = f"""
 SELECT 
     I.idinsumo as Codigo,
     I.descripcion as Producto,
@@ -1895,14 +1901,14 @@ LEFT JOIN gruposi GS ON GS.idgruposi = I.idgruposi
 LEFT JOIN gruposiclasificacion GC ON GC.idgruposiclasificacion = GS.idgruposiclasificacion
 LEFT JOIN insumosdetalle ID ON ID.idinsumo = I.idinsumo
 LEFT JOIN (
-    SELECT DET.idinsumo, DET.existenciaalmacen1
+    SELECT RTRIM(DET.idinsumo) as idinsumo, DET.existenciaalmacen1
     FROM invfisicomovtos DET
-    WHERE DET.folio = '{folio_inicial}'
+    WHERE DET.folio = '{folio_inicial}' AND RTRIM(DET.idinsumo) <> ''
 ) INV_INI ON INV_INI.idinsumo = I.idinsumo
 LEFT JOIN (
-    SELECT DET.idinsumo, DET.existenciaalmacen1
+    SELECT RTRIM(DET.idinsumo) as idinsumo, DET.existenciaalmacen1
     FROM invfisicomovtos DET
-    WHERE DET.folio = '{folio_final}'
+    WHERE DET.folio = '{folio_final}' AND RTRIM(DET.idinsumo) <> ''
 ) INV_FIN ON INV_FIN.idinsumo = I.idinsumo
 LEFT JOIN (
     SELECT idinsumo, AVG(costo) as costo_promedio
@@ -1916,6 +1922,48 @@ WHERE (INV_INI.existenciaalmacen1 IS NOT NULL OR INV_FIN.existenciaalmacen1 IS N
     {filtro_subfamilia_sr}
 ORDER BY GC.descripcion, GS.descripcion, I.descripcion
 """
+            else:
+                # ALMACÉN DE BODEGA (tipo=2): usa idpresentacion -> insumospresentaciones -> insumos
+                logging.info("Usando consulta para almacén de BODEGA (idpresentacion)")
+                productos_query = f"""
+SELECT 
+    I.idinsumo as Codigo,
+    I.descripcion as Producto,
+    CASE GC.clasificacionventa 
+        WHEN 1 THEN 'ALIMENTOS'
+        WHEN 2 THEN 'BEBIDAS'
+        WHEN 3 THEN 'OTROS'
+        ELSE 'SIN CLASIFICAR'
+    END as Categoria,
+    ISNULL(GC.descripcion, 'Sin Grupo') as Familia,
+    ISNULL(GS.descripcion, 'Sin SubGrupo') as SubFamilia,
+    ISNULL(I.unidad, 'PZA') as Unidad,
+    ISNULL(INV_INI.costo, ISNULL(INV_FIN.costo, 0)) as Costo_Unitario,
+    ISNULL(INV_INI.existenciaalmacen1, 0) as Inv_Inicial_Cantidad,
+    ISNULL(INV_FIN.existenciaalmacen1, 0) as Inv_Final_Cantidad,
+    INV_INI.idpresentacion as Presentacion_Ini,
+    INV_FIN.idpresentacion as Presentacion_Fin
+FROM insumos I
+LEFT JOIN gruposi GS ON GS.idgruposi = I.idgruposi
+LEFT JOIN gruposiclasificacion GC ON GC.idgruposiclasificacion = GS.idgruposiclasificacion
+LEFT JOIN (
+    SELECT IP.idinsumo, DET.existenciaalmacen1, DET.costo, RTRIM(DET.idpresentacion) as idpresentacion
+    FROM invfisicomovtos DET
+    INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = DET.idpresentacion
+    WHERE DET.folio = '{folio_inicial}'
+) INV_INI ON INV_INI.idinsumo = I.idinsumo
+LEFT JOIN (
+    SELECT IP.idinsumo, DET.existenciaalmacen1, DET.costo, RTRIM(DET.idpresentacion) as idpresentacion
+    FROM invfisicomovtos DET
+    INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = DET.idpresentacion
+    WHERE DET.folio = '{folio_final}'
+) INV_FIN ON INV_FIN.idinsumo = I.idinsumo
+WHERE (INV_INI.existenciaalmacen1 IS NOT NULL OR INV_FIN.existenciaalmacen1 IS NOT NULL)
+    {filtro_categoria_sr}
+    {filtro_familia_sr}
+    {filtro_subfamilia_sr}
+ORDER BY GC.descripcion, GS.descripcion, I.descripcion
+"""
             productos = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], productos_query
@@ -1923,8 +1971,14 @@ ORDER BY GC.descripcion, GS.descripcion, I.descripcion
             logging.info(f"Productos obtenidos: {len(productos)}")
             
             # 3. Obtener movimientos de inventario
-            # Para SoftRestaurant, los movimientos de insumos están en 'movsinv'
-            movimientos_query = f"""
+            # La tabla varía según el tipo de almacén:
+            # - Tipo 1 (Consumo): movsinv con idinsumo
+            # - Tipo 2 (Bodega): movtosalmacen con idinsumospresentaciones
+            
+            if es_almacen_consumo:
+                # Almacén de CONSUMO: usa movsinv con idinsumo
+                logging.info("Obteniendo movimientos de movsinv (almacén de consumo)")
+                movimientos_query = f"""
 SELECT 
     M.idinsumo as Producto_Codigo,
     SUM(CASE WHEN M.cantidad > 0 THEN M.cantidad ELSE 0 END) -
@@ -1934,6 +1988,21 @@ WHERE RTRIM(M.idalmacen) = '{almacen_id}'
     AND M.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
 GROUP BY M.idinsumo
 """
+            else:
+                # Almacén de BODEGA: usa movtosalmacen con idinsumospresentaciones
+                logging.info("Obteniendo movimientos de movtosalmacen (almacén de bodega)")
+                movimientos_query = f"""
+SELECT 
+    IP.idinsumo as Producto_Codigo,
+    SUM(CASE WHEN M.cantidad > 0 THEN M.cantidad ELSE 0 END) -
+    SUM(CASE WHEN M.cantidad < 0 THEN ABS(M.cantidad) ELSE 0 END) as Total_Movimientos
+FROM movtosalmacen M
+INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = M.idinsumospresentaciones
+WHERE RTRIM(M.idalmacen) = '{almacen_id}'
+    AND M.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+GROUP BY IP.idinsumo
+"""
+            
             try:
                 movimientos_result = execute_sql_query(
                     server['host'], server['port'], server['database'],
