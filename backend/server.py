@@ -1393,57 +1393,105 @@ async def generate_inventory_report(report_params: Dict, current_user: Dict = De
 async def get_report_filters(server_id: str, current_user: Dict = Depends(get_current_user)):
     """
     Obtiene las opciones de filtros (categorías, familias, subfamilias) para el reporte de análisis.
-    Solo para MPRO por ahora.
+    Soporta MPRO y SoftRestaurant con equivalencias:
+    - MPRO: Categoria, Familia, SubFamilia
+    - SoftRestaurant: clasificacionventa (CATEGORIA), gruposiclasificacion (FAMILIA), gruposi (SUBFAMILIA)
     """
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
-    if server['system_type'] != 'MPRO':
-        return {"categorias": [], "familias": [], "subfamilias": []}
-    
     try:
-        # Obtener categorías
-        categorias_query = """
-            SELECT DISTINCT Ct_Cve_Categoria as id, Ct_Descripcion as nombre 
-            FROM Categoria 
-            WHERE Es_Cve_Estado <> 'BA'
-            ORDER BY Ct_Descripcion
-        """
-        categorias = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], categorias_query
-        )
-        
-        # Obtener familias
-        familias_query = """
-            SELECT DISTINCT Fm_Cve_Familia as id, Fm_Descripcion as nombre 
-            FROM Familia 
-            WHERE Es_Cve_Estado <> 'BA'
-            ORDER BY Fm_Descripcion
-        """
-        familias = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], familias_query
-        )
-        
-        # Obtener subfamilias
-        subfamilias_query = """
-            SELECT DISTINCT Sf_Cve_SubFamilia as id, Sf_Descripcion as nombre 
-            FROM SubFamilia 
-            WHERE Es_Cve_Estado <> 'BA'
-            ORDER BY Sf_Descripcion
-        """
-        subfamilias = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], subfamilias_query
-        )
-        
-        return {
-            "categorias": categorias or [],
-            "familias": familias or [],
-            "subfamilias": subfamilias or []
-        }
+        if server['system_type'] == 'MPRO':
+            # Obtener categorías
+            categorias_query = """
+                SELECT DISTINCT Ct_Cve_Categoria as id, Ct_Descripcion as nombre 
+                FROM Categoria 
+                WHERE Es_Cve_Estado <> 'BA'
+                ORDER BY Ct_Descripcion
+            """
+            categorias = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], categorias_query
+            )
+            
+            # Obtener familias
+            familias_query = """
+                SELECT DISTINCT Fm_Cve_Familia as id, Fm_Descripcion as nombre 
+                FROM Familia 
+                WHERE Es_Cve_Estado <> 'BA'
+                ORDER BY Fm_Descripcion
+            """
+            familias = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], familias_query
+            )
+            
+            # Obtener subfamilias
+            subfamilias_query = """
+                SELECT DISTINCT Sf_Cve_SubFamilia as id, Sf_Descripcion as nombre 
+                FROM SubFamilia 
+                WHERE Es_Cve_Estado <> 'BA'
+                ORDER BY Sf_Descripcion
+            """
+            subfamilias = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], subfamilias_query
+            )
+            
+            return {
+                "categorias": categorias or [],
+                "familias": familias or [],
+                "subfamilias": subfamilias or []
+            }
+            
+        elif server['system_type'] == 'SoftRestaurant':
+            # Para SoftRestaurant:
+            # clasificacionventa (1=ALIMENTOS, 2=BEBIDAS, 3=OTROS) = CATEGORIA
+            # gruposiclasificacion = FAMILIA
+            # gruposi = SUBFAMILIA
+            
+            # Categorías fijas según clasificacionventa
+            categorias = [
+                {"id": "1", "nombre": "ALIMENTOS"},
+                {"id": "2", "nombre": "BEBIDAS"},
+                {"id": "3", "nombre": "OTROS"}
+            ]
+            
+            # Obtener familias (gruposiclasificacion)
+            familias_query = """
+                SELECT DISTINCT 
+                    CAST(idgruposiclasificacion as VARCHAR) as id, 
+                    descripcion as nombre 
+                FROM gruposiclasificacion
+                ORDER BY descripcion
+            """
+            familias = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], familias_query
+            )
+            
+            # Obtener subfamilias (gruposi)
+            subfamilias_query = """
+                SELECT DISTINCT 
+                    CAST(idgruposi as VARCHAR) as id, 
+                    descripcion as nombre 
+                FROM gruposi
+                ORDER BY descripcion
+            """
+            subfamilias = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], subfamilias_query
+            )
+            
+            return {
+                "categorias": categorias,
+                "familias": familias or [],
+                "subfamilias": subfamilias or []
+            }
+        else:
+            return {"categorias": [], "familias": [], "subfamilias": []}
+            
     except Exception as e:
         logging.error(f"Error obteniendo filtros: {str(e)}")
         return {"categorias": [], "familias": [], "subfamilias": []}
@@ -1750,6 +1798,7 @@ GROUP BY E.Pr_Cve_Producto
             logging.info(f"Generando análisis de inventario SoftRestaurant: {almacen}")
             logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
             logging.info(f"Folios: {folio_inicial} a {folio_final}")
+            logging.info(f"Filtros frontend - Categorias: {filtro_categorias_frontend}, Familias: {filtro_familias_frontend}, SubFamilias: {filtro_subfamilias_frontend}")
             
             # 1. Obtener información del almacén incluyendo el TIPO
             # TIPO = 1: Almacén de consumo (tiene ventas)
@@ -1777,18 +1826,46 @@ WHERE nombre LIKE '%{almacen}%'
             es_almacen_consumo = (almacen_tipo == 1)
             logging.info(f"Almacén: {almacen_nombre}, ID: {almacen_id}, Tipo: {almacen_tipo}, Es Consumo (tiene ventas): {es_almacen_consumo}")
             
+            # Construir filtros SQL para SoftRestaurant
+            # Categoría = clasificacionventa (1=ALIMENTOS, 2=BEBIDAS, 3=OTROS)
+            filtro_categoria_sr = ""
+            if filtro_categorias_frontend:
+                cats_sql = ",".join([f"'{c}'" for c in filtro_categorias_frontend])
+                filtro_categoria_sr = f"AND GC.clasificacionventa IN ({cats_sql})"
+            
+            # Familia = gruposiclasificacion
+            filtro_familia_sr = ""
+            if filtro_familias_frontend:
+                fams_sql = ",".join([f"'{f}'" for f in filtro_familias_frontend])
+                filtro_familia_sr = f"AND GC.idgruposiclasificacion IN ({fams_sql})"
+            
+            # SubFamilia = gruposi
+            filtro_subfamilia_sr = ""
+            if filtro_subfamilias_frontend:
+                sfs_sql = ",".join([f"'{s}'" for s in filtro_subfamilias_frontend])
+                filtro_subfamilia_sr = f"AND GS.idgruposi IN ({sfs_sql})"
+            
             # 2. Obtener productos con inventario inicial y final
+            # Incluye Categoria (clasificacionventa), Familia (gruposiclasificacion), SubFamilia (gruposi)
             productos_query = f"""
 SELECT 
     I.idinsumo as Codigo,
     I.descripcion as Producto,
-    ISNULL(GS.descripcion, 'Sin Grupo') as Categoria,
+    CASE GC.clasificacionventa 
+        WHEN 1 THEN 'ALIMENTOS'
+        WHEN 2 THEN 'BEBIDAS'
+        WHEN 3 THEN 'OTROS'
+        ELSE 'SIN CLASIFICAR'
+    END as Categoria,
+    ISNULL(GC.descripcion, 'Sin Grupo') as Familia,
+    ISNULL(GS.descripcion, 'Sin SubGrupo') as SubFamilia,
     I.unidaddecompra as Unidad,
     ISNULL(I.costounitario, 0) as Costo_Unitario,
     ISNULL(INV_INI.existenciaalmacen1, 0) as Inv_Inicial_Cantidad,
     ISNULL(INV_FIN.existenciaalmacen1, 0) as Inv_Final_Cantidad
 FROM insumos I
 LEFT JOIN gruposi GS ON GS.idgruposi = I.idgruposi
+LEFT JOIN gruposiclasificacion GC ON GC.idgruposiclasificacion = GS.idgruposiclasificacion
 LEFT JOIN (
     SELECT DET.idinsumo, DET.existenciaalmacen1
     FROM invfisicomovtos DET
@@ -1800,7 +1877,10 @@ LEFT JOIN (
     WHERE DET.folio = '{folio_final}'
 ) INV_FIN ON INV_FIN.idinsumo = I.idinsumo
 WHERE (INV_INI.existenciaalmacen1 IS NOT NULL OR INV_FIN.existenciaalmacen1 IS NOT NULL)
-ORDER BY GS.descripcion, I.descripcion
+    {filtro_categoria_sr}
+    {filtro_familia_sr}
+    {filtro_subfamilia_sr}
+ORDER BY GC.descripcion, GS.descripcion, I.descripcion
 """
             productos = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -1876,6 +1956,8 @@ GROUP BY IP.idinsumo
                 
                 results.append({
                     'Categoria': prod.get('Categoria'),
+                    'Familia': prod.get('Familia'),
+                    'SubFamilia': prod.get('SubFamilia'),
                     'Codigo': codigo,
                     'Producto': prod.get('Producto'),
                     'Unidad': prod.get('Unidad'),

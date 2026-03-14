@@ -64,6 +64,18 @@ User {
 
 ## Lo Implementado
 
+### 2025-03-14 - Filtros y Análisis Completo para SoftRestaurant
+- **Backend - Filtros para SoftRestaurant**:
+  - Clasificación (clasificacionventa): 1=ALIMENTOS, 2=BEBIDAS, 3=OTROS (equivale a Categoría)
+  - Grupos (gruposiclasificacion): 74 grupos disponibles (equivale a Familia)
+  - SubGrupos (gruposi): SubFamilias disponibles
+- **Backend - Análisis de Inventario con Filtros**:
+  - Los filtros se aplican a la consulta SQL correctamente
+  - Resultado incluye: Categoría, Familia, SubFamilia, Código, Producto, etc.
+- **Frontend - UI de Filtros para SoftRestaurant**:
+  - Etiquetas adaptadas: Clasificación, Grupos, SubGrupos
+  - Filtros visibles al seleccionar servidor SoftRestaurant
+
 ### 2025-03-14 - Corrección de Filtros y Análisis SoftRestaurant
 - **Backend - Filtros de Categoría/Familia/SubFamilia CORREGIDOS**: Los filtros del frontend ahora se aplican correctamente a la consulta SQL
 - **Backend - Análisis de Inventario para SoftRestaurant**: Implementado con lógica de ventas según tipo de almacén

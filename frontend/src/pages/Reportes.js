@@ -728,8 +728,8 @@ const Reportes = () => {
             </div>
           </div>
 
-          {/* Filtros adicionales (Categoría, Familia, SubFamilia) - Solo para MPRO */}
-          {filters.query_type === 'analisis' && selectedServer?.system_type === 'MPRO' && (
+          {/* Filtros adicionales (Categoría, Familia, SubFamilia) - Para MPRO y SoftRestaurant */}
+          {filters.query_type === 'analisis' && (selectedServer?.system_type === 'MPRO' || selectedServer?.system_type === 'SoftRestaurant') && (
             <div className="mt-6 pt-4 border-t border-zinc-200">
               <div className="flex items-center gap-2 mb-4">
                 <Filter className="h-4 w-4 text-zinc-500" />
@@ -739,7 +739,7 @@ const Reportes = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Multiselect Categorías */}
                 <div className="space-y-2">
-                  <Label>Categorías</Label>
+                  <Label>{selectedServer?.system_type === 'SoftRestaurant' ? 'Clasificación' : 'Categorías'}</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button 
@@ -794,7 +794,7 @@ const Reportes = () => {
 
                 {/* Multiselect Familias */}
                 <div className="space-y-2">
-                  <Label>Familias</Label>
+                  <Label>{selectedServer?.system_type === 'SoftRestaurant' ? 'Grupos' : 'Familias'}</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button 
@@ -849,7 +849,7 @@ const Reportes = () => {
 
                 {/* Multiselect SubFamilias */}
                 <div className="space-y-2">
-                  <Label>SubFamilias</Label>
+                  <Label>{selectedServer?.system_type === 'SoftRestaurant' ? 'SubGrupos' : 'SubFamilias'}</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button 
