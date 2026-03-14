@@ -70,8 +70,30 @@ const Reportes = () => {
       // Guardar el servidor seleccionado
       const server = servers.find(s => s.id === filters.server_id);
       setSelectedServer(server);
+      
+      // Si es SoftRestaurant, cargar almacenes directamente (no tiene sucursales)
+      if (server?.system_type === 'SoftRestaurant') {
+        loadAlmacenesSoftRestaurant();
+      }
     }
   }, [filters.server_id, servers]);
+
+  // Cargar almacenes para SoftRestaurant (no requiere sucursal)
+  const loadAlmacenesSoftRestaurant = async () => {
+    try {
+      const response = await api.get(`/servers/${filters.server_id}/almacenes-softrestaurant`);
+      setAlmacenes(response.data);
+      // Establecer una sucursal "ficticia" para que el flujo continúe
+      setFilters(prev => ({
+        ...prev,
+        sucursal_id: 'default',
+        sucursal: 'SoftRestaurant'
+      }));
+    } catch (error) {
+      console.error('Error al cargar almacenes SoftRestaurant:', error);
+      setAlmacenes([]);
+    }
+  };
 
   // Cargar opciones de filtros (categorías, familias, subfamilias)
   const loadReportFilters = async () => {
@@ -95,15 +117,22 @@ const Reportes = () => {
 
   useEffect(() => {
     if (filters.server_id && filters.sucursal_id) {
-      loadAlmacenes();
+      // Solo cargar almacenes si NO es SoftRestaurant (que ya los carga directamente)
+      if (selectedServer?.system_type !== 'SoftRestaurant') {
+        loadAlmacenes();
+      }
     }
-  }, [filters.server_id, filters.sucursal_id]);
+  }, [filters.server_id, filters.sucursal_id, selectedServer]);
 
   useEffect(() => {
-    if (filters.server_id && filters.sucursal_id && filters.almacen_id) {
-      loadInventarios();
+    // Cargar inventarios cuando hay almacén seleccionado
+    // Para SoftRestaurant no requiere sucursal_id
+    if (filters.server_id && filters.almacen_id) {
+      if (selectedServer?.system_type === 'SoftRestaurant' || filters.sucursal_id) {
+        loadInventarios();
+      }
     }
-  }, [filters.server_id, filters.sucursal_id, filters.almacen_id]);
+  }, [filters.server_id, filters.sucursal_id, filters.almacen_id, selectedServer]);
 
   const loadServers = async () => {
     try {
@@ -568,40 +597,50 @@ const Reportes = () => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Sucursal</Label>
-              <Select 
-                value={filters.sucursal_id} 
-                onValueChange={handleSucursalChange}
-                disabled={!filters.server_id || sucursales.length === 0}
-              >
-                <SelectTrigger data-testid="sucursal-select">
-                  <SelectValue placeholder={!filters.server_id ? "Selecciona servidor primero" : "Selecciona una sucursal"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {sucursales.map((sucursal) => (
-                    <SelectItem key={sucursal.id} value={sucursal.id}>
-                      {sucursal.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Sucursal - Solo mostrar si NO es SoftRestaurant */}
+            {selectedServer?.system_type !== 'SoftRestaurant' && (
+              <div className="space-y-2">
+                <Label>Sucursal</Label>
+                <Select 
+                  value={filters.sucursal_id} 
+                  onValueChange={handleSucursalChange}
+                  disabled={!filters.server_id || sucursales.length === 0}
+                >
+                  <SelectTrigger data-testid="sucursal-select">
+                    <SelectValue placeholder={!filters.server_id ? "Selecciona servidor primero" : "Selecciona una sucursal"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sucursales.map((sucursal) => (
+                      <SelectItem key={sucursal.id} value={sucursal.id}>
+                        {sucursal.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Almacén</Label>
               <Select 
                 value={filters.almacen_id} 
                 onValueChange={handleAlmacenChange}
-                disabled={!filters.sucursal_id || almacenes.length === 0}
+                disabled={selectedServer?.system_type === 'SoftRestaurant' 
+                  ? (!filters.server_id || almacenes.length === 0)
+                  : (!filters.sucursal_id || almacenes.length === 0)
+                }
               >
                 <SelectTrigger data-testid="almacen-select">
-                  <SelectValue placeholder={!filters.sucursal_id ? "Selecciona sucursal primero" : "Selecciona un almacén"} />
+                  <SelectValue placeholder={
+                    selectedServer?.system_type === 'SoftRestaurant'
+                      ? (!filters.server_id ? "Selecciona servidor primero" : (almacenes.length === 0 ? "Cargando almacenes..." : "Selecciona un almacén"))
+                      : (!filters.sucursal_id ? "Selecciona sucursal primero" : "Selecciona un almacén")
+                  } />
                 </SelectTrigger>
                 <SelectContent>
                   {almacenes.map((almacen) => (
                     <SelectItem key={almacen.id} value={almacen.id}>
-                      {almacen.nombre}
+                      {almacen.nombre} {almacen.tipo === 1 ? '(Consumo)' : almacen.tipo === 2 ? '(Presentaciones)' : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>

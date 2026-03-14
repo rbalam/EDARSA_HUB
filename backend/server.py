@@ -1247,6 +1247,41 @@ async def get_almacenes(server_id: str, sucursal_id: Optional[str] = None, curre
         logging.error(f"Error obteniendo almacenes: {str(e)}")
         return []
 
+@api_router.get("/servers/{server_id}/almacenes-softrestaurant")
+async def get_almacenes_softrestaurant(server_id: str, current_user: Dict = Depends(get_current_user)):
+    """Obtiene la lista de almacenes de SoftRestaurant (no requiere sucursal)"""
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if server['system_type'] != 'SoftRestaurant':
+        raise HTTPException(status_code=400, detail="Este endpoint es solo para SoftRestaurant")
+    
+    try:
+        # Query para obtener almacenes de SoftRestaurant incluyendo el tipo
+        # TIPO = 1: Almacén de consumo (tiene ventas)
+        # TIPO = 2: Almacén de presentaciones (NO tiene ventas)
+        query = """
+SELECT 
+    idalmacen as id, 
+    nombre,
+    ISNULL(tipo, 1) as tipo
+FROM almacen
+ORDER BY nombre
+"""
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            query
+        )
+        return results
+    except Exception as e:
+        logging.error(f"Error obteniendo almacenes SoftRestaurant: {str(e)}")
+        return []
+
 @api_router.get("/servers/{server_id}/inventarios")
 async def get_inventarios_list(
     server_id: str, 
@@ -1282,6 +1317,24 @@ async def get_inventarios_list(
                 {where_clause}
                 GROUP BY F.Fi_Folio, F.fi_fecha, F.Sc_Cve_Sucursal, S.Sc_Descripcion, F.Al_Cve_Almacen, A.Al_Descripcion
                 ORDER BY F.fi_fecha DESC
+            """
+        elif server['system_type'] == 'SoftRestaurant':
+            # Query para SoftRestaurant
+            where_clause = "WHERE INV.cancelado = 0"
+            if almacen_id:
+                where_clause += f" AND INV.idalmacen1 = '{almacen_id}'"
+            
+            query = f"""
+                SELECT 
+                    INV.folio as folio,
+                    CONVERT(varchar, INV.fecha, 23) as fecha,
+                    CONVERT(varchar, INV.fecha, 120) as fecha_completa,
+                    INV.idalmacen1 as almacen_id,
+                    A.nombre as almacen
+                FROM invfisico INV
+                LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
+                {where_clause}
+                ORDER BY INV.fecha DESC
             """
         else:
             query = "SELECT Fi_Folio as folio, CONVERT(varchar, fi_fecha, 23) as fecha, CONVERT(varchar, fi_fecha, 120) as fecha_completa FROM Fisico GROUP BY Fi_Folio, fi_fecha ORDER BY fi_fecha DESC"
