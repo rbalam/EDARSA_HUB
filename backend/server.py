@@ -1872,9 +1872,9 @@ WHERE nombre LIKE '%{almacen}%'
                 sfs_sql = ",".join([f"'{s}'" for s in filtro_subfamilias_frontend])
                 filtro_subfamilia_sr = f"AND GS.idgruposi IN ({sfs_sql})"
             
-            # 2. Obtener productos (catálogo) con UNION de INSUMOS inventariables + PRESENTACIONES
+            # 2. Obtener productos (catálogo) con UNION de INSUMOS inventariables + PRESENTACIONES de insumos inventariables
             # Basado en las consultas de Power BI del usuario
-            logging.info("Obteniendo catálogo de productos (INSUMOS inventariables + PRESENTACIONES)")
+            logging.info("Obteniendo catálogo de productos (INSUMOS inventariables + PRESENTACIONES de insumos inventariables)")
             
             productos_query = f"""
 -- INSUMOS inventariables
@@ -1896,7 +1896,7 @@ WHERE LEFT(insumos.descripcion, 3) <> 'zzz'
 
 UNION ALL
 
--- PRESENTACIONES
+-- PRESENTACIONES de insumos inventariables
 SELECT 
     'PRESENTACION' as TABLA,
     gruposiclasificacion.descripcion as CATEGORIA,
@@ -1910,8 +1910,10 @@ FROM insumospresentaciones INPRE
 INNER JOIN gruposi GP ON GP.idgruposi = INPRE.idgruposi
 INNER JOIN insumospresentacionesdetalle INPRED ON INPRED.idinsumospresentaciones = INPRE.idinsumospresentaciones
 INNER JOIN insumos INSUMOS ON INSUMOS.idinsumo = INPRE.idinsumo
+INNER JOIN insumosdetalle IDET_PRES ON IDET_PRES.idinsumo = INPRE.idinsumo
 INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = GP.idgruposiclasificacion
 WHERE LEFT(INPRE.descripcion, 3) <> 'zzz'
+  AND IDET_PRES.inventariable = 1
 """
             
             productos_result = execute_sql_query(
@@ -2071,11 +2073,16 @@ GROUP BY LEFT(GP.descripcion,1) + RTRIM(LTRIM(receta.idinsumo))
             else:
                 logging.info(f"Almacén tipo {almacen_tipo} (NO es consumo) - ventas = 0 para todos los productos")
             
-            # 7. Combinar resultados - Solo productos que aparecen en inventarios
+            # 7. Combinar resultados - Solo productos que aparecen en inventarios Y están en el catálogo
+            # El catálogo ya está filtrado por inventariable = 1 para insumos
             results = []
             for codigo in todos_codigos:
                 # Obtener datos del catálogo de productos
-                prod_info = productos_dict.get(codigo, {})
+                prod_info = productos_dict.get(codigo, None)
+                
+                # FILTRO IMPORTANTE: Solo incluir productos que están en el catálogo (inventariables)
+                if prod_info is None:
+                    continue
                 
                 # Obtener datos de inventarios
                 inv_ini = inv_inicial_dict.get(codigo, {'existencia': 0, 'costo': 0, 'tipo': ''})
