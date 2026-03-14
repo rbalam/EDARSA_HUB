@@ -1796,9 +1796,36 @@ GROUP BY E.Pr_Cve_Producto
         elif server['system_type'] == 'SoftRestaurant':
             # Análisis de inventario para SoftRestaurant
             logging.info(f"Generando análisis de inventario SoftRestaurant: {almacen}")
-            logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
             logging.info(f"Folios: {folio_inicial} a {folio_final}")
             logging.info(f"Filtros frontend - Categorias: {filtro_categorias_frontend}, Familias: {filtro_familias_frontend}, SubFamilias: {filtro_subfamilias_frontend}")
+            
+            # Obtener fechas de los folios de inventario
+            fechas_query = f"""
+SELECT folio, fecha
+FROM invfisico
+WHERE folio IN ({folio_inicial}, {folio_final})
+ORDER BY folio
+"""
+            fechas_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], fechas_query
+            )
+            
+            # Extraer fechas
+            fecha_ini = None
+            fecha_fin = None
+            for row in fechas_result:
+                if str(row['folio']) == str(folio_inicial):
+                    fecha_ini = str(row['fecha'])[:10]  # Solo fecha YYYY-MM-DD
+                elif str(row['folio']) == str(folio_final):
+                    fecha_fin = str(row['fecha'])[:10]
+            
+            if not fecha_ini or not fecha_fin:
+                logging.warning(f"No se encontraron fechas para los folios {folio_inicial} y {folio_final}")
+                fecha_ini = fecha_ini or "2000-01-01"
+                fecha_fin = fecha_fin or "2099-12-31"
+            
+            logging.info(f"Fechas calculadas de inventarios: {fecha_ini} a {fecha_fin}")
             
             # 1. Obtener información del almacén incluyendo el TIPO
             # TIPO = 1: Almacén de consumo (tiene ventas)
@@ -1859,13 +1886,14 @@ SELECT
     END as Categoria,
     ISNULL(GC.descripcion, 'Sin Grupo') as Familia,
     ISNULL(GS.descripcion, 'Sin SubGrupo') as SubFamilia,
-    'PZA' as Unidad,
-    0 as Costo_Unitario,
+    ISNULL(I.unidad, 'PZA') as Unidad,
+    ISNULL(ID.costo, ISNULL(COSTO_MOV.costo_promedio, 0)) as Costo_Unitario,
     ISNULL(INV_INI.existenciaalmacen1, 0) as Inv_Inicial_Cantidad,
     ISNULL(INV_FIN.existenciaalmacen1, 0) as Inv_Final_Cantidad
 FROM insumos I
 LEFT JOIN gruposi GS ON GS.idgruposi = I.idgruposi
 LEFT JOIN gruposiclasificacion GC ON GC.idgruposiclasificacion = GS.idgruposiclasificacion
+LEFT JOIN insumosdetalle ID ON ID.idinsumo = I.idinsumo
 LEFT JOIN (
     SELECT DET.idinsumo, DET.existenciaalmacen1
     FROM invfisicomovtos DET
@@ -1876,6 +1904,12 @@ LEFT JOIN (
     FROM invfisicomovtos DET
     WHERE DET.folio = '{folio_final}'
 ) INV_FIN ON INV_FIN.idinsumo = I.idinsumo
+LEFT JOIN (
+    SELECT idinsumo, AVG(costo) as costo_promedio
+    FROM movsinv
+    WHERE RTRIM(idalmacen) = '{almacen_id}' AND costo > 0
+    GROUP BY idinsumo
+) COSTO_MOV ON COSTO_MOV.idinsumo = I.idinsumo
 WHERE (INV_INI.existenciaalmacen1 IS NOT NULL OR INV_FIN.existenciaalmacen1 IS NOT NULL)
     {filtro_categoria_sr}
     {filtro_familia_sr}
@@ -1889,14 +1923,14 @@ ORDER BY GC.descripcion, GS.descripcion, I.descripcion
             logging.info(f"Productos obtenidos: {len(productos)}")
             
             # 3. Obtener movimientos de inventario
-            # Para SoftRestaurant, los movimientos de insumos están en 'movsinsumos'
+            # Para SoftRestaurant, los movimientos de insumos están en 'movsinv'
             movimientos_query = f"""
 SELECT 
     M.idinsumo as Producto_Codigo,
     SUM(CASE WHEN M.cantidad > 0 THEN M.cantidad ELSE 0 END) -
     SUM(CASE WHEN M.cantidad < 0 THEN ABS(M.cantidad) ELSE 0 END) as Total_Movimientos
-FROM movsinsumos M
-WHERE M.idalmacen = '{almacen_id}'
+FROM movsinv M
+WHERE RTRIM(M.idalmacen) = '{almacen_id}'
     AND M.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
 GROUP BY M.idinsumo
 """
@@ -1915,26 +1949,38 @@ GROUP BY M.idinsumo
             ventas_dict = {}
             if es_almacen_consumo:
                 logging.info("Obteniendo ventas (almacén de CONSUMO tipo=1)...")
-                ventas_query = f"""
-SELECT 
-    IP.idinsumo as Producto_Codigo,
-    SUM(VC.cantidad * ISNULL(IP.equivalencia, 1)) as Total_Ventas
-FROM ventascuentas VC
-INNER JOIN cuentas C ON C.idcuenta = VC.idcuenta
-INNER JOIN productos P ON P.idproducto = VC.idproducto
-INNER JOIN insumos_productos INP ON INP.idproducto = P.idproducto
-INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = INP.idinsumospresentaciones
-WHERE C.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-    AND C.cancelada = 0
-GROUP BY IP.idinsumo
-"""
+                # En SoftRestaurant, las ventas de insumos se calculan a través de las recetas
+                # Primero verificamos si hay recetas configuradas
                 try:
-                    ventas_result = execute_sql_query(
+                    recetas_check = execute_sql_query(
                         server['host'], server['port'], server['database'],
-                        server['username'], server['password'], ventas_query
+                        server['username'], server['password'], 
+                        "SELECT COUNT(*) as total FROM explosioninsumosdetalle"
                     )
-                    ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
-                    logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
+                    recetas_count = recetas_check[0]['total'] if recetas_check else 0
+                    
+                    if recetas_count == 0:
+                        logging.warning("No hay recetas configuradas en explosioninsumosdetalle - ventas de insumos no calculables")
+                        ventas_dict = {}
+                    else:
+                        # Usamos explosioninsumosdetalle para relacionar ventas de productos con insumos
+                        ventas_query = f"""
+SELECT 
+    EID.idinsumo as Producto_Codigo,
+    SUM(CD.cantidad * EID.cantidad) as Total_Ventas
+FROM cheqdet CD
+INNER JOIN cheques C ON C.folio = CD.foliodet
+INNER JOIN explosioninsumosdetalle EID ON EID.idproducto = CD.idproducto
+WHERE C.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
+    AND C.cancelado = 0
+GROUP BY EID.idinsumo
+"""
+                        ventas_result = execute_sql_query(
+                            server['host'], server['port'], server['database'],
+                            server['username'], server['password'], ventas_query
+                        )
+                        ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
+                        logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
                 except Exception as e:
                     logging.warning(f"Error al obtener ventas: {str(e)}, continuando sin ventas")
                     ventas_dict = {}
@@ -2085,21 +2131,24 @@ ORDER BY M.Mv_Fecha DESC
             return {"data": movements, "count": len(movements)}
             
         elif server['system_type'] == 'SoftRestaurant':
-            # Para SoftRestaurant - usando movsinsumos
+            # Para SoftRestaurant - usando movsinv
             query = f"""
 SELECT 
-    M.idmovsinsumos as Folio,
+    COALESCE(M.foliocheque, CAST(M.idcompra AS VARCHAR), CAST(M.traspaso AS VARCHAR), CAST(M.invfisico AS VARCHAR)) as Folio,
     M.fecha as Fecha,
     M.cantidad as Cantidad,
-    M.idtipomovsinsumos as Tipo_Codigo,
-    TM.nombre as Tipo_Descripcion,
+    M.movto as Tipo_Codigo,
+    CASE M.movto
+        WHEN 'E' THEN 'Entrada'
+        WHEN 'S' THEN 'Salida'
+        ELSE ISNULL(M.movto, 'Sin Tipo')
+    END as Tipo_Descripcion,
     I.descripcion as Producto,
     A.nombre as Almacen,
-    ISNULL(M.observaciones, '') as Observaciones
-FROM movsinsumos M
-INNER JOIN tiposmovsinsumos TM ON TM.idtiposmovsinsumos = M.idtipomovsinsumos
+    M.costo as Costo
+FROM movsinv M
 INNER JOIN insumos I ON I.idinsumo = M.idinsumo
-INNER JOIN almacen A ON A.idalmacen = M.idalmacen
+INNER JOIN almacen A ON RTRIM(A.idalmacen) = RTRIM(M.idalmacen)
 WHERE M.idinsumo = '{producto_codigo}'
     AND M.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
 ORDER BY M.fecha DESC
@@ -2120,7 +2169,7 @@ ORDER BY M.fecha DESC
                     'tipo_movimiento': '',
                     'producto': row.get('Producto'),
                     'almacen': row.get('Almacen'),
-                    'observaciones': row.get('Observaciones') or ''
+                    'observaciones': f"Costo: ${row.get('Costo', 0):.2f}" if row.get('Costo') else ''
                 })
             
             return {"data": movements, "count": len(movements)}

@@ -39,8 +39,10 @@ Aplicación web para analizar inventarios de múltiples sucursales, cada una con
 - `POST /api/auth/login` - Autenticación
 - `GET/POST /api/servers` - CRUD de servidores (filtrado por permisos)
 - `GET /api/servers/{id}/sucursales` - Lista de sucursales (filtrada por permisos)
+- `GET /api/servers/{id}/almacenes-softrestaurant` - Lista de almacenes para SoftRestaurant
+- `GET /api/servers/{id}/inventarios` - Lista de inventarios físicos
 - `GET /api/servers/{id}/report-filters` - Obtiene categorías, familias, subfamilias para filtros
-- `POST /api/reports/inventory-analysis` - Análisis de inventario (acepta filtros: categorias, familias, subfamilias)
+- `POST /api/reports/inventory-analysis` - Análisis de inventario (acepta filtros)
 - `POST /api/reports/movement-details` - Detalle de movimientos por producto
 - `POST /api/reports/sales-details` - Detalle de ventas por producto
 - `POST /api/reports/export/excel` - Exportar Excel con formato
@@ -64,10 +66,22 @@ User {
 
 ## Lo Implementado
 
-### 2025-03-14 - Filtros y Análisis Completo para SoftRestaurant
+### 2026-03-14 - Corrección Completa de SoftRestaurant
+- **Backend - Consultas SQL Corregidas**:
+  - Tabla `movsinv` identificada y usada correctamente para movimientos de insumos
+  - Tabla `insumosdetalle` usada para obtener costos de insumos
+  - Columna `idalmacen` tiene espacios - se usa `RTRIM()` para comparaciones
+  - Fechas se calculan automáticamente desde los folios de inventario
+  - Ventas de insumos requieren recetas en `explosioninsumosdetalle` (si no hay, ventas = 0)
+- **Resultado**: Reporte genera correctamente 124 productos con:
+  - 32 productos con costo > 0
+  - 23 productos con movimientos
+  - 31 productos con diferencias
+
+### 2026-03-14 - Filtros y Análisis Completo para SoftRestaurant
 - **Backend - Filtros para SoftRestaurant**:
   - Clasificación (clasificacionventa): 1=ALIMENTOS, 2=BEBIDAS, 3=OTROS (equivale a Categoría)
-  - Grupos (gruposiclasificacion): 74 grupos disponibles (equivale a Familia)
+  - Grupos (gruposiclasificacion): Grupos disponibles (equivale a Familia)
   - SubGrupos (gruposi): SubFamilias disponibles
 - **Backend - Análisis de Inventario con Filtros**:
   - Los filtros se aplican a la consulta SQL correctamente
@@ -76,71 +90,29 @@ User {
   - Etiquetas adaptadas: Clasificación, Grupos, SubGrupos
   - Filtros visibles al seleccionar servidor SoftRestaurant
 
-### 2025-03-14 - Corrección de Filtros y Análisis SoftRestaurant
-- **Backend - Filtros de Categoría/Familia/SubFamilia CORREGIDOS**: Los filtros del frontend ahora se aplican correctamente a la consulta SQL
-- **Backend - Análisis de Inventario para SoftRestaurant**: Implementado con lógica de ventas según tipo de almacén
-  - **ALMACEN.TIPO = 1** (Consumo): Tiene ventas
-  - **ALMACEN.TIPO = 2** (Presentaciones): NO tiene ventas (ventas = 0)
-- **Frontend - Log de debugging agregado**: Muestra en consola qué filtros se envían al backend
-
-### 2025-03-13 - Correcciones Finales
+### 2026-03-13 - Correcciones Finales
 - **Backend - Corregido error SQL en detalle de movimientos**: Removida columna `Mv_Observaciones` que no existe en MPRO
 - **Backend - Corregido error SQL en Dashboard SoftRestaurant**: Removido filtro por columna `esinventariable` que no existe
 - **Frontend - Restaurados filtros multiselección**: Categorías, Familias, SubFamilias funcionando correctamente
 
-### 2025-03-13 - Optimización de Carga del Dashboard
+### 2026-03-13 - Optimización de Carga del Dashboard
 - **Dashboard NO carga datos automáticamente al iniciar sesión**
 - El usuario debe seleccionar manualmente un servidor para cargar los datos
 - Esto elimina el bloqueo al iniciar sesión que causaba timeouts
 - Nueva vista inicial con selector de servidor y mensaje informativo
 
-### 2025-03-13 - Corrección de Ventas por Almacén (v2)
+### 2026-03-13 - Corrección de Ventas por Almacén (v2)
 - **Backend - Lógica de Ventas Corregida**:
   - **MPRO**: Solo almacenes con nombre que contenga "GENERAL", "CONSUMO" o "VENTA" muestran ventas
   - Almacenes como BODEGA, PRODUCCIÓN, etc. NO muestran ventas (ventas = 0)
   - Se obtiene el código de almacén junto con la sucursal para filtrar correctamente
 - **Backend - Nuevos Endpoints de Detalle**:
-  - `POST /api/reports/movement-details`: Detalle de movimientos (folio, fecha, cantidad, tipo, descripción, almacén, observaciones)
-  - `POST /api/reports/sales-details`: Detalle de ventas (folio, fecha, cantidad, tipo venta, producto vendido, precio unitario)
+  - `POST /api/reports/movement-details`: Detalle de movimientos
+  - `POST /api/reports/sales-details`: Detalle de ventas
 - **Frontend - Detalle con Doble Clic**:
-  - Columnas Movimientos y Ventas son clickeables (color azul) cuando valor ≠ 0
-  - Doble clic abre un modal simple (sin Radix Dialog) con el detalle completo
-  - Tabla con información de folio, fecha, cantidad, tipo de movimiento/venta
+  - Columnas Movimientos y Ventas son clickeables cuando valor ≠ 0
+  - Doble clic abre un modal simple con el detalle completo
   - Modal simple con HTML/CSS para evitar errores de `removeChild`
-
-### 2025-03-13 - Mejoras en Reporte de Análisis de Inventarios
-- **Backend**: Nuevo endpoint `GET /api/servers/{id}/report-filters` para obtener categorías, familias y subfamilias
-- **Backend**: El endpoint `POST /api/reports/inventory-analysis` ahora acepta filtros adicionales (categorias, familias, subfamilias)
-- **Backend**: Nuevas columnas en el resultado del análisis: `Valor_Real` y `Teorico`
-  - `Valor_Real = (Inv_Inicial + Movimientos - Inv_Final) * Costo`
-  - `Teorico = Ventas * Costo`
-- **Frontend**: Renombrado "Análisis Completo de Inventario" → "Análisis de Inventarios"
-- **Frontend**: Filtros multiselección de Categoría, Familia, SubFamilia (solo para MPRO)
-  - Componentes Popover con Checkbox para selección múltiple
-  - Tags de colores para mostrar filtros seleccionados
-  - Botón "Limpiar selección" en cada dropdown
-- **Testing**: 78% backend tests pasados (7/9), 100% frontend verificado
-
-### 2025-03-12 - Permisos de Sucursales y Excel con Formato
-- **Backend**: Nuevo campo `allowed_sucursales` en modelo User
-- **Backend**: Función `filter_sucursales_by_permissions()` filtra sucursales según usuario
-- **Backend**: Endpoint `/servers/{id}/sucursales` ahora filtra automáticamente
-- **Frontend**: Página de Usuarios con selección de sucursales por servidor
-- **Excel mejorado**:
-  - Encabezado con título, sucursal, almacén, folios, período y fecha
-  - Números con formato `#,##0.00` (2 decimales)
-  - Moneda con formato `$#,##0.00`
-  - Porcentajes con formato `0.00%`
-  - Datos ordenados por Categoría → Familia → SubFamilia
-  - Auto-filtro habilitado para filtrar en Excel
-  - Panel congelado para mantener encabezados visibles
-- **Testing**: 100% tests pasados (backend y frontend)
-
-### 2025-03-12 - Sistema de Permisos de Usuario (P0)
-- **Backend**: Campos `company_group`, `allowed_servers`, `allowed_warehouses`
-- **Backend**: Filtrado automático de servidores en `GET /api/servers`
-- **Backend**: Endpoint `PUT /api/users/{id}/permissions`
-- **Frontend**: Diálogo de permisos con checkboxes para servidores/almacenes
 
 ### Sesiones Anteriores
 - Corrección de conexión DDNS con pytds
@@ -148,8 +120,13 @@ User {
 - Dashboard con gráficos interactivos
 - Implementación de filtros configurables por servidor
 - Catálogo de consultas centralizado
+- Sistema de permisos granular
+- Excel con formato profesional
 
 ## Pendiente / Backlog
+
+### P1 - Alta Prioridad
+- [ ] Corregir exportación a Excel/PDF (el archivo no se descarga)
 
 ### P2 - Media Prioridad
 - [ ] Agregar paginación al reporte de inventario
@@ -159,17 +136,18 @@ User {
 - [ ] Exportación PDF mejorada con el mismo formato que Excel
 - [ ] Envío de reportes por correo electrónico
 - [ ] Limpieza de endpoints de debug
+- [ ] Modularización del backend (server.py es muy grande)
 
 ## Credenciales de Prueba
 
 ### Aplicación
-- **Admin**: `admin@inventario.com` / `admin123` (acceso completo - ve 7 sucursales)
+- **Admin**: `admin@inventario.com` / `admin123` (acceso completo)
 - **Test User**: `test@inventario.com` / `test123` (solo sucursales 0021, 0022 de ManagmentPro)
 
-### Servidores SQL
+### Servidores SQL Configurados
 - **ManagmentPro**: `54.39.104.176:1433`, DB: `CENTRAL2020`, User: `HRLectura`
 - **Cienfuegos**: `servercienfuegos.ddns.net,6669\nationalsoft`, DB: `softrestaurant95pro`
-- **LA ESTELAR**: `serverestelar.ddns.net,6669`, DB: `softrestaurant12`
+- **LA ESTELAR**: `serverestelar.ddns.net,6669`, DB: `softrestaurant12`, User: `STLectura`
 
 ## Notas Técnicas
 
@@ -177,7 +155,15 @@ User {
 - Administradores tienen acceso completo a todos los servidores/sucursales
 - Usuarios normales solo ven servidores/sucursales en sus listas permitidas
 - Si `allowed_sucursales[server_id]` está vacío, tiene acceso a todas las sucursales
-- Si tiene sucursales específicas, solo ve esas sucursales en reportes
+
+### SoftRestaurant - Tablas Importantes
+- `insumos` - Catálogo de insumos (idinsumo, descripcion, unidad)
+- `insumosdetalle` - Detalle con costos (idinsumo, costo)
+- `movsinv` - Movimientos de insumos (fecha, idinsumo, cantidad, costo, idalmacen)
+- `invfisico` - Inventarios físicos (folio, fecha)
+- `invfisicomovtos` - Detalle de inventarios físicos
+- `explosioninsumosdetalle` - Recetas (para calcular ventas de insumos)
+- `almacen` - Almacenes (tipo: 1=Consumo con ventas, 2=Presentaciones sin ventas)
 
 ### Formato Excel
 - Usa openpyxl con estilos profesionales
