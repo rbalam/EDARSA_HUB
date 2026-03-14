@@ -1963,20 +1963,26 @@ ORDER BY FMOV.folio, CODIGO
                 server['username'], server['password'], inventarios_query
             )
             
-            # Separar inventarios inicial y final
+            # Separar inventarios inicial y final - SOLO productos con existencia != 0
             inv_inicial_dict = {}
             inv_final_dict = {}
             for inv in inventarios_result:
                 codigo = inv['CODIGO']
+                existencia = float(inv['EXISTENCIA'] or 0)
+                
+                # Solo incluir si tiene existencia != 0
+                if existencia == 0:
+                    continue
+                    
                 if str(inv['folio']) == str(folio_inicial):
                     inv_inicial_dict[codigo] = {
-                        'existencia': float(inv['EXISTENCIA'] or 0),
+                        'existencia': existencia,
                         'costo': float(inv['costo'] or 0),
                         'tipo': inv['TIPO']
                     }
                 elif str(inv['folio']) == str(folio_final):
                     inv_final_dict[codigo] = {
-                        'existencia': float(inv['EXISTENCIA'] or 0),
+                        'existencia': existencia,
                         'costo': float(inv['costo'] or 0),
                         'tipo': inv['TIPO']
                     }
