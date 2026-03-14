@@ -1859,8 +1859,8 @@ SELECT
     END as Categoria,
     ISNULL(GC.descripcion, 'Sin Grupo') as Familia,
     ISNULL(GS.descripcion, 'Sin SubGrupo') as SubFamilia,
-    I.unidaddecompra as Unidad,
-    ISNULL(I.costounitario, 0) as Costo_Unitario,
+    'PZA' as Unidad,
+    0 as Costo_Unitario,
     ISNULL(INV_INI.existenciaalmacen1, 0) as Inv_Inicial_Cantidad,
     ISNULL(INV_FIN.existenciaalmacen1, 0) as Inv_Final_Cantidad
 FROM insumos I
@@ -1889,22 +1889,27 @@ ORDER BY GC.descripcion, GS.descripcion, I.descripcion
             logging.info(f"Productos obtenidos: {len(productos)}")
             
             # 3. Obtener movimientos de inventario
+            # Para SoftRestaurant, los movimientos de insumos están en 'movsinsumos'
             movimientos_query = f"""
 SELECT 
     M.idinsumo as Producto_Codigo,
     SUM(CASE WHEN M.cantidad > 0 THEN M.cantidad ELSE 0 END) -
     SUM(CASE WHEN M.cantidad < 0 THEN ABS(M.cantidad) ELSE 0 END) as Total_Movimientos
-FROM movimientosinventario M
+FROM movsinsumos M
 WHERE M.idalmacen = '{almacen_id}'
     AND M.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
 GROUP BY M.idinsumo
 """
-            movimientos_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], movimientos_query
-            )
-            movimientos_dict = {m['Producto_Codigo']: float(m['Total_Movimientos'] or 0) for m in movimientos_result}
-            logging.info(f"Movimientos obtenidos para {len(movimientos_dict)} productos")
+            try:
+                movimientos_result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], movimientos_query
+                )
+                movimientos_dict = {m['Producto_Codigo']: float(m['Total_Movimientos'] or 0) for m in movimientos_result}
+                logging.info(f"Movimientos obtenidos para {len(movimientos_dict)} productos")
+            except Exception as e:
+                logging.warning(f"Error al obtener movimientos: {str(e)}, continuando con movimientos = 0")
+                movimientos_dict = {}
             
             # 4. Obtener ventas SOLO si es almacén de consumo (tipo = 1)
             ventas_dict = {}
@@ -2080,21 +2085,21 @@ ORDER BY M.Mv_Fecha DESC
             return {"data": movements, "count": len(movements)}
             
         elif server['system_type'] == 'SoftRestaurant':
-            # Para SoftRestaurant - usando MOVSINV
+            # Para SoftRestaurant - usando movsinsumos
             query = f"""
 SELECT 
-    M.idmovimiento as Folio,
+    M.idmovsinsumos as Folio,
     M.fecha as Fecha,
     M.cantidad as Cantidad,
-    M.idtipomovimiento as Tipo_Codigo,
+    M.idtipomovsinsumos as Tipo_Codigo,
     TM.nombre as Tipo_Descripcion,
     I.descripcion as Producto,
     A.nombre as Almacen,
-    M.observaciones as Observaciones
-FROM movimientosinventario M
-INNER JOIN tipomovimiento TM ON TM.idtipomovimiento = M.idtipomovimiento
+    ISNULL(M.observaciones, '') as Observaciones
+FROM movsinsumos M
+INNER JOIN tiposmovsinsumos TM ON TM.idtiposmovsinsumos = M.idtipomovsinsumos
 INNER JOIN insumos I ON I.idinsumo = M.idinsumo
-INNER JOIN almacenes A ON A.idalmacen = M.idalmacen
+INNER JOIN almacen A ON A.idalmacen = M.idalmacen
 WHERE M.idinsumo = '{producto_codigo}'
     AND M.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
 ORDER BY M.fecha DESC
