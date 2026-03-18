@@ -2004,15 +2004,18 @@ ORDER BY FMOV.folio, CODIGO
             logging.info(f"Total códigos únicos en inventarios: {len(todos_codigos)}")
             
             # 5. Obtener movimientos - UNION de movsinv (INSUMOS) + movtosalmacen (PRESENTACIONES)
-            # Ambas tablas se consultan para TODOS los almacenes
+            # Usando tabla CONCEPTOS para determinar el signo:
+            # - TIPO = 1: ENTRADAS (positivo)
+            # - TIPO = 2: SALIDAS (negativo)
             logging.info(f"Obteniendo movimientos entre {fecha_ini} y {fecha_fin} para almacén {almacen_nombre}")
             
             movimientos_query = f"""
--- MOVIMIENTOS DE INSUMOS (movsinv)
+-- MOVIMIENTOS DE INSUMOS (movsinv) con signo según tipo de concepto
 SELECT 
     LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo)) as CODIGO,
-    SUM(movsinv.cantidad) as CANTIDAD
+    SUM(CASE WHEN conceptos.tipo = 1 THEN movsinv.cantidad ELSE -movsinv.cantidad END) as CANTIDAD
 FROM movsinv
+INNER JOIN conceptos ON conceptos.idconcepto = movsinv.idconcepto
 INNER JOIN insumos ON insumos.idinsumo = movsinv.idinsumo
 INNER JOIN gruposi GP ON GP.idgruposi = insumos.idgruposi
 INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = GP.idgruposiclasificacion
@@ -2024,11 +2027,12 @@ GROUP BY LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo
 
 UNION ALL
 
--- MOVIMIENTOS DE PRESENTACIONES (movtosalmacen)
+-- MOVIMIENTOS DE PRESENTACIONES (movtosalmacen) con signo según tipo de concepto
 SELECT 
     LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones)) as CODIGO,
-    SUM(movtosalmacen.cantidad) as CANTIDAD
+    SUM(CASE WHEN conceptos.tipo = 1 THEN movtosalmacen.cantidad ELSE -movtosalmacen.cantidad END) as CANTIDAD
 FROM movtosalmacen
+INNER JOIN conceptos ON conceptos.idconcepto = movtosalmacen.idconcepto
 INNER JOIN insumospresentaciones ON insumospresentaciones.idinsumospresentaciones = movtosalmacen.idinsumospresentaciones
 INNER JOIN gruposi ON gruposi.idgruposi = insumospresentaciones.idgruposi
 INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = gruposi.idgruposiclasificacion
