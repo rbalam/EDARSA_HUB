@@ -20,21 +20,29 @@ const Reportes = () => {
   const [sucursales, setSucursales] = useState([]);
   const [almacenes, setAlmacenes] = useState([]);
   const [inventarios, setInventarios] = useState([]);
-  const [reportData, setReportData] = useState([]);
+  const [reportData, setReportData] = useState(() => {
+    // Recuperar datos del reporte desde sessionStorage
+    const saved = sessionStorage.getItem('reportData');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({
-    server_id: '',
-    query_type: 'analisis',
-    sucursal_id: '',
-    sucursal: '',
-    almacen_id: '',
-    almacen: '',
-    inventario_inicial: '',
-    inventario_inicial_fecha: '',
-    inventario_final: '',
-    inventario_final_fecha: '',
-    fecha_ini: '',
-    fecha_fin: ''
+  const [filters, setFilters] = useState(() => {
+    // Recuperar filtros desde sessionStorage
+    const saved = sessionStorage.getItem('reportFilters');
+    return saved ? JSON.parse(saved) : {
+      server_id: '',
+      query_type: 'analisis',
+      sucursal_id: '',
+      sucursal: '',
+      almacen_id: '',
+      almacen: '',
+      inventario_inicial: '',
+      inventario_inicial_fecha: '',
+      inventario_final: '',
+      inventario_final_fecha: '',
+      fecha_ini: '',
+      fecha_fin: ''
+    };
   });
 
   const [selectedServer, setSelectedServer] = useState(null);
@@ -54,10 +62,40 @@ const Reportes = () => {
     familias: [],
     subfamilias: []
   });
-  const [selectedCategorias, setSelectedCategorias] = useState([]);
-  const [selectedFamilias, setSelectedFamilias] = useState([]);
-  const [selectedSubfamilias, setSelectedSubfamilias] = useState([]);
+  const [selectedCategorias, setSelectedCategorias] = useState(() => {
+    const saved = sessionStorage.getItem('selectedCategorias');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [selectedFamilias, setSelectedFamilias] = useState(() => {
+    const saved = sessionStorage.getItem('selectedFamilias');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [selectedSubfamilias, setSelectedSubfamilias] = useState(() => {
+    const saved = sessionStorage.getItem('selectedSubfamilias');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [loadingFilters, setLoadingFilters] = useState(false);
+
+  // Guardar estado en sessionStorage cuando cambie
+  useEffect(() => {
+    sessionStorage.setItem('reportFilters', JSON.stringify(filters));
+  }, [filters]);
+
+  useEffect(() => {
+    sessionStorage.setItem('reportData', JSON.stringify(reportData));
+  }, [reportData]);
+
+  useEffect(() => {
+    sessionStorage.setItem('selectedCategorias', JSON.stringify(selectedCategorias));
+  }, [selectedCategorias]);
+
+  useEffect(() => {
+    sessionStorage.setItem('selectedFamilias', JSON.stringify(selectedFamilias));
+  }, [selectedFamilias]);
+
+  useEffect(() => {
+    sessionStorage.setItem('selectedSubfamilias', JSON.stringify(selectedSubfamilias));
+  }, [selectedSubfamilias]);
 
   useEffect(() => {
     loadServers();
