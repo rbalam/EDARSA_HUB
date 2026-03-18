@@ -4,16 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
+// Estilos para los selectores nativos
+const selectStyle = "w-full h-10 px-3 py-2 text-sm border border-zinc-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-zinc-100 disabled:cursor-not-allowed";
 
 const Reportes = () => {
   const [servers, setServers] = useState([]);
@@ -601,128 +601,118 @@ const Reportes = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Servidor {servers.length === 0 && <span className="text-red-500 text-xs">(Cargando...)</span>}</Label>
-              <Select value={filters.server_id} onValueChange={(value) => setFilters({...filters, server_id: value, sucursal_id: '', almacen_id: '', sucursal: '', almacen: ''})}>
-                <SelectTrigger data-testid="server-select">
-                  <SelectValue placeholder={servers.length === 0 ? "Cargando servidores..." : "Selecciona un servidor"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {servers.length === 0 ? (
-                    <SelectItem value="loading" disabled>No hay servidores disponibles</SelectItem>
-                  ) : (
-                    servers.map((server) => (
-                      <SelectItem key={server.id} value={server.id}>
-                        {server.name} ({server.system_type})
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+              <select 
+                className={selectStyle}
+                data-testid="server-select"
+                value={filters.server_id}
+                onChange={(e) => setFilters({...filters, server_id: e.target.value, sucursal_id: '', almacen_id: '', sucursal: '', almacen: ''})}
+              >
+                <option value="">{servers.length === 0 ? "Cargando servidores..." : "Selecciona un servidor"}</option>
+                {servers.map((server) => (
+                  <option key={server.id} value={server.id}>
+                    {server.name} ({server.system_type})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
               <Label>Tipo de Consulta</Label>
-              <Select value={filters.query_type} onValueChange={(value) => setFilters({...filters, query_type: value})}>
-                <SelectTrigger data-testid="query-type-select">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="analisis">Análisis Completo de Inventario</SelectItem>
-                  <SelectItem value="ventas">Ventas</SelectItem>
-                  <SelectItem value="movimientos">Movimientos</SelectItem>
-                  <SelectItem value="productos">Productos</SelectItem>
-                  <SelectItem value="inventarios">Inventarios Físicos</SelectItem>
-                </SelectContent>
-              </Select>
+              <select 
+                className={selectStyle}
+                data-testid="query-type-select"
+                value={filters.query_type}
+                onChange={(e) => setFilters({...filters, query_type: e.target.value})}
+              >
+                <option value="analisis">Análisis Completo de Inventario</option>
+                <option value="ventas">Ventas</option>
+                <option value="movimientos">Movimientos</option>
+                <option value="productos">Productos</option>
+                <option value="inventarios">Inventarios Físicos</option>
+              </select>
             </div>
 
             {/* Sucursal - Solo mostrar si NO es SoftRestaurant */}
             {selectedServer?.system_type !== 'SoftRestaurant' && (
               <div className="space-y-2">
                 <Label>Sucursal</Label>
-                <Select 
-                  value={filters.sucursal_id} 
-                  onValueChange={handleSucursalChange}
+                <select 
+                  className={selectStyle}
+                  data-testid="sucursal-select"
+                  value={filters.sucursal_id}
+                  onChange={(e) => handleSucursalChange(e.target.value)}
                   disabled={!filters.server_id || sucursales.length === 0}
                 >
-                  <SelectTrigger data-testid="sucursal-select">
-                    <SelectValue placeholder={!filters.server_id ? "Selecciona servidor primero" : "Selecciona una sucursal"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sucursales.map((sucursal) => (
-                      <SelectItem key={sucursal.id} value={sucursal.id}>
-                        {sucursal.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <option value="">{!filters.server_id ? "Selecciona servidor primero" : "Selecciona una sucursal"}</option>
+                  {sucursales.map((sucursal) => (
+                    <option key={sucursal.id} value={sucursal.id}>
+                      {sucursal.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
 
             <div className="space-y-2">
               <Label>Almacén</Label>
-              <Select 
-                value={filters.almacen_id} 
-                onValueChange={handleAlmacenChange}
+              <select 
+                className={selectStyle}
+                data-testid="almacen-select"
+                value={filters.almacen_id}
+                onChange={(e) => handleAlmacenChange(e.target.value)}
                 disabled={selectedServer?.system_type === 'SoftRestaurant' 
                   ? (!filters.server_id || almacenes.length === 0)
                   : (!filters.sucursal_id || almacenes.length === 0)
                 }
               >
-                <SelectTrigger data-testid="almacen-select">
-                  <SelectValue placeholder={
-                    selectedServer?.system_type === 'SoftRestaurant'
-                      ? (!filters.server_id ? "Selecciona servidor primero" : (almacenes.length === 0 ? "Cargando almacenes..." : "Selecciona un almacén"))
-                      : (!filters.sucursal_id ? "Selecciona sucursal primero" : "Selecciona un almacén")
-                  } />
-                </SelectTrigger>
-                <SelectContent>
-                  {almacenes.map((almacen) => (
-                    <SelectItem key={almacen.id} value={almacen.id}>
-                      {almacen.nombre} {almacen.tipo === 1 ? '(Consumo)' : almacen.tipo === 2 ? '(Presentaciones)' : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">
+                  {selectedServer?.system_type === 'SoftRestaurant'
+                    ? (!filters.server_id ? "Selecciona servidor primero" : (almacenes.length === 0 ? "Cargando almacenes..." : "Selecciona un almacén"))
+                    : (!filters.sucursal_id ? "Selecciona sucursal primero" : "Selecciona un almacén")
+                  }
+                </option>
+                {almacenes.map((almacen) => (
+                  <option key={almacen.id} value={almacen.id}>
+                    {almacen.nombre} {almacen.tipo === 1 ? '(Consumo)' : almacen.tipo === 2 ? '(Presentaciones)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
               <Label>Inventario Inicial</Label>
-              <Select 
-                value={filters.inventario_inicial} 
-                onValueChange={handleInventarioInicialChange}
+              <select 
+                className={selectStyle}
+                data-testid="inventario-inicial-select"
+                value={filters.inventario_inicial}
+                onChange={(e) => handleInventarioInicialChange(e.target.value)}
                 disabled={!filters.almacen_id || inventarios.length === 0}
               >
-                <SelectTrigger data-testid="inventario-inicial-select">
-                  <SelectValue placeholder={!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario inicial"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {inventarios.map((inv) => (
-                    <SelectItem key={inv.folio} value={inv.folio}>
-                      Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-MX') : 'Sin fecha'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">{!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario inicial"}</option>
+                {inventarios.map((inv) => (
+                  <option key={inv.folio} value={inv.folio}>
+                    Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-MX') : 'Sin fecha'}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
               <Label>Inventario Final</Label>
-              <Select 
-                value={filters.inventario_final} 
-                onValueChange={handleInventarioFinalChange}
+              <select 
+                className={selectStyle}
+                data-testid="inventario-final-select"
+                value={filters.inventario_final}
+                onChange={(e) => handleInventarioFinalChange(e.target.value)}
                 disabled={!filters.almacen_id || inventarios.length === 0}
               >
-                <SelectTrigger data-testid="inventario-final-select">
-                  <SelectValue placeholder={!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario final"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {inventarios.map((inv) => (
-                    <SelectItem key={inv.folio} value={inv.folio}>
-                      Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-MX') : 'Sin fecha'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">{!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario final"}</option>
+                {inventarios.map((inv) => (
+                  <option key={inv.folio} value={inv.folio}>
+                    Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-MX') : 'Sin fecha'}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
@@ -775,169 +765,151 @@ const Reportes = () => {
                 {loadingFilters && <span className="text-xs text-zinc-400">Cargando...</span>}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Multiselect Categorías */}
+                {/* Multiselect Categorías - Usando detalles/summary nativo */}
                 <div className="space-y-2">
                   <Label>{selectedServer?.system_type === 'SoftRestaurant' ? 'Clasificación' : 'Categorías'}</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-between font-normal"
-                        data-testid="categorias-multiselect"
-                        disabled={filterOptions.categorias.length === 0}
-                      >
-                        <span className="truncate">
-                          {selectedCategorias.length === 0 
-                            ? 'Todas las categorías' 
-                            : `${selectedCategorias.length} seleccionada(s)`}
-                        </span>
-                        <ChevronDown className="h-4 w-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-2 max-h-64 overflow-y-auto">
+                  <details className="relative">
+                    <summary 
+                      className={`${selectStyle} cursor-pointer list-none flex items-center justify-between`}
+                      data-testid="categorias-multiselect"
+                    >
+                      <span className="truncate">
+                        {selectedCategorias.length === 0 
+                          ? 'Todas las categorías' 
+                          : `${selectedCategorias.length} seleccionada(s)`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </summary>
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-64 overflow-y-auto">
                       {selectedCategorias.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full mb-2 text-xs"
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
                           onClick={() => setSelectedCategorias([])}
                         >
                           <X className="h-3 w-3 mr-1" /> Limpiar selección
-                        </Button>
+                        </button>
                       )}
                       {filterOptions.categorias.map((cat) => (
-                        <div key={cat.id} className="flex items-center space-x-2 py-1.5 px-2 hover:bg-zinc-50 rounded">
-                          <Checkbox
-                            id={`cat-${cat.id}`}
+                        <label key={cat.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="rounded border-zinc-300"
                             checked={selectedCategorias.includes(cat.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
+                            onChange={(e) => {
+                              if (e.target.checked) {
                                 setSelectedCategorias([...selectedCategorias, cat.id]);
                               } else {
                                 setSelectedCategorias(selectedCategorias.filter(c => c !== cat.id));
                               }
                             }}
                           />
-                          <label htmlFor={`cat-${cat.id}`} className="text-sm cursor-pointer flex-1">
-                            {cat.nombre}
-                          </label>
-                        </div>
+                          <span className="text-sm">{cat.nombre}</span>
+                        </label>
                       ))}
                       {filterOptions.categorias.length === 0 && (
                         <p className="text-xs text-zinc-400 text-center py-2">No hay categorías disponibles</p>
                       )}
-                    </PopoverContent>
-                  </Popover>
+                    </div>
+                  </details>
                 </div>
 
-                {/* Multiselect Familias */}
+                {/* Multiselect Familias - Usando detalles/summary nativo */}
                 <div className="space-y-2">
                   <Label>{selectedServer?.system_type === 'SoftRestaurant' ? 'Grupos' : 'Familias'}</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-between font-normal"
-                        data-testid="familias-multiselect"
-                        disabled={filterOptions.familias.length === 0}
-                      >
-                        <span className="truncate">
-                          {selectedFamilias.length === 0 
-                            ? 'Todas las familias' 
-                            : `${selectedFamilias.length} seleccionada(s)`}
-                        </span>
-                        <ChevronDown className="h-4 w-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-2 max-h-64 overflow-y-auto">
+                  <details className="relative">
+                    <summary 
+                      className={`${selectStyle} cursor-pointer list-none flex items-center justify-between`}
+                      data-testid="familias-multiselect"
+                    >
+                      <span className="truncate">
+                        {selectedFamilias.length === 0 
+                          ? 'Todas las familias' 
+                          : `${selectedFamilias.length} seleccionada(s)`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </summary>
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-64 overflow-y-auto">
                       {selectedFamilias.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full mb-2 text-xs"
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
                           onClick={() => setSelectedFamilias([])}
                         >
                           <X className="h-3 w-3 mr-1" /> Limpiar selección
-                        </Button>
+                        </button>
                       )}
                       {filterOptions.familias.map((fam) => (
-                        <div key={fam.id} className="flex items-center space-x-2 py-1.5 px-2 hover:bg-zinc-50 rounded">
-                          <Checkbox
-                            id={`fam-${fam.id}`}
+                        <label key={fam.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="rounded border-zinc-300"
                             checked={selectedFamilias.includes(fam.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
+                            onChange={(e) => {
+                              if (e.target.checked) {
                                 setSelectedFamilias([...selectedFamilias, fam.id]);
                               } else {
                                 setSelectedFamilias(selectedFamilias.filter(f => f !== fam.id));
                               }
                             }}
                           />
-                          <label htmlFor={`fam-${fam.id}`} className="text-sm cursor-pointer flex-1">
-                            {fam.nombre}
-                          </label>
-                        </div>
+                          <span className="text-sm">{fam.nombre}</span>
+                        </label>
                       ))}
                       {filterOptions.familias.length === 0 && (
                         <p className="text-xs text-zinc-400 text-center py-2">No hay familias disponibles</p>
                       )}
-                    </PopoverContent>
-                  </Popover>
+                    </div>
+                  </details>
                 </div>
 
-                {/* Multiselect SubFamilias */}
+                {/* Multiselect SubFamilias - Usando detalles/summary nativo */}
                 <div className="space-y-2">
                   <Label>{selectedServer?.system_type === 'SoftRestaurant' ? 'SubGrupos' : 'SubFamilias'}</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-between font-normal"
-                        data-testid="subfamilias-multiselect"
-                        disabled={filterOptions.subfamilias.length === 0}
-                      >
-                        <span className="truncate">
-                          {selectedSubfamilias.length === 0 
-                            ? 'Todas las subfamilias' 
-                            : `${selectedSubfamilias.length} seleccionada(s)`}
-                        </span>
-                        <ChevronDown className="h-4 w-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-2 max-h-64 overflow-y-auto">
+                  <details className="relative">
+                    <summary 
+                      className={`${selectStyle} cursor-pointer list-none flex items-center justify-between`}
+                      data-testid="subfamilias-multiselect"
+                    >
+                      <span className="truncate">
+                        {selectedSubfamilias.length === 0 
+                          ? 'Todas las subfamilias' 
+                          : `${selectedSubfamilias.length} seleccionada(s)`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </summary>
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-64 overflow-y-auto">
                       {selectedSubfamilias.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full mb-2 text-xs"
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
                           onClick={() => setSelectedSubfamilias([])}
                         >
                           <X className="h-3 w-3 mr-1" /> Limpiar selección
-                        </Button>
+                        </button>
                       )}
                       {filterOptions.subfamilias.map((sf) => (
-                        <div key={sf.id} className="flex items-center space-x-2 py-1.5 px-2 hover:bg-zinc-50 rounded">
-                          <Checkbox
-                            id={`sf-${sf.id}`}
+                        <label key={sf.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="rounded border-zinc-300"
                             checked={selectedSubfamilias.includes(sf.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
+                            onChange={(e) => {
+                              if (e.target.checked) {
                                 setSelectedSubfamilias([...selectedSubfamilias, sf.id]);
                               } else {
                                 setSelectedSubfamilias(selectedSubfamilias.filter(s => s !== sf.id));
                               }
                             }}
                           />
-                          <label htmlFor={`sf-${sf.id}`} className="text-sm cursor-pointer flex-1">
-                            {sf.nombre}
-                          </label>
-                        </div>
+                          <span className="text-sm">{sf.nombre}</span>
+                        </label>
                       ))}
                       {filterOptions.subfamilias.length === 0 && (
                         <p className="text-xs text-zinc-400 text-center py-2">No hay subfamilias disponibles</p>
                       )}
-                    </PopoverContent>
-                  </Popover>
+                    </div>
+                  </details>
                 </div>
               </div>
               
