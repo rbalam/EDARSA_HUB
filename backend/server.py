@@ -1854,54 +1854,61 @@ WHERE nombre LIKE '%{almacen}%'
             logging.info(f"Almacén: {almacen_nombre}, ID: {almacen_id}, Tipo: {almacen_tipo}, Es Consumo (tiene ventas): {es_almacen_consumo}")
             
             # Construir filtros SQL para SoftRestaurant
-            # Categoría = clasificacionventa (1=ALIMENTOS, 2=BEBIDAS, 3=OTROS)
-            filtro_categoria_sr = ""
-            if filtro_categorias_frontend:
-                cats_sql = ",".join([f"'{c}'" for c in filtro_categorias_frontend])
-                filtro_categoria_sr = f"AND GC.clasificacionventa IN ({cats_sql})"
+            # Categoría = clasificacionventa (1=ALIMENTOS, 2=BEBIDAS, 3=OTROS) en tabla gruposiclasificacion
+            # Familia = idgruposiclasificacion en tabla gruposiclasificacion
+            # SubFamilia = idgruposi en tabla gruposi
             
-            # Familia = gruposiclasificacion
-            filtro_familia_sr = ""
-            if filtro_familias_frontend:
-                fams_sql = ",".join([f"'{f}'" for f in filtro_familias_frontend])
-                filtro_familia_sr = f"AND GC.idgruposiclasificacion IN ({fams_sql})"
+            # Construir valores SQL para los filtros
+            cats_sql = ",".join([f"'{c}'" for c in filtro_categorias_frontend]) if filtro_categorias_frontend else ""
+            fams_sql = ",".join([f"'{f}'" for f in filtro_familias_frontend]) if filtro_familias_frontend else ""
+            sfs_sql = ",".join([f"'{s}'" for s in filtro_subfamilias_frontend]) if filtro_subfamilias_frontend else ""
             
-            # SubFamilia = gruposi
-            filtro_subfamilia_sr = ""
-            if filtro_subfamilias_frontend:
-                sfs_sql = ",".join([f"'{s}'" for s in filtro_subfamilias_frontend])
-                filtro_subfamilia_sr = f"AND GS.idgruposi IN ({sfs_sql})"
+            # Filtros para INSUMOS (usa GC para gruposiclasificacion, GS para gruposi)
+            filtro_categoria_insumos = f"AND GC.clasificacionventa IN ({cats_sql})" if cats_sql else ""
+            filtro_familia_insumos = f"AND GC.idgruposiclasificacion IN ({fams_sql})" if fams_sql else ""
+            filtro_subfamilia_insumos = f"AND GS.idgruposi IN ({sfs_sql})" if sfs_sql else ""
+            
+            # Filtros para PRESENTACIONES (usa GC para gruposiclasificacion, GP para gruposi)
+            filtro_categoria_pres = f"AND GC.clasificacionventa IN ({cats_sql})" if cats_sql else ""
+            filtro_familia_pres = f"AND GC.idgruposiclasificacion IN ({fams_sql})" if fams_sql else ""
+            filtro_subfamilia_pres = f"AND GP.idgruposi IN ({sfs_sql})" if sfs_sql else ""
+            
+            logging.info(f"Filtros construidos - Categorias: {cats_sql}, Familias: {fams_sql}, SubFamilias: {sfs_sql}")
             
             # 2. Obtener productos (catálogo) con UNION de INSUMOS inventariables + PRESENTACIONES de insumos inventariables
             # Basado en las consultas de Power BI del usuario
+            # APLICANDO FILTROS DE CLASIFICACION, GRUPO Y SUBGRUPO
             logging.info("Obteniendo catálogo de productos (INSUMOS inventariables + PRESENTACIONES de insumos inventariables)")
             
             productos_query = f"""
 -- INSUMOS inventariables
 SELECT 
     'INSUMO' as TABLA,
-    gruposiclasificacion.descripcion as CATEGORIA,
-    gruposi.descripcion as GRUPO,
-    LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(insumos.idinsumo)) as CODIGO,
+    GC.descripcion as CATEGORIA,
+    GS.descripcion as GRUPO,
+    LEFT(GC.descripcion,1) + RTRIM(LTRIM(insumos.idinsumo)) as CODIGO,
     insumos.descripcion as DESCRIPCION,
     insumos.unidad as UM,
     ISNULL((SELECT TOP 1 RENDIMIENTO FROM insumospresentaciones WHERE insumospresentaciones.idinsumo = insumos.idinsumo), 0) as RENDIMIENTO,
     IDET.costo as COSTO
 FROM insumos
 INNER JOIN insumosdetalle IDET ON IDET.idinsumo = insumos.idinsumo
-INNER JOIN gruposi ON gruposi.idgruposi = insumos.idgruposi
-INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = gruposi.idgruposiclasificacion
+INNER JOIN gruposi GS ON GS.idgruposi = insumos.idgruposi
+INNER JOIN gruposiclasificacion GC ON GC.idgruposiclasificacion = GS.idgruposiclasificacion
 WHERE LEFT(insumos.descripcion, 3) <> 'zzz'
   AND IDET.inventariable = 1
+  {filtro_categoria_insumos}
+  {filtro_familia_insumos}
+  {filtro_subfamilia_insumos}
 
 UNION ALL
 
 -- PRESENTACIONES de insumos inventariables
 SELECT 
     'PRESENTACION' as TABLA,
-    gruposiclasificacion.descripcion as CATEGORIA,
+    GC.descripcion as CATEGORIA,
     GP.descripcion as GRUPO,
-    LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(INPRE.idinsumospresentaciones)) as CODIGO,
+    LEFT(GC.descripcion,1) + RTRIM(LTRIM(INPRE.idinsumospresentaciones)) as CODIGO,
     INPRE.descripcion as DESCRIPCION,
     INSUMOS.unidad as UM,
     ISNULL(INPRE.rendimiento, 0) as RENDIMIENTO,
@@ -1911,9 +1918,12 @@ INNER JOIN gruposi GP ON GP.idgruposi = INPRE.idgruposi
 INNER JOIN insumospresentacionesdetalle INPRED ON INPRED.idinsumospresentaciones = INPRE.idinsumospresentaciones
 INNER JOIN insumos INSUMOS ON INSUMOS.idinsumo = INPRE.idinsumo
 INNER JOIN insumosdetalle IDET_PRES ON IDET_PRES.idinsumo = INPRE.idinsumo
-INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = GP.idgruposiclasificacion
+INNER JOIN gruposiclasificacion GC ON GC.idgruposiclasificacion = GP.idgruposiclasificacion
 WHERE LEFT(INPRE.descripcion, 3) <> 'zzz'
   AND IDET_PRES.inventariable = 1
+  {filtro_categoria_pres}
+  {filtro_familia_pres}
+  {filtro_subfamilia_pres}
 """
             
             productos_result = execute_sql_query(
