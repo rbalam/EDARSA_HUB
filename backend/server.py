@@ -2048,6 +2048,9 @@ GROUP BY RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
                 )
                 movimientos_dict = {m['CODIGO']: float(m['CANTIDAD'] or 0) for m in movimientos_result}
                 logging.info(f"Movimientos obtenidos para {len(movimientos_dict)} productos")
+                # DEBUG: Mostrar el valor de B130009
+                if 'B130009' in movimientos_dict:
+                    logging.info(f"DEBUG B130009 movimientos: {movimientos_dict['B130009']}")
             except Exception as e:
                 logging.warning(f"Error al obtener movimientos: {str(e)}, continuando con movimientos = 0")
                 movimientos_dict = {}
