@@ -333,39 +333,41 @@ const Reportes = () => {
     });
   };
 
-  // Función auxiliar para parsear fechas de forma compatible con todos los navegadores
+  // Función auxiliar para parsear fechas SIN conversión de zona horaria
+  // Siempre interpreta la fecha como hora local
   const parseDateString = (dateStr) => {
     if (!dateStr) return null;
     
-    // Intentar varios formatos comunes
-    // Formato: "2026-02-28 10:30:00" o "2026-02-28T10:30:00" o "2026/02/28 10:30:00"
-    let normalized = String(dateStr).trim();
+    const str = String(dateStr).trim();
     
-    // Reemplazar / por - para normalizar
-    normalized = normalized.replace(/\//g, '-');
+    // Parsing manual para evitar problemas de zona horaria
+    // Formato esperado: "YYYY-MM-DD HH:MM:SS" o "YYYY-MM-DDTHH:MM:SS"
+    const match = str.match(/(\d{4})-(\d{1,2})-(\d{1,2})[\sT](\d{1,2}):(\d{1,2}):(\d{1,2})/);
     
-    // Si tiene espacio entre fecha y hora, reemplazar por T para ISO format
-    if (normalized.includes(' ') && !normalized.includes('T')) {
-      normalized = normalized.replace(' ', 'T');
+    if (match) {
+      const [, year, month, day, hour, min, sec] = match;
+      // Crear fecha usando componentes locales (NO UTC)
+      return new Date(
+        parseInt(year), 
+        parseInt(month) - 1,  // Mes es 0-indexado
+        parseInt(day), 
+        parseInt(hour), 
+        parseInt(min), 
+        parseInt(sec)
+      );
     }
     
-    // Intentar parsear directamente
-    let date = new Date(normalized);
-    
-    // Si el parsing falló, intentar manualmente
-    if (isNaN(date.getTime())) {
-      // Formato: YYYY-MM-DD HH:MM:SS o YYYY-MM-DDTHH:MM:SS
-      const match = normalized.match(/(\d{4})-(\d{1,2})-(\d{1,2})(?:T|\s)?(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?/);
-      if (match) {
-        const [, year, month, day, hour = 0, min = 0, sec = 0] = match;
-        date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(min), parseInt(sec));
-      }
+    // Si no tiene hora, asumir 00:00:00
+    const dateOnlyMatch = str.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (dateOnlyMatch) {
+      const [, year, month, day] = dateOnlyMatch;
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 0, 0, 0);
     }
     
-    return isNaN(date.getTime()) ? null : date;
+    return null;
   };
 
-  // Función para formatear fecha como "YYYY-MM-DD HH:MM:SS"
+  // Función para formatear fecha como "YYYY-MM-DD HH:MM:SS" (hora local)
   const formatDateForSQL = (date) => {
     if (!date) return '';
     const pad = (n) => String(n).padStart(2, '0');
@@ -386,12 +388,20 @@ const Reportes = () => {
       const fechaInicialDate = parseDateString(inicialFecha);
       const fechaFinalDate = parseDateString(finalFecha);
       
+      console.log('Fechas parseadas (hora local):', {
+        original_ini: inicialFecha,
+        original_fin: finalFecha,
+        parsed_ini: fechaInicialDate?.toString(),
+        parsed_fin: fechaFinalDate?.toString()
+      });
+      
       if (!fechaInicialDate || !fechaFinalDate) {
         console.error('Error parseando fechas:', { inicialFecha, finalFecha });
-        // Fallback: usar las fechas tal cual
-        fecha_ini = String(inicialFecha).split(/[T\s]/)[0] + ' 00:00:01';
-        fecha_fin = String(finalFecha).split(/[T\s]/)[0] + ' 23:59:59';
+        // Fallback: usar las fechas tal cual + ajuste manual
+        fecha_ini = String(inicialFecha).replace(/(\d{2}:\d{2}:)(\d{2})/, (m, p1, p2) => p1 + String(parseInt(p2) + 1).padStart(2, '0'));
+        fecha_fin = String(finalFecha).replace(/(\d{2}:\d{2}:)(\d{2})/, (m, p1, p2) => p1 + String(parseInt(p2) - 1).padStart(2, '0'));
       } else {
+        // Sumar/restar 1 segundo
         fechaInicialDate.setSeconds(fechaInicialDate.getSeconds() + 1);
         fechaFinalDate.setSeconds(fechaFinalDate.getSeconds() - 1);
         
@@ -404,7 +414,7 @@ const Reportes = () => {
       fecha_fin = String(finalFecha).split(/[T\s]/)[0];
     }
 
-    console.log('Fechas calculadas:', { inicialFecha, finalFecha, fecha_ini, fecha_fin, systemType });
+    console.log('Fechas calculadas FINAL:', { inicialFecha, finalFecha, fecha_ini, fecha_fin, systemType });
     return { fecha_ini, fecha_fin };
   };
 
