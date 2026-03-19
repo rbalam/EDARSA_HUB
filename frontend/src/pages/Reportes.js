@@ -1306,10 +1306,24 @@ const Reportes = () => {
               )}
             </div>
             
-            {/* Footer */}
+            {/* Footer con totales */}
             {detailModal.data.length > 0 && (
-              <div className="p-4 border-t text-sm text-zinc-500 text-right">
-                Total: {detailModal.data.length} registro(s)
+              <div className="p-4 border-t text-sm text-zinc-500">
+                <div className="flex justify-between items-center">
+                  <span>Total: {detailModal.data.length} registro(s)</span>
+                  {detailModal.type === 'movimientos' && (
+                    <span className="font-semibold text-zinc-700">
+                      Total Cantidad: <span className={detailModal.data.reduce((sum, row) => sum + (parseFloat(row.cantidad) || 0), 0) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                        {detailModal.data.reduce((sum, row) => sum + (parseFloat(row.cantidad) || 0), 0).toFixed(2)}
+                      </span>
+                    </span>
+                  )}
+                  {detailModal.type === 'ventas' && (
+                    <span className="font-semibold text-zinc-700">
+                      Total Cantidad: {detailModal.data.reduce((sum, row) => sum + (parseFloat(row.cantidad) || 0), 0).toFixed(2)}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>
