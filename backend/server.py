@@ -1305,8 +1305,7 @@ async def get_inventarios_list(
             query = f"""
                 SELECT 
                     F.Fi_Folio as folio,
-                    CONVERT(varchar, F.fi_fecha, 23) as fecha,
-                    CONVERT(varchar, F.fi_fecha, 120) as fecha_completa,
+                    CONVERT(varchar, F.fi_fecha, 120) as fecha,
                     F.Sc_Cve_Sucursal as sucursal_id,
                     S.Sc_Descripcion as sucursal,
                     F.Al_Cve_Almacen as almacen_id,
@@ -1319,7 +1318,7 @@ async def get_inventarios_list(
                 ORDER BY F.fi_fecha DESC
             """
         elif server['system_type'] == 'SoftRestaurant':
-            # Query para SoftRestaurant
+            # Query para SoftRestaurant - fecha en formato YYYY-MM-DD HH:MM:SS
             where_clause = "WHERE INV.cancelado = 0"
             if almacen_id:
                 where_clause += f" AND INV.idalmacen1 = '{almacen_id}'"
@@ -1327,8 +1326,7 @@ async def get_inventarios_list(
             query = f"""
                 SELECT 
                     INV.folio as folio,
-                    CONVERT(varchar, INV.fecha, 23) as fecha,
-                    CONVERT(varchar, INV.fecha, 120) as fecha_completa,
+                    CONVERT(varchar, INV.fecha, 120) as fecha,
                     INV.idalmacen1 as almacen_id,
                     A.nombre as almacen
                 FROM invfisico INV
@@ -1337,7 +1335,7 @@ async def get_inventarios_list(
                 ORDER BY INV.fecha DESC
             """
         else:
-            query = "SELECT Fi_Folio as folio, CONVERT(varchar, fi_fecha, 23) as fecha, CONVERT(varchar, fi_fecha, 120) as fecha_completa FROM Fisico GROUP BY Fi_Folio, fi_fecha ORDER BY fi_fecha DESC"
+            query = "SELECT Fi_Folio as folio, CONVERT(varchar, fi_fecha, 120) as fecha FROM Fisico GROUP BY Fi_Folio, fi_fecha ORDER BY fi_fecha DESC"
         
         results = execute_sql_query(
             server['host'],

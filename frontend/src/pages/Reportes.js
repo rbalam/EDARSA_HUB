@@ -410,7 +410,7 @@ const Reportes = () => {
 
   const handleInventarioInicialChange = (value) => {
     const inventario = inventarios.find(inv => inv.folio === value);
-    const nuevaFechaInicial = inventario?.fecha_completa || inventario?.fecha || '';
+    const nuevaFechaInicial = inventario?.fecha || '';
     
     console.log('Inventario inicial seleccionado:', { value, fecha: nuevaFechaInicial, inventario });
     
@@ -432,7 +432,7 @@ const Reportes = () => {
 
   const handleInventarioFinalChange = (value) => {
     const inventario = inventarios.find(inv => inv.folio === value);
-    const nuevaFechaFinal = inventario?.fecha_completa || inventario?.fecha || '';
+    const nuevaFechaFinal = inventario?.fecha || '';
     
     console.log('Inventario final seleccionado:', { value, fecha: nuevaFechaFinal, inventario });
     
@@ -742,7 +742,7 @@ const Reportes = () => {
                 <option value="">{!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario inicial"}</option>
                 {inventarios.map((inv) => (
                   <option key={inv.folio} value={inv.folio}>
-                    Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-MX') : 'Sin fecha'}
+                    Folio: {inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : 'Sin fecha'}
                   </option>
                 ))}
               </select>
@@ -760,7 +760,7 @@ const Reportes = () => {
                 <option value="">{!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario final"}</option>
                 {inventarios.map((inv) => (
                   <option key={inv.folio} value={inv.folio}>
-                    Folio: {inv.folio} - {inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-MX') : 'Sin fecha'}
+                    Folio: {inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : 'Sin fecha'}
                   </option>
                 ))}
               </select>
