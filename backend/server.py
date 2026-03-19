@@ -2026,9 +2026,9 @@ GROUP BY LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo
 UNION ALL
 
 -- MOVIMIENTOS DE PRESENTACIONES (movtosalmacen)
--- El código se genera igual que en inventarios: prefijo + idpresentacion
+-- El idinsumospresentaciones YA tiene el prefijo (ej: B130009), no agregar otro
 SELECT 
-    LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones)) as CODIGO,
+    RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones)) as CODIGO,
     SUM(movtosalmacen.cantidad) as CANTIDAD
 FROM movtosalmacen
 INNER JOIN insumospresentaciones ON insumospresentaciones.idinsumospresentaciones = movtosalmacen.idinsumospresentaciones
@@ -2038,7 +2038,7 @@ LEFT JOIN almacen ON almacen.idalmacen = movtosalmacen.idalmacen
 WHERE movtosalmacen.idconcepto NOT IN ('')
   AND movtosalmacen.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
   AND almacen.nombre LIKE '%{almacen}%'
-GROUP BY LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
+GROUP BY RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
 """
             
             try:
