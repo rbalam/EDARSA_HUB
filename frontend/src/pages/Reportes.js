@@ -172,6 +172,30 @@ const Reportes = () => {
     }
   }, [filters.server_id, filters.sucursal_id, filters.almacen_id, selectedServer]);
 
+  // AUTO-CALCULAR fechas cuando ambos inventarios estén seleccionados
+  useEffect(() => {
+    if (filters.inventario_inicial && filters.inventario_final && selectedServer && inventarios.length > 0) {
+      const invInicial = inventarios.find(inv => String(inv.folio) === String(filters.inventario_inicial));
+      const invFinal = inventarios.find(inv => String(inv.folio) === String(filters.inventario_final));
+      
+      if (invInicial?.fecha && invFinal?.fecha) {
+        const dates = calculateDates(invInicial.fecha, invFinal.fecha, selectedServer.system_type);
+        
+        // Solo actualizar si las fechas son diferentes
+        if (dates.fecha_ini !== filters.fecha_ini || dates.fecha_fin !== filters.fecha_fin) {
+          console.log('Auto-calculando fechas:', dates);
+          setFilters(prev => ({
+            ...prev,
+            inventario_inicial_fecha: invInicial.fecha,
+            inventario_final_fecha: invFinal.fecha,
+            fecha_ini: dates.fecha_ini,
+            fecha_fin: dates.fecha_fin
+          }));
+        }
+      }
+    }
+  }, [filters.inventario_inicial, filters.inventario_final, inventarios, selectedServer]);
+
   const loadServers = async () => {
     try {
       console.log('Cargando servidores...');
