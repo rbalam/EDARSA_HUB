@@ -2018,9 +2018,9 @@ ORDER BY FMOV.folio, CODIGO
             
             # 5. Obtener movimientos - UNION de movsinv (INSUMOS) + movtosalmacen (PRESENTACIONES)
             # Las cantidades tienen signo invertido, multiplicar por -1
-            # Formato de fecha: YYYYMMDD HH:MM:SS
-            fecha_ini_fmt = fecha_ini.replace('-', '') if fecha_ini else ''
-            fecha_fin_fmt = fecha_fin.replace('-', '') if fecha_fin else ''
+            # Formato de fecha: YYYYMMDD HH:MM:SS (sin guiones, con espacio)
+            fecha_ini_fmt = fecha_ini.replace('-', '').replace('T', ' ') if fecha_ini else ''
+            fecha_fin_fmt = fecha_fin.replace('-', '').replace('T', ' ') if fecha_fin else ''
             logging.info(f"DEBUG fechas originales: fecha_ini={fecha_ini}, fecha_fin={fecha_fin}")
             logging.info(f"Obteniendo movimientos entre {fecha_ini_fmt} y {fecha_fin_fmt} para almacén {almacen_nombre}")
             
