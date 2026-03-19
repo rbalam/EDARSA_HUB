@@ -2256,42 +2256,53 @@ ORDER BY M.Mv_Fecha DESC
             return {"data": movements, "count": len(movements)}
             
         elif server['system_type'] == 'SoftRestaurant':
-            # Para SoftRestaurant - usando movsinv
+            # Para SoftRestaurant - usando movsinv con tabla conceptos
+            # El código tiene prefijo de clasificación (ej: B130009), extraer solo el número
+            # Quitar el primer carácter (prefijo de clasificación)
+            producto_id = producto_codigo[1:] if producto_codigo and len(producto_codigo) > 1 else producto_codigo
+            
+            logging.info(f"Detalle movimientos SoftRestaurant - Código original: {producto_codigo}, ID extraído: {producto_id}, Almacén: {almacen}, Fechas: {fecha_ini} a {fecha_fin}")
+            
             query = f"""
 SELECT 
-    COALESCE(M.foliocheque, CAST(M.idcompra AS VARCHAR), CAST(M.traspaso AS VARCHAR), CAST(M.invfisico AS VARCHAR)) as Folio,
+    COALESCE(M.foliocheque, CAST(M.idcompra AS VARCHAR), CAST(M.traspaso AS VARCHAR), CAST(M.invfisico AS VARCHAR), '') as Folio,
     M.fecha as Fecha,
-    M.cantidad as Cantidad,
-    M.movto as Tipo_Codigo,
-    CASE M.movto
-        WHEN 'E' THEN 'Entrada'
-        WHEN 'S' THEN 'Salida'
-        ELSE ISNULL(M.movto, 'Sin Tipo')
-    END as Tipo_Descripcion,
+    CASE WHEN C.tipo = 1 THEN M.cantidad ELSE -M.cantidad END as Cantidad,
+    C.idconcepto as Tipo_Codigo,
+    C.descripcion as Tipo_Descripcion,
+    CASE WHEN C.tipo = 1 THEN 'Entrada' ELSE 'Salida' END as Tipo_Movimiento,
     I.descripcion as Producto,
     A.nombre as Almacen,
-    M.costo as Costo
+    M.costo as Costo,
+    M.idconcepto as Concepto_ID
 FROM movsinv M
+INNER JOIN conceptos C ON C.idconcepto = M.idconcepto
 INNER JOIN insumos I ON I.idinsumo = M.idinsumo
-INNER JOIN almacen A ON RTRIM(A.idalmacen) = RTRIM(M.idalmacen)
-WHERE M.idinsumo = '{producto_codigo}'
-    AND M.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
+WHERE RTRIM(LTRIM(M.idinsumo)) = '{producto_id}'
+    AND A.nombre LIKE '%{almacen}%'
+    AND M.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
+    AND M.idconcepto <> ''
 ORDER BY M.fecha DESC
 """
+            logging.info(f"Query detalle movimientos: {query[:500]}...")
+            
             result = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], query
             )
             
+            logging.info(f"Movimientos encontrados: {len(result)}")
+            
             movements = []
             for row in result:
                 movements.append({
-                    'folio': row.get('Folio'),
+                    'folio': row.get('Folio') or '',
                     'fecha': str(row.get('Fecha'))[:19] if row.get('Fecha') else '',
                     'cantidad': float(row.get('Cantidad') or 0),
                     'tipo_codigo': row.get('Tipo_Codigo'),
                     'tipo_descripcion': row.get('Tipo_Descripcion'),
-                    'tipo_movimiento': '',
+                    'tipo_movimiento': row.get('Tipo_Movimiento', ''),
                     'producto': row.get('Producto'),
                     'almacen': row.get('Almacen'),
                     'observaciones': f"Costo: ${row.get('Costo', 0):.2f}" if row.get('Costo') else ''
