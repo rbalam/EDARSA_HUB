@@ -2002,11 +2002,11 @@ ORDER BY FMOV.folio, CODIGO
             logging.info(f"Total códigos únicos en inventarios: {len(todos_codigos)}")
             
             # 5. Obtener movimientos - UNION de movsinv (INSUMOS) + movtosalmacen (PRESENTACIONES)
-            # Las cantidades en la BD ya tienen el signo correcto:
-            # - TIPO 1 (ENTRADAS): cantidades positivas
-            # - TIPO 2 (SALIDAS): cantidades negativas
-            # Solo necesitamos SUM(cantidad)
-            logging.info(f"Obteniendo movimientos entre {fecha_ini} y {fecha_fin} para almacén {almacen_nombre}")
+            # Las cantidades ya tienen el signo correcto en la BD
+            # Formato de fecha: YYYYMMDD HH:MM:SS
+            fecha_ini_fmt = fecha_ini.replace('-', '') if fecha_ini else ''
+            fecha_fin_fmt = fecha_fin.replace('-', '') if fecha_fin else ''
+            logging.info(f"Obteniendo movimientos entre {fecha_ini_fmt} y {fecha_fin_fmt} para almacén {almacen_nombre}")
             
             movimientos_query = f"""
 -- MOVIMIENTOS DE INSUMOS (movsinv)
@@ -2014,14 +2014,12 @@ SELECT
     LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo)) as CODIGO,
     SUM(movsinv.cantidad) as CANTIDAD
 FROM movsinv
-INNER JOIN conceptos ON conceptos.idconcepto = movsinv.idconcepto
 INNER JOIN insumos ON insumos.idinsumo = movsinv.idinsumo
 INNER JOIN gruposi GP ON GP.idgruposi = insumos.idgruposi
 INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = GP.idgruposiclasificacion
 LEFT JOIN almacen ON almacen.idalmacen = movsinv.idalmacen
-WHERE movsinv.idconcepto <> ''
-  AND movsinv.fecha >= '{fecha_ini}'
-  AND movsinv.fecha <= '{fecha_fin}'
+WHERE movsinv.idconcepto NOT IN ('')
+  AND movsinv.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
   AND almacen.nombre LIKE '%{almacen}%'
 GROUP BY LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo))
 
@@ -2032,14 +2030,12 @@ SELECT
     LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones)) as CODIGO,
     SUM(movtosalmacen.cantidad) as CANTIDAD
 FROM movtosalmacen
-INNER JOIN conceptos ON conceptos.idconcepto = movtosalmacen.idconcepto
 INNER JOIN insumospresentaciones ON insumospresentaciones.idinsumospresentaciones = movtosalmacen.idinsumospresentaciones
 INNER JOIN gruposi ON gruposi.idgruposi = insumospresentaciones.idgruposi
 INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = gruposi.idgruposiclasificacion
 LEFT JOIN almacen ON almacen.idalmacen = movtosalmacen.idalmacen
-WHERE movtosalmacen.idconcepto <> ''
-  AND movtosalmacen.fecha >= '{fecha_ini}'
-  AND movtosalmacen.fecha <= '{fecha_fin}'
+WHERE movtosalmacen.idconcepto NOT IN ('')
+  AND movtosalmacen.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
   AND almacen.nombre LIKE '%{almacen}%'
 GROUP BY LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
 """
