@@ -1902,11 +1902,12 @@ WHERE LEFT(insumos.descripcion, 3) <> 'zzz'
 UNION ALL
 
 -- PRESENTACIONES de insumos inventariables
+-- El idinsumospresentaciones YA tiene el prefijo (ej: B130009), no agregar otro
 SELECT 
     'PRESENTACION' as TABLA,
     GC.descripcion as CATEGORIA,
     GP.descripcion as GRUPO,
-    LEFT(GC.descripcion,1) + RTRIM(LTRIM(INPRE.idinsumospresentaciones)) as CODIGO,
+    RTRIM(LTRIM(INPRE.idinsumospresentaciones)) as CODIGO,
     INPRE.descripcion as DESCRIPCION,
     INSUMOS.unidad as UM,
     ISNULL(INPRE.rendimiento, 0) as RENDIMIENTO,
@@ -1942,7 +1943,7 @@ SELECT
     CASE WHEN RTRIM(ISNULL(FMOV.idinsumo,'')) = '' THEN 'PRESENTACION' ELSE 'INSUMO' END as TIPO,
     CASE 
         WHEN RTRIM(ISNULL(FMOV.idinsumo,'')) = '' 
-        THEN LEFT(ISNULL(GC_PRES.descripcion,'X'),1) + RTRIM(LTRIM(FMOV.idpresentacion))
+        THEN RTRIM(LTRIM(FMOV.idpresentacion))
         ELSE LEFT(ISNULL(GC_INS.descripcion,'X'),1) + RTRIM(LTRIM(FMOV.idinsumo))
     END as CODIGO,
     FMOV.costo,
