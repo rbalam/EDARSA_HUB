@@ -2003,55 +2003,47 @@ ORDER BY FMOV.folio, CODIGO
             
             # 5. Obtener movimientos - UNION de movsinv (INSUMOS) + movtosalmacen (PRESENTACIONES)
             # Usando tabla CONCEPTOS para determinar el signo:
-            # - TIPO = 1: ENTRADAS (positivo)
-            # - TIPO = 2: SALIDAS (negativo)
-            # Las fechas ya vienen con hora exacta del frontend (fecha_ini +1seg, fecha_fin -1seg)
+            # - TIPO = 1: ENTRADAS (sumar)
+            # - TIPO = 2: SALIDAS (restar)
+            # Fórmula: SUM(entradas) - SUM(salidas)
             logging.info(f"Obteniendo movimientos entre {fecha_ini} y {fecha_fin} para almacén {almacen_nombre}")
             
             movimientos_query = f"""
--- MOVIMIENTOS DE INSUMOS (movsinv) con signo según tipo de concepto
+-- MOVIMIENTOS DE INSUMOS (movsinv)
 SELECT 
-    CODIGO,
-    SUM(CANTIDAD) as CANTIDAD
-FROM (
-    SELECT 
-        LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo)) as CODIGO,
-        CASE WHEN conceptos.tipo = 1 THEN movsinv.cantidad ELSE -movsinv.cantidad END as CANTIDAD
-    FROM movsinv
-    INNER JOIN conceptos ON conceptos.idconcepto = movsinv.idconcepto
-    INNER JOIN insumos ON insumos.idinsumo = movsinv.idinsumo
-    INNER JOIN gruposi GP ON GP.idgruposi = insumos.idgruposi
-    INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = GP.idgruposiclasificacion
-    LEFT JOIN almacen ON almacen.idalmacen = movsinv.idalmacen
-    WHERE movsinv.idconcepto <> ''
-      AND movsinv.fecha >= '{fecha_ini}'
-      AND movsinv.fecha <= '{fecha_fin}'
-      AND almacen.nombre LIKE '%{almacen}%'
-) AS MovInsumosConSigno
-GROUP BY CODIGO
+    LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo)) as CODIGO,
+    SUM(CASE WHEN conceptos.tipo = 1 THEN movsinv.cantidad ELSE 0 END) 
+    - SUM(CASE WHEN conceptos.tipo = 2 THEN movsinv.cantidad ELSE 0 END) as CANTIDAD
+FROM movsinv
+INNER JOIN conceptos ON conceptos.idconcepto = movsinv.idconcepto
+INNER JOIN insumos ON insumos.idinsumo = movsinv.idinsumo
+INNER JOIN gruposi GP ON GP.idgruposi = insumos.idgruposi
+INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = GP.idgruposiclasificacion
+LEFT JOIN almacen ON almacen.idalmacen = movsinv.idalmacen
+WHERE movsinv.idconcepto <> ''
+  AND movsinv.fecha >= '{fecha_ini}'
+  AND movsinv.fecha <= '{fecha_fin}'
+  AND almacen.nombre LIKE '%{almacen}%'
+GROUP BY LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo))
 
 UNION ALL
 
--- MOVIMIENTOS DE PRESENTACIONES (movtosalmacen) con signo según tipo de concepto
+-- MOVIMIENTOS DE PRESENTACIONES (movtosalmacen)
 SELECT 
-    CODIGO,
-    SUM(CANTIDAD) as CANTIDAD
-FROM (
-    SELECT 
-        LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones)) as CODIGO,
-        CASE WHEN conceptos.tipo = 1 THEN movtosalmacen.cantidad ELSE -movtosalmacen.cantidad END as CANTIDAD
-    FROM movtosalmacen
-    INNER JOIN conceptos ON conceptos.idconcepto = movtosalmacen.idconcepto
-    INNER JOIN insumospresentaciones ON insumospresentaciones.idinsumospresentaciones = movtosalmacen.idinsumospresentaciones
-    INNER JOIN gruposi ON gruposi.idgruposi = insumospresentaciones.idgruposi
-    INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = gruposi.idgruposiclasificacion
-    LEFT JOIN almacen ON almacen.idalmacen = movtosalmacen.idalmacen
-    WHERE movtosalmacen.idconcepto <> ''
-      AND movtosalmacen.fecha >= '{fecha_ini}'
-      AND movtosalmacen.fecha <= '{fecha_fin}'
-      AND almacen.nombre LIKE '%{almacen}%'
-) AS MovPresentacionesConSigno
-GROUP BY CODIGO
+    LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones)) as CODIGO,
+    SUM(CASE WHEN conceptos.tipo = 1 THEN movtosalmacen.cantidad ELSE 0 END) 
+    - SUM(CASE WHEN conceptos.tipo = 2 THEN movtosalmacen.cantidad ELSE 0 END) as CANTIDAD
+FROM movtosalmacen
+INNER JOIN conceptos ON conceptos.idconcepto = movtosalmacen.idconcepto
+INNER JOIN insumospresentaciones ON insumospresentaciones.idinsumospresentaciones = movtosalmacen.idinsumospresentaciones
+INNER JOIN gruposi ON gruposi.idgruposi = insumospresentaciones.idgruposi
+INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = gruposi.idgruposiclasificacion
+LEFT JOIN almacen ON almacen.idalmacen = movtosalmacen.idalmacen
+WHERE movtosalmacen.idconcepto <> ''
+  AND movtosalmacen.fecha >= '{fecha_ini}'
+  AND movtosalmacen.fecha <= '{fecha_fin}'
+  AND almacen.nombre LIKE '%{almacen}%'
+GROUP BY LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
 """
             
             try:
