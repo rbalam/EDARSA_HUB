@@ -2002,18 +2002,18 @@ ORDER BY FMOV.folio, CODIGO
             logging.info(f"Total códigos únicos en inventarios: {len(todos_codigos)}")
             
             # 5. Obtener movimientos - UNION de movsinv (INSUMOS) + movtosalmacen (PRESENTACIONES)
-            # Usando tabla CONCEPTOS para determinar el signo:
-            # - TIPO = 1: ENTRADAS (sumar)
-            # - TIPO = 2: SALIDAS (restar)
-            # Fórmula: Entradas - Salidas = +2 para Bacardí (33 entradas - 31 salidas)
+            # Usando tabla CONCEPTOS:
+            # - TIPO = 1: ENTRADAS 
+            # - TIPO = 2: SALIDAS
+            # Fórmula: ENTRADAS - SALIDAS = tipo1 - tipo2
             logging.info(f"Obteniendo movimientos entre {fecha_ini} y {fecha_fin} para almacén {almacen_nombre}")
             
             movimientos_query = f"""
 -- MOVIMIENTOS DE INSUMOS (movsinv)
 SELECT 
     LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo)) as CODIGO,
-    SUM(CASE WHEN conceptos.tipo = 2 THEN movsinv.cantidad ELSE 0 END) 
-    - SUM(CASE WHEN conceptos.tipo = 1 THEN movsinv.cantidad ELSE 0 END) as CANTIDAD
+    SUM(CASE WHEN conceptos.tipo = 1 THEN movsinv.cantidad ELSE 0 END) 
+    - SUM(CASE WHEN conceptos.tipo = 2 THEN movsinv.cantidad ELSE 0 END) as CANTIDAD
 FROM movsinv
 INNER JOIN conceptos ON conceptos.idconcepto = movsinv.idconcepto
 INNER JOIN insumos ON insumos.idinsumo = movsinv.idinsumo
@@ -2031,8 +2031,8 @@ UNION ALL
 -- MOVIMIENTOS DE PRESENTACIONES (movtosalmacen)
 SELECT 
     LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones)) as CODIGO,
-    SUM(CASE WHEN conceptos.tipo = 2 THEN movtosalmacen.cantidad ELSE 0 END) 
-    - SUM(CASE WHEN conceptos.tipo = 1 THEN movtosalmacen.cantidad ELSE 0 END) as CANTIDAD
+    SUM(CASE WHEN conceptos.tipo = 1 THEN movtosalmacen.cantidad ELSE 0 END) 
+    - SUM(CASE WHEN conceptos.tipo = 2 THEN movtosalmacen.cantidad ELSE 0 END) as CANTIDAD
 FROM movtosalmacen
 INNER JOIN conceptos ON conceptos.idconcepto = movtosalmacen.idconcepto
 INNER JOIN insumospresentaciones ON insumospresentaciones.idinsumospresentaciones = movtosalmacen.idinsumospresentaciones
