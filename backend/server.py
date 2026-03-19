@@ -1809,21 +1809,35 @@ ORDER BY folio
                 server['username'], server['password'], fechas_query
             )
             
-            # Extraer fechas
+            # Extraer fechas con hora completa
             fecha_ini = None
             fecha_fin = None
             for row in fechas_result:
                 if str(row['folio']) == str(folio_inicial):
-                    fecha_ini = str(row['fecha'])[:10]  # Solo fecha YYYY-MM-DD
+                    # Usar fecha completa con hora, formato: YYYY-MM-DD HH:MM:SS
+                    fecha_ini = str(row['fecha'])[:19]  # Fecha completa con hora
                 elif str(row['folio']) == str(folio_final):
-                    fecha_fin = str(row['fecha'])[:10]
+                    fecha_fin = str(row['fecha'])[:19]
             
             if not fecha_ini or not fecha_fin:
                 logging.warning(f"No se encontraron fechas para los folios {folio_inicial} y {folio_final}")
-                fecha_ini = fecha_ini or "2000-01-01"
-                fecha_fin = fecha_fin or "2099-12-31"
+                fecha_ini = fecha_ini or "2000-01-01 00:00:00"
+                fecha_fin = fecha_fin or "2099-12-31 23:59:59"
             
-            logging.info(f"Fechas calculadas de inventarios: {fecha_ini} a {fecha_fin}")
+            # Ajustar fechas: +1 segundo al inicio, -1 segundo al final
+            # para no incluir el momento exacto del inventario
+            try:
+                from datetime import datetime, timedelta
+                dt_ini = datetime.strptime(fecha_ini, "%Y-%m-%d %H:%M:%S")
+                dt_fin = datetime.strptime(fecha_fin, "%Y-%m-%d %H:%M:%S")
+                dt_ini = dt_ini + timedelta(seconds=1)
+                dt_fin = dt_fin - timedelta(seconds=1)
+                fecha_ini = dt_ini.strftime("%Y-%m-%d %H:%M:%S")
+                fecha_fin = dt_fin.strftime("%Y-%m-%d %H:%M:%S")
+            except Exception as e:
+                logging.warning(f"Error ajustando fechas: {e}")
+            
+            logging.info(f"Fechas calculadas de inventarios (con hora): {fecha_ini} a {fecha_fin}")
             
             # 1. Obtener información del almacén incluyendo el TIPO
             # TIPO = 1: Almacén de consumo (tiene ventas)
