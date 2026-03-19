@@ -2274,41 +2274,76 @@ ORDER BY M.Mv_Fecha DESC
             return {"data": movements, "count": len(movements)}
             
         elif server['system_type'] == 'SoftRestaurant':
-            # Para SoftRestaurant - usando movsinv con tabla conceptos
-            # El código tiene prefijo de clasificación (ej: B130009), extraer solo el número
-            # Quitar el primer carácter (prefijo de clasificación)
-            producto_id = producto_codigo[1:] if producto_codigo and len(producto_codigo) > 1 else producto_codigo
+            # Para SoftRestaurant - detectar si es INSUMO o PRESENTACIÓN
+            # PRESENTACIONES: el idinsumospresentaciones ya tiene el código completo (ej: B130009)
+            # INSUMOS: el código se genera como prefijo + idinsumo (ej: B + 12345 = B12345)
             
-            logging.info(f"Detalle movimientos SoftRestaurant - Código original: {producto_codigo}, ID extraído: {producto_id}, Almacén: {almacen}, Fechas: {fecha_ini} a {fecha_fin}")
+            # Formatear fechas para SQL Server: YYYYMMDD HH:MM:SS
+            fecha_ini_fmt = fecha_ini.replace('-', '').replace('T', ' ') if fecha_ini else ''
+            fecha_fin_fmt = fecha_fin.replace('-', '').replace('T', ' ') if fecha_fin else ''
             
-            query = f"""
+            logging.info(f"Detalle movimientos SoftRestaurant - Código: {producto_codigo}, Almacén: {almacen}, Fechas: {fecha_ini_fmt} a {fecha_fin_fmt}")
+            
+            # Primero intentar buscar en PRESENTACIONES (movtosalmacen)
+            query_presentaciones = f"""
+SELECT 
+    COALESCE(CAST(M.idcompra AS VARCHAR), CAST(M.traspaso AS VARCHAR), CAST(M.invfisico AS VARCHAR), '') as Folio,
+    M.fecha as Fecha,
+    M.cantidad as Cantidad,
+    M.idconcepto as Tipo_Codigo,
+    C.descripcion as Tipo_Descripcion,
+    CASE WHEN C.tipo = 1 THEN 'Entrada' ELSE 'Salida' END as Tipo_Movimiento,
+    IP.descripcion as Producto,
+    A.nombre as Almacen,
+    M.costo as Costo
+FROM movtosalmacen M
+INNER JOIN conceptos C ON C.idconcepto = M.idconcepto
+INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = M.idinsumospresentaciones
+LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
+WHERE RTRIM(LTRIM(M.idinsumospresentaciones)) = '{producto_codigo}'
+    AND A.nombre LIKE '%{almacen}%'
+    AND M.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
+    AND M.idconcepto <> ''
+ORDER BY M.fecha DESC
+"""
+            logging.info(f"Query detalle movimientos PRESENTACIONES: {query_presentaciones[:300]}...")
+            
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_presentaciones
+            )
+            
+            # Si no hay resultados en presentaciones, buscar en INSUMOS
+            if not result:
+                # Para INSUMOS, el código es prefijo + idinsumo, quitar el primer carácter
+                producto_id = producto_codigo[1:] if producto_codigo and len(producto_codigo) > 1 else producto_codigo
+                logging.info(f"No encontrado en presentaciones, buscando en INSUMOS con ID: {producto_id}")
+                
+                query_insumos = f"""
 SELECT 
     COALESCE(M.foliocheque, CAST(M.idcompra AS VARCHAR), CAST(M.traspaso AS VARCHAR), CAST(M.invfisico AS VARCHAR), '') as Folio,
     M.fecha as Fecha,
-    CASE WHEN C.tipo = 1 THEN M.cantidad ELSE -M.cantidad END as Cantidad,
-    C.idconcepto as Tipo_Codigo,
+    M.cantidad as Cantidad,
+    M.idconcepto as Tipo_Codigo,
     C.descripcion as Tipo_Descripcion,
     CASE WHEN C.tipo = 1 THEN 'Entrada' ELSE 'Salida' END as Tipo_Movimiento,
     I.descripcion as Producto,
     A.nombre as Almacen,
-    M.costo as Costo,
-    M.idconcepto as Concepto_ID
+    M.costo as Costo
 FROM movsinv M
 INNER JOIN conceptos C ON C.idconcepto = M.idconcepto
 INNER JOIN insumos I ON I.idinsumo = M.idinsumo
 LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
 WHERE RTRIM(LTRIM(M.idinsumo)) = '{producto_id}'
     AND A.nombre LIKE '%{almacen}%'
-    AND M.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
+    AND M.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
     AND M.idconcepto <> ''
 ORDER BY M.fecha DESC
 """
-            logging.info(f"Query detalle movimientos: {query[:500]}...")
-            
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
+                result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_insumos
+                )
             
             logging.info(f"Movimientos encontrados: {len(result)}")
             
