@@ -2029,7 +2029,7 @@ UNION ALL
 -- MOVIMIENTOS DE PRESENTACIONES (movtosalmacen)
 SELECT 
     RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones)) as CODIGO,
-    -SUM(movtosalmacen.cantidad) as CANTIDAD
+    SUM(movtosalmacen.cantidad) as CANTIDAD
 FROM movtosalmacen
 INNER JOIN insumospresentaciones ON insumospresentaciones.idinsumospresentaciones = movtosalmacen.idinsumospresentaciones
 INNER JOIN gruposi ON gruposi.idgruposi = insumospresentaciones.idgruposi
