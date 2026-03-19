@@ -333,37 +333,86 @@ const Reportes = () => {
     });
   };
 
+  // Función auxiliar para parsear fechas de forma compatible con todos los navegadores
+  const parseDateString = (dateStr) => {
+    if (!dateStr) return null;
+    
+    // Intentar varios formatos comunes
+    // Formato: "2026-02-28 10:30:00" o "2026-02-28T10:30:00" o "2026/02/28 10:30:00"
+    let normalized = String(dateStr).trim();
+    
+    // Reemplazar / por - para normalizar
+    normalized = normalized.replace(/\//g, '-');
+    
+    // Si tiene espacio entre fecha y hora, reemplazar por T para ISO format
+    if (normalized.includes(' ') && !normalized.includes('T')) {
+      normalized = normalized.replace(' ', 'T');
+    }
+    
+    // Intentar parsear directamente
+    let date = new Date(normalized);
+    
+    // Si el parsing falló, intentar manualmente
+    if (isNaN(date.getTime())) {
+      // Formato: YYYY-MM-DD HH:MM:SS o YYYY-MM-DDTHH:MM:SS
+      const match = normalized.match(/(\d{4})-(\d{1,2})-(\d{1,2})(?:T|\s)?(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?/);
+      if (match) {
+        const [, year, month, day, hour = 0, min = 0, sec = 0] = match;
+        date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(min), parseInt(sec));
+      }
+    }
+    
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  // Función para formatear fecha como "YYYY-MM-DD HH:MM:SS"
+  const formatDateForSQL = (date) => {
+    if (!date) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  };
+
   const calculateDates = (inicialFecha, finalFecha, systemType) => {
     if (!inicialFecha || !finalFecha) return { fecha_ini: '', fecha_fin: '' };
 
     let fecha_ini, fecha_fin;
 
     if (systemType === 'MPRO') {
-      // Para MPRO: usar las fechas exactas de los inventarios
-      fecha_ini = inicialFecha.split(' ')[0]; // Solo fecha, sin hora
-      fecha_fin = finalFecha.split(' ')[0];
+      // Para MPRO: usar las fechas exactas de los inventarios (solo fecha)
+      fecha_ini = String(inicialFecha).split(/[T\s]/)[0]; // Solo fecha, sin hora
+      fecha_fin = String(finalFecha).split(/[T\s]/)[0];
     } else if (systemType === 'SoftRestaurant') {
       // Para SoftRestaurant: fecha inicial + 1 segundo, fecha final - 1 segundo
-      const fechaInicialDate = new Date(inicialFecha);
-      const fechaFinalDate = new Date(finalFecha);
+      const fechaInicialDate = parseDateString(inicialFecha);
+      const fechaFinalDate = parseDateString(finalFecha);
       
-      fechaInicialDate.setSeconds(fechaInicialDate.getSeconds() + 1);
-      fechaFinalDate.setSeconds(fechaFinalDate.getSeconds() - 1);
-      
-      fecha_ini = fechaInicialDate.toISOString().slice(0, 19).replace('T', ' ');
-      fecha_fin = fechaFinalDate.toISOString().slice(0, 19).replace('T', ' ');
+      if (!fechaInicialDate || !fechaFinalDate) {
+        console.error('Error parseando fechas:', { inicialFecha, finalFecha });
+        // Fallback: usar las fechas tal cual
+        fecha_ini = String(inicialFecha).split(/[T\s]/)[0] + ' 00:00:01';
+        fecha_fin = String(finalFecha).split(/[T\s]/)[0] + ' 23:59:59';
+      } else {
+        fechaInicialDate.setSeconds(fechaInicialDate.getSeconds() + 1);
+        fechaFinalDate.setSeconds(fechaFinalDate.getSeconds() - 1);
+        
+        fecha_ini = formatDateForSQL(fechaInicialDate);
+        fecha_fin = formatDateForSQL(fechaFinalDate);
+      }
     } else {
-      // Default: usar las fechas exactas
-      fecha_ini = inicialFecha.split(' ')[0];
-      fecha_fin = finalFecha.split(' ')[0];
+      // Default: usar las fechas exactas (solo fecha)
+      fecha_ini = String(inicialFecha).split(/[T\s]/)[0];
+      fecha_fin = String(finalFecha).split(/[T\s]/)[0];
     }
 
+    console.log('Fechas calculadas:', { inicialFecha, finalFecha, fecha_ini, fecha_fin, systemType });
     return { fecha_ini, fecha_fin };
   };
 
   const handleInventarioInicialChange = (value) => {
     const inventario = inventarios.find(inv => inv.folio === value);
     const nuevaFechaInicial = inventario?.fecha_completa || inventario?.fecha || '';
+    
+    console.log('Inventario inicial seleccionado:', { value, fecha: nuevaFechaInicial, inventario });
     
     const newFilters = {
       ...filters,
@@ -384,6 +433,8 @@ const Reportes = () => {
   const handleInventarioFinalChange = (value) => {
     const inventario = inventarios.find(inv => inv.folio === value);
     const nuevaFechaFinal = inventario?.fecha_completa || inventario?.fecha || '';
+    
+    console.log('Inventario final seleccionado:', { value, fecha: nuevaFechaFinal, inventario });
     
     const newFilters = {
       ...filters,
@@ -727,10 +778,9 @@ const Reportes = () => {
               <Input
                 type="text"
                 value={filters.fecha_ini}
-                readOnly
-                disabled
-                className="bg-zinc-50 cursor-not-allowed"
-                placeholder="Auto-calculado al seleccionar inventarios"
+                onChange={(e) => setFilters({...filters, fecha_ini: e.target.value})}
+                className={filters.fecha_ini ? "bg-white" : "bg-zinc-50"}
+                placeholder="Auto-calculado o ingrese: YYYY-MM-DD HH:MM:SS"
                 data-testid="fecha-inicio-input"
               />
             </div>
@@ -747,10 +797,9 @@ const Reportes = () => {
               <Input
                 type="text"
                 value={filters.fecha_fin}
-                readOnly
-                disabled
-                className="bg-zinc-50 cursor-not-allowed"
-                placeholder="Auto-calculado al seleccionar inventarios"
+                onChange={(e) => setFilters({...filters, fecha_fin: e.target.value})}
+                className={filters.fecha_fin ? "bg-white" : "bg-zinc-50"}
+                placeholder="Auto-calculado o ingrese: YYYY-MM-DD HH:MM:SS"
                 data-testid="fecha-fin-input"
               />
             </div>
