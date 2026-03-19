@@ -2026,6 +2026,7 @@ GROUP BY LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo
 UNION ALL
 
 -- MOVIMIENTOS DE PRESENTACIONES (movtosalmacen)
+-- El código se genera igual que en inventarios: prefijo + idpresentacion
 SELECT 
     LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones)) as CODIGO,
     SUM(movtosalmacen.cantidad) as CANTIDAD
