@@ -768,7 +768,7 @@ const Reportes = () => {
 
             <div className="space-y-2">
               <Label>
-                Fecha Inicio de Ventas 
+                Fecha Inicio de Movimientos
                 {selectedServer && (
                   <span className="text-xs text-zinc-500 ml-2">
                     ({selectedServer.system_type === 'MPRO' ? 'Fecha inv. inicial' : 'Fecha inv. inicial + 1 seg'})
@@ -787,7 +787,7 @@ const Reportes = () => {
 
             <div className="space-y-2">
               <Label>
-                Fecha Fin de Ventas
+                Fecha Fin de Movimientos
                 {selectedServer && (
                   <span className="text-xs text-zinc-500 ml-2">
                     ({selectedServer.system_type === 'MPRO' ? 'Fecha inv. final' : 'Fecha inv. final - 1 seg'})

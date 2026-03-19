@@ -68,7 +68,7 @@ INNER JOIN Almacen A ON A.Al_Cve_Almacen = V.Al_Cve_Almacen
 INNER JOIN Producto P ON P.Pr_Cve_Producto = V.Pr_Cve_Producto
 WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
     AND V.Es_Cve_Estado <> 'CA'
-    AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+    AND V.Vn_Fecha BETWEEN '{fecha_ini} 23:59:59' AND '{fecha_fin} 23:59:59'
 ORDER BY V.Vn_Fecha DESC
 """
     },
@@ -90,7 +90,7 @@ INNER JOIN Producto P ON P.Pr_Cve_Producto = C.Pr_Cve_Producto
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = C.Sc_Cve_Sucursal
 WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
     AND C.Es_Cve_Estado <> 'CA'
-    AND C.Co_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+    AND C.Co_Fecha BETWEEN '{fecha_ini} 23:59:59' AND '{fecha_fin} 23:59:59'
 GROUP BY C.Pr_Cve_Producto, P.Pr_Descripcion
 ORDER BY P.Pr_Descripcion
 """
