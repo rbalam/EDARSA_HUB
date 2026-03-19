@@ -2007,6 +2007,7 @@ ORDER BY FMOV.folio, CODIGO
             # Formato de fecha: YYYYMMDD HH:MM:SS
             fecha_ini_fmt = fecha_ini.replace('-', '') if fecha_ini else ''
             fecha_fin_fmt = fecha_fin.replace('-', '') if fecha_fin else ''
+            logging.info(f"DEBUG fechas originales: fecha_ini={fecha_ini}, fecha_fin={fecha_fin}")
             logging.info(f"Obteniendo movimientos entre {fecha_ini_fmt} y {fecha_fin_fmt} para almacén {almacen_nombre}")
             
             movimientos_query = f"""
