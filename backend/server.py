@@ -2003,7 +2003,7 @@ ORDER BY FMOV.folio, CODIGO
             logging.info(f"Total códigos únicos en inventarios: {len(todos_codigos)}")
             
             # 5. Obtener movimientos - UNION de movsinv (INSUMOS) + movtosalmacen (PRESENTACIONES)
-            # Las cantidades ya tienen el signo correcto en la BD
+            # Las cantidades tienen signo invertido, multiplicar por -1
             # Formato de fecha: YYYYMMDD HH:MM:SS
             fecha_ini_fmt = fecha_ini.replace('-', '') if fecha_ini else ''
             fecha_fin_fmt = fecha_fin.replace('-', '') if fecha_fin else ''
@@ -2013,7 +2013,7 @@ ORDER BY FMOV.folio, CODIGO
 -- MOVIMIENTOS DE INSUMOS (movsinv)
 SELECT 
     LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo)) as CODIGO,
-    SUM(movsinv.cantidad) as CANTIDAD
+    -SUM(movsinv.cantidad) as CANTIDAD
 FROM movsinv
 INNER JOIN insumos ON insumos.idinsumo = movsinv.idinsumo
 INNER JOIN gruposi GP ON GP.idgruposi = insumos.idgruposi
@@ -2027,10 +2027,9 @@ GROUP BY LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo
 UNION ALL
 
 -- MOVIMIENTOS DE PRESENTACIONES (movtosalmacen)
--- El idinsumospresentaciones YA tiene el prefijo (ej: B130009), no agregar otro
 SELECT 
     RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones)) as CODIGO,
-    SUM(movtosalmacen.cantidad) as CANTIDAD
+    -SUM(movtosalmacen.cantidad) as CANTIDAD
 FROM movtosalmacen
 INNER JOIN insumospresentaciones ON insumospresentaciones.idinsumospresentaciones = movtosalmacen.idinsumospresentaciones
 INNER JOIN gruposi ON gruposi.idgruposi = insumospresentaciones.idgruposi
