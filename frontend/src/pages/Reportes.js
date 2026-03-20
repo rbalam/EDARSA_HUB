@@ -487,20 +487,24 @@ const Reportes = () => {
   };
 
   const handleExportExcel = () => {
+    console.log('handleExportExcel llamado, reportData:', reportData.length);
     if (reportData.length === 0) {
       toast.error('No hay datos para exportar');
       return;
     }
 
     try {
+      console.log('Creando worksheet...');
       const worksheet = XLSX.utils.json_to_sheet(reportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte');
       
+      console.log('Generando Excel buffer...');
       const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const fileName = `reporte_inventario_${new Date().toISOString().split('T')[0]}.xlsx`;
       
+      console.log('Descargando archivo:', fileName);
       saveAs(blob, fileName);
       
       toast.success(`Archivo "${fileName}" descargado correctamente. Revisa tu carpeta de Descargas.`);
@@ -511,12 +515,14 @@ const Reportes = () => {
   };
 
   const handleExportPDF = () => {
+    console.log('handleExportPDF llamado, reportData:', reportData.length);
     if (reportData.length === 0) {
       toast.error('No hay datos para exportar');
       return;
     }
 
     try {
+      console.log('Creando documento PDF...');
       const doc = new jsPDF('landscape');
       
       doc.setFontSize(18);
@@ -524,20 +530,22 @@ const Reportes = () => {
       
       doc.setFontSize(10);
       doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 28);
-      doc.text(`Sucursal: ${filters.sucursal}`, 14, 34);
-      doc.text(`Almacén: ${filters.almacen}`, 14, 40);
-      doc.text(`Período: ${filters.fecha_ini} a ${filters.fecha_fin}`, 14, 46);
+      doc.text(`Sucursal: ${filters.sucursal || 'N/A'}`, 14, 34);
+      doc.text(`Almacén: ${filters.almacen || 'N/A'}`, 14, 40);
+      doc.text(`Período: ${filters.fecha_ini || 'N/A'} a ${filters.fecha_fin || 'N/A'}`, 14, 46);
       
       // Columnas más relevantes para el PDF
       const columns = ['Codigo', 'Producto', 'Inv_Inicial_Cantidad', 'Movimientos', 'Ventas', 'Inv_Teorico_Cantidad', 'Inv_Final_Cantidad', 'Diferencia_Cantidad'];
       const headers = ['Código', 'Producto', 'Inv. Inicial', 'Movimientos', 'Ventas', 'Inv. Teórico', 'Inv. Final', 'Diferencia'];
       
+      console.log('Preparando datos para tabla...');
       const data = reportData.map(row => columns.map(col => {
         const val = row[col];
         if (typeof val === 'number') return val.toLocaleString('es-MX', { maximumFractionDigits: 2 });
         return val || '';
       }));
       
+      console.log('Generando tabla autoTable...');
       autoTable(doc, {
         head: [headers],
         body: data,
@@ -557,6 +565,7 @@ const Reportes = () => {
       });
       
       const fileName = `reporte_inventario_${new Date().toISOString().split('T')[0]}.pdf`;
+      console.log('Guardando PDF:', fileName);
       doc.save(fileName);
       
       toast.success(`Archivo "${fileName}" descargado correctamente. Revisa tu carpeta de Descargas.`);
