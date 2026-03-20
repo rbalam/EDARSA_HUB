@@ -505,9 +505,18 @@ const Reportes = () => {
       const fileName = `reporte_inventario_${new Date().toISOString().split('T')[0]}.xlsx`;
       
       console.log('Descargando archivo:', fileName);
-      saveAs(blob, fileName);
       
-      toast.success(`Archivo "${fileName}" descargado correctamente. Revisa tu carpeta de Descargas.`);
+      // Método alternativo: crear enlace y hacer click
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success(`Archivo "${fileName}" descargado correctamente.`);
     } catch (error) {
       console.error('Error al exportar Excel:', error);
       toast.error('Error al exportar a Excel: ' + error.message);
@@ -566,9 +575,19 @@ const Reportes = () => {
       
       const fileName = `reporte_inventario_${new Date().toISOString().split('T')[0]}.pdf`;
       console.log('Guardando PDF:', fileName);
-      doc.save(fileName);
       
-      toast.success(`Archivo "${fileName}" descargado correctamente. Revisa tu carpeta de Descargas.`);
+      // Método alternativo: crear blob y descargar
+      const pdfBlob = doc.output('blob');
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success(`Archivo "${fileName}" descargado correctamente.`);
     } catch (error) {
       console.error('Error al exportar PDF:', error);
       toast.error('Error al exportar a PDF: ' + error.message);
