@@ -1815,14 +1815,18 @@ ORDER BY folio
             for row in fechas_result:
                 if str(row['folio']) == str(folio_inicial):
                     # Usar fecha completa con hora, formato: YYYY-MM-DD HH:MM:SS
-                    fecha_ini = str(row['fecha'])[:19]  # Fecha completa con hora
+                    fecha_str = str(row['fecha'])[:19].replace('T', ' ')  # Normalizar formato
+                    fecha_ini = fecha_str
                 elif str(row['folio']) == str(folio_final):
-                    fecha_fin = str(row['fecha'])[:19]
+                    fecha_str = str(row['fecha'])[:19].replace('T', ' ')  # Normalizar formato
+                    fecha_fin = fecha_str
             
             if not fecha_ini or not fecha_fin:
                 logging.warning(f"No se encontraron fechas para los folios {folio_inicial} y {folio_final}")
                 fecha_ini = fecha_ini or "2000-01-01 00:00:00"
                 fecha_fin = fecha_fin or "2099-12-31 23:59:59"
+            
+            logging.info(f"Fechas de inventarios: ini={fecha_ini}, fin={fecha_fin}")
             
             # Ajustar fechas: +1 segundo al inicio, -1 segundo al final
             # para no incluir el momento exacto del inventario
@@ -1830,6 +1834,18 @@ ORDER BY folio
                 from datetime import datetime, timedelta
                 dt_ini = datetime.strptime(fecha_ini, "%Y-%m-%d %H:%M:%S")
                 dt_fin = datetime.strptime(fecha_fin, "%Y-%m-%d %H:%M:%S")
+                
+                logging.info(f"Fechas ANTES de verificación: ini={dt_ini}, fin={dt_fin}")
+                
+                # IMPORTANTE: Si las fechas están invertidas, intercambiarlas
+                # Esto pasa cuando el usuario selecciona el inventario inicial con fecha más reciente
+                if dt_ini > dt_fin:
+                    logging.info(f"Fechas invertidas detectadas. Intercambiando...")
+                    dt_ini, dt_fin = dt_fin, dt_ini
+                    logging.info(f"Fechas DESPUÉS de intercambio: ini={dt_ini}, fin={dt_fin}")
+                else:
+                    logging.info(f"Fechas en orden correcto (ini <= fin)")
+                
                 dt_ini = dt_ini + timedelta(seconds=1)
                 dt_fin = dt_fin - timedelta(seconds=1)
                 fecha_ini = dt_ini.strftime("%Y-%m-%d %H:%M:%S")

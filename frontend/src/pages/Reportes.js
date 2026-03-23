@@ -656,6 +656,7 @@ const Reportes = () => {
 
   // Función para cargar el detalle de ventas
   const loadSalesDetails = async (producto) => {
+    console.log('loadSalesDetails llamado con producto:', producto);
     setDetailModal({
       open: true,
       type: 'ventas',
@@ -665,6 +666,14 @@ const Reportes = () => {
     });
 
     try {
+      console.log('Enviando request a /reports/sales-details con:', {
+        server_id: filters.server_id,
+        producto_codigo: producto.Codigo,
+        sucursal: filters.sucursal,
+        almacen: filters.almacen,
+        fecha_ini: filters.fecha_ini,
+        fecha_fin: filters.fecha_fin
+      });
       const response = await api.post('/reports/sales-details', {
         server_id: filters.server_id,
         producto_codigo: producto.Codigo,
@@ -674,6 +683,7 @@ const Reportes = () => {
         fecha_fin: filters.fecha_fin
       });
       
+      console.log('Respuesta de sales-details:', response.data);
       setDetailModal(prev => ({
         ...prev,
         data: response.data.data,
