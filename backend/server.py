@@ -1947,6 +1947,11 @@ WHERE LEFT(INPRE.descripcion, 3) <> 'zzz'
             productos_dict = {p['CODIGO']: p for p in productos_result}
             logging.info(f"Productos en catálogo: {len(productos_dict)}")
             
+            # DEBUG: Mostrar códigos de presentaciones para verificar
+            codigos_130009 = [c for c in productos_dict.keys() if '130009' in str(c)]
+            if codigos_130009:
+                logging.info(f"DEBUG Códigos con 130009 en CATALOGO: {codigos_130009}")
+            
             # 3. Obtener inventarios (inicial y final) de invfisicomovtos
             # La consulta maneja AMBOS tipos: si idinsumo='' usa idpresentacion, sino usa idinsumo
             logging.info(f"Obteniendo inventarios de folios {folio_inicial} y {folio_final}")
@@ -2011,6 +2016,11 @@ ORDER BY FMOV.folio, CODIGO
                     }
             
             logging.info(f"Inventario inicial: {len(inv_inicial_dict)} productos, Final: {len(inv_final_dict)} productos")
+            
+            # DEBUG: Mostrar códigos de inventarios para verificar
+            inv_130009 = [c for c in inv_inicial_dict.keys() if '130009' in str(c)]
+            if inv_130009:
+                logging.info(f"DEBUG Códigos con 130009 en INVENTARIOS: {inv_130009}")
             
             # 4. Obtener TODOS los códigos que aparecen en inventarios (inicial o final)
             todos_codigos = set(inv_inicial_dict.keys()) | set(inv_final_dict.keys())
