@@ -2072,10 +2072,13 @@ GROUP BY RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
             
             # 6. Obtener ventas SOLO si es almacén de consumo (tipo = 1)
             # Basado en la consulta de Power BI que usa recetasalmacenes + costos
+            # Formato de fecha: YYYYMMDD HH:MM:SS
             ventas_dict = {}
             if es_almacen_consumo:
                 logging.info("Obteniendo ventas (almacén de CONSUMO tipo=1)...")
-                ventas_query = f"""
+                
+                # Ventas de INSUMOS
+                ventas_insumos_query = f"""
 SELECT 
     LEFT(GP.descripcion,1) + RTRIM(LTRIM(receta.idinsumo)) as CODIGO,
     SUM(venta.cantidad * COSTOS.cantidad) as CONSUMIDO
@@ -2091,7 +2094,7 @@ INNER JOIN insumos receta ON receta.idinsumo = costos.idinsumo
 INNER JOIN gruposi Grupo ON Grupo.idgruposi = receta.idgruposi
 INNER JOIN gruposiclasificacion GP ON GP.idgruposiclasificacion = Grupo.idgruposiclasificacion
 INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.APERTURA BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+WHERE turnos.APERTURA BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
   AND cheques.cancelado = 0
   AND AL.nombre LIKE '%{almacen}%'
 GROUP BY LEFT(GP.descripcion,1) + RTRIM(LTRIM(receta.idinsumo))
@@ -2099,13 +2102,50 @@ GROUP BY LEFT(GP.descripcion,1) + RTRIM(LTRIM(receta.idinsumo))
                 try:
                     ventas_result = execute_sql_query(
                         server['host'], server['port'], server['database'],
-                        server['username'], server['password'], ventas_query
+                        server['username'], server['password'], ventas_insumos_query
                     )
-                    ventas_dict = {v['CODIGO']: float(v['CONSUMIDO'] or 0) for v in ventas_result}
-                    logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
+                    for v in ventas_result:
+                        ventas_dict[v['CODIGO']] = float(v['CONSUMIDO'] or 0)
+                    logging.info(f"Ventas INSUMOS obtenidas para {len(ventas_result)} productos")
                 except Exception as e:
-                    logging.warning(f"Error al obtener ventas: {str(e)}, continuando sin ventas")
-                    ventas_dict = {}
+                    logging.warning(f"Error al obtener ventas de insumos: {str(e)}")
+                
+                # Ventas de PRESENTACIONES - usando idinsumospresentaciones
+                ventas_presentaciones_query = f"""
+SELECT 
+    RTRIM(LTRIM(RC.idinsumospresentaciones)) as CODIGO,
+    SUM(venta.cantidad * COSTOS.cantidad) as CONSUMIDO
+FROM cheqdet venta
+INNER JOIN cheques ON venta.foliodet = cheques.folio
+INNER JOIN costos ON costos.idproducto = venta.idproducto
+INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
+    AND RC.idinsumospresentaciones = COSTOS.idinsumospresentaciones 
+    AND cheques.idarearestaurant = RC.idarearestaurant 
+    AND cheques.idempresa = RC.idempresa
+INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
+INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RC.idinsumospresentaciones
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.APERTURA BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
+  AND cheques.cancelado = 0
+  AND AL.nombre LIKE '%{almacen}%'
+  AND RC.idinsumospresentaciones IS NOT NULL
+  AND RC.idinsumospresentaciones <> ''
+GROUP BY RTRIM(LTRIM(RC.idinsumospresentaciones))
+"""
+                try:
+                    ventas_pres_result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], ventas_presentaciones_query
+                    )
+                    for v in ventas_pres_result:
+                        codigo = v['CODIGO']
+                        if codigo:
+                            ventas_dict[codigo] = ventas_dict.get(codigo, 0) + float(v['CONSUMIDO'] or 0)
+                    logging.info(f"Ventas PRESENTACIONES obtenidas para {len(ventas_pres_result)} productos")
+                except Exception as e:
+                    logging.warning(f"Error al obtener ventas de presentaciones: {str(e)}")
+                
+                logging.info(f"Total ventas obtenidas: {len(ventas_dict)} productos")
             else:
                 logging.info(f"Almacén tipo {almacen_tipo} (NO es consumo) - ventas = 0 para todos los productos")
             
