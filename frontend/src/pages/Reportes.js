@@ -318,6 +318,8 @@ const Reportes = () => {
         });
       }
       
+      console.log('Respuesta del reporte:', response.data);
+      console.log('Primer producto:', response.data.data[0]);
       setReportData(response.data.data);
       toast.success(`Reporte generado: ${response.data.count} registros`);
     } catch (error) {
