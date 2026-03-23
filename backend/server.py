@@ -415,7 +415,16 @@ def execute_sql_query(host: str, port: int, database: str, username: str, passwo
 
 # ============= EXPORT FUNCTIONS =============
 
-def generate_excel(data: List[Dict], filename: str = "reporte.xlsx") -> bytes:
+def generate_excel(data: List[Dict], filename: str = "reporte.xlsx", metadata: Dict = None) -> bytes:
+    """
+    Genera archivo Excel con formato profesional para el reporte de inventario.
+    Incluye encabezados con información del servidor, fechas y KPIs visuales.
+    """
+    from openpyxl.styles import Border, Side, NamedStyle
+    from openpyxl.formatting.rule import CellIsRule
+    from openpyxl.utils import get_column_letter
+    from datetime import datetime
+    
     wb = Workbook()
     ws = wb.active
     ws.title = "Reporte de Inventario"
@@ -423,38 +432,166 @@ def generate_excel(data: List[Dict], filename: str = "reporte.xlsx") -> bytes:
     if not data:
         return b''
     
-    # Headers
-    headers = list(data[0].keys())
-    ws.append(headers)
+    # Metadata del reporte
+    meta = metadata or {}
+    servidor_nombre = meta.get('servidor_nombre', 'N/A')
+    sucursal = meta.get('sucursal', 'N/A')
+    almacen = meta.get('almacen', 'N/A')
+    fecha_inicio = meta.get('fecha_inicio', 'N/A')
+    fecha_fin = meta.get('fecha_fin', 'N/A')
+    fecha_elaboracion = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     
-    # Style headers
+    # Estilos
+    titulo_font = Font(size=14, bold=True, color="18181b")
     header_fill = PatternFill(start_color="18181b", end_color="18181b", fill_type="solid")
-    header_font = Font(color="FFFFFF", bold=True)
+    header_font = Font(color="FFFFFF", bold=True, size=10)
+    label_font = Font(bold=True, size=10)
+    value_font = Font(size=10)
+    
+    # Colores para KPI de diferencias
+    verde_fill = PatternFill(start_color="22c55e", end_color="22c55e", fill_type="solid")  # Positivo
+    rojo_fill = PatternFill(start_color="ef4444", end_color="ef4444", fill_type="solid")    # Negativo
+    amarillo_fill = PatternFill(start_color="eab308", end_color="eab308", fill_type="solid") # Cero
+    
+    thin_border = Border(
+        left=Side(style='thin', color='d4d4d8'),
+        right=Side(style='thin', color='d4d4d8'),
+        top=Side(style='thin', color='d4d4d8'),
+        bottom=Side(style='thin', color='d4d4d8')
+    )
+    
+    # ==================== ENCABEZADO DEL REPORTE ====================
+    row_num = 1
+    
+    # Título principal
+    ws.merge_cells(start_row=row_num, start_column=1, end_row=row_num, end_column=6)
+    ws.cell(row=row_num, column=1, value="REPORTE DE ANÁLISIS DE INVENTARIO").font = titulo_font
+    ws.cell(row=row_num, column=1).alignment = Alignment(horizontal="center")
+    row_num += 2
+    
+    # Información del reporte (2 columnas)
+    info_data = [
+        ("Servidor:", servidor_nombre),
+        ("Sucursal:", sucursal),
+        ("Almacén:", almacen),
+        ("Período:", f"Del {fecha_inicio} al {fecha_fin}"),
+        ("Fecha de Elaboración:", fecha_elaboracion)
+    ]
+    
+    for label, value in info_data:
+        ws.cell(row=row_num, column=1, value=label).font = label_font
+        ws.cell(row=row_num, column=2, value=value).font = value_font
+        row_num += 1
+    
+    row_num += 1  # Espacio antes de la tabla
+    
+    # ==================== RESUMEN / KPIs ====================
+    # Calcular totales
+    total_sobrante = sum(float(row.get('Diferencia_Costo', 0) or 0) for row in data if float(row.get('Diferencia_Costo', 0) or 0) > 0)
+    total_faltante = sum(float(row.get('Diferencia_Costo', 0) or 0) for row in data if float(row.get('Diferencia_Costo', 0) or 0) < 0)
+    total_neto = total_sobrante + total_faltante
+    
+    ws.cell(row=row_num, column=1, value="RESUMEN:").font = label_font
+    row_num += 1
+    
+    # Sobrante (verde)
+    ws.cell(row=row_num, column=1, value="Sobrante:").font = label_font
+    cell_sobrante = ws.cell(row=row_num, column=2, value=f"$ {total_sobrante:,.2f}")
+    cell_sobrante.fill = verde_fill
+    cell_sobrante.font = Font(bold=True, color="FFFFFF")
+    row_num += 1
+    
+    # Faltante (rojo)
+    ws.cell(row=row_num, column=1, value="Faltante:").font = label_font
+    cell_faltante = ws.cell(row=row_num, column=2, value=f"-$ {abs(total_faltante):,.2f}")
+    cell_faltante.fill = rojo_fill
+    cell_faltante.font = Font(bold=True, color="FFFFFF")
+    row_num += 1
+    
+    # Neto
+    ws.cell(row=row_num, column=1, value="Neto:").font = label_font
+    cell_neto = ws.cell(row=row_num, column=2, value=f"$ {total_neto:,.2f}")
+    if total_neto > 0:
+        cell_neto.fill = verde_fill
+        cell_neto.font = Font(bold=True, color="FFFFFF")
+    elif total_neto < 0:
+        cell_neto.fill = rojo_fill
+        cell_neto.font = Font(bold=True, color="FFFFFF")
+    else:
+        cell_neto.fill = amarillo_fill
+        cell_neto.font = Font(bold=True)
+    row_num += 2
+    
+    # ==================== TABLA DE DATOS ====================
+    # Headers de la tabla
+    headers = list(data[0].keys())
+    header_row = row_num
     
     for col_num, header in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col_num)
+        cell = ws.cell(row=row_num, column=col_num, value=header)
         cell.fill = header_fill
         cell.font = header_font
-        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = thin_border
     
-    # Data rows
+    row_num += 1
+    
+    # Filas de datos con KPI de colores para diferencias
+    diferencia_cols = []
+    for idx, header in enumerate(headers):
+        if 'diferencia' in header.lower():
+            diferencia_cols.append(idx + 1)
+    
     for row_data in data:
-        ws.append(list(row_data.values()))
+        values = list(row_data.values())
+        for col_num, value in enumerate(values, 1):
+            cell = ws.cell(row=row_num, column=col_num, value=value)
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal="center" if isinstance(value, (int, float)) else "left")
+            
+            # Aplicar color KPI a columnas de diferencia
+            if col_num in diferencia_cols:
+                try:
+                    num_value = float(value) if value is not None else 0
+                    if num_value > 0:
+                        cell.fill = verde_fill
+                        cell.font = Font(bold=True, color="FFFFFF")
+                    elif num_value < 0:
+                        cell.fill = rojo_fill
+                        cell.font = Font(bold=True, color="FFFFFF")
+                    else:
+                        cell.fill = amarillo_fill
+                        cell.font = Font(bold=True)
+                except (ValueError, TypeError):
+                    pass
+        row_num += 1
     
-    # Adjust column widths
-    for column in ws.columns:
+    # ==================== FORMATO DE TABLA CON FILTROS ====================
+    # Aplicar autofiltro a la tabla de datos
+    last_col_letter = get_column_letter(len(headers))
+    ws.auto_filter.ref = f"A{header_row}:{last_col_letter}{row_num - 1}"
+    
+    # Ajustar ancho de columnas (evitar celdas mezcladas)
+    for col_idx in range(1, len(headers) + 1):
         max_length = 0
-        column = [cell for cell in column]
-        for cell in column:
+        col_letter = get_column_letter(col_idx)
+        for row in range(header_row, row_num):
+            cell = ws.cell(row=row, column=col_idx)
             try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(cell.value)
+                if cell.value and not isinstance(cell, type(None)):
+                    cell_length = len(str(cell.value))
+                    if cell_length > max_length:
+                        max_length = cell_length
             except:
                 pass
-        adjusted_width = (max_length + 2)
-        ws.column_dimensions[column[0].column_letter].width = adjusted_width
+        adjusted_width = min(max_length + 2, 50)  # Max 50 caracteres
+        if adjusted_width > 0:
+            ws.column_dimensions[col_letter].width = adjusted_width
     
-    # Save to bytes
+    # Congelar paneles (encabezado de tabla visible al hacer scroll)
+    ws.freeze_panes = f"A{header_row + 1}"
+    
+    # Guardar
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
@@ -2644,7 +2781,16 @@ async def export_excel(data: Dict, current_user: Dict = Depends(get_current_user
     report_data = data.get('data', [])
     filename = data.get('filename', 'reporte_inventario.xlsx')
     
-    excel_bytes = generate_excel(report_data, filename)
+    # Metadatos para el encabezado del reporte
+    metadata = {
+        'servidor_nombre': data.get('servidor_nombre', 'N/A'),
+        'sucursal': data.get('sucursal', 'N/A'),
+        'almacen': data.get('almacen', 'N/A'),
+        'fecha_inicio': data.get('fecha_inicio', 'N/A'),
+        'fecha_fin': data.get('fecha_fin', 'N/A')
+    }
+    
+    excel_bytes = generate_excel(report_data, filename, metadata)
     
     return StreamingResponse(
         io.BytesIO(excel_bytes),

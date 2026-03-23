@@ -512,7 +512,7 @@ const Reportes = () => {
     setFilters(newFilters);
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     console.log('handleExportExcel llamado, reportData:', reportData.length);
     if (reportData.length === 0) {
       toast.error('No hay datos para exportar');
@@ -520,19 +520,31 @@ const Reportes = () => {
     }
 
     try {
-      console.log('Creando worksheet...');
-      const worksheet = XLSX.utils.json_to_sheet(reportData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte');
+      toast.info('Generando archivo Excel...');
       
-      console.log('Generando Excel buffer...');
-      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      // Obtener nombre del servidor seleccionado
+      const selectedServer = servers.find(s => s.id === filters.server_id);
+      const serverName = selectedServer ? selectedServer.name : 'N/A';
+      
+      // Llamar al backend para generar el Excel con formato profesional
+      const response = await api.post('/reports/export/excel', {
+        data: reportData,
+        filename: `reporte_inventario_${new Date().toISOString().split('T')[0]}.xlsx`,
+        servidor_nombre: serverName,
+        sucursal: filters.sucursal || 'N/A',
+        almacen: filters.almacen || 'N/A',
+        fecha_inicio: filters.fecha_ini || filters.inventario_inicial_fecha || 'N/A',
+        fecha_fin: filters.fecha_fin || filters.inventario_final_fecha || 'N/A'
+      }, {
+        responseType: 'blob'
+      });
+      
+      // Descargar el archivo
+      const blob = new Blob([response.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
       const fileName = `reporte_inventario_${new Date().toISOString().split('T')[0]}.xlsx`;
       
-      console.log('Descargando archivo:', fileName);
-      
-      // Método alternativo: crear enlace y hacer click
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -545,7 +557,7 @@ const Reportes = () => {
       toast.success(`Archivo "${fileName}" descargado correctamente.`);
     } catch (error) {
       console.error('Error al exportar Excel:', error);
-      toast.error('Error al exportar a Excel: ' + error.message);
+      toast.error('Error al exportar a Excel: ' + (error.response?.data?.detail || error.message));
     }
   };
 
