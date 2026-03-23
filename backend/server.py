@@ -2115,7 +2115,23 @@ GROUP BY RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
             if es_almacen_consumo:
                 logging.info("Obteniendo ventas (almacén de CONSUMO tipo=1)...")
                 
+                # Formatear fechas para SQL Server (dd/mm/yyyy HH:MM:SS)
+                # fecha_ini y fecha_fin vienen en formato 'YYYY-MM-DD HH:MM:SS'
+                try:
+                    from datetime import datetime
+                    dt_ini = datetime.strptime(fecha_ini, "%Y-%m-%d %H:%M:%S")
+                    dt_fin = datetime.strptime(fecha_fin, "%Y-%m-%d %H:%M:%S")
+                    fecha_ini_sql = dt_ini.strftime("%d/%m/%Y %H:%M:%S")
+                    fecha_fin_sql = dt_fin.strftime("%d/%m/%Y %H:%M:%S")
+                except:
+                    fecha_ini_sql = fecha_ini
+                    fecha_fin_sql = fecha_fin
+                
+                logging.info(f"Fechas para ventas: ini={fecha_ini_sql}, fin={fecha_fin_sql} (se restará 1 día al fin)")
+                
                 # Ventas de INSUMOS - usando código natural (ya incluye prefijo)
+                # El filtro usa CONVERT con formato 103 (dd/mm/yyyy) y -1 para restar un día a la fecha final
+                # Esto asegura que solo se tomen ventas del período correcto (excluyendo el día del inventario final)
                 ventas_insumos_query = f"""
 SELECT 
     RTRIM(LTRIM(receta.idinsumo)) as CODIGO,
@@ -2132,7 +2148,8 @@ INNER JOIN insumos receta ON receta.idinsumo = costos.idinsumo
 INNER JOIN gruposi Grupo ON Grupo.idgruposi = receta.idgruposi
 INNER JOIN gruposiclasificacion GP ON GP.idgruposiclasificacion = Grupo.idgruposiclasificacion
 INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.APERTURA BETWEEN '{fecha_ini}' AND '{fecha_fin}'
+WHERE turnos.APERTURA BETWEEN CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_ini_sql}',103),103) 
+                          AND CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_fin_sql}',103),103) - 1
   AND cheques.cancelado = 0
   AND AL.nombre LIKE '%{almacen}%'
 GROUP BY RTRIM(LTRIM(receta.idinsumo))
@@ -2143,12 +2160,55 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
                         server['host'], server['port'], server['database'],
                         server['username'], server['password'], ventas_insumos_query
                     )
+                    # Sumar las ventas por código
                     for v in ventas_result:
                         if v['CODIGO']:
-                            ventas_dict[v['CODIGO']] = float(v['CONSUMIDO'] or 0)
-                    logging.info(f"Ventas INSUMOS obtenidas: {len(ventas_result)} productos")
+                            codigo = v['CODIGO']
+                            cantidad = float(v['CONSUMIDO'] or 0)
+                            ventas_dict[codigo] = ventas_dict.get(codigo, 0) + cantidad
+                    logging.info(f"Ventas cheques cerrados: {len(ventas_result)} registros, {len(ventas_dict)} productos únicos")
                 except Exception as e:
-                    logging.warning(f"Error al obtener ventas de insumos: {str(e)}")
+                    logging.warning(f"Error al obtener ventas de cheques cerrados: {str(e)}")
+                
+                # Intentar obtener ventas de tablas temporales (cuentas no cerradas)
+                # Estas tablas pueden no existir en todas las instalaciones de SoftRestaurant
+                ventas_temp_query = f"""
+SELECT 
+    RTRIM(LTRIM(receta.idinsumo)) as CODIGO,
+    SUM(venta.cantidad * COSTOS.cantidad) as CONSUMIDO
+FROM temcheqdet venta
+INNER JOIN temcheques cheques ON venta.foliodet = cheques.folio 
+INNER JOIN costos ON costos.idproducto = venta.idproducto
+INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
+    AND RC.idinsumo = COSTOS.idinsumo 
+    AND cheques.idarearestaurant = RC.idarearestaurant 
+    AND cheques.idempresa = RC.idempresa
+INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
+INNER JOIN insumos receta ON receta.idinsumo = costos.idinsumo
+INNER JOIN gruposi Grupo ON Grupo.idgruposi = receta.idgruposi
+INNER JOIN gruposiclasificacion GP ON GP.idgruposiclasificacion = Grupo.idgruposiclasificacion
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.APERTURA BETWEEN CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_ini_sql}',103),103) 
+                          AND CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_fin_sql}',103),103) - 1
+  AND cheques.cancelado = 0
+  AND AL.nombre LIKE '%{almacen}%'
+GROUP BY RTRIM(LTRIM(receta.idinsumo))
+"""
+                try:
+                    logging.info("Intentando obtener ventas de cuentas temporales (temcheques/temcheqdet)...")
+                    ventas_temp_result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], ventas_temp_query
+                    )
+                    for v in ventas_temp_result:
+                        if v['CODIGO']:
+                            codigo = v['CODIGO']
+                            cantidad = float(v['CONSUMIDO'] or 0)
+                            ventas_dict[codigo] = ventas_dict.get(codigo, 0) + cantidad
+                    logging.info(f"Ventas temporales: {len(ventas_temp_result)} registros adicionales")
+                except Exception as e:
+                    # Es normal que falle si las tablas temporales no existen
+                    logging.info(f"Tablas temporales no disponibles (esto es normal): {str(e)[:100]}")
                 
                 # NOTA: La tabla recetasalmacenes solo tiene idinsumo, no tiene idinsumospresentaciones
                 # Por lo tanto, las ventas de PRESENTACIONES no se pueden calcular de la misma manera
