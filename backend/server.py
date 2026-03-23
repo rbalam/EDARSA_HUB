@@ -2017,26 +2017,40 @@ ORDER BY FMOV.folio, CODIGO
             logging.info(f"Total códigos únicos en inventarios: {len(todos_codigos)}")
             
             # 5. Obtener movimientos - UNION de movsinv (INSUMOS) + movtosalmacen (PRESENTACIONES)
-            # Las cantidades tienen signo invertido, multiplicar por -1
+            # Usar los tipos de movimiento configurados en el servidor
             # Formato de fecha: YYYYMMDD HH:MM:SS (sin guiones, con espacio)
             fecha_ini_fmt = fecha_ini.replace('-', '').replace('T', ' ') if fecha_ini else ''
             fecha_fin_fmt = fecha_fin.replace('-', '').replace('T', ' ') if fecha_fin else ''
             logging.info(f"DEBUG fechas originales: fecha_ini={fecha_ini}, fecha_fin={fecha_fin}")
             logging.info(f"Obteniendo movimientos entre {fecha_ini_fmt} y {fecha_fin_fmt} para almacén {almacen_nombre}")
             
+            # Obtener tipos de movimiento configurados en el servidor
+            tipos_movimiento = server.get('tipos_movimiento', [])
+            if tipos_movimiento:
+                # Filtrar solo por los conceptos configurados
+                conceptos_filter = ", ".join([f"'{t}'" for t in tipos_movimiento])
+                filtro_conceptos_insumos = f"AND movsinv.idconcepto IN ({conceptos_filter})"
+                filtro_conceptos_presentaciones = f"AND movtosalmacen.idconcepto IN ({conceptos_filter})"
+                logging.info(f"Usando tipos de movimiento configurados: {tipos_movimiento}")
+            else:
+                # Si no hay configuración, excluir solo los vacíos
+                filtro_conceptos_insumos = "AND movsinv.idconcepto NOT IN ('')"
+                filtro_conceptos_presentaciones = "AND movtosalmacen.idconcepto NOT IN ('')"
+                logging.info("No hay tipos de movimiento configurados, usando todos excepto vacíos")
+            
             movimientos_query = f"""
 -- MOVIMIENTOS DE INSUMOS (movsinv)
 SELECT 
     LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo)) as CODIGO,
-    -SUM(movsinv.cantidad) as CANTIDAD
+    SUM(movsinv.cantidad) as CANTIDAD
 FROM movsinv
 INNER JOIN insumos ON insumos.idinsumo = movsinv.idinsumo
 INNER JOIN gruposi GP ON GP.idgruposi = insumos.idgruposi
 INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = GP.idgruposiclasificacion
 LEFT JOIN almacen ON almacen.idalmacen = movsinv.idalmacen
-WHERE movsinv.idconcepto NOT IN ('')
-  AND movsinv.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
+WHERE movsinv.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
   AND almacen.nombre LIKE '%{almacen}%'
+  {filtro_conceptos_insumos}
 GROUP BY LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo))
 
 UNION ALL
@@ -2050,9 +2064,9 @@ INNER JOIN insumospresentaciones ON insumospresentaciones.idinsumospresentacione
 INNER JOIN gruposi ON gruposi.idgruposi = insumospresentaciones.idgruposi
 INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = gruposi.idgruposiclasificacion
 LEFT JOIN almacen ON almacen.idalmacen = movtosalmacen.idalmacen
-WHERE movtosalmacen.idconcepto NOT IN ('')
-  AND movtosalmacen.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
+WHERE movtosalmacen.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
   AND almacen.nombre LIKE '%{almacen}%'
+  {filtro_conceptos_presentaciones}
 GROUP BY RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
 """
             
