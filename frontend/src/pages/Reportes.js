@@ -669,6 +669,7 @@ const Reportes = () => {
         server_id: filters.server_id,
         producto_codigo: producto.Codigo,
         sucursal: filters.sucursal,
+        almacen: filters.almacen,
         fecha_ini: filters.fecha_ini,
         fecha_fin: filters.fecha_fin
       });

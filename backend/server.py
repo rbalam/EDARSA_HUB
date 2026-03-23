@@ -2510,28 +2510,87 @@ ORDER BY Fecha DESC
             return {"data": sales, "count": len(sales)}
             
         elif server['system_type'] == 'SoftRestaurant':
-            # Para SoftRestaurant
-            query = f"""
+            # Para SoftRestaurant - detalle de ventas usando recetasalmacenes
+            # El código puede ser INSUMO (con prefijo) o PRESENTACION (código directo)
+            almacen = params.get('almacen', '')
+            
+            # Formatear fechas para SQL Server: YYYYMMDD HH:MM:SS
+            fecha_ini_fmt = fecha_ini.replace('-', '').replace('T', ' ') if fecha_ini else ''
+            fecha_fin_fmt = fecha_fin.replace('-', '').replace('T', ' ') if fecha_fin else ''
+            
+            logging.info(f"Detalle ventas SoftRestaurant - Código: {producto_codigo}, Almacén: {almacen}, Fechas: {fecha_ini_fmt} a {fecha_fin_fmt}")
+            
+            # Primero intentar como PRESENTACION (código directo como B130009)
+            query_presentaciones = f"""
 SELECT 
-    VC.idventacuenta as Folio,
-    C.fecha as Fecha,
-    VC.cantidad as Cantidad,
-    'DIRECTA' as Tipo_Venta,
-    P.descripcion as Producto,
-    VC.precio as Precio_Unitario
-FROM ventascuentas VC
-INNER JOIN cuentas C ON C.idcuenta = VC.idcuenta
-INNER JOIN productos P ON P.idproducto = VC.idproducto
-WHERE VC.idproducto IN (
-    SELECT idproducto FROM insumos_productos WHERE idinsumo = '{producto_codigo}'
-)
-AND C.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-ORDER BY C.fecha DESC
+    cheques.folio as Folio,
+    turnos.APERTURA as Fecha,
+    venta.cantidad * COSTOS.cantidad as Cantidad,
+    'RECETA' as Tipo_Venta,
+    productos.descripcion as Producto_Vendido,
+    IP.descripcion as Producto,
+    venta.precio as Precio_Unitario,
+    AL.nombre as Almacen
+FROM cheqdet venta
+INNER JOIN cheques ON venta.foliodet = cheques.folio 
+INNER JOIN costos ON costos.idproducto = venta.idproducto
+INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
+    AND RC.idinsumospresentaciones = COSTOS.idinsumospresentaciones 
+    AND cheques.idarearestaurant = RC.idarearestaurant 
+    AND cheques.idempresa = RC.idempresa
+INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
+INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RC.idinsumospresentaciones
+INNER JOIN productos ON productos.idproducto = venta.idproducto
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE RTRIM(LTRIM(RC.idinsumospresentaciones)) = '{producto_codigo}'
+  AND turnos.APERTURA BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
+  AND cheques.cancelado = 0
+  AND AL.nombre LIKE '%{almacen}%'
+ORDER BY turnos.APERTURA DESC
 """
             result = execute_sql_query(
                 server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
+                server['username'], server['password'], query_presentaciones
             )
+            
+            # Si no hay resultados, intentar como INSUMO (quitar primer carácter del código)
+            if not result:
+                producto_id = producto_codigo[1:] if producto_codigo and len(producto_codigo) > 1 else producto_codigo
+                logging.info(f"No encontrado en presentaciones, buscando en INSUMOS con ID: {producto_id}")
+                
+                query_insumos = f"""
+SELECT 
+    cheques.folio as Folio,
+    turnos.APERTURA as Fecha,
+    venta.cantidad * COSTOS.cantidad as Cantidad,
+    'RECETA' as Tipo_Venta,
+    productos.descripcion as Producto_Vendido,
+    receta.descripcion as Producto,
+    venta.precio as Precio_Unitario,
+    AL.nombre as Almacen
+FROM cheqdet venta
+INNER JOIN cheques ON venta.foliodet = cheques.folio 
+INNER JOIN costos ON costos.idproducto = venta.idproducto
+INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
+    AND RC.idinsumo = COSTOS.idinsumo 
+    AND cheques.idarearestaurant = RC.idarearestaurant 
+    AND cheques.idempresa = RC.idempresa
+INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
+INNER JOIN insumos receta ON receta.idinsumo = costos.idinsumo
+INNER JOIN productos ON productos.idproducto = venta.idproducto
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE RTRIM(LTRIM(receta.idinsumo)) = '{producto_id}'
+  AND turnos.APERTURA BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
+  AND cheques.cancelado = 0
+  AND AL.nombre LIKE '%{almacen}%'
+ORDER BY turnos.APERTURA DESC
+"""
+                result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_insumos
+                )
+            
+            logging.info(f"Ventas encontradas: {len(result)}")
             
             sales = []
             for row in result:
@@ -2540,9 +2599,10 @@ ORDER BY C.fecha DESC
                     'fecha': str(row.get('Fecha'))[:19] if row.get('Fecha') else '',
                     'cantidad': float(row.get('Cantidad') or 0),
                     'tipo_venta': row.get('Tipo_Venta'),
+                    'producto_vendido': row.get('Producto_Vendido'),
                     'producto': row.get('Producto'),
                     'precio_unitario': float(row.get('Precio_Unitario') or 0),
-                    'sucursal': ''
+                    'sucursal': row.get('Almacen', '')
                 })
             
             return {"data": sales, "count": len(sales)}
