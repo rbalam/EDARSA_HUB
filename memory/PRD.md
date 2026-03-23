@@ -1,147 +1,186 @@
 # Sistema de Análisis de Inventarios - PRD
 
+## CHECKPOINT ESTABLE - 23 Marzo 2026
+> **Todo el reporte de Análisis de Inventarios está funcionando correctamente.**
+> Este es el punto de referencia para rollback si algo falla en futuras actualizaciones.
+
+---
+
 ## Resumen del Producto
-Aplicación web para analizar inventarios de múltiples sucursales. Los datos se obtienen de diferentes servidores SQL Server con distintas estructuras de bases de datos (ManagmentPro y SoftRestaurant).
+Aplicación web para analizar inventarios de múltiples sucursales. Los datos se obtienen de servidores SQL Server con diferentes estructuras (ManagmentPro y SoftRestaurant).
 
 ## Arquitectura Técnica
 
 ### Stack
-- **Frontend**: React, TailwindCSS, Shadcn UI, Recharts
+- **Frontend**: React, TailwindCSS, Shadcn UI
 - **Backend**: FastAPI, Python
 - **Base de Datos**: MongoDB (configuración), SQL Server (datos de inventario)
-- **Bibliotecas SQL**: pytds (principal)
+- **Bibliotecas SQL**: pytds (principal), pymssql (fallback)
 
-### Endpoints Principales
-- `POST /api/auth/login` - Autenticación
-- `POST /api/reports/inventory-analysis` - Análisis de inventario principal
-- `POST /api/reports/movement-details` - Detalle de movimientos
-- `POST /api/reports/sales-details` - Detalle de ventas
-- `GET /api/servers/{id}/almacenes-softrestaurant` - Lista de almacenes
-- `GET /api/servers/{id}/inventarios` - Lista de inventarios físicos
+### URLs
+- **Preview**: https://stock-tracker-990.preview.emergentagent.com
+- **API**: https://stock-tracker-990.preview.emergentagent.com/api
 
----
-
-## ✅ RESUELTO (2026-03-23)
-
-### Bug Crítico: Doble Prefijo en Códigos de Producto (SoftRestaurant)
-- **Problema**: Los códigos de productos INSUMOS se mostraban con prefijo duplicado (ej: "BB130009" en lugar de "B130009")
-- **Causa Raíz**: La tabla `insumos` ya almacena los códigos CON el prefijo incluido (A100043, B130009, etc.), pero las consultas SQL agregaban otro prefijo con `LEFT(clasificacion.descripcion,1) + idinsumo`
-- **Solución**: Se eliminó la concatenación de prefijo en las consultas de:
-  - Catálogo de productos (línea ~1901)
-  - Inventarios (línea ~1965)
-  - Movimientos (línea ~2053)
-  - Ventas (línea ~2105)
-- **Verificación**: 
-  - Backend: 9/9 tests pasaron
-  - Frontend: E2E testing verificado
-  - Producto B130009 (RON BACARDI BLANCO 700 ML) muestra código correcto
+### Credenciales de Prueba
+- **Admin**: admin@inventario.com / admin123
 
 ---
 
-## Funcionalidades Implementadas
+## FUNCIONALIDADES VERIFICADAS (23 Mar 2026)
 
-### Reporte SoftRestaurant - FUNCIONANDO ✅
-**1. PRODUCTOS (Catálogo)**
-- UNION de INSUMOS inventariables + PRESENTACIONES de insumos inventariables
-- Código natural desde la BD (ya incluye prefijo): `RTRIM(LTRIM(idinsumo))` o `RTRIM(LTRIM(idinsumospresentaciones))`
+### 1. Reporte Análisis de Inventarios - SoftRestaurant
 
-**2. INVENTARIOS (invfisicomovtos)**
-- Maneja AMBOS tipos:
-  - Si `idinsumo = ''` → Es PRESENTACIÓN, usa `idpresentacion`
-  - Si `idinsumo <> ''` → Es INSUMO, usa `idinsumo`
-- Filtro: Solo productos con `existencia != 0`
+#### Almacén BODEGA (Presentaciones) - FUNCIONANDO
+- Catálogo de productos (INSUMOS + PRESENTACIONES inventariables)
+- Inventario inicial y final por folio
+- Movimientos entre inventarios
+- Códigos de producto SIN doble prefijo (B130009, no BB130009)
 
-**3. MOVIMIENTOS**
-- UNION de `movsinv` (INSUMOS) + `movtosalmacen` (PRESENTACIONES)
-- Filtrado por `tipos_movimiento` del servidor (idconcepto)
+#### Almacén CONSUMO (200 BARRA) - FUNCIONANDO
+- Catálogo de INSUMOS inventariables
+- Inventarios físicos
+- Movimientos
+- **Ventas calculadas correctamente**:
+  - Filtro por fecha de APERTURA del turno
+  - Rango: Día del inventario inicial (00:00:00) hasta día ANTERIOR al inventario final (23:59:59)
+  - Incluye todos los turnos del período (ej: turno del 15 que abre a las 13:27)
+  - Intenta incluir tablas temporales (temcheques/temcheqdet) si existen
 
-**4. VENTAS (Solo almacenes de consumo tipo=1)**
-- Usa `cheqdet` + `cheques` + `costos` + `recetasalmacenes`
+#### Datos Verificados:
+- B130004 (RON CAPITAN MORGAN): Ventas = 1,035.00 ✓
+- B130009 (RON BACARDI BLANCO): Ventas = 18,802.50 ✓
 
-**5. Modal Detalle de Movimientos** ✅
-- Funciona al hacer doble clic en columna "Movimientos"
-- Muestra: folio, fecha, cantidad, tipo, descripción, almacén
+### 2. Modal Detalle de Movimientos - FUNCIONANDO
+- Muestra detalle por producto al hacer doble clic
+- Incluye: folio, fecha, cantidad, tipo, descripción
 
----
+### 3. Modal Detalle de Ventas - FUNCIONANDO  
+- Muestra detalle de ventas por producto
+- Incluye: folio, fecha, cantidad, producto vendido
 
-## 🔴 PENDIENTES
-
-### P1 - IMPORTANTES
-
-#### 1. Detalle de Ventas NO funciona
-- **Síntoma**: Modal no se abre o error al hacer doble clic en columna "Ventas"
-- **Endpoint**: `POST /api/reports/sales-details`
-- **Error conocido**: "Invalid column name 'idinsumospresentaciones'" en tabla recetasalmacenes
-
-#### 2. Verificar cálculo de Movimientos para almacenes de consumo
-- **Almacén**: 200 BARRA
-- **Requisito**: Los movimientos deben filtrar por `idconcepto` configurados en el servidor
-
-#### 3. Ventas para almacenes de consumo
-- **Verificar**: La consulta de ventas implementada funciona correctamente
-
-### P2 - PENDIENTES
-
-#### 4. Dashboard MPRO vacío
-- El dashboard no carga datos para servidores ManagmentPro
-
-#### 5. Detalle de Movimientos INCORRECTO en MPRO
-- Información duplicada/triplicada
-
-#### 6. Exportación a Excel/PDF
-- Mensaje de éxito pero archivo no se descarga
-
-### P3 - FUTUROS
-
-#### 7. Dashboard muestra productos NO inventariables
-- Filtrar por `inventariable = 1`
-
-#### 8. Envío de reportes por correo electrónico
+### 4. Filtros - FUNCIONANDO
+- Por Categoría (Clasificación)
+- Por Familia (Grupo)
+- Por SubFamilia (SubGrupo)
 
 ---
 
-## Tablas de SoftRestaurant (Referencia)
+## Consultas SQL Clave
+
+### Ventas para Almacenes de Consumo (SoftRestaurant)
+```sql
+SELECT 
+    RTRIM(LTRIM(receta.idinsumo)) as CODIGO,
+    SUM(venta.cantidad * COSTOS.cantidad) as CONSUMIDO
+FROM cheqdet venta
+INNER JOIN cheques ON venta.foliodet = cheques.folio 
+INNER JOIN costos ON costos.idproducto = venta.idproducto
+INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
+    AND RC.idinsumo = COSTOS.idinsumo 
+    AND cheques.idarearestaurant = RC.idarearestaurant 
+    AND cheques.idempresa = RC.idempresa
+INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
+INNER JOIN insumos receta ON receta.idinsumo = costos.idinsumo
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.APERTURA BETWEEN 
+    CONVERT(datetime, CONVERT(nvarchar(30),'DD/MM/YYYY 00:00:00',103),103) 
+    AND CONVERT(datetime, CONVERT(nvarchar(30),'DD/MM/YYYY 23:59:59',103),103)
+  AND cheques.cancelado = 0
+  AND AL.nombre LIKE '%ALMACEN%'
+GROUP BY RTRIM(LTRIM(receta.idinsumo))
+```
+
+**Nota importante sobre fechas de ventas:**
+- fecha_ini: Día del inventario INICIAL a las 00:00:00
+- fecha_fin: Día ANTERIOR al inventario FINAL a las 23:59:59
+- Esto asegura incluir todos los turnos del período correcto
+
+---
+
+## Archivos Principales
+
+### Backend
+- `/app/backend/server.py` - API principal (~3400 líneas)
+  - Líneas 1908-1965: Consulta catálogo productos
+  - Líneas 1975-2010: Consulta inventarios
+  - Líneas 2060-2095: Consulta movimientos
+  - Líneas 2115-2170: Consulta ventas (con lógica de fechas corregida)
+
+### Frontend
+- `/app/frontend/src/pages/Reportes.js` - UI de reportes (~1400 líneas)
+  - Manejo de sessionStorage para persistencia
+  - Modales de detalle de movimientos y ventas
+  - Exportación a Excel/PDF
+
+---
+
+## Servidores Configurados
+
+| Nombre | Tipo | Host | Base de Datos |
+|--------|------|------|---------------|
+| ManagmentPro | MPRO | 54.39.104.176:1433 | CENTRAL2020 |
+| Cienfuegos | SoftRestaurant | (configurado) | softrestaurant12 |
+| LA ESTELAR | SoftRestaurant | serverestelar.ddns.net:6669 | softrestaurant12 |
+
+---
+
+## Tablas SoftRestaurant (Referencia)
 
 ### Catálogo
-- `insumos` + `insumosdetalle` (filtrar `inventariable = 1`)
+- `insumos` + `insumosdetalle` (inventariable=1)
 - `insumospresentaciones` + `insumospresentacionesdetalle`
-- `gruposi` - Grupos de insumos
-- `gruposiclasificacion` - Clasificación de grupos
+- `gruposi` / `gruposiclasificacion`
 
 ### Inventario Físico
-- `invfisico` - Cabecera de inventarios
-- `invfisicomovtos` - Detalle (usa `idinsumo` o `idpresentacion`)
+- `invfisico` - Cabecera
+- `invfisicomovtos` - Detalle (idinsumo o idpresentacion)
 
 ### Movimientos
-- `movsinv` - Para INSUMOS
-- `movtosalmacen` - Para PRESENTACIONES
+- `movsinv` - Movimientos de INSUMOS
+- `movtosalmacen` - Movimientos de PRESENTACIONES
 
 ### Ventas
-- `cheques` / `cheqdet` - Ventas de productos
-- `costos` - Costos de recetas
+- `cheques` / `cheqdet` - Ventas cerradas
+- `temcheques` / `temcheqdet` - Ventas temporales (puede no existir)
+- `costos` - Recetas
 - `recetasalmacenes` - Relación producto-insumo-almacén
+- `turnos` - Para filtrar por fecha de apertura
 
 ---
 
-## Credenciales de Prueba
+## Pendientes / Backlog
 
-### Aplicación
-- **Admin**: `admin@inventario.com` / `admin123`
+### P1 - Próximos
+1. **Reporte "Insumos Pendientes por Descargar"** - Nuevo reporte solicitado
+   - Insumos consumidos según ventas vs existencias
+   - Solo para almacenes de consumo
+   - Posible envío automático cuando informan que "traspasos están listos"
 
-### Servidores SQL
-- **ManagmentPro**: `54.39.104.176:1433`, DB: `CENTRAL2020`, User: `HRLectura`
-- **LA ESTELAR** (SoftRestaurant): `serverestelar.ddns.net,6669`, DB: `softrestaurant12`, User: `STLectura`
+### P2 - Mejoras
+2. Dashboard MPRO vacío (timeout en consultas largas)
+3. Exportación a Excel/PDF (verificar funcionamiento)
+
+### P3 - Futuros
+4. Envío de reportes por correo electrónico
+5. Filtrar productos no inventariables en dashboards
+6. Integración con WhatsApp para notificaciones
 
 ---
 
-## Archivos Clave
+## Historial de Cambios
 
-- `/app/backend/server.py` - Backend principal (>3000 líneas)
-- `/app/frontend/src/pages/Reportes.js` - UI de reportes
-- `/app/frontend/src/pages/Dashboard.js` - UI de dashboard
-- `/app/backend/tests/test_softrestaurant_inventory.py` - Tests automatizados
+### 23 Mar 2026 - CHECKPOINT ESTABLE
+- ✅ Corregido doble prefijo en códigos (BB130009 → B130009)
+- ✅ Corregido cálculo de ventas para almacenes de consumo
+- ✅ Corregido filtro de fechas de ventas (incluye todos los turnos del período)
+- ✅ Modal detalle de movimientos funcionando
+- ✅ Modal detalle de ventas funcionando
+- ✅ Manejo robusto de sessionStorage en frontend
 
----
-
-## Test Reports
-- `/app/test_reports/iteration_8.json` - Último reporte de testing (2026-03-23)
+### Correcciones Técnicas Aplicadas:
+1. Códigos de producto: Usar código natural de BD (ya incluye prefijo)
+2. Fechas de ventas: 
+   - Inicio: día inventario inicial 00:00:00
+   - Fin: día ANTERIOR a inventario final 23:59:59
+3. Tablas temporales: Manejo graceful si no existen
+4. SessionStorage: Validación y limpieza de datos corruptos
