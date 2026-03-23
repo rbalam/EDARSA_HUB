@@ -1893,7 +1893,7 @@ WHERE nombre LIKE '%{almacen}%'
             logging.info("Obteniendo catálogo de productos (INSUMOS inventariables + PRESENTACIONES de insumos inventariables)")
             
             productos_query = f"""
--- INSUMOS inventariables - usar código natural sin prefijo
+-- INSUMOS inventariables - usar código natural (ya incluye el prefijo en la BD)
 SELECT 
     'INSUMO' as TABLA,
     GC.descripcion as CATEGORIA,
@@ -1962,7 +1962,7 @@ SELECT
     CASE 
         WHEN RTRIM(ISNULL(FMOV.idinsumo,'')) = '' 
         THEN RTRIM(LTRIM(FMOV.idpresentacion))
-        ELSE LEFT(ISNULL(GC_INS.descripcion,'X'),1) + RTRIM(LTRIM(FMOV.idinsumo))
+        ELSE RTRIM(LTRIM(FMOV.idinsumo))
     END as CODIGO,
     FMOV.costo,
     FMOV.fisicoalmacen1 as EXISTENCIA,
@@ -2048,9 +2048,9 @@ ORDER BY FMOV.folio, CODIGO
                 logging.info("No hay tipos de movimiento configurados, usando todos excepto vacíos")
             
             movimientos_query = f"""
--- MOVIMIENTOS DE INSUMOS (movsinv)
+-- MOVIMIENTOS DE INSUMOS (movsinv) - usar código natural (ya incluye prefijo)
 SELECT 
-    LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo)) as CODIGO,
+    RTRIM(LTRIM(movsinv.idinsumo)) as CODIGO,
     SUM(movsinv.cantidad) as CANTIDAD
 FROM movsinv
 INNER JOIN insumos ON insumos.idinsumo = movsinv.idinsumo
@@ -2060,7 +2060,7 @@ LEFT JOIN almacen ON almacen.idalmacen = movsinv.idalmacen
 WHERE movsinv.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
   AND almacen.nombre LIKE '%{almacen}%'
   {filtro_conceptos_insumos}
-GROUP BY LEFT(gruposiclasificacion.descripcion,1) + RTRIM(LTRIM(movsinv.idinsumo))
+GROUP BY RTRIM(LTRIM(movsinv.idinsumo))
 
 UNION ALL
 
@@ -2099,10 +2099,10 @@ GROUP BY RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
             if es_almacen_consumo:
                 logging.info("Obteniendo ventas (almacén de CONSUMO tipo=1)...")
                 
-                # Ventas de INSUMOS - usando la consulta del usuario
+                # Ventas de INSUMOS - usando código natural (ya incluye prefijo)
                 ventas_insumos_query = f"""
 SELECT 
-    LEFT(GP.descripcion,1) + RTRIM(LTRIM(receta.idinsumo)) as CODIGO,
+    RTRIM(LTRIM(receta.idinsumo)) as CODIGO,
     SUM(venta.cantidad * COSTOS.cantidad) as CONSUMIDO
 FROM cheqdet venta
 INNER JOIN cheques ON venta.foliodet = cheques.folio 
@@ -2119,7 +2119,7 @@ INNER JOIN turnos ON turnos.idturno = cheques.idturno
 WHERE turnos.APERTURA BETWEEN '{fecha_ini}' AND '{fecha_fin}'
   AND cheques.cancelado = 0
   AND AL.nombre LIKE '%{almacen}%'
-GROUP BY LEFT(GP.descripcion,1) + RTRIM(LTRIM(receta.idinsumo))
+GROUP BY RTRIM(LTRIM(receta.idinsumo))
 """
                 try:
                     logging.info(f"Ejecutando consulta ventas INSUMOS para almacén {almacen}")
