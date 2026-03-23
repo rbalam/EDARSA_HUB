@@ -1893,12 +1893,12 @@ WHERE nombre LIKE '%{almacen}%'
             logging.info("Obteniendo catálogo de productos (INSUMOS inventariables + PRESENTACIONES de insumos inventariables)")
             
             productos_query = f"""
--- INSUMOS inventariables
+-- INSUMOS inventariables - usar código natural sin prefijo
 SELECT 
     'INSUMO' as TABLA,
     GC.descripcion as CATEGORIA,
     GS.descripcion as GRUPO,
-    LEFT(GC.descripcion,1) + RTRIM(LTRIM(insumos.idinsumo)) as CODIGO,
+    RTRIM(LTRIM(insumos.idinsumo)) as CODIGO,
     insumos.descripcion as DESCRIPCION,
     insumos.unidad as UM,
     ISNULL((SELECT TOP 1 RENDIMIENTO FROM insumospresentaciones WHERE insumospresentaciones.idinsumo = insumos.idinsumo), 0) as RENDIMIENTO,
@@ -1915,8 +1915,7 @@ WHERE LEFT(insumos.descripcion, 3) <> 'zzz'
 
 UNION ALL
 
--- PRESENTACIONES de insumos inventariables
--- El idinsumospresentaciones YA tiene el prefijo (ej: B130009), no agregar otro
+-- PRESENTACIONES de insumos inventariables - usar código natural
 SELECT 
     'PRESENTACION' as TABLA,
     GC.descripcion as CATEGORIA,
