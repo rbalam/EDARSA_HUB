@@ -22,14 +22,38 @@ const Reportes = () => {
   const [inventarios, setInventarios] = useState([]);
   const [reportData, setReportData] = useState(() => {
     // Recuperar datos del reporte desde sessionStorage
-    const saved = sessionStorage.getItem('reportData');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = sessionStorage.getItem('reportData');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Validar que sea un array
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing reportData from sessionStorage:', e);
+      sessionStorage.removeItem('reportData');
+    }
+    return [];
   });
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState(() => {
     // Recuperar filtros desde sessionStorage
-    const saved = sessionStorage.getItem('reportFilters');
-    return saved ? JSON.parse(saved) : {
+    try {
+      const saved = sessionStorage.getItem('reportFilters');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Validar que tenga la estructura correcta
+        if (parsed && typeof parsed === 'object' && parsed.server_id !== undefined) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing reportFilters from sessionStorage:', e);
+      sessionStorage.removeItem('reportFilters');
+    }
+    return {
       server_id: '',
       query_type: 'analisis',
       sucursal_id: '',
