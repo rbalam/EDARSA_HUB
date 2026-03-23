@@ -2071,19 +2071,18 @@ GROUP BY RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
                 movimientos_dict = {}
             
             # 6. Obtener ventas SOLO si es almacén de consumo (tipo = 1)
-            # Basado en la consulta de Power BI que usa recetasalmacenes + costos
-            # Formato de fecha: YYYYMMDD HH:MM:SS
+            # Consulta basada en recetasalmacenes + costos + turnos
             ventas_dict = {}
             if es_almacen_consumo:
                 logging.info("Obteniendo ventas (almacén de CONSUMO tipo=1)...")
                 
-                # Ventas de INSUMOS
+                # Ventas de INSUMOS - usando la consulta del usuario
                 ventas_insumos_query = f"""
 SELECT 
     LEFT(GP.descripcion,1) + RTRIM(LTRIM(receta.idinsumo)) as CODIGO,
     SUM(venta.cantidad * COSTOS.cantidad) as CONSUMIDO
 FROM cheqdet venta
-INNER JOIN cheques ON venta.foliodet = cheques.folio
+INNER JOIN cheques ON venta.foliodet = cheques.folio 
 INNER JOIN costos ON costos.idproducto = venta.idproducto
 INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
     AND RC.idinsumo = COSTOS.idinsumo 
@@ -2094,29 +2093,32 @@ INNER JOIN insumos receta ON receta.idinsumo = costos.idinsumo
 INNER JOIN gruposi Grupo ON Grupo.idgruposi = receta.idgruposi
 INNER JOIN gruposiclasificacion GP ON GP.idgruposiclasificacion = Grupo.idgruposiclasificacion
 INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.APERTURA BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
+WHERE turnos.APERTURA BETWEEN '{fecha_ini}' AND '{fecha_fin}'
   AND cheques.cancelado = 0
   AND AL.nombre LIKE '%{almacen}%'
 GROUP BY LEFT(GP.descripcion,1) + RTRIM(LTRIM(receta.idinsumo))
 """
                 try:
+                    logging.info(f"Ejecutando consulta ventas INSUMOS para almacén {almacen}")
                     ventas_result = execute_sql_query(
                         server['host'], server['port'], server['database'],
                         server['username'], server['password'], ventas_insumos_query
                     )
                     for v in ventas_result:
-                        ventas_dict[v['CODIGO']] = float(v['CONSUMIDO'] or 0)
-                    logging.info(f"Ventas INSUMOS obtenidas para {len(ventas_result)} productos")
+                        if v['CODIGO']:
+                            ventas_dict[v['CODIGO']] = float(v['CONSUMIDO'] or 0)
+                    logging.info(f"Ventas INSUMOS obtenidas: {len(ventas_result)} productos")
                 except Exception as e:
                     logging.warning(f"Error al obtener ventas de insumos: {str(e)}")
                 
-                # Ventas de PRESENTACIONES - usando idinsumospresentaciones
+                # Ventas de PRESENTACIONES - similar pero usando idinsumospresentaciones
+                # El código de presentaciones YA tiene el prefijo (ej: B130009)
                 ventas_presentaciones_query = f"""
 SELECT 
     RTRIM(LTRIM(RC.idinsumospresentaciones)) as CODIGO,
     SUM(venta.cantidad * COSTOS.cantidad) as CONSUMIDO
 FROM cheqdet venta
-INNER JOIN cheques ON venta.foliodet = cheques.folio
+INNER JOIN cheques ON venta.foliodet = cheques.folio 
 INNER JOIN costos ON costos.idproducto = venta.idproducto
 INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
     AND RC.idinsumospresentaciones = COSTOS.idinsumospresentaciones 
@@ -2125,14 +2127,15 @@ INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto
 INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
 INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RC.idinsumospresentaciones
 INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.APERTURA BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
+WHERE turnos.APERTURA BETWEEN '{fecha_ini}' AND '{fecha_fin}'
   AND cheques.cancelado = 0
   AND AL.nombre LIKE '%{almacen}%'
   AND RC.idinsumospresentaciones IS NOT NULL
-  AND RC.idinsumospresentaciones <> ''
+  AND RTRIM(LTRIM(RC.idinsumospresentaciones)) <> ''
 GROUP BY RTRIM(LTRIM(RC.idinsumospresentaciones))
 """
                 try:
+                    logging.info(f"Ejecutando consulta ventas PRESENTACIONES para almacén {almacen}")
                     ventas_pres_result = execute_sql_query(
                         server['host'], server['port'], server['database'],
                         server['username'], server['password'], ventas_presentaciones_query
@@ -2141,7 +2144,7 @@ GROUP BY RTRIM(LTRIM(RC.idinsumospresentaciones))
                         codigo = v['CODIGO']
                         if codigo:
                             ventas_dict[codigo] = ventas_dict.get(codigo, 0) + float(v['CONSUMIDO'] or 0)
-                    logging.info(f"Ventas PRESENTACIONES obtenidas para {len(ventas_pres_result)} productos")
+                    logging.info(f"Ventas PRESENTACIONES obtenidas: {len(ventas_pres_result)} productos")
                 except Exception as e:
                     logging.warning(f"Error al obtener ventas de presentaciones: {str(e)}")
                 
