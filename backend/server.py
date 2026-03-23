@@ -2126,7 +2126,7 @@ GROUP BY LEFT(GP.descripcion,1) + RTRIM(LTRIM(receta.idinsumo))
                     logging.warning(f"Error al obtener ventas de insumos: {str(e)}")
                 
                 # Ventas de PRESENTACIONES - similar pero usando idinsumospresentaciones
-                # El código de presentaciones YA tiene el prefijo (ej: B130009)
+                # NOTA: La tabla costos puede no tener idinsumospresentaciones, usar idpresentacion
                 ventas_presentaciones_query = f"""
 SELECT 
     RTRIM(LTRIM(RC.idinsumospresentaciones)) as CODIGO,
@@ -2135,7 +2135,7 @@ FROM cheqdet venta
 INNER JOIN cheques ON venta.foliodet = cheques.folio 
 INNER JOIN costos ON costos.idproducto = venta.idproducto
 INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
-    AND RC.idinsumospresentaciones = COSTOS.idinsumospresentaciones 
+    AND RC.idinsumo = COSTOS.idinsumo 
     AND cheques.idarearestaurant = RC.idarearestaurant 
     AND cheques.idempresa = RC.idempresa
 INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
@@ -2535,7 +2535,7 @@ FROM cheqdet venta
 INNER JOIN cheques ON venta.foliodet = cheques.folio 
 INNER JOIN costos ON costos.idproducto = venta.idproducto
 INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
-    AND RC.idinsumospresentaciones = COSTOS.idinsumospresentaciones 
+    AND RC.idinsumo = COSTOS.idinsumo 
     AND cheques.idarearestaurant = RC.idarearestaurant 
     AND cheques.idempresa = RC.idempresa
 INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
