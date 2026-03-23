@@ -2134,42 +2134,10 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
                 except Exception as e:
                     logging.warning(f"Error al obtener ventas de insumos: {str(e)}")
                 
-                # Ventas de PRESENTACIONES - similar pero usando idinsumospresentaciones
-                # NOTA: La tabla costos puede no tener idinsumospresentaciones, usar idpresentacion
-                ventas_presentaciones_query = f"""
-SELECT 
-    RTRIM(LTRIM(RC.idinsumospresentaciones)) as CODIGO,
-    SUM(venta.cantidad * COSTOS.cantidad) as CONSUMIDO
-FROM cheqdet venta
-INNER JOIN cheques ON venta.foliodet = cheques.folio 
-INNER JOIN costos ON costos.idproducto = venta.idproducto
-INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
-    AND RC.idinsumo = COSTOS.idinsumo 
-    AND cheques.idarearestaurant = RC.idarearestaurant 
-    AND cheques.idempresa = RC.idempresa
-INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
-INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RC.idinsumospresentaciones
-INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.APERTURA BETWEEN '{fecha_ini}' AND '{fecha_fin}'
-  AND cheques.cancelado = 0
-  AND AL.nombre LIKE '%{almacen}%'
-  AND RC.idinsumospresentaciones IS NOT NULL
-  AND RTRIM(LTRIM(RC.idinsumospresentaciones)) <> ''
-GROUP BY RTRIM(LTRIM(RC.idinsumospresentaciones))
-"""
-                try:
-                    logging.info(f"Ejecutando consulta ventas PRESENTACIONES para almacén {almacen}")
-                    ventas_pres_result = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], ventas_presentaciones_query
-                    )
-                    for v in ventas_pres_result:
-                        codigo = v['CODIGO']
-                        if codigo:
-                            ventas_dict[codigo] = ventas_dict.get(codigo, 0) + float(v['CONSUMIDO'] or 0)
-                    logging.info(f"Ventas PRESENTACIONES obtenidas: {len(ventas_pres_result)} productos")
-                except Exception as e:
-                    logging.warning(f"Error al obtener ventas de presentaciones: {str(e)}")
+                # NOTA: La tabla recetasalmacenes solo tiene idinsumo, no tiene idinsumospresentaciones
+                # Por lo tanto, las ventas de PRESENTACIONES no se pueden calcular de la misma manera
+                # Las presentaciones se descuentan del inventario a través de los INSUMOS que las componen
+                logging.info("Ventas de PRESENTACIONES no disponibles - recetasalmacenes solo tiene idinsumo")
                 
                 logging.info(f"Total ventas obtenidas: {len(ventas_dict)} productos")
             else:
@@ -2353,7 +2321,7 @@ ORDER BY M.Mv_Fecha DESC
             # Primero intentar buscar en PRESENTACIONES (movtosalmacen)
             query_presentaciones = f"""
 SELECT 
-    COALESCE(CAST(M.idcompra AS VARCHAR), CAST(M.traspaso AS VARCHAR), CAST(M.invfisico AS VARCHAR), '') as Folio,
+    COALESCE(CAST(M.idcompra AS VARCHAR(50)), CAST(M.traspaso AS VARCHAR(50)), CAST(M.invfisico AS VARCHAR(50)), '') as Folio,
     M.fecha as Fecha,
     M.cantidad as Cantidad,
     M.idconcepto as Tipo_Codigo,
@@ -2381,13 +2349,13 @@ ORDER BY M.fecha DESC
             
             # Si no hay resultados en presentaciones, buscar en INSUMOS
             if not result:
-                # Para INSUMOS, el código es prefijo + idinsumo, quitar el primer carácter
-                producto_id = producto_codigo[1:] if producto_codigo and len(producto_codigo) > 1 else producto_codigo
-                logging.info(f"No encontrado en presentaciones, buscando en INSUMOS con ID: {producto_id}")
+                # El código ya es el idinsumo completo (incluyendo el prefijo, ej: B130001)
+                # No necesitamos quitar ningún carácter
+                logging.info(f"No encontrado en presentaciones, buscando en INSUMOS con ID: {producto_codigo}")
                 
                 query_insumos = f"""
 SELECT 
-    COALESCE(M.foliocheque, CAST(M.idcompra AS VARCHAR), CAST(M.traspaso AS VARCHAR), CAST(M.invfisico AS VARCHAR), '') as Folio,
+    COALESCE(CAST(M.foliocheque AS VARCHAR(50)), CAST(M.idcompra AS VARCHAR(50)), CAST(M.traspaso AS VARCHAR(50)), CAST(M.invfisico AS VARCHAR(50)), '') as Folio,
     M.fecha as Fecha,
     M.cantidad as Cantidad,
     M.idconcepto as Tipo_Codigo,
@@ -2400,7 +2368,7 @@ FROM movsinv M
 INNER JOIN conceptos C ON C.idconcepto = M.idconcepto
 INNER JOIN insumos I ON I.idinsumo = M.idinsumo
 LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
-WHERE RTRIM(LTRIM(M.idinsumo)) = '{producto_id}'
+WHERE RTRIM(LTRIM(M.idinsumo)) = '{producto_codigo}'
     AND A.nombre LIKE '%{almacen}%'
     AND M.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
     AND M.idconcepto <> ''
@@ -2529,45 +2497,9 @@ ORDER BY Fecha DESC
             
             logging.info(f"Detalle ventas SoftRestaurant - Código: {producto_codigo}, Almacén: {almacen}, Fechas: {fecha_ini_fmt} a {fecha_fin_fmt}")
             
-            # Primero intentar como PRESENTACION (código directo como B130009)
-            query_presentaciones = f"""
-SELECT 
-    cheques.folio as Folio,
-    turnos.APERTURA as Fecha,
-    venta.cantidad * COSTOS.cantidad as Cantidad,
-    'RECETA' as Tipo_Venta,
-    productos.descripcion as Producto_Vendido,
-    IP.descripcion as Producto,
-    venta.precio as Precio_Unitario,
-    AL.nombre as Almacen
-FROM cheqdet venta
-INNER JOIN cheques ON venta.foliodet = cheques.folio 
-INNER JOIN costos ON costos.idproducto = venta.idproducto
-INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
-    AND RC.idinsumo = COSTOS.idinsumo 
-    AND cheques.idarearestaurant = RC.idarearestaurant 
-    AND cheques.idempresa = RC.idempresa
-INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
-INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RC.idinsumospresentaciones
-INNER JOIN productos ON productos.idproducto = venta.idproducto
-INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE RTRIM(LTRIM(RC.idinsumospresentaciones)) = '{producto_codigo}'
-  AND turnos.APERTURA BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
-  AND cheques.cancelado = 0
-  AND AL.nombre LIKE '%{almacen}%'
-ORDER BY turnos.APERTURA DESC
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_presentaciones
-            )
-            
-            # Si no hay resultados, intentar como INSUMO (quitar primer carácter del código)
-            if not result:
-                producto_id = producto_codigo[1:] if producto_codigo and len(producto_codigo) > 1 else producto_codigo
-                logging.info(f"No encontrado en presentaciones, buscando en INSUMOS con ID: {producto_id}")
-                
-                query_insumos = f"""
+            # La tabla recetasalmacenes solo tiene idinsumo, no tiene idinsumospresentaciones
+            # Por lo tanto, buscamos directamente por el código de INSUMO (que ya incluye el prefijo)
+            query_insumos = f"""
 SELECT 
     cheques.folio as Folio,
     turnos.APERTURA as Fecha,
@@ -2588,16 +2520,16 @@ INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
 INNER JOIN insumos receta ON receta.idinsumo = costos.idinsumo
 INNER JOIN productos ON productos.idproducto = venta.idproducto
 INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE RTRIM(LTRIM(receta.idinsumo)) = '{producto_id}'
+WHERE RTRIM(LTRIM(receta.idinsumo)) = '{producto_codigo}'
   AND turnos.APERTURA BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
   AND cheques.cancelado = 0
   AND AL.nombre LIKE '%{almacen}%'
 ORDER BY turnos.APERTURA DESC
 """
-                result = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_insumos
-                )
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_insumos
+            )
             
             logging.info(f"Ventas encontradas: {len(result)}")
             
