@@ -2115,23 +2115,32 @@ GROUP BY RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
             if es_almacen_consumo:
                 logging.info("Obteniendo ventas (almacén de CONSUMO tipo=1)...")
                 
-                # Formatear fechas para SQL Server (dd/mm/yyyy HH:MM:SS)
-                # fecha_ini y fecha_fin vienen en formato 'YYYY-MM-DD HH:MM:SS'
+                # Calcular fechas para ventas:
+                # - fecha_ini: Día del inventario inicial a las 00:00:00
+                # - fecha_fin: Día ANTERIOR al inventario final a las 23:59:59
+                # Esto asegura incluir TODOS los turnos del período correcto
                 try:
-                    from datetime import datetime
+                    from datetime import datetime, timedelta
                     dt_ini = datetime.strptime(fecha_ini, "%Y-%m-%d %H:%M:%S")
                     dt_fin = datetime.strptime(fecha_fin, "%Y-%m-%d %H:%M:%S")
-                    fecha_ini_sql = dt_ini.strftime("%d/%m/%Y %H:%M:%S")
-                    fecha_fin_sql = dt_fin.strftime("%d/%m/%Y %H:%M:%S")
-                except:
+                    
+                    # Fecha inicio: inicio del día del inventario inicial
+                    fecha_ini_ventas = dt_ini.replace(hour=0, minute=0, second=0)
+                    
+                    # Fecha fin: final del día ANTERIOR al inventario final (23:59:59)
+                    fecha_fin_ventas = (dt_fin - timedelta(days=1)).replace(hour=23, minute=59, second=59)
+                    
+                    fecha_ini_sql = fecha_ini_ventas.strftime("%d/%m/%Y %H:%M:%S")
+                    fecha_fin_sql = fecha_fin_ventas.strftime("%d/%m/%Y %H:%M:%S")
+                except Exception as e:
+                    logging.warning(f"Error calculando fechas de ventas: {e}")
                     fecha_ini_sql = fecha_ini
                     fecha_fin_sql = fecha_fin
                 
-                logging.info(f"Fechas para ventas: ini={fecha_ini_sql}, fin={fecha_fin_sql} (se restará 1 día al fin)")
+                logging.info(f"Fechas para ventas: ini={fecha_ini_sql}, fin={fecha_fin_sql}")
                 
                 # Ventas de INSUMOS - usando código natural (ya incluye prefijo)
-                # El filtro usa CONVERT con formato 103 (dd/mm/yyyy) y -1 para restar un día a la fecha final
-                # Esto asegura que solo se tomen ventas del período correcto (excluyendo el día del inventario final)
+                # El filtro usa el día del inventario inicial hasta el final del día anterior al inventario final
                 ventas_insumos_query = f"""
 SELECT 
     RTRIM(LTRIM(receta.idinsumo)) as CODIGO,
@@ -2149,7 +2158,7 @@ INNER JOIN gruposi Grupo ON Grupo.idgruposi = receta.idgruposi
 INNER JOIN gruposiclasificacion GP ON GP.idgruposiclasificacion = Grupo.idgruposiclasificacion
 INNER JOIN turnos ON turnos.idturno = cheques.idturno
 WHERE turnos.APERTURA BETWEEN CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_ini_sql}',103),103) 
-                          AND CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_fin_sql}',103),103) - 1
+                          AND CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_fin_sql}',103),103)
   AND cheques.cancelado = 0
   AND AL.nombre LIKE '%{almacen}%'
 GROUP BY RTRIM(LTRIM(receta.idinsumo))
@@ -2189,7 +2198,7 @@ INNER JOIN gruposi Grupo ON Grupo.idgruposi = receta.idgruposi
 INNER JOIN gruposiclasificacion GP ON GP.idgruposiclasificacion = Grupo.idgruposiclasificacion
 INNER JOIN turnos ON turnos.idturno = cheques.idturno
 WHERE turnos.APERTURA BETWEEN CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_ini_sql}',103),103) 
-                          AND CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_fin_sql}',103),103) - 1
+                          AND CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_fin_sql}',103),103)
   AND cheques.cancelado = 0
   AND AL.nombre LIKE '%{almacen}%'
 GROUP BY RTRIM(LTRIM(receta.idinsumo))
