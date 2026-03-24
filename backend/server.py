@@ -2540,29 +2540,55 @@ WHERE A.Al_Descripcion LIKE '%{almacen}%'
             else:
                 filtro_tipos_mov = ""
             
-            # Consulta detalle de movimientos
+            # Consulta detalle de movimientos - CON LÓGICA ESPECIAL DE FECHAS PARA TIPOS 508/108
+            # La fecha real de los movimientos tipo 508/108 se calcula de Conversion_Producto/Compra
             query = f"""
 SELECT 
     M.Mv_Folio as Folio,
-    M.Mv_Fecha as Fecha,
+    CASE   
+        WHEN TM.Tm_Cve_Tipo_Movimiento IN('508','108') 
+        THEN 
+            CASE WHEN M.Mv_Tabla = 'CONVERSION_PRODUCTO' THEN M.Mv_Fecha 
+            ELSE ISNULL((
+                SELECT TOP 1 C.Co_Fecha FROM Conversion_Producto CN
+                INNER JOIN COMPRA C ON C.Co_Folio = CN.Cp_Documento AND C.Pr_Cve_Producto = CN.Pr_Cve_Producto
+                WHERE CN.Cp_Folio = M.Mv_Documento
+            ), M.Mv_Fecha)
+            END
+        ELSE M.Mv_Fecha
+    END as Fecha,
     M.Mv_Cantidad_Control_1 as Cantidad,
     M.Tm_Cve_Tipo_Movimiento as Tipo_Codigo,
     TM.Tm_Descripcion as Tipo_Descripcion,
     TM.Tm_Tipo as Tipo_Movimiento,
     P.Pr_Descripcion as Producto,
-    A.Al_Descripcion as Almacen
+    A.Al_Descripcion as Almacen,
+    M.Mv_Documento as Documento
 FROM Movimiento M
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
 INNER JOIN Producto P ON P.Pr_Cve_Producto = M.Pr_Cve_Producto
-INNER JOIN Almacen A ON A.Al_Cve_Almacen = M.Al_Cve_Almacen
+INNER JOIN Almacen A ON A.Al_Cve_Almacen = M.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
 WHERE M.Pr_Cve_Producto = '{producto_codigo}'
     AND S.Sc_Descripcion LIKE '%{sucursal}%'
     AND M.Al_Cve_Almacen = '{almacen_codigo}'
     AND M.Es_Cve_Estado <> 'CA'
-    AND M.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
     {filtro_tipos_mov}
-ORDER BY M.Mv_Fecha DESC
+    AND (
+        CASE   
+            WHEN TM.Tm_Cve_Tipo_Movimiento IN('508','108') 
+            THEN 
+                CASE WHEN M.Mv_Tabla = 'CONVERSION_PRODUCTO' THEN M.Mv_Fecha 
+                ELSE ISNULL((
+                    SELECT TOP 1 C.Co_Fecha FROM Conversion_Producto CN
+                    INNER JOIN COMPRA C ON C.Co_Folio = CN.Cp_Documento AND C.Pr_Cve_Producto = CN.Pr_Cve_Producto
+                    WHERE CN.Cp_Folio = M.Mv_Documento
+                ), M.Mv_Fecha)
+                END
+            ELSE M.Mv_Fecha
+        END
+    ) BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+ORDER BY Fecha DESC
 """
             result = execute_sql_query(
                 server['host'], server['port'], server['database'],
