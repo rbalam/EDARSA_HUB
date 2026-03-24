@@ -1749,6 +1749,7 @@ WHERE A.Al_Descripcion LIKE '%{almacen}%'
             # Solo mostramos productos que:
             # a) Son INSUMOS (Dp_Cve_Departamento = '0007') Y tienen presentaciones
             # b) Son productos de COMPRA que NO están como presentación de ningún insumo
+            # NOTA: Usamos GROUP BY y SUM para agrupar inventarios duplicados
             productos_query = f"""
 WITH InsumosConPresentaciones AS (
     -- INSUMOS que tienen al menos una presentación
@@ -1762,6 +1763,20 @@ ProductosComoPresentacion AS (
     -- Productos que están registrados como presentación de algún insumo
     SELECT DISTINCT Pp_Producto as Pr_Cve_Producto
     FROM Producto_Presentacion
+),
+InventarioInicial AS (
+    -- Sumar inventarios iniciales duplicados por producto
+    SELECT Pr_Cve_Producto, SUM(Fi_Cantidad_Control_1) as Cantidad
+    FROM Fisico
+    WHERE Fi_Folio = '{folio_inicial}' AND Al_Cve_Almacen = '{almacen_codigo}'
+    GROUP BY Pr_Cve_Producto
+),
+InventarioFinal AS (
+    -- Sumar inventarios finales duplicados por producto
+    SELECT Pr_Cve_Producto, SUM(Fi_Cantidad_Control_1) as Cantidad
+    FROM Fisico
+    WHERE Fi_Folio = '{folio_final}' AND Al_Cve_Almacen = '{almacen_codigo}'
+    GROUP BY Pr_Cve_Producto
 )
 SELECT TOP 3000
     P.Pr_Cve_Producto as Codigo,
@@ -1780,8 +1795,8 @@ SELECT TOP 3000
         WHEN ICP.Pr_Cve_Producto IS NOT NULL THEN 1
         ELSE 0
     END as Tiene_Presentaciones,
-    ISNULL(FI.Fi_Cantidad_Control_1, 0) as Inv_Inicial_Cantidad,
-    ISNULL(FF.Fi_Cantidad_Control_1, 0) as Inv_Final_Cantidad
+    ISNULL(FI.Cantidad, 0) as Inv_Inicial_Cantidad,
+    ISNULL(FF.Cantidad, 0) as Inv_Final_Cantidad
 FROM Producto P
 INNER JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
 INNER JOIN SubFamilia SF ON SF.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
@@ -1789,12 +1804,8 @@ INNER JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
 INNER JOIN Departamento D ON D.Dp_Cve_Departamento = P.Dp_Cve_Departamento
 LEFT JOIN InsumosConPresentaciones ICP ON ICP.Pr_Cve_Producto = P.Pr_Cve_Producto
 LEFT JOIN ProductosComoPresentacion PCP ON PCP.Pr_Cve_Producto = P.Pr_Cve_Producto
-LEFT JOIN Fisico FI ON FI.Pr_Cve_Producto = P.Pr_Cve_Producto 
-    AND FI.Fi_Folio = '{folio_inicial}'
-    AND FI.Al_Cve_Almacen = '{almacen_codigo}'
-LEFT JOIN Fisico FF ON FF.Pr_Cve_Producto = P.Pr_Cve_Producto
-    AND FF.Fi_Folio = '{folio_final}'
-    AND FF.Al_Cve_Almacen = '{almacen_codigo}'
+LEFT JOIN InventarioInicial FI ON FI.Pr_Cve_Producto = P.Pr_Cve_Producto
+LEFT JOIN InventarioFinal FF ON FF.Pr_Cve_Producto = P.Pr_Cve_Producto
 WHERE P.Es_Cve_Estado <> 'BA'
     AND (
         -- Caso A: Es un INSUMO con presentaciones
