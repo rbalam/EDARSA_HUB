@@ -2040,13 +2040,15 @@ WHERE nombre LIKE '%{almacen}%'
             
             logging.info(f"Filtros construidos - Categorias: {cats_sql}, Familias: {fams_sql}, SubFamilias: {sfs_sql}")
             
-            # 2. Obtener productos (catálogo) con UNION de INSUMOS inventariables + PRESENTACIONES de insumos inventariables
-            # Basado en las consultas de Power BI del usuario
-            # APLICANDO FILTROS DE CLASIFICACION, GRUPO Y SUBGRUPO
-            logging.info("Obteniendo catálogo de productos (INSUMOS inventariables + PRESENTACIONES de insumos inventariables)")
+            # 2. Obtener productos (catálogo) según el tipo de almacén
+            # - Almacén CONSUMO (tipo 1): Usa INSUMOS (tabla insumos)
+            # - Almacén BODEGA/PRESENTACIONES (tipo 2): Usa PRESENTACIONES (tabla insumospresentaciones)
             
-            productos_query = f"""
--- INSUMOS inventariables - usar código natural (ya incluye el prefijo en la BD)
+            if es_almacen_consumo:
+                # ALMACÉN DE CONSUMO: Solo INSUMOS
+                logging.info("Obteniendo catálogo de productos: INSUMOS (almacén de consumo)")
+                
+                productos_query = f"""
 SELECT 
     'INSUMO' as TABLA,
     GC.descripcion as CATEGORIA,
@@ -2054,7 +2056,7 @@ SELECT
     RTRIM(LTRIM(insumos.idinsumo)) as CODIGO,
     insumos.descripcion as DESCRIPCION,
     insumos.unidad as UM,
-    ISNULL((SELECT TOP 1 RENDIMIENTO FROM insumospresentaciones WHERE insumospresentaciones.idinsumo = insumos.idinsumo), 0) as RENDIMIENTO,
+    1 as RENDIMIENTO,
     IDET.costo as COSTO
 FROM insumos
 INNER JOIN insumosdetalle IDET ON IDET.idinsumo = insumos.idinsumo
@@ -2065,10 +2067,12 @@ WHERE LEFT(insumos.descripcion, 3) <> 'zzz'
   {filtro_categoria_insumos}
   {filtro_familia_insumos}
   {filtro_subfamilia_insumos}
-
-UNION ALL
-
--- PRESENTACIONES de insumos inventariables - usar código natural
+"""
+            else:
+                # ALMACÉN DE BODEGA/PRESENTACIONES: Solo PRESENTACIONES
+                logging.info("Obteniendo catálogo de productos: PRESENTACIONES (almacén de bodega)")
+                
+                productos_query = f"""
 SELECT 
     'PRESENTACION' as TABLA,
     GC.descripcion as CATEGORIA,
