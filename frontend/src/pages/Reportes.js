@@ -37,6 +37,7 @@ const Reportes = () => {
     }
     return [];
   });
+  const [erroresCaptura, setErroresCaptura] = useState([]); // Errores de captura de inventario (MPRO)
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState(() => {
     // Recuperar filtros desde sessionStorage
@@ -345,6 +346,15 @@ const Reportes = () => {
       console.log('Respuesta del reporte:', response.data);
       console.log('Primer producto:', response.data.data[0]);
       setReportData(response.data.data);
+      
+      // Manejar errores de captura de inventario (MPRO)
+      if (response.data.errores_captura && response.data.errores_captura.length > 0) {
+        setErroresCaptura(response.data.errores_captura);
+        toast.warning(`Atención: ${response.data.errores_captura.length} error(es) de captura detectados`);
+      } else {
+        setErroresCaptura([]);
+      }
+      
       toast.success(`Reporte generado: ${response.data.count} registros`);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error al generar reporte');
@@ -1174,6 +1184,30 @@ const Reportes = () => {
             </div>
           </CardHeader>
           <CardContent>
+            {/* Errores de captura de inventario (MPRO) */}
+            {erroresCaptura.length > 0 && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-5 w-5 text-red-600" />
+                  <span className="font-semibold text-red-800">
+                    ⚠️ Errores de Captura de Inventario Detectados ({erroresCaptura.length})
+                  </span>
+                </div>
+                <p className="text-sm text-red-700 mb-2">
+                  Los siguientes productos fueron capturados incorrectamente en el inventario físico:
+                </p>
+                <ul className="text-sm text-red-700 space-y-1 ml-4">
+                  {erroresCaptura.map((error, idx) => (
+                    <li key={idx} className="list-disc">
+                      {error.mensaje}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-red-600 mt-2 italic">
+                  Nota: No se debe capturar una presentación si el insumo ya existe. Revise los datos del inventario.
+                </p>
+              </div>
+            )}
             <p className="text-xs text-zinc-500 mb-2 italic">
               💡 Doble clic en las columnas Movimientos o Ventas para ver el detalle
             </p>

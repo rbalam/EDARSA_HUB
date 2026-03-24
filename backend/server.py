@@ -1665,43 +1665,31 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     
     try:
         if server['system_type'] == 'MPRO':
-            logging.info(f"Generando análisis de inventario: {sucursal} - {almacen}")
+            logging.info(f"Generando análisis de inventario MPRO: {sucursal} - {almacen}")
             logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
             logging.info(f"Folios: {folio_inicial} a {folio_final}")
             
             # Obtener filtros configurados del servidor
             tipos_movimiento = server.get('tipos_movimiento', [])
             categorias_servidor = server.get('categorias', [])
-            departamentos = server.get('departamentos', [])
             
             # PRIORIDAD: Si el frontend envía filtros, usarlos. Si no, usar los del servidor.
             categorias = filtro_categorias_frontend if filtro_categorias_frontend else categorias_servidor
             
-            logging.info(f"Filtros finales - Tipos Mov: {len(tipos_movimiento)}, Categorias: {len(categorias)}, Departamentos: {len(departamentos)}")
+            logging.info(f"Filtros finales - Tipos Mov: {len(tipos_movimiento)}, Categorias: {len(categorias)}")
             
             # Construir filtros SQL dinámicos
             if tipos_movimiento:
                 tipos_mov_sql = ",".join([f"'{t}'" for t in tipos_movimiento])
                 filtro_tipos_mov = f"AND E.Tm_Cve_Tipo_Movimiento IN ({tipos_mov_sql})"
             else:
-                # Si no hay configuración, no filtrar por tipo de movimiento
                 filtro_tipos_mov = ""
             
             if categorias:
                 categorias_sql = ",".join([f"'{c}'" for c in categorias])
-                filtro_categorias = f"AND producto.Ct_Cve_Categoria IN ({categorias_sql})"
                 filtro_categorias_p = f"AND P.Ct_Cve_Categoria IN ({categorias_sql})"
             else:
-                filtro_categorias = ""
                 filtro_categorias_p = ""
-            
-            if departamentos:
-                departamentos_sql = ",".join([f"'{d}'" for d in departamentos])
-                filtro_departamentos = f"AND producto.Dp_Cve_Departamento IN ({departamentos_sql})"
-                filtro_departamentos_p = f"AND P.Dp_Cve_Departamento IN ({departamentos_sql})"
-            else:
-                filtro_departamentos = ""
-                filtro_departamentos_p = ""
             
             # Filtros de familia y subfamilia del frontend
             if filtro_familias_frontend:
@@ -1716,11 +1704,14 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             else:
                 filtro_subfamilias_p = ""
             
-            # ENFOQUE OPTIMIZADO: Ejecutar consultas separadas y combinar en Python
-            # Esto es más rápido que CTEs complejas con UNION ALL
+            # ==================== LÓGICA MPRO CORREGIDA ====================
+            # El reporte muestra productos del departamento '0007' (INSUMOS)
+            # - Si el INSUMO tiene presentaciones (en Producto_Presentacion) → mostrar el INSUMO
+            # - Si NO tiene presentaciones → mostrar la clave de COMPRA
+            # - Las ventas se calculan usando Producto_Kit (recetas)
+            # ===============================================================
             
-            # 1. Obtener código del almacén y verificar si tiene ventas
-            # En MPRO, un almacén tiene ventas si está relacionado con movimientos de venta en la sucursal
+            # 1. Obtener código del almacén
             almacen_query = f"""
 SELECT TOP 1 
     A.Al_Cve_Almacen as codigo,
@@ -1744,18 +1735,24 @@ WHERE A.Al_Descripcion LIKE '%{almacen}%'
             
             logging.info(f"Almacén encontrado: {almacen_codigo} - {almacen_nombre} (Sucursal: {sucursal_codigo})")
             
-            # Verificar si el almacén tiene ventas (si es almacén de ventas/consumo)
-            # Un almacén tiene ventas si tiene movimientos relacionados con ventas
-            # Típicamente el almacén "GENERAL" o de "CONSUMO" tiene ventas
-            # Los almacenes de BODEGA, PRODUCCIÓN, etc. no tienen ventas directas
-            almacen_nombre_upper = almacen_nombre.upper() if almacen_nombre else ''
-            es_almacen_ventas = 'GENERAL' in almacen_nombre_upper or 'CONSUMO' in almacen_nombre_upper or 'VENTA' in almacen_nombre_upper
-            
-            logging.info(f"Código de almacén: {almacen_codigo}, Nombre: {almacen_nombre}, Es almacén de ventas: {es_almacen_ventas}")
-            
-            # 2. Obtener TODOS los productos que cumplen los filtros de categoría/departamento
-            # Luego filtraremos solo los que tienen actividad (inventario, ventas o movimientos)
+            # 2. Obtener productos del departamento INSUMOS (0007)
+            # Solo mostramos productos que:
+            # a) Son INSUMOS (Dp_Cve_Departamento = '0007') Y tienen presentaciones
+            # b) Son productos de COMPRA que NO están como presentación de ningún insumo
             productos_query = f"""
+WITH InsumosConPresentaciones AS (
+    -- INSUMOS que tienen al menos una presentación
+    SELECT DISTINCT P.Pr_Cve_Producto
+    FROM Producto P
+    INNER JOIN Producto_Presentacion PP ON PP.Pr_Cve_Producto = P.Pr_Cve_Producto
+    WHERE P.Dp_Cve_Departamento = '0007'
+      AND P.Es_Cve_Estado <> 'BA'
+),
+ProductosComoPresentacion AS (
+    -- Productos que están registrados como presentación de algún insumo
+    SELECT DISTINCT Pp_Producto as Pr_Cve_Producto
+    FROM Producto_Presentacion
+)
 SELECT TOP 3000
     P.Pr_Cve_Producto as Codigo,
     P.Pr_Descripcion as Producto,
@@ -1764,12 +1761,24 @@ SELECT TOP 3000
     C.Ct_Descripcion as Categoria,
     P.Pr_Unidad_Control_1 as Unidad,
     P.Pr_ultimo_costo as Costo_Unitario,
+    D.Dp_Descripcion as Departamento,
+    CASE 
+        WHEN P.Dp_Cve_Departamento = '0007' THEN 'INSUMO'
+        ELSE 'COMPRA'
+    END as Tipo_Producto,
+    CASE 
+        WHEN ICP.Pr_Cve_Producto IS NOT NULL THEN 1
+        ELSE 0
+    END as Tiene_Presentaciones,
     ISNULL(FI.Fi_Cantidad_Control_1, 0) as Inv_Inicial_Cantidad,
     ISNULL(FF.Fi_Cantidad_Control_1, 0) as Inv_Final_Cantidad
 FROM Producto P
 INNER JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
 INNER JOIN SubFamilia SF ON SF.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
 INNER JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
+INNER JOIN Departamento D ON D.Dp_Cve_Departamento = P.Dp_Cve_Departamento
+LEFT JOIN InsumosConPresentaciones ICP ON ICP.Pr_Cve_Producto = P.Pr_Cve_Producto
+LEFT JOIN ProductosComoPresentacion PCP ON PCP.Pr_Cve_Producto = P.Pr_Cve_Producto
 LEFT JOIN Fisico FI ON FI.Pr_Cve_Producto = P.Pr_Cve_Producto 
     AND FI.Fi_Folio = '{folio_inicial}'
     AND FI.Al_Cve_Almacen = '{almacen_codigo}'
@@ -1777,74 +1786,48 @@ LEFT JOIN Fisico FF ON FF.Pr_Cve_Producto = P.Pr_Cve_Producto
     AND FF.Fi_Folio = '{folio_final}'
     AND FF.Al_Cve_Almacen = '{almacen_codigo}'
 WHERE P.Es_Cve_Estado <> 'BA'
+    AND (
+        -- Caso A: Es un INSUMO con presentaciones
+        (P.Dp_Cve_Departamento = '0007' AND ICP.Pr_Cve_Producto IS NOT NULL)
+        OR
+        -- Caso B: Es un producto de COMPRA que NO está como presentación de ningún insumo
+        (P.Dp_Cve_Departamento <> '0007' AND PCP.Pr_Cve_Producto IS NULL)
+    )
     {filtro_categorias_p}
-    {filtro_departamentos_p}
     {filtro_familias_p}
     {filtro_subfamilias_p}
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
 """
-            logging.info("Obteniendo productos con inventario...")
+            logging.info("Obteniendo catálogo de productos MPRO (INSUMOS con presentaciones + COMPRAS sin presentación)...")
             productos = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], productos_query
             )
             logging.info(f"Productos obtenidos: {len(productos)}")
             
-            # 3. Obtener ventas por producto (combinando kits y directas)
-            # IMPORTANTE: Solo los almacenes de ventas/consumo tienen ventas
-            # Los almacenes de bodega, producción, etc. NO tienen ventas
-            ventas_dict = {}
-            
-            if es_almacen_ventas:
-                ventas_query = f"""
-SELECT Producto_Codigo, SUM(Cantidad) as Total_Ventas FROM (
-    -- Ventas de productos KIT
-    SELECT 
-        Producto_Kit.Pk_Producto as Producto_Codigo,
-        SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as Cantidad
-    FROM venta
-    INNER JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
-    INNER JOIN producto ON producto.Pr_Cve_Producto = Producto_kit.Pk_Producto
-    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
-    WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
-        AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-        AND producto_kit.Pk_Producto IS NOT NULL
-        {filtro_categorias}
-        {filtro_departamentos}
-    GROUP BY Producto_Kit.Pk_Producto
-    
-    UNION ALL
-    
-    -- Ventas DIRECTAS
-    SELECT 
-        venta.Pr_Cve_Producto as Producto_Codigo,
-        SUM(venta.Vn_Cantidad_Control_1) as Cantidad
-    FROM venta
-    INNER JOIN producto ON producto.Pr_Cve_Producto = venta.Pr_Cve_Producto
-    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
-    WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
-        AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-        {filtro_categorias}
-        {filtro_departamentos}
-    GROUP BY venta.Pr_Cve_Producto
-) AS VentasCombinadas
-GROUP BY Producto_Codigo
+            # 3. Obtener ventas - Usar Producto_Kit para calcular consumo de INSUMOS
+            # Cuando se vende un producto, se consume el insumo según la receta (Producto_Kit)
+            ventas_query = f"""
+SELECT 
+    PK.Pk_Producto as Producto_Codigo,
+    SUM(V.Vn_Cantidad_1 * PK.Pk_Cantidad) as Total_Ventas
+FROM Venta V
+INNER JOIN Producto_Kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
+WHERE S.Sc_Cve_Sucursal = '{sucursal_codigo}'
+    AND V.Es_Cve_Estado <> 'CA'
+    AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+GROUP BY PK.Pk_Producto
 """
-                logging.info("Obteniendo ventas (almacén de ventas/consumo)...")
-                ventas_result = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], ventas_query
-                )
-                ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
-                logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
-            else:
-                logging.info(f"Almacén '{almacen_nombre}' NO es de ventas/consumo - ventas = 0 para todos los productos")
+            logging.info("Obteniendo ventas desde Producto_Kit (recetas)...")
+            ventas_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], ventas_query
+            )
+            ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
+            logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
             
             # 4. Obtener movimientos por producto FILTRADO POR ALMACÉN
-            # Los valores de Mv_Cantidad_Control_1 ya incluyen el signo (positivo para entradas, negativo para salidas)
-            # Solo sumamos directamente sin aplicar CASE por Tm_Tipo
             movimientos_query = f"""
 SELECT 
     E.Pr_Cve_Producto as Producto_Codigo,
@@ -1853,9 +1836,6 @@ FROM Movimiento E
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = E.Sc_Cve_Sucursal
 INNER JOIN Almacen A ON A.Al_Cve_Almacen = E.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = S.Sc_Cve_Sucursal
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
-INNER JOIN Producto P ON P.Pr_Cve_Producto = E.Pr_Cve_Producto
-INNER JOIN Familia FM ON FM.Fm_Cve_Familia = P.Fm_Cve_Familia
-INNER JOIN SubFamilia SB ON SB.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
 WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
     AND E.Al_Cve_Almacen = '{almacen_codigo}'
     AND E.Es_Cve_Estado <> 'CA'
@@ -1871,9 +1851,37 @@ GROUP BY E.Pr_Cve_Producto
             movimientos_dict = {m['Producto_Codigo']: float(m['Total_Movimientos'] or 0) for m in movimientos_result}
             logging.info(f"Movimientos obtenidos para {len(movimientos_dict)} productos")
             
-            # 5. Combinar resultados - Solo incluir productos con actividad
+            # 5. Detectar errores de captura de inventario
+            # Si un producto está en Producto_Presentacion como Pp_Producto (es una presentación)
+            # Y también fue capturado en inventario físico, es un ERROR
+            errores_captura_query = f"""
+SELECT DISTINCT 
+    PP.Pp_Producto as Codigo_Presentacion,
+    P_PRES.Pr_Descripcion as Descripcion_Presentacion,
+    PP.Pr_Cve_Producto as Codigo_Insumo,
+    P_INS.Pr_Descripcion as Descripcion_Insumo
+FROM Producto_Presentacion PP
+INNER JOIN Producto P_PRES ON P_PRES.Pr_Cve_Producto = PP.Pp_Producto
+INNER JOIN Producto P_INS ON P_INS.Pr_Cve_Producto = PP.Pr_Cve_Producto
+INNER JOIN Fisico F ON F.Pr_Cve_Producto = PP.Pp_Producto
+    AND F.Al_Cve_Almacen = '{almacen_codigo}'
+    AND F.Fi_Folio IN ('{folio_inicial}', '{folio_final}')
+WHERE P_INS.Dp_Cve_Departamento = '0007'
+"""
+            errores_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], errores_captura_query
+            )
+            if errores_result:
+                logging.warning(f"ERRORES DE CAPTURA DETECTADOS: {len(errores_result)} presentaciones capturadas incorrectamente")
+                for err in errores_result:
+                    logging.warning(f"  - Presentación {err['Codigo_Presentacion']} ({err['Descripcion_Presentacion']}) capturada en inventario, pero debería capturarse como INSUMO {err['Codigo_Insumo']} ({err['Descripcion_Insumo']})")
+            
+            # 6. Combinar resultados
             logging.info("Combinando resultados...")
             results = []
+            errores_list = []
+            
             for prod in productos:
                 codigo = prod['Codigo']
                 ventas_total = ventas_dict.get(codigo, 0)
@@ -1881,6 +1889,7 @@ GROUP BY E.Pr_Cve_Producto
                 inv_inicial = float(prod.get('Inv_Inicial_Cantidad', 0) or 0)
                 inv_final = float(prod.get('Inv_Final_Cantidad', 0) or 0)
                 costo = float(prod.get('Costo_Unitario', 0) or 0)
+                tipo_producto = prod.get('Tipo_Producto', 'COMPRA')
                 
                 # Solo incluir productos con alguna actividad
                 if inv_inicial == 0 and inv_final == 0 and ventas_total == 0 and movimientos == 0:
@@ -1894,13 +1903,13 @@ GROUP BY E.Pr_Cve_Producto
                 diferencia_costo = diferencia_cantidad * costo
                 diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
                 
-                # Nuevas columnas solicitadas
                 # Valor Real = (Inv_Inicial + Movimientos - Inv_Final) * Costo
                 valor_real = (inv_inicial + movimientos - inv_final) * costo
                 # Teórico = Ventas * Costo
                 teorico_ventas = ventas_total * costo
                 
                 results.append({
+                    'Tipo': tipo_producto,
                     'Categoria': prod.get('Categoria'),
                     'Familia': prod.get('Familia'),
                     'SubFamilia': prod.get('SubFamilia'),
@@ -1925,8 +1934,15 @@ GROUP BY E.Pr_Cve_Producto
                     'Teorico': round(teorico_ventas, 2)
                 })
             
-            logging.info(f"Análisis completado: {len(results)} productos procesados")
-            return {"data": results, "count": len(results)}
+            # Agregar errores de captura al resultado si existen
+            for err in errores_result:
+                errores_list.append({
+                    'tipo': 'ERROR_CAPTURA',
+                    'mensaje': f"Presentación '{err['Descripcion_Presentacion']}' ({err['Codigo_Presentacion']}) capturada en inventario. Debería capturarse como INSUMO '{err['Descripcion_Insumo']}' ({err['Codigo_Insumo']})"
+                })
+            
+            logging.info(f"Análisis MPRO completado: {len(results)} productos procesados, {len(errores_list)} errores de captura")
+            return {"data": results, "count": len(results), "errores_captura": errores_list}
             
         elif server['system_type'] == 'SoftRestaurant':
             # Análisis de inventario para SoftRestaurant
@@ -2658,7 +2674,7 @@ SELECT * FROM (
         'KIT' as Tipo_Venta,
         PV.Pr_Descripcion as Producto_Vendido,
         P.Pr_Descripcion as Producto,
-        V.Vn_Precio_Unitario as Precio_Unitario,
+        V.Vn_Precio_Lista as Precio_Unitario,
         S.Sc_Descripcion as Sucursal
     FROM venta V
     INNER JOIN producto_kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto
@@ -2680,7 +2696,7 @@ SELECT * FROM (
         'DIRECTA' as Tipo_Venta,
         P.Pr_Descripcion as Producto_Vendido,
         P.Pr_Descripcion as Producto,
-        V.Vn_Precio_Unitario as Precio_Unitario,
+        V.Vn_Precio_Lista as Precio_Unitario,
         S.Sc_Descripcion as Sucursal
     FROM venta V
     INNER JOIN producto P ON P.Pr_Cve_Producto = V.Pr_Cve_Producto

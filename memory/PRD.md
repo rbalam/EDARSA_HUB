@@ -1,7 +1,7 @@
 # Sistema de Análisis de Inventarios - PRD
 
-## CHECKPOINT ESTABLE - 23 Marzo 2026
-> **Todo el reporte de Análisis de Inventarios está funcionando correctamente.**
+## CHECKPOINT ESTABLE - 24 Marzo 2026
+> **Reportes de Análisis de Inventarios funcionando para SoftRestaurant y MPRO.**
 > Este es el punto de referencia para rollback si algo falla en futuras actualizaciones.
 
 ---
@@ -26,9 +26,9 @@ Aplicación web para analizar inventarios de múltiples sucursales. Los datos se
 
 ---
 
-## FUNCIONALIDADES VERIFICADAS (23 Mar 2026)
+## FUNCIONALIDADES VERIFICADAS
 
-### 1. Reporte Análisis de Inventarios - SoftRestaurant
+### 1. Reporte Análisis de Inventarios - SoftRestaurant ✅ (23 Mar 2026)
 
 #### Almacén BODEGA (Presentaciones) - FUNCIONANDO
 - Catálogo de productos (INSUMOS + PRESENTACIONES inventariables)
@@ -50,15 +50,44 @@ Aplicación web para analizar inventarios de múltiples sucursales. Los datos se
 - B130004 (RON CAPITAN MORGAN): Ventas = 1,035.00 ✓
 - B130009 (RON BACARDI BLANCO): Ventas = 18,802.50 ✓
 
-### 2. Modal Detalle de Movimientos - FUNCIONANDO
+### 2. Reporte Análisis de Inventarios - MPRO ✅ (24 Mar 2026)
+
+#### Lógica Implementada:
+El reporte muestra productos según la siguiente lógica:
+1. **INSUMOS (Dp_Cve_Departamento = '0007')** que tienen **PRESENTACIONES** asociadas en `Producto_Presentacion`
+2. **COMPRAS** que NO están registradas como presentación de ningún insumo
+
+#### Tablas MPRO utilizadas:
+- `Producto` - Catálogo de productos con departamento
+- `Producto_Presentacion` - Relaciona INSUMOS con sus presentaciones de compra
+  - `Pr_Cve_Producto` = Código del INSUMO
+  - `Pp_Producto` = Código de la PRESENTACIÓN (unidad de compra)
+  - `Pp_Cantidad` = Rendimiento
+- `Producto_Kit` - Recetas (relaciona producto vendido con componentes)
+  - `Pr_Cve_Producto` = Producto vendido
+  - `Pk_Producto` = Insumo usado en la receta
+  - `Pk_Cantidad` = Cantidad del insumo por unidad vendida
+
+#### Cálculo de Ventas:
+Las ventas se calculan usando `Producto_Kit`. Cuando se vende un producto, se consume el insumo según la receta.
+
+#### Detección de Errores de Captura:
+El sistema detecta cuando una PRESENTACIÓN fue capturada en inventario físico, pero debería haberse capturado el INSUMO. Esto se muestra como alerta en el frontend.
+
+#### Ejemplo - Ron Bacardí:
+- **INSUMO `0000000185`** (Ron Bacardí Blanco ml*) → **SÍ APARECE** en el reporte
+- **PRESENTACIONES `0000007586` y `0000009049`** (botellas 750ml y 700ml) → **NO APARECEN** (son presentaciones del insumo)
+- Las ventas se calculan sumando: (cantidad_vendida × cantidad_receta) para cada producto que usa el insumo
+
+### 3. Modal Detalle de Movimientos - FUNCIONANDO
 - Muestra detalle por producto al hacer doble clic
 - Incluye: folio, fecha, cantidad, tipo, descripción
 
-### 3. Modal Detalle de Ventas - FUNCIONANDO  
+### 4. Modal Detalle de Ventas - FUNCIONANDO  
 - Muestra detalle de ventas por producto
 - Incluye: folio, fecha, cantidad, producto vendido
 
-### 4. Filtros - FUNCIONANDO
+### 5. Filtros - FUNCIONANDO
 - Por Categoría (Clasificación)
 - Por Familia (Grupo)
 - Por SubFamilia (SubGrupo)
@@ -151,17 +180,17 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
 ## Pendientes / Backlog
 
 ### P1 - Próximos
-1. **Reporte "Insumos Pendientes por Descargar"** - Nuevo reporte solicitado
+1. **Verificar Dashboard MPRO** - Debería funcionar ahora con la nueva lógica
+2. **Reporte "Insumos Pendientes por Descargar"** - Nuevo reporte solicitado
    - Insumos consumidos según ventas vs existencias
    - Solo para almacenes de consumo
    - Posible envío automático cuando informan que "traspasos están listos"
 
 ### P2 - Mejoras
-2. Dashboard MPRO vacío (timeout en consultas largas)
-3. Exportación a Excel/PDF (verificar funcionamiento)
+3. Exportación a PDF (verificar funcionamiento)
+4. Envío de reportes por correo electrónico
 
 ### P3 - Futuros
-4. Envío de reportes por correo electrónico
 5. Filtrar productos no inventariables en dashboards
 6. Integración con WhatsApp para notificaciones
 
@@ -169,7 +198,15 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
 
 ## Historial de Cambios
 
-### 23 Mar 2026 - CHECKPOINT ESTABLE
+### 24 Mar 2026 - REPORTE MPRO IMPLEMENTADO
+- ✅ Implementada lógica de INSUMOS vs PRESENTACIONES para MPRO
+- ✅ El reporte muestra INSUMOS (depto 0007) que tienen presentaciones
+- ✅ El reporte muestra COMPRAS que no son presentación de ningún insumo
+- ✅ Ventas calculadas usando `Producto_Kit` (recetas)
+- ✅ Detección de errores de captura (presentaciones capturadas incorrectamente)
+- ✅ Frontend actualizado para mostrar errores de captura
+
+### 23 Mar 2026 - CHECKPOINT ESTABLE SOFTRESTAURANT
 - ✅ Corregido doble prefijo en códigos (BB130009 → B130009)
 - ✅ Corregido cálculo de ventas para almacenes de consumo
 - ✅ Corregido filtro de fechas de ventas (incluye todos los turnos del período)

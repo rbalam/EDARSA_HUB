@@ -1,0 +1,100 @@
+{
+  "summary": "Verified MPRO inventory analysis report logic. All 15 backend tests passed. The report correctly shows INSUMOS (dept 0007) with presentations and COMPRAS without presentations. Presentations of INSUMOS are correctly excluded. Sales are calculated using Producto_Kit (recipes). Fixed a bug in sales-details endpoint (wrong column name Vn_Precio_Unitario -> Vn_Precio_Lista).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/reports/sales-details",
+        "issue": "FIXED: Invalid column name 'Vn_Precio_Unitario' - changed to 'Vn_Precio_Lista'",
+        "priority": "FIXED"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_mpro_inventory_analysis.py",
+    "/app/test_reports/pytest/pytest_mpro_inventory.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_mpro_inventory_analysis.py",
+    "/app/backend/server.py (fixed Vn_Precio_Unitario -> Vn_Precio_Lista in sales-details endpoint)"
+  ],
+  "success_rate": {
+    "backend": "100% (15/15 tests passed)",
+    "frontend": "Not tested (backend only testing requested)"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "admin@inventario.com",
+      "password": "admin123"
+    },
+    "mpro_server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "test_sucursal": "QUERETARO",
+    "test_almacen": "ALMACEN GENERAL",
+    "test_folio_inicial": "QR-0000900",
+    "test_folio_final": "QR-0000939"
+  },
+  "seed_data_creation": "No new seed data created - used existing ManagmentPro server data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "MPRO inventory analysis is working correctly. Key verifications: 1) INSUMO 0000000185 (Ron Bacardí) appears in report with 22,425 units in sales. 2) Presentations 0000007586 and 0000009049 do NOT appear in report (correctly excluded). 3) Report has both INSUMO and COMPRA type products. 4) Sales are calculated using Producto_Kit (recipes). 5) SoftRestaurant reports still work (no regression).",
+  "features_tested": {
+    "mpro_inventory_analysis": {
+      "status": "PASS",
+      "details": "Report generates 762 products for QUERETARO - ALMACEN GENERAL with folios QR-0000900 to QR-0000939",
+      "verification": "Backend test test_report_generates_successfully passed"
+    },
+    "insumo_with_presentations_appears": {
+      "status": "PASS",
+      "details": "INSUMO 0000000185 (Ron Bacardí Blanco) appears in report as expected",
+      "verification": "Backend test test_insumo_ron_bacardi_appears_in_report passed"
+    },
+    "insumo_has_sales_from_producto_kit": {
+      "status": "PASS",
+      "details": "Ron Bacardí has 22,425 units in sales calculated from Producto_Kit (recipes)",
+      "verification": "Backend test test_ron_bacardi_has_sales passed"
+    },
+    "presentations_excluded_from_report": {
+      "status": "PASS",
+      "details": "Presentations 0000007586 and 0000009049 do NOT appear in report",
+      "verification": "Backend tests test_presentation_7586_not_in_report and test_presentation_9049_not_in_report passed"
+    },
+    "report_has_insumos_and_compras": {
+      "status": "PASS",
+      "details": "Report contains both INSUMO and COMPRA type products",
+      "verification": "Backend test test_report_has_insumos_and_compras passed"
+    },
+    "softrestaurant_no_regression": {
+      "status": "PASS",
+      "details": "SoftRestaurant inventory analysis still works correctly",
+      "verification": "Backend test test_softrestaurant_report_generates passed"
+    },
+    "sales_details_endpoint": {
+      "status": "PASS (after fix)",
+      "details": "Sales details for Ron Bacardí returns 467 records showing KIT sales",
+      "verification": "Manual curl test after fixing Vn_Precio_Unitario -> Vn_Precio_Lista"
+    }
+  },
+  "api_tests": {
+    "POST /api/auth/login": "PASS - Returns 200 with token",
+    "GET /api/servers/{id}": "PASS - Returns ManagmentPro server details",
+    "GET /api/servers/{id}/sucursales": "PASS - Returns 7 sucursales including QUERETARO",
+    "GET /api/servers/{id}/almacenes": "PASS - Returns almacenes including ALMACEN GENERAL",
+    "GET /api/servers/{id}/inventarios": "PASS - Returns inventarios including QR-0000900 to QR-0000939",
+    "POST /api/reports/inventory-analysis": "PASS - Returns 762 products with correct INSUMO/COMPRA logic",
+    "POST /api/reports/sales-details": "PASS (after fix) - Returns 467 sales records for Ron Bacardí"
+  },
+  "bug_fix_applied": {
+    "file": "/app/backend/server.py",
+    "line_range": "2667-2710",
+    "issue": "Invalid column name 'Vn_Precio_Unitario' in MPRO sales-details query",
+    "fix": "Changed Vn_Precio_Unitario to Vn_Precio_Lista (correct column name in Venta table)",
+    "verification": "Sales details endpoint now returns data correctly"
+  }
+}
