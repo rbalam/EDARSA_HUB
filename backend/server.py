@@ -2599,9 +2599,11 @@ ORDER BY Fecha DESC
             movements = []
             for row in result:
                 tipo_texto = 'Entrada' if row.get('Tipo_Movimiento') == 'E' else 'Salida'
+                # Formatear fecha sin la "T" (2026-03-21T00:00:00 -> 2026-03-21 00:00:00)
+                fecha_str = str(row.get('Fecha'))[:19].replace('T', ' ') if row.get('Fecha') else ''
                 movements.append({
                     'folio': row.get('Folio'),
-                    'fecha': str(row.get('Fecha'))[:19] if row.get('Fecha') else '',
+                    'fecha': fecha_str,
                     'cantidad': float(row.get('Cantidad') or 0),
                     'tipo_codigo': row.get('Tipo_Codigo'),
                     'tipo_descripcion': row.get('Tipo_Descripcion'),
