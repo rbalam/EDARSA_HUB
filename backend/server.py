@@ -1805,21 +1805,41 @@ ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
             )
             logging.info(f"Productos obtenidos: {len(productos)}")
             
-            # 3. Obtener ventas - Usar Producto_Kit para calcular consumo de INSUMOS
-            # Cuando se vende un producto, se consume el insumo según la receta (Producto_Kit)
+            # 3. Obtener ventas - UNION ALL de ventas KIT + ventas DIRECTAS
+            # Consulta proporcionada por el usuario para MPRO
             ventas_query = f"""
-SELECT 
-    PK.Pk_Producto as Producto_Codigo,
-    SUM(V.Vn_Cantidad_1 * PK.Pk_Cantidad) as Total_Ventas
-FROM Venta V
-INNER JOIN Producto_Kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
-WHERE S.Sc_Cve_Sucursal = '{sucursal_codigo}'
-    AND V.Es_Cve_Estado <> 'CA'
-    AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-GROUP BY PK.Pk_Producto
+SELECT Producto_Codigo, SUM(cantidad) as Total_Ventas FROM (
+    -- Ventas de productos KIT (usando recetas de Producto_Kit)
+    SELECT 
+        Producto_Kit.Pk_Producto as Producto_Codigo,
+        SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as cantidad
+    FROM venta 
+    LEFT JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
+    LEFT JOIN producto ON producto.Pr_Cve_Producto = Producto_kit.Pk_Producto
+    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
+    WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
+        AND venta.Es_Cve_Estado <> 'CA'
+        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+        AND producto_kit.Pk_Producto IS NOT NULL
+    GROUP BY Producto_Kit.Pk_Producto
+
+    UNION ALL
+
+    -- Ventas DIRECTAS (productos vendidos directamente sin receta)
+    SELECT 
+        venta.Pr_Cve_Producto as Producto_Codigo,
+        SUM(venta.Vn_Cantidad_Control_1) as cantidad
+    FROM venta 
+    INNER JOIN producto ON producto.Pr_Cve_Producto = venta.Pr_Cve_Producto 
+    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
+    WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
+        AND venta.Es_Cve_Estado <> 'CA'
+        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+    GROUP BY venta.Pr_Cve_Producto
+) AS VentasCombinadas
+GROUP BY Producto_Codigo
 """
-            logging.info("Obteniendo ventas desde Producto_Kit (recetas)...")
+            logging.info("Obteniendo ventas (KIT + DIRECTAS)...")
             ventas_result = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], ventas_query
@@ -1828,6 +1848,10 @@ GROUP BY PK.Pk_Producto
             logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
             
             # 4. Obtener movimientos por producto FILTRADO POR ALMACÉN
+            # Consulta proporcionada por el usuario para MPRO
+            # Lógica especial de fecha para tipos '508' y '108':
+            # - Si Mv_Tabla = 'CONVERSION_PRODUCTO' → usa Mv_Fecha
+            # - Si no → busca la fecha en la tabla Compra a través de Conversion_Producto
             movimientos_query = f"""
 SELECT 
     E.Pr_Cve_Producto as Producto_Codigo,
@@ -1836,14 +1860,28 @@ FROM Movimiento E
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = E.Sc_Cve_Sucursal
 INNER JOIN Almacen A ON A.Al_Cve_Almacen = E.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = S.Sc_Cve_Sucursal
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
+INNER JOIN Producto P ON P.Pr_Cve_Producto = E.Pr_Cve_Producto
 WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
     AND E.Al_Cve_Almacen = '{almacen_codigo}'
     AND E.Es_Cve_Estado <> 'CA'
     {filtro_tipos_mov}
-    AND E.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+    AND (
+        CASE   
+            WHEN TM.Tm_Cve_Tipo_Movimiento IN('508','108') 
+            THEN 
+                CASE WHEN E.Mv_Tabla = 'CONVERSION_PRODUCTO' THEN E.Mv_Fecha 
+                ELSE (
+                    SELECT TOP 1 C.Co_Fecha FROM Conversion_Producto CN
+                    INNER JOIN COMPRA C ON C.Co_Folio = CN.Cp_Documento AND C.Pr_Cve_Producto = CN.Pr_Cve_Producto
+                    WHERE CN.Cp_Folio = E.Mv_Documento
+                )
+                END
+            ELSE E.Mv_Fecha
+        END
+    ) BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
 GROUP BY E.Pr_Cve_Producto
 """
-            logging.info("Obteniendo movimientos...")
+            logging.info("Obteniendo movimientos (con lógica especial de fechas para tipos 508/108)...")
             movimientos_result = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], movimientos_query
