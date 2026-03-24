@@ -1948,8 +1948,10 @@ WHERE P_INS.Dp_Cve_Departamento = '0007'
                 # Calcular inventario teórico: Inicial + Movimientos - Ventas
                 inv_teorico = inv_inicial + movimientos - ventas_total
                 
-                # Calcular diferencias: Teórico - Final
-                diferencia_cantidad = inv_teorico - inv_final
+                # Calcular diferencias: Final - Teórico
+                # Si Final < Teórico → negativo (faltante)
+                # Si Final > Teórico → positivo (sobrante)
+                diferencia_cantidad = inv_final - inv_teorico
                 diferencia_costo = diferencia_cantidad * costo
                 diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
                 
