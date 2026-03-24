@@ -1709,7 +1709,17 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             # - Si el INSUMO tiene presentaciones (en Producto_Presentacion) → mostrar el INSUMO
             # - Si NO tiene presentaciones → mostrar la clave de COMPRA
             # - Las ventas se calculan usando Producto_Kit (recetas)
+            # 
+            # FECHAS MPRO:
+            # - Movimientos y Ventas: desde (fecha_inventario_inicial + 1 día) hasta fecha_inventario_final
+            # - Ejemplo: Si inventario inicial es 28-Feb-2026, movimientos/ventas desde 01-Mar-2026
             # ===============================================================
+            
+            # Calcular fecha de inicio para movimientos/ventas (fecha_ini + 1 día)
+            from datetime import datetime, timedelta
+            fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
+            fecha_ini_mov = (fecha_ini_dt + timedelta(days=1)).strftime('%Y-%m-%d')
+            logging.info(f"MPRO - Fecha movimientos/ventas: {fecha_ini_mov} a {fecha_fin}")
             
             # 1. Obtener código del almacén
             almacen_query = f"""
@@ -1807,6 +1817,7 @@ ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
             
             # 3. Obtener ventas - UNION ALL de ventas KIT + ventas DIRECTAS
             # Consulta proporcionada por el usuario para MPRO
+            # MPRO: Ventas desde (fecha_inventario_inicial + 1 día) hasta fecha_inventario_final
             ventas_query = f"""
 SELECT Producto_Codigo, SUM(cantidad) as Total_Ventas FROM (
     -- Ventas de productos KIT (usando recetas de Producto_Kit)
@@ -1819,7 +1830,7 @@ SELECT Producto_Codigo, SUM(cantidad) as Total_Ventas FROM (
     INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
     WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
         AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+        AND venta.Vn_Fecha BETWEEN '{fecha_ini_mov}' AND '{fecha_fin} 23:59:59'
         AND producto_kit.Pk_Producto IS NOT NULL
     GROUP BY Producto_Kit.Pk_Producto
 
@@ -1834,7 +1845,7 @@ SELECT Producto_Codigo, SUM(cantidad) as Total_Ventas FROM (
     INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
     WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
         AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+        AND venta.Vn_Fecha BETWEEN '{fecha_ini_mov}' AND '{fecha_fin} 23:59:59'
     GROUP BY venta.Pr_Cve_Producto
 ) AS VentasCombinadas
 GROUP BY Producto_Codigo
@@ -1852,6 +1863,7 @@ GROUP BY Producto_Codigo
             # Lógica especial de fecha para tipos '508' y '108':
             # - Si Mv_Tabla = 'CONVERSION_PRODUCTO' → usa Mv_Fecha
             # - Si no → busca la fecha en la tabla Compra a través de Conversion_Producto
+            # MPRO: Movimientos desde (fecha_inventario_inicial + 1 día) hasta fecha_inventario_final
             movimientos_query = f"""
 SELECT 
     E.Pr_Cve_Producto as Producto_Codigo,
@@ -1878,7 +1890,7 @@ WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
                 END
             ELSE E.Mv_Fecha
         END
-    ) BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+    ) BETWEEN '{fecha_ini_mov}' AND '{fecha_fin} 23:59:59'
 GROUP BY E.Pr_Cve_Producto
 """
             logging.info("Obteniendo movimientos (con lógica especial de fechas para tipos 508/108)...")
@@ -2516,6 +2528,11 @@ async def get_movement_details(params: Dict, current_user: Dict = Depends(get_cu
     
     try:
         if server['system_type'] == 'MPRO':
+            # MPRO: Movimientos desde (fecha_inventario_inicial + 1 día) hasta fecha_inventario_final
+            from datetime import datetime, timedelta
+            fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
+            fecha_ini_mov = (fecha_ini_dt + timedelta(days=1)).strftime('%Y-%m-%d')
+            
             # Obtener código del almacén
             almacen_query = f"""
 SELECT TOP 1 A.Al_Cve_Almacen as codigo
@@ -2587,7 +2604,7 @@ WHERE M.Pr_Cve_Producto = '{producto_codigo}'
                 END
             ELSE M.Mv_Fecha
         END
-    ) BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+    ) BETWEEN '{fecha_ini_mov}' AND '{fecha_fin} 23:59:59'
 ORDER BY Fecha DESC
 """
             result = execute_sql_query(
