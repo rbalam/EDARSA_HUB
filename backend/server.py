@@ -1977,10 +1977,17 @@ WHERE P_INS.Dp_Cve_Departamento = '0007'
                 diferencia_costo = diferencia_cantidad * costo
                 diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
                 
-                # Valor Real = (Inv_Inicial + Movimientos - Inv_Final) * Costo
+                # Valor Real y Teórico para comparación
+                # Valor Real = Lo que realmente se consumió = (Inv_Inicial + Movimientos - Inv_Final) × Costo
+                # Teórico = Lo que debería haberse consumido según ventas = Ventas × Costo
+                # NOTA: Si la diferencia de cantidad es 0 (o muy pequeña), el valor real debe ser igual al teórico
                 valor_real = (inv_inicial + movimientos - inv_final) * costo
-                # Teórico = Ventas * Costo
                 teorico_ventas = ventas_total * costo
+                
+                # Si la diferencia de cantidad es prácticamente 0, igualar valor_real al teórico
+                # para evitar discrepancias por redondeo
+                if abs(diferencia_cantidad) < 0.01:
+                    valor_real = teorico_ventas
                 
                 results.append({
                     'Tipo': tipo_producto,
