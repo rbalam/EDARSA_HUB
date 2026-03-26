@@ -1743,7 +1743,12 @@ WHERE A.Al_Descripcion LIKE '%{almacen}%'
             almacen_nombre = almacen_result[0]['nombre']
             sucursal_codigo = almacen_result[0]['sucursal_codigo']
             
+            # MPRO: Detectar si es almacén tipo BODEGA (no tiene ventas)
+            almacen_nombre_upper = almacen_nombre.upper() if almacen_nombre else ''
+            es_almacen_bodega = 'BODEGA' in almacen_nombre_upper
+            
             logging.info(f"Almacén encontrado: {almacen_codigo} - {almacen_nombre} (Sucursal: {sucursal_codigo})")
+            logging.info(f"MPRO - Es almacén BODEGA (sin ventas): {es_almacen_bodega}")
             
             # 2. Obtener productos del departamento INSUMOS (0007)
             # Solo mostramos productos que:
@@ -1829,7 +1834,11 @@ ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
             # 3. Obtener ventas - UNION ALL de ventas KIT + ventas DIRECTAS
             # Consulta proporcionada por el usuario para MPRO
             # MPRO: Ventas desde (fecha_inventario_inicial + 1 día) hasta fecha_inventario_final
-            ventas_query = f"""
+            # NOTA: Los almacenes tipo BODEGA no tienen ventas
+            ventas_dict = {}
+            
+            if not es_almacen_bodega:
+                ventas_query = f"""
 SELECT Producto_Codigo, SUM(cantidad) as Total_Ventas FROM (
     -- Ventas de productos KIT (usando recetas de Producto_Kit)
     SELECT 
@@ -1861,13 +1870,15 @@ SELECT Producto_Codigo, SUM(cantidad) as Total_Ventas FROM (
 ) AS VentasCombinadas
 GROUP BY Producto_Codigo
 """
-            logging.info("Obteniendo ventas (KIT + DIRECTAS)...")
-            ventas_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], ventas_query
-            )
-            ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
-            logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
+                logging.info("Obteniendo ventas (KIT + DIRECTAS)...")
+                ventas_result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], ventas_query
+                )
+                ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
+                logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
+            else:
+                logging.info(f"MPRO - Almacén BODEGA '{almacen_nombre}' - Ventas = 0 para todos los productos")
             
             # 4. Obtener movimientos por producto FILTRADO POR ALMACÉN
             # Consulta proporcionada por el usuario para MPRO
