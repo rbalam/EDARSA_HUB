@@ -1211,17 +1211,18 @@ const Reportes = () => {
             <p className="text-xs text-zinc-500 mb-2 italic">
               💡 Doble clic en las columnas Movimientos o Ventas para ver el detalle
             </p>
-            <div className="rounded-md border border-zinc-200 overflow-auto max-h-[70vh]">
-              <Table>
-                <TableHeader className="sticky top-0 z-10">
-                  <TableRow className="bg-zinc-100 border-b-2 border-zinc-300">
-                    {Object.keys(reportData[0]).map((key) => (
-                      <TableHead key={key} className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-100">
-                        {key.replace(/_/g, ' ')}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
+            <div className="rounded-md border border-zinc-200">
+              <div className="max-h-[600px] overflow-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 z-10 bg-zinc-100">
+                    <TableRow className="border-b-2 border-zinc-300">
+                      {Object.keys(reportData[0]).map((key) => (
+                        <TableHead key={key} className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-100 py-3">
+                          {key.replace(/_/g, ' ')}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {reportData.slice(0, 2000).map((row, idx) => (
                     <TableRow key={idx} className="hover:bg-zinc-50/50">
@@ -1282,6 +1283,7 @@ const Reportes = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
             {reportData.length > 2000 && (
               <p className="text-sm text-zinc-600 mt-4 text-center">
