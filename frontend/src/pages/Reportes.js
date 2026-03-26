@@ -1211,12 +1211,12 @@ const Reportes = () => {
             <p className="text-xs text-zinc-500 mb-2 italic">
               💡 Doble clic en las columnas Movimientos o Ventas para ver el detalle
             </p>
-            <div className="rounded-md border border-zinc-200 overflow-x-auto">
+            <div className="rounded-md border border-zinc-200 overflow-auto max-h-[70vh]">
               <Table>
-                <TableHeader>
-                  <TableRow className="bg-zinc-50">
+                <TableHeader className="sticky top-0 z-10">
+                  <TableRow className="bg-zinc-100 border-b-2 border-zinc-300">
                     {Object.keys(reportData[0]).map((key) => (
-                      <TableHead key={key} className="text-xs uppercase tracking-wider font-medium text-zinc-500 whitespace-nowrap">
+                      <TableHead key={key} className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-100">
                         {key.replace(/_/g, ' ')}
                       </TableHead>
                     ))}
