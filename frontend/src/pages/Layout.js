@@ -34,14 +34,14 @@ const Layout = () => {
     { name: 'Compras', href: '/compras', icon: ShoppingCart, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 4 },
     { name: 'Comercial', href: '/comercial', icon: TrendingUp, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 5 },
     { name: 'Tablero Ejecutivo', href: '/tablero-ejecutivo', icon: PieChart, roles: ['Supervisor', 'Administrador'], modulo: 6 },
-    { name: 'Catálogo SQL', href: '/catalogo-consultas', icon: Database, roles: ['Supervisor', 'Administrador'], modulo: 7 },
-    { name: 'Explorador BD', href: '/explorador-bd', icon: TableProperties, roles: ['Administrador'], modulo: 8 },
   ];
 
   // Configuración y sistema
   const sistema = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['Usuario', 'Supervisor', 'Administrador'] },
     { name: 'Servidores', href: '/servidores', icon: Server, roles: ['Administrador'] },
+    { name: 'Catálogo SQL', href: '/catalogo-consultas', icon: Database, roles: ['Supervisor', 'Administrador'] },
+    { name: 'Explorador BD', href: '/explorador-bd', icon: TableProperties, roles: ['Administrador'] },
     { name: 'Alertas', href: '/alertas', icon: Bell, roles: ['Supervisor', 'Administrador'] },
     { name: 'Usuarios', href: '/usuarios', icon: Users, roles: ['Administrador'] },
   ];

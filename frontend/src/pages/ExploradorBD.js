@@ -5,13 +5,186 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
 import { 
   Loader2, Database, Table, Columns, Link2, Eye, Play, 
-  ChevronRight, Search, Download, Server
+  ChevronRight, Search, Download, Server, X, FileText
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Componente de Buscador Global
+function BuscadorGlobal({ serverSeleccionado, onSelectTabla }) {
+  const [busqueda, setBusqueda] = useState('');
+  const [tipoBusqueda, setTipoBusqueda] = useState('todo');
+  const [resultados, setResultados] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [tablaFiltro, setTablaFiltro] = useState('');
+
+  const buscar = async () => {
+    if (!busqueda.trim() || busqueda.length < 2) {
+      toast.error('Ingresa al menos 2 caracteres');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const params = { q: busqueda, tipo: tipoBusqueda };
+      if (tablaFiltro) params.tabla = tablaFiltro;
+      
+      const response = await axios.get(
+        `${API_URL}/api/explorador/buscar/${serverSeleccionado}`,
+        { params, headers: { Authorization: `Bearer ${token}` } }
+      );
+      setResultados(response.data);
+      toast.success(`${response.data.total} resultados encontrados`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error en búsqueda');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') buscar();
+  };
+
+  return (
+    <Card className="border-2 border-blue-200 bg-blue-50/30">
+      <CardHeader className="py-3 bg-blue-100">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Search className="h-4 w-4" />
+          Buscador Global de Base de Datos
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-3 space-y-3">
+        <div className="flex gap-2">
+          <Input
+            placeholder="Buscar tablas, columnas, datos..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            onKeyPress={handleKeyPress}
+            className="flex-1"
+            data-testid="buscador-global-input"
+          />
+          <Select value={tipoBusqueda} onValueChange={setTipoBusqueda}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todo">Todo</SelectItem>
+              <SelectItem value="tablas">Tablas</SelectItem>
+              <SelectItem value="columnas">Columnas</SelectItem>
+              <SelectItem value="datos">Datos</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={buscar} disabled={loading || !busqueda.trim()}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+          </Button>
+        </div>
+
+        {tipoBusqueda === 'datos' && (
+          <Input
+            placeholder="Filtrar en tabla específica (opcional)..."
+            value={tablaFiltro}
+            onChange={(e) => setTablaFiltro(e.target.value)}
+            className="text-sm"
+          />
+        )}
+
+        {/* Resultados */}
+        {resultados && (
+          <div className="space-y-3 mt-3">
+            {/* Tablas encontradas */}
+            {resultados.tablas?.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-600 mb-1 flex items-center gap-1">
+                  <Database className="h-3 w-3" /> Tablas ({resultados.tablas.length})
+                </h4>
+                <div className="flex flex-wrap gap-1">
+                  {resultados.tablas.map((t, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded cursor-pointer hover:bg-green-200 transition-colors"
+                      onClick={() => onSelectTabla(t.tabla)}
+                    >
+                      {t.tabla}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Columnas encontradas */}
+            {resultados.columnas?.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-600 mb-1 flex items-center gap-1">
+                  <Columns className="h-3 w-3" /> Columnas ({resultados.columnas.length})
+                </h4>
+                <div className="max-h-[150px] overflow-y-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-zinc-100 sticky top-0">
+                      <tr>
+                        <th className="py-1 px-2 text-left">Tabla</th>
+                        <th className="py-1 px-2 text-left">Columna</th>
+                        <th className="py-1 px-2 text-left">Tipo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resultados.columnas.map((c, i) => (
+                        <tr key={i} className="border-b hover:bg-zinc-50 cursor-pointer" onClick={() => onSelectTabla(c.tabla)}>
+                          <td className="py-1 px-2 text-blue-600">{c.tabla}</td>
+                          <td className="py-1 px-2 font-medium">{c.columna}</td>
+                          <td className="py-1 px-2 text-zinc-500">{c.tipo_dato}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Datos encontrados */}
+            {resultados.datos?.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-600 mb-1 flex items-center gap-1">
+                  <FileText className="h-3 w-3" /> Datos ({resultados.datos.length})
+                </h4>
+                <div className="max-h-[200px] overflow-y-auto space-y-2">
+                  {resultados.datos.map((d, i) => (
+                    <div key={i} className="p-2 bg-white border rounded text-xs">
+                      <div className="font-semibold text-purple-600 mb-1 cursor-pointer" onClick={() => onSelectTabla(d.tabla)}>
+                        {d.tabla}
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
+                        {Object.entries(d.fila).slice(0, 8).map(([key, val], j) => (
+                          <div key={j} className="truncate">
+                            <span className="text-zinc-500">{key}: </span>
+                            <span className="font-medium">{val?.toString()?.substring(0, 30) || '-'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {resultados.total === 0 && (
+              <div className="text-center py-4 text-zinc-500">
+                <Search className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                <p>No se encontraron resultados para "{busqueda}"</p>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function ExploradorBD() {
   const [servers, setServers] = useState([]);
@@ -194,7 +367,17 @@ export default function ExploradorBD() {
       </Card>
 
       {serverSeleccionado && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <>
+          {/* Buscador Global */}
+          <BuscadorGlobal 
+            serverSeleccionado={serverSeleccionado} 
+            onSelectTabla={(tabla) => {
+              setFiltroTabla('');
+              seleccionarTabla(tabla);
+            }}
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Lista de tablas */}
           <Card className="border">
             <CardHeader className="py-2 bg-zinc-100">
@@ -410,6 +593,7 @@ export default function ExploradorBD() {
             </Card>
           </div>
         </div>
+        </>
       )}
     </div>
   );

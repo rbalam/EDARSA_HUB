@@ -6242,6 +6242,152 @@ async def ejecutar_query_libre(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/explorador/buscar/{server_id}")
+async def buscar_en_bd(
+    server_id: str,
+    q: str = Query(..., min_length=2, description="Término de búsqueda"),
+    tipo: str = Query(default="todo", description="Tipo: todo, tablas, columnas, datos"),
+    tabla: str = Query(default=None, description="Buscar datos solo en esta tabla"),
+    limite: int = Query(default=50, le=200),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Buscador global de la base de datos.
+    Busca en nombres de tablas, columnas y opcionalmente en datos.
+    """
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if not user_has_server_access(current_user, server_id):
+        raise HTTPException(status_code=403, detail="Sin acceso")
+    
+    resultados = {
+        "termino": q,
+        "tablas": [],
+        "columnas": [],
+        "datos": [],
+        "total": 0
+    }
+    
+    try:
+        # 1. Buscar en nombres de TABLAS
+        if tipo in ["todo", "tablas"]:
+            query_tablas = f"""
+SELECT TABLE_NAME as tabla, TABLE_TYPE as tipo
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_TYPE = 'BASE TABLE'
+  AND TABLE_NAME LIKE '%{q}%'
+ORDER BY TABLE_NAME
+"""
+            tablas = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_tablas
+            )
+            resultados["tablas"] = tablas or []
+        
+        # 2. Buscar en nombres de COLUMNAS
+        if tipo in ["todo", "columnas"]:
+            query_columnas = f"""
+SELECT 
+    TABLE_NAME as tabla,
+    COLUMN_NAME as columna,
+    DATA_TYPE as tipo_dato
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE COLUMN_NAME LIKE '%{q}%'
+ORDER BY TABLE_NAME, COLUMN_NAME
+"""
+            columnas = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_columnas
+            )
+            resultados["columnas"] = columnas or []
+        
+        # 3. Buscar en DATOS (opcional, más costoso)
+        if tipo in ["todo", "datos"] and tabla:
+            # Buscar en una tabla específica
+            # Obtener columnas de tipo texto de la tabla
+            query_cols_texto = f"""
+SELECT COLUMN_NAME
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = '{tabla}'
+  AND DATA_TYPE IN ('varchar', 'nvarchar', 'char', 'nchar', 'text', 'ntext')
+"""
+            cols_texto = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_cols_texto
+            )
+            
+            if cols_texto:
+                # Construir WHERE con OR para cada columna de texto
+                condiciones = " OR ".join([f"[{c['COLUMN_NAME']}] LIKE '%{q}%'" for c in cols_texto])
+                query_datos = f"""
+SELECT TOP {limite} *
+FROM [{tabla}]
+WHERE {condiciones}
+"""
+                datos = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_datos
+                )
+                resultados["datos"] = [{"tabla": tabla, "fila": d} for d in (datos or [])]
+        
+        elif tipo == "datos" and not tabla:
+            # Buscar en todas las tablas principales (limitado por rendimiento)
+            # Solo busca en las primeras 5 tablas que contengan columnas de texto
+            query_tablas_texto = f"""
+SELECT DISTINCT TOP 5 TABLE_NAME
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE DATA_TYPE IN ('varchar', 'nvarchar', 'char', 'nchar', 'text', 'ntext')
+  AND TABLE_NAME NOT LIKE 'sys%'
+"""
+            tablas_texto = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_tablas_texto
+            )
+            
+            datos_encontrados = []
+            for t in (tablas_texto or [])[:5]:
+                tabla_nombre = t['TABLE_NAME']
+                # Obtener columnas de texto
+                query_cols = f"""
+SELECT COLUMN_NAME
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = '{tabla_nombre}'
+  AND DATA_TYPE IN ('varchar', 'nvarchar', 'char', 'nchar', 'text', 'ntext')
+"""
+                cols = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_cols
+                )
+                
+                if cols:
+                    condiciones = " OR ".join([f"[{c['COLUMN_NAME']}] LIKE '%{q}%'" for c in cols[:5]])
+                    query_datos = f"SELECT TOP 10 * FROM [{tabla_nombre}] WHERE {condiciones}"
+                    try:
+                        datos = execute_sql_query(
+                            server['host'], server['port'], server['database'],
+                            server['username'], server['password'], query_datos
+                        )
+                        for d in (datos or []):
+                            datos_encontrados.append({"tabla": tabla_nombre, "fila": d})
+                    except:
+                        pass  # Ignorar errores en tablas específicas
+                
+                if len(datos_encontrados) >= limite:
+                    break
+            
+            resultados["datos"] = datos_encontrados[:limite]
+        
+        resultados["total"] = len(resultados["tablas"]) + len(resultados["columnas"]) + len(resultados["datos"])
+        
+        return resultados
+        
+    except Exception as e:
+        logging.error(f"Error en búsqueda BD: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============================================================================
 # CATÁLOGO DE CONSULTAS - Para que Rich use sin programador
 # ============================================================================
