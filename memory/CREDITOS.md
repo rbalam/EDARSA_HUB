@@ -3,7 +3,7 @@
 ## Resumen
 | Métrica | Valor |
 |---------|-------|
-| **Saldo Actual** | 121.49 |
+| **Saldo Actual** | ~119.49 |
 | **Última Actualización** | 2026-03-27 |
 
 ---
@@ -16,7 +16,8 @@
 | 2026-03-24 | Aclaración multi-sistema (MPRO + SoftRestaurant) | 5.18 | - |
 | 2026-03-27 | Fase 1 Compras: Implementación inicial | 40.46 | - |
 | 2026-03-27 | Fase 1.5 Compras: Multi-almacén, período, pedidos vigentes | 24.50 | - |
-| 2026-03-27 | **Bugfixes + Renombre Edarsa Hub + Sidebar modular** | **21.65** | **121.49** |
+| 2026-03-27 | Bugfixes + Renombre Edarsa Hub + Sidebar modular | 21.65 | 121.49 |
+| 2026-03-27 | **Crear Agente Edarsa Hub (perfil Ricardo)** | **~2** | **~119.49** |
 
 ---
 
