@@ -3727,26 +3727,158 @@ class ParametrosCompra(BaseModel):
 class CalculoPedidoRequest(BaseModel):
     server_id: str
     sucursal: str
-    almacen: str
-    fecha_calculo: str  # Fecha desde la cual calcular
-    dias_historial_ventas: int = 30  # Días para calcular promedio de ventas
+    almacenes: List[str]  # Puede ser uno, varios, o "TODOS"
+    fecha_inventario_fisico: str  # Fecha del inventario físico inicial
+    fecha_fin_periodo: str  # Fecha fin del período de análisis
     dias_inventario: int = 10  # Días de inventario a comprar
-    usar_inventario_fisico: bool = False  # True = usar físico, False = usar teórico
-    folio_inventario_fisico: Optional[str] = None  # Si usar_inventario_fisico = True
+    metodo_calculo: str = "consumo"  # "consumo" (promedio) o "stock" (min/max)
+    folio_inventario_fisico: Optional[str] = None
     categorias: Optional[List[str]] = None
     familias: Optional[List[str]] = None
+    folio_pedido_comparar: Optional[str] = None  # Para comparar con pedido existente
 
 # ============= MÓDULO DE COMPRAS - ENDPOINTS =============
+
+@api_router.get("/compras/inventarios-fisicos/{server_id}")
+async def obtener_inventarios_fisicos(server_id: str, sucursal: str, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Obtiene la lista de inventarios físicos disponibles para seleccionar"""
+    verify_token(credentials.credentials)
+    
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if server['system_type'] == 'MPRO':
+        # Obtener almacén código si se especifica
+        almacen_filtro = ""
+        if almacen and almacen != "TODOS":
+            almacen_filtro = f"AND A.Al_Descripcion LIKE '%{almacen}%'"
+        
+        query = f"""
+SELECT DISTINCT 
+    F.Fi_Folio as folio,
+    F.Fi_Fecha as fecha,
+    A.Al_Descripcion as almacen,
+    COUNT(DISTINCT F.Pr_Cve_Producto) as total_productos
+FROM Fisico F
+INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
+WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+    {almacen_filtro}
+GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion
+ORDER BY F.Fi_Fecha DESC
+"""
+        result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query
+        )
+        return [{"folio": r['folio'], "fecha": str(r['fecha']), "almacen": r['almacen'], "productos": r['total_productos']} for r in result]
+    
+    return []
+
+@api_router.get("/compras/pedidos-vigentes/{server_id}")
+async def obtener_pedidos_vigentes(server_id: str, sucursal: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Obtiene la lista de pedidos/órdenes de compra vigentes para comparar"""
+    verify_token(credentials.credentials)
+    
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if server['system_type'] == 'MPRO':
+        # Buscar pedidos y órdenes de compra de los últimos 60 días
+        query = f"""
+SELECT 'PEDIDO' as tipo, PD.Pd_Folio as folio, PD.Pd_Fecha as fecha, 
+       PR.Pv_Nombre as proveedor, PD.Es_Cve_Estado as estado,
+       COUNT(PDD.Pr_Cve_Producto) as total_productos,
+       SUM(PDD.Pd_Importe) as importe_total
+FROM Pedido PD
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = PD.Sc_Cve_Sucursal
+LEFT JOIN Proveedor PR ON PR.Pv_Cve_Proveedor = PD.Pv_Cve_Proveedor
+LEFT JOIN Pedido_Detalle PDD ON PDD.Pd_Folio = PD.Pd_Folio
+WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+    AND PD.Es_Cve_Estado NOT IN ('CA', 'BA')
+    AND PD.Pd_Fecha >= DATEADD(day, -60, GETDATE())
+GROUP BY PD.Pd_Folio, PD.Pd_Fecha, PR.Pv_Nombre, PD.Es_Cve_Estado
+
+UNION ALL
+
+SELECT 'ORDEN' as tipo, OC.Oc_Folio as folio, OC.Oc_Fecha as fecha,
+       PR.Pv_Nombre as proveedor, OC.Es_Cve_Estado as estado,
+       COUNT(OCD.Pr_Cve_Producto) as total_productos,
+       SUM(OCD.Oc_Importe) as importe_total
+FROM Orden_Compra OC
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = OC.Sc_Cve_Sucursal
+LEFT JOIN Proveedor PR ON PR.Pv_Cve_Proveedor = OC.Pv_Cve_Proveedor
+LEFT JOIN Orden_Compra_Detalle OCD ON OCD.Oc_Folio = OC.Oc_Folio
+WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+    AND OC.Es_Cve_Estado NOT IN ('CA', 'BA')
+    AND OC.Oc_Fecha >= DATEADD(day, -60, GETDATE())
+GROUP BY OC.Oc_Folio, OC.Oc_Fecha, PR.Pv_Nombre, OC.Es_Cve_Estado
+
+ORDER BY fecha DESC
+"""
+        result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query
+        )
+        return [{"tipo": r['tipo'], "folio": r['folio'], "fecha": str(r['fecha']), 
+                 "proveedor": r['proveedor'], "estado": r['estado'],
+                 "productos": r['total_productos'], "importe": float(r['importe_total'] or 0)} for r in result]
+    
+    return []
+
+@api_router.get("/compras/detalle-pedido/{server_id}/{folio}")
+async def obtener_detalle_pedido(server_id: str, folio: str, tipo: str = "PEDIDO", credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Obtiene el detalle de un pedido/orden de compra para comparar"""
+    verify_token(credentials.credentials)
+    
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if server['system_type'] == 'MPRO':
+        if tipo == "PEDIDO":
+            query = f"""
+SELECT 
+    PDD.Pr_Cve_Producto as codigo,
+    P.Pr_Descripcion as producto,
+    PDD.Pd_Cantidad as cantidad,
+    PDD.Pd_Costo as costo,
+    PDD.Pd_Importe as importe
+FROM Pedido_Detalle PDD
+INNER JOIN Producto P ON P.Pr_Cve_Producto = PDD.Pr_Cve_Producto
+WHERE PDD.Pd_Folio = '{folio}'
+"""
+        else:
+            query = f"""
+SELECT 
+    OCD.Pr_Cve_Producto as codigo,
+    P.Pr_Descripcion as producto,
+    OCD.Oc_Cantidad as cantidad,
+    OCD.Oc_Costo as costo,
+    OCD.Oc_Importe as importe
+FROM Orden_Compra_Detalle OCD
+INNER JOIN Producto P ON P.Pr_Cve_Producto = OCD.Pr_Cve_Producto
+WHERE OCD.Oc_Folio = '{folio}'
+"""
+        result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query
+        )
+        return {r['codigo']: {"cantidad": float(r['cantidad'] or 0), "costo": float(r['costo'] or 0)} for r in result}
 
 @api_router.post("/compras/calculo-pedido")
 async def calcular_pedido_sugerido(request: CalculoPedidoRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Calcula el pedido sugerido basándose en:
-    1. Inventario inicial (físico capturado) - Si no existe, requiere captura manual
-    2. + Compras recientes (desde Movimiento con concepto compras)
+    1. Inventario inicial (físico capturado en fecha_inventario_fisico)
+    2. + Compras del período (movimientos tipo entrada)
     3. - Consumos/Ventas del período
     4. = Inventario Teórico Actual
-    5. Cantidad a pedir = (Promedio Diario × Días Inventario) - Disponible
+    5. Cantidad a pedir según método:
+       - consumo: (Promedio Diario × Días Inventario) - Disponible
+       - stock: Stock Máximo - Disponible
     """
     verify_token(credentials.credentials)
     
@@ -3758,48 +3890,61 @@ async def calcular_pedido_sugerido(request: CalculoPedidoRequest, credentials: H
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     sucursal = request.sucursal
-    almacen = request.almacen
-    fecha_calculo = request.fecha_calculo
-    dias_historial = request.dias_historial_ventas
+    almacenes = request.almacenes  # Lista de almacenes o ["TODOS"]
+    fecha_inv_fisico = request.fecha_inventario_fisico
+    fecha_fin = request.fecha_fin_periodo
     dias_inventario = request.dias_inventario
+    metodo = request.metodo_calculo  # "consumo" o "stock"
+    folio_inv = request.folio_inventario_fisico
     
-    # Calcular fechas
+    # Calcular días del período para promedio
     from datetime import datetime, timedelta
-    fecha_calc_dt = datetime.strptime(fecha_calculo, '%Y-%m-%d')
-    fecha_inicio_historial = (fecha_calc_dt - timedelta(days=dias_historial)).strftime('%Y-%m-%d')
+    fecha_ini_dt = datetime.strptime(fecha_inv_fisico, '%Y-%m-%d')
+    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d')
+    dias_periodo = (fecha_fin_dt - fecha_ini_dt).days
+    if dias_periodo <= 0:
+        dias_periodo = 1
     
-    logging.info(f"[COMPRAS] Calculando pedido sugerido para {server['name']}")
-    logging.info(f"[COMPRAS] Sucursal: {sucursal}, Almacén: {almacen}")
-    logging.info(f"[COMPRAS] Fecha cálculo: {fecha_calculo}, Días inventario: {dias_inventario}")
+    # Para movimientos: desde fecha_inv_fisico + 1 día
+    fecha_mov_ini = (fecha_ini_dt + timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    logging.info(f"[COMPRAS] Parámetros: sucursal={sucursal}, almacenes={almacenes}")
+    logging.info(f"[COMPRAS] Período: {fecha_inv_fisico} al {fecha_fin} ({dias_periodo} días)")
+    logging.info(f"[COMPRAS] Método: {metodo}, Días inventario: {dias_inventario}")
     
     if server['system_type'] == 'MPRO':
-        # Obtener código del almacén y sucursal
-        almacen_query = f"""
-SELECT TOP 1 
-    A.Al_Cve_Almacen as codigo,
-    A.Al_Descripcion as nombre,
-    A.Sc_Cve_Sucursal as sucursal_codigo
+        # Obtener códigos de almacenes
+        if "TODOS" in almacenes:
+            almacen_query = f"""
+SELECT A.Al_Cve_Almacen as codigo, A.Al_Descripcion as nombre, A.Sc_Cve_Sucursal as sucursal_codigo
 FROM Almacen A
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
-WHERE A.Al_Descripcion LIKE '%{almacen}%'
-    AND S.Sc_Descripcion LIKE '%{sucursal}%'
+WHERE S.Sc_Descripcion LIKE '%{sucursal}%' AND A.Es_Cve_Estado <> 'BA'
 """
-        logging.info(f"[COMPRAS] Ejecutando query almacén...")
+        else:
+            almacen_likes = " OR ".join([f"A.Al_Descripcion LIKE '%{a}%'" for a in almacenes])
+            almacen_query = f"""
+SELECT A.Al_Cve_Almacen as codigo, A.Al_Descripcion as nombre, A.Sc_Cve_Sucursal as sucursal_codigo
+FROM Almacen A
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
+WHERE S.Sc_Descripcion LIKE '%{sucursal}%' AND ({almacen_likes}) AND A.Es_Cve_Estado <> 'BA'
+"""
+        
         almacen_result = execute_sql_query(
             server['host'], server['port'], server['database'],
             server['username'], server['password'], almacen_query
         )
-        logging.info(f"[COMPRAS] Resultado almacén: {len(almacen_result) if almacen_result else 0} registros")
         if not almacen_result:
-            logging.error(f"[COMPRAS] Almacén no encontrado: sucursal={sucursal}, almacen={almacen}")
-            raise HTTPException(status_code=404, detail=f"Almacén '{almacen}' no encontrado en sucursal '{sucursal}'")
+            raise HTTPException(status_code=404, detail=f"No se encontraron almacenes para sucursal '{sucursal}'")
         
-        almacen_codigo = almacen_result[0]['codigo']
+        almacen_codigos = [a['codigo'] for a in almacen_result]
+        almacen_nombres = [a['nombre'] for a in almacen_result]
         sucursal_codigo = almacen_result[0]['sucursal_codigo']
-        almacen_nombre = almacen_result[0].get('nombre', '')
-        es_bodega = 'BODEGA' in almacen_nombre.upper() if almacen_nombre else False
+        es_bodega = any('BODEGA' in (a['nombre'] or '').upper() for a in almacen_result)
         
-        logging.info(f"[COMPRAS] Almacén encontrado: {almacen_codigo} ({almacen_nombre}), es_bodega={es_bodega}")
+        almacen_codigos_str = ",".join([f"'{c}'" for c in almacen_codigos])
+        
+        logging.info(f"[COMPRAS] Almacenes encontrados: {almacen_nombres}")
         
         # Construir filtros
         filtro_categorias = ""
@@ -3812,33 +3957,38 @@ WHERE A.Al_Descripcion LIKE '%{almacen}%'
             fams = ",".join([f"'{f}'" for f in request.familias])
             filtro_familias = f"AND P.Fm_Cve_Familia IN ({fams})"
         
-        # Verificar si hay inventario físico capturado para la fecha de cálculo
-        inventario_fisico_query = f"""
-SELECT TOP 1 
-    Fi_Folio as folio,
-    Fi_Fecha as fecha
-FROM Fisico
-WHERE Al_Cve_Almacen = '{almacen_codigo}'
+        # Verificar folio de inventario físico
+        if folio_inv:
+            folio_inventario = folio_inv
+            fecha_inventario = fecha_inv_fisico
+            tiene_inventario_fisico = True
+        else:
+            # Buscar el más reciente
+            inv_query = f"""
+SELECT TOP 1 Fi_Folio as folio, Fi_Fecha as fecha
+FROM Fisico WHERE Al_Cve_Almacen IN ({almacen_codigos_str})
 ORDER BY Fi_Fecha DESC
 """
-        inv_fisico_result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], inventario_fisico_query
-        )
+            inv_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], inv_query
+            )
+            tiene_inventario_fisico = len(inv_result) > 0
+            folio_inventario = inv_result[0]['folio'] if tiene_inventario_fisico else None
+            fecha_inventario = inv_result[0]['fecha'] if tiene_inventario_fisico else None
         
-        tiene_inventario_fisico = len(inv_fisico_result) > 0
-        folio_inventario = inv_fisico_result[0]['folio'] if tiene_inventario_fisico else None
-        fecha_inventario = inv_fisico_result[0]['fecha'] if tiene_inventario_fisico else None
+        logging.info(f"[COMPRAS] Inventario físico: folio={folio_inventario}, fecha={fecha_inventario}")
         
-        logging.info(f"[COMPRAS] Inventario físico encontrado: {tiene_inventario_fisico}, Folio: {folio_inventario}")
-        
-        # 1. Obtener catálogo de productos (INSUMOS con presentaciones + COMPRAS directas)
+        # 1. Obtener catálogo de productos - MISMA LÓGICA DEL REPORTE DE INVENTARIOS
         productos_query = f"""
-WITH InsumosConPresentacion AS (
-    SELECT DISTINCT PP.Pr_Cve_Producto
-    FROM Producto_Presentacion PP
-    INNER JOIN Producto P_Insumo ON P_Insumo.Pr_Cve_Producto = PP.Pr_Cve_Producto
-    WHERE P_Insumo.Dp_Cve_Departamento = '0007'
+WITH InsumosConPresentaciones AS (
+    SELECT DISTINCT P.Pr_Cve_Producto
+    FROM Producto P
+    INNER JOIN Producto_Presentacion PP ON PP.Pr_Cve_Producto = P.Pr_Cve_Producto
+    WHERE P.Dp_Cve_Departamento = '0007' AND P.Es_Cve_Estado <> 'BA'
+),
+ProductosComoPresentacion AS (
+    SELECT DISTINCT Pp_Producto as Pr_Cve_Producto FROM Producto_Presentacion
 )
 SELECT 
     P.Pr_Cve_Producto as Codigo,
@@ -3846,167 +3996,181 @@ SELECT
     F.Fm_Descripcion as Familia,
     C.Ct_Descripcion as Categoria,
     P.Pr_Unidad_Control_1 as Unidad,
-    P.Pr_ultimo_costo as Costo_Unitario
+    P.Pr_ultimo_costo as Costo_Unitario,
+    CASE WHEN ICP.Pr_Cve_Producto IS NOT NULL THEN 1 ELSE 0 END as Tiene_Presentaciones
 FROM Producto P
 INNER JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
 INNER JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
+LEFT JOIN InsumosConPresentaciones ICP ON ICP.Pr_Cve_Producto = P.Pr_Cve_Producto
+LEFT JOIN ProductosComoPresentacion PCP ON PCP.Pr_Cve_Producto = P.Pr_Cve_Producto
 WHERE P.Es_Cve_Estado <> 'BA'
     AND (
-        -- Es un INSUMO con presentación
-        P.Pr_Cve_Producto IN (SELECT Pr_Cve_Producto FROM InsumosConPresentacion)
+        (P.Dp_Cve_Departamento = '0007' AND ICP.Pr_Cve_Producto IS NOT NULL)
         OR
-        -- Es un producto de COMPRA que NO es presentación de ningún insumo
-        (P.Dp_Cve_Departamento = '0007' 
-         AND NOT EXISTS (
-            SELECT 1 FROM Producto_Presentacion PP2 
-            WHERE PP2.Pp_Producto = P.Pr_Cve_Producto
-         ))
+        (P.Dp_Cve_Departamento <> '0007' AND PCP.Pr_Cve_Producto IS NULL)
     )
     {filtro_categorias}
     {filtro_familias}
 """
-        logging.info("[COMPRAS] Obteniendo catálogo de productos...")
         productos = execute_sql_query(
             server['host'], server['port'], server['database'],
             server['username'], server['password'], productos_query
         )
         logging.info(f"[COMPRAS] Productos obtenidos: {len(productos)}")
         
-        # 2. Obtener inventario físico más reciente (si existe)
+        # 2. Obtener inventario físico
         inventario_dict = {}
         if tiene_inventario_fisico:
             inv_detalle_query = f"""
-SELECT 
-    F.Pr_Cve_Producto as Codigo,
-    SUM(F.Fi_Cantidad_Control_1) as Cantidad
-FROM Fisico F
-WHERE F.Al_Cve_Almacen = '{almacen_codigo}'
-    AND F.Fi_Folio = '{folio_inventario}'
-GROUP BY F.Pr_Cve_Producto
+SELECT Pr_Cve_Producto as Codigo, SUM(Fi_Cantidad_Control_1) as Cantidad
+FROM Fisico
+WHERE Al_Cve_Almacen IN ({almacen_codigos_str}) AND Fi_Folio = '{folio_inventario}'
+GROUP BY Pr_Cve_Producto
 """
             inv_detalle = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], inv_detalle_query
             )
             inventario_dict = {i['Codigo']: float(i['Cantidad'] or 0) for i in inv_detalle}
-            logging.info(f"[COMPRAS] Inventario físico obtenido para {len(inventario_dict)} productos")
+            logging.info(f"[COMPRAS] Inventario físico: {len(inventario_dict)} productos")
         
-        # 3. Obtener compras desde Movimientos (tipo '100' = Entrada por compra)
-        # Usamos la tabla Movimiento filtrando por tipos de movimiento de ENTRADA/COMPRA
-        compras_query = f"""
-SELECT 
-    M.Pr_Cve_Producto as Codigo,
-    SUM(M.Mv_Cantidad_Control_1) as Total_Compras
-FROM Movimiento M
-INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
-WHERE M.Al_Cve_Almacen = '{almacen_codigo}'
-    AND TM.Tm_Tipo = 'E'  -- Solo entradas
-    AND TM.Tm_Cve_Tipo_Movimiento IN ('100', '050', '106')  -- Compra, Entrada directa, Entrada por traspaso
-    AND M.Mv_Fecha BETWEEN '{fecha_inicio_historial}' AND '{fecha_calculo} 23:59:59'
-GROUP BY M.Pr_Cve_Producto
+        # 3. Obtener movimientos (entradas = compras) del período
+        # Usa la misma lógica de fechas del reporte de inventarios: desde fecha_inv + 1
+        movimientos_query = f"""
+SELECT E.Pr_Cve_Producto as Codigo, SUM(E.Mv_Cantidad_Control_1) as Total_Mov
+FROM Movimiento E
+INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
+WHERE E.Al_Cve_Almacen IN ({almacen_codigos_str})
+    AND E.Es_Cve_Estado <> 'CA'
+    AND TM.Tm_Cve_Tipo_Movimiento IN ('050','100','106','108','112','202','400','500','506','508','510','512')
+    AND (
+        CASE   
+            WHEN TM.Tm_Cve_Tipo_Movimiento IN('508','108') 
+            THEN CASE WHEN E.Mv_Tabla = 'CONVERSION_PRODUCTO' THEN E.Mv_Fecha 
+                 ELSE (SELECT TOP 1 C.Co_Fecha FROM Conversion_Producto CN
+                       INNER JOIN COMPRA C ON C.Co_Folio = CN.Cp_Documento AND C.Pr_Cve_Producto = CN.Pr_Cve_Producto
+                       WHERE CN.Cp_Folio = E.Mv_Documento) END
+            ELSE E.Mv_Fecha
+        END
+    ) BETWEEN '{fecha_mov_ini}' AND '{fecha_fin} 23:59:59'
+GROUP BY E.Pr_Cve_Producto
 """
-        logging.info("[COMPRAS] Obteniendo compras desde Movimientos...")
-        compras_result = execute_sql_query(
+        mov_result = execute_sql_query(
             server['host'], server['port'], server['database'],
-            server['username'], server['password'], compras_query
+            server['username'], server['password'], movimientos_query
         )
-        compras_dict = {c['Codigo']: float(c['Total_Compras'] or 0) for c in compras_result}
-        logging.info(f"[COMPRAS] Compras obtenidas para {len(compras_dict)} productos")
+        movimientos_dict = {m['Codigo']: float(m['Total_Mov'] or 0) for m in mov_result}
+        logging.info(f"[COMPRAS] Movimientos obtenidos: {len(movimientos_dict)} productos")
         
-        # 4. Obtener consumos/ventas del período
+        # 4. Obtener consumos/ventas del período - MISMA LÓGICA DEL REPORTE
         consumos_dict = {}
         if not es_bodega:
-            # Solo para almacenes que NO son bodega (tienen ventas)
             ventas_query = f"""
 SELECT Producto_Codigo, SUM(cantidad) as Total_Consumo FROM (
-    -- Ventas de productos KIT (consumo de insumos por receta)
-    SELECT 
-        Producto_Kit.Pk_Producto as Producto_Codigo,
-        SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as cantidad
+    SELECT Producto_Kit.Pk_Producto as Producto_Codigo,
+           SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as cantidad
     FROM venta 
     LEFT JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
     LEFT JOIN producto ON producto.Pr_Cve_Producto = Producto_kit.Pk_Producto
-    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
-    WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
+    WHERE venta.Sc_Cve_Sucursal = '{sucursal_codigo}'
         AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN '{fecha_inicio_historial}' AND '{fecha_calculo} 23:59:59'
+        AND venta.Vn_Fecha BETWEEN '{fecha_mov_ini}' AND '{fecha_fin} 23:59:59'
         AND producto_kit.Pk_Producto IS NOT NULL
     GROUP BY Producto_Kit.Pk_Producto
-    
     UNION ALL
-    
-    -- Ventas DIRECTAS
-    SELECT 
-        venta.Pr_Cve_Producto as Producto_Codigo,
-        SUM(venta.Vn_Cantidad_Control_1) as cantidad
+    SELECT venta.Pr_Cve_Producto as Producto_Codigo,
+           SUM(venta.Vn_Cantidad_Control_1) as cantidad
     FROM venta 
     INNER JOIN producto ON producto.Pr_Cve_Producto = venta.Pr_Cve_Producto 
-    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
-    WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
+    WHERE venta.Sc_Cve_Sucursal = '{sucursal_codigo}'
         AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN '{fecha_inicio_historial}' AND '{fecha_calculo} 23:59:59'
+        AND venta.Vn_Fecha BETWEEN '{fecha_mov_ini}' AND '{fecha_fin} 23:59:59'
     GROUP BY venta.Pr_Cve_Producto
 ) AS ConsumosCombinados
 GROUP BY Producto_Codigo
 """
-            logging.info("[COMPRAS] Obteniendo consumos/ventas...")
             ventas_result = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], ventas_query
             )
             consumos_dict = {v['Producto_Codigo']: float(v['Total_Consumo'] or 0) for v in ventas_result}
-            logging.info(f"[COMPRAS] Consumos obtenidos para {len(consumos_dict)} productos")
+            logging.info(f"[COMPRAS] Consumos obtenidos: {len(consumos_dict)} productos")
         else:
-            # Para bodegas: obtener salidas por traspaso como "consumo"
+            # Para bodegas: salidas como consumo
             salidas_query = f"""
-SELECT 
-    M.Pr_Cve_Producto as Codigo,
-    SUM(ABS(M.Mv_Cantidad_Control_1)) as Total_Salidas
+SELECT M.Pr_Cve_Producto as Codigo, SUM(ABS(M.Mv_Cantidad_Control_1)) as Total
 FROM Movimiento M
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
-WHERE M.Al_Cve_Almacen = '{almacen_codigo}'
-    AND TM.Tm_Tipo = 'S'  -- Salidas
-    AND M.Mv_Fecha BETWEEN '{fecha_inicio_historial}' AND '{fecha_calculo} 23:59:59'
+WHERE M.Al_Cve_Almacen IN ({almacen_codigos_str}) AND TM.Tm_Tipo = 'S'
+    AND M.Mv_Fecha BETWEEN '{fecha_mov_ini}' AND '{fecha_fin} 23:59:59'
 GROUP BY M.Pr_Cve_Producto
 """
             salidas_result = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], salidas_query
             )
-            consumos_dict = {s['Codigo']: float(s['Total_Salidas'] or 0) for s in salidas_result}
-            logging.info(f"[COMPRAS] Salidas (bodega) obtenidas para {len(consumos_dict)} productos")
+            consumos_dict = {s['Codigo']: float(s['Total'] or 0) for s in salidas_result}
+            logging.info(f"[COMPRAS] Salidas (bodega): {len(consumos_dict)} productos")
         
-        # 5. Calcular pedido sugerido para cada producto
+        # 5. Obtener pedido existente para comparar (si se especificó)
+        pedido_existente = {}
+        if request.folio_pedido_comparar:
+            # Detectar si es pedido u orden
+            ped_query = f"""
+SELECT PDD.Pr_Cve_Producto as codigo, PDD.Pd_Cantidad as cantidad
+FROM Pedido_Detalle PDD WHERE PDD.Pd_Folio = '{request.folio_pedido_comparar}'
+UNION ALL
+SELECT OCD.Pr_Cve_Producto as codigo, OCD.Oc_Cantidad as cantidad
+FROM Orden_Compra_Detalle OCD WHERE OCD.Oc_Folio = '{request.folio_pedido_comparar}'
+"""
+            ped_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], ped_query
+            )
+            pedido_existente = {p['codigo']: float(p['cantidad'] or 0) for p in ped_result}
+            logging.info(f"[COMPRAS] Pedido a comparar: {len(pedido_existente)} productos")
+        
+        # 6. Calcular pedido sugerido
         results = []
         productos_sin_inventario = []
         
         for prod in productos:
             codigo = prod['Codigo']
             inv_fisico = inventario_dict.get(codigo, 0)
-            compras_periodo = compras_dict.get(codigo, 0)
-            consumos_periodo = consumos_dict.get(codigo, 0)
+            movimientos = movimientos_dict.get(codigo, 0)
+            consumos = consumos_dict.get(codigo, 0)
             costo = float(prod.get('Costo_Unitario', 0) or 0)
+            # Stock min/max no disponible en esta versión
+            stock_min = 0
+            stock_max = 0
             
-            # Calcular promedio diario de consumo
-            promedio_diario = consumos_periodo / dias_historial if dias_historial > 0 else 0
+            # Inventario Teórico = Inv. Físico + Movimientos - Consumos
+            inventario_teorico = inv_fisico + movimientos - consumos
             
-            # Inventario Teórico = Inv. Físico + Compras - Consumos
-            inventario_teorico = inv_fisico + compras_periodo - consumos_periodo
+            # Promedio diario de consumo
+            promedio_diario = consumos / dias_periodo if dias_periodo > 0 else 0
             
-            # Consumo esperado para los días de inventario deseados
-            consumo_esperado = promedio_diario * dias_inventario
-            
-            # Cantidad a pedir = lo que necesito - lo que tengo
-            cantidad_pedir = max(0, consumo_esperado - inventario_teorico)
+            # Cantidad a pedir según método
+            if metodo == "stock" and stock_max > 0:
+                # Método stock: pedir hasta llegar al máximo
+                cantidad_pedir = max(0, stock_max - inventario_teorico)
+            else:
+                # Método consumo: pedir para cubrir X días
+                consumo_esperado = promedio_diario * dias_inventario
+                cantidad_pedir = max(0, consumo_esperado - inventario_teorico)
             
             # Días de inventario actual
             dias_inv_actual = inventario_teorico / promedio_diario if promedio_diario > 0 else 999
             
-            # Flag si no tiene inventario físico pero sí tiene movimientos
-            sin_inv_fisico = inv_fisico == 0 and (compras_periodo > 0 or consumos_periodo > 0)
+            # Flag sin inventario físico
+            sin_inv_fisico = inv_fisico == 0 and (movimientos != 0 or consumos > 0)
+            
+            # Cantidad en pedido existente
+            cant_pedido_exist = pedido_existente.get(codigo, 0)
+            diferencia_pedido = cantidad_pedir - cant_pedido_exist if cant_pedido_exist > 0 else None
             
             # Solo incluir productos con actividad
-            if inv_fisico > 0 or compras_periodo > 0 or consumos_periodo > 0:
+            if inv_fisico > 0 or movimientos != 0 or consumos > 0 or cant_pedido_exist > 0:
                 item = {
                     'Codigo': codigo,
                     'Producto': prod.get('Producto'),
@@ -4015,16 +4179,18 @@ GROUP BY M.Pr_Cve_Producto
                     'Unidad': prod.get('Unidad'),
                     'Costo_Unitario': round(costo, 2),
                     'Inventario_Fisico': round(inv_fisico, 2),
-                    'Compras_Periodo': round(compras_periodo, 2),
-                    'Consumos_Periodo': round(consumos_periodo, 2),
+                    'Movimientos_Periodo': round(movimientos, 2),
+                    'Consumos_Periodo': round(consumos, 2),
                     'Inventario_Teorico': round(inventario_teorico, 2),
-                    'Promedio_Diario': round(promedio_diario, 2),
+                    'Promedio_Diario': round(promedio_diario, 3),
                     'Dias_Inventario': round(dias_inv_actual, 1) if dias_inv_actual < 999 else 999,
-                    'Consumo_Esperado': round(consumo_esperado, 2),
+                    'Stock_Minimo': round(stock_min, 2),
+                    'Stock_Maximo': round(stock_max, 2),
                     'Cantidad_Pedir': round(cantidad_pedir, 2),
                     'Costo_Pedido': round(cantidad_pedir * costo, 2),
                     'Sin_Inventario_Fisico': sin_inv_fisico,
-                    'Existencia_Manual': None  # Campo para captura manual si no hay inv. físico
+                    'Cantidad_Pedido_Existente': round(cant_pedido_exist, 2) if cant_pedido_exist > 0 else None,
+                    'Diferencia_Pedido': round(diferencia_pedido, 2) if diferencia_pedido is not None else None
                 }
                 results.append(item)
                 
@@ -4035,31 +4201,29 @@ GROUP BY M.Pr_Cve_Producto
         results.sort(key=lambda x: x['Cantidad_Pedir'], reverse=True)
         
         logging.info(f"[COMPRAS] Cálculo completado: {len(results)} productos")
-        logging.info(f"[COMPRAS] Productos sin inventario físico: {len(productos_sin_inventario)}")
         
         return {
             "data": results,
             "count": len(results),
             "tiene_inventario_fisico": tiene_inventario_fisico,
-            "fecha_inventario_fisico": str(fecha_inventario) if fecha_inventario else None,
+            "fecha_inventario_fisico": str(fecha_inventario) if fecha_inventario else fecha_inv_fisico,
             "folio_inventario_fisico": folio_inventario,
             "productos_sin_inventario": len(productos_sin_inventario),
             "es_bodega": es_bodega,
+            "almacenes": almacen_nombres,
+            "dias_periodo": dias_periodo,
+            "comparando_con_pedido": request.folio_pedido_comparar,
+            "metodo_calculo": metodo,
             "parametros": {
-                "fecha_calculo": fecha_calculo,
-                "dias_historial": dias_historial,
+                "fecha_inventario_fisico": fecha_inv_fisico,
+                "fecha_fin_periodo": fecha_fin,
                 "dias_inventario": dias_inventario,
-                "sucursal": sucursal,
-                "almacen": almacen
+                "sucursal": sucursal
             }
         }
     
-    elif server['system_type'] == 'SoftRestaurant':
-        # TODO: Implementar lógica para SoftRestaurant
-        raise HTTPException(status_code=501, detail="Módulo de compras para SoftRestaurant en desarrollo")
-    
-    else:
-        raise HTTPException(status_code=400, detail=f"Tipo de sistema no soportado: {server['system_type']}")
+    # SoftRestaurant - Por implementar
+    return {"detail": "SoftRestaurant no implementado aún", "data": [], "count": 0}
 
 
 @api_router.get("/compras/parametros/{server_id}")

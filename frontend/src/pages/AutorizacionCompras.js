@@ -5,8 +5,9 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Checkbox } from '../components/ui/checkbox';
 import { toast } from 'sonner';
-import { Loader2, ShoppingCart, Package, TrendingUp, AlertTriangle, Download, AlertCircle, Calendar, Edit3 } from 'lucide-react';
+import { Loader2, ShoppingCart, Package, TrendingUp, AlertTriangle, Download, AlertCircle, Calendar, Edit3, FileText, RefreshCw } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -27,16 +28,29 @@ export default function AutorizacionCompras() {
   const [sucursales, setSucursales] = useState([]);
   const [almacenes, setAlmacenes] = useState([]);
   const [selectedSucursal, setSelectedSucursal] = useState('');
-  const [selectedAlmacen, setSelectedAlmacen] = useState('');
-  const [fechaCalculo, setFechaCalculo] = useState(new Date().toISOString().split('T')[0]);
-  const [diasHistorial, setDiasHistorial] = useState(30);
+  const [selectedAlmacenes, setSelectedAlmacenes] = useState([]);
+  const [todosAlmacenes, setTodosAlmacenes] = useState(false);
+  
+  // Fechas y período
+  const [fechaInvFisico, setFechaInvFisico] = useState('');
+  const [fechaFinPeriodo, setFechaFinPeriodo] = useState(new Date().toISOString().split('T')[0]);
   const [diasInventario, setDiasInventario] = useState(10);
+  const [metodoCalculo, setMetodoCalculo] = useState('consumo');
+  
+  // Inventarios físicos disponibles
+  const [inventariosFisicos, setInventariosFisicos] = useState([]);
+  const [folioInvFisico, setFolioInvFisico] = useState('');
+  
+  // Pedidos para comparar
+  const [pedidosVigentes, setPedidosVigentes] = useState([]);
+  const [folioPedidoComparar, setFolioPedidoComparar] = useState('');
+  
+  // Resultados
   const [loading, setLoading] = useState(false);
   const [pedidoData, setPedidoData] = useState([]);
   const [resumen, setResumen] = useState(null);
   const [infoInventario, setInfoInventario] = useState(null);
   const [editingRow, setEditingRow] = useState(null);
-  const [existenciaManual, setExistenciaManual] = useState({});
 
   // Cargar servidores al iniciar
   useEffect(() => {
@@ -62,16 +76,20 @@ export default function AutorizacionCompras() {
       setServerData(server);
       fetchSucursales(selectedServer);
       setSelectedSucursal('');
-      setSelectedAlmacen('');
+      setSelectedAlmacenes([]);
       setPedidoData([]);
+      setInventariosFisicos([]);
+      setPedidosVigentes([]);
     }
   }, [selectedServer, servers]);
 
-  // Cargar almacenes cuando cambia la sucursal
+  // Cargar almacenes e inventarios cuando cambia la sucursal
   useEffect(() => {
     if (selectedServer && selectedSucursal) {
       fetchAlmacenes(selectedServer, selectedSucursal);
-      setSelectedAlmacen('');
+      fetchInventariosFisicos(selectedServer, selectedSucursal);
+      fetchPedidosVigentes(selectedServer, selectedSucursal);
+      setSelectedAlmacenes([]);
       setPedidoData([]);
     }
   }, [selectedServer, selectedSucursal]);
@@ -95,16 +113,71 @@ export default function AutorizacionCompras() {
       const response = await axios.get(`${API_URL}/api/servers/${serverId}/almacenes?sucursal=${encodeURIComponent(sucursal)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setAlmacenes(response.data);
+      // Eliminar duplicados por nombre
+      const unique = [...new Map(response.data.map(a => [a.nombre, a])).values()];
+      setAlmacenes(unique);
     } catch (error) {
       console.error('Error cargando almacenes:', error);
       toast.error('Error al cargar almacenes');
     }
   };
 
+  const fetchInventariosFisicos = async (serverId, sucursal) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/compras/inventarios-fisicos/${serverId}?sucursal=${encodeURIComponent(sucursal)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setInventariosFisicos(response.data);
+      // Seleccionar el más reciente por defecto
+      if (response.data.length > 0) {
+        setFolioInvFisico(response.data[0].folio);
+        setFechaInvFisico(response.data[0].fecha.split('T')[0]);
+      }
+    } catch (error) {
+      console.error('Error cargando inventarios físicos:', error);
+    }
+  };
+
+  const fetchPedidosVigentes = async (serverId, sucursal) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/compras/pedidos-vigentes/${serverId}?sucursal=${encodeURIComponent(sucursal)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPedidosVigentes(response.data);
+    } catch (error) {
+      console.error('Error cargando pedidos vigentes:', error);
+    }
+  };
+
+  const handleAlmacenToggle = (almacenNombre) => {
+    setSelectedAlmacenes(prev => {
+      if (prev.includes(almacenNombre)) {
+        return prev.filter(a => a !== almacenNombre);
+      }
+      return [...prev, almacenNombre];
+    });
+    setTodosAlmacenes(false);
+  };
+
+  const handleTodosAlmacenes = (checked) => {
+    setTodosAlmacenes(checked);
+    if (checked) {
+      setSelectedAlmacenes(['TODOS']);
+    } else {
+      setSelectedAlmacenes([]);
+    }
+  };
+
   const calcularPedido = async () => {
-    if (!selectedServer || !selectedSucursal || !selectedAlmacen) {
-      toast.error('Selecciona servidor, sucursal y almacén');
+    if (!selectedServer || !selectedSucursal || (selectedAlmacenes.length === 0 && !todosAlmacenes)) {
+      toast.error('Selecciona servidor, sucursal y al menos un almacén');
+      return;
+    }
+
+    if (!fechaInvFisico || !fechaFinPeriodo) {
+      toast.error('Selecciona las fechas del período de análisis');
       return;
     }
 
@@ -112,17 +185,19 @@ export default function AutorizacionCompras() {
     setPedidoData([]);
     setResumen(null);
     setInfoInventario(null);
-    setExistenciaManual({});
 
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(`${API_URL}/api/compras/calculo-pedido`, {
         server_id: selectedServer,
         sucursal: selectedSucursal,
-        almacen: selectedAlmacen,
-        fecha_calculo: fechaCalculo,
-        dias_historial_ventas: parseInt(diasHistorial),
-        dias_inventario: parseInt(diasInventario)
+        almacenes: todosAlmacenes ? ['TODOS'] : selectedAlmacenes,
+        fecha_inventario_fisico: fechaInvFisico,
+        fecha_fin_periodo: fechaFinPeriodo,
+        dias_inventario: parseInt(diasInventario),
+        metodo_calculo: metodoCalculo,
+        folio_inventario_fisico: folioInvFisico || null,
+        folio_pedido_comparar: (folioPedidoComparar && folioPedidoComparar !== '__none__') ? folioPedidoComparar : null
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -135,7 +210,11 @@ export default function AutorizacionCompras() {
         fechaInventarioFisico: response.data.fecha_inventario_fisico,
         folioInventarioFisico: response.data.folio_inventario_fisico,
         productosSinInventario: response.data.productos_sin_inventario,
-        esBodega: response.data.es_bodega
+        esBodega: response.data.es_bodega,
+        almacenes: response.data.almacenes,
+        diasPeriodo: response.data.dias_periodo,
+        comparandoConPedido: response.data.comparando_con_pedido,
+        metodoCalculo: response.data.metodo_calculo
       });
       
       // Calcular resumen
@@ -143,8 +222,9 @@ export default function AutorizacionCompras() {
       const totalProductos = data.length;
       const productosAPedir = data.filter(p => p.Cantidad_Pedir > 0).length;
       const costoTotalPedido = data.reduce((sum, p) => sum + (p.Costo_Pedido || 0), 0);
-      const productosStockBajo = data.filter(p => p.Dias_Inventario < 3).length;
+      const productosStockBajo = data.filter(p => p.Dias_Inventario < 3 && p.Dias_Inventario !== 999).length;
       const productosSinInvFisico = data.filter(p => p.Sin_Inventario_Fisico).length;
+      const productosConDiferencia = data.filter(p => p.Diferencia_Pedido !== null && p.Diferencia_Pedido !== 0).length;
 
       setResumen({
         totalProductos,
@@ -152,6 +232,7 @@ export default function AutorizacionCompras() {
         costoTotalPedido,
         productosStockBajo,
         productosSinInvFisico,
+        productosConDiferencia,
         parametros: response.data.parametros
       });
 
@@ -167,13 +248,17 @@ export default function AutorizacionCompras() {
   // Función para actualizar existencia manual y recalcular
   const actualizarExistenciaManual = (codigo, valor) => {
     const nuevoValor = parseFloat(valor) || 0;
-    setExistenciaManual(prev => ({ ...prev, [codigo]: nuevoValor }));
     
-    // Recalcular el pedido para este producto
     setPedidoData(prev => prev.map(row => {
       if (row.Codigo === codigo) {
-        const invTeorico = nuevoValor + row.Compras_Periodo - row.Consumos_Periodo;
-        const cantidadPedir = Math.max(0, row.Consumo_Esperado - invTeorico);
+        const invTeorico = nuevoValor + row.Movimientos_Periodo - row.Consumos_Periodo;
+        let cantidadPedir;
+        if (metodoCalculo === 'stock' && row.Stock_Maximo > 0) {
+          cantidadPedir = Math.max(0, row.Stock_Maximo - invTeorico);
+        } else {
+          const consumoEsperado = row.Promedio_Diario * diasInventario;
+          cantidadPedir = Math.max(0, consumoEsperado - invTeorico);
+        }
         const diasInv = row.Promedio_Diario > 0 ? invTeorico / row.Promedio_Diario : 999;
         return {
           ...row,
@@ -182,8 +267,7 @@ export default function AutorizacionCompras() {
           Cantidad_Pedir: cantidadPedir,
           Costo_Pedido: cantidadPedir * row.Costo_Unitario,
           Dias_Inventario: diasInv < 999 ? diasInv : 999,
-          Sin_Inventario_Fisico: false,
-          Existencia_Manual: nuevoValor
+          Sin_Inventario_Fisico: false
         };
       }
       return row;
@@ -193,41 +277,42 @@ export default function AutorizacionCompras() {
   };
 
   const exportarExcel = () => {
-    // TODO: Implementar exportación a Excel
-    toast.info('Exportación a Excel en desarrollo');
+    if (pedidoData.length === 0) {
+      toast.error('No hay datos para exportar');
+      return;
+    }
+    // TODO: Implementar exportación
+    toast.info('Exportación en desarrollo');
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
+    <div className="space-y-6" data-testid="compras-page">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-800 flex items-center gap-2">
-            <ShoppingCart className="h-6 w-6" />
-            Autorización de Compras
-          </h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Calcula el pedido sugerido basándose en inventario, ventas y parámetros configurados
-          </p>
+          <h1 className="text-2xl font-bold text-zinc-800">Autorización de Compras</h1>
+          <p className="text-sm text-zinc-500">Calcula pedidos sugeridos y compara con requisiciones del sistema</p>
         </div>
       </div>
 
-      {/* Filtros */}
+      {/* Parámetros de Cálculo */}
       <Card className="border border-zinc-200 shadow-sm">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold">Parámetros de Cálculo</CardTitle>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5 text-blue-600" />
+            Parámetros del Cálculo
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Servidor */}
+        <CardContent className="space-y-4">
+          {/* Fila 1: Servidor, Sucursal */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Servidor</Label>
               <Select value={selectedServer} onValueChange={setSelectedServer}>
                 <SelectTrigger data-testid="server-select">
-                  <SelectValue placeholder="Selecciona un servidor" />
+                  <SelectValue placeholder="Seleccionar servidor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {servers.map((server) => (
+                  {servers.map(server => (
                     <SelectItem key={server.id} value={server.id}>
                       {server.name} ({server.system_type})
                     </SelectItem>
@@ -236,110 +321,152 @@ export default function AutorizacionCompras() {
               </Select>
             </div>
 
-            {/* Sucursal */}
             <div className="space-y-2">
               <Label>Sucursal</Label>
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger data-testid="sucursal-select">
-                  <SelectValue placeholder="Selecciona sucursal" />
+                  <SelectValue placeholder="Seleccionar sucursal" />
                 </SelectTrigger>
                 <SelectContent>
-                  {sucursales.map((suc, idx) => (
-                    <SelectItem key={idx} value={suc.nombre}>
+                  {sucursales.map(suc => (
+                    <SelectItem key={suc.codigo || suc.nombre} value={suc.nombre}>
                       {suc.nombre}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
-            {/* Almacén */}
+          {/* Fila 2: Almacenes (multi-select) */}
+          {almacenes.length > 0 && (
             <div className="space-y-2">
-              <Label>Almacén</Label>
-              <Select value={selectedAlmacen} onValueChange={setSelectedAlmacen} disabled={!selectedSucursal}>
-                <SelectTrigger data-testid="almacen-select">
-                  <SelectValue placeholder="Selecciona almacén" />
+              <Label>Almacenes</Label>
+              <div className="flex flex-wrap gap-3 p-3 border rounded-md bg-zinc-50">
+                <div className="flex items-center gap-2">
+                  <Checkbox 
+                    id="todos-almacenes"
+                    checked={todosAlmacenes}
+                    onCheckedChange={handleTodosAlmacenes}
+                  />
+                  <label htmlFor="todos-almacenes" className="text-sm font-medium">TODOS</label>
+                </div>
+                <div className="w-px h-6 bg-zinc-300" />
+                {almacenes.map(alm => (
+                  <div key={alm.nombre} className="flex items-center gap-2">
+                    <Checkbox 
+                      id={`alm-${alm.nombre}`}
+                      checked={selectedAlmacenes.includes(alm.nombre)}
+                      onCheckedChange={() => handleAlmacenToggle(alm.nombre)}
+                      disabled={todosAlmacenes}
+                    />
+                    <label htmlFor={`alm-${alm.nombre}`} className="text-sm">{alm.nombre}</label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Fila 3: Período de Análisis */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label>Inventario Físico (Folio)</Label>
+              <Select value={folioInvFisico} onValueChange={(val) => {
+                setFolioInvFisico(val);
+                const inv = inventariosFisicos.find(i => i.folio === val);
+                if (inv) setFechaInvFisico(inv.fecha.split('T')[0]);
+              }} data-testid="folio-inv-select">
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar folio" />
                 </SelectTrigger>
                 <SelectContent>
-                  {almacenes.map((alm, idx) => (
-                    <SelectItem key={idx} value={alm.nombre}>
-                      {alm.nombre}
+                  {inventariosFisicos.map(inv => (
+                    <SelectItem key={inv.folio} value={inv.folio}>
+                      {inv.folio} - {new Date(inv.fecha).toLocaleDateString('es-MX')} ({inv.almacen})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Fecha de Cálculo */}
             <div className="space-y-2">
-              <Label>Fecha de Cálculo</Label>
+              <Label>Fecha Inv. Físico (Inicio)</Label>
               <Input
                 type="date"
-                value={fechaCalculo}
-                onChange={(e) => setFechaCalculo(e.target.value)}
-                data-testid="fecha-calculo"
+                value={fechaInvFisico}
+                onChange={(e) => setFechaInvFisico(e.target.value)}
+                data-testid="fecha-inv-fisico"
               />
             </div>
 
-            {/* Días Historial */}
             <div className="space-y-2">
-              <Label>Días Historial Ventas</Label>
+              <Label>Fecha Fin Período</Label>
               <Input
-                type="number"
-                value={diasHistorial}
-                onChange={(e) => setDiasHistorial(e.target.value)}
-                min="7"
-                max="90"
-                data-testid="dias-historial"
+                type="date"
+                value={fechaFinPeriodo}
+                onChange={(e) => setFechaFinPeriodo(e.target.value)}
+                data-testid="fecha-fin-periodo"
               />
             </div>
 
-            {/* Días Inventario */}
             <div className="space-y-2">
               <Label>Días Inventario a Comprar</Label>
               <Input
                 type="number"
+                min="1"
+                max="90"
                 value={diasInventario}
                 onChange={(e) => setDiasInventario(e.target.value)}
-                min="1"
-                max="30"
                 data-testid="dias-inventario"
               />
             </div>
+          </div>
 
-            {/* Botón Calcular */}
-            <div className="space-y-2 flex items-end">
-              <Button 
-                onClick={calcularPedido} 
-                disabled={loading || !selectedAlmacen}
-                className="w-full"
-                data-testid="btn-calcular"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Calculando...
-                  </>
-                ) : (
-                  <>
-                    <TrendingUp className="mr-2 h-4 w-4" />
-                    Calcular Pedido
-                  </>
-                )}
-              </Button>
+          {/* Fila 4: Método y Pedido a Comparar */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Método de Cálculo</Label>
+              <Select value={metodoCalculo} onValueChange={setMetodoCalculo} data-testid="metodo-select">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="consumo">Por Consumo Promedio</SelectItem>
+                  <SelectItem value="stock">Por Stock Máx/Mín</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Botón Exportar */}
-            <div className="space-y-2 flex items-end">
+            <div className="space-y-2">
+              <Label>Comparar con Pedido/Requisición</Label>
+              <Select value={folioPedidoComparar} onValueChange={setFolioPedidoComparar} data-testid="pedido-comparar-select">
+                <SelectTrigger>
+                  <SelectValue placeholder="(Opcional) Seleccionar pedido" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sin comparar</SelectItem>
+                  {pedidosVigentes.map(ped => (
+                    <SelectItem key={`${ped.tipo}-${ped.folio}`} value={ped.folio}>
+                      [{ped.tipo}] {ped.folio} - {new Date(ped.fecha).toLocaleDateString('es-MX')} - {ped.proveedor || 'Sin proveedor'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-end gap-2">
               <Button 
-                variant="outline"
-                onClick={exportarExcel} 
-                disabled={pedidoData.length === 0}
-                className="w-full"
-                data-testid="btn-exportar"
+                onClick={calcularPedido} 
+                disabled={loading || !selectedServer || !selectedSucursal || (selectedAlmacenes.length === 0 && !todosAlmacenes)}
+                className="flex-1"
+                data-testid="btn-calcular"
               >
-                <Download className="mr-2 h-4 w-4" />
-                Exportar Excel
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                Calcular Pedido
+              </Button>
+              <Button variant="outline" onClick={exportarExcel} disabled={pedidoData.length === 0} data-testid="btn-exportar">
+                <Download className="h-4 w-4 mr-2" />
+                Excel
               </Button>
             </div>
           </div>
@@ -348,95 +475,105 @@ export default function AutorizacionCompras() {
 
       {/* Resumen KPIs */}
       {resumen && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <Card className="border border-zinc-200">
-            <CardContent className="pt-6">
+            <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-zinc-500">Total Productos</p>
-                  <p className="text-2xl font-bold text-zinc-800">{resumen.totalProductos}</p>
+                  <p className="text-xs text-zinc-500">Total Productos</p>
+                  <p className="text-xl font-bold text-zinc-800">{resumen.totalProductos}</p>
                 </div>
-                <Package className="h-8 w-8 text-blue-500" />
+                <Package className="h-6 w-6 text-blue-500" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="border border-zinc-200">
-            <CardContent className="pt-6">
+            <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-zinc-500">Productos a Pedir</p>
-                  <p className="text-2xl font-bold text-green-600">{resumen.productosAPedir}</p>
+                  <p className="text-xs text-zinc-500">A Pedir</p>
+                  <p className="text-xl font-bold text-green-600">{resumen.productosAPedir}</p>
                 </div>
-                <ShoppingCart className="h-8 w-8 text-green-500" />
+                <ShoppingCart className="h-6 w-6 text-green-500" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="border border-zinc-200">
-            <CardContent className="pt-6">
+            <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-zinc-500">Costo Total Pedido</p>
-                  <p className="text-2xl font-bold text-zinc-800">{formatCurrency(resumen.costoTotalPedido)}</p>
+                  <p className="text-xs text-zinc-500">Costo Total</p>
+                  <p className="text-lg font-bold text-zinc-800">{formatCurrency(resumen.costoTotalPedido)}</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-purple-500" />
+                <TrendingUp className="h-6 w-6 text-purple-500" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="border border-zinc-200">
-            <CardContent className="pt-6">
+            <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-zinc-500">Stock Bajo (&lt;3 días)</p>
-                  <p className="text-2xl font-bold text-red-600">{resumen.productosStockBajo}</p>
+                  <p className="text-xs text-zinc-500">Stock Bajo</p>
+                  <p className="text-xl font-bold text-red-600">{resumen.productosStockBajo}</p>
                 </div>
-                <AlertTriangle className="h-8 w-8 text-red-500" />
+                <AlertTriangle className="h-6 w-6 text-red-500" />
               </div>
             </CardContent>
           </Card>
           
           <Card className={`border ${resumen.productosSinInvFisico > 0 ? 'border-orange-300 bg-orange-50' : 'border-zinc-200'}`}>
-            <CardContent className="pt-6">
+            <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-zinc-500">Sin Inv. Físico</p>
-                  <p className={`text-2xl font-bold ${resumen.productosSinInvFisico > 0 ? 'text-orange-600' : 'text-zinc-400'}`}>
+                  <p className="text-xs text-zinc-500">Sin Inv. Físico</p>
+                  <p className={`text-xl font-bold ${resumen.productosSinInvFisico > 0 ? 'text-orange-600' : 'text-zinc-400'}`}>
                     {resumen.productosSinInvFisico}
                   </p>
                 </div>
-                <AlertCircle className={`h-8 w-8 ${resumen.productosSinInvFisico > 0 ? 'text-orange-500' : 'text-zinc-300'}`} />
+                <AlertCircle className={`h-6 w-6 ${resumen.productosSinInvFisico > 0 ? 'text-orange-500' : 'text-zinc-300'}`} />
               </div>
             </CardContent>
           </Card>
+
+          {folioPedidoComparar && (
+            <Card className={`border ${resumen.productosConDiferencia > 0 ? 'border-blue-300 bg-blue-50' : 'border-zinc-200'}`}>
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-zinc-500">Con Diferencia</p>
+                    <p className={`text-xl font-bold ${resumen.productosConDiferencia > 0 ? 'text-blue-600' : 'text-zinc-400'}`}>
+                      {resumen.productosConDiferencia}
+                    </p>
+                  </div>
+                  <FileText className={`h-6 w-6 ${resumen.productosConDiferencia > 0 ? 'text-blue-500' : 'text-zinc-300'}`} />
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
       
       {/* Alerta de información del inventario */}
       {infoInventario && (
         <Card className={`border ${infoInventario.tieneInventarioFisico ? 'border-blue-200 bg-blue-50' : 'border-orange-200 bg-orange-50'}`}>
-          <CardContent className="py-4">
-            <div className="flex items-center gap-3">
+          <CardContent className="py-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <Calendar className={`h-5 w-5 ${infoInventario.tieneInventarioFisico ? 'text-blue-600' : 'text-orange-600'}`} />
               <div className="flex-1">
-                {infoInventario.tieneInventarioFisico ? (
-                  <p className="text-sm text-blue-800">
-                    <span className="font-semibold">Inventario Físico:</span> Folio {infoInventario.folioInventarioFisico} 
-                    {infoInventario.fechaInventarioFisico && ` del ${new Date(infoInventario.fechaInventarioFisico).toLocaleDateString('es-MX')}`}
-                    {infoInventario.esBodega && <span className="ml-2 px-2 py-0.5 bg-blue-200 rounded text-xs">BODEGA</span>}
-                  </p>
-                ) : (
-                  <p className="text-sm text-orange-800">
-                    <span className="font-semibold">Sin inventario físico capturado.</span> Ingresa las existencias manualmente para calcular correctamente.
-                  </p>
-                )}
+                <p className="text-sm">
+                  <span className="font-semibold">Período:</span> {infoInventario.fechaInventarioFisico} al {fechaFinPeriodo} ({infoInventario.diasPeriodo} días)
+                  {infoInventario.folioInventarioFisico && <span className="ml-2 text-zinc-600">| Folio: {infoInventario.folioInventarioFisico}</span>}
+                  {infoInventario.esBodega && <span className="ml-2 px-2 py-0.5 bg-blue-200 rounded text-xs">BODEGA</span>}
+                  {infoInventario.comparandoConPedido && <span className="ml-2 px-2 py-0.5 bg-green-200 rounded text-xs">vs Pedido {infoInventario.comparandoConPedido}</span>}
+                  <span className="ml-2 px-2 py-0.5 bg-zinc-200 rounded text-xs">
+                    {infoInventario.metodoCalculo === 'stock' ? 'Stock Máx/Mín' : 'Consumo Promedio'}
+                  </span>
+                </p>
+                <p className="text-xs text-zinc-600">Almacenes: {infoInventario.almacenes?.join(', ') || '-'}</p>
               </div>
-              {infoInventario.productosSinInventario > 0 && (
-                <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded">
-                  {infoInventario.productosSinInventario} productos requieren existencia manual
-                </span>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -462,22 +599,28 @@ export default function AutorizacionCompras() {
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">Producto</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">Familia</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Inv. Físico</th>
-                    <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Compras</th>
+                    <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Movimientos</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Consumos</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Inv. Teórico</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Prom. Diario</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Días Inv.</th>
-                    <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Consumo Esp.</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Cant. Pedir</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Costo Pedido</th>
+                    {folioPedidoComparar && (
+                      <>
+                        <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Pedido Exist.</th>
+                        <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Diferencia</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {pedidoData.map((row, idx) => {
                     const necesitaPedir = row.Cantidad_Pedir > 0;
-                    const stockCritico = row.Dias_Inventario < 3;
+                    const stockCritico = row.Dias_Inventario < 3 && row.Dias_Inventario !== 999;
                     const sinInvFisico = row.Sin_Inventario_Fisico;
                     const isEditing = editingRow === row.Codigo;
+                    const tieneDiferencia = row.Diferencia_Pedido !== null && row.Diferencia_Pedido !== 0;
                     
                     return (
                       <tr 
@@ -498,7 +641,6 @@ export default function AutorizacionCompras() {
                                 type="number"
                                 step="0.01"
                                 className="w-20 h-7 text-xs text-right"
-                                defaultValue={existenciaManual[row.Codigo] || ''}
                                 autoFocus
                                 onBlur={(e) => actualizarExistenciaManual(row.Codigo, e.target.value)}
                                 onKeyDown={(e) => {
@@ -518,41 +660,42 @@ export default function AutorizacionCompras() {
                                 data-testid={`btn-edit-${row.Codigo}`}
                               >
                                 <Edit3 className="h-3 w-3" />
-                                {row.Existencia_Manual !== null ? formatNumber(row.Existencia_Manual) : 'Ingresar'}
+                                Ingresar
                               </button>
                             )
                           ) : (
                             <span className="font-mono">{formatNumber(row.Inventario_Fisico)}</span>
                           )}
                         </td>
-                        <td className="py-2 px-2 text-right font-mono text-green-700">{formatNumber(row.Compras_Periodo)}</td>
+                        <td className={`py-2 px-2 text-right font-mono ${row.Movimientos_Periodo > 0 ? 'text-green-700' : row.Movimientos_Periodo < 0 ? 'text-red-600' : ''}`}>
+                          {formatNumber(row.Movimientos_Periodo)}
+                        </td>
                         <td className="py-2 px-2 text-right font-mono text-red-600">{formatNumber(row.Consumos_Periodo)}</td>
                         <td className="py-2 px-2 text-right font-mono font-semibold">{formatNumber(row.Inventario_Teorico)}</td>
                         <td className="py-2 px-2 text-right font-mono">{formatNumber(row.Promedio_Diario)}</td>
                         <td className={`py-2 px-2 text-right font-mono font-semibold ${stockCritico ? 'text-red-600' : ''}`}>
                           {row.Dias_Inventario >= 999 ? '∞' : formatNumber(row.Dias_Inventario)}
                         </td>
-                        <td className="py-2 px-2 text-right font-mono">{formatNumber(row.Consumo_Esperado)}</td>
                         <td className={`py-2 px-2 text-right font-mono font-bold ${necesitaPedir ? 'text-green-700' : 'text-zinc-400'}`}>
                           {formatNumber(row.Cantidad_Pedir)}
                         </td>
                         <td className="py-2 px-2 text-right font-mono">{formatCurrency(row.Costo_Pedido)}</td>
+                        {folioPedidoComparar && (
+                          <>
+                            <td className="py-2 px-2 text-right font-mono text-blue-600">
+                              {row.Cantidad_Pedido_Existente !== null ? formatNumber(row.Cantidad_Pedido_Existente) : '-'}
+                            </td>
+                            <td className={`py-2 px-2 text-right font-mono font-semibold ${tieneDiferencia ? (row.Diferencia_Pedido > 0 ? 'text-green-600' : 'text-red-600') : ''}`}>
+                              {row.Diferencia_Pedido !== null ? (row.Diferencia_Pedido > 0 ? '+' : '') + formatNumber(row.Diferencia_Pedido) : '-'}
+                            </td>
+                          </>
+                        )}
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Mensaje cuando no hay datos */}
-      {!loading && pedidoData.length === 0 && selectedAlmacen && (
-        <Card className="border border-zinc-200">
-          <CardContent className="py-12 text-center">
-            <ShoppingCart className="h-12 w-12 text-zinc-300 mx-auto mb-4" />
-            <p className="text-zinc-500">Selecciona los parámetros y haz clic en "Calcular Pedido"</p>
           </CardContent>
         </Card>
       )}
