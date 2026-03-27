@@ -863,7 +863,7 @@ const Reportes = () => {
                 <option value="">{!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario inicial"}</option>
                 {inventarios.map((inv) => (
                   <option key={inv.folio} value={inv.folio}>
-                    Folio: {inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : 'Sin fecha'}
+                    {inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : 'Sin fecha'} - {inv.comentario || inv.almacen || ''}
                   </option>
                 ))}
               </select>
@@ -881,7 +881,7 @@ const Reportes = () => {
                 <option value="">{!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario final"}</option>
                 {inventarios.map((inv) => (
                   <option key={inv.folio} value={inv.folio}>
-                    Folio: {inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : 'Sin fecha'}
+                    {inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : 'Sin fecha'} - {inv.comentario || inv.almacen || ''}
                   </option>
                 ))}
               </select>

@@ -1446,12 +1446,13 @@ async def get_inventarios_list(
                     F.Sc_Cve_Sucursal as sucursal_id,
                     S.Sc_Descripcion as sucursal,
                     F.Al_Cve_Almacen as almacen_id,
-                    A.Al_Descripcion as almacen
+                    A.Al_Descripcion as almacen,
+                    ISNULL(F.Fi_Comentario, '') as comentario
                 FROM Fisico F
                 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
                 INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND F.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
                 {where_clause}
-                GROUP BY F.Fi_Folio, F.fi_fecha, F.Sc_Cve_Sucursal, S.Sc_Descripcion, F.Al_Cve_Almacen, A.Al_Descripcion
+                GROUP BY F.Fi_Folio, F.fi_fecha, F.Sc_Cve_Sucursal, S.Sc_Descripcion, F.Al_Cve_Almacen, A.Al_Descripcion, F.Fi_Comentario
                 ORDER BY F.fi_fecha DESC
             """
         elif server['system_type'] == 'SoftRestaurant':
@@ -1465,7 +1466,8 @@ async def get_inventarios_list(
                     INV.folio as folio,
                     CONVERT(varchar, INV.fecha, 120) as fecha,
                     INV.idalmacen1 as almacen_id,
-                    A.nombre as almacen
+                    A.nombre as almacen,
+                    ISNULL(INV.observaciones, '') as comentario
                 FROM invfisico INV
                 LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
                 {where_clause}

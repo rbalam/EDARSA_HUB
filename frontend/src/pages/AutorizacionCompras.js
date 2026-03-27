@@ -497,7 +497,7 @@ export default function AutorizacionCompras() {
                 <SelectContent className="max-h-72 overflow-y-auto">
                   {inventariosFiltrados.map(inv => (
                     <SelectItem key={inv.folio} value={inv.folio}>
-                      {inv.folio} ({new Date(inv.fecha).toLocaleDateString('es-MX')}) {inv.comentario ? `- ${inv.comentario.substring(0,20)}` : ''}
+                      {inv.folio} ({new Date(inv.fecha).toLocaleDateString('es-MX')}) - {inv.comentario || inv.almacen || ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
