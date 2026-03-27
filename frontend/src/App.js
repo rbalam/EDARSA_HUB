@@ -8,6 +8,7 @@ import Reportes from '@/pages/Reportes';
 import Compras from '@/pages/Compras';
 import Comercial from '@/pages/Comercial';
 import TableroEjecutivo from '@/pages/TableroEjecutivo';
+import CatalogoConsultas from '@/pages/CatalogoConsultas';
 import Alertas from '@/pages/Alertas';
 import Usuarios from '@/pages/Usuarios';
 import { isAuthenticated } from '@/lib/auth';
@@ -27,6 +28,7 @@ function App() {
             <Route path="compras" element={<Compras />} />
             <Route path="comercial" element={<Comercial />} />
             <Route path="tablero-ejecutivo" element={<TableroEjecutivo />} />
+            <Route path="catalogo-consultas" element={<CatalogoConsultas />} />
             <Route path="alertas" element={<Alertas />} />
             <Route path="usuarios" element={<Usuarios />} />
           </Route>

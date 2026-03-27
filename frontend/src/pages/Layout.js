@@ -13,7 +13,8 @@ import {
   ShoppingCart,
   TrendingUp,
   Settings,
-  PieChart
+  PieChart,
+  Database
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -32,6 +33,7 @@ const Layout = () => {
     { name: 'Compras', href: '/compras', icon: ShoppingCart, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 4 },
     { name: 'Comercial', href: '/comercial', icon: TrendingUp, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 5 },
     { name: 'Tablero Ejecutivo', href: '/tablero-ejecutivo', icon: PieChart, roles: ['Supervisor', 'Administrador'], modulo: 6 },
+    { name: 'Catálogo SQL', href: '/catalogo-consultas', icon: Database, roles: ['Supervisor', 'Administrador'], modulo: 7 },
   ];
 
   // Configuración y sistema

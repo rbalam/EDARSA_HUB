@@ -29,6 +29,7 @@ import base64
 # Importar catálogos de consultas
 from catalogo.consultas_mpro import CONSULTAS_MPRO, ESTRUCTURA_TABLAS_MPRO
 from catalogo.consultas_softrestaurant import CONSULTAS_SOFTRESTAURANT, ESTRUCTURA_TABLAS_SOFTRESTAURANT
+from catalogo.catalogo_consultas import CATALOGO_CONSULTAS, get_consultas_por_categoria as catalogo_get_consultas, get_categorias as catalogo_get_categorias, preparar_sql as catalogo_preparar_sql
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -5548,6 +5549,102 @@ WHERE turnos.apertura >= '{fiaa} 00:00:00' AND turnos.apertura <= '{ffaa} 23:59:
     }
 
 
+def get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes):
+    """Query reutilizable para MPRO - ventas desde tabla Venta"""
+    # Formato YYYYMMDD para MPRO
+    fi = fecha_ini.replace('-', '')
+    ff = fecha_fin.replace('-', '')
+    
+    # MPRO usa Vn_Folio, no Vn_Ticket. Y Vn_Importe o calcular con cantidad*precio
+    query = f"""
+SELECT 
+    COUNT(DISTINCT Vn_Folio) as cheques,
+    ISNULL(SUM(Vn_Importe), 0) as ventas
+FROM Venta
+WHERE Vn_Fecha >= '{fi}' AND Vn_Fecha <= '{ff} 23:59:59'
+  AND ISNULL(Es_Cve_Estado, '') <> 'CA'
+"""
+    try:
+        result = execute_sql_query(server['host'], server['port'], server['database'], 
+                                   server['username'], server['password'], query)
+        if result and len(result) > 0:
+            ventas = float(result[0]['ventas'] or 0)
+            cheques = int(result[0]['cheques'] or 0)
+        else:
+            ventas, cheques = 0, 0
+        logging.info(f"MPRO {server['name']}: Ventas={ventas}, Cheques={cheques}")
+    except Exception as e:
+        logging.warning(f"Error consultando MPRO {server['name']}: {e}")
+        return None
+    
+    # MPRO no tiene PAX normalmente, estimamos como cheques
+    pax = cheques
+    
+    # Mes anterior
+    fia = fecha_ini_ant.replace('-', '')
+    ffa = fecha_fin_ant.replace('-', '')
+    query_ant = f"""
+SELECT ISNULL(SUM(Vn_Importe), 0) as ventas, COUNT(DISTINCT Vn_Ticket) as cheques
+FROM Venta WHERE Vn_Fecha >= '{fia}' AND Vn_Fecha <= '{ffa} 23:59:59' AND Es_Cve_Estado <> 'CA'
+"""
+    try:
+        r_ant = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], query_ant)
+        ventas_ant = float(r_ant[0]['ventas'] or 0) if r_ant else 0
+        cheques_ant = int(r_ant[0]['cheques'] or 0) if r_ant else 0
+    except:
+        ventas_ant, cheques_ant = 0, 0
+    pax_ant = cheques_ant
+    
+    # Año anterior
+    fiaa = fecha_ini_año_ant.replace('-', '')
+    ffaa = fecha_fin_año_ant.replace('-', '')
+    query_año = f"""
+SELECT ISNULL(SUM(Vn_Importe), 0) as ventas, COUNT(DISTINCT Vn_Ticket) as cheques
+FROM Venta WHERE Vn_Fecha >= '{fiaa}' AND Vn_Fecha <= '{ffaa} 23:59:59' AND Es_Cve_Estado <> 'CA'
+"""
+    try:
+        r_año = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], query_año)
+        ventas_año = float(r_año[0]['ventas'] or 0) if r_año else 0
+        cheques_año = int(r_año[0]['cheques'] or 0) if r_año else 0
+    except:
+        ventas_año, cheques_año = 0, 0
+    pax_año = cheques_año
+    
+    # Cálculos
+    ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
+    cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
+    proyeccion = round((ventas / dias_transcurridos) * dias_mes, 2) if dias_transcurridos > 0 else 0
+    
+    # Variaciones %
+    var_vs_mes_ant = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
+    var_vs_año_ant = round(((ventas - ventas_año) / ventas_año * 100), 1) if ventas_año > 0 else 0
+    var_pax_mes = round(((pax - pax_ant) / pax_ant * 100), 1) if pax_ant > 0 else 0
+    var_pax_año = round(((pax - pax_año) / pax_año * 100), 1) if pax_año > 0 else 0
+    var_cheques_mes = round(((cheques - cheques_ant) / cheques_ant * 100), 1) if cheques_ant > 0 else 0
+    var_cheques_año = round(((cheques - cheques_año) / cheques_año * 100), 1) if cheques_año > 0 else 0
+    
+    return {
+        "ventas": ventas,
+        "ventas_ant": ventas_ant,
+        "ventas_año": ventas_año,
+        "var_vs_mes_ant": var_vs_mes_ant,
+        "var_vs_año_ant": var_vs_año_ant,
+        "proyeccion": proyeccion,
+        "pax": pax,
+        "pax_ant": pax_ant,
+        "pax_año": pax_año,
+        "var_pax_mes": var_pax_mes,
+        "var_pax_año": var_pax_año,
+        "cheques": cheques,
+        "cheques_ant": cheques_ant,
+        "cheques_año": cheques_año,
+        "var_cheques_mes": var_cheques_mes,
+        "var_cheques_año": var_cheques_año,
+        "ticket_prom": ticket_prom,
+        "cheque_prom": cheque_prom
+    }
+
+
 @api_router.get("/comercial/tablero-ejecutivo")
 async def tablero_ejecutivo(
     mes: int = Query(default=0),  # 0 = mes actual
@@ -5599,6 +5696,7 @@ async def tablero_ejecutivo(
     
     # Obtener todos los servidores activos
     servers = await db.servers.find({"active": True}).to_list(100)
+    logging.info(f"Servidores encontrados: {len(servers)} - Tipos: {[s['system_type'] for s in servers]}")
     
     # Filtrar por permisos del usuario
     if current_user.get('role') != 'Administrador':
@@ -5610,17 +5708,24 @@ async def tablero_ejecutivo(
                "cheques": 0, "cheques_ant": 0, "cheques_año": 0, "proyeccion": 0}
     
     for server in servers:
+        kpis = None
+        logging.info(f"Procesando servidor: {server['name']} - Tipo: {server['system_type']}")
         if server['system_type'] == 'SoftRestaurant':
             kpis = get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
                                            fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
-            if kpis:
-                kpis["unidad"] = server['name']
-                kpis["server_id"] = server['id']
-                resultados.append(kpis)
-                # Acumular totales
-                for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
-                          "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
-                    totales[k] += kpis.get(k, 0)
+        elif server['system_type'] == 'MPRO':
+            kpis = get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
+                                 fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
+        
+        if kpis:
+            kpis["unidad"] = server['name']
+            kpis["server_id"] = server['id']
+            kpis["system_type"] = server['system_type']
+            resultados.append(kpis)
+            # Acumular totales
+            for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
+                      "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
+                totales[k] += kpis.get(k, 0)
     
     # Calcular variaciones de totales
     totales["var_vs_mes_ant"] = round(((totales["ventas"] - totales["ventas_ant"]) / totales["ventas_ant"] * 100), 1) if totales["ventas_ant"] > 0 else 0
@@ -5634,6 +5739,115 @@ async def tablero_ejecutivo(
         "unidades": resultados,
         "totales": totales
     }
+
+
+# ============================================================================
+# CATÁLOGO DE CONSULTAS - Para que Rich use sin programador
+# ============================================================================
+
+@api_router.get("/catalogo/consultas-rich")
+async def listar_consultas_rich(
+    sistema: str = Query(default=None),  # SoftRestaurant, MPRO
+    categoria: str = Query(default=None),  # Ventas, Compras, Pagos, etc.
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Lista todas las consultas disponibles en el catálogo de Rich.
+    Filtrable por sistema y categoría.
+    """
+    consultas = catalogo_get_consultas(sistema, categoria)
+    
+    # Formato amigable para el frontend
+    resultado = []
+    for key, c in consultas.items():
+        resultado.append({
+            "id": key,
+            "nombre": c["nombre"],
+            "descripcion": c["descripcion"],
+            "sistema": c["sistema"],
+            "categoria": c["categoria"],
+            "parametros": c["parametros"]
+        })
+    
+    return {
+        "consultas": resultado,
+        "categorias": catalogo_get_categorias(),
+        "total": len(resultado)
+    }
+
+
+@api_router.post("/catalogo/ejecutar-rich/{consulta_id}")
+async def ejecutar_consulta_catalogo(
+    consulta_id: str,
+    server_id: str = Query(...),
+    body: Dict = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Ejecuta una consulta del catálogo con los parámetros dados.
+    Body debe contener: { "fecha_ini": "2026-03-01", "fecha_fin": "2026-03-27" }
+    o { "parametros": { "fecha_ini": "...", ... } }
+    """
+    if consulta_id not in CATALOGO_CONSULTAS:
+        raise HTTPException(status_code=404, detail=f"Consulta '{consulta_id}' no encontrada en el catálogo")
+    
+    consulta = CATALOGO_CONSULTAS[consulta_id]
+    
+    # Extraer parámetros del body (soporta ambos formatos)
+    if body and 'parametros' in body:
+        parametros = body['parametros']
+    else:
+        parametros = body or {}
+    
+    # Verificar servidor
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    # Verificar que el sistema coincida
+    sistema_server = server['system_type']
+    sistema_consulta = consulta['sistema']
+    
+    # Mapeo de tipos
+    if sistema_server == 'MPRO' and not consulta_id.startswith('MPRO_'):
+        raise HTTPException(status_code=400, detail=f"Esta consulta es para {sistema_consulta}, no para MPRO")
+    if sistema_server == 'SoftRestaurant' and not consulta_id.startswith('SR_'):
+        raise HTTPException(status_code=400, detail=f"Esta consulta es para {sistema_consulta}, no para SoftRestaurant")
+    
+    # Verificar permisos
+    if not user_has_server_access(current_user, server_id):
+        raise HTTPException(status_code=403, detail="Sin acceso a este servidor")
+    
+    # Preparar parámetros
+    params = parametros or {}
+    
+    # Validar parámetros requeridos
+    for param in consulta['parametros']:
+        if param not in params:
+            raise HTTPException(status_code=400, detail=f"Falta parámetro requerido: {param}")
+    
+    # Preparar SQL
+    sql = catalogo_preparar_sql(consulta_id, params)
+    
+    logging.info(f"Catálogo - Ejecutando {consulta_id} en {server['name']}")
+    
+    try:
+        result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], sql
+        )
+        
+        return {
+            "consulta": consulta['nombre'],
+            "servidor": server['name'],
+            "parametros": params,
+            "registros": len(result),
+            "datos": result
+        }
+        
+    except Exception as e:
+        logging.error(f"Error ejecutando consulta del catálogo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Incluir el router después de definir todos los endpoints
