@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   ShoppingCart,
+  TrendingUp,
   Settings
 } from 'lucide-react';
 import { useState } from 'react';
@@ -28,6 +29,7 @@ const Layout = () => {
   const modulos = [
     { name: 'Inventarios', href: '/reportes', icon: Package, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 1 },
     { name: 'Compras', href: '/compras', icon: ShoppingCart, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 4 },
+    { name: 'Comercial', href: '/comercial', icon: TrendingUp, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 5 },
   ];
 
   // Configuración y sistema

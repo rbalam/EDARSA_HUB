@@ -3,7 +3,7 @@
 ## Resumen
 | Métrica | Valor |
 |---------|-------|
-| **Saldo Actual** | 93 |
+| **Saldo Actual** | ~52 (estimado, parcial) |
 | **Última Actualización** | 2026-03-27 |
 
 ---
@@ -19,6 +19,7 @@
 | 2026-03-27 | Bugfixes + Renombre Edarsa Hub + Sidebar modular | 21.65 | 121.49 |
 | 2026-03-27 | Crear Agente Rich (perfil Ricardo) | GRATIS | 121.49 |
 | 2026-03-27 | **Módulo Compras con Tabs + Análisis + Endpoints** | **~27** | **~82** |
+| 2026-03-27 | **Módulo Comercial (Ventas) - Frontend completo** | **~30** | **~52** |
 
 ---
 
