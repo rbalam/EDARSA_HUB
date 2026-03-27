@@ -4,13 +4,14 @@ import { Button } from '@/components/ui/button';
 import { 
   LayoutDashboard, 
   Server, 
-  FileText, 
+  Package, 
   Bell, 
   Users, 
   LogOut,
   Menu,
   X,
-  ShoppingCart
+  ShoppingCart,
+  Settings
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -23,16 +24,22 @@ const Layout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  const navigation = [
+  // Módulos principales según arquitectura
+  const modulos = [
+    { name: 'Inventarios', href: '/reportes', icon: Package, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 1 },
+    { name: 'Compras', href: '/compras', icon: ShoppingCart, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 4 },
+  ];
+
+  // Configuración y sistema
+  const sistema = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['Usuario', 'Supervisor', 'Administrador'] },
     { name: 'Servidores', href: '/servidores', icon: Server, roles: ['Administrador'] },
-    { name: 'Reportes', href: '/reportes', icon: FileText, roles: ['Usuario', 'Supervisor', 'Administrador'] },
-    { name: 'Compras', href: '/compras', icon: ShoppingCart, roles: ['Usuario', 'Supervisor', 'Administrador'] },
     { name: 'Alertas', href: '/alertas', icon: Bell, roles: ['Supervisor', 'Administrador'] },
     { name: 'Usuarios', href: '/usuarios', icon: Users, roles: ['Administrador'] },
   ];
 
-  const filteredNav = navigation.filter(item => item.roles.includes(user?.role));
+  const filteredModulos = modulos.filter(item => item.roles.includes(user?.role));
+  const filteredSistema = sistema.filter(item => item.roles.includes(user?.role));
 
   return (
     <div className="min-h-screen bg-zinc-50" data-testid="layout">
@@ -66,28 +73,58 @@ const Layout = () => {
             <p className="text-zinc-500 text-xs">{user?.role}</p>
           </div>
 
-          <nav className="flex-1 p-4 space-y-1" data-testid="sidebar-nav">
-            {filteredNav.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.href;
-              
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
-                    isActive 
-                      ? 'bg-zinc-800 text-white' 
-                      : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                  }`}
-                  data-testid={`nav-${item.name.toLowerCase()}`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="font-medium">{item.name}</span>
-                </Link>
-              );
-            })}
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto" data-testid="sidebar-nav">
+            {/* Sección: Módulos */}
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider px-4 mb-2">Módulos</p>
+              {filteredModulos.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.href;
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
+                      isActive 
+                        ? 'bg-zinc-800 text-white' 
+                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                    }`}
+                    data-testid={`nav-${item.name.toLowerCase()}`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="font-medium">{item.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Sección: Sistema */}
+            <div>
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider px-4 mb-2">Sistema</p>
+              {filteredSistema.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.href;
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
+                      isActive 
+                        ? 'bg-zinc-800 text-white' 
+                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                    }`}
+                    data-testid={`nav-${item.name.toLowerCase()}`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="font-medium">{item.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </nav>
 
           <div className="p-4 border-t border-zinc-800">
