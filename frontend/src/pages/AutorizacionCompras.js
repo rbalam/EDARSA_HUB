@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Checkbox } from '../components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, ShoppingCart, Package, TrendingUp, AlertTriangle, Download, AlertCircle, Calendar, Edit3, FileText, RefreshCw, Search, X } from 'lucide-react';
+import { Loader2, ShoppingCart, Package, TrendingUp, AlertTriangle, Download, AlertCircle, Calendar, Edit3, RefreshCw, Search } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
+const STORAGE_KEY = 'compras_params';
 
 const formatNumber = (num) => {
   if (num === null || num === undefined) return '-';
@@ -20,6 +21,21 @@ const formatNumber = (num) => {
 const formatCurrency = (num) => {
   if (num === null || num === undefined) return '-';
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(num);
+};
+
+// Guardar parámetros en localStorage
+const saveParams = (params) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(params));
+  } catch (e) { console.error('Error saving params', e); }
+};
+
+// Cargar parámetros de localStorage
+const loadParams = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch (e) { return null; }
 };
 
 export default function AutorizacionCompras() {
@@ -40,6 +56,7 @@ export default function AutorizacionCompras() {
   
   // Inventarios físicos disponibles
   const [inventariosFisicos, setInventariosFisicos] = useState([]);
+  const [inventariosFiltrados, setInventariosFiltrados] = useState([]);
   const [folioInvFisico, setFolioInvFisico] = useState('');
   
   // Pedidos para comparar
@@ -58,6 +75,9 @@ export default function AutorizacionCompras() {
   
   // Modal de detalle
   const [detalleModal, setDetalleModal] = useState({ open: false, tipo: '', data: [], titulo: '', loading: false });
+  
+  // Flag para restaurar params
+  const [paramsRestored, setParamsRestored] = useState(false);
 
   // Cargar servidores al iniciar
   useEffect(() => {
@@ -68,6 +88,19 @@ export default function AutorizacionCompras() {
           headers: { Authorization: `Bearer ${token}` }
         });
         setServers(response.data);
+        
+        // Restaurar parámetros guardados
+        const saved = loadParams();
+        if (saved && response.data.length > 0) {
+          const serverExists = response.data.find(s => s.id === saved.server);
+          if (serverExists) {
+            setSelectedServer(saved.server);
+            setMetodoCalculo(saved.metodo || 'consumo');
+            setDiasInventario(saved.dias || 10);
+            // Marcar que hay params para restaurar
+            setParamsRestored(true);
+          }
+        }
       } catch (error) {
         console.error('Error cargando servidores:', error);
         toast.error('Error al cargar servidores');
@@ -82,24 +115,98 @@ export default function AutorizacionCompras() {
       const server = servers.find(s => s.id === selectedServer);
       setServerData(server);
       fetchSucursales(selectedServer);
-      setSelectedSucursal('');
-      setSelectedAlmacenes([]);
-      setPedidoData([]);
-      setInventariosFisicos([]);
-      setPedidosVigentes([]);
     }
   }, [selectedServer, servers]);
+
+  // Restaurar sucursal después de cargar sucursales
+  useEffect(() => {
+    if (paramsRestored && sucursales.length > 0) {
+      const saved = loadParams();
+      if (saved?.sucursal) {
+        const exists = sucursales.find(s => s.nombre === saved.sucursal);
+        if (exists) {
+          setSelectedSucursal(saved.sucursal);
+        }
+      }
+    }
+  }, [sucursales, paramsRestored]);
 
   // Cargar almacenes e inventarios cuando cambia la sucursal
   useEffect(() => {
     if (selectedServer && selectedSucursal) {
       fetchAlmacenes(selectedServer, selectedSucursal);
-      fetchInventariosFisicos(selectedServer, selectedSucursal);
+      fetchInventariosFisicos(selectedServer, selectedSucursal, null);
       fetchPedidosVigentes(selectedServer, selectedSucursal);
-      setSelectedAlmacenes([]);
-      setPedidoData([]);
+      
+      // Restaurar almacenes guardados
+      if (paramsRestored) {
+        const saved = loadParams();
+        if (saved?.almacenes) {
+          if (saved.almacenes.includes('TODOS')) {
+            setTodosAlmacenes(true);
+            setSelectedAlmacenes(['TODOS']);
+          } else {
+            setSelectedAlmacenes(saved.almacenes);
+          }
+        }
+        if (saved?.folio) setFolioInvFisico(saved.folio);
+        if (saved?.fechaIni) setFechaInvFisico(saved.fechaIni);
+        if (saved?.fechaFin) setFechaFinPeriodo(saved.fechaFin);
+        setParamsRestored(false); // Solo restaurar una vez
+      }
     }
   }, [selectedServer, selectedSucursal]);
+
+  // Filtrar inventarios cuando cambian los almacenes seleccionados
+  useEffect(() => {
+    if (todosAlmacenes || selectedAlmacenes.includes('TODOS')) {
+      // Mostrar todos agrupados por fecha
+      const grouped = {};
+      inventariosFisicos.forEach(inv => {
+        const key = inv.fecha.split('T')[0];
+        if (!grouped[key]) grouped[key] = { fecha: inv.fecha, almacenes: [], comentario: inv.comentario };
+        grouped[key].almacenes.push(inv.almacen);
+      });
+      const consolidated = Object.entries(grouped).map(([fecha, data]) => ({
+        folio: `TODOS-${fecha}`,
+        fecha: data.fecha,
+        almacen: `${data.almacenes.length} almacenes`,
+        comentario: data.comentario || '',
+        isTodos: true
+      }));
+      setInventariosFiltrados(consolidated.slice(0, 30));
+    } else if (selectedAlmacenes.length === 1) {
+      // Filtrar por almacén seleccionado
+      const filtered = inventariosFisicos.filter(inv => 
+        inv.almacen.toLowerCase().includes(selectedAlmacenes[0].toLowerCase())
+      );
+      setInventariosFiltrados(filtered.slice(0, 50));
+    } else if (selectedAlmacenes.length > 1) {
+      // Múltiples almacenes - mostrar todos de esos almacenes
+      const filtered = inventariosFisicos.filter(inv => 
+        selectedAlmacenes.some(a => inv.almacen.toLowerCase().includes(a.toLowerCase()))
+      );
+      setInventariosFiltrados(filtered.slice(0, 50));
+    } else {
+      setInventariosFiltrados(inventariosFisicos.slice(0, 50));
+    }
+  }, [selectedAlmacenes, todosAlmacenes, inventariosFisicos]);
+
+  // Guardar parámetros cuando cambian
+  useEffect(() => {
+    if (selectedServer && selectedSucursal) {
+      saveParams({
+        server: selectedServer,
+        sucursal: selectedSucursal,
+        almacenes: selectedAlmacenes,
+        folio: folioInvFisico,
+        fechaIni: fechaInvFisico,
+        fechaFin: fechaFinPeriodo,
+        metodo: metodoCalculo,
+        dias: diasInventario
+      });
+    }
+  }, [selectedServer, selectedSucursal, selectedAlmacenes, folioInvFisico, fechaInvFisico, fechaFinPeriodo, metodoCalculo, diasInventario]);
 
   const fetchSucursales = async (serverId) => {
     try {
@@ -126,14 +233,18 @@ export default function AutorizacionCompras() {
     }
   };
 
-  const fetchInventariosFisicos = async (serverId, sucursal) => {
+  const fetchInventariosFisicos = async (serverId, sucursal, almacen) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/compras/inventarios-fisicos/${serverId}?sucursal=${encodeURIComponent(sucursal)}`, {
+      let url = `${API_URL}/api/compras/inventarios-fisicos/${serverId}?sucursal=${encodeURIComponent(sucursal)}`;
+      if (almacen && almacen !== 'TODOS') {
+        url += `&almacen=${encodeURIComponent(almacen)}`;
+      }
+      const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setInventariosFisicos(response.data);
-      if (response.data.length > 0) {
+      if (response.data.length > 0 && !folioInvFisico) {
         setFolioInvFisico(response.data[0].folio);
         setFechaInvFisico(response.data[0].fecha.split('T')[0]);
       }
@@ -148,9 +259,10 @@ export default function AutorizacionCompras() {
       const response = await axios.get(`${API_URL}/api/compras/pedidos-vigentes/${serverId}?sucursal=${encodeURIComponent(sucursal)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setPedidosVigentes(response.data);
+      setPedidosVigentes(response.data || []);
     } catch (error) {
       console.error('Error cargando pedidos vigentes:', error);
+      setPedidosVigentes([]);
     }
   };
 
@@ -162,12 +274,14 @@ export default function AutorizacionCompras() {
       return [...prev, almacenNombre];
     });
     setTodosAlmacenes(false);
+    setFolioInvFisico(''); // Reset folio al cambiar almacén
   };
 
   const handleTodosAlmacenes = (checked) => {
     setTodosAlmacenes(checked);
     if (checked) {
       setSelectedAlmacenes(['TODOS']);
+      setFolioInvFisico(''); // Reset folio
     } else {
       setSelectedAlmacenes([]);
     }
@@ -209,7 +323,10 @@ export default function AutorizacionCompras() {
 
     try {
       const token = localStorage.getItem('token');
-      const folioComparar = usarFolioManual ? folioManual : (folioPedidoComparar !== '__none__' ? folioPedidoComparar : null);
+      const folioComparar = usarFolioManual ? folioManual : (folioPedidoComparar && folioPedidoComparar !== '__none__' ? folioPedidoComparar : null);
+      
+      // Si es TODOS, no enviar folio específico
+      const folioEnviar = (todosAlmacenes || folioInvFisico?.startsWith('TODOS-')) ? null : folioInvFisico;
       
       const response = await axios.post(`${API_URL}/api/compras/calculo-pedido`, {
         server_id: selectedServer,
@@ -219,7 +336,7 @@ export default function AutorizacionCompras() {
         fecha_fin_periodo: fechaFinPeriodo,
         dias_inventario: parseInt(diasInventario),
         metodo_calculo: metodoCalculo,
-        folio_inventario_fisico: folioInvFisico || null,
+        folio_inventario_fisico: folioEnviar,
         folio_pedido_comparar: folioComparar
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -245,22 +362,14 @@ export default function AutorizacionCompras() {
       });
       
       const data = response.data.data;
-      const totalProductos = data.length;
-      const productosAPedir = data.filter(p => p.Cantidad_Pedir > 0).length;
-      const costoTotalPedido = data.reduce((sum, p) => sum + (p.Costo_Pedido || 0), 0);
-      const productosStockBajo = data.filter(p => p.Dias_Inventario < 3 && p.Dias_Inventario !== 999).length;
-      const productosSinInvInicial = data.filter(p => p.Sin_Inventario_Inicial).length;
-      const productosSinInvFinal = data.filter(p => p.Sin_Inventario_Final).length;
-      const productosConDiferencia = data.filter(p => p.Diferencia_Pedido !== null && p.Diferencia_Pedido !== 0).length;
-
       setResumen({
-        totalProductos,
-        productosAPedir,
-        costoTotalPedido,
-        productosStockBajo,
-        productosSinInvInicial,
-        productosSinInvFinal,
-        productosConDiferencia
+        totalProductos: data.length,
+        productosAPedir: data.filter(p => p.Cantidad_Pedir > 0).length,
+        costoTotalPedido: data.reduce((sum, p) => sum + (p.Costo_Pedido || 0), 0),
+        productosStockBajo: data.filter(p => p.Dias_Inventario < 3 && p.Dias_Inventario !== 999).length,
+        productosSinInvInicial: data.filter(p => p.Sin_Inventario_Inicial).length,
+        productosSinInvFinal: data.filter(p => p.Sin_Inventario_Final).length,
+        productosConDiferencia: data.filter(p => p.Diferencia_Pedido !== null && p.Diferencia_Pedido !== 0).length
       });
 
       toast.success(`Cálculo completado: ${response.data.count} productos`);
@@ -272,7 +381,6 @@ export default function AutorizacionCompras() {
     }
   };
 
-  // Función para ver detalle de movimientos
   const verDetalleMovimientos = async (codigo, producto) => {
     if (!infoInventario?.almacenCodigos) return;
     setDetalleModal({ open: true, tipo: 'movimientos', data: [], titulo: `Movimientos: ${producto}`, loading: true });
@@ -288,7 +396,6 @@ export default function AutorizacionCompras() {
     }
   };
 
-  // Función para ver detalle de consumos
   const verDetalleConsumos = async (codigo, producto) => {
     if (!infoInventario?.sucursalCodigo) return;
     setDetalleModal({ open: true, tipo: 'consumos', data: [], titulo: `Consumos: ${producto}`, loading: true });
@@ -304,7 +411,6 @@ export default function AutorizacionCompras() {
     }
   };
 
-  // Actualizar inventario inicial manual
   const actualizarInvInicial = (codigo, valor) => {
     const nuevoValor = parseFloat(valor) || 0;
     setPedidoData(prev => prev.map(row => {
@@ -321,7 +427,6 @@ export default function AutorizacionCompras() {
     setEditingRow(null);
   };
 
-  // Actualizar inventario final manual
   const actualizarInvFinal = (codigo, valor) => {
     const nuevoValor = parseFloat(valor) || 0;
     setPedidoData(prev => prev.map(row => {
@@ -372,7 +477,7 @@ export default function AutorizacionCompras() {
                 <SelectTrigger data-testid="sucursal-select" className="h-9">
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-60 overflow-y-auto">
                   {sucursales.map(suc => (
                     <SelectItem key={suc.codigo || suc.nombre} value={suc.nombre}>{suc.nombre}</SelectItem>
                   ))}
@@ -380,14 +485,20 @@ export default function AutorizacionCompras() {
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Folio Inv. Inicial</Label>
-              <Select value={folioInvFisico} onValueChange={(val) => { setFolioInvFisico(val); const inv = inventariosFisicos.find(i => i.folio === val); if (inv) setFechaInvFisico(inv.fecha.split('T')[0]); }}>
+              <Label className="text-xs">Folio Inv. Inicial {todosAlmacenes && <span className="text-orange-500">(Consolidado)</span>}</Label>
+              <Select value={folioInvFisico} onValueChange={(val) => { 
+                setFolioInvFisico(val); 
+                const inv = inventariosFiltrados.find(i => i.folio === val); 
+                if (inv) setFechaInvFisico(inv.fecha.split('T')[0]); 
+              }} disabled={todosAlmacenes}>
                 <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Seleccionar" />
+                  <SelectValue placeholder={todosAlmacenes ? "Todos los folios" : "Seleccionar"} />
                 </SelectTrigger>
-                <SelectContent>
-                  {inventariosFisicos.slice(0, 20).map(inv => (
-                    <SelectItem key={inv.folio} value={inv.folio}>{inv.folio} ({new Date(inv.fecha).toLocaleDateString('es-MX')})</SelectItem>
+                <SelectContent className="max-h-72 overflow-y-auto">
+                  {inventariosFiltrados.map(inv => (
+                    <SelectItem key={inv.folio} value={inv.folio}>
+                      {inv.folio} ({new Date(inv.fecha).toLocaleDateString('es-MX')}) {inv.comentario ? `- ${inv.comentario.substring(0,20)}` : ''}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -410,7 +521,7 @@ export default function AutorizacionCompras() {
           {almacenes.length > 0 && (
             <div className="space-y-1">
               <Label className="text-xs">Almacenes</Label>
-              <div className="flex flex-wrap gap-2 p-2 border rounded-md bg-zinc-50 text-sm">
+              <div className="flex flex-wrap gap-2 p-2 border rounded-md bg-zinc-50 text-sm max-h-20 overflow-y-auto">
                 <div className="flex items-center gap-1">
                   <Checkbox id="todos" checked={todosAlmacenes} onCheckedChange={handleTodosAlmacenes} />
                   <label htmlFor="todos" className="font-medium">TODOS</label>
@@ -445,17 +556,22 @@ export default function AutorizacionCompras() {
               <div className="flex gap-2">
                 <Select value={folioPedidoComparar} onValueChange={(v) => { setFolioPedidoComparar(v); setUsarFolioManual(false); }} disabled={usarFolioManual}>
                   <SelectTrigger className="h-9 flex-1">
-                    <SelectValue placeholder="Sin autorizar" />
+                    <SelectValue placeholder="Pedidos sin autorizar" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-60 overflow-y-auto">
                     <SelectItem value="__none__">Sin comparar</SelectItem>
                     {pedidosVigentes.map(p => (
-                      <SelectItem key={`${p.tipo}-${p.folio}`} value={p.folio}>[{p.tipo}] {p.folio}</SelectItem>
+                      <SelectItem key={`${p.tipo}-${p.folio}`} value={p.folio}>
+                        [{p.tipo}] {p.folio} - {p.estado} - {p.proveedor || 'Sin prov.'}
+                      </SelectItem>
                     ))}
+                    {pedidosVigentes.length === 0 && (
+                      <div className="px-2 py-1 text-xs text-zinc-500">No hay pedidos sin autorizar</div>
+                    )}
                   </SelectContent>
                 </Select>
-                <Input placeholder="Folio manual" value={folioManual} onChange={(e) => setFolioManual(e.target.value)} className="h-9 w-32" />
-                <Button variant="outline" size="sm" onClick={buscarFolioManual} className="h-9"><Search className="h-4 w-4" /></Button>
+                <Input placeholder="Folio manual" value={folioManual} onChange={(e) => setFolioManual(e.target.value)} className="h-9 w-28" />
+                <Button variant="outline" size="sm" onClick={buscarFolioManual} className="h-9 px-2"><Search className="h-4 w-4" /></Button>
               </div>
             </div>
           </div>
@@ -490,7 +606,7 @@ export default function AutorizacionCompras() {
         <Card className="border border-blue-200 bg-blue-50">
           <CardContent className="py-2 text-sm">
             <span className="font-semibold">Período:</span> {infoInventario.fechaInventarioFisico} → {fechaFinPeriodo} ({infoInventario.diasPeriodo} días) | 
-            <span className="ml-2">Folio Ini: {infoInventario.folioInventarioFisico || 'N/A'}</span>
+            <span className="ml-2">Folio Ini: {infoInventario.folioInventarioFisico || (todosAlmacenes ? 'Consolidado' : 'N/A')}</span>
             {infoInventario.tieneInventarioFinal && <span className="ml-2 text-green-700">| Folio Fin: {infoInventario.folioInventarioFinal}</span>}
             {!infoInventario.tieneInventarioFinal && <span className="ml-2 text-orange-600">| Sin inv. final capturado</span>}
             {infoInventario.comparandoConPedido && <span className="ml-2 px-2 py-0.5 bg-green-200 rounded text-xs">vs {infoInventario.comparandoConPedido}</span>}
