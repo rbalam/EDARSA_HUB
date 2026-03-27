@@ -5237,16 +5237,25 @@ WHERE turnos.apertura >= '{fecha_ini_ant} 00:00:00'
             }
         
         elif server['system_type'] == 'MPRO':
-            # Query para MPRO - usa tabla Venta con Vn_Folio (no Vn_Ticket)
+            # Query para MPRO - usa tabla Venta con Vn_Precio_Neto_Importe (NO Vn_Importe)
+            # Filtrar por sucursal usando JOIN si viene el nombre
+            sucursal_join = ""
+            sucursal_filter = ""
+            if sucursal:
+                sucursal_join = "INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal"
+                sucursal_filter = f" AND S.Sc_Descripcion LIKE '%{sucursal}%'"
+            
             query_kpis = f"""
 SELECT 
-    COUNT(DISTINCT Vn_Folio) as cheques_total,
-    ISNULL(SUM(Vn_Importe), 0) as ventas_periodo,
-    ISNULL(AVG(Vn_Importe), 0) as ticket_promedio
-FROM Venta
-WHERE Vn_Fecha >= '{fecha_ini}'
-  AND Vn_Fecha <= '{fecha_fin} 23:59:59'
-  AND ISNULL(Es_Cve_Estado, '') <> 'CA'
+    COUNT(DISTINCT V.Vn_Folio) as cheques_total,
+    ISNULL(SUM(V.Vn_Precio_Neto_Importe), 0) as ventas_periodo,
+    ISNULL(AVG(V.Vn_Precio_Neto_Importe), 0) as ticket_promedio
+FROM Venta V
+{sucursal_join}
+WHERE V.Vn_Fecha >= '{fecha_ini}'
+  AND V.Vn_Fecha <= '{fecha_fin} 23:59:59'
+  AND ISNULL(V.Es_Cve_Estado, '') <> 'CA'
+  {sucursal_filter}
 """
             result = execute_sql_query(
                 server['host'], server['port'], server['database'],
