@@ -4874,8 +4874,7 @@ async def comercial_dashboard(
         
         if server['system_type'] == 'SoftRestaurant':
             # Query principal para KPIs de ventas SoftRestaurant
-            # IMPORTANTE: Usamos cheques.fecha directamente para coincidir con SoftRestaurant
-            # Filtramos total > 0 para excluir cortesías completas (igual que Edarsa Sales)
+            # MISMA LÓGICA QUE ANÁLISIS DE INVENTARIOS: usa turnos.apertura
             query_kpis = f"""
 SELECT 
     COUNT(DISTINCT cheques.folio) as cheques_total,
@@ -4884,10 +4883,10 @@ SELECT
     ISNULL(SUM(cheques.nopersonas), 0) as pax_total,
     ISNULL(AVG(CAST(cheques.nopersonas as float)), 0) as pax_promedio
 FROM cheques
-WHERE cheques.fecha >= '{fecha_ini} 00:00:00'
-  AND cheques.fecha <= '{fecha_fin} 23:59:59'
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{fecha_ini} 00:00:00'
+  AND turnos.apertura <= '{fecha_fin} 23:59:59'
   AND cheques.cancelado = 0
-  AND cheques.total > 0
 """
             result = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -4914,13 +4913,14 @@ WHERE cheques.fecha >= '{fecha_ini} 00:00:00'
             # Calcular rotación de mesas (vueltas promedio por mesa)
             rotacion_mesas = round(cheques_total / mesas_atendidas, 2) if mesas_atendidas > 0 else 0
             
-            # Query para período anterior (comparativo)
+            # Query para período anterior (comparativo) - MISMA LÓGICA
             query_anterior = f"""
 SELECT 
     SUM(cheques.total) as ventas_periodo
 FROM cheques
-WHERE cheques.fecha >= '{fecha_ini_ant} 00:00:00'
-  AND cheques.fecha <= '{fecha_fin_ant} 23:59:59'
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{fecha_ini_ant} 00:00:00'
+  AND turnos.apertura <= '{fecha_fin_ant} 23:59:59'
   AND cheques.cancelado = 0
 """
             result_ant = execute_sql_query(
