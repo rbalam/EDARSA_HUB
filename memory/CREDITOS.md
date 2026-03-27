@@ -3,7 +3,7 @@
 ## Resumen
 | Métrica | Valor |
 |---------|-------|
-| **Total Acumulado** | 0.48 |
+| **Total Acumulado** | 5.66 |
 | **Última Actualización** | 2026-03-24 |
 
 ---
@@ -13,6 +13,7 @@
 | Fecha | Concepto | Créditos | Acumulado |
 |-------|----------|----------|-----------|
 | 2026-03-24 | Preguntas + Plan Fase 1 Módulo Compras | 0.48 | 0.48 |
+| 2026-03-24 | Aclaración multi-sistema (MPRO + SoftRestaurant) | 5.18 | 5.66 |
 
 ---
 
