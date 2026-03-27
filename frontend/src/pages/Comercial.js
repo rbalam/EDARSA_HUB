@@ -12,7 +12,8 @@ import { toast } from 'sonner';
 import { 
   Loader2, TrendingUp, TrendingDown, DollarSign, Users, Clock, Target,
   AlertTriangle, BarChart3, PieChart, ShoppingBag, Utensils, Coffee,
-  Wine, Award, RefreshCw, Calendar, ArrowUpRight, ArrowDownRight
+  Wine, Award, RefreshCw, Calendar, ArrowUpRight, ArrowDownRight,
+  Receipt, ChevronLeft, ChevronRight, X, Search
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -32,6 +33,156 @@ const formatPercent = (num) => {
   return `${num >= 0 ? '+' : ''}${num.toFixed(1)}%`;
 };
 
+// ============ MODAL DE DETALLE DE MOVIMIENTOS (Drill-down) ============
+function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo, tipoKpi }) {
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(null);
+  const [page, setPage] = useState(1);
+
+  const titulos = {
+    ventas: { titulo: 'Detalle de Ventas', icono: DollarSign, color: 'text-green-600' },
+    ticket: { titulo: 'Detalle de Cheques', icono: Receipt, color: 'text-blue-600' },
+    pax: { titulo: 'Detalle de Comensales', icono: Users, color: 'text-purple-600' },
+    rotacion: { titulo: 'Detalle de Mesas', icono: Utensils, color: 'text-orange-600' }
+  };
+
+  const config = titulos[tipoKpi] || titulos.ventas;
+  const IconComponent = config.icono;
+
+  useEffect(() => {
+    if (isOpen && serverId && sucursal) {
+      cargarDetalle();
+    }
+  }, [isOpen, serverId, sucursal, page, periodo]);
+
+  const cargarDetalle = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/comercial/detalle-movimientos/${serverId}`, {
+        params: { sucursal, tipo: tipoKpi, periodo, page, limit: 50 },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setData(response.data);
+    } catch (error) {
+      console.error('Error cargando detalle:', error);
+      toast.error('Error al cargar detalle de movimientos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="flex items-center gap-2">
+            <IconComponent className={`h-5 w-5 ${config.color}`} />
+            {config.titulo}
+            {data?.servidor && <span className="text-sm font-normal text-zinc-500">• {data.servidor}</span>}
+          </DialogTitle>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+          </div>
+        ) : data?.movimientos?.length > 0 ? (
+          <div className="flex-1 overflow-hidden flex flex-col">
+            {/* Info del período */}
+            <div className="flex items-center justify-between mb-3 px-1">
+              <span className="text-sm text-zinc-500">
+                Período: {data.periodo?.inicio} a {data.periodo?.fin}
+              </span>
+              <span className="text-sm font-medium">
+                {data.total} movimientos
+              </span>
+            </div>
+
+            {/* Tabla de movimientos */}
+            <div className="flex-1 overflow-auto border rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-zinc-800 text-white">
+                  <tr>
+                    <th className="py-2 px-3 text-left">Folio</th>
+                    <th className="py-2 px-3 text-left">Fecha/Hora</th>
+                    <th className="py-2 px-3 text-right">Importe</th>
+                    <th className="py-2 px-3 text-center">PAX</th>
+                    <th className="py-2 px-3 text-center">Productos</th>
+                    <th className="py-2 px-3 text-left">Tipo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.movimientos.map((mov, idx) => (
+                    <tr key={idx} className="border-b hover:bg-zinc-50 transition-colors">
+                      <td className="py-2 px-3 font-mono text-xs font-medium">{mov.folio}</td>
+                      <td className="py-2 px-3 text-zinc-600">{mov.fecha}</td>
+                      <td className="py-2 px-3 text-right font-semibold text-green-600">
+                        {formatCurrency(mov.importe)}
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        {mov.pax > 0 ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Users className="h-3 w-3 text-purple-500" />
+                            {mov.pax}
+                          </span>
+                        ) : '-'}
+                      </td>
+                      <td className="py-2 px-3 text-center text-zinc-500">{mov.num_productos}</td>
+                      <td className="py-2 px-3">
+                        <span className={`px-2 py-0.5 rounded text-xs ${
+                          mov.tipo_servicio === 'Comedor' ? 'bg-blue-100 text-blue-700' :
+                          mov.tipo_servicio === 'Domicilio' ? 'bg-orange-100 text-orange-700' :
+                          mov.tipo_servicio === 'Para llevar' ? 'bg-green-100 text-green-700' :
+                          'bg-zinc-100 text-zinc-700'
+                        }`}>
+                          {mov.tipo_servicio}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Paginación */}
+            {data.pages > 1 && (
+              <div className="flex items-center justify-between pt-3 border-t mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                </Button>
+                <span className="text-sm text-zinc-500">
+                  Página {page} de {data.pages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.min(data.pages, p + 1))}
+                  disabled={page >= data.pages}
+                >
+                  Siguiente <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-zinc-500">
+            <Receipt className="h-12 w-12 mx-auto mb-3 opacity-30" />
+            <p>No hay movimientos en este período</p>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ============ TAB 1: DASHBOARD DE VENTAS ============
 function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
   const [loading, setLoading] = useState(false);
@@ -39,6 +190,7 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
   const [comparativo, setComparativo] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const [periodo, setPeriodo] = useState('mes'); // mes, semana, dia
+  const [detalleModal, setDetalleModal] = useState({ open: false, tipo: null });
 
   const cargarDashboard = async () => {
     if (!selectedServer || !selectedSucursal) {
@@ -71,6 +223,14 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
       cargarDashboard();
     }
   }, [selectedServer, selectedSucursal, periodo]);
+
+  const handleDoubleClick = (tipoKpi) => {
+    if (!selectedServer || !selectedSucursal) {
+      toast.error('Selecciona servidor y sucursal primero');
+      return;
+    }
+    setDetalleModal({ open: true, tipo: tipoKpi });
+  };
 
   return (
     <div className="space-y-4">
@@ -137,11 +297,22 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
         </Card>
       )}
 
-      {/* KPIs principales */}
+      {/* Instrucción de drill-down */}
+      {kpis && (
+        <p className="text-xs text-zinc-500 italic text-center">
+          💡 Doble clic en cualquier tarjeta para ver el detalle de movimientos
+        </p>
+      )}
+
+      {/* KPIs principales - CON DOBLE CLICK DRILL-DOWN */}
       {kpis && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Card className="border bg-gradient-to-br from-green-50 to-white">
+            <Card 
+              className="border bg-gradient-to-br from-green-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
+              onDoubleClick={() => handleDoubleClick('ventas')}
+              data-testid="kpi-ventas"
+            >
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -163,7 +334,11 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
               </CardContent>
             </Card>
 
-            <Card className="border bg-gradient-to-br from-blue-50 to-white">
+            <Card 
+              className="border bg-gradient-to-br from-blue-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
+              onDoubleClick={() => handleDoubleClick('ticket')}
+              data-testid="kpi-ticket"
+            >
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -176,7 +351,11 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
               </CardContent>
             </Card>
 
-            <Card className="border bg-gradient-to-br from-purple-50 to-white">
+            <Card 
+              className="border bg-gradient-to-br from-purple-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
+              onDoubleClick={() => handleDoubleClick('pax')}
+              data-testid="kpi-pax"
+            >
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -189,7 +368,11 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
               </CardContent>
             </Card>
 
-            <Card className="border bg-gradient-to-br from-orange-50 to-white">
+            <Card 
+              className="border bg-gradient-to-br from-orange-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
+              onDoubleClick={() => handleDoubleClick('rotacion')}
+              data-testid="kpi-rotacion"
+            >
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -235,6 +418,16 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
           )}
         </>
       )}
+
+      {/* Modal de Detalle de Movimientos */}
+      <DetalleMovimientosModal
+        isOpen={detalleModal.open}
+        onClose={() => setDetalleModal({ open: false, tipo: null })}
+        serverId={selectedServer}
+        sucursal={selectedSucursal}
+        periodo={periodo}
+        tipoKpi={detalleModal.tipo}
+      />
     </div>
   );
 }

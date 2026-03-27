@@ -5447,6 +5447,163 @@ ORDER BY COUNT(*) DESC
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/comercial/detalle-movimientos/{server_id}")
+async def comercial_detalle_movimientos(
+    server_id: str, 
+    sucursal: str = Query(default=""),
+    tipo: str = Query(default="ventas"),  # ventas, pax, cheques
+    periodo: str = Query(default="mes"),  # dia, semana, mes
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=50, le=200),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Detalle de movimientos para drill-down en KPIs.
+    Devuelve cheques/facturas individuales con su detalle.
+    """
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if not user_has_server_access(current_user, server_id):
+        raise HTTPException(status_code=403, detail="Sin acceso a este servidor")
+    
+    try:
+        from datetime import datetime, timedelta
+        hoy = datetime.now()
+        
+        # Calcular fechas según período
+        if periodo == "dia":
+            fecha_ini = hoy.strftime('%Y-%m-%d')
+            fecha_fin = hoy.strftime('%Y-%m-%d')
+        elif periodo == "semana":
+            inicio_semana = hoy - timedelta(days=hoy.weekday())
+            fecha_ini = inicio_semana.strftime('%Y-%m-%d')
+            fecha_fin = hoy.strftime('%Y-%m-%d')
+        else:  # mes
+            fecha_ini = hoy.replace(day=1).strftime('%Y-%m-%d')
+            fecha_fin = hoy.strftime('%Y-%m-%d')
+        
+        offset = (page - 1) * limit
+        
+        if server['system_type'] == 'SoftRestaurant':
+            # Query para obtener detalle de cheques - Sin columnas opcionales que pueden no existir
+            query_detalle = f"""
+SELECT 
+    cheques.folio,
+    turnos.apertura as fecha,
+    cheques.total as importe,
+    ISNULL(cheques.nopersonas, 0) as pax,
+    ISNULL(cheques.descuento, 0) as descuento,
+    ISNULL(cheques.propina, 0) as propina,
+    'Comedor' as tipo_servicio
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{fecha_ini} 00:00:00'
+  AND turnos.apertura <= '{fecha_fin} 23:59:59'
+  AND cheques.cancelado = 0
+  AND cheques.total > 0
+ORDER BY turnos.apertura DESC
+OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+"""
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_detalle
+            )
+            
+            # Query para contar total
+            query_total = f"""
+SELECT COUNT(*) as total
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{fecha_ini} 00:00:00'
+  AND turnos.apertura <= '{fecha_fin} 23:59:59'
+  AND cheques.cancelado = 0
+  AND cheques.total > 0
+"""
+            result_total = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_total
+            )
+            total = int(result_total[0]['total']) if result_total else 0
+            
+            movimientos = []
+            for row in result or []:
+                fecha_val = row.get('fecha')
+                fecha_str = fecha_val.strftime('%Y-%m-%d %H:%M') if hasattr(fecha_val, 'strftime') else str(fecha_val) if fecha_val else ''
+                movimientos.append({
+                    "folio": str(row.get('folio', '')),
+                    "fecha": fecha_str,
+                    "importe": float(row.get('importe') or 0),
+                    "pax": int(row.get('pax') or 0),
+                    "descuento": float(row.get('descuento') or 0),
+                    "propina": float(row.get('propina') or 0),
+                    "tipo_servicio": row.get('tipo_servicio', 'Comedor'),
+                    "num_productos": 0
+                })
+            
+            return {
+                "movimientos": movimientos,
+                "total": total,
+                "page": page,
+                "limit": limit,
+                "pages": (total + limit - 1) // limit,
+                "periodo": {"inicio": fecha_ini, "fin": fecha_fin},
+                "servidor": server['name']
+            }
+        
+        elif server['system_type'] == 'ManagmentPro':
+            # Query para MPRO - usa Vn_Precio_Neto_Importe y Vn_Folio
+            query_detalle = f"""
+SELECT TOP {limit}
+    v.Vn_Folio as folio,
+    v.Vn_Fecha as fecha,
+    SUM(v.Vn_Precio_Neto_Importe) as importe,
+    SUM(v.Vn_Cantidad_1) as cantidad,
+    COUNT(*) as num_productos
+FROM Venta v
+WHERE v.Vn_Fecha >= '{fecha_ini}'
+  AND v.Vn_Fecha <= '{fecha_fin}'
+GROUP BY v.Vn_Folio, v.Vn_Fecha
+ORDER BY v.Vn_Fecha DESC
+"""
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_detalle
+            )
+            
+            movimientos = []
+            for row in result or []:
+                fecha_val = row.get('fecha')
+                fecha_str = fecha_val.strftime('%Y-%m-%d') if hasattr(fecha_val, 'strftime') else str(fecha_val)
+                movimientos.append({
+                    "folio": str(row.get('folio', '')),
+                    "fecha": fecha_str,
+                    "importe": float(row.get('importe') or 0),
+                    "pax": 0,
+                    "descuento": 0,
+                    "propina": 0,
+                    "tipo_servicio": "Factura",
+                    "num_productos": int(row.get('num_productos') or 0)
+                })
+            
+            return {
+                "movimientos": movimientos,
+                "total": len(movimientos),
+                "page": page,
+                "limit": limit,
+                "pages": 1,
+                "periodo": {"inicio": fecha_ini, "fin": fecha_fin},
+                "servidor": server['name']
+            }
+        
+        return {"movimientos": [], "total": 0, "page": 1, "limit": limit, "pages": 0}
+        
+    except Exception as e:
+        logging.error(f"Error en detalle movimientos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============================================================================
 # TABLERO EJECUTIVO - Multi-Unidad (Socios/Accionistas)
 # ============================================================================
