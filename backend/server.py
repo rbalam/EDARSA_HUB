@@ -1357,7 +1357,7 @@ async def get_sucursales(server_id: str, current_user: Dict = Depends(get_curren
         return []
 
 @api_router.get("/servers/{server_id}/almacenes")
-async def get_almacenes(server_id: str, sucursal_id: Optional[str] = None, current_user: Dict = Depends(get_current_user)):
+async def get_almacenes(server_id: str, sucursal_id: Optional[str] = None, sucursal: Optional[str] = None, current_user: Dict = Depends(get_current_user)):
     """Obtiene la lista de almacenes desde SQL Server"""
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
     if not server:
@@ -1369,22 +1369,39 @@ async def get_almacenes(server_id: str, sucursal_id: Optional[str] = None, curre
                 query = f"SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Sc_Cve_Sucursal = '{sucursal_id}' AND Es_Cve_Estado <> 'BA'"
             else:
                 query = "SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Es_Cve_Estado <> 'BA'"
+            results = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query
+            )
+            return results
+        
+        elif server['system_type'] == 'SoftRestaurant':
+            # SoftRestaurant: Usar tabla almacen con estructura diferente
+            query = """
+SELECT 
+    idalmacen as id, 
+    nombre,
+    ISNULL(tipo, 1) as tipo
+FROM almacen
+ORDER BY nombre
+"""
+            results = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query
+            )
+            return results
+        
         else:
             # Query genérica para otros sistemas
             if sucursal_id:
                 query = f"SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Sc_Cve_Sucursal = '{sucursal_id}'"
             else:
                 query = "SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen"
-        
-        results = execute_sql_query(
-            server['host'],
-            server['port'],
-            server['database'],
-            server['username'],
-            server['password'],
-            query
-        )
-        return results
+            results = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query
+            )
+            return results
     except Exception as e:
         logging.error(f"Error obteniendo almacenes: {str(e)}")
         return []
