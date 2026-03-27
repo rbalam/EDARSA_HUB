@@ -57,26 +57,10 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
       setAlertas(response.data.alertas || []);
     } catch (error) {
       console.error('Error cargando dashboard:', error);
-      // Datos de ejemplo mientras se implementa
-      setKpis({
-        ventas_periodo: 485000,
-        ticket_promedio: 385,
-        cheques_total: 1260,
-        pax_total: 3150,
-        pax_promedio: 2.5,
-        mesas_atendidas: 890,
-        rotacion_mesas: 2.8,
-        venta_por_hora: 20208
-      });
-      setComparativo({
-        vs_periodo_anterior: 12.5,
-        vs_ano_anterior: 8.3,
-        vs_presupuesto: -5.2
-      });
-      setAlertas([
-        { tipo: 'baja_venta', producto: 'Vino Tinto Casa', variacion: -35, mensaje: 'Ventas cayeron 35%' },
-        { tipo: 'sobrestock', producto: 'Cerveza Importada', ventas_var: -28, compras_var: 5, mensaje: 'Compras no bajan con ventas' }
-      ]);
+      toast.error('Error al cargar datos de ventas');
+      setKpis(null);
+      setComparativo(null);
+      setAlertas([]);
     } finally {
       setLoading(false);
     }
@@ -273,28 +257,10 @@ function TicketPerfecto({ servers, selectedServer, setSelectedServer, selectedSu
       setTicketData(response.data.ticket);
       setRentabilidad(response.data.rentabilidad || []);
     } catch (error) {
-      // Datos de ejemplo
-      setTicketData({
-        tickets_totales: 1260,
-        tickets_completos: 340,
-        pct_completos: 27,
-        con_entrada: 680,
-        pct_entrada: 54,
-        con_plato_fuerte: 1150,
-        pct_plato_fuerte: 91,
-        con_postre: 420,
-        pct_postre: 33,
-        con_digestivo: 180,
-        pct_digestivo: 14,
-        oportunidad_perdida: 125000
-      });
-      setRentabilidad([
-        { codigo: 'P001', producto: 'Filete Mignon', ventas: 45000, costo: 18000, margen: 60, categoria: 'A' },
-        { codigo: 'P002', producto: 'Pasta Alfredo', ventas: 32000, costo: 8000, margen: 75, categoria: 'A' },
-        { codigo: 'P003', producto: 'Ensalada César', ventas: 28000, costo: 5600, margen: 80, categoria: 'A' },
-        { codigo: 'P004', producto: 'Vino Tinto Casa', ventas: 25000, costo: 12500, margen: 50, categoria: 'B' },
-        { codigo: 'P005', producto: 'Cerveza Importada', ventas: 18000, costo: 10800, margen: 40, categoria: 'C' },
-      ]);
+      console.error('Error cargando ticket perfecto:', error);
+      toast.error('Error al cargar datos de ticket perfecto');
+      setTicketData(null);
+      setRentabilidad([]);
     } finally {
       setLoading(false);
     }
@@ -449,17 +415,10 @@ function MetasVentas({ servers, selectedServer, setSelectedServer, selectedSucur
       setMetasProducto(response.data.por_producto || []);
       setMetasVendedor(response.data.por_vendedor || []);
     } catch (error) {
-      // Datos de ejemplo
-      setMetasProducto([
-        { producto: 'Filete Mignon', meta: 60000, real: 45000, cumplimiento: 75 },
-        { producto: 'Pasta Alfredo', meta: 40000, real: 32000, cumplimiento: 80 },
-        { producto: 'Ensalada César', meta: 30000, real: 28000, cumplimiento: 93 },
-      ]);
-      setMetasVendedor([
-        { vendedor: 'Carlos Pérez', meta: 150000, real: 165000, cumplimiento: 110 },
-        { vendedor: 'María García', meta: 150000, real: 142000, cumplimiento: 95 },
-        { vendedor: 'Juan López', meta: 120000, real: 98000, cumplimiento: 82 },
-      ]);
+      console.error('Error cargando metas:', error);
+      toast.error('Error al cargar metas');
+      setMetasProducto([]);
+      setMetasVendedor([]);
     } finally {
       setLoading(false);
     }
@@ -568,24 +527,10 @@ function VentasPorTiempo({ servers, selectedServer, setSelectedServer, selectedS
       setVentasPorHora(response.data.por_hora || []);
       setVentasPorDia(response.data.por_dia || []);
     } catch (error) {
-      // Datos de ejemplo
-      setVentasPorHora([
-        { hora: '12:00', ventas: 35000, pax: 85 },
-        { hora: '13:00', ventas: 52000, pax: 120 },
-        { hora: '14:00', ventas: 48000, pax: 110 },
-        { hora: '19:00', ventas: 42000, pax: 95 },
-        { hora: '20:00', ventas: 65000, pax: 150 },
-        { hora: '21:00', ventas: 58000, pax: 130 },
-      ]);
-      setVentasPorDia([
-        { dia: 'Lunes', ventas: 45000 },
-        { dia: 'Martes', ventas: 42000 },
-        { dia: 'Miércoles', ventas: 48000 },
-        { dia: 'Jueves', ventas: 52000 },
-        { dia: 'Viernes', ventas: 78000 },
-        { dia: 'Sábado', ventas: 95000 },
-        { dia: 'Domingo', ventas: 68000 },
-      ]);
+      console.error('Error cargando ventas por tiempo:', error);
+      toast.error('Error al cargar datos por hora/día');
+      setVentasPorHora([]);
+      setVentasPorDia([]);
     } finally {
       setLoading(false);
     }
@@ -698,27 +643,10 @@ function MesasComensales({ servers, selectedServer, setSelectedServer, selectedS
       setDatosUnidad(response.data.unidad);
       setRotacionPorMesa(response.data.rotacion || []);
     } catch (error) {
-      // Datos de ejemplo
-      setDatosUnidad({
-        nombre: selectedSucursal,
-        total_mesas: 35,
-        capacidad_total: 140,
-        mesas_atendidas_mes: 2450,
-        comensales_mes: 6125,
-        rotacion_promedio: 2.8,
-        ticket_promedio: 385,
-        cheque_promedio: 962,
-        pax_promedio: 2.5,
-        vueltas_por_dia: 70,
-        vueltas_por_hora_pico: 12
-      });
-      setRotacionPorMesa([
-        { mesa: 'Mesa 1', capacidad: 4, vueltas: 85, ocupacion: 92 },
-        { mesa: 'Mesa 2', capacidad: 4, vueltas: 78, ocupacion: 88 },
-        { mesa: 'Mesa 3', capacidad: 6, vueltas: 72, ocupacion: 85 },
-        { mesa: 'Mesa 4', capacidad: 2, vueltas: 95, ocupacion: 95 },
-        { mesa: 'Mesa 5', capacidad: 8, vueltas: 45, ocupacion: 65 },
-      ]);
+      console.error('Error cargando mesas:', error);
+      toast.error('Error al cargar datos de mesas');
+      setDatosUnidad(null);
+      setRotacionPorMesa([]);
     } finally {
       setLoading(false);
     }

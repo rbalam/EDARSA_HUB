@@ -3,7 +3,7 @@
 ## Resumen
 | Métrica | Valor |
 |---------|-------|
-| **Saldo Actual** | ~52 (estimado, parcial) |
+| **Saldo Actual** | ~17 (estimado) |
 | **Última Actualización** | 2026-03-27 |
 
 ---
@@ -20,6 +20,7 @@
 | 2026-03-27 | Crear Agente Rich (perfil Ricardo) | GRATIS | 121.49 |
 | 2026-03-27 | **Módulo Compras con Tabs + Análisis + Endpoints** | **~27** | **~82** |
 | 2026-03-27 | **Módulo Comercial (Ventas) - Frontend completo** | **~30** | **~52** |
+| 2026-03-27 | **Módulo Comercial - Backend REAL (5 endpoints)** | **~35** | **~17** |
 
 ---
 
@@ -37,10 +38,12 @@
 
 | Módulo/Tarea | Créditos Est. | Estado |
 |--------------|---------------|--------|
+| Módulo Comercial - Backend (5 endpoints) | ~35 | ✅ COMPLETADO |
 | Fase 2: Inventario final inteligente | 4-5 | Pendiente |
 | Fase 3: Captura y comparación pedidos | 6-8 | Pendiente |
 | Fase 4: Autorización con cobro diferencias | 8-10 | Pendiente |
 | Fase 5: Alertas y días proveedor | 5-6 | Pendiente |
 | Fase 6: Lógica compra por período | 4-5 | Pendiente |
+| Visor PDF/XML de facturas (drill-down) | 8-10 | Pendiente |
 | Migrar Portal Proveedores | 10-15 | Pendiente |
 | Migrar Bitácora Activos | 10-15 | Pendiente |

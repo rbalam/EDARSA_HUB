@@ -3,6 +3,7 @@
 ## CHECKPOINT ESTABLE - 27 Marzo 2026
 > **Aplicación renombrada a "Edarsa Hub"**
 > **Módulo de Compras con TABS: Dashboard, Autorización, Análisis**
+> **Módulo Comercial (Ventas) con DATOS REALES - ✅ COMPLETADO**
 > **Análisis de compras por proveedor con drill-down hasta nivel factura/productos**
 > **Reportes de Análisis de Inventarios funcionando para SoftRestaurant y MPRO.**
 
@@ -25,6 +26,40 @@
 
 ### Credenciales de Prueba
 - **Admin**: admin@inventario.com / admin123
+
+---
+
+## MÓDULO COMERCIAL (VENTAS) - IMPLEMENTADO ✅ (27 Mar 2026)
+
+### Estructura con TABS:
+1. **Dashboard** - KPIs de ventas, ticket promedio, PAX, comparativos
+2. **Ticket Perfecto** - Análisis de tickets completos, rentabilidad por producto
+3. **Metas** - Metas por producto y vendedor (calculadas dinámicamente)
+4. **Por Hora/Día** - Ventas por hora pico y día de semana
+5. **Mesas** - Rotación de mesas/hora, comensales, capacidad
+
+### Funcionalidades Implementadas:
+- KPIs reales desde SQL Server (SoftRestaurant)
+- Ventas del período, ticket promedio, PAX total
+- Comparativo vs período anterior (%)
+- Top productos por rentabilidad (margen %)
+- Ventas por hora (horarios pico)
+- Ventas por día de la semana
+- Análisis de rotación por hora
+
+### Endpoints Nuevos (27 Mar 2026):
+- `GET /api/comercial/dashboard/{server_id}` - KPIs y comparativos
+- `GET /api/comercial/ticket-perfecto/{server_id}` - Ticket perfecto y rentabilidad
+- `GET /api/comercial/metas/{server_id}` - Metas por producto y vendedor
+- `GET /api/comercial/ventas-tiempo/{server_id}` - Ventas por hora y día
+- `GET /api/comercial/mesas/{server_id}` - Rotación y comensales
+
+### Datos Verificados (LA ESTELAR - Marzo 2026):
+- Ventas del Mes: $2,191,051.00
+- Ticket Promedio: $1,619.40
+- Cheques: 1,353
+- PAX Total: 4,007
+- Comparativo: -25.2% vs período anterior
 
 ---
 
