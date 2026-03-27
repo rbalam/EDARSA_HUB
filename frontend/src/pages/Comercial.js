@@ -364,7 +364,9 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   </div>
                   <Users className="h-8 w-8 text-purple-200" />
                 </div>
-                <p className="text-xs text-zinc-500 mt-2">Promedio: {formatNumber(kpis.pax_promedio)} personas/mesa</p>
+                <p className="text-xs text-zinc-500 mt-2">
+                  {kpis.consumo_persona ? `$${formatNumber(kpis.consumo_persona)}/persona` : `Promedio: ${formatNumber(kpis.pax_promedio)} personas/mesa`}
+                </p>
               </CardContent>
             </Card>
 

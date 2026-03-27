@@ -5237,24 +5237,25 @@ WHERE turnos.apertura >= '{fecha_ini_ant} 00:00:00'
             }
         
         elif server['system_type'] == 'MPRO':
-            # Query para MPRO - usa tabla Venta con Vn_Precio_Neto_Importe (NO Vn_Importe)
-            # Filtrar por sucursal usando JOIN si viene el nombre
+            # Query para MPRO - usar Venta_Encabezado con Comanda para PAX
             sucursal_join = ""
             sucursal_filter = ""
             if sucursal:
-                sucursal_join = "INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal"
+                sucursal_join = "INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal"
                 sucursal_filter = f" AND S.Sc_Descripcion LIKE '%{sucursal}%'"
             
+            # Query con PAX de tabla Comanda
             query_kpis = f"""
 SELECT 
-    COUNT(DISTINCT V.Vn_Folio) as cheques_total,
-    ISNULL(SUM(V.Vn_Precio_Neto_Importe), 0) as ventas_periodo,
-    ISNULL(AVG(V.Vn_Precio_Neto_Importe), 0) as ticket_promedio
-FROM Venta V
+    COUNT(DISTINCT VE.Vn_Folio) as cheques_total,
+    ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas_periodo,
+    ISNULL(SUM(C.Co_Personas), 0) as pax_total
+FROM Venta_Encabezado VE
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 {sucursal_join}
-WHERE V.Vn_Fecha >= '{fecha_ini}'
-  AND V.Vn_Fecha <= '{fecha_fin} 23:59:59'
-  AND ISNULL(V.Es_Cve_Estado, '') <> 'CA'
+WHERE VE.Vn_Fecha >= '{fecha_ini}'
+  AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
   {sucursal_filter}
 """
             result = execute_sql_query(
@@ -5262,32 +5263,37 @@ WHERE V.Vn_Fecha >= '{fecha_ini}'
                 server['username'], server['password'], query_kpis
             )
             
-            if result and len(result) > 0:
-                row = result[0]
-                cheques_total = int(row['cheques_total'] or 0)
-                ventas_periodo = float(row['ventas_periodo'] or 0)
-                ticket_promedio = float(row['ticket_promedio'] or 0)
-            else:
-                cheques_total = 0
-                ventas_periodo = 0
-                ticket_promedio = 0
-            
-            kpis = {
-                "ventas_periodo": ventas_periodo,
-                "ticket_promedio": round(ticket_promedio, 2),
-                "cheques_total": cheques_total,
-                "pax_total": 0,
-                "pax_promedio": 0,
-                "mesas_atendidas": 0,
-                "rotacion_mesas": 0,
-                "venta_por_hora": round(ventas_periodo / 12, 2) if ventas_periodo > 0 else 0
-            }
-            
-            return {
-                "kpis": kpis,
-                "comparativo": {"vs_periodo_anterior": 0, "vs_ano_anterior": 0, "vs_presupuesto": 0},
-                "alertas": []
-            }
+            if result:
+                cheques = int(result[0].get('cheques_total') or 0)
+                ventas = float(result[0].get('ventas_periodo') or 0)
+                pax = int(result[0].get('pax_total') or 0)
+                ticket_promedio = ventas / cheques if cheques > 0 else 0
+                consumo_persona = ventas / pax if pax > 0 else 0
+                pax_promedio = pax / cheques if cheques > 0 else 0
+                
+                kpis = {
+                    "ventas_periodo": round(ventas, 2),
+                    "ticket_promedio": round(ticket_promedio, 2),
+                    "cheques_total": cheques,
+                    "pax_total": pax,
+                    "pax_promedio": round(pax_promedio, 2),
+                    "consumo_persona": round(consumo_persona, 2),
+                    "rotacion_mesas": 0,
+                    "mesas_atendidas": 0
+                }
+                
+                # Comparativo para MPRO
+                comparativo = {
+                    "vs_periodo_anterior": 0,
+                    "vs_ano_anterior": 0,
+                    "vs_presupuesto": 0
+                }
+                
+                return {
+                    "kpis": kpis,
+                    "comparativo": comparativo,
+                    "alertas": []
+                }
         
         return {"kpis": None, "comparativo": None, "alertas": []}
         
