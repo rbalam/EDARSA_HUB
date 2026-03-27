@@ -5446,6 +5446,196 @@ ORDER BY COUNT(*) DESC
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============================================================================
+# TABLERO EJECUTIVO - Multi-Unidad (Socios/Accionistas)
+# ============================================================================
+
+def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes):
+    """Query reutilizable para SoftRestaurant - misma lógica análisis inventarios"""
+    # Usar formato YYYYMMDD sin guiones para evitar problemas de conversión de fecha
+    fi = fecha_ini.replace('-', '')
+    ff = fecha_fin.replace('-', '')
+    query = f"""
+SELECT 
+    COUNT(DISTINCT cheques.folio) as cheques,
+    ISNULL(SUM(cheques.total), 0) as ventas,
+    ISNULL(SUM(cheques.nopersonas), 0) as pax
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{fi} 00:00:00'
+  AND turnos.apertura <= '{ff} 23:59:59'
+  AND cheques.cancelado = 0
+"""
+    try:
+        result = execute_sql_query(server['host'], server['port'], server['database'], 
+                                   server['username'], server['password'], query)
+        if result and len(result) > 0:
+            ventas = float(result[0]['ventas'] or 0)
+            pax = int(result[0]['pax'] or 0)
+            cheques = int(result[0]['cheques'] or 0)
+        else:
+            ventas, pax, cheques = 0, 0, 0
+    except Exception as e:
+        logging.warning(f"Error consultando {server['name']}: {e}")
+        return None
+    
+    # Mes anterior (mismos días)
+    fia = fecha_ini_ant.replace('-', '')
+    ffa = fecha_fin_ant.replace('-', '')
+    query_ant = f"""
+SELECT ISNULL(SUM(cheques.total), 0) as ventas, ISNULL(SUM(cheques.nopersonas), 0) as pax, COUNT(DISTINCT cheques.folio) as cheques
+FROM cheques INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{fia} 00:00:00' AND turnos.apertura <= '{ffa} 23:59:59' AND cheques.cancelado = 0
+"""
+    try:
+        r_ant = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], query_ant)
+        ventas_ant = float(r_ant[0]['ventas'] or 0) if r_ant else 0
+        pax_ant = int(r_ant[0]['pax'] or 0) if r_ant else 0
+        cheques_ant = int(r_ant[0]['cheques'] or 0) if r_ant else 0
+    except:
+        ventas_ant, pax_ant, cheques_ant = 0, 0, 0
+    
+    # Año anterior (mismos días)
+    fiaa = fecha_ini_año_ant.replace('-', '')
+    ffaa = fecha_fin_año_ant.replace('-', '')
+    query_año = f"""
+SELECT ISNULL(SUM(cheques.total), 0) as ventas, ISNULL(SUM(cheques.nopersonas), 0) as pax, COUNT(DISTINCT cheques.folio) as cheques
+FROM cheques INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{fiaa} 00:00:00' AND turnos.apertura <= '{ffaa} 23:59:59' AND cheques.cancelado = 0
+"""
+    try:
+        r_año = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], query_año)
+        ventas_año = float(r_año[0]['ventas'] or 0) if r_año else 0
+        pax_año = int(r_año[0]['pax'] or 0) if r_año else 0
+        cheques_año = int(r_año[0]['cheques'] or 0) if r_año else 0
+    except:
+        ventas_año, pax_año, cheques_año = 0, 0, 0
+    
+    # Cálculos
+    ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
+    cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
+    
+    # Proyección mes completo
+    proyeccion = round((ventas / dias_transcurridos) * dias_mes, 2) if dias_transcurridos > 0 else 0
+    
+    # Variaciones %
+    var_vs_mes_ant = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
+    var_vs_año_ant = round(((ventas - ventas_año) / ventas_año * 100), 1) if ventas_año > 0 else 0
+    var_pax_mes = round(((pax - pax_ant) / pax_ant * 100), 1) if pax_ant > 0 else 0
+    var_pax_año = round(((pax - pax_año) / pax_año * 100), 1) if pax_año > 0 else 0
+    var_cheques_mes = round(((cheques - cheques_ant) / cheques_ant * 100), 1) if cheques_ant > 0 else 0
+    var_cheques_año = round(((cheques - cheques_año) / cheques_año * 100), 1) if cheques_año > 0 else 0
+    
+    return {
+        "ventas": ventas,
+        "ventas_ant": ventas_ant,
+        "ventas_año": ventas_año,
+        "var_vs_mes_ant": var_vs_mes_ant,
+        "var_vs_año_ant": var_vs_año_ant,
+        "proyeccion": proyeccion,
+        "pax": pax,
+        "pax_ant": pax_ant,
+        "pax_año": pax_año,
+        "var_pax_mes": var_pax_mes,
+        "var_pax_año": var_pax_año,
+        "cheques": cheques,
+        "cheques_ant": cheques_ant,
+        "cheques_año": cheques_año,
+        "var_cheques_mes": var_cheques_mes,
+        "var_cheques_año": var_cheques_año,
+        "ticket_prom": ticket_prom,
+        "cheque_prom": cheque_prom
+    }
+
+
+@api_router.get("/comercial/tablero-ejecutivo")
+async def tablero_ejecutivo(
+    mes: int = Query(default=0),  # 0 = mes actual
+    anio: int = Query(default=0),  # 0 = año actual
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Tablero ejecutivo con KPIs de TODAS las unidades.
+    Comparativo vs mes anterior y año anterior (mismos días).
+    """
+    from datetime import datetime, timedelta
+    import calendar
+    
+    hoy = datetime.now()
+    
+    # Determinar período
+    if anio == 0:
+        anio = hoy.year
+    if mes == 0:
+        mes = hoy.month
+    
+    # Fechas del período actual
+    fecha_ini = f"{anio}-{mes:02d}-01"
+    if anio == hoy.year and mes == hoy.month:
+        # Mes actual incompleto
+        fecha_fin = hoy.strftime('%Y-%m-%d')
+        dias_transcurridos = hoy.day
+    else:
+        # Mes completo
+        ultimo_dia = calendar.monthrange(anio, mes)[1]
+        fecha_fin = f"{anio}-{mes:02d}-{ultimo_dia:02d}"
+        dias_transcurridos = ultimo_dia
+    
+    dias_mes = calendar.monthrange(anio, mes)[1]
+    
+    # Mes anterior (mismos días para comparar proporcional)
+    if mes == 1:
+        mes_ant, anio_mes_ant = 12, anio - 1
+    else:
+        mes_ant, anio_mes_ant = mes - 1, anio
+    fecha_ini_ant = f"{anio_mes_ant}-{mes_ant:02d}-01"
+    fecha_fin_ant = f"{anio_mes_ant}-{mes_ant:02d}-{min(dias_transcurridos, calendar.monthrange(anio_mes_ant, mes_ant)[1]):02d}"
+    
+    # Año anterior (mismo mes, mismos días)
+    fecha_ini_año_ant = f"{anio-1}-{mes:02d}-01"
+    fecha_fin_año_ant = f"{anio-1}-{mes:02d}-{min(dias_transcurridos, calendar.monthrange(anio-1, mes)[1]):02d}"
+    
+    logging.info(f"Tablero Ejecutivo: {mes}/{anio} ({fecha_ini} a {fecha_fin}), días: {dias_transcurridos}/{dias_mes}")
+    
+    # Obtener todos los servidores activos
+    servers = await db.servers.find({"active": True}).to_list(100)
+    
+    # Filtrar por permisos del usuario
+    if current_user.get('role') != 'Administrador':
+        allowed = current_user.get('allowed_servers', [])
+        servers = [s for s in servers if s['id'] in allowed]
+    
+    resultados = []
+    totales = {"ventas": 0, "ventas_ant": 0, "ventas_año": 0, "pax": 0, "pax_ant": 0, "pax_año": 0, 
+               "cheques": 0, "cheques_ant": 0, "cheques_año": 0, "proyeccion": 0}
+    
+    for server in servers:
+        if server['system_type'] == 'SoftRestaurant':
+            kpis = get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
+                                           fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
+            if kpis:
+                kpis["unidad"] = server['name']
+                kpis["server_id"] = server['id']
+                resultados.append(kpis)
+                # Acumular totales
+                for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
+                          "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
+                    totales[k] += kpis.get(k, 0)
+    
+    # Calcular variaciones de totales
+    totales["var_vs_mes_ant"] = round(((totales["ventas"] - totales["ventas_ant"]) / totales["ventas_ant"] * 100), 1) if totales["ventas_ant"] > 0 else 0
+    totales["var_vs_año_ant"] = round(((totales["ventas"] - totales["ventas_año"]) / totales["ventas_año"] * 100), 1) if totales["ventas_año"] > 0 else 0
+    totales["ticket_prom"] = round(totales["ventas"] / totales["pax"], 2) if totales["pax"] > 0 else 0
+    totales["cheque_prom"] = round(totales["ventas"] / totales["cheques"], 2) if totales["cheques"] > 0 else 0
+    
+    return {
+        "periodo": {"mes": mes, "anio": anio, "dias_transcurridos": dias_transcurridos, "dias_mes": dias_mes},
+        "comparativo_con": {"mes_anterior": f"{mes_ant}/{anio_mes_ant}", "año_anterior": f"{mes}/{anio-1}"},
+        "unidades": resultados,
+        "totales": totales
+    }
+
+
 # Incluir el router después de definir todos los endpoints
 app.include_router(api_router)
 

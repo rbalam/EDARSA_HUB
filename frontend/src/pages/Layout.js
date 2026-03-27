@@ -12,7 +12,8 @@ import {
   X,
   ShoppingCart,
   TrendingUp,
-  Settings
+  Settings,
+  PieChart
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -30,6 +31,7 @@ const Layout = () => {
     { name: 'Inventarios', href: '/reportes', icon: Package, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 1 },
     { name: 'Compras', href: '/compras', icon: ShoppingCart, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 4 },
     { name: 'Comercial', href: '/comercial', icon: TrendingUp, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 5 },
+    { name: 'Tablero Ejecutivo', href: '/tablero-ejecutivo', icon: PieChart, roles: ['Supervisor', 'Administrador'], modulo: 6 },
   ];
 
   // Configuración y sistema
