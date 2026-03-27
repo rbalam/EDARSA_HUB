@@ -3718,6 +3718,292 @@ async def get_dashboard_metrics(current_user: Dict = Depends(get_current_user)):
 
 app.include_router(api_router)
 
+# ============= MÓDULO DE COMPRAS - MODELOS =============
+
+class ParametrosCompra(BaseModel):
+    dias_inventario: int = 10  # Días de inventario a comprar
+    excluir_domingos: bool = True
+    dias_inhabiles: List[str] = []  # Lista de fechas YYYY-MM-DD
+    dias_transito_proveedor: int = 2  # Días que tarda en llegar el producto
+
+class CalculoPedidoRequest(BaseModel):
+    server_id: str
+    sucursal: str
+    almacen: str
+    fecha_calculo: str  # Fecha desde la cual calcular
+    dias_historial_ventas: int = 30  # Días para calcular promedio de ventas
+    dias_inventario: int = 10  # Días de inventario a comprar
+    usar_inventario_fisico: bool = False  # True = usar físico, False = usar teórico
+    folio_inventario_fisico: Optional[str] = None  # Si usar_inventario_fisico = True
+    categorias: Optional[List[str]] = None
+    familias: Optional[List[str]] = None
+
+# ============= MÓDULO DE COMPRAS - ENDPOINTS =============
+
+@api_router.post("/compras/calculo-pedido")
+async def calcular_pedido_sugerido(request: CalculoPedidoRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Calcula el pedido sugerido basándose en:
+    1. Inventario inicial (físico o teórico)
+    2. + Compras recientes
+    3. = Productos disponibles
+    4. - Ventas promedio * días_inventario
+    5. = Cantidad a pedir
+    """
+    verify_token(credentials.credentials)
+    
+    server = await db.servers.find_one({"id": request.server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    sucursal = request.sucursal
+    almacen = request.almacen
+    fecha_calculo = request.fecha_calculo
+    dias_historial = request.dias_historial_ventas
+    dias_inventario = request.dias_inventario
+    
+    # Calcular fechas
+    from datetime import datetime, timedelta
+    fecha_calc_dt = datetime.strptime(fecha_calculo, '%Y-%m-%d')
+    fecha_inicio_ventas = (fecha_calc_dt - timedelta(days=dias_historial)).strftime('%Y-%m-%d')
+    
+    logging.info(f"Calculando pedido sugerido para {server['name']}")
+    logging.info(f"Sucursal: {sucursal}, Almacén: {almacen}")
+    logging.info(f"Fecha cálculo: {fecha_calculo}, Días inventario: {dias_inventario}")
+    
+    if server['system_type'] == 'MPRO':
+        # Obtener código del almacén y sucursal
+        almacen_query = f"""
+SELECT TOP 1 
+    A.Al_Cve_Almacen as codigo,
+    A.Al_Descripcion as nombre,
+    A.Sc_Cve_Sucursal as sucursal_codigo
+FROM Almacen A
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
+WHERE A.Al_Descripcion LIKE '%{almacen}%'
+    AND S.Sc_Descripcion LIKE '%{sucursal}%'
+"""
+        almacen_result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], almacen_query
+        )
+        if not almacen_result:
+            raise HTTPException(status_code=404, detail="Almacén no encontrado")
+        
+        almacen_codigo = almacen_result[0]['codigo']
+        sucursal_codigo = almacen_result[0]['sucursal_codigo']
+        
+        # Construir filtros
+        filtro_categorias = ""
+        if request.categorias:
+            cats = ",".join([f"'{c}'" for c in request.categorias])
+            filtro_categorias = f"AND P.Ct_Cve_Categoria IN ({cats})"
+        
+        filtro_familias = ""
+        if request.familias:
+            fams = ",".join([f"'{f}'" for f in request.familias])
+            filtro_familias = f"AND P.Fm_Cve_Familia IN ({fams})"
+        
+        # 1. Obtener catálogo de productos con inventario actual
+        productos_query = f"""
+SELECT 
+    P.Pr_Cve_Producto as Codigo,
+    P.Pr_Descripcion as Producto,
+    F.Fm_Descripcion as Familia,
+    C.Ct_Descripcion as Categoria,
+    P.Pr_Unidad_Control_1 as Unidad,
+    P.Pr_ultimo_costo as Costo_Unitario,
+    ISNULL((
+        SELECT SUM(Fi_Cantidad_Control_1) 
+        FROM Fisico FI 
+        WHERE FI.Pr_Cve_Producto = P.Pr_Cve_Producto 
+            AND FI.Al_Cve_Almacen = '{almacen_codigo}'
+            AND FI.Fi_Folio = (
+                SELECT TOP 1 Fi_Folio FROM Fisico 
+                WHERE Al_Cve_Almacen = '{almacen_codigo}' 
+                ORDER BY Fi_Fecha DESC
+            )
+    ), 0) as Inventario_Actual
+FROM Producto P
+INNER JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
+INNER JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
+WHERE P.Es_Cve_Estado <> 'BA'
+    {filtro_categorias}
+    {filtro_familias}
+"""
+        logging.info("Obteniendo catálogo de productos...")
+        productos = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], productos_query
+        )
+        logging.info(f"Productos obtenidos: {len(productos)}")
+        
+        # 2. Obtener compras recientes (últimos 30 días)
+        compras_query = f"""
+SELECT 
+    C.Pr_Cve_Producto as Codigo,
+    SUM(C.Co_Cantidad_Control_1) as Total_Compras
+FROM Compra C
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = C.Sc_Cve_Sucursal
+WHERE S.Sc_Cve_Sucursal = '{sucursal_codigo}'
+    AND C.Al_Cve_Almacen = '{almacen_codigo}'
+    AND C.Es_Cve_Estado <> 'CA'
+    AND C.Co_Fecha BETWEEN '{fecha_inicio_ventas}' AND '{fecha_calculo} 23:59:59'
+GROUP BY C.Pr_Cve_Producto
+"""
+        logging.info("Obteniendo compras recientes...")
+        compras_result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], compras_query
+        )
+        compras_dict = {c['Codigo']: float(c['Total_Compras'] or 0) for c in compras_result}
+        logging.info(f"Compras obtenidas para {len(compras_dict)} productos")
+        
+        # 3. Obtener ventas del período (para calcular promedio diario)
+        ventas_query = f"""
+SELECT Producto_Codigo, SUM(cantidad) as Total_Ventas FROM (
+    -- Ventas de productos KIT
+    SELECT 
+        Producto_Kit.Pk_Producto as Producto_Codigo,
+        SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as cantidad
+    FROM venta 
+    LEFT JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
+    LEFT JOIN producto ON producto.Pr_Cve_Producto = Producto_kit.Pk_Producto
+    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
+    WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
+        AND venta.Es_Cve_Estado <> 'CA'
+        AND venta.Vn_Fecha BETWEEN '{fecha_inicio_ventas}' AND '{fecha_calculo} 23:59:59'
+        AND producto_kit.Pk_Producto IS NOT NULL
+    GROUP BY Producto_Kit.Pk_Producto
+    
+    UNION ALL
+    
+    -- Ventas DIRECTAS
+    SELECT 
+        venta.Pr_Cve_Producto as Producto_Codigo,
+        SUM(venta.Vn_Cantidad_Control_1) as cantidad
+    FROM venta 
+    INNER JOIN producto ON producto.Pr_Cve_Producto = venta.Pr_Cve_Producto 
+    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
+    WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
+        AND venta.Es_Cve_Estado <> 'CA'
+        AND venta.Vn_Fecha BETWEEN '{fecha_inicio_ventas}' AND '{fecha_calculo} 23:59:59'
+    GROUP BY venta.Pr_Cve_Producto
+) AS VentasCombinadas
+GROUP BY Producto_Codigo
+"""
+        logging.info("Obteniendo ventas para cálculo de promedio...")
+        ventas_result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], ventas_query
+        )
+        ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
+        logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
+        
+        # 4. Calcular pedido sugerido para cada producto
+        results = []
+        for prod in productos:
+            codigo = prod['Codigo']
+            inventario_actual = float(prod.get('Inventario_Actual', 0) or 0)
+            compras_recientes = compras_dict.get(codigo, 0)
+            ventas_periodo = ventas_dict.get(codigo, 0)
+            costo = float(prod.get('Costo_Unitario', 0) or 0)
+            
+            # Calcular promedio diario de ventas
+            promedio_diario = ventas_periodo / dias_historial if dias_historial > 0 else 0
+            
+            # Consumo esperado para los días de inventario
+            consumo_esperado = promedio_diario * dias_inventario
+            
+            # Disponible = Inventario actual + Compras recientes
+            disponible = inventario_actual + compras_recientes
+            
+            # Cantidad a pedir = Consumo esperado - Disponible
+            cantidad_pedir = max(0, consumo_esperado - disponible)
+            
+            # Solo incluir productos con movimiento o inventario
+            if inventario_actual > 0 or ventas_periodo > 0 or compras_recientes > 0:
+                results.append({
+                    'Codigo': codigo,
+                    'Producto': prod.get('Producto'),
+                    'Familia': prod.get('Familia'),
+                    'Categoria': prod.get('Categoria'),
+                    'Unidad': prod.get('Unidad'),
+                    'Costo_Unitario': round(costo, 2),
+                    'Inventario_Actual': round(inventario_actual, 2),
+                    'Compras_Recientes': round(compras_recientes, 2),
+                    'Disponible': round(disponible, 2),
+                    'Ventas_Periodo': round(ventas_periodo, 2),
+                    'Promedio_Diario': round(promedio_diario, 2),
+                    'Consumo_Esperado': round(consumo_esperado, 2),
+                    'Cantidad_Pedir': round(cantidad_pedir, 2),
+                    'Costo_Pedido': round(cantidad_pedir * costo, 2),
+                    'Dias_Inventario': round(disponible / promedio_diario, 1) if promedio_diario > 0 else 999
+                })
+        
+        # Ordenar por cantidad a pedir (mayor primero)
+        results.sort(key=lambda x: x['Cantidad_Pedir'], reverse=True)
+        
+        logging.info(f"Cálculo completado: {len(results)} productos")
+        return {
+            "data": results,
+            "count": len(results),
+            "parametros": {
+                "fecha_calculo": fecha_calculo,
+                "dias_historial_ventas": dias_historial,
+                "dias_inventario": dias_inventario,
+                "sucursal": sucursal,
+                "almacen": almacen
+            }
+        }
+    
+    elif server['system_type'] == 'SoftRestaurant':
+        # TODO: Implementar lógica para SoftRestaurant
+        raise HTTPException(status_code=501, detail="Módulo de compras para SoftRestaurant en desarrollo")
+    
+    else:
+        raise HTTPException(status_code=400, detail=f"Tipo de sistema no soportado: {server['system_type']}")
+
+
+@api_router.get("/compras/parametros/{server_id}")
+async def obtener_parametros_compra(server_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Obtiene los parámetros de compra configurados para un servidor"""
+    verify_token(credentials.credentials)
+    
+    params = await db.parametros_compra.find_one({"server_id": server_id})
+    if not params:
+        # Retornar valores por defecto
+        return {
+            "server_id": server_id,
+            "dias_inventario": 10,
+            "excluir_domingos": True,
+            "dias_inhabiles": [],
+            "dias_transito_proveedor": 2
+        }
+    
+    # Excluir _id de MongoDB
+    params.pop('_id', None)
+    return params
+
+
+@api_router.post("/compras/parametros")
+async def guardar_parametros_compra(params: dict, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Guarda los parámetros de compra para un servidor"""
+    verify_token(credentials.credentials)
+    
+    server_id = params.get('server_id')
+    if not server_id:
+        raise HTTPException(status_code=400, detail="server_id es requerido")
+    
+    await db.parametros_compra.update_one(
+        {"server_id": server_id},
+        {"$set": params},
+        upsert=True
+    )
+    
+    return {"message": "Parámetros guardados correctamente"}
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
