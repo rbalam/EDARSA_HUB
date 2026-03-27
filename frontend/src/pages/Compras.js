@@ -495,7 +495,7 @@ function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer, se
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button onClick={calcularPedido} disabled={loading || !selectedServer || !selectedSucursal}>
+            <Button onClick={calcularPedido} disabled={loading || !selectedServer || !parentSucursal}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
               Calcular Pedido
             </Button>

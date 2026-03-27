@@ -1,49 +1,64 @@
-# Control de Créditos del Proyecto
+# Control de Créditos del Proyecto - Edarsa Hub
 
-## Resumen
+## Resumen Actual
 | Métrica | Valor |
 |---------|-------|
-| **Saldo Actual** | ~17 (estimado) |
-| **Última Actualización** | 2026-03-27 |
+| **Saldo Actual** | $3,479.31 |
+| **Última Actualización** | 2026-03-27 (sesión actual) |
 
 ---
 
-## Historial de Consumo
+## Historial de Consumo (Esta Sesión)
 
-| Fecha | Concepto | Créditos | Saldo |
-|-------|----------|----------|-------|
-| 2026-03-24 | Preguntas + Plan Fase 1 Módulo Compras | 0.48 | - |
-| 2026-03-24 | Aclaración multi-sistema (MPRO + SoftRestaurant) | 5.18 | - |
-| 2026-03-27 | Fase 1 Compras: Implementación inicial | 40.46 | - |
-| 2026-03-27 | Fase 1.5 Compras: Multi-almacén, período, pedidos vigentes | 24.50 | - |
-| 2026-03-27 | Bugfixes + Renombre Edarsa Hub + Sidebar modular | 21.65 | 121.49 |
-| 2026-03-27 | Crear Agente Rich (perfil Ricardo) | GRATIS | 121.49 |
-| 2026-03-27 | **Módulo Compras con Tabs + Análisis + Endpoints** | **~27** | **~82** |
-| 2026-03-27 | **Módulo Comercial (Ventas) - Frontend completo** | **~30** | **~52** |
-| 2026-03-27 | **Módulo Comercial - Backend REAL (5 endpoints)** | **~35** | **~17** |
+| Fecha | Concepto | Créditos | Saldo Restante |
+|-------|----------|----------|----------------|
+| 2026-03-27 | Saldo Inicial Reportado | - | $3,479.31 |
+| 2026-03-27 | Drill-down KPIs Comercial + División MPRO | ~5.00 | $3,474.31 |
+| 2026-03-27 | Buscador Global Explorador BD | ~3.00 | $3,471.31 |
+| 2026-03-27 | Reorganización Sidebar (SQL a Sistema) | ~0.50 | $3,470.81 |
+| 2026-03-27 | Fix bug Inventarios (columna observaciones) | ~1.00 | $3,469.81 |
+| 2026-03-27 | Fix bug Compras (selectedSucursal) | ~0.50 | $3,469.31 |
 
 ---
 
-## REGLA OBLIGATORIA
+## REGLA OBLIGATORIA (Agente Rich)
 
-**ANTES de cualquier cambio, el agente DEBE:**
-1. Preguntar al usuario su saldo actual de créditos
-2. Estimar el costo de la tarea
-3. Esperar "LUZ VERDE" explícita
-4. Usar restas simples para calcular (SIN IA)
+**ANTES de cualquier cambio significativo:**
+1. Preguntar saldo actual al usuario
+2. Estimar costo de la tarea (usar históricos)
+3. Esperar "LUZ VERDE" explícita para tareas > $5
+4. Usar SUMAS y RESTAS simples (SIN IA para cálculos)
+5. Reutilizar consultas SQL existentes cuando sea posible
 
 ---
 
-## Estimaciones Pendientes
+## Estimaciones de Referencia
 
-| Módulo/Tarea | Créditos Est. | Estado |
-|--------------|---------------|--------|
-| Módulo Comercial - Backend (5 endpoints) | ~35 | ✅ COMPLETADO |
-| Fase 2: Inventario final inteligente | 4-5 | Pendiente |
-| Fase 3: Captura y comparación pedidos | 6-8 | Pendiente |
-| Fase 4: Autorización con cobro diferencias | 8-10 | Pendiente |
-| Fase 5: Alertas y días proveedor | 5-6 | Pendiente |
-| Fase 6: Lógica compra por período | 4-5 | Pendiente |
-| Visor PDF/XML de facturas (drill-down) | 8-10 | Pendiente |
-| Migrar Portal Proveedores | 10-15 | Pendiente |
-| Migrar Bitácora Activos | 10-15 | Pendiente |
+| Tipo de Tarea | Créditos Estimados |
+|---------------|-------------------|
+| Fix bug simple (1 archivo) | $0.50 - $1.00 |
+| Fix bug medio (2-3 archivos) | $1.00 - $3.00 |
+| Feature pequeña (UI only) | $2.00 - $5.00 |
+| Feature mediana (Frontend + Backend) | $5.00 - $15.00 |
+| Feature grande (Módulo completo) | $20.00 - $40.00 |
+| Consulta SQL nueva | $0.50 - $2.00 |
+| Reutilizar consulta existente | $0.00 |
+
+---
+
+## Tareas Pendientes (Con Estimación)
+
+| Tarea | Créditos Est. | Prioridad |
+|-------|---------------|-----------|
+| Presupuestos (CRUD MongoDB) | $8.00 - $12.00 | P1 |
+| Ventas sin inflación (% parametrizable) | $3.00 - $5.00 | P1 |
+| Filtros grupo/zona/permisos | $5.00 - $8.00 | P1 |
+| Exportación PDF | $5.00 - $8.00 | P2 |
+| Módulo Rentabilidad (OpenTable) | $15.00 - $25.00 | P2 |
+
+---
+
+## Notas
+- Los créditos son aproximados basados en complejidad de código
+- Tareas que reutilizan código existente cuestan menos
+- Bugfixes simples son los más económicos
