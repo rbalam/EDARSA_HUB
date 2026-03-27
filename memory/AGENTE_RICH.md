@@ -61,6 +61,41 @@ Saldo después: 119.49 créditos
 
 ---
 
+## 2.5 REGLA PERMANENTE: PERMISOS POR SERVIDOR/SUCURSAL
+
+### ⚠️ NUNCA OLVIDAR - APLICA A TODOS LOS MÓDULOS:
+
+```
+CADA módulo DEBE respetar:
+1. Usuario solo ve SERVIDORES asignados
+2. Usuario solo ve SUCURSALES asignadas por servidor
+3. Administradores tienen acceso FULL a todo
+4. El filtrado se hace en BACKEND (ya implementado)
+```
+
+### Implementación existente:
+- `GET /api/servers` → `filter_servers_by_permissions()`
+- `GET /api/servers/{id}/sucursales` → `filter_sucursales_by_permissions()`
+
+### Verificar en cada módulo nuevo:
+- [ ] ¿Usa `GET /api/servers` para cargar servidores?
+- [ ] ¿Usa `GET /api/servers/{id}/sucursales` para cargar sucursales?
+- [ ] ¿Los endpoints verifican permisos con `user_has_server_access()`?
+
+### Modelo de permisos (MongoDB - colección users):
+```json
+{
+  "role": "Usuario|Supervisor|Administrador",
+  "allowed_servers": ["server_id_1", "server_id_2"],
+  "allowed_sucursales": {
+    "server_id_1": ["suc_1", "suc_2"],
+    "server_id_2": []  // vacío = todas
+  }
+}
+```
+
+---
+
 ## 3. AUTOMATIZACIÓN TOTAL
 
 ### Filosofía Central:
