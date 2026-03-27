@@ -38,7 +38,7 @@ const Layout = () => {
     <div className="min-h-screen bg-zinc-50" data-testid="layout">
       {/* Mobile sidebar toggle */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-zinc-900 px-4 py-3 flex items-center justify-between">
-        <h1 className="text-white font-bold text-lg" style={{ fontFamily: 'Manrope, sans-serif' }}>Sistema Inventarios</h1>
+        <h1 className="text-white font-bold text-lg" style={{ fontFamily: 'Manrope, sans-serif' }}>Edarsa Hub</h1>
         <Button 
           variant="ghost" 
           size="icon"
@@ -60,7 +60,7 @@ const Layout = () => {
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-zinc-800">
             <h1 className="text-xl font-extrabold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Sistema Inventarios
+              Edarsa Hub
             </h1>
             <p className="text-zinc-400 text-sm mt-1">{user?.name}</p>
             <p className="text-zinc-500 text-xs">{user?.role}</p>

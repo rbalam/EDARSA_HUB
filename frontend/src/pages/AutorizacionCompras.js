@@ -552,21 +552,21 @@ export default function AutorizacionCompras() {
               <Input type="number" min="1" max="90" value={diasInventario} onChange={(e) => setDiasInventario(e.target.value)} className="h-9" />
             </div>
             <div className="space-y-1 col-span-2">
-              <Label className="text-xs">Comparar con Pedido</Label>
+              <Label className="text-xs">Comparar con Pedido/Requisición</Label>
               <div className="flex gap-2">
                 <Select value={folioPedidoComparar} onValueChange={(v) => { setFolioPedidoComparar(v); setUsarFolioManual(false); }} disabled={usarFolioManual}>
                   <SelectTrigger className="h-9 flex-1">
-                    <SelectValue placeholder="Pedidos sin autorizar" />
+                    <SelectValue placeholder="Requisiciones sin autorizar" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto">
-                    <SelectItem value="__none__">Sin comparar</SelectItem>
+                  <SelectContent className="max-h-72 overflow-y-auto">
+                    <SelectItem value="__none__">Sin comparar (todos los productos)</SelectItem>
                     {pedidosVigentes.map(p => (
                       <SelectItem key={`${p.tipo}-${p.folio}`} value={p.folio}>
-                        [{p.tipo}] {p.folio} - {p.estado} - {p.proveedor || 'Sin prov.'}
+                        {p.folio} - {p.comentario || p.comprador || 'Sin desc.'}
                       </SelectItem>
                     ))}
                     {pedidosVigentes.length === 0 && (
-                      <div className="px-2 py-1 text-xs text-zinc-500">No hay pedidos sin autorizar</div>
+                      <div className="px-2 py-1 text-xs text-zinc-500">No hay requisiciones sin autorizar</div>
                     )}
                   </SelectContent>
                 </Select>

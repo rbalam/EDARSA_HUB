@@ -1,13 +1,14 @@
-# Sistema de Análisis de Inventarios - PRD
+# Edarsa Hub - PRD
 
-## CHECKPOINT ESTABLE - 24 Marzo 2026
+## CHECKPOINT ESTABLE - 27 Marzo 2026
+> **Aplicación renombrada a "Edarsa Hub"**
+> **Módulo de Compras con comparación 1:1 de requisiciones**
 > **Reportes de Análisis de Inventarios funcionando para SoftRestaurant y MPRO.**
-> Este es el punto de referencia para rollback si algo falla en futuras actualizaciones.
 
 ---
 
 ## Resumen del Producto
-Aplicación web para analizar inventarios de múltiples sucursales. Los datos se obtienen de servidores SQL Server con diferentes estructuras (ManagmentPro y SoftRestaurant).
+**Edarsa Hub** - Aplicación web (Mini-ERP) para analizar inventarios de múltiples sucursales y autorizar compras. Los datos se obtienen de servidores SQL Server con diferentes estructuras (ManagmentPro y SoftRestaurant).
 
 ## Arquitectura Técnica
 
@@ -207,6 +208,14 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
 ---
 
 ## Historial de Cambios
+
+### 27 Mar 2026 - EDARSA HUB + BUGFIXES ✅
+- ✅ **Renombre del sistema**: "Sistema Inventarios" → "Edarsa Hub"
+- ✅ **Fix Bug Consumos en Ceros**: Ahora `es_bodega` solo es TRUE si TODOS los almacenes son bodegas (antes cualquier bodega lo marcaba como TRUE)
+- ✅ **Lista de Requisiciones**: Cambiado de `Pedido`/`Orden_Compra` a `REQUISICION_COMPRA` con estado `PXA` (Por Autorizar)
+- ✅ **Soporte SoftRestaurant**: Agregada consulta de pedidos sin autorizar para Soft
+- ✅ **Comparación 1:1**: Cuando se compara con un folio de requisición, SOLO muestra los productos de ese folio específico
+- ✅ **UI mejorada**: Dropdown de requisiciones muestra comentario del pedido
 
 ### 27 Mar 2026 - MÓDULO AUTORIZACIÓN DE COMPRAS - FASE 1 ✅
 - ✅ Nuevo módulo "Autorización de Compras" agregado al menú lateral

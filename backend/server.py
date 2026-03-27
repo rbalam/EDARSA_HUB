@@ -3780,7 +3780,7 @@ ORDER BY F.Fi_Fecha DESC
 
 @api_router.get("/compras/pedidos-vigentes/{server_id}")
 async def obtener_pedidos_vigentes(server_id: str, sucursal: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtiene la lista de pedidos/órdenes de compra SIN AUTORIZAR (vigentes) para comparar"""
+    """Obtiene la lista de REQUISICIONES de compra SIN AUTORIZAR (estado PXA) para comparar"""
     verify_token(credentials.credentials)
     
     server = await db.servers.find_one({"id": server_id, "active": True})
@@ -3788,52 +3788,66 @@ async def obtener_pedidos_vigentes(server_id: str, sucursal: str, credentials: H
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     if server['system_type'] == 'MPRO':
-        # Buscar pedidos y órdenes de compra SIN AUTORIZAR de los últimos 90 días
-        # Estados típicos: 'PE' = Pendiente, 'PR' = Procesando, 'AU' = Autorizado, 'CA' = Cancelado
+        # REQUISICION_COMPRA es la tabla correcta con estado PXA = Por Autorizar
         query = f"""
-SELECT 'PEDIDO' as tipo, PD.Pd_Folio as folio, PD.Pd_Fecha as fecha, 
-       PR.Pv_Nombre as proveedor, PD.Es_Cve_Estado as estado,
-       COUNT(PDD.Pr_Cve_Producto) as total_productos,
-       SUM(ISNULL(PDD.Pd_Importe, 0)) as importe_total
-FROM Pedido PD
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = PD.Sc_Cve_Sucursal
-LEFT JOIN Proveedor PR ON PR.Pv_Cve_Proveedor = PD.Pv_Cve_Proveedor
-LEFT JOIN Pedido_Detalle PDD ON PDD.Pd_Folio = PD.Pd_Folio
+SELECT 'REQUI' as tipo, RC.Rc_Folio as folio, RC.Rc_Fecha as fecha, 
+       RC.Rc_Comentario as comentario, RC.Es_Cve_Estado as estado,
+       CM.Cm_Descripcion as comprador,
+       COUNT(RCD.Pr_Cve_Producto) as total_productos,
+       SUM(ISNULL(RCD.Rc_Importe, 0)) as importe_total
+FROM Requisicion_Compra RC
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = RC.Sc_Cve_Sucursal
+LEFT JOIN Comprador CM ON CM.Cm_Cve_Comprador = RC.Cm_Cve_Comprador
+LEFT JOIN Requisicion_Compra_Detalle RCD ON RCD.Rc_Folio = RC.Rc_Folio
 WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
-    AND PD.Es_Cve_Estado NOT IN ('CA', 'BA', 'AU', 'AP', 'CE')
-    AND PD.Pd_Fecha >= DATEADD(day, -90, GETDATE())
-GROUP BY PD.Pd_Folio, PD.Pd_Fecha, PR.Pv_Nombre, PD.Es_Cve_Estado
-
-UNION ALL
-
-SELECT 'ORDEN' as tipo, OC.Oc_Folio as folio, OC.Oc_Fecha as fecha,
-       PR.Pv_Nombre as proveedor, OC.Es_Cve_Estado as estado,
-       COUNT(OCD.Pr_Cve_Producto) as total_productos,
-       SUM(ISNULL(OCD.Oc_Importe, 0)) as importe_total
-FROM Orden_Compra OC
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = OC.Sc_Cve_Sucursal
-LEFT JOIN Proveedor PR ON PR.Pv_Cve_Proveedor = OC.Pv_Cve_Proveedor
-LEFT JOIN Orden_Compra_Detalle OCD ON OCD.Oc_Folio = OC.Oc_Folio
-WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
-    AND OC.Es_Cve_Estado NOT IN ('CA', 'BA', 'AU', 'AP', 'CE')
-    AND OC.Oc_Fecha >= DATEADD(day, -90, GETDATE())
-GROUP BY OC.Oc_Folio, OC.Oc_Fecha, PR.Pv_Nombre, OC.Es_Cve_Estado
-
-ORDER BY fecha DESC
+    AND RC.Es_Cve_Estado = 'PXA'
+    AND RC.Rc_Fecha >= DATEADD(day, -30, GETDATE())
+GROUP BY RC.Rc_Folio, RC.Rc_Fecha, RC.Rc_Comentario, RC.Es_Cve_Estado, CM.Cm_Descripcion
+ORDER BY RC.Rc_Fecha DESC
 """
         result = execute_sql_query(
             server['host'], server['port'], server['database'],
             server['username'], server['password'], query
         )
         return [{"tipo": r['tipo'], "folio": r['folio'], "fecha": str(r['fecha']), 
-                 "proveedor": r['proveedor'], "estado": r['estado'],
+                 "comentario": r['comentario'] or '', "estado": r['estado'],
+                 "comprador": r['comprador'] or '',
                  "productos": r['total_productos'], "importe": float(r['importe_total'] or 0)} for r in result]
+    
+    elif server['system_type'] == 'SoftRestaurant':
+        # SoftRestaurant: Buscar en tabla de pedidos/requisiciones sin autorizar
+        try:
+            query = f"""
+SELECT 'PEDIDO' as tipo, P.idpedido as folio, P.fecha as fecha,
+       P.observaciones as comentario, 'PXA' as estado,
+       PR.nombre as proveedor,
+       COUNT(PD.idarticulo) as total_productos,
+       SUM(ISNULL(PD.cantidad * PD.costo, 0)) as importe_total
+FROM pedidos P
+LEFT JOIN proveedores PR ON PR.idproveedor = P.idproveedor
+LEFT JOIN pedidosdetalle PD ON PD.idpedido = P.idpedido
+WHERE P.autorizado = 0
+    AND P.fecha >= DATEADD(day, -30, GETDATE())
+GROUP BY P.idpedido, P.fecha, P.observaciones, PR.nombre
+ORDER BY P.fecha DESC
+"""
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query
+            )
+            return [{"tipo": r['tipo'], "folio": str(r['folio']), "fecha": str(r['fecha']), 
+                     "comentario": r['comentario'] or '', "estado": r['estado'],
+                     "comprador": r['proveedor'] or '',
+                     "productos": r['total_productos'], "importe": float(r['importe_total'] or 0)} for r in result]
+        except Exception as e:
+            logging.warning(f"Error obteniendo pedidos SoftRestaurant: {e}")
+            return []
     
     return []
 
 @api_router.get("/compras/detalle-pedido-manual/{server_id}")
 async def obtener_detalle_pedido_manual(server_id: str, folio: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtiene el detalle de un pedido/orden por folio manual (busca en ambas tablas)"""
+    """Obtiene el detalle de una requisición por folio manual"""
     verify_token(credentials.credentials)
     
     server = await db.servers.find_one({"id": server_id, "active": True})
@@ -3841,7 +3855,28 @@ async def obtener_detalle_pedido_manual(server_id: str, folio: str, credentials:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     if server['system_type'] == 'MPRO':
+        # Buscar primero en REQUISICION_COMPRA_DETALLE (tabla principal)
         query = f"""
+SELECT 'REQUI' as tipo, RCD.Pr_Cve_Producto as codigo, P.Pr_Descripcion as producto,
+       RCD.Rc_Cantidad as cantidad, RCD.Rc_Costo as costo,
+       RC.Rc_Comentario as comentario
+FROM Requisicion_Compra_Detalle RCD
+INNER JOIN Producto P ON P.Pr_Cve_Producto = RCD.Pr_Cve_Producto
+INNER JOIN Requisicion_Compra RC ON RC.Rc_Folio = RCD.Rc_Folio
+WHERE RCD.Rc_Folio = '{folio}'
+"""
+        result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query
+        )
+        if result:
+            return {"folio": folio, "tipo": result[0]['tipo'], "comentario": result[0].get('comentario', ''), "detalle": [
+                {"codigo": r['codigo'], "producto": r['producto'], "cantidad": float(r['cantidad'] or 0), "costo": float(r['costo'] or 0)}
+                for r in result
+            ]}
+        
+        # Si no encuentra en requisición, buscar en pedido/orden (legacy)
+        query_legacy = f"""
 SELECT 'PEDIDO' as tipo, PDD.Pr_Cve_Producto as codigo, P.Pr_Descripcion as producto,
        PDD.Pd_Cantidad as cantidad, PDD.Pd_Costo as costo
 FROM Pedido_Detalle PDD
@@ -3856,11 +3891,11 @@ WHERE OCD.Oc_Folio = '{folio}'
 """
         result = execute_sql_query(
             server['host'], server['port'], server['database'],
-            server['username'], server['password'], query
+            server['username'], server['password'], query_legacy
         )
         if not result:
             raise HTTPException(status_code=404, detail=f"No se encontró el folio '{folio}'")
-        return {"folio": folio, "tipo": result[0]['tipo'], "detalle": [
+        return {"folio": folio, "tipo": result[0]['tipo'], "comentario": '', "detalle": [
             {"codigo": r['codigo'], "producto": r['producto'], "cantidad": float(r['cantidad'] or 0), "costo": float(r['costo'] or 0)}
             for r in result
         ]}
@@ -4055,7 +4090,8 @@ WHERE S.Sc_Descripcion LIKE '%{sucursal}%' AND ({almacen_likes}) AND A.Es_Cve_Es
         almacen_codigos = [a['codigo'] for a in almacen_result]
         almacen_nombres = [a['nombre'] for a in almacen_result]
         sucursal_codigo = almacen_result[0]['sucursal_codigo']
-        es_bodega = any('BODEGA' in (a['nombre'] or '').upper() for a in almacen_result)
+        # Solo es bodega si TODOS los almacenes seleccionados son bodegas (no solo algunos)
+        es_bodega = all('BODEGA' in (a['nombre'] or '').upper() for a in almacen_result)
         
         almacen_codigos_str = ",".join([f"'{c}'" for c in almacen_codigos])
         
@@ -4263,28 +4299,47 @@ GROUP BY Pr_Cve_Producto
         
         # 6. Obtener pedido existente para comparar (si se especificó)
         pedido_existente = {}
+        productos_pedido = set()  # Para filtrar 1:1
         if request.folio_pedido_comparar:
-            # Detectar si es pedido u orden
+            # Buscar primero en REQUISICION_COMPRA_DETALLE
             ped_query = f"""
+SELECT RCD.Pr_Cve_Producto as codigo, RCD.Rc_Cantidad as cantidad
+FROM Requisicion_Compra_Detalle RCD WHERE RCD.Rc_Folio = '{request.folio_pedido_comparar}'
+"""
+            ped_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], ped_query
+            )
+            
+            # Si no encuentra en requisición, buscar en pedido/orden (legacy)
+            if not ped_result:
+                ped_query_legacy = f"""
 SELECT PDD.Pr_Cve_Producto as codigo, PDD.Pd_Cantidad as cantidad
 FROM Pedido_Detalle PDD WHERE PDD.Pd_Folio = '{request.folio_pedido_comparar}'
 UNION ALL
 SELECT OCD.Pr_Cve_Producto as codigo, OCD.Oc_Cantidad as cantidad
 FROM Orden_Compra_Detalle OCD WHERE OCD.Oc_Folio = '{request.folio_pedido_comparar}'
 """
-            ped_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], ped_query
-            )
+                ped_result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], ped_query_legacy
+                )
+            
             pedido_existente = {p['codigo']: float(p['cantidad'] or 0) for p in ped_result}
+            productos_pedido = set(pedido_existente.keys())
             logging.info(f"[COMPRAS] Pedido a comparar: {len(pedido_existente)} productos")
         
-        # 6. Calcular pedido sugerido
+        # 7. Calcular pedido sugerido
         results = []
         productos_sin_inventario = []
         
         for prod in productos:
             codigo = prod['Codigo']
+            
+            # FILTRO 1:1: Si se está comparando con un pedido, SOLO incluir productos de ese pedido
+            if productos_pedido and codigo not in productos_pedido:
+                continue
+            
             inv_fisico = inventario_dict.get(codigo, 0)
             movimientos = movimientos_dict.get(codigo, 0)
             consumos = consumos_dict.get(codigo, 0)
