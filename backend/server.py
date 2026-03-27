@@ -4959,16 +4959,16 @@ WHERE turnos.apertura >= '{fecha_ini_ant} 00:00:00'
             }
         
         elif server['system_type'] == 'MPRO':
-            # Query para MPRO - usa tabla Venta
+            # Query para MPRO - usa tabla Venta con Vn_Folio (no Vn_Ticket)
             query_kpis = f"""
 SELECT 
-    COUNT(DISTINCT Vn_Ticket) as cheques_total,
-    SUM(Vn_Importe) as ventas_periodo,
-    AVG(Vn_Importe) as ticket_promedio
+    COUNT(DISTINCT Vn_Folio) as cheques_total,
+    ISNULL(SUM(Vn_Importe), 0) as ventas_periodo,
+    ISNULL(AVG(Vn_Importe), 0) as ticket_promedio
 FROM Venta
 WHERE Vn_Fecha >= '{fecha_ini}'
   AND Vn_Fecha <= '{fecha_fin} 23:59:59'
-  AND Es_Cve_Estado <> 'CA'
+  AND ISNULL(Es_Cve_Estado, '') <> 'CA'
 """
             result = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -5555,11 +5555,11 @@ def get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fe
     fi = fecha_ini.replace('-', '')
     ff = fecha_fin.replace('-', '')
     
-    # MPRO usa Vn_Folio, no Vn_Ticket. Y Vn_Importe o calcular con cantidad*precio
+    # MPRO usa Vn_Folio para identificar tickets y Vn_Precio_Neto_Importe para el monto de venta
     query = f"""
 SELECT 
     COUNT(DISTINCT Vn_Folio) as cheques,
-    ISNULL(SUM(Vn_Importe), 0) as ventas
+    ISNULL(SUM(Vn_Precio_Neto_Importe), 0) as ventas
 FROM Venta
 WHERE Vn_Fecha >= '{fi}' AND Vn_Fecha <= '{ff} 23:59:59'
   AND ISNULL(Es_Cve_Estado, '') <> 'CA'
@@ -5584,8 +5584,8 @@ WHERE Vn_Fecha >= '{fi}' AND Vn_Fecha <= '{ff} 23:59:59'
     fia = fecha_ini_ant.replace('-', '')
     ffa = fecha_fin_ant.replace('-', '')
     query_ant = f"""
-SELECT ISNULL(SUM(Vn_Importe), 0) as ventas, COUNT(DISTINCT Vn_Ticket) as cheques
-FROM Venta WHERE Vn_Fecha >= '{fia}' AND Vn_Fecha <= '{ffa} 23:59:59' AND Es_Cve_Estado <> 'CA'
+SELECT ISNULL(SUM(Vn_Precio_Neto_Importe), 0) as ventas, COUNT(DISTINCT Vn_Folio) as cheques
+FROM Venta WHERE Vn_Fecha >= '{fia}' AND Vn_Fecha <= '{ffa} 23:59:59' AND ISNULL(Es_Cve_Estado, '') <> 'CA'
 """
     try:
         r_ant = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], query_ant)
@@ -5599,8 +5599,8 @@ FROM Venta WHERE Vn_Fecha >= '{fia}' AND Vn_Fecha <= '{ffa} 23:59:59' AND Es_Cve
     fiaa = fecha_ini_año_ant.replace('-', '')
     ffaa = fecha_fin_año_ant.replace('-', '')
     query_año = f"""
-SELECT ISNULL(SUM(Vn_Importe), 0) as ventas, COUNT(DISTINCT Vn_Ticket) as cheques
-FROM Venta WHERE Vn_Fecha >= '{fiaa}' AND Vn_Fecha <= '{ffaa} 23:59:59' AND Es_Cve_Estado <> 'CA'
+SELECT ISNULL(SUM(Vn_Precio_Neto_Importe), 0) as ventas, COUNT(DISTINCT Vn_Folio) as cheques
+FROM Venta WHERE Vn_Fecha >= '{fiaa}' AND Vn_Fecha <= '{ffaa} 23:59:59' AND ISNULL(Es_Cve_Estado, '') <> 'CA'
 """
     try:
         r_año = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], query_año)
@@ -5739,6 +5739,218 @@ async def tablero_ejecutivo(
         "unidades": resultados,
         "totales": totales
     }
+
+
+# ============================================================================
+# EXPLORADOR DE BASE DE DATOS - Ver tablas y estructuras
+# ============================================================================
+
+@api_router.get("/explorador/tablas/{server_id}")
+async def listar_tablas(
+    server_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Lista todas las tablas de la base de datos del servidor.
+    """
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if not user_has_server_access(current_user, server_id):
+        raise HTTPException(status_code=403, detail="Sin acceso")
+    
+    # Query para listar tablas (SQL Server)
+    query = """
+SELECT 
+    TABLE_NAME as tabla,
+    TABLE_TYPE as tipo
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_TYPE = 'BASE TABLE'
+ORDER BY TABLE_NAME
+"""
+    try:
+        result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query
+        )
+        return {
+            "servidor": server['name'],
+            "sistema": server['system_type'],
+            "database": server['database'],
+            "tablas": result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/explorador/columnas/{server_id}/{tabla}")
+async def listar_columnas(
+    server_id: str,
+    tabla: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Lista las columnas de una tabla específica.
+    """
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if not user_has_server_access(current_user, server_id):
+        raise HTTPException(status_code=403, detail="Sin acceso")
+    
+    query = f"""
+SELECT 
+    COLUMN_NAME as columna,
+    DATA_TYPE as tipo,
+    CHARACTER_MAXIMUM_LENGTH as longitud,
+    IS_NULLABLE as nullable,
+    COLUMN_DEFAULT as default_value
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = '{tabla}'
+ORDER BY ORDINAL_POSITION
+"""
+    try:
+        result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query
+        )
+        return {
+            "tabla": tabla,
+            "servidor": server['name'],
+            "columnas": result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/explorador/relaciones/{server_id}/{tabla}")
+async def listar_relaciones(
+    server_id: str,
+    tabla: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Lista las relaciones (foreign keys) de una tabla.
+    """
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if not user_has_server_access(current_user, server_id):
+        raise HTTPException(status_code=403, detail="Sin acceso")
+    
+    query = f"""
+SELECT 
+    fk.name as nombre_fk,
+    tp.name as tabla_padre,
+    cp.name as columna_padre,
+    tr.name as tabla_referenciada,
+    cr.name as columna_referenciada
+FROM sys.foreign_keys fk
+INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id = fk.object_id
+INNER JOIN sys.tables tp ON tp.object_id = fk.parent_object_id
+INNER JOIN sys.columns cp ON cp.object_id = fk.parent_object_id AND cp.column_id = fkc.parent_column_id
+INNER JOIN sys.tables tr ON tr.object_id = fk.referenced_object_id
+INNER JOIN sys.columns cr ON cr.object_id = fk.referenced_object_id AND cr.column_id = fkc.referenced_column_id
+WHERE tp.name = '{tabla}' OR tr.name = '{tabla}'
+ORDER BY fk.name
+"""
+    try:
+        result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query
+        )
+        return {
+            "tabla": tabla,
+            "servidor": server['name'],
+            "relaciones": result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/explorador/preview/{server_id}/{tabla}")
+async def preview_tabla(
+    server_id: str,
+    tabla: str,
+    limite: int = Query(default=10, le=100),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Muestra las primeras N filas de una tabla.
+    """
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if not user_has_server_access(current_user, server_id):
+        raise HTTPException(status_code=403, detail="Sin acceso")
+    
+    # Sanitizar nombre de tabla para evitar SQL injection
+    if not tabla.replace('_', '').isalnum():
+        raise HTTPException(status_code=400, detail="Nombre de tabla inválido")
+    
+    query = f"SELECT TOP {limite} * FROM [{tabla}]"
+    
+    try:
+        result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query
+        )
+        return {
+            "tabla": tabla,
+            "servidor": server['name'],
+            "registros": len(result),
+            "datos": result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/explorador/query/{server_id}")
+async def ejecutar_query_libre(
+    server_id: str,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Ejecuta una query SQL personalizada (solo SELECT).
+    Solo para administradores.
+    """
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar queries libres")
+    
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    query = body.get('query', '').strip()
+    
+    # Validar que sea solo SELECT
+    if not query.upper().startswith('SELECT'):
+        raise HTTPException(status_code=400, detail="Solo se permiten consultas SELECT")
+    
+    # Bloquear palabras peligrosas
+    palabras_prohibidas = ['DROP', 'DELETE', 'UPDATE', 'INSERT', 'TRUNCATE', 'ALTER', 'CREATE', 'EXEC']
+    for palabra in palabras_prohibidas:
+        if palabra in query.upper():
+            raise HTTPException(status_code=400, detail=f"Query contiene operación prohibida: {palabra}")
+    
+    try:
+        result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query
+        )
+        return {
+            "servidor": server['name'],
+            "query": query,
+            "registros": len(result),
+            "datos": result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================================================

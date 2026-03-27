@@ -14,7 +14,8 @@ import {
   TrendingUp,
   Settings,
   PieChart,
-  Database
+  Database,
+  TableProperties
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -34,6 +35,7 @@ const Layout = () => {
     { name: 'Comercial', href: '/comercial', icon: TrendingUp, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 5 },
     { name: 'Tablero Ejecutivo', href: '/tablero-ejecutivo', icon: PieChart, roles: ['Supervisor', 'Administrador'], modulo: 6 },
     { name: 'Catálogo SQL', href: '/catalogo-consultas', icon: Database, roles: ['Supervisor', 'Administrador'], modulo: 7 },
+    { name: 'Explorador BD', href: '/explorador-bd', icon: TableProperties, roles: ['Administrador'], modulo: 8 },
   ];
 
   // Configuración y sistema
