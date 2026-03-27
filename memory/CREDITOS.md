@@ -3,7 +3,7 @@
 ## Resumen
 | Métrica | Valor |
 |---------|-------|
-| **Total Acumulado** | 46.12 |
+| **Total Acumulado** | 70.62 |
 | **Última Actualización** | 2026-03-27 |
 
 ---
@@ -14,7 +14,8 @@
 |-------|----------|----------|-----------|
 | 2026-03-24 | Preguntas + Plan Fase 1 Módulo Compras | 0.48 | 0.48 |
 | 2026-03-24 | Aclaración multi-sistema (MPRO + SoftRestaurant) | 5.18 | 5.66 |
-| 2026-03-27 | **Fase 1 Compras: Implementación completa (Backend + Frontend + Testing)** | **40.46** | **46.12** |
+| 2026-03-27 | Fase 1 Compras: Implementación inicial | 40.46 | 46.12 |
+| 2026-03-27 | **Fase 1.5 Compras: Multi-almacén, período, pedidos vigentes** | **24.50** | **70.62** |
 
 ---
 
@@ -22,7 +23,7 @@
 
 | Módulo/Tarea | Créditos Est. | Estado |
 |--------------|---------------|--------|
-| Fase 1: Cálculo pedido sugerido | 8-10 | ✅ COMPLETADO (Real: 40.46) |
+| Fase 1: Cálculo pedido sugerido | 8-10 | ✅ COMPLETADO (Real: 64.96) |
 | Fase 2: Inventario final inteligente | 4-5 | Pendiente |
 | Fase 3: Captura y comparación pedidos | 6-8 | Pendiente |
 | Fase 4: Autorización con cobro diferencias | 8-10 | Pendiente |
@@ -36,5 +37,4 @@
 ## Notas
 - Los créditos estimados son aproximados
 - El costo real se registra después de cada interacción
-- El usuario debe proporcionar capturas de pantalla para calcular diferencias
-- **Saldo actual en plataforma:** 197.91 créditos (27-Mar-2026)
+- **Saldo actual en plataforma:** 171.30 créditos (27-Mar-2026)
