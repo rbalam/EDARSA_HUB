@@ -5802,6 +5802,131 @@ FROM Venta WHERE Vn_Fecha >= '{fiaa}' AND Vn_Fecha <= '{ffaa} 23:59:59' AND ISNU
     }
 
 
+def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes):
+    """
+    Query para MPRO que devuelve KPIs DIVIDIDOS POR SUCURSAL (como en Inventarios).
+    Retorna una lista de unidades, no un solo bloque.
+    """
+    # Formato YYYYMMDD para MPRO
+    fi = fecha_ini.replace('-', '')
+    ff = fecha_fin.replace('-', '')
+    fia = fecha_ini_ant.replace('-', '')
+    ffa = fecha_fin_ant.replace('-', '')
+    fiaa = fecha_ini_año_ant.replace('-', '')
+    ffaa = fecha_fin_año_ant.replace('-', '')
+    
+    # Query principal agrupando por sucursal
+    query = f"""
+SELECT 
+    S.Sc_Cve_Sucursal as sucursal_id,
+    S.Sc_Descripcion as sucursal_nombre,
+    COUNT(DISTINCT V.Vn_Folio) as cheques,
+    ISNULL(SUM(V.Vn_Precio_Neto_Importe), 0) as ventas
+FROM Venta V
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
+WHERE V.Vn_Fecha >= '{fi}' AND V.Vn_Fecha <= '{ff} 23:59:59'
+  AND ISNULL(V.Es_Cve_Estado, '') <> 'CA'
+GROUP BY S.Sc_Cve_Sucursal, S.Sc_Descripcion
+ORDER BY SUM(V.Vn_Precio_Neto_Importe) DESC
+"""
+    
+    try:
+        result = execute_sql_query(server['host'], server['port'], server['database'], 
+                                   server['username'], server['password'], query)
+        if not result:
+            logging.warning(f"MPRO {server['name']}: No se encontraron sucursales con ventas")
+            return []
+    except Exception as e:
+        logging.warning(f"Error consultando MPRO por sucursal {server['name']}: {e}")
+        return []
+    
+    unidades = []
+    
+    for row in result:
+        sucursal_id = row.get('sucursal_id', '')
+        sucursal_nombre = row.get('sucursal_nombre', 'Sin nombre')
+        ventas = float(row.get('ventas') or 0)
+        cheques = int(row.get('cheques') or 0)
+        pax = cheques  # MPRO no tiene PAX, estimamos = cheques
+        
+        # Query mes anterior para esta sucursal
+        query_ant = f"""
+SELECT ISNULL(SUM(V.Vn_Precio_Neto_Importe), 0) as ventas, COUNT(DISTINCT V.Vn_Folio) as cheques
+FROM Venta V
+WHERE V.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND V.Vn_Fecha >= '{fia}' AND V.Vn_Fecha <= '{ffa} 23:59:59'
+  AND ISNULL(V.Es_Cve_Estado, '') <> 'CA'
+"""
+        try:
+            r_ant = execute_sql_query(server['host'], server['port'], server['database'], 
+                                      server['username'], server['password'], query_ant)
+            ventas_ant = float(r_ant[0]['ventas'] or 0) if r_ant else 0
+            cheques_ant = int(r_ant[0]['cheques'] or 0) if r_ant else 0
+        except:
+            ventas_ant, cheques_ant = 0, 0
+        pax_ant = cheques_ant
+        
+        # Query año anterior para esta sucursal
+        query_año = f"""
+SELECT ISNULL(SUM(V.Vn_Precio_Neto_Importe), 0) as ventas, COUNT(DISTINCT V.Vn_Folio) as cheques
+FROM Venta V
+WHERE V.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND V.Vn_Fecha >= '{fiaa}' AND V.Vn_Fecha <= '{ffaa} 23:59:59'
+  AND ISNULL(V.Es_Cve_Estado, '') <> 'CA'
+"""
+        try:
+            r_año = execute_sql_query(server['host'], server['port'], server['database'], 
+                                      server['username'], server['password'], query_año)
+            ventas_año = float(r_año[0]['ventas'] or 0) if r_año else 0
+            cheques_año = int(r_año[0]['cheques'] or 0) if r_año else 0
+        except:
+            ventas_año, cheques_año = 0, 0
+        pax_año = cheques_año
+        
+        # Cálculos
+        ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
+        cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
+        proyeccion = round((ventas / dias_transcurridos) * dias_mes, 2) if dias_transcurridos > 0 else 0
+        
+        # Variaciones %
+        var_vs_mes_ant = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
+        var_vs_año_ant = round(((ventas - ventas_año) / ventas_año * 100), 1) if ventas_año > 0 else 0
+        var_pax_mes = round(((pax - pax_ant) / pax_ant * 100), 1) if pax_ant > 0 else 0
+        var_pax_año = round(((pax - pax_año) / pax_año * 100), 1) if pax_año > 0 else 0
+        var_cheques_mes = round(((cheques - cheques_ant) / cheques_ant * 100), 1) if cheques_ant > 0 else 0
+        var_cheques_año = round(((cheques - cheques_año) / cheques_año * 100), 1) if cheques_año > 0 else 0
+        
+        unidades.append({
+            "unidad": sucursal_nombre,
+            "server_id": server['id'],
+            "sucursal_id": sucursal_id,
+            "system_type": "MPRO",
+            "parent_server": server['name'],
+            "ventas": ventas,
+            "ventas_ant": ventas_ant,
+            "ventas_año": ventas_año,
+            "var_vs_mes_ant": var_vs_mes_ant,
+            "var_vs_año_ant": var_vs_año_ant,
+            "proyeccion": proyeccion,
+            "pax": pax,
+            "pax_ant": pax_ant,
+            "pax_año": pax_año,
+            "var_pax_mes": var_pax_mes,
+            "var_pax_año": var_pax_año,
+            "cheques": cheques,
+            "cheques_ant": cheques_ant,
+            "cheques_año": cheques_año,
+            "var_cheques_mes": var_cheques_mes,
+            "var_cheques_año": var_cheques_año,
+            "ticket_prom": ticket_prom,
+            "cheque_prom": cheque_prom
+        })
+        
+        logging.info(f"MPRO {server['name']} - Sucursal '{sucursal_nombre}': Ventas={ventas}, Cheques={cheques}")
+    
+    return unidades
+
+
 @api_router.get("/comercial/tablero-ejecutivo")
 async def tablero_ejecutivo(
     mes: int = Query(default=0),  # 0 = mes actual
@@ -5865,24 +5990,31 @@ async def tablero_ejecutivo(
                "cheques": 0, "cheques_ant": 0, "cheques_año": 0, "proyeccion": 0}
     
     for server in servers:
-        kpis = None
         logging.info(f"Procesando servidor: {server['name']} - Tipo: {server['system_type']}")
+        
         if server['system_type'] == 'SoftRestaurant':
             kpis = get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
                                            fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
-        elif server['system_type'] == 'MPRO':
-            kpis = get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
-                                 fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
+            if kpis:
+                kpis["unidad"] = server['name']
+                kpis["server_id"] = server['id']
+                kpis["system_type"] = server['system_type']
+                resultados.append(kpis)
+                # Acumular totales
+                for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
+                          "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
+                    totales[k] += kpis.get(k, 0)
         
-        if kpis:
-            kpis["unidad"] = server['name']
-            kpis["server_id"] = server['id']
-            kpis["system_type"] = server['system_type']
-            resultados.append(kpis)
-            # Acumular totales
-            for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
-                      "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
-                totales[k] += kpis.get(k, 0)
+        elif server['system_type'] == 'MPRO':
+            # MPRO: Dividir por sucursal (igual que en Inventarios)
+            unidades_mpro = get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
+                                                       fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
+            for unidad in unidades_mpro:
+                resultados.append(unidad)
+                # Acumular totales
+                for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
+                          "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
+                    totales[k] += unidad.get(k, 0)
     
     # Calcular variaciones de totales
     totales["var_vs_mes_ant"] = round(((totales["ventas"] - totales["ventas_ant"]) / totales["ventas_ant"] * 100), 1) if totales["ventas_ant"] > 0 else 0

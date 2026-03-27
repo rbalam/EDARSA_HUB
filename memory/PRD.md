@@ -4,6 +4,8 @@
 > **Aplicación renombrada a "Edarsa Hub"**
 > **Módulo de Compras con TABS: Dashboard, Autorización, Análisis**
 > **Módulo Comercial (Ventas) con DATOS REALES - ✅ COMPLETADO**
+> **TABLERO EJECUTIVO con MPRO dividido por sucursal - ✅ COMPLETADO (27 Mar 2026)**
+> **Drill-down en KPIs (doble click para ver movimientos) - ✅ COMPLETADO (27 Mar 2026)**
 > **Análisis de compras por proveedor con drill-down hasta nivel factura/productos**
 > **Reportes de Análisis de Inventarios funcionando para SoftRestaurant y MPRO.**
 
@@ -29,6 +31,23 @@
 
 ---
 
+## TABLERO EJECUTIVO - IMPLEMENTADO ✅ (27 Mar 2026)
+
+### Funcionalidades:
+1. **Consolidación Multi-Servidor** - Ventas de todos los servidores (SoftRestaurant + MPRO)
+2. **MPRO dividido por sucursal** - 130° QUERETARO, ORIGEN, EDARSA (como en Inventarios)
+3. **KPIs consolidados** - Ventas, PAX, Cheques, Proyección, Ticket Promedio
+4. **Comparativos** - vs Mes Anterior, vs Año Anterior
+5. **Drill-down por unidad** - Click para ver detalle de cada sucursal
+
+### Datos Verificados (Marzo 2026):
+- Ventas Consolidadas: $10.92M
+- Unidades: 5 (130° QUERETARO, ORIGEN, EDARSA, Cienfuegos, LA ESTELAR)
+- Variación vs Mes: -17.2%
+- Variación vs Año: +14.9%
+
+---
+
 ## MÓDULO COMERCIAL (VENTAS) - IMPLEMENTADO ✅ (27 Mar 2026)
 
 ### Estructura con TABS:
@@ -46,6 +65,7 @@
 - Ventas por hora (horarios pico)
 - Ventas por día de la semana
 - Análisis de rotación por hora
+- **DRILL-DOWN en KPIs (doble click para ver detalle de movimientos)** ✅ NUEVO
 
 ### Endpoints Nuevos (27 Mar 2026):
 - `GET /api/comercial/dashboard/{server_id}` - KPIs y comparativos
@@ -53,6 +73,7 @@
 - `GET /api/comercial/metas/{server_id}` - Metas por producto y vendedor
 - `GET /api/comercial/ventas-tiempo/{server_id}` - Ventas por hora y día
 - `GET /api/comercial/mesas/{server_id}` - Rotación y comensales
+- `GET /api/comercial/detalle-movimientos/{server_id}` - **NUEVO** Drill-down de cheques
 
 ### Datos Verificados (LA ESTELAR - Marzo 2026):
 - Ventas del Mes: $2,191,051.00
@@ -238,34 +259,51 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
 
 ## Pendientes / Backlog
 
+### P0 - COMPLETADOS (27 Mar 2026)
+1. ~~**MPRO dividido por sucursal**~~ ✅ - Tablero Ejecutivo ahora muestra cada sucursal por separado
+2. ~~**Drill-down en KPIs**~~ ✅ - Doble click para ver detalle de movimientos
+
 ### P1 - Próximos
-1. **Módulo Compras - Fases 2-6** - Continuar desarrollo del Mini-ERP de compras
+1. **Bug routing `/explorador-bd`** - Redirige al Dashboard (pendiente arreglar)
+2. **Presupuestos** - Comparativa vs presupuesto (existe en análisis e inventarios)
+3. **Ventas sin inflación** - Parametrizable el % de inflación (precios constantes)
+4. **Filtros por grupo, zona, permisos** - Especialmente para MPRO y relación usuarios
+
+5. **Módulo Compras - Fases 2-6** - Continuar desarrollo del Mini-ERP de compras
    - Fase 2: Inventario final inteligente
    - Fase 3: Captura y comparación de pedidos
    - Fase 4: Autorización con cobro de diferencias
    - Fase 5: Alertas y días de proveedor
    - Fase 6: Lógica de compra por período
 
-2. **Reporte "Insumos Pendientes por Descargar"** - Nuevo reporte solicitado
+6. **Reporte "Insumos Pendientes por Descargar"** - Nuevo reporte solicitado
    - Insumos consumidos según ventas vs existencias
    - Solo para almacenes de consumo
-   - Posible envío automático cuando informan que "traspasos están listos"
 
 ### P2 - Mejoras
-3. Exportación a PDF (verificar funcionamiento - reportada rota)
-4. Envío de reportes por correo electrónico
-5. Productos con movimientos pero sin inventario físico (Issue bloqueado por análisis del usuario)
-6. Filtro por comentarios de captura física e Inventario Selectivo (Checkbox)
+7. Exportación a PDF (verificar funcionamiento - reportada rota)
+8. Envío de reportes por correo electrónico
+9. Productos con movimientos pero sin inventario físico
+10. Filtro por comentarios de captura física e Inventario Selectivo
 
 ### P3 - Futuros
-7. Filtrar productos no inventariables en dashboards
-8. Integración con WhatsApp para notificaciones
-9. Migrar Portal de Proveedores (proyecto separado)
-10. Migrar Bitácora de Activos (proyecto separado)
+11. Módulo Rentabilidad - OpenTable, conciliación PAX
+12. Módulo CRM (Leads, estado de cuenta)
+13. Módulo Comisionistas, Bonificaciones, Convenios
+14. Integración con WhatsApp para notificaciones
+15. Migrar Portal de Proveedores
+16. Migrar Bitácora de Activos
 
 ---
 
 ## Historial de Cambios
+
+### 27 Mar 2026 - TABLERO EJECUTIVO + DRILL-DOWN ✅
+- ✅ **MPRO dividido por sucursal**: Tablero Ejecutivo muestra 130° QUERETARO, ORIGEN, EDARSA separados
+- ✅ **Nueva función `get_kpis_mpro_por_sucursal`**: GROUP BY Sc_Cve_Sucursal para dividir datos
+- ✅ **Drill-down en KPIs**: Doble click en tarjetas de Comercial muestra detalle de movimientos
+- ✅ **Endpoint `/api/comercial/detalle-movimientos/{server_id}`**: Paginación de cheques/facturas
+- ✅ **5 unidades en Tablero**: 130° QUERETARO, ORIGEN, EDARSA (MPRO) + Cienfuegos, LA ESTELAR (Soft)
 
 ### 27 Mar 2026 - EDARSA HUB + BUGFIXES ✅
 - ✅ **Renombre del sistema**: "Sistema Inventarios" → "Edarsa Hub"
