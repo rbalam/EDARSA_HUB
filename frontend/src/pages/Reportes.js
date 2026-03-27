@@ -1211,21 +1211,20 @@ const Reportes = () => {
             <p className="text-xs text-zinc-500 mb-2 italic">
               💡 Doble clic en las columnas Movimientos o Ventas para ver el detalle
             </p>
-            <div className="rounded-md border border-zinc-200">
-              <div className="max-h-[600px] overflow-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 z-10 bg-zinc-100">
-                    <TableRow className="border-b-2 border-zinc-300">
-                      {Object.keys(reportData[0]).map((key) => (
-                        <TableHead key={key} className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-100 py-3">
-                          {key.replace(/_/g, ' ')}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                <TableBody>
+            <div className="rounded-md border border-zinc-200 max-h-[600px] overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-10 bg-zinc-200">
+                  <tr className="border-b-2 border-zinc-400">
+                    {Object.keys(reportData[0]).map((key) => (
+                      <th key={key} className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">
+                        {key.replace(/_/g, ' ')}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
                   {reportData.slice(0, 2000).map((row, idx) => (
-                    <TableRow key={idx} className="hover:bg-zinc-50/50">
+                    <tr key={idx} className="border-b hover:bg-zinc-50/50">
                       {Object.entries(row).map(([key, value], cellIdx) => {
                         // Special formatting for analysis report
                         const isDiferencia = key.toLowerCase().includes('diferencia');
@@ -1235,21 +1234,21 @@ const Reportes = () => {
                         const isVentas = key === 'Ventas';
                         
                         let displayValue = value;
-                        let className = "text-sm font-data text-zinc-700";
+                        let className = "text-sm font-data text-zinc-700 p-2";
                         let onDoubleClick = null;
                         
                         // Columnas clickeables para ver detalle
                         if (isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
                           onDoubleClick = () => loadMovementDetails(row);
-                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline";
+                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2";
                           displayValue = formatNumber(value);
                         } else if (isVentas && value !== null && value !== undefined && parseFloat(value) !== 0) {
                           onDoubleClick = () => loadSalesDetails(row);
-                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline";
+                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2";
                           displayValue = formatNumber(value);
                         } else if (isPorcentaje && value !== null && value !== undefined) {
                           displayValue = `${formatNumber(value)}%`;
-                          className = `text-sm font-data font-semibold ${getDifferenceColor(parseFloat(value))}`;
+                          className = `text-sm font-data font-semibold p-2 ${getDifferenceColor(parseFloat(value))}`;
                         } else if (isCosto && value !== null && value !== undefined) {
                           displayValue = formatCurrency(value);
                         } else if ((key.toLowerCase().includes('cantidad') || key.toLowerCase().includes('ventas') || key.toLowerCase().includes('movimientos')) && value !== null && value !== undefined && typeof value === 'number') {
@@ -1269,21 +1268,20 @@ const Reportes = () => {
                         }
                         
                         return (
-                          <TableCell 
+                          <td 
                             key={cellIdx} 
                             className={className}
                             onDoubleClick={onDoubleClick}
                             title={onDoubleClick ? 'Doble clic para ver detalle' : ''}
                           >
                             {displayValue}
-                          </TableCell>
+                          </td>
                         );
                       })}
-                    </TableRow>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
-              </div>
+                </tbody>
+              </table>
             </div>
             {reportData.length > 2000 && (
               <p className="text-sm text-zinc-600 mt-4 text-center">
