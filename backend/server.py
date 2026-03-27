@@ -1462,7 +1462,7 @@ async def get_inventarios_list(
             """
         elif server['system_type'] == 'SoftRestaurant':
             # Query para SoftRestaurant - fecha en formato YYYY-MM-DD HH:MM:SS
-            where_clause = "WHERE INV.cancelado = 0"
+            where_clause = "WHERE 1=1"
             if almacen_id:
                 where_clause += f" AND INV.idalmacen1 = '{almacen_id}'"
             
@@ -1472,7 +1472,7 @@ async def get_inventarios_list(
                     CONVERT(varchar, INV.fecha, 120) as fecha,
                     INV.idalmacen1 as almacen_id,
                     A.nombre as almacen,
-                    ISNULL(INV.observaciones, '') as comentario
+                    '' as comentario
                 FROM invfisico INV
                 LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
                 {where_clause}
