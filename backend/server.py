@@ -1333,6 +1333,10 @@ async def get_sucursales(server_id: str, current_user: Dict = Depends(get_curren
     try:
         if server['system_type'] == 'MPRO':
             query = "SELECT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal WHERE Es_Cve_Estado <> 'BA'"
+        elif server['system_type'] == 'SoftRestaurant':
+            # SoftRestaurant NO tiene tabla Sucursal - devolvemos una sucursal virtual con el nombre del servidor
+            # o podemos devolver los almacenes como "sucursales" virtuales
+            return [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
         else:
             # Query genérica para otros sistemas
             query = "SELECT DISTINCT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal"
@@ -4576,6 +4580,64 @@ ORDER BY total DESC
                     "requisiciones_pendientes": req_pendientes,
                     "proveedores_activos": prov_activos,
                     "alertas_activas": 0  # TODO: calcular alertas reales
+                },
+                "alertas": [],
+                "top_proveedores": top_proveedores
+            }
+        
+        elif server['system_type'] == 'SoftRestaurant':
+            # SoftRestaurant tiene estructura diferente - usamos movimientos de entrada
+            query_compras = """
+SELECT ISNULL(SUM(M.cantidad * M.costo), 0) as total
+FROM movtosalmacen M
+INNER JOIN conceptos C ON C.idconcepto = M.idconcepto
+WHERE C.tipo = 1
+    AND M.fecha >= DATEADD(day, -30, GETDATE())
+"""
+            result_compras = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_compras
+            )
+            total_compras = float(result_compras[0]['total']) if result_compras else 0
+            
+            # Proveedores activos
+            query_prov = """
+SELECT COUNT(DISTINCT M.idproveedor) as total
+FROM movtosalmacen M
+WHERE M.fecha >= DATEADD(day, -90, GETDATE())
+    AND M.idproveedor IS NOT NULL
+"""
+            result_prov = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_prov
+            )
+            prov_activos = result_prov[0]['total'] if result_prov else 0
+            
+            # Top proveedores
+            query_top = """
+SELECT TOP 5 
+    P.nombre as nombre,
+    SUM(M.cantidad * M.costo) as total
+FROM movtosalmacen M
+INNER JOIN proveedores P ON P.idproveedor = M.idproveedor
+INNER JOIN conceptos C ON C.idconcepto = M.idconcepto
+WHERE C.tipo = 1
+    AND M.fecha >= DATEADD(day, -30, GETDATE())
+GROUP BY P.nombre
+ORDER BY total DESC
+"""
+            result_top = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_top
+            )
+            top_proveedores = [{"nombre": r['nombre'], "total": float(r['total'] or 0)} for r in result_top]
+            
+            return {
+                "kpis": {
+                    "total_compras_mes": total_compras,
+                    "requisiciones_pendientes": 0,  # SoftRestaurant no tiene este concepto
+                    "proveedores_activos": prov_activos,
+                    "alertas_activas": 0
                 },
                 "alertas": [],
                 "top_proveedores": top_proveedores
