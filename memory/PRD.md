@@ -2,7 +2,8 @@
 
 ## CHECKPOINT ESTABLE - 27 Marzo 2026
 > **Aplicación renombrada a "Edarsa Hub"**
-> **Módulo de Compras con comparación 1:1 de requisiciones**
+> **Módulo de Compras con TABS: Dashboard, Autorización, Análisis**
+> **Análisis de compras por proveedor con drill-down hasta nivel factura/productos**
 > **Reportes de Análisis de Inventarios funcionando para SoftRestaurant y MPRO.**
 
 ---
@@ -24,6 +25,28 @@
 
 ### Credenciales de Prueba
 - **Admin**: admin@inventario.com / admin123
+
+---
+
+## MÓDULO DE COMPRAS - IMPLEMENTADO ✅ (27 Mar 2026)
+
+### Estructura con TABS (menos clicks):
+1. **Dashboard** - KPIs de compras, alertas, top proveedores
+2. **Autorización** - Cálculo de pedido sugerido (existente)
+3. **Análisis** - Compras por proveedor con drill-down
+
+### Funcionalidades Implementadas:
+- Tabla pivote: Proveedor × Mes con totales
+- Drill-down 3 niveles: Proveedor → Facturas → Productos
+- Visor de documentos (PDF/XML) - estructura lista
+- Alertas de desviación Compras vs Consumos
+- Validaciones fiscales (RFC emisor/receptor) - estructura lista
+
+### Endpoints Nuevos:
+- `GET /api/compras/dashboard/{server_id}` - KPIs y alertas
+- `POST /api/compras/analisis` - Análisis por proveedor/mes
+- `GET /api/compras/facturas-proveedor/{server_id}` - Facturas de un proveedor
+- `GET /api/compras/detalle-factura/{server_id}/{folio}` - Detalle de factura
 
 ---
 

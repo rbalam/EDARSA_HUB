@@ -3,7 +3,7 @@
 ## Resumen
 | Métrica | Valor |
 |---------|-------|
-| **Saldo Actual** | ~119.49 |
+| **Saldo Actual** | ~82 (estimado, confirmar) |
 | **Última Actualización** | 2026-03-27 |
 
 ---
@@ -18,6 +18,7 @@
 | 2026-03-27 | Fase 1.5 Compras: Multi-almacén, período, pedidos vigentes | 24.50 | - |
 | 2026-03-27 | Bugfixes + Renombre Edarsa Hub + Sidebar modular | 21.65 | 121.49 |
 | 2026-03-27 | Crear Agente Rich (perfil Ricardo) | GRATIS | 121.49 |
+| 2026-03-27 | **Módulo Compras con Tabs + Análisis + Endpoints** | **~27** | **~82** |
 
 ---
 

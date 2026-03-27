@@ -4481,6 +4481,270 @@ async def guardar_parametros_compra(params: dict, credentials: HTTPAuthorization
     return {"message": "Parámetros guardados correctamente"}
 
 
+# ============= ANÁLISIS DE COMPRAS - ENDPOINTS =============
+
+class AnalisisComprasRequest(BaseModel):
+    server_id: str
+    sucursal: str
+    anio: int
+    meses: List[str]
+
+@api_router.get("/compras/dashboard/{server_id}")
+async def obtener_dashboard_compras(server_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Obtiene KPIs y alertas para el dashboard de compras"""
+    verify_token(credentials.credentials)
+    
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        if server['system_type'] == 'MPRO':
+            # Total compras del mes actual
+            query_compras = """
+SELECT ISNULL(SUM(M.Mv_Importe), 0) as total
+FROM Movimiento M
+INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
+WHERE TM.Tm_Entrada_Salida = 'E'
+    AND TM.Tm_Cve_Tipo_Movimiento LIKE '%COMP%'
+    AND M.Mv_Fecha >= DATEADD(day, -30, GETDATE())
+    AND M.Es_Cve_Estado <> 'CA'
+"""
+            result_compras = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_compras
+            )
+            total_compras = float(result_compras[0]['total']) if result_compras else 0
+            
+            # Requisiciones pendientes
+            query_req = """
+SELECT COUNT(*) as total FROM Requisicion_Compra WHERE Es_Cve_Estado = 'PXA'
+"""
+            result_req = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_req
+            )
+            req_pendientes = result_req[0]['total'] if result_req else 0
+            
+            # Proveedores activos (con compras en últimos 90 días)
+            query_prov = """
+SELECT COUNT(DISTINCT M.Pv_Cve_Proveedor) as total
+FROM Movimiento M
+WHERE M.Mv_Fecha >= DATEADD(day, -90, GETDATE())
+    AND M.Pv_Cve_Proveedor IS NOT NULL
+"""
+            result_prov = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_prov
+            )
+            prov_activos = result_prov[0]['total'] if result_prov else 0
+            
+            # Top 5 proveedores
+            query_top = """
+SELECT TOP 5 
+    P.Pv_Nombre as nombre,
+    SUM(M.Mv_Importe) as total
+FROM Movimiento M
+INNER JOIN Proveedor P ON P.Pv_Cve_Proveedor = M.Pv_Cve_Proveedor
+INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
+WHERE TM.Tm_Entrada_Salida = 'E'
+    AND M.Mv_Fecha >= DATEADD(day, -30, GETDATE())
+    AND M.Es_Cve_Estado <> 'CA'
+GROUP BY P.Pv_Nombre
+ORDER BY total DESC
+"""
+            result_top = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_top
+            )
+            top_proveedores = [{"nombre": r['nombre'], "total": float(r['total'])} for r in result_top]
+            
+            return {
+                "kpis": {
+                    "total_compras_mes": total_compras,
+                    "requisiciones_pendientes": req_pendientes,
+                    "proveedores_activos": prov_activos,
+                    "alertas_activas": 0  # TODO: calcular alertas reales
+                },
+                "alertas": [],
+                "top_proveedores": top_proveedores
+            }
+        
+        return {"kpis": {}, "alertas": [], "top_proveedores": []}
+    except Exception as e:
+        logging.error(f"Error en dashboard compras: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/compras/analisis")
+async def obtener_analisis_compras(request: AnalisisComprasRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Obtiene análisis de compras por proveedor y mes con alertas de desviación"""
+    verify_token(credentials.credentials)
+    
+    server = await db.servers.find_one({"id": request.server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        if server['system_type'] == 'MPRO':
+            # Construir condición de meses
+            meses_cond = " OR ".join([f"MONTH(M.Mv_Fecha) = {int(m)}" for m in request.meses])
+            
+            query = f"""
+SELECT 
+    P.Pv_Cve_Proveedor as codigo,
+    P.Pv_Nombre as nombre,
+    MONTH(M.Mv_Fecha) as mes,
+    SUM(M.Mv_Importe) as total
+FROM Movimiento M
+INNER JOIN Proveedor P ON P.Pv_Cve_Proveedor = M.Pv_Cve_Proveedor
+INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
+WHERE TM.Tm_Entrada_Salida = 'E'
+    AND YEAR(M.Mv_Fecha) = {request.anio}
+    AND ({meses_cond})
+    AND S.Sc_Descripcion LIKE '%{request.sucursal}%'
+    AND M.Es_Cve_Estado <> 'CA'
+GROUP BY P.Pv_Cve_Proveedor, P.Pv_Nombre, MONTH(M.Mv_Fecha)
+ORDER BY P.Pv_Nombre, MONTH(M.Mv_Fecha)
+"""
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query
+            )
+            
+            # Pivot por proveedor y mes
+            proveedores = {}
+            for row in result:
+                codigo = row['codigo']
+                if codigo not in proveedores:
+                    proveedores[codigo] = {
+                        'codigo': codigo,
+                        'nombre': row['nombre'],
+                        'total': 0
+                    }
+                    for m in request.meses:
+                        proveedores[codigo][m] = 0
+                
+                mes_str = str(row['mes']).zfill(2)
+                if mes_str in request.meses:
+                    proveedores[codigo][mes_str] = float(row['total'])
+                    proveedores[codigo]['total'] += float(row['total'])
+            
+            # Ordenar por total descendente
+            proveedores_list = sorted(proveedores.values(), key=lambda x: x['total'], reverse=True)
+            
+            return {
+                "proveedores": proveedores_list[:50],  # Top 50
+                "alertas": []  # TODO: calcular alertas de desviación
+            }
+        
+        return {"proveedores": [], "alertas": []}
+    except Exception as e:
+        logging.error(f"Error en análisis compras: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/compras/facturas-proveedor/{server_id}")
+async def obtener_facturas_proveedor(server_id: str, proveedor_codigo: str, anio: int, meses: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Obtiene las facturas/entradas de un proveedor específico"""
+    verify_token(credentials.credentials)
+    
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        if server['system_type'] == 'MPRO':
+            meses_list = meses.split(',')
+            meses_cond = " OR ".join([f"MONTH(M.Mv_Fecha) = {int(m)}" for m in meses_list])
+            
+            query = f"""
+SELECT 
+    M.Mv_Documento as folio,
+    M.Mv_Fecha as fecha,
+    COUNT(DISTINCT MD.Pr_Cve_Producto) as productos,
+    SUM(MD.Md_Importe) as importe,
+    CASE WHEN M.Es_Cve_Estado = 'PA' THEN 'pagada' ELSE 'pendiente' END as status
+FROM Movimiento M
+INNER JOIN Movimiento_Detalle MD ON MD.Mv_Folio = M.Mv_Folio
+WHERE M.Pv_Cve_Proveedor = '{proveedor_codigo}'
+    AND YEAR(M.Mv_Fecha) = {anio}
+    AND ({meses_cond})
+    AND M.Es_Cve_Estado <> 'CA'
+GROUP BY M.Mv_Documento, M.Mv_Fecha, M.Es_Cve_Estado
+ORDER BY M.Mv_Fecha DESC
+"""
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query
+            )
+            
+            return [
+                {
+                    "folio": r['folio'],
+                    "fecha": str(r['fecha']),
+                    "productos": r['productos'],
+                    "importe": float(r['importe'] or 0),
+                    "status": r['status'],
+                    "tiene_pdf": False,  # TODO: verificar si existe archivo
+                    "tiene_xml": False
+                }
+                for r in result
+            ]
+        
+        return []
+    except Exception as e:
+        logging.error(f"Error obteniendo facturas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/compras/detalle-factura/{server_id}/{folio}")
+async def obtener_detalle_factura(server_id: str, folio: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Obtiene el detalle de productos de una factura/entrada"""
+    verify_token(credentials.credentials)
+    
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        if server['system_type'] == 'MPRO':
+            query = f"""
+SELECT 
+    MD.Pr_Cve_Producto as codigo,
+    P.Pr_Descripcion as producto,
+    MD.Md_Cantidad as cantidad,
+    MD.Md_Costo as costo,
+    MD.Md_Importe as importe
+FROM Movimiento_Detalle MD
+INNER JOIN Movimiento M ON M.Mv_Folio = MD.Mv_Folio
+INNER JOIN Producto P ON P.Pr_Cve_Producto = MD.Pr_Cve_Producto
+WHERE M.Mv_Documento = '{folio}'
+ORDER BY P.Pr_Descripcion
+"""
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query
+            )
+            
+            return [
+                {
+                    "codigo": r['codigo'],
+                    "producto": r['producto'],
+                    "cantidad": float(r['cantidad'] or 0),
+                    "costo": float(r['costo'] or 0),
+                    "importe": float(r['importe'] or 0)
+                }
+                for r in result
+            ]
+        
+        return []
+    except Exception as e:
+        logging.error(f"Error obteniendo detalle factura: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Incluir el router después de definir todos los endpoints
 app.include_router(api_router)
 
