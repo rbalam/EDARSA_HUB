@@ -3716,8 +3716,6 @@ async def get_dashboard_metrics(current_user: Dict = Depends(get_current_user)):
         "servers_configured": servers_configured
     }
 
-app.include_router(api_router)
-
 # ============= MÓDULO DE COMPRAS - MODELOS =============
 
 class ParametrosCompra(BaseModel):
@@ -3744,16 +3742,19 @@ class CalculoPedidoRequest(BaseModel):
 async def calcular_pedido_sugerido(request: CalculoPedidoRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Calcula el pedido sugerido basándose en:
-    1. Inventario inicial (físico o teórico)
-    2. + Compras recientes
-    3. = Productos disponibles
-    4. - Ventas promedio * días_inventario
-    5. = Cantidad a pedir
+    1. Inventario inicial (físico capturado) - Si no existe, requiere captura manual
+    2. + Compras recientes (desde Movimiento con concepto compras)
+    3. - Consumos/Ventas del período
+    4. = Inventario Teórico Actual
+    5. Cantidad a pedir = (Promedio Diario × Días Inventario) - Disponible
     """
     verify_token(credentials.credentials)
     
+    logging.info(f"[COMPRAS] Iniciando cálculo de pedido - server_id: {request.server_id}")
+    
     server = await db.servers.find_one({"id": request.server_id, "active": True})
     if not server:
+        logging.error(f"[COMPRAS] Servidor no encontrado: {request.server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     sucursal = request.sucursal
@@ -3765,11 +3766,11 @@ async def calcular_pedido_sugerido(request: CalculoPedidoRequest, credentials: H
     # Calcular fechas
     from datetime import datetime, timedelta
     fecha_calc_dt = datetime.strptime(fecha_calculo, '%Y-%m-%d')
-    fecha_inicio_ventas = (fecha_calc_dt - timedelta(days=dias_historial)).strftime('%Y-%m-%d')
+    fecha_inicio_historial = (fecha_calc_dt - timedelta(days=dias_historial)).strftime('%Y-%m-%d')
     
-    logging.info(f"Calculando pedido sugerido para {server['name']}")
-    logging.info(f"Sucursal: {sucursal}, Almacén: {almacen}")
-    logging.info(f"Fecha cálculo: {fecha_calculo}, Días inventario: {dias_inventario}")
+    logging.info(f"[COMPRAS] Calculando pedido sugerido para {server['name']}")
+    logging.info(f"[COMPRAS] Sucursal: {sucursal}, Almacén: {almacen}")
+    logging.info(f"[COMPRAS] Fecha cálculo: {fecha_calculo}, Días inventario: {dias_inventario}")
     
     if server['system_type'] == 'MPRO':
         # Obtener código del almacén y sucursal
@@ -3783,15 +3784,22 @@ INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
 WHERE A.Al_Descripcion LIKE '%{almacen}%'
     AND S.Sc_Descripcion LIKE '%{sucursal}%'
 """
+        logging.info(f"[COMPRAS] Ejecutando query almacén...")
         almacen_result = execute_sql_query(
             server['host'], server['port'], server['database'],
             server['username'], server['password'], almacen_query
         )
+        logging.info(f"[COMPRAS] Resultado almacén: {len(almacen_result) if almacen_result else 0} registros")
         if not almacen_result:
-            raise HTTPException(status_code=404, detail="Almacén no encontrado")
+            logging.error(f"[COMPRAS] Almacén no encontrado: sucursal={sucursal}, almacen={almacen}")
+            raise HTTPException(status_code=404, detail=f"Almacén '{almacen}' no encontrado en sucursal '{sucursal}'")
         
         almacen_codigo = almacen_result[0]['codigo']
         sucursal_codigo = almacen_result[0]['sucursal_codigo']
+        almacen_nombre = almacen_result[0].get('nombre', '')
+        es_bodega = 'BODEGA' in almacen_nombre.upper() if almacen_nombre else False
+        
+        logging.info(f"[COMPRAS] Almacén encontrado: {almacen_codigo} ({almacen_nombre}), es_bodega={es_bodega}")
         
         # Construir filtros
         filtro_categorias = ""
@@ -3804,65 +3812,114 @@ WHERE A.Al_Descripcion LIKE '%{almacen}%'
             fams = ",".join([f"'{f}'" for f in request.familias])
             filtro_familias = f"AND P.Fm_Cve_Familia IN ({fams})"
         
-        # 1. Obtener catálogo de productos con inventario actual
+        # Verificar si hay inventario físico capturado para la fecha de cálculo
+        inventario_fisico_query = f"""
+SELECT TOP 1 
+    Fi_Folio as folio,
+    Fi_Fecha as fecha
+FROM Fisico
+WHERE Al_Cve_Almacen = '{almacen_codigo}'
+ORDER BY Fi_Fecha DESC
+"""
+        inv_fisico_result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], inventario_fisico_query
+        )
+        
+        tiene_inventario_fisico = len(inv_fisico_result) > 0
+        folio_inventario = inv_fisico_result[0]['folio'] if tiene_inventario_fisico else None
+        fecha_inventario = inv_fisico_result[0]['fecha'] if tiene_inventario_fisico else None
+        
+        logging.info(f"[COMPRAS] Inventario físico encontrado: {tiene_inventario_fisico}, Folio: {folio_inventario}")
+        
+        # 1. Obtener catálogo de productos (INSUMOS con presentaciones + COMPRAS directas)
         productos_query = f"""
+WITH InsumosConPresentacion AS (
+    SELECT DISTINCT PP.Pr_Cve_Producto
+    FROM Producto_Presentacion PP
+    INNER JOIN Producto P_Insumo ON P_Insumo.Pr_Cve_Producto = PP.Pr_Cve_Producto
+    WHERE P_Insumo.Dp_Cve_Departamento = '0007'
+)
 SELECT 
     P.Pr_Cve_Producto as Codigo,
     P.Pr_Descripcion as Producto,
     F.Fm_Descripcion as Familia,
     C.Ct_Descripcion as Categoria,
     P.Pr_Unidad_Control_1 as Unidad,
-    P.Pr_ultimo_costo as Costo_Unitario,
-    ISNULL((
-        SELECT SUM(Fi_Cantidad_Control_1) 
-        FROM Fisico FI 
-        WHERE FI.Pr_Cve_Producto = P.Pr_Cve_Producto 
-            AND FI.Al_Cve_Almacen = '{almacen_codigo}'
-            AND FI.Fi_Folio = (
-                SELECT TOP 1 Fi_Folio FROM Fisico 
-                WHERE Al_Cve_Almacen = '{almacen_codigo}' 
-                ORDER BY Fi_Fecha DESC
-            )
-    ), 0) as Inventario_Actual
+    P.Pr_ultimo_costo as Costo_Unitario
 FROM Producto P
 INNER JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
 INNER JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
 WHERE P.Es_Cve_Estado <> 'BA'
+    AND (
+        -- Es un INSUMO con presentación
+        P.Pr_Cve_Producto IN (SELECT Pr_Cve_Producto FROM InsumosConPresentacion)
+        OR
+        -- Es un producto de COMPRA que NO es presentación de ningún insumo
+        (P.Dp_Cve_Departamento = '0007' 
+         AND NOT EXISTS (
+            SELECT 1 FROM Producto_Presentacion PP2 
+            WHERE PP2.Pp_Producto = P.Pr_Cve_Producto
+         ))
+    )
     {filtro_categorias}
     {filtro_familias}
 """
-        logging.info("Obteniendo catálogo de productos...")
+        logging.info("[COMPRAS] Obteniendo catálogo de productos...")
         productos = execute_sql_query(
             server['host'], server['port'], server['database'],
             server['username'], server['password'], productos_query
         )
-        logging.info(f"Productos obtenidos: {len(productos)}")
+        logging.info(f"[COMPRAS] Productos obtenidos: {len(productos)}")
         
-        # 2. Obtener compras recientes (últimos 30 días)
+        # 2. Obtener inventario físico más reciente (si existe)
+        inventario_dict = {}
+        if tiene_inventario_fisico:
+            inv_detalle_query = f"""
+SELECT 
+    F.Pr_Cve_Producto as Codigo,
+    SUM(F.Fi_Cantidad_Control_1) as Cantidad
+FROM Fisico F
+WHERE F.Al_Cve_Almacen = '{almacen_codigo}'
+    AND F.Fi_Folio = '{folio_inventario}'
+GROUP BY F.Pr_Cve_Producto
+"""
+            inv_detalle = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], inv_detalle_query
+            )
+            inventario_dict = {i['Codigo']: float(i['Cantidad'] or 0) for i in inv_detalle}
+            logging.info(f"[COMPRAS] Inventario físico obtenido para {len(inventario_dict)} productos")
+        
+        # 3. Obtener compras desde Movimientos (tipo '100' = Entrada por compra)
+        # Usamos la tabla Movimiento filtrando por tipos de movimiento de ENTRADA/COMPRA
         compras_query = f"""
 SELECT 
-    C.Pr_Cve_Producto as Codigo,
-    SUM(C.Co_Cantidad_Control_1) as Total_Compras
-FROM Compra C
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = C.Sc_Cve_Sucursal
-WHERE S.Sc_Cve_Sucursal = '{sucursal_codigo}'
-    AND C.Al_Cve_Almacen = '{almacen_codigo}'
-    AND C.Es_Cve_Estado <> 'CA'
-    AND C.Co_Fecha BETWEEN '{fecha_inicio_ventas}' AND '{fecha_calculo} 23:59:59'
-GROUP BY C.Pr_Cve_Producto
+    M.Pr_Cve_Producto as Codigo,
+    SUM(M.Mv_Cantidad_Control_1) as Total_Compras
+FROM Movimiento M
+INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
+WHERE M.Al_Cve_Almacen = '{almacen_codigo}'
+    AND TM.Tm_Tipo = 'E'  -- Solo entradas
+    AND TM.Tm_Cve_Tipo_Movimiento IN ('100', '050', '106')  -- Compra, Entrada directa, Entrada por traspaso
+    AND M.Mv_Fecha BETWEEN '{fecha_inicio_historial}' AND '{fecha_calculo} 23:59:59'
+GROUP BY M.Pr_Cve_Producto
 """
-        logging.info("Obteniendo compras recientes...")
+        logging.info("[COMPRAS] Obteniendo compras desde Movimientos...")
         compras_result = execute_sql_query(
             server['host'], server['port'], server['database'],
             server['username'], server['password'], compras_query
         )
         compras_dict = {c['Codigo']: float(c['Total_Compras'] or 0) for c in compras_result}
-        logging.info(f"Compras obtenidas para {len(compras_dict)} productos")
+        logging.info(f"[COMPRAS] Compras obtenidas para {len(compras_dict)} productos")
         
-        # 3. Obtener ventas del período (para calcular promedio diario)
-        ventas_query = f"""
-SELECT Producto_Codigo, SUM(cantidad) as Total_Ventas FROM (
-    -- Ventas de productos KIT
+        # 4. Obtener consumos/ventas del período
+        consumos_dict = {}
+        if not es_bodega:
+            # Solo para almacenes que NO son bodega (tienen ventas)
+            ventas_query = f"""
+SELECT Producto_Codigo, SUM(cantidad) as Total_Consumo FROM (
+    -- Ventas de productos KIT (consumo de insumos por receta)
     SELECT 
         Producto_Kit.Pk_Producto as Producto_Codigo,
         SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as cantidad
@@ -3872,7 +3929,7 @@ SELECT Producto_Codigo, SUM(cantidad) as Total_Ventas FROM (
     INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
     WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
         AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN '{fecha_inicio_ventas}' AND '{fecha_calculo} 23:59:59'
+        AND venta.Vn_Fecha BETWEEN '{fecha_inicio_historial}' AND '{fecha_calculo} 23:59:59'
         AND producto_kit.Pk_Producto IS NOT NULL
     GROUP BY Producto_Kit.Pk_Producto
     
@@ -3887,70 +3944,110 @@ SELECT Producto_Codigo, SUM(cantidad) as Total_Ventas FROM (
     INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
     WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
         AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN '{fecha_inicio_ventas}' AND '{fecha_calculo} 23:59:59'
+        AND venta.Vn_Fecha BETWEEN '{fecha_inicio_historial}' AND '{fecha_calculo} 23:59:59'
     GROUP BY venta.Pr_Cve_Producto
-) AS VentasCombinadas
+) AS ConsumosCombinados
 GROUP BY Producto_Codigo
 """
-        logging.info("Obteniendo ventas para cálculo de promedio...")
-        ventas_result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], ventas_query
-        )
-        ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
-        logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
+            logging.info("[COMPRAS] Obteniendo consumos/ventas...")
+            ventas_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], ventas_query
+            )
+            consumos_dict = {v['Producto_Codigo']: float(v['Total_Consumo'] or 0) for v in ventas_result}
+            logging.info(f"[COMPRAS] Consumos obtenidos para {len(consumos_dict)} productos")
+        else:
+            # Para bodegas: obtener salidas por traspaso como "consumo"
+            salidas_query = f"""
+SELECT 
+    M.Pr_Cve_Producto as Codigo,
+    SUM(ABS(M.Mv_Cantidad_Control_1)) as Total_Salidas
+FROM Movimiento M
+INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
+WHERE M.Al_Cve_Almacen = '{almacen_codigo}'
+    AND TM.Tm_Tipo = 'S'  -- Salidas
+    AND M.Mv_Fecha BETWEEN '{fecha_inicio_historial}' AND '{fecha_calculo} 23:59:59'
+GROUP BY M.Pr_Cve_Producto
+"""
+            salidas_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], salidas_query
+            )
+            consumos_dict = {s['Codigo']: float(s['Total_Salidas'] or 0) for s in salidas_result}
+            logging.info(f"[COMPRAS] Salidas (bodega) obtenidas para {len(consumos_dict)} productos")
         
-        # 4. Calcular pedido sugerido para cada producto
+        # 5. Calcular pedido sugerido para cada producto
         results = []
+        productos_sin_inventario = []
+        
         for prod in productos:
             codigo = prod['Codigo']
-            inventario_actual = float(prod.get('Inventario_Actual', 0) or 0)
-            compras_recientes = compras_dict.get(codigo, 0)
-            ventas_periodo = ventas_dict.get(codigo, 0)
+            inv_fisico = inventario_dict.get(codigo, 0)
+            compras_periodo = compras_dict.get(codigo, 0)
+            consumos_periodo = consumos_dict.get(codigo, 0)
             costo = float(prod.get('Costo_Unitario', 0) or 0)
             
-            # Calcular promedio diario de ventas
-            promedio_diario = ventas_periodo / dias_historial if dias_historial > 0 else 0
+            # Calcular promedio diario de consumo
+            promedio_diario = consumos_periodo / dias_historial if dias_historial > 0 else 0
             
-            # Consumo esperado para los días de inventario
+            # Inventario Teórico = Inv. Físico + Compras - Consumos
+            inventario_teorico = inv_fisico + compras_periodo - consumos_periodo
+            
+            # Consumo esperado para los días de inventario deseados
             consumo_esperado = promedio_diario * dias_inventario
             
-            # Disponible = Inventario actual + Compras recientes
-            disponible = inventario_actual + compras_recientes
+            # Cantidad a pedir = lo que necesito - lo que tengo
+            cantidad_pedir = max(0, consumo_esperado - inventario_teorico)
             
-            # Cantidad a pedir = Consumo esperado - Disponible
-            cantidad_pedir = max(0, consumo_esperado - disponible)
+            # Días de inventario actual
+            dias_inv_actual = inventario_teorico / promedio_diario if promedio_diario > 0 else 999
             
-            # Solo incluir productos con movimiento o inventario
-            if inventario_actual > 0 or ventas_periodo > 0 or compras_recientes > 0:
-                results.append({
+            # Flag si no tiene inventario físico pero sí tiene movimientos
+            sin_inv_fisico = inv_fisico == 0 and (compras_periodo > 0 or consumos_periodo > 0)
+            
+            # Solo incluir productos con actividad
+            if inv_fisico > 0 or compras_periodo > 0 or consumos_periodo > 0:
+                item = {
                     'Codigo': codigo,
                     'Producto': prod.get('Producto'),
                     'Familia': prod.get('Familia'),
                     'Categoria': prod.get('Categoria'),
                     'Unidad': prod.get('Unidad'),
                     'Costo_Unitario': round(costo, 2),
-                    'Inventario_Actual': round(inventario_actual, 2),
-                    'Compras_Recientes': round(compras_recientes, 2),
-                    'Disponible': round(disponible, 2),
-                    'Ventas_Periodo': round(ventas_periodo, 2),
+                    'Inventario_Fisico': round(inv_fisico, 2),
+                    'Compras_Periodo': round(compras_periodo, 2),
+                    'Consumos_Periodo': round(consumos_periodo, 2),
+                    'Inventario_Teorico': round(inventario_teorico, 2),
                     'Promedio_Diario': round(promedio_diario, 2),
+                    'Dias_Inventario': round(dias_inv_actual, 1) if dias_inv_actual < 999 else 999,
                     'Consumo_Esperado': round(consumo_esperado, 2),
                     'Cantidad_Pedir': round(cantidad_pedir, 2),
                     'Costo_Pedido': round(cantidad_pedir * costo, 2),
-                    'Dias_Inventario': round(disponible / promedio_diario, 1) if promedio_diario > 0 else 999
-                })
+                    'Sin_Inventario_Fisico': sin_inv_fisico,
+                    'Existencia_Manual': None  # Campo para captura manual si no hay inv. físico
+                }
+                results.append(item)
+                
+                if sin_inv_fisico:
+                    productos_sin_inventario.append(codigo)
         
         # Ordenar por cantidad a pedir (mayor primero)
         results.sort(key=lambda x: x['Cantidad_Pedir'], reverse=True)
         
-        logging.info(f"Cálculo completado: {len(results)} productos")
+        logging.info(f"[COMPRAS] Cálculo completado: {len(results)} productos")
+        logging.info(f"[COMPRAS] Productos sin inventario físico: {len(productos_sin_inventario)}")
+        
         return {
             "data": results,
             "count": len(results),
+            "tiene_inventario_fisico": tiene_inventario_fisico,
+            "fecha_inventario_fisico": str(fecha_inventario) if fecha_inventario else None,
+            "folio_inventario_fisico": folio_inventario,
+            "productos_sin_inventario": len(productos_sin_inventario),
+            "es_bodega": es_bodega,
             "parametros": {
                 "fecha_calculo": fecha_calculo,
-                "dias_historial_ventas": dias_historial,
+                "dias_historial": dias_historial,
                 "dias_inventario": dias_inventario,
                 "sucursal": sucursal,
                 "almacen": almacen
@@ -4003,6 +4100,9 @@ async def guardar_parametros_compra(params: dict, credentials: HTTPAuthorization
     
     return {"message": "Parámetros guardados correctamente"}
 
+
+# Incluir el router después de definir todos los endpoints
+app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,

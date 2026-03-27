@@ -6,7 +6,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, ShoppingCart, Package, TrendingUp, AlertTriangle, Download } from 'lucide-react';
+import { Loader2, ShoppingCart, Package, TrendingUp, AlertTriangle, Download, AlertCircle, Calendar, Edit3 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -32,9 +32,11 @@ export default function AutorizacionCompras() {
   const [diasHistorial, setDiasHistorial] = useState(30);
   const [diasInventario, setDiasInventario] = useState(10);
   const [loading, setLoading] = useState(false);
-  const [loadingData, setLoadingData] = useState(false);
   const [pedidoData, setPedidoData] = useState([]);
   const [resumen, setResumen] = useState(null);
+  const [infoInventario, setInfoInventario] = useState(null);
+  const [editingRow, setEditingRow] = useState(null);
+  const [existenciaManual, setExistenciaManual] = useState({});
 
   // Cargar servidores al iniciar
   useEffect(() => {
@@ -109,6 +111,8 @@ export default function AutorizacionCompras() {
     setLoading(true);
     setPedidoData([]);
     setResumen(null);
+    setInfoInventario(null);
+    setExistenciaManual({});
 
     try {
       const token = localStorage.getItem('token');
@@ -125,18 +129,29 @@ export default function AutorizacionCompras() {
 
       setPedidoData(response.data.data);
       
+      // Guardar info del inventario físico
+      setInfoInventario({
+        tieneInventarioFisico: response.data.tiene_inventario_fisico,
+        fechaInventarioFisico: response.data.fecha_inventario_fisico,
+        folioInventarioFisico: response.data.folio_inventario_fisico,
+        productosSinInventario: response.data.productos_sin_inventario,
+        esBodega: response.data.es_bodega
+      });
+      
       // Calcular resumen
       const data = response.data.data;
       const totalProductos = data.length;
       const productosAPedir = data.filter(p => p.Cantidad_Pedir > 0).length;
       const costoTotalPedido = data.reduce((sum, p) => sum + (p.Costo_Pedido || 0), 0);
       const productosStockBajo = data.filter(p => p.Dias_Inventario < 3).length;
+      const productosSinInvFisico = data.filter(p => p.Sin_Inventario_Fisico).length;
 
       setResumen({
         totalProductos,
         productosAPedir,
         costoTotalPedido,
         productosStockBajo,
+        productosSinInvFisico,
         parametros: response.data.parametros
       });
 
@@ -147,6 +162,34 @@ export default function AutorizacionCompras() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Función para actualizar existencia manual y recalcular
+  const actualizarExistenciaManual = (codigo, valor) => {
+    const nuevoValor = parseFloat(valor) || 0;
+    setExistenciaManual(prev => ({ ...prev, [codigo]: nuevoValor }));
+    
+    // Recalcular el pedido para este producto
+    setPedidoData(prev => prev.map(row => {
+      if (row.Codigo === codigo) {
+        const invTeorico = nuevoValor + row.Compras_Periodo - row.Consumos_Periodo;
+        const cantidadPedir = Math.max(0, row.Consumo_Esperado - invTeorico);
+        const diasInv = row.Promedio_Diario > 0 ? invTeorico / row.Promedio_Diario : 999;
+        return {
+          ...row,
+          Inventario_Fisico: nuevoValor,
+          Inventario_Teorico: invTeorico,
+          Cantidad_Pedir: cantidadPedir,
+          Costo_Pedido: cantidadPedir * row.Costo_Unitario,
+          Dias_Inventario: diasInv < 999 ? diasInv : 999,
+          Sin_Inventario_Fisico: false,
+          Existencia_Manual: nuevoValor
+        };
+      }
+      return row;
+    }));
+    
+    setEditingRow(null);
   };
 
   const exportarExcel = () => {
@@ -305,7 +348,7 @@ export default function AutorizacionCompras() {
 
       {/* Resumen KPIs */}
       {resumen && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card className="border border-zinc-200">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -353,7 +396,50 @@ export default function AutorizacionCompras() {
               </div>
             </CardContent>
           </Card>
+          
+          <Card className={`border ${resumen.productosSinInvFisico > 0 ? 'border-orange-300 bg-orange-50' : 'border-zinc-200'}`}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-zinc-500">Sin Inv. Físico</p>
+                  <p className={`text-2xl font-bold ${resumen.productosSinInvFisico > 0 ? 'text-orange-600' : 'text-zinc-400'}`}>
+                    {resumen.productosSinInvFisico}
+                  </p>
+                </div>
+                <AlertCircle className={`h-8 w-8 ${resumen.productosSinInvFisico > 0 ? 'text-orange-500' : 'text-zinc-300'}`} />
+              </div>
+            </CardContent>
+          </Card>
         </div>
+      )}
+      
+      {/* Alerta de información del inventario */}
+      {infoInventario && (
+        <Card className={`border ${infoInventario.tieneInventarioFisico ? 'border-blue-200 bg-blue-50' : 'border-orange-200 bg-orange-50'}`}>
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <Calendar className={`h-5 w-5 ${infoInventario.tieneInventarioFisico ? 'text-blue-600' : 'text-orange-600'}`} />
+              <div className="flex-1">
+                {infoInventario.tieneInventarioFisico ? (
+                  <p className="text-sm text-blue-800">
+                    <span className="font-semibold">Inventario Físico:</span> Folio {infoInventario.folioInventarioFisico} 
+                    {infoInventario.fechaInventarioFisico && ` del ${new Date(infoInventario.fechaInventarioFisico).toLocaleDateString('es-MX')}`}
+                    {infoInventario.esBodega && <span className="ml-2 px-2 py-0.5 bg-blue-200 rounded text-xs">BODEGA</span>}
+                  </p>
+                ) : (
+                  <p className="text-sm text-orange-800">
+                    <span className="font-semibold">Sin inventario físico capturado.</span> Ingresa las existencias manualmente para calcular correctamente.
+                  </p>
+                )}
+              </div>
+              {infoInventario.productosSinInventario > 0 && (
+                <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded">
+                  {infoInventario.productosSinInventario} productos requieren existencia manual
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Tabla de Resultados */}
@@ -375,9 +461,10 @@ export default function AutorizacionCompras() {
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">Código</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">Producto</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">Familia</th>
-                    <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Inv. Actual</th>
+                    <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Inv. Físico</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Compras</th>
-                    <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Disponible</th>
+                    <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Consumos</th>
+                    <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Inv. Teórico</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Prom. Diario</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Días Inv.</th>
                     <th className="text-xs uppercase font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-right">Consumo Esp.</th>
@@ -389,18 +476,58 @@ export default function AutorizacionCompras() {
                   {pedidoData.map((row, idx) => {
                     const necesitaPedir = row.Cantidad_Pedir > 0;
                     const stockCritico = row.Dias_Inventario < 3;
+                    const sinInvFisico = row.Sin_Inventario_Fisico;
+                    const isEditing = editingRow === row.Codigo;
                     
                     return (
                       <tr 
                         key={idx} 
-                        className={`border-b hover:bg-zinc-50 ${necesitaPedir ? 'bg-yellow-50' : ''} ${stockCritico ? 'bg-red-50' : ''}`}
+                        className={`border-b hover:bg-zinc-50 
+                          ${sinInvFisico ? 'bg-orange-50' : ''} 
+                          ${necesitaPedir && !sinInvFisico ? 'bg-yellow-50' : ''} 
+                          ${stockCritico && !sinInvFisico ? 'bg-red-50' : ''}`}
+                        data-testid={`row-${row.Codigo}`}
                       >
                         <td className="py-2 px-2 font-mono text-xs">{row.Codigo}</td>
                         <td className="py-2 px-2 text-sm max-w-[200px] truncate" title={row.Producto}>{row.Producto}</td>
                         <td className="py-2 px-2 text-sm">{row.Familia}</td>
-                        <td className="py-2 px-2 text-right font-mono">{formatNumber(row.Inventario_Actual)}</td>
-                        <td className="py-2 px-2 text-right font-mono">{formatNumber(row.Compras_Recientes)}</td>
-                        <td className="py-2 px-2 text-right font-mono font-semibold">{formatNumber(row.Disponible)}</td>
+                        <td className="py-2 px-2 text-right">
+                          {sinInvFisico ? (
+                            isEditing ? (
+                              <Input
+                                type="number"
+                                step="0.01"
+                                className="w-20 h-7 text-xs text-right"
+                                defaultValue={existenciaManual[row.Codigo] || ''}
+                                autoFocus
+                                onBlur={(e) => actualizarExistenciaManual(row.Codigo, e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    actualizarExistenciaManual(row.Codigo, e.target.value);
+                                  } else if (e.key === 'Escape') {
+                                    setEditingRow(null);
+                                  }
+                                }}
+                                data-testid={`input-existencia-${row.Codigo}`}
+                              />
+                            ) : (
+                              <button
+                                onClick={() => setEditingRow(row.Codigo)}
+                                className="flex items-center gap-1 text-orange-600 hover:text-orange-800 font-mono text-xs"
+                                title="Clic para ingresar existencia"
+                                data-testid={`btn-edit-${row.Codigo}`}
+                              >
+                                <Edit3 className="h-3 w-3" />
+                                {row.Existencia_Manual !== null ? formatNumber(row.Existencia_Manual) : 'Ingresar'}
+                              </button>
+                            )
+                          ) : (
+                            <span className="font-mono">{formatNumber(row.Inventario_Fisico)}</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-2 text-right font-mono text-green-700">{formatNumber(row.Compras_Periodo)}</td>
+                        <td className="py-2 px-2 text-right font-mono text-red-600">{formatNumber(row.Consumos_Periodo)}</td>
+                        <td className="py-2 px-2 text-right font-mono font-semibold">{formatNumber(row.Inventario_Teorico)}</td>
                         <td className="py-2 px-2 text-right font-mono">{formatNumber(row.Promedio_Diario)}</td>
                         <td className={`py-2 px-2 text-right font-mono font-semibold ${stockCritico ? 'text-red-600' : ''}`}>
                           {row.Dias_Inventario >= 999 ? '∞' : formatNumber(row.Dias_Inventario)}

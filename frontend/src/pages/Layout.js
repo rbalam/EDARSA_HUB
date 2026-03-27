@@ -9,7 +9,8 @@ import {
   Users, 
   LogOut,
   Menu,
-  X
+  X,
+  ShoppingCart
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -26,6 +27,7 @@ const Layout = () => {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['Usuario', 'Supervisor', 'Administrador'] },
     { name: 'Servidores', href: '/servidores', icon: Server, roles: ['Administrador'] },
     { name: 'Reportes', href: '/reportes', icon: FileText, roles: ['Usuario', 'Supervisor', 'Administrador'] },
+    { name: 'Compras', href: '/compras', icon: ShoppingCart, roles: ['Usuario', 'Supervisor', 'Administrador'] },
     { name: 'Alertas', href: '/alertas', icon: Bell, roles: ['Supervisor', 'Administrador'] },
     { name: 'Usuarios', href: '/usuarios', icon: Users, roles: ['Administrador'] },
   ];

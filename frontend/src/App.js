@@ -5,6 +5,7 @@ import Layout from '@/pages/Layout';
 import Dashboard from '@/pages/Dashboard';
 import Servidores from '@/pages/Servidores';
 import Reportes from '@/pages/Reportes';
+import AutorizacionCompras from '@/pages/AutorizacionCompras';
 import Alertas from '@/pages/Alertas';
 import Usuarios from '@/pages/Usuarios';
 import { isAuthenticated } from '@/lib/auth';
@@ -21,6 +22,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="servidores" element={<Servidores />} />
             <Route path="reportes" element={<Reportes />} />
+            <Route path="compras" element={<AutorizacionCompras />} />
             <Route path="alertas" element={<Alertas />} />
             <Route path="usuarios" element={<Usuarios />} />
           </Route>

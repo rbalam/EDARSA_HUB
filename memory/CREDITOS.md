@@ -3,8 +3,8 @@
 ## Resumen
 | Métrica | Valor |
 |---------|-------|
-| **Total Acumulado** | 5.66 |
-| **Última Actualización** | 2026-03-24 |
+| **Total Acumulado** | ~20.66 |
+| **Última Actualización** | 2026-03-27 |
 
 ---
 
@@ -14,6 +14,7 @@
 |-------|----------|----------|-----------|
 | 2026-03-24 | Preguntas + Plan Fase 1 Módulo Compras | 0.48 | 0.48 |
 | 2026-03-24 | Aclaración multi-sistema (MPRO + SoftRestaurant) | 5.18 | 5.66 |
+| 2026-03-27 | Fase 1 Compras: Implementación completa (Backend + Frontend) | ~15 | ~20.66 |
 
 ---
 
@@ -21,7 +22,7 @@
 
 | Módulo/Tarea | Créditos Est. | Estado |
 |--------------|---------------|--------|
-| Fase 1: Cálculo pedido sugerido | 8-10 | AUTORIZADO |
+| Fase 1: Cálculo pedido sugerido | 8-10 | ✅ COMPLETADO |
 | Fase 2: Inventario final inteligente | 4-5 | Pendiente |
 | Fase 3: Captura y comparación pedidos | 6-8 | Pendiente |
 | Fase 4: Autorización con cobro diferencias | 8-10 | Pendiente |

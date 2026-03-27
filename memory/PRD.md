@@ -180,23 +180,47 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
 ## Pendientes / Backlog
 
 ### P1 - Próximos
-1. **Verificar Dashboard MPRO** - Debería funcionar ahora con la nueva lógica
+1. **Módulo Compras - Fases 2-6** - Continuar desarrollo del Mini-ERP de compras
+   - Fase 2: Inventario final inteligente
+   - Fase 3: Captura y comparación de pedidos
+   - Fase 4: Autorización con cobro de diferencias
+   - Fase 5: Alertas y días de proveedor
+   - Fase 6: Lógica de compra por período
+
 2. **Reporte "Insumos Pendientes por Descargar"** - Nuevo reporte solicitado
    - Insumos consumidos según ventas vs existencias
    - Solo para almacenes de consumo
    - Posible envío automático cuando informan que "traspasos están listos"
 
 ### P2 - Mejoras
-3. Exportación a PDF (verificar funcionamiento)
+3. Exportación a PDF (verificar funcionamiento - reportada rota)
 4. Envío de reportes por correo electrónico
+5. Productos con movimientos pero sin inventario físico (Issue bloqueado por análisis del usuario)
+6. Filtro por comentarios de captura física e Inventario Selectivo (Checkbox)
 
 ### P3 - Futuros
-5. Filtrar productos no inventariables en dashboards
-6. Integración con WhatsApp para notificaciones
+7. Filtrar productos no inventariables en dashboards
+8. Integración con WhatsApp para notificaciones
+9. Migrar Portal de Proveedores (proyecto separado)
+10. Migrar Bitácora de Activos (proyecto separado)
 
 ---
 
 ## Historial de Cambios
+
+### 27 Mar 2026 - MÓDULO AUTORIZACIÓN DE COMPRAS - FASE 1 ✅
+- ✅ Nuevo módulo "Autorización de Compras" agregado al menú lateral
+- ✅ Ruta `/compras` enlazada en App.js y Layout.js
+- ✅ Endpoint `/api/compras/calculo-pedido` implementado para MPRO
+- ✅ Lógica de cálculo: Inv. Físico + Compras - Consumos = Inv. Teórico
+- ✅ Obtención de compras desde tabla `Movimiento` (filtro tipos de entrada)
+- ✅ Para bodegas: salidas por traspaso como "consumo"
+- ✅ Para almacenes de consumo: ventas calculadas por recetas (Producto_Kit)
+- ✅ Detección de productos sin inventario físico (flag `Sin_Inventario_Fisico`)
+- ✅ UI permite ingreso manual de existencias cuando no hay inv. físico
+- ✅ KPIs: Total productos, A pedir, Costo total, Stock bajo, Sin inv. físico
+- ✅ Información del folio de inventario físico y fecha
+- ✅ Tabla con todas las columnas del cálculo de pedido
 
 ### 24 Mar 2026 - REPORTE MPRO IMPLEMENTADO
 - ✅ Implementada lógica de INSUMOS vs PRESENTACIONES para MPRO
