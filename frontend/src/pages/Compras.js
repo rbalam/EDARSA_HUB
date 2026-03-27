@@ -29,24 +29,24 @@ const formatCurrency = (num) => {
 };
 
 // ============ TAB 1: DASHBOARD DE COMPRAS ============
-function DashboardCompras({ servers, selectedServer, setSelectedServer, serverData }) {
+function DashboardCompras({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
   const [kpis, setKpis] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [topProveedores, setTopProveedores] = useState([]);
 
   useEffect(() => {
-    if (selectedServer) {
+    if (selectedServer && selectedSucursal) {
       cargarDashboard();
     }
-  }, [selectedServer]);
+  }, [selectedServer, selectedSucursal]);
 
   const cargarDashboard = async () => {
+    if (!selectedSucursal) return;
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      // Cargar KPIs de compras
-      const response = await axios.get(`${API_URL}/api/compras/dashboard/${selectedServer}`, {
+      const response = await axios.get(`${API_URL}/api/compras/dashboard/${selectedServer}?sucursal=${encodeURIComponent(selectedSucursal)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setKpis(response.data.kpis);
@@ -54,22 +54,14 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, serverDa
       setTopProveedores(response.data.top_proveedores || []);
     } catch (error) {
       console.error('Error cargando dashboard:', error);
-      // Datos de ejemplo mientras se implementa el endpoint
       setKpis({
-        total_compras_mes: 1597601,
-        requisiciones_pendientes: 5,
-        proveedores_activos: 42,
-        alertas_activas: 3
+        total_compras_mes: 0,
+        requisiciones_pendientes: 0,
+        proveedores_activos: 0,
+        alertas_activas: 0
       });
-      setAlertas([
-        { tipo: 'sobrecompra', producto: 'Vino Tinto', variacion_ventas: -35, variacion_compras: 12 },
-        { tipo: 'desabasto', producto: 'Aguacate Hass', variacion_ventas: 45, variacion_compras: -20 },
-      ]);
-      setTopProveedores([
-        { nombre: 'VINO PA TODOS', total: 19785 },
-        { nombre: 'CAVA DEL 10', total: 19488 },
-        { nombre: 'DIFRUTA/MONICA', total: 18760 },
-      ]);
+      setAlertas([]);
+      setTopProveedores([]);
     } finally {
       setLoading(false);
     }
@@ -77,11 +69,11 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, serverDa
 
   return (
     <div className="space-y-4">
-      {/* Selector de servidor */}
+      {/* Selector de servidor y sucursal */}
       <Card className="border">
         <CardContent className="py-4">
-          <div className="flex items-center gap-4">
-            <div className="flex-1 max-w-xs">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex-1 min-w-[200px] max-w-xs">
               <Label className="text-xs mb-1 block">Servidor</Label>
               <Select value={selectedServer} onValueChange={setSelectedServer}>
                 <SelectTrigger>
@@ -94,7 +86,20 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, serverDa
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={cargarDashboard} disabled={!selectedServer || loading} variant="outline">
+            <div className="flex-1 min-w-[200px] max-w-xs">
+              <Label className="text-xs mb-1 block">Sucursal</Label>
+              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
+                <SelectTrigger>
+                  <SelectValue placeholder={selectedServer ? "Seleccionar sucursal" : "Selecciona servidor primero"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {sucursales.map(s => (
+                    <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={cargarDashboard} disabled={!selectedServer || !selectedSucursal || loading} variant="outline" className="mt-5">
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Actualizar
             </Button>
@@ -189,13 +194,10 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, serverDa
 }
 
 // ============ TAB 2: AUTORIZACIÓN (Código existente simplificado) ============
-function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer }) {
-  // Este componente contiene la lógica existente de AutorizacionCompras
-  // Por brevedad, importamos el contenido del archivo original
+function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer, selectedSucursal: parentSucursal, setSelectedSucursal: setParentSucursal, sucursales: parentSucursales }) {
+  // Este componente usa las sucursales del padre para mantener sincronización
   const [serverData, setServerData] = useState(null);
-  const [sucursales, setSucursales] = useState([]);
   const [almacenes, setAlmacenes] = useState([]);
-  const [selectedSucursal, setSelectedSucursal] = useState('');
   const [selectedAlmacenes, setSelectedAlmacenes] = useState([]);
   const [todosAlmacenes, setTodosAlmacenes] = useState(false);
   const [fechaInvFisico, setFechaInvFisico] = useState('');
@@ -218,17 +220,16 @@ function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer }) 
     if (selectedServer) {
       const server = servers.find(s => s.id === selectedServer);
       setServerData(server);
-      fetchSucursales(selectedServer);
     }
   }, [selectedServer, servers]);
 
   useEffect(() => {
-    if (selectedServer && selectedSucursal) {
-      fetchAlmacenes(selectedServer, selectedSucursal);
-      fetchInventariosFisicos(selectedServer, selectedSucursal);
-      fetchPedidosVigentes(selectedServer, selectedSucursal);
+    if (selectedServer && parentSucursal) {
+      fetchAlmacenes(selectedServer, parentSucursal);
+      fetchInventariosFisicos(selectedServer, parentSucursal);
+      fetchPedidosVigentes(selectedServer, parentSucursal);
     }
-  }, [selectedServer, selectedSucursal]);
+  }, [selectedServer, parentSucursal]);
 
   useEffect(() => {
     if (todosAlmacenes || selectedAlmacenes.includes('TODOS')) {
@@ -255,18 +256,6 @@ function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer }) 
       setInventariosFiltrados(inventariosFisicos.slice(0, 50));
     }
   }, [selectedAlmacenes, todosAlmacenes, inventariosFisicos]);
-
-  const fetchSucursales = async (serverId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/servers/${serverId}/sucursales`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSucursales(response.data);
-    } catch (error) {
-      console.error('Error cargando sucursales:', error);
-    }
-  };
 
   const fetchAlmacenes = async (serverId, sucursal) => {
     try {
@@ -332,7 +321,7 @@ function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer }) 
   };
 
   const calcularPedido = async () => {
-    if (!selectedServer || !selectedSucursal || (selectedAlmacenes.length === 0 && !todosAlmacenes)) {
+    if (!selectedServer || !parentSucursal || (selectedAlmacenes.length === 0 && !todosAlmacenes)) {
       toast.error('Selecciona servidor, sucursal y al menos un almacén');
       return;
     }
@@ -352,7 +341,7 @@ function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer }) 
       
       const response = await axios.post(`${API_URL}/api/compras/calculo-pedido`, {
         server_id: selectedServer,
-        sucursal: selectedSucursal,
+        sucursal: parentSucursal,
         almacenes: todosAlmacenes ? ['TODOS'] : selectedAlmacenes,
         fecha_inventario_fisico: fechaInvFisico,
         fecha_fin_periodo: fechaFinPeriodo,
@@ -411,12 +400,12 @@ function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer }) 
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
+              <Select value={parentSucursal} onValueChange={setParentSucursal} disabled={!selectedServer}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60 overflow-y-auto">
-                  {sucursales.map(suc => (
+                  {parentSucursales.map(suc => (
                     <SelectItem key={suc.codigo || suc.nombre} value={suc.nombre}>{suc.nombre}</SelectItem>
                   ))}
                 </SelectContent>
@@ -571,12 +560,10 @@ function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer }) 
 }
 
 // ============ TAB 3: ANÁLISIS DE COMPRAS ============
-function AnalisisCompras({ servers, selectedServer, setSelectedServer }) {
+function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
   const [loading, setLoading] = useState(false);
   const [anio, setAnio] = useState(new Date().getFullYear());
   const [mesesSeleccionados, setMesesSeleccionados] = useState(['01', '02', '03']);
-  const [sucursal, setSucursal] = useState('');
-  const [sucursales, setSucursales] = useState([]);
   const [comprasPorProveedor, setComprasPorProveedor] = useState([]);
   const [expandedProveedor, setExpandedProveedor] = useState(null);
   const [detalleFacturas, setDetalleFacturas] = useState([]);
@@ -592,26 +579,8 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer }) {
     { value: '10', label: 'Oct' }, { value: '11', label: 'Nov' }, { value: '12', label: 'Dic' },
   ];
 
-  useEffect(() => {
-    if (selectedServer) {
-      fetchSucursales();
-    }
-  }, [selectedServer]);
-
-  const fetchSucursales = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/servers/${selectedServer}/sucursales`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSucursales(response.data);
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
-
   const cargarAnalisis = async () => {
-    if (!selectedServer || !sucursal) {
+    if (!selectedServer || !selectedSucursal) {
       toast.error('Selecciona servidor y sucursal');
       return;
     }
@@ -620,7 +589,7 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer }) {
       const token = localStorage.getItem('token');
       const response = await axios.post(`${API_URL}/api/compras/analisis`, {
         server_id: selectedServer,
-        sucursal: sucursal,
+        sucursal: selectedSucursal,
         anio: anio,
         meses: mesesSeleccionados
       }, {
@@ -703,9 +672,9 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer }) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Sucursal</Label>
-              <Select value={sucursal} onValueChange={setSucursal} disabled={!selectedServer}>
+              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Seleccionar" />
+                  <SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} />
                 </SelectTrigger>
                 <SelectContent>
                   {sucursales.map(s => (
@@ -728,7 +697,7 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer }) {
               </Select>
             </div>
             <div className="flex items-end">
-              <Button onClick={cargarAnalisis} disabled={loading || !selectedServer || !sucursal} className="w-full">
+              <Button onClick={cargarAnalisis} disabled={loading || !selectedServer || !selectedSucursal} className="w-full">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <BarChart3 className="h-4 w-4 mr-2" />}
                 Analizar
               </Button>
@@ -1030,6 +999,8 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer }) {
 export default function Compras() {
   const [servers, setServers] = useState([]);
   const [selectedServer, setSelectedServer] = useState('');
+  const [selectedSucursal, setSelectedSucursal] = useState('');
+  const [sucursales, setSucursales] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
@@ -1055,6 +1026,29 @@ export default function Compras() {
     };
     fetchServers();
   }, []);
+
+  // Cargar sucursales cuando cambia el servidor
+  useEffect(() => {
+    if (selectedServer) {
+      const fetchSucursales = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await axios.get(`${API_URL}/api/servers/${selectedServer}/sucursales`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setSucursales(response.data);
+          setSelectedSucursal(''); // Reset sucursal al cambiar servidor
+        } catch (error) {
+          console.error('Error cargando sucursales:', error);
+          setSucursales([]);
+        }
+      };
+      fetchSucursales();
+    } else {
+      setSucursales([]);
+      setSelectedSucursal('');
+    }
+  }, [selectedServer]);
 
   return (
     <div className="space-y-4" data-testid="compras-module">
@@ -1086,6 +1080,9 @@ export default function Compras() {
             servers={servers} 
             selectedServer={selectedServer} 
             setSelectedServer={setSelectedServer}
+            selectedSucursal={selectedSucursal}
+            setSelectedSucursal={setSelectedSucursal}
+            sucursales={sucursales}
           />
         </TabsContent>
 
@@ -1094,6 +1091,9 @@ export default function Compras() {
             servers={servers} 
             selectedServer={selectedServer} 
             setSelectedServer={setSelectedServer}
+            selectedSucursal={selectedSucursal}
+            setSelectedSucursal={setSelectedSucursal}
+            sucursales={sucursales}
           />
         </TabsContent>
 
@@ -1102,6 +1102,9 @@ export default function Compras() {
             servers={servers} 
             selectedServer={selectedServer} 
             setSelectedServer={setSelectedServer}
+            selectedSucursal={selectedSucursal}
+            setSelectedSucursal={setSelectedSucursal}
+            sucursales={sucursales}
           />
         </TabsContent>
       </Tabs>

@@ -3,7 +3,7 @@
 ## Resumen
 | Métrica | Valor |
 |---------|-------|
-| **Saldo Actual** | ~82 (estimado, confirmar) |
+| **Saldo Actual** | 93 |
 | **Última Actualización** | 2026-03-27 |
 
 ---

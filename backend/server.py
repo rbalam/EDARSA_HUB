@@ -4490,7 +4490,7 @@ class AnalisisComprasRequest(BaseModel):
     meses: List[str]
 
 @api_router.get("/compras/dashboard/{server_id}")
-async def obtener_dashboard_compras(server_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def obtener_dashboard_compras(server_id: str, sucursal: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Obtiene KPIs y alertas para el dashboard de compras"""
     verify_token(credentials.credentials)
     
@@ -4498,17 +4498,22 @@ async def obtener_dashboard_compras(server_id: str, credentials: HTTPAuthorizati
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
+    if not sucursal:
+        return {"kpis": {"total_compras_mes": 0, "requisiciones_pendientes": 0, "proveedores_activos": 0, "alertas_activas": 0}, "alertas": [], "top_proveedores": []}
+    
     try:
         if server['system_type'] == 'MPRO':
-            # Total compras del mes actual
-            query_compras = """
+            # Total compras del mes actual FILTRADO POR SUCURSAL
+            query_compras = f"""
 SELECT ISNULL(SUM(M.Mv_Importe), 0) as total
 FROM Movimiento M
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
 WHERE TM.Tm_Entrada_Salida = 'E'
     AND TM.Tm_Cve_Tipo_Movimiento LIKE '%COMP%'
     AND M.Mv_Fecha >= DATEADD(day, -30, GETDATE())
     AND M.Es_Cve_Estado <> 'CA'
+    AND S.Sc_Descripcion LIKE '%{sucursal}%'
 """
             result_compras = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -4516,9 +4521,11 @@ WHERE TM.Tm_Entrada_Salida = 'E'
             )
             total_compras = float(result_compras[0]['total']) if result_compras else 0
             
-            # Requisiciones pendientes
-            query_req = """
-SELECT COUNT(*) as total FROM Requisicion_Compra WHERE Es_Cve_Estado = 'PXA'
+            # Requisiciones pendientes FILTRADO POR SUCURSAL
+            query_req = f"""
+SELECT COUNT(*) as total FROM Requisicion_Compra RC
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = RC.Sc_Cve_Sucursal
+WHERE RC.Es_Cve_Estado = 'PXA' AND S.Sc_Descripcion LIKE '%{sucursal}%'
 """
             result_req = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -4526,12 +4533,14 @@ SELECT COUNT(*) as total FROM Requisicion_Compra WHERE Es_Cve_Estado = 'PXA'
             )
             req_pendientes = result_req[0]['total'] if result_req else 0
             
-            # Proveedores activos (con compras en últimos 90 días)
-            query_prov = """
+            # Proveedores activos (con compras en últimos 90 días) FILTRADO POR SUCURSAL
+            query_prov = f"""
 SELECT COUNT(DISTINCT M.Pv_Cve_Proveedor) as total
 FROM Movimiento M
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
 WHERE M.Mv_Fecha >= DATEADD(day, -90, GETDATE())
     AND M.Pv_Cve_Proveedor IS NOT NULL
+    AND S.Sc_Descripcion LIKE '%{sucursal}%'
 """
             result_prov = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -4539,17 +4548,19 @@ WHERE M.Mv_Fecha >= DATEADD(day, -90, GETDATE())
             )
             prov_activos = result_prov[0]['total'] if result_prov else 0
             
-            # Top 5 proveedores
-            query_top = """
+            # Top 5 proveedores FILTRADO POR SUCURSAL
+            query_top = f"""
 SELECT TOP 5 
     P.Pv_Nombre as nombre,
     SUM(M.Mv_Importe) as total
 FROM Movimiento M
 INNER JOIN Proveedor P ON P.Pv_Cve_Proveedor = M.Pv_Cve_Proveedor
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
 WHERE TM.Tm_Entrada_Salida = 'E'
     AND M.Mv_Fecha >= DATEADD(day, -30, GETDATE())
     AND M.Es_Cve_Estado <> 'CA'
+    AND S.Sc_Descripcion LIKE '%{sucursal}%'
 GROUP BY P.Pv_Nombre
 ORDER BY total DESC
 """
