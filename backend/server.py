@@ -4534,6 +4534,236 @@ async def guardar_parametros_compra(params: dict, credentials: HTTPAuthorization
     return {"message": "Parámetros guardados correctamente"}
 
 
+# ============= AUDITORÍA OPERATIVA DE COMPRAS =============
+
+class AuditoriaOperativaRequest(BaseModel):
+    server_id: str
+    sucursal: str
+    almacenes: List[str]
+    folio_inv_inicial: Optional[str] = None
+    fecha_inv_inicial: str
+    fecha_auditoria: str  # Fecha del inventario final o actual
+    folio_inv_final: Optional[str] = None  # Opcional: si no hay, se captura manual
+    folio_requisicion: str  # Requisición a comparar
+    inventario_manual: Optional[List[Dict]] = None  # Para captura manual si no hay folio
+
+@api_router.post("/compras/auditoria-operativa")
+async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Realiza Auditoría Operativa:
+    1. Inventario Inicial + Compras - Consumos = Existencia Teórica
+    2. Compara vs Inventario Físico (folio o captura manual)
+    3. Calcula diferencias (favor +, en contra -)
+    4. Genera acta de auditoría si hay diferencias en contra
+    5. Calcula días de consumo y compara vs requisición
+    """
+    verify_token(credentials.credentials)
+    
+    logging.info(f"[AUDITORIA] Iniciando auditoría - server: {request.server_id}, sucursal: {request.sucursal}")
+    
+    server = await db.servers.find_one({"id": request.server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    sucursal = request.sucursal
+    fecha_ini = request.fecha_inv_inicial
+    fecha_fin = request.fecha_auditoria
+    
+    resultados = []
+    resumen = {
+        "total_teorico": 0,
+        "total_fisico": 0,
+        "total_diferencia": 0,
+        "productos_favor": 0,
+        "productos_contra": 0,
+        "importe_favor": 0,
+        "importe_contra": 0,
+        "requiere_acta": False
+    }
+    
+    try:
+        if server['system_type'] == 'SoftRestaurant':
+            # Obtener inventario inicial
+            inv_ini_dict = {}
+            if request.folio_inv_inicial:
+                query_inv_ini = f"""
+SELECT INM.idinsumo as codigo, I.nombre as producto, 
+       INM.existencia as cantidad, ISNULL(I.costopromedio, 0) as costo
+FROM invfisicomov INM
+INNER JOIN insumos I ON I.idinsumo = INM.idinsumo
+WHERE INM.folio = {request.folio_inv_inicial}
+"""
+                result_ini = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_inv_ini
+                )
+                inv_ini_dict = {str(r['codigo']): {
+                    "producto": r['producto'], 
+                    "cantidad": float(r['cantidad'] or 0),
+                    "costo": float(r['costo'] or 0)
+                } for r in result_ini}
+            
+            # Obtener compras del período
+            query_compras = f"""
+SELECT OCM.idinsumo as codigo, SUM(OCM.cantidad) as cantidad
+FROM ordenescompramov OCM
+INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
+WHERE OC.aplicada = 1 
+    AND OC.fechacaptura >= '{fecha_ini}'
+    AND OC.fechacaptura <= '{fecha_fin} 23:59:59'
+GROUP BY OCM.idinsumo
+"""
+            compras_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_compras
+            )
+            compras_dict = {str(c['codigo']): float(c['cantidad'] or 0) for c in compras_result}
+            
+            # Obtener consumos por ventas del período
+            query_consumos = f"""
+SELECT PK.idinsumo as codigo, SUM(CD.cantidad * PK.cantidad) as consumo
+FROM cheqdet CD
+INNER JOIN cheques C ON C.folio = CD.foliodet
+INNER JOIN turnos T ON T.idturno = C.idturno
+INNER JOIN productoskitinsumos PK ON PK.idproducto = CD.idproducto
+WHERE T.apertura >= '{fecha_ini}'
+    AND T.apertura <= '{fecha_fin} 23:59:59'
+    AND C.cancelado = 0
+GROUP BY PK.idinsumo
+"""
+            consumos_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_consumos
+            )
+            consumos_dict = {str(c['codigo']): float(c['consumo'] or 0) for c in consumos_result}
+            
+            # Obtener inventario final (físico o manual)
+            inv_fin_dict = {}
+            if request.folio_inv_final:
+                query_inv_fin = f"""
+SELECT INM.idinsumo as codigo, I.nombre as producto,
+       INM.existencia as cantidad, ISNULL(I.costopromedio, 0) as costo
+FROM invfisicomov INM
+INNER JOIN insumos I ON I.idinsumo = INM.idinsumo
+WHERE INM.folio = {request.folio_inv_final}
+"""
+                result_fin = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_inv_fin
+                )
+                inv_fin_dict = {str(r['codigo']): {
+                    "producto": r['producto'],
+                    "cantidad": float(r['cantidad'] or 0),
+                    "costo": float(r['costo'] or 0)
+                } for r in result_fin}
+            elif request.inventario_manual:
+                inv_fin_dict = {str(item['codigo']): {
+                    "producto": item.get('producto', ''),
+                    "cantidad": float(item.get('cantidad', 0)),
+                    "costo": float(item.get('costo', 0))
+                } for item in request.inventario_manual}
+            
+            # Obtener detalle de requisición para comparar
+            query_requi = f"""
+SELECT OCM.idinsumo as codigo, I.nombre as producto, 
+       SUM(OCM.cantidad) as cantidad_pedido
+FROM ordenescompramov OCM
+INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
+INNER JOIN insumos I ON I.idinsumo = OCM.idinsumo
+WHERE OC.folio = '{request.folio_requisicion}'
+GROUP BY OCM.idinsumo, I.nombre
+"""
+            requi_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_requi
+            )
+            requi_dict = {str(r['codigo']): float(r['cantidad_pedido'] or 0) for r in requi_result}
+            
+            # Calcular diferencias y días de consumo
+            from datetime import datetime
+            dias_periodo = (datetime.strptime(fecha_fin, '%Y-%m-%d') - datetime.strptime(fecha_ini, '%Y-%m-%d')).days
+            if dias_periodo <= 0:
+                dias_periodo = 1
+            
+            todos_codigos = set(inv_ini_dict.keys()) | set(compras_dict.keys()) | set(consumos_dict.keys()) | set(inv_fin_dict.keys())
+            
+            for codigo in todos_codigos:
+                inv_inicial = inv_ini_dict.get(codigo, {}).get('cantidad', 0)
+                compras = compras_dict.get(codigo, 0)
+                consumos = consumos_dict.get(codigo, 0)
+                inv_fisico = inv_fin_dict.get(codigo, {}).get('cantidad', 0)
+                costo = inv_ini_dict.get(codigo, {}).get('costo', 0) or inv_fin_dict.get(codigo, {}).get('costo', 0)
+                producto = inv_ini_dict.get(codigo, {}).get('producto', '') or inv_fin_dict.get(codigo, {}).get('producto', '')
+                cantidad_pedido = requi_dict.get(codigo, 0)
+                
+                # Existencia teórica = inicial + compras - consumos
+                existencia_teorica = inv_inicial + compras - consumos
+                
+                # Diferencia = físico - teórico
+                diferencia = inv_fisico - existencia_teorica
+                importe_dif = diferencia * costo
+                
+                # Consumo diario promedio
+                consumo_diario = consumos / dias_periodo if dias_periodo > 0 else 0
+                
+                # Días de inventario disponible
+                dias_inv = inv_fisico / consumo_diario if consumo_diario > 0 else 999
+                
+                # ¿Debe comprar?
+                debe_comprar = dias_inv < 10  # Umbral de 10 días
+                
+                if producto:  # Solo productos con nombre
+                    resultados.append({
+                        "codigo": codigo,
+                        "producto": producto,
+                        "inv_inicial": inv_inicial,
+                        "compras": compras,
+                        "consumos": consumos,
+                        "existencia_teorica": round(existencia_teorica, 2),
+                        "inv_fisico": inv_fisico,
+                        "diferencia": round(diferencia, 2),
+                        "costo": costo,
+                        "importe_diferencia": round(importe_dif, 2),
+                        "tipo_diferencia": "favor" if diferencia >= 0 else "contra",
+                        "consumo_diario": round(consumo_diario, 2),
+                        "dias_inventario": round(dias_inv, 1) if dias_inv < 999 else "N/A",
+                        "cantidad_pedido": cantidad_pedido,
+                        "debe_comprar": debe_comprar,
+                        "recomendacion": "COMPRAR" if debe_comprar and cantidad_pedido > 0 else "OK" if not debe_comprar else "SIN PEDIDO"
+                    })
+                    
+                    resumen["total_teorico"] += existencia_teorica * costo
+                    resumen["total_fisico"] += inv_fisico * costo
+                    resumen["total_diferencia"] += importe_dif
+                    if diferencia >= 0:
+                        resumen["productos_favor"] += 1
+                        resumen["importe_favor"] += importe_dif
+                    else:
+                        resumen["productos_contra"] += 1
+                        resumen["importe_contra"] += abs(importe_dif)
+            
+            resumen["requiere_acta"] = resumen["productos_contra"] > 0 or resumen["importe_contra"] > 100
+            
+            # Ordenar por importe diferencia (más graves primero)
+            resultados = sorted(resultados, key=lambda x: x['importe_diferencia'])
+        
+        elif server['system_type'] == 'MPRO':
+            # Lógica similar para MPRO
+            # TODO: Implementar para MPRO si es necesario
+            pass
+        
+        return {
+            "resultados": resultados,
+            "resumen": resumen,
+            "periodo": {"inicio": fecha_ini, "fin": fecha_fin, "dias": dias_periodo if 'dias_periodo' in dir() else 0},
+            "folio_requisicion": request.folio_requisicion
+        }
+        
+    except Exception as e:
+        logging.error(f"[AUDITORIA] Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============= ANÁLISIS DE COMPRAS - ENDPOINTS =============
 
 class AnalisisComprasRequest(BaseModel):

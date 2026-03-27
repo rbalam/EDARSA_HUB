@@ -329,6 +329,10 @@ function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer, se
       toast.error('Selecciona las fechas del período de análisis');
       return;
     }
+    if (!folioPedidoComparar && !usarFolioManual) {
+      toast.error('Selecciona una requisición para comparar');
+      return;
+    }
 
     setLoading(true);
     setPedidoData([]);
@@ -336,7 +340,7 @@ function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer, se
 
     try {
       const token = localStorage.getItem('token');
-      const folioComparar = usarFolioManual ? folioManual : (folioPedidoComparar && folioPedidoComparar !== '__none__' ? folioPedidoComparar : null);
+      const folioComparar = usarFolioManual ? folioManual : folioPedidoComparar;
       const folioEnviar = (todosAlmacenes || folioInvFisico?.startsWith('TODOS-')) ? null : folioInvFisico;
       
       const response = await axios.post(`${API_URL}/api/compras/calculo-pedido`, {
@@ -480,10 +484,9 @@ function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer, se
               <Label className="text-xs">Comparar con Requisición</Label>
               <Select value={folioPedidoComparar} onValueChange={setFolioPedidoComparar}>
                 <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Sin comparar" />
+                  <SelectValue placeholder="Seleccionar requisición" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60 overflow-y-auto">
-                  <SelectItem value="__none__">Sin comparar</SelectItem>
                   {pedidosVigentes.map(p => (
                     <SelectItem key={`${p.tipo}-${p.folio}`} value={p.folio}>
                       {p.folio} - {p.comentario || p.comprador || 'Sin desc.'}
@@ -996,6 +999,359 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
 }
 
 // ============ COMPONENTE PRINCIPAL CON TABS ============
+// ============ TAB 4: AUDITORÍA OPERATIVA ============
+function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, selectedSucursal: parentSucursal, setSelectedSucursal: setParentSucursal, sucursales: parentSucursales }) {
+  const [loading, setLoading] = useState(false);
+  const [almacenes, setAlmacenes] = useState([]);
+  const [selectedAlmacenes, setSelectedAlmacenes] = useState([]);
+  const [inventariosFisicos, setInventariosFisicos] = useState([]);
+  const [pedidosVigentes, setPedidosVigentes] = useState([]);
+  
+  const [folioInvInicial, setFolioInvInicial] = useState('');
+  const [folioInvFinal, setFolioInvFinal] = useState('');
+  const [folioPedido, setFolioPedido] = useState('');
+  const [fechaInicial, setFechaInicial] = useState('');
+  const [fechaAuditoria, setFechaAuditoria] = useState(new Date().toISOString().split('T')[0]);
+  const [usarCapturaManual, setUsarCapturaManual] = useState(false);
+  const [inventarioManual, setInventarioManual] = useState([]);
+  
+  const [resultados, setResultados] = useState(null);
+  const [resumen, setResumen] = useState(null);
+
+  useEffect(() => {
+    if (selectedServer && parentSucursal) {
+      fetchAlmacenes();
+      fetchInventariosFisicos();
+      fetchPedidosVigentes();
+    }
+  }, [selectedServer, parentSucursal]);
+
+  const fetchAlmacenes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/servers/${selectedServer}/almacenes?sucursal=${encodeURIComponent(parentSucursal)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAlmacenes(response.data);
+    } catch (error) {
+      console.error('Error cargando almacenes:', error);
+    }
+  };
+
+  const fetchInventariosFisicos = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/compras/inventarios-fisicos/${selectedServer}?sucursal=${encodeURIComponent(parentSucursal)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setInventariosFisicos(response.data);
+    } catch (error) {
+      console.error('Error cargando inventarios físicos:', error);
+    }
+  };
+
+  const fetchPedidosVigentes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/compras/pedidos-vigentes/${selectedServer}?sucursal=${encodeURIComponent(parentSucursal)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPedidosVigentes(response.data);
+    } catch (error) {
+      console.error('Error cargando pedidos:', error);
+    }
+  };
+
+  const handleInvInicialChange = (folio) => {
+    setFolioInvInicial(folio);
+    const inv = inventariosFisicos.find(i => String(i.folio) === String(folio));
+    if (inv) {
+      setFechaInicial(inv.fecha?.split('T')[0] || '');
+    }
+  };
+
+  const realizarAuditoria = async () => {
+    if (!selectedServer || !parentSucursal) {
+      toast.error('Selecciona servidor y sucursal');
+      return;
+    }
+    if (!folioInvInicial || !fechaInicial || !fechaAuditoria) {
+      toast.error('Completa las fechas y el inventario inicial');
+      return;
+    }
+    if (!folioPedido) {
+      toast.error('Selecciona una requisición para comparar');
+      return;
+    }
+    if (!usarCapturaManual && !folioInvFinal) {
+      toast.error('Selecciona un inventario final o activa captura manual');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_URL}/api/compras/auditoria-operativa`, {
+        server_id: selectedServer,
+        sucursal: parentSucursal,
+        almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes : ['TODOS'],
+        folio_inv_inicial: folioInvInicial,
+        fecha_inv_inicial: fechaInicial,
+        fecha_auditoria: fechaAuditoria,
+        folio_inv_final: usarCapturaManual ? null : folioInvFinal,
+        folio_requisicion: folioPedido,
+        inventario_manual: usarCapturaManual ? inventarioManual : null
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setResultados(response.data.resultados);
+      setResumen(response.data.resumen);
+      
+      if (response.data.resumen?.requiere_acta) {
+        toast.warning('Se detectaron diferencias en contra. Se requiere Acta de Auditoría.');
+      } else {
+        toast.success('Auditoría completada sin diferencias significativas');
+      }
+    } catch (error) {
+      console.error('Error en auditoría:', error);
+      toast.error(error.response?.data?.detail || 'Error al realizar auditoría');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card className="border">
+        <CardHeader className="py-3 bg-amber-50 border-b">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileWarning className="h-5 w-5 text-amber-600" />
+            Auditoría Operativa de Inventarios
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 space-y-4">
+          {/* Selección de servidor y sucursal */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <Label className="text-xs">Servidor</Label>
+              <Select value={selectedServer} onValueChange={setSelectedServer}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Seleccionar servidor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {servers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Sucursal</Label>
+              <Select value={parentSucursal} onValueChange={setParentSucursal} disabled={!selectedServer}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Seleccionar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {parentSucursales.map(suc => (
+                    <SelectItem key={suc.codigo || suc.nombre} value={suc.nombre}>
+                      {suc.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Requisición a Comparar *</Label>
+              <Select value={folioPedido} onValueChange={setFolioPedido}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Seleccionar requisición" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {pedidosVigentes.map(p => (
+                    <SelectItem key={`${p.tipo}-${p.folio}`} value={p.folio}>
+                      {p.folio} - {p.comprador || 'Sin proveedor'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Inventarios y fechas */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-1">
+              <Label className="text-xs">Inventario Inicial</Label>
+              <Select value={folioInvInicial} onValueChange={handleInvInicialChange}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Seleccionar" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {inventariosFisicos.map(i => (
+                    <SelectItem key={i.folio} value={String(i.folio)}>
+                      {i.folio} ({i.fecha?.split('T')[0]}) - {i.almacen}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Fecha Inicial</Label>
+              <Input type="date" value={fechaInicial} onChange={e => setFechaInicial(e.target.value)} className="h-9" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Fecha Auditoría</Label>
+              <Input type="date" value={fechaAuditoria} onChange={e => setFechaAuditoria(e.target.value)} className="h-9" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Inventario Final</Label>
+              {!usarCapturaManual ? (
+                <Select value={folioInvFinal} onValueChange={setFolioInvFinal}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    {inventariosFisicos.map(i => (
+                      <SelectItem key={i.folio} value={String(i.folio)}>
+                        {i.folio} ({i.fecha?.split('T')[0]}) - {i.almacen}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="text-xs text-amber-600 font-medium p-2 bg-amber-50 rounded">
+                  Captura Manual Activa
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Opción de captura manual */}
+          <div className="flex items-center gap-2">
+            <Checkbox 
+              id="captura-manual" 
+              checked={usarCapturaManual} 
+              onCheckedChange={setUsarCapturaManual} 
+            />
+            <Label htmlFor="captura-manual" className="text-sm">
+              Sin folio de inventario final - Usar captura manual
+            </Label>
+          </div>
+
+          {/* Botón de ejecución */}
+          <div className="flex gap-2 pt-2">
+            <Button onClick={realizarAuditoria} disabled={loading || !selectedServer || !parentSucursal}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileWarning className="h-4 w-4 mr-2" />}
+              Realizar Auditoría
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Resumen de Auditoría */}
+      {resumen && (
+        <Card className={`border-2 ${resumen.requiere_acta ? 'border-red-300 bg-red-50' : 'border-green-300 bg-green-50'}`}>
+          <CardHeader className="py-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              {resumen.requiere_acta ? (
+                <><XCircle className="h-5 w-5 text-red-600" /> Requiere Acta de Auditoría</>
+              ) : (
+                <><CheckCircle2 className="h-5 w-5 text-green-600" /> Auditoría Sin Observaciones</>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-3 bg-white rounded border">
+                <p className="text-xs text-zinc-500">Existencia Teórica</p>
+                <p className="text-lg font-bold text-blue-600">{formatCurrency(resumen.total_teorico)}</p>
+              </div>
+              <div className="text-center p-3 bg-white rounded border">
+                <p className="text-xs text-zinc-500">Existencia Física</p>
+                <p className="text-lg font-bold text-purple-600">{formatCurrency(resumen.total_fisico)}</p>
+              </div>
+              <div className="text-center p-3 bg-white rounded border">
+                <p className="text-xs text-zinc-500">A Favor ({resumen.productos_favor})</p>
+                <p className="text-lg font-bold text-green-600">+{formatCurrency(resumen.importe_favor)}</p>
+              </div>
+              <div className="text-center p-3 bg-white rounded border">
+                <p className="text-xs text-zinc-500">En Contra ({resumen.productos_contra})</p>
+                <p className="text-lg font-bold text-red-600">-{formatCurrency(resumen.importe_contra)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tabla de resultados */}
+      {resultados && resultados.length > 0 && (
+        <Card className="border">
+          <CardHeader className="py-2">
+            <CardTitle className="text-sm">Detalle de Auditoría ({resultados.length} productos)</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="max-h-[400px] overflow-auto">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-zinc-800 text-white">
+                  <tr>
+                    <th className="py-2 px-2 text-left">Producto</th>
+                    <th className="py-2 px-2 text-right">Inv.Ini</th>
+                    <th className="py-2 px-2 text-right">+Compras</th>
+                    <th className="py-2 px-2 text-right">-Consumos</th>
+                    <th className="py-2 px-2 text-right">Teórico</th>
+                    <th className="py-2 px-2 text-right">Físico</th>
+                    <th className="py-2 px-2 text-right">Diferencia</th>
+                    <th className="py-2 px-2 text-right">Importe</th>
+                    <th className="py-2 px-2 text-center">Días Inv</th>
+                    <th className="py-2 px-2 text-right">Pedido</th>
+                    <th className="py-2 px-2 text-center">Recomendar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resultados.map((r, idx) => (
+                    <tr key={idx} className={`border-b ${r.tipo_diferencia === 'contra' ? 'bg-red-50' : ''}`}>
+                      <td className="py-1.5 px-2 font-medium">{r.producto}</td>
+                      <td className="py-1.5 px-2 text-right">{formatNumber(r.inv_inicial)}</td>
+                      <td className="py-1.5 px-2 text-right text-green-600">+{formatNumber(r.compras)}</td>
+                      <td className="py-1.5 px-2 text-right text-orange-600">-{formatNumber(r.consumos)}</td>
+                      <td className="py-1.5 px-2 text-right font-medium">{formatNumber(r.existencia_teorica)}</td>
+                      <td className="py-1.5 px-2 text-right font-medium">{formatNumber(r.inv_fisico)}</td>
+                      <td className={`py-1.5 px-2 text-right font-bold ${r.diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {r.diferencia >= 0 ? '+' : ''}{formatNumber(r.diferencia)}
+                      </td>
+                      <td className={`py-1.5 px-2 text-right ${r.importe_diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(r.importe_diferencia)}
+                      </td>
+                      <td className="py-1.5 px-2 text-center">
+                        <span className={`px-1.5 py-0.5 rounded text-xs ${
+                          r.dias_inventario === 'N/A' ? 'bg-zinc-100' :
+                          r.dias_inventario < 5 ? 'bg-red-100 text-red-700' :
+                          r.dias_inventario < 10 ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-green-100 text-green-700'
+                        }`}>
+                          {r.dias_inventario}
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-2 text-right">{formatNumber(r.cantidad_pedido)}</td>
+                      <td className="py-1.5 px-2 text-center">
+                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                          r.recomendacion === 'COMPRAR' ? 'bg-red-100 text-red-700' :
+                          r.recomendacion === 'OK' ? 'bg-green-100 text-green-700' :
+                          'bg-zinc-100 text-zinc-600'
+                        }`}>
+                          {r.recomendacion}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 export default function Compras() {
   const [servers, setServers] = useState([]);
   const [selectedServer, setSelectedServer] = useState('');
@@ -1036,8 +1392,15 @@ export default function Compras() {
           const response = await axios.get(`${API_URL}/api/servers/${selectedServer}/sucursales`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          setSucursales(response.data);
-          setSelectedSucursal(''); // Reset sucursal al cambiar servidor
+          const sucursalesData = response.data;
+          setSucursales(sucursalesData);
+          
+          // Auto-seleccionar si solo hay una sucursal
+          if (sucursalesData.length === 1) {
+            setSelectedSucursal(sucursalesData[0].nombre || sucursalesData[0].codigo || sucursalesData[0]);
+          } else {
+            setSelectedSucursal(''); // Reset si hay múltiples
+          }
         } catch (error) {
           console.error('Error cargando sucursales:', error);
           setSucursales([]);
@@ -1073,6 +1436,10 @@ export default function Compras() {
             <TrendingUp className="h-4 w-4" />
             Análisis
           </TabsTrigger>
+          <TabsTrigger value="auditoria" className="flex items-center gap-2">
+            <FileWarning className="h-4 w-4" />
+            Auditoría
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard">
@@ -1099,6 +1466,17 @@ export default function Compras() {
 
         <TabsContent value="analisis">
           <AnalisisCompras 
+            servers={servers} 
+            selectedServer={selectedServer} 
+            setSelectedServer={setSelectedServer}
+            selectedSucursal={selectedSucursal}
+            setSelectedSucursal={setSelectedSucursal}
+            sucursales={sucursales}
+          />
+        </TabsContent>
+
+        <TabsContent value="auditoria">
+          <AuditoriaOperativaTab 
             servers={servers} 
             selectedServer={selectedServer} 
             setSelectedServer={setSelectedServer}
