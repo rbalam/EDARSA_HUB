@@ -231,7 +231,11 @@ export default function CatalogoConsultas() {
                           <p className="font-medium text-sm truncate">{c.nombre}</p>
                           <p className="text-xs text-zinc-500 truncate">{c.descripcion}</p>
                           <div className="flex gap-1 mt-1">
-                            <span className="text-xs px-1 bg-zinc-200 rounded">{c.sistema}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                              c.sistema === 'MPRO' 
+                                ? 'bg-purple-100 text-purple-700' 
+                                : 'bg-blue-100 text-blue-700'
+                            }`}>{c.sistema}</span>
                             <span className="text-xs px-1 bg-zinc-100 rounded">{c.categoria}</span>
                           </div>
                         </div>
@@ -264,11 +268,25 @@ export default function CatalogoConsultas() {
                         <SelectValue placeholder="Seleccionar..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {serversDisponibles.map(s => (
-                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                        ))}
+                        {serversDisponibles.length === 0 ? (
+                          <SelectItem value="none" disabled>No hay servidores {consultaSeleccionada.sistema}</SelectItem>
+                        ) : (
+                          serversDisponibles.map(s => (
+                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
+                    {serversDisponibles.length === 0 && (
+                      <p className="text-xs text-orange-600 mt-1">
+                        Esta consulta requiere un servidor {consultaSeleccionada.sistema}
+                      </p>
+                    )}
+                    {consultaSeleccionada.sistema && (
+                      <p className="text-xs text-zinc-400 mt-0.5">
+                        Sistema: {consultaSeleccionada.sistema}
+                      </p>
+                    )}
                   </div>
                   
                   {/* Parámetros de la consulta */}
