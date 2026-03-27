@@ -3783,6 +3783,35 @@ ORDER BY F.Fi_Fecha DESC
         return [{"folio": r['folio'], "fecha": str(r['fecha']), "almacen": r['almacen'], 
                  "comentario": r['comentario'], "productos": r['total_productos']} for r in result]
     
+    elif server['system_type'] == 'SoftRestaurant':
+        # SoftRestaurant: Usar tabla invfisico
+        almacen_filtro = ""
+        if almacen and almacen != "TODOS":
+            almacen_filtro = f"AND A.nombre LIKE '%{almacen}%'"
+        
+        query = f"""
+SELECT DISTINCT 
+    INV.folio as folio,
+    INV.fecha as fecha,
+    A.nombre as almacen,
+    '' as comentario
+FROM invfisico INV
+LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
+WHERE 1=1
+    {almacen_filtro}
+ORDER BY INV.fecha DESC
+"""
+        try:
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query
+            )
+            return [{"folio": str(r['folio']), "fecha": str(r['fecha']), "almacen": r['almacen'] or 'Sin almacén', 
+                     "comentario": '', "productos": 0} for r in result]
+        except Exception as e:
+            logging.warning(f"Error obteniendo inventarios físicos SoftRestaurant: {e}")
+            return []
+    
     return []
 
 @api_router.get("/compras/pedidos-vigentes/{server_id}")
@@ -3822,21 +3851,23 @@ ORDER BY RC.Rc_Fecha DESC
                  "productos": r['total_productos'], "importe": float(r['importe_total'] or 0)} for r in result]
     
     elif server['system_type'] == 'SoftRestaurant':
-        # SoftRestaurant: Buscar en tabla de pedidos/requisiciones sin autorizar
+        # SoftRestaurant: Usar tabla ordenescompra (órdenes sin aplicar = sin autorizar)
         try:
             query = f"""
-SELECT 'PEDIDO' as tipo, P.idpedido as folio, P.fecha as fecha,
-       P.observaciones as comentario, 'PXA' as estado,
+SELECT 'ORDEN' as tipo, OC.folio as folio, OC.fechacaptura as fecha,
+       '' as comentario, 
+       CASE WHEN OC.aplicada = 0 THEN 'PXA' ELSE 'AUT' END as estado,
        PR.nombre as proveedor,
-       COUNT(PD.idarticulo) as total_productos,
-       SUM(ISNULL(PD.cantidad * PD.costo, 0)) as importe_total
-FROM pedidos P
-LEFT JOIN proveedores PR ON PR.idproveedor = P.idproveedor
-LEFT JOIN pedidosdetalle PD ON PD.idpedido = P.idpedido
-WHERE P.autorizado = 0
-    AND P.fecha >= DATEADD(day, -30, GETDATE())
-GROUP BY P.idpedido, P.fecha, P.observaciones, PR.nombre
-ORDER BY P.fecha DESC
+       COUNT(OCM.idinsumo) as total_productos,
+       ISNULL(OC.total, 0) as importe_total
+FROM ordenescompra OC
+LEFT JOIN proveedores PR ON PR.idproveedor = OC.idproveedor
+LEFT JOIN ordenescompramov OCM ON OCM.idordencompra = OC.idordencompra
+WHERE OC.aplicada = 0
+    AND OC.cancelado = 0
+    AND OC.fechacaptura >= DATEADD(day, -30, GETDATE())
+GROUP BY OC.folio, OC.fechacaptura, OC.aplicada, PR.nombre, OC.total
+ORDER BY OC.fechacaptura DESC
 """
             result = execute_sql_query(
                 server['host'], server['port'], server['database'],
