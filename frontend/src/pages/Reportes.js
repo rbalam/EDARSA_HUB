@@ -1045,7 +1045,7 @@ const Reportes = () => {
                             }
                           }}
                         />
-                        <span className="text-sm">{inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : ''} - {inv.almacen || inv.comentario || ''}</span>
+                        <span className="text-sm">{inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : ''} - {inv.almacen || ''}{inv.comentario ? ` - ${inv.comentario}` : ''}</span>
                       </label>
                     ))}
                     {inventarios.length === 0 && (
@@ -1127,7 +1127,7 @@ const Reportes = () => {
                             }
                           }}
                         />
-                        <span className="text-sm">{inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : ''} - {inv.almacen || inv.comentario || ''}</span>
+                        <span className="text-sm">{inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : ''} - {inv.almacen || ''}{inv.comentario ? ` - ${inv.comentario}` : ''}</span>
                       </label>
                     ))}
                     {inventarios.length === 0 && (
