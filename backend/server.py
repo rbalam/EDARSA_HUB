@@ -6593,19 +6593,21 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
     fiaa = fecha_ini_año_ant.replace('-', '')
     ffaa = fecha_fin_año_ant.replace('-', '')
     
-    # Query principal agrupando por sucursal
+    # Query principal agrupando por sucursal - INCLUYE PAX desde Comanda
     query = f"""
 SELECT 
     S.Sc_Cve_Sucursal as sucursal_id,
     S.Sc_Descripcion as sucursal_nombre,
-    COUNT(DISTINCT V.Vn_Folio) as cheques,
-    ISNULL(SUM(V.Vn_Precio_Neto_Importe), 0) as ventas
-FROM Venta V
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
-WHERE V.Vn_Fecha >= '{fi}' AND V.Vn_Fecha <= '{ff} 23:59:59'
-  AND ISNULL(V.Es_Cve_Estado, '') <> 'CA'
+    COUNT(DISTINCT VE.Vn_Folio) as cheques,
+    ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas,
+    ISNULL(SUM(C.Co_Personas), 0) as pax
+FROM Venta_Encabezado VE
+INNER JOIN Sucursal S ON S.Sc_Cve = VE.Sc_Cve_Sucursal
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+WHERE VE.Vn_Fecha >= '{fecha_ini}' AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
+  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
 GROUP BY S.Sc_Cve_Sucursal, S.Sc_Descripcion
-ORDER BY SUM(V.Vn_Precio_Neto_Importe) DESC
+ORDER BY SUM(VE.Vn_Precio_Neto_Importe) DESC
 """
     
     try:
@@ -6625,41 +6627,57 @@ ORDER BY SUM(V.Vn_Precio_Neto_Importe) DESC
         sucursal_nombre = row.get('sucursal_nombre', 'Sin nombre')
         ventas = float(row.get('ventas') or 0)
         cheques = int(row.get('cheques') or 0)
-        pax = cheques  # MPRO no tiene PAX, estimamos = cheques
+        pax = int(row.get('pax') or 0)  # PAX real desde Comanda.Co_Personas
         
-        # Query mes anterior para esta sucursal
+        # Si PAX es 0 pero hay cheques, estimamos PAX = cheques (1 persona por ticket mínimo)
+        if pax == 0 and cheques > 0:
+            pax = cheques
+        
+        # Query mes anterior para esta sucursal - con PAX
         query_ant = f"""
-SELECT ISNULL(SUM(V.Vn_Precio_Neto_Importe), 0) as ventas, COUNT(DISTINCT V.Vn_Folio) as cheques
-FROM Venta V
-WHERE V.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND V.Vn_Fecha >= '{fia}' AND V.Vn_Fecha <= '{ffa} 23:59:59'
-  AND ISNULL(V.Es_Cve_Estado, '') <> 'CA'
+SELECT 
+    ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas, 
+    COUNT(DISTINCT VE.Vn_Folio) as cheques,
+    ISNULL(SUM(C.Co_Personas), 0) as pax
+FROM Venta_Encabezado VE
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND VE.Vn_Fecha >= '{fecha_ini_ant}' AND VE.Vn_Fecha <= '{fecha_fin_ant} 23:59:59'
+  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
 """
         try:
             r_ant = execute_sql_query(server['host'], server['port'], server['database'], 
                                       server['username'], server['password'], query_ant)
             ventas_ant = float(r_ant[0]['ventas'] or 0) if r_ant else 0
             cheques_ant = int(r_ant[0]['cheques'] or 0) if r_ant else 0
+            pax_ant = int(r_ant[0]['pax'] or 0) if r_ant else 0
+            if pax_ant == 0 and cheques_ant > 0:
+                pax_ant = cheques_ant
         except:
-            ventas_ant, cheques_ant = 0, 0
-        pax_ant = cheques_ant
+            ventas_ant, cheques_ant, pax_ant = 0, 0, 0
         
-        # Query año anterior para esta sucursal
+        # Query año anterior para esta sucursal - con PAX
         query_año = f"""
-SELECT ISNULL(SUM(V.Vn_Precio_Neto_Importe), 0) as ventas, COUNT(DISTINCT V.Vn_Folio) as cheques
-FROM Venta V
-WHERE V.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND V.Vn_Fecha >= '{fiaa}' AND V.Vn_Fecha <= '{ffaa} 23:59:59'
-  AND ISNULL(V.Es_Cve_Estado, '') <> 'CA'
+SELECT 
+    ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas, 
+    COUNT(DISTINCT VE.Vn_Folio) as cheques,
+    ISNULL(SUM(C.Co_Personas), 0) as pax
+FROM Venta_Encabezado VE
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND VE.Vn_Fecha >= '{fecha_ini_año_ant}' AND VE.Vn_Fecha <= '{fecha_fin_año_ant} 23:59:59'
+  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
 """
         try:
             r_año = execute_sql_query(server['host'], server['port'], server['database'], 
                                       server['username'], server['password'], query_año)
             ventas_año = float(r_año[0]['ventas'] or 0) if r_año else 0
             cheques_año = int(r_año[0]['cheques'] or 0) if r_año else 0
+            pax_año = int(r_año[0]['pax'] or 0) if r_año else 0
+            if pax_año == 0 and cheques_año > 0:
+                pax_año = cheques_año
         except:
-            ventas_año, cheques_año = 0, 0
-        pax_año = cheques_año
+            ventas_año, cheques_año, pax_año = 0, 0, 0
         
         # Cálculos
         ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
