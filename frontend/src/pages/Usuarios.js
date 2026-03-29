@@ -8,10 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, User, Shield, Eye, Settings, Server, Building2, Warehouse, Edit } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Trash2, User, Shield, Eye, Settings, Server, Building2, Warehouse, Edit, Key, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Usuarios = () => {
+  // ============= ESTADOS USUARIOS =============
   const [users, setUsers] = useState([]);
   const [servers, setServers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +23,19 @@ const Usuarios = () => {
   const [sucursalesMap, setSucursalesMap] = useState({});
   const [departamentosMap, setDepartamentosMap] = useState({});
   
+  // ============= ESTADOS ROLES =============
+  const [roles, setRoles] = useState([]);
+  const [modulos, setModulos] = useState([]);
+  const [rolesLoading, setRolesLoading] = useState(true);
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState(null);
+  const [roleFormData, setRoleFormData] = useState({
+    nombre: '',
+    descripcion: '',
+    permisos: []
+  });
+  
+  // ============= ESTADOS FORMULARIO USUARIOS =============
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -64,8 +79,93 @@ const Usuarios = () => {
   useEffect(() => {
     loadUsers();
     loadServers();
+    loadRoles();
+    loadModulos();
   }, [loadUsers, loadServers]);
 
+  // ============= FUNCIONES ROLES =============
+  const loadRoles = async () => {
+    setRolesLoading(true);
+    try {
+      const response = await api.get('/roles');
+      setRoles(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error loading roles:', error);
+      setRoles([]);
+    } finally {
+      setRolesLoading(false);
+    }
+  };
+
+  const loadModulos = async () => {
+    try {
+      const response = await api.get('/roles/modulos');
+      setModulos(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error loading modulos:', error);
+      setModulos([]);
+    }
+  };
+
+  const openRoleDialog = (role = null) => {
+    if (role) {
+      setEditingRole(role);
+      setRoleFormData({
+        nombre: role.nombre,
+        descripcion: role.descripcion || '',
+        permisos: role.permisos || []
+      });
+    } else {
+      setEditingRole(null);
+      setRoleFormData({
+        nombre: '',
+        descripcion: '',
+        permisos: []
+      });
+    }
+    setRoleDialogOpen(true);
+  };
+
+  const handleRoleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingRole) {
+        await api.put(`/roles/${editingRole.id}`, roleFormData);
+        toast.success('Rol actualizado');
+      } else {
+        await api.post('/roles', roleFormData);
+        toast.success('Rol creado');
+      }
+      setRoleDialogOpen(false);
+      loadRoles();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al guardar rol');
+    }
+  };
+
+  const handleDeleteRole = async (roleId) => {
+    if (!window.confirm('¿Estás seguro de eliminar este rol?')) return;
+    try {
+      await api.delete(`/roles/${roleId}`);
+      toast.success('Rol eliminado');
+      loadRoles();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al eliminar rol');
+    }
+  };
+
+  const togglePermiso = (moduloId) => {
+    const current = [...roleFormData.permisos];
+    const idx = current.indexOf(moduloId);
+    if (idx > -1) {
+      current.splice(idx, 1);
+    } else {
+      current.push(moduloId);
+    }
+    setRoleFormData({ ...roleFormData, permisos: current });
+  };
+
+  // ============= FUNCIONES USUARIOS =============
   const loadSucursalesForServer = async (serverId) => {
     if (sucursalesMap[serverId]) return; // Ya cargadas
     try {
@@ -243,84 +343,181 @@ const Usuarios = () => {
 
   return (
     <div className="space-y-6" data-testid="usuarios-page">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-extrabold text-zinc-900">Usuarios</h1>
-          <p className="text-zinc-600 mt-1">Gestiona los usuarios del sistema</p>
-        </div>
-        <Button onClick={() => setDialogOpen(true)} className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800" data-testid="add-user-button">
-          <Plus className="h-4 w-4 mr-2" />
-          Agregar Usuario
-        </Button>
+      <div>
+        <h1 className="text-3xl font-extrabold text-zinc-900">Usuarios y Roles</h1>
+        <p className="text-zinc-600 mt-1">Gestiona los usuarios y roles del sistema</p>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-900"></div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {users.map((user) => (
-            <Card key={user.id} className="border border-zinc-200 shadow-sm" data-testid="user-card">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="bg-zinc-100 p-2 rounded-lg">
-                    <User className="h-5 w-5 text-zinc-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-semibold">{user.name}</CardTitle>
-                    <p className="text-xs text-zinc-500">{user.email}</p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Badge className={`${getRoleBadge(user.role)} border`}>
-                      {getRoleIcon(user.role)}
-                      <span className="ml-1">{user.role}</span>
-                    </Badge>
-                  </div>
-                  <div className="text-sm">
-                    <span className="text-zinc-600">Estado: </span>
-                    <span className={user.active ? 'text-green-600' : 'text-red-600'}>
-                      {user.active ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </div>
-                  {user.allowed_servers && user.allowed_servers.length > 0 && (
-                    <div className="text-sm text-blue-600">
-                      {user.allowed_servers.length} servidor(es) asignado(s)
+      <Tabs defaultValue="usuarios" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="usuarios" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Usuarios
+          </TabsTrigger>
+          <TabsTrigger value="roles" className="flex items-center gap-2">
+            <Key className="h-4 w-4" />
+            Roles
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ============= TAB USUARIOS ============= */}
+        <TabsContent value="usuarios" className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-zinc-600">{users.length} usuario(s) registrado(s)</p>
+            <Button onClick={() => { resetForm(); setDialogOpen(true); }} className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800" data-testid="add-user-button">
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar Usuario
+            </Button>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-900"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {users.map((user) => (
+                <Card key={user.id} className="border border-zinc-200 shadow-sm" data-testid="user-card">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-zinc-100 p-2 rounded-lg">
+                        <User className="h-5 w-5 text-zinc-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-semibold">{user.name}</CardTitle>
+                        <p className="text-xs text-zinc-500">{user.email}</p>
+                      </div>
                     </div>
-                  )}
-                  {user.role === 'Administrador' && (
-                    <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                      Acceso total
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge className={`${getRoleBadge(user.role)} border`}>
+                          {getRoleIcon(user.role)}
+                          <span className="ml-1">{user.role}</span>
+                        </Badge>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-zinc-600">Estado: </span>
+                        <span className={user.active ? 'text-green-600' : 'text-red-600'}>
+                          {user.active ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                      {user.allowed_servers && user.allowed_servers.length > 0 && (
+                        <div className="text-sm text-blue-600">
+                          {user.allowed_servers.length} servidor(es) asignado(s)
+                        </div>
+                      )}
+                      {user.role === 'Administrador' && (
+                        <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                          Acceso total
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => openEditDialog(user)} data-testid="edit-user-button">
-                    <Edit className="h-4 w-4 mr-1" />
-                    Editar
-                  </Button>
-                  {user.role !== 'Administrador' && (
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => openPermissionsDialog(user)} data-testid="permissions-button">
-                      <Settings className="h-4 w-4 mr-1" />
-                      Permisos
-                    </Button>
-                  )}
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => handleDelete(user.id)} 
-                    disabled={user.role === 'Administrador' && users.filter(u => u.role === 'Administrador').length === 1}
-                    data-testid="delete-user-button">
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Eliminar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                    <div className="flex gap-2 mt-4">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => openEditDialog(user)} data-testid="edit-user-button">
+                        <Edit className="h-4 w-4 mr-1" />
+                        Editar
+                      </Button>
+                      {user.role !== 'Administrador' && (
+                        <Button variant="outline" size="sm" className="flex-1" onClick={() => openPermissionsDialog(user)} data-testid="permissions-button">
+                          <Settings className="h-4 w-4 mr-1" />
+                          Permisos
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleDelete(user.id)} 
+                        disabled={user.role === 'Administrador' && users.filter(u => u.role === 'Administrador').length === 1}
+                        data-testid="delete-user-button">
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Eliminar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ============= TAB ROLES ============= */}
+        <TabsContent value="roles" className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-zinc-600">{roles.length} rol(es) configurado(s)</p>
+            <Button onClick={() => openRoleDialog()} className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800" data-testid="add-role-button">
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Rol
+            </Button>
+          </div>
+
+          {rolesLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-900"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {roles.map((role) => (
+                <Card key={role.id} className="border border-zinc-200 shadow-sm" data-testid="role-card">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${role.nombre === 'Administrador' ? 'bg-red-100' : role.nombre === 'Supervisor' ? 'bg-blue-100' : 'bg-green-100'}`}>
+                          {role.nombre === 'Administrador' ? <Shield className="h-5 w-5 text-red-600" /> : 
+                           role.nombre === 'Supervisor' ? <Eye className="h-5 w-5 text-blue-600" /> : 
+                           <User className="h-5 w-5 text-green-600" />}
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg font-semibold">{role.nombre}</CardTitle>
+                          {role.es_sistema && (
+                            <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                              <Lock className="h-3 w-3 mr-1" />
+                              Sistema
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-zinc-600 mb-3">{role.descripcion || 'Sin descripción'}</p>
+                    
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-zinc-500 mb-1">Permisos ({role.permisos?.length || 0}):</p>
+                      <div className="flex flex-wrap gap-1">
+                        {(role.permisos || []).slice(0, 5).map(p => {
+                          const modulo = modulos.find(m => m.id === p);
+                          return (
+                            <Badge key={p} variant="outline" className="text-xs">
+                              {modulo?.nombre || p}
+                            </Badge>
+                          );
+                        })}
+                        {(role.permisos?.length || 0) > 5 && (
+                          <Badge variant="outline" className="text-xs bg-zinc-100">
+                            +{role.permisos.length - 5} más
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => openRoleDialog(role)} data-testid="edit-role-button">
+                        <Edit className="h-4 w-4 mr-1" />
+                        Editar
+                      </Button>
+                      {!role.es_sistema && (
+                        <Button variant="outline" size="sm" className="flex-1 text-red-600 hover:text-red-700" onClick={() => handleDeleteRole(role.id)} data-testid="delete-role-button">
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Eliminar
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Dialog para crear usuario */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -458,6 +655,74 @@ const Usuarios = () => {
               Guardar Permisos
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para crear/editar rol */}
+      <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingRole ? 'Editar Rol' : 'Nuevo Rol'}</DialogTitle>
+            <DialogDescription>
+              {editingRole?.es_sistema 
+                ? 'Este es un rol de sistema. Solo puedes modificar la descripción y permisos.'
+                : 'Define el nombre, descripción y permisos del rol'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleRoleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Nombre del Rol</Label>
+                <Input 
+                  value={roleFormData.nombre} 
+                  onChange={(e) => setRoleFormData({...roleFormData, nombre: e.target.value})} 
+                  required 
+                  disabled={editingRole?.es_sistema}
+                  placeholder="Ej: Auditor, Gerente, etc."
+                  data-testid="role-name-input" 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Descripción</Label>
+                <Input 
+                  value={roleFormData.descripcion} 
+                  onChange={(e) => setRoleFormData({...roleFormData, descripcion: e.target.value})} 
+                  placeholder="Breve descripción del rol"
+                  data-testid="role-desc-input" 
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Permisos de Módulos</Label>
+              <p className="text-xs text-zinc-500 mb-2">Selecciona los módulos a los que tendrá acceso este rol</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-64 overflow-y-auto border rounded-lg p-3">
+                {modulos.map((modulo) => (
+                  <div key={modulo.id} className="flex items-start gap-2 p-2 rounded hover:bg-zinc-50">
+                    <Checkbox
+                      id={`perm-${modulo.id}`}
+                      checked={roleFormData.permisos.includes(modulo.id)}
+                      onCheckedChange={() => togglePermiso(modulo.id)}
+                    />
+                    <label htmlFor={`perm-${modulo.id}`} className="cursor-pointer">
+                      <span className="text-sm font-medium">{modulo.nombre}</span>
+                      <p className="text-xs text-zinc-500">{modulo.descripcion}</p>
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-zinc-400 mt-1">
+                {roleFormData.permisos.length} módulo(s) seleccionado(s)
+              </p>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setRoleDialogOpen(false)}>Cancelar</Button>
+              <Button type="submit" className="bg-zinc-900 text-zinc-50" data-testid="submit-role-button">
+                {editingRole ? 'Guardar Cambios' : 'Crear Rol'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

@@ -14,6 +14,13 @@
   - El endpoint esperaba `sucursal` y `almacen` (nombres), pero frontend enviaba `sucursal_id` y `almacen_id`
   - Ahora pasa `sucursal: 'SoftRestaurant'` para servidores SoftRestaurant
   - Parsing de respuesta corregido (acepta array directo o `{inventarios: [...]}`)
+- **Nuevo:** Catálogo de Roles completo
+  - Ubicado en Sistema > Usuarios > Tab "Roles"
+  - CRUD completo: Crear, Editar, Eliminar roles
+  - 14 módulos disponibles para asignar permisos
+  - 3 roles predeterminados (Sistema): Administrador, Supervisor, Usuario
+  - Los roles de sistema no se pueden eliminar pero sí editar sus permisos
+  - Colección MongoDB `roles` creada
 
 ### Bug Fixes y Mejoras Anteriores (29 Mar 2026)
 - **Corregido:** Etiqueta "Tipo" en movimientos usa el campo `C.tipo` de la BD (no el signo de cantidad)

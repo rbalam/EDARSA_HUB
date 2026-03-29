@@ -784,6 +784,152 @@ async def update_user_permissions(user_id: str, permissions: Dict, current_user:
     
     return {"message": "Permisos actualizados"}
 
+# ============= ROLES CRUD =============
+
+# Módulos disponibles para asignar permisos
+MODULOS_DISPONIBLES = [
+    {"id": "tablero_ejecutivo", "nombre": "Tablero Ejecutivo", "descripcion": "Vista consolidada de todas las unidades"},
+    {"id": "comercial", "nombre": "Comercial", "descripcion": "Dashboard de ventas, ticket perfecto, metas"},
+    {"id": "compras", "nombre": "Compras", "descripcion": "Dashboard de compras, autorización, análisis"},
+    {"id": "inventarios", "nombre": "Inventarios", "descripcion": "Análisis de inventarios, reportes"},
+    {"id": "dashboard_inventarios", "nombre": "Dashboard Inventarios", "descripcion": "Gráficas de diferencias de inventario"},
+    {"id": "finanzas", "nombre": "Finanzas", "descripcion": "Libro mayor, cuentas, conciliación"},
+    {"id": "produccion", "nombre": "Producción", "descripcion": "Órdenes de producción, BOM"},
+    {"id": "recursos_humanos", "nombre": "Recursos Humanos", "descripcion": "Nómina, asistencias"},
+    {"id": "reportes_bi", "nombre": "Reportes BI", "descripcion": "Análisis predictivo, KPIs avanzados"},
+    {"id": "servidores", "nombre": "Servidores", "descripcion": "Configuración de conexiones a BD"},
+    {"id": "catalogo_sql", "nombre": "Catálogo SQL", "descripcion": "Consultas SQL personalizadas"},
+    {"id": "explorador_bd", "nombre": "Explorador BD", "descripcion": "Explorar estructura de bases de datos"},
+    {"id": "alertas", "nombre": "Alertas", "descripcion": "Configuración de alertas del sistema"},
+    {"id": "usuarios", "nombre": "Usuarios", "descripcion": "Gestión de usuarios y roles"},
+]
+
+@api_router.get("/roles/modulos")
+async def get_modulos_disponibles(current_user: Dict = Depends(get_current_user)):
+    """Obtiene la lista de módulos disponibles para asignar permisos"""
+    if current_user['role'] != 'Administrador':
+        raise HTTPException(status_code=403, detail="No autorizado")
+    return MODULOS_DISPONIBLES
+
+@api_router.get("/roles")
+async def get_roles(current_user: Dict = Depends(get_current_user)):
+    """Obtiene todos los roles del sistema"""
+    if current_user['role'] != 'Administrador':
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    roles = await db.roles.find({}, {"_id": 0}).to_list(100)
+    
+    # Si no hay roles, crear los predeterminados
+    if not roles:
+        default_roles = [
+            {
+                "id": str(uuid.uuid4()),
+                "nombre": "Administrador",
+                "descripcion": "Acceso total al sistema",
+                "permisos": [m["id"] for m in MODULOS_DISPONIBLES],  # Todos los módulos
+                "es_sistema": True,  # No se puede eliminar
+                "created_at": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "nombre": "Supervisor",
+                "descripcion": "Acceso a módulos operativos y reportes",
+                "permisos": ["tablero_ejecutivo", "comercial", "compras", "inventarios", "dashboard_inventarios", "catalogo_sql", "alertas"],
+                "es_sistema": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "nombre": "Usuario",
+                "descripcion": "Acceso básico de consulta",
+                "permisos": ["comercial", "compras", "inventarios", "dashboard_inventarios"],
+                "es_sistema": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        ]
+        await db.roles.insert_many(default_roles)
+        roles = default_roles
+    
+    return roles
+
+@api_router.post("/roles")
+async def create_role(role_data: Dict, current_user: Dict = Depends(get_current_user)):
+    """Crea un nuevo rol"""
+    if current_user['role'] != 'Administrador':
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    # Verificar que no exista un rol con el mismo nombre
+    existing = await db.roles.find_one({"nombre": role_data.get("nombre")})
+    if existing:
+        raise HTTPException(status_code=400, detail="Ya existe un rol con ese nombre")
+    
+    new_role = {
+        "id": str(uuid.uuid4()),
+        "nombre": role_data.get("nombre", ""),
+        "descripcion": role_data.get("descripcion", ""),
+        "permisos": role_data.get("permisos", []),
+        "es_sistema": False,  # Los roles creados por usuario no son de sistema
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.roles.insert_one(new_role)
+    if "_id" in new_role:
+        del new_role["_id"]
+    return new_role
+
+@api_router.put("/roles/{role_id}")
+async def update_role(role_id: str, role_data: Dict, current_user: Dict = Depends(get_current_user)):
+    """Actualiza un rol existente"""
+    if current_user['role'] != 'Administrador':
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    existing = await db.roles.find_one({"id": role_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Rol no encontrado")
+    
+    # Solo permitir cambiar nombre/descripción/permisos en roles de sistema
+    update_data = {}
+    if "descripcion" in role_data:
+        update_data["descripcion"] = role_data["descripcion"]
+    if "permisos" in role_data:
+        update_data["permisos"] = role_data["permisos"]
+    
+    # Solo permitir cambiar nombre si no es rol de sistema
+    if not existing.get("es_sistema") and "nombre" in role_data:
+        # Verificar que el nuevo nombre no exista
+        if role_data["nombre"] != existing["nombre"]:
+            dup = await db.roles.find_one({"nombre": role_data["nombre"]})
+            if dup:
+                raise HTTPException(status_code=400, detail="Ya existe un rol con ese nombre")
+        update_data["nombre"] = role_data["nombre"]
+    
+    if update_data:
+        await db.roles.update_one({"id": role_id}, {"$set": update_data})
+    
+    updated = await db.roles.find_one({"id": role_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/roles/{role_id}")
+async def delete_role(role_id: str, current_user: Dict = Depends(get_current_user)):
+    """Elimina un rol (solo roles no de sistema)"""
+    if current_user['role'] != 'Administrador':
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    existing = await db.roles.find_one({"id": role_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Rol no encontrado")
+    
+    if existing.get("es_sistema"):
+        raise HTTPException(status_code=400, detail="No se pueden eliminar roles de sistema")
+    
+    # Verificar que no haya usuarios con este rol
+    users_with_role = await db.users.count_documents({"role": existing["nombre"]})
+    if users_with_role > 0:
+        raise HTTPException(status_code=400, detail=f"No se puede eliminar: {users_with_role} usuario(s) tienen este rol asignado")
+    
+    await db.roles.delete_one({"id": role_id})
+    return {"message": "Rol eliminado"}
+
 # ============= PERMISSION HELPERS =============
 
 def user_has_server_access(user: Dict, server_id: str) -> bool:
