@@ -1851,6 +1851,7 @@ WHERE P.Es_Cve_Estado <> 'BA'
         -- Caso B: Es un producto de COMPRA que NO está como presentación de ningún insumo
         (P.Dp_Cve_Departamento <> '0007' AND PCP.Pr_Cve_Producto IS NULL)
     )
+    AND ISNULL(P.Pr_Destino, 'V') <> 'G'
     {filtro_categorias_p}
     {filtro_familias_p}
     {filtro_subfamilias_p}
