@@ -349,9 +349,14 @@ export default function TableroEjecutivo() {
   ];
 
   const cargarDatos = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Sesión no válida. Por favor inicia sesión.');
+      return;
+    }
+    
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.get(`${API_URL}/api/comercial/tablero-ejecutivo`, {
         params: { mes, anio },
         headers: { Authorization: `Bearer ${token}` }
@@ -359,14 +364,22 @@ export default function TableroEjecutivo() {
       setData(response.data);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Error al cargar tablero ejecutivo');
+      if (error.response?.status === 401) {
+        toast.error('Sesión expirada. Por favor inicia sesión de nuevo.');
+      } else {
+        toast.error('Error al cargar tablero ejecutivo. Intenta actualizar.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    cargarDatos();
+    // Pequeño delay para asegurar que el token esté disponible
+    const timer = setTimeout(() => {
+      cargarDatos();
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const nombreMes = data?.periodo?.mes ? meses.find(m => m.value === String(data.periodo.mes))?.label : '';
