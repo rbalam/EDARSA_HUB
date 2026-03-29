@@ -348,10 +348,9 @@ export default function TableroEjecutivo() {
     { value: '2026', label: '2026' }, { value: '2025', label: '2025' }, { value: '2024', label: '2024' }
   ];
 
-  const cargarDatos = async () => {
+  const cargarDatos = async (retry = 0) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      // Sin token, redirigir al login
       window.location.href = '/login';
       return;
     }
@@ -360,36 +359,39 @@ export default function TableroEjecutivo() {
     try {
       const response = await axios.get(`${API_URL}/api/comercial/tablero-ejecutivo`, {
         params: { mes, anio },
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 30000 // 30 segundos timeout
       });
       setData(response.data);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error cargando tablero:', error);
       if (error.response?.status === 401) {
-        // Token expirado, limpiar y redirigir al login
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
+      } else if (retry < 2) {
+        // Reintentar hasta 2 veces
+        console.log(`Reintentando (${retry + 1}/2)...`);
+        setTimeout(() => cargarDatos(retry + 1), 1000);
       } else {
         toast.error('Error al cargar datos. Intenta actualizar.');
       }
     } finally {
-      setLoading(false);
+      if (retry === 0 || retry >= 2) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    // Verificar autenticación antes de cargar
     const token = localStorage.getItem('token');
     if (!token) {
       window.location.href = '/login';
       return;
     }
     
-    const timer = setTimeout(() => {
-      cargarDatos();
-    }, 100);
-    return () => clearTimeout(timer);
+    // Cargar datos inmediatamente
+    cargarDatos();
   }, []);
 
   const nombreMes = data?.periodo?.mes ? meses.find(m => m.value === String(data.periodo.mes))?.label : '';
