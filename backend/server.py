@@ -5184,6 +5184,12 @@ async def comercial_dashboard(
         logging.info(f"Comercial Dashboard: {server['name']} - Período: {periodo} ({fecha_ini} a {fecha_fin})")
         
         if server['system_type'] == 'SoftRestaurant':
+            # Formato de fecha compatible con SQL Server en español (YYYYMMDD)
+            f_ini = fecha_ini.replace('-', '')
+            f_fin = fecha_fin.replace('-', '')
+            f_ini_ant = fecha_ini_ant.replace('-', '')
+            f_fin_ant = fecha_fin_ant.replace('-', '')
+            
             # Query principal para KPIs de ventas SoftRestaurant
             # MISMA LÓGICA QUE ANÁLISIS DE INVENTARIOS: usa turnos.apertura
             query_kpis = f"""
@@ -5195,8 +5201,8 @@ SELECT
     ISNULL(AVG(CAST(cheques.nopersonas as float)), 0) as pax_promedio
 FROM cheques
 INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.apertura >= '{fecha_ini} 00:00:00'
-  AND turnos.apertura <= '{fecha_fin} 23:59:59'
+WHERE turnos.apertura >= '{f_ini} 00:00:00'
+  AND turnos.apertura <= '{f_fin} 23:59:59'
   AND cheques.cancelado = 0
 """
             result = execute_sql_query(
@@ -5230,8 +5236,8 @@ SELECT
     SUM(cheques.total) as ventas_periodo
 FROM cheques
 INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.apertura >= '{fecha_ini_ant} 00:00:00'
-  AND turnos.apertura <= '{fecha_fin_ant} 23:59:59'
+WHERE turnos.apertura >= '{f_ini_ant} 00:00:00'
+  AND turnos.apertura <= '{f_fin_ant} 23:59:59'
   AND cheques.cancelado = 0
 """
             result_ant = execute_sql_query(
@@ -5249,8 +5255,8 @@ WHERE turnos.apertura >= '{fecha_ini_ant} 00:00:00'
 SELECT ISNULL(SUM(cheques.nopersonas), 0) as pax_total, SUM(cheques.total) as ventas
 FROM cheques
 INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.apertura >= '{fecha_ini_ant} 00:00:00'
-  AND turnos.apertura <= '{fecha_fin_ant} 23:59:59'
+WHERE turnos.apertura >= '{f_ini_ant} 00:00:00'
+  AND turnos.apertura <= '{f_fin_ant} 23:59:59'
   AND cheques.cancelado = 0
 """
             result_pax_ant = execute_sql_query(
