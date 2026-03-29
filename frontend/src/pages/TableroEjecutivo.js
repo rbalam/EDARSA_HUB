@@ -75,28 +75,20 @@ const UnidadCard = ({ unidad, onClick }) => {
           </div>
           
           <div className="border-t pt-2 mt-2 grid grid-cols-2 gap-2 text-xs">
-            <div className="text-center">
-              <span className="text-zinc-500">PAX</span>
-            </div>
-            <div className="text-center">
-              <span className="text-zinc-500">Cheques</span>
-            </div>
             <div>
+              <span className="text-zinc-500">PAX</span>
               <p className="font-semibold">{unidad.pax?.toLocaleString()}</p>
             </div>
             <div>
+              <span className="text-zinc-500">Cheques</span>
               <p className="font-semibold">{unidad.cheques?.toLocaleString()}</p>
             </div>
-            <div className="text-center">
-              <span className="text-zinc-500">Ticket</span>
-            </div>
-            <div className="text-center">
-              <span className="text-zinc-500">Proyección</span>
-            </div>
             <div>
+              <span className="text-zinc-500">Ticket</span>
               <p className="font-semibold">{formatCurrency(unidad.ticket_prom)}</p>
             </div>
             <div>
+              <span className="text-zinc-500">Proyección</span>
               <p className="font-semibold text-orange-600">{formatCurrency(unidad.proyeccion)}</p>
             </div>
           </div>
