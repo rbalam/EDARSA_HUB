@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { 
   Loader2, ShoppingCart, Package, TrendingUp, AlertTriangle, Download, 
   AlertCircle, Calendar, Edit3, RefreshCw, Search, BarChart3, FileText,
-  ChevronRight, ChevronDown, ExternalLink, FileWarning, CheckCircle2, XCircle
+  ChevronRight, ChevronDown, ExternalLink, FileWarning, CheckCircle2, XCircle, X
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -1509,7 +1509,7 @@ export default function Compras() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
+        <TabsList className="grid w-full grid-cols-4 mb-4">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Dashboard
