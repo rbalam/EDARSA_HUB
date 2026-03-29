@@ -18,6 +18,15 @@
   - Inventario Inicial y Final ahora soportan selección múltiple
   - Incluye buscador dentro del dropdown
   - Backend actualizado para combinar múltiples folios en el análisis
+- **Corregido (29 Mar 2026):** Bug de MPRO en Tablero Ejecutivo
+  - Las unidades MPRO no aparecían por error SQL `Invalid column name 'Vn_Cancelacion'`
+  - Corregido usando formato de fecha YYYYMMDD en todas las queries MPRO
+- **Nuevo (29 Mar 2026):** CRUD de Consultas Personalizadas en Catálogo SQL
+  - Botón "+ Nueva" para agregar consultas personalizadas
+  - Modal con campos: Nombre, Sistema, Categoría, Parámetros, Descripción, SQL
+  - Consultas almacenadas en MongoDB (colección `consultas_custom`)
+  - Botón de eliminar para consultas personalizadas
+  - Las consultas custom se mezclan con las predefinidas y muestran etiqueta "Custom"
 
 ## CHECKPOINT ESTABLE - 29 Marzo 2026
 > **Aplicación renombrada a "Edarsa Hub"**

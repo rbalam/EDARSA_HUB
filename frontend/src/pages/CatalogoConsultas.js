@@ -3,11 +3,14 @@ import axios from 'axios';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { toast } from 'sonner';
 import { 
   Loader2, Search, Play, Database, Filter, Download, 
-  BarChart3, ShoppingCart, CreditCard, Package, FileText
+  BarChart3, ShoppingCart, CreditCard, Package, FileText,
+  Plus, X, Trash2, Edit, Save
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -37,6 +40,18 @@ export default function CatalogoConsultas() {
   
   // Resultados
   const [resultados, setResultados] = useState(null);
+  
+  // Modal Nueva Consulta
+  const [showNuevaConsulta, setShowNuevaConsulta] = useState(false);
+  const [nuevaConsulta, setNuevaConsulta] = useState({
+    nombre: '',
+    descripcion: '',
+    sistema: '',
+    categoria: '',
+    parametros: '',
+    sql: ''
+  });
+  const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
     cargarConsultas();
@@ -156,6 +171,57 @@ export default function CatalogoConsultas() {
     return val;
   };
 
+  // Guardar nueva consulta personalizada
+  const guardarNuevaConsulta = async () => {
+    // Validar campos
+    if (!nuevaConsulta.nombre || !nuevaConsulta.sistema || !nuevaConsulta.categoria || !nuevaConsulta.sql) {
+      toast.error('Completa todos los campos requeridos');
+      return;
+    }
+    
+    setGuardando(true);
+    try {
+      const token = localStorage.getItem('token');
+      const payload = {
+        ...nuevaConsulta,
+        parametros: nuevaConsulta.parametros.split(',').map(p => p.trim()).filter(p => p)
+      };
+      
+      await axios.post(`${API_URL}/api/catalogo/consultas-custom`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success('Consulta creada exitosamente');
+      setShowNuevaConsulta(false);
+      setNuevaConsulta({ nombre: '', descripcion: '', sistema: '', categoria: '', parametros: '', sql: '' });
+      cargarConsultas();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error(error.response?.data?.detail || 'Error al crear consulta');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  // Eliminar consulta personalizada
+  const eliminarConsulta = async (consultaId) => {
+    if (!window.confirm('¿Eliminar esta consulta personalizada?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/catalogo/consultas-custom/${consultaId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Consulta eliminada');
+      cargarConsultas();
+      if (consultaSeleccionada?.id === consultaId) {
+        setConsultaSeleccionada(null);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al eliminar');
+    }
+  };
+
   // Filtrar servers por sistema de la consulta seleccionada
   const serversDisponibles = consultaSeleccionada 
     ? servers.filter(s => {
@@ -176,10 +242,20 @@ export default function CatalogoConsultas() {
         {/* Panel izquierdo - Lista de consultas */}
         <Card className="lg:col-span-1 border">
           <CardHeader className="py-3 bg-zinc-100">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              Consultas Disponibles
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                Consultas Disponibles
+              </CardTitle>
+              <Button 
+                size="sm" 
+                className="h-7 text-xs"
+                onClick={() => setShowNuevaConsulta(true)}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Nueva
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="p-3">
             {/* Filtros */}
@@ -215,6 +291,7 @@ export default function CatalogoConsultas() {
                 consultas.map(c => {
                   const Icono = iconosPorCategoria[c.categoria] || FileText;
                   const isSelected = consultaSeleccionada?.id === c.id;
+                  const esPersonalizada = c.tipo === 'personalizada';
                   return (
                     <div
                       key={c.id}
@@ -228,15 +305,32 @@ export default function CatalogoConsultas() {
                       <div className="flex items-start gap-2">
                         <Icono className={`h-4 w-4 mt-0.5 ${isSelected ? 'text-blue-600' : 'text-zinc-400'}`} />
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{c.nombre}</p>
+                          <div className="flex items-center gap-1">
+                            <p className="font-medium text-sm truncate">{c.nombre}</p>
+                            {esPersonalizada && (
+                              <span className="text-xs px-1 py-0.5 bg-green-100 text-green-700 rounded">Custom</span>
+                            )}
+                          </div>
                           <p className="text-xs text-zinc-500 truncate">{c.descripcion}</p>
-                          <div className="flex gap-1 mt-1">
+                          <div className="flex gap-1 mt-1 items-center">
                             <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
                               c.sistema === 'MPRO' 
                                 ? 'bg-purple-100 text-purple-700' 
                                 : 'bg-blue-100 text-blue-700'
                             }`}>{c.sistema}</span>
                             <span className="text-xs px-1 bg-zinc-100 rounded">{c.categoria}</span>
+                            {esPersonalizada && (
+                              <button
+                                className="ml-auto p-1 text-red-500 hover:bg-red-50 rounded"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  eliminarConsulta(c.id);
+                                }}
+                                title="Eliminar consulta"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -375,6 +469,114 @@ export default function CatalogoConsultas() {
           )}
         </div>
       </div>
+
+      {/* Modal Nueva Consulta */}
+      {showNuevaConsulta && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <CardHeader className="border-b">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Nueva Consulta Personalizada</CardTitle>
+                <button onClick={() => setShowNuevaConsulta(false)} className="p-1 hover:bg-zinc-100 rounded">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nombre *</Label>
+                  <Input 
+                    placeholder="Ej: Ventas por Zona"
+                    value={nuevaConsulta.nombre}
+                    onChange={(e) => setNuevaConsulta({...nuevaConsulta, nombre: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Sistema *</Label>
+                  <Select 
+                    value={nuevaConsulta.sistema} 
+                    onValueChange={(v) => setNuevaConsulta({...nuevaConsulta, sistema: v})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SoftRestaurant">SoftRestaurant</SelectItem>
+                      <SelectItem value="MPRO">MPRO</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Categoría *</Label>
+                  <Select 
+                    value={nuevaConsulta.categoria} 
+                    onValueChange={(v) => setNuevaConsulta({...nuevaConsulta, categoria: v})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Ventas">Ventas</SelectItem>
+                      <SelectItem value="Compras">Compras</SelectItem>
+                      <SelectItem value="Inventarios">Inventarios</SelectItem>
+                      <SelectItem value="Pagos">Pagos</SelectItem>
+                      <SelectItem value="Operaciones">Operaciones</SelectItem>
+                      <SelectItem value="Otros">Otros</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Parámetros (separados por coma)</Label>
+                  <Input 
+                    placeholder="fecha_ini, fecha_fin"
+                    value={nuevaConsulta.parametros}
+                    onChange={(e) => setNuevaConsulta({...nuevaConsulta, parametros: e.target.value})}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Descripción</Label>
+                <Input 
+                  placeholder="Breve descripción de la consulta"
+                  value={nuevaConsulta.descripcion}
+                  onChange={(e) => setNuevaConsulta({...nuevaConsulta, descripcion: e.target.value})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>SQL *</Label>
+                <Textarea 
+                  className="font-mono text-sm min-h-[200px]"
+                  placeholder={`SELECT columna1, columna2
+FROM tabla
+WHERE fecha >= '{fecha_ini}' 
+  AND fecha <= '{fecha_fin}'`}
+                  value={nuevaConsulta.sql}
+                  onChange={(e) => setNuevaConsulta({...nuevaConsulta, sql: e.target.value})}
+                />
+                <p className="text-xs text-zinc-500">
+                  Usa {'{'}parametro{'}'} para valores dinámicos. Ej: {'{'}fecha_ini{'}'}, {'{'}fecha_fin{'}'}, {'{'}almacen{'}'}
+                </p>
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setShowNuevaConsulta(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={guardarNuevaConsulta} disabled={guardando}>
+                  {guardando ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                  Guardar Consulta
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

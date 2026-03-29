@@ -6669,7 +6669,7 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
     Query para MPRO que devuelve KPIs DIVIDIDOS POR SUCURSAL (como en Inventarios).
     Retorna una lista de unidades, no un solo bloque.
     """
-    # Formato YYYYMMDD para MPRO
+    # Formato YYYYMMDD para MPRO (SQL Server con configuración regional español)
     fi = fecha_ini.replace('-', '')
     ff = fecha_fin.replace('-', '')
     fia = fecha_ini_ant.replace('-', '')
@@ -6677,7 +6677,10 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
     fiaa = fecha_ini_año_ant.replace('-', '')
     ffaa = fecha_fin_año_ant.replace('-', '')
     
+    logging.info(f"MPRO {server['name']}: Consultando ventas del {fi} al {ff}")
+    
     # Query principal agrupando por sucursal - INCLUYE PAX desde Comanda
+    # IMPORTANTE: Usar formato YYYYMMDD para evitar errores de conversión regional
     query = f"""
 SELECT 
     S.Sc_Cve_Sucursal as sucursal_id,
@@ -6686,10 +6689,9 @@ SELECT
     ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas,
     ISNULL(SUM(C.Co_Personas), 0) as pax
 FROM Venta_Encabezado VE
-INNER JOIN Sucursal S ON S.Sc_Cve = VE.Sc_Cve_Sucursal
+INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
-WHERE VE.Vn_Fecha >= '{fecha_ini}' AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
-  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
+WHERE VE.Vn_Fecha >= '{fi}' AND VE.Vn_Fecha <= '{ff}'
 GROUP BY S.Sc_Cve_Sucursal, S.Sc_Descripcion
 ORDER BY SUM(VE.Vn_Precio_Neto_Importe) DESC
 """
@@ -6717,7 +6719,7 @@ ORDER BY SUM(VE.Vn_Precio_Neto_Importe) DESC
         if pax == 0 and cheques > 0:
             pax = cheques
         
-        # Query mes anterior para esta sucursal - con PAX
+        # Query mes anterior para esta sucursal - con PAX (formato YYYYMMDD)
         query_ant = f"""
 SELECT 
     ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas, 
@@ -6726,8 +6728,7 @@ SELECT
 FROM Venta_Encabezado VE
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND VE.Vn_Fecha >= '{fecha_ini_ant}' AND VE.Vn_Fecha <= '{fecha_fin_ant} 23:59:59'
-  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
+  AND VE.Vn_Fecha >= '{fia}' AND VE.Vn_Fecha <= '{ffa}'
 """
         try:
             r_ant = execute_sql_query(server['host'], server['port'], server['database'], 
@@ -6740,7 +6741,7 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
         except:
             ventas_ant, cheques_ant, pax_ant = 0, 0, 0
         
-        # Query año anterior para esta sucursal - con PAX
+        # Query año anterior para esta sucursal - con PAX (formato YYYYMMDD)
         query_año = f"""
 SELECT 
     ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas, 
@@ -6749,8 +6750,7 @@ SELECT
 FROM Venta_Encabezado VE
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND VE.Vn_Fecha >= '{fecha_ini_año_ant}' AND VE.Vn_Fecha <= '{fecha_fin_año_ant} 23:59:59'
-  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
+  AND VE.Vn_Fecha >= '{fiaa}' AND VE.Vn_Fecha <= '{ffaa}'
 """
         try:
             r_año = execute_sql_query(server['host'], server['port'], server['database'], 
@@ -6888,14 +6888,19 @@ async def tablero_ejecutivo(
         
         elif server['system_type'] == 'MPRO':
             # MPRO: Dividir por sucursal (igual que en Inventarios)
-            unidades_mpro = get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
-                                                       fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
-            for unidad in unidades_mpro:
-                resultados.append(unidad)
-                # Acumular totales
-                for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
-                          "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
-                    totales[k] += unidad.get(k, 0)
+            logging.info(f"Procesando servidor MPRO: {server['name']}")
+            try:
+                unidades_mpro = get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
+                                                           fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
+                logging.info(f"MPRO {server['name']}: Encontradas {len(unidades_mpro)} unidades")
+                for unidad in unidades_mpro:
+                    resultados.append(unidad)
+                    # Acumular totales
+                    for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
+                              "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
+                        totales[k] += unidad.get(k, 0)
+            except Exception as mpro_error:
+                logging.error(f"Error procesando MPRO {server['name']}: {mpro_error}")
     
     # Calcular variaciones de totales
     totales["var_vs_mes_ant"] = round(((totales["ventas"] - totales["ventas_ant"]) / totales["ventas_ant"] * 100), 1) if totales["ventas_ant"] > 0 else 0
@@ -7294,8 +7299,10 @@ async def listar_consultas_rich(
 ):
     """
     Lista todas las consultas disponibles en el catálogo de Rich.
+    Incluye consultas predefinidas y personalizadas (MongoDB).
     Filtrable por sistema y categoría.
     """
+    # Consultas predefinidas del catálogo
     consultas = catalogo_get_consultas(sistema, categoria)
     
     # Formato amigable para el frontend
@@ -7307,12 +7314,39 @@ async def listar_consultas_rich(
             "descripcion": c["descripcion"],
             "sistema": c["sistema"],
             "categoria": c["categoria"],
-            "parametros": c["parametros"]
+            "parametros": c["parametros"],
+            "tipo": "predefinida"
         })
+    
+    # Agregar consultas personalizadas desde MongoDB
+    filtro = {"active": True}
+    if sistema:
+        filtro["sistema"] = sistema
+    if categoria:
+        filtro["categoria"] = categoria
+    
+    consultas_custom = await db.consultas_custom.find(filtro).to_list(500)
+    for c in consultas_custom:
+        resultado.append({
+            "id": c["id"],
+            "nombre": c["nombre"],
+            "descripcion": c["descripcion"],
+            "sistema": c["sistema"],
+            "categoria": c["categoria"],
+            "parametros": c["parametros"],
+            "tipo": "personalizada",
+            "created_by": c.get("created_by"),
+            "created_at": c.get("created_at")
+        })
+    
+    # Obtener categorías (incluyendo las de consultas personalizadas)
+    categorias_base = set(catalogo_get_categorias())
+    for c in consultas_custom:
+        categorias_base.add(c.get("categoria", ""))
     
     return {
         "consultas": resultado,
-        "categorias": catalogo_get_categorias(),
+        "categorias": sorted(list(categorias_base)),
         "total": len(resultado)
     }
 
@@ -7325,14 +7359,25 @@ async def ejecutar_consulta_catalogo(
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    Ejecuta una consulta del catálogo con los parámetros dados.
+    Ejecuta una consulta del catálogo (predefinida o personalizada) con los parámetros dados.
     Body debe contener: { "fecha_ini": "2026-03-01", "fecha_fin": "2026-03-27" }
     o { "parametros": { "fecha_ini": "...", ... } }
     """
-    if consulta_id not in CATALOGO_CONSULTAS:
-        raise HTTPException(status_code=404, detail=f"Consulta '{consulta_id}' no encontrada en el catálogo")
+    # Buscar primero en consultas predefinidas
+    consulta = None
+    es_custom = False
     
-    consulta = CATALOGO_CONSULTAS[consulta_id]
+    if consulta_id in CATALOGO_CONSULTAS:
+        consulta = CATALOGO_CONSULTAS[consulta_id]
+    else:
+        # Buscar en consultas personalizadas
+        consulta_custom = await db.consultas_custom.find_one({"id": consulta_id})
+        if consulta_custom:
+            consulta = consulta_custom
+            es_custom = True
+    
+    if not consulta:
+        raise HTTPException(status_code=404, detail=f"Consulta '{consulta_id}' no encontrada en el catálogo")
     
     # Extraer parámetros del body (soporta ambos formatos)
     if body and 'parametros' in body:
@@ -7349,11 +7394,16 @@ async def ejecutar_consulta_catalogo(
     sistema_server = server['system_type']
     sistema_consulta = consulta['sistema']
     
-    # Mapeo de tipos
-    if sistema_server == 'MPRO' and not consulta_id.startswith('MPRO_'):
-        raise HTTPException(status_code=400, detail=f"Esta consulta es para {sistema_consulta}, no para MPRO")
-    if sistema_server == 'SoftRestaurant' and not consulta_id.startswith('SR_'):
-        raise HTTPException(status_code=400, detail=f"Esta consulta es para {sistema_consulta}, no para SoftRestaurant")
+    # Mapeo de tipos para consultas predefinidas
+    if not es_custom:
+        if sistema_server == 'MPRO' and not consulta_id.startswith('MPRO_'):
+            raise HTTPException(status_code=400, detail=f"Esta consulta es para {sistema_consulta}, no para MPRO")
+        if sistema_server == 'SoftRestaurant' and not consulta_id.startswith('SR_'):
+            raise HTTPException(status_code=400, detail=f"Esta consulta es para {sistema_consulta}, no para SoftRestaurant")
+    else:
+        # Para consultas custom, verificar directamente
+        if sistema_server != sistema_consulta:
+            raise HTTPException(status_code=400, detail=f"Esta consulta es para {sistema_consulta}, no para {sistema_server}")
     
     # Verificar permisos
     if not user_has_server_access(current_user, server_id):
@@ -7368,7 +7418,12 @@ async def ejecutar_consulta_catalogo(
             raise HTTPException(status_code=400, detail=f"Falta parámetro requerido: {param}")
     
     # Preparar SQL
-    sql = catalogo_preparar_sql(consulta_id, params)
+    if es_custom:
+        sql = consulta['sql']
+        for param, valor in params.items():
+            sql = sql.replace('{' + param + '}', str(valor))
+    else:
+        sql = catalogo_preparar_sql(consulta_id, params)
     
     logging.info(f"Catálogo - Ejecutando {consulta_id} en {server['name']}")
     
@@ -7388,6 +7443,144 @@ async def ejecutar_consulta_catalogo(
         
     except Exception as e:
         logging.error(f"Error ejecutando consulta del catálogo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# CRUD CONSULTAS PERSONALIZADAS (MongoDB)
+# ============================================================================
+
+@api_router.get("/catalogo/consultas-custom")
+async def listar_consultas_custom(current_user: Dict = Depends(get_current_user)):
+    """Lista todas las consultas personalizadas guardadas en MongoDB"""
+    consultas = await db.consultas_custom.find().to_list(1000)
+    for c in consultas:
+        c['_id'] = str(c['_id'])
+    return consultas
+
+
+@api_router.post("/catalogo/consultas-custom")
+async def crear_consulta_custom(body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Crea una nueva consulta personalizada"""
+    # Solo admin puede crear consultas
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden crear consultas")
+    
+    # Validar campos requeridos
+    required = ['nombre', 'descripcion', 'sistema', 'categoria', 'parametros', 'sql']
+    for field in required:
+        if field not in body or not body[field]:
+            raise HTTPException(status_code=400, detail=f"Campo requerido: {field}")
+    
+    # Generar ID único
+    import uuid
+    consulta_id = f"CUSTOM_{body['sistema']}_{uuid.uuid4().hex[:8].upper()}"
+    
+    consulta = {
+        "id": consulta_id,
+        "nombre": body['nombre'],
+        "descripcion": body['descripcion'],
+        "sistema": body['sistema'],
+        "categoria": body['categoria'],
+        "parametros": body['parametros'] if isinstance(body['parametros'], list) else body['parametros'].split(','),
+        "sql": body['sql'],
+        "created_by": current_user.get('email'),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "active": True
+    }
+    
+    await db.consultas_custom.insert_one(consulta)
+    consulta.pop('_id', None)
+    
+    return {"message": "Consulta creada exitosamente", "consulta": consulta}
+
+
+@api_router.put("/catalogo/consultas-custom/{consulta_id}")
+async def actualizar_consulta_custom(consulta_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Actualiza una consulta personalizada"""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden editar consultas")
+    
+    consulta = await db.consultas_custom.find_one({"id": consulta_id})
+    if not consulta:
+        raise HTTPException(status_code=404, detail="Consulta no encontrada")
+    
+    update_data = {}
+    for field in ['nombre', 'descripcion', 'categoria', 'parametros', 'sql']:
+        if field in body:
+            if field == 'parametros' and isinstance(body[field], str):
+                update_data[field] = body[field].split(',')
+            else:
+                update_data[field] = body[field]
+    
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    update_data['updated_by'] = current_user.get('email')
+    
+    await db.consultas_custom.update_one({"id": consulta_id}, {"$set": update_data})
+    
+    return {"message": "Consulta actualizada"}
+
+
+@api_router.delete("/catalogo/consultas-custom/{consulta_id}")
+async def eliminar_consulta_custom(consulta_id: str, current_user: Dict = Depends(get_current_user)):
+    """Elimina una consulta personalizada"""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden eliminar consultas")
+    
+    result = await db.consultas_custom.delete_one({"id": consulta_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Consulta no encontrada")
+    
+    return {"message": "Consulta eliminada"}
+
+
+@api_router.post("/catalogo/ejecutar-custom/{consulta_id}")
+async def ejecutar_consulta_custom(
+    consulta_id: str,
+    server_id: str = Query(...),
+    body: Dict = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Ejecuta una consulta personalizada"""
+    # Buscar consulta en MongoDB
+    consulta = await db.consultas_custom.find_one({"id": consulta_id})
+    if not consulta:
+        raise HTTPException(status_code=404, detail="Consulta no encontrada")
+    
+    # Verificar servidor
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    # Verificar que el sistema coincida
+    if server['system_type'] != consulta['sistema']:
+        raise HTTPException(status_code=400, detail=f"Esta consulta es para {consulta['sistema']}, no para {server['system_type']}")
+    
+    # Preparar parámetros
+    parametros = body.get('parametros', body) if body else {}
+    
+    # Preparar SQL
+    sql = consulta['sql']
+    for param, valor in parametros.items():
+        sql = sql.replace('{' + param + '}', str(valor))
+    
+    logging.info(f"Ejecutando consulta custom {consulta_id} en {server['name']}")
+    
+    try:
+        result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], sql
+        )
+        
+        return {
+            "consulta": consulta['nombre'],
+            "servidor": server['name'],
+            "parametros": parametros,
+            "registros": len(result),
+            "datos": result
+        }
+    except Exception as e:
+        logging.error(f"Error ejecutando consulta custom: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
