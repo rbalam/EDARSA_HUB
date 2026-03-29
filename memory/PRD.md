@@ -1,5 +1,10 @@
 # Edarsa Hub - PRD
 
+## Última Actualización: Diciembre 2025
+
+### Bug Fix Reciente
+- **Corregido (Dic 2025):** Etiqueta "Tipo" en movimientos de inventario ahora muestra "Entrada"/"Salida" correctamente basándose en el signo de la cantidad
+
 ## CHECKPOINT ESTABLE - 27 Marzo 2026
 > **Aplicación renombrada a "Edarsa Hub"**
 > **Módulo de Compras con TABS: Dashboard, Autorización, Análisis**
