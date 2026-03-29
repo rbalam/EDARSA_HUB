@@ -232,6 +232,11 @@ const Reportes = () => {
           }));
           allInventarios = [...allInventarios, ...inventariosConAlmacen];
         }
+        // Ordenar todos los inventarios por folio descendente
+        allInventarios.sort((a, b) => {
+          // Comparar folios como strings para mantener orden alfanumérico correcto
+          return b.folio.localeCompare(a.folio);
+        });
         setInventarios(allInventarios);
       } catch (error) {
         console.error('Error cargando inventarios:', error);
