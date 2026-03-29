@@ -351,7 +351,8 @@ export default function TableroEjecutivo() {
   const cargarDatos = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      toast.error('Sesión no válida. Por favor inicia sesión.');
+      // Sin token, redirigir al login
+      window.location.href = '/login';
       return;
     }
     
@@ -365,9 +366,12 @@ export default function TableroEjecutivo() {
     } catch (error) {
       console.error('Error:', error);
       if (error.response?.status === 401) {
-        toast.error('Sesión expirada. Por favor inicia sesión de nuevo.');
+        // Token expirado, limpiar y redirigir al login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
       } else {
-        toast.error('Error al cargar tablero ejecutivo. Intenta actualizar.');
+        toast.error('Error al cargar datos. Intenta actualizar.');
       }
     } finally {
       setLoading(false);
@@ -375,7 +379,13 @@ export default function TableroEjecutivo() {
   };
 
   useEffect(() => {
-    // Pequeño delay para asegurar que el token esté disponible
+    // Verificar autenticación antes de cargar
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+    
     const timer = setTimeout(() => {
       cargarDatos();
     }, 100);
