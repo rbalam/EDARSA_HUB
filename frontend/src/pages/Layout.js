@@ -12,10 +12,10 @@ import {
   X,
   ShoppingCart,
   TrendingUp,
-  Settings,
-  PieChart,
   Database,
-  TableProperties
+  TableProperties,
+  PieChart,
+  Warehouse
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -28,17 +28,60 @@ const Layout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Módulos principales según arquitectura
+  // ============================================
+  // MÓDULOS OPERATIVOS (Estructura ERP)
+  // ============================================
+  // 1. Tablero de Control (Dashboard) - KPIs consolidados
+  // 2. Comercial (Ventas y CRM) - Ventas, PAX, análisis comercial
+  // 3. Compras (Procurement) - Requisiciones, autorizaciones, auditoría
+  // 4. Inventarios y Almacén - Existencias, movimientos, análisis
+  // ============================================
+  
   const modulos = [
-    { name: 'Inventarios', href: '/reportes', icon: Package, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 1 },
-    { name: 'Compras', href: '/compras', icon: ShoppingCart, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 4 },
-    { name: 'Comercial', href: '/comercial', icon: TrendingUp, roles: ['Usuario', 'Supervisor', 'Administrador'], modulo: 5 },
-    { name: 'Tablero Ejecutivo', href: '/tablero-ejecutivo', icon: PieChart, roles: ['Supervisor', 'Administrador'], modulo: 6 },
+    { 
+      name: 'Dashboard', 
+      href: '/dashboard', 
+      icon: LayoutDashboard, 
+      roles: ['Usuario', 'Supervisor', 'Administrador'],
+      descripcion: 'Vista general del sistema'
+    },
+    { 
+      name: 'Tablero Ejecutivo', 
+      href: '/tablero-ejecutivo', 
+      icon: PieChart, 
+      roles: ['Supervisor', 'Administrador'],
+      descripcion: 'KPIs consolidados multi-sucursal'
+    },
+    { 
+      name: 'Comercial', 
+      href: '/comercial', 
+      icon: TrendingUp, 
+      roles: ['Usuario', 'Supervisor', 'Administrador'],
+      descripcion: 'Ventas, PAX, cheques, tendencias'
+    },
+    { 
+      name: 'Compras', 
+      href: '/compras', 
+      icon: ShoppingCart, 
+      roles: ['Usuario', 'Supervisor', 'Administrador'],
+      descripcion: 'Requisiciones, auditoría operativa'
+    },
+    { 
+      name: 'Inventarios', 
+      href: '/reportes', 
+      icon: Warehouse, 
+      roles: ['Usuario', 'Supervisor', 'Administrador'],
+      descripcion: 'Existencias, movimientos, análisis'
+    },
   ];
 
-  // Configuración y sistema
+  // ============================================
+  // SISTEMA (Administración y Configuración)
+  // ============================================
+  // Gestión técnica: servidores, BD, usuarios, alertas
+  // ============================================
+  
   const sistema = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['Usuario', 'Supervisor', 'Administrador'] },
     { name: 'Servidores', href: '/servidores', icon: Server, roles: ['Administrador'] },
     { name: 'Catálogo SQL', href: '/catalogo-consultas', icon: Database, roles: ['Supervisor', 'Administrador'] },
     { name: 'Explorador BD', href: '/explorador-bd', icon: TableProperties, roles: ['Administrador'] },
