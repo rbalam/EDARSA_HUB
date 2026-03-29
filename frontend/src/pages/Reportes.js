@@ -1027,7 +1027,15 @@ const Reportes = () => {
                         <X className="h-3 w-3 mr-1" /> Limpiar selección ({selectedInventariosIni.length})
                       </button>
                     )}
-                    {inventarios.map((inv) => (
+                    {/* Filtrar por fecha: solo mostrar inventarios de la misma fecha que el primero seleccionado */}
+                    {inventarios
+                      .filter(inv => {
+                        if (selectedInventariosIni.length === 0) return true;
+                        const fechaBase = selectedInventariosIni[0].fecha?.split('T')[0] || selectedInventariosIni[0].fecha?.split(' ')[0];
+                        const fechaInv = inv.fecha?.split('T')[0] || inv.fecha?.split(' ')[0];
+                        return fechaBase === fechaInv;
+                      })
+                      .map((inv) => (
                       <label 
                         key={inv.folio} 
                         data-inv-inicial={`${inv.folio} ${inv.fecha || ''} ${inv.almacen || ''} ${inv.comentario || ''}`}
@@ -1109,7 +1117,15 @@ const Reportes = () => {
                         <X className="h-3 w-3 mr-1" /> Limpiar selección ({selectedInventariosFin.length})
                       </button>
                     )}
-                    {inventarios.map((inv) => (
+                    {/* Filtrar por fecha: solo mostrar inventarios de la misma fecha que el primero seleccionado */}
+                    {inventarios
+                      .filter(inv => {
+                        if (selectedInventariosFin.length === 0) return true;
+                        const fechaBase = selectedInventariosFin[0].fecha?.split('T')[0] || selectedInventariosFin[0].fecha?.split(' ')[0];
+                        const fechaInv = inv.fecha?.split('T')[0] || inv.fecha?.split(' ')[0];
+                        return fechaBase === fechaInv;
+                      })
+                      .map((inv) => (
                       <label 
                         key={inv.folio} 
                         data-inv-final={`${inv.folio} ${inv.fecha || ''} ${inv.almacen || ''} ${inv.comentario || ''}`}
