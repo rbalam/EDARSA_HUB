@@ -110,6 +110,9 @@ const Reportes = () => {
   const [selectedAlmacenes, setSelectedAlmacenes] = useState([]);
   const [selectedInventariosIni, setSelectedInventariosIni] = useState([]);
   const [selectedInventariosFin, setSelectedInventariosFin] = useState([]);
+  
+  // Estado para agrupar insumos de múltiples inventarios (MPRO)
+  const [agruparInsumos, setAgruparInsumos] = useState(false);
 
   // Guardar estado en sessionStorage cuando cambie
   useEffect(() => {
@@ -426,6 +429,8 @@ const Reportes = () => {
           // Info completa de inventarios para MPRO
           inventarios_iniciales_info: inventariosIniInfo,
           inventarios_finales_info: inventariosFinInfo,
+          // Opción de agrupación
+          agrupar_insumos: agruparInsumos,
           // Filtros adicionales
           categorias: selectedCategorias,
           familias: selectedFamilias,
@@ -1199,6 +1204,22 @@ const Reportes = () => {
                 </div>
               )}
             </div>
+
+            {/* Opción de agrupar insumos - solo visible con multi-inventario en MPRO */}
+            {selectedServer?.system_type === 'MPRO' && (selectedInventariosIni.length > 1 || selectedInventariosFin.length > 1) && (
+              <div className="col-span-2 flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <input
+                  type="checkbox"
+                  id="agrupar-insumos"
+                  checked={agruparInsumos}
+                  onChange={(e) => setAgruparInsumos(e.target.checked)}
+                  className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="agrupar-insumos" className="text-sm text-blue-800 cursor-pointer">
+                  <strong>Agrupar insumos</strong> - Suma cantidades de productos que aparecen en múltiples inventarios
+                </label>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>

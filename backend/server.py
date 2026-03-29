@@ -1876,7 +1876,11 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     filtro_familias_frontend = report_params.get('familias', [])
     filtro_subfamilias_frontend = report_params.get('subfamilias', [])
     
+    # Opción de agrupación de insumos (por defecto NO agrupar)
+    agrupar_insumos = report_params.get('agrupar_insumos', False)
+    
     logging.info(f"Filtros recibidos del frontend - Categorias: {filtro_categorias_frontend}, Familias: {filtro_familias_frontend}, SubFamilias: {filtro_subfamilias_frontend}")
+    logging.info(f"Agrupar insumos: {agrupar_insumos}")
     
     # Get server
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
@@ -2175,73 +2179,188 @@ WHERE P_INS.Dp_Cve_Departamento = '0007'
             
             # 6. Combinar resultados
             logging.info("Combinando resultados...")
+            logging.info(f"Modo de agrupación: {'AGRUPADO' if agrupar_insumos else 'SIN AGRUPAR'}")
             results = []
             errores_list = []
             
-            for prod in productos:
-                codigo = prod['Codigo']
-                ventas_total = ventas_dict.get(codigo, 0)
-                movimientos = movimientos_dict.get(codigo, 0)
-                inv_inicial = float(prod.get('Inv_Inicial_Cantidad', 0) or 0)
-                inv_final = float(prod.get('Inv_Final_Cantidad', 0) or 0)
-                costo = float(prod.get('Costo_Unitario', 0) or 0)
-                tipo_producto = prod.get('Tipo_Producto', 'COMPRA')
+            if agrupar_insumos:
+                # MODO AGRUPADO: Una fila por producto (comportamiento original)
+                for prod in productos:
+                    codigo = prod['Codigo']
+                    ventas_total = ventas_dict.get(codigo, 0)
+                    movimientos = movimientos_dict.get(codigo, 0)
+                    inv_inicial = float(prod.get('Inv_Inicial_Cantidad', 0) or 0)
+                    inv_final = float(prod.get('Inv_Final_Cantidad', 0) or 0)
+                    costo = float(prod.get('Costo_Unitario', 0) or 0)
+                    tipo_producto = prod.get('Tipo_Producto', 'COMPRA')
+                    
+                    # Solo incluir productos con alguna actividad
+                    if inv_inicial == 0 and inv_final == 0 and ventas_total == 0 and movimientos == 0:
+                        continue
+                    
+                    # Calcular inventario teórico: Inicial + Movimientos - Ventas
+                    inv_teorico = inv_inicial + movimientos - ventas_total
+                    
+                    # Calcular diferencias
+                    diferencia_cantidad = inv_final - inv_teorico
+                    diferencia_costo = diferencia_cantidad * costo
+                    diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
+                    valor_real = diferencia_cantidad * costo
+                    teorico_ventas = ventas_total * costo
+                    
+                    # Construir strings de folios y comentarios (agrupados)
+                    folios_ini_str = ', '.join([i.get('folio', '') for i in inventarios_iniciales_info]) if inventarios_iniciales_info else ', '.join(lista_folios_ini)
+                    folios_fin_str = ', '.join([i.get('folio', '') for i in inventarios_finales_info]) if inventarios_finales_info else ', '.join(lista_folios_fin)
+                    comentarios_ini_str = ', '.join([i.get('comentario', '') for i in inventarios_iniciales_info if i.get('comentario')]) if inventarios_iniciales_info else ''
+                    comentarios_fin_str = ', '.join([i.get('comentario', '') for i in inventarios_finales_info if i.get('comentario')]) if inventarios_finales_info else ''
+                    
+                    results.append({
+                        'ID_Inv_Ini': folios_ini_str,
+                        'Comentario_Ini': comentarios_ini_str,
+                        'ID_Inv_Fin': folios_fin_str,
+                        'Comentario_Fin': comentarios_fin_str,
+                        'Tipo': tipo_producto,
+                        'Categoria': prod.get('Categoria'),
+                        'Familia': prod.get('Familia'),
+                        'SubFamilia': prod.get('SubFamilia'),
+                        'Codigo': codigo,
+                        'Producto': prod.get('Producto'),
+                        'Unidad': prod.get('Unidad'),
+                        'Costo_Unitario': round(costo, 2),
+                        'Inv_Inicial_Cantidad': round(inv_inicial, 2),
+                        'Inv_Inicial_Costo': round(inv_inicial * costo, 2),
+                        'Movimientos': round(movimientos, 2),
+                        'Movimientos_Costo': round(movimientos * costo, 2),
+                        'Ventas': round(ventas_total, 2),
+                        'Ventas_Costo': round(ventas_total * costo, 2),
+                        'Inv_Teorico_Cantidad': round(inv_teorico, 2),
+                        'Inv_Teorico_Costo': round(inv_teorico * costo, 2),
+                        'Inv_Final_Cantidad': round(inv_final, 2),
+                        'Inv_Final_Costo': round(inv_final * costo, 2),
+                        'Diferencia_Cantidad': round(diferencia_cantidad, 2),
+                        'Diferencia_Costo': round(diferencia_costo, 2),
+                        'Diferencia_Porcentaje': round(diferencia_porcentaje, 2),
+                        'Valor_Real': round(valor_real, 2),
+                        'Teorico': round(teorico_ventas, 2)
+                    })
+            else:
+                # MODO SIN AGRUPAR: Una fila por cada combinación producto + inventario
+                # Obtener inventarios detallados por folio
+                inv_detalle_query = f"""
+SELECT 
+    F.Fi_Folio as Folio,
+    F.Pr_Cve_Producto as Codigo,
+    F.Fi_Cantidad_Control_1 as Cantidad,
+    ISNULL(FIS.Fi_Comentario, '') as Comentario
+FROM Fisico F
+INNER JOIN Fisico_Encabezado FIS ON FIS.Fi_Folio = F.Fi_Folio
+WHERE F.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql}) 
+    AND F.Al_Cve_Almacen = '{almacen_codigo}'
+ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
+"""
+                inv_detalle = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], inv_detalle_query
+                )
                 
-                # Solo incluir productos con alguna actividad
-                if inv_inicial == 0 and inv_final == 0 and ventas_total == 0 and movimientos == 0:
-                    continue
+                # Crear diccionarios de folios iniciales y finales
+                folios_ini_set = set(lista_folios_ini)
+                folios_fin_set = set(lista_folios_fin)
                 
-                # Calcular inventario teórico: Inicial + Movimientos - Ventas
-                inv_teorico = inv_inicial + movimientos - ventas_total
+                # Organizar inventarios por código y folio
+                inv_por_codigo = {}
+                for row in inv_detalle:
+                    codigo = row['Codigo']
+                    folio = row['Folio']
+                    cantidad = float(row['Cantidad'] or 0)
+                    comentario = row['Comentario'] or ''
+                    
+                    if codigo not in inv_por_codigo:
+                        inv_por_codigo[codigo] = {'ini': {}, 'fin': {}}
+                    
+                    if folio in folios_ini_set:
+                        inv_por_codigo[codigo]['ini'][folio] = {'cantidad': cantidad, 'comentario': comentario}
+                    elif folio in folios_fin_set:
+                        inv_por_codigo[codigo]['fin'][folio] = {'cantidad': cantidad, 'comentario': comentario}
                 
-                # Calcular diferencias: Final - Teórico
-                # Si Final > Teórico → positivo (sobrante)
-                # Si Final < Teórico → negativo (faltante)
-                diferencia_cantidad = inv_final - inv_teorico
-                diferencia_costo = diferencia_cantidad * costo
-                diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
-                
-                # Valor Real = Diferencia × Costo (igual a diferencia_costo)
-                # Positivo = sobrante, Negativo = faltante
-                valor_real = diferencia_cantidad * costo
-                # Teórico = Ventas × Costo
-                teorico_ventas = ventas_total * costo
-                
-                # Construir strings de folios y comentarios para MPRO
-                folios_ini_str = ', '.join([i.get('folio', '') for i in inventarios_iniciales_info]) if inventarios_iniciales_info else ', '.join(lista_folios_ini)
-                folios_fin_str = ', '.join([i.get('folio', '') for i in inventarios_finales_info]) if inventarios_finales_info else ', '.join(lista_folios_fin)
-                comentarios_ini_str = ', '.join([i.get('comentario', '') for i in inventarios_iniciales_info if i.get('comentario')]) if inventarios_iniciales_info else ''
-                comentarios_fin_str = ', '.join([i.get('comentario', '') for i in inventarios_finales_info if i.get('comentario')]) if inventarios_finales_info else ''
-                
-                results.append({
-                    'ID_Inv_Ini': folios_ini_str,
-                    'Comentario_Ini': comentarios_ini_str,
-                    'ID_Inv_Fin': folios_fin_str,
-                    'Comentario_Fin': comentarios_fin_str,
-                    'Tipo': tipo_producto,
-                    'Categoria': prod.get('Categoria'),
-                    'Familia': prod.get('Familia'),
-                    'SubFamilia': prod.get('SubFamilia'),
-                    'Codigo': codigo,
-                    'Producto': prod.get('Producto'),
-                    'Unidad': prod.get('Unidad'),
-                    'Costo_Unitario': round(costo, 2),
-                    'Inv_Inicial_Cantidad': round(inv_inicial, 2),
-                    'Inv_Inicial_Costo': round(inv_inicial * costo, 2),
-                    'Movimientos': round(movimientos, 2),
-                    'Movimientos_Costo': round(movimientos * costo, 2),
-                    'Ventas': round(ventas_total, 2),
-                    'Ventas_Costo': round(ventas_total * costo, 2),
-                    'Inv_Teorico_Cantidad': round(inv_teorico, 2),
-                    'Inv_Teorico_Costo': round(inv_teorico * costo, 2),
-                    'Inv_Final_Cantidad': round(inv_final, 2),
-                    'Inv_Final_Costo': round(inv_final * costo, 2),
-                    'Diferencia_Cantidad': round(diferencia_cantidad, 2),
-                    'Diferencia_Costo': round(diferencia_costo, 2),
-                    'Diferencia_Porcentaje': round(diferencia_porcentaje, 2),
-                    'Valor_Real': round(valor_real, 2),
-                    'Teorico': round(teorico_ventas, 2)
-                })
+                # Procesar productos con inventarios detallados
+                for prod in productos:
+                    codigo = prod['Codigo']
+                    ventas_total = ventas_dict.get(codigo, 0)
+                    movimientos = movimientos_dict.get(codigo, 0)
+                    costo = float(prod.get('Costo_Unitario', 0) or 0)
+                    tipo_producto = prod.get('Tipo_Producto', 'COMPRA')
+                    
+                    inv_data = inv_por_codigo.get(codigo, {'ini': {}, 'fin': {}})
+                    
+                    # Si no hay inventarios, omitir
+                    if not inv_data['ini'] and not inv_data['fin'] and ventas_total == 0 and movimientos == 0:
+                        continue
+                    
+                    # Crear filas por cada combinación de folios
+                    # Emparejar por orden de selección
+                    folios_ini_list = list(inv_data['ini'].keys()) if inv_data['ini'] else ['']
+                    folios_fin_list = list(inv_data['fin'].keys()) if inv_data['fin'] else ['']
+                    
+                    # Generar tantas filas como sea necesario (máximo entre ini y fin)
+                    max_filas = max(len(folios_ini_list), len(folios_fin_list), 1)
+                    
+                    for idx in range(max_filas):
+                        folio_ini = folios_ini_list[idx] if idx < len(folios_ini_list) else ''
+                        folio_fin = folios_fin_list[idx] if idx < len(folios_fin_list) else ''
+                        
+                        inv_inicial = inv_data['ini'].get(folio_ini, {}).get('cantidad', 0) if folio_ini else 0
+                        inv_final = inv_data['fin'].get(folio_fin, {}).get('cantidad', 0) if folio_fin else 0
+                        comentario_ini = inv_data['ini'].get(folio_ini, {}).get('comentario', '') if folio_ini else ''
+                        comentario_fin = inv_data['fin'].get(folio_fin, {}).get('comentario', '') if folio_fin else ''
+                        
+                        # Distribuir movimientos y ventas proporcionalmente entre las filas
+                        mov_fila = movimientos / max_filas if max_filas > 0 else 0
+                        ven_fila = ventas_total / max_filas if max_filas > 0 else 0
+                        
+                        # Solo incluir si hay actividad
+                        if inv_inicial == 0 and inv_final == 0 and mov_fila == 0 and ven_fila == 0:
+                            continue
+                        
+                        # Calcular inventario teórico: Inicial + Movimientos - Ventas
+                        inv_teorico = inv_inicial + mov_fila - ven_fila
+                        
+                        # Calcular diferencias
+                        diferencia_cantidad = inv_final - inv_teorico
+                        diferencia_costo = diferencia_cantidad * costo
+                        diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
+                        valor_real = diferencia_cantidad * costo
+                        teorico_ventas = ven_fila * costo
+                        
+                        results.append({
+                            'ID_Inv_Ini': folio_ini,
+                            'Comentario_Ini': comentario_ini,
+                            'ID_Inv_Fin': folio_fin,
+                            'Comentario_Fin': comentario_fin,
+                            'Tipo': tipo_producto,
+                            'Categoria': prod.get('Categoria'),
+                            'Familia': prod.get('Familia'),
+                            'SubFamilia': prod.get('SubFamilia'),
+                            'Codigo': codigo,
+                            'Producto': prod.get('Producto'),
+                            'Unidad': prod.get('Unidad'),
+                            'Costo_Unitario': round(costo, 2),
+                            'Inv_Inicial_Cantidad': round(inv_inicial, 2),
+                            'Inv_Inicial_Costo': round(inv_inicial * costo, 2),
+                            'Movimientos': round(mov_fila, 2),
+                            'Movimientos_Costo': round(mov_fila * costo, 2),
+                            'Ventas': round(ven_fila, 2),
+                            'Ventas_Costo': round(ven_fila * costo, 2),
+                            'Inv_Teorico_Cantidad': round(inv_teorico, 2),
+                            'Inv_Teorico_Costo': round(inv_teorico * costo, 2),
+                            'Inv_Final_Cantidad': round(inv_final, 2),
+                            'Inv_Final_Costo': round(inv_final * costo, 2),
+                            'Diferencia_Cantidad': round(diferencia_cantidad, 2),
+                            'Diferencia_Costo': round(diferencia_costo, 2),
+                            'Diferencia_Porcentaje': round(diferencia_porcentaje, 2),
+                            'Valor_Real': round(valor_real, 2),
+                            'Teorico': round(teorico_ventas, 2)
+                        })
             
             # Agregar errores de captura al resultado si existen
             for err in errores_result:
