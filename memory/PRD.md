@@ -11,6 +11,9 @@
 - **Nuevo:** Reporte de PAX con drill-up/down por vendedor o ticket
 - **Mejorado:** Exportación Excel de Análisis de Inventario ahora ordena por Diferencia_Costo (negativo a positivo)
 - **Mejorado:** Detalle del Tablero Ejecutivo ahora pasa parámetro `sucursal` para mostrar gráficas por hora/día correctamente
+- **Reorganizado (29 Mar 2026):** KPIs del Dashboard Comercial - Nueva estructura:
+  - **Fila 1:** Ventas del Período, Pax Promedio (Ventas ÷ PAX), Cheque Promedio (Ventas ÷ Cheques)
+  - **Fila 2:** PAX Total, Cheques Total, Rotación Mesas
 
 ## CHECKPOINT ESTABLE - 29 Marzo 2026
 > **Aplicación renombrada a "Edarsa Hub"**

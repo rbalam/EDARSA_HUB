@@ -308,7 +308,9 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
       {/* KPIs principales - CON DOBLE CLICK DRILL-DOWN */}
       {kpis && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* FILA 1: Ventas + Promedios (Pax Promedio y Cheque Promedio) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Ventas del Período */}
             <Card 
               className="border bg-gradient-to-br from-green-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
               onDoubleClick={() => handleDoubleClick('ventas')}
@@ -335,10 +337,62 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
               </CardContent>
             </Card>
 
+            {/* Pax Promedio (Ventas ÷ PAX = Consumo por Persona) */}
             <Card 
               className="border bg-gradient-to-br from-purple-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
               onDoubleClick={() => handleDoubleClick('pax')}
-              data-testid="kpi-pax"
+              data-testid="kpi-pax-promedio"
+            >
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-zinc-500">Pax Promedio</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {formatCurrency(kpis.pax_total > 0 ? (kpis.ventas_periodo / kpis.pax_total) : 0)}
+                    </p>
+                    <p className="text-xs text-zinc-400 mt-1">Ventas ÷ PAX</p>
+                  </div>
+                  <Users className="h-8 w-8 text-purple-200" />
+                </div>
+                {comparativo?.pax_vs_mes_anterior !== undefined && (
+                  <div className="flex items-center gap-1 mt-2">
+                    {comparativo.pax_vs_mes_anterior >= 0 ? 
+                      <ArrowUpRight className="h-3 w-3 text-green-600" /> : 
+                      <ArrowDownRight className="h-3 w-3 text-red-600" />}
+                    <span className={`text-xs ${comparativo.pax_vs_mes_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatPercent(comparativo.pax_vs_mes_anterior)} vs mes ant.
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Cheque Promedio (Ventas ÷ Cheques) */}
+            <Card 
+              className="border bg-gradient-to-br from-blue-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
+              onDoubleClick={() => handleDoubleClick('ticket')}
+              data-testid="kpi-cheque-promedio"
+            >
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-zinc-500">Cheque Promedio</p>
+                    <p className="text-2xl font-bold text-blue-600">{formatCurrency(kpis.ticket_promedio)}</p>
+                    <p className="text-xs text-zinc-400 mt-1">Ventas ÷ Cheques</p>
+                  </div>
+                  <Receipt className="h-8 w-8 text-blue-200" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* FILA 2: Totales (PAX Total, Cheques Total, Rotación) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* PAX Total */}
+            <Card 
+              className="border bg-gradient-to-br from-purple-50/50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
+              onDoubleClick={() => handleDoubleClick('pax')}
+              data-testid="kpi-pax-total"
             >
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
@@ -348,41 +402,27 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   </div>
                   <Users className="h-8 w-8 text-purple-200" />
                 </div>
-                <div className="mt-2">
-                  <p className="text-xs text-zinc-500">
-                    Pax Promedio: <span className="font-semibold text-purple-600">{formatCurrency(kpis.consumo_persona || (kpis.ventas_periodo / kpis.pax_total))}</span>
-                  </p>
-                  {comparativo?.pax_vs_mes_anterior !== undefined && (
-                    <div className="flex items-center gap-1 mt-1">
-                      {comparativo.pax_vs_mes_anterior >= 0 ? 
-                        <ArrowUpRight className="h-3 w-3 text-green-600" /> : 
-                        <ArrowDownRight className="h-3 w-3 text-red-600" />}
-                      <span className={`text-xs ${comparativo.pax_vs_mes_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatPercent(comparativo.pax_vs_mes_anterior)} vs mes ant.
-                      </span>
-                    </div>
-                  )}
-                </div>
               </CardContent>
             </Card>
 
+            {/* Cheques Total */}
             <Card 
-              className="border bg-gradient-to-br from-blue-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
+              className="border bg-gradient-to-br from-blue-50/50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
               onDoubleClick={() => handleDoubleClick('ticket')}
-              data-testid="kpi-cheque"
+              data-testid="kpi-cheques-total"
             >
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-zinc-500">Cheque Promedio</p>
-                    <p className="text-2xl font-bold text-blue-600">{formatCurrency(kpis.ticket_promedio)}</p>
+                    <p className="text-xs text-zinc-500">Cheques Total</p>
+                    <p className="text-2xl font-bold text-blue-600">{formatNumber(kpis.cheques_total)}</p>
                   </div>
                   <Receipt className="h-8 w-8 text-blue-200" />
                 </div>
-                <p className="text-xs text-zinc-500 mt-2">{kpis.cheques_total} cheques</p>
               </CardContent>
             </Card>
 
+            {/* Rotación Mesas */}
             <Card 
               className="border bg-gradient-to-br from-orange-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
               onDoubleClick={() => handleDoubleClick('rotacion')}
@@ -393,10 +433,10 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   <div>
                     <p className="text-xs text-zinc-500">Rotación Mesas</p>
                     <p className="text-2xl font-bold text-orange-600">{formatNumber(kpis.rotacion_mesas)}x</p>
+                    <p className="text-xs text-zinc-400 mt-1">{kpis.mesas_atendidas} mesas atendidas</p>
                   </div>
                   <Utensils className="h-8 w-8 text-orange-200" />
                 </div>
-                <p className="text-xs text-zinc-500 mt-2">{kpis.mesas_atendidas} mesas atendidas</p>
               </CardContent>
             </Card>
           </div>
