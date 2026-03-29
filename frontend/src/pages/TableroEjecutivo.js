@@ -107,11 +107,15 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
         const token = localStorage.getItem('token');
         const headers = { Authorization: `Bearer ${token}` };
         
+        // Parámetros con sucursal (si existe)
+        const params = unidad.sucursal ? `?sucursal=${encodeURIComponent(unidad.sucursal)}` : '';
+        const periodParams = unidad.sucursal ? `?periodo=mes&sucursal=${encodeURIComponent(unidad.sucursal)}` : '?periodo=mes';
+        
         // Cargar datos adicionales de la unidad
         const [dashboard, ventasTiempo, mesas] = await Promise.all([
-          axios.get(`${API_URL}/api/comercial/dashboard/${unidad.server_id}?periodo=mes`, { headers }),
-          axios.get(`${API_URL}/api/comercial/ventas-tiempo/${unidad.server_id}`, { headers }),
-          axios.get(`${API_URL}/api/comercial/mesas/${unidad.server_id}`, { headers })
+          axios.get(`${API_URL}/api/comercial/dashboard/${unidad.server_id}${periodParams}`, { headers }),
+          axios.get(`${API_URL}/api/comercial/ventas-tiempo/${unidad.server_id}${params}`, { headers }),
+          axios.get(`${API_URL}/api/comercial/mesas/${unidad.server_id}${params}`, { headers })
         ]);
         
         setDetalleData({
@@ -209,16 +213,19 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
                     <p className="text-xs text-zinc-500">Mes Actual</p>
                     <p className="font-bold text-lg">{formatCurrency(unidad.ventas)}</p>
                     <p className="text-xs">{unidad.cheques} cheques</p>
+                    <p className="text-xs text-purple-600">{unidad.pax || 0} pax</p>
                   </div>
                   <div>
                     <p className="text-xs text-zinc-500">Mes Anterior</p>
                     <p className="font-bold text-lg">{formatCurrency(unidad.ventas_ant)}</p>
                     <p className="text-xs">{unidad.cheques_ant} cheques</p>
+                    <p className="text-xs text-purple-600">{unidad.pax_ant || 0} pax</p>
                   </div>
                   <div>
                     <p className="text-xs text-zinc-500">Año Anterior</p>
                     <p className="font-bold text-lg">{formatCurrency(unidad.ventas_año)}</p>
                     <p className="text-xs">{unidad.cheques_año} cheques</p>
+                    <p className="text-xs text-purple-600">{unidad.pax_año || 0} pax</p>
                   </div>
                 </div>
               </CardContent>

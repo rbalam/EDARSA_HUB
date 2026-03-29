@@ -2672,15 +2672,22 @@ ORDER BY Fecha DESC
             # Formatear resultados
             movements = []
             for row in result:
-                # Determinar tipo basado en el signo de la cantidad (más confiable)
-                cantidad = float(row.get('Cantidad') or 0)
-                tipo_texto = 'Entrada' if cantidad >= 0 else 'Salida'
+                # Usar Tipo_Movimiento de la BD (E=Entrada, S=Salida)
+                tipo_bd = row.get('Tipo_Movimiento', '')
+                if tipo_bd == 'E':
+                    tipo_texto = 'Entrada'
+                elif tipo_bd == 'S':
+                    tipo_texto = 'Salida'
+                else:
+                    # Fallback por signo
+                    cantidad = float(row.get('Cantidad') or 0)
+                    tipo_texto = 'Entrada' if cantidad >= 0 else 'Salida'
                 # Formatear fecha sin la "T" (2026-03-21T00:00:00 -> 2026-03-21 00:00:00)
                 fecha_str = str(row.get('Fecha'))[:19].replace('T', ' ') if row.get('Fecha') else ''
                 movements.append({
                     'folio': row.get('Folio'),
                     'fecha': fecha_str,
-                    'cantidad': cantidad,
+                    'cantidad': float(row.get('Cantidad') or 0),
                     'tipo_codigo': row.get('Tipo_Codigo'),
                     'tipo_descripcion': row.get('Tipo_Descripcion'),
                     'tipo_movimiento': tipo_texto,
@@ -2767,13 +2774,16 @@ ORDER BY M.fecha DESC
             
             movements = []
             for row in result:
-                # Determinar tipo basado en el signo de la cantidad (más confiable que C.tipo)
-                cantidad = float(row.get('Cantidad') or 0)
-                tipo_movimiento = 'Entrada' if cantidad >= 0 else 'Salida'
+                # Usar el campo Tipo_Movimiento de la BD (viene del query SQL)
+                tipo_movimiento = row.get('Tipo_Movimiento', '')
+                if not tipo_movimiento:
+                    # Fallback: Si no viene de BD, inferir por el signo
+                    cantidad = float(row.get('Cantidad') or 0)
+                    tipo_movimiento = 'Entrada' if cantidad >= 0 else 'Salida'
                 movements.append({
                     'folio': row.get('Folio') or '',
                     'fecha': str(row.get('Fecha'))[:19] if row.get('Fecha') else '',
-                    'cantidad': cantidad,
+                    'cantidad': float(row.get('Cantidad') or 0),
                     'tipo_codigo': row.get('Tipo_Codigo'),
                     'tipo_descripcion': row.get('Tipo_Descripcion'),
                     'tipo_movimiento': tipo_movimiento,
@@ -6588,6 +6598,7 @@ WHERE V.Sc_Cve_Sucursal = '{sucursal_id}'
         
         unidades.append({
             "unidad": sucursal_nombre,
+            "sucursal": sucursal_nombre,  # Para filtrar en endpoints de detalle
             "server_id": server['id'],
             "sucursal_id": sucursal_id,
             "system_type": "MPRO",

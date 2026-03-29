@@ -3,11 +3,14 @@
 ## Última Actualización: Marzo 2026
 
 ### Bug Fixes y Mejoras Recientes (29 Mar 2026)
-- **Corregido:** Etiqueta "Tipo" en movimientos de inventario ahora muestra "Entrada"/"Salida" basándose en el signo de la cantidad
+- **Corregido:** Etiqueta "Tipo" en movimientos usa el campo `C.tipo` de la BD (no el signo de cantidad)
 - **Renombrado:** "Ticket Promedio" → "Cheque Promedio" y "Consumo por Persona" → "Pax Promedio"
+- **Renombrado:** "Cienfuegos SoftRestaurant" → "CIENFUEGOS" (en MongoDB)
 - **Nuevo:** Comparativa de PAX vs mes/año anterior en Dashboard Comercial
+- **Nuevo:** PAX agregado al Comparativo del Tablero Ejecutivo (Mes Actual/Anterior/Año Anterior)
 - **Nuevo:** Reporte de PAX con drill-up/down por vendedor o ticket
 - **Mejorado:** Exportación Excel de Análisis de Inventario ahora ordena por Diferencia_Costo (negativo a positivo)
+- **Mejorado:** Detalle del Tablero Ejecutivo ahora pasa parámetro `sucursal` para mostrar gráficas por hora/día correctamente
 
 ## CHECKPOINT ESTABLE - 29 Marzo 2026
 > **Aplicación renombrada a "Edarsa Hub"**
