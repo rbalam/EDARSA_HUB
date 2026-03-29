@@ -5693,7 +5693,7 @@ ORDER BY DATEPART(WEEKDAY, turnos.apertura)
                 "por_dia": ventas_por_dia
             }
         
-        elif server['system_type'] == 'ManagmentPro':
+        elif server['system_type'] == 'ManagmentPro' or server['system_type'] == 'MPRO':
             # Filtro de sucursal para MPRO
             sucursal_filter = ""
             if sucursal:
@@ -5935,6 +5935,10 @@ async def comercial_detalle_movimientos(
         offset = (page - 1) * limit
         
         if server['system_type'] == 'SoftRestaurant':
+            # Formato de fecha para SoftRestaurant (YYYYMMDD)
+            f_ini = fecha_ini.replace('-', '')
+            f_fin = fecha_fin.replace('-', '')
+            
             # Query para obtener detalle de cheques - Sin columnas opcionales que pueden no existir
             query_detalle = f"""
 SELECT 
@@ -5947,8 +5951,8 @@ SELECT
     'Comedor' as tipo_servicio
 FROM cheques
 INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.apertura >= '{fecha_ini} 00:00:00'
-  AND turnos.apertura <= '{fecha_fin} 23:59:59'
+WHERE turnos.apertura >= '{f_ini} 00:00:00'
+  AND turnos.apertura <= '{f_fin} 23:59:59'
   AND cheques.cancelado = 0
   AND cheques.total > 0
 ORDER BY turnos.apertura DESC
@@ -5964,8 +5968,8 @@ OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
 SELECT COUNT(*) as total
 FROM cheques
 INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.apertura >= '{fecha_ini} 00:00:00'
-  AND turnos.apertura <= '{fecha_fin} 23:59:59'
+WHERE turnos.apertura >= '{f_ini} 00:00:00'
+  AND turnos.apertura <= '{f_fin} 23:59:59'
   AND cheques.cancelado = 0
   AND cheques.total > 0
 """
@@ -6000,47 +6004,81 @@ WHERE turnos.apertura >= '{fecha_ini} 00:00:00'
                 "servidor": server['name']
             }
         
-        elif server['system_type'] == 'ManagmentPro':
-            # Query para MPRO - usa Vn_Precio_Neto_Importe y Vn_Folio
+        elif server['system_type'] == 'ManagmentPro' or server['system_type'] == 'MPRO' or server['system_type'] == 'MPRO':
+            # Formato de fecha para MPRO (YYYYMMDD)
+            f_ini = fecha_ini.replace('-', '')
+            f_fin = fecha_fin.replace('-', '')
+            
+            # Filtro de sucursal si viene
+            sucursal_filter = ""
+            if sucursal:
+                sucursal_filter = f"AND S.Sc_Descripcion LIKE '%{sucursal}%'"
+            
+            logging.info(f"Detalle MPRO: f_ini={f_ini}, f_fin={f_fin}, sucursal_filter={sucursal_filter}")
+            
+            # Query para MPRO - usa Venta_Encabezado con Comanda para PAX
             query_detalle = f"""
-SELECT TOP {limit}
-    v.Vn_Folio as folio,
-    v.Vn_Fecha as fecha,
-    SUM(v.Vn_Precio_Neto_Importe) as importe,
-    SUM(v.Vn_Cantidad_1) as cantidad,
-    COUNT(*) as num_productos
-FROM Venta v
-WHERE v.Vn_Fecha >= '{fecha_ini}'
-  AND v.Vn_Fecha <= '{fecha_fin}'
-GROUP BY v.Vn_Folio, v.Vn_Fecha
-ORDER BY v.Vn_Fecha DESC
+SELECT 
+    VE.Vn_Folio as folio,
+    VE.Vn_Fecha as fecha,
+    VE.Vn_Precio_Neto_Importe as importe,
+    ISNULL(C.Co_Personas, 0) as pax,
+    'Comedor' as tipo_servicio
+FROM Venta_Encabezado VE
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+WHERE VE.Vn_Fecha >= '{f_ini}'
+  AND VE.Vn_Fecha <= '{f_fin} 23:59:59'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+  AND VE.Vn_Precio_Neto_Importe > 0
+  {sucursal_filter}
+ORDER BY VE.Vn_Fecha DESC
+OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
 """
+            logging.info(f"Query MPRO detalle: {query_detalle[:200]}...")
             result = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], query_detalle
             )
             
+            # Query para contar total
+            query_total = f"""
+SELECT COUNT(*) as total
+FROM Venta_Encabezado VE
+LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+WHERE VE.Vn_Fecha >= '{f_ini}'
+  AND VE.Vn_Fecha <= '{f_fin} 23:59:59'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+  AND VE.Vn_Precio_Neto_Importe > 0
+  {sucursal_filter}
+"""
+            result_total = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_total
+            )
+            total = int(result_total[0]['total']) if result_total else 0
+            
             movimientos = []
             for row in result or []:
                 fecha_val = row.get('fecha')
-                fecha_str = fecha_val.strftime('%Y-%m-%d') if hasattr(fecha_val, 'strftime') else str(fecha_val)
+                fecha_str = fecha_val.strftime('%Y-%m-%dT%H:%M:%S') if hasattr(fecha_val, 'strftime') else str(fecha_val) if fecha_val else ''
                 movimientos.append({
                     "folio": str(row.get('folio', '')),
                     "fecha": fecha_str,
                     "importe": float(row.get('importe') or 0),
-                    "pax": 0,
+                    "pax": int(row.get('pax') or 0),
                     "descuento": 0,
                     "propina": 0,
-                    "tipo_servicio": "Factura",
-                    "num_productos": int(row.get('num_productos') or 0)
+                    "tipo_servicio": row.get('tipo_servicio', 'Comedor'),
+                    "num_productos": 0
                 })
             
             return {
                 "movimientos": movimientos,
-                "total": len(movimientos),
+                "total": total,
                 "page": page,
                 "limit": limit,
-                "pages": 1,
+                "pages": (total + limit - 1) // limit if total > 0 else 0,
                 "periodo": {"inicio": fecha_ini, "fin": fecha_fin},
                 "servidor": server['name']
             }
@@ -6239,7 +6277,7 @@ WHERE t.apertura >= '{f_q} 00:00:00' AND t.apertura <= '{f_q} 23:59:59'
             comparativo["vs_mes_anterior"] = ((pax_prom_actual - pax_prom_mes) / pax_prom_mes * 100) if pax_prom_mes > 0 else 0
             comparativo["vs_ano_anterior"] = ((pax_prom_actual - pax_prom_ano) / pax_prom_ano * 100) if pax_prom_ano > 0 else 0
         
-        elif server['system_type'] == 'ManagmentPro':
+        elif server['system_type'] == 'ManagmentPro' or server['system_type'] == 'MPRO':
             # Implementación para MPRO
             if agrupacion == 'vendedor':
                 query = f"""
