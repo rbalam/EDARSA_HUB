@@ -105,6 +105,11 @@ const Reportes = () => {
   const [searchCategorias, setSearchCategorias] = useState('');
   const [searchFamilias, setSearchFamilias] = useState('');
   const [searchSubfamilias, setSearchSubfamilias] = useState('');
+  
+  // Estados para selección múltiple de almacenes e inventarios
+  const [selectedAlmacenes, setSelectedAlmacenes] = useState([]);
+  const [selectedInventariosIni, setSelectedInventariosIni] = useState([]);
+  const [selectedInventariosFin, setSelectedInventariosFin] = useState([]);
 
   // Guardar estado en sessionStorage cuando cambie
   useEffect(() => {
@@ -193,14 +198,43 @@ const Reportes = () => {
   }, [filters.server_id, filters.sucursal_id, selectedServer]);
 
   useEffect(() => {
-    // Cargar inventarios cuando hay almacén seleccionado
-    // Para SoftRestaurant no requiere sucursal_id
-    if (filters.server_id && filters.almacen_id) {
+    // Cargar inventarios cuando hay almacén(es) seleccionado(s)
+    const loadAllInventarios = async () => {
+      if (selectedAlmacenes.length === 0) {
+        setInventarios([]);
+        return;
+      }
+      
+      try {
+        let allInventarios = [];
+        for (const almacen of selectedAlmacenes) {
+          const response = await api.get(`/compras/inventarios-fisicos/${filters.server_id}`, {
+            params: { 
+              almacen_id: almacen.id,
+              sucursal_id: filters.sucursal_id || ''
+            }
+          });
+          // Agregar el nombre del almacén a cada inventario
+          const inventariosConAlmacen = (response.data.inventarios || []).map(inv => ({
+            ...inv,
+            almacen: almacen.nombre,
+            almacen_id: almacen.id
+          }));
+          allInventarios = [...allInventarios, ...inventariosConAlmacen];
+        }
+        setInventarios(allInventarios);
+      } catch (error) {
+        console.error('Error cargando inventarios:', error);
+        setInventarios([]);
+      }
+    };
+    
+    if (filters.server_id && selectedAlmacenes.length > 0) {
       if (selectedServer?.system_type === 'SoftRestaurant' || filters.sucursal_id) {
-        loadInventarios();
+        loadAllInventarios();
       }
     }
-  }, [filters.server_id, filters.sucursal_id, filters.almacen_id, selectedServer]);
+  }, [filters.server_id, filters.sucursal_id, selectedAlmacenes, selectedServer]);
 
   // AUTO-CALCULAR fechas cuando ambos inventarios estén seleccionados
   useEffect(() => {
@@ -831,65 +865,192 @@ const Reportes = () => {
             )}
 
             <div className="space-y-2">
-              <Label>Almacén</Label>
-              <select 
-                className={selectStyle}
-                data-testid="almacen-select"
-                value={filters.almacen_id}
-                onChange={(e) => handleAlmacenChange(e.target.value)}
-                disabled={selectedServer?.system_type === 'SoftRestaurant' 
-                  ? (!filters.server_id || almacenes.length === 0)
-                  : (!filters.sucursal_id || almacenes.length === 0)
-                }
-              >
-                <option value="">
-                  {selectedServer?.system_type === 'SoftRestaurant'
-                    ? (!filters.server_id ? "Selecciona servidor primero" : (almacenes.length === 0 ? "Cargando almacenes..." : "Selecciona un almacén"))
-                    : (!filters.sucursal_id ? "Selecciona sucursal primero" : "Selecciona un almacén")
-                  }
-                </option>
-                {almacenes.map((almacen) => (
-                  <option key={almacen.id} value={almacen.id}>
-                    {almacen.nombre} {almacen.tipo === 1 ? '(Consumo)' : almacen.tipo === 2 ? '(Presentaciones)' : ''}
-                  </option>
-                ))}
-              </select>
+              <Label>Almacén(es)</Label>
+              <details className="relative">
+                <summary 
+                  className={`${selectStyle} cursor-pointer list-none flex items-center justify-between`}
+                  data-testid="almacen-multiselect"
+                >
+                  <span className="truncate">
+                    {selectedAlmacenes.length === 0 
+                      ? (selectedServer?.system_type === 'SoftRestaurant'
+                          ? (!filters.server_id ? "Selecciona servidor primero" : (almacenes.length === 0 ? "Cargando..." : "Selecciona almacén(es)"))
+                          : (!filters.sucursal_id ? "Selecciona sucursal primero" : "Selecciona almacén(es)"))
+                      : `${selectedAlmacenes.length} seleccionado(s)`}
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </summary>
+                <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-72 overflow-hidden">
+                  <div className="max-h-60 overflow-y-auto">
+                    {selectedAlmacenes.length > 0 && (
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
+                        onClick={() => {
+                          setSelectedAlmacenes([]);
+                          setSelectedInventariosIni([]);
+                          setSelectedInventariosFin([]);
+                          setFilters({...filters, almacen_id: '', almacen: '', inventario_inicial: '', inventario_final: ''});
+                        }}
+                      >
+                        <X className="h-3 w-3 mr-1" /> Limpiar selección
+                      </button>
+                    )}
+                    {almacenes.map((almacen) => (
+                      <label key={almacen.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-zinc-300"
+                          checked={selectedAlmacenes.some(a => a.id === almacen.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const newSelected = [...selectedAlmacenes, almacen];
+                              setSelectedAlmacenes(newSelected);
+                              // Si es el primero, actualizar filters para compatibilidad
+                              if (newSelected.length === 1) {
+                                setFilters({...filters, almacen_id: almacen.id, almacen: almacen.nombre});
+                              }
+                            } else {
+                              const newSelected = selectedAlmacenes.filter(a => a.id !== almacen.id);
+                              setSelectedAlmacenes(newSelected);
+                              // Limpiar inventarios si se deselecciona un almacén
+                              setSelectedInventariosIni([]);
+                              setSelectedInventariosFin([]);
+                              if (newSelected.length === 1) {
+                                setFilters({...filters, almacen_id: newSelected[0].id, almacen: newSelected[0].nombre});
+                              } else if (newSelected.length === 0) {
+                                setFilters({...filters, almacen_id: '', almacen: '', inventario_inicial: '', inventario_final: ''});
+                              }
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{almacen.nombre} {almacen.tipo === 1 ? '(Consumo)' : almacen.tipo === 2 ? '(Presentaciones)' : ''}</span>
+                      </label>
+                    ))}
+                    {almacenes.length === 0 && (
+                      <p className="text-xs text-zinc-400 text-center py-2">No hay almacenes disponibles</p>
+                    )}
+                  </div>
+                </div>
+              </details>
             </div>
 
             <div className="space-y-2">
-              <Label>Inventario Inicial</Label>
-              <select 
-                className={selectStyle}
-                data-testid="inventario-inicial-select"
-                value={filters.inventario_inicial}
-                onChange={(e) => handleInventarioInicialChange(e.target.value)}
-                disabled={!filters.almacen_id || inventarios.length === 0}
-              >
-                <option value="">{!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario inicial"}</option>
-                {inventarios.map((inv) => (
-                  <option key={inv.folio} value={inv.folio}>
-                    {inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : 'Sin fecha'} - {inv.comentario || inv.almacen || ''}
-                  </option>
-                ))}
-              </select>
+              <Label>Inventario Inicial {selectedAlmacenes.length > 1 ? '(múltiple)' : ''}</Label>
+              {selectedAlmacenes.length <= 1 ? (
+                <select 
+                  className={selectStyle}
+                  data-testid="inventario-inicial-select"
+                  value={filters.inventario_inicial}
+                  onChange={(e) => handleInventarioInicialChange(e.target.value)}
+                  disabled={selectedAlmacenes.length === 0 || inventarios.length === 0}
+                >
+                  <option value="">{selectedAlmacenes.length === 0 ? "Selecciona almacén primero" : "Selecciona inventario inicial"}</option>
+                  {inventarios.map((inv) => (
+                    <option key={inv.folio} value={inv.folio}>
+                      {inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : 'Sin fecha'} - {inv.comentario || inv.almacen || ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <details className="relative">
+                  <summary className={`${selectStyle} cursor-pointer list-none flex items-center justify-between`}>
+                    <span className="truncate">
+                      {selectedInventariosIni.length === 0 
+                        ? "Selecciona inventarios iniciales" 
+                        : `${selectedInventariosIni.length} seleccionado(s)`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </summary>
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {selectedInventariosIni.length > 0 && (
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
+                        onClick={() => setSelectedInventariosIni([])}
+                      >
+                        <X className="h-3 w-3 mr-1" /> Limpiar selección
+                      </button>
+                    )}
+                    {inventarios.map((inv) => (
+                      <label key={inv.folio} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-zinc-300"
+                          checked={selectedInventariosIni.some(i => i.folio === inv.folio)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedInventariosIni([...selectedInventariosIni, inv]);
+                            } else {
+                              setSelectedInventariosIni(selectedInventariosIni.filter(i => i.folio !== inv.folio));
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : ''} - {inv.almacen || ''}</span>
+                      </label>
+                    ))}
+                  </div>
+                </details>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label>Inventario Final</Label>
-              <select 
-                className={selectStyle}
-                data-testid="inventario-final-select"
-                value={filters.inventario_final}
-                onChange={(e) => handleInventarioFinalChange(e.target.value)}
-                disabled={!filters.almacen_id || inventarios.length === 0}
-              >
-                <option value="">{!filters.almacen_id ? "Selecciona almacén primero" : "Selecciona inventario final"}</option>
-                {inventarios.map((inv) => (
-                  <option key={inv.folio} value={inv.folio}>
-                    {inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : 'Sin fecha'} - {inv.comentario || inv.almacen || ''}
-                  </option>
-                ))}
-              </select>
+              <Label>Inventario Final {selectedAlmacenes.length > 1 ? '(múltiple)' : ''}</Label>
+              {selectedAlmacenes.length <= 1 ? (
+                <select 
+                  className={selectStyle}
+                  data-testid="inventario-final-select"
+                  value={filters.inventario_final}
+                  onChange={(e) => handleInventarioFinalChange(e.target.value)}
+                  disabled={selectedAlmacenes.length === 0 || inventarios.length === 0}
+                >
+                  <option value="">{selectedAlmacenes.length === 0 ? "Selecciona almacén primero" : "Selecciona inventario final"}</option>
+                  {inventarios.map((inv) => (
+                    <option key={inv.folio} value={inv.folio}>
+                      {inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : 'Sin fecha'} - {inv.comentario || inv.almacen || ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <details className="relative">
+                  <summary className={`${selectStyle} cursor-pointer list-none flex items-center justify-between`}>
+                    <span className="truncate">
+                      {selectedInventariosFin.length === 0 
+                        ? "Selecciona inventarios finales" 
+                        : `${selectedInventariosFin.length} seleccionado(s)`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </summary>
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {selectedInventariosFin.length > 0 && (
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
+                        onClick={() => setSelectedInventariosFin([])}
+                      >
+                        <X className="h-3 w-3 mr-1" /> Limpiar selección
+                      </button>
+                    )}
+                    {inventarios.map((inv) => (
+                      <label key={inv.folio} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-zinc-300"
+                          checked={selectedInventariosFin.some(i => i.folio === inv.folio)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedInventariosFin([...selectedInventariosFin, inv]);
+                            } else {
+                              setSelectedInventariosFin(selectedInventariosFin.filter(i => i.folio !== inv.folio));
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : ''} - {inv.almacen || ''}</span>
+                      </label>
+                    ))}
+                  </div>
+                </details>
+              )}
             </div>
 
             <div className="space-y-2">
