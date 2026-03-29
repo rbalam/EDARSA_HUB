@@ -372,11 +372,9 @@ export default function TableroEjecutivo() {
   return (
     <div className="space-y-4" data-testid="tablero-ejecutivo">
       {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-800">Tablero Comercial</h1>
-          <p className="text-sm text-zinc-500">KPIs consolidados de ventas • Clic en unidad para ver detalle</p>
-        </div>
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-zinc-800">Tablero Comercial</h1>
+        <p className="text-sm text-zinc-500">KPIs consolidados de ventas • Clic en unidad para ver detalle</p>
       </div>
 
       {/* Filtros */}

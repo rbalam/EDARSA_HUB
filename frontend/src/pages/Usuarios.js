@@ -343,9 +343,9 @@ const Usuarios = () => {
 
   return (
     <div className="space-y-6" data-testid="usuarios-page">
-      <div>
-        <h1 className="text-3xl font-extrabold text-zinc-900">Usuarios y Roles</h1>
-        <p className="text-zinc-600 mt-1">Gestiona los usuarios y roles del sistema</p>
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-zinc-800">Usuarios y Roles</h1>
+        <p className="text-sm text-zinc-500">Gestiona los usuarios y roles del sistema</p>
       </div>
 
       <Tabs defaultValue="usuarios" className="w-full">

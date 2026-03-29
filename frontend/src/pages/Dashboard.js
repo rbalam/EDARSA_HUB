@@ -284,12 +284,12 @@ const Dashboard = () => {
     <div className="space-y-6" data-testid="dashboard-page">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-zinc-900" style={{ fontFamily: 'Manrope, sans-serif' }} data-testid="dashboard-title">
+        <div className="text-center sm:text-left flex-1">
+          <h1 className="text-2xl font-bold text-zinc-800" data-testid="dashboard-title">
             Dashboard de Inventarios
           </h1>
-          <p className="text-zinc-600 mt-1">
-            Analisis de diferencias - {dashboardData?.server_name || 'Selecciona un servidor'}
+          <p className="text-sm text-zinc-500">
+            Análisis de diferencias - {dashboardData?.server_name || 'Selecciona un servidor'}
           </p>
         </div>
         

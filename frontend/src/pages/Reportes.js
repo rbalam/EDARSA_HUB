@@ -819,11 +819,11 @@ const Reportes = () => {
 
   return (
     <div className="space-y-6" data-testid="reportes-page">
-      <div>
-        <h1 className="text-3xl font-extrabold text-zinc-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-          Reportes de Inventario
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-zinc-800">
+          Análisis de Inventarios
         </h1>
-        <p className="text-zinc-600 mt-1">Genera y analiza reportes de inventario</p>
+        <p className="text-sm text-zinc-500">Genera y analiza reportes de inventario</p>
       </div>
 
       {/* Filters */}

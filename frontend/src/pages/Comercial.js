@@ -21,7 +21,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const formatNumber = (num) => {
   if (num === null || num === undefined) return '-';
-  return new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+  return new Intl.NumberFormat('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(num);
 };
 
 const formatCurrency = (num) => {
@@ -308,9 +308,9 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
       {/* KPIs principales - CON DOBLE CLICK DRILL-DOWN */}
       {kpis && (
         <>
-          {/* FILA 1: Ventas + Promedios (Pax Promedio y Cheque Promedio) */}
+          {/* FILA 1: Ventas, Pax Promedio, Cheque Promedio */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* Ventas del Período */}
+            {/* Ventas del Período (VERDE) */}
             <Card 
               className="border bg-gradient-to-br from-green-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
               onDoubleClick={() => handleDoubleClick('ventas')}
@@ -324,20 +324,18 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   </div>
                   <DollarSign className="h-8 w-8 text-green-200" />
                 </div>
-                {comparativo && (
-                  <div className="flex items-center gap-1 mt-2">
-                    {comparativo.vs_periodo_anterior >= 0 ? 
-                      <ArrowUpRight className="h-4 w-4 text-green-600" /> : 
-                      <ArrowDownRight className="h-4 w-4 text-red-600" />}
-                    <span className={`text-xs ${comparativo.vs_periodo_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatPercent(comparativo.vs_periodo_anterior)} vs período anterior
-                    </span>
-                  </div>
-                )}
+                <div className="flex gap-3 mt-2 text-xs">
+                  <span className={comparativo?.vs_periodo_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatPercent(comparativo?.vs_periodo_anterior || 0)} vs mes
+                  </span>
+                  <span className={comparativo?.vs_ano_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatPercent(comparativo?.vs_ano_anterior || 0)} vs año
+                  </span>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Pax Promedio (Ventas ÷ PAX = Consumo por Persona) */}
+            {/* Pax Promedio (MORADO) */}
             <Card 
               className="border bg-gradient-to-br from-purple-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
               onDoubleClick={() => handleDoubleClick('pax')}
@@ -350,24 +348,22 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                     <p className="text-2xl font-bold text-purple-600">
                       {formatCurrency(kpis.pax_total > 0 ? (kpis.ventas_periodo / kpis.pax_total) : 0)}
                     </p>
-                    <p className="text-xs text-zinc-400 mt-1">Ventas ÷ PAX</p>
+                    <p className="text-xs text-zinc-400">Ventas ÷ PAX</p>
                   </div>
                   <Users className="h-8 w-8 text-purple-200" />
                 </div>
-                {comparativo?.pax_vs_mes_anterior !== undefined && (
-                  <div className="flex items-center gap-1 mt-2">
-                    {comparativo.pax_vs_mes_anterior >= 0 ? 
-                      <ArrowUpRight className="h-3 w-3 text-green-600" /> : 
-                      <ArrowDownRight className="h-3 w-3 text-red-600" />}
-                    <span className={`text-xs ${comparativo.pax_vs_mes_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatPercent(comparativo.pax_vs_mes_anterior)} vs mes ant.
-                    </span>
-                  </div>
-                )}
+                <div className="flex gap-3 mt-2 text-xs">
+                  <span className={comparativo?.pax_vs_mes_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatPercent(comparativo?.pax_vs_mes_anterior || 0)} vs mes
+                  </span>
+                  <span className={comparativo?.pax_vs_ano_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatPercent(comparativo?.pax_vs_ano_anterior || 0)} vs año
+                  </span>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Cheque Promedio (Ventas ÷ Cheques) */}
+            {/* Cheque Promedio (AZUL) */}
             <Card 
               className="border bg-gradient-to-br from-blue-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
               onDoubleClick={() => handleDoubleClick('ticket')}
@@ -378,17 +374,51 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   <div>
                     <p className="text-xs text-zinc-500">Cheque Promedio</p>
                     <p className="text-2xl font-bold text-blue-600">{formatCurrency(kpis.ticket_promedio)}</p>
-                    <p className="text-xs text-zinc-400 mt-1">Ventas ÷ Cheques</p>
+                    <p className="text-xs text-zinc-400">Ventas ÷ Cheques</p>
                   </div>
                   <Receipt className="h-8 w-8 text-blue-200" />
+                </div>
+                <div className="flex gap-3 mt-2 text-xs">
+                  <span className={comparativo?.cheque_vs_mes_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatPercent(comparativo?.cheque_vs_mes_anterior || 0)} vs mes
+                  </span>
+                  <span className={comparativo?.cheque_vs_ano_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatPercent(comparativo?.cheque_vs_ano_anterior || 0)} vs año
+                  </span>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* FILA 2: Totales (PAX Total, Cheques Total, Rotación) */}
+          {/* FILA 2: Rotación, PAX Total, Cheques Total (mismas columnas de color) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* PAX Total */}
+            {/* Rotación Mesas (VERDE - debajo de Ventas) */}
+            <Card 
+              className="border bg-gradient-to-br from-green-50/50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
+              onDoubleClick={() => handleDoubleClick('rotacion')}
+              data-testid="kpi-rotacion"
+            >
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-zinc-500">Rotación Mesas</p>
+                    <p className="text-2xl font-bold text-green-600">{formatNumber(kpis.rotacion_mesas)}x</p>
+                    <p className="text-xs text-zinc-400">{kpis.mesas_atendidas} mesas atendidas</p>
+                  </div>
+                  <Utensils className="h-8 w-8 text-green-200" />
+                </div>
+                <div className="flex gap-3 mt-2 text-xs">
+                  <span className={comparativo?.rotacion_vs_mes >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatPercent(comparativo?.rotacion_vs_mes || 0)} vs mes
+                  </span>
+                  <span className={comparativo?.rotacion_vs_ano >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatPercent(comparativo?.rotacion_vs_ano || 0)} vs año
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* PAX Total (MORADO) */}
             <Card 
               className="border bg-gradient-to-br from-purple-50/50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
               onDoubleClick={() => handleDoubleClick('pax')}
@@ -402,10 +432,18 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   </div>
                   <Users className="h-8 w-8 text-purple-200" />
                 </div>
+                <div className="flex gap-3 mt-2 text-xs">
+                  <span className={comparativo?.pax_total_vs_mes >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatPercent(comparativo?.pax_total_vs_mes || 0)} vs mes
+                  </span>
+                  <span className={comparativo?.pax_total_vs_ano >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatPercent(comparativo?.pax_total_vs_ano || 0)} vs año
+                  </span>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Cheques Total */}
+            {/* Cheques Total (AZUL) */}
             <Card 
               className="border bg-gradient-to-br from-blue-50/50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
               onDoubleClick={() => handleDoubleClick('ticket')}
@@ -419,23 +457,13 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   </div>
                   <Receipt className="h-8 w-8 text-blue-200" />
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Rotación Mesas */}
-            <Card 
-              className="border bg-gradient-to-br from-orange-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
-              onDoubleClick={() => handleDoubleClick('rotacion')}
-              data-testid="kpi-rotacion"
-            >
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-zinc-500">Rotación Mesas</p>
-                    <p className="text-2xl font-bold text-orange-600">{formatNumber(kpis.rotacion_mesas)}x</p>
-                    <p className="text-xs text-zinc-400 mt-1">{kpis.mesas_atendidas} mesas atendidas</p>
-                  </div>
-                  <Utensils className="h-8 w-8 text-orange-200" />
+                <div className="flex gap-3 mt-2 text-xs">
+                  <span className={comparativo?.cheques_total_vs_mes >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatPercent(comparativo?.cheques_total_vs_mes || 0)} vs mes
+                  </span>
+                  <span className={comparativo?.cheques_total_vs_ano >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatPercent(comparativo?.cheques_total_vs_ano || 0)} vs año
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -1478,7 +1506,7 @@ export default function Comercial() {
 
   return (
     <div className="space-y-4" data-testid="comercial-module">
-      <div>
+      <div className="text-center">
         <h1 className="text-2xl font-bold text-zinc-800">Comercial</h1>
         <p className="text-sm text-zinc-500">Análisis de ventas, rentabilidad y metas</p>
       </div>

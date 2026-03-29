@@ -1503,11 +1503,9 @@ export default function Compras() {
 
   return (
     <div className="space-y-4" data-testid="compras-module">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-800">Compras</h1>
-          <p className="text-sm text-zinc-500">Gestión y análisis de compras</p>
-        </div>
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-zinc-800">Compras</h1>
+        <p className="text-sm text-zinc-500">Gestión y análisis de compras</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
