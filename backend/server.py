@@ -6723,10 +6723,13 @@ async def tablero_ejecutivo(
     totales["ticket_prom"] = round(totales["ventas"] / totales["pax"], 2) if totales["pax"] > 0 else 0
     totales["cheque_prom"] = round(totales["ventas"] / totales["cheques"], 2) if totales["cheques"] > 0 else 0
     
+    # Ordenar unidades de mayor a menor venta
+    resultados_ordenados = sorted(resultados, key=lambda x: x.get('ventas', 0), reverse=True)
+    
     return {
         "periodo": {"mes": mes, "anio": anio, "dias_transcurridos": dias_transcurridos, "dias_mes": dias_mes},
         "comparativo_con": {"mes_anterior": f"{mes_ant}/{anio_mes_ant}", "año_anterior": f"{mes}/{anio-1}"},
-        "unidades": resultados,
+        "unidades": resultados_ordenados,
         "totales": totales
     }
 
