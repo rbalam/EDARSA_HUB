@@ -100,6 +100,11 @@ const Reportes = () => {
     return saved ? JSON.parse(saved) : [];
   });
   const [loadingFilters, setLoadingFilters] = useState(false);
+  
+  // Estados para búsqueda en filtros
+  const [searchCategorias, setSearchCategorias] = useState('');
+  const [searchFamilias, setSearchFamilias] = useState('');
+  const [searchSubfamilias, setSearchSubfamilias] = useState('');
 
   // Guardar estado en sessionStorage cuando cambie
   useEffect(() => {
@@ -935,7 +940,7 @@ const Reportes = () => {
                 {loadingFilters && <span className="text-xs text-zinc-400">Cargando...</span>}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Multiselect Categorías - Usando detalles/summary nativo */}
+                {/* Multiselect Categorías - Con búsqueda */}
                 <div className="space-y-2">
                   <Label>{selectedServer?.system_type === 'SoftRestaurant' ? 'Clasificación' : 'Categorías'}</Label>
                   <details className="relative">
@@ -950,41 +955,56 @@ const Reportes = () => {
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50" />
                     </summary>
-                    <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-64 overflow-y-auto">
-                      {selectedCategorias.length > 0 && (
-                        <button
-                          type="button"
-                          className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
-                          onClick={() => setSelectedCategorias([])}
-                        >
-                          <X className="h-3 w-3 mr-1" /> Limpiar selección
-                        </button>
-                      )}
-                      {filterOptions.categorias.map((cat) => (
-                        <label key={cat.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            className="rounded border-zinc-300"
-                            checked={selectedCategorias.includes(cat.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedCategorias([...selectedCategorias, cat.id]);
-                              } else {
-                                setSelectedCategorias(selectedCategorias.filter(c => c !== cat.id));
-                              }
-                            }}
-                          />
-                          <span className="text-sm">{cat.nombre}</span>
-                        </label>
-                      ))}
-                      {filterOptions.categorias.length === 0 && (
-                        <p className="text-xs text-zinc-400 text-center py-2">No hay categorías disponibles</p>
-                      )}
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-72 overflow-hidden">
+                      {/* Campo de búsqueda */}
+                      <div className="sticky top-0 bg-white border-b p-2">
+                        <input
+                          type="text"
+                          placeholder="Buscar..."
+                          value={searchCategorias}
+                          onChange={(e) => setSearchCategorias(e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-zinc-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto">
+                        {selectedCategorias.length > 0 && (
+                          <button
+                            type="button"
+                            className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
+                            onClick={() => setSelectedCategorias([])}
+                          >
+                            <X className="h-3 w-3 mr-1" /> Limpiar selección
+                          </button>
+                        )}
+                        {filterOptions.categorias
+                          .filter(cat => cat.nombre.toLowerCase().includes(searchCategorias.toLowerCase()))
+                          .map((cat) => (
+                          <label key={cat.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="rounded border-zinc-300"
+                              checked={selectedCategorias.includes(cat.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedCategorias([...selectedCategorias, cat.id]);
+                                } else {
+                                  setSelectedCategorias(selectedCategorias.filter(c => c !== cat.id));
+                                }
+                              }}
+                            />
+                            <span className="text-sm">{cat.nombre}</span>
+                          </label>
+                        ))}
+                        {filterOptions.categorias.filter(cat => cat.nombre.toLowerCase().includes(searchCategorias.toLowerCase())).length === 0 && (
+                          <p className="text-xs text-zinc-400 text-center py-2">No hay coincidencias</p>
+                        )}
+                      </div>
                     </div>
                   </details>
                 </div>
 
-                {/* Multiselect Familias - Usando detalles/summary nativo */}
+                {/* Multiselect Familias - Con búsqueda */}
                 <div className="space-y-2">
                   <Label>{selectedServer?.system_type === 'SoftRestaurant' ? 'Grupos' : 'Familias'}</Label>
                   <details className="relative">
@@ -999,41 +1019,56 @@ const Reportes = () => {
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50" />
                     </summary>
-                    <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-64 overflow-y-auto">
-                      {selectedFamilias.length > 0 && (
-                        <button
-                          type="button"
-                          className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
-                          onClick={() => setSelectedFamilias([])}
-                        >
-                          <X className="h-3 w-3 mr-1" /> Limpiar selección
-                        </button>
-                      )}
-                      {filterOptions.familias.map((fam) => (
-                        <label key={fam.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            className="rounded border-zinc-300"
-                            checked={selectedFamilias.includes(fam.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedFamilias([...selectedFamilias, fam.id]);
-                              } else {
-                                setSelectedFamilias(selectedFamilias.filter(f => f !== fam.id));
-                              }
-                            }}
-                          />
-                          <span className="text-sm">{fam.nombre}</span>
-                        </label>
-                      ))}
-                      {filterOptions.familias.length === 0 && (
-                        <p className="text-xs text-zinc-400 text-center py-2">No hay familias disponibles</p>
-                      )}
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-72 overflow-hidden">
+                      {/* Campo de búsqueda */}
+                      <div className="sticky top-0 bg-white border-b p-2">
+                        <input
+                          type="text"
+                          placeholder="Buscar..."
+                          value={searchFamilias}
+                          onChange={(e) => setSearchFamilias(e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-zinc-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto">
+                        {selectedFamilias.length > 0 && (
+                          <button
+                            type="button"
+                            className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
+                            onClick={() => setSelectedFamilias([])}
+                          >
+                            <X className="h-3 w-3 mr-1" /> Limpiar selección
+                          </button>
+                        )}
+                        {filterOptions.familias
+                          .filter(fam => fam.nombre.toLowerCase().includes(searchFamilias.toLowerCase()))
+                          .map((fam) => (
+                          <label key={fam.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="rounded border-zinc-300"
+                              checked={selectedFamilias.includes(fam.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedFamilias([...selectedFamilias, fam.id]);
+                                } else {
+                                  setSelectedFamilias(selectedFamilias.filter(f => f !== fam.id));
+                                }
+                              }}
+                            />
+                            <span className="text-sm">{fam.nombre}</span>
+                          </label>
+                        ))}
+                        {filterOptions.familias.filter(fam => fam.nombre.toLowerCase().includes(searchFamilias.toLowerCase())).length === 0 && (
+                          <p className="text-xs text-zinc-400 text-center py-2">No hay coincidencias</p>
+                        )}
+                      </div>
                     </div>
                   </details>
                 </div>
 
-                {/* Multiselect SubFamilias - Usando detalles/summary nativo */}
+                {/* Multiselect SubFamilias - Con búsqueda */}
                 <div className="space-y-2">
                   <Label>{selectedServer?.system_type === 'SoftRestaurant' ? 'SubGrupos' : 'SubFamilias'}</Label>
                   <details className="relative">
@@ -1048,36 +1083,51 @@ const Reportes = () => {
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50" />
                     </summary>
-                    <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-64 overflow-y-auto">
-                      {selectedSubfamilias.length > 0 && (
-                        <button
-                          type="button"
-                          className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
-                          onClick={() => setSelectedSubfamilias([])}
-                        >
-                          <X className="h-3 w-3 mr-1" /> Limpiar selección
-                        </button>
-                      )}
-                      {filterOptions.subfamilias.map((sf) => (
-                        <label key={sf.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            className="rounded border-zinc-300"
-                            checked={selectedSubfamilias.includes(sf.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedSubfamilias([...selectedSubfamilias, sf.id]);
-                              } else {
-                                setSelectedSubfamilias(selectedSubfamilias.filter(s => s !== sf.id));
-                              }
-                            }}
-                          />
-                          <span className="text-sm">{sf.nombre}</span>
-                        </label>
-                      ))}
-                      {filterOptions.subfamilias.length === 0 && (
-                        <p className="text-xs text-zinc-400 text-center py-2">No hay subfamilias disponibles</p>
-                      )}
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-72 overflow-hidden">
+                      {/* Campo de búsqueda */}
+                      <div className="sticky top-0 bg-white border-b p-2">
+                        <input
+                          type="text"
+                          placeholder="Buscar..."
+                          value={searchSubfamilias}
+                          onChange={(e) => setSearchSubfamilias(e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-zinc-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto">
+                        {selectedSubfamilias.length > 0 && (
+                          <button
+                            type="button"
+                            className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
+                            onClick={() => setSelectedSubfamilias([])}
+                          >
+                            <X className="h-3 w-3 mr-1" /> Limpiar selección
+                          </button>
+                        )}
+                        {filterOptions.subfamilias
+                          .filter(sf => sf.nombre.toLowerCase().includes(searchSubfamilias.toLowerCase()))
+                          .map((sf) => (
+                          <label key={sf.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="rounded border-zinc-300"
+                              checked={selectedSubfamilias.includes(sf.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedSubfamilias([...selectedSubfamilias, sf.id]);
+                                } else {
+                                  setSelectedSubfamilias(selectedSubfamilias.filter(s => s !== sf.id));
+                                }
+                              }}
+                            />
+                            <span className="text-sm">{sf.nombre}</span>
+                          </label>
+                        ))}
+                        {filterOptions.subfamilias.filter(sf => sf.nombre.toLowerCase().includes(searchSubfamilias.toLowerCase())).length === 0 && (
+                          <p className="text-xs text-zinc-400 text-center py-2">No hay coincidencias</p>
+                        )}
+                      </div>
                     </div>
                   </details>
                 </div>
