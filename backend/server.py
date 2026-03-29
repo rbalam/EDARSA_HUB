@@ -4032,7 +4032,7 @@ INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
 WHERE {sucursal_filtro}
     {almacen_filtro}
 GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, S.Sc_Descripcion, A.Sc_Cve_Sucursal, F.Fi_Comentario
-ORDER BY F.Fi_Fecha DESC
+ORDER BY F.Fi_Fecha DESC, F.Fi_Folio DESC
 """
         logging.info(f"Inventarios MPRO - Sucursal ID: '{sucursal_id}', Nombre: '{sucursal}', Almacén: '{almacen}'")
         result = execute_sql_query(
