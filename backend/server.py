@@ -5679,6 +5679,75 @@ ORDER BY DATEPART(WEEKDAY, turnos.apertura)
                 "por_dia": ventas_por_dia
             }
         
+        elif server['system_type'] == 'ManagmentPro':
+            # Filtro de sucursal para MPRO
+            sucursal_filter = ""
+            if sucursal:
+                sucursal_filter = f"AND S.Sc_Nombre LIKE '%{sucursal}%'"
+            
+            # Ventas por hora para MPRO
+            query_hora = f"""
+SELECT 
+    DATEPART(HOUR, VE.Vn_Fecha) as hora,
+    SUM(VE.Vn_Precio_Neto_Importe) as ventas,
+    ISNULL(SUM(C.Co_Personas), 0) as pax
+FROM Venta_Encabezado VE
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+LEFT JOIN Sucursal S ON S.Sc_Cve = VE.Sc_Cve_Sucursal
+WHERE VE.Vn_Fecha >= '{fecha_ini}'
+  AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
+  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
+  {sucursal_filter}
+GROUP BY DATEPART(HOUR, VE.Vn_Fecha)
+ORDER BY SUM(VE.Vn_Precio_Neto_Importe) DESC
+"""
+            result_hora = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_hora
+            )
+            
+            ventas_por_hora = []
+            for r in (result_hora or [])[:8]:
+                hora_int = int(r['hora'] or 0)
+                ventas_por_hora.append({
+                    "hora": f"{hora_int:02d}:00",
+                    "ventas": float(r['ventas'] or 0),
+                    "pax": int(r['pax'] or 0)
+                })
+            
+            # Ventas por día de la semana para MPRO
+            query_dia = f"""
+SELECT 
+    DATEPART(WEEKDAY, VE.Vn_Fecha) as dia_num,
+    SUM(VE.Vn_Precio_Neto_Importe) as ventas
+FROM Venta_Encabezado VE
+LEFT JOIN Sucursal S ON S.Sc_Cve = VE.Sc_Cve_Sucursal
+WHERE VE.Vn_Fecha >= '{fecha_ini}'
+  AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
+  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
+  {sucursal_filter}
+GROUP BY DATEPART(WEEKDAY, VE.Vn_Fecha)
+ORDER BY DATEPART(WEEKDAY, VE.Vn_Fecha)
+"""
+            result_dia = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_dia
+            )
+            
+            dias_semana = {1: 'Domingo', 2: 'Lunes', 3: 'Martes', 4: 'Miércoles', 5: 'Jueves', 6: 'Viernes', 7: 'Sábado'}
+            ventas_por_dia = []
+            for r in (result_dia or []):
+                dia_num = int(r['dia_num'] or 1)
+                ventas_por_dia.append({
+                    "dia": dias_semana.get(dia_num, f'Día {dia_num}'),
+                    "ventas": float(r['ventas'] or 0)
+                })
+            
+            return {
+                "por_hora": ventas_por_hora,
+                "por_dia": ventas_por_dia
+            }
+        
         return {"por_hora": [], "por_dia": []}
         
     except Exception as e:

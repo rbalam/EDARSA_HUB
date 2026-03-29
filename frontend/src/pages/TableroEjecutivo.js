@@ -263,20 +263,37 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
                 </CardHeader>
                 <CardContent className="p-3">
                   <div className="grid grid-cols-7 gap-1">
-                    {detalleData.ventasTiempo.por_dia.map((d, i) => {
-                      const maxVenta = Math.max(...detalleData.ventasTiempo.por_dia.map(x => x.ventas));
-                      const height = (d.ventas / maxVenta * 60) + 20;
-                      return (
-                        <div key={i} className="text-center">
-                          <div 
-                            className="bg-blue-500 rounded-t mx-auto w-8 transition-all" 
-                            style={{ height: `${height}px` }}
-                          />
-                          <p className="text-xs font-medium mt-1">{d.dia.substring(0, 3)}</p>
-                          <p className="text-xs text-zinc-500">{formatCurrency(d.ventas)}</p>
-                        </div>
-                      );
-                    })}
+                    {(() => {
+                      // Asegurar que siempre tengamos los 7 días de la semana
+                      const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                      const diasMap = {};
+                      detalleData.ventasTiempo.por_dia.forEach(d => {
+                        const diaKey = d.dia.substring(0, 3);
+                        diasMap[diaKey] = d;
+                      });
+                      
+                      const diasCompletos = diasSemana.map(dia => ({
+                        dia: dia,
+                        ventas: diasMap[dia]?.ventas || 0,
+                        pax: diasMap[dia]?.pax || 0
+                      }));
+                      
+                      const maxVenta = Math.max(...diasCompletos.map(x => x.ventas), 1);
+                      
+                      return diasCompletos.map((d, i) => {
+                        const height = (d.ventas / maxVenta * 60) + 20;
+                        return (
+                          <div key={i} className="text-center">
+                            <div 
+                              className={`rounded-t mx-auto w-8 transition-all ${d.ventas > 0 ? 'bg-blue-500' : 'bg-zinc-200'}`}
+                              style={{ height: `${height}px` }}
+                            />
+                            <p className="text-xs font-medium mt-1">{d.dia}</p>
+                            <p className="text-xs text-zinc-500">{formatCurrency(d.ventas)}</p>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </CardContent>
               </Card>
