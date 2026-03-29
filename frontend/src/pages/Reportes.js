@@ -1205,22 +1205,7 @@ const Reportes = () => {
               )}
             </div>
 
-            {/* Opción de agrupar insumos - solo visible con multi-inventario en MPRO */}
-            {selectedServer?.system_type === 'MPRO' && (selectedInventariosIni.length > 1 || selectedInventariosFin.length > 1) && (
-              <div className="col-span-2 flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <input
-                  type="checkbox"
-                  id="agrupar-insumos"
-                  checked={agruparInsumos}
-                  onChange={(e) => setAgruparInsumos(e.target.checked)}
-                  className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="agrupar-insumos" className="text-sm text-blue-800 cursor-pointer">
-                  <strong>Agrupar insumos</strong> - Suma cantidades de productos que aparecen en múltiples inventarios
-                </label>
-              </div>
-            )}
-
+            {/* Fechas en la misma fila */}
             <div className="space-y-2">
               <Label>
                 Fecha Inicio de Movimientos
@@ -1258,6 +1243,22 @@ const Reportes = () => {
                 data-testid="fecha-fin-input"
               />
             </div>
+
+            {/* Opción de agrupar insumos - debajo de las fechas, solo visible con multi-inventario en MPRO */}
+            {selectedServer?.system_type === 'MPRO' && (selectedInventariosIni.length > 1 || selectedInventariosFin.length > 1) && (
+              <div className="col-span-2 flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <input
+                  type="checkbox"
+                  id="agrupar-insumos"
+                  checked={agruparInsumos}
+                  onChange={(e) => setAgruparInsumos(e.target.checked)}
+                  className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="agrupar-insumos" className="text-sm text-blue-800 cursor-pointer">
+                  <strong>Agrupar insumos</strong> - Suma cantidades de productos que aparecen en múltiples inventarios
+                </label>
+              </div>
+            )}
           </div>
 
           {/* Filtros adicionales (Categoría, Familia, SubFamilia) - Para MPRO y SoftRestaurant */}

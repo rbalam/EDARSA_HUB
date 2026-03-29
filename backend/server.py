@@ -2245,12 +2245,13 @@ WHERE P_INS.Dp_Cve_Departamento = '0007'
                     })
             else:
                 # MODO SIN AGRUPAR: Una fila por cada combinación producto + inventario
-                # Obtener inventarios detallados por folio
+                # Obtener inventarios detallados por folio, incluyendo el código de almacén
                 inv_detalle_query = f"""
 SELECT 
     F.Fi_Folio as Folio,
     F.Pr_Cve_Producto as Codigo,
     F.Fi_Cantidad_Control_1 as Cantidad,
+    F.Al_Cve_Almacen as Almacen_Codigo,
     ISNULL(FIS.Fi_Comentario, '') as Comentario
 FROM Fisico F
 INNER JOIN Fisico_Encabezado FIS ON FIS.Fi_Folio = F.Fi_Folio
@@ -2267,6 +2268,11 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                 folios_ini_set = set(lista_folios_ini)
                 folios_fin_set = set(lista_folios_fin)
                 
+                # Mapear folio -> almacén para obtener movimientos específicos
+                folio_almacen_map = {}
+                for row in inv_detalle:
+                    folio_almacen_map[row['Folio']] = row['Almacen_Codigo']
+                
                 # Organizar inventarios por código y folio
                 inv_por_codigo = {}
                 for row in inv_detalle:
@@ -2274,27 +2280,26 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                     folio = row['Folio']
                     cantidad = float(row['Cantidad'] or 0)
                     comentario = row['Comentario'] or ''
+                    almacen_cod = row['Almacen_Codigo']
                     
                     if codigo not in inv_por_codigo:
                         inv_por_codigo[codigo] = {'ini': {}, 'fin': {}}
                     
                     if folio in folios_ini_set:
-                        inv_por_codigo[codigo]['ini'][folio] = {'cantidad': cantidad, 'comentario': comentario}
+                        inv_por_codigo[codigo]['ini'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
                     elif folio in folios_fin_set:
-                        inv_por_codigo[codigo]['fin'][folio] = {'cantidad': cantidad, 'comentario': comentario}
+                        inv_por_codigo[codigo]['fin'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
                 
                 # Procesar productos con inventarios detallados
                 for prod in productos:
                     codigo = prod['Codigo']
-                    ventas_total = ventas_dict.get(codigo, 0)
-                    movimientos = movimientos_dict.get(codigo, 0)
                     costo = float(prod.get('Costo_Unitario', 0) or 0)
                     tipo_producto = prod.get('Tipo_Producto', 'COMPRA')
                     
                     inv_data = inv_por_codigo.get(codigo, {'ini': {}, 'fin': {}})
                     
                     # Si no hay inventarios, omitir
-                    if not inv_data['ini'] and not inv_data['fin'] and ventas_total == 0 and movimientos == 0:
+                    if not inv_data['ini'] and not inv_data['fin']:
                         continue
                     
                     # Crear filas por cada combinación de folios
@@ -2314,12 +2319,14 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                         comentario_ini = inv_data['ini'].get(folio_ini, {}).get('comentario', '') if folio_ini else ''
                         comentario_fin = inv_data['fin'].get(folio_fin, {}).get('comentario', '') if folio_fin else ''
                         
-                        # Distribuir movimientos y ventas proporcionalmente entre las filas
-                        mov_fila = movimientos / max_filas if max_filas > 0 else 0
-                        ven_fila = ventas_total / max_filas if max_filas > 0 else 0
+                        # Movimientos y ventas totales del producto (no se dividen, aplican al consolidado)
+                        # En modo sin agrupar, cada fila representa un almacén diferente
+                        # Los movimientos y ventas son globales del producto
+                        mov_fila = movimientos_dict.get(codigo, 0)
+                        ven_fila = ventas_dict.get(codigo, 0)
                         
                         # Solo incluir si hay actividad
-                        if inv_inicial == 0 and inv_final == 0 and mov_fila == 0 and ven_fila == 0:
+                        if inv_inicial == 0 and inv_final == 0:
                             continue
                         
                         # Calcular inventario teórico: Inicial + Movimientos - Ventas
