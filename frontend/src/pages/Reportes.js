@@ -275,6 +275,31 @@ const Reportes = () => {
     }
   }, [filters.inventario_inicial, filters.inventario_final, inventarios, selectedServer]);
 
+  // AUTO-CALCULAR fechas para MULTI-SELECCIÓN de inventarios
+  useEffect(() => {
+    if (selectedInventariosIni.length > 0 && selectedInventariosFin.length > 0 && selectedServer) {
+      // Usar la fecha del primer inventario seleccionado de cada grupo
+      const fechaInicial = selectedInventariosIni[0]?.fecha;
+      const fechaFinal = selectedInventariosFin[0]?.fecha;
+      
+      if (fechaInicial && fechaFinal) {
+        const dates = calculateDates(fechaInicial, fechaFinal, selectedServer.system_type);
+        
+        // Solo actualizar si las fechas son diferentes
+        if (dates.fecha_ini !== filters.fecha_ini || dates.fecha_fin !== filters.fecha_fin) {
+          console.log('Auto-calculando fechas (multi-selección):', dates);
+          setFilters(prev => ({
+            ...prev,
+            inventario_inicial_fecha: fechaInicial,
+            inventario_final_fecha: fechaFinal,
+            fecha_ini: dates.fecha_ini,
+            fecha_fin: dates.fecha_fin
+          }));
+        }
+      }
+    }
+  }, [selectedInventariosIni, selectedInventariosFin, selectedServer]);
+
   const loadServers = async () => {
     try {
       console.log('Cargando servidores...');
