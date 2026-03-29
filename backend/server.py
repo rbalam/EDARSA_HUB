@@ -3992,7 +3992,7 @@ class CalculoPedidoRequest(BaseModel):
 
 @api_router.get("/compras/inventarios-fisicos/{server_id}")
 async def obtener_inventarios_fisicos(server_id: str, sucursal: str, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtiene la lista de inventarios físicos disponibles para seleccionar, filtrado por almacén"""
+    """Obtiene la lista de inventarios físicos disponibles para seleccionar, filtrado por almacén y sucursal"""
     verify_token(credentials.credentials)
     
     server = await db.servers.find_one({"id": server_id, "active": True})
@@ -4005,26 +4005,32 @@ async def obtener_inventarios_fisicos(server_id: str, sucursal: str, almacen: st
         if almacen and almacen != "TODOS" and almacen:
             almacen_filtro = f"AND A.Al_Descripcion LIKE '%{almacen}%'"
         
+        # Filtro estricto por sucursal para MPRO - usar = en vez de LIKE si es exacto
+        sucursal_filtro = f"S.Sc_Descripcion = '{sucursal}'" if sucursal else "1=1"
+        
         query = f"""
 SELECT DISTINCT 
     F.Fi_Folio as folio,
     F.Fi_Fecha as fecha,
     A.Al_Descripcion as almacen,
+    S.Sc_Descripcion as sucursal,
     ISNULL(F.Fi_Comentario, '') as comentario,
     COUNT(DISTINCT F.Pr_Cve_Producto) as total_productos
 FROM Fisico F
 INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
-WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+WHERE {sucursal_filtro}
     {almacen_filtro}
-GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, F.Fi_Comentario
+GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, S.Sc_Descripcion, F.Fi_Comentario
 ORDER BY F.Fi_Fecha DESC
 """
+        logging.info(f"Inventarios MPRO - Sucursal: '{sucursal}', Almacén: '{almacen}'")
         result = execute_sql_query(
             server['host'], server['port'], server['database'],
             server['username'], server['password'], query
         )
         return [{"folio": r['folio'], "fecha": str(r['fecha']), "almacen": r['almacen'], 
+                 "sucursal": r.get('sucursal', ''),
                  "comentario": r['comentario'], "productos": r['total_productos']} for r in result]
     
     elif server['system_type'] == 'SoftRestaurant':
