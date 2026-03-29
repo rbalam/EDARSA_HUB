@@ -158,13 +158,13 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
             {/* KPIs principales */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Card className="bg-green-50 border-green-200">
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-2 mb-1">
+                <CardContent className="p-3 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
                     <DollarSign className="h-4 w-4 text-green-600" />
                     <span className="text-xs text-zinc-600">Ventas</span>
                   </div>
                   <p className="text-xl font-bold text-green-600">{formatCurrency(unidad.ventas)}</p>
-                  <div className="flex gap-2 mt-1">
+                  <div className="flex justify-center gap-2 mt-1">
                     <span className="text-xs">Mes: <VariacionBadge valor={unidad.var_vs_mes_ant} /></span>
                     <span className="text-xs">Año: <VariacionBadge valor={unidad.var_vs_año_ant} /></span>
                   </div>
@@ -172,14 +172,14 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
               </Card>
               
               <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-2 mb-1">
+                <CardContent className="p-3 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
                     <Users className="h-4 w-4 text-blue-600" />
                     <span className="text-xs text-zinc-600">PAX</span>
                   </div>
                   <p className="text-xl font-bold text-blue-600">{unidad.pax?.toLocaleString()}</p>
                   <p className="text-xs text-zinc-500">Ticket: {formatCurrency(unidad.ticket_prom)}</p>
-                  <div className="flex gap-2 mt-1">
+                  <div className="flex justify-center gap-2 mt-1">
                     <span className="text-xs">Mes: <VariacionBadge valor={unidad.pax_ant > 0 ? ((unidad.pax - unidad.pax_ant) / unidad.pax_ant * 100) : 0} /></span>
                     <span className="text-xs">Año: <VariacionBadge valor={unidad.pax_año > 0 ? ((unidad.pax - unidad.pax_año) / unidad.pax_año * 100) : 0} /></span>
                   </div>
@@ -187,14 +187,14 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
               </Card>
               
               <Card className="bg-purple-50 border-purple-200">
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-2 mb-1">
+                <CardContent className="p-3 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
                     <Receipt className="h-4 w-4 text-purple-600" />
                     <span className="text-xs text-zinc-600">Cheques</span>
                   </div>
                   <p className="text-xl font-bold text-purple-600">{unidad.cheques?.toLocaleString()}</p>
                   <p className="text-xs text-zinc-500">Promedio: {formatCurrency(unidad.cheque_prom)}</p>
-                  <div className="flex gap-2 mt-1">
+                  <div className="flex justify-center gap-2 mt-1">
                     <span className="text-xs">Mes: <VariacionBadge valor={unidad.cheques_ant > 0 ? ((unidad.cheques - unidad.cheques_ant) / unidad.cheques_ant * 100) : 0} /></span>
                     <span className="text-xs">Año: <VariacionBadge valor={unidad.cheques_año > 0 ? ((unidad.cheques - unidad.cheques_año) / unidad.cheques_año * 100) : 0} /></span>
                   </div>
@@ -202,14 +202,14 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
               </Card>
               
               <Card className="bg-orange-50 border-orange-200">
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-2 mb-1">
+                <CardContent className="p-3 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
                     <Target className="h-4 w-4 text-orange-600" />
                     <span className="text-xs text-zinc-600">Proyección</span>
                   </div>
                   <p className="text-xl font-bold text-orange-600">{formatCurrency(unidad.proyeccion)}</p>
                   <p className="text-xs text-zinc-500">Mes completo</p>
-                  <div className="flex gap-2 mt-1">
+                  <div className="flex justify-center gap-2 mt-1">
                     <span className="text-xs">vs Mes: <VariacionBadge valor={unidad.ventas_ant > 0 ? ((unidad.proyeccion - unidad.ventas_ant) / unidad.ventas_ant * 100) : 0} /></span>
                     <span className="text-xs">vs Año: <VariacionBadge valor={unidad.ventas_año > 0 ? ((unidad.proyeccion - unidad.ventas_año) / unidad.ventas_año * 100) : 0} /></span>
                   </div>
