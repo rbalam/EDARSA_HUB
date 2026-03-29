@@ -13,7 +13,8 @@ import {
   Loader2, TrendingUp, TrendingDown, DollarSign, Users, Clock, Target,
   AlertTriangle, BarChart3, PieChart, ShoppingBag, Utensils, Coffee,
   Wine, Award, RefreshCw, Calendar, ArrowUpRight, ArrowDownRight,
-  Receipt, ChevronLeft, ChevronRight, X, Search
+  Receipt, ChevronLeft, ChevronRight, X, Search, ChevronDown, ChevronUp,
+  UserCheck, Download, FileSpreadsheet, FileText, Share2, Mail
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -42,7 +43,7 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
   const titulos = {
     ventas: { titulo: 'Detalle de Ventas', icono: DollarSign, color: 'text-green-600' },
     ticket: { titulo: 'Detalle de Cheques', icono: Receipt, color: 'text-blue-600' },
-    pax: { titulo: 'Detalle de Comensales', icono: Users, color: 'text-purple-600' },
+    pax: { titulo: 'Detalle de Comensales (PAX)', icono: Users, color: 'text-purple-600' },
     rotacion: { titulo: 'Detalle de Mesas', icono: Utensils, color: 'text-orange-600' }
   };
 
@@ -337,15 +338,15 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
             <Card 
               className="border bg-gradient-to-br from-blue-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
               onDoubleClick={() => handleDoubleClick('ticket')}
-              data-testid="kpi-ticket"
+              data-testid="kpi-cheque"
             >
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-zinc-500">Ticket Promedio</p>
+                    <p className="text-xs text-zinc-500">Cheque Promedio</p>
                     <p className="text-2xl font-bold text-blue-600">{formatCurrency(kpis.ticket_promedio)}</p>
                   </div>
-                  <ShoppingBag className="h-8 w-8 text-blue-200" />
+                  <Receipt className="h-8 w-8 text-blue-200" />
                 </div>
                 <p className="text-xs text-zinc-500 mt-2">{kpis.cheques_total} cheques</p>
               </CardContent>
@@ -364,9 +365,21 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   </div>
                   <Users className="h-8 w-8 text-purple-200" />
                 </div>
-                <p className="text-xs text-zinc-500 mt-2">
-                  {kpis.consumo_persona ? `$${formatNumber(kpis.consumo_persona)}/persona` : `Promedio: ${formatNumber(kpis.pax_promedio)} personas/mesa`}
-                </p>
+                <div className="mt-2">
+                  <p className="text-xs text-zinc-500">
+                    Pax Promedio: <span className="font-semibold text-purple-600">{formatCurrency(kpis.consumo_persona || (kpis.ventas_periodo / kpis.pax_total))}</span>
+                  </p>
+                  {comparativo?.pax_vs_mes_anterior !== undefined && (
+                    <div className="flex items-center gap-1 mt-1">
+                      {comparativo.pax_vs_mes_anterior >= 0 ? 
+                        <ArrowUpRight className="h-3 w-3 text-green-600" /> : 
+                        <ArrowDownRight className="h-3 w-3 text-red-600" />}
+                      <span className={`text-xs ${comparativo.pax_vs_mes_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatPercent(comparativo.pax_vs_mes_anterior)} vs mes ant.
+                      </span>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
@@ -978,6 +991,355 @@ function MesasComensales({ servers, selectedServer, setSelectedServer, selectedS
   );
 }
 
+// ============ TAB 6: REPORTE DE PAX (Nuevo) ============
+function ReportePax({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(null);
+  const [viewMode, setViewMode] = useState('vendedor'); // 'vendedor' o 'ticket'
+  const [expandedRows, setExpandedRows] = useState(new Set());
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: 'total', direction: 'desc' });
+
+  const cargarDatos = async () => {
+    if (!selectedServer || !selectedSucursal) {
+      toast.error('Selecciona servidor y sucursal');
+      return;
+    }
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/comercial/reporte-pax/${selectedServer}`, {
+        params: { sucursal: selectedSucursal, fecha: selectedDate, agrupacion: viewMode },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setData(response.data);
+      setExpandedRows(new Set());
+    } catch (error) {
+      console.error('Error cargando reporte PAX:', error);
+      toast.error('Error al cargar reporte de PAX');
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedServer && selectedSucursal) {
+      cargarDatos();
+    }
+  }, [selectedServer, selectedSucursal, selectedDate, viewMode]);
+
+  const toggleRow = (id) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedRows(newExpanded);
+  };
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Filtrar y ordenar datos
+  const filteredData = React.useMemo(() => {
+    if (!data?.items) return [];
+    let items = [...data.items];
+    
+    // Filtrar por búsqueda
+    if (searchTerm) {
+      items = items.filter(item => 
+        item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.folio?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Ordenar
+    items.sort((a, b) => {
+      const aVal = a[sortConfig.key] || 0;
+      const bVal = b[sortConfig.key] || 0;
+      return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+    
+    return items;
+  }, [data, searchTerm, sortConfig]);
+
+  const SortableHeader = ({ label, sortKey, className = '' }) => (
+    <th 
+      className={`py-2 px-3 cursor-pointer hover:bg-zinc-700 transition-colors ${className}`}
+      onClick={() => handleSort(sortKey)}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        {sortConfig.key === sortKey && (
+          sortConfig.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+        )}
+      </div>
+    </th>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Filtros */}
+      <Card className="border">
+        <CardContent className="py-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex-1 min-w-[180px] max-w-xs">
+              <Label className="text-xs mb-1 block">Servidor</Label>
+              <Select value={selectedServer} onValueChange={setSelectedServer}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                <SelectContent>
+                  {servers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1 min-w-[180px] max-w-xs">
+              <Label className="text-xs mb-1 block">Sucursal</Label>
+              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
+                <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
+                <SelectContent>
+                  {sucursales.map(s => <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="min-w-[150px]">
+              <Label className="text-xs mb-1 block">Fecha</Label>
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="min-w-[150px]">
+              <Label className="text-xs mb-1 block">Agrupar por</Label>
+              <Select value={viewMode} onValueChange={setViewMode}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="vendedor">
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="h-4 w-4" /> Vendedor
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="ticket">
+                    <div className="flex items-center gap-2">
+                      <Receipt className="h-4 w-4" /> Cheque/Ticket
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={cargarDatos} disabled={loading || !selectedServer || !selectedSucursal} className="mt-5">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              Actualizar
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Resumen KPIs */}
+      {data?.resumen && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Card className="border bg-gradient-to-br from-purple-50 to-white">
+            <CardContent className="py-3 text-center">
+              <p className="text-xs text-zinc-500">PAX Total</p>
+              <p className="text-2xl font-bold text-purple-600">{formatNumber(data.resumen.pax_total)}</p>
+            </CardContent>
+          </Card>
+          <Card className="border bg-gradient-to-br from-green-50 to-white">
+            <CardContent className="py-3 text-center">
+              <p className="text-xs text-zinc-500">Ventas Total</p>
+              <p className="text-xl font-bold text-green-600">{formatCurrency(data.resumen.ventas_total)}</p>
+            </CardContent>
+          </Card>
+          <Card className="border bg-gradient-to-br from-blue-50 to-white">
+            <CardContent className="py-3 text-center">
+              <p className="text-xs text-zinc-500">Pax Promedio</p>
+              <p className="text-xl font-bold text-blue-600">{formatCurrency(data.resumen.pax_promedio)}</p>
+            </CardContent>
+          </Card>
+          <Card className="border bg-gradient-to-br from-yellow-50 to-white">
+            <CardContent className="py-3 text-center">
+              <p className="text-xs text-zinc-500">Cheque Promedio</p>
+              <p className="text-xl font-bold text-yellow-600">{formatCurrency(data.resumen.cheque_promedio)}</p>
+            </CardContent>
+          </Card>
+          <Card className="border bg-gradient-to-br from-zinc-50 to-white">
+            <CardContent className="py-3 text-center">
+              <p className="text-xs text-zinc-500">Total Cheques</p>
+              <p className="text-xl font-bold text-zinc-600">{data.resumen.total_cheques}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Comparativo vs Mes/Año anterior */}
+      {data?.comparativo && (
+        <Card className="border">
+          <CardHeader className="py-2">
+            <CardTitle className="text-sm">Comparativo PAX</CardTitle>
+          </CardHeader>
+          <CardContent className="py-2">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="p-3 bg-zinc-50 rounded">
+                <p className="text-xs text-zinc-500 mb-1">vs Día Anterior</p>
+                <p className={`text-lg font-bold ${data.comparativo.vs_dia_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatPercent(data.comparativo.vs_dia_anterior)}
+                </p>
+              </div>
+              <div className="p-3 bg-zinc-50 rounded">
+                <p className="text-xs text-zinc-500 mb-1">vs Mes Anterior (mismo día)</p>
+                <p className={`text-lg font-bold ${data.comparativo.vs_mes_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatPercent(data.comparativo.vs_mes_anterior)}
+                </p>
+              </div>
+              <div className="p-3 bg-zinc-50 rounded">
+                <p className="text-xs text-zinc-500 mb-1">vs Año Anterior (mismo día)</p>
+                <p className={`text-lg font-bold ${data.comparativo.vs_ano_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatPercent(data.comparativo.vs_ano_anterior)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Barra de búsqueda y acciones */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+          <Input
+            placeholder={`Buscar ${viewMode === 'vendedor' ? 'vendedor' : 'folio'}...`}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => toast.info('Exportación a Excel próximamente')}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => toast.info('Exportación a PDF próximamente')}>
+            <FileText className="h-4 w-4 mr-1" /> PDF
+          </Button>
+        </div>
+      </div>
+
+      {/* Tabla con drill-down */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+        </div>
+      ) : filteredData.length > 0 ? (
+        <Card className="border">
+          <CardContent className="p-0">
+            <div className="max-h-[500px] overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-zinc-800 text-white z-10">
+                  <tr>
+                    <th className="py-2 px-3 text-left w-8"></th>
+                    <SortableHeader label={viewMode === 'vendedor' ? 'Vendedor' : 'Folio'} sortKey="nombre" className="text-left" />
+                    <SortableHeader label="PAX" sortKey="pax" className="text-center" />
+                    <SortableHeader label="Total" sortKey="total" className="text-right" />
+                    <SortableHeader label="Pax Promedio" sortKey="pax_promedio" className="text-right" />
+                    {viewMode === 'vendedor' && <SortableHeader label="Cheques" sortKey="num_cheques" className="text-center" />}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredData.map((item, idx) => (
+                    <React.Fragment key={item.id || idx}>
+                      {/* Fila principal */}
+                      <tr 
+                        className={`border-b cursor-pointer hover:bg-zinc-50 transition-colors ${expandedRows.has(item.id) ? 'bg-blue-50' : ''}`}
+                        onClick={() => item.detalle?.length > 0 && toggleRow(item.id)}
+                      >
+                        <td className="py-2 px-3">
+                          {item.detalle?.length > 0 && (
+                            <button className="p-1 hover:bg-zinc-200 rounded">
+                              {expandedRows.has(item.id) ? 
+                                <ChevronDown className="h-4 w-4 text-blue-600" /> : 
+                                <ChevronRight className="h-4 w-4 text-zinc-400" />
+                              }
+                            </button>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 font-medium">
+                          {viewMode === 'vendedor' ? (
+                            <div className="flex items-center gap-2">
+                              <UserCheck className="h-4 w-4 text-zinc-400" />
+                              {item.nombre}
+                            </div>
+                          ) : (
+                            <span className="font-mono">{item.folio}</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 text-center">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
+                            <Users className="h-3 w-3" /> {item.pax}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-right font-semibold text-green-600">
+                          {formatCurrency(item.total)}
+                        </td>
+                        <td className="py-2 px-3 text-right font-semibold text-blue-600">
+                          {formatCurrency(item.pax_promedio)}
+                        </td>
+                        {viewMode === 'vendedor' && (
+                          <td className="py-2 px-3 text-center text-zinc-500">
+                            {item.num_cheques}
+                          </td>
+                        )}
+                      </tr>
+                      
+                      {/* Filas expandidas (detalle) */}
+                      {expandedRows.has(item.id) && item.detalle?.map((det, detIdx) => (
+                        <tr key={`${item.id}-${detIdx}`} className="bg-zinc-50 border-b border-zinc-100">
+                          <td className="py-1 px-3"></td>
+                          <td className="py-1 px-3 pl-10 text-sm text-zinc-600">
+                            {viewMode === 'vendedor' ? (
+                              <span className="font-mono text-xs">{det.folio}</span>
+                            ) : (
+                              <span>{det.vendedor}</span>
+                            )}
+                          </td>
+                          <td className="py-1 px-3 text-center text-sm">{det.pax}</td>
+                          <td className="py-1 px-3 text-right text-sm text-green-600">{formatCurrency(det.total)}</td>
+                          <td className="py-1 px-3 text-right text-sm text-blue-600">{formatCurrency(det.pax_promedio)}</td>
+                          {viewMode === 'vendedor' && <td className="py-1 px-3"></td>}
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      ) : data && (
+        <div className="text-center py-12 text-zinc-500">
+          <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
+          <p>No hay datos de PAX para esta fecha</p>
+        </div>
+      )}
+
+      {/* Tip de uso */}
+      {filteredData.length > 0 && (
+        <p className="text-xs text-zinc-500 italic text-center">
+          💡 Haz clic en una fila para expandir/contraer el detalle. Usa los botones de ordenamiento en las cabeceras.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ============ COMPONENTE PRINCIPAL ============
 export default function Comercial() {
   const [servers, setServers] = useState([]);
@@ -1030,8 +1392,9 @@ export default function Comercial() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 mb-4">
+        <TabsList className="grid w-full grid-cols-6 mb-4">
           <TabsTrigger value="dashboard" className="text-xs"><BarChart3 className="h-4 w-4 mr-1" />Dashboard</TabsTrigger>
+          <TabsTrigger value="pax" className="text-xs"><Users className="h-4 w-4 mr-1" />Reporte PAX</TabsTrigger>
           <TabsTrigger value="ticket" className="text-xs"><Award className="h-4 w-4 mr-1" />Ticket Perfecto</TabsTrigger>
           <TabsTrigger value="metas" className="text-xs"><Target className="h-4 w-4 mr-1" />Metas</TabsTrigger>
           <TabsTrigger value="tiempo" className="text-xs"><Clock className="h-4 w-4 mr-1" />Por Hora/Día</TabsTrigger>
@@ -1039,6 +1402,7 @@ export default function Comercial() {
         </TabsList>
 
         <TabsContent value="dashboard"><DashboardVentas {...commonProps} /></TabsContent>
+        <TabsContent value="pax"><ReportePax {...commonProps} /></TabsContent>
         <TabsContent value="ticket"><TicketPerfecto {...commonProps} /></TabsContent>
         <TabsContent value="metas"><MetasVentas {...commonProps} /></TabsContent>
         <TabsContent value="tiempo"><VentasPorTiempo {...commonProps} /></TabsContent>

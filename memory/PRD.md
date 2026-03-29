@@ -1,16 +1,21 @@
 # Edarsa Hub - PRD
 
-## Última Actualización: Diciembre 2025
+## Última Actualización: Marzo 2026
 
-### Bug Fix Reciente
-- **Corregido (Dic 2025):** Etiqueta "Tipo" en movimientos de inventario ahora muestra "Entrada"/"Salida" correctamente basándose en el signo de la cantidad
+### Bug Fixes y Mejoras Recientes (29 Mar 2026)
+- **Corregido:** Etiqueta "Tipo" en movimientos de inventario ahora muestra "Entrada"/"Salida" basándose en el signo de la cantidad
+- **Renombrado:** "Ticket Promedio" → "Cheque Promedio" y "Consumo por Persona" → "Pax Promedio"
+- **Nuevo:** Comparativa de PAX vs mes/año anterior en Dashboard Comercial
+- **Nuevo:** Reporte de PAX con drill-up/down por vendedor o ticket
+- **Mejorado:** Exportación Excel de Análisis de Inventario ahora ordena por Diferencia_Costo (negativo a positivo)
 
-## CHECKPOINT ESTABLE - 27 Marzo 2026
+## CHECKPOINT ESTABLE - 29 Marzo 2026
 > **Aplicación renombrada a "Edarsa Hub"**
 > **Módulo de Compras con TABS: Dashboard, Autorización, Análisis**
 > **Módulo Comercial (Ventas) con DATOS REALES - ✅ COMPLETADO**
 > **TABLERO EJECUTIVO con MPRO dividido por sucursal - ✅ COMPLETADO (27 Mar 2026)**
 > **Drill-down en KPIs (doble click para ver movimientos) - ✅ COMPLETADO (27 Mar 2026)**
+> **REPORTE DE PAX con drill-down vendedor/ticket - ✅ COMPLETADO (29 Mar 2026)**
 > **Análisis de compras por proveedor con drill-down hasta nivel factura/productos**
 > **Reportes de Análisis de Inventarios funcionando para SoftRestaurant y MPRO.**
 
