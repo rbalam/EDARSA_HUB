@@ -4651,8 +4651,8 @@ async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, crede
             if request.folio_inv_inicial:
                 query_inv_ini = f"""
 SELECT INM.idinsumo as codigo, I.nombre as producto, 
-       INM.existencia as cantidad, ISNULL(I.costopromedio, 0) as costo
-FROM invfisicomov INM
+       INM.fisicoalmacen1 as cantidad, ISNULL(I.costopromedio, 0) as costo
+FROM invfisicomovtos INM
 INNER JOIN insumos I ON I.idinsumo = INM.idinsumo
 WHERE INM.folio = {request.folio_inv_inicial}
 """
@@ -4705,8 +4705,8 @@ GROUP BY PK.idinsumo
             if request.folio_inv_final:
                 query_inv_fin = f"""
 SELECT INM.idinsumo as codigo, I.nombre as producto,
-       INM.existencia as cantidad, ISNULL(I.costopromedio, 0) as costo
-FROM invfisicomov INM
+       INM.fisicoalmacen1 as cantidad, ISNULL(I.costopromedio, 0) as costo
+FROM invfisicomovtos INM
 INNER JOIN insumos I ON I.idinsumo = INM.idinsumo
 WHERE INM.folio = {request.folio_inv_final}
 """
