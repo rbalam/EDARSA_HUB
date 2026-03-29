@@ -328,16 +328,19 @@ const Reportes = () => {
         toast.error('Selecciona una sucursal');
         return;
       }
-      if (!filters.almacen) {
-        toast.error('Selecciona un almacén');
+      if (selectedAlmacenes.length === 0) {
+        toast.error('Selecciona al menos un almacén');
         return;
       }
       if (!filters.fecha_ini || !filters.fecha_fin) {
         toast.error('Selecciona fechas de inicio y fin');
         return;
       }
-      if (!filters.inventario_inicial || !filters.inventario_final) {
-        toast.error('Selecciona inventario inicial y final');
+      // Validar inventarios (multi o single)
+      const hasInvIni = selectedInventariosIni.length > 0 || filters.inventario_inicial;
+      const hasInvFin = selectedInventariosFin.length > 0 || filters.inventario_final;
+      if (!hasInvIni || !hasInvFin) {
+        toast.error('Selecciona inventario(s) inicial(es) y final(es)');
         return;
       }
     }
@@ -347,11 +350,21 @@ const Reportes = () => {
       let response;
       
       if (filters.query_type === 'analisis') {
+        // Obtener folios de inventarios (multi-select o single)
+        const foliosIniciales = selectedInventariosIni.length > 0 
+          ? selectedInventariosIni.map(i => i.folio) 
+          : [filters.inventario_inicial];
+        const foliosFinales = selectedInventariosFin.length > 0 
+          ? selectedInventariosFin.map(i => i.folio) 
+          : [filters.inventario_final];
+        
         // Log para debugging
         console.log('Filtros a enviar:', {
           categorias: selectedCategorias,
           familias: selectedFamilias,
-          subfamilias: selectedSubfamilias
+          subfamilias: selectedSubfamilias,
+          folios_iniciales: foliosIniciales,
+          folios_finales: foliosFinales
         });
         
         // Llamar al endpoint de análisis completo con filtros adicionales
@@ -359,10 +372,13 @@ const Reportes = () => {
           server_id: filters.server_id,
           sucursal: filters.sucursal,
           almacen: filters.almacen,
+          almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes : undefined,
           fecha_ini: filters.fecha_ini,
           fecha_fin: filters.fecha_fin,
-          folio_inicial: filters.inventario_inicial,
-          folio_final: filters.inventario_final,
+          folio_inicial: foliosIniciales.length === 1 ? foliosIniciales[0] : undefined,
+          folio_final: foliosFinales.length === 1 ? foliosFinales[0] : undefined,
+          folios_iniciales: foliosIniciales.length > 1 ? foliosIniciales : undefined,
+          folios_finales: foliosFinales.length > 1 ? foliosFinales : undefined,
           // Filtros adicionales
           categorias: selectedCategorias,
           familias: selectedFamilias,
@@ -936,44 +952,50 @@ const Reportes = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Inventario Inicial {selectedAlmacenes.length > 1 ? '(múltiple)' : ''}</Label>
-              {selectedAlmacenes.length <= 1 ? (
-                <select 
-                  className={selectStyle}
-                  data-testid="inventario-inicial-select"
-                  value={filters.inventario_inicial}
-                  onChange={(e) => handleInventarioInicialChange(e.target.value)}
-                  disabled={selectedAlmacenes.length === 0 || inventarios.length === 0}
-                >
-                  <option value="">{selectedAlmacenes.length === 0 ? "Selecciona almacén primero" : "Selecciona inventario inicial"}</option>
-                  {inventarios.map((inv) => (
-                    <option key={inv.folio} value={inv.folio}>
-                      {inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : 'Sin fecha'} - {inv.comentario || inv.almacen || ''}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <details className="relative">
-                  <summary className={`${selectStyle} cursor-pointer list-none flex items-center justify-between`}>
-                    <span className="truncate">
-                      {selectedInventariosIni.length === 0 
+              <Label>Inventario Inicial (multi-selección)</Label>
+              <details className="relative">
+                <summary className={`${selectStyle} cursor-pointer list-none flex items-center justify-between ${selectedAlmacenes.length === 0 ? 'opacity-50' : ''}`}>
+                  <span className="truncate">
+                    {selectedAlmacenes.length === 0 
+                      ? "Selecciona almacén primero"
+                      : selectedInventariosIni.length === 0 
                         ? "Selecciona inventarios iniciales" 
-                        : `${selectedInventariosIni.length} seleccionado(s)`}
-                    </span>
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </summary>
+                        : `${selectedInventariosIni.length} inventario(s) seleccionado(s)`}
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </summary>
+                {selectedAlmacenes.length > 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {/* Buscador */}
+                    <div className="sticky top-0 bg-white border-b p-2">
+                      <input
+                        type="text"
+                        placeholder="Buscar inventario..."
+                        className="w-full px-2 py-1 text-sm border rounded"
+                        onChange={(e) => {
+                          const searchVal = e.target.value.toLowerCase();
+                          document.querySelectorAll('[data-inv-inicial]').forEach(el => {
+                            const text = el.getAttribute('data-inv-inicial').toLowerCase();
+                            el.style.display = text.includes(searchVal) ? '' : 'none';
+                          });
+                        }}
+                      />
+                    </div>
                     {selectedInventariosIni.length > 0 && (
                       <button
                         type="button"
-                        className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
+                        className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center text-red-600"
                         onClick={() => setSelectedInventariosIni([])}
                       >
-                        <X className="h-3 w-3 mr-1" /> Limpiar selección
+                        <X className="h-3 w-3 mr-1" /> Limpiar selección ({selectedInventariosIni.length})
                       </button>
                     )}
                     {inventarios.map((inv) => (
-                      <label key={inv.folio} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+                      <label 
+                        key={inv.folio} 
+                        data-inv-inicial={`${inv.folio} ${inv.fecha || ''} ${inv.almacen || ''} ${inv.comentario || ''}`}
+                        className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer"
+                      >
                         <input
                           type="checkbox"
                           className="rounded border-zinc-300"
@@ -986,53 +1008,62 @@ const Reportes = () => {
                             }
                           }}
                         />
-                        <span className="text-sm">{inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : ''} - {inv.almacen || ''}</span>
+                        <span className="text-sm">{inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : ''} - {inv.almacen || inv.comentario || ''}</span>
                       </label>
                     ))}
+                    {inventarios.length === 0 && (
+                      <p className="text-xs text-zinc-400 text-center py-3">No hay inventarios disponibles</p>
+                    )}
                   </div>
-                </details>
-              )}
+                )}
+              </details>
             </div>
 
             <div className="space-y-2">
-              <Label>Inventario Final {selectedAlmacenes.length > 1 ? '(múltiple)' : ''}</Label>
-              {selectedAlmacenes.length <= 1 ? (
-                <select 
-                  className={selectStyle}
-                  data-testid="inventario-final-select"
-                  value={filters.inventario_final}
-                  onChange={(e) => handleInventarioFinalChange(e.target.value)}
-                  disabled={selectedAlmacenes.length === 0 || inventarios.length === 0}
-                >
-                  <option value="">{selectedAlmacenes.length === 0 ? "Selecciona almacén primero" : "Selecciona inventario final"}</option>
-                  {inventarios.map((inv) => (
-                    <option key={inv.folio} value={inv.folio}>
-                      {inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : 'Sin fecha'} - {inv.comentario || inv.almacen || ''}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <details className="relative">
-                  <summary className={`${selectStyle} cursor-pointer list-none flex items-center justify-between`}>
-                    <span className="truncate">
-                      {selectedInventariosFin.length === 0 
+              <Label>Inventario Final (multi-selección)</Label>
+              <details className="relative">
+                <summary className={`${selectStyle} cursor-pointer list-none flex items-center justify-between ${selectedAlmacenes.length === 0 ? 'opacity-50' : ''}`}>
+                  <span className="truncate">
+                    {selectedAlmacenes.length === 0 
+                      ? "Selecciona almacén primero"
+                      : selectedInventariosFin.length === 0 
                         ? "Selecciona inventarios finales" 
-                        : `${selectedInventariosFin.length} seleccionado(s)`}
-                    </span>
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </summary>
+                        : `${selectedInventariosFin.length} inventario(s) seleccionado(s)`}
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </summary>
+                {selectedAlmacenes.length > 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {/* Buscador */}
+                    <div className="sticky top-0 bg-white border-b p-2">
+                      <input
+                        type="text"
+                        placeholder="Buscar inventario..."
+                        className="w-full px-2 py-1 text-sm border rounded"
+                        onChange={(e) => {
+                          const searchVal = e.target.value.toLowerCase();
+                          document.querySelectorAll('[data-inv-final]').forEach(el => {
+                            const text = el.getAttribute('data-inv-final').toLowerCase();
+                            el.style.display = text.includes(searchVal) ? '' : 'none';
+                          });
+                        }}
+                      />
+                    </div>
                     {selectedInventariosFin.length > 0 && (
                       <button
                         type="button"
-                        className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center"
+                        className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center text-red-600"
                         onClick={() => setSelectedInventariosFin([])}
                       >
-                        <X className="h-3 w-3 mr-1" /> Limpiar selección
+                        <X className="h-3 w-3 mr-1" /> Limpiar selección ({selectedInventariosFin.length})
                       </button>
                     )}
                     {inventarios.map((inv) => (
-                      <label key={inv.folio} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+                      <label 
+                        key={inv.folio} 
+                        data-inv-final={`${inv.folio} ${inv.fecha || ''} ${inv.almacen || ''} ${inv.comentario || ''}`}
+                        className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer"
+                      >
                         <input
                           type="checkbox"
                           className="rounded border-zinc-300"
@@ -1045,12 +1076,15 @@ const Reportes = () => {
                             }
                           }}
                         />
-                        <span className="text-sm">{inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : ''} - {inv.almacen || ''}</span>
+                        <span className="text-sm">{inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : ''} - {inv.almacen || inv.comentario || ''}</span>
                       </label>
                     ))}
+                    {inventarios.length === 0 && (
+                      <p className="text-xs text-zinc-400 text-center py-3">No hay inventarios disponibles</p>
+                    )}
                   </div>
-                </details>
-              )}
+                )}
+              </details>
             </div>
 
             <div className="space-y-2">

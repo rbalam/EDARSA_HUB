@@ -1678,10 +1678,30 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     server_id = report_params.get('server_id')
     sucursal = report_params.get('sucursal')
     almacen = report_params.get('almacen')
+    almacenes = report_params.get('almacenes', [])  # Multi-almacén
     fecha_ini = report_params.get('fecha_ini')
     fecha_fin = report_params.get('fecha_fin')
     folio_inicial = report_params.get('folio_inicial')
     folio_final = report_params.get('folio_final')
+    
+    # Multi-folios (nuevo)
+    folios_iniciales = report_params.get('folios_iniciales', [])
+    folios_finales = report_params.get('folios_finales', [])
+    
+    # Normalizar a listas - si hay multi-folios, usarlos; si no, usar el individual
+    if folios_iniciales:
+        lista_folios_ini = folios_iniciales
+    elif folio_inicial:
+        lista_folios_ini = [folio_inicial]
+    else:
+        lista_folios_ini = []
+    
+    if folios_finales:
+        lista_folios_fin = folios_finales
+    elif folio_final:
+        lista_folios_fin = [folio_final]
+    else:
+        lista_folios_fin = []
     
     # Filtros adicionales del frontend
     filtro_categorias_frontend = report_params.get('categorias', [])
@@ -1699,7 +1719,11 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
         if server['system_type'] == 'MPRO':
             logging.info(f"Generando análisis de inventario MPRO: {sucursal} - {almacen}")
             logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
-            logging.info(f"Folios: {folio_inicial} a {folio_final}")
+            logging.info(f"Folios iniciales: {lista_folios_ini}, finales: {lista_folios_fin}")
+            
+            # Generar cadenas SQL para folios múltiples
+            folios_ini_sql = ",".join([f"'{f}'" for f in lista_folios_ini]) if lista_folios_ini else "''"
+            folios_fin_sql = ",".join([f"'{f}'" for f in lista_folios_fin]) if lista_folios_fin else "''"
             
             # Obtener filtros configurados del servidor
             tipos_movimiento = server.get('tipos_movimiento', [])
@@ -1802,17 +1826,17 @@ ProductosComoPresentacion AS (
     FROM Producto_Presentacion
 ),
 InventarioInicial AS (
-    -- Sumar inventarios iniciales duplicados por producto
+    -- Sumar inventarios iniciales duplicados por producto (multi-folio)
     SELECT Pr_Cve_Producto, SUM(Fi_Cantidad_Control_1) as Cantidad
     FROM Fisico
-    WHERE Fi_Folio = '{folio_inicial}' AND Al_Cve_Almacen = '{almacen_codigo}'
+    WHERE Fi_Folio IN ({folios_ini_sql}) AND Al_Cve_Almacen = '{almacen_codigo}'
     GROUP BY Pr_Cve_Producto
 ),
 InventarioFinal AS (
-    -- Sumar inventarios finales duplicados por producto
+    -- Sumar inventarios finales duplicados por producto (multi-folio)
     SELECT Pr_Cve_Producto, SUM(Fi_Cantidad_Control_1) as Cantidad
     FROM Fisico
-    WHERE Fi_Folio = '{folio_final}' AND Al_Cve_Almacen = '{almacen_codigo}'
+    WHERE Fi_Folio IN ({folios_fin_sql}) AND Al_Cve_Almacen = '{almacen_codigo}'
     GROUP BY Pr_Cve_Producto
 )
 SELECT TOP 3000
@@ -1969,7 +1993,7 @@ INNER JOIN Producto P_PRES ON P_PRES.Pr_Cve_Producto = PP.Pp_Producto
 INNER JOIN Producto P_INS ON P_INS.Pr_Cve_Producto = PP.Pr_Cve_Producto
 INNER JOIN Fisico F ON F.Pr_Cve_Producto = PP.Pp_Producto
     AND F.Al_Cve_Almacen = '{almacen_codigo}'
-    AND F.Fi_Folio IN ('{folio_inicial}', '{folio_final}')
+    AND F.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql})
 WHERE P_INS.Dp_Cve_Departamento = '0007'
 """
             errores_result = execute_sql_query(
@@ -2054,14 +2078,19 @@ WHERE P_INS.Dp_Cve_Departamento = '0007'
         elif server['system_type'] == 'SoftRestaurant':
             # Análisis de inventario para SoftRestaurant
             logging.info(f"Generando análisis de inventario SoftRestaurant: {almacen}")
-            logging.info(f"Folios: {folio_inicial} a {folio_final}")
+            logging.info(f"Folios iniciales: {lista_folios_ini}, finales: {lista_folios_fin}")
             logging.info(f"Filtros frontend - Categorias: {filtro_categorias_frontend}, Familias: {filtro_familias_frontend}, SubFamilias: {filtro_subfamilias_frontend}")
+            
+            # Generar cadenas SQL para folios múltiples
+            folios_ini_sql_sr = ",".join([str(f) for f in lista_folios_ini]) if lista_folios_ini else "0"
+            folios_fin_sql_sr = ",".join([str(f) for f in lista_folios_fin]) if lista_folios_fin else "0"
+            all_folios_sql = f"{folios_ini_sql_sr},{folios_fin_sql_sr}"
             
             # Obtener fechas de los folios de inventario
             fechas_query = f"""
 SELECT folio, fecha
 FROM invfisico
-WHERE folio IN ({folio_inicial}, {folio_final})
+WHERE folio IN ({all_folios_sql})
 ORDER BY folio
 """
             fechas_result = execute_sql_query(
@@ -2069,20 +2098,23 @@ ORDER BY folio
                 server['username'], server['password'], fechas_query
             )
             
-            # Extraer fechas con hora completa
+            # Extraer fechas con hora completa (usar primera y última)
             fecha_ini = None
             fecha_fin = None
+            folios_ini_set = set(str(f) for f in lista_folios_ini)
+            folios_fin_set = set(str(f) for f in lista_folios_fin)
             for row in fechas_result:
-                if str(row['folio']) == str(folio_inicial):
-                    # Usar fecha completa con hora, formato: YYYY-MM-DD HH:MM:SS
-                    fecha_str = str(row['fecha'])[:19].replace('T', ' ')  # Normalizar formato
-                    fecha_ini = fecha_str
-                elif str(row['folio']) == str(folio_final):
-                    fecha_str = str(row['fecha'])[:19].replace('T', ' ')  # Normalizar formato
-                    fecha_fin = fecha_str
+                folio_str = str(row['folio'])
+                fecha_str = str(row['fecha'])[:19].replace('T', ' ')  # Normalizar formato
+                if folio_str in folios_ini_set:
+                    if not fecha_ini or fecha_str < fecha_ini:
+                        fecha_ini = fecha_str
+                elif folio_str in folios_fin_set:
+                    if not fecha_fin or fecha_str > fecha_fin:
+                        fecha_fin = fecha_str
             
             if not fecha_ini or not fecha_fin:
-                logging.warning(f"No se encontraron fechas para los folios {folio_inicial} y {folio_final}")
+                logging.warning(f"No se encontraron fechas para los folios {lista_folios_ini} y {lista_folios_fin}")
                 fecha_ini = fecha_ini or "2000-01-01 00:00:00"
                 fecha_fin = fecha_fin or "2099-12-31 23:59:59"
             
@@ -2260,7 +2292,7 @@ LEFT JOIN insumos I_PRES ON I_PRES.idinsumo = IP.idinsumo
 LEFT JOIN insumos I_INS ON I_INS.idinsumo = FMOV.idinsumo
 LEFT JOIN gruposi GP_INS ON GP_INS.idgruposi = I_INS.idgruposi
 LEFT JOIN gruposiclasificacion GC_INS ON GC_INS.idgruposiclasificacion = GP_INS.idgruposiclasificacion
-WHERE FMOV.folio IN ({folio_inicial}, {folio_final})
+WHERE FMOV.folio IN ({all_folios_sql})
   AND AL.nombre LIKE '%{almacen}%'
 ORDER BY FMOV.folio, CODIGO
 """
@@ -2280,19 +2312,27 @@ ORDER BY FMOV.folio, CODIGO
                 # Solo incluir si tiene existencia != 0
                 if existencia == 0:
                     continue
-                    
-                if str(inv['folio']) == str(folio_inicial):
-                    inv_inicial_dict[codigo] = {
-                        'existencia': existencia,
-                        'costo': float(inv['costo'] or 0),
-                        'tipo': inv['TIPO']
-                    }
-                elif str(inv['folio']) == str(folio_final):
-                    inv_final_dict[codigo] = {
-                        'existencia': existencia,
-                        'costo': float(inv['costo'] or 0),
-                        'tipo': inv['TIPO']
-                    }
+                
+                folio_str = str(inv['folio'])
+                
+                # Acumular inventarios iniciales
+                if folio_str in folios_ini_set:
+                    if codigo not in inv_inicial_dict:
+                        inv_inicial_dict[codigo] = {
+                            'existencia': 0,
+                            'costo': float(inv['costo'] or 0),
+                            'tipo': inv['TIPO']
+                        }
+                    inv_inicial_dict[codigo]['existencia'] += existencia
+                # Acumular inventarios finales
+                elif folio_str in folios_fin_set:
+                    if codigo not in inv_final_dict:
+                        inv_final_dict[codigo] = {
+                            'existencia': 0,
+                            'costo': float(inv['costo'] or 0),
+                            'tipo': inv['TIPO']
+                        }
+                    inv_final_dict[codigo]['existencia'] += existencia
             
             logging.info(f"Inventario inicial: {len(inv_inicial_dict)} productos, Final: {len(inv_final_dict)} productos")
             

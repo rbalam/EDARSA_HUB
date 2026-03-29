@@ -14,6 +14,10 @@
 - **Reorganizado (29 Mar 2026):** KPIs del Dashboard Comercial - Nueva estructura:
   - **Fila 1:** Ventas del Período, Pax Promedio (Ventas ÷ PAX), Cheque Promedio (Ventas ÷ Cheques)
   - **Fila 2:** PAX Total, Cheques Total, Rotación Mesas
+- **Nuevo (29 Mar 2026):** Multi-selección de Inventarios en Reportes
+  - Inventario Inicial y Final ahora soportan selección múltiple
+  - Incluye buscador dentro del dropdown
+  - Backend actualizado para combinar múltiples folios en el análisis
 
 ## CHECKPOINT ESTABLE - 29 Marzo 2026
 > **Aplicación renombrada a "Edarsa Hub"**
