@@ -74,21 +74,29 @@ const UnidadCard = ({ unidad, onClick }) => {
             <VariacionBadge valor={unidad.var_vs_año_ant} />
           </div>
           
-          <div className="border-t pt-2 mt-2 grid grid-cols-2 gap-2 text-xs text-center">
-            <div>
+          <div className="border-t pt-2 mt-2 grid grid-cols-2 gap-2 text-xs">
+            <div className="text-center">
               <span className="text-zinc-500">PAX</span>
+            </div>
+            <div className="text-center">
+              <span className="text-zinc-500">Cheques</span>
+            </div>
+            <div>
               <p className="font-semibold">{unidad.pax?.toLocaleString()}</p>
             </div>
             <div>
-              <span className="text-zinc-500">Cheques</span>
               <p className="font-semibold">{unidad.cheques?.toLocaleString()}</p>
             </div>
-            <div>
+            <div className="text-center">
               <span className="text-zinc-500">Ticket</span>
+            </div>
+            <div className="text-center">
+              <span className="text-zinc-500">Proyección</span>
+            </div>
+            <div>
               <p className="font-semibold">{formatCurrency(unidad.ticket_prom)}</p>
             </div>
             <div>
-              <span className="text-zinc-500">Proyección</span>
               <p className="font-semibold text-orange-600">{formatCurrency(unidad.proyeccion)}</p>
             </div>
           </div>
@@ -179,6 +187,10 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
                   </div>
                   <p className="text-xl font-bold text-blue-600">{unidad.pax?.toLocaleString()}</p>
                   <p className="text-xs text-zinc-500">Ticket: {formatCurrency(unidad.ticket_prom)}</p>
+                  <div className="flex gap-2 mt-1">
+                    <span className="text-xs">Mes: <VariacionBadge valor={unidad.pax_ant > 0 ? ((unidad.pax - unidad.pax_ant) / unidad.pax_ant * 100) : 0} /></span>
+                    <span className="text-xs">Año: <VariacionBadge valor={unidad.pax_año > 0 ? ((unidad.pax - unidad.pax_año) / unidad.pax_año * 100) : 0} /></span>
+                  </div>
                 </CardContent>
               </Card>
               
@@ -190,6 +202,10 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
                   </div>
                   <p className="text-xl font-bold text-purple-600">{unidad.cheques?.toLocaleString()}</p>
                   <p className="text-xs text-zinc-500">Promedio: {formatCurrency(unidad.cheque_prom)}</p>
+                  <div className="flex gap-2 mt-1">
+                    <span className="text-xs">Mes: <VariacionBadge valor={unidad.cheques_ant > 0 ? ((unidad.cheques - unidad.cheques_ant) / unidad.cheques_ant * 100) : 0} /></span>
+                    <span className="text-xs">Año: <VariacionBadge valor={unidad.cheques_año > 0 ? ((unidad.cheques - unidad.cheques_año) / unidad.cheques_año * 100) : 0} /></span>
+                  </div>
                 </CardContent>
               </Card>
               
@@ -201,6 +217,10 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
                   </div>
                   <p className="text-xl font-bold text-orange-600">{formatCurrency(unidad.proyeccion)}</p>
                   <p className="text-xs text-zinc-500">Mes completo</p>
+                  <div className="flex gap-2 mt-1">
+                    <span className="text-xs">vs Mes: <VariacionBadge valor={unidad.ventas_ant > 0 ? ((unidad.proyeccion - unidad.ventas_ant) / unidad.ventas_ant * 100) : 0} /></span>
+                    <span className="text-xs">vs Año: <VariacionBadge valor={unidad.ventas_año > 0 ? ((unidad.proyeccion - unidad.ventas_año) / unidad.ventas_año * 100) : 0} /></span>
+                  </div>
                 </CardContent>
               </Card>
             </div>
