@@ -213,20 +213,20 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
                   <div>
                     <p className="text-xs text-zinc-500">Mes Actual</p>
                     <p className="font-bold text-lg">{formatCurrency(unidad.ventas)}</p>
-                    <p className="text-xs">{unidad.cheques} cheques</p>
                     <p className="text-xs text-purple-600">{unidad.pax || 0} pax</p>
+                    <p className="text-xs">{unidad.cheques} cheques</p>
                   </div>
                   <div>
                     <p className="text-xs text-zinc-500">Mes Anterior</p>
                     <p className="font-bold text-lg">{formatCurrency(unidad.ventas_ant)}</p>
-                    <p className="text-xs">{unidad.cheques_ant} cheques</p>
                     <p className="text-xs text-purple-600">{unidad.pax_ant || 0} pax</p>
+                    <p className="text-xs">{unidad.cheques_ant} cheques</p>
                   </div>
                   <div>
                     <p className="text-xs text-zinc-500">Año Anterior</p>
                     <p className="font-bold text-lg">{formatCurrency(unidad.ventas_año)}</p>
-                    <p className="text-xs">{unidad.cheques_año} cheques</p>
                     <p className="text-xs text-purple-600">{unidad.pax_año || 0} pax</p>
+                    <p className="text-xs">{unidad.cheques_año} cheques</p>
                   </div>
                 </div>
               </CardContent>
