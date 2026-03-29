@@ -4,10 +4,12 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
 import { 
   Loader2, TrendingUp, TrendingDown, RefreshCw, Building2, Users, Receipt, 
-  DollarSign, ArrowLeft, ChevronRight, Target, Clock, Utensils, X
+  DollarSign, ArrowLeft, ChevronRight, Target, Clock, Utensils, X,
+  BarChart3, Wallet, UserCircle, Award
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -72,7 +74,7 @@ const UnidadCard = ({ unidad, onClick }) => {
             <VariacionBadge valor={unidad.var_vs_año_ant} />
           </div>
           
-          <div className="border-t pt-2 mt-2 grid grid-cols-2 gap-2 text-xs">
+          <div className="border-t pt-2 mt-2 grid grid-cols-2 gap-2 text-xs text-center">
             <div>
               <span className="text-zinc-500">PAX</span>
               <p className="font-semibold">{unidad.pax?.toLocaleString()}</p>
@@ -373,38 +375,61 @@ export default function TableroEjecutivo() {
     <div className="space-y-4" data-testid="tablero-ejecutivo">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-zinc-800">Tablero Comercial</h1>
-        <p className="text-sm text-zinc-500">KPIs consolidados de ventas • Clic en unidad para ver detalle</p>
+        <h1 className="text-2xl font-bold text-zinc-800">Tablero Ejecutivo</h1>
+        <p className="text-sm text-zinc-500">Vista consolidada para directivos • Clic en unidad para detalle</p>
       </div>
 
-      {/* Filtros */}
-      <Card className="border bg-white">
-        <CardContent className="py-3">
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="w-36">
-              <Select value={String(mes)} onValueChange={(v) => setMes(parseInt(v))}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Mes" /></SelectTrigger>
-                <SelectContent>{meses.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="w-28">
-              <Select value={String(anio)} onValueChange={(v) => setAnio(parseInt(v))}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Año" /></SelectTrigger>
-                <SelectContent>{anios.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <Button onClick={cargarDatos} disabled={loading} size="sm">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-              Actualizar
-            </Button>
-            {data?.periodo && (
-              <span className="text-xs text-zinc-500 ml-auto bg-zinc-100 px-2 py-1 rounded">
-                {nombreMes} {data.periodo.anio} • Día {data.periodo.dias_transcurridos} de {data.periodo.dias_mes}
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Tabs de Sub-tableros */}
+      <Tabs defaultValue="comercial" className="w-full">
+        <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 mb-4">
+          <TabsTrigger value="comercial" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Comercial
+          </TabsTrigger>
+          <TabsTrigger value="finanzas" className="flex items-center gap-2" disabled>
+            <Wallet className="h-4 w-4" />
+            Finanzas
+          </TabsTrigger>
+          <TabsTrigger value="rh" className="flex items-center gap-2" disabled>
+            <UserCircle className="h-4 w-4" />
+            RH
+          </TabsTrigger>
+          <TabsTrigger value="bsc" className="flex items-center gap-2" disabled>
+            <Award className="h-4 w-4" />
+            BSC
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab Comercial (Actual) */}
+        <TabsContent value="comercial">
+          {/* Filtros */}
+          <Card className="border bg-white">
+            <CardContent className="py-3">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="w-36">
+                  <Select value={String(mes)} onValueChange={(v) => setMes(parseInt(v))}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Mes" /></SelectTrigger>
+                    <SelectContent>{meses.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="w-28">
+                  <Select value={String(anio)} onValueChange={(v) => setAnio(parseInt(v))}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Año" /></SelectTrigger>
+                    <SelectContent>{anios.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={cargarDatos} disabled={loading} size="sm">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                  Actualizar
+                </Button>
+                {data?.periodo && (
+                  <span className="text-xs text-zinc-500 ml-auto bg-zinc-100 px-2 py-1 rounded">
+                    {nombreMes} {data.periodo.anio} • Día {data.periodo.dias_transcurridos} de {data.periodo.dias_mes}
+                  </span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
       {/* TOTALES - Vista Ejecutiva Grande */}
       {data?.totales && (
@@ -535,6 +560,41 @@ export default function TableroEjecutivo() {
           <span className="ml-2 text-zinc-500">Consultando todas las unidades...</span>
         </div>
       )}
+        </TabsContent>
+
+        {/* Tab Finanzas (Próximamente) */}
+        <TabsContent value="finanzas">
+          <Card className="border bg-zinc-50">
+            <CardContent className="py-12 text-center">
+              <Wallet className="h-12 w-12 mx-auto text-zinc-300 mb-4" />
+              <h3 className="text-lg font-semibold text-zinc-600">Tablero Financiero</h3>
+              <p className="text-sm text-zinc-500 mt-2">Próximamente: Flujo de caja, cuentas por cobrar/pagar, indicadores financieros</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab RH (Próximamente) */}
+        <TabsContent value="rh">
+          <Card className="border bg-zinc-50">
+            <CardContent className="py-12 text-center">
+              <UserCircle className="h-12 w-12 mx-auto text-zinc-300 mb-4" />
+              <h3 className="text-lg font-semibold text-zinc-600">Tablero de Recursos Humanos</h3>
+              <p className="text-sm text-zinc-500 mt-2">Próximamente: Plantilla, rotación, productividad, horas extra</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab BSC (Próximamente) */}
+        <TabsContent value="bsc">
+          <Card className="border bg-zinc-50">
+            <CardContent className="py-12 text-center">
+              <Award className="h-12 w-12 mx-auto text-zinc-300 mb-4" />
+              <h3 className="text-lg font-semibold text-zinc-600">Balance Scorecard</h3>
+              <p className="text-sm text-zinc-500 mt-2">Próximamente: Perspectivas financiera, cliente, procesos, aprendizaje</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Modal de Detalle */}
       {unidadSeleccionada && (

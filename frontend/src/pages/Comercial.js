@@ -1457,6 +1457,9 @@ export default function Comercial() {
 
   useEffect(() => {
     if (selectedServer) {
+      // Limpiar sucursal al cambiar de servidor para forzar re-carga
+      setSelectedSucursal('');
+      
       const fetchSucursales = async () => {
         try {
           const token = localStorage.getItem('token');
@@ -1468,7 +1471,10 @@ export default function Comercial() {
           
           // Auto-seleccionar si solo hay una sucursal (CIENFUEGOS, LA ESTELAR)
           if (sucursalesData.length === 1) {
-            setSelectedSucursal(sucursalesData[0].nombre);
+            // Usar setTimeout para asegurar que el estado se actualice después del clear
+            setTimeout(() => {
+              setSelectedSucursal(sucursalesData[0].nombre);
+            }, 50);
             setShowSucursalSelector(false);
           } else if (sucursalesData.length > 1) {
             setShowSucursalSelector(true);
@@ -1478,19 +1484,16 @@ export default function Comercial() {
               try {
                 const filters = JSON.parse(savedFilters);
                 if (filters.sucursal && sucursalesData.some(s => s.nombre === filters.sucursal)) {
-                  setSelectedSucursal(filters.sucursal);
-                } else {
-                  setSelectedSucursal('');
+                  setTimeout(() => {
+                    setSelectedSucursal(filters.sucursal);
+                  }, 50);
                 }
               } catch (e) {
-                setSelectedSucursal('');
+                // mantener vacío
               }
-            } else {
-              setSelectedSucursal('');
             }
           } else {
             setShowSucursalSelector(false);
-            setSelectedSucursal('');
           }
         } catch (error) {
           console.error('Error:', error);
@@ -1499,6 +1502,10 @@ export default function Comercial() {
         }
       };
       fetchSucursales();
+    } else {
+      setSucursales([]);
+      setShowSucursalSelector(false);
+      setSelectedSucursal('');
     }
   }, [selectedServer]);
 
