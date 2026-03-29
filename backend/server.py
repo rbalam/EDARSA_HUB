@@ -2214,9 +2214,9 @@ WHERE P_INS.Dp_Cve_Departamento = '0007'
                 comentarios_fin_str = ', '.join([i.get('comentario', '') for i in inventarios_finales_info if i.get('comentario')]) if inventarios_finales_info else ''
                 
                 results.append({
-                    'Folio_Inv_Ini': folios_ini_str,
+                    'ID_Inv_Ini': folios_ini_str,
                     'Comentario_Ini': comentarios_ini_str,
-                    'Folio_Inv_Fin': folios_fin_str,
+                    'ID_Inv_Fin': folios_fin_str,
                     'Comentario_Fin': comentarios_fin_str,
                     'Tipo': tipo_producto,
                     'Categoria': prod.get('Categoria'),
@@ -2746,7 +2746,17 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
                 # Tipo del producto (INSUMO o PRESENTACION)
                 tipo_producto = inv_ini.get('tipo') or inv_fin.get('tipo') or prod_info.get('TABLA', '')
                 
+                # Construir strings de folios para SoftRestaurant
+                # Para Soft, el "comentario" es el nombre del almacén
+                folios_ini_str = ', '.join([str(f) for f in lista_folios_ini])
+                folios_fin_str = ', '.join([str(f) for f in lista_folios_fin])
+                almacen_nombre_soft = almacen or ''  # El almacén viene como nombre en SoftRestaurant
+                
                 results.append({
+                    'ID_Inv_Ini': folios_ini_str,
+                    'Comentario_Ini': almacen_nombre_soft,
+                    'ID_Inv_Fin': folios_fin_str,
+                    'Comentario_Fin': almacen_nombre_soft,
                     'Categoria': prod_info.get('CATEGORIA', 'Sin Categoría'),
                     'Familia': prod_info.get('GRUPO', 'Sin Familia'),
                     'SubFamilia': tipo_producto,  # Mostrar si es INSUMO o PRESENTACION
