@@ -4888,26 +4888,34 @@ ORDER BY total DESC
             }
         
         elif server['system_type'] == 'SoftRestaurant':
-            # SoftRestaurant tiene estructura diferente - usamos movimientos de entrada
-            query_compras = """
-SELECT ISNULL(SUM(M.cantidad * M.costo), 0) as total
-FROM movtosalmacen M
-INNER JOIN conceptos C ON C.idconcepto = M.idconcepto
-WHERE C.tipo = 1
-    AND M.fecha >= DATEADD(day, -30, GETDATE())
+            # SoftRestaurant - Usando tabla compras del catálogo
+            from datetime import datetime, timedelta
+            fecha_fin = datetime.now().strftime('%Y-%m-%d')
+            fecha_ini = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+            
+            # Total compras del mes (usando tabla compras)
+            query_compras = f"""
+SELECT 
+    COUNT(DISTINCT c.idcompra) as Facturas,
+    ISNULL(SUM(c.total), 0) as Compra_Total
+FROM compras c
+WHERE c.fecha >= '{fecha_ini}'
+  AND c.fecha <= '{fecha_fin} 23:59:59'
 """
             result_compras = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], query_compras
             )
-            total_compras = float(result_compras[0]['total']) if result_compras else 0
+            total_compras = float(result_compras[0]['Compra_Total'] or 0) if result_compras else 0
+            facturas = int(result_compras[0]['Facturas'] or 0) if result_compras else 0
             
-            # Proveedores activos
-            query_prov = """
-SELECT COUNT(DISTINCT M.idproveedor) as total
-FROM movtosalmacen M
-WHERE M.fecha >= DATEADD(day, -90, GETDATE())
-    AND M.idproveedor IS NOT NULL
+            # Proveedores activos (con compras en últimos 90 días)
+            fecha_90 = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
+            query_prov = f"""
+SELECT COUNT(DISTINCT c.idproveedor) as total
+FROM compras c
+WHERE c.fecha >= '{fecha_90}'
+  AND c.idproveedor IS NOT NULL
 """
             result_prov = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -4915,28 +4923,29 @@ WHERE M.fecha >= DATEADD(day, -90, GETDATE())
             )
             prov_activos = result_prov[0]['total'] if result_prov else 0
             
-            # Top proveedores
-            query_top = """
+            # Top proveedores usando tabla compras
+            query_top = f"""
 SELECT TOP 5 
-    P.nombre as nombre,
-    SUM(M.cantidad * M.costo) as total
-FROM movtosalmacen M
-INNER JOIN proveedores P ON P.idproveedor = M.idproveedor
-INNER JOIN conceptos C ON C.idconcepto = M.idconcepto
-WHERE C.tipo = 1
-    AND M.fecha >= DATEADD(day, -30, GETDATE())
-GROUP BY P.nombre
-ORDER BY total DESC
+    ISNULL(p.nombre, 'Sin proveedor') as nombre,
+    COUNT(DISTINCT c.idcompra) as Facturas,
+    ISNULL(SUM(c.total), 0) as total
+FROM compras c
+LEFT JOIN proveedores p ON p.idproveedor = c.idproveedor
+WHERE c.fecha >= '{fecha_ini}'
+  AND c.fecha <= '{fecha_fin} 23:59:59'
+GROUP BY p.nombre
+ORDER BY SUM(c.total) DESC
 """
             result_top = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], query_top
             )
-            top_proveedores = [{"nombre": r['nombre'], "total": float(r['total'] or 0)} for r in result_top]
+            top_proveedores = [{"nombre": r['nombre'], "total": float(r['total'] or 0)} for r in (result_top or [])]
             
             return {
                 "kpis": {
                     "total_compras_mes": total_compras,
+                    "facturas_mes": facturas,
                     "requisiciones_pendientes": 0,  # SoftRestaurant no tiene este concepto
                     "proveedores_activos": prov_activos,
                     "alertas_activas": 0
