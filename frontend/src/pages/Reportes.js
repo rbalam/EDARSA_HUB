@@ -208,14 +208,21 @@ const Reportes = () => {
       try {
         let allInventarios = [];
         for (const almacen of selectedAlmacenes) {
+          // FIX: El endpoint espera 'sucursal' y 'almacen' (nombres), no IDs
+          const sucursalParam = selectedServer?.system_type === 'SoftRestaurant' 
+            ? 'SoftRestaurant'  // SoftRestaurant no usa sucursales
+            : (filters.sucursal || '');
+          
           const response = await api.get(`/compras/inventarios-fisicos/${filters.server_id}`, {
             params: { 
-              almacen_id: almacen.id,
-              sucursal_id: filters.sucursal_id || ''
+              sucursal: sucursalParam,
+              almacen: almacen.nombre || ''
             }
           });
+          // La respuesta es un array directo, no {inventarios: [...]}
+          const inventariosData = Array.isArray(response.data) ? response.data : (response.data.inventarios || []);
           // Agregar el nombre del almacén a cada inventario
-          const inventariosConAlmacen = (response.data.inventarios || []).map(inv => ({
+          const inventariosConAlmacen = inventariosData.map(inv => ({
             ...inv,
             almacen: almacen.nombre,
             almacen_id: almacen.id
@@ -234,7 +241,7 @@ const Reportes = () => {
         loadAllInventarios();
       }
     }
-  }, [filters.server_id, filters.sucursal_id, selectedAlmacenes, selectedServer]);
+  }, [filters.server_id, filters.sucursal_id, selectedAlmacenes, selectedServer, filters.sucursal]);
 
   // AUTO-CALCULAR fechas cuando ambos inventarios estén seleccionados
   useEffect(() => {
@@ -949,6 +956,28 @@ const Reportes = () => {
                   </div>
                 </div>
               </details>
+              {/* Badges de almacenes seleccionados */}
+              {selectedAlmacenes.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {selectedAlmacenes.map(alm => (
+                    <span key={alm.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">
+                      {alm.nombre}
+                      <X 
+                        className="h-3 w-3 cursor-pointer hover:text-blue-900" 
+                        onClick={() => {
+                          const newSelected = selectedAlmacenes.filter(a => a.id !== alm.id);
+                          setSelectedAlmacenes(newSelected);
+                          setSelectedInventariosIni([]);
+                          setSelectedInventariosFin([]);
+                          if (newSelected.length === 0) {
+                            setFilters({...filters, almacen_id: '', almacen: '', inventario_inicial: '', inventario_final: ''});
+                          }
+                        }}
+                      />
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -1017,6 +1046,20 @@ const Reportes = () => {
                   </div>
                 )}
               </details>
+              {/* Badges de inventarios iniciales seleccionados */}
+              {selectedInventariosIni.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {selectedInventariosIni.map(inv => (
+                    <span key={inv.folio} className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">
+                      {inv.folio} - {inv.fecha?.split(' ')[0] || ''}
+                      <X 
+                        className="h-3 w-3 cursor-pointer hover:text-green-900" 
+                        onClick={() => setSelectedInventariosIni(selectedInventariosIni.filter(i => i.folio !== inv.folio))}
+                      />
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -1085,6 +1128,20 @@ const Reportes = () => {
                   </div>
                 )}
               </details>
+              {/* Badges de inventarios finales seleccionados */}
+              {selectedInventariosFin.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {selectedInventariosFin.map(inv => (
+                    <span key={inv.folio} className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-50 text-orange-700 text-xs rounded-full">
+                      {inv.folio} - {inv.fecha?.split(' ')[0] || ''}
+                      <X 
+                        className="h-3 w-3 cursor-pointer hover:text-orange-900" 
+                        onClick={() => setSelectedInventariosFin(selectedInventariosFin.filter(i => i.folio !== inv.folio))}
+                      />
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

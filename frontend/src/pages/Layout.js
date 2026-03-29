@@ -38,12 +38,6 @@ const Layout = () => {
   
   const modulos = [
     { 
-      name: 'Dashboard', 
-      href: '/dashboard', 
-      icon: LayoutDashboard, 
-      roles: ['Usuario', 'Supervisor', 'Administrador'],
-    },
-    { 
       name: 'Tablero Ejecutivo', 
       href: '/tablero-ejecutivo', 
       icon: PieChart, 
@@ -65,6 +59,12 @@ const Layout = () => {
       name: 'Inventarios', 
       href: '/reportes', 
       icon: Warehouse, 
+      roles: ['Usuario', 'Supervisor', 'Administrador'],
+    },
+    { 
+      name: 'Dashboard Inventarios', 
+      href: '/dashboard', 
+      icon: LayoutDashboard, 
       roles: ['Usuario', 'Supervisor', 'Administrador'],
     },
     { 

@@ -2,7 +2,20 @@
 
 ## Última Actualización: Marzo 2026
 
-### Bug Fixes y Mejoras Recientes (29 Mar 2026)
+### Bug Fixes y Mejoras Recientes (29 Mar 2026 - Sesión 2)
+- **Corregido:** Bug rutas - "Tablero de Dirección" ya no abre "Dashboard de Inventarios" 
+  - Menú reorganizado: "Tablero Ejecutivo" primero, "Dashboard Inventarios" debajo de "Inventarios"
+  - Redirect por defecto ahora va a `/tablero-ejecutivo`
+- **Nuevo:** Badges en multi-selectores de Inventarios
+  - Almacenes seleccionados muestran badges azules con "×" para eliminar
+  - Inventarios iniciales seleccionados muestran badges verdes
+  - Inventarios finales seleccionados muestran badges naranjas
+- **Corregido:** Inventarios no cargaban para SoftRestaurant ("No hay inventarios disponibles")
+  - El endpoint esperaba `sucursal` y `almacen` (nombres), pero frontend enviaba `sucursal_id` y `almacen_id`
+  - Ahora pasa `sucursal: 'SoftRestaurant'` para servidores SoftRestaurant
+  - Parsing de respuesta corregido (acepta array directo o `{inventarios: [...]}`)
+
+### Bug Fixes y Mejoras Anteriores (29 Mar 2026)
 - **Corregido:** Etiqueta "Tipo" en movimientos usa el campo `C.tipo` de la BD (no el signo de cantidad)
 - **Renombrado:** "Ticket Promedio" → "Cheque Promedio" y "Consumo por Persona" → "Pax Promedio"
 - **Renombrado:** "Cienfuegos SoftRestaurant" → "CIENFUEGOS" (en MongoDB)
