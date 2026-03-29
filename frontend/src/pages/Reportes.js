@@ -208,17 +208,20 @@ const Reportes = () => {
       try {
         let allInventarios = [];
         for (const almacen of selectedAlmacenes) {
-          // FIX: El endpoint espera 'sucursal' y 'almacen' (nombres), no IDs
-          const sucursalParam = selectedServer?.system_type === 'SoftRestaurant' 
-            ? 'SoftRestaurant'  // SoftRestaurant no usa sucursales
-            : (filters.sucursal || '');
+          // Para MPRO usar sucursal_id, para SoftRestaurant usar 'SoftRestaurant'
+          const params = {
+            almacen: almacen.nombre || ''
+          };
           
-          const response = await api.get(`/compras/inventarios-fisicos/${filters.server_id}`, {
-            params: { 
-              sucursal: sucursalParam,
-              almacen: almacen.nombre || ''
-            }
-          });
+          if (selectedServer?.system_type === 'SoftRestaurant') {
+            params.sucursal = 'SoftRestaurant';
+          } else {
+            // MPRO: usar sucursal_id para filtro correcto
+            params.sucursal_id = filters.sucursal_id || '';
+            params.sucursal = filters.sucursal || '';
+          }
+          
+          const response = await api.get(`/compras/inventarios-fisicos/${filters.server_id}`, { params });
           // La respuesta es un array directo, no {inventarios: [...]}
           const inventariosData = Array.isArray(response.data) ? response.data : (response.data.inventarios || []);
           // Agregar el nombre del almacén a cada inventario

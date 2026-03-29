@@ -3991,7 +3991,7 @@ class CalculoPedidoRequest(BaseModel):
 # ============= MÓDULO DE COMPRAS - ENDPOINTS =============
 
 @api_router.get("/compras/inventarios-fisicos/{server_id}")
-async def obtener_inventarios_fisicos(server_id: str, sucursal: str, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def obtener_inventarios_fisicos(server_id: str, sucursal: str = None, sucursal_id: str = None, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Obtiene la lista de inventarios físicos disponibles para seleccionar, filtrado por almacén y sucursal"""
     verify_token(credentials.credentials)
     
@@ -4000,14 +4000,21 @@ async def obtener_inventarios_fisicos(server_id: str, sucursal: str, almacen: st
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     if server['system_type'] == 'MPRO':
-        # Obtener almacén código si se especifica
+        # Para MPRO, los almacenes tienen el mismo ID en diferentes sucursales
+        # Necesitamos filtrar por la combinación Almacen.Sc_Cve_Sucursal + Almacen.Al_Cve_Almacen
+        
+        # Filtro por almacén
         almacen_filtro = ""
         if almacen and almacen != "TODOS" and almacen:
             almacen_filtro = f"AND A.Al_Descripcion LIKE '%{almacen}%'"
         
-        # Filtro por sucursal usando LIKE con el nombre exacto
+        # Filtro por sucursal - CRÍTICO: usar la clave de sucursal del Almacén
         sucursal_filtro = "1=1"
-        if sucursal:
+        if sucursal_id:
+            # Filtrar almacenes que pertenecen a esta sucursal específica
+            sucursal_filtro = f"A.Sc_Cve_Sucursal = '{sucursal_id}'"
+        elif sucursal:
+            # Fallback: buscar por nombre de sucursal
             sucursal_filtro = f"S.Sc_Descripcion LIKE '%{sucursal}%'"
         
         query = f"""
@@ -4016,24 +4023,25 @@ SELECT DISTINCT
     F.Fi_Fecha as fecha,
     A.Al_Descripcion as almacen,
     S.Sc_Descripcion as sucursal,
+    A.Sc_Cve_Sucursal as sucursal_id,
     ISNULL(F.Fi_Comentario, '') as comentario,
     COUNT(DISTINCT F.Pr_Cve_Producto) as total_productos
 FROM Fisico F
-INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen
+INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
 WHERE {sucursal_filtro}
     {almacen_filtro}
-GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, S.Sc_Descripcion, F.Fi_Comentario
+GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, S.Sc_Descripcion, A.Sc_Cve_Sucursal, F.Fi_Comentario
 ORDER BY F.Fi_Fecha DESC
 """
-        logging.info(f"Inventarios MPRO - Sucursal: '{sucursal}', Almacén: '{almacen}', Filtro: {sucursal_filtro}")
+        logging.info(f"Inventarios MPRO - Sucursal ID: '{sucursal_id}', Nombre: '{sucursal}', Almacén: '{almacen}'")
         result = execute_sql_query(
             server['host'], server['port'], server['database'],
             server['username'], server['password'], query
         )
         logging.info(f"Inventarios MPRO - Encontrados: {len(result)}")
         return [{"folio": r['folio'], "fecha": str(r['fecha']), "almacen": r['almacen'], 
-                 "sucursal": r.get('sucursal', ''),
+                 "sucursal": r.get('sucursal', ''), "sucursal_id": r.get('sucursal_id', ''),
                  "comentario": r['comentario'], "productos": r['total_productos']} for r in result]
     
     elif server['system_type'] == 'SoftRestaurant':
