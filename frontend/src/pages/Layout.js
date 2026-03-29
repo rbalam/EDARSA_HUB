@@ -15,7 +15,11 @@ import {
   Database,
   TableProperties,
   PieChart,
-  Warehouse
+  Warehouse,
+  DollarSign,
+  Factory,
+  UserCircle,
+  BarChart3
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -31,11 +35,6 @@ const Layout = () => {
   // ============================================
   // MÓDULOS OPERATIVOS (Estructura ERP)
   // ============================================
-  // 1. Tablero de Control (Dashboard) - KPIs consolidados
-  // 2. Comercial (Ventas y CRM) - Ventas, PAX, análisis comercial
-  // 3. Compras (Procurement) - Requisiciones, autorizaciones, auditoría
-  // 4. Inventarios y Almacén - Existencias, movimientos, análisis
-  // ============================================
   
   const modulos = [
     { 
@@ -43,42 +42,63 @@ const Layout = () => {
       href: '/dashboard', 
       icon: LayoutDashboard, 
       roles: ['Usuario', 'Supervisor', 'Administrador'],
-      descripcion: 'Vista general del sistema'
     },
     { 
       name: 'Tablero Ejecutivo', 
       href: '/tablero-ejecutivo', 
       icon: PieChart, 
       roles: ['Supervisor', 'Administrador'],
-      descripcion: 'KPIs consolidados multi-sucursal'
     },
     { 
       name: 'Comercial', 
       href: '/comercial', 
       icon: TrendingUp, 
       roles: ['Usuario', 'Supervisor', 'Administrador'],
-      descripcion: 'Ventas, PAX, cheques, tendencias'
     },
     { 
       name: 'Compras', 
       href: '/compras', 
       icon: ShoppingCart, 
       roles: ['Usuario', 'Supervisor', 'Administrador'],
-      descripcion: 'Requisiciones, auditoría operativa'
     },
     { 
       name: 'Inventarios', 
       href: '/reportes', 
       icon: Warehouse, 
       roles: ['Usuario', 'Supervisor', 'Administrador'],
-      descripcion: 'Existencias, movimientos, análisis'
+    },
+    { 
+      name: 'Finanzas', 
+      href: '/finanzas', 
+      icon: DollarSign, 
+      roles: ['Supervisor', 'Administrador'],
+      badge: 'Próx.'
+    },
+    { 
+      name: 'Producción', 
+      href: '/produccion', 
+      icon: Factory, 
+      roles: ['Supervisor', 'Administrador'],
+      badge: 'Próx.'
+    },
+    { 
+      name: 'Recursos Humanos', 
+      href: '/recursos-humanos', 
+      icon: UserCircle, 
+      roles: ['Supervisor', 'Administrador'],
+      badge: 'Próx.'
+    },
+    { 
+      name: 'Reportes BI', 
+      href: '/reportes-bi', 
+      icon: BarChart3, 
+      roles: ['Supervisor', 'Administrador'],
+      badge: 'Próx.'
     },
   ];
 
   // ============================================
   // SISTEMA (Administración y Configuración)
-  // ============================================
-  // Gestión técnica: servidores, BD, usuarios, alertas
   // ============================================
   
   const sistema = [
@@ -142,10 +162,15 @@ const Layout = () => {
                         ? 'bg-zinc-800 text-white' 
                         : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                     }`}
-                    data-testid={`nav-${item.name.toLowerCase()}`}
+                    data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                   >
                     <Icon className="h-5 w-5" />
-                    <span className="font-medium">{item.name}</span>
+                    <span className="font-medium flex-1">{item.name}</span>
+                    {item.badge && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
+                        {item.badge}
+                      </span>
+                    )}
                   </Link>
                 );
               })}

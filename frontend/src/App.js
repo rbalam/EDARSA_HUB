@@ -12,6 +12,10 @@ import CatalogoConsultas from '@/pages/CatalogoConsultas';
 import ExploradorBD from '@/pages/ExploradorBD';
 import Alertas from '@/pages/Alertas';
 import Usuarios from '@/pages/Usuarios';
+import Finanzas from '@/pages/Finanzas';
+import Produccion from '@/pages/Produccion';
+import RecursosHumanos from '@/pages/RecursosHumanos';
+import ReportesBI from '@/pages/ReportesBI';
 import { isAuthenticated } from '@/lib/auth';
 
 function App() {
@@ -33,6 +37,11 @@ function App() {
             <Route path="explorador-bd" element={<ExploradorBD />} />
             <Route path="alertas" element={<Alertas />} />
             <Route path="usuarios" element={<Usuarios />} />
+            {/* Nuevos módulos ERP */}
+            <Route path="finanzas" element={<Finanzas />} />
+            <Route path="produccion" element={<Produccion />} />
+            <Route path="recursos-humanos" element={<RecursosHumanos />} />
+            <Route path="reportes-bi" element={<ReportesBI />} />
           </Route>
           
           <Route path="*" element={<Navigate to={isAuthenticated() ? "/dashboard" : "/login"} replace />} />

@@ -27,6 +27,18 @@
   - Consultas almacenadas en MongoDB (colección `consultas_custom`)
   - Botón de eliminar para consultas personalizadas
   - Las consultas custom se mezclan con las predefinidas y muestran etiqueta "Custom"
+- **Corregido (29 Mar 2026):** Error `Invalid object name 'invfisicomov'` en Auditoría Operativa
+  - Nombre de tabla corregido a `invfisicomovtos` y columna `fisicoalmacen1`
+- **Nuevo (29 Mar 2026):** Menú ERP Completo con módulos placeholder
+  - Finanzas (Próximamente) - Libro Mayor, Cuentas, Conciliación
+  - Producción MRP (Próximamente) - Órdenes, BOM, Tiempos
+  - Recursos Humanos (Próximamente) - Nómina, Asistencias, Vacaciones
+  - Reportes BI (Próximamente) - Análisis Predictivo, KPIs
+
+### Sistema Standalone (Pendiente - Solo cuando haya cliente)
+Cuando un cliente requiera usar el sistema SIN BD externa:
+- Crear colecciones MongoDB: productos, inventarios, ventas, compras, etc.
+- Estimación: ~2,000-2,800 créditos
 
 ## CHECKPOINT ESTABLE - 29 Marzo 2026
 > **Aplicación renombrada a "Edarsa Hub"**
