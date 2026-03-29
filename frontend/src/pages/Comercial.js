@@ -248,7 +248,7 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                 </SelectContent>
               </Select>
             </div>
-            <div className={`flex-1 min-w-[180px] max-w-xs ${sucursales.length <= 1 ? 'hidden' : ''}`}>
+            <div className="flex-1 min-w-[180px] max-w-xs">
               <Label className="text-xs mb-1 block">Sucursal</Label>
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
@@ -1139,7 +1139,7 @@ function ReportePax({ servers, selectedServer, setSelectedServer, selectedSucurs
                 </SelectContent>
               </Select>
             </div>
-            <div className={`flex-1 min-w-[180px] max-w-xs ${sucursales.length <= 1 ? 'hidden' : ''}`}>
+            <div className="flex-1 min-w-[180px] max-w-xs">
               <Label className="text-xs mb-1 block">Sucursal</Label>
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>

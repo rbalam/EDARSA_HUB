@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, User, Shield, Eye, Settings, Server, Building2, Warehouse } from 'lucide-react';
+import { Plus, Trash2, User, Shield, Eye, Settings, Server, Building2, Warehouse, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Usuarios = () => {
@@ -28,6 +28,9 @@ const Usuarios = () => {
     role: 'Usuario',
     sucursales: []
   });
+  
+  const [editMode, setEditMode] = useState(false);
+  const [editUserId, setEditUserId] = useState(null);
   
   const [permissionsData, setPermissionsData] = useState({
     allowed_servers: [],
@@ -90,14 +93,36 @@ const Usuarios = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/auth/register', formData);
-      toast.success('Usuario creado exitosamente');
+      if (editMode && editUserId) {
+        // Actualizar usuario existente
+        const updateData = { ...formData };
+        if (!updateData.password) delete updateData.password; // No enviar password vacío
+        await api.put(`/users/${editUserId}`, updateData);
+        toast.success('Usuario actualizado exitosamente');
+      } else {
+        // Crear nuevo usuario
+        await api.post('/auth/register', formData);
+        toast.success('Usuario creado exitosamente');
+      }
       setDialogOpen(false);
       resetForm();
       loadUsers();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error al crear usuario');
+      toast.error(error.response?.data?.detail || 'Error al guardar usuario');
     }
+  };
+
+  const openEditDialog = (user) => {
+    setEditMode(true);
+    setEditUserId(user.id);
+    setFormData({
+      name: user.name,
+      email: user.email,
+      password: '', // No mostrar contraseña
+      role: user.role,
+      sucursales: user.sucursales || []
+    });
+    setDialogOpen(true);
   };
 
   const handleDelete = async (userId) => {
@@ -197,6 +222,8 @@ const Usuarios = () => {
       role: 'Usuario',
       sucursales: []
     });
+    setEditMode(false);
+    setEditUserId(null);
   };
 
   const getRoleBadge = (role) => {
@@ -272,6 +299,10 @@ const Usuarios = () => {
                   )}
                 </div>
                 <div className="flex gap-2 mt-4">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => openEditDialog(user)} data-testid="edit-user-button">
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
                   {user.role !== 'Administrador' && (
                     <Button variant="outline" size="sm" className="flex-1" onClick={() => openPermissionsDialog(user)} data-testid="permissions-button">
                       <Settings className="h-4 w-4 mr-1" />
@@ -295,7 +326,7 @@ const Usuarios = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Nuevo Usuario</DialogTitle>
+            <DialogTitle>{editMode ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
             <DialogDescription>Crea un nuevo usuario para el sistema</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -308,8 +339,8 @@ const Usuarios = () => {
               <Input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required data-testid="user-email-input" />
             </div>
             <div className="space-y-2">
-              <Label>Contraseña</Label>
-              <Input type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required data-testid="user-password-input" />
+              <Label>{editMode ? 'Nueva Contraseña (dejar vacío para no cambiar)' : 'Contraseña'}</Label>
+              <Input type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required={!editMode} placeholder={editMode ? "Dejar vacío para mantener" : ""} data-testid="user-password-input" />
             </div>
             <div className="space-y-2">
               <Label>Rol</Label>

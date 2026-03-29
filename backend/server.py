@@ -732,7 +732,25 @@ async def update_user(user_id: str, user_data: Dict, current_user: Dict = Depend
     if current_user['role'] != 'Administrador':
         raise HTTPException(status_code=403, detail="No autorizado")
     
-    await db.users.update_one({"id": user_id}, {"$set": user_data})
+    # Preparar datos de actualización
+    update_data = {}
+    if 'name' in user_data:
+        update_data['name'] = user_data['name']
+    if 'email' in user_data:
+        update_data['email'] = user_data['email']
+    if 'role' in user_data:
+        update_data['role'] = user_data['role']
+    if 'sucursales' in user_data:
+        update_data['sucursales'] = user_data['sucursales']
+    
+    # Solo hashear contraseña si se proporciona una nueva
+    if 'password' in user_data and user_data['password']:
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        update_data['password'] = pwd_context.hash(user_data['password'])
+    
+    if update_data:
+        await db.users.update_one({"id": user_id}, {"$set": update_data})
     return {"message": "Usuario actualizado"}
 
 @api_router.delete("/users/{user_id}")
@@ -4851,14 +4869,14 @@ async def obtener_dashboard_compras(server_id: str, sucursal: str = None, creden
         if server['system_type'] == 'MPRO':
             # Total compras del mes actual FILTRADO POR SUCURSAL
             query_compras = f"""
-SELECT ISNULL(SUM(M.Mv_Importe), 0) as total
+SELECT ISNULL(SUM(M.Mv_Costo_Importe), 0) as total
 FROM Movimiento M
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
-WHERE TM.Tm_Entrada_Salida = 'E'
-    AND TM.Tm_Cve_Tipo_Movimiento LIKE '%COMP%'
+WHERE TM.Tm_Tipo = 'E'
+    AND (TM.Tm_Descripcion LIKE '%COMP%' OR TM.Tm_Cve_Tipo_Movimiento LIKE '%COMP%')
     AND M.Mv_Fecha >= DATEADD(day, -30, GETDATE())
-    AND M.Es_Cve_Estado <> 'CA'
+    AND ISNULL(M.Es_Cve_Estado, '') <> 'CA'
     AND S.Sc_Descripcion LIKE '%{sucursal}%'
 """
             result_compras = execute_sql_query(
@@ -4898,14 +4916,14 @@ WHERE M.Mv_Fecha >= DATEADD(day, -90, GETDATE())
             query_top = f"""
 SELECT TOP 5 
     P.Pv_Nombre as nombre,
-    SUM(M.Mv_Importe) as total
+    SUM(M.Mv_Costo_Importe) as total
 FROM Movimiento M
 INNER JOIN Proveedor P ON P.Pv_Cve_Proveedor = M.Pv_Cve_Proveedor
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
-WHERE TM.Tm_Entrada_Salida = 'E'
+WHERE TM.Tm_Tipo = 'E'
     AND M.Mv_Fecha >= DATEADD(day, -30, GETDATE())
-    AND M.Es_Cve_Estado <> 'CA'
+    AND ISNULL(M.Es_Cve_Estado, '') <> 'CA'
     AND S.Sc_Descripcion LIKE '%{sucursal}%'
 GROUP BY P.Pv_Nombre
 ORDER BY total DESC
@@ -5022,16 +5040,16 @@ SELECT
     P.Pv_Cve_Proveedor as codigo,
     P.Pv_Nombre as nombre,
     MONTH(M.Mv_Fecha) as mes,
-    SUM(M.Mv_Importe) as total
+    SUM(M.Mv_Costo_Importe) as total
 FROM Movimiento M
 INNER JOIN Proveedor P ON P.Pv_Cve_Proveedor = M.Pv_Cve_Proveedor
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
-WHERE TM.Tm_Entrada_Salida = 'E'
+WHERE TM.Tm_Tipo = 'E'
     AND YEAR(M.Mv_Fecha) = {request.anio}
     AND ({meses_cond})
     AND S.Sc_Descripcion LIKE '%{request.sucursal}%'
-    AND M.Es_Cve_Estado <> 'CA'
+    AND ISNULL(M.Es_Cve_Estado, '') <> 'CA'
 GROUP BY P.Pv_Cve_Proveedor, P.Pv_Nombre, MONTH(M.Mv_Fecha)
 ORDER BY P.Pv_Nombre, MONTH(M.Mv_Fecha)
 """

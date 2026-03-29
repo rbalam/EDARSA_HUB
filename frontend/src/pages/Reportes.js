@@ -851,7 +851,7 @@ const Reportes = () => {
                 value={filters.query_type}
                 onChange={(e) => setFilters({...filters, query_type: e.target.value})}
               >
-                <option value="analisis">Análisis Completo de Inventario</option>
+                <option value="analisis">Análisis de Inventarios</option>
                 <option value="ventas">Ventas</option>
                 <option value="movimientos">Movimientos</option>
                 <option value="productos">Productos</option>
