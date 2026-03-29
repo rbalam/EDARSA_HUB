@@ -1852,6 +1852,10 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     folios_iniciales = report_params.get('folios_iniciales', [])
     folios_finales = report_params.get('folios_finales', [])
     
+    # Info completa de inventarios (folio + comentario) para MPRO
+    inventarios_iniciales_info = report_params.get('inventarios_iniciales_info', [])
+    inventarios_finales_info = report_params.get('inventarios_finales_info', [])
+    
     # Normalizar a listas - si hay multi-folios, usarlos; si no, usar el individual
     if folios_iniciales:
         lista_folios_ini = folios_iniciales
@@ -2203,7 +2207,17 @@ WHERE P_INS.Dp_Cve_Departamento = '0007'
                 # Teórico = Ventas × Costo
                 teorico_ventas = ventas_total * costo
                 
+                # Construir strings de folios y comentarios para MPRO
+                folios_ini_str = ', '.join([i.get('folio', '') for i in inventarios_iniciales_info]) if inventarios_iniciales_info else ', '.join(lista_folios_ini)
+                folios_fin_str = ', '.join([i.get('folio', '') for i in inventarios_finales_info]) if inventarios_finales_info else ', '.join(lista_folios_fin)
+                comentarios_ini_str = ', '.join([i.get('comentario', '') for i in inventarios_iniciales_info if i.get('comentario')]) if inventarios_iniciales_info else ''
+                comentarios_fin_str = ', '.join([i.get('comentario', '') for i in inventarios_finales_info if i.get('comentario')]) if inventarios_finales_info else ''
+                
                 results.append({
+                    'Folio_Inv_Ini': folios_ini_str,
+                    'Comentario_Ini': comentarios_ini_str,
+                    'Folio_Inv_Fin': folios_fin_str,
+                    'Comentario_Fin': comentarios_fin_str,
                     'Tipo': tipo_producto,
                     'Categoria': prod.get('Categoria'),
                     'Familia': prod.get('Familia'),

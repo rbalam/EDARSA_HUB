@@ -407,6 +407,10 @@ const Reportes = () => {
           folios_finales: foliosFinales
         });
         
+        // Preparar info de inventarios para MPRO (folio + comentario)
+        const inventariosIniInfo = selectedInventariosIni.map(i => ({ folio: i.folio, comentario: i.comentario || '' }));
+        const inventariosFinInfo = selectedInventariosFin.map(i => ({ folio: i.folio, comentario: i.comentario || '' }));
+        
         // Llamar al endpoint de análisis completo con filtros adicionales
         response = await api.post('/reports/inventory-analysis', {
           server_id: filters.server_id,
@@ -419,6 +423,9 @@ const Reportes = () => {
           folio_final: foliosFinales.length === 1 ? foliosFinales[0] : undefined,
           folios_iniciales: foliosIniciales.length > 1 ? foliosIniciales : undefined,
           folios_finales: foliosFinales.length > 1 ? foliosFinales : undefined,
+          // Info completa de inventarios para MPRO
+          inventarios_iniciales_info: inventariosIniInfo,
+          inventarios_finales_info: inventariosFinInfo,
           // Filtros adicionales
           categorias: selectedCategorias,
           familias: selectedFamilias,
