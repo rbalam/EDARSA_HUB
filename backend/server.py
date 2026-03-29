@@ -4933,14 +4933,15 @@ ORDER BY total DESC
             fecha_fin = datetime.now().strftime('%Y-%m-%d')
             fecha_ini = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
             
-            # Total compras del mes (usando tabla compras)
+            # Total compras del mes (usando tabla compras - columna correcta: fechaaplicacion)
             query_compras = f"""
 SELECT 
     COUNT(DISTINCT c.idcompra) as Facturas,
     ISNULL(SUM(c.total), 0) as Compra_Total
 FROM compras c
-WHERE c.fecha >= '{fecha_ini}'
-  AND c.fecha <= '{fecha_fin} 23:59:59'
+WHERE c.fechaaplicacion >= '{fecha_ini}'
+  AND c.fechaaplicacion <= '{fecha_fin} 23:59:59'
+  AND ISNULL(c.cancelado, 0) = 0
 """
             result_compras = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -4954,8 +4955,9 @@ WHERE c.fecha >= '{fecha_ini}'
             query_prov = f"""
 SELECT COUNT(DISTINCT c.idproveedor) as total
 FROM compras c
-WHERE c.fecha >= '{fecha_90}'
+WHERE c.fechaaplicacion >= '{fecha_90}'
   AND c.idproveedor IS NOT NULL
+  AND ISNULL(c.cancelado, 0) = 0
 """
             result_prov = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -4971,8 +4973,9 @@ SELECT TOP 5
     ISNULL(SUM(c.total), 0) as total
 FROM compras c
 LEFT JOIN proveedores p ON p.idproveedor = c.idproveedor
-WHERE c.fecha >= '{fecha_ini}'
-  AND c.fecha <= '{fecha_fin} 23:59:59'
+WHERE c.fechaaplicacion >= '{fecha_ini}'
+  AND c.fechaaplicacion <= '{fecha_fin} 23:59:59'
+  AND ISNULL(c.cancelado, 0) = 0
 GROUP BY p.nombre
 ORDER BY SUM(c.total) DESC
 """

@@ -308,9 +308,30 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
 export default function TableroEjecutivo() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
-  const [mes, setMes] = useState(0);
-  const [anio, setAnio] = useState(0);
+  const [mes, setMes] = useState(() => {
+    const saved = localStorage.getItem('tablero_filtros');
+    if (saved) {
+      try {
+        return JSON.parse(saved).mes || 0;
+      } catch (e) { return 0; }
+    }
+    return 0;
+  });
+  const [anio, setAnio] = useState(() => {
+    const saved = localStorage.getItem('tablero_filtros');
+    if (saved) {
+      try {
+        return JSON.parse(saved).anio || 0;
+      } catch (e) { return 0; }
+    }
+    return 0;
+  });
   const [unidadSeleccionada, setUnidadSeleccionada] = useState(null);
+
+  // Guardar filtros cuando cambien
+  useEffect(() => {
+    localStorage.setItem('tablero_filtros', JSON.stringify({ mes, anio }));
+  }, [mes, anio]);
 
   const meses = [
     { value: '0', label: 'Mes Actual' },

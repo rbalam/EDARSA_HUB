@@ -185,7 +185,7 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
 }
 
 // ============ TAB 1: DASHBOARD DE VENTAS ============
-function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
+function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector }) {
   const [loading, setLoading] = useState(false);
   const [kpis, setKpis] = useState(null);
   const [comparativo, setComparativo] = useState(null);
@@ -248,7 +248,7 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-1 min-w-[180px] max-w-xs">
+            <div className={`flex-1 min-w-[180px] max-w-xs ${sucursales.length <= 1 ? 'hidden' : ''}`}>
               <Label className="text-xs mb-1 block">Sucursal</Label>
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
@@ -1139,7 +1139,7 @@ function ReportePax({ servers, selectedServer, setSelectedServer, selectedSucurs
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-1 min-w-[180px] max-w-xs">
+            <div className={`flex-1 min-w-[180px] max-w-xs ${sucursales.length <= 1 ? 'hidden' : ''}`}>
               <Label className="text-xs mb-1 block">Sucursal</Label>
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
@@ -1387,6 +1387,30 @@ export default function Comercial() {
   const [selectedSucursal, setSelectedSucursal] = useState('');
   const [sucursales, setSucursales] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showSucursalSelector, setShowSucursalSelector] = useState(true);
+
+  // Cargar filtros guardados al inicio
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('comercial_filters');
+    if (savedFilters) {
+      try {
+        const filters = JSON.parse(savedFilters);
+        if (filters.server) setSelectedServer(filters.server);
+        if (filters.tab) setActiveTab(filters.tab);
+      } catch (e) {}
+    }
+  }, []);
+
+  // Guardar filtros cuando cambien
+  useEffect(() => {
+    if (selectedServer) {
+      localStorage.setItem('comercial_filters', JSON.stringify({
+        server: selectedServer,
+        sucursal: selectedSucursal,
+        tab: activeTab
+      }));
+    }
+  }, [selectedServer, selectedSucursal, activeTab]);
 
   useEffect(() => {
     const fetchServers = async () => {
@@ -1411,18 +1435,46 @@ export default function Comercial() {
           const response = await axios.get(`${API_URL}/api/servers/${selectedServer}/sucursales`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          setSucursales(response.data);
-          setSelectedSucursal('');
+          const sucursalesData = response.data || [];
+          setSucursales(sucursalesData);
+          
+          // Auto-seleccionar si solo hay una sucursal (CIENFUEGOS, LA ESTELAR)
+          if (sucursalesData.length === 1) {
+            setSelectedSucursal(sucursalesData[0].nombre);
+            setShowSucursalSelector(false);
+          } else if (sucursalesData.length > 1) {
+            setShowSucursalSelector(true);
+            // Restaurar sucursal guardada si existe
+            const savedFilters = localStorage.getItem('comercial_filters');
+            if (savedFilters) {
+              try {
+                const filters = JSON.parse(savedFilters);
+                if (filters.sucursal && sucursalesData.some(s => s.nombre === filters.sucursal)) {
+                  setSelectedSucursal(filters.sucursal);
+                } else {
+                  setSelectedSucursal('');
+                }
+              } catch (e) {
+                setSelectedSucursal('');
+              }
+            } else {
+              setSelectedSucursal('');
+            }
+          } else {
+            setShowSucursalSelector(false);
+            setSelectedSucursal('');
+          }
         } catch (error) {
           console.error('Error:', error);
           setSucursales([]);
+          setShowSucursalSelector(false);
         }
       };
       fetchSucursales();
     }
   }, [selectedServer]);
 
-  const commonProps = { servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales };
+  const commonProps = { servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector };
 
   return (
     <div className="space-y-4" data-testid="comercial-module">

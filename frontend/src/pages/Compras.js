@@ -86,19 +86,21 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, selected
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-1 min-w-[200px] max-w-xs">
-              <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
-                <SelectTrigger>
-                  <SelectValue placeholder={selectedServer ? "Seleccionar sucursal" : "Selecciona servidor primero"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {sucursales.map(s => (
-                    <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {sucursales.length > 1 && (
+              <div className="flex-1 min-w-[200px] max-w-xs">
+                <Label className="text-xs mb-1 block">Sucursal</Label>
+                <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={selectedServer ? "Seleccionar sucursal" : "Selecciona servidor primero"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sucursales.map(s => (
+                      <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <Button onClick={cargarDashboard} disabled={!selectedServer || !selectedSucursal || loading} variant="outline" className="mt-5">
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Actualizar
@@ -402,19 +404,21 @@ function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer, se
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Sucursal</Label>
-              <Select value={parentSucursal} onValueChange={setParentSucursal} disabled={!selectedServer}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60 overflow-y-auto">
-                  {parentSucursales.map(suc => (
-                    <SelectItem key={suc.codigo || suc.nombre} value={suc.nombre}>{suc.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {parentSucursales.length > 1 && (
+              <div className="space-y-1">
+                <Label className="text-xs">Sucursal</Label>
+                <Select value={parentSucursal} onValueChange={setParentSucursal} disabled={!selectedServer}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    {parentSucursales.map(suc => (
+                      <SelectItem key={suc.codigo || suc.nombre} value={suc.nombre}>{suc.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1">
               <Label className="text-xs">Folio Inv. Inicial</Label>
               <Select value={folioInvFisico} onValueChange={(val) => { 
@@ -673,19 +677,21 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {sucursales.map(s => (
-                    <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {sucursales.length > 1 && (
+              <div className="space-y-1">
+                <Label className="text-xs">Sucursal</Label>
+                <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sucursales.map(s => (
+                      <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1">
               <Label className="text-xs">Año</Label>
               <Select value={String(anio)} onValueChange={(v) => setAnio(Number(v))}>
@@ -1148,21 +1154,23 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Sucursal</Label>
-              <Select value={parentSucursal} onValueChange={setParentSucursal} disabled={!selectedServer}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent>
-                  {parentSucursales.map(suc => (
-                    <SelectItem key={suc.codigo || suc.nombre} value={suc.nombre}>
-                      {suc.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {parentSucursales.length > 1 && (
+              <div className="space-y-1">
+                <Label className="text-xs">Sucursal</Label>
+                <Select value={parentSucursal} onValueChange={setParentSucursal} disabled={!selectedServer}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {parentSucursales.map(suc => (
+                      <SelectItem key={suc.codigo || suc.nombre} value={suc.nombre}>
+                        {suc.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1">
               <Label className="text-xs">Requisición a Comparar *</Label>
               <Select value={folioPedido} onValueChange={setFolioPedido}>
