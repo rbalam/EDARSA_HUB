@@ -6728,6 +6728,12 @@ async def tablero_ejecutivo(
     totales["ticket_prom"] = round(totales["ventas"] / totales["pax"], 2) if totales["pax"] > 0 else 0
     totales["cheque_prom"] = round(totales["ventas"] / totales["cheques"], 2) if totales["cheques"] > 0 else 0
     
+    # Proyección vs ventas año anterior (comparar proyección con ventas_año)
+    totales["var_proy_vs_año"] = round(((totales["proyeccion"] - totales["ventas_año"]) / totales["ventas_año"] * 100), 1) if totales["ventas_año"] > 0 else 0
+    
+    # Contar unidades que tenían ventas el año anterior (ventas_año > 0)
+    totales["unidades_año_ant"] = sum(1 for u in resultados if u.get("ventas_año", 0) > 0)
+    
     # Ordenar unidades de mayor a menor venta
     resultados_ordenados = sorted(resultados, key=lambda x: x.get('ventas', 0), reverse=True)
     

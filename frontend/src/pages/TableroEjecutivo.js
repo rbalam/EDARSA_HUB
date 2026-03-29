@@ -20,7 +20,8 @@ const formatCurrency = (num) => {
 };
 
 const formatPercent = (num) => {
-  if (num === null || num === undefined || num === 0) return '-';
+  if (num === null || num === undefined) return '0%';
+  if (num === 0) return '0%';
   const prefix = num > 0 ? '+' : '';
   return `${prefix}${num.toFixed(1)}%`;
 };
@@ -437,12 +438,28 @@ export default function TableroEjecutivo() {
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">Proyección Mes</p>
                 <p className="text-2xl font-bold text-orange-400">{formatCurrency(data.totales.proyeccion)}</p>
                 <p className="text-xs text-zinc-400 mt-1">Si mantiene ritmo</p>
+                <div className="flex gap-3 mt-2">
+                  <div>
+                    <span className="text-xs text-zinc-400">vs Año Ant.</span>
+                    <p className={`text-sm font-bold ${(data.totales.var_proy_vs_año || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {formatPercent(data.totales.var_proy_vs_año || 0)}
+                    </p>
+                  </div>
+                </div>
               </div>
               
               <div>
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">Unidades</p>
                 <p className="text-2xl font-bold">{data.unidades?.length || 0}</p>
                 <p className="text-xs text-zinc-400 mt-1">Conectadas</p>
+                <div className="flex gap-3 mt-2">
+                  <div>
+                    <span className="text-xs text-zinc-400">Año Ant.</span>
+                    <p className="text-sm font-bold text-zinc-300">
+                      {data.totales.unidades_año_ant || 0}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
