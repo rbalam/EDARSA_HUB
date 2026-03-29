@@ -15,7 +15,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 const formatCurrency = (num) => {
   if (num === null || num === undefined) return '-';
   if (num >= 1000000) return `$${(num/1000000).toFixed(2)}M`;
-  if (num >= 1000) return `$${(num/1000).toFixed(0)}K`;
+  if (num >= 1000) return `$${(num/1000).toFixed(2)}K`;
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(num);
 };
 
@@ -374,8 +374,8 @@ export default function TableroEjecutivo() {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-800">Tablero de Dirección</h1>
-          <p className="text-sm text-zinc-500">Vista consolidada de todas las unidades • Clic para ver detalle</p>
+          <h1 className="text-2xl font-bold text-zinc-800">Tablero Comercial</h1>
+          <p className="text-sm text-zinc-500">KPIs consolidados de ventas • Clic en unidad para ver detalle</p>
         </div>
       </div>
 
@@ -414,11 +414,11 @@ export default function TableroEjecutivo() {
           <CardContent className="py-6">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
               {/* Ventas Consolidadas */}
-              <div className="col-span-2 md:col-span-1 flex flex-col">
+              <div className="col-span-2 md:col-span-1 flex flex-col text-center">
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">Ventas Consolidadas</p>
                 <p className="text-3xl font-bold text-green-400">{formatCurrency(data.totales.ventas)}</p>
                 <p className="text-xs text-zinc-400 mt-1">&nbsp;</p>
-                <div className="flex gap-4 mt-auto pt-2">
+                <div className="flex gap-4 mt-auto pt-2 justify-center">
                   <div className="text-center">
                     <span className="text-xs text-zinc-400 block">vs Mes</span>
                     <p className={`font-bold ${data.totales.var_vs_mes_ant >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -435,11 +435,11 @@ export default function TableroEjecutivo() {
               </div>
               
               {/* PAX Total */}
-              <div className="flex flex-col">
+              <div className="flex flex-col text-center">
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">PAX Total</p>
                 <p className="text-2xl font-bold">{data.totales.pax?.toLocaleString()}</p>
                 <p className="text-xs text-zinc-400 mt-1">Ticket: {formatCurrency(data.totales.ticket_prom)}</p>
-                <div className="flex gap-4 mt-auto pt-2">
+                <div className="flex gap-4 mt-auto pt-2 justify-center">
                   <div className="text-center">
                     <span className="text-xs text-zinc-400 block">vs Mes</span>
                     <p className={`text-sm font-bold ${(data.totales.var_pax_mes || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -456,11 +456,11 @@ export default function TableroEjecutivo() {
               </div>
               
               {/* Cheques */}
-              <div className="flex flex-col">
+              <div className="flex flex-col text-center">
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">Cheques</p>
                 <p className="text-2xl font-bold">{data.totales.cheques?.toLocaleString()}</p>
                 <p className="text-xs text-zinc-400 mt-1">Promedio: {formatCurrency(data.totales.cheque_prom)}</p>
-                <div className="flex gap-4 mt-auto pt-2">
+                <div className="flex gap-4 mt-auto pt-2 justify-center">
                   <div className="text-center">
                     <span className="text-xs text-zinc-400 block">vs Mes</span>
                     <p className={`text-sm font-bold ${(data.totales.var_cheques_mes || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -477,11 +477,11 @@ export default function TableroEjecutivo() {
               </div>
               
               {/* Proyección Mes */}
-              <div className="flex flex-col">
+              <div className="flex flex-col text-center">
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">Proyección Mes</p>
                 <p className="text-2xl font-bold text-orange-400">{formatCurrency(data.totales.proyeccion)}</p>
                 <p className="text-xs text-zinc-400 mt-1">Si mantiene ritmo</p>
-                <div className="flex gap-4 mt-auto pt-2">
+                <div className="flex gap-4 mt-auto pt-2 justify-center">
                   <div className="text-center">
                     <span className="text-xs text-zinc-400 block">vs Año Ant.</span>
                     <p className={`text-sm font-bold ${(data.totales.var_proy_vs_año || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -492,11 +492,11 @@ export default function TableroEjecutivo() {
               </div>
               
               {/* Unidades */}
-              <div className="flex flex-col">
+              <div className="flex flex-col text-center">
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">Unidades</p>
                 <p className="text-2xl font-bold">{data.unidades?.length || 0}</p>
                 <p className="text-xs text-zinc-400 mt-1">Conectadas</p>
-                <div className="flex gap-4 mt-auto pt-2">
+                <div className="flex gap-4 mt-auto pt-2 justify-center">
                   <div className="text-center">
                     <span className="text-xs text-zinc-400 block">Año Ant.</span>
                     <p className="text-sm font-bold text-zinc-300">
