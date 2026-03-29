@@ -336,23 +336,6 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
             </Card>
 
             <Card 
-              className="border bg-gradient-to-br from-blue-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
-              onDoubleClick={() => handleDoubleClick('ticket')}
-              data-testid="kpi-cheque"
-            >
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-zinc-500">Cheque Promedio</p>
-                    <p className="text-2xl font-bold text-blue-600">{formatCurrency(kpis.ticket_promedio)}</p>
-                  </div>
-                  <Receipt className="h-8 w-8 text-blue-200" />
-                </div>
-                <p className="text-xs text-zinc-500 mt-2">{kpis.cheques_total} cheques</p>
-              </CardContent>
-            </Card>
-
-            <Card 
               className="border bg-gradient-to-br from-purple-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
               onDoubleClick={() => handleDoubleClick('pax')}
               data-testid="kpi-pax"
@@ -380,6 +363,23 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                     </div>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="border bg-gradient-to-br from-blue-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
+              onDoubleClick={() => handleDoubleClick('ticket')}
+              data-testid="kpi-cheque"
+            >
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-zinc-500">Cheque Promedio</p>
+                    <p className="text-2xl font-bold text-blue-600">{formatCurrency(kpis.ticket_promedio)}</p>
+                  </div>
+                  <Receipt className="h-8 w-8 text-blue-200" />
+                </div>
+                <p className="text-xs text-zinc-500 mt-2">{kpis.cheques_total} cheques</p>
               </CardContent>
             </Card>
 
