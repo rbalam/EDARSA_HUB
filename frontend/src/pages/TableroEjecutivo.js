@@ -397,12 +397,40 @@ export default function TableroEjecutivo() {
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">PAX Total</p>
                 <p className="text-2xl font-bold">{data.totales.pax?.toLocaleString()}</p>
                 <p className="text-xs text-zinc-400 mt-1">Ticket: {formatCurrency(data.totales.ticket_prom)}</p>
+                <div className="flex gap-3 mt-2">
+                  <div>
+                    <span className="text-xs text-zinc-400">vs Mes</span>
+                    <p className={`text-sm font-bold ${(data.totales.var_pax_mes || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {formatPercent(data.totales.var_pax_mes || 0)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-zinc-400">vs Año</span>
+                    <p className={`text-sm font-bold ${(data.totales.var_pax_año || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {formatPercent(data.totales.var_pax_año || 0)}
+                    </p>
+                  </div>
+                </div>
               </div>
               
               <div>
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">Cheques</p>
                 <p className="text-2xl font-bold">{data.totales.cheques?.toLocaleString()}</p>
                 <p className="text-xs text-zinc-400 mt-1">Promedio: {formatCurrency(data.totales.cheque_prom)}</p>
+                <div className="flex gap-3 mt-2">
+                  <div>
+                    <span className="text-xs text-zinc-400">vs Mes</span>
+                    <p className={`text-sm font-bold ${(data.totales.var_cheques_mes || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {formatPercent(data.totales.var_cheques_mes || 0)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-zinc-400">vs Año</span>
+                    <p className={`text-sm font-bold ${(data.totales.var_cheques_año || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {formatPercent(data.totales.var_cheques_año || 0)}
+                    </p>
+                  </div>
+                </div>
               </div>
               
               <div>
