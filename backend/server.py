@@ -4005,8 +4005,10 @@ async def obtener_inventarios_fisicos(server_id: str, sucursal: str, almacen: st
         if almacen and almacen != "TODOS" and almacen:
             almacen_filtro = f"AND A.Al_Descripcion LIKE '%{almacen}%'"
         
-        # Filtro estricto por sucursal para MPRO - usar = en vez de LIKE si es exacto
-        sucursal_filtro = f"S.Sc_Descripcion = '{sucursal}'" if sucursal else "1=1"
+        # Filtro por sucursal usando LIKE con el nombre exacto
+        sucursal_filtro = "1=1"
+        if sucursal:
+            sucursal_filtro = f"S.Sc_Descripcion LIKE '%{sucursal}%'"
         
         query = f"""
 SELECT DISTINCT 
@@ -4024,11 +4026,12 @@ WHERE {sucursal_filtro}
 GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, S.Sc_Descripcion, F.Fi_Comentario
 ORDER BY F.Fi_Fecha DESC
 """
-        logging.info(f"Inventarios MPRO - Sucursal: '{sucursal}', Almacén: '{almacen}'")
+        logging.info(f"Inventarios MPRO - Sucursal: '{sucursal}', Almacén: '{almacen}', Filtro: {sucursal_filtro}")
         result = execute_sql_query(
             server['host'], server['port'], server['database'],
             server['username'], server['password'], query
         )
+        logging.info(f"Inventarios MPRO - Encontrados: {len(result)}")
         return [{"folio": r['folio'], "fecha": str(r['fecha']), "almacen": r['almacen'], 
                  "sucursal": r.get('sucursal', ''),
                  "comentario": r['comentario'], "productos": r['total_productos']} for r in result]
