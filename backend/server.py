@@ -6042,7 +6042,7 @@ ORDER BY SUM(cheques.total) DESC
             )
             
             ventas_por_hora = []
-            for r in result_hora[:8]:  # Top 8 horas
+            for r in result_hora[:6]:  # Top 6 horas
                 hora_int = int(r['hora'] or 0)
                 ventas_por_hora.append({
                     "hora": f"{hora_int:02d}:00",
@@ -6068,14 +6068,22 @@ ORDER BY DATEPART(WEEKDAY, turnos.apertura)
                 server['username'], server['password'], query_dia
             )
             
-            dias_semana = {1: 'Domingo', 2: 'Lunes', 3: 'Martes', 4: 'Miércoles', 5: 'Jueves', 6: 'Viernes', 7: 'Sábado'}
-            ventas_por_dia = []
+            # Mapeo SQL Server DATEPART(WEEKDAY): 1=Domingo, 2=Lunes, ..., 7=Sábado
+            # Reordenamos para que sea Lunes a Domingo (2,3,4,5,6,7,1)
+            dias_semana = {1: 'Dom', 2: 'Lun', 3: 'Mar', 4: 'Mié', 5: 'Jue', 6: 'Vie', 7: 'Sáb'}
+            orden_dias = {2: 0, 3: 1, 4: 2, 5: 3, 6: 4, 7: 5, 1: 6}  # Lunes=0, ..., Domingo=6
+            
+            # Crear diccionario con todos los días inicializados en 0
+            ventas_dict = {dia: 0 for dia in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']}
+            
             for r in result_dia:
                 dia_num = int(r['dia_num'] or 1)
-                ventas_por_dia.append({
-                    "dia": dias_semana.get(dia_num, f'Día {dia_num}'),
-                    "ventas": float(r['ventas'] or 0)
-                })
+                dia_nombre = dias_semana.get(dia_num, 'Otro')
+                if dia_nombre in ventas_dict:
+                    ventas_dict[dia_nombre] = float(r['ventas'] or 0)
+            
+            # Convertir a lista ordenada de Lunes a Domingo
+            ventas_por_dia = [{"dia": dia, "ventas": ventas_dict[dia]} for dia in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']]
             
             return {
                 "por_hora": ventas_por_hora,
@@ -6110,7 +6118,7 @@ ORDER BY SUM(VE.Vn_Precio_Neto_Importe) DESC
             )
             
             ventas_por_hora = []
-            for r in (result_hora or [])[:8]:
+            for r in (result_hora or [])[:6]:  # Top 6 horas
                 hora_int = int(r['hora'] or 0)
                 ventas_por_hora.append({
                     "hora": f"{hora_int:02d}:00",
@@ -6137,14 +6145,21 @@ ORDER BY DATEPART(WEEKDAY, VE.Vn_Fecha)
                 server['username'], server['password'], query_dia
             )
             
-            dias_semana = {1: 'Domingo', 2: 'Lunes', 3: 'Martes', 4: 'Miércoles', 5: 'Jueves', 6: 'Viernes', 7: 'Sábado'}
-            ventas_por_dia = []
+            # Mapeo SQL Server DATEPART(WEEKDAY): 1=Domingo, 2=Lunes, ..., 7=Sábado
+            # Reordenamos para que sea Lunes a Domingo
+            dias_semana = {1: 'Dom', 2: 'Lun', 3: 'Mar', 4: 'Mié', 5: 'Jue', 6: 'Vie', 7: 'Sáb'}
+            
+            # Crear diccionario con todos los días inicializados en 0
+            ventas_dict = {dia: 0 for dia in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']}
+            
             for r in (result_dia or []):
                 dia_num = int(r['dia_num'] or 1)
-                ventas_por_dia.append({
-                    "dia": dias_semana.get(dia_num, f'Día {dia_num}'),
-                    "ventas": float(r['ventas'] or 0)
-                })
+                dia_nombre = dias_semana.get(dia_num, 'Otro')
+                if dia_nombre in ventas_dict:
+                    ventas_dict[dia_nombre] = float(r['ventas'] or 0)
+            
+            # Convertir a lista ordenada de Lunes a Domingo
+            ventas_por_dia = [{"dia": dia, "ventas": ventas_dict[dia]} for dia in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']]
             
             return {
                 "por_hora": ventas_por_hora,
