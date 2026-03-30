@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { 
   Loader2, Search, Play, Database, Filter, Download, 
   BarChart3, ShoppingCart, CreditCard, Package, FileText,
-  Plus, X, Trash2, Edit, Save
+  Plus, X, Trash2, Edit, Save, Code, Eye, EyeOff
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -40,6 +40,9 @@ export default function CatalogoConsultas() {
   
   // Resultados
   const [resultados, setResultados] = useState(null);
+  
+  // Ver SQL
+  const [mostrarSQL, setMostrarSQL] = useState(false);
   
   // Modal Nueva Consulta
   const [showNuevaConsulta, setShowNuevaConsulta] = useState(false);
@@ -398,6 +401,38 @@ export default function CatalogoConsultas() {
                     </div>
                   ))}
                 </div>
+                
+                {/* Botón Ver Consulta SQL */}
+                <Button 
+                  variant="outline"
+                  onClick={() => setMostrarSQL(!mostrarSQL)}
+                  className="w-full mb-2"
+                >
+                  {mostrarSQL ? (
+                    <EyeOff className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Eye className="h-4 w-4 mr-2" />
+                  )}
+                  {mostrarSQL ? 'Ocultar Consulta SQL' : 'Ver Consulta SQL'}
+                </Button>
+                
+                {/* Mostrar SQL */}
+                {mostrarSQL && consultaSeleccionada?.sql && (
+                  <div className="mb-3 p-3 bg-zinc-900 rounded-lg overflow-x-auto">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Code className="h-4 w-4 text-green-400" />
+                      <span className="text-xs text-green-400 font-medium">SQL Query</span>
+                    </div>
+                    <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-mono">
+                      {consultaSeleccionada.sql
+                        .replace(/\{fecha_ini\}/g, parametros.fecha_ini || '@fecha_ini')
+                        .replace(/\{fecha_fin\}/g, parametros.fecha_fin || '@fecha_fin')
+                        .replace(/\{almacen\}/g, parametros.almacen || '@almacen')
+                        .replace(/\{sucursal\}/g, parametros.sucursal || '@sucursal')
+                      }
+                    </pre>
+                  </div>
+                )}
                 
                 <Button 
                   onClick={ejecutarConsulta} 
