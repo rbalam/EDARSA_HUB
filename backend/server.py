@@ -6086,7 +6086,7 @@ ORDER BY DATEPART(WEEKDAY, turnos.apertura)
             # Filtro de sucursal para MPRO
             sucursal_filter = ""
             if sucursal:
-                sucursal_filter = f"AND S.Sc_Nombre LIKE '%{sucursal}%'"
+                sucursal_filter = f"AND S.Sc_Descripcion LIKE '%{sucursal}%'"
             
             # Ventas por hora para MPRO
             query_hora = f"""
@@ -6099,7 +6099,7 @@ LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cv
 LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 WHERE VE.Vn_Fecha >= '{fecha_ini}'
   AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
-  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
+  AND VE.Es_Cve_Estado <> 'CA'
   {sucursal_filter}
 GROUP BY DATEPART(HOUR, VE.Vn_Fecha)
 ORDER BY SUM(VE.Vn_Precio_Neto_Importe) DESC
@@ -6127,7 +6127,7 @@ FROM Venta_Encabezado VE
 LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 WHERE VE.Vn_Fecha >= '{fecha_ini}'
   AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
-  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
+  AND VE.Es_Cve_Estado <> 'CA'
   {sucursal_filter}
 GROUP BY DATEPART(WEEKDAY, VE.Vn_Fecha)
 ORDER BY DATEPART(WEEKDAY, VE.Vn_Fecha)
@@ -6292,7 +6292,7 @@ LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cv
 LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 WHERE VE.Vn_Fecha >= '{fecha_ini}'
   AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
-  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
+  AND VE.Es_Cve_Estado <> 'CA'
   AND VE.Vn_Precio_Neto_Importe > 0
   {sucursal_filter}
 """
@@ -6344,7 +6344,7 @@ LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cv
 LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 WHERE VE.Vn_Fecha >= '{fecha_ini}'
   AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
-  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
+  AND VE.Es_Cve_Estado <> 'CA'
   AND VE.Vn_Precio_Neto_Importe > 0
   {sucursal_filter}
 GROUP BY DATEPART(HOUR, VE.Vn_Fecha)
