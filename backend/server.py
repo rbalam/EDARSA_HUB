@@ -6096,7 +6096,7 @@ SELECT
     ISNULL(SUM(C.Co_Personas), 0) as pax
 FROM Venta_Encabezado VE
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
-LEFT JOIN Sucursal S ON S.Sc_Cve = VE.Sc_Cve_Sucursal
+LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 WHERE VE.Vn_Fecha >= '{fecha_ini}'
   AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
   AND ISNULL(VE.Vn_Cancelacion, 0) = 0
@@ -6124,7 +6124,7 @@ SELECT
     DATEPART(WEEKDAY, VE.Vn_Fecha) as dia_num,
     SUM(VE.Vn_Precio_Neto_Importe) as ventas
 FROM Venta_Encabezado VE
-LEFT JOIN Sucursal S ON S.Sc_Cve = VE.Sc_Cve_Sucursal
+LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 WHERE VE.Vn_Fecha >= '{fecha_ini}'
   AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
   AND ISNULL(VE.Vn_Cancelacion, 0) = 0
@@ -6262,6 +6262,104 @@ ORDER BY COUNT(*) DESC
                 vueltas = int(r['vueltas'] or 0)
                 ocupacion = round((vueltas / max_vueltas * 100), 0) if max_vueltas > 0 else 0
                 hora = int(r['hora'] or 0)
+                rotacion_por_mesa.append({
+                    "mesa": f"Hora {hora:02d}:00",
+                    "capacidad": int(r['capacidad_promedio'] or 2),
+                    "vueltas": vueltas,
+                    "ocupacion": ocupacion
+                })
+            
+            return {
+                "unidad": unidad_data,
+                "rotacion": rotacion_por_mesa
+            }
+        
+        elif server['system_type'] == 'ManagmentPro' or server['system_type'] == 'MPRO':
+            # Filtro de sucursal para MPRO
+            sucursal_filter = ""
+            if sucursal:
+                sucursal_filter = f"AND S.Sc_Descripcion LIKE '%{sucursal}%'"
+            
+            # KPIs generales de mesas para MPRO
+            query_unidad = f"""
+SELECT 
+    COUNT(DISTINCT VE.Vn_Folio) as cheques_mes,
+    ISNULL(SUM(C.Co_Personas), 0) as comensales_mes,
+    AVG(VE.Vn_Precio_Neto_Importe) as ticket_promedio,
+    ISNULL(AVG(CAST(C.Co_Personas as float)), 0) as pax_promedio
+FROM Venta_Encabezado VE
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+WHERE VE.Vn_Fecha >= '{fecha_ini}'
+  AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
+  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
+  AND VE.Vn_Precio_Neto_Importe > 0
+  {sucursal_filter}
+"""
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_unidad
+            )
+            
+            if result and len(result) > 0:
+                row = result[0]
+                cheques_mes = int(row['cheques_mes'] or 0)
+                comensales_mes = int(row['comensales_mes'] or 0)
+                ticket_promedio = float(row['ticket_promedio'] or 0)
+                pax_promedio = float(row['pax_promedio'] or 0)
+                total_mesas = max(1, cheques_mes // max(1, hoy.day * 2))
+            else:
+                total_mesas = 0
+                cheques_mes = 0
+                comensales_mes = 0
+                ticket_promedio = 0
+                pax_promedio = 0
+            
+            rotacion_promedio = round(cheques_mes / total_mesas, 1) if total_mesas > 0 else 0
+            dias_mes = hoy.day
+            vueltas_por_dia = round(cheques_mes / dias_mes, 0) if dias_mes > 0 else 0
+            
+            unidad_data = {
+                "nombre": sucursal or server['name'],
+                "total_mesas": total_mesas,
+                "capacidad_total": total_mesas * 4,
+                "mesas_atendidas_mes": cheques_mes,
+                "comensales_mes": comensales_mes,
+                "rotacion_promedio": rotacion_promedio,
+                "ticket_promedio": round(ticket_promedio, 2),
+                "cheque_promedio": round(ticket_promedio * pax_promedio, 2) if pax_promedio > 0 else ticket_promedio,
+                "pax_promedio": round(pax_promedio, 1),
+                "vueltas_por_dia": vueltas_por_dia,
+                "vueltas_por_hora_pico": round(vueltas_por_dia / 4, 0)
+            }
+            
+            # Rotación por hora para MPRO
+            query_rotacion = f"""
+SELECT TOP 15
+    DATEPART(HOUR, VE.Vn_Fecha) as hora,
+    COUNT(*) as vueltas,
+    ISNULL(AVG(CAST(C.Co_Personas as float)), 2) as capacidad_promedio
+FROM Venta_Encabezado VE
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+WHERE VE.Vn_Fecha >= '{fecha_ini}'
+  AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
+  AND ISNULL(VE.Vn_Cancelacion, 0) = 0
+  AND VE.Vn_Precio_Neto_Importe > 0
+  {sucursal_filter}
+GROUP BY DATEPART(HOUR, VE.Vn_Fecha)
+ORDER BY COUNT(*) DESC
+"""
+            result_rotacion = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_rotacion
+            )
+            
+            rotacion_por_mesa = []
+            for r in (result_rotacion or []):
+                hora = int(r['hora'] or 0)
+                vueltas = int(r['vueltas'] or 0)
+                ocupacion = min(100, round((vueltas / max(1, vueltas_por_dia)) * 100, 1)) if vueltas_por_dia > 0 else 0
                 rotacion_por_mesa.append({
                     "mesa": f"Hora {hora:02d}:00",
                     "capacidad": int(r['capacidad_promedio'] or 2),
