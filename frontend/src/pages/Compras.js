@@ -34,19 +34,21 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, selected
   const [alertas, setAlertas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [topProveedores, setTopProveedores] = useState([]);
+  const [periodoMes, setPeriodoMes] = useState('actual'); // actual, anterior
+  const [periodoAno, setPeriodoAno] = useState('actual'); // actual, anterior
 
   useEffect(() => {
     if (selectedServer && selectedSucursal) {
       cargarDashboard();
     }
-  }, [selectedServer, selectedSucursal]);
+  }, [selectedServer, selectedSucursal, periodoMes, periodoAno]);
 
   const cargarDashboard = async () => {
     if (!selectedSucursal) return;
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/compras/dashboard/${selectedServer}?sucursal=${encodeURIComponent(selectedSucursal)}`, {
+      const response = await axios.get(`${API_URL}/api/compras/dashboard/${selectedServer}?sucursal=${encodeURIComponent(selectedSucursal)}&periodo_mes=${periodoMes}&periodo_ano=${periodoAno}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setKpis(response.data.kpis);
@@ -69,7 +71,7 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, selected
 
   return (
     <div className="space-y-4">
-      {/* Selector de servidor y sucursal */}
+      {/* Selector de servidor, sucursal y período */}
       <Card className="border">
         <CardContent className="py-4">
           <div className="flex items-center gap-4 flex-wrap">
@@ -103,6 +105,33 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, selected
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Actualizar
             </Button>
+          </div>
+          {/* Selectores de período */}
+          <div className="flex items-center gap-4 flex-wrap mt-4 pt-4 border-t">
+            <div className="flex-1 min-w-[150px] max-w-[200px]">
+              <Label className="text-xs mb-1 block">Período (Mes)</Label>
+              <Select value={periodoMes} onValueChange={setPeriodoMes}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="actual">Mes Actual</SelectItem>
+                  <SelectItem value="anterior">Mes Anterior</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1 min-w-[150px] max-w-[200px]">
+              <Label className="text-xs mb-1 block">Año</Label>
+              <Select value={periodoAno} onValueChange={setPeriodoAno}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="actual">Año Actual</SelectItem>
+                  <SelectItem value="anterior">Año Anterior</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>

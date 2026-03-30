@@ -5182,7 +5182,13 @@ class AnalisisComprasRequest(BaseModel):
     meses: List[str]
 
 @api_router.get("/compras/dashboard/{server_id}")
-async def obtener_dashboard_compras(server_id: str, sucursal: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def obtener_dashboard_compras(
+    server_id: str, 
+    sucursal: str = None, 
+    periodo_mes: str = Query(default="actual"),
+    periodo_ano: str = Query(default="actual"),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
     """Obtiene KPIs y alertas para el dashboard de compras"""
     verify_token(credentials.credentials)
     
@@ -5194,8 +5200,41 @@ async def obtener_dashboard_compras(server_id: str, sucursal: str = None, creden
         return {"kpis": {"total_compras_mes": 0, "requisiciones_pendientes": 0, "proveedores_activos": 0, "alertas_activas": 0}, "alertas": [], "top_proveedores": []}
     
     try:
+        # Calcular fechas según período seleccionado
+        from datetime import datetime
+        now = datetime.now()
+        
+        # Determinar el año
+        if periodo_ano == "anterior":
+            year = now.year - 1
+        else:
+            year = now.year
+        
+        # Determinar el mes
+        if periodo_mes == "anterior":
+            if now.month == 1:
+                month = 12
+                year = year - 1
+            else:
+                month = now.month - 1
+        else:
+            month = now.month
+        
+        # Calcular fecha inicio y fin del período
+        fecha_inicio = f"{year}-{month:02d}-01"
+        # Calcular último día del mes
+        if month == 12:
+            next_month_year = year + 1
+            next_month = 1
+        else:
+            next_month_year = year
+            next_month = month + 1
+        fecha_fin = f"{next_month_year}-{next_month:02d}-01"
+        
+        logging.info(f"Dashboard Compras: período {fecha_inicio} a {fecha_fin}")
+        
         if server['system_type'] == 'MPRO':
-            # Total compras del mes actual FILTRADO POR SUCURSAL
+            # Total compras del período FILTRADO POR SUCURSAL
             query_compras = f"""
 SELECT ISNULL(SUM(M.Mv_Costo_Importe), 0) as total
 FROM Movimiento M
@@ -5203,7 +5242,8 @@ INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movim
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
 WHERE TM.Tm_Tipo = 'E'
     AND (TM.Tm_Descripcion LIKE '%COMP%' OR TM.Tm_Cve_Tipo_Movimiento LIKE '%COMP%')
-    AND M.Mv_Fecha >= DATEADD(day, -30, GETDATE())
+    AND M.Mv_Fecha >= '{fecha_inicio}'
+    AND M.Mv_Fecha < '{fecha_fin}'
     AND ISNULL(M.Es_Cve_Estado, '') <> 'CA'
     AND S.Sc_Descripcion LIKE '%{sucursal}%'
 """
@@ -5250,7 +5290,8 @@ INNER JOIN Proveedor P ON P.Pv_Cve_Proveedor = M.Pv_Cve_Proveedor
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
 WHERE TM.Tm_Tipo = 'E'
-    AND M.Mv_Fecha >= DATEADD(day, -30, GETDATE())
+    AND M.Mv_Fecha >= '{fecha_inicio}'
+    AND M.Mv_Fecha < '{fecha_fin}'
     AND ISNULL(M.Es_Cve_Estado, '') <> 'CA'
     AND S.Sc_Descripcion LIKE '%{sucursal}%'
 GROUP BY P.Pv_Nombre
