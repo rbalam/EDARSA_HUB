@@ -1949,15 +1949,24 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             fecha_ini_mov = (fecha_ini_dt + timedelta(days=1)).strftime('%Y-%m-%d')
             logging.info(f"MPRO - Fecha movimientos/ventas: {fecha_ini_mov} a {fecha_fin}")
             
-            # 1. Obtener código del almacén
+            # 1. Obtener códigos de TODOS los almacenes seleccionados
+            # Si hay almacenes múltiples, usarlos; si no, usar el almacén simple
+            lista_almacenes = almacenes if almacenes else [almacen] if almacen else []
+            
+            if not lista_almacenes:
+                raise HTTPException(status_code=400, detail="Debe seleccionar al menos un almacén")
+            
+            # Construir condición SQL para múltiples almacenes
+            almacenes_like_conditions = " OR ".join([f"A.Al_Descripcion LIKE '%{alm}%'" for alm in lista_almacenes])
+            
             almacen_query = f"""
-SELECT TOP 1 
+SELECT 
     A.Al_Cve_Almacen as codigo,
     A.Al_Descripcion as nombre,
     A.Sc_Cve_Sucursal as sucursal_codigo
 FROM Almacen A
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
-WHERE A.Al_Descripcion LIKE '%{almacen}%'
+WHERE ({almacenes_like_conditions})
     AND S.Sc_Descripcion LIKE '%{sucursal}%'
 """
             almacen_result = execute_sql_query(
@@ -1967,16 +1976,23 @@ WHERE A.Al_Descripcion LIKE '%{almacen}%'
             if not almacen_result:
                 raise HTTPException(status_code=404, detail="Almacén no encontrado")
             
-            almacen_codigo = almacen_result[0]['codigo']
-            almacen_nombre = almacen_result[0]['nombre']
+            # Lista de códigos de almacén
+            almacenes_codigos = [r['codigo'] for r in almacen_result]
+            almacenes_nombres = [r['nombre'] for r in almacen_result]
             sucursal_codigo = almacen_result[0]['sucursal_codigo']
             
-            # MPRO: Detectar si es almacén tipo BODEGA (no tiene ventas)
-            almacen_nombre_upper = almacen_nombre.upper() if almacen_nombre else ''
-            es_almacen_bodega = 'BODEGA' in almacen_nombre_upper
+            # Para compatibilidad: usar el primer almacén como principal
+            almacen_codigo = almacenes_codigos[0]
+            almacen_nombre = almacenes_nombres[0]
             
-            logging.info(f"Almacén encontrado: {almacen_codigo} - {almacen_nombre} (Sucursal: {sucursal_codigo})")
-            logging.info(f"MPRO - Es almacén BODEGA (sin ventas): {es_almacen_bodega}")
+            # Construir SQL IN clause para múltiples almacenes
+            almacenes_sql = ",".join([f"'{c}'" for c in almacenes_codigos])
+            
+            # MPRO: Detectar si ALGÚN almacén es tipo BODEGA
+            es_almacen_bodega = any('BODEGA' in (n.upper() if n else '') for n in almacenes_nombres)
+            
+            logging.info(f"Almacenes encontrados: {almacenes_codigos} - {almacenes_nombres} (Sucursal: {sucursal_codigo})")
+            logging.info(f"MPRO - Incluye almacén BODEGA: {es_almacen_bodega}")
             
             # 2. Obtener productos del departamento INSUMOS (0007)
             # Solo mostramos productos que:
@@ -1998,17 +2014,17 @@ ProductosComoPresentacion AS (
     FROM Producto_Presentacion
 ),
 InventarioInicial AS (
-    -- Sumar inventarios iniciales duplicados por producto (multi-folio)
+    -- Sumar inventarios iniciales duplicados por producto (multi-folio, multi-almacén)
     SELECT Pr_Cve_Producto, SUM(Fi_Cantidad_Control_1) as Cantidad
     FROM Fisico
-    WHERE Fi_Folio IN ({folios_ini_sql}) AND Al_Cve_Almacen = '{almacen_codigo}'
+    WHERE Fi_Folio IN ({folios_ini_sql}) AND Al_Cve_Almacen IN ({almacenes_sql})
     GROUP BY Pr_Cve_Producto
 ),
 InventarioFinal AS (
-    -- Sumar inventarios finales duplicados por producto (multi-folio)
+    -- Sumar inventarios finales duplicados por producto (multi-folio, multi-almacén)
     SELECT Pr_Cve_Producto, SUM(Fi_Cantidad_Control_1) as Cantidad
     FROM Fisico
-    WHERE Fi_Folio IN ({folios_fin_sql}) AND Al_Cve_Almacen = '{almacen_codigo}'
+    WHERE Fi_Folio IN ({folios_fin_sql}) AND Al_Cve_Almacen IN ({almacenes_sql})
     GROUP BY Pr_Cve_Producto
 )
 SELECT TOP 3000
@@ -2124,7 +2140,7 @@ INNER JOIN Almacen A ON A.Al_Cve_Almacen = E.Al_Cve_Almacen AND A.Sc_Cve_Sucursa
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
 INNER JOIN Producto P ON P.Pr_Cve_Producto = E.Pr_Cve_Producto
 WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
-    AND E.Al_Cve_Almacen = '{almacen_codigo}'
+    AND E.Al_Cve_Almacen IN ({almacenes_sql})
     AND E.Es_Cve_Estado <> 'CA'
     {filtro_tipos_mov}
     AND (
@@ -2164,7 +2180,7 @@ FROM Producto_Presentacion PP
 INNER JOIN Producto P_PRES ON P_PRES.Pr_Cve_Producto = PP.Pp_Producto
 INNER JOIN Producto P_INS ON P_INS.Pr_Cve_Producto = PP.Pr_Cve_Producto
 INNER JOIN Fisico F ON F.Pr_Cve_Producto = PP.Pp_Producto
-    AND F.Al_Cve_Almacen = '{almacen_codigo}'
+    AND F.Al_Cve_Almacen IN ({almacenes_sql})
     AND F.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql})
 WHERE P_INS.Dp_Cve_Departamento = '0007'
 """
@@ -2255,7 +2271,7 @@ SELECT
     ISNULL(F.Fi_Comentario, '') as Comentario
 FROM Fisico F
 WHERE F.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql}) 
-    AND F.Al_Cve_Almacen = '{almacen_codigo}'
+    AND F.Al_Cve_Almacen IN ({almacenes_sql})
 ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
 """
                 inv_detalle = execute_sql_query(
