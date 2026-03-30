@@ -419,7 +419,7 @@ const Reportes = () => {
           server_id: filters.server_id,
           sucursal: filters.sucursal,
           almacen: filters.almacen,
-          almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes : undefined,
+          almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes.map(a => a.nombre) : undefined,
           fecha_ini: filters.fecha_ini,
           fecha_fin: filters.fecha_fin,
           folio_inicial: foliosIniciales.length === 1 ? foliosIniciales[0] : undefined,
