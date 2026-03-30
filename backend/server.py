@@ -7858,6 +7858,7 @@ async def listar_consultas_rich(
 async def ejecutar_consulta_catalogo(
     consulta_id: str,
     server_id: str = Query(...),
+    limit: int = Query(default=None, description="Límite de registros (para modo test)"),
     body: Dict = None,
     current_user: Dict = Depends(get_current_user)
 ):
@@ -7927,6 +7928,16 @@ async def ejecutar_consulta_catalogo(
             sql = sql.replace('{' + param + '}', str(valor))
     else:
         sql = catalogo_preparar_sql(consulta_id, params)
+    
+    # Si hay límite (modo test), agregar TOP/LIMIT al SQL
+    if limit and limit > 0:
+        # Detectar si ya tiene TOP
+        sql_upper = sql.upper().strip()
+        if sql_upper.startswith('SELECT') and 'TOP ' not in sql_upper[:50]:
+            # Insertar TOP después de SELECT
+            sql = sql.replace('SELECT', f'SELECT TOP {limit}', 1)
+            sql = sql.replace('select', f'SELECT TOP {limit}', 1)
+        logging.info(f"Modo TEST con límite de {limit} registros")
     
     logging.info(f"Catálogo - Ejecutando {consulta_id} en {server['name']}")
     
@@ -8022,6 +8033,58 @@ async def actualizar_consulta_custom(consulta_id: str, body: Dict, current_user:
     await db.consultas_custom.update_one({"id": consulta_id}, {"$set": update_data})
     
     return {"message": "Consulta actualizada"}
+
+
+@api_router.put("/catalogo/consultas/{consulta_id}")
+async def actualizar_consulta_sql(consulta_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
+    """
+    Actualiza el SQL de cualquier consulta.
+    Para consultas predefinidas, guarda una versión modificada en consultas_custom.
+    """
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden editar consultas")
+    
+    sql_nuevo = body.get('sql')
+    if not sql_nuevo:
+        raise HTTPException(status_code=400, detail="Se requiere el campo 'sql'")
+    
+    # Verificar si es consulta custom
+    consulta_custom = await db.consultas_custom.find_one({"id": consulta_id})
+    if consulta_custom:
+        # Actualizar consulta custom existente
+        await db.consultas_custom.update_one(
+            {"id": consulta_id},
+            {"$set": {
+                "sql": sql_nuevo,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user.get('email')
+            }}
+        )
+        return {"message": "Consulta personalizada actualizada"}
+    
+    # Si es predefinida, verificar que existe y crear versión custom
+    if consulta_id in CATALOGO_CONSULTAS:
+        original = CATALOGO_CONSULTAS[consulta_id]
+        # Guardar como versión modificada
+        import uuid
+        consulta_mod = {
+            "id": f"{consulta_id}_mod_{uuid.uuid4().hex[:6]}",
+            "original_id": consulta_id,
+            "nombre": f"{original['nombre']} (Modificada)",
+            "descripcion": original['descripcion'],
+            "sistema": original['sistema'],
+            "categoria": original['categoria'],
+            "parametros": original['parametros'],
+            "sql": sql_nuevo,
+            "created_by": current_user.get('email'),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "active": True
+        }
+        await db.consultas_custom.insert_one(consulta_mod)
+        consulta_mod.pop('_id', None)
+        return {"message": "Versión modificada guardada", "consulta": consulta_mod}
+    
+    raise HTTPException(status_code=404, detail="Consulta no encontrada")
 
 
 @api_router.delete("/catalogo/consultas-custom/{consulta_id}")

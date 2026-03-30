@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { 
   Loader2, Search, Play, Database, Filter, Download, 
   BarChart3, ShoppingCart, CreditCard, Package, FileText,
-  Plus, X, Trash2, Edit, Save, Code, Eye, EyeOff
+  Plus, X, Trash2, Edit, Save, Code, Eye, EyeOff, TestTube, History, Check
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -43,6 +43,15 @@ export default function CatalogoConsultas() {
   
   // Ver SQL
   const [mostrarSQL, setMostrarSQL] = useState(false);
+  
+  // Modo Edición
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [sqlEditado, setSqlEditado] = useState('');
+  
+  // Modo Test
+  const [modoTest, setModoTest] = useState(false);
+  const [resultadosTest, setResultadosTest] = useState(null);
+  const [ejecutandoTest, setEjecutandoTest] = useState(false);
   
   // Modal Nueva Consulta
   const [showNuevaConsulta, setShowNuevaConsulta] = useState(false);
@@ -130,7 +139,7 @@ export default function CatalogoConsultas() {
       const response = await axios.post(
         `${API_URL}/api/catalogo/ejecutar-rich/${consultaSeleccionada.id}?server_id=${serverSeleccionado}`,
         { parametros },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 60000 }
       );
       setResultados(response.data);
       toast.success(`${response.data.registros} registros encontrados`);
@@ -139,6 +148,65 @@ export default function CatalogoConsultas() {
       toast.error(error.response?.data?.detail || 'Error al ejecutar consulta');
     } finally {
       setEjecutando(false);
+    }
+  };
+
+  // Función TEST - Ejecutar consulta con límite para validación
+  const ejecutarTest = async () => {
+    if (!consultaSeleccionada || !serverSeleccionado) {
+      toast.error('Selecciona una consulta y un servidor');
+      return;
+    }
+    
+    setEjecutandoTest(true);
+    setResultadosTest(null);
+    setModoTest(true);
+    
+    try {
+      const token = localStorage.getItem('token');
+      // Usar el mismo endpoint pero con límite de 10 registros para test
+      const response = await axios.post(
+        `${API_URL}/api/catalogo/ejecutar-rich/${consultaSeleccionada.id}?server_id=${serverSeleccionado}&limit=10`,
+        { parametros },
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 30000 }
+      );
+      setResultadosTest(response.data);
+      toast.success(`Test completado: ${response.data.registros} registros (limitado a 10)`);
+    } catch (error) {
+      console.error('Error en test:', error);
+      const errorMsg = error.response?.data?.detail || error.message || 'Error al probar consulta';
+      setResultadosTest({ error: errorMsg });
+      toast.error(errorMsg);
+    } finally {
+      setEjecutandoTest(false);
+    }
+  };
+
+  // Función para iniciar edición
+  const iniciarEdicion = () => {
+    setSqlEditado(consultaSeleccionada.sql);
+    setModoEdicion(true);
+  };
+
+  // Función para guardar edición
+  const guardarEdicion = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `${API_URL}/api/catalogo/consultas/${consultaSeleccionada.id}`,
+        { sql: sqlEditado },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // Actualizar la consulta localmente
+      setConsultaSeleccionada({ ...consultaSeleccionada, sql: sqlEditado });
+      setConsultas(prev => prev.map(c => 
+        c.id === consultaSeleccionada.id ? { ...c, sql: sqlEditado } : c
+      ));
+      setModoEdicion(false);
+      toast.success('Consulta guardada correctamente');
+    } catch (error) {
+      console.error('Error guardando:', error);
+      toast.error(error.response?.data?.detail || 'Error al guardar consulta');
     }
   };
 
@@ -402,50 +470,204 @@ export default function CatalogoConsultas() {
                   ))}
                 </div>
                 
-                {/* Botón Ver Consulta SQL */}
-                <Button 
-                  variant="outline"
-                  onClick={() => setMostrarSQL(!mostrarSQL)}
-                  className="w-full mb-2"
-                >
-                  {mostrarSQL ? (
-                    <EyeOff className="h-4 w-4 mr-2" />
-                  ) : (
-                    <Eye className="h-4 w-4 mr-2" />
-                  )}
-                  {mostrarSQL ? 'Ocultar Consulta SQL' : 'Ver Consulta SQL'}
-                </Button>
+                {/* BARRA DE BOTONES: Ver, Editar, Test, Ejecutar */}
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {/* 1. VER */}
+                  <Button 
+                    variant={mostrarSQL ? "default" : "outline"}
+                    onClick={() => { setMostrarSQL(!mostrarSQL); setModoEdicion(false); setModoTest(false); }}
+                    size="sm"
+                    className="flex flex-col items-center py-3 h-auto"
+                  >
+                    <Eye className="h-4 w-4 mb-1" />
+                    <span className="text-xs">Ver</span>
+                  </Button>
+                  
+                  {/* 2. EDITAR */}
+                  <Button 
+                    variant={modoEdicion ? "default" : "outline"}
+                    onClick={() => { 
+                      if (!modoEdicion) iniciarEdicion();
+                      else setModoEdicion(false);
+                      setMostrarSQL(false); 
+                      setModoTest(false);
+                    }}
+                    size="sm"
+                    className="flex flex-col items-center py-3 h-auto"
+                  >
+                    <Edit className="h-4 w-4 mb-1" />
+                    <span className="text-xs">Editar</span>
+                  </Button>
+                  
+                  {/* 3. TEST */}
+                  <Button 
+                    variant={modoTest ? "default" : "outline"}
+                    onClick={() => { setModoTest(!modoTest); setMostrarSQL(false); setModoEdicion(false); }}
+                    size="sm"
+                    disabled={!serverSeleccionado}
+                    className="flex flex-col items-center py-3 h-auto"
+                  >
+                    <TestTube className="h-4 w-4 mb-1" />
+                    <span className="text-xs">Test</span>
+                  </Button>
+                  
+                  {/* 4. EJECUTAR */}
+                  <Button 
+                    variant="default"
+                    onClick={ejecutarConsulta}
+                    disabled={ejecutando || !serverSeleccionado}
+                    size="sm"
+                    className="flex flex-col items-center py-3 h-auto bg-green-600 hover:bg-green-700"
+                  >
+                    {ejecutando ? (
+                      <Loader2 className="h-4 w-4 mb-1 animate-spin" />
+                    ) : (
+                      <Play className="h-4 w-4 mb-1" />
+                    )}
+                    <span className="text-xs">Ejecutar</span>
+                  </Button>
+                </div>
                 
-                {/* Mostrar SQL */}
+                {/* PANEL VER SQL (Solo lectura) */}
                 {mostrarSQL && consultaSeleccionada?.sql && (
                   <div className="mb-3 p-3 bg-zinc-900 rounded-lg overflow-x-auto">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Code className="h-4 w-4 text-green-400" />
-                      <span className="text-xs text-green-400 font-medium">SQL Query</span>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Code className="h-4 w-4 text-green-400" />
+                        <span className="text-xs text-green-400 font-medium">SQL Query (Solo lectura)</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => {navigator.clipboard.writeText(consultaSeleccionada.sql); toast.success('SQL copiado');}}
+                        className="h-6 text-xs text-zinc-400 hover:text-white"
+                      >
+                        Copiar
+                      </Button>
                     </div>
-                    <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-mono">
+                    <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-mono max-h-48 overflow-y-auto">
                       {consultaSeleccionada.sql
                         .replace(/\{fecha_ini\}/g, parametros.fecha_ini || '@fecha_ini')
                         .replace(/\{fecha_fin\}/g, parametros.fecha_fin || '@fecha_fin')
                         .replace(/\{almacen\}/g, parametros.almacen || '@almacen')
                         .replace(/\{sucursal\}/g, parametros.sucursal || '@sucursal')
+                        .replace(/\{fecha\}/g, parametros.fecha || '@fecha')
                       }
                     </pre>
                   </div>
                 )}
                 
-                <Button 
-                  onClick={ejecutarConsulta} 
-                  disabled={ejecutando || !serverSeleccionado}
-                  className="w-full"
-                >
-                  {ejecutando ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Play className="h-4 w-4 mr-2" />
-                  )}
-                  Ejecutar Consulta
-                </Button>
+                {/* PANEL EDITAR SQL */}
+                {modoEdicion && (
+                  <div className="mb-3 p-3 bg-zinc-900 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Edit className="h-4 w-4 text-yellow-400" />
+                        <span className="text-xs text-yellow-400 font-medium">Modo Edición</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setModoEdicion(false)}
+                          className="h-6 text-xs text-zinc-400 hover:text-white"
+                        >
+                          Cancelar
+                        </Button>
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          onClick={guardarEdicion}
+                          className="h-6 text-xs bg-green-600 hover:bg-green-700"
+                        >
+                          <Save className="h-3 w-3 mr-1" />
+                          Guardar
+                        </Button>
+                      </div>
+                    </div>
+                    <Textarea
+                      value={sqlEditado}
+                      onChange={(e) => setSqlEditado(e.target.value)}
+                      className="font-mono text-xs bg-zinc-800 text-zinc-100 border-zinc-700 min-h-[200px]"
+                      placeholder="Escribe tu consulta SQL aquí..."
+                    />
+                    <p className="text-xs text-zinc-500 mt-2">
+                      Usa {'{fecha_ini}'}, {'{fecha_fin}'}, {'{almacen}'}, {'{sucursal}'} como parámetros
+                    </p>
+                  </div>
+                )}
+                
+                {/* PANEL TEST */}
+                {modoTest && (
+                  <div className="mb-3 p-3 bg-blue-950 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <TestTube className="h-4 w-4 text-blue-400" />
+                        <span className="text-xs text-blue-400 font-medium">Modo Test (máx 10 registros)</span>
+                      </div>
+                      <Button 
+                        variant="default" 
+                        size="sm" 
+                        onClick={ejecutarTest}
+                        disabled={ejecutandoTest}
+                        className="h-6 text-xs bg-blue-600 hover:bg-blue-700"
+                      >
+                        {ejecutandoTest ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : (
+                          <Play className="h-3 w-3 mr-1" />
+                        )}
+                        Probar
+                      </Button>
+                    </div>
+                    
+                    {/* Resultados del Test */}
+                    {resultadosTest && (
+                      <div className="mt-2">
+                        {resultadosTest.error ? (
+                          <div className="p-2 bg-red-900/50 rounded text-red-300 text-xs">
+                            <strong>Error:</strong> {resultadosTest.error}
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Check className="h-4 w-4 text-green-400" />
+                              <span className="text-xs text-green-400">
+                                Test exitoso: {resultadosTest.registros} registros
+                              </span>
+                            </div>
+                            {resultadosTest.datos?.length > 0 && (
+                              <div className="overflow-x-auto max-h-40">
+                                <table className="w-full text-xs">
+                                  <thead className="bg-blue-900/50">
+                                    <tr>
+                                      {Object.keys(resultadosTest.datos[0]).map(col => (
+                                        <th key={col} className="py-1 px-2 text-left text-blue-300 font-medium">
+                                          {col}
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {resultadosTest.datos.slice(0, 5).map((row, i) => (
+                                      <tr key={i} className="border-t border-blue-800/50">
+                                        {Object.values(row).map((val, j) => (
+                                          <td key={j} className="py-1 px-2 text-zinc-300 truncate max-w-[150px]">
+                                            {val ?? '-'}
+                                          </td>
+                                        ))}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
