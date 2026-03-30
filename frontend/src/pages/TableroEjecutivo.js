@@ -278,8 +278,8 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
                 <CardContent className="p-3">
                   <div className="grid grid-cols-7 gap-1">
                     {(() => {
-                      // Asegurar que siempre tengamos los 7 días de la semana
-                      const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                      // Asegurar que siempre tengamos los 7 días de la semana (Lunes a Domingo)
+                      const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
                       const diasMap = {};
                       detalleData.ventasTiempo.por_dia.forEach(d => {
                         const diaKey = d.dia.substring(0, 3);
