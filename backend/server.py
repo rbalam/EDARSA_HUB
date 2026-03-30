@@ -2252,9 +2252,8 @@ SELECT
     F.Pr_Cve_Producto as Codigo,
     F.Fi_Cantidad_Control_1 as Cantidad,
     F.Al_Cve_Almacen as Almacen_Codigo,
-    ISNULL(FIS.Fi_Comentario, '') as Comentario
+    ISNULL(F.Fi_Comentario, '') as Comentario
 FROM Fisico F
-INNER JOIN Fisico_Encabezado FIS ON FIS.Fi_Folio = F.Fi_Folio
 WHERE F.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql}) 
     AND F.Al_Cve_Almacen = '{almacen_codigo}'
 ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
