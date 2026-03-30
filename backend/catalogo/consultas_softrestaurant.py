@@ -54,17 +54,18 @@ ORDER BY C.fecha DESC, C.hora DESC
         "parametros": ["@FECHA_INI", "@FECHA_FIN"],
         "sql": """
 SELECT 
-    CD.idproducto as Codigo,
-    P.descripcion as Producto,
-    SUM(CD.cantidad) as Cantidad,
-    SUM(CD.costo * CD.cantidad) as Importe_Total,
-    AVG(CD.costo) as Costo_Promedio
-FROM comprasdet CD
-INNER JOIN productos P ON P.idproducto = CD.idproducto
-INNER JOIN compras C ON C.idcompra = CD.idcompra
-WHERE C.fecha BETWEEN '{fecha_ini}' AND '{fecha_fin}'
-GROUP BY CD.idproducto, P.descripcion
-ORDER BY P.descripcion
+    CM.idinsumo as Codigo,
+    I.descripcion as Producto,
+    SUM(CM.cantidad) as Cantidad,
+    SUM(CM.costo * CM.cantidad) as Importe_Total,
+    AVG(CM.costo) as Costo_Promedio
+FROM comprasmovtos CM
+INNER JOIN insumos I ON I.idinsumo = CM.idinsumo
+INNER JOIN compras C ON C.idcompra = CM.idcompra
+WHERE C.fechaaplicacion BETWEEN '{fecha_ini}' AND '{fecha_fin}'
+    AND C.cancelado = 0
+GROUP BY CM.idinsumo, I.descripcion
+ORDER BY I.descripcion
 """
     },
 
@@ -208,13 +209,14 @@ ESTRUCTURA_TABLAS_SOFTRESTAURANT = {
             "total - Total de la compra"
         ]
     },
-    "comprasdet": {
-        "descripcion": "Detalle de compras",
+    "comprasmovtos": {
+        "descripcion": "Detalle de compras (movimientos de compra)",
         "campos_principales": [
             "idcompra - ID de compra",
-            "idproducto - Producto",
+            "idinsumo - Producto/Insumo",
             "cantidad - Cantidad comprada",
-            "costo - Costo unitario"
+            "costo - Costo unitario",
+            "importeconimpuestos - Total con impuestos"
         ]
     },
     "movtos": {

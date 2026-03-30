@@ -200,8 +200,9 @@ SELECT
     COUNT(DISTINCT c.idcompra) as Facturas,
     ISNULL(SUM(c.total), 0) as Compra_Total
 FROM compras c
-WHERE c.fecha >= '{fecha_ini}'
-  AND c.fecha <= '{fecha_fin} 23:59:59'
+WHERE c.fechaaplicacion >= '{fecha_ini}'
+  AND c.fechaaplicacion <= '{fecha_fin} 23:59:59'
+  AND c.cancelado = 0
 """
     },
     
@@ -218,8 +219,9 @@ SELECT
     ISNULL(SUM(c.total), 0) as Compra_Total
 FROM compras c
 LEFT JOIN proveedores p ON p.idproveedor = c.idproveedor
-WHERE c.fecha >= '{fecha_ini}'
-  AND c.fecha <= '{fecha_fin} 23:59:59'
+WHERE c.fechaaplicacion >= '{fecha_ini}'
+  AND c.fechaaplicacion <= '{fecha_fin} 23:59:59'
+  AND c.cancelado = 0
 GROUP BY p.nombre
 ORDER BY SUM(c.total) DESC
 """
@@ -235,16 +237,17 @@ ORDER BY SUM(c.total) DESC
 SELECT TOP 50
     i.idinsumo as Codigo,
     i.descripcion as Producto,
-    SUM(cd.cantidad) as Cantidad,
-    AVG(cd.costo) as Costo_Promedio,
-    SUM(cd.cantidad * cd.costo) as Compra_Total
-FROM comprasdet cd
-INNER JOIN compras c ON c.idcompra = cd.idcompra
-INNER JOIN insumos i ON i.idinsumo = cd.idproducto
-WHERE c.fecha >= '{fecha_ini}'
-  AND c.fecha <= '{fecha_fin} 23:59:59'
+    SUM(cm.cantidad) as Cantidad,
+    AVG(cm.costo) as Costo_Promedio,
+    SUM(cm.cantidad * cm.costo) as Compra_Total
+FROM comprasmovtos cm
+INNER JOIN compras c ON c.idcompra = cm.idcompra
+INNER JOIN insumos i ON i.idinsumo = cm.idinsumo
+WHERE c.fechaaplicacion >= '{fecha_ini}'
+  AND c.fechaaplicacion <= '{fecha_fin} 23:59:59'
+  AND c.cancelado = 0
 GROUP BY i.idinsumo, i.descripcion
-ORDER BY SUM(cd.cantidad * cd.costo) DESC
+ORDER BY SUM(cm.cantidad * cm.costo) DESC
 """
     },
 

@@ -89,15 +89,16 @@ GROUP BY VD.Pr_Cve_Producto, P.Pr_Descripcion`
     optionalColumns: ['fecha', 'tipo_movimiento', 'sucursal', 'almacen', 'costo'],
     placeholder: `-- Ejemplo para SoftRestaurant (Compras):
 SELECT 
-    CD.idproducto as Codigo,
-    P.descripcion as Descripcion,
-    SUM(CD.cantidad) as Cantidad,
+    CM.idinsumo as Codigo,
+    I.descripcion as Descripcion,
+    SUM(CM.cantidad) as Cantidad,
     'Compra' as Tipo_Movimiento
-FROM comprasdet CD
-INNER JOIN productos P ON P.idproducto = CD.idproducto
-INNER JOIN compras C ON C.idcompra = CD.idcompra
-WHERE C.fecha BETWEEN @fecha_ini AND @fecha_fin
-GROUP BY CD.idproducto, P.descripcion
+FROM comprasmovtos CM
+INNER JOIN insumos I ON I.idinsumo = CM.idinsumo
+INNER JOIN compras C ON C.idcompra = CM.idcompra
+WHERE C.fechaaplicacion BETWEEN @fecha_ini AND @fecha_fin
+    AND C.cancelado = 0
+GROUP BY CM.idinsumo, I.descripcion
 
 -- Ejemplo para MPRO:
 SELECT 
