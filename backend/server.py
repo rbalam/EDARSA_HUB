@@ -5053,6 +5053,25 @@ async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, crede
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
+    # Probar conexión primero
+    import time
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            test_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'],
+                "SELECT 1 as test"
+            )
+            if test_result:
+                logging.info(f"[AUDITORIA] Conexión verificada en intento {attempt + 1}")
+                break
+        except Exception as e:
+            logging.warning(f"[AUDITORIA] Intento {attempt + 1} fallido: {e}")
+            if attempt == max_retries - 1:
+                raise HTTPException(status_code=503, detail=f"No se puede conectar al servidor después de {max_retries} intentos. Por favor intente de nuevo.")
+            time.sleep(2)  # Esperar antes de reintentar
+    
     sucursal = request.sucursal
     fecha_ini = request.fecha_inv_inicial
     fecha_fin = request.fecha_auditoria
