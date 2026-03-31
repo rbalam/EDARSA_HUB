@@ -8306,9 +8306,10 @@ async def tablero_ejecutivo(
     # Fechas del período actual
     fecha_ini = f"{anio}-{mes:02d}-01"
     if anio == hoy.year and mes == hoy.month:
-        # Mes actual incompleto
-        fecha_fin = hoy.strftime('%Y-%m-%d')
-        dias_transcurridos = hoy.day
+        # Mes actual incompleto - ventas hasta AYER (hoy no se cuenta)
+        ayer = hoy - timedelta(days=1)
+        fecha_fin = ayer.strftime('%Y-%m-%d')
+        dias_transcurridos = ayer.day  # Días hasta ayer, no hasta hoy
     else:
         # Mes completo
         ultimo_dia = calendar.monthrange(anio, mes)[1]
