@@ -5631,16 +5631,24 @@ async def obtener_detalle_movimientos(request: DetalleMovimientosRequest):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     # Formatear fechas para SQL
-    fecha_ini = request.fecha_inicio.replace('-', '')
-    fecha_fin = request.fecha_fin.replace('-', '')
+    fecha_ini = request.fecha_inicio.replace('-', '') if request.fecha_inicio else ''
+    fecha_fin = request.fecha_fin.replace('-', '') if request.fecha_fin else ''
+    
+    if not fecha_ini or not fecha_fin:
+        return {"movimientos": [], "totales": {"entradas": 0, "salidas": 0, "neto": 0}, "error": "Fechas no válidas"}
     
     movimientos = []
     totales = {"entradas": 0, "salidas": 0, "neto": 0}
     
-    try:
-        if server['system_type'] == 'SoftRestaurant':
-            # Obtener movimientos de presentaciones (movtosalmacen)
-            query_pres = f"""
+    # Reintentos para manejar conexiones inestables
+    max_retries = 2
+    last_error = None
+    
+    for retry in range(max_retries):
+        try:
+            if server['system_type'] == 'SoftRestaurant':
+                # Obtener movimientos de presentaciones (movtosalmacen)
+                query_pres = f"""
 SELECT 
     M.fecha,
     M.idconcepto as concepto,
@@ -5726,16 +5734,37 @@ ORDER BY M.fecha DESC
             # Ordenar por fecha
             movimientos.sort(key=lambda x: x['fecha'], reverse=True)
             
-        totales["neto"] = totales["entradas"] - totales["salidas"]
-        
+            totales["neto"] = totales["entradas"] - totales["salidas"]
+            
+            return {
+                "movimientos": movimientos,
+                "totales": totales
+            }
+            
+        except Exception as e:
+            last_error = str(e)
+            logging.warning(f"[DETALLE_MOV] Intento {retry + 1}/{max_retries} falló: {e}")
+            if retry < max_retries - 1:
+                import asyncio
+                await asyncio.sleep(1)  # Esperar 1 segundo antes de reintentar
+            continue
+    
+    # Si llegamos aquí, todos los reintentos fallaron
+    logging.error(f"[DETALLE_MOV] Todos los reintentos fallaron: {last_error}")
+    
+    # Devolver respuesta con error pero sin hacer crash
+    if "unavailable" in str(last_error).lower() or "timeout" in str(last_error).lower():
         return {
-            "movimientos": movimientos,
-            "totales": totales
+            "movimientos": [],
+            "totales": {"entradas": 0, "salidas": 0, "neto": 0},
+            "error": "El servidor externo no está disponible. Intente nuevamente en unos momentos."
         }
-        
-    except Exception as e:
-        logging.error(f"[DETALLE_MOV] Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    
+    return {
+        "movimientos": [],
+        "totales": {"entradas": 0, "salidas": 0, "neto": 0},
+        "error": f"Error al obtener movimientos: {last_error[:100]}"
+    }
 
 
 # ============= ANÁLISIS DE COMPRAS - ENDPOINTS =============

@@ -1176,25 +1176,43 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
         server_id: selectedServer,
         sucursal: parentSucursal,
         codigo: codigo,
-        fecha_inicio: fechaInicial || selectedInvIniciales[0]?.fecha?.split('T')[0],
+        fecha_inicio: fechaInicial || selectedInvIniciales[0]?.fecha?.split('T')[0] || fechaAuditoria,
         fecha_fin: fechaAuditoria,
         almacenes: selectedAlmacenes
       }, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 30000  // 30 segundos de timeout
       });
-      setDetalleMovimientos({
-        codigo,
-        producto,
-        movimientos: response.data.movimientos || [],
-        totales: response.data.totales || {}
-      });
+      
+      // Verificar si la respuesta tiene error del servidor
+      if (response.data.error) {
+        setDetalleMovimientos({
+          codigo,
+          producto,
+          movimientos: [],
+          error: response.data.error
+        });
+      } else {
+        setDetalleMovimientos({
+          codigo,
+          producto,
+          movimientos: response.data.movimientos || [],
+          totales: response.data.totales || {}
+        });
+      }
     } catch (error) {
       console.error('Error obteniendo detalle:', error);
+      let errorMsg = 'Error al obtener detalle de movimientos';
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMsg = 'Tiempo de espera agotado. El servidor externo no responde.';
+      } else if (error.response?.data?.detail) {
+        errorMsg = error.response.data.detail.substring(0, 150);
+      }
       setDetalleMovimientos({
         codigo,
         producto,
         movimientos: [],
-        error: 'Error al obtener detalle de movimientos'
+        error: errorMsg
       });
     } finally {
       setLoadingDetalle(false);
