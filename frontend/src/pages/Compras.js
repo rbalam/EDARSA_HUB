@@ -1208,23 +1208,60 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   const getConversionValuesMovimientos = getConversionValues;
   const getConversionValuesConsumo = getConversionValues;
   
-  // Función para inicializar captura manual desde los resultados de auditoría
-  const iniciarCapturaManual = () => {
-    if (!resultados || resultados.length === 0) {
-      alert('Primero ejecute la auditoría para obtener los productos');
+  // Función para inicializar captura manual desde los resultados de auditoría o inventarios iniciales
+  const iniciarCapturaManual = async () => {
+    // Si ya hay resultados de auditoría, usar esos
+    if (resultados && resultados.length > 0) {
+      const capturaInicial = resultados.map(r => ({
+        codigo: r.codigo,
+        producto: r.producto,
+        rendimiento: r.rendimiento || 1,
+        cantidadInsumos: 0,
+        cantidadPresentaciones: 0,
+        totalInsumos: 0
+      }));
+      setInventarioManualCaptura(capturaInicial);
+      setMostrarCapturaManual(true);
       return;
     }
-    // Inicializar con los productos de la auditoría
-    const capturaInicial = resultados.map(r => ({
-      codigo: r.codigo,
-      producto: r.producto,
-      rendimiento: r.rendimiento || 1,
-      cantidadInsumos: 0,
-      cantidadPresentaciones: 0,
-      totalInsumos: 0 // Será calculado
-    }));
-    setInventarioManualCaptura(capturaInicial);
-    setMostrarCapturaManual(true);
+    
+    // Si no hay resultados pero hay inventarios iniciales, obtener productos del backend
+    if (selectedInvIniciales.length > 0 || folioPedido.length > 0) {
+      try {
+        const token = localStorage.getItem('token');
+        const foliosIni = selectedInvIniciales.map(inv => inv.folio);
+        
+        // Obtener productos de los inventarios iniciales y/o requisiciones
+        const response = await axios.post(`${API_URL}/api/compras/productos-para-captura`, {
+          server_id: selectedServer,
+          folios_inv_inicial: foliosIni,
+          folios_requisiciones: folioPedido
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.productos && response.data.productos.length > 0) {
+          const capturaInicial = response.data.productos.map(p => ({
+            codigo: p.codigo,
+            producto: p.producto,
+            rendimiento: p.rendimiento || 1,
+            cantidadInsumos: 0,
+            cantidadPresentaciones: 0,
+            totalInsumos: 0
+          }));
+          setInventarioManualCaptura(capturaInicial);
+          setMostrarCapturaManual(true);
+        } else {
+          alert('No se encontraron productos en los inventarios/requisiciones seleccionados');
+        }
+      } catch (error) {
+        console.error('Error obteniendo productos:', error);
+        alert('Error al obtener productos. Verifique que haya seleccionado inventarios iniciales o requisiciones.');
+      }
+      return;
+    }
+    
+    alert('Seleccione primero inventarios iniciales o requisiciones para obtener la lista de productos');
   };
   
   // Función para abrir calculadora de un producto específico
@@ -1913,7 +1950,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
             <Label htmlFor="captura-manual" className="text-sm">
               Sin folio de inventario final - Usar captura manual
             </Label>
-            {usarCapturaManual && resultados && resultados.length > 0 && (
+            {usarCapturaManual && (selectedInvIniciales.length > 0 || folioPedido.length > 0 || (resultados && resultados.length > 0)) && (
               <Button 
                 variant="outline" 
                 size="sm" 

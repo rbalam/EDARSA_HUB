@@ -5039,6 +5039,121 @@ class AuditoriaOperativaRequest(BaseModel):
     inventario_fisico_actual: Optional[List[Dict]] = None  # Captura manual del inv físico del día del pedido
     solo_skus_requisicion: bool = True  # Por defecto solo muestra SKUs de las requisiciones
 
+
+class ProductosParaCapturaRequest(BaseModel):
+    server_id: str
+    folios_inv_inicial: Optional[List[str]] = None
+    folios_requisiciones: Optional[List[str]] = None
+
+@api_router.post("/compras/productos-para-captura")
+async def obtener_productos_para_captura(request: ProductosParaCapturaRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Obtiene la lista de productos de los inventarios iniciales y/o requisiciones
+    para inicializar la captura manual de inventario físico.
+    """
+    current_user = await get_current_user(credentials)
+    
+    server = await db.servers.find_one({"id": request.server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    productos = {}
+    
+    try:
+        if server['system_type'] == 'SoftRestaurant':
+            # Obtener productos de inventarios iniciales
+            if request.folios_inv_inicial:
+                for folio in request.folios_inv_inicial:
+                    query = f"""
+SELECT 
+    RTRIM(COALESCE(
+        NULLIF(RTRIM(IP.idinsumo), ''),
+        NULLIF(RTRIM(INM.idinsumo), ''),
+        INM.idpresentacion
+    )) as codigo,
+    COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto,
+    ISNULL(IP.rendimiento, 1) as rendimiento
+FROM invfisicomovtos INM
+LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(INM.idpresentacion)
+LEFT JOIN insumos I ON I.idinsumo = COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), NULLIF(RTRIM(INM.idinsumo), ''))
+WHERE INM.folio = {folio}
+"""
+                    result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query
+                    )
+                    for r in result:
+                        codigo = str(r['codigo'] or '').strip()
+                        if codigo and codigo not in productos:
+                            productos[codigo] = {
+                                'codigo': codigo,
+                                'producto': r['producto'] or f'SKU: {codigo}',
+                                'rendimiento': float(r['rendimiento'] or 1)
+                            }
+            
+            # Obtener productos de requisiciones
+            if request.folios_requisiciones:
+                folios_sql = ", ".join([f"'{f}'" for f in request.folios_requisiciones])
+                query_requi = f"""
+SELECT 
+    RTRIM(OCM.idinsumo) as codigo,
+    COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto,
+    ISNULL(IP.rendimiento, 1) as rendimiento
+FROM ordenescompramov OCM
+INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
+LEFT JOIN insumos I ON I.idinsumo = OCM.idinsumo
+LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = OCM.idinsumo
+WHERE OC.folio IN ({folios_sql})
+"""
+                result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_requi
+                )
+                for r in result:
+                    codigo = str(r['codigo'] or '').strip()
+                    if codigo and codigo not in productos:
+                        productos[codigo] = {
+                            'codigo': codigo,
+                            'producto': r['producto'] or f'SKU: {codigo}',
+                            'rendimiento': float(r['rendimiento'] or 1)
+                        }
+        
+        elif server['system_type'] == 'MPRO':
+            # Para MPRO
+            if request.folios_inv_inicial:
+                for folio in request.folios_inv_inicial:
+                    query = f"""
+SELECT 
+    P.Pr_Clave as codigo,
+    P.Pr_Descripcion as producto,
+    1 as rendimiento
+FROM Fi_Detalle D
+INNER JOIN Producto P ON P.Pr_Clave = D.Fi_Producto
+WHERE D.Fi_Folio = '{folio}'
+"""
+                    result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query
+                    )
+                    for r in result:
+                        codigo = str(r['codigo'] or '').strip()
+                        if codigo and codigo not in productos:
+                            productos[codigo] = {
+                                'codigo': codigo,
+                                'producto': r['producto'] or f'SKU: {codigo}',
+                                'rendimiento': 1
+                            }
+        
+        return {
+            'productos': list(productos.values()),
+            'total': len(productos)
+        }
+        
+    except Exception as e:
+        logging.error(f"Error obteniendo productos para captura: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/compras/auditoria-operativa")
 async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
