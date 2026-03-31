@@ -12,7 +12,8 @@ import { toast } from 'sonner';
 import { 
   Loader2, ShoppingCart, Package, TrendingUp, AlertTriangle, Download, 
   AlertCircle, Calendar, Edit3, RefreshCw, Search, BarChart3, FileText,
-  ChevronRight, ChevronDown, ExternalLink, FileWarning, CheckCircle2, XCircle, X
+  ChevronRight, ChevronDown, ExternalLink, FileWarning, CheckCircle2, XCircle, X,
+  Calculator, Check, Plus
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -1057,6 +1058,13 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   const [busquedaInvIni, setBusquedaInvIni] = useState('');
   const [busquedaInvFin, setBusquedaInvFin] = useState('');
   
+  // Estados para captura manual de inventario final
+  const [mostrarCapturaManual, setMostrarCapturaManual] = useState(false);
+  const [inventarioManualCaptura, setInventarioManualCaptura] = useState([]);
+  const [calculadoraAbierta, setCalculadoraAbierta] = useState(null); // código del producto
+  const [calculadoraInsumos, setCalculadoraInsumos] = useState('');
+  const [calculadoraPresentaciones, setCalculadoraPresentaciones] = useState('');
+  
   // Calcular fecha mínima de inventarios iniciales para filtrar finales
   const fechaMinimaInvInicial = useMemo(() => {
     if (selectedInvIniciales.length === 0) return null;
@@ -1199,6 +1207,84 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   const getConversionValuesInventario = getConversionValues;
   const getConversionValuesMovimientos = getConversionValues;
   const getConversionValuesConsumo = getConversionValues;
+  
+  // Función para inicializar captura manual desde los resultados de auditoría
+  const iniciarCapturaManual = () => {
+    if (resultadosAuditoria.length === 0) {
+      alert('Primero ejecute la auditoría para obtener los productos');
+      return;
+    }
+    // Inicializar con los productos de la auditoría
+    const capturaInicial = resultadosAuditoria.map(r => ({
+      codigo: r.codigo,
+      producto: r.producto,
+      rendimiento: r.rendimiento || 1,
+      cantidadInsumos: 0,
+      cantidadPresentaciones: 0,
+      totalInsumos: 0 // Será calculado
+    }));
+    setInventarioManualCaptura(capturaInicial);
+    setMostrarCapturaManual(true);
+  };
+  
+  // Función para abrir calculadora de un producto específico
+  const abrirCalculadora = (codigo) => {
+    const item = inventarioManualCaptura.find(i => i.codigo === codigo);
+    if (item) {
+      setCalculadoraInsumos(item.cantidadInsumos?.toString() || '0');
+      setCalculadoraPresentaciones(item.cantidadPresentaciones?.toString() || '0');
+    } else {
+      setCalculadoraInsumos('0');
+      setCalculadoraPresentaciones('0');
+    }
+    setCalculadoraAbierta(codigo);
+  };
+  
+  // Función para guardar el valor de la calculadora
+  const guardarCalculadora = () => {
+    if (!calculadoraAbierta) return;
+    
+    const insumos = parseFloat(calculadoraInsumos) || 0;
+    const presentaciones = parseFloat(calculadoraPresentaciones) || 0;
+    
+    setInventarioManualCaptura(prev => prev.map(item => {
+      if (item.codigo === calculadoraAbierta) {
+        const rendimiento = item.rendimiento || 1;
+        // Convertir presentaciones a insumos y sumar
+        const totalInsumos = insumos + (presentaciones * rendimiento);
+        return {
+          ...item,
+          cantidadInsumos: insumos,
+          cantidadPresentaciones: presentaciones,
+          totalInsumos: totalInsumos
+        };
+      }
+      return item;
+    }));
+    
+    setCalculadoraAbierta(null);
+    setCalculadoraInsumos('');
+    setCalculadoraPresentaciones('');
+  };
+  
+  // Función para aplicar inventario manual a la auditoría
+  const aplicarInventarioManual = () => {
+    // Crear el array de inventario manual para enviar al backend
+    const inventarioParaBackend = inventarioManualCaptura
+      .filter(item => item.totalInsumos > 0)
+      .map(item => ({
+        codigo: item.codigo,
+        producto: item.producto,
+        cantidad: item.totalInsumos, // Ya normalizado en insumos
+        costo: 0
+      }));
+    
+    setInventarioManual(inventarioParaBackend);
+    setMostrarCapturaManual(false);
+    
+    // Mostrar mensaje de confirmación
+    alert(`Inventario manual capturado: ${inventarioParaBackend.length} productos. Ahora puede ejecutar la auditoría.`);
+  };
   
   // Función para obtener el costo según unidad seleccionada
   // Usa directamente costo_insumo o costo_presentacion del backend
@@ -1827,7 +1913,34 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
             <Label htmlFor="captura-manual" className="text-sm">
               Sin folio de inventario final - Usar captura manual
             </Label>
+            {usarCapturaManual && resultadosAuditoria.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={iniciarCapturaManual}
+                className="ml-4"
+              >
+                <Calculator className="h-4 w-4 mr-1" />
+                Capturar Inventario Físico
+              </Button>
+            )}
           </div>
+          
+          {/* Info de captura manual */}
+          {usarCapturaManual && inventarioManual.length > 0 && (
+            <div className="text-xs text-green-600 bg-green-50 p-2 rounded flex items-center gap-2">
+              <Check className="h-4 w-4" />
+              Inventario manual capturado: {inventarioManual.length} productos
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={iniciarCapturaManual}
+                className="ml-2 h-6 text-xs"
+              >
+                Editar
+              </Button>
+            </div>
+          )}
 
           {/* Botón de ejecución */}
           <div className="flex gap-2 pt-2">
@@ -1920,7 +2033,8 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                     <th className="py-2 px-2 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
                     <th className="py-2 px-2 text-right">{unidadAnalisis === 'presentaciones' ? '-Cons (Pres)' : '-Cons (Ins)'}</th>
                     <th className="py-2 px-2 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
-                    <th className="py-2 px-2 text-right">Teórico</th>
+                    <th className="py-2 px-2 text-right">{unidadAnalisis === 'presentaciones' ? 'Teórico (Pres)' : 'Teórico (Ins)'}</th>
+                    <th className="py-2 px-2 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
                     <th className="py-2 px-2 text-right">Físico</th>
                     <th className="py-2 px-2 text-right">Diferencia</th>
                     <th className="py-2 px-2 text-right">Costo Unit</th>
@@ -1990,8 +2104,10 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                           </td>
                           {/* Consumos - Alternativo */}
                           <td className="py-1.5 px-2 text-right text-orange-400">{consValues.alternativo}</td>
-                          {/* Teórico */}
+                          {/* Teórico - Principal */}
                           <td className="py-1.5 px-2 text-right font-medium">{teoricoValues.principal}</td>
+                          {/* Teórico - Alternativo */}
+                          <td className="py-1.5 px-2 text-right text-zinc-400">{teoricoValues.alternativo}</td>
                           {/* Físico */}
                           <td className="py-1.5 px-2 text-right font-medium">{fisicoValues.principal}</td>
                           {/* Diferencia */}
@@ -2124,6 +2240,174 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                 Cerrar
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de Captura Manual de Inventario Físico */}
+      {mostrarCapturaManual && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+            <div className="px-4 py-3 border-b flex items-center justify-between bg-blue-50">
+              <div>
+                <h3 className="font-semibold text-blue-800">Captura Manual de Inventario Físico</h3>
+                <p className="text-xs text-blue-600">Use la calculadora para ingresar cantidades en insumos y/o presentaciones</p>
+              </div>
+              <button 
+                onClick={() => setMostrarCapturaManual(false)}
+                className="p-1 hover:bg-blue-200 rounded"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto max-h-[65vh]">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-zinc-100">
+                  <tr>
+                    <th className="py-2 px-3 text-left">Código</th>
+                    <th className="py-2 px-3 text-left">Producto</th>
+                    <th className="py-2 px-3 text-center">Rend.</th>
+                    <th className="py-2 px-3 text-right">Insumos (pz)</th>
+                    <th className="py-2 px-3 text-right">Presentaciones</th>
+                    <th className="py-2 px-3 text-right font-bold">Total (Insumos)</th>
+                    <th className="py-2 px-3 text-right text-zinc-500">(Presentaciones)</th>
+                    <th className="py-2 px-3 text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inventarioManualCaptura.map((item, idx) => {
+                    const rendimiento = item.rendimiento || 1;
+                    const totalPresentaciones = rendimiento > 0 ? item.totalInsumos / rendimiento : 0;
+                    
+                    return (
+                      <tr key={item.codigo} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-zinc-50'}`}>
+                        <td className="py-2 px-3 font-mono text-xs">{item.codigo}</td>
+                        <td className="py-2 px-3">{item.producto}</td>
+                        <td className="py-2 px-3 text-center text-zinc-500">{rendimiento}</td>
+                        <td className="py-2 px-3 text-right">{formatNumber(item.cantidadInsumos || 0)}</td>
+                        <td className="py-2 px-3 text-right">{formatNumber(item.cantidadPresentaciones || 0)}</td>
+                        <td className="py-2 px-3 text-right font-bold text-blue-600">{formatNumber(item.totalInsumos || 0)}</td>
+                        <td className="py-2 px-3 text-right text-zinc-500">({formatNumber(totalPresentaciones)})</td>
+                        <td className="py-2 px-3 text-center">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => abrirCalculadora(item.codigo)}
+                            className="h-7 px-2"
+                          >
+                            <Calculator className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="px-4 py-3 border-t bg-zinc-50 flex justify-between items-center">
+              <div className="text-sm text-zinc-600">
+                Total productos con inventario: {inventarioManualCaptura.filter(i => i.totalInsumos > 0).length} de {inventarioManualCaptura.length}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setMostrarCapturaManual(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={aplicarInventarioManual}>
+                  <Check className="h-4 w-4 mr-1" />
+                  Aplicar Inventario
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal Calculadora */}
+      {calculadoraAbierta && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-4">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-blue-600" />
+              Calculadora de Inventario
+            </h4>
+            
+            {(() => {
+              const item = inventarioManualCaptura.find(i => i.codigo === calculadoraAbierta);
+              if (!item) return null;
+              
+              const rendimiento = item.rendimiento || 1;
+              const insumos = parseFloat(calculadoraInsumos) || 0;
+              const presentaciones = parseFloat(calculadoraPresentaciones) || 0;
+              const totalInsumos = insumos + (presentaciones * rendimiento);
+              const totalPresentaciones = rendimiento > 0 ? totalInsumos / rendimiento : 0;
+              
+              return (
+                <>
+                  <div className="text-sm text-zinc-600 mb-3">
+                    <strong>{item.codigo}</strong> - {item.producto}
+                    <br/>
+                    <span className="text-xs">Rendimiento: {rendimiento} insumos por presentación</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs">Cantidad en Insumos (piezas sueltas)</Label>
+                      <Input 
+                        type="number"
+                        value={calculadoraInsumos}
+                        onChange={(e) => setCalculadoraInsumos(e.target.value)}
+                        placeholder="Ej: 8"
+                        className="mt-1"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-center">
+                      <Plus className="h-4 w-4 text-zinc-400" />
+                    </div>
+                    
+                    <div>
+                      <Label className="text-xs">Cantidad en Presentaciones (cajas/paquetes)</Label>
+                      <Input 
+                        type="number"
+                        value={calculadoraPresentaciones}
+                        onChange={(e) => setCalculadoraPresentaciones(e.target.value)}
+                        placeholder="Ej: 2"
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-zinc-500 mt-1">
+                        = {presentaciones} × {rendimiento} = {presentaciones * rendimiento} insumos
+                      </p>
+                    </div>
+                    
+                    <div className="border-t pt-3 mt-3">
+                      <div className="bg-blue-50 p-3 rounded">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">Total:</span>
+                          <span className="text-lg font-bold text-blue-600">
+                            {formatNumber(totalInsumos)} insumos
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm text-zinc-600 mt-1">
+                          <span>Equivale a:</span>
+                          <span>{formatNumber(totalPresentaciones)} presentaciones</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 mt-4">
+                    <Button variant="outline" className="flex-1" onClick={() => setCalculadoraAbierta(null)}>
+                      Cancelar
+                    </Button>
+                    <Button className="flex-1" onClick={guardarCalculadora}>
+                      Guardar
+                    </Button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
