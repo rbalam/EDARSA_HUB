@@ -2185,16 +2185,25 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                             {formatCurrency(r.importe_diferencia)}
                           </td>
                           {/* Días de Inventario */}
-                          <td className="py-1.5 px-2 text-center">
-                            <span className={`px-1.5 py-0.5 rounded text-xs ${
-                              r.dias_inventario === 'N/A' ? 'bg-zinc-100' :
-                              r.dias_inventario < (r.dias_objetivo || diasObjetivoDefault) * 0.5 ? 'bg-red-100 text-red-700' :
-                              r.dias_inventario < (r.dias_objetivo || diasObjetivoDefault) ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-green-100 text-green-700'
-                            }`}>
-                              {r.dias_inventario}
-                            </span>
-                          </td>
+                          {(() => {
+                            const diasObj = diasObjetivoPorSku[r.codigo] !== undefined 
+                              ? diasObjetivoPorSku[r.codigo] 
+                              : (r.dias_objetivo || diasObjetivoDefault);
+                            const diasInv = r.dias_inventario === 'N/A' ? 999 : parseFloat(r.dias_inventario);
+                            
+                            return (
+                              <td className="py-1.5 px-2 text-center">
+                                <span className={`px-1.5 py-0.5 rounded text-xs ${
+                                  r.dias_inventario === 'N/A' ? 'bg-zinc-100' :
+                                  diasInv < diasObj * 0.5 ? 'bg-red-100 text-red-700' :
+                                  diasInv < diasObj ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-green-100 text-green-700'
+                                }`}>
+                                  {r.dias_inventario}
+                                </span>
+                              </td>
+                            );
+                          })()}
                           {/* Días Objetivo */}
                           <td className="py-1 px-1 text-center">
                             {puedeEditarDiasObjetivo ? (
@@ -2215,15 +2224,29 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                             )}
                           </td>
                           <td className="py-1.5 px-2 text-right">{formatNumber(r.cantidad_pedido)}</td>
-                          <td className="py-1.5 px-2 text-center">
-                            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                              r.recomendacion === 'COMPRAR' ? 'bg-red-100 text-red-700' :
-                              r.recomendacion === 'OK' ? 'bg-green-100 text-green-700' :
-                              'bg-zinc-100 text-zinc-600'
-                            }`}>
-                              {r.recomendacion}
-                            </span>
-                          </td>
+                          {/* Recomendación - Calculada dinámicamente según días objetivo actual */}
+                          {(() => {
+                            const diasObj = diasObjetivoPorSku[r.codigo] !== undefined 
+                              ? diasObjetivoPorSku[r.codigo] 
+                              : (r.dias_objetivo || diasObjetivoDefault);
+                            const diasInv = r.dias_inventario === 'N/A' ? 999 : parseFloat(r.dias_inventario);
+                            const debeComprar = diasInv < diasObj;
+                            const recomendacion = debeComprar && r.cantidad_pedido > 0 
+                              ? 'COMPRAR' 
+                              : (!debeComprar ? 'OK' : 'SIN PEDIDO');
+                            
+                            return (
+                              <td className="py-1.5 px-2 text-center">
+                                <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                                  recomendacion === 'COMPRAR' ? 'bg-red-100 text-red-700' :
+                                  recomendacion === 'OK' ? 'bg-green-100 text-green-700' :
+                                  'bg-zinc-100 text-zinc-600'
+                                }`}>
+                                  {recomendacion}
+                                </span>
+                              </td>
+                            );
+                          })()}
                         </tr>
                       );
                     });
