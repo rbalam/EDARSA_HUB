@@ -2284,11 +2284,11 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
       {/* Modal de Captura Manual de Inventario Físico */}
       {mostrarCapturaManual && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
             <div className="px-4 py-3 border-b flex items-center justify-between bg-blue-50">
               <div>
                 <h3 className="font-semibold text-blue-800">Captura Manual de Inventario Físico</h3>
-                <p className="text-xs text-blue-600">Use la calculadora para ingresar cantidades en insumos y/o presentaciones</p>
+                <p className="text-xs text-blue-600">Ingrese cantidades en insumos y/o presentaciones. El total se calcula automáticamente.</p>
               </div>
               <button 
                 onClick={() => setMostrarCapturaManual(false)}
@@ -2309,7 +2309,6 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                     <th className="py-2 px-3 text-right">Presentaciones</th>
                     <th className="py-2 px-3 text-right font-bold">Total (Insumos)</th>
                     <th className="py-2 px-3 text-right text-zinc-500">(Presentaciones)</th>
-                    <th className="py-2 px-3 text-center">Acción</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2322,20 +2321,44 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                         <td className="py-2 px-3 font-mono text-xs">{item.codigo}</td>
                         <td className="py-2 px-3">{item.producto}</td>
                         <td className="py-2 px-3 text-center text-zinc-500">{rendimiento}</td>
-                        <td className="py-2 px-3 text-right">{formatNumber(item.cantidadInsumos || 0)}</td>
-                        <td className="py-2 px-3 text-right">{formatNumber(item.cantidadPresentaciones || 0)}</td>
+                        <td className="py-1 px-2">
+                          <Input 
+                            type="number"
+                            value={item.cantidadInsumos || 0}
+                            onChange={(e) => {
+                              const insumos = parseFloat(e.target.value) || 0;
+                              setInventarioManualCaptura(prev => prev.map(i => {
+                                if (i.codigo === item.codigo) {
+                                  const totalInsumos = insumos + ((i.cantidadPresentaciones || 0) * rendimiento);
+                                  return { ...i, cantidadInsumos: insumos, totalInsumos };
+                                }
+                                return i;
+                              }));
+                            }}
+                            onFocus={(e) => e.target.select()}
+                            className="h-8 w-24 text-right"
+                          />
+                        </td>
+                        <td className="py-1 px-2">
+                          <Input 
+                            type="number"
+                            value={item.cantidadPresentaciones || 0}
+                            onChange={(e) => {
+                              const presentaciones = parseFloat(e.target.value) || 0;
+                              setInventarioManualCaptura(prev => prev.map(i => {
+                                if (i.codigo === item.codigo) {
+                                  const totalInsumos = (i.cantidadInsumos || 0) + (presentaciones * rendimiento);
+                                  return { ...i, cantidadPresentaciones: presentaciones, totalInsumos };
+                                }
+                                return i;
+                              }));
+                            }}
+                            onFocus={(e) => e.target.select()}
+                            className="h-8 w-24 text-right"
+                          />
+                        </td>
                         <td className="py-2 px-3 text-right font-bold text-blue-600">{formatNumber(item.totalInsumos || 0)}</td>
                         <td className="py-2 px-3 text-right text-zinc-500">({formatNumber(totalPresentaciones)})</td>
-                        <td className="py-2 px-3 text-center">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => abrirCalculadora(item.codigo)}
-                            className="h-7 px-2"
-                          >
-                            <Calculator className="h-4 w-4" />
-                          </Button>
-                        </td>
                       </tr>
                     );
                   })}
@@ -2361,93 +2384,6 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
         </div>
       )}
       
-      {/* Modal Calculadora */}
-      {calculadoraAbierta && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[60]">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-4">
-            <h4 className="font-semibold mb-4 flex items-center gap-2">
-              <Calculator className="h-5 w-5 text-blue-600" />
-              Calculadora de Inventario
-            </h4>
-            
-            {(() => {
-              const item = inventarioManualCaptura.find(i => i.codigo === calculadoraAbierta);
-              if (!item) return null;
-              
-              const rendimiento = item.rendimiento || 1;
-              const insumos = parseFloat(calculadoraInsumos) || 0;
-              const presentaciones = parseFloat(calculadoraPresentaciones) || 0;
-              const totalInsumos = insumos + (presentaciones * rendimiento);
-              const totalPresentaciones = rendimiento > 0 ? totalInsumos / rendimiento : 0;
-              
-              return (
-                <>
-                  <div className="text-sm text-zinc-600 mb-3">
-                    <strong>{item.codigo}</strong> - {item.producto}
-                    <br/>
-                    <span className="text-xs">Rendimiento: {rendimiento} insumos por presentación</span>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-xs">Cantidad en Insumos (piezas sueltas)</Label>
-                      <Input 
-                        type="number"
-                        value={calculadoraInsumos}
-                        onChange={(e) => setCalculadoraInsumos(e.target.value)}
-                        placeholder="Ej: 8"
-                        className="mt-1"
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-center">
-                      <Plus className="h-4 w-4 text-zinc-400" />
-                    </div>
-                    
-                    <div>
-                      <Label className="text-xs">Cantidad en Presentaciones (cajas/paquetes)</Label>
-                      <Input 
-                        type="number"
-                        value={calculadoraPresentaciones}
-                        onChange={(e) => setCalculadoraPresentaciones(e.target.value)}
-                        placeholder="Ej: 2"
-                        className="mt-1"
-                      />
-                      <p className="text-xs text-zinc-500 mt-1">
-                        = {presentaciones} × {rendimiento} = {presentaciones * rendimiento} insumos
-                      </p>
-                    </div>
-                    
-                    <div className="border-t pt-3 mt-3">
-                      <div className="bg-blue-50 p-3 rounded">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">Total:</span>
-                          <span className="text-lg font-bold text-blue-600">
-                            {formatNumber(totalInsumos)} insumos
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm text-zinc-600 mt-1">
-                          <span>Equivale a:</span>
-                          <span>{formatNumber(totalPresentaciones)} presentaciones</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2 mt-4">
-                    <Button variant="outline" className="flex-1" onClick={() => setCalculadoraAbierta(null)}>
-                      Cancelar
-                    </Button>
-                    <Button className="flex-1" onClick={guardarCalculadora}>
-                      Guardar
-                    </Button>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
