@@ -1018,6 +1018,71 @@ async def delete_server(server_id: str, current_user: Dict = Depends(get_current
     await db.servers.update_one({"id": server_id}, {"$set": {"active": False}})
     return {"message": "Servidor desactivado"}
 
+
+@api_router.get("/servers/{server_id}/ping")
+async def ping_server(server_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Prueba la conexión a un servidor SQL Server.
+    Retorna información de estado y tiempo de respuesta.
+    """
+    verify_token(credentials.credentials)
+    
+    server = await db.servers.find_one({"id": server_id})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    import time
+    start_time = time.time()
+    
+    try:
+        # Intentar conexión
+        result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'],
+            "SELECT 1 as ping, GETDATE() as server_time, @@VERSION as version"
+        )
+        
+        elapsed_time = round((time.time() - start_time) * 1000, 2)  # ms
+        
+        if result and len(result) > 0:
+            server_time = result[0].get('server_time', '')
+            version = result[0].get('version', '')[:100]  # Primeros 100 chars
+            
+            return {
+                "status": "connected",
+                "server_name": server['name'],
+                "response_time_ms": elapsed_time,
+                "server_time": str(server_time) if server_time else None,
+                "version": version,
+                "message": f"Conexión exitosa en {elapsed_time}ms"
+            }
+        else:
+            return {
+                "status": "connected",
+                "server_name": server['name'],
+                "response_time_ms": elapsed_time,
+                "message": "Conexión exitosa (sin datos)"
+            }
+            
+    except Exception as e:
+        elapsed_time = round((time.time() - start_time) * 1000, 2)
+        error_msg = str(e)
+        
+        # Determinar tipo de error
+        if "Unable to connect" in error_msg or "unavailable" in error_msg.lower():
+            status = "unreachable"
+        elif "Login failed" in error_msg or "authentication" in error_msg.lower():
+            status = "auth_error"
+        else:
+            status = "error"
+        
+        return {
+            "status": status,
+            "server_name": server['name'],
+            "response_time_ms": elapsed_time,
+            "message": error_msg[:200]
+        }
+
 # ============= QUERIES =============
 
 @api_router.post("/queries")

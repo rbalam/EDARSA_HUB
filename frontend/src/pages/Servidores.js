@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import QueryConfigWizard from '@/components/QueryConfigWizard';
 
@@ -22,6 +22,9 @@ const Servidores = () => {
   const [selectedServer, setSelectedServer] = useState(null);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionValid, setConnectionValid] = useState(false);
+  
+  // Estado para ping de servidores
+  const [pingStatus, setPingStatus] = useState({}); // { server_id: { status, message, loading } }
   
   // Listas de opciones desde SQL Server
   const [tiposMovimiento, setTiposMovimiento] = useState([]);
@@ -63,6 +66,53 @@ const Servidores = () => {
       toast.error('Error al cargar servidores');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Función para hacer ping a un servidor
+  const pingServer = async (serverId) => {
+    setPingStatus(prev => ({
+      ...prev,
+      [serverId]: { loading: true, status: null, message: 'Probando conexión...' }
+    }));
+    
+    try {
+      const response = await api.get(`/servers/${serverId}/ping`);
+      const data = response.data;
+      
+      setPingStatus(prev => ({
+        ...prev,
+        [serverId]: {
+          loading: false,
+          status: data.status,
+          message: data.message,
+          responseTime: data.response_time_ms,
+          serverTime: data.server_time
+        }
+      }));
+      
+      if (data.status === 'connected') {
+        toast.success(`${data.server_name}: Conectado en ${data.response_time_ms}ms`);
+      } else {
+        toast.error(`${data.server_name}: ${data.message}`);
+      }
+    } catch (error) {
+      setPingStatus(prev => ({
+        ...prev,
+        [serverId]: {
+          loading: false,
+          status: 'error',
+          message: error.response?.data?.detail || 'Error de conexión'
+        }
+      }));
+      toast.error('Error al probar conexión');
+    }
+  };
+
+  // Función para hacer ping a todos los servidores
+  const pingAllServers = async () => {
+    for (const server of servers) {
+      await pingServer(server.id);
     }
   };
 
@@ -236,17 +286,27 @@ const Servidores = () => {
           </h1>
           <p className="text-zinc-600 mt-1">Gestiona las conexiones a bases de datos</p>
         </div>
-        <Button 
-          onClick={() => {
-            resetForm();
-            setDialogOpen(true);
-          }}
-          className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
-          data-testid="add-server-button"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Agregar Servidor
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={pingAllServers}
+            variant="outline"
+            className="border-blue-200 text-blue-700 hover:bg-blue-50"
+          >
+            <Wifi className="h-4 w-4 mr-2" />
+            Ping Todos
+          </Button>
+          <Button 
+            onClick={() => {
+              resetForm();
+              setDialogOpen(true);
+            }}
+            className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
+            data-testid="add-server-button"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Agregar Servidor
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -267,6 +327,34 @@ const Servidores = () => {
                       <CardTitle className="text-lg font-semibold">{server.name}</CardTitle>
                       <p className="text-xs text-zinc-500 mt-1">{server.system_type}</p>
                     </div>
+                  </div>
+                  {/* Indicador de estado de ping */}
+                  <div className="flex items-center gap-2">
+                    {pingStatus[server.id]?.loading ? (
+                      <div className="flex items-center gap-1 text-blue-600">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-xs">Probando...</span>
+                      </div>
+                    ) : pingStatus[server.id]?.status === 'connected' ? (
+                      <div className="flex items-center gap-1 text-green-600" title={`${pingStatus[server.id]?.responseTime}ms`}>
+                        <Wifi className="h-4 w-4" />
+                        <span className="text-xs">{pingStatus[server.id]?.responseTime}ms</span>
+                      </div>
+                    ) : pingStatus[server.id]?.status ? (
+                      <div className="flex items-center gap-1 text-red-500" title={pingStatus[server.id]?.message}>
+                        <WifiOff className="h-4 w-4" />
+                        <span className="text-xs">Error</span>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-zinc-400 hover:text-blue-600"
+                        onClick={() => pingServer(server.id)}
+                      >
+                        <Wifi className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardHeader>
