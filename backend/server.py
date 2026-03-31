@@ -5309,14 +5309,18 @@ WHERE INM.folio = {folio_inv}
             
             if es_solo_bodega:
                 # BODEGA: Solo movimientos de entrada activos (EPC, ECS, etc.)
+                # NORMALIZAR A INSUMOS: cantidad × rendimiento
                 if tipos_entrada_compra:
                     query_mov = f"""
-SELECT RTRIM(M.idinsumospresentaciones) as codigo, SUM(M.cantidad) as cantidad
+SELECT 
+    COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), RTRIM(M.idinsumospresentaciones)) as codigo, 
+    SUM(M.cantidad * ISNULL(IP.rendimiento, 1)) as cantidad
 FROM movtosalmacen M
+LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(M.idinsumospresentaciones)
 WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in tipos_entrada_compra])})
     AND M.fecha >= '{fecha_ini_sql}'
     AND M.fecha <= '{fecha_fin_sql} 23:59:59'
-GROUP BY RTRIM(M.idinsumospresentaciones)
+GROUP BY COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), RTRIM(M.idinsumospresentaciones))
 """
                     mov_result = execute_sql_query(
                         server['host'], server['port'], server['database'],
@@ -5367,15 +5371,18 @@ GROUP BY RTRIM(M.idinsumo)
             
             else:  # es_mixto
                 # MIXTO: Compras bodega + Traspasos entrada consumo
-                # Por ahora, usar misma lógica que bodega para presentaciones
+                # NORMALIZAR A INSUMOS: cantidad × rendimiento
                 if tipos_entrada_compra:
                     query_mov = f"""
-SELECT RTRIM(M.idinsumospresentaciones) as codigo, SUM(M.cantidad) as cantidad
+SELECT 
+    COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), RTRIM(M.idinsumospresentaciones)) as codigo, 
+    SUM(M.cantidad * ISNULL(IP.rendimiento, 1)) as cantidad
 FROM movtosalmacen M
+LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(M.idinsumospresentaciones)
 WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in tipos_entrada_compra])})
     AND M.fecha >= '{fecha_ini_sql}'
     AND M.fecha <= '{fecha_fin_sql} 23:59:59'
-GROUP BY RTRIM(M.idinsumospresentaciones)
+GROUP BY COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), RTRIM(M.idinsumospresentaciones))
 """
                     mov_result = execute_sql_query(
                         server['host'], server['port'], server['database'],
@@ -5396,14 +5403,18 @@ GROUP BY RTRIM(M.idinsumospresentaciones)
             
             if es_solo_bodega:
                 # Para bodega, las salidas son traspasos a consumo (usa movtosalmacen)
+                # NORMALIZAR A INSUMOS: cantidad × rendimiento
                 if tipos_salida_traspaso:
                     query_salidas = f"""
-SELECT RTRIM(M.idinsumospresentaciones) as codigo, SUM(M.cantidad) as cantidad
+SELECT 
+    COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), RTRIM(M.idinsumospresentaciones)) as codigo, 
+    SUM(M.cantidad * ISNULL(IP.rendimiento, 1)) as cantidad
 FROM movtosalmacen M
+LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(M.idinsumospresentaciones)
 WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in tipos_salida_traspaso])})
     AND M.fecha >= '{fecha_ini_sql}'
     AND M.fecha <= '{fecha_fin_sql} 23:59:59'
-GROUP BY RTRIM(M.idinsumospresentaciones)
+GROUP BY COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), RTRIM(M.idinsumospresentaciones))
 """
                     salidas_result = execute_sql_query(
                         server['host'], server['port'], server['database'],

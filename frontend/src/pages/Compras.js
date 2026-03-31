@@ -1170,8 +1170,8 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
     }
   };
 
-  // Función para convertir cantidades de INVENTARIO/MOVIMIENTOS
-  // AHORA: Los datos vienen NORMALIZADOS en INSUMOS del backend
+  // Función ÚNICA para convertir cantidades
+  // TODOS los datos (inventarios, movimientos, consumos) vienen NORMALIZADOS en INSUMOS del backend
   const getConversionValues = (cantidad, rendimiento) => {
     if (!cantidad || cantidad === 0) return { principal: '0.00', alternativo: '0.00' };
     
@@ -1179,14 +1179,14 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
     const rendimientoNum = parseFloat(rendimiento) || 1;
     
     if (unidadAnalisis === 'presentaciones') {
-      // Principal: presentaciones (÷ rendimiento), Alternativo: insumos (tal cual)
+      // Datos en insumos → convertir a presentaciones (÷ rendimiento)
       const enPresentaciones = rendimientoNum > 0 ? cantidadNum / rendimientoNum : cantidadNum;
       return {
         principal: formatNumber(enPresentaciones),
         alternativo: formatNumber(cantidadNum)
       };
     } else {
-      // Principal: insumos (tal cual), Alternativo: presentaciones (÷ rendimiento)
+      // Datos en insumos → mostrar tal cual
       const enPresentaciones = rendimientoNum > 0 ? cantidadNum / rendimientoNum : cantidadNum;
       return {
         principal: formatNumber(cantidadNum),
@@ -1195,12 +1195,10 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
     }
   };
   
-  // Función para convertir cantidades de CONSUMOS
-  // Los datos también vienen en INSUMOS del backend (desde recetas)
-  // Usa la misma lógica que getConversionValues
-  const getConversionValuesConsumo = (cantidad, rendimiento) => {
-    return getConversionValues(cantidad, rendimiento);
-  };
+  // Alias para compatibilidad
+  const getConversionValuesInventario = getConversionValues;
+  const getConversionValuesMovimientos = getConversionValues;
+  const getConversionValuesConsumo = getConversionValues;
   
   // Función para obtener el costo según unidad seleccionada
   // Usa directamente costo_insumo o costo_presentacion del backend
@@ -1942,12 +1940,12 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                       const isNewFolio = agruparPorProveedor && r.folio_pedido !== lastFolio;
                       
                       // Obtener valores convertidos para cada columna
-                      const invIniValues = getConversionValues(r.inv_inicial, rendimiento);
-                      const movValues = getConversionValues(r.movimientos || r.entradas || 0, rendimiento);
+                      const invIniValues = getConversionValuesInventario(r.inv_inicial, rendimiento);
+                      const movValues = getConversionValuesMovimientos(r.movimientos || r.entradas || 0, rendimiento);
                       const consValues = getConversionValuesConsumo(Math.abs(r.consumos || 0), rendimiento);
-                      const teoricoValues = getConversionValues(r.existencia_teorica, rendimiento);
-                      const fisicoValues = getConversionValues(r.inv_fisico, rendimiento);
-                      const difValues = getConversionValues(r.diferencia, rendimiento);
+                      const teoricoValues = getConversionValuesInventario(r.existencia_teorica, rendimiento);
+                      const fisicoValues = getConversionValuesInventario(r.inv_fisico, rendimiento);
+                      const difValues = getConversionValuesInventario(r.diferencia, rendimiento);
                       const costoUnit = getCostoSegunUnidad(r);
                       
                       if (agruparPorProveedor) {
