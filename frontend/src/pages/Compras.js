@@ -1069,8 +1069,11 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   const [diasObjetivoDefault, setDiasObjetivoDefault] = useState(10);
   const [diasObjetivoPorSku, setDiasObjetivoPorSku] = useState({}); // {codigo: dias}
   
+  // Obtener usuario del localStorage para verificar permisos
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  
   // Verificar si el usuario puede editar días objetivo (admin o roles autorizados)
-  const puedeEditarDiasObjetivo = user?.role === 'admin' || user?.role === 'gerente' || user?.permisos?.includes('editar_dias_inventario');
+  const puedeEditarDiasObjetivo = currentUser?.role === 'admin' || currentUser?.role === 'Administrador' || currentUser?.role === 'gerente' || currentUser?.permisos?.includes('editar_dias_inventario');
   
   // Calcular fecha mínima de inventarios iniciales para filtrar finales
   const fechaMinimaInvInicial = useMemo(() => {
