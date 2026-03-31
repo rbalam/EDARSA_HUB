@@ -26,6 +26,9 @@ const Servidores = () => {
   // Estado para ping de servidores
   const [pingStatus, setPingStatus] = useState({}); // { server_id: { status, message, loading } }
   
+  // Estado para modo edición
+  const [editingServer, setEditingServer] = useState(null);
+  
   // Listas de opciones desde SQL Server
   const [tiposMovimiento, setTiposMovimiento] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -126,23 +129,39 @@ const Servidores = () => {
     setConnectionValid(false);
     
     try {
-      // Intentar crear el servidor para probar la conexión
-      const response = await api.post('/servers', formData);
-      setConnectionValid(true);
-      toast.success('Conexión exitosa');
+      let response;
       
-      // Guardar el servidor creado
-      const newServerId = response.data.id;
-      setSelectedServer({ ...response.data, id: newServerId });
-      
-      // Cargar las opciones de filtros
-      await loadFilterOptions(newServerId);
-      
-      setDialogOpen(false);
-      loadServers();
-      
-      // Abrir el diálogo de configuración
-      setConfigDialogOpen(true);
+      if (editingServer) {
+        // Modo edición: actualizar servidor existente
+        const updateData = { ...formData };
+        // Si la contraseña está vacía, no actualizarla (mantener la existente)
+        if (!updateData.password) {
+          delete updateData.password;
+        }
+        response = await api.put(`/servers/${editingServer.id}`, updateData);
+        toast.success('Servidor actualizado correctamente');
+        setDialogOpen(false);
+        loadServers();
+        resetForm();
+      } else {
+        // Modo creación: crear nuevo servidor
+        response = await api.post('/servers', formData);
+        setConnectionValid(true);
+        toast.success('Conexión exitosa');
+        
+        // Guardar el servidor creado
+        const newServerId = response.data.id;
+        setSelectedServer({ ...response.data, id: newServerId });
+        
+        // Cargar las opciones de filtros
+        await loadFilterOptions(newServerId);
+        
+        setDialogOpen(false);
+        loadServers();
+        
+        // Abrir el diálogo de configuración
+        setConfigDialogOpen(true);
+      }
       
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error de conexión');
@@ -268,6 +287,28 @@ const Servidores = () => {
       departamentos: []
     });
     setConnectionValid(false);
+    setEditingServer(null);
+  };
+
+  // Función para abrir el diálogo de edición con los datos del servidor
+  const openEditDialog = (server) => {
+    setFormData({
+      name: server.name || '',
+      host: server.host || '',
+      port: server.port || 1433,
+      database: server.database || '',
+      username: server.username || '',
+      password: '', // No mostramos la contraseña por seguridad
+      system_type: server.system_type || 'MPRO',
+      date_calculation_method: server.date_calculation_method || 'inventory_dates',
+      sucursales: server.sucursales || [],
+      tipos_movimiento: server.tipos_movimiento || [],
+      categorias: server.categorias || [],
+      departamentos: server.departamentos || []
+    });
+    setEditingServer(server);
+    setConnectionValid(false);
+    setDialogOpen(true);
   };
 
   const getFilterCount = (server) => {
@@ -454,6 +495,14 @@ const Servidores = () => {
                   <div className="flex gap-2">
                     <Button 
                       variant="outline" 
+                      size="sm"
+                      onClick={() => openEditDialog(server)}
+                      data-testid="edit-server-button"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
                       size="sm" 
                       className="flex-1"
                       onClick={() => openConfigDialog(server)}
@@ -478,12 +527,14 @@ const Servidores = () => {
         </div>
       )}
 
-      {/* Add Server Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* Add/Edit Server Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Agregar Nuevo Servidor</DialogTitle>
-            <DialogDescription>Configura la conexión a un servidor SQL</DialogDescription>
+            <DialogTitle>{editingServer ? 'Editar Servidor' : 'Agregar Nuevo Servidor'}</DialogTitle>
+            <DialogDescription>
+              {editingServer ? 'Modifica los parámetros de conexión' : 'Configura la conexión a un servidor SQL'}
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
@@ -570,13 +621,17 @@ const Servidores = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
+                <Label htmlFor="password">
+                  Contraseña
+                  {editingServer && <span className="text-xs text-zinc-400 ml-2">(dejar vacío para mantener)</span>}
+                </Label>
                 <Input
                   id="password"
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
-                  required
+                  required={!editingServer}
+                  placeholder={editingServer ? '••••••••' : ''}
                   data-testid="server-password-input"
                 />
               </div>
@@ -603,12 +658,12 @@ const Servidores = () => {
                 {testingConnection ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Conectando...
+                    {editingServer ? 'Guardando...' : 'Conectando...'}
                   </>
                 ) : (
                   <>
                     <Database className="h-4 w-4 mr-2" />
-                    Conectar y Configurar
+                    {editingServer ? 'Guardar Cambios' : 'Conectar y Configurar'}
                   </>
                 )}
               </Button>

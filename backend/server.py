@@ -1007,7 +1007,20 @@ async def update_server(server_id: str, server_data: Dict, current_user: Dict = 
     if current_user['role'] != 'Administrador':
         raise HTTPException(status_code=403, detail="No autorizado")
     
-    await db.servers.update_one({"id": server_id}, {"$set": server_data})
+    # Verificar que el servidor existe
+    existing = await db.servers.find_one({"id": server_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    # Si no se envía contraseña, mantener la existente
+    update_data = {k: v for k, v in server_data.items() if v is not None and v != ''}
+    if 'password' not in update_data or not update_data.get('password'):
+        update_data.pop('password', None)  # No actualizar la contraseña si está vacía
+    
+    # Actualizar timestamp
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.servers.update_one({"id": server_id}, {"$set": update_data})
     return {"message": "Servidor actualizado"}
 
 @api_router.delete("/servers/{server_id}")
