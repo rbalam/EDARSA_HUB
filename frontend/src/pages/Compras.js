@@ -1210,12 +1210,12 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   
   // Función para inicializar captura manual desde los resultados de auditoría
   const iniciarCapturaManual = () => {
-    if (resultadosAuditoria.length === 0) {
+    if (!resultados || resultados.length === 0) {
       alert('Primero ejecute la auditoría para obtener los productos');
       return;
     }
     // Inicializar con los productos de la auditoría
-    const capturaInicial = resultadosAuditoria.map(r => ({
+    const capturaInicial = resultados.map(r => ({
       codigo: r.codigo,
       producto: r.producto,
       rendimiento: r.rendimiento || 1,
@@ -1913,7 +1913,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
             <Label htmlFor="captura-manual" className="text-sm">
               Sin folio de inventario final - Usar captura manual
             </Label>
-            {usarCapturaManual && resultadosAuditoria.length > 0 && (
+            {usarCapturaManual && resultados && resultados.length > 0 && (
               <Button 
                 variant="outline" 
                 size="sm" 
