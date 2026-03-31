@@ -1065,6 +1065,13 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   const [calculadoraInsumos, setCalculadoraInsumos] = useState('');
   const [calculadoraPresentaciones, setCalculadoraPresentaciones] = useState('');
   
+  // Estados para días objetivo de inventario
+  const [diasObjetivoDefault, setDiasObjetivoDefault] = useState(10);
+  const [diasObjetivoPorSku, setDiasObjetivoPorSku] = useState({}); // {codigo: dias}
+  
+  // Verificar si el usuario puede editar días objetivo (admin o roles autorizados)
+  const puedeEditarDiasObjetivo = user?.role === 'admin' || user?.role === 'gerente' || user?.permisos?.includes('editar_dias_inventario');
+  
   // Calcular fecha mínima de inventarios iniciales para filtrar finales
   const fechaMinimaInvInicial = useMemo(() => {
     if (selectedInvIniciales.length === 0) return null;
@@ -1503,7 +1510,9 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
         folios_inv_final: usarCapturaManual ? null : foliosInvFinalToUse,  // Nuevo: todos los folios
         folio_requisicion: folioPedido[0] || '',  // Siempre string (el primero)
         folios_requisiciones: folioPedido,  // Array completo
-        inventario_manual: usarCapturaManual ? inventarioManual : null
+        inventario_manual: usarCapturaManual ? inventarioManual : null,
+        dias_objetivo_default: diasObjetivoDefault,
+        dias_objetivo_por_sku: Object.keys(diasObjetivoPorSku).length > 0 ? diasObjetivoPorSku : null
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -2077,6 +2086,19 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                     <th className="py-2 px-2 text-right">Costo Unit</th>
                     <th className="py-2 px-2 text-right">Importe</th>
                     <th className="py-2 px-2 text-center">Días Inv</th>
+                    <th className="py-2 px-2 text-center" title="Días objetivo de inventario">
+                      Días Obj
+                      {puedeEditarDiasObjetivo && (
+                        <Input 
+                          type="number"
+                          value={diasObjetivoDefault}
+                          onChange={(e) => setDiasObjetivoDefault(parseInt(e.target.value) || 10)}
+                          onFocus={(e) => e.target.select()}
+                          className="h-5 w-12 text-xs text-center mt-1 bg-zinc-700 border-zinc-600"
+                          title="Días objetivo por defecto"
+                        />
+                      )}
+                    </th>
                     <th className="py-2 px-2 text-right">Pedido</th>
                     <th className="py-2 px-2 text-center">Recomendar</th>
                   </tr>
@@ -2159,15 +2181,35 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                           <td className={`py-1.5 px-2 text-right ${r.importe_diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {formatCurrency(r.importe_diferencia)}
                           </td>
+                          {/* Días de Inventario */}
                           <td className="py-1.5 px-2 text-center">
                             <span className={`px-1.5 py-0.5 rounded text-xs ${
                               r.dias_inventario === 'N/A' ? 'bg-zinc-100' :
-                              r.dias_inventario < 5 ? 'bg-red-100 text-red-700' :
-                              r.dias_inventario < 10 ? 'bg-yellow-100 text-yellow-700' :
+                              r.dias_inventario < (r.dias_objetivo || diasObjetivoDefault) * 0.5 ? 'bg-red-100 text-red-700' :
+                              r.dias_inventario < (r.dias_objetivo || diasObjetivoDefault) ? 'bg-yellow-100 text-yellow-700' :
                               'bg-green-100 text-green-700'
                             }`}>
                               {r.dias_inventario}
                             </span>
+                          </td>
+                          {/* Días Objetivo */}
+                          <td className="py-1 px-1 text-center">
+                            {puedeEditarDiasObjetivo ? (
+                              <Input 
+                                type="number"
+                                value={diasObjetivoPorSku[r.codigo] !== undefined ? diasObjetivoPorSku[r.codigo] : (r.dias_objetivo || diasObjetivoDefault)}
+                                onChange={(e) => {
+                                  const valor = parseInt(e.target.value) || diasObjetivoDefault;
+                                  setDiasObjetivoPorSku(prev => ({...prev, [r.codigo]: valor}));
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                className="h-6 w-14 text-xs text-center"
+                              />
+                            ) : (
+                              <span className="text-xs text-zinc-500">
+                                {r.dias_objetivo || diasObjetivoDefault}
+                              </span>
+                            )}
                           </td>
                           <td className="py-1.5 px-2 text-right">{formatNumber(r.cantidad_pedido)}</td>
                           <td className="py-1.5 px-2 text-center">

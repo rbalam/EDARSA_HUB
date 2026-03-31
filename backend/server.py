@@ -5038,6 +5038,8 @@ class AuditoriaOperativaRequest(BaseModel):
     inventario_manual: Optional[List[Dict]] = None  # Para captura manual si no hay folio
     inventario_fisico_actual: Optional[List[Dict]] = None  # Captura manual del inv físico del día del pedido
     solo_skus_requisicion: bool = True  # Por defecto solo muestra SKUs de las requisiciones
+    dias_objetivo_default: int = 10  # Días de inventario objetivo por defecto
+    dias_objetivo_por_sku: Optional[Dict[str, int]] = None  # Días personalizados por SKU {codigo: dias}
 
 
 class ProductosParaCapturaRequest(BaseModel):
@@ -5695,7 +5697,15 @@ WHERE INM.folio = {folio_inv}
                     # Consumo diario promedio
                     consumo_diario = abs(consumos) / dias_periodo if dias_periodo > 0 else 0
                     dias_inv = inv_fisico / consumo_diario if consumo_diario > 0 else 999
-                    debe_comprar = dias_inv < 10
+                    
+                    # Días objetivo para este SKU (personalizado o default)
+                    dias_objetivo_sku = 10  # Default
+                    if request.dias_objetivo_por_sku and codigo in request.dias_objetivo_por_sku:
+                        dias_objetivo_sku = request.dias_objetivo_por_sku[codigo]
+                    elif hasattr(request, 'dias_objetivo_default') and request.dias_objetivo_default:
+                        dias_objetivo_sku = request.dias_objetivo_default
+                    
+                    debe_comprar = dias_inv < dias_objetivo_sku
                     
                     resultados.append({
                         "codigo": codigo,
@@ -5716,6 +5726,7 @@ WHERE INM.folio = {folio_inv}
                         "tipo_diferencia": "favor" if diferencia >= 0 else "contra",
                         "consumo_diario": round(consumo_diario, 2),
                         "dias_inventario": round(dias_inv, 1) if dias_inv < 999 else "N/A",
+                        "dias_objetivo": dias_objetivo_sku,
                         "cantidad_pedido": cantidad_pedido,
                         "debe_comprar": debe_comprar,
                         "recomendacion": "COMPRAR" if debe_comprar and cantidad_pedido > 0 else "OK" if not debe_comprar else "SIN PEDIDO",
@@ -5766,8 +5777,15 @@ WHERE INM.folio = {folio_inv}
                     # Días de inventario disponible
                     dias_inv = inv_fisico / consumo_diario if consumo_diario > 0 else 999
                     
+                    # Días objetivo para este SKU (personalizado o default)
+                    dias_objetivo_sku = 10  # Default
+                    if request.dias_objetivo_por_sku and codigo in request.dias_objetivo_por_sku:
+                        dias_objetivo_sku = request.dias_objetivo_por_sku[codigo]
+                    elif hasattr(request, 'dias_objetivo_default') and request.dias_objetivo_default:
+                        dias_objetivo_sku = request.dias_objetivo_default
+                    
                     # ¿Debe comprar?
-                    debe_comprar = dias_inv < 10  # Umbral de 10 días
+                    debe_comprar = dias_inv < dias_objetivo_sku
                     
                     # Obtener rendimiento y unidad de la requisición
                     rendimiento = requi_dict.get(codigo, {}).get('rendimiento', 1) if isinstance(requi_dict.get(codigo), dict) else 1
@@ -5799,6 +5817,7 @@ WHERE INM.folio = {folio_inv}
                             "tipo_diferencia": "favor" if diferencia >= 0 else "contra",
                             "consumo_diario": round(consumo_diario, 2),
                             "dias_inventario": round(dias_inv, 1) if dias_inv < 999 else "N/A",
+                            "dias_objetivo": dias_objetivo_sku,
                             "cantidad_pedido": cantidad_pedido,
                             "debe_comprar": debe_comprar,
                             "recomendacion": "COMPRAR" if debe_comprar and cantidad_pedido > 0 else "OK" if not debe_comprar else "SIN PEDIDO",
