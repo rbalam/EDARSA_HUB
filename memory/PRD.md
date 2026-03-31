@@ -2,7 +2,20 @@
 
 ## Última Actualización: Marzo 2026
 
-### Bug Fixes y Mejoras Recientes (29 Mar 2026 - Sesión 2)
+### Bug Fixes y Mejoras Recientes (31 Mar 2026)
+- **CORREGIDO (P0):** Error en Endpoint de Auditoría de Compras (SoftRestaurant/CIENFUEGOS)
+  - **Problema**: Las columnas SQL usadas no existían en las tablas del cliente
+    - `insumos.nombre` → Corregido a `I.descripcion`
+    - `insumos.costopromedio` → Corregido a `INM.costo` (desde invfisicomovtos)
+    - `productoskitinsumos` → Corregido a tabla `costos` (SoftRestaurant)
+  - **Problema**: Fechas con formato `YYYY-MM-DD` causaban error de conversión en pytds
+    - Corregido a formato `YYYYMMDD` sin guiones
+  - **Problema**: `idinsumo` vacío en `invfisicomovtos` - los datos estaban en `idpresentacion`
+    - Corregido con JOIN a `insumospresentaciones` para obtener el `idinsumo` real
+  - **Resultado**: Endpoint `/api/compras/auditoria-operativa` ahora funciona correctamente
+    - Probado con CIENFUEGOS: 1291 productos procesados exitosamente
+
+### Bug Fixes y Mejoras Anteriores (29 Mar 2026 - Sesión 2)
 - **Corregido:** Bug rutas - "Tablero de Dirección" ya no abre "Dashboard de Inventarios" 
   - Menú reorganizado: "Tablero Ejecutivo" primero, "Dashboard Inventarios" debajo de "Inventarios"
   - Redirect por defecto ahora va a `/tablero-ejecutivo`
@@ -325,7 +338,9 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
 2. ~~**Drill-down en KPIs**~~ ✅ - Doble click para ver detalle de movimientos
 
 ### P1 - Próximos
-1. **Bug routing `/explorador-bd`** - Redirige al Dashboard (pendiente arreglar)
+1. **Tablero de Compras estilo Power BI** - Selector multi-mes, tabla proveedores/mes, gráfico categorías
+2. **Filtro Gasto/Venta en Análisis Inventario MPRO** - Pendiente confirmación del usuario
+3. **Bug routing `/explorador-bd`** - Redirige al Dashboard (pendiente arreglar)
 2. **Presupuestos** - Comparativa vs presupuesto (existe en análisis e inventarios)
 3. **Ventas sin inflación** - Parametrizable el % de inflación (precios constantes)
 4. **Filtros por grupo, zona, permisos** - Especialmente para MPRO y relación usuarios

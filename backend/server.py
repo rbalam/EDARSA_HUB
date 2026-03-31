@@ -5076,6 +5076,10 @@ async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, crede
     fecha_ini = request.fecha_inv_inicial
     fecha_fin = request.fecha_auditoria
     
+    # Convertir fechas a formato YYYYMMDD para pytds (evita error de conversión datetime)
+    fecha_ini_sql = fecha_ini.replace('-', '')
+    fecha_fin_sql = fecha_fin.replace('-', '')
+    
     resultados = []
     resumen = {
         "total_teorico": 0,
@@ -5091,13 +5095,22 @@ async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, crede
     try:
         if server['system_type'] == 'SoftRestaurant':
             # Obtener inventario inicial
+            # SoftRestaurant usa idpresentacion -> obtener idinsumo de la presentación para match
             inv_ini_dict = {}
             if request.folio_inv_inicial:
                 query_inv_ini = f"""
-SELECT INM.idinsumo as codigo, I.nombre as producto, 
-       INM.fisicoalmacen1 as cantidad, ISNULL(I.costopromedio, 0) as costo
+SELECT 
+    RTRIM(COALESCE(
+        NULLIF(RTRIM(INM.idinsumo), ''),
+        IP.idinsumo,
+        INM.idpresentacion
+    )) as codigo,
+    COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto, 
+    INM.fisicoalmacen1 as cantidad, 
+    ISNULL(INM.costo, 0) as costo
 FROM invfisicomovtos INM
-INNER JOIN insumos I ON I.idinsumo = INM.idinsumo
+LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(INM.idpresentacion)
+LEFT JOIN insumos I ON I.idinsumo = COALESCE(NULLIF(RTRIM(INM.idinsumo), ''), IP.idinsumo)
 WHERE INM.folio = {request.folio_inv_inicial}
 """
                 result_ini = execute_sql_query(
@@ -5116,8 +5129,8 @@ SELECT OCM.idinsumo as codigo, SUM(OCM.cantidad) as cantidad
 FROM ordenescompramov OCM
 INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
 WHERE OC.aplicada = 1 
-    AND OC.fechacaptura >= '{fecha_ini}'
-    AND OC.fechacaptura <= '{fecha_fin} 23:59:59'
+    AND OC.fechacaptura >= '{fecha_ini_sql}'
+    AND OC.fechacaptura <= '{fecha_fin_sql} 23:59:59'
 GROUP BY OCM.idinsumo
 """
             compras_result = execute_sql_query(
@@ -5127,16 +5140,17 @@ GROUP BY OCM.idinsumo
             compras_dict = {str(c['codigo']): float(c['cantidad'] or 0) for c in compras_result}
             
             # Obtener consumos por ventas del período
+            # SoftRestaurant usa tabla 'costos' para la relación producto->insumo->cantidad
             query_consumos = f"""
-SELECT PK.idinsumo as codigo, SUM(CD.cantidad * PK.cantidad) as consumo
+SELECT C.idinsumo as codigo, SUM(CD.cantidad * C.cantidad) as consumo
 FROM cheqdet CD
-INNER JOIN cheques C ON C.folio = CD.foliodet
-INNER JOIN turnos T ON T.idturno = C.idturno
-INNER JOIN productoskitinsumos PK ON PK.idproducto = CD.idproducto
-WHERE T.apertura >= '{fecha_ini}'
-    AND T.apertura <= '{fecha_fin} 23:59:59'
-    AND C.cancelado = 0
-GROUP BY PK.idinsumo
+INNER JOIN cheques CH ON CH.folio = CD.foliodet
+INNER JOIN turnos T ON T.idturno = CH.idturno
+INNER JOIN costos C ON C.idproducto = CD.idproducto
+WHERE T.apertura >= '{fecha_ini_sql}'
+    AND T.apertura <= '{fecha_fin_sql} 23:59:59'
+    AND CH.cancelado = 0
+GROUP BY C.idinsumo
 """
             consumos_result = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -5148,10 +5162,18 @@ GROUP BY PK.idinsumo
             inv_fin_dict = {}
             if request.folio_inv_final:
                 query_inv_fin = f"""
-SELECT INM.idinsumo as codigo, I.nombre as producto,
-       INM.fisicoalmacen1 as cantidad, ISNULL(I.costopromedio, 0) as costo
+SELECT 
+    RTRIM(COALESCE(
+        NULLIF(RTRIM(INM.idinsumo), ''),
+        IP.idinsumo,
+        INM.idpresentacion
+    )) as codigo,
+    COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto,
+    INM.fisicoalmacen1 as cantidad, 
+    ISNULL(INM.costo, 0) as costo
 FROM invfisicomovtos INM
-INNER JOIN insumos I ON I.idinsumo = INM.idinsumo
+LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(INM.idpresentacion)
+LEFT JOIN insumos I ON I.idinsumo = COALESCE(NULLIF(RTRIM(INM.idinsumo), ''), IP.idinsumo)
 WHERE INM.folio = {request.folio_inv_final}
 """
                 result_fin = execute_sql_query(
@@ -5181,13 +5203,13 @@ WHERE INM.folio = {request.folio_inv_final}
             folios_sql = ", ".join([f"'{f}'" for f in folios_req])
             
             query_requi = f"""
-SELECT OCM.idinsumo as codigo, I.nombre as producto, 
+SELECT OCM.idinsumo as codigo, I.descripcion as producto, 
        SUM(OCM.cantidad) as cantidad_pedido
 FROM ordenescompramov OCM
 INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
 INNER JOIN insumos I ON I.idinsumo = OCM.idinsumo
 WHERE OC.folio IN ({folios_sql})
-GROUP BY OCM.idinsumo, I.nombre
+GROUP BY OCM.idinsumo, I.descripcion
 """
             requi_result = execute_sql_query(
                 server['host'], server['port'], server['database'],
