@@ -5709,7 +5709,7 @@ SELECT
     C.descripcion as descripcion_concepto,
     M.cantidad,
     A.nombre as almacen,
-    ISNULL(CAST(M.referencia AS VARCHAR(50)), '') as referencia,
+    ISNULL(CAST(M.folio AS VARCHAR(50)), '') as referencia,
     CASE WHEN C.tipo = 1 THEN 'E' ELSE 'S' END as tipo
 FROM movsinv M
 LEFT JOIN conceptos C ON C.idconcepto = M.idconcepto

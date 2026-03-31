@@ -1170,22 +1170,51 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
     }
   };
 
-  // Función para formatear cantidad con conversión
-  const formatConversion = (cantidad, rendimiento, unidadPrincipal) => {
-    if (!cantidad || cantidad === 0) return '0.00';
+  // Función para convertir cantidades según unidad seleccionada
+  // Devuelve objeto {principal, alternativo} para mostrar en columnas separadas
+  const getConversionValues = (cantidad, rendimiento) => {
+    if (!cantidad || cantidad === 0) return { principal: '0.00', alternativo: '0.00' };
     
     const cantidadNum = parseFloat(cantidad) || 0;
     const rendimientoNum = parseFloat(rendimiento) || 1;
     
     if (unidadAnalisis === 'presentaciones') {
-      // Mostrar presentaciones, con insumos entre paréntesis
+      // Principal: presentaciones, Alternativo: insumos
       const enInsumos = cantidadNum * rendimientoNum;
-      return `${formatNumber(cantidadNum)} (${formatNumber(enInsumos)})`;
+      return {
+        principal: formatNumber(cantidadNum),
+        alternativo: formatNumber(enInsumos)
+      };
     } else {
-      // Mostrar insumos, con presentaciones entre paréntesis
+      // Principal: insumos, Alternativo: presentaciones
       const enPresentaciones = rendimientoNum > 0 ? cantidadNum / rendimientoNum : 0;
-      return `${formatNumber(cantidadNum)} (${formatNumber(enPresentaciones)})`;
+      return {
+        principal: formatNumber(cantidadNum),
+        alternativo: formatNumber(enPresentaciones)
+      };
     }
+  };
+  
+  // Función para obtener el costo ajustado según unidad seleccionada
+  const getCostoAjustado = (costo, rendimiento) => {
+    if (!costo || costo === 0) return 0;
+    
+    const costoNum = parseFloat(costo) || 0;
+    const rendimientoNum = parseFloat(rendimiento) || 1;
+    
+    if (unidadAnalisis === 'presentaciones') {
+      // Costo de la presentación (ya viene así del backend)
+      return costoNum;
+    } else {
+      // Costo del insumo = costo de presentación / rendimiento
+      return rendimientoNum > 0 ? costoNum / rendimientoNum : costoNum;
+    }
+  };
+
+  // Función para formatear cantidad con conversión (formato legible)
+  const formatConversion = (cantidad, rendimiento, unidadPrincipal) => {
+    const values = getConversionValues(cantidad, rendimiento);
+    return `${values.principal} (${values.alternativo})`;
   };
 
   // Función para obtener detalle de movimientos al hacer doble click
@@ -1882,12 +1911,16 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                     {agruparPorProveedor && <th className="py-2 px-2 text-left">Proveedor</th>}
                     {agruparPorProveedor && <th className="py-2 px-2 text-left">Folio Pedido</th>}
                     <th className="py-2 px-2 text-left">Producto</th>
-                    <th className="py-2 px-2 text-right">Inv.Ini</th>
-                    <th className="py-2 px-2 text-right">+Movimientos</th>
-                    <th className="py-2 px-2 text-right">-Consumos</th>
+                    <th className="py-2 px-2 text-right">{unidadAnalisis === 'presentaciones' ? 'Inv.Ini (Pres)' : 'Inv.Ini (Ins)'}</th>
+                    <th className="py-2 px-2 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
+                    <th className="py-2 px-2 text-right">{unidadAnalisis === 'presentaciones' ? '+Mov (Pres)' : '+Mov (Ins)'}</th>
+                    <th className="py-2 px-2 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
+                    <th className="py-2 px-2 text-right">{unidadAnalisis === 'presentaciones' ? '-Cons (Pres)' : '-Cons (Ins)'}</th>
+                    <th className="py-2 px-2 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
                     <th className="py-2 px-2 text-right">Teórico</th>
                     <th className="py-2 px-2 text-right">Físico</th>
                     <th className="py-2 px-2 text-right">Diferencia</th>
+                    <th className="py-2 px-2 text-right">Costo Unit</th>
                     <th className="py-2 px-2 text-right">Importe</th>
                     <th className="py-2 px-2 text-center">Días Inv</th>
                     <th className="py-2 px-2 text-right">Pedido</th>
@@ -1902,6 +1935,15 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                       const rendimiento = r.rendimiento || 1;
                       const isNewProveedor = agruparPorProveedor && r.proveedor !== lastProveedor;
                       const isNewFolio = agruparPorProveedor && r.folio_pedido !== lastFolio;
+                      
+                      // Obtener valores convertidos para cada columna
+                      const invIniValues = getConversionValues(r.inv_inicial, rendimiento);
+                      const movValues = getConversionValues(r.movimientos || r.entradas || 0, rendimiento);
+                      const consValues = getConversionValues(Math.abs(r.consumos || 0), rendimiento);
+                      const teoricoValues = getConversionValues(r.existencia_teorica, rendimiento);
+                      const fisicoValues = getConversionValues(r.inv_fisico, rendimiento);
+                      const difValues = getConversionValues(r.diferencia, rendimiento);
+                      const costoUnit = getCostoAjustado(r.costo, rendimiento);
                       
                       if (agruparPorProveedor) {
                         lastProveedor = r.proveedor;
@@ -1921,26 +1963,43 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                             </td>
                           )}
                           <td className="py-1.5 px-2 font-medium">{r.producto}</td>
-                          <td className="py-1.5 px-2 text-right">{formatConversion(r.inv_inicial, rendimiento)}</td>
+                          {/* Inv Inicial - Principal */}
+                          <td className="py-1.5 px-2 text-right">{invIniValues.principal}</td>
+                          {/* Inv Inicial - Alternativo */}
+                          <td className="py-1.5 px-2 text-right text-zinc-400">{invIniValues.alternativo}</td>
+                          {/* Movimientos - Principal */}
                           <td 
                             className="py-1.5 px-2 text-right text-green-600 cursor-pointer hover:bg-green-100 transition-colors"
                             onDoubleClick={() => fetchDetalleMovimientos(r.codigo, r.producto)}
                             title="Doble click para ver detalle de movimientos"
                           >
-                            +{formatConversion(r.movimientos || r.entradas || 0, rendimiento)}
+                            +{movValues.principal}
                           </td>
+                          {/* Movimientos - Alternativo */}
+                          <td className="py-1.5 px-2 text-right text-green-400">{movValues.alternativo}</td>
+                          {/* Consumos - Principal */}
                           <td 
                             className="py-1.5 px-2 text-right text-orange-600 cursor-pointer hover:bg-orange-100 transition-colors"
                             onDoubleClick={() => fetchDetalleConsumos(r.codigo, r.producto)}
                             title="Doble click para ver detalle de consumos"
                           >
-                            -{formatConversion(Math.abs(r.consumos || 0), rendimiento)}
+                            -{consValues.principal}
                           </td>
-                          <td className="py-1.5 px-2 text-right font-medium">{formatConversion(r.existencia_teorica, rendimiento)}</td>
-                          <td className="py-1.5 px-2 text-right font-medium">{formatConversion(r.inv_fisico, rendimiento)}</td>
+                          {/* Consumos - Alternativo */}
+                          <td className="py-1.5 px-2 text-right text-orange-400">{consValues.alternativo}</td>
+                          {/* Teórico */}
+                          <td className="py-1.5 px-2 text-right font-medium">{teoricoValues.principal}</td>
+                          {/* Físico */}
+                          <td className="py-1.5 px-2 text-right font-medium">{fisicoValues.principal}</td>
+                          {/* Diferencia */}
                           <td className={`py-1.5 px-2 text-right font-bold ${r.diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {r.diferencia >= 0 ? '+' : ''}{formatConversion(r.diferencia, rendimiento)}
+                            {r.diferencia >= 0 ? '+' : ''}{difValues.principal}
                           </td>
+                          {/* Costo Unitario */}
+                          <td className="py-1.5 px-2 text-right text-zinc-500">
+                            {formatCurrency(costoUnit)}
+                          </td>
+                          {/* Importe Diferencia */}
                           <td className={`py-1.5 px-2 text-right ${r.importe_diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {formatCurrency(r.importe_diferencia)}
                           </td>
