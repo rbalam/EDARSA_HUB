@@ -1170,8 +1170,8 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
     }
   };
 
-  // Función para convertir cantidades según unidad seleccionada
-  // Devuelve objeto {principal, alternativo} para mostrar en columnas separadas
+  // Función para convertir cantidades de INVENTARIO/MOVIMIENTOS
+  // Los datos vienen en PRESENTACIONES del backend
   const getConversionValues = (cantidad, rendimiento) => {
     if (!cantidad || cantidad === 0) return { principal: '0.00', alternativo: '0.00' };
     
@@ -1179,15 +1179,40 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
     const rendimientoNum = parseFloat(rendimiento) || 1;
     
     if (unidadAnalisis === 'presentaciones') {
-      // Principal: presentaciones, Alternativo: insumos
+      // Principal: presentaciones (tal cual), Alternativo: insumos (× rendimiento)
       const enInsumos = cantidadNum * rendimientoNum;
       return {
         principal: formatNumber(cantidadNum),
         alternativo: formatNumber(enInsumos)
       };
     } else {
-      // Principal: insumos, Alternativo: presentaciones
-      const enPresentaciones = rendimientoNum > 0 ? cantidadNum / rendimientoNum : 0;
+      // Principal: insumos (× rendimiento), Alternativo: presentaciones (tal cual)
+      const enInsumos = cantidadNum * rendimientoNum;
+      return {
+        principal: formatNumber(enInsumos),
+        alternativo: formatNumber(cantidadNum)
+      };
+    }
+  };
+  
+  // Función para convertir cantidades de CONSUMOS
+  // Los datos vienen en INSUMOS del backend (desde recetas)
+  const getConversionValuesConsumo = (cantidad, rendimiento) => {
+    if (!cantidad || cantidad === 0) return { principal: '0.00', alternativo: '0.00' };
+    
+    const cantidadNum = parseFloat(cantidad) || 0;
+    const rendimientoNum = parseFloat(rendimiento) || 1;
+    
+    if (unidadAnalisis === 'presentaciones') {
+      // Principal: presentaciones (÷ rendimiento), Alternativo: insumos (tal cual)
+      const enPresentaciones = rendimientoNum > 0 ? cantidadNum / rendimientoNum : cantidadNum;
+      return {
+        principal: formatNumber(enPresentaciones),
+        alternativo: formatNumber(cantidadNum)
+      };
+    } else {
+      // Principal: insumos (tal cual), Alternativo: presentaciones (÷ rendimiento)
+      const enPresentaciones = rendimientoNum > 0 ? cantidadNum / rendimientoNum : cantidadNum;
       return {
         principal: formatNumber(cantidadNum),
         alternativo: formatNumber(enPresentaciones)
@@ -1935,7 +1960,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                       // Obtener valores convertidos para cada columna
                       const invIniValues = getConversionValues(r.inv_inicial, rendimiento);
                       const movValues = getConversionValues(r.movimientos || r.entradas || 0, rendimiento);
-                      const consValues = getConversionValues(Math.abs(r.consumos || 0), rendimiento);
+                      const consValues = getConversionValuesConsumo(Math.abs(r.consumos || 0), rendimiento);
                       const teoricoValues = getConversionValues(r.existencia_teorica, rendimiento);
                       const fisicoValues = getConversionValues(r.inv_fisico, rendimiento);
                       const difValues = getConversionValues(r.diferencia, rendimiento);
