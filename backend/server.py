@@ -5034,6 +5034,8 @@ class AuditoriaOperativaRequest(BaseModel):
     folio_requisicion: Optional[str] = None  # Requisición a comparar (una sola)
     folios_requisiciones: Optional[List[str]] = None  # Múltiples requisiciones
     inventario_manual: Optional[List[Dict]] = None  # Para captura manual si no hay folio
+    inventario_fisico_actual: Optional[List[Dict]] = None  # Captura manual del inv físico del día del pedido
+    solo_skus_requisicion: bool = True  # Por defecto solo muestra SKUs de las requisiciones
 
 @api_router.post("/compras/auditoria-operativa")
 async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -5094,11 +5096,87 @@ async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, crede
     
     try:
         if server['system_type'] == 'SoftRestaurant':
-            # Obtener inventario inicial
-            # SoftRestaurant usa idpresentacion -> obtener idinsumo de la presentación para match
+            # PASO 1: Determinar tipo de almacenes seleccionados
+            # tipo=1: Consumo (INSUMOS) - Barra, Cava, Producción
+            # tipo=2: Bodega (PRESENTACIONES) - Bodega, Congelador
+            almacenes_str = ", ".join([f"'{a}'" for a in request.almacenes])
+            query_tipos_alm = f"""
+SELECT idalmacen, nombre, ISNULL(tipo, 1) as tipo
+FROM almacen
+WHERE nombre IN ({almacenes_str}) OR idalmacen IN ({almacenes_str})
+"""
+            tipos_alm_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_tipos_alm
+            )
+            
+            almacenes_bodega = [a['idalmacen'] for a in tipos_alm_result if a['tipo'] == 2]
+            almacenes_consumo = [a['idalmacen'] for a in tipos_alm_result if a['tipo'] == 1]
+            
+            es_solo_bodega = len(almacenes_bodega) > 0 and len(almacenes_consumo) == 0
+            es_solo_consumo = len(almacenes_consumo) > 0 and len(almacenes_bodega) == 0
+            es_mixto = len(almacenes_bodega) > 0 and len(almacenes_consumo) > 0
+            
+            logging.info(f"[AUDITORIA] Almacenes - Bodega: {almacenes_bodega}, Consumo: {almacenes_consumo}")
+            logging.info(f"[AUDITORIA] Tipo: solo_bodega={es_solo_bodega}, solo_consumo={es_solo_consumo}, mixto={es_mixto}")
+            
+            # PASO 2: Obtener SKUs de las requisiciones seleccionadas (para filtrar)
+            folios_req = request.folios_requisiciones if request.folios_requisiciones else ([request.folio_requisicion] if request.folio_requisicion else [])
+            
+            skus_requisicion = set()
+            requi_dict = {}
+            
+            if folios_req:
+                folios_sql = ", ".join([f"'{f}'" for f in folios_req])
+                # Las órdenes de compra en SoftRestaurant usan códigos que pueden ser presentaciones
+                # Intentamos obtener descripción de ambas tablas
+                query_requi = f"""
+SELECT 
+    OCM.idinsumo as codigo, 
+    COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto, 
+    SUM(OCM.cantidad) as cantidad_pedido,
+    ISNULL(OCM.costo, 0) as costo
+FROM ordenescompramov OCM
+INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
+LEFT JOIN insumos I ON I.idinsumo = OCM.idinsumo
+LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = OCM.idinsumo
+WHERE OC.folio IN ({folios_sql})
+GROUP BY OCM.idinsumo, I.descripcion, IP.descripcion, OCM.costo
+"""
+                requi_result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_requi
+                )
+                for r in requi_result:
+                    codigo = str(r['codigo']).strip()
+                    skus_requisicion.add(codigo)
+                    requi_dict[codigo] = {
+                        'cantidad': float(r['cantidad_pedido'] or 0),
+                        'producto': r['producto'] or '',
+                        'costo': float(r.get('costo', 0) or 0)
+                    }
+                logging.info(f"[AUDITORIA] SKUs en requisiciones: {len(skus_requisicion)}")
+            
+            # PASO 3: Obtener inventario inicial
+            # Para BODEGA: usar idpresentacion como código
+            # Para CONSUMO: usar idinsumo como código
             inv_ini_dict = {}
             if request.folio_inv_inicial:
-                query_inv_ini = f"""
+                if es_solo_bodega:
+                    # Bodega trabaja con presentaciones
+                    query_inv_ini = f"""
+SELECT 
+    RTRIM(INM.idpresentacion) as codigo,
+    COALESCE(IP.descripcion, 'Sin descripción') as producto, 
+    INM.fisicoalmacen1 as cantidad, 
+    ISNULL(INM.costo, 0) as costo
+FROM invfisicomovtos INM
+LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(INM.idpresentacion)
+WHERE INM.folio = {request.folio_inv_inicial}
+"""
+                else:
+                    # Consumo trabaja con insumos
+                    query_inv_ini = f"""
 SELECT 
     RTRIM(COALESCE(
         NULLIF(RTRIM(INM.idinsumo), ''),
@@ -5117,31 +5195,105 @@ WHERE INM.folio = {request.folio_inv_inicial}
                     server['host'], server['port'], server['database'],
                     server['username'], server['password'], query_inv_ini
                 )
-                inv_ini_dict = {str(r['codigo']): {
+                inv_ini_dict = {str(r['codigo']).strip(): {
                     "producto": r['producto'], 
                     "cantidad": float(r['cantidad'] or 0),
                     "costo": float(r['costo'] or 0)
                 } for r in result_ini}
             
-            # Obtener compras del período
-            query_compras = f"""
-SELECT OCM.idinsumo as codigo, SUM(OCM.cantidad) as cantidad
-FROM ordenescompramov OCM
-INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
-WHERE OC.aplicada = 1 
-    AND OC.fechacaptura >= '{fecha_ini_sql}'
-    AND OC.fechacaptura <= '{fecha_fin_sql} 23:59:59'
-GROUP BY OCM.idinsumo
-"""
-            compras_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_compras
-            )
-            compras_dict = {str(c['codigo']): float(c['cantidad'] or 0) for c in compras_result}
+            # PASO 4: Obtener ENTRADAS según tipo de almacén
+            # - Solo Bodega: Entradas = COMPRAS (concepto EPC y similares)
+            # - Solo Consumo: Entradas = TRASPASOS (concepto ETR)
+            # - Mixto: Entradas = COMPRAS + TRASPASOS
             
-            # Obtener consumos por ventas del período
-            # SoftRestaurant usa tabla 'costos' para la relación producto->insumo->cantidad
-            query_consumos = f"""
+            # Obtener tipos de movimiento activos del servidor
+            tipos_mov_activos = server.get('tipos_movimiento', [])
+            
+            # Filtrar tipos de entrada activos
+            tipos_entrada_compra = ['EPC', 'ECS', 'EPB', 'EDE', 'EEH', 'ECO']  # Compras y similares
+            tipos_entrada_traspaso = ['ETR', 'ETA']  # Traspasos
+            
+            entradas_activas_compra = [t for t in tipos_entrada_compra if t in tipos_mov_activos]
+            entradas_activas_traspaso = [t for t in tipos_entrada_traspaso if t in tipos_mov_activos]
+            
+            entradas_dict = {}
+            
+            if es_solo_bodega or es_mixto:
+                # Obtener compras del período (para bodega - usa movtosalmacen con presentaciones)
+                # Bodega: usar idinsumospresentaciones como código (NO convertir a idinsumo)
+                query_compras = f"""
+SELECT RTRIM(M.idinsumospresentaciones) as codigo, SUM(M.cantidad) as cantidad
+FROM movtosalmacen M
+WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in entradas_activas_compra])})
+    AND M.fecha >= '{fecha_ini_sql}'
+    AND M.fecha <= '{fecha_fin_sql} 23:59:59'
+GROUP BY RTRIM(M.idinsumospresentaciones)
+"""
+                if entradas_activas_compra:
+                    compras_result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query_compras
+                    )
+                    for c in compras_result:
+                        codigo = str(c['codigo']).strip()
+                        entradas_dict[codigo] = entradas_dict.get(codigo, 0) + float(c['cantidad'] or 0)
+            
+            if es_solo_consumo or es_mixto:
+                # Obtener traspasos del período (para consumo - usa movsinv con insumos)
+                if entradas_activas_traspaso:
+                    query_traspasos = f"""
+SELECT RTRIM(M.idinsumo) as codigo, SUM(M.cantidad) as cantidad
+FROM movsinv M
+WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in entradas_activas_traspaso])})
+    AND M.fecha >= '{fecha_ini_sql}'
+    AND M.fecha <= '{fecha_fin_sql} 23:59:59'
+GROUP BY RTRIM(M.idinsumo)
+"""
+                    traspasos_result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query_traspasos
+                    )
+                    for t in traspasos_result:
+                        codigo = str(t['codigo']).strip()
+                        entradas_dict[codigo] = entradas_dict.get(codigo, 0) + float(t['cantidad'] or 0)
+            
+            logging.info(f"[AUDITORIA] Entradas encontradas: {len(entradas_dict)}")
+            
+            # PASO 5: Obtener consumos/salidas
+            # - Solo Bodega: Salidas = TRASPASOS (STR - lo que sale a consumo)
+            # - Solo Consumo: Salidas = VENTAS (SPV)
+            # - Mixto: Ventas (el consumo final)
+            
+            tipos_salida_venta = ['SPV']
+            tipos_salida_traspaso = ['STR', 'STA']
+            
+            salidas_activas_venta = [t for t in tipos_salida_venta if t in tipos_mov_activos]
+            salidas_activas_traspaso = [t for t in tipos_salida_traspaso if t in tipos_mov_activos]
+            
+            consumos_dict = {}
+            
+            if es_solo_bodega:
+                # Para bodega, las salidas son traspasos a consumo (usa movtosalmacen)
+                # Usar idinsumospresentaciones como código
+                if salidas_activas_traspaso:
+                    query_salidas = f"""
+SELECT RTRIM(M.idinsumospresentaciones) as codigo, SUM(M.cantidad) as cantidad
+FROM movtosalmacen M
+WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in salidas_activas_traspaso])})
+    AND M.fecha >= '{fecha_ini_sql}'
+    AND M.fecha <= '{fecha_fin_sql} 23:59:59'
+GROUP BY RTRIM(M.idinsumospresentaciones)
+"""
+                    salidas_result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query_salidas
+                    )
+                    for s in salidas_result:
+                        codigo = str(s['codigo']).strip()
+                        consumos_dict[codigo] = float(s['cantidad'] or 0)
+            else:
+                # Para consumo o mixto, las salidas son ventas
+                query_consumos = f"""
 SELECT C.idinsumo as codigo, SUM(CD.cantidad * C.cantidad) as consumo
 FROM cheqdet CD
 INNER JOIN cheques CH ON CH.folio = CD.foliodet
@@ -5152,16 +5304,41 @@ WHERE T.apertura >= '{fecha_ini_sql}'
     AND CH.cancelado = 0
 GROUP BY C.idinsumo
 """
-            consumos_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_consumos
-            )
-            consumos_dict = {str(c['codigo']): float(c['consumo'] or 0) for c in consumos_result}
+                consumos_result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_consumos
+                )
+                for c in consumos_result:
+                    codigo = str(c['codigo']).strip()
+                    consumos_dict[codigo] = float(c['consumo'] or 0)
             
-            # Obtener inventario final (físico o manual)
+            logging.info(f"[AUDITORIA] Consumos/Salidas encontradas: {len(consumos_dict)}")
+            
+            # PASO 6: Obtener inventario final (físico del día del pedido)
             inv_fin_dict = {}
-            if request.folio_inv_final:
-                query_inv_fin = f"""
+            if request.inventario_fisico_actual:
+                # Captura manual del inventario físico del día del pedido
+                inv_fin_dict = {str(item['codigo']).strip(): {
+                    "producto": item.get('producto', ''),
+                    "cantidad": float(item.get('cantidad', 0)),
+                    "costo": float(item.get('costo', 0))
+                } for item in request.inventario_fisico_actual}
+            elif request.folio_inv_final:
+                if es_solo_bodega:
+                    # Bodega: usar idpresentacion como código
+                    query_inv_fin = f"""
+SELECT 
+    RTRIM(INM.idpresentacion) as codigo,
+    COALESCE(IP.descripcion, 'Sin descripción') as producto, 
+    INM.fisicoalmacen1 as cantidad, 
+    ISNULL(INM.costo, 0) as costo
+FROM invfisicomovtos INM
+LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(INM.idpresentacion)
+WHERE INM.folio = {request.folio_inv_final}
+"""
+                else:
+                    # Consumo: usar idinsumo como código
+                    query_inv_fin = f"""
 SELECT 
     RTRIM(COALESCE(
         NULLIF(RTRIM(INM.idinsumo), ''),
@@ -5180,62 +5357,50 @@ WHERE INM.folio = {request.folio_inv_final}
                     server['host'], server['port'], server['database'],
                     server['username'], server['password'], query_inv_fin
                 )
-                inv_fin_dict = {str(r['codigo']): {
+                inv_fin_dict = {str(r['codigo']).strip(): {
                     "producto": r['producto'],
                     "cantidad": float(r['cantidad'] or 0),
                     "costo": float(r['costo'] or 0)
                 } for r in result_fin}
             elif request.inventario_manual:
-                inv_fin_dict = {str(item['codigo']): {
+                inv_fin_dict = {str(item['codigo']).strip(): {
                     "producto": item.get('producto', ''),
                     "cantidad": float(item.get('cantidad', 0)),
                     "costo": float(item.get('costo', 0))
                 } for item in request.inventario_manual}
             
-            # Obtener detalle de requisición para comparar
-            # Determinar folios de requisición a usar
-            folios_req = request.folios_requisiciones if request.folios_requisiciones else ([request.folio_requisicion] if request.folio_requisicion else [])
-            
-            if not folios_req:
-                raise HTTPException(status_code=400, detail="Se requiere al menos una requisición")
-            
-            # Construir condición SQL para múltiples folios
-            folios_sql = ", ".join([f"'{f}'" for f in folios_req])
-            
-            query_requi = f"""
-SELECT OCM.idinsumo as codigo, I.descripcion as producto, 
-       SUM(OCM.cantidad) as cantidad_pedido
-FROM ordenescompramov OCM
-INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
-INNER JOIN insumos I ON I.idinsumo = OCM.idinsumo
-WHERE OC.folio IN ({folios_sql})
-GROUP BY OCM.idinsumo, I.descripcion
-"""
-            requi_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_requi
-            )
-            requi_dict = {str(r['codigo']): float(r['cantidad_pedido'] or 0) for r in requi_result}
-            
-            # Calcular diferencias y días de consumo
+            # PASO 7: Calcular diferencias y días de consumo
+            # FILTRAR SOLO POR SKUs DE LA REQUISICIÓN (si solo_skus_requisicion está activo)
             from datetime import datetime
             dias_periodo = (datetime.strptime(fecha_fin, '%Y-%m-%d') - datetime.strptime(fecha_ini, '%Y-%m-%d')).days
             if dias_periodo <= 0:
                 dias_periodo = 1
             
-            todos_codigos = set(inv_ini_dict.keys()) | set(compras_dict.keys()) | set(consumos_dict.keys()) | set(inv_fin_dict.keys())
+            # Determinar qué códigos procesar
+            if request.solo_skus_requisicion and skus_requisicion:
+                # Solo los SKUs que están en las requisiciones seleccionadas
+                todos_codigos = skus_requisicion
+                logging.info(f"[AUDITORIA] Filtrando solo SKUs de requisición: {len(todos_codigos)}")
+            else:
+                # Todos los códigos encontrados
+                todos_codigos = set(inv_ini_dict.keys()) | set(entradas_dict.keys()) | set(consumos_dict.keys()) | set(inv_fin_dict.keys())
             
             for codigo in todos_codigos:
                 inv_inicial = inv_ini_dict.get(codigo, {}).get('cantidad', 0)
-                compras = compras_dict.get(codigo, 0)
+                entradas = entradas_dict.get(codigo, 0)  # Compras o traspasos según tipo de almacén
                 consumos = consumos_dict.get(codigo, 0)
                 inv_fisico = inv_fin_dict.get(codigo, {}).get('cantidad', 0)
                 costo = inv_ini_dict.get(codigo, {}).get('costo', 0) or inv_fin_dict.get(codigo, {}).get('costo', 0)
-                producto = inv_ini_dict.get(codigo, {}).get('producto', '') or inv_fin_dict.get(codigo, {}).get('producto', '')
-                cantidad_pedido = requi_dict.get(codigo, 0)
                 
-                # Existencia teórica = inicial + compras - consumos
-                existencia_teorica = inv_inicial + compras - consumos
+                # Obtener producto desde requisición primero, luego de inventarios
+                producto = requi_dict.get(codigo, {}).get('producto', '') if isinstance(requi_dict.get(codigo), dict) else ''
+                if not producto:
+                    producto = inv_ini_dict.get(codigo, {}).get('producto', '') or inv_fin_dict.get(codigo, {}).get('producto', '')
+                
+                cantidad_pedido = requi_dict.get(codigo, {}).get('cantidad', 0) if isinstance(requi_dict.get(codigo), dict) else requi_dict.get(codigo, 0)
+                
+                # Existencia teórica = inicial + entradas - consumos
+                existencia_teorica = inv_inicial + entradas - consumos
                 
                 # Diferencia = físico - teórico
                 diferencia = inv_fisico - existencia_teorica
@@ -5250,12 +5415,13 @@ GROUP BY OCM.idinsumo, I.descripcion
                 # ¿Debe comprar?
                 debe_comprar = dias_inv < 10  # Umbral de 10 días
                 
-                if producto:  # Solo productos con nombre
+                # Incluir producto si tiene nombre o está en la requisición
+                if producto or codigo in skus_requisicion:
                     resultados.append({
                         "codigo": codigo,
-                        "producto": producto,
+                        "producto": producto or f"SKU: {codigo}",
                         "inv_inicial": inv_inicial,
-                        "compras": compras,
+                        "entradas": entradas,  # Cambiado de 'compras' a 'entradas'
                         "consumos": consumos,
                         "existencia_teorica": round(existencia_teorica, 2),
                         "inv_fisico": inv_fisico,

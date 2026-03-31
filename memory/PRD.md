@@ -4,16 +4,24 @@
 
 ### Bug Fixes y Mejoras Recientes (31 Mar 2026)
 - **CORREGIDO (P0):** Error en Endpoint de Auditoría de Compras (SoftRestaurant/CIENFUEGOS)
-  - **Problema**: Las columnas SQL usadas no existían en las tablas del cliente
-    - `insumos.nombre` → Corregido a `I.descripcion`
-    - `insumos.costopromedio` → Corregido a `INM.costo` (desde invfisicomovtos)
-    - `productoskitinsumos` → Corregido a tabla `costos` (SoftRestaurant)
-  - **Problema**: Fechas con formato `YYYY-MM-DD` causaban error de conversión en pytds
-    - Corregido a formato `YYYYMMDD` sin guiones
-  - **Problema**: `idinsumo` vacío en `invfisicomovtos` - los datos estaban en `idpresentacion`
-    - Corregido con JOIN a `insumospresentaciones` para obtener el `idinsumo` real
-  - **Resultado**: Endpoint `/api/compras/auditoria-operativa` ahora funciona correctamente
-    - Probado con CIENFUEGOS: 1291 productos procesados exitosamente
+  - **Problema original**: Las columnas SQL usadas no existían en las tablas del cliente
+  - **Solución implementada - FASE 1**:
+    1. Corrección de columnas SQL (`insumos.nombre` → `I.descripcion`, tabla `costos` para recetas)
+    2. Formato de fechas `YYYYMMDD` para pytds
+    3. **Diferenciación por tipo de almacén**:
+       - BODEGA (tipo=2): Usa `movtosalmacen` con `idinsumospresentaciones` (PRESENTACIONES)
+       - CONSUMO (tipo=1): Usa `movsinv` con `idinsumo` (INSUMOS)
+    4. **Filtrado por SKUs de requisición** (`solo_skus_requisicion=true` por defecto)
+    5. Entradas según tipo: Compras (EPC) para bodega, Traspasos (ETR) para consumo
+    6. Salidas según tipo: Traspasos (STR) para bodega, Ventas (SPV) para consumo
+    7. Descripción de productos desde `insumos` O `insumospresentaciones`
+  - **Resultado**: Endpoint funcionando. Probado: 2624 productos totales, filtrado a 2 con requisición específica
+
+### Pendiente FASE 2 - Auditoría Operativa:
+  - [ ] Captura manual del inventario físico del día del pedido (campo ya existe: `inventario_fisico_actual`)
+  - [ ] Opción análisis en "Insumos" vs "Presentaciones" cuando hay almacenes mixtos
+  - [ ] Mostrar unidades duales: `48 (2)` = 48 insumos (2 presentaciones)
+  - [ ] Validación del rendimiento de presentaciones en conversiones
 
 ### Bug Fixes y Mejoras Anteriores (29 Mar 2026 - Sesión 2)
 - **Corregido:** Bug rutas - "Tablero de Dirección" ya no abre "Dashboard de Inventarios" 
