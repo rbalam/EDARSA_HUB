@@ -5027,10 +5027,12 @@ class AuditoriaOperativaRequest(BaseModel):
     server_id: str
     sucursal: str
     almacenes: List[str]
-    folio_inv_inicial: Optional[str] = None
+    folio_inv_inicial: Optional[str] = None  # Legacy: un solo folio
+    folios_inv_inicial: Optional[List[str]] = None  # Nuevo: múltiples folios
     fecha_inv_inicial: str
     fecha_auditoria: str  # Fecha del inventario final o actual
-    folio_inv_final: Optional[str] = None  # Opcional: si no hay, se captura manual
+    folio_inv_final: Optional[str] = None  # Legacy: un solo folio
+    folios_inv_final: Optional[List[str]] = None  # Nuevo: múltiples folios
     folio_requisicion: Optional[str] = None  # Requisición a comparar (una sola)
     folios_requisiciones: Optional[List[str]] = None  # Múltiples requisiciones
     inventario_manual: Optional[List[Dict]] = None  # Para captura manual si no hay folio
@@ -5193,46 +5195,93 @@ ORDER BY P.nombre, OC.folio, OCM.idinsumo
             # PASO 3: Obtener inventario inicial
             # Para BODEGA: usar idpresentacion como código
             # Para CONSUMO: usar idinsumo como código
+            # NUEVO: Procesar múltiples folios y normalizar TODO a INSUMOS
             inv_ini_dict = {}
-            if request.folio_inv_inicial:
-                if es_solo_bodega:
-                    # Bodega trabaja con presentaciones
-                    query_inv_ini = f"""
-SELECT 
-    RTRIM(INM.idpresentacion) as codigo,
-    COALESCE(IP.descripcion, 'Sin descripción') as producto, 
-    INM.fisicoalmacen1 as cantidad, 
-    ISNULL(INM.costo, 0) as costo
-FROM invfisicomovtos INM
-LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(INM.idpresentacion)
-WHERE INM.folio = {request.folio_inv_inicial}
+            
+            # Combinar folios (legacy + nuevo formato)
+            folios_iniciales = []
+            if request.folios_inv_inicial:
+                folios_iniciales = request.folios_inv_inicial
+            elif request.folio_inv_inicial:
+                folios_iniciales = [request.folio_inv_inicial]
+            
+            if folios_iniciales:
+                for folio_inv in folios_iniciales:
+                    # Determinar el tipo de almacén de este inventario específico
+                    query_tipo_alm = f"""
+SELECT A.tipo, A.nombre, INV.idalmacen1
+FROM invfisico INV
+LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
+WHERE INV.folio = {folio_inv}
 """
-                else:
-                    # Consumo trabaja con insumos
+                    tipo_result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query_tipo_alm
+                    )
+                    
+                    # tipo=1: Consumo (insumos), tipo=2: Bodega (presentaciones)
+                    tipo_almacen = tipo_result[0]['tipo'] if tipo_result else 1
+                    es_bodega = tipo_almacen == 2
+                    
+                    logging.info(f"[AUDITORIA] Procesando inv inicial folio={folio_inv}, tipo_almacen={tipo_almacen}, es_bodega={es_bodega}")
+                    
+                    # Query para obtener datos del inventario
+                    # SIEMPRE traemos el código de insumo para normalizar
                     query_inv_ini = f"""
 SELECT 
     RTRIM(COALESCE(
+        NULLIF(RTRIM(IP.idinsumo), ''),
         NULLIF(RTRIM(INM.idinsumo), ''),
-        IP.idinsumo,
         INM.idpresentacion
-    )) as codigo,
+    )) as codigo_insumo,
+    RTRIM(INM.idpresentacion) as codigo_presentacion,
     COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto, 
-    INM.fisicoalmacen1 as cantidad, 
-    ISNULL(INM.costo, 0) as costo
+    INM.fisicoalmacen1 as cantidad,
+    ISNULL(ID.costo, 0) as costo_insumo,
+    ISNULL(IPD.costo, ISNULL(INM.costo, 0)) as costo_presentacion,
+    ISNULL(IP.rendimiento, 1) as rendimiento
 FROM invfisicomovtos INM
 LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(INM.idpresentacion)
-LEFT JOIN insumos I ON I.idinsumo = COALESCE(NULLIF(RTRIM(INM.idinsumo), ''), IP.idinsumo)
-WHERE INM.folio = {request.folio_inv_inicial}
+LEFT JOIN insumos I ON I.idinsumo = COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), NULLIF(RTRIM(INM.idinsumo), ''))
+LEFT JOIN insumosdetalle ID ON ID.idinsumo = COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), NULLIF(RTRIM(INM.idinsumo), ''))
+LEFT JOIN insumospresentacionesdetalle IPD ON IPD.idinsumospresentaciones = RTRIM(INM.idpresentacion)
+WHERE INM.folio = {folio_inv}
 """
-                result_ini = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_inv_ini
-                )
-                inv_ini_dict = {str(r['codigo']).strip(): {
-                    "producto": r['producto'], 
-                    "cantidad": float(r['cantidad'] or 0),
-                    "costo": float(r['costo'] or 0)
-                } for r in result_ini}
+                    result_ini = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query_inv_ini
+                    )
+                    
+                    for r in result_ini:
+                        codigo = str(r['codigo_insumo'] or r['codigo_presentacion'] or '').strip()
+                        if not codigo:
+                            continue
+                        
+                        cantidad_raw = float(r['cantidad'] or 0)
+                        rendimiento = float(r['rendimiento'] or 1)
+                        
+                        # NORMALIZAR A INSUMOS:
+                        # - Si viene de BODEGA (tipo 2): cantidad está en presentaciones → multiplicar × rendimiento
+                        # - Si viene de CONSUMO (tipo 1): cantidad ya está en insumos → mantener
+                        if es_bodega:
+                            cantidad_en_insumos = cantidad_raw * rendimiento
+                        else:
+                            cantidad_en_insumos = cantidad_raw
+                        
+                        # Sumar al diccionario (puede haber mismo producto en múltiples inventarios)
+                        if codigo in inv_ini_dict:
+                            inv_ini_dict[codigo]['cantidad'] += cantidad_en_insumos
+                        else:
+                            inv_ini_dict[codigo] = {
+                                "producto": r['producto'],
+                                "cantidad": cantidad_en_insumos,
+                                "costo": float(r['costo_presentacion'] or 0),
+                                "costo_insumo": float(r['costo_insumo'] or 0),
+                                "costo_presentacion": float(r['costo_presentacion'] or 0),
+                                "rendimiento": rendimiento
+                            }
+                    
+                    logging.info(f"[AUDITORIA] Folio {folio_inv}: {len(result_ini)} productos procesados")
             
             # PASO 4: Obtener MOVIMIENTOS según tipo de almacén
             # - Solo Bodega: Movimientos = Entradas activas del filtro en Servidores SQL
@@ -5387,6 +5436,7 @@ GROUP BY C.idinsumo
             logging.info(f"[AUDITORIA] Consumos/Salidas encontradas: {len(consumos_dict)}")
             
             # PASO 6: Obtener inventario final (físico del día del pedido)
+            # NUEVO: Procesar múltiples folios y normalizar TODO a INSUMOS
             inv_fin_dict = {}
             if request.inventario_fisico_actual:
                 # Captura manual del inventario físico del día del pedido
@@ -5395,51 +5445,91 @@ GROUP BY C.idinsumo
                     "cantidad": float(item.get('cantidad', 0)),
                     "costo": float(item.get('costo', 0))
                 } for item in request.inventario_fisico_actual}
-            elif request.folio_inv_final:
-                if es_solo_bodega:
-                    # Bodega: usar idpresentacion como código
-                    query_inv_fin = f"""
-SELECT 
-    RTRIM(INM.idpresentacion) as codigo,
-    COALESCE(IP.descripcion, 'Sin descripción') as producto, 
-    INM.fisicoalmacen1 as cantidad, 
-    ISNULL(INM.costo, 0) as costo
-FROM invfisicomovtos INM
-LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(INM.idpresentacion)
-WHERE INM.folio = {request.folio_inv_final}
+            else:
+                # Combinar folios (legacy + nuevo formato)
+                folios_finales = []
+                if request.folios_inv_final:
+                    folios_finales = request.folios_inv_final
+                elif request.folio_inv_final:
+                    folios_finales = [request.folio_inv_final]
+                
+                if folios_finales:
+                    for folio_inv in folios_finales:
+                        # Determinar el tipo de almacén de este inventario específico
+                        query_tipo_alm = f"""
+SELECT A.tipo, A.nombre, INV.idalmacen1
+FROM invfisico INV
+LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
+WHERE INV.folio = {folio_inv}
 """
-                else:
-                    # Consumo: usar idinsumo como código
-                    query_inv_fin = f"""
+                        tipo_result = execute_sql_query(
+                            server['host'], server['port'], server['database'],
+                            server['username'], server['password'], query_tipo_alm
+                        )
+                        
+                        tipo_almacen = tipo_result[0]['tipo'] if tipo_result else 1
+                        es_bodega = tipo_almacen == 2
+                        
+                        logging.info(f"[AUDITORIA] Procesando inv final folio={folio_inv}, tipo_almacen={tipo_almacen}, es_bodega={es_bodega}")
+                        
+                        query_inv_fin = f"""
 SELECT 
     RTRIM(COALESCE(
+        NULLIF(RTRIM(IP.idinsumo), ''),
         NULLIF(RTRIM(INM.idinsumo), ''),
-        IP.idinsumo,
         INM.idpresentacion
-    )) as codigo,
+    )) as codigo_insumo,
+    RTRIM(INM.idpresentacion) as codigo_presentacion,
     COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto,
     INM.fisicoalmacen1 as cantidad, 
-    ISNULL(INM.costo, 0) as costo
+    ISNULL(ID.costo, 0) as costo_insumo,
+    ISNULL(IPD.costo, ISNULL(INM.costo, 0)) as costo_presentacion,
+    ISNULL(IP.rendimiento, 1) as rendimiento
 FROM invfisicomovtos INM
 LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(INM.idpresentacion)
-LEFT JOIN insumos I ON I.idinsumo = COALESCE(NULLIF(RTRIM(INM.idinsumo), ''), IP.idinsumo)
-WHERE INM.folio = {request.folio_inv_final}
+LEFT JOIN insumos I ON I.idinsumo = COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), NULLIF(RTRIM(INM.idinsumo), ''))
+LEFT JOIN insumosdetalle ID ON ID.idinsumo = COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), NULLIF(RTRIM(INM.idinsumo), ''))
+LEFT JOIN insumospresentacionesdetalle IPD ON IPD.idinsumospresentaciones = RTRIM(INM.idpresentacion)
+WHERE INM.folio = {folio_inv}
 """
-                result_fin = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_inv_fin
-                )
-                inv_fin_dict = {str(r['codigo']).strip(): {
-                    "producto": r['producto'],
-                    "cantidad": float(r['cantidad'] or 0),
-                    "costo": float(r['costo'] or 0)
-                } for r in result_fin}
-            elif request.inventario_manual:
-                inv_fin_dict = {str(item['codigo']).strip(): {
-                    "producto": item.get('producto', ''),
-                    "cantidad": float(item.get('cantidad', 0)),
-                    "costo": float(item.get('costo', 0))
-                } for item in request.inventario_manual}
+                        result_fin = execute_sql_query(
+                            server['host'], server['port'], server['database'],
+                            server['username'], server['password'], query_inv_fin
+                        )
+                        
+                        for r in result_fin:
+                            codigo = str(r['codigo_insumo'] or r['codigo_presentacion'] or '').strip()
+                            if not codigo:
+                                continue
+                            
+                            cantidad_raw = float(r['cantidad'] or 0)
+                            rendimiento = float(r['rendimiento'] or 1)
+                            
+                            # NORMALIZAR A INSUMOS
+                            if es_bodega:
+                                cantidad_en_insumos = cantidad_raw * rendimiento
+                            else:
+                                cantidad_en_insumos = cantidad_raw
+                            
+                            if codigo in inv_fin_dict:
+                                inv_fin_dict[codigo]['cantidad'] += cantidad_en_insumos
+                            else:
+                                inv_fin_dict[codigo] = {
+                                    "producto": r['producto'],
+                                    "cantidad": cantidad_en_insumos,
+                                    "costo": float(r['costo_presentacion'] or 0),
+                                    "costo_insumo": float(r['costo_insumo'] or 0),
+                                    "costo_presentacion": float(r['costo_presentacion'] or 0),
+                                    "rendimiento": rendimiento
+                                }
+                        
+                        logging.info(f"[AUDITORIA] Folio final {folio_inv}: {len(result_fin)} productos procesados")
+                elif request.inventario_manual:
+                    inv_fin_dict = {str(item['codigo']).strip(): {
+                        "producto": item.get('producto', ''),
+                        "cantidad": float(item.get('cantidad', 0)),
+                        "costo": float(item.get('costo', 0))
+                    } for item in request.inventario_manual}
             
             # PASO 7: Calcular diferencias y días de consumo
             # FILTRAR SOLO POR SKUs DE LA REQUISICIÓN (si solo_skus_requisicion está activo)

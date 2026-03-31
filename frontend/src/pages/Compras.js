@@ -1171,33 +1171,8 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   };
 
   // Función para convertir cantidades de INVENTARIO/MOVIMIENTOS
-  // Los datos vienen en PRESENTACIONES del backend
+  // AHORA: Los datos vienen NORMALIZADOS en INSUMOS del backend
   const getConversionValues = (cantidad, rendimiento) => {
-    if (!cantidad || cantidad === 0) return { principal: '0.00', alternativo: '0.00' };
-    
-    const cantidadNum = parseFloat(cantidad) || 0;
-    const rendimientoNum = parseFloat(rendimiento) || 1;
-    
-    if (unidadAnalisis === 'presentaciones') {
-      // Principal: presentaciones (tal cual), Alternativo: insumos (× rendimiento)
-      const enInsumos = cantidadNum * rendimientoNum;
-      return {
-        principal: formatNumber(cantidadNum),
-        alternativo: formatNumber(enInsumos)
-      };
-    } else {
-      // Principal: insumos (× rendimiento), Alternativo: presentaciones (tal cual)
-      const enInsumos = cantidadNum * rendimientoNum;
-      return {
-        principal: formatNumber(enInsumos),
-        alternativo: formatNumber(cantidadNum)
-      };
-    }
-  };
-  
-  // Función para convertir cantidades de CONSUMOS
-  // Los datos vienen en INSUMOS del backend (desde recetas)
-  const getConversionValuesConsumo = (cantidad, rendimiento) => {
     if (!cantidad || cantidad === 0) return { principal: '0.00', alternativo: '0.00' };
     
     const cantidadNum = parseFloat(cantidad) || 0;
@@ -1218,6 +1193,13 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
         alternativo: formatNumber(enPresentaciones)
       };
     }
+  };
+  
+  // Función para convertir cantidades de CONSUMOS
+  // Los datos también vienen en INSUMOS del backend (desde recetas)
+  // Usa la misma lógica que getConversionValues
+  const getConversionValuesConsumo = (cantidad, rendimiento) => {
+    return getConversionValues(cantidad, rendimiento);
   };
   
   // Función para obtener el costo según unidad seleccionada
@@ -1378,24 +1360,26 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
     try {
       const token = localStorage.getItem('token');
       
-      // Determinar el folio de inventario inicial a usar
-      const folioInvInicialToUse = selectedInvIniciales.length > 0 
-        ? selectedInvIniciales[0].folio 
-        : folioInvInicial;
+      // Determinar los folios de inventario inicial a usar (TODOS los seleccionados)
+      const foliosInvInicialToUse = selectedInvIniciales.length > 0 
+        ? selectedInvIniciales.map(inv => inv.folio)
+        : (folioInvInicial ? [folioInvInicial] : []);
       
-      // Determinar el folio de inventario final a usar
-      const folioInvFinalToUse = selectedInvFinales.length > 0 
-        ? selectedInvFinales[0].folio 
-        : folioInvFinal;
+      // Determinar los folios de inventario final a usar (TODOS los seleccionados)
+      const foliosInvFinalToUse = selectedInvFinales.length > 0 
+        ? selectedInvFinales.map(inv => inv.folio)
+        : (folioInvFinal ? [folioInvFinal] : []);
       
       const response = await axios.post(`${API_URL}/api/compras/auditoria-operativa`, {
         server_id: selectedServer,
         sucursal: parentSucursal,
         almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes : ['TODOS'],
-        folio_inv_inicial: folioInvInicialToUse,
+        folio_inv_inicial: foliosInvInicialToUse[0] || null,  // Legacy: primer folio
+        folios_inv_inicial: foliosInvInicialToUse,  // Nuevo: todos los folios
         fecha_inv_inicial: fechaInicial,
         fecha_auditoria: fechaAuditoria,
-        folio_inv_final: usarCapturaManual ? null : folioInvFinalToUse,
+        folio_inv_final: usarCapturaManual ? null : (foliosInvFinalToUse[0] || null),  // Legacy
+        folios_inv_final: usarCapturaManual ? null : foliosInvFinalToUse,  // Nuevo: todos los folios
         folio_requisicion: folioPedido[0] || '',  // Siempre string (el primero)
         folios_requisiciones: folioPedido,  // Array completo
         inventario_manual: usarCapturaManual ? inventarioManual : null
