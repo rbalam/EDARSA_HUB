@@ -463,17 +463,18 @@ export default function CatalogoConsultas() {
                     )}
                   </div>
                   
-                  {/* Parámetros de la consulta */}
+                  {/* Parámetros de la consulta (opcionales) */}
                   {(Array.isArray(consultaSeleccionada.parametros) ? consultaSeleccionada.parametros : []).map(param => (
                     <div key={param}>
                       <label className="text-xs font-medium text-zinc-600 capitalize">
-                        {param.replace('_', ' ')} *
+                        {param.replace('_', ' ')}
                       </label>
                       <Input
                         type={param.includes('fecha') ? 'date' : 'text'}
                         value={parametros[param] || ''}
                         onChange={(e) => setParametros({...parametros, [param]: e.target.value})}
                         className="h-9"
+                        placeholder={`Opcional`}
                       />
                     </div>
                   ))}

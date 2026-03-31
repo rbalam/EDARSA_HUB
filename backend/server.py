@@ -7943,10 +7943,23 @@ async def ejecutar_consulta_catalogo(
     
     logging.info(f"Catálogo - Ejecutando {consulta_id} en {server['name']}")
     
+    # Convertir fechas al formato YYYYMMDD sin guiones para compatibilidad con SQL Server
+    for key in ['fecha_ini', 'fecha_fin', 'fecha']:
+        if key in params and params[key]:
+            # Quitar guiones si existen
+            params[key] = params[key].replace('-', '')
+    
+    # Reemplazar los parámetros en el SQL
+    sql_final = sql
+    for key, val in params.items():
+        sql_final = sql_final.replace('{' + key + '}', str(val))
+    
+    logging.info(f"SQL Final: {sql_final[:200]}...")
+    
     try:
         result = execute_sql_query(
             server['host'], server['port'], server['database'],
-            server['username'], server['password'], sql
+            server['username'], server['password'], sql_final
         )
         
         return {
