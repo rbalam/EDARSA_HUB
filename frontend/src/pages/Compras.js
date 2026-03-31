@@ -1232,7 +1232,11 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
       toast.error('Selecciona servidor y sucursal');
       return;
     }
-    if (!folioInvInicial || !fechaInicial || !fechaAuditoria) {
+    
+    // Usar selectedInvIniciales si hay elementos, sino folioInvInicial
+    const tieneInvInicial = selectedInvIniciales.length > 0 || folioInvInicial;
+    
+    if (!tieneInvInicial || !fechaInicial || !fechaAuditoria) {
       toast.error('Completa las fechas y el inventario inicial');
       return;
     }
@@ -1240,7 +1244,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
       toast.error('Selecciona al menos una requisición para comparar');
       return;
     }
-    if (!usarCapturaManual && !folioInvFinal) {
+    if (!usarCapturaManual && !folioInvFinal && selectedInvFinales.length === 0) {
       toast.error('Selecciona un inventario final o activa captura manual');
       return;
     }
@@ -1248,11 +1252,22 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      
+      // Determinar el folio de inventario inicial a usar
+      const folioInvInicialToUse = selectedInvIniciales.length > 0 
+        ? selectedInvIniciales[0].folio 
+        : folioInvInicial;
+      
+      // Determinar el folio de inventario final a usar
+      const folioInvFinalToUse = selectedInvFinales.length > 0 
+        ? selectedInvFinales[0].folio 
+        : folioInvFinal;
+      
       const response = await axios.post(`${API_URL}/api/compras/auditoria-operativa`, {
         server_id: selectedServer,
         sucursal: parentSucursal,
         almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes : ['TODOS'],
-        folio_inv_inicial: folioInvInicial,
+        folio_inv_inicial: folioInvInicialToUse,
         fecha_inv_inicial: fechaInicial,
         fecha_auditoria: fechaAuditoria,
         folio_inv_final: usarCapturaManual ? null : folioInvFinal,
