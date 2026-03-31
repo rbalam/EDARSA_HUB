@@ -5839,28 +5839,29 @@ async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current
         if server['system_type'] == 'SoftRestaurant':
             logging.info(f"[DETALLE_CONSUMOS] Buscando consumos para código: '{codigo_limpio}' (sin prefijo: '{codigo_sin_prefijo}'), fechas: {fecha_ini} a {fecha_fin}")
             
-            # Buscar ventas donde este insumo está en la receta de un platillo
-            # recetasalmacenes vincula idinsumo con idmenualmacenes
+            # Buscar ventas donde este insumo está en la receta de un producto vendido
+            # cheqdet tiene los productos vendidos
+            # recetasalmacenes tiene la receta (qué insumos usa cada producto)
+            # Consumo = cantidad vendida × cantidad del insumo en la receta
             query_ventas = f"""
 SELECT 
-    CT.fecha,
-    CT.folio as documento,
-    M.descripcion as producto_vendido,
-    CTP.cantidad as cantidad_vendida,
+    C.fecha,
+    C.folio as documento,
+    P.descripcion as producto_vendido,
+    CD.cantidad as cantidad_vendida,
     R.cantidad as cantidad_receta,
-    (CTP.cantidad * R.cantidad) as consumo_total,
+    (CD.cantidad * R.cantidad) as consumo_total,
     A.nombre as almacen
-FROM cuentastotales CT
-INNER JOIN cuentastotalespla CTP ON CTP.idcuentastotales = CT.idcuentastotales
-INNER JOIN menualmacenes MA ON MA.idmenualmacenes = CTP.idmenualmacenes
-INNER JOIN menu M ON M.idmenu = MA.idmenu
-INNER JOIN recetasalmacenes R ON R.idmenualmacenes = MA.idmenualmacenes
-LEFT JOIN almacen A ON A.idalmacen = MA.idalmacen
+FROM cheques C
+INNER JOIN cheqdet CD ON CD.foliodet = C.folio
+INNER JOIN productos P ON P.idproducto = CD.idproducto
+INNER JOIN recetasalmacenes R ON R.idproducto = CD.idproducto
+LEFT JOIN almacen A ON A.idalmacen = R.idalmacen
 WHERE (RTRIM(LTRIM(R.idinsumo)) = '{codigo_limpio}' OR RTRIM(LTRIM(R.idinsumo)) = '{codigo_sin_prefijo}')
-    AND CT.fecha >= '{fecha_ini}'
-    AND CT.fecha <= '{fecha_fin} 23:59:59'
-    AND CT.statusfactura <> 'CA'
-ORDER BY CT.fecha DESC
+    AND C.fecha >= '{fecha_ini}'
+    AND C.fecha <= '{fecha_fin} 23:59:59'
+    AND C.statusfactura <> 'CA'
+ORDER BY C.fecha DESC
 """
             logging.info(f"[DETALLE_CONSUMOS] Query: {query_ventas[:200]}...")
             result_ventas = execute_sql_query(
