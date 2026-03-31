@@ -1270,7 +1270,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
         folio_inv_inicial: folioInvInicialToUse,
         fecha_inv_inicial: fechaInicial,
         fecha_auditoria: fechaAuditoria,
-        folio_inv_final: usarCapturaManual ? null : folioInvFinal,
+        folio_inv_final: usarCapturaManual ? null : folioInvFinalToUse,
         folio_requisicion: folioPedido[0] || '',  // Siempre string (el primero)
         folios_requisiciones: folioPedido,  // Array completo
         inventario_manual: usarCapturaManual ? inventarioManual : null

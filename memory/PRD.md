@@ -1,8 +1,16 @@
 # Edarsa Hub - PRD
 
-## Última Actualización: Marzo 2026
+## Última Actualización: Diciembre 2025
 
-### Bug Fixes y Mejoras Recientes (31 Mar 2026)
+### Bug Fixes y Mejoras Recientes (Dic 2025)
+- **CORREGIDO (P0):** Bug de validación con filtros cacheados en Auditoría Operativa
+  - **Problema**: Al cargar filtros desde `localStorage`, el botón "Realizar Auditoría" mostraba error de validación porque verificaba las variables escalares antiguas (`folioInvInicial`, `folioInvFinal`) en lugar de los arrays (`selectedInvIniciales`, `selectedInvFinales`)
+  - **Solución**: 
+    1. Validación actualizada para aceptar `selectedInvIniciales.length > 0` como condición válida
+    2. Payload corregido para usar `folioInvFinalToUse` (derivado del array) en línea 1273 de `Compras.js`
+  - **Resultado**: Los usuarios pueden reutilizar sus configuraciones cacheadas sin re-seleccionar datos
+
+### Bug Fixes y Mejoras Anteriores (31 Mar 2026)
 - **CORREGIDO (P0):** Error en Endpoint de Auditoría de Compras (SoftRestaurant/CIENFUEGOS)
   - **Problema original**: Las columnas SQL usadas no existían en las tablas del cliente
   - **Solución implementada - FASE 1**:
