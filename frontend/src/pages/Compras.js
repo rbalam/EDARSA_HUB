@@ -1038,7 +1038,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   
   const [folioInvInicial, setFolioInvInicial] = useState('');
   const [folioInvFinal, setFolioInvFinal] = useState('');
-  const [folioPedido, setFolioPedido] = useState('');
+  const [folioPedido, setFolioPedido] = useState([]);  // Cambiado a array para multi-selección
   const [fechaInicial, setFechaInicial] = useState('');
   const [fechaAuditoria, setFechaAuditoria] = useState(new Date().toISOString().split('T')[0]);
   const [usarCapturaManual, setUsarCapturaManual] = useState(false);
@@ -1112,8 +1112,8 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
       toast.error('Completa las fechas y el inventario inicial');
       return;
     }
-    if (!folioPedido) {
-      toast.error('Selecciona una requisición para comparar');
+    if (folioPedido.length === 0) {
+      toast.error('Selecciona al menos una requisición para comparar');
       return;
     }
     if (!usarCapturaManual && !folioInvFinal) {
@@ -1132,7 +1132,8 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
         fecha_inv_inicial: fechaInicial,
         fecha_auditoria: fechaAuditoria,
         folio_inv_final: usarCapturaManual ? null : folioInvFinal,
-        folio_requisicion: folioPedido,
+        folio_requisicion: folioPedido.length === 1 ? folioPedido[0] : folioPedido,
+        folios_requisiciones: folioPedido,  // Siempre enviar como array
         inventario_manual: usarCapturaManual ? inventarioManual : null
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -1195,19 +1196,70 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
               </div>
             )}
             <div className="space-y-1">
-              <Label className="text-xs">Requisición a Comparar *</Label>
-              <Select value={folioPedido} onValueChange={setFolioPedido}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Seleccionar requisición" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60 overflow-y-auto">
-                  {pedidosVigentes.map(p => (
-                    <SelectItem key={`${p.tipo}-${p.folio}`} value={p.folio}>
-                      {p.folio} - {p.comprador || 'Sin proveedor'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs">Requisición(es) a Comparar *</Label>
+              <details className="relative">
+                <summary className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer">
+                  <span className="truncate text-left">
+                    {folioPedido.length === 0 
+                      ? "Seleccionar requisición(es)" 
+                      : `${folioPedido.length} seleccionada(s)`}
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </summary>
+                <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-64 overflow-hidden">
+                  {folioPedido.length > 0 && (
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center text-red-600"
+                      onClick={() => setFolioPedido([])}
+                    >
+                      <X className="h-3 w-3 mr-1" /> Limpiar selección ({folioPedido.length})
+                    </button>
+                  )}
+                  <div className="max-h-52 overflow-y-auto">
+                    {pedidosVigentes.map(p => (
+                      <label key={`${p.tipo}-${p.folio}`} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-zinc-300"
+                          checked={folioPedido.includes(p.folio)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFolioPedido([...folioPedido, p.folio]);
+                            } else {
+                              setFolioPedido(folioPedido.filter(f => f !== p.folio));
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{p.folio} - {p.comprador || 'Sin proveedor'}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </details>
+              {/* Badges de requisiciones seleccionadas */}
+              {folioPedido.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {folioPedido.map(f => {
+                    const pedido = pedidosVigentes.find(p => p.folio === f);
+                    return (
+                      <span 
+                        key={f}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-800 border border-purple-200"
+                      >
+                        {f}
+                        <button 
+                          type="button"
+                          onClick={() => setFolioPedido(folioPedido.filter(x => x !== f))}
+                          className="hover:text-purple-600"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1270,6 +1322,33 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                   </div>
                 </div>
               </details>
+              {/* Badges de inventarios iniciales */}
+              {selectedInvIniciales.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {selectedInvIniciales.map(inv => (
+                    <span 
+                      key={inv.folio}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800 border border-blue-200"
+                    >
+                      {inv.folio}
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const newSelected = selectedInvIniciales.filter(i => i.folio !== inv.folio);
+                          setSelectedInvIniciales(newSelected);
+                          if (newSelected.length === 0) {
+                            setFolioInvInicial('');
+                            setFechaInicial('');
+                          }
+                        }}
+                        className="hover:text-blue-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Fecha Inicial</Label>
@@ -1336,6 +1415,32 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
               ) : (
                 <div className="text-xs text-amber-600 font-medium p-2 bg-amber-50 rounded">
                   Captura Manual Activa
+                </div>
+              )}
+              {/* Badges de inventarios finales */}
+              {!usarCapturaManual && selectedInvFinales.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {selectedInvFinales.map(inv => (
+                    <span 
+                      key={inv.folio}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800 border border-green-200"
+                    >
+                      {inv.folio}
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const newSelected = selectedInvFinales.filter(i => i.folio !== inv.folio);
+                          setSelectedInvFinales(newSelected);
+                          if (newSelected.length === 0) {
+                            setFolioInvFinal('');
+                          }
+                        }}
+                        className="hover:text-green-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
