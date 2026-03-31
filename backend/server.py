@@ -5129,19 +5129,21 @@ WHERE nombre IN ({almacenes_str}) OR idalmacen IN ({almacenes_str})
             if folios_req:
                 folios_sql = ", ".join([f"'{f}'" for f in folios_req])
                 # Las órdenes de compra en SoftRestaurant usan códigos que pueden ser presentaciones
-                # Intentamos obtener descripción de ambas tablas
+                # Intentamos obtener descripción de ambas tablas y el proveedor
                 query_requi = f"""
 SELECT 
     OCM.idinsumo as codigo, 
     COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto, 
     SUM(OCM.cantidad) as cantidad_pedido,
-    ISNULL(OCM.costo, 0) as costo
+    ISNULL(OCM.costo, 0) as costo,
+    COALESCE(P.nombre, 'Sin proveedor') as proveedor
 FROM ordenescompramov OCM
 INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
 LEFT JOIN insumos I ON I.idinsumo = OCM.idinsumo
 LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = OCM.idinsumo
+LEFT JOIN proveedores P ON P.idproveedor = OC.idproveedor
 WHERE OC.folio IN ({folios_sql})
-GROUP BY OCM.idinsumo, I.descripcion, IP.descripcion, OCM.costo
+GROUP BY OCM.idinsumo, I.descripcion, IP.descripcion, OCM.costo, P.nombre
 """
                 requi_result = execute_sql_query(
                     server['host'], server['port'], server['database'],
@@ -5153,7 +5155,8 @@ GROUP BY OCM.idinsumo, I.descripcion, IP.descripcion, OCM.costo
                     requi_dict[codigo] = {
                         'cantidad': float(r['cantidad_pedido'] or 0),
                         'producto': r['producto'] or '',
-                        'costo': float(r.get('costo', 0) or 0)
+                        'costo': float(r.get('costo', 0) or 0),
+                        'proveedor': r.get('proveedor', '') or ''
                     }
                 logging.info(f"[AUDITORIA] SKUs en requisiciones: {len(skus_requisicion)}")
             
@@ -5399,6 +5402,9 @@ WHERE INM.folio = {request.folio_inv_final}
                 
                 cantidad_pedido = requi_dict.get(codigo, {}).get('cantidad', 0) if isinstance(requi_dict.get(codigo), dict) else requi_dict.get(codigo, 0)
                 
+                # Obtener proveedor de la requisición
+                proveedor = requi_dict.get(codigo, {}).get('proveedor', '') if isinstance(requi_dict.get(codigo), dict) else ''
+                
                 # Existencia teórica = inicial + entradas - consumos
                 existencia_teorica = inv_inicial + entradas - consumos
                 
@@ -5407,7 +5413,7 @@ WHERE INM.folio = {request.folio_inv_final}
                 importe_dif = diferencia * costo
                 
                 # Consumo diario promedio
-                consumo_diario = consumos / dias_periodo if dias_periodo > 0 else 0
+                consumo_diario = abs(consumos) / dias_periodo if dias_periodo > 0 else 0
                 
                 # Días de inventario disponible
                 dias_inv = inv_fisico / consumo_diario if consumo_diario > 0 else 999
@@ -5420,9 +5426,10 @@ WHERE INM.folio = {request.folio_inv_final}
                     resultados.append({
                         "codigo": codigo,
                         "producto": producto or f"SKU: {codigo}",
+                        "proveedor": proveedor,
                         "inv_inicial": inv_inicial,
                         "entradas": entradas,  # Cambiado de 'compras' a 'entradas'
-                        "consumos": consumos,
+                        "consumos": abs(consumos),  # Mostrar siempre positivo para claridad
                         "existencia_teorica": round(existencia_teorica, 2),
                         "inv_fisico": inv_fisico,
                         "diferencia": round(diferencia, 2),

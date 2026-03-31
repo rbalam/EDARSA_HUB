@@ -1059,6 +1059,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   
   const [resultados, setResultados] = useState(null);
   const [resumen, setResumen] = useState(null);
+  const [agruparPorProveedor, setAgruparPorProveedor] = useState(false);
 
   useEffect(() => {
     if (selectedServer && parentSucursal) {
@@ -1639,17 +1640,27 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
       {/* Tabla de resultados */}
       {resultados && resultados.length > 0 && (
         <Card className="border">
-          <CardHeader className="py-2">
+          <CardHeader className="py-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm">Detalle de Auditoría ({resultados.length} productos)</CardTitle>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                className="rounded border-zinc-300"
+                checked={agruparPorProveedor}
+                onChange={(e) => setAgruparPorProveedor(e.target.checked)}
+              />
+              <span>Agrupar por Proveedor</span>
+            </label>
           </CardHeader>
           <CardContent className="p-0">
             <div className="max-h-[400px] overflow-auto">
               <table className="w-full text-xs">
                 <thead className="sticky top-0 bg-zinc-800 text-white">
                   <tr>
+                    {agruparPorProveedor && <th className="py-2 px-2 text-left">Proveedor</th>}
                     <th className="py-2 px-2 text-left">Producto</th>
                     <th className="py-2 px-2 text-right">Inv.Ini</th>
-                    <th className="py-2 px-2 text-right">+Compras</th>
+                    <th className="py-2 px-2 text-right">+Entradas</th>
                     <th className="py-2 px-2 text-right">-Consumos</th>
                     <th className="py-2 px-2 text-right">Teórico</th>
                     <th className="py-2 px-2 text-right">Físico</th>
@@ -1663,10 +1674,11 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                 <tbody>
                   {resultados.map((r, idx) => (
                     <tr key={idx} className={`border-b ${r.tipo_diferencia === 'contra' ? 'bg-red-50' : ''}`}>
+                      {agruparPorProveedor && <td className="py-1.5 px-2 text-zinc-600">{r.proveedor || '-'}</td>}
                       <td className="py-1.5 px-2 font-medium">{r.producto}</td>
                       <td className="py-1.5 px-2 text-right">{formatNumber(r.inv_inicial)}</td>
-                      <td className="py-1.5 px-2 text-right text-green-600">+{formatNumber(r.compras)}</td>
-                      <td className="py-1.5 px-2 text-right text-orange-600">-{formatNumber(r.consumos)}</td>
+                      <td className="py-1.5 px-2 text-right text-green-600">+{formatNumber(r.entradas || r.compras || 0)}</td>
+                      <td className="py-1.5 px-2 text-right text-orange-600">-{formatNumber(Math.abs(r.consumos || 0))}</td>
                       <td className="py-1.5 px-2 text-right font-medium">{formatNumber(r.existencia_teorica)}</td>
                       <td className="py-1.5 px-2 text-right font-medium">{formatNumber(r.inv_fisico)}</td>
                       <td className={`py-1.5 px-2 text-right font-bold ${r.diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
