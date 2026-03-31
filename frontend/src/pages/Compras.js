@@ -1068,6 +1068,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   const [detalleMovimientos, setDetalleMovimientos] = useState(null);
   const [showDetalleModal, setShowDetalleModal] = useState(false);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [tipoDetalle, setTipoDetalle] = useState('movimientos'); // 'movimientos' o 'consumos'
 
   // Cargar filtros guardados al montar
   useEffect(() => {
@@ -1170,6 +1171,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   const fetchDetalleMovimientos = async (codigo, producto) => {
     setLoadingDetalle(true);
     setShowDetalleModal(true);
+    setTipoDetalle('movimientos');
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(`${API_URL}/api/compras/detalle-movimientos`, {
@@ -1203,6 +1205,58 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
     } catch (error) {
       console.error('Error obteniendo detalle:', error);
       let errorMsg = 'Error al obtener detalle de movimientos';
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMsg = 'Tiempo de espera agotado. El servidor externo no responde.';
+      } else if (error.response?.data?.detail) {
+        errorMsg = error.response.data.detail.substring(0, 150);
+      }
+      setDetalleMovimientos({
+        codigo,
+        producto,
+        movimientos: [],
+        error: errorMsg
+      });
+    } finally {
+      setLoadingDetalle(false);
+    }
+  };
+
+  const fetchDetalleConsumos = async (codigo, producto) => {
+    setLoadingDetalle(true);
+    setShowDetalleModal(true);
+    setTipoDetalle('consumos');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_URL}/api/compras/detalle-consumos`, {
+        server_id: selectedServer,
+        sucursal: parentSucursal,
+        codigo: codigo,
+        fecha_inicio: fechaInicial || selectedInvIniciales[0]?.fecha?.split('T')[0] || fechaAuditoria,
+        fecha_fin: fechaAuditoria,
+        almacenes: selectedAlmacenes
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 30000
+      });
+      
+      if (response.data.error) {
+        setDetalleMovimientos({
+          codigo,
+          producto,
+          movimientos: [],
+          error: response.data.error
+        });
+      } else {
+        setDetalleMovimientos({
+          codigo,
+          producto,
+          movimientos: response.data.consumos || response.data.movimientos || [],
+          totales: response.data.totales || {}
+        });
+      }
+    } catch (error) {
+      console.error('Error obteniendo detalle consumos:', error);
+      let errorMsg = 'Error al obtener detalle de consumos';
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
         errorMsg = 'Tiempo de espera agotado. El servidor externo no responde.';
       } else if (error.response?.data?.detail) {
@@ -1853,7 +1907,13 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                           >
                             +{formatConversion(r.movimientos || r.entradas || 0, rendimiento)}
                           </td>
-                          <td className="py-1.5 px-2 text-right text-orange-600">-{formatConversion(Math.abs(r.consumos || 0), rendimiento)}</td>
+                          <td 
+                            className="py-1.5 px-2 text-right text-orange-600 cursor-pointer hover:bg-orange-100 transition-colors"
+                            onDoubleClick={() => fetchDetalleConsumos(r.codigo, r.producto)}
+                            title="Doble click para ver detalle de consumos"
+                          >
+                            -{formatConversion(Math.abs(r.consumos || 0), rendimiento)}
+                          </td>
                           <td className="py-1.5 px-2 text-right font-medium">{formatConversion(r.existencia_teorica, rendimiento)}</td>
                           <td className="py-1.5 px-2 text-right font-medium">{formatConversion(r.inv_fisico, rendimiento)}</td>
                           <td className={`py-1.5 px-2 text-right font-bold ${r.diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -1893,13 +1953,15 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
         </Card>
       )}
 
-      {/* Modal Detalle de Movimientos */}
+      {/* Modal Detalle de Movimientos/Consumos */}
       {showDetalleModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
             <div className="px-4 py-3 border-b flex items-center justify-between bg-zinc-50">
               <div>
-                <h3 className="font-semibold">Detalle de Movimientos</h3>
+                <h3 className="font-semibold">
+                  {tipoDetalle === 'consumos' ? 'Detalle de Consumos' : 'Detalle de Movimientos'}
+                </h3>
                 {detalleMovimientos && (
                   <p className="text-sm text-zinc-500">{detalleMovimientos.codigo} - {detalleMovimientos.producto}</p>
                 )}

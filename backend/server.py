@@ -4303,7 +4303,7 @@ FROM invfisico INV
 LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
 WHERE 1=1
     {almacen_filtro}
-ORDER BY INV.fecha DESC
+ORDER BY INV.folio DESC, INV.fecha DESC
 """
         try:
             result = execute_sql_query(
@@ -5646,12 +5646,17 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
     
     # Limpiar código de espacios
     codigo_limpio = request.codigo.strip()
-    logging.info(f"[DETALLE_MOV] Buscando movimientos para código: '{codigo_limpio}', fechas: {fecha_ini} a {fecha_fin}")
+    
+    # Si el código empieza con letra (posible prefijo de almacén A/B/C), también probar sin él
+    codigo_sin_prefijo = codigo_limpio[1:] if codigo_limpio and codigo_limpio[0].isalpha() else codigo_limpio
+    
+    logging.info(f"[DETALLE_MOV] Buscando movimientos para código: '{codigo_limpio}' (sin prefijo: '{codigo_sin_prefijo}'), fechas: {fecha_ini} a {fecha_fin}")
     
     for retry in range(max_retries):
         try:
             if server['system_type'] == 'SoftRestaurant':
                 # Obtener movimientos de presentaciones (movtosalmacen)
+                # Buscar con código completo Y sin prefijo (por si A/B es prefijo de almacén)
                 query_pres = f"""
 SELECT 
     M.fecha,
@@ -5664,7 +5669,8 @@ SELECT
 FROM movtosalmacen M
 LEFT JOIN conceptos C ON C.idconcepto = M.idconcepto
 LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
-WHERE RTRIM(LTRIM(M.idinsumospresentaciones)) = '{codigo_limpio}'
+WHERE (RTRIM(LTRIM(M.idinsumospresentaciones)) = '{codigo_limpio}' 
+    OR RTRIM(LTRIM(M.idinsumospresentaciones)) = '{codigo_sin_prefijo}')
     AND M.fecha >= '{fecha_ini}'
     AND M.fecha <= '{fecha_fin} 23:59:59'
 ORDER BY M.fecha DESC
@@ -5708,7 +5714,8 @@ SELECT
 FROM movsinv M
 LEFT JOIN conceptos C ON C.idconcepto = M.idconcepto
 LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
-WHERE RTRIM(LTRIM(M.idinsumo)) = '{codigo_limpio}'
+WHERE (RTRIM(LTRIM(M.idinsumo)) = '{codigo_limpio}'
+    OR RTRIM(LTRIM(M.idinsumo)) = '{codigo_sin_prefijo}')
     AND M.fecha >= '{fecha_ini}'
     AND M.fecha <= '{fecha_fin} 23:59:59'
 ORDER BY M.fecha DESC
@@ -5780,6 +5787,111 @@ ORDER BY M.fecha DESC
         "totales": {"entradas": 0, "salidas": 0, "neto": 0},
         "error": f"Error al obtener movimientos: {last_error[:100]}"
     }
+
+
+class DetalleConsumosRequest(BaseModel):
+    server_id: str
+    sucursal: str
+    codigo: str
+    fecha_inicio: str
+    fecha_fin: str
+    almacenes: Optional[List[str]] = None
+
+@api_router.post("/compras/detalle-consumos")
+async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current_user: Dict = Depends(get_current_user)):
+    """
+    Obtiene el detalle de consumos/ventas de un producto específico en un período.
+    Para SoftRestaurant: ventas directas o a través de recetas.
+    """
+    server = await db.servers.find_one({"id": request.server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    # Formatear fechas para SQL
+    fecha_ini = request.fecha_inicio.replace('-', '') if request.fecha_inicio else ''
+    fecha_fin = request.fecha_fin.replace('-', '') if request.fecha_fin else ''
+    
+    if not fecha_ini or not fecha_fin:
+        return {"consumos": [], "totales": {"total": 0}, "error": "Fechas no válidas"}
+    
+    # Limpiar código de espacios y posibles prefijos
+    codigo_limpio = request.codigo.strip()
+    codigo_sin_prefijo = codigo_limpio[1:] if codigo_limpio and codigo_limpio[0].isalpha() else codigo_limpio
+    
+    consumos = []
+    total_consumo = 0
+    
+    try:
+        if server['system_type'] == 'SoftRestaurant':
+            logging.info(f"[DETALLE_CONSUMOS] Buscando consumos para código: '{codigo_limpio}' (sin prefijo: '{codigo_sin_prefijo}'), fechas: {fecha_ini} a {fecha_fin}")
+            
+            # Buscar ventas donde este insumo está en la receta de un platillo
+            # recetasalmacenes vincula idinsumo con idmenualmacenes
+            query_ventas = f"""
+SELECT 
+    CT.fecha,
+    CT.folio as documento,
+    M.descripcion as producto_vendido,
+    CTP.cantidad as cantidad_vendida,
+    R.cantidad as cantidad_receta,
+    (CTP.cantidad * R.cantidad) as consumo_total,
+    A.nombre as almacen
+FROM cuentastotales CT
+INNER JOIN cuentastotalespla CTP ON CTP.idcuentastotales = CT.idcuentastotales
+INNER JOIN menualmacenes MA ON MA.idmenualmacenes = CTP.idmenualmacenes
+INNER JOIN menu M ON M.idmenu = MA.idmenu
+INNER JOIN recetasalmacenes R ON R.idmenualmacenes = MA.idmenualmacenes
+LEFT JOIN almacen A ON A.idalmacen = MA.idalmacen
+WHERE (RTRIM(LTRIM(R.idinsumo)) = '{codigo_limpio}' OR RTRIM(LTRIM(R.idinsumo)) = '{codigo_sin_prefijo}')
+    AND CT.fecha >= '{fecha_ini}'
+    AND CT.fecha <= '{fecha_fin} 23:59:59'
+    AND CT.statusfactura <> 'CA'
+ORDER BY CT.fecha DESC
+"""
+            logging.info(f"[DETALLE_CONSUMOS] Query: {query_ventas[:200]}...")
+            result_ventas = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_ventas
+            )
+            logging.info(f"[DETALLE_CONSUMOS] Resultados: {len(result_ventas)}")
+            
+            for r in result_ventas:
+                consumo = float(r.get('consumo_total', 0) or 0)
+                consumos.append({
+                    "fecha": r['fecha'].isoformat() if hasattr(r['fecha'], 'isoformat') else str(r['fecha']),
+                    "documento": str(r.get('documento', '')),
+                    "producto_vendido": r.get('producto_vendido', ''),
+                    "cantidad_vendida": float(r.get('cantidad_vendida', 0) or 0),
+                    "cantidad_receta": float(r.get('cantidad_receta', 0) or 0),
+                    "consumo": consumo,
+                    "almacen": r.get('almacen', '')
+                })
+                total_consumo += consumo
+            
+            return {
+                "consumos": consumos,
+                "totales": {"total": round(total_consumo, 4)}
+            }
+        
+        return {
+            "consumos": [],
+            "totales": {"total": 0},
+            "error": f"Sistema {server['system_type']} no soportado para detalle de consumos"
+        }
+        
+    except Exception as e:
+        logging.error(f"[DETALLE_CONSUMOS] Error: {str(e)}")
+        if "unavailable" in str(e).lower() or "timeout" in str(e).lower():
+            return {
+                "consumos": [],
+                "totales": {"total": 0},
+                "error": "El servidor externo no está disponible. Intente nuevamente en unos momentos."
+            }
+        return {
+            "consumos": [],
+            "totales": {"total": 0},
+            "error": f"Error al obtener consumos: {str(e)[:100]}"
+        }
 
 
 # ============= ANÁLISIS DE COMPRAS - ENDPOINTS =============
