@@ -7818,6 +7818,7 @@ async def listar_consultas_rich(
             "sistema": c["sistema"],
             "categoria": c["categoria"],
             "parametros": c["parametros"],
+            "sql": c["sql"],  # Incluir el SQL para visualización
             "tipo": "predefinida"
         })
     
@@ -7837,6 +7838,7 @@ async def listar_consultas_rich(
             "sistema": c["sistema"],
             "categoria": c["categoria"],
             "parametros": c["parametros"],
+            "sql": c.get("sql", ""),  # Incluir el SQL
             "tipo": "personalizada",
             "created_by": c.get("created_by"),
             "created_at": c.get("created_at")

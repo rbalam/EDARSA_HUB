@@ -109,14 +109,23 @@ export default function CatalogoConsultas() {
   }, [filtroCategoria, filtroSistema]);
 
   const seleccionarConsulta = (consulta) => {
+    console.log('Consulta seleccionada:', consulta); // Debug
     setConsultaSeleccionada(consulta);
     setResultados(null);
+    setResultadosTest(null);
+    setMostrarSQL(false);
+    setModoEdicion(false);
+    setModoTest(false);
+    
     // Inicializar parámetros con valores default
     const params = {};
     const hoy = new Date().toISOString().split('T')[0];
     const inicioMes = hoy.substring(0, 8) + '01';
     
-    consulta.parametros.forEach(p => {
+    // Asegurar que parametros sea un array
+    const parametrosArray = Array.isArray(consulta.parametros) ? consulta.parametros : [];
+    
+    parametrosArray.forEach(p => {
       if (p === 'fecha') params[p] = hoy;
       else if (p === 'fecha_ini') params[p] = inicioMes;
       else if (p === 'fecha_fin') params[p] = hoy;
@@ -455,7 +464,7 @@ export default function CatalogoConsultas() {
                   </div>
                   
                   {/* Parámetros de la consulta */}
-                  {consultaSeleccionada.parametros.map(param => (
+                  {(Array.isArray(consultaSeleccionada.parametros) ? consultaSeleccionada.parametros : []).map(param => (
                     <div key={param}>
                       <label className="text-xs font-medium text-zinc-600 capitalize">
                         {param.replace('_', ' ')} *
@@ -529,31 +538,39 @@ export default function CatalogoConsultas() {
                 </div>
                 
                 {/* PANEL VER SQL (Solo lectura) */}
-                {mostrarSQL && consultaSeleccionada?.sql && (
+                {mostrarSQL && (
                   <div className="mb-3 p-3 bg-zinc-900 rounded-lg overflow-x-auto">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Code className="h-4 w-4 text-green-400" />
                         <span className="text-xs text-green-400 font-medium">SQL Query (Solo lectura)</span>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => {navigator.clipboard.writeText(consultaSeleccionada.sql); toast.success('SQL copiado');}}
-                        className="h-6 text-xs text-zinc-400 hover:text-white"
-                      >
-                        Copiar
-                      </Button>
+                      {consultaSeleccionada?.sql && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {navigator.clipboard.writeText(consultaSeleccionada.sql); toast.success('SQL copiado');}}
+                          className="h-6 text-xs text-zinc-400 hover:text-white"
+                        >
+                          Copiar
+                        </Button>
+                      )}
                     </div>
-                    <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-mono max-h-48 overflow-y-auto">
-                      {consultaSeleccionada.sql
-                        .replace(/\{fecha_ini\}/g, parametros.fecha_ini || '@fecha_ini')
-                        .replace(/\{fecha_fin\}/g, parametros.fecha_fin || '@fecha_fin')
-                        .replace(/\{almacen\}/g, parametros.almacen || '@almacen')
-                        .replace(/\{sucursal\}/g, parametros.sucursal || '@sucursal')
-                        .replace(/\{fecha\}/g, parametros.fecha || '@fecha')
-                      }
-                    </pre>
+                    {consultaSeleccionada?.sql ? (
+                      <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-mono max-h-48 overflow-y-auto">
+                        {consultaSeleccionada.sql
+                          .replace(/\{fecha_ini\}/g, parametros.fecha_ini || '@fecha_ini')
+                          .replace(/\{fecha_fin\}/g, parametros.fecha_fin || '@fecha_fin')
+                          .replace(/\{almacen\}/g, parametros.almacen || '@almacen')
+                          .replace(/\{sucursal\}/g, parametros.sucursal || '@sucursal')
+                          .replace(/\{fecha\}/g, parametros.fecha || '@fecha')
+                        }
+                      </pre>
+                    ) : (
+                      <div className="text-yellow-400 text-xs">
+                        SQL no disponible. Recarga la página para obtener la consulta actualizada.
+                      </div>
+                    )}
                   </div>
                 )}
                 
