@@ -5621,7 +5621,7 @@ class DetalleMovimientosRequest(BaseModel):
     almacenes: Optional[List[str]] = None
 
 @api_router.post("/compras/detalle-movimientos")
-async def obtener_detalle_movimientos(request: DetalleMovimientosRequest):
+async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, current_user: Dict = Depends(get_current_user)):
     """
     Obtiene el detalle de movimientos de un producto específico en un período.
     Muestra cada movimiento individual que compone el total.
@@ -5644,6 +5644,10 @@ async def obtener_detalle_movimientos(request: DetalleMovimientosRequest):
     max_retries = 2
     last_error = None
     
+    # Limpiar código de espacios
+    codigo_limpio = request.codigo.strip()
+    logging.info(f"[DETALLE_MOV] Buscando movimientos para código: '{codigo_limpio}', fechas: {fecha_ini} a {fecha_fin}")
+    
     for retry in range(max_retries):
         try:
             if server['system_type'] == 'SoftRestaurant':
@@ -5651,95 +5655,106 @@ async def obtener_detalle_movimientos(request: DetalleMovimientosRequest):
                 query_pres = f"""
 SELECT 
     M.fecha,
-    M.idconcepto as concepto,
+    RTRIM(LTRIM(M.idconcepto)) as concepto,
     C.descripcion as descripcion_concepto,
     M.cantidad,
     A.nombre as almacen,
-    ISNULL(M.movto, '') as referencia,
+    ISNULL(CAST(M.movto AS VARCHAR(50)), '') as referencia,
     CASE WHEN C.tipo = 1 THEN 'E' ELSE 'S' END as tipo
 FROM movtosalmacen M
 LEFT JOIN conceptos C ON C.idconcepto = M.idconcepto
 LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
-WHERE M.idinsumospresentaciones = '{request.codigo}'
+WHERE RTRIM(LTRIM(M.idinsumospresentaciones)) = '{codigo_limpio}'
     AND M.fecha >= '{fecha_ini}'
     AND M.fecha <= '{fecha_fin} 23:59:59'
 ORDER BY M.fecha DESC
 """
-            result_pres = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_pres
-            )
-            
-            for m in result_pres:
-                cantidad = float(m.get('cantidad', 0) or 0)
-                tipo = m.get('tipo', 'E')
+                logging.info(f"[DETALLE_MOV] Query presentaciones: {query_pres[:200]}...")
+                result_pres = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_pres
+                )
+                logging.info(f"[DETALLE_MOV] Resultados presentaciones: {len(result_pres)}")
                 
-                movimientos.append({
-                    "fecha": m['fecha'].isoformat() if hasattr(m['fecha'], 'isoformat') else str(m['fecha']),
-                    "concepto": m['concepto'],
-                    "descripcion": m.get('descripcion_concepto', ''),
-                    "cantidad": cantidad if tipo == 'E' else -cantidad,
-                    "almacen": m.get('almacen', ''),
-                    "referencia": str(m.get('referencia', '')),
-                    "tipo": tipo
-                })
+                for m in result_pres:
+                    cantidad = float(m.get('cantidad', 0) or 0)
+                    tipo = m.get('tipo', 'E')
+                    
+                    movimientos.append({
+                        "fecha": m['fecha'].isoformat() if hasattr(m['fecha'], 'isoformat') else str(m['fecha']),
+                        "concepto": m['concepto'],
+                        "descripcion": m.get('descripcion_concepto', ''),
+                        "cantidad": cantidad if tipo == 'E' else -cantidad,
+                        "almacen": m.get('almacen', ''),
+                        "referencia": str(m.get('referencia', '')),
+                        "tipo": tipo
+                    })
+                    
+                    if tipo == 'E':
+                        totales["entradas"] += cantidad
+                    else:
+                        totales["salidas"] += cantidad
                 
-                if tipo == 'E':
-                    totales["entradas"] += cantidad
-                else:
-                    totales["salidas"] += cantidad
-            
-            # También buscar en movsinv (para insumos)
-            query_ins = f"""
+                # También buscar en movsinv (para insumos)
+                query_ins = f"""
 SELECT 
     M.fecha,
-    M.idconcepto as concepto,
+    RTRIM(LTRIM(M.idconcepto)) as concepto,
     C.descripcion as descripcion_concepto,
     M.cantidad,
     A.nombre as almacen,
-    ISNULL(M.referencia, '') as referencia,
+    ISNULL(CAST(M.referencia AS VARCHAR(50)), '') as referencia,
     CASE WHEN C.tipo = 1 THEN 'E' ELSE 'S' END as tipo
 FROM movsinv M
 LEFT JOIN conceptos C ON C.idconcepto = M.idconcepto
 LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
-WHERE M.idinsumo = '{request.codigo}'
+WHERE RTRIM(LTRIM(M.idinsumo)) = '{codigo_limpio}'
     AND M.fecha >= '{fecha_ini}'
     AND M.fecha <= '{fecha_fin} 23:59:59'
 ORDER BY M.fecha DESC
 """
-            result_ins = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_ins
-            )
-            
-            for m in result_ins:
-                cantidad = float(m.get('cantidad', 0) or 0)
-                tipo = m.get('tipo', 'E')
+                logging.info(f"[DETALLE_MOV] Query insumos: {query_ins[:200]}...")
+                result_ins = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_ins
+                )
+                logging.info(f"[DETALLE_MOV] Resultados insumos: {len(result_ins)}")
                 
-                movimientos.append({
-                    "fecha": m['fecha'].isoformat() if hasattr(m['fecha'], 'isoformat') else str(m['fecha']),
-                    "concepto": m['concepto'],
-                    "descripcion": m.get('descripcion_concepto', ''),
-                    "cantidad": cantidad if tipo == 'E' else -cantidad,
-                    "almacen": m.get('almacen', ''),
-                    "referencia": str(m.get('referencia', '')),
-                    "tipo": tipo
-                })
+                for m in result_ins:
+                    cantidad = float(m.get('cantidad', 0) or 0)
+                    tipo = m.get('tipo', 'E')
+                    
+                    movimientos.append({
+                        "fecha": m['fecha'].isoformat() if hasattr(m['fecha'], 'isoformat') else str(m['fecha']),
+                        "concepto": m['concepto'],
+                        "descripcion": m.get('descripcion_concepto', ''),
+                        "cantidad": cantidad if tipo == 'E' else -cantidad,
+                        "almacen": m.get('almacen', ''),
+                        "referencia": str(m.get('referencia', '')),
+                        "tipo": tipo
+                    })
+                    
+                    if tipo == 'E':
+                        totales["entradas"] += cantidad
+                    else:
+                        totales["salidas"] += cantidad
                 
-                if tipo == 'E':
-                    totales["entradas"] += cantidad
-                else:
-                    totales["salidas"] += cantidad
-            
-            # Ordenar por fecha
-            movimientos.sort(key=lambda x: x['fecha'], reverse=True)
-            
-            totales["neto"] = totales["entradas"] - totales["salidas"]
-            
-            return {
-                "movimientos": movimientos,
-                "totales": totales
-            }
+                # Ordenar por fecha
+                movimientos.sort(key=lambda x: x['fecha'], reverse=True)
+                
+                totales["neto"] = totales["entradas"] - totales["salidas"]
+                
+                return {
+                    "movimientos": movimientos,
+                    "totales": totales
+                }
+            else:
+                # Para otros sistemas (MPRO, etc.), retornar vacío por ahora
+                return {
+                    "movimientos": [],
+                    "totales": {"entradas": 0, "salidas": 0, "neto": 0},
+                    "error": f"Sistema {server['system_type']} no soportado para detalle de movimientos"
+                }
             
         except Exception as e:
             last_error = str(e)
