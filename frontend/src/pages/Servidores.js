@@ -328,34 +328,50 @@ const Servidores = () => {
                       <p className="text-xs text-zinc-500 mt-1">{server.system_type}</p>
                     </div>
                   </div>
-                  {/* Indicador de estado de ping */}
-                  <div className="flex items-center gap-2">
-                    {pingStatus[server.id]?.loading ? (
-                      <div className="flex items-center gap-1 text-blue-600">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span className="text-xs">Probando...</span>
-                      </div>
-                    ) : pingStatus[server.id]?.status === 'connected' ? (
-                      <div className="flex items-center gap-1 text-green-600" title={`${pingStatus[server.id]?.responseTime}ms`}>
-                        <Wifi className="h-4 w-4" />
-                        <span className="text-xs">{pingStatus[server.id]?.responseTime}ms</span>
-                      </div>
-                    ) : pingStatus[server.id]?.status ? (
-                      <div className="flex items-center gap-1 text-red-500" title={pingStatus[server.id]?.message}>
-                        <WifiOff className="h-4 w-4" />
-                        <span className="text-xs">Error</span>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-zinc-400 hover:text-blue-600"
-                        onClick={() => pingServer(server.id)}
-                      >
-                        <Wifi className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+                  {/* Botón de estado Online/Offline */}
+                  {pingStatus[server.id]?.loading ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled
+                      className="h-7 px-3 text-xs border-blue-200 text-blue-600"
+                    >
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      Probando...
+                    </Button>
+                  ) : pingStatus[server.id]?.status === 'connected' ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => pingServer(server.id)}
+                      className="h-7 px-3 text-xs bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
+                      title={`Conectado en ${pingStatus[server.id]?.responseTime}ms`}
+                    >
+                      <Wifi className="h-3 w-3 mr-1" />
+                      Online ({pingStatus[server.id]?.responseTime}ms)
+                    </Button>
+                  ) : pingStatus[server.id]?.status ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => pingServer(server.id)}
+                      className="h-7 px-3 text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100"
+                      title={pingStatus[server.id]?.message}
+                    >
+                      <WifiOff className="h-3 w-3 mr-1" />
+                      Offline
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => pingServer(server.id)}
+                      className="h-7 px-3 text-xs border-zinc-200 text-zinc-500 hover:bg-zinc-50"
+                    >
+                      <Wifi className="h-3 w-3 mr-1" />
+                      Ping
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
