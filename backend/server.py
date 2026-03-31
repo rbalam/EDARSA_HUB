@@ -5125,18 +5125,20 @@ WHERE nombre IN ({almacenes_str}) OR idalmacen IN ({almacenes_str})
             
             skus_requisicion = set()
             requi_dict = {}
+            requi_list = []  # Lista para mantener el orden por proveedor-pedido
             
             if folios_req:
                 folios_sql = ", ".join([f"'{f}'" for f in folios_req])
                 # Las órdenes de compra en SoftRestaurant usan códigos que pueden ser presentaciones
-                # Intentamos obtener descripción de ambas tablas, el proveedor y el rendimiento
+                # Obtener cada línea de pedido con su folio y proveedor
                 query_requi = f"""
 SELECT 
     OCM.idinsumo as codigo, 
     COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto, 
-    SUM(OCM.cantidad) as cantidad_pedido,
+    OCM.cantidad as cantidad_pedido,
     ISNULL(OCM.costo, 0) as costo,
     COALESCE(P.nombre, 'Sin proveedor') as proveedor,
+    OC.folio as folio_pedido,
     ISNULL(IP.rendimiento, 1) as rendimiento,
     COALESCE(I.unidad, IP.unidad, '') as unidad
 FROM ordenescompramov OCM
@@ -5145,7 +5147,7 @@ LEFT JOIN insumos I ON I.idinsumo = OCM.idinsumo
 LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = OCM.idinsumo
 LEFT JOIN proveedores P ON P.idproveedor = OC.idproveedor
 WHERE OC.folio IN ({folios_sql})
-GROUP BY OCM.idinsumo, I.descripcion, IP.descripcion, OCM.costo, P.nombre, IP.rendimiento, I.unidad, IP.unidad
+ORDER BY P.nombre, OC.folio, OCM.idinsumo
 """
                 requi_result = execute_sql_query(
                     server['host'], server['port'], server['database'],
@@ -5154,15 +5156,31 @@ GROUP BY OCM.idinsumo, I.descripcion, IP.descripcion, OCM.costo, P.nombre, IP.re
                 for r in requi_result:
                     codigo = str(r['codigo']).strip()
                     skus_requisicion.add(codigo)
-                    requi_dict[codigo] = {
+                    
+                    # Guardar en lista para mantener orden por proveedor-pedido
+                    requi_list.append({
+                        'codigo': codigo,
                         'cantidad': float(r['cantidad_pedido'] or 0),
                         'producto': r['producto'] or '',
                         'costo': float(r.get('costo', 0) or 0),
                         'proveedor': r.get('proveedor', '') or '',
+                        'folio_pedido': str(r.get('folio_pedido', '')).strip(),
                         'rendimiento': float(r.get('rendimiento', 1) or 1),
                         'unidad': r.get('unidad', '') or ''
-                    }
-                logging.info(f"[AUDITORIA] SKUs en requisiciones: {len(skus_requisicion)}")
+                    })
+                    
+                    # También mantener dict para lookup rápido
+                    if codigo not in requi_dict:
+                        requi_dict[codigo] = {
+                            'cantidad': float(r['cantidad_pedido'] or 0),
+                            'producto': r['producto'] or '',
+                            'costo': float(r.get('costo', 0) or 0),
+                            'proveedor': r.get('proveedor', '') or '',
+                            'folio_pedido': str(r.get('folio_pedido', '')).strip(),
+                            'rendimiento': float(r.get('rendimiento', 1) or 1),
+                            'unidad': r.get('unidad', '') or ''
+                        }
+                logging.info(f"[AUDITORIA] SKUs en requisiciones: {len(skus_requisicion)}, Líneas de pedido: {len(requi_list)}")
             
             # PASO 3: Obtener inventario inicial
             # Para BODEGA: usar idpresentacion como código
@@ -5422,62 +5440,48 @@ WHERE INM.folio = {request.folio_inv_final}
             if dias_periodo <= 0:
                 dias_periodo = 1
             
-            # Determinar qué códigos procesar
-            if request.solo_skus_requisicion and skus_requisicion:
-                # Solo los SKUs que están en las requisiciones seleccionadas
-                todos_codigos = skus_requisicion
-                logging.info(f"[AUDITORIA] Filtrando solo SKUs de requisición: {len(todos_codigos)}")
-            else:
-                # Todos los códigos encontrados
-                todos_codigos = set(inv_ini_dict.keys()) | set(movimientos_dict.keys()) | set(consumos_dict.keys()) | set(inv_fin_dict.keys())
-            
-            for codigo in todos_codigos:
-                inv_inicial = inv_ini_dict.get(codigo, {}).get('cantidad', 0)
-                movimientos = movimientos_dict.get(codigo, 0)  # Entradas según tipo de almacén
-                consumos = consumos_dict.get(codigo, 0)
-                inv_fisico = inv_fin_dict.get(codigo, {}).get('cantidad', 0)
-                costo = inv_ini_dict.get(codigo, {}).get('costo', 0) or inv_fin_dict.get(codigo, {}).get('costo', 0)
+            # Determinar qué procesar: usar requi_list para mantener orden por proveedor-pedido
+            if request.solo_skus_requisicion and requi_list:
+                # Procesar en orden por proveedor-pedido usando la lista de requisiciones
+                logging.info(f"[AUDITORIA] Procesando {len(requi_list)} líneas de pedido por proveedor-pedido")
                 
-                # Obtener producto desde requisición primero, luego de inventarios
-                producto = requi_dict.get(codigo, {}).get('producto', '') if isinstance(requi_dict.get(codigo), dict) else ''
-                if not producto:
-                    producto = inv_ini_dict.get(codigo, {}).get('producto', '') or inv_fin_dict.get(codigo, {}).get('producto', '')
-                
-                cantidad_pedido = requi_dict.get(codigo, {}).get('cantidad', 0) if isinstance(requi_dict.get(codigo), dict) else requi_dict.get(codigo, 0)
-                
-                # Obtener proveedor de la requisición
-                proveedor = requi_dict.get(codigo, {}).get('proveedor', '') if isinstance(requi_dict.get(codigo), dict) else ''
-                
-                # Existencia teórica = inicial + movimientos - consumos
-                existencia_teorica = inv_inicial + movimientos - consumos
-                
-                # Diferencia = físico - teórico
-                diferencia = inv_fisico - existencia_teorica
-                importe_dif = diferencia * costo
-                
-                # Consumo diario promedio
-                consumo_diario = abs(consumos) / dias_periodo if dias_periodo > 0 else 0
-                
-                # Días de inventario disponible
-                dias_inv = inv_fisico / consumo_diario if consumo_diario > 0 else 999
-                
-                # ¿Debe comprar?
-                debe_comprar = dias_inv < 10  # Umbral de 10 días
-                
-                # Obtener rendimiento y unidad de la requisición
-                rendimiento = requi_dict.get(codigo, {}).get('rendimiento', 1) if isinstance(requi_dict.get(codigo), dict) else 1
-                unidad = requi_dict.get(codigo, {}).get('unidad', '') if isinstance(requi_dict.get(codigo), dict) else ''
-                
-                # Incluir producto si tiene nombre o está en la requisición
-                if producto or codigo in skus_requisicion:
+                for item in requi_list:
+                    codigo = item['codigo']
+                    inv_inicial = inv_ini_dict.get(codigo, {}).get('cantidad', 0)
+                    movimientos = movimientos_dict.get(codigo, 0)
+                    consumos = consumos_dict.get(codigo, 0)
+                    inv_fisico = inv_fin_dict.get(codigo, {}).get('cantidad', 0)
+                    costo = inv_ini_dict.get(codigo, {}).get('costo', 0) or inv_fin_dict.get(codigo, {}).get('costo', 0) or item.get('costo', 0)
+                    
+                    producto = item.get('producto', '')
+                    if not producto:
+                        producto = inv_ini_dict.get(codigo, {}).get('producto', '') or inv_fin_dict.get(codigo, {}).get('producto', '')
+                    
+                    cantidad_pedido = item.get('cantidad', 0)
+                    proveedor = item.get('proveedor', '')
+                    folio_pedido = item.get('folio_pedido', '')
+                    rendimiento = item.get('rendimiento', 1)
+                    unidad = item.get('unidad', '')
+                    
+                    # Existencia teórica = inicial + movimientos - consumos
+                    existencia_teorica = inv_inicial + movimientos - consumos
+                    diferencia = inv_fisico - existencia_teorica
+                    importe_dif = diferencia * costo
+                    
+                    # Consumo diario promedio
+                    consumo_diario = abs(consumos) / dias_periodo if dias_periodo > 0 else 0
+                    dias_inv = inv_fisico / consumo_diario if consumo_diario > 0 else 999
+                    debe_comprar = dias_inv < 10
+                    
                     resultados.append({
                         "codigo": codigo,
                         "producto": producto or f"SKU: {codigo}",
                         "proveedor": proveedor,
+                        "folio_pedido": folio_pedido,
                         "inv_inicial": inv_inicial,
-                        "movimientos": movimientos,  # Campo renombrado
-                        "entradas": movimientos,  # Mantener compatibilidad
-                        "consumos": abs(consumos),  # Mostrar siempre positivo para claridad
+                        "movimientos": movimientos,
+                        "entradas": movimientos,
+                        "consumos": abs(consumos),
                         "existencia_teorica": round(existencia_teorica, 2),
                         "inv_fisico": inv_fisico,
                         "diferencia": round(diferencia, 2),
@@ -5502,11 +5506,92 @@ WHERE INM.folio = {request.folio_inv_final}
                     else:
                         resumen["productos_contra"] += 1
                         resumen["importe_contra"] += abs(importe_dif)
+            else:
+                # Todos los códigos encontrados (sin orden específico)
+                todos_codigos = set(inv_ini_dict.keys()) | set(movimientos_dict.keys()) | set(consumos_dict.keys()) | set(inv_fin_dict.keys())
+                
+                for codigo in todos_codigos:
+                    inv_inicial = inv_ini_dict.get(codigo, {}).get('cantidad', 0)
+                    movimientos = movimientos_dict.get(codigo, 0)  # Entradas según tipo de almacén
+                    consumos = consumos_dict.get(codigo, 0)
+                    inv_fisico = inv_fin_dict.get(codigo, {}).get('cantidad', 0)
+                    costo = inv_ini_dict.get(codigo, {}).get('costo', 0) or inv_fin_dict.get(codigo, {}).get('costo', 0)
+                    
+                    # Obtener producto desde requisición primero, luego de inventarios
+                    producto = requi_dict.get(codigo, {}).get('producto', '') if isinstance(requi_dict.get(codigo), dict) else ''
+                    if not producto:
+                        producto = inv_ini_dict.get(codigo, {}).get('producto', '') or inv_fin_dict.get(codigo, {}).get('producto', '')
+                    
+                    cantidad_pedido = requi_dict.get(codigo, {}).get('cantidad', 0) if isinstance(requi_dict.get(codigo), dict) else requi_dict.get(codigo, 0)
+                    
+                    # Obtener proveedor de la requisición
+                    proveedor = requi_dict.get(codigo, {}).get('proveedor', '') if isinstance(requi_dict.get(codigo), dict) else ''
+                    
+                    # Existencia teórica = inicial + movimientos - consumos
+                    existencia_teorica = inv_inicial + movimientos - consumos
+                    
+                    # Diferencia = físico - teórico
+                    diferencia = inv_fisico - existencia_teorica
+                    importe_dif = diferencia * costo
+                    
+                    # Consumo diario promedio
+                    consumo_diario = abs(consumos) / dias_periodo if dias_periodo > 0 else 0
+                    
+                    # Días de inventario disponible
+                    dias_inv = inv_fisico / consumo_diario if consumo_diario > 0 else 999
+                    
+                    # ¿Debe comprar?
+                    debe_comprar = dias_inv < 10  # Umbral de 10 días
+                    
+                    # Obtener rendimiento y unidad de la requisición
+                    rendimiento = requi_dict.get(codigo, {}).get('rendimiento', 1) if isinstance(requi_dict.get(codigo), dict) else 1
+                    unidad = requi_dict.get(codigo, {}).get('unidad', '') if isinstance(requi_dict.get(codigo), dict) else ''
+                    
+                    # Incluir producto si tiene nombre o está en la requisición
+                    if producto or codigo in skus_requisicion:
+                        # Obtener folio_pedido si existe
+                        folio_pedido = requi_dict.get(codigo, {}).get('folio_pedido', '') if isinstance(requi_dict.get(codigo), dict) else ''
+                        
+                        resultados.append({
+                            "codigo": codigo,
+                            "producto": producto or f"SKU: {codigo}",
+                            "proveedor": proveedor,
+                            "folio_pedido": folio_pedido,
+                            "inv_inicial": inv_inicial,
+                            "movimientos": movimientos,
+                            "entradas": movimientos,
+                            "consumos": abs(consumos),
+                            "existencia_teorica": round(existencia_teorica, 2),
+                            "inv_fisico": inv_fisico,
+                            "diferencia": round(diferencia, 2),
+                            "costo": costo,
+                            "importe_diferencia": round(importe_dif, 2),
+                            "tipo_diferencia": "favor" if diferencia >= 0 else "contra",
+                            "consumo_diario": round(consumo_diario, 2),
+                            "dias_inventario": round(dias_inv, 1) if dias_inv < 999 else "N/A",
+                            "cantidad_pedido": cantidad_pedido,
+                            "debe_comprar": debe_comprar,
+                            "recomendacion": "COMPRAR" if debe_comprar and cantidad_pedido > 0 else "OK" if not debe_comprar else "SIN PEDIDO",
+                            "rendimiento": rendimiento,
+                            "unidad": unidad
+                        })
+                        
+                        resumen["total_teorico"] += existencia_teorica * costo
+                        resumen["total_fisico"] += inv_fisico * costo
+                        resumen["total_diferencia"] += importe_dif
+                        if diferencia >= 0:
+                            resumen["productos_favor"] += 1
+                            resumen["importe_favor"] += importe_dif
+                        else:
+                            resumen["productos_contra"] += 1
+                            resumen["importe_contra"] += abs(importe_dif)
             
             resumen["requiere_acta"] = resumen["productos_contra"] > 0 or resumen["importe_contra"] > 100
             
-            # Ordenar por importe diferencia (más graves primero)
-            resultados = sorted(resultados, key=lambda x: x['importe_diferencia'])
+            # Solo ordenar por importe cuando NO se filtra por SKUs de requisición
+            # (cuando se filtra, ya viene ordenado por proveedor-pedido)
+            if not (request.solo_skus_requisicion and requi_list):
+                resultados = sorted(resultados, key=lambda x: x['importe_diferencia'])
         
         elif server['system_type'] == 'MPRO':
             # Lógica similar para MPRO

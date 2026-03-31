@@ -1771,6 +1771,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                 <thead className="sticky top-0 bg-zinc-800 text-white">
                   <tr>
                     {agruparPorProveedor && <th className="py-2 px-2 text-left">Proveedor</th>}
+                    {agruparPorProveedor && <th className="py-2 px-2 text-left">Folio Pedido</th>}
                     <th className="py-2 px-2 text-left">Producto</th>
                     <th className="py-2 px-2 text-right">Inv.Ini</th>
                     <th className="py-2 px-2 text-right">+Movimientos</th>
@@ -1785,52 +1786,73 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                   </tr>
                 </thead>
                 <tbody>
-                  {resultados.map((r, idx) => {
-                    const rendimiento = r.rendimiento || 1;
-                    return (
-                      <tr key={idx} className={`border-b ${r.tipo_diferencia === 'contra' ? 'bg-red-50' : ''}`}>
-                        {agruparPorProveedor && <td className="py-1.5 px-2 text-zinc-600">{r.proveedor || '-'}</td>}
-                        <td className="py-1.5 px-2 font-medium">{r.producto}</td>
-                        <td className="py-1.5 px-2 text-right">{formatConversion(r.inv_inicial, rendimiento)}</td>
-                        <td 
-                          className="py-1.5 px-2 text-right text-green-600 cursor-pointer hover:bg-green-100 transition-colors"
-                          onDoubleClick={() => fetchDetalleMovimientos(r.codigo, r.producto)}
-                          title="Doble click para ver detalle de movimientos"
-                        >
-                          +{formatConversion(r.movimientos || r.entradas || 0, rendimiento)}
-                        </td>
-                        <td className="py-1.5 px-2 text-right text-orange-600">-{formatConversion(Math.abs(r.consumos || 0), rendimiento)}</td>
-                        <td className="py-1.5 px-2 text-right font-medium">{formatConversion(r.existencia_teorica, rendimiento)}</td>
-                        <td className="py-1.5 px-2 text-right font-medium">{formatConversion(r.inv_fisico, rendimiento)}</td>
-                        <td className={`py-1.5 px-2 text-right font-bold ${r.diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {r.diferencia >= 0 ? '+' : ''}{formatConversion(r.diferencia, rendimiento)}
-                        </td>
-                        <td className={`py-1.5 px-2 text-right ${r.importe_diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {formatCurrency(r.importe_diferencia)}
-                        </td>
-                        <td className="py-1.5 px-2 text-center">
-                          <span className={`px-1.5 py-0.5 rounded text-xs ${
-                            r.dias_inventario === 'N/A' ? 'bg-zinc-100' :
-                            r.dias_inventario < 5 ? 'bg-red-100 text-red-700' :
-                            r.dias_inventario < 10 ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-green-100 text-green-700'
-                          }`}>
-                            {r.dias_inventario}
-                          </span>
-                        </td>
-                        <td className="py-1.5 px-2 text-right">{formatNumber(r.cantidad_pedido)}</td>
-                        <td className="py-1.5 px-2 text-center">
-                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                            r.recomendacion === 'COMPRAR' ? 'bg-red-100 text-red-700' :
-                            r.recomendacion === 'OK' ? 'bg-green-100 text-green-700' :
-                            'bg-zinc-100 text-zinc-600'
-                          }`}>
-                            {r.recomendacion}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {(() => {
+                    let lastProveedor = '';
+                    let lastFolio = '';
+                    return resultados.map((r, idx) => {
+                      const rendimiento = r.rendimiento || 1;
+                      const isNewProveedor = agruparPorProveedor && r.proveedor !== lastProveedor;
+                      const isNewFolio = agruparPorProveedor && r.folio_pedido !== lastFolio;
+                      
+                      if (agruparPorProveedor) {
+                        lastProveedor = r.proveedor;
+                        lastFolio = r.folio_pedido;
+                      }
+                      
+                      return (
+                        <tr key={idx} className={`border-b ${r.tipo_diferencia === 'contra' ? 'bg-red-50' : ''} ${isNewProveedor ? 'border-t-2 border-t-zinc-400' : ''}`}>
+                          {agruparPorProveedor && (
+                            <td className={`py-1.5 px-2 ${isNewProveedor ? 'font-bold text-zinc-800' : 'text-zinc-400'}`}>
+                              {isNewProveedor ? r.proveedor : ''}
+                            </td>
+                          )}
+                          {agruparPorProveedor && (
+                            <td className={`py-1.5 px-2 ${isNewFolio ? 'font-medium text-blue-600' : 'text-zinc-400'}`}>
+                              {isNewFolio ? r.folio_pedido : ''}
+                            </td>
+                          )}
+                          <td className="py-1.5 px-2 font-medium">{r.producto}</td>
+                          <td className="py-1.5 px-2 text-right">{formatConversion(r.inv_inicial, rendimiento)}</td>
+                          <td 
+                            className="py-1.5 px-2 text-right text-green-600 cursor-pointer hover:bg-green-100 transition-colors"
+                            onDoubleClick={() => fetchDetalleMovimientos(r.codigo, r.producto)}
+                            title="Doble click para ver detalle de movimientos"
+                          >
+                            +{formatConversion(r.movimientos || r.entradas || 0, rendimiento)}
+                          </td>
+                          <td className="py-1.5 px-2 text-right text-orange-600">-{formatConversion(Math.abs(r.consumos || 0), rendimiento)}</td>
+                          <td className="py-1.5 px-2 text-right font-medium">{formatConversion(r.existencia_teorica, rendimiento)}</td>
+                          <td className="py-1.5 px-2 text-right font-medium">{formatConversion(r.inv_fisico, rendimiento)}</td>
+                          <td className={`py-1.5 px-2 text-right font-bold ${r.diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {r.diferencia >= 0 ? '+' : ''}{formatConversion(r.diferencia, rendimiento)}
+                          </td>
+                          <td className={`py-1.5 px-2 text-right ${r.importe_diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(r.importe_diferencia)}
+                          </td>
+                          <td className="py-1.5 px-2 text-center">
+                            <span className={`px-1.5 py-0.5 rounded text-xs ${
+                              r.dias_inventario === 'N/A' ? 'bg-zinc-100' :
+                              r.dias_inventario < 5 ? 'bg-red-100 text-red-700' :
+                              r.dias_inventario < 10 ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-green-100 text-green-700'
+                            }`}>
+                              {r.dias_inventario}
+                            </span>
+                          </td>
+                          <td className="py-1.5 px-2 text-right">{formatNumber(r.cantidad_pedido)}</td>
+                          <td className="py-1.5 px-2 text-center">
+                            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                              r.recomendacion === 'COMPRAR' ? 'bg-red-100 text-red-700' :
+                              r.recomendacion === 'OK' ? 'bg-green-100 text-green-700' :
+                              'bg-zinc-100 text-zinc-600'
+                            }`}>
+                              {r.recomendacion}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>
