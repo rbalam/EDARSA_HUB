@@ -1061,6 +1061,41 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   const [resumen, setResumen] = useState(null);
   const [agruparPorProveedor, setAgruparPorProveedor] = useState(false);
 
+  // Cargar filtros guardados al montar
+  useEffect(() => {
+    const savedFilters = localStorage.getItem(`auditoria_filters_${selectedServer}_${parentSucursal}`);
+    if (savedFilters) {
+      try {
+        const filters = JSON.parse(savedFilters);
+        if (filters.selectedAlmacenes) setSelectedAlmacenes(filters.selectedAlmacenes);
+        if (filters.folioPedido) setFolioPedido(filters.folioPedido);
+        if (filters.fechaInicial) setFechaInicial(filters.fechaInicial);
+        if (filters.fechaAuditoria) setFechaAuditoria(filters.fechaAuditoria);
+        if (filters.selectedInvIniciales) setSelectedInvIniciales(filters.selectedInvIniciales);
+        if (filters.selectedInvFinales) setSelectedInvFinales(filters.selectedInvFinales);
+        if (filters.usarCapturaManual !== undefined) setUsarCapturaManual(filters.usarCapturaManual);
+      } catch (e) {
+        console.warn('Error loading saved filters:', e);
+      }
+    }
+  }, [selectedServer, parentSucursal]);
+
+  // Guardar filtros cuando cambien
+  useEffect(() => {
+    if (selectedServer && parentSucursal) {
+      const filters = {
+        selectedAlmacenes,
+        folioPedido,
+        fechaInicial,
+        fechaAuditoria,
+        selectedInvIniciales,
+        selectedInvFinales,
+        usarCapturaManual
+      };
+      localStorage.setItem(`auditoria_filters_${selectedServer}_${parentSucursal}`, JSON.stringify(filters));
+    }
+  }, [selectedServer, parentSucursal, selectedAlmacenes, folioPedido, fechaInicial, fechaAuditoria, selectedInvIniciales, selectedInvFinales, usarCapturaManual]);
+
   useEffect(() => {
     if (selectedServer && parentSucursal) {
       fetchAlmacenes();
@@ -1660,7 +1695,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                     {agruparPorProveedor && <th className="py-2 px-2 text-left">Proveedor</th>}
                     <th className="py-2 px-2 text-left">Producto</th>
                     <th className="py-2 px-2 text-right">Inv.Ini</th>
-                    <th className="py-2 px-2 text-right">+Entradas</th>
+                    <th className="py-2 px-2 text-right">+Movimientos</th>
                     <th className="py-2 px-2 text-right">-Consumos</th>
                     <th className="py-2 px-2 text-right">Teórico</th>
                     <th className="py-2 px-2 text-right">Físico</th>
@@ -1677,7 +1712,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                       {agruparPorProveedor && <td className="py-1.5 px-2 text-zinc-600">{r.proveedor || '-'}</td>}
                       <td className="py-1.5 px-2 font-medium">{r.producto}</td>
                       <td className="py-1.5 px-2 text-right">{formatNumber(r.inv_inicial)}</td>
-                      <td className="py-1.5 px-2 text-right text-green-600">+{formatNumber(r.entradas || r.compras || 0)}</td>
+                      <td className="py-1.5 px-2 text-right text-green-600">+{formatNumber(r.movimientos || r.entradas || r.compras || 0)}</td>
                       <td className="py-1.5 px-2 text-right text-orange-600">-{formatNumber(Math.abs(r.consumos || 0))}</td>
                       <td className="py-1.5 px-2 text-right font-medium">{formatNumber(r.existencia_teorica)}</td>
                       <td className="py-1.5 px-2 text-right font-medium">{formatNumber(r.inv_fisico)}</td>

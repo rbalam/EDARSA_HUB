@@ -5204,85 +5204,124 @@ WHERE INM.folio = {request.folio_inv_inicial}
                     "costo": float(r['costo'] or 0)
                 } for r in result_ini}
             
-            # PASO 4: Obtener ENTRADAS según tipo de almacén
-            # - Solo Bodega: Entradas = COMPRAS (concepto EPC y similares)
-            # - Solo Consumo: Entradas = TRASPASOS (concepto ETR)
-            # - Mixto: Entradas = COMPRAS + TRASPASOS
+            # PASO 4: Obtener MOVIMIENTOS según tipo de almacén
+            # - Solo Bodega: Movimientos = Entradas activas del filtro en Servidores SQL
+            # - Solo Consumo: Movimientos = Traspasos entrada - Traspasos salida del período
+            # - Mixto: Compras bodega + Traspasos entrada consumo - Salidas traspasos
             
-            # Obtener tipos de movimiento activos del servidor
+            # Obtener tipos de movimiento activos del servidor (filtros configurados en Servidores SQL)
             tipos_mov_activos = server.get('tipos_movimiento', [])
             
-            # Filtrar tipos de entrada activos
-            tipos_entrada_compra = ['EPC', 'ECS', 'EPB', 'EDE', 'EEH', 'ECO']  # Compras y similares
-            tipos_entrada_traspaso = ['ETR', 'ETA']  # Traspasos
+            # Separar tipos de movimiento por tipo (entrada vs salida)
+            # Los que empiezan con 'E' son entradas, los que empiezan con 'S' son salidas
+            tipos_entrada_activos = [t for t in tipos_mov_activos if t.startswith('E')]
+            tipos_salida_activos = [t for t in tipos_mov_activos if t.startswith('S')]
             
-            entradas_activas_compra = [t for t in tipos_entrada_compra if t in tipos_mov_activos]
-            entradas_activas_traspaso = [t for t in tipos_entrada_traspaso if t in tipos_mov_activos]
+            # Tipos específicos
+            tipos_entrada_compra = [t for t in tipos_entrada_activos if t in ['EPC', 'ECS', 'EPB', 'EDE', 'EEH', 'ECO', 'ECA', 'EPL', 'EPR']]
+            tipos_entrada_traspaso = [t for t in tipos_entrada_activos if t in ['ETR', 'ETA', 'EAL']]
+            tipos_salida_traspaso = [t for t in tipos_salida_activos if t in ['STR', 'STA', 'SAL']]
+            tipos_salida_consumo = [t for t in tipos_salida_activos if t in ['SPV', 'SCP', 'SCS']]
             
-            entradas_dict = {}
+            logging.info(f"[AUDITORIA] Tipos entrada activos: {tipos_entrada_activos}")
+            logging.info(f"[AUDITORIA] Tipos salida activos: {tipos_salida_activos}")
             
-            if es_solo_bodega or es_mixto:
-                # Obtener compras del período (para bodega - usa movtosalmacen con presentaciones)
-                # Bodega: usar idinsumospresentaciones como código (NO convertir a idinsumo)
-                query_compras = f"""
+            movimientos_dict = {}
+            
+            if es_solo_bodega:
+                # BODEGA: Solo movimientos de entrada activos (EPC, ECS, etc.)
+                if tipos_entrada_compra:
+                    query_mov = f"""
 SELECT RTRIM(M.idinsumospresentaciones) as codigo, SUM(M.cantidad) as cantidad
 FROM movtosalmacen M
-WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in entradas_activas_compra])})
+WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in tipos_entrada_compra])})
     AND M.fecha >= '{fecha_ini_sql}'
     AND M.fecha <= '{fecha_fin_sql} 23:59:59'
 GROUP BY RTRIM(M.idinsumospresentaciones)
 """
-                if entradas_activas_compra:
-                    compras_result = execute_sql_query(
+                    mov_result = execute_sql_query(
                         server['host'], server['port'], server['database'],
-                        server['username'], server['password'], query_compras
+                        server['username'], server['password'], query_mov
                     )
-                    for c in compras_result:
-                        codigo = str(c['codigo']).strip()
-                        entradas_dict[codigo] = entradas_dict.get(codigo, 0) + float(c['cantidad'] or 0)
+                    for m in mov_result:
+                        codigo = str(m['codigo']).strip()
+                        movimientos_dict[codigo] = movimientos_dict.get(codigo, 0) + float(m['cantidad'] or 0)
             
-            if es_solo_consumo or es_mixto:
-                # Obtener traspasos del período (para consumo - usa movsinv con insumos)
-                if entradas_activas_traspaso:
-                    query_traspasos = f"""
+            elif es_solo_consumo:
+                # CONSUMO: Traspasos entrada - Traspasos salida del período
+                # Entradas por traspaso
+                if tipos_entrada_traspaso:
+                    query_entrada = f"""
 SELECT RTRIM(M.idinsumo) as codigo, SUM(M.cantidad) as cantidad
 FROM movsinv M
-WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in entradas_activas_traspaso])})
+WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in tipos_entrada_traspaso])})
     AND M.fecha >= '{fecha_ini_sql}'
     AND M.fecha <= '{fecha_fin_sql} 23:59:59'
 GROUP BY RTRIM(M.idinsumo)
 """
-                    traspasos_result = execute_sql_query(
+                    entrada_result = execute_sql_query(
                         server['host'], server['port'], server['database'],
-                        server['username'], server['password'], query_traspasos
+                        server['username'], server['password'], query_entrada
                     )
-                    for t in traspasos_result:
-                        codigo = str(t['codigo']).strip()
-                        entradas_dict[codigo] = entradas_dict.get(codigo, 0) + float(t['cantidad'] or 0)
+                    for e in entrada_result:
+                        codigo = str(e['codigo']).strip()
+                        movimientos_dict[codigo] = movimientos_dict.get(codigo, 0) + float(e['cantidad'] or 0)
+                
+                # Salidas por traspaso (restar)
+                if tipos_salida_traspaso:
+                    query_salida = f"""
+SELECT RTRIM(M.idinsumo) as codigo, SUM(M.cantidad) as cantidad
+FROM movsinv M
+WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in tipos_salida_traspaso])})
+    AND M.fecha >= '{fecha_ini_sql}'
+    AND M.fecha <= '{fecha_fin_sql} 23:59:59'
+GROUP BY RTRIM(M.idinsumo)
+"""
+                    salida_result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query_salida
+                    )
+                    for s in salida_result:
+                        codigo = str(s['codigo']).strip()
+                        # Las salidas restan
+                        movimientos_dict[codigo] = movimientos_dict.get(codigo, 0) - float(s['cantidad'] or 0)
             
-            logging.info(f"[AUDITORIA] Entradas encontradas: {len(entradas_dict)}")
+            else:  # es_mixto
+                # MIXTO: Compras bodega + Traspasos entrada consumo
+                # Por ahora, usar misma lógica que bodega para presentaciones
+                if tipos_entrada_compra:
+                    query_mov = f"""
+SELECT RTRIM(M.idinsumospresentaciones) as codigo, SUM(M.cantidad) as cantidad
+FROM movtosalmacen M
+WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in tipos_entrada_compra])})
+    AND M.fecha >= '{fecha_ini_sql}'
+    AND M.fecha <= '{fecha_fin_sql} 23:59:59'
+GROUP BY RTRIM(M.idinsumospresentaciones)
+"""
+                    mov_result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query_mov
+                    )
+                    for m in mov_result:
+                        codigo = str(m['codigo']).strip()
+                        movimientos_dict[codigo] = movimientos_dict.get(codigo, 0) + float(m['cantidad'] or 0)
             
-            # PASO 5: Obtener consumos/salidas
-            # - Solo Bodega: Salidas = TRASPASOS (STR - lo que sale a consumo)
-            # - Solo Consumo: Salidas = VENTAS (SPV)
+            logging.info(f"[AUDITORIA] Movimientos encontrados: {len(movimientos_dict)}")
+            
+            # PASO 5: Obtener consumos/salidas según tipo de almacén
+            # - Solo Bodega: Salidas = Tipos de salida activos en filtros (STR, etc.)
+            # - Solo Consumo: Salidas = Ventas (SPV) o tipos de salida consumo activos
             # - Mixto: Ventas (el consumo final)
-            
-            tipos_salida_venta = ['SPV']
-            tipos_salida_traspaso = ['STR', 'STA']
-            
-            salidas_activas_venta = [t for t in tipos_salida_venta if t in tipos_mov_activos]
-            salidas_activas_traspaso = [t for t in tipos_salida_traspaso if t in tipos_mov_activos]
             
             consumos_dict = {}
             
             if es_solo_bodega:
                 # Para bodega, las salidas son traspasos a consumo (usa movtosalmacen)
-                # Usar idinsumospresentaciones como código
-                if salidas_activas_traspaso:
+                if tipos_salida_traspaso:
                     query_salidas = f"""
 SELECT RTRIM(M.idinsumospresentaciones) as codigo, SUM(M.cantidad) as cantidad
 FROM movtosalmacen M
-WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in salidas_activas_traspaso])})
+WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in tipos_salida_traspaso])})
     AND M.fecha >= '{fecha_ini_sql}'
     AND M.fecha <= '{fecha_fin_sql} 23:59:59'
 GROUP BY RTRIM(M.idinsumospresentaciones)
@@ -5386,11 +5425,11 @@ WHERE INM.folio = {request.folio_inv_final}
                 logging.info(f"[AUDITORIA] Filtrando solo SKUs de requisición: {len(todos_codigos)}")
             else:
                 # Todos los códigos encontrados
-                todos_codigos = set(inv_ini_dict.keys()) | set(entradas_dict.keys()) | set(consumos_dict.keys()) | set(inv_fin_dict.keys())
+                todos_codigos = set(inv_ini_dict.keys()) | set(movimientos_dict.keys()) | set(consumos_dict.keys()) | set(inv_fin_dict.keys())
             
             for codigo in todos_codigos:
                 inv_inicial = inv_ini_dict.get(codigo, {}).get('cantidad', 0)
-                entradas = entradas_dict.get(codigo, 0)  # Compras o traspasos según tipo de almacén
+                movimientos = movimientos_dict.get(codigo, 0)  # Entradas según tipo de almacén
                 consumos = consumos_dict.get(codigo, 0)
                 inv_fisico = inv_fin_dict.get(codigo, {}).get('cantidad', 0)
                 costo = inv_ini_dict.get(codigo, {}).get('costo', 0) or inv_fin_dict.get(codigo, {}).get('costo', 0)
@@ -5405,8 +5444,8 @@ WHERE INM.folio = {request.folio_inv_final}
                 # Obtener proveedor de la requisición
                 proveedor = requi_dict.get(codigo, {}).get('proveedor', '') if isinstance(requi_dict.get(codigo), dict) else ''
                 
-                # Existencia teórica = inicial + entradas - consumos
-                existencia_teorica = inv_inicial + entradas - consumos
+                # Existencia teórica = inicial + movimientos - consumos
+                existencia_teorica = inv_inicial + movimientos - consumos
                 
                 # Diferencia = físico - teórico
                 diferencia = inv_fisico - existencia_teorica
@@ -5428,7 +5467,8 @@ WHERE INM.folio = {request.folio_inv_final}
                         "producto": producto or f"SKU: {codigo}",
                         "proveedor": proveedor,
                         "inv_inicial": inv_inicial,
-                        "entradas": entradas,  # Cambiado de 'compras' a 'entradas'
+                        "movimientos": movimientos,  # Campo renombrado
+                        "entradas": movimientos,  # Mantener compatibilidad
                         "consumos": abs(consumos),  # Mostrar siempre positivo para claridad
                         "existencia_teorica": round(existencia_teorica, 2),
                         "inv_fisico": inv_fisico,
