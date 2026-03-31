@@ -60,6 +60,8 @@ Aplicación web ERP modular para gestionar múltiples sucursales con bases de da
 ## 2025-03-31
 - **FIXED**: Error de sintaxis en `Compras.js` - código JSX duplicado/corrupto eliminado (~260 líneas)
 - **VERIFIED**: Layout compacto de formulario de Auditoría funcionando correctamente
+- **ADDED**: Badges de folios de requisiciones seleccionadas (estilo igual a inventarios)
+- **IDENTIFIED**: Bug de rendimiento incorrecto cuando código existe como INSUMO y PRESENTACIÓN (ej: B070033) - pendiente corregir
 
 ## Previous Session (before fork)
 - ✅ Bug de validación por filtros cacheados en Auditoría de Compras
