@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -1057,6 +1057,27 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   const [busquedaInvIni, setBusquedaInvIni] = useState('');
   const [busquedaInvFin, setBusquedaInvFin] = useState('');
   
+  // Calcular fecha mínima de inventarios iniciales para filtrar finales
+  const fechaMinimaInvInicial = useMemo(() => {
+    if (selectedInvIniciales.length === 0) return null;
+    // Obtener la fecha más antigua de los inventarios iniciales
+    const fechas = selectedInvIniciales
+      .map(inv => inv.fecha?.split('T')[0])
+      .filter(f => f);
+    if (fechas.length === 0) return null;
+    return fechas.sort()[0]; // La fecha más antigua
+  }, [selectedInvIniciales]);
+  
+  // Filtrar inventarios finales: solo mostrar los que tienen fecha >= fecha del inv inicial
+  const inventariosFinalesFiltrados = useMemo(() => {
+    if (!fechaMinimaInvInicial) return inventariosFisicos;
+    return inventariosFisicos.filter(inv => {
+      const fechaInv = inv.fecha?.split('T')[0];
+      if (!fechaInv) return true; // Si no tiene fecha, mostrarlo
+      return fechaInv >= fechaMinimaInvInicial;
+    });
+  }, [inventariosFisicos, fechaMinimaInvInicial]);
+  
   const [resultados, setResultados] = useState(null);
   const [resumen, setResumen] = useState(null);
   const [agruparPorProveedor, setAgruparPorProveedor] = useState(false);
@@ -1653,16 +1674,17 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                         </button>
                       )}
                       <span className="text-xs text-zinc-400 ml-auto">
-                        {inventariosFisicos.filter(inv => 
+                        {inventariosFinalesFiltrados.filter(inv => 
                           !busquedaInvFin || 
                           String(inv.folio).includes(busquedaInvFin) ||
                           (inv.almacen || '').toLowerCase().includes(busquedaInvFin.toLowerCase())
                         ).length} inventarios
+                        {fechaMinimaInvInicial && <span className="ml-1">(desde {fechaMinimaInvInicial})</span>}
                       </span>
                     </div>
                     {/* Lista de inventarios con scroll mejorado */}
                     <div className="max-h-72 overflow-y-auto" style={{ scrollbarWidth: 'auto', scrollbarColor: '#a1a1aa #f4f4f5' }}>
-                      {inventariosFisicos
+                      {inventariosFinalesFiltrados
                         .filter(inv => 
                           !busquedaInvFin || 
                           String(inv.folio).includes(busquedaInvFin) ||

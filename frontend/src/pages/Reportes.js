@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -110,6 +110,27 @@ const Reportes = () => {
   const [selectedAlmacenes, setSelectedAlmacenes] = useState([]);
   const [selectedInventariosIni, setSelectedInventariosIni] = useState([]);
   const [selectedInventariosFin, setSelectedInventariosFin] = useState([]);
+  
+  // Calcular fecha mínima de inventarios iniciales para filtrar finales
+  const fechaMinimaInvInicial = useMemo(() => {
+    if (selectedInventariosIni.length === 0) return null;
+    // Obtener la fecha más antigua de los inventarios iniciales
+    const fechas = selectedInventariosIni
+      .map(inv => inv.fecha?.split('T')[0])
+      .filter(f => f);
+    if (fechas.length === 0) return null;
+    return fechas.sort()[0]; // La fecha más antigua
+  }, [selectedInventariosIni]);
+  
+  // Filtrar inventarios finales: solo mostrar los que tienen fecha >= fecha del inv inicial
+  const inventariosFinalesFiltrados = useMemo(() => {
+    if (!fechaMinimaInvInicial) return inventarios;
+    return inventarios.filter(inv => {
+      const fechaInv = inv.fecha?.split('T')[0];
+      if (!fechaInv) return true; // Si no tiene fecha, mostrarlo
+      return fechaInv >= fechaMinimaInvInicial;
+    });
+  }, [inventarios, fechaMinimaInvInicial]);
   
   // Estado para agrupar insumos de múltiples inventarios (MPRO)
   const [agruparInsumos, setAgruparInsumos] = useState(false);
@@ -1154,9 +1175,16 @@ const Reportes = () => {
                         <X className="h-3 w-3 mr-1" /> Limpiar selección ({selectedInventariosFin.length})
                       </button>
                     )}
-                    {/* Filtrar por fecha: solo mostrar inventarios de la misma fecha que el primero seleccionado */}
-                    {inventarios
+                    {/* Info: mostrar fecha mínima cuando hay inventarios iniciales seleccionados */}
+                    {fechaMinimaInvInicial && (
+                      <div className="px-3 py-1 text-xs text-zinc-500 bg-blue-50 border-b">
+                        Solo inventarios desde: {fechaMinimaInvInicial}
+                      </div>
+                    )}
+                    {/* Filtrar: solo mostrar inventarios con fecha >= fecha del inventario inicial */}
+                    {inventariosFinalesFiltrados
                       .filter(inv => {
+                        // Filtro adicional: si ya hay finales seleccionados, filtrar por misma fecha
                         if (selectedInventariosFin.length === 0) return true;
                         const fechaBase = selectedInventariosFin[0].fecha?.split('T')[0] || selectedInventariosFin[0].fecha?.split(' ')[0];
                         const fechaInv = inv.fecha?.split('T')[0] || inv.fecha?.split(' ')[0];
@@ -1183,8 +1211,12 @@ const Reportes = () => {
                         <span className="text-sm">{inv.folio} - {inv.fecha ? inv.fecha.split(' ')[0] : ''} - {inv.almacen || ''}{inv.comentario ? ` - ${inv.comentario}` : ''}</span>
                       </label>
                     ))}
-                    {inventarios.length === 0 && (
-                      <p className="text-xs text-zinc-400 text-center py-3">No hay inventarios disponibles</p>
+                    {inventariosFinalesFiltrados.length === 0 && (
+                      <p className="text-xs text-zinc-400 text-center py-3">
+                        {inventarios.length === 0 
+                          ? "No hay inventarios disponibles" 
+                          : "No hay inventarios con fecha posterior al inicial"}
+                      </p>
                     )}
                   </div>
                 )}
