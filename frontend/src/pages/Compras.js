@@ -1625,6 +1625,26 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                   </div>
                 </div>
               </details>
+              {/* Badges de requisiciones seleccionadas */}
+              {folioPedido.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {folioPedido.map(folio => (
+                    <span 
+                      key={folio}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800 border border-amber-200"
+                    >
+                      {folio}
+                      <button 
+                        type="button"
+                        onClick={() => setFolioPedido(folioPedido.filter(f => f !== folio))}
+                        className="hover:text-amber-600"
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Fecha Inicial</Label>
