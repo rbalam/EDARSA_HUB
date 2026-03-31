@@ -2103,6 +2103,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                       )}
                     </th>
                     <th className="py-2 px-2 text-right">Pedido</th>
+                    <th className="py-2 px-2 text-center">Ajuste</th>
                     <th className="py-2 px-2 text-center">Recomendar</th>
                   </tr>
                 </thead>
@@ -2224,27 +2225,74 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                             )}
                           </td>
                           <td className="py-1.5 px-2 text-right">{formatNumber(r.cantidad_pedido)}</td>
-                          {/* Recomendación - Calculada dinámicamente según días objetivo actual */}
+                          {/* Ajuste y Recomendación - Calculados dinámicamente */}
                           {(() => {
                             const diasObj = diasObjetivoPorSku[r.codigo] !== undefined 
                               ? diasObjetivoPorSku[r.codigo] 
                               : (r.dias_objetivo || diasObjetivoDefault);
                             const diasInv = r.dias_inventario === 'N/A' ? 999 : parseFloat(r.dias_inventario);
+                            const consumoDiario = r.consumo_diario || 0;
+                            const invFisico = r.inv_fisico || 0;
+                            const cantidadPedido = r.cantidad_pedido || 0;
+                            const rendimiento = r.rendimiento || 1;
+                            
+                            // Calcular necesidad en insumos para alcanzar días objetivo
+                            const necesidadInsumos = consumoDiario * diasObj;
+                            // Lo que falta para llegar a la necesidad
+                            const faltanteInsumos = necesidadInsumos - invFisico;
+                            // Ajuste = faltante - lo ya pedido (convertido a insumos si es presentación)
+                            const pedidoEnInsumos = cantidadPedido * rendimiento;
+                            const ajusteInsumos = faltanteInsumos - pedidoEnInsumos;
+                            
+                            // Convertir ajuste a la unidad de análisis
+                            const ajusteMostrar = unidadAnalisis === 'presentaciones' 
+                              ? (rendimiento > 0 ? ajusteInsumos / rendimiento : ajusteInsumos)
+                              : ajusteInsumos;
+                            
                             const debeComprar = diasInv < diasObj;
-                            const recomendacion = debeComprar && r.cantidad_pedido > 0 
-                              ? 'COMPRAR' 
-                              : (!debeComprar ? 'OK' : 'SIN PEDIDO');
+                            let recomendacion = 'OK';
+                            let ajusteTexto = 'OK';
+                            let ajusteColor = 'text-green-600';
+                            
+                            if (Math.abs(ajusteMostrar) < 0.01) {
+                              ajusteTexto = 'OK';
+                              ajusteColor = 'text-green-600';
+                              recomendacion = 'OK';
+                            } else if (ajusteMostrar > 0) {
+                              // Falta pedir más
+                              ajusteTexto = `+${formatNumber(ajusteMostrar)}`;
+                              ajusteColor = 'text-red-600 font-bold';
+                              recomendacion = cantidadPedido > 0 ? 'AUMENTAR' : 'COMPRAR';
+                            } else {
+                              // Sobra, puede reducir
+                              ajusteTexto = formatNumber(ajusteMostrar);
+                              ajusteColor = 'text-blue-600';
+                              recomendacion = 'REDUCIR';
+                            }
+                            
+                            // Si no hay consumo, no se puede calcular
+                            if (consumoDiario === 0 || r.dias_inventario === 'N/A') {
+                              ajusteTexto = '-';
+                              ajusteColor = 'text-zinc-400';
+                              recomendacion = cantidadPedido > 0 ? 'REVISAR' : 'SIN DATOS';
+                            }
                             
                             return (
-                              <td className="py-1.5 px-2 text-center">
-                                <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                                  recomendacion === 'COMPRAR' ? 'bg-red-100 text-red-700' :
-                                  recomendacion === 'OK' ? 'bg-green-100 text-green-700' :
-                                  'bg-zinc-100 text-zinc-600'
-                                }`}>
-                                  {recomendacion}
-                                </span>
-                              </td>
+                              <>
+                                <td className={`py-1.5 px-2 text-center ${ajusteColor}`}>
+                                  {ajusteTexto}
+                                </td>
+                                <td className="py-1.5 px-2 text-center">
+                                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                                    recomendacion === 'COMPRAR' || recomendacion === 'AUMENTAR' ? 'bg-red-100 text-red-700' :
+                                    recomendacion === 'OK' ? 'bg-green-100 text-green-700' :
+                                    recomendacion === 'REDUCIR' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-zinc-100 text-zinc-600'
+                                  }`}>
+                                    {recomendacion}
+                                  </span>
+                                </td>
+                              </>
                             );
                           })()}
                         </tr>
