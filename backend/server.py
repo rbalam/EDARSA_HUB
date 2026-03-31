@@ -5129,21 +5129,23 @@ WHERE nombre IN ({almacenes_str}) OR idalmacen IN ({almacenes_str})
             if folios_req:
                 folios_sql = ", ".join([f"'{f}'" for f in folios_req])
                 # Las órdenes de compra en SoftRestaurant usan códigos que pueden ser presentaciones
-                # Intentamos obtener descripción de ambas tablas y el proveedor
+                # Intentamos obtener descripción de ambas tablas, el proveedor y el rendimiento
                 query_requi = f"""
 SELECT 
     OCM.idinsumo as codigo, 
     COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto, 
     SUM(OCM.cantidad) as cantidad_pedido,
     ISNULL(OCM.costo, 0) as costo,
-    COALESCE(P.nombre, 'Sin proveedor') as proveedor
+    COALESCE(P.nombre, 'Sin proveedor') as proveedor,
+    ISNULL(IP.rendimiento, 1) as rendimiento,
+    COALESCE(I.unidad, IP.unidad, '') as unidad
 FROM ordenescompramov OCM
 INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
 LEFT JOIN insumos I ON I.idinsumo = OCM.idinsumo
 LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = OCM.idinsumo
 LEFT JOIN proveedores P ON P.idproveedor = OC.idproveedor
 WHERE OC.folio IN ({folios_sql})
-GROUP BY OCM.idinsumo, I.descripcion, IP.descripcion, OCM.costo, P.nombre
+GROUP BY OCM.idinsumo, I.descripcion, IP.descripcion, OCM.costo, P.nombre, IP.rendimiento, I.unidad, IP.unidad
 """
                 requi_result = execute_sql_query(
                     server['host'], server['port'], server['database'],
@@ -5156,7 +5158,9 @@ GROUP BY OCM.idinsumo, I.descripcion, IP.descripcion, OCM.costo, P.nombre
                         'cantidad': float(r['cantidad_pedido'] or 0),
                         'producto': r['producto'] or '',
                         'costo': float(r.get('costo', 0) or 0),
-                        'proveedor': r.get('proveedor', '') or ''
+                        'proveedor': r.get('proveedor', '') or '',
+                        'rendimiento': float(r.get('rendimiento', 1) or 1),
+                        'unidad': r.get('unidad', '') or ''
                     }
                 logging.info(f"[AUDITORIA] SKUs en requisiciones: {len(skus_requisicion)}")
             
@@ -5460,6 +5464,10 @@ WHERE INM.folio = {request.folio_inv_final}
                 # ¿Debe comprar?
                 debe_comprar = dias_inv < 10  # Umbral de 10 días
                 
+                # Obtener rendimiento y unidad de la requisición
+                rendimiento = requi_dict.get(codigo, {}).get('rendimiento', 1) if isinstance(requi_dict.get(codigo), dict) else 1
+                unidad = requi_dict.get(codigo, {}).get('unidad', '') if isinstance(requi_dict.get(codigo), dict) else ''
+                
                 # Incluir producto si tiene nombre o está en la requisición
                 if producto or codigo in skus_requisicion:
                     resultados.append({
@@ -5480,7 +5488,9 @@ WHERE INM.folio = {request.folio_inv_final}
                         "dias_inventario": round(dias_inv, 1) if dias_inv < 999 else "N/A",
                         "cantidad_pedido": cantidad_pedido,
                         "debe_comprar": debe_comprar,
-                        "recomendacion": "COMPRAR" if debe_comprar and cantidad_pedido > 0 else "OK" if not debe_comprar else "SIN PEDIDO"
+                        "recomendacion": "COMPRAR" if debe_comprar and cantidad_pedido > 0 else "OK" if not debe_comprar else "SIN PEDIDO",
+                        "rendimiento": rendimiento,
+                        "unidad": unidad
                     })
                     
                     resumen["total_teorico"] += existencia_teorica * costo
@@ -5512,6 +5522,134 @@ WHERE INM.folio = {request.folio_inv_final}
         
     except Exception as e:
         logging.error(f"[AUDITORIA] Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============= DETALLE DE MOVIMIENTOS =============
+
+class DetalleMovimientosRequest(BaseModel):
+    server_id: str
+    sucursal: str
+    codigo: str
+    fecha_inicio: str
+    fecha_fin: str
+    almacenes: Optional[List[str]] = None
+
+@api_router.post("/compras/detalle-movimientos")
+async def obtener_detalle_movimientos(request: DetalleMovimientosRequest):
+    """
+    Obtiene el detalle de movimientos de un producto específico en un período.
+    Muestra cada movimiento individual que compone el total.
+    """
+    server = await db.servers.find_one({"id": request.server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    # Formatear fechas para SQL
+    fecha_ini = request.fecha_inicio.replace('-', '')
+    fecha_fin = request.fecha_fin.replace('-', '')
+    
+    movimientos = []
+    totales = {"entradas": 0, "salidas": 0, "neto": 0}
+    
+    try:
+        if server['system_type'] == 'SoftRestaurant':
+            # Obtener movimientos de presentaciones (movtosalmacen)
+            query_pres = f"""
+SELECT 
+    M.fecha,
+    M.idconcepto as concepto,
+    C.descripcion as descripcion_concepto,
+    M.cantidad,
+    A.nombre as almacen,
+    ISNULL(M.movto, '') as referencia,
+    CASE WHEN C.tipo = 1 THEN 'E' ELSE 'S' END as tipo
+FROM movtosalmacen M
+LEFT JOIN conceptos C ON C.idconcepto = M.idconcepto
+LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
+WHERE M.idinsumospresentaciones = '{request.codigo}'
+    AND M.fecha >= '{fecha_ini}'
+    AND M.fecha <= '{fecha_fin} 23:59:59'
+ORDER BY M.fecha DESC
+"""
+            result_pres = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_pres
+            )
+            
+            for m in result_pres:
+                cantidad = float(m.get('cantidad', 0) or 0)
+                tipo = m.get('tipo', 'E')
+                
+                movimientos.append({
+                    "fecha": m['fecha'].isoformat() if hasattr(m['fecha'], 'isoformat') else str(m['fecha']),
+                    "concepto": m['concepto'],
+                    "descripcion": m.get('descripcion_concepto', ''),
+                    "cantidad": cantidad if tipo == 'E' else -cantidad,
+                    "almacen": m.get('almacen', ''),
+                    "referencia": str(m.get('referencia', '')),
+                    "tipo": tipo
+                })
+                
+                if tipo == 'E':
+                    totales["entradas"] += cantidad
+                else:
+                    totales["salidas"] += cantidad
+            
+            # También buscar en movsinv (para insumos)
+            query_ins = f"""
+SELECT 
+    M.fecha,
+    M.idconcepto as concepto,
+    C.descripcion as descripcion_concepto,
+    M.cantidad,
+    A.nombre as almacen,
+    ISNULL(M.referencia, '') as referencia,
+    CASE WHEN C.tipo = 1 THEN 'E' ELSE 'S' END as tipo
+FROM movsinv M
+LEFT JOIN conceptos C ON C.idconcepto = M.idconcepto
+LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
+WHERE M.idinsumo = '{request.codigo}'
+    AND M.fecha >= '{fecha_ini}'
+    AND M.fecha <= '{fecha_fin} 23:59:59'
+ORDER BY M.fecha DESC
+"""
+            result_ins = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_ins
+            )
+            
+            for m in result_ins:
+                cantidad = float(m.get('cantidad', 0) or 0)
+                tipo = m.get('tipo', 'E')
+                
+                movimientos.append({
+                    "fecha": m['fecha'].isoformat() if hasattr(m['fecha'], 'isoformat') else str(m['fecha']),
+                    "concepto": m['concepto'],
+                    "descripcion": m.get('descripcion_concepto', ''),
+                    "cantidad": cantidad if tipo == 'E' else -cantidad,
+                    "almacen": m.get('almacen', ''),
+                    "referencia": str(m.get('referencia', '')),
+                    "tipo": tipo
+                })
+                
+                if tipo == 'E':
+                    totales["entradas"] += cantidad
+                else:
+                    totales["salidas"] += cantidad
+            
+            # Ordenar por fecha
+            movimientos.sort(key=lambda x: x['fecha'], reverse=True)
+            
+        totales["neto"] = totales["entradas"] - totales["salidas"]
+        
+        return {
+            "movimientos": movimientos,
+            "totales": totales
+        }
+        
+    except Exception as e:
+        logging.error(f"[DETALLE_MOV] Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

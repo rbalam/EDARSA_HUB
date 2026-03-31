@@ -1060,6 +1060,14 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   const [resultados, setResultados] = useState(null);
   const [resumen, setResumen] = useState(null);
   const [agruparPorProveedor, setAgruparPorProveedor] = useState(false);
+  
+  // Selector de unidad de análisis: 'presentaciones' o 'insumos'
+  const [unidadAnalisis, setUnidadAnalisis] = useState('presentaciones');
+  
+  // Modal detalle de movimientos
+  const [detalleMovimientos, setDetalleMovimientos] = useState(null);
+  const [showDetalleModal, setShowDetalleModal] = useState(false);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
 
   // Cargar filtros guardados al montar
   useEffect(() => {
@@ -1137,6 +1145,59 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
       setPedidosVigentes(response.data);
     } catch (error) {
       console.error('Error cargando pedidos:', error);
+    }
+  };
+
+  // Función para formatear cantidad con conversión
+  const formatConversion = (cantidad, rendimiento, unidadPrincipal) => {
+    if (!cantidad || cantidad === 0) return '0.00';
+    
+    const cantidadNum = parseFloat(cantidad) || 0;
+    const rendimientoNum = parseFloat(rendimiento) || 1;
+    
+    if (unidadAnalisis === 'presentaciones') {
+      // Mostrar presentaciones, con insumos entre paréntesis
+      const enInsumos = cantidadNum * rendimientoNum;
+      return `${formatNumber(cantidadNum)} (${formatNumber(enInsumos)})`;
+    } else {
+      // Mostrar insumos, con presentaciones entre paréntesis
+      const enPresentaciones = rendimientoNum > 0 ? cantidadNum / rendimientoNum : 0;
+      return `${formatNumber(cantidadNum)} (${formatNumber(enPresentaciones)})`;
+    }
+  };
+
+  // Función para obtener detalle de movimientos al hacer doble click
+  const fetchDetalleMovimientos = async (codigo, producto) => {
+    setLoadingDetalle(true);
+    setShowDetalleModal(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_URL}/api/compras/detalle-movimientos`, {
+        server_id: selectedServer,
+        sucursal: parentSucursal,
+        codigo: codigo,
+        fecha_inicio: fechaInicial || selectedInvIniciales[0]?.fecha?.split('T')[0],
+        fecha_fin: fechaAuditoria,
+        almacenes: selectedAlmacenes
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDetalleMovimientos({
+        codigo,
+        producto,
+        movimientos: response.data.movimientos || [],
+        totales: response.data.totales || {}
+      });
+    } catch (error) {
+      console.error('Error obteniendo detalle:', error);
+      setDetalleMovimientos({
+        codigo,
+        producto,
+        movimientos: [],
+        error: 'Error al obtener detalle de movimientos'
+      });
+    } finally {
+      setLoadingDetalle(false);
     }
   };
 
@@ -1675,17 +1736,34 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
       {/* Tabla de resultados */}
       {resultados && resultados.length > 0 && (
         <Card className="border">
-          <CardHeader className="py-2 flex flex-row items-center justify-between">
+          <CardHeader className="py-2 flex flex-row items-center justify-between gap-4">
             <CardTitle className="text-sm">Detalle de Auditoría ({resultados.length} productos)</CardTitle>
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input
-                type="checkbox"
-                className="rounded border-zinc-300"
-                checked={agruparPorProveedor}
-                onChange={(e) => setAgruparPorProveedor(e.target.checked)}
-              />
-              <span>Agrupar por Proveedor</span>
-            </label>
+            <div className="flex items-center gap-4">
+              {/* Selector de unidad de análisis */}
+              <div className="flex items-center gap-2 bg-zinc-100 rounded-lg p-1">
+                <button
+                  className={`px-3 py-1 text-xs rounded ${unidadAnalisis === 'presentaciones' ? 'bg-white shadow font-medium' : 'text-zinc-600'}`}
+                  onClick={() => setUnidadAnalisis('presentaciones')}
+                >
+                  Presentaciones
+                </button>
+                <button
+                  className={`px-3 py-1 text-xs rounded ${unidadAnalisis === 'insumos' ? 'bg-white shadow font-medium' : 'text-zinc-600'}`}
+                  onClick={() => setUnidadAnalisis('insumos')}
+                >
+                  Insumos
+                </button>
+              </div>
+              <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="rounded border-zinc-300"
+                  checked={agruparPorProveedor}
+                  onChange={(e) => setAgruparPorProveedor(e.target.checked)}
+                />
+                <span>Agrupar por Proveedor</span>
+              </label>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="max-h-[400px] overflow-auto">
@@ -1707,48 +1785,146 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                   </tr>
                 </thead>
                 <tbody>
-                  {resultados.map((r, idx) => (
-                    <tr key={idx} className={`border-b ${r.tipo_diferencia === 'contra' ? 'bg-red-50' : ''}`}>
-                      {agruparPorProveedor && <td className="py-1.5 px-2 text-zinc-600">{r.proveedor || '-'}</td>}
-                      <td className="py-1.5 px-2 font-medium">{r.producto}</td>
-                      <td className="py-1.5 px-2 text-right">{formatNumber(r.inv_inicial)}</td>
-                      <td className="py-1.5 px-2 text-right text-green-600">+{formatNumber(r.movimientos || r.entradas || r.compras || 0)}</td>
-                      <td className="py-1.5 px-2 text-right text-orange-600">-{formatNumber(Math.abs(r.consumos || 0))}</td>
-                      <td className="py-1.5 px-2 text-right font-medium">{formatNumber(r.existencia_teorica)}</td>
-                      <td className="py-1.5 px-2 text-right font-medium">{formatNumber(r.inv_fisico)}</td>
-                      <td className={`py-1.5 px-2 text-right font-bold ${r.diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {r.diferencia >= 0 ? '+' : ''}{formatNumber(r.diferencia)}
-                      </td>
-                      <td className={`py-1.5 px-2 text-right ${r.importe_diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(r.importe_diferencia)}
-                      </td>
-                      <td className="py-1.5 px-2 text-center">
-                        <span className={`px-1.5 py-0.5 rounded text-xs ${
-                          r.dias_inventario === 'N/A' ? 'bg-zinc-100' :
-                          r.dias_inventario < 5 ? 'bg-red-100 text-red-700' :
-                          r.dias_inventario < 10 ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-green-100 text-green-700'
-                        }`}>
-                          {r.dias_inventario}
-                        </span>
-                      </td>
-                      <td className="py-1.5 px-2 text-right">{formatNumber(r.cantidad_pedido)}</td>
-                      <td className="py-1.5 px-2 text-center">
-                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                          r.recomendacion === 'COMPRAR' ? 'bg-red-100 text-red-700' :
-                          r.recomendacion === 'OK' ? 'bg-green-100 text-green-700' :
-                          'bg-zinc-100 text-zinc-600'
-                        }`}>
-                          {r.recomendacion}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {resultados.map((r, idx) => {
+                    const rendimiento = r.rendimiento || 1;
+                    return (
+                      <tr key={idx} className={`border-b ${r.tipo_diferencia === 'contra' ? 'bg-red-50' : ''}`}>
+                        {agruparPorProveedor && <td className="py-1.5 px-2 text-zinc-600">{r.proveedor || '-'}</td>}
+                        <td className="py-1.5 px-2 font-medium">{r.producto}</td>
+                        <td className="py-1.5 px-2 text-right">{formatConversion(r.inv_inicial, rendimiento)}</td>
+                        <td 
+                          className="py-1.5 px-2 text-right text-green-600 cursor-pointer hover:bg-green-100 transition-colors"
+                          onDoubleClick={() => fetchDetalleMovimientos(r.codigo, r.producto)}
+                          title="Doble click para ver detalle de movimientos"
+                        >
+                          +{formatConversion(r.movimientos || r.entradas || 0, rendimiento)}
+                        </td>
+                        <td className="py-1.5 px-2 text-right text-orange-600">-{formatConversion(Math.abs(r.consumos || 0), rendimiento)}</td>
+                        <td className="py-1.5 px-2 text-right font-medium">{formatConversion(r.existencia_teorica, rendimiento)}</td>
+                        <td className="py-1.5 px-2 text-right font-medium">{formatConversion(r.inv_fisico, rendimiento)}</td>
+                        <td className={`py-1.5 px-2 text-right font-bold ${r.diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {r.diferencia >= 0 ? '+' : ''}{formatConversion(r.diferencia, rendimiento)}
+                        </td>
+                        <td className={`py-1.5 px-2 text-right ${r.importe_diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(r.importe_diferencia)}
+                        </td>
+                        <td className="py-1.5 px-2 text-center">
+                          <span className={`px-1.5 py-0.5 rounded text-xs ${
+                            r.dias_inventario === 'N/A' ? 'bg-zinc-100' :
+                            r.dias_inventario < 5 ? 'bg-red-100 text-red-700' :
+                            r.dias_inventario < 10 ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-green-100 text-green-700'
+                          }`}>
+                            {r.dias_inventario}
+                          </span>
+                        </td>
+                        <td className="py-1.5 px-2 text-right">{formatNumber(r.cantidad_pedido)}</td>
+                        <td className="py-1.5 px-2 text-center">
+                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                            r.recomendacion === 'COMPRAR' ? 'bg-red-100 text-red-700' :
+                            r.recomendacion === 'OK' ? 'bg-green-100 text-green-700' :
+                            'bg-zinc-100 text-zinc-600'
+                          }`}>
+                            {r.recomendacion}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Modal Detalle de Movimientos */}
+      {showDetalleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
+            <div className="px-4 py-3 border-b flex items-center justify-between bg-zinc-50">
+              <div>
+                <h3 className="font-semibold">Detalle de Movimientos</h3>
+                {detalleMovimientos && (
+                  <p className="text-sm text-zinc-500">{detalleMovimientos.codigo} - {detalleMovimientos.producto}</p>
+                )}
+              </div>
+              <button 
+                onClick={() => setShowDetalleModal(false)}
+                className="p-1 hover:bg-zinc-200 rounded"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-auto max-h-[60vh]">
+              {loadingDetalle ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                </div>
+              ) : detalleMovimientos?.error ? (
+                <p className="text-red-600 text-center py-4">{detalleMovimientos.error}</p>
+              ) : detalleMovimientos?.movimientos?.length > 0 ? (
+                <>
+                  <table className="w-full text-sm">
+                    <thead className="bg-zinc-100">
+                      <tr>
+                        <th className="py-2 px-3 text-left">Fecha</th>
+                        <th className="py-2 px-3 text-left">Concepto</th>
+                        <th className="py-2 px-3 text-left">Descripción</th>
+                        <th className="py-2 px-3 text-right">Cantidad</th>
+                        <th className="py-2 px-3 text-left">Almacén</th>
+                        <th className="py-2 px-3 text-left">Referencia</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detalleMovimientos.movimientos.map((m, idx) => (
+                        <tr key={idx} className={`border-b ${m.tipo === 'E' ? 'bg-green-50' : 'bg-red-50'}`}>
+                          <td className="py-1.5 px-3">{new Date(m.fecha).toLocaleDateString()}</td>
+                          <td className="py-1.5 px-3">
+                            <span className={`px-2 py-0.5 rounded text-xs ${m.tipo === 'E' ? 'bg-green-200' : 'bg-red-200'}`}>
+                              {m.concepto}
+                            </span>
+                          </td>
+                          <td className="py-1.5 px-3">{m.descripcion}</td>
+                          <td className={`py-1.5 px-3 text-right font-medium ${m.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {m.cantidad >= 0 ? '+' : ''}{formatNumber(m.cantidad)}
+                          </td>
+                          <td className="py-1.5 px-3">{m.almacen}</td>
+                          <td className="py-1.5 px-3 text-zinc-500">{m.referencia}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {detalleMovimientos.totales && (
+                    <div className="mt-4 p-3 bg-zinc-100 rounded flex gap-6">
+                      <div>
+                        <span className="text-xs text-zinc-500">Total Entradas:</span>
+                        <span className="ml-2 font-bold text-green-600">+{formatNumber(detalleMovimientos.totales.entradas || 0)}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-zinc-500">Total Salidas:</span>
+                        <span className="ml-2 font-bold text-red-600">-{formatNumber(detalleMovimientos.totales.salidas || 0)}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-zinc-500">Neto:</span>
+                        <span className={`ml-2 font-bold ${detalleMovimientos.totales.neto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatNumber(detalleMovimientos.totales.neto || 0)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-center text-zinc-500 py-8">No se encontraron movimientos para este producto en el período seleccionado</p>
+              )}
+            </div>
+            <div className="px-4 py-3 border-t bg-zinc-50 flex justify-end">
+              <Button variant="outline" onClick={() => setShowDetalleModal(false)}>
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
