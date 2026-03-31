@@ -5031,7 +5031,8 @@ class AuditoriaOperativaRequest(BaseModel):
     fecha_inv_inicial: str
     fecha_auditoria: str  # Fecha del inventario final o actual
     folio_inv_final: Optional[str] = None  # Opcional: si no hay, se captura manual
-    folio_requisicion: str  # Requisición a comparar
+    folio_requisicion: Optional[str] = None  # Requisición a comparar (una sola)
+    folios_requisiciones: Optional[List[str]] = None  # Múltiples requisiciones
     inventario_manual: Optional[List[Dict]] = None  # Para captura manual si no hay folio
 
 @api_router.post("/compras/auditoria-operativa")
@@ -5151,13 +5152,22 @@ WHERE INM.folio = {request.folio_inv_final}
                 } for item in request.inventario_manual}
             
             # Obtener detalle de requisición para comparar
+            # Determinar folios de requisición a usar
+            folios_req = request.folios_requisiciones if request.folios_requisiciones else ([request.folio_requisicion] if request.folio_requisicion else [])
+            
+            if not folios_req:
+                raise HTTPException(status_code=400, detail="Se requiere al menos una requisición")
+            
+            # Construir condición SQL para múltiples folios
+            folios_sql = ", ".join([f"'{f}'" for f in folios_req])
+            
             query_requi = f"""
 SELECT OCM.idinsumo as codigo, I.nombre as producto, 
        SUM(OCM.cantidad) as cantidad_pedido
 FROM ordenescompramov OCM
 INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
 INNER JOIN insumos I ON I.idinsumo = OCM.idinsumo
-WHERE OC.folio = '{request.folio_requisicion}'
+WHERE OC.folio IN ({folios_sql})
 GROUP BY OCM.idinsumo, I.nombre
 """
             requi_result = execute_sql_query(
@@ -5243,7 +5253,7 @@ GROUP BY OCM.idinsumo, I.nombre
             "resultados": resultados,
             "resumen": resumen,
             "periodo": {"inicio": fecha_ini, "fin": fecha_fin, "dias": dias_periodo if 'dias_periodo' in dir() else 0},
-            "folio_requisicion": request.folio_requisicion
+            "folios_requisiciones": folios_req
         }
         
     except Exception as e:

@@ -1141,8 +1141,8 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
         fecha_inv_inicial: fechaInicial,
         fecha_auditoria: fechaAuditoria,
         folio_inv_final: usarCapturaManual ? null : folioInvFinal,
-        folio_requisicion: folioPedido.length === 1 ? folioPedido[0] : folioPedido,
-        folios_requisiciones: folioPedido,  // Siempre enviar como array
+        folio_requisicion: folioPedido[0] || '',  // Siempre string (el primero)
+        folios_requisiciones: folioPedido,  // Array completo
         inventario_manual: usarCapturaManual ? inventarioManual : null
       }, {
         headers: { Authorization: `Bearer ${token}` }
