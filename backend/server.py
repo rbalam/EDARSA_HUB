@@ -5137,8 +5137,8 @@ SELECT
     COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto, 
     OCM.cantidad as cantidad_pedido,
     ISNULL(OCM.costo, 0) as costo,
-    ISNULL(I.costopromedio, ISNULL(I.costo, 0)) as costo_insumo,
-    ISNULL(IP.costopromedio, ISNULL(IP.costo, ISNULL(OCM.costo, 0))) as costo_presentacion,
+    ISNULL(ID.costo, 0) as costo_insumo,
+    ISNULL(IPD.costo, ISNULL(OCM.costo, 0)) as costo_presentacion,
     COALESCE(P.nombre, 'Sin proveedor') as proveedor,
     OC.folio as folio_pedido,
     ISNULL(IP.rendimiento, 1) as rendimiento,
@@ -5146,7 +5146,9 @@ SELECT
 FROM ordenescompramov OCM
 INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
 LEFT JOIN insumos I ON I.idinsumo = OCM.idinsumo
+LEFT JOIN insumosdetalle ID ON ID.idinsumo = OCM.idinsumo
 LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = OCM.idinsumo
+LEFT JOIN insumospresentacionesdetalle IPD ON IPD.idinsumospresentaciones = OCM.idinsumo
 LEFT JOIN proveedores P ON P.idproveedor = OC.idproveedor
 WHERE OC.folio IN ({folios_sql})
 ORDER BY P.nombre, OC.folio, OCM.idinsumo
