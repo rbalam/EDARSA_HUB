@@ -1552,13 +1552,13 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
             Auditoría Operativa de Inventarios
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4 space-y-4">
-          {/* Selección de servidor y sucursal */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="p-4 space-y-3">
+          {/* Fila 1: Servidor, Sucursal, Requisición */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Servidor</Label>
               <Select value={selectedServer} onValueChange={setSelectedServer}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-8">
                   <SelectValue placeholder="Seleccionar servidor" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1570,7 +1570,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
               <div className="space-y-1">
                 <Label className="text-xs">Sucursal</Label>
                 <Select value={parentSucursal} onValueChange={setParentSucursal} disabled={!selectedServer}>
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger className="h-8">
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1584,15 +1584,15 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
               </div>
             )}
             <div className="space-y-1">
-              <Label className="text-xs">Requisición(es) a Comparar *</Label>
+              <Label className="text-xs">Requisición(es) *</Label>
               <details className="relative">
-                <summary className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer">
-                  <span className="truncate text-left">
+                <summary className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-sm cursor-pointer">
+                  <span className="truncate text-left text-xs">
                     {folioPedido.length === 0 
-                      ? "Seleccionar requisición(es)" 
+                      ? "Seleccionar" 
                       : `${folioPedido.length} seleccionada(s)`}
                   </span>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
+                  <ChevronDown className="h-3 w-3 opacity-50" />
                 </summary>
                 <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-64 overflow-hidden">
                   {folioPedido.length > 0 && (
@@ -1601,7 +1601,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                       className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center text-red-600"
                       onClick={() => setFolioPedido([])}
                     >
-                      <X className="h-3 w-3 mr-1" /> Limpiar selección ({folioPedido.length})
+                      <X className="h-3 w-3 mr-1" /> Limpiar ({folioPedido.length})
                     </button>
                   )}
                   <div className="max-h-52 overflow-y-auto">
@@ -1625,56 +1625,39 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                   </div>
                 </div>
               </details>
-              {/* Badges de requisiciones seleccionadas */}
-              {folioPedido.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {folioPedido.map(f => {
-                    const pedido = pedidosVigentes.find(p => p.folio === f);
-                    return (
-                      <span 
-                        key={f}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-800 border border-purple-200"
-                      >
-                        {f}
-                        <button 
-                          type="button"
-                          onClick={() => setFolioPedido(folioPedido.filter(x => x !== f))}
-                          className="hover:text-purple-600"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Fecha Inicial</Label>
+              <Input type="date" value={fechaInicial} onChange={e => setFechaInicial(e.target.value)} className="h-8 text-xs" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Fecha Auditoría</Label>
+              <Input type="date" value={fechaAuditoria} onChange={e => setFechaAuditoria(e.target.value)} className="h-8 text-xs" />
             </div>
           </div>
 
-          {/* Inventarios y fechas */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Fila 2: Inventarios Inicial y Final */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Inventario(s) Inicial(es)</Label>
               <details className="relative group">
-                <summary className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer hover:border-zinc-400">
-                  <span className="truncate text-left">
+                <summary className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-sm cursor-pointer hover:border-zinc-400">
+                  <span className="truncate text-left text-xs">
                     {selectedInvIniciales.length === 0 
                       ? "Seleccionar inventario(s)" 
                       : `${selectedInvIniciales.length} seleccionado(s)`}
                   </span>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
+                  <ChevronDown className="h-3 w-3 opacity-50" />
                 </summary>
                 <div className="absolute z-50 w-[350px] mt-1 bg-white border rounded-md shadow-xl">
-                  {/* Barra de búsqueda */}
                   <div className="p-2 border-b bg-zinc-50">
                     <Input
                       placeholder="Buscar por folio o almacén..."
                       value={busquedaInvIni}
                       onChange={(e) => setBusquedaInvIni(e.target.value)}
-                      className="h-8 text-sm"
+                      className="h-7 text-xs"
                     />
                   </div>
-                  {/* Botones de acción */}
                   <div className="flex items-center justify-between px-2 py-1 border-b bg-zinc-50">
                     {selectedInvIniciales.length > 0 && (
                       <button
@@ -1694,11 +1677,10 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                         !busquedaInvIni || 
                         String(inv.folio).includes(busquedaInvIni) ||
                         (inv.almacen || '').toLowerCase().includes(busquedaInvIni.toLowerCase())
-                      ).length} inventarios
+                      ).length} inv.
                     </span>
                   </div>
-                  {/* Lista de inventarios con scroll mejorado */}
-                  <div className="max-h-72 overflow-y-auto" style={{ scrollbarWidth: 'auto', scrollbarColor: '#a1a1aa #f4f4f5' }}>
+                  <div className="max-h-60 overflow-y-auto">
                     {inventariosFisicos
                       .filter(inv => 
                         !busquedaInvIni || 
@@ -1708,16 +1690,215 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                       .map(inv => (
                         <label 
                           key={inv.folio} 
-                          className={`flex items-center space-x-3 py-3 px-3 hover:bg-blue-50 cursor-pointer border-b border-zinc-100 ${
+                          className={`flex items-center space-x-2 py-2 px-3 hover:bg-blue-50 cursor-pointer border-b border-zinc-100 ${
                             selectedInvIniciales.some(i => i.folio === inv.folio) ? 'bg-blue-50' : ''
                           }`}
                         >
                           <input
                             type="checkbox"
-                            className="rounded border-zinc-300 h-4 w-4"
+                            className="rounded border-zinc-300 h-3 w-3"
                             checked={selectedInvIniciales.some(i => i.folio === inv.folio)}
                             onChange={(e) => {
                               if (e.target.checked) {
+                                const newSelected = [...selectedInvIniciales, inv];
+                                setSelectedInvIniciales(newSelected);
+                                if (newSelected.length === 1) {
+                                  setFolioInvInicial(String(inv.folio));
+                                  if (inv.fecha) {
+                                    setFechaInicial(inv.fecha.split('T')[0]);
+                                  }
+                                }
+                              } else {
+                                const newSelected = selectedInvIniciales.filter(i => i.folio !== inv.folio);
+                                setSelectedInvIniciales(newSelected);
+                                if (newSelected.length === 0) {
+                                  setFolioInvInicial('');
+                                  setFechaInicial('');
+                                }
+                              }
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-xs">{inv.folio} - {inv.fecha?.split('T')[0]}</div>
+                            <div className="text-xs text-zinc-500 truncate">{inv.almacen}</div>
+                          </div>
+                        </label>
+                      ))}
+                  </div>
+                </div>
+              </details>
+              {selectedInvIniciales.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedInvIniciales.slice(0, 3).map(inv => (
+                    <span key={inv.folio} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+                      {inv.folio}
+                      <button type="button" onClick={() => {
+                        const newSelected = selectedInvIniciales.filter(i => i.folio !== inv.folio);
+                        setSelectedInvIniciales(newSelected);
+                      }}>
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </span>
+                  ))}
+                  {selectedInvIniciales.length > 3 && (
+                    <span className="text-xs text-zinc-500">+{selectedInvIniciales.length - 3} más</span>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-1">
+              <Label className="text-xs">Inventario(s) Final(es)</Label>
+              {!usarCapturaManual ? (
+                <details className="relative group">
+                  <summary className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-sm cursor-pointer hover:border-zinc-400">
+                    <span className="truncate text-left text-xs">
+                      {selectedInvFinales.length === 0 
+                        ? "Seleccionar inventario(s)" 
+                        : `${selectedInvFinales.length} seleccionado(s)`}
+                    </span>
+                    <ChevronDown className="h-3 w-3 opacity-50" />
+                  </summary>
+                  <div className="absolute z-50 w-[350px] right-0 mt-1 bg-white border rounded-md shadow-xl">
+                    <div className="p-2 border-b bg-zinc-50">
+                      <Input
+                        placeholder="Buscar por folio o almacén..."
+                        value={busquedaInvFin}
+                        onChange={(e) => setBusquedaInvFin(e.target.value)}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between px-2 py-1 border-b bg-zinc-50">
+                      {selectedInvFinales.length > 0 && (
+                        <button
+                          type="button"
+                          className="text-xs text-red-600 hover:text-red-700 flex items-center"
+                          onClick={() => {
+                            setSelectedInvFinales([]);
+                            setFolioInvFinal('');
+                          }}
+                        >
+                          <X className="h-3 w-3 mr-1" /> Limpiar ({selectedInvFinales.length})
+                        </button>
+                      )}
+                      <span className="text-xs text-zinc-400 ml-auto">
+                        {inventariosFinalesFiltrados.filter(inv => 
+                          !busquedaInvFin || 
+                          String(inv.folio).includes(busquedaInvFin) ||
+                          (inv.almacen || '').toLowerCase().includes(busquedaInvFin.toLowerCase())
+                        ).length} inv.
+                        {fechaMinimaInvInicial && <span className="ml-1">(≥{fechaMinimaInvInicial})</span>}
+                      </span>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto">
+                      {inventariosFinalesFiltrados
+                        .filter(inv => 
+                          !busquedaInvFin || 
+                          String(inv.folio).includes(busquedaInvFin) ||
+                          (inv.almacen || '').toLowerCase().includes(busquedaInvFin.toLowerCase())
+                        )
+                        .map(inv => (
+                          <label 
+                            key={inv.folio} 
+                            className={`flex items-center space-x-2 py-2 px-3 hover:bg-green-50 cursor-pointer border-b border-zinc-100 ${
+                              selectedInvFinales.some(i => i.folio === inv.folio) ? 'bg-green-50' : ''
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="rounded border-zinc-300 h-3 w-3"
+                              checked={selectedInvFinales.some(i => i.folio === inv.folio)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  const newSelected = [...selectedInvFinales, inv];
+                                  setSelectedInvFinales(newSelected);
+                                  if (newSelected.length === 1) {
+                                    setFolioInvFinal(String(inv.folio));
+                                  }
+                                } else {
+                                  const newSelected = selectedInvFinales.filter(i => i.folio !== inv.folio);
+                                  setSelectedInvFinales(newSelected);
+                                  if (newSelected.length === 0) {
+                                    setFolioInvFinal('');
+                                  }
+                                }
+                              }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-xs">{inv.folio} - {inv.fecha?.split('T')[0]}</div>
+                              <div className="text-xs text-zinc-500 truncate">{inv.almacen}</div>
+                            </div>
+                          </label>
+                        ))}
+                    </div>
+                  </div>
+                </details>
+              ) : (
+                <div className="text-xs text-amber-600 font-medium p-1.5 bg-amber-50 rounded h-8 flex items-center">
+                  Captura Manual Activa
+                </div>
+              )}
+              {!usarCapturaManual && selectedInvFinales.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedInvFinales.slice(0, 3).map(inv => (
+                    <span key={inv.folio} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-800">
+                      {inv.folio}
+                      <button type="button" onClick={() => {
+                        const newSelected = selectedInvFinales.filter(i => i.folio !== inv.folio);
+                        setSelectedInvFinales(newSelected);
+                      }}>
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </span>
+                  ))}
+                  {selectedInvFinales.length > 3 && (
+                    <span className="text-xs text-zinc-500">+{selectedInvFinales.length - 3} más</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Fila 3: Captura manual y botón ejecutar */}
+          <div className="flex flex-wrap items-center gap-3 pt-1 border-t">
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id="captura-manual" 
+                checked={usarCapturaManual} 
+                onCheckedChange={setUsarCapturaManual} 
+              />
+              <Label htmlFor="captura-manual" className="text-xs">
+                Sin inventario final
+              </Label>
+            </div>
+            
+            {usarCapturaManual && (selectedInvIniciales.length > 0 || folioPedido.length > 0 || (resultados && resultados.length > 0)) && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={iniciarCapturaManual}
+                className="h-7 text-xs"
+              >
+                <Calculator className="h-3 w-3 mr-1" />
+                Capturar Inv. Físico
+              </Button>
+            )}
+            
+            {usarCapturaManual && inventarioManual.length > 0 && (
+              <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded flex items-center gap-1">
+                <Check className="h-3 w-3" />
+                {inventarioManual.length} productos capturados
+              </span>
+            )}
+            
+            <div className="ml-auto">
+              <Button onClick={realizarAuditoria} disabled={loading || !selectedServer || !parentSucursal} size="sm" className="h-8">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FileWarning className="h-4 w-4 mr-1" />}
+                Realizar Auditoría
+              </Button>
+            </div>
+          </div>
+        </CardContent>
                                 const newSelected = [...selectedInvIniciales, inv];
                                 setSelectedInvIniciales(newSelected);
                                 if (newSelected.length === 1) {
