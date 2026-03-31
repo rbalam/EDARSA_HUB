@@ -1195,19 +1195,15 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
     }
   };
   
-  // Función para obtener el costo ajustado según unidad seleccionada
-  const getCostoAjustado = (costo, rendimiento) => {
-    if (!costo || costo === 0) return 0;
-    
-    const costoNum = parseFloat(costo) || 0;
-    const rendimientoNum = parseFloat(rendimiento) || 1;
-    
+  // Función para obtener el costo según unidad seleccionada
+  // Usa directamente costo_insumo o costo_presentacion del backend
+  const getCostoSegunUnidad = (row) => {
     if (unidadAnalisis === 'presentaciones') {
-      // Costo de la presentación (ya viene así del backend)
-      return costoNum;
+      // Costo de la presentación (del backend)
+      return row.costo_presentacion || row.costo || 0;
     } else {
-      // Costo del insumo = costo de presentación / rendimiento
-      return rendimientoNum > 0 ? costoNum / rendimientoNum : costoNum;
+      // Costo del insumo directamente de la tabla insumos
+      return row.costo_insumo || row.costo || 0;
     }
   };
 
@@ -1943,7 +1939,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                       const teoricoValues = getConversionValues(r.existencia_teorica, rendimiento);
                       const fisicoValues = getConversionValues(r.inv_fisico, rendimiento);
                       const difValues = getConversionValues(r.diferencia, rendimiento);
-                      const costoUnit = getCostoAjustado(r.costo, rendimiento);
+                      const costoUnit = getCostoSegunUnidad(r);
                       
                       if (agruparPorProveedor) {
                         lastProveedor = r.proveedor;

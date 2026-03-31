@@ -5137,6 +5137,8 @@ SELECT
     COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto, 
     OCM.cantidad as cantidad_pedido,
     ISNULL(OCM.costo, 0) as costo,
+    ISNULL(I.costopromedio, ISNULL(I.costo, 0)) as costo_insumo,
+    ISNULL(IP.costopromedio, ISNULL(IP.costo, ISNULL(OCM.costo, 0))) as costo_presentacion,
     COALESCE(P.nombre, 'Sin proveedor') as proveedor,
     OC.folio as folio_pedido,
     ISNULL(IP.rendimiento, 1) as rendimiento,
@@ -5163,6 +5165,8 @@ ORDER BY P.nombre, OC.folio, OCM.idinsumo
                         'cantidad': float(r['cantidad_pedido'] or 0),
                         'producto': r['producto'] or '',
                         'costo': float(r.get('costo', 0) or 0),
+                        'costo_insumo': float(r.get('costo_insumo', 0) or 0),
+                        'costo_presentacion': float(r.get('costo_presentacion', 0) or r.get('costo', 0) or 0),
                         'proveedor': r.get('proveedor', '') or '',
                         'folio_pedido': str(r.get('folio_pedido', '')).strip(),
                         'rendimiento': float(r.get('rendimiento', 1) or 1),
@@ -5175,6 +5179,8 @@ ORDER BY P.nombre, OC.folio, OCM.idinsumo
                             'cantidad': float(r['cantidad_pedido'] or 0),
                             'producto': r['producto'] or '',
                             'costo': float(r.get('costo', 0) or 0),
+                            'costo_insumo': float(r.get('costo_insumo', 0) or 0),
+                            'costo_presentacion': float(r.get('costo_presentacion', 0) or r.get('costo', 0) or 0),
                             'proveedor': r.get('proveedor', '') or '',
                             'folio_pedido': str(r.get('folio_pedido', '')).strip(),
                             'rendimiento': float(r.get('rendimiento', 1) or 1),
@@ -5486,6 +5492,8 @@ WHERE INM.folio = {request.folio_inv_final}
                         "inv_fisico": inv_fisico,
                         "diferencia": round(diferencia, 2),
                         "costo": costo,
+                        "costo_insumo": item.get('costo_insumo', 0),
+                        "costo_presentacion": item.get('costo_presentacion', costo),
                         "importe_diferencia": round(importe_dif, 2),
                         "tipo_diferencia": "favor" if diferencia >= 0 else "contra",
                         "consumo_diario": round(consumo_diario, 2),
@@ -5551,6 +5559,8 @@ WHERE INM.folio = {request.folio_inv_final}
                     if producto or codigo in skus_requisicion:
                         # Obtener folio_pedido si existe
                         folio_pedido = requi_dict.get(codigo, {}).get('folio_pedido', '') if isinstance(requi_dict.get(codigo), dict) else ''
+                        costo_insumo = requi_dict.get(codigo, {}).get('costo_insumo', 0) if isinstance(requi_dict.get(codigo), dict) else 0
+                        costo_presentacion = requi_dict.get(codigo, {}).get('costo_presentacion', costo) if isinstance(requi_dict.get(codigo), dict) else costo
                         
                         resultados.append({
                             "codigo": codigo,
@@ -5565,6 +5575,8 @@ WHERE INM.folio = {request.folio_inv_final}
                             "inv_fisico": inv_fisico,
                             "diferencia": round(diferencia, 2),
                             "costo": costo,
+                            "costo_insumo": costo_insumo,
+                            "costo_presentacion": costo_presentacion,
                             "importe_diferencia": round(importe_dif, 2),
                             "tipo_diferencia": "favor" if diferencia >= 0 else "contra",
                             "consumo_diario": round(consumo_diario, 2),
