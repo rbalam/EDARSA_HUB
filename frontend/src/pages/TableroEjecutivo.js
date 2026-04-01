@@ -40,23 +40,68 @@ const VariacionBadge = ({ valor, size = 'sm' }) => {
   );
 };
 
+// Función para formatear fecha de última actualización
+const formatLastUpdate = (isoDate) => {
+  if (!isoDate) return '';
+  try {
+    const date = new Date(isoDate);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    
+    if (diffMins < 1) return 'hace un momento';
+    if (diffMins < 60) return `hace ${diffMins} min`;
+    if (diffHours < 24) return `hace ${diffHours}h`;
+    
+    return date.toLocaleDateString('es-MX', { 
+      day: '2-digit', 
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return '';
+  }
+};
+
 // Tarjeta de Unidad clickeable
 const UnidadCard = ({ unidad, onClick }) => {
   const isPositive = unidad.var_vs_mes_ant >= 0;
+  const isOnline = unidad.status === 'online';
+  const isOffline = unidad.status === 'offline';
   
   return (
     <Card 
       className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] border-2 ${
         isPositive ? 'hover:border-green-400' : 'hover:border-red-400'
-      }`}
+      } ${isOffline ? 'bg-zinc-50' : ''}`}
       onClick={() => onClick(unidad)}
       data-testid={`unidad-card-${unidad.server_id}`}
     >
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-3">
-          <h3 className="font-bold text-zinc-800 text-sm truncate max-w-[180px]">{unidad.unidad}</h3>
+          <div className="flex items-center gap-2">
+            {/* Indicador de estado */}
+            {isOnline ? (
+              <span className="h-2.5 w-2.5 rounded-full bg-green-500" title="Online - Datos actualizados" />
+            ) : isOffline ? (
+              <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" title={`Offline - Última sync: ${formatLastUpdate(unidad.updated_at)}`} />
+            ) : (
+              <span className="h-2.5 w-2.5 rounded-full bg-zinc-300" title="Sin verificar" />
+            )}
+            <h3 className="font-bold text-zinc-800 text-sm truncate max-w-[160px]">{unidad.unidad}</h3>
+          </div>
           <ChevronRight className="h-4 w-4 text-zinc-400" />
         </div>
+        
+        {/* Indicador de última actualización si está offline */}
+        {isOffline && (
+          <div className="mb-2 px-2 py-1 bg-red-100 rounded text-xs text-red-700 flex items-center gap-1">
+            <span className="font-medium">Offline</span>
+            <span>• {formatLastUpdate(unidad.updated_at)}</span>
+          </div>
+        )}
         
         <div className="space-y-2">
           <div className="flex justify-between items-center">

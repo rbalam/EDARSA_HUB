@@ -7944,6 +7944,31 @@ WHERE V.Vn_Fecha = '{f}' AND V.Vn_Cancelacion = 0 AND V.Vn_Precio_Neto_Importe >
 # TABLERO EJECUTIVO - Multi-Unidad (Socios/Accionistas)
 # ============================================================================
 
+# Función para guardar/obtener caché de KPIs
+async def get_cached_kpis(server_id: str, periodo_key: str):
+    """Obtiene los KPIs cacheados de un servidor"""
+    cache = await db.kpis_cache.find_one({
+        "server_id": server_id,
+        "periodo_key": periodo_key
+    })
+    return cache
+
+async def save_kpis_cache(server_id: str, periodo_key: str, kpis: dict):
+    """Guarda los KPIs en caché"""
+    await db.kpis_cache.update_one(
+        {"server_id": server_id, "periodo_key": periodo_key},
+        {
+            "$set": {
+                "server_id": server_id,
+                "periodo_key": periodo_key,
+                "kpis": kpis,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "status": "online"
+            }
+        },
+        upsert=True
+    )
+
 def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes):
     """Query reutilizable para SoftRestaurant - misma lógica análisis inventarios"""
     # Usar formato YYYYMMDD sin guiones para evitar problemas de conversión de fecha
@@ -8345,6 +8370,8 @@ async def tablero_ejecutivo(
     totales = {"ventas": 0, "ventas_ant": 0, "ventas_año": 0, "pax": 0, "pax_ant": 0, "pax_año": 0, 
                "cheques": 0, "cheques_ant": 0, "cheques_año": 0, "proyeccion": 0}
     
+    periodo_key = f"{anio}-{mes:02d}"
+    
     for server in servers:
         logging.info(f"Procesando servidor: {server['name']} - Tipo: {server['system_type']}")
         
@@ -8352,14 +8379,37 @@ async def tablero_ejecutivo(
             kpis = get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
                                            fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
             if kpis:
+                # Conexión exitosa - guardar en caché
                 kpis["unidad"] = server['name']
                 kpis["server_id"] = server['id']
                 kpis["system_type"] = server['system_type']
+                kpis["status"] = "online"
+                kpis["updated_at"] = datetime.now(timezone.utc).isoformat()
                 resultados.append(kpis)
+                # Guardar en caché
+                await save_kpis_cache(server['id'], periodo_key, kpis)
                 # Acumular totales
                 for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
                           "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
                     totales[k] += kpis.get(k, 0)
+            else:
+                # Conexión fallida - buscar en caché
+                cached = await get_cached_kpis(server['id'], periodo_key)
+                if cached and cached.get('kpis'):
+                    kpis = cached['kpis']
+                    kpis["status"] = "offline"
+                    kpis["updated_at"] = cached.get('updated_at', '')
+                    kpis["unidad"] = server['name']
+                    kpis["server_id"] = server['id']
+                    kpis["system_type"] = server['system_type']
+                    resultados.append(kpis)
+                    logging.info(f"Usando caché para {server['name']} - última actualización: {cached.get('updated_at')}")
+                    # Acumular totales del caché
+                    for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
+                              "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
+                        totales[k] += kpis.get(k, 0)
+                else:
+                    logging.warning(f"Sin caché disponible para {server['name']}")
         
         elif server['system_type'] == 'MPRO':
             # MPRO: Dividir por sucursal (igual que en Inventarios)
@@ -8369,13 +8419,32 @@ async def tablero_ejecutivo(
                                                            fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
                 logging.info(f"MPRO {server['name']}: Encontradas {len(unidades_mpro)} unidades")
                 for unidad in unidades_mpro:
+                    unidad["status"] = "online"
+                    unidad["updated_at"] = datetime.now(timezone.utc).isoformat()
                     resultados.append(unidad)
+                    # Guardar en caché cada unidad
+                    unidad_key = f"{periodo_key}-{unidad.get('unidad', 'unknown')}"
+                    await save_kpis_cache(server['id'], unidad_key, unidad)
                     # Acumular totales
                     for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
                               "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
                         totales[k] += unidad.get(k, 0)
             except Exception as mpro_error:
                 logging.error(f"Error procesando MPRO {server['name']}: {mpro_error}")
+                # Buscar en caché para MPRO
+                cached_list = await db.kpis_cache.find({
+                    "server_id": server['id'],
+                    "periodo_key": {"$regex": f"^{periodo_key}"}
+                }).to_list(100)
+                for cached in cached_list:
+                    if cached.get('kpis'):
+                        kpis = cached['kpis']
+                        kpis["status"] = "offline"
+                        kpis["updated_at"] = cached.get('updated_at', '')
+                        resultados.append(kpis)
+                        for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
+                                  "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
+                            totales[k] += kpis.get(k, 0)
     
     # Calcular variaciones de totales
     totales["var_vs_mes_ant"] = round(((totales["ventas"] - totales["ventas_ant"]) / totales["ventas_ant"] * 100), 1) if totales["ventas_ant"] > 0 else 0
