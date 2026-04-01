@@ -256,9 +256,15 @@ const Reportes = () => {
           }));
           allInventarios = [...allInventarios, ...inventariosConAlmacen];
         }
-        // Ordenar todos los inventarios por folio descendente
+        // Ordenar todos los inventarios por fecha descendente (más reciente primero)
         allInventarios.sort((a, b) => {
-          // Comparar folios como strings para mantener orden alfanumérico correcto
+          // Primero por fecha descendente
+          const fechaA = a.fecha ? new Date(a.fecha) : new Date(0);
+          const fechaB = b.fecha ? new Date(b.fecha) : new Date(0);
+          if (fechaB.getTime() !== fechaA.getTime()) {
+            return fechaB.getTime() - fechaA.getTime();
+          }
+          // Si misma fecha, por folio descendente
           return b.folio.localeCompare(a.folio);
         });
         setInventarios(allInventarios);
@@ -373,7 +379,16 @@ const Reportes = () => {
           almacen_id: filters.almacen_id
         }
       });
-      setInventarios(response.data);
+      // Ordenar por fecha descendente (más reciente primero)
+      const inventariosOrdenados = (response.data || []).sort((a, b) => {
+        const fechaA = a.fecha ? new Date(a.fecha) : new Date(0);
+        const fechaB = b.fecha ? new Date(b.fecha) : new Date(0);
+        if (fechaB.getTime() !== fechaA.getTime()) {
+          return fechaB.getTime() - fechaA.getTime();
+        }
+        return (b.folio || '').localeCompare(a.folio || '');
+      });
+      setInventarios(inventariosOrdenados);
     } catch (error) {
       console.error('Error al cargar inventarios:', error);
       setInventarios([]);
