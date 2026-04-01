@@ -134,6 +134,9 @@ const Reportes = () => {
   
   // Estado para agrupar insumos de múltiples inventarios (MPRO)
   const [agruparInsumos, setAgruparInsumos] = useState(false);
+  
+  // Estado para mostrar/ocultar columnas de costos (oculto por defecto)
+  const [mostrarCostos, setMostrarCostos] = useState(false);
 
   // Guardar estado en sessionStorage cuando cambie
   useEffect(() => {
@@ -1579,7 +1582,7 @@ const Reportes = () => {
 
       {/* Actions */}
       {reportData.length > 0 && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <Button 
             onClick={handleExportExcel}
             variant="outline"
@@ -1596,6 +1599,19 @@ const Reportes = () => {
             <FileDown className="h-4 w-4 mr-2" />
             Exportar a PDF
           </Button>
+          
+          {/* Toggle para mostrar/ocultar costos */}
+          <div className="flex items-center gap-2 ml-4 border-l pl-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={mostrarCostos}
+                onChange={(e) => setMostrarCostos(e.target.checked)}
+                className="rounded border-zinc-300"
+              />
+              <span className="text-sm text-zinc-600">Ver costos</span>
+            </label>
+          </div>
         </div>
       )}
 
@@ -1642,7 +1658,9 @@ const Reportes = () => {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-zinc-200">
                   <tr className="border-b-2 border-zinc-400">
-                    {Object.keys(reportData[0]).map((key) => (
+                    {Object.keys(reportData[0])
+                      .filter(key => mostrarCostos || !key.toLowerCase().includes('costo'))
+                      .map((key) => (
                       <th key={key} className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">
                         {key.replace(/_/g, ' ')}
                       </th>
@@ -1652,7 +1670,9 @@ const Reportes = () => {
                 <tbody>
                   {reportData.slice(0, 2000).map((row, idx) => (
                     <tr key={idx} className="border-b hover:bg-zinc-50/50">
-                      {Object.entries(row).map(([key, value], cellIdx) => {
+                      {Object.entries(row)
+                        .filter(([key]) => mostrarCostos || !key.toLowerCase().includes('costo'))
+                        .map(([key, value], cellIdx) => {
                         // Special formatting for analysis report
                         const isDiferencia = key.toLowerCase().includes('diferencia');
                         const isCosto = key.toLowerCase().includes('costo');
