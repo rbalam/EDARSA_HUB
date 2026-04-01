@@ -61,15 +61,26 @@ const Servidores = () => {
     loadServers();
   }, []);
 
-  // Ping automático cuando se cargan los servidores (silencioso, sin toasts)
+  // Ping automático cuando se cargan los servidores (silencioso, con delay entre cada uno)
   useEffect(() => {
     if (servers.length > 0) {
-      // Hacer ping silencioso a todos los servidores al cargar
-      servers.forEach(server => {
-        if (!pingStatus[server.id]) {
-          pingServerSilent(server.id);
+      // Hacer ping silencioso con delay para no parecer ataque
+      const pingWithDelay = async () => {
+        for (let i = 0; i < servers.length; i++) {
+          const server = servers[i];
+          if (!pingStatus[server.id]) {
+            pingServerSilent(server.id);
+            // Esperar 4 segundos entre cada ping (excepto el último)
+            if (i < servers.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 4000));
+            }
+          }
         }
-      });
+      };
+      
+      // Iniciar después de 2 segundos de cargar la página
+      const timeoutId = setTimeout(pingWithDelay, 2000);
+      return () => clearTimeout(timeoutId);
     }
   }, [servers]);
 
