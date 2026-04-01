@@ -341,23 +341,35 @@ def test_sql_connection(host: str, port: int, database: str, username: str, pass
 _server_status_cache = {}
 
 def mark_server_offline(host: str):
-    """Marca un servidor como offline en caché de memoria"""
+    """Marca un servidor como offline en caché de memoria con backoff exponencial"""
+    current = _server_status_cache.get(host, {})
+    fail_count = current.get("fail_count", 0) + 1
+    
+    # Backoff exponencial: 5min, 10min, 20min, 30min máximo
+    wait_minutes = min(5 * (2 ** (fail_count - 1)), 30)
+    
     _server_status_cache[host] = {
         "is_online": False,
         "last_check": datetime.now(timezone.utc),
-        "fail_count": _server_status_cache.get(host, {}).get("fail_count", 0) + 1
+        "fail_count": fail_count,
+        "wait_minutes": wait_minutes
     }
+    logging.info(f"Servidor {host} marcado offline (intento {fail_count}) - próximo reintento en {wait_minutes} min")
 
 def mark_server_online(host: str):
     """Marca un servidor como online en caché de memoria"""
     _server_status_cache[host] = {
         "is_online": True,
         "last_check": datetime.now(timezone.utc),
-        "fail_count": 0
+        "fail_count": 0,
+        "wait_minutes": 0
     }
 
-def is_server_offline_in_memory(host: str, minutes_threshold: int = 5) -> bool:
-    """Verifica si un servidor está marcado como offline en memoria"""
+def is_server_offline_in_memory(host: str) -> bool:
+    """
+    Verifica si un servidor está marcado como offline.
+    Usa backoff exponencial para evitar parecer un ataque.
+    """
     status = _server_status_cache.get(host)
     if not status:
         return False
@@ -365,28 +377,54 @@ def is_server_offline_in_memory(host: str, minutes_threshold: int = 5) -> bool:
     if status.get("is_online", True):
         return False
     
-    # Verificar si el último chequeo fue hace menos de X minutos
+    # Verificar si ha pasado suficiente tiempo según el backoff
     last_check = status.get("last_check")
+    wait_minutes = status.get("wait_minutes", 5)
+    
     if last_check:
         diff = (datetime.now(timezone.utc) - last_check).total_seconds() / 60
-        if diff < minutes_threshold:
+        if diff < wait_minutes:
+            logging.debug(f"Servidor {host} en cooldown - esperar {wait_minutes - diff:.1f} min más")
             return True
     
     return False
 
+def get_server_cooldown_info(host: str) -> dict:
+    """Obtiene información del cooldown de un servidor"""
+    status = _server_status_cache.get(host, {})
+    if not status or status.get("is_online", True):
+        return {"is_offline": False}
+    
+    last_check = status.get("last_check")
+    wait_minutes = status.get("wait_minutes", 5)
+    
+    if last_check:
+        diff = (datetime.now(timezone.utc) - last_check).total_seconds() / 60
+        remaining = max(0, wait_minutes - diff)
+        return {
+            "is_offline": True,
+            "fail_count": status.get("fail_count", 0),
+            "wait_minutes": wait_minutes,
+            "remaining_minutes": round(remaining, 1)
+        }
+    
+    return {"is_offline": True}
 
-def execute_sql_query(host: str, port: int, database: str, username: str, password: str, query: str, timeout_seconds: int = 60) -> List[Dict]:
+
+def execute_sql_query(host: str, port: int, database: str, username: str, password: str, query: str, timeout_seconds: int = 45) -> List[Dict]:
     """
     Ejecuta una consulta SQL usando pytds (preferido) con fallback a pymssql.
-    Incluye verificación de estado offline para evitar timeouts innecesarios.
+    Incluye verificación de estado offline con backoff exponencial para evitar
+    comportamiento de bot/malware.
     """
-    # Verificar si el servidor está marcado como offline recientemente
-    if is_server_offline_in_memory(host, minutes_threshold=5):
-        logging.info(f"Servidor {host} marcado como offline - saltando consulta")
+    # Verificar si el servidor está en cooldown (offline con backoff)
+    if is_server_offline_in_memory(host):
+        cooldown = get_server_cooldown_info(host)
+        logging.info(f"Servidor {host} en cooldown - {cooldown.get('remaining_minutes', 0):.1f} min restantes")
         return []
     
     hostname, parsed_port, instance = parse_sql_server_host(host, port)
-    logging.info(f"Conectando a SQL Server: hostname={hostname}, port={parsed_port}, instance={instance}, db={database}")
+    logging.info(f"Conectando a SQL Server: hostname={hostname}, port={parsed_port}, db={database}")
     
     # Primero intentar con pytds
     try:
