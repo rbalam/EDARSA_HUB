@@ -106,6 +106,10 @@ const Reportes = () => {
   const [searchFamilias, setSearchFamilias] = useState('');
   const [searchSubfamilias, setSearchSubfamilias] = useState('');
   
+  // Estados para controlar dropdowns (para mejor compatibilidad con Windows)
+  const [dropdownInvIni, setDropdownInvIni] = useState(false);
+  const [dropdownInvFin, setDropdownInvFin] = useState(false);
+  
   // Estados para selección múltiple de almacenes e inventarios
   const [selectedAlmacenes, setSelectedAlmacenes] = useState([]);
   const [selectedInventariosIni, setSelectedInventariosIni] = useState([]);
@@ -158,6 +162,18 @@ const Reportes = () => {
   useEffect(() => {
     sessionStorage.setItem('selectedSubfamilias', JSON.stringify(selectedSubfamilias));
   }, [selectedSubfamilias]);
+
+  // Cerrar dropdowns de inventarios al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('[data-dropdown-inv]')) {
+        setDropdownInvIni(false);
+        setDropdownInvFin(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     loadServers();
@@ -1066,8 +1082,11 @@ const Reportes = () => {
 
             <div className="space-y-2">
               <Label>Inventario Inicial (multi-selección)</Label>
-              <details className="relative">
-                <summary className={`${selectStyle} cursor-pointer list-none flex items-center justify-between ${selectedAlmacenes.length === 0 ? 'opacity-50' : ''}`}>
+              <div className="relative" data-dropdown-inv="ini">
+                <div 
+                  className={`${selectStyle} cursor-pointer flex items-center justify-between ${selectedAlmacenes.length === 0 ? 'opacity-50 pointer-events-none' : ''}`}
+                  onClick={() => selectedAlmacenes.length > 0 && setDropdownInvIni(!dropdownInvIni)}
+                >
                   <span className="truncate">
                     {selectedAlmacenes.length === 0 
                       ? "Selecciona almacén primero"
@@ -1075,9 +1094,9 @@ const Reportes = () => {
                         ? "Selecciona inventarios iniciales" 
                         : `${selectedInventariosIni.length} inventario(s) seleccionado(s)`}
                   </span>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </summary>
-                {selectedAlmacenes.length > 0 && (
+                  <ChevronDown className={`h-4 w-4 opacity-50 transition-transform ${dropdownInvIni ? 'rotate-180' : ''}`} />
+                </div>
+                {dropdownInvIni && selectedAlmacenes.length > 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
                     {/* Buscador */}
                     <div className="sticky top-0 bg-white border-b p-2">
@@ -1085,6 +1104,7 @@ const Reportes = () => {
                         type="text"
                         placeholder="Buscar inventario..."
                         className="w-full px-2 py-1 text-sm border rounded"
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) => {
                           const searchVal = e.target.value.toLowerCase();
                           document.querySelectorAll('[data-inv-inicial]').forEach(el => {
@@ -1098,7 +1118,7 @@ const Reportes = () => {
                       <button
                         type="button"
                         className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center text-red-600"
-                        onClick={() => setSelectedInventariosIni([])}
+                        onClick={(e) => { e.stopPropagation(); setSelectedInventariosIni([]); }}
                       >
                         <X className="h-3 w-3 mr-1" /> Limpiar selección ({selectedInventariosIni.length})
                       </button>
@@ -1116,6 +1136,7 @@ const Reportes = () => {
                         key={inv.folio} 
                         data-inv-inicial={`${inv.folio} ${inv.fecha || ''} ${inv.almacen || ''} ${inv.comentario || ''}`}
                         className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <input
                           type="checkbox"
@@ -1137,7 +1158,7 @@ const Reportes = () => {
                     )}
                   </div>
                 )}
-              </details>
+              </div>
               {/* Badges de inventarios iniciales seleccionados */}
               {selectedInventariosIni.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1">
@@ -1156,8 +1177,11 @@ const Reportes = () => {
 
             <div className="space-y-2">
               <Label>Inventario Final (multi-selección)</Label>
-              <details className="relative">
-                <summary className={`${selectStyle} cursor-pointer list-none flex items-center justify-between ${selectedAlmacenes.length === 0 ? 'opacity-50' : ''}`}>
+              <div className="relative" data-dropdown-inv="fin">
+                <div 
+                  className={`${selectStyle} cursor-pointer flex items-center justify-between ${selectedAlmacenes.length === 0 ? 'opacity-50 pointer-events-none' : ''}`}
+                  onClick={() => selectedAlmacenes.length > 0 && setDropdownInvFin(!dropdownInvFin)}
+                >
                   <span className="truncate">
                     {selectedAlmacenes.length === 0 
                       ? "Selecciona almacén primero"
@@ -1165,9 +1189,9 @@ const Reportes = () => {
                         ? "Selecciona inventarios finales" 
                         : `${selectedInventariosFin.length} inventario(s) seleccionado(s)`}
                   </span>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </summary>
-                {selectedAlmacenes.length > 0 && (
+                  <ChevronDown className={`h-4 w-4 opacity-50 transition-transform ${dropdownInvFin ? 'rotate-180' : ''}`} />
+                </div>
+                {dropdownInvFin && selectedAlmacenes.length > 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
                     {/* Buscador */}
                     <div className="sticky top-0 bg-white border-b p-2">
@@ -1175,6 +1199,7 @@ const Reportes = () => {
                         type="text"
                         placeholder="Buscar inventario..."
                         className="w-full px-2 py-1 text-sm border rounded"
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) => {
                           const searchVal = e.target.value.toLowerCase();
                           document.querySelectorAll('[data-inv-final]').forEach(el => {
@@ -1188,7 +1213,7 @@ const Reportes = () => {
                       <button
                         type="button"
                         className="w-full px-3 py-2 text-xs text-left hover:bg-zinc-100 border-b flex items-center text-red-600"
-                        onClick={() => setSelectedInventariosFin([])}
+                        onClick={(e) => { e.stopPropagation(); setSelectedInventariosFin([]); }}
                       >
                         <X className="h-3 w-3 mr-1" /> Limpiar selección ({selectedInventariosFin.length})
                       </button>
@@ -1213,6 +1238,7 @@ const Reportes = () => {
                         key={inv.folio} 
                         data-inv-final={`${inv.folio} ${inv.fecha || ''} ${inv.almacen || ''} ${inv.comentario || ''}`}
                         className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <input
                           type="checkbox"
@@ -1238,7 +1264,7 @@ const Reportes = () => {
                     )}
                   </div>
                 )}
-              </details>
+              </div>
               {/* Badges de inventarios finales seleccionados */}
               {selectedInventariosFin.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1">
