@@ -57,14 +57,17 @@ Aplicación web ERP modular para gestionar múltiples sucursales con bases de da
 
 # CHANGELOG
 
-## 2025-03-31
+## 2025-03-31 / 2025-04-01
 - **FIXED**: Error de sintaxis en `Compras.js` - código JSX duplicado/corrupto eliminado (~260 líneas)
 - **VERIFIED**: Layout compacto de formulario de Auditoría funcionando correctamente
 - **ADDED**: Badges de folios de requisiciones seleccionadas (estilo igual a inventarios)
 - **IDENTIFIED**: Bug de rendimiento incorrecto cuando código existe como INSUMO y PRESENTACIÓN (ej: B070033) - pendiente corregir
 - **FIXED**: Proyección de ventas - ahora calcula correctamente usando días hasta AYER (no hoy)
 - **ADDED**: Indicador visual Online/Offline en Servidores SQL (círculo verde/rojo/amarillo)
-- **ADDED**: Ping automático al cargar página de Servidores
+- **ADDED**: Ping automático al cargar página de Servidores (con delay de 4 seg entre cada uno)
+- **ADDED**: Sistema de caché para servidores offline - muestra última data disponible
+- **ADDED**: Backoff exponencial para reintentos de conexión (5min, 10min, 20min, 30min máx)
+- **ADDED**: Infraestructura Local-First (archivos creados pero no activados aún)
 - **PLANNED**: Módulo de Seguridad y Monitoreo (auditoría, detección amenazas, alertas)
 
 ## Previous Session (before fork)
