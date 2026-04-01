@@ -1061,6 +1061,13 @@ async def ping_server(server_id: str, credentials: HTTPAuthorizationCredentials 
             server_time = result[0].get('server_time', '')
             version = result[0].get('version', '')[:100]  # Primeros 100 chars
             
+            # Guardar estado como online
+            await db.server_status.update_one(
+                {"server_id": server_id},
+                {"$set": {"server_id": server_id, "is_online": True, "response_time_ms": elapsed_time, "last_check": datetime.now(timezone.utc).isoformat()}},
+                upsert=True
+            )
+            
             return {
                 "status": "connected",
                 "server_name": server['name'],
@@ -1080,6 +1087,13 @@ async def ping_server(server_id: str, credentials: HTTPAuthorizationCredentials 
     except Exception as e:
         elapsed_time = round((time.time() - start_time) * 1000, 2)
         error_msg = str(e)
+        
+        # Guardar estado como offline
+        await db.server_status.update_one(
+            {"server_id": server_id},
+            {"$set": {"server_id": server_id, "is_online": False, "last_check": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
         
         # Determinar tipo de error
         if "Unable to connect" in error_msg or "unavailable" in error_msg.lower():
@@ -7944,6 +7958,50 @@ WHERE V.Vn_Fecha = '{f}' AND V.Vn_Cancelacion = 0 AND V.Vn_Precio_Neto_Importe >
 # TABLERO EJECUTIVO - Multi-Unidad (Socios/Accionistas)
 # ============================================================================
 
+# Función para guardar/obtener estado de conexión de servidores
+async def get_server_connection_status(server_id: str):
+    """Obtiene el último estado de conexión de un servidor"""
+    status = await db.server_status.find_one({"server_id": server_id})
+    return status
+
+async def save_server_connection_status(server_id: str, is_online: bool, response_time_ms: int = None):
+    """Guarda el estado de conexión de un servidor"""
+    await db.server_status.update_one(
+        {"server_id": server_id},
+        {
+            "$set": {
+                "server_id": server_id,
+                "is_online": is_online,
+                "response_time_ms": response_time_ms,
+                "last_check": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
+
+async def is_server_recently_offline(server_id: str, minutes_threshold: int = 10):
+    """Verifica si un servidor fue marcado como offline recientemente (evita reintentos)"""
+    status = await get_server_connection_status(server_id)
+    if not status:
+        return False  # Sin registro, intentar conectar
+    
+    if status.get('is_online', True):
+        return False  # Estaba online, intentar conectar
+    
+    # Verificar si el último chequeo fue hace menos de X minutos
+    last_check = status.get('last_check')
+    if last_check:
+        try:
+            last_check_dt = datetime.fromisoformat(last_check.replace('Z', '+00:00'))
+            now = datetime.now(timezone.utc)
+            diff_minutes = (now - last_check_dt).total_seconds() / 60
+            if diff_minutes < minutes_threshold:
+                return True  # Offline recientemente, no reintentar
+        except:
+            pass
+    
+    return False
+
 # Función para guardar/obtener caché de KPIs
 async def get_cached_kpis(server_id: str, periodo_key: str):
     """Obtiene los KPIs cacheados de un servidor"""
@@ -8375,9 +8433,25 @@ async def tablero_ejecutivo(
     for server in servers:
         logging.info(f"Procesando servidor: {server['name']} - Tipo: {server['system_type']}")
         
+        # Verificar si el servidor está offline recientemente (evitar timeouts)
+        server_offline = await is_server_recently_offline(server['id'], minutes_threshold=10)
+        
         if server['system_type'] == 'SoftRestaurant':
-            kpis = get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
-                                           fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
+            kpis = None
+            
+            # Solo intentar conexión si el servidor NO está marcado como offline recientemente
+            if not server_offline:
+                kpis = get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
+                                               fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
+                if kpis:
+                    # Conexión exitosa - marcar como online
+                    await save_server_connection_status(server['id'], True)
+                else:
+                    # Conexión fallida - marcar como offline
+                    await save_server_connection_status(server['id'], False)
+            else:
+                logging.info(f"Servidor {server['name']} marcado como offline - usando caché")
+            
             if kpis:
                 # Conexión exitosa - guardar en caché
                 kpis["unidad"] = server['name']
