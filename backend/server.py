@@ -337,10 +337,54 @@ def test_sql_connection(host: str, port: int, database: str, username: str, pass
         return False
 
 
-def execute_sql_query(host: str, port: int, database: str, username: str, password: str, query: str) -> List[Dict]:
+# Diccionario en memoria para tracking rápido de estado de servidores
+_server_status_cache = {}
+
+def mark_server_offline(host: str):
+    """Marca un servidor como offline en caché de memoria"""
+    _server_status_cache[host] = {
+        "is_online": False,
+        "last_check": datetime.now(timezone.utc),
+        "fail_count": _server_status_cache.get(host, {}).get("fail_count", 0) + 1
+    }
+
+def mark_server_online(host: str):
+    """Marca un servidor como online en caché de memoria"""
+    _server_status_cache[host] = {
+        "is_online": True,
+        "last_check": datetime.now(timezone.utc),
+        "fail_count": 0
+    }
+
+def is_server_offline_in_memory(host: str, minutes_threshold: int = 5) -> bool:
+    """Verifica si un servidor está marcado como offline en memoria"""
+    status = _server_status_cache.get(host)
+    if not status:
+        return False
+    
+    if status.get("is_online", True):
+        return False
+    
+    # Verificar si el último chequeo fue hace menos de X minutos
+    last_check = status.get("last_check")
+    if last_check:
+        diff = (datetime.now(timezone.utc) - last_check).total_seconds() / 60
+        if diff < minutes_threshold:
+            return True
+    
+    return False
+
+
+def execute_sql_query(host: str, port: int, database: str, username: str, password: str, query: str, timeout_seconds: int = 60) -> List[Dict]:
     """
     Ejecuta una consulta SQL usando pytds (preferido) con fallback a pymssql.
+    Incluye verificación de estado offline para evitar timeouts innecesarios.
     """
+    # Verificar si el servidor está marcado como offline recientemente
+    if is_server_offline_in_memory(host, minutes_threshold=5):
+        logging.info(f"Servidor {host} marcado como offline - saltando consulta")
+        return []
+    
     hostname, parsed_port, instance = parse_sql_server_host(host, port)
     logging.info(f"Conectando a SQL Server: hostname={hostname}, port={parsed_port}, instance={instance}, db={database}")
     
@@ -353,8 +397,8 @@ def execute_sql_query(host: str, port: int, database: str, username: str, passwo
             database=database,
             user=username,
             password=password,
-            timeout=120,
-            login_timeout=30
+            timeout=timeout_seconds,
+            login_timeout=15  # Reducido de 30 a 15 segundos
         )
         cursor = conn.cursor()
         cursor.execute(query)
@@ -377,6 +421,7 @@ def execute_sql_query(host: str, port: int, database: str, username: str, passwo
         
         conn.close()
         logging.info(f"Query exitosa con pytds: {len(results)} registros")
+        mark_server_online(host)  # Marcar como online
         return results
         
     except Exception as pytds_error:
@@ -392,8 +437,8 @@ def execute_sql_query(host: str, port: int, database: str, username: str, passwo
             user=username, 
             password=password, 
             database=database, 
-            timeout=120, 
-            login_timeout=30
+            timeout=timeout_seconds, 
+            login_timeout=15  # Reducido de 30 a 15 segundos
         )
         cursor = conn.cursor(as_dict=True)
         cursor.execute(query)
@@ -407,12 +452,14 @@ def execute_sql_query(host: str, port: int, database: str, username: str, passwo
                     row[key] = value.isoformat()
         
         logging.info(f"Query exitosa con pymssql: {len(results)} registros")
+        mark_server_online(host)  # Marcar como online
         return results
         
     except Exception as pymssql_error:
         error_msg = f"Error ejecutando consulta. pytds y pymssql fallaron: {str(pymssql_error)}"
         logging.error(error_msg)
-        raise HTTPException(status_code=500, detail=error_msg)
+        mark_server_offline(host)  # Marcar como offline
+        return []  # Devolver lista vacía en lugar de lanzar excepción
 
 # ============= EXPORT FUNCTIONS =============
 
