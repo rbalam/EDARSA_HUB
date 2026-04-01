@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -9,8 +9,10 @@ import { toast } from 'sonner';
 import { 
   Loader2, TrendingUp, TrendingDown, RefreshCw, Building2, Users, Receipt, 
   DollarSign, ArrowLeft, ChevronRight, Target, Clock, Utensils, X,
-  BarChart3, Wallet, UserCircle, Award
+  BarChart3, Wallet, UserCircle, Award, Wifi, WifiOff
 } from 'lucide-react';
+import useLocalFirst, { STORES } from '../hooks/useLocalFirst';
+import { DataStatusBadge, StatusDot } from '../components/SyncStatusIndicator';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -365,8 +367,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
 };
 
 export default function TableroEjecutivo() {
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState(null);
+  // Estados de filtros (se guardan en localStorage)
   const [mes, setMes] = useState(() => {
     const saved = localStorage.getItem('tablero_filtros');
     if (saved) {
@@ -405,50 +406,57 @@ export default function TableroEjecutivo() {
     { value: '2026', label: '2026' }, { value: '2025', label: '2025' }, { value: '2024', label: '2024' }
   ];
 
-  const cargarDatos = async (retry = 0) => {
+  // Función para obtener datos del servidor
+  const fetchTableroData = useCallback(async () => {
     const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      return;
-    }
+    if (!token) throw new Error('No token');
     
-    setLoading(true);
-    try {
-      const response = await axios.get(`${API_URL}/api/comercial/tablero-ejecutivo`, {
-        params: { mes, anio },
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 30000 // 30 segundos timeout
-      });
-      setData(response.data);
-    } catch (error) {
-      console.error('Error cargando tablero:', error);
-      if (error.response?.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-      } else if (retry < 2) {
-        // Reintentar hasta 2 veces
-        console.log(`Reintentando (${retry + 1}/2)...`);
-        setTimeout(() => cargarDatos(retry + 1), 1000);
-      } else {
-        toast.error('Error al cargar datos. Intenta actualizar.');
-      }
-    } finally {
-      if (retry === 0 || retry >= 2) {
-        setLoading(false);
-      }
-    }
-  };
+    const response = await axios.get(`${API_URL}/api/comercial/tablero-ejecutivo`, {
+      params: { mes, anio },
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 30000
+    });
+    return response.data;
+  }, [mes, anio]);
 
+  // Clave única para el caché basada en mes/año
+  const cacheKey = `tablero-${mes}-${anio}`;
+
+  // Hook Local-First para datos del tablero
+  const {
+    data,
+    loading,
+    error,
+    status: dataStatus,
+    updatedAt,
+    refresh,
+    isStale,
+    isOffline
+  } = useLocalFirst(
+    STORES.KPI_TABLERO,
+    cacheKey,
+    fetchTableroData,
+    {
+      ttl: 15, // 15 minutos
+      refetchOnFocus: true
+    }
+  );
+
+  // Manejar errores de autenticación
+  useEffect(() => {
+    if (error?.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+  }, [error]);
+
+  // Verificar token al montar
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
       window.location.href = '/login';
-      return;
     }
-    
-    // Cargar datos inmediatamente
-    cargarDatos();
   }, []);
 
   const nombreMes = data?.periodo?.mes ? meses.find(m => m.value === String(data.periodo.mes))?.label : '';
@@ -500,10 +508,31 @@ export default function TableroEjecutivo() {
                     <SelectContent>{anios.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <Button onClick={cargarDatos} disabled={loading} size="sm">
+                <Button onClick={refresh} disabled={loading} size="sm">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                   Actualizar
                 </Button>
+                
+                {/* Indicador de estado Local-First */}
+                <div className="flex items-center gap-2 ml-2">
+                  {isOffline && (
+                    <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+                      <WifiOff className="h-3 w-3" />
+                      Offline
+                    </span>
+                  )}
+                  {isStale && !isOffline && (
+                    <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                      Datos desactualizados
+                    </span>
+                  )}
+                  {dataStatus === 'online' && (
+                    <span className="flex items-center gap-1 text-xs text-green-600">
+                      <Wifi className="h-3 w-3" />
+                    </span>
+                  )}
+                </div>
+
                 {data?.periodo && (
                   <span className="text-xs text-zinc-500 ml-auto bg-zinc-100 px-2 py-1 rounded">
                     {nombreMes} {data.periodo.anio} • Día {data.periodo.dias_transcurridos} de {data.periodo.dias_mes}

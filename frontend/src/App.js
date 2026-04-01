@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { useEffect } from 'react';
 import Login from '@/pages/Login';
 import Layout from '@/pages/Layout';
 import Dashboard from '@/pages/Dashboard';
@@ -17,8 +18,14 @@ import Produccion from '@/pages/Produccion';
 import RecursosHumanos from '@/pages/RecursosHumanos';
 import ReportesBI from '@/pages/ReportesBI';
 import { isAuthenticated } from '@/lib/auth';
+import syncManager from '@/services/syncManager';
 
 function App() {
+  // Inicializar SyncManager para Local-First
+  useEffect(() => {
+    syncManager.init();
+  }, []);
+
   return (
     <div className="App">
       <BrowserRouter>
