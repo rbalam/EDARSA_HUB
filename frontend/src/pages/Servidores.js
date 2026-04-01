@@ -61,6 +61,18 @@ const Servidores = () => {
     loadServers();
   }, []);
 
+  // Ping automático cuando se cargan los servidores
+  useEffect(() => {
+    if (servers.length > 0) {
+      // Hacer ping a todos los servidores al cargar
+      servers.forEach(server => {
+        if (!pingStatus[server.id]) {
+          pingServer(server.id);
+        }
+      });
+    }
+  }, [servers]);
+
   const loadServers = async () => {
     try {
       const response = await api.get('/servers');
@@ -361,8 +373,20 @@ const Servidores = () => {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="bg-blue-50 p-2 rounded-lg">
-                      <Database className="h-5 w-5 text-blue-600" />
+                    <div className="relative">
+                      <div className="bg-blue-50 p-2 rounded-lg">
+                        <Database className="h-5 w-5 text-blue-600" />
+                      </div>
+                      {/* Indicador de estado Online/Offline */}
+                      {pingStatus[server.id]?.loading ? (
+                        <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-yellow-400 animate-pulse border-2 border-white" title="Verificando..." />
+                      ) : pingStatus[server.id]?.status === 'connected' ? (
+                        <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white" title="Online" />
+                      ) : pingStatus[server.id]?.status ? (
+                        <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500 border-2 border-white" title="Offline" />
+                      ) : (
+                        <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-zinc-300 border-2 border-white" title="Sin verificar" />
+                      )}
                     </div>
                     <div>
                       <CardTitle className="text-lg font-semibold">{server.name}</CardTitle>
