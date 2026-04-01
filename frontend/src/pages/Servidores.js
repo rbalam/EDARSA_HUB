@@ -61,13 +61,13 @@ const Servidores = () => {
     loadServers();
   }, []);
 
-  // Ping automático cuando se cargan los servidores
+  // Ping automático cuando se cargan los servidores (silencioso, sin toasts)
   useEffect(() => {
     if (servers.length > 0) {
-      // Hacer ping a todos los servidores al cargar
+      // Hacer ping silencioso a todos los servidores al cargar
       servers.forEach(server => {
         if (!pingStatus[server.id]) {
-          pingServer(server.id);
+          pingServerSilent(server.id);
         }
       });
     }
@@ -84,7 +84,41 @@ const Servidores = () => {
     }
   };
 
-  // Función para hacer ping a un servidor
+  // Ping silencioso (para auto-ping al cargar, sin toasts ni errores que rompan la UI)
+  const pingServerSilent = async (serverId) => {
+    setPingStatus(prev => ({
+      ...prev,
+      [serverId]: { loading: true, status: null, message: 'Verificando...' }
+    }));
+    
+    try {
+      const response = await api.get(`/servers/${serverId}/ping`, { timeout: 10000 }); // 10s timeout
+      const data = response.data;
+      
+      setPingStatus(prev => ({
+        ...prev,
+        [serverId]: {
+          loading: false,
+          status: data.status,
+          message: data.message,
+          responseTime: data.response_time_ms,
+          serverTime: data.server_time
+        }
+      }));
+    } catch (error) {
+      // Silencioso - no mostrar toast, solo actualizar estado
+      setPingStatus(prev => ({
+        ...prev,
+        [serverId]: {
+          loading: false,
+          status: 'error',
+          message: 'Sin conexión'
+        }
+      }));
+    }
+  };
+
+  // Función para hacer ping a un servidor (con toasts para acción manual)
   const pingServer = async (serverId) => {
     setPingStatus(prev => ({
       ...prev,
