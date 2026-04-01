@@ -62,6 +62,10 @@ Aplicación web ERP modular para gestionar múltiples sucursales con bases de da
 - **VERIFIED**: Layout compacto de formulario de Auditoría funcionando correctamente
 - **ADDED**: Badges de folios de requisiciones seleccionadas (estilo igual a inventarios)
 - **IDENTIFIED**: Bug de rendimiento incorrecto cuando código existe como INSUMO y PRESENTACIÓN (ej: B070033) - pendiente corregir
+- **FIXED**: Proyección de ventas - ahora calcula correctamente usando días hasta AYER (no hoy)
+- **ADDED**: Indicador visual Online/Offline en Servidores SQL (círculo verde/rojo/amarillo)
+- **ADDED**: Ping automático al cargar página de Servidores
+- **PLANNED**: Módulo de Seguridad y Monitoreo (auditoría, detección amenazas, alertas)
 
 ## Previous Session (before fork)
 - ✅ Bug de validación por filtros cacheados en Auditoría de Compras
@@ -84,6 +88,15 @@ Aplicación web ERP modular para gestionar múltiples sucursales con bases de da
 - [x] Fix error de sintaxis en Compras.js
 
 ## P1 - High Priority
+- [ ] **🛡️ MÓDULO DE SEGURIDAD Y MONITOREO** (NUEVO - PRIORITARIO)
+  - Auditoría de accesos a Edarsa Hub (logins exitosos/fallidos, IP, navegador, GeoIP)
+  - Log de conexiones a SQL Servers externos
+  - Detección de fuerza bruta y bloqueo temporal de IP/usuario
+  - Rate limiting y detección de patrones sospechosos
+  - Dashboard de seguridad con métricas en tiempo real
+  - Notificaciones/alertas para amenazas críticas
+  - Lista negra de IPs y configuración de umbrales
+- [ ] Corregir lógica de rendimiento (distinguir INSUMO vs PRESENTACIÓN)
 - [ ] Tablero de Compras estilo Power BI (selector multi-mes, tabla proveedores, gráfico)
 - [ ] Filtro "Gasto" vs "Venta" en Análisis de Inventario MPRO (BLOCKED - esperando confirmación del usuario)
 - [ ] Módulo Comercial - "Ventas sin inflación" (Valuación con precios año anterior)
