@@ -8895,6 +8895,176 @@ async def ejecutar_query_libre(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.post("/explorador/ejecutar-script/{server_id}")
+async def ejecutar_script_sql(
+    server_id: str,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Ejecuta un script SQL completo (CREATE, INSERT, UPDATE, DELETE, etc.).
+    SOLO ADMINISTRADORES - USAR CON PRECAUCIÓN.
+    Ejecuta cada statement por separado y devuelve el resultado de cada uno.
+    """
+    # Verificar que sea admin
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar scripts SQL")
+    
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    script = body.get('script', '').strip()
+    if not script:
+        raise HTTPException(status_code=400, detail="El script está vacío")
+    
+    # Parsear el script en statements individuales
+    # Dividir por GO (batch separator de SQL Server) o por punto y coma
+    import re
+    
+    # Reemplazar GO como separador de batch
+    script_normalizado = re.sub(r'\bGO\b', ';', script, flags=re.IGNORECASE)
+    
+    # Dividir por punto y coma, pero ignorar los que están dentro de strings
+    statements = []
+    current_statement = []
+    in_string = False
+    string_char = None
+    
+    for char in script_normalizado:
+        if char in ("'", '"') and not in_string:
+            in_string = True
+            string_char = char
+        elif char == string_char and in_string:
+            in_string = False
+            string_char = None
+        
+        if char == ';' and not in_string:
+            stmt = ''.join(current_statement).strip()
+            if stmt:
+                statements.append(stmt)
+            current_statement = []
+        else:
+            current_statement.append(char)
+    
+    # Agregar el último statement si no termina en ;
+    final_stmt = ''.join(current_statement).strip()
+    if final_stmt:
+        statements.append(final_stmt)
+    
+    # Filtrar statements vacíos y comentarios puros
+    statements = [s for s in statements if s and not s.startswith('--')]
+    
+    if not statements:
+        raise HTTPException(status_code=400, detail="No se encontraron comandos SQL válidos")
+    
+    logging.info(f"[SCRIPT SQL] Usuario {current_user.get('email')} ejecutando {len(statements)} comandos en {server['name']}")
+    
+    resultados = []
+    exitosos = 0
+    fallidos = 0
+    
+    # Ejecutar cada statement
+    import pytds
+    
+    try:
+        # Parsear host y puerto
+        host_str = server['host']
+        port = server.get('port', 1433)
+        
+        if ',' in host_str:
+            parts = host_str.split(',')
+            host = parts[0].strip()
+            try:
+                port = int(parts[1].strip().split('\\')[0])
+            except:
+                pass
+            if '\\' in host_str:
+                host = host_str.split(',')[0].strip()
+        else:
+            host = host_str
+        
+        with pytds.connect(
+            server=host,
+            port=port,
+            database=server['database'],
+            user=server['username'],
+            password=server['password'],
+            timeout=60,
+            login_timeout=30,
+            autocommit=True  # Importante para DDL
+        ) as conn:
+            cursor = conn.cursor()
+            
+            for idx, stmt in enumerate(statements):
+                stmt_tipo = stmt.split()[0].upper() if stmt.split() else 'UNKNOWN'
+                
+                try:
+                    cursor.execute(stmt)
+                    
+                    # Si es SELECT, obtener resultados
+                    if stmt_tipo == 'SELECT':
+                        try:
+                            rows = cursor.fetchall()
+                            resultados.append({
+                                "exito": True,
+                                "tipo": stmt_tipo,
+                                "mensaje": f"Retornó {len(rows)} filas",
+                                "filas_afectadas": len(rows)
+                            })
+                        except:
+                            resultados.append({
+                                "exito": True,
+                                "tipo": stmt_tipo,
+                                "mensaje": "Ejecutado correctamente"
+                            })
+                    else:
+                        # Para DDL/DML, mostrar filas afectadas
+                        filas = cursor.rowcount if cursor.rowcount >= 0 else 0
+                        resultados.append({
+                            "exito": True,
+                            "tipo": stmt_tipo,
+                            "mensaje": f"{filas} filas afectadas" if filas > 0 else "Ejecutado correctamente",
+                            "filas_afectadas": filas
+                        })
+                    
+                    exitosos += 1
+                    
+                except Exception as e:
+                    error_msg = str(e)
+                    resultados.append({
+                        "exito": False,
+                        "tipo": stmt_tipo,
+                        "error": error_msg,
+                        "statement": stmt[:100] + '...' if len(stmt) > 100 else stmt
+                    })
+                    fallidos += 1
+                    logging.warning(f"[SCRIPT SQL] Error en statement {idx+1}: {error_msg}")
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error de conexión: {str(e)}")
+    
+    # Guardar log en MongoDB
+    await db.script_logs.insert_one({
+        "server_id": server_id,
+        "server_name": server['name'],
+        "usuario": current_user.get('email'),
+        "fecha": datetime.now(timezone.utc),
+        "total_statements": len(statements),
+        "exitosos": exitosos,
+        "fallidos": fallidos,
+        "resultados": resultados
+    })
+    
+    return {
+        "servidor": server['name'],
+        "total": len(statements),
+        "exitosos": exitosos,
+        "fallidos": fallidos,
+        "resultados": resultados
+    }
+
+
 @api_router.get("/explorador/buscar/{server_id}")
 async def buscar_en_bd(
     server_id: str,

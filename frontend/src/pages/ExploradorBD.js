@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -10,10 +10,249 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { toast } from 'sonner';
 import { 
   Loader2, Database, Table, Columns, Link2, Eye, Play, 
-  ChevronRight, Search, Download, Server, X, FileText
+  ChevronRight, Search, Download, Server, X, FileText,
+  Plus, Upload, Terminal, CheckCircle2, XCircle, AlertTriangle
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+// ============ COMPONENTE: AGREGAR TABLAS (ADMIN ONLY) ============
+function AgregarTablasModal({ isOpen, onClose, serverSeleccionado, serverName, onSuccess }) {
+  const [script, setScript] = useState('');
+  const [ejecutando, setEjecutando] = useState(false);
+  const [progreso, setProgreso] = useState({ current: 0, total: 0, statement: '' });
+  const [logs, setLogs] = useState([]);
+  const [archivo, setArchivo] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const agregarLog = (tipo, mensaje, detalle = '') => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs(prev => [...prev, { tipo, mensaje, detalle, timestamp }]);
+  };
+
+  const cargarArchivo = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.name.endsWith('.sql')) {
+        toast.error('Solo se permiten archivos .sql');
+        return;
+      }
+      setArchivo(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setScript(event.target.result);
+        toast.success(`Archivo ${file.name} cargado`);
+        agregarLog('info', `Archivo cargado: ${file.name}`, `${(file.size / 1024).toFixed(1)} KB`);
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const ejecutarScript = async () => {
+    if (!script.trim()) {
+      toast.error('El script está vacío');
+      return;
+    }
+
+    setEjecutando(true);
+    setLogs([]);
+    agregarLog('info', 'Iniciando ejecución de script...', serverName);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_URL}/api/explorador/ejecutar-script/${serverSeleccionado}`,
+        { script },
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const resultado = response.data;
+      
+      // Mostrar logs de cada statement
+      resultado.resultados.forEach((r, idx) => {
+        if (r.exito) {
+          agregarLog('success', `[${idx + 1}] ${r.tipo}`, r.mensaje);
+        } else {
+          agregarLog('error', `[${idx + 1}] ${r.tipo}`, r.error);
+        }
+      });
+
+      // Resumen final
+      if (resultado.exitosos === resultado.total) {
+        toast.success(`✅ Script ejecutado: ${resultado.exitosos}/${resultado.total} comandos exitosos`);
+        agregarLog('success', 'COMPLETADO', `${resultado.exitosos} de ${resultado.total} comandos ejecutados correctamente`);
+        if (onSuccess) onSuccess();
+      } else {
+        toast.warning(`⚠️ Script con errores: ${resultado.exitosos}/${resultado.total} exitosos`);
+        agregarLog('warning', 'COMPLETADO CON ERRORES', `${resultado.exitosos} exitosos, ${resultado.fallidos} fallidos`);
+      }
+
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || error.message;
+      toast.error(`Error: ${errorMsg}`);
+      agregarLog('error', 'ERROR FATAL', errorMsg);
+    } finally {
+      setEjecutando(false);
+    }
+  };
+
+  const limpiar = () => {
+    setScript('');
+    setLogs([]);
+    setArchivo(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const getLogIcon = (tipo) => {
+    switch (tipo) {
+      case 'success': return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case 'error': return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'warning': return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+      default: return <Terminal className="h-4 w-4 text-blue-500" />;
+    }
+  };
+
+  const getLogColor = (tipo) => {
+    switch (tipo) {
+      case 'success': return 'bg-green-50 border-green-200';
+      case 'error': return 'bg-red-50 border-red-200';
+      case 'warning': return 'bg-yellow-50 border-yellow-200';
+      default: return 'bg-blue-50 border-blue-200';
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Plus className="h-5 w-5 text-green-600" />
+            Agregar Tablas - {serverName}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-hidden flex flex-col gap-4">
+          {/* Área de entrada */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                accept=".sql"
+                onChange={cargarArchivo}
+                ref={fileInputRef}
+                className="hidden"
+              />
+              <Button 
+                variant="outline" 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={ejecutando}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Cargar .SQL
+              </Button>
+              {archivo && (
+                <span className="text-sm text-zinc-500 flex items-center gap-1">
+                  <FileText className="h-4 w-4" />
+                  {archivo.name}
+                </span>
+              )}
+              <div className="flex-1" />
+              <Button variant="ghost" onClick={limpiar} disabled={ejecutando}>
+                Limpiar
+              </Button>
+            </div>
+
+            <Textarea
+              value={script}
+              onChange={(e) => setScript(e.target.value)}
+              placeholder={`-- Pega tu script SQL aquí
+-- Ejemplo:
+CREATE TABLE MiTabla (
+    id INT PRIMARY KEY IDENTITY(1,1),
+    nombre NVARCHAR(100),
+    fecha DATETIME DEFAULT GETDATE()
+);
+
+INSERT INTO MiTabla (nombre) VALUES ('Registro 1');`}
+              className="font-mono text-sm h-48 resize-none"
+              disabled={ejecutando}
+            />
+
+            <div className="flex gap-2">
+              <Button 
+                onClick={ejecutarScript} 
+                disabled={ejecutando || !script.trim()} 
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                {ejecutando ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Ejecutando...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    Ejecutar Script
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Log de ejecución */}
+          <div className="flex-1 min-h-0">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-zinc-700 flex items-center gap-2">
+                <Terminal className="h-4 w-4" />
+                Log de Ejecución
+              </span>
+              {logs.length > 0 && (
+                <span className="text-xs text-zinc-500">{logs.length} entradas</span>
+              )}
+            </div>
+            <div className="border rounded-lg bg-zinc-900 p-3 h-48 overflow-y-auto font-mono text-xs">
+              {logs.length === 0 ? (
+                <p className="text-zinc-500 italic">El log aparecerá aquí cuando ejecutes un script...</p>
+              ) : (
+                logs.map((log, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`flex items-start gap-2 py-1 ${
+                      log.tipo === 'success' ? 'text-green-400' :
+                      log.tipo === 'error' ? 'text-red-400' :
+                      log.tipo === 'warning' ? 'text-yellow-400' :
+                      'text-blue-400'
+                    }`}
+                  >
+                    <span className="text-zinc-500 shrink-0">[{log.timestamp}]</span>
+                    <span className="font-semibold shrink-0">{log.mensaje}</span>
+                    {log.detalle && <span className="text-zinc-400 truncate">{log.detalle}</span>}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Advertencia */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2">
+            <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
+            <div className="text-sm text-yellow-800">
+              <strong>Precaución:</strong> Los comandos se ejecutan directamente en la base de datos. 
+              Asegúrate de revisar el script antes de ejecutar. Esta acción no se puede deshacer.
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // Componente de Buscador Global
 function BuscadorGlobal({ serverSeleccionado, onSelectTabla }) {
@@ -201,9 +440,16 @@ export default function ExploradorBD() {
   const [queryLibre, setQueryLibre] = useState('SELECT TOP 10 * FROM ');
   const [resultadoQuery, setResultadoQuery] = useState(null);
   const [filtroTabla, setFiltroTabla] = useState('');
+  
+  // Modal Agregar Tablas
+  const [showAgregarTablas, setShowAgregarTablas] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     cargarServers();
+    // Verificar si el usuario es admin
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setIsAdmin(user.rol === 'Administrador' || user.email === 'admin@inventario.com');
   }, []);
 
   const cargarServers = async () => {
@@ -343,7 +589,7 @@ export default function ExploradorBD() {
       {/* Selector de servidor */}
       <Card className="border">
         <CardContent className="py-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <Server className="h-5 w-5 text-zinc-400" />
             <Select value={serverSeleccionado} onValueChange={(v) => { setServerSeleccionado(v); cargarTablas(v); }}>
               <SelectTrigger className="w-64">
@@ -362,9 +608,30 @@ export default function ExploradorBD() {
                 <span className="font-medium">{serverInfo.sistema}</span> • {serverInfo.database}
               </div>
             )}
+            <div className="flex-1" />
+            {/* Botón Agregar Tablas - Solo Admin */}
+            {isAdmin && serverSeleccionado && (
+              <Button 
+                onClick={() => setShowAgregarTablas(true)}
+                className="bg-green-600 hover:bg-green-700"
+                data-testid="btn-agregar-tablas"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Tablas
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal Agregar Tablas */}
+      <AgregarTablasModal
+        isOpen={showAgregarTablas}
+        onClose={() => setShowAgregarTablas(false)}
+        serverSeleccionado={serverSeleccionado}
+        serverName={servers.find(s => s.id === serverSeleccionado)?.name || ''}
+        onSuccess={() => cargarTablas(serverSeleccionado)}
+      />
 
       {serverSeleccionado && (
         <>

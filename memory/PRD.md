@@ -68,6 +68,13 @@ Aplicación web ERP modular para gestionar múltiples sucursales con bases de da
   - Selector de año (últimos 6 años disponibles)
   - Botones "Todos" y "Solo actual" para selección rápida
   - Backend actualizado para soportar rangos de fechas personalizados
+- **ADDED**: Herramienta "Agregar Tablas" en Explorador de Base de Datos:
+  - Solo accesible para administradores
+  - Área de texto grande para pegar scripts SQL completos (CREATE, INSERT, UPDATE, etc.)
+  - Botón para cargar archivos .sql
+  - Ejecuta statements línea por línea con log de progreso
+  - Guarda log de ejecución en MongoDB (colección `script_logs`)
+  - Advertencia de precaución antes de ejecutar
 
 ## 2025-03-31 / 2025-04-01
 - **FIXED**: Error de sintaxis en `Compras.js` - código JSX duplicado/corrupto eliminado (~260 líneas)
