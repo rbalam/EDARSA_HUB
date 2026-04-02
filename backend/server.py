@@ -6456,18 +6456,16 @@ ORDER BY total DESC
         
         elif server['system_type'] == 'SoftRestaurant':
             # SoftRestaurant - Usando tabla compras del catálogo
-            from datetime import datetime, timedelta
-            fecha_fin = datetime.now().strftime('%Y-%m-%d')
-            fecha_ini = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+            # Usar los parámetros de meses y años del frontend
             
-            # Total compras del mes (usando tabla compras - columna correcta: fechaaplicacion)
+            # Total compras del período seleccionado (usando tabla compras - columna correcta: fechaaplicacion)
             query_compras = f"""
 SELECT 
     COUNT(DISTINCT c.idcompra) as Facturas,
     ISNULL(SUM(c.total), 0) as Compra_Total
 FROM compras c
-WHERE c.fechaaplicacion >= '{fecha_ini}'
-  AND c.fechaaplicacion <= '{fecha_fin} 23:59:59'
+WHERE c.fechaaplicacion >= '{fecha_inicio}'
+  AND c.fechaaplicacion < '{fecha_fin}'
   AND ISNULL(c.cancelado, 0) = 0
 """
             result_compras = execute_sql_query(
@@ -6477,7 +6475,8 @@ WHERE c.fechaaplicacion >= '{fecha_ini}'
             total_compras = float(result_compras[0]['Compra_Total'] or 0) if result_compras else 0
             facturas = int(result_compras[0]['Facturas'] or 0) if result_compras else 0
             
-            # Proveedores activos (con compras en últimos 90 días)
+            # Proveedores activos (con compras en últimos 90 días desde hoy)
+            from datetime import datetime, timedelta
             fecha_90 = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
             query_prov = f"""
 SELECT COUNT(DISTINCT c.idproveedor) as total
@@ -6492,7 +6491,7 @@ WHERE c.fechaaplicacion >= '{fecha_90}'
             )
             prov_activos = result_prov[0]['total'] if result_prov else 0
             
-            # Top proveedores usando tabla compras
+            # Top proveedores usando tabla compras - período seleccionado
             query_top = f"""
 SELECT TOP 5 
     ISNULL(p.nombre, 'Sin proveedor') as nombre,
@@ -6500,8 +6499,8 @@ SELECT TOP 5
     ISNULL(SUM(c.total), 0) as total
 FROM compras c
 LEFT JOIN proveedores p ON p.idproveedor = c.idproveedor
-WHERE c.fechaaplicacion >= '{fecha_ini}'
-  AND c.fechaaplicacion <= '{fecha_fin} 23:59:59'
+WHERE c.fechaaplicacion >= '{fecha_inicio}'
+  AND c.fechaaplicacion < '{fecha_fin}'
   AND ISNULL(c.cancelado, 0) = 0
 GROUP BY p.nombre
 ORDER BY SUM(c.total) DESC
