@@ -6255,11 +6255,13 @@ class AnalisisComprasRequest(BaseModel):
 async def obtener_dashboard_compras(
     server_id: str, 
     sucursal: str = None, 
-    periodo_mes: str = Query(default="actual"),
-    periodo_ano: str = Query(default="actual"),
+    meses: str = Query(default=""),  # "01,02,03" - Lista de meses separados por coma
+    anio: str = Query(default=""),  # "2025" - Año específico
+    periodo_mes: str = Query(default="actual"),  # Mantener para compatibilidad
+    periodo_ano: str = Query(default="actual"),  # Mantener para compatibilidad
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
-    """Obtiene KPIs y alertas para el dashboard de compras"""
+    """Obtiene KPIs y alertas para el dashboard de compras. Soporta multiselección de meses."""
     verify_token(credentials.credentials)
     
     server = await db.servers.find_one({"id": server_id, "active": True})
@@ -6274,34 +6276,53 @@ async def obtener_dashboard_compras(
         from datetime import datetime
         now = datetime.now()
         
-        # Determinar el año
-        if periodo_ano == "anterior":
-            year = now.year - 1
-        else:
-            year = now.year
-        
-        # Determinar el mes
-        if periodo_mes == "anterior":
-            if now.month == 1:
-                month = 12
-                year = year - 1
+        # Nueva lógica: meses y año específicos
+        if meses and anio:
+            lista_meses = [m.strip() for m in meses.split(',') if m.strip()]
+            year = int(anio)
+            
+            mes_min = min([int(m) for m in lista_meses])
+            mes_max = max([int(m) for m in lista_meses])
+            
+            fecha_inicio = f"{year}-{str(mes_min).zfill(2)}-01"
+            
+            # Último día del mes máximo + 1 para el filtro < fecha_fin
+            if mes_max == 12:
+                fecha_fin = f"{year + 1}-01-01"
             else:
-                month = now.month - 1
+                fecha_fin = f"{year}-{str(mes_max + 1).zfill(2)}-01"
+            
+            logging.info(f"Dashboard Compras (multiselección): Meses: {lista_meses} Año: {year} ({fecha_inicio} a {fecha_fin})")
         else:
-            month = now.month
-        
-        # Calcular fecha inicio y fin del período
-        fecha_inicio = f"{year}-{month:02d}-01"
-        # Calcular último día del mes
-        if month == 12:
-            next_month_year = year + 1
-            next_month = 1
-        else:
-            next_month_year = year
-            next_month = month + 1
-        fecha_fin = f"{next_month_year}-{next_month:02d}-01"
-        
-        logging.info(f"Dashboard Compras: período {fecha_inicio} a {fecha_fin}")
+            # Lógica antigua para compatibilidad
+            # Determinar el año
+            if periodo_ano == "anterior":
+                year = now.year - 1
+            else:
+                year = now.year
+            
+            # Determinar el mes
+            if periodo_mes == "anterior":
+                if now.month == 1:
+                    month = 12
+                    year = year - 1
+                else:
+                    month = now.month - 1
+            else:
+                month = now.month
+            
+            # Calcular fecha inicio y fin del período
+            fecha_inicio = f"{year}-{month:02d}-01"
+            # Calcular último día del mes
+            if month == 12:
+                next_month_year = year + 1
+                next_month = 1
+            else:
+                next_month_year = year
+                next_month = month + 1
+            fecha_fin = f"{next_month_year}-{next_month:02d}-01"
+            
+            logging.info(f"Dashboard Compras: período {fecha_inicio} a {fecha_fin}")
         
         if server['system_type'] == 'MPRO':
             # Total compras del período FILTRADO POR SUCURSAL
@@ -6638,11 +6659,14 @@ async def comercial_dashboard(
     server_id: str, 
     sucursal: str = Query(default=""), 
     periodo: str = Query(default="dia"),  # dia, semana, mes
+    meses: str = Query(default=""),  # "01,02,03" - Lista de meses separados por coma
+    anio: str = Query(default=""),  # "2025" - Año específico
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Dashboard principal de ventas con KPIs y comparativos.
     Soporta SoftRestaurant y MPRO.
+    Ahora soporta multiselección de meses y año específico.
     """
     server = await db.servers.find_one({"id": server_id, "active": True})
     if not server:
@@ -6657,7 +6681,34 @@ async def comercial_dashboard(
         from datetime import datetime, timedelta
         hoy = datetime.now()
         
-        if periodo == "dia":
+        # Si se proporcionan meses y año específicos, usar esos
+        if meses and anio:
+            lista_meses = [m.strip() for m in meses.split(',') if m.strip()]
+            year = int(anio)
+            
+            # Para múltiples meses, calcular rango de fechas
+            mes_min = min([int(m) for m in lista_meses])
+            mes_max = max([int(m) for m in lista_meses])
+            
+            fecha_ini = f"{year}-{str(mes_min).zfill(2)}-01"
+            
+            # Último día del mes máximo
+            if mes_max == 12:
+                ultimo_dia = datetime(year + 1, 1, 1) - timedelta(days=1)
+            else:
+                ultimo_dia = datetime(year, mes_max + 1, 1) - timedelta(days=1)
+            fecha_fin = ultimo_dia.strftime('%Y-%m-%d')
+            
+            # Para comparativo: mismo período del año anterior
+            fecha_ini_ant = f"{year - 1}-{str(mes_min).zfill(2)}-01"
+            if mes_max == 12:
+                ultimo_dia_ant = datetime(year, 1, 1) - timedelta(days=1)
+            else:
+                ultimo_dia_ant = datetime(year - 1, mes_max + 1, 1) - timedelta(days=1)
+            fecha_fin_ant = ultimo_dia_ant.strftime('%Y-%m-%d')
+            
+            logging.info(f"Comercial Dashboard (multiselección): {server['name']} - Meses: {lista_meses} Año: {year} ({fecha_ini} a {fecha_fin})")
+        elif periodo == "dia":
             fecha_ini = hoy.strftime('%Y-%m-%d')
             fecha_fin = hoy.strftime('%Y-%m-%d')
             # Para comparativo: día anterior

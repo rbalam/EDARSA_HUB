@@ -29,27 +29,55 @@ const formatCurrency = (num) => {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(num);
 };
 
+// Constantes para meses y años
+const MESES = [
+  { value: '01', label: 'Enero' },
+  { value: '02', label: 'Febrero' },
+  { value: '03', label: 'Marzo' },
+  { value: '04', label: 'Abril' },
+  { value: '05', label: 'Mayo' },
+  { value: '06', label: 'Junio' },
+  { value: '07', label: 'Julio' },
+  { value: '08', label: 'Agosto' },
+  { value: '09', label: 'Septiembre' },
+  { value: '10', label: 'Octubre' },
+  { value: '11', label: 'Noviembre' },
+  { value: '12', label: 'Diciembre' }
+];
+
+const getAniosDisponibles = () => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let y = currentYear; y >= currentYear - 5; y--) {
+    years.push({ value: y.toString(), label: y.toString() });
+  }
+  return years;
+};
+
 // ============ TAB 1: DASHBOARD DE COMPRAS ============
 function DashboardCompras({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
   const [kpis, setKpis] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [topProveedores, setTopProveedores] = useState([]);
-  const [periodoMes, setPeriodoMes] = useState('actual'); // actual, anterior
-  const [periodoAno, setPeriodoAno] = useState('actual'); // actual, anterior
+  const [selectedMeses, setSelectedMeses] = useState([String(new Date().getMonth() + 1).padStart(2, '0')]);
+  const [selectedAnio, setSelectedAnio] = useState(new Date().getFullYear().toString());
+  const [showMesesDropdown, setShowMesesDropdown] = useState(false);
+  
+  const ANIOS = getAniosDisponibles();
 
   useEffect(() => {
     if (selectedServer && selectedSucursal) {
       cargarDashboard();
     }
-  }, [selectedServer, selectedSucursal, periodoMes, periodoAno]);
+  }, [selectedServer, selectedSucursal, selectedMeses, selectedAnio]);
 
   const cargarDashboard = async () => {
     if (!selectedSucursal) return;
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/compras/dashboard/${selectedServer}?sucursal=${encodeURIComponent(selectedSucursal)}&periodo_mes=${periodoMes}&periodo_ano=${periodoAno}`, {
+      const response = await axios.get(`${API_URL}/api/compras/dashboard/${selectedServer}?sucursal=${encodeURIComponent(selectedSucursal)}&meses=${selectedMeses.join(',')}&anio=${selectedAnio}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setKpis(response.data.kpis);
@@ -68,6 +96,25 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, selected
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleMes = (mes) => {
+    setSelectedMeses(prev => {
+      if (prev.includes(mes)) {
+        if (prev.length === 1) return prev;
+        return prev.filter(m => m !== mes);
+      }
+      return [...prev, mes].sort();
+    });
+  };
+
+  const getMesesLabel = () => {
+    if (selectedMeses.length === 0) return 'Seleccionar';
+    if (selectedMeses.length === 1) {
+      return MESES.find(m => m.value === selectedMeses[0])?.label || 'Mes';
+    }
+    if (selectedMeses.length === 12) return 'Todo el año';
+    return `${selectedMeses.length} meses`;
   };
 
   return (
@@ -109,27 +156,64 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, selected
           </div>
           {/* Selectores de período */}
           <div className="flex items-center gap-4 flex-wrap mt-4 pt-4 border-t">
-            <div className="flex-1 min-w-[150px] max-w-[200px]">
-              <Label className="text-xs mb-1 block">Período (Mes)</Label>
-              <Select value={periodoMes} onValueChange={setPeriodoMes}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="actual">Mes Actual</SelectItem>
-                  <SelectItem value="anterior">Mes Anterior</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Selector de Meses (multiselección) */}
+            <div className="flex-1 min-w-[150px] max-w-[200px] relative">
+              <Label className="text-xs mb-1 block">Mes(es)</Label>
+              <button
+                type="button"
+                onClick={() => setShowMesesDropdown(!showMesesDropdown)}
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <span>{getMesesLabel()}</span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </button>
+              {showMesesDropdown && (
+                <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg max-h-60 overflow-auto">
+                  <div className="p-2 border-b">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMeses(MESES.map(m => m.value))}
+                      className="text-xs text-blue-600 hover:underline mr-3"
+                    >
+                      Todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMeses([String(new Date().getMonth() + 1).padStart(2, '0')])}
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      Solo actual
+                    </button>
+                  </div>
+                  {MESES.map(mes => (
+                    <label
+                      key={mes.value}
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-100 cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={selectedMeses.includes(mes.value)}
+                        onCheckedChange={() => toggleMes(mes.value)}
+                      />
+                      <span className="text-sm">{mes.label}</span>
+                    </label>
+                  ))}
+                  <div className="p-2 border-t">
+                    <Button size="sm" onClick={() => setShowMesesDropdown(false)} className="w-full">
+                      Aplicar
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="flex-1 min-w-[150px] max-w-[200px]">
+            {/* Selector de Año */}
+            <div className="flex-1 min-w-[100px] max-w-[130px]">
               <Label className="text-xs mb-1 block">Año</Label>
-              <Select value={periodoAno} onValueChange={setPeriodoAno}>
+              <Select value={selectedAnio} onValueChange={setSelectedAnio}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="actual">Año Actual</SelectItem>
-                  <SelectItem value="anterior">Año Anterior</SelectItem>
+                  {ANIOS.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

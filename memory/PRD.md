@@ -63,6 +63,11 @@ Aplicación web ERP modular para gestionar múltiples sucursales con bases de da
   - "130 Merida" → "130° MERIDA" (en MongoDB y formatSucursal.js)
   - Actualizado archivo `formatSucursal.js` con mapeo extendido
 - **RESEARCHED**: Playbooks de integración obtenidos para Toast POS, QuickBooks Online y MarginEdge (esperando credenciales del usuario)
+- **ADDED**: Filtros avanzados de Mes y Año en Comercial y Compras:
+  - Multiselección de meses con checkboxes (Enero-Diciembre)
+  - Selector de año (últimos 6 años disponibles)
+  - Botones "Todos" y "Solo actual" para selección rápida
+  - Backend actualizado para soportar rangos de fechas personalizados
 
 ## 2025-03-31 / 2025-04-01
 - **FIXED**: Error de sintaxis en `Compras.js` - código JSX duplicado/corrupto eliminado (~260 líneas)
