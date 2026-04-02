@@ -9214,6 +9214,47 @@ async def eliminar_script_pendiente(
     return {"message": "Script eliminado"}
 
 
+@api_router.put("/explorador/script-pendiente/{script_id}")
+async def actualizar_script_pendiente(
+    script_id: str,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza un script pendiente (título y/o contenido)."""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden editar scripts")
+    
+    titulo = body.get('titulo', '').strip()
+    script = body.get('script', '').strip()
+    
+    if not titulo:
+        raise HTTPException(status_code=400, detail="El título es requerido")
+    if not script:
+        raise HTTPException(status_code=400, detail="El script no puede estar vacío")
+    
+    # Contar statements actualizados
+    import re
+    script_normalizado = re.sub(r'\bGO\b', ';', script, flags=re.IGNORECASE)
+    statements = [s.strip() for s in script_normalizado.split(';') if s.strip() and not s.strip().startswith('--')]
+    
+    from bson import ObjectId
+    result = await db.scripts_pendientes.update_one(
+        {"_id": ObjectId(script_id)},
+        {"$set": {
+            "titulo": titulo,
+            "script": script,
+            "num_statements": len(statements),
+            "modificado_por": current_user.get('email'),
+            "fecha_modificacion": datetime.now(timezone.utc)
+        }}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Script no encontrado")
+    
+    return {"message": "Script actualizado", "num_statements": len(statements)}
+
+
 @api_router.post("/explorador/ejecutar-con-credenciales/{server_id}")
 async def ejecutar_script_con_credenciales(
     server_id: str,

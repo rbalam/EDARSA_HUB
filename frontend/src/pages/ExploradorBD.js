@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { 
   Loader2, Database, Table, Columns, Link2, Eye, Play, 
   ChevronRight, Search, Download, Server, X, FileText,
-  Plus, Upload, Terminal, CheckCircle2, XCircle, AlertTriangle
+  Plus, Upload, Terminal, CheckCircle2, XCircle, AlertTriangle, Pencil
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -30,6 +30,10 @@ function AgregarTablasModal({ isOpen, onClose, serverSeleccionado, serverName, o
   const [scriptSeleccionado, setScriptSeleccionado] = useState(null);
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [adminCredentials, setAdminCredentials] = useState({ username: '', password: '' });
+  const [editandoScript, setEditandoScript] = useState(null); // Script que se está editando
+  const [editTitulo, setEditTitulo] = useState('');
+  const [editContenido, setEditContenido] = useState('');
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
   const fileInputRef = useRef(null);
 
   // Cargar scripts pendientes cuando se abre el tab
@@ -175,6 +179,46 @@ function AgregarTablasModal({ isOpen, onClose, serverSeleccionado, serverName, o
       cargarScriptsPendientes();
     } catch (error) {
       toast.error(`Error: ${error.response?.data?.detail || error.message}`);
+    }
+  };
+
+  const iniciarEdicion = (sp) => {
+    setEditandoScript(sp);
+    setEditTitulo(sp.titulo);
+    setEditContenido(sp.script);
+  };
+
+  const cancelarEdicion = () => {
+    setEditandoScript(null);
+    setEditTitulo('');
+    setEditContenido('');
+  };
+
+  const guardarEdicion = async () => {
+    if (!editTitulo.trim()) {
+      toast.error('El título es requerido');
+      return;
+    }
+    if (!editContenido.trim()) {
+      toast.error('El script no puede estar vacío');
+      return;
+    }
+
+    setGuardandoEdicion(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `${API_URL}/api/explorador/script-pendiente/${editandoScript._id}`,
+        { titulo: editTitulo, script: editContenido },
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+      );
+      toast.success('Script actualizado');
+      cancelarEdicion();
+      cargarScriptsPendientes();
+    } catch (error) {
+      toast.error(`Error: ${error.response?.data?.detail || error.message}`);
+    } finally {
+      setGuardandoEdicion(false);
     }
   };
 
@@ -370,6 +414,63 @@ CREATE TABLE MiTabla (
                 <div className="flex items-center justify-center h-40">
                   <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
                 </div>
+              ) : editandoScript ? (
+                /* Formulario de edición */
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-zinc-800">Editando Script</h4>
+                    <Button variant="ghost" size="sm" onClick={cancelarEdicion}>
+                      <X className="h-4 w-4 mr-1" /> Cancelar
+                    </Button>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">
+                      Descripción del Script <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      value={editTitulo}
+                      onChange={(e) => setEditTitulo(e.target.value)}
+                      placeholder="Descripción del script"
+                      disabled={guardandoEdicion}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">
+                      Script SQL <span className="text-red-500">*</span>
+                    </label>
+                    <Textarea
+                      value={editContenido}
+                      onChange={(e) => setEditContenido(e.target.value)}
+                      className="font-mono text-sm h-64 resize-none"
+                      disabled={guardandoEdicion}
+                    />
+                  </div>
+
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={cancelarEdicion} disabled={guardandoEdicion}>
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={guardarEdicion} 
+                      disabled={guardandoEdicion || !editTitulo.trim() || !editContenido.trim()}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {guardandoEdicion ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Guardando...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Guardar Cambios
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               ) : scriptsPendientes.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-40 text-zinc-500">
                   <FileText className="h-12 w-12 mb-2 opacity-30" />
@@ -393,8 +494,18 @@ CREATE TABLE MiTabla (
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => iniciarEdicion(sp)}
+                            className="text-blue-600 hover:bg-blue-50"
+                            title="Editar script"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => eliminarScriptPendiente(sp._id)}
                             className="text-red-600 hover:bg-red-50"
+                            title="Eliminar script"
                           >
                             <X className="h-4 w-4" />
                           </Button>
