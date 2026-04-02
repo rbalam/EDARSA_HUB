@@ -9129,6 +9129,282 @@ async def ejecutar_script_sql(
     }
 
 
+# ============ SCRIPTS PENDIENTES (STAND-BY) ============
+
+@api_router.post("/explorador/guardar-script/{server_id}")
+async def guardar_script_pendiente(
+    server_id: str,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Guarda un script SQL en stand-by para ejecución posterior.
+    Permite que un administrador de BD lo ejecute con sus credenciales.
+    """
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden guardar scripts")
+    
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    script = body.get('script', '').strip()
+    titulo = body.get('titulo', '').strip()
+    
+    if not script:
+        raise HTTPException(status_code=400, detail="El script está vacío")
+    if not titulo:
+        raise HTTPException(status_code=400, detail="El título es requerido")
+    
+    # Contar statements
+    import re
+    script_normalizado = re.sub(r'\bGO\b', ';', script, flags=re.IGNORECASE)
+    statements = [s.strip() for s in script_normalizado.split(';') if s.strip() and not s.strip().startswith('--')]
+    
+    # Guardar en MongoDB
+    result = await db.scripts_pendientes.insert_one({
+        "server_id": server_id,
+        "server_name": server['name'],
+        "titulo": titulo,
+        "script": script,
+        "num_statements": len(statements),
+        "creado_por": current_user.get('email'),
+        "fecha_creacion": datetime.now(timezone.utc),
+        "estado": "pendiente"
+    })
+    
+    return {"message": "Script guardado en stand-by", "id": str(result.inserted_id)}
+
+
+@api_router.get("/explorador/scripts-pendientes/{server_id}")
+async def listar_scripts_pendientes(
+    server_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista los scripts pendientes de ejecución para un servidor."""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden ver scripts pendientes")
+    
+    scripts = await db.scripts_pendientes.find(
+        {"server_id": server_id, "estado": "pendiente"},
+        {"_id": 1, "titulo": 1, "script": 1, "num_statements": 1, "creado_por": 1, "fecha_creacion": 1}
+    ).sort("fecha_creacion", -1).to_list(100)
+    
+    # Convertir ObjectId a string
+    for s in scripts:
+        s['_id'] = str(s['_id'])
+    
+    return scripts
+
+
+@api_router.delete("/explorador/script-pendiente/{script_id}")
+async def eliminar_script_pendiente(
+    script_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina un script pendiente."""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden eliminar scripts")
+    
+    from bson import ObjectId
+    result = await db.scripts_pendientes.delete_one({"_id": ObjectId(script_id)})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Script no encontrado")
+    
+    return {"message": "Script eliminado"}
+
+
+@api_router.post("/explorador/ejecutar-con-credenciales/{server_id}")
+async def ejecutar_script_con_credenciales(
+    server_id: str,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Ejecuta un script SQL usando credenciales de administrador proporcionadas.
+    Las credenciales se usan solo para esta ejecución (no se guardan).
+    """
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar scripts")
+    
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    script_id = body.get('script_id')
+    script = body.get('script', '').strip()
+    titulo = body.get('titulo', 'Script sin título')
+    admin_username = body.get('admin_username', '').strip()
+    admin_password = body.get('admin_password', '')
+    
+    if not admin_username or not admin_password:
+        raise HTTPException(status_code=400, detail="Credenciales de administrador requeridas")
+    
+    # Si hay script_id, cargar el script de MongoDB
+    if script_id:
+        from bson import ObjectId
+        script_doc = await db.scripts_pendientes.find_one({"_id": ObjectId(script_id)})
+        if script_doc:
+            script = script_doc.get('script', '')
+            titulo = script_doc.get('titulo', titulo)
+    
+    if not script:
+        raise HTTPException(status_code=400, detail="El script está vacío")
+    
+    # Parsear statements
+    import re
+    script_normalizado = re.sub(r'\bGO\b', ';', script, flags=re.IGNORECASE)
+    statements = []
+    current_statement = []
+    in_string = False
+    string_char = None
+    
+    for char in script_normalizado:
+        if char in ("'", '"') and not in_string:
+            in_string = True
+            string_char = char
+        elif char == string_char and in_string:
+            in_string = False
+            string_char = None
+        
+        if char == ';' and not in_string:
+            stmt = ''.join(current_statement).strip()
+            if stmt:
+                statements.append(stmt)
+            current_statement = []
+        else:
+            current_statement.append(char)
+    
+    final_stmt = ''.join(current_statement).strip()
+    if final_stmt:
+        statements.append(final_stmt)
+    
+    statements = [s for s in statements if s and not s.startswith('--')]
+    
+    if not statements:
+        raise HTTPException(status_code=400, detail="No se encontraron comandos SQL válidos")
+    
+    logging.info(f"[SCRIPT CON CREDS] Usuario {current_user.get('email')} ejecutando {len(statements)} comandos en {server['name']} con credenciales de {admin_username}")
+    
+    resultados = []
+    exitosos = 0
+    fallidos = 0
+    
+    import pytds
+    
+    try:
+        host_str = server['host']
+        port = server.get('port', 1433)
+        
+        if ',' in host_str:
+            parts = host_str.split(',')
+            host = parts[0].strip()
+            try:
+                port = int(parts[1].strip().split('\\')[0])
+            except:
+                pass
+        else:
+            host = host_str
+        
+        with pytds.connect(
+            server=host,
+            port=port,
+            database=server['database'],
+            user=admin_username,  # Usar credenciales proporcionadas
+            password=admin_password,
+            timeout=60,
+            login_timeout=30,
+            autocommit=True
+        ) as conn:
+            cursor = conn.cursor()
+            
+            for idx, stmt in enumerate(statements):
+                stmt_tipo = stmt.split()[0].upper() if stmt.split() else 'UNKNOWN'
+                
+                try:
+                    cursor.execute(stmt)
+                    
+                    if stmt_tipo == 'SELECT':
+                        try:
+                            rows = cursor.fetchall()
+                            resultados.append({
+                                "exito": True,
+                                "tipo": stmt_tipo,
+                                "mensaje": f"Retornó {len(rows)} filas",
+                                "filas_afectadas": len(rows)
+                            })
+                        except:
+                            resultados.append({
+                                "exito": True,
+                                "tipo": stmt_tipo,
+                                "mensaje": "Ejecutado correctamente"
+                            })
+                    else:
+                        filas = cursor.rowcount if cursor.rowcount >= 0 else 0
+                        resultados.append({
+                            "exito": True,
+                            "tipo": stmt_tipo,
+                            "mensaje": f"{filas} filas afectadas" if filas > 0 else "Ejecutado correctamente",
+                            "filas_afectadas": filas
+                        })
+                    
+                    exitosos += 1
+                    
+                except Exception as e:
+                    error_msg = str(e)
+                    resultados.append({
+                        "exito": False,
+                        "tipo": stmt_tipo,
+                        "error": error_msg,
+                        "statement": stmt[:100] + '...' if len(stmt) > 100 else stmt
+                    })
+                    fallidos += 1
+                    logging.warning(f"[SCRIPT CON CREDS] Error en statement {idx+1}: {error_msg}")
+    
+    except pytds.LoginError as e:
+        raise HTTPException(status_code=401, detail=f"Error de autenticación: Usuario o contraseña incorrectos")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error de conexión: {str(e)}")
+    
+    # Guardar log
+    await db.script_logs.insert_one({
+        "server_id": server_id,
+        "server_name": server['name'],
+        "titulo": titulo,
+        "usuario_app": current_user.get('email'),
+        "usuario_sql": admin_username,
+        "fecha": datetime.now(timezone.utc),
+        "total_statements": len(statements),
+        "exitosos": exitosos,
+        "fallidos": fallidos,
+        "resultados": resultados,
+        "tipo": "ejecutado_con_credenciales"
+    })
+    
+    # Si se ejecutó exitosamente y era un script pendiente, marcarlo como ejecutado
+    if script_id and exitosos > 0:
+        from bson import ObjectId
+        await db.scripts_pendientes.update_one(
+            {"_id": ObjectId(script_id)},
+            {"$set": {
+                "estado": "ejecutado",
+                "fecha_ejecucion": datetime.now(timezone.utc),
+                "ejecutado_por": current_user.get('email'),
+                "resultado": {"exitosos": exitosos, "fallidos": fallidos}
+            }}
+        )
+    
+    return {
+        "servidor": server['name'],
+        "titulo": titulo,
+        "total": len(statements),
+        "exitosos": exitosos,
+        "fallidos": fallidos,
+        "resultados": resultados
+    }
+
+
 @api_router.get("/explorador/buscar/{server_id}")
 async def buscar_en_bd(
     server_id: str,

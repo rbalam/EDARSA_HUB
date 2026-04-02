@@ -21,10 +21,40 @@ function AgregarTablasModal({ isOpen, onClose, serverSeleccionado, serverName, o
   const [titulo, setTitulo] = useState('');
   const [script, setScript] = useState('');
   const [ejecutando, setEjecutando] = useState(false);
-  const [progreso, setProgreso] = useState({ current: 0, total: 0, statement: '' });
+  const [guardando, setGuardando] = useState(false);
   const [logs, setLogs] = useState([]);
   const [archivo, setArchivo] = useState(null);
+  const [activeTab, setActiveTab] = useState('nuevo'); // 'nuevo' | 'pendientes'
+  const [scriptsPendientes, setScriptsPendientes] = useState([]);
+  const [loadingPendientes, setLoadingPendientes] = useState(false);
+  const [scriptSeleccionado, setScriptSeleccionado] = useState(null);
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [adminCredentials, setAdminCredentials] = useState({ username: '', password: '' });
   const fileInputRef = useRef(null);
+
+  // Cargar scripts pendientes cuando se abre el tab
+  useEffect(() => {
+    if (activeTab === 'pendientes' && serverSeleccionado) {
+      cargarScriptsPendientes();
+    }
+  }, [activeTab, serverSeleccionado]);
+
+  const cargarScriptsPendientes = async () => {
+    setLoadingPendientes(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `${API_URL}/api/explorador/scripts-pendientes/${serverSeleccionado}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setScriptsPendientes(response.data);
+    } catch (error) {
+      console.error('Error cargando scripts pendientes:', error);
+      setScriptsPendientes([]);
+    } finally {
+      setLoadingPendientes(false);
+    }
+  };
 
   const agregarLog = (tipo, mensaje, detalle = '') => {
     const timestamp = new Date().toLocaleTimeString();
@@ -39,7 +69,6 @@ function AgregarTablasModal({ isOpen, onClose, serverSeleccionado, serverName, o
         return;
       }
       setArchivo(file);
-      // Usar el nombre del archivo como título si no hay uno
       if (!titulo) {
         setTitulo(file.name.replace('.sql', ''));
       }
@@ -53,32 +82,60 @@ function AgregarTablasModal({ isOpen, onClose, serverSeleccionado, serverName, o
     }
   };
 
-  const ejecutarScript = async () => {
+  const guardarEnStandby = async () => {
     if (!script.trim()) {
       toast.error('El script está vacío');
+      return;
+    }
+    if (!titulo.trim()) {
+      toast.error('Ingresa un título/descripción para el script');
+      return;
+    }
+
+    setGuardando(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${API_URL}/api/explorador/guardar-script/${serverSeleccionado}`,
+        { script, titulo },
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+      );
+      toast.success('Script guardado en stand-by. Un administrador de BD podrá ejecutarlo.');
+      limpiar();
+      setActiveTab('pendientes');
+      cargarScriptsPendientes();
+    } catch (error) {
+      toast.error(`Error: ${error.response?.data?.detail || error.message}`);
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const ejecutarConCredenciales = async () => {
+    if (!adminCredentials.username || !adminCredentials.password) {
+      toast.error('Ingresa usuario y contraseña del administrador');
       return;
     }
 
     setEjecutando(true);
     setLogs([]);
-    agregarLog('info', titulo ? `Ejecutando: ${titulo}` : 'Iniciando ejecución de script...', serverName);
+    agregarLog('info', `Ejecutando: ${scriptSeleccionado?.titulo || 'Script'}`, `Con credenciales de: ${adminCredentials.username}`);
 
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_URL}/api/explorador/ejecutar-script/${serverSeleccionado}`,
-        { script, titulo },
+        `${API_URL}/api/explorador/ejecutar-con-credenciales/${serverSeleccionado}`,
         { 
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+          script_id: scriptSeleccionado?._id,
+          script: scriptSeleccionado?.script || script,
+          titulo: scriptSeleccionado?.titulo || titulo,
+          admin_username: adminCredentials.username,
+          admin_password: adminCredentials.password
+        },
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
       );
 
       const resultado = response.data;
-      
-      // Mostrar logs de cada statement
       resultado.resultados.forEach((r, idx) => {
         if (r.exito) {
           agregarLog('success', `[${idx + 1}] ${r.tipo}`, r.mensaje);
@@ -87,22 +144,37 @@ function AgregarTablasModal({ isOpen, onClose, serverSeleccionado, serverName, o
         }
       });
 
-      // Resumen final
       if (resultado.exitosos === resultado.total) {
         toast.success(`✅ Script ejecutado: ${resultado.exitosos}/${resultado.total} comandos exitosos`);
         agregarLog('success', 'COMPLETADO', `${resultado.exitosos} de ${resultado.total} comandos ejecutados correctamente`);
         if (onSuccess) onSuccess();
+        cargarScriptsPendientes();
       } else {
         toast.warning(`⚠️ Script con errores: ${resultado.exitosos}/${resultado.total} exitosos`);
         agregarLog('warning', 'COMPLETADO CON ERRORES', `${resultado.exitosos} exitosos, ${resultado.fallidos} fallidos`);
       }
-
     } catch (error) {
       const errorMsg = error.response?.data?.detail || error.message;
       toast.error(`Error: ${errorMsg}`);
-      agregarLog('error', 'ERROR FATAL', errorMsg);
+      agregarLog('error', 'ERROR', errorMsg);
     } finally {
       setEjecutando(false);
+      setShowCredentialsModal(false);
+      setAdminCredentials({ username: '', password: '' });
+    }
+  };
+
+  const eliminarScriptPendiente = async (scriptId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(
+        `${API_URL}/api/explorador/script-pendiente/${scriptId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Script eliminado');
+      cargarScriptsPendientes();
+    } catch (error) {
+      toast.error(`Error: ${error.response?.data?.detail || error.message}`);
     }
   };
 
@@ -111,166 +183,333 @@ function AgregarTablasModal({ isOpen, onClose, serverSeleccionado, serverName, o
     setScript('');
     setLogs([]);
     setArchivo(null);
+    setScriptSeleccionado(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const getLogIcon = (tipo) => {
-    switch (tipo) {
-      case 'success': return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-      case 'error': return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'warning': return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      default: return <Terminal className="h-4 w-4 text-blue-500" />;
-    }
-  };
-
-  const getLogColor = (tipo) => {
-    switch (tipo) {
-      case 'success': return 'bg-green-50 border-green-200';
-      case 'error': return 'bg-red-50 border-red-200';
-      case 'warning': return 'bg-yellow-50 border-yellow-200';
-      default: return 'bg-blue-50 border-blue-200';
-    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5 text-green-600" />
-            Agregar Tablas - {serverName}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-green-600" />
+              Agregar Tablas - {serverName}
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col gap-4">
-          {/* Campo de Título/Descripción */}
-          <div>
-            <label className="text-sm font-medium text-zinc-700 mb-1 block">
-              Descripción del Script (opcional)
-            </label>
-            <Input
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              placeholder="Ej: Crear tablas de Recursos Humanos, Migración de datos, etc."
-              disabled={ejecutando}
-              className="w-full"
-            />
-          </div>
-
-          {/* Área de entrada */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <input
-                type="file"
-                accept=".sql"
-                onChange={cargarArchivo}
-                ref={fileInputRef}
-                className="hidden"
-              />
-              <Button 
-                variant="outline" 
-                onClick={() => fileInputRef.current?.click()}
-                disabled={ejecutando}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Cargar .SQL
-              </Button>
-              {archivo && (
-                <span className="text-sm text-zinc-500 flex items-center gap-1">
-                  <FileText className="h-4 w-4" />
-                  {archivo.name}
+          {/* Tabs */}
+          <div className="flex border-b mb-4">
+            <button
+              onClick={() => setActiveTab('nuevo')}
+              className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'nuevo' 
+                  ? 'border-green-600 text-green-600' 
+                  : 'border-transparent text-zinc-500 hover:text-zinc-700'
+              }`}
+            >
+              <Plus className="h-4 w-4 inline mr-1" />
+              Nuevo Script
+            </button>
+            <button
+              onClick={() => setActiveTab('pendientes')}
+              className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'pendientes' 
+                  ? 'border-blue-600 text-blue-600' 
+                  : 'border-transparent text-zinc-500 hover:text-zinc-700'
+              }`}
+            >
+              <FileText className="h-4 w-4 inline mr-1" />
+              Scripts Pendientes
+              {scriptsPendientes.length > 0 && (
+                <span className="ml-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">
+                  {scriptsPendientes.length}
                 </span>
               )}
-              <div className="flex-1" />
-              <Button variant="ghost" onClick={limpiar} disabled={ejecutando}>
-                Limpiar
-              </Button>
-            </div>
+            </button>
+          </div>
 
-            <Textarea
-              value={script}
-              onChange={(e) => setScript(e.target.value)}
-              placeholder={`-- Pega tu script SQL aquí
+          {activeTab === 'nuevo' ? (
+            <div className="flex-1 overflow-hidden flex flex-col gap-4">
+              {/* Campo de Título/Descripción */}
+              <div>
+                <label className="text-sm font-medium text-zinc-700 mb-1 block">
+                  Descripción del Script <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  value={titulo}
+                  onChange={(e) => setTitulo(e.target.value)}
+                  placeholder="Ej: Crear tablas de Recursos Humanos, Migración de datos, etc."
+                  disabled={ejecutando || guardando}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Área de entrada */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept=".sql"
+                    onChange={cargarArchivo}
+                    ref={fileInputRef}
+                    className="hidden"
+                  />
+                  <Button 
+                    variant="outline" 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={ejecutando || guardando}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Cargar .SQL
+                  </Button>
+                  {archivo && (
+                    <span className="text-sm text-zinc-500 flex items-center gap-1">
+                      <FileText className="h-4 w-4" />
+                      {archivo.name}
+                    </span>
+                  )}
+                  <div className="flex-1" />
+                  <Button variant="ghost" onClick={limpiar} disabled={ejecutando || guardando}>
+                    Limpiar
+                  </Button>
+                </div>
+
+                <Textarea
+                  value={script}
+                  onChange={(e) => setScript(e.target.value)}
+                  placeholder={`-- Pega tu script SQL aquí
 -- Ejemplo:
 CREATE TABLE MiTabla (
     id INT PRIMARY KEY IDENTITY(1,1),
     nombre NVARCHAR(100),
     fecha DATETIME DEFAULT GETDATE()
-);
+);`}
+                  className="font-mono text-sm h-40 resize-none"
+                  disabled={ejecutando || guardando}
+                />
 
-INSERT INTO MiTabla (nombre) VALUES ('Registro 1');`}
-              className="font-mono text-sm h-48 resize-none"
-              disabled={ejecutando}
-            />
-
-            <div className="flex gap-2">
-              <Button 
-                onClick={ejecutarScript} 
-                disabled={ejecutando || !script.trim()} 
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                {ejecutando ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Ejecutando...
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 mr-2" />
-                    Ejecutar Script
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Log de ejecución */}
-          <div className="flex-1 min-h-0">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-zinc-700 flex items-center gap-2">
-                <Terminal className="h-4 w-4" />
-                Log de Ejecución
-              </span>
-              {logs.length > 0 && (
-                <span className="text-xs text-zinc-500">{logs.length} entradas</span>
-              )}
-            </div>
-            <div className="border rounded-lg bg-zinc-900 p-3 h-48 overflow-y-auto font-mono text-xs">
-              {logs.length === 0 ? (
-                <p className="text-zinc-500 italic">El log aparecerá aquí cuando ejecutes un script...</p>
-              ) : (
-                logs.map((log, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`flex items-start gap-2 py-1 ${
-                      log.tipo === 'success' ? 'text-green-400' :
-                      log.tipo === 'error' ? 'text-red-400' :
-                      log.tipo === 'warning' ? 'text-yellow-400' :
-                      'text-blue-400'
-                    }`}
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={guardarEnStandby} 
+                    disabled={ejecutando || guardando || !script.trim() || !titulo.trim()} 
+                    variant="outline"
+                    className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50"
                   >
-                    <span className="text-zinc-500 shrink-0">[{log.timestamp}]</span>
-                    <span className="font-semibold shrink-0">{log.mensaje}</span>
-                    {log.detalle && <span className="text-zinc-400 truncate">{log.detalle}</span>}
+                    {guardando ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Guardar en Stand-by
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setScriptSeleccionado(null);
+                      setShowCredentialsModal(true);
+                    }} 
+                    disabled={ejecutando || guardando || !script.trim()} 
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Ejecutar con Credenciales Admin
+                  </Button>
+                </div>
+              </div>
+
+              {/* Log de ejecución */}
+              {logs.length > 0 && (
+                <div className="flex-1 min-h-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-zinc-700 flex items-center gap-2">
+                      <Terminal className="h-4 w-4" />
+                      Log de Ejecución
+                    </span>
+                    <span className="text-xs text-zinc-500">{logs.length} entradas</span>
                   </div>
-                ))
+                  <div className="border rounded-lg bg-zinc-900 p-3 h-32 overflow-y-auto font-mono text-xs">
+                    {logs.map((log, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`flex items-start gap-2 py-1 ${
+                          log.tipo === 'success' ? 'text-green-400' :
+                          log.tipo === 'error' ? 'text-red-400' :
+                          log.tipo === 'warning' ? 'text-yellow-400' :
+                          'text-blue-400'
+                        }`}
+                      >
+                        <span className="text-zinc-500 shrink-0">[{log.timestamp}]</span>
+                        <span className="font-semibold shrink-0">{log.mensaje}</span>
+                        {log.detalle && <span className="text-zinc-400 truncate">{log.detalle}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Advertencia */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+                <AlertTriangle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                <div className="text-sm text-blue-800">
+                  <strong>Nota:</strong> Puedes guardar el script en "Stand-by" para que un administrador 
+                  de BD lo ejecute después con sus propias credenciales (con permisos de CREATE TABLE).
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Tab: Scripts Pendientes */
+            <div className="flex-1 overflow-auto">
+              {loadingPendientes ? (
+                <div className="flex items-center justify-center h-40">
+                  <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+                </div>
+              ) : scriptsPendientes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-40 text-zinc-500">
+                  <FileText className="h-12 w-12 mb-2 opacity-30" />
+                  <p>No hay scripts pendientes</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {scriptsPendientes.map((sp) => (
+                    <div key={sp._id} className="border rounded-lg p-4 bg-zinc-50 hover:bg-zinc-100 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-zinc-800">{sp.titulo}</h4>
+                          <p className="text-xs text-zinc-500 mt-1">
+                            Creado por: {sp.creado_por} • {new Date(sp.fecha_creacion).toLocaleString()}
+                          </p>
+                          <p className="text-xs text-zinc-500">
+                            {sp.num_statements} comandos SQL
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => eliminarScriptPendiente(sp._id)}
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setScriptSeleccionado(sp);
+                              setShowCredentialsModal(true);
+                            }}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <Play className="h-4 w-4 mr-1" />
+                            Ejecutar
+                          </Button>
+                        </div>
+                      </div>
+                      {/* Preview del script */}
+                      <div className="mt-3 bg-zinc-900 rounded p-2 max-h-20 overflow-auto">
+                        <pre className="text-xs text-zinc-300 whitespace-pre-wrap">
+                          {sp.script.substring(0, 300)}{sp.script.length > 300 ? '...' : ''}
+                        </pre>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Credenciales de Administrador */}
+      <Dialog open={showCredentialsModal} onOpenChange={setShowCredentialsModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-blue-600" />
+              Credenciales de Administrador BD
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+              <strong>Importante:</strong> Ingresa las credenciales de un usuario SQL Server con permisos 
+              de CREATE TABLE (ej: sa, db_owner, db_ddladmin).
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-zinc-700 mb-1 block">
+                Usuario SQL Server
+              </label>
+              <Input
+                value={adminCredentials.username}
+                onChange={(e) => setAdminCredentials(prev => ({ ...prev, username: e.target.value }))}
+                placeholder="Ej: sa, AdminDB, etc."
+                disabled={ejecutando}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-zinc-700 mb-1 block">
+                Contraseña
+              </label>
+              <Input
+                type="password"
+                value={adminCredentials.password}
+                onChange={(e) => setAdminCredentials(prev => ({ ...prev, password: e.target.value }))}
+                placeholder="••••••••"
+                disabled={ejecutando}
+              />
+            </div>
+
+            <div className="text-xs text-zinc-500">
+              Servidor: <strong>{serverName}</strong>
+              {scriptSeleccionado && (
+                <>
+                  <br />
+                  Script: <strong>{scriptSeleccionado.titulo}</strong>
+                </>
               )}
             </div>
           </div>
 
-          {/* Advertencia */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
-            <div className="text-sm text-yellow-800">
-              <strong>Precaución:</strong> Los comandos se ejecutan directamente en la base de datos. 
-              Asegúrate de revisar el script antes de ejecutar. Esta acción no se puede deshacer.
-            </div>
+          <div className="flex gap-2 justify-end">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowCredentialsModal(false);
+                setAdminCredentials({ username: '', password: '' });
+              }}
+              disabled={ejecutando}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={ejecutarConCredenciales}
+              disabled={ejecutando || !adminCredentials.username || !adminCredentials.password}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {ejecutando ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Ejecutando...
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-2" />
+                  Ejecutar Script
+                </>
+              )}
+            </Button>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

@@ -75,6 +75,20 @@ Aplicación web ERP modular para gestionar múltiples sucursales con bases de da
   - Ejecuta statements línea por línea con log de progreso
   - Guarda log de ejecución en MongoDB (colección `script_logs`)
   - Advertencia de precaución antes de ejecutar
+- **ADDED**: Sistema de Scripts en Stand-by:
+  - Opción "Guardar en Stand-by" para scripts que requieren permisos elevados
+  - Tab "Scripts Pendientes" para ver scripts guardados
+  - Modal de "Credenciales de Administrador BD" para ejecutar con usuario privilegiado (ej: sa, db_owner)
+  - Las credenciales de admin se usan solo para la ejecución (no se guardan)
+  - Los scripts ejecutados exitosamente se marcan automáticamente como "ejecutado"
+  - Nuevas colecciones MongoDB: `scripts_pendientes`
+- **FIXED**: Bug de sucursales vacías en ManagmentPro:
+  - Ahora hace fallback a tabla `Almacen` cuando `Sucursal` está vacía
+  - MPRO muestra 7 sucursales: 130° QUERETARO, AGRICREME, ORIGEN, EDARSA, 130° MERIDA, MECA, CIEN FUEGOS
+- **ADDED**: Multiselección de años en filtros de Comercial y Compras:
+  - Selector con checkboxes para elegir múltiples años
+  - Botón "Actual + Anterior" para selección rápida
+  - Layout estandarizado: todos los filtros en una sola fila
 
 ## 2025-03-31 / 2025-04-01
 - **FIXED**: Error de sintaxis en `Compras.js` - código JSX duplicado/corrupto eliminado (~260 líneas)
