@@ -1682,28 +1682,68 @@ async def get_sucursales(server_id: str, current_user: Dict = Depends(get_curren
     
     try:
         if server['system_type'] == 'MPRO':
+            # Intentar obtener sucursales de MPRO
             query = "SELECT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal WHERE Es_Cve_Estado <> 'BA'"
+            try:
+                results = execute_sql_query(
+                    server['host'],
+                    server['port'],
+                    server['database'],
+                    server['username'],
+                    server['password'],
+                    query
+                )
+                if results and len(results) > 0:
+                    return filter_sucursales_by_permissions(results, current_user, server_id)
+            except Exception as e:
+                logging.warning(f"MPRO Sucursales query failed: {e}")
+            
+            # Si no hay sucursales en la tabla Sucursal, intentar usar Almacenes
+            try:
+                query_almacen = "SELECT DISTINCT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Es_Cve_Estado <> 'BA'"
+                almacenes = execute_sql_query(
+                    server['host'],
+                    server['port'],
+                    server['database'],
+                    server['username'],
+                    server['password'],
+                    query_almacen
+                )
+                if almacenes and len(almacenes) > 0:
+                    return filter_sucursales_by_permissions(almacenes, current_user, server_id)
+            except Exception as e:
+                logging.warning(f"MPRO Almacenes query failed: {e}")
+            
+            # Si no hay nada, devolver sucursal virtual "Principal"
+            return [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
+            
         elif server['system_type'] == 'SoftRestaurant':
             # SoftRestaurant NO tiene tabla Sucursal - devolvemos una sucursal virtual con el nombre del servidor
             # o podemos devolver los almacenes como "sucursales" virtuales
             return [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
         else:
-            # Query genérica para otros sistemas
-            query = "SELECT DISTINCT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal"
+            # Query genérica para otros sistemas - también con fallback
+            try:
+                query = "SELECT DISTINCT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal"
+                results = execute_sql_query(
+                    server['host'],
+                    server['port'],
+                    server['database'],
+                    server['username'],
+                    server['password'],
+                    query
+                )
+                if results and len(results) > 0:
+                    return filter_sucursales_by_permissions(results, current_user, server_id)
+            except:
+                pass
+            # Fallback: sucursal virtual
+            return [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
         
-        results = execute_sql_query(
-            server['host'],
-            server['port'],
-            server['database'],
-            server['username'],
-            server['password'],
-            query
-        )
-        # Filtrar por permisos del usuario
-        return filter_sucursales_by_permissions(results, current_user, server_id)
     except Exception as e:
         logging.error(f"Error obteniendo sucursales: {str(e)}")
-        return []
+        # En caso de error, devolver sucursal virtual en lugar de array vacío
+        return [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
 
 @api_router.get("/servers/{server_id}/almacenes")
 async def get_almacenes(server_id: str, sucursal_id: Optional[str] = None, sucursal: Optional[str] = None, current_user: Dict = Depends(get_current_user)):
