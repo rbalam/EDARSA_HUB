@@ -11,6 +11,7 @@ import {
   DollarSign, ArrowLeft, ChevronRight, Target, Clock, Utensils, X,
   BarChart3, Wallet, UserCircle, Award
 } from 'lucide-react';
+import { formatNombreSucursal } from '../lib/formatSucursal';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -90,7 +91,7 @@ const UnidadCard = ({ unidad, onClick }) => {
             ) : (
               <span className="h-2.5 w-2.5 rounded-full bg-zinc-300" title="Sin verificar" />
             )}
-            <h3 className="font-bold text-zinc-800 text-sm truncate max-w-[160px]">{unidad.unidad}</h3>
+            <h3 className="font-bold text-zinc-800 text-sm truncate max-w-[160px]">{formatNombreSucursal(unidad.unidad)}</h3>
           </div>
           <ChevronRight className="h-4 w-4 text-zinc-400" />
         </div>
@@ -190,7 +191,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            {unidad.unidad}
+            {formatNombreSucursal(unidad.unidad)}
           </DialogTitle>
         </DialogHeader>
         

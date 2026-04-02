@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import QueryConfigWizard from '@/components/QueryConfigWizard';
+import { formatNombreSucursal } from '@/lib/formatSucursal';
 
 const Servidores = () => {
   const [servers, setServers] = useState([]);
@@ -434,7 +435,7 @@ const Servidores = () => {
                       )}
                     </div>
                     <div>
-                      <CardTitle className="text-lg font-semibold">{server.name}</CardTitle>
+                      <CardTitle className="text-lg font-semibold">{formatNombreSucursal(server.name)}</CardTitle>
                       <p className="text-xs text-zinc-500 mt-1">{server.system_type}</p>
                     </div>
                   </div>
