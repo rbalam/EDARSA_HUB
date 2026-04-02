@@ -8915,6 +8915,8 @@ async def ejecutar_script_sql(
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     script = body.get('script', '').strip()
+    titulo = body.get('titulo', '').strip() or 'Script sin título'
+    
     if not script:
         raise HTTPException(status_code=400, detail="El script está vacío")
     
@@ -9048,6 +9050,7 @@ async def ejecutar_script_sql(
     await db.script_logs.insert_one({
         "server_id": server_id,
         "server_name": server['name'],
+        "titulo": titulo,
         "usuario": current_user.get('email'),
         "fecha": datetime.now(timezone.utc),
         "total_statements": len(statements),
@@ -9058,6 +9061,7 @@ async def ejecutar_script_sql(
     
     return {
         "servidor": server['name'],
+        "titulo": titulo,
         "total": len(statements),
         "exitosos": exitosos,
         "fallidos": fallidos,

@@ -18,6 +18,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 // ============ COMPONENTE: AGREGAR TABLAS (ADMIN ONLY) ============
 function AgregarTablasModal({ isOpen, onClose, serverSeleccionado, serverName, onSuccess }) {
+  const [titulo, setTitulo] = useState('');
   const [script, setScript] = useState('');
   const [ejecutando, setEjecutando] = useState(false);
   const [progreso, setProgreso] = useState({ current: 0, total: 0, statement: '' });
@@ -38,6 +39,10 @@ function AgregarTablasModal({ isOpen, onClose, serverSeleccionado, serverName, o
         return;
       }
       setArchivo(file);
+      // Usar el nombre del archivo como título si no hay uno
+      if (!titulo) {
+        setTitulo(file.name.replace('.sql', ''));
+      }
       const reader = new FileReader();
       reader.onload = (event) => {
         setScript(event.target.result);
@@ -56,13 +61,13 @@ function AgregarTablasModal({ isOpen, onClose, serverSeleccionado, serverName, o
 
     setEjecutando(true);
     setLogs([]);
-    agregarLog('info', 'Iniciando ejecución de script...', serverName);
+    agregarLog('info', titulo ? `Ejecutando: ${titulo}` : 'Iniciando ejecución de script...', serverName);
 
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
         `${API_URL}/api/explorador/ejecutar-script/${serverSeleccionado}`,
-        { script },
+        { script, titulo },
         { 
           headers: { 
             Authorization: `Bearer ${token}`,
@@ -102,6 +107,7 @@ function AgregarTablasModal({ isOpen, onClose, serverSeleccionado, serverName, o
   };
 
   const limpiar = () => {
+    setTitulo('');
     setScript('');
     setLogs([]);
     setArchivo(null);
@@ -139,6 +145,20 @@ function AgregarTablasModal({ isOpen, onClose, serverSeleccionado, serverName, o
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col gap-4">
+          {/* Campo de Título/Descripción */}
+          <div>
+            <label className="text-sm font-medium text-zinc-700 mb-1 block">
+              Descripción del Script (opcional)
+            </label>
+            <Input
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+              placeholder="Ej: Crear tablas de Recursos Humanos, Migración de datos, etc."
+              disabled={ejecutando}
+              className="w-full"
+            />
+          </div>
+
           {/* Área de entrada */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
