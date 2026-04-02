@@ -46,7 +46,7 @@ const Login = () => {
         <div className="bg-white rounded-lg shadow-sm border border-zinc-200 p-8">
           <div className="mb-8">
             <h1 className="text-3xl font-extrabold text-zinc-900 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Edarsa Hub
+              EDARSA HUB
             </h1>
             <p className="text-zinc-600">Ingresa tus credenciales para continuar</p>
           </div>

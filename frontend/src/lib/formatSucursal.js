@@ -5,10 +5,16 @@
 
 // Mapeo de nombres de sucursales (BD → Display)
 const NOMBRE_SUCURSAL_MAP = {
+  // 130 Merida variants
   '130 Merida': '130° MERIDA',
   '130 MERIDA': '130° MERIDA',
   '130Merida': '130° MERIDA',
   '130 merida': '130° MERIDA',
+  // ERP variants - remover prefijo "ERP"
+  'ERP EDARSA HUB': 'EDARSA HUB',
+  'ERP Edarsa Hub': 'EDARSA HUB',
+  'ERP EDARSA hub': 'EDARSA HUB',
+  'Edarsa Hub': 'EDARSA HUB',
 };
 
 /**

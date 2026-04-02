@@ -57,6 +57,13 @@ Aplicación web ERP modular para gestionar múltiples sucursales con bases de da
 
 # CHANGELOG
 
+## 2025-04-02
+- **FIXED**: Nombres de marca y sucursales normalizados:
+  - "ERP EDARSA HUB" → "EDARSA HUB" (en Login, Sidebar, y MongoDB)
+  - "130 Merida" → "130° MERIDA" (en MongoDB y formatSucursal.js)
+  - Actualizado archivo `formatSucursal.js` con mapeo extendido
+- **RESEARCHED**: Playbooks de integración obtenidos para Toast POS, QuickBooks Online y MarginEdge (esperando credenciales del usuario)
+
 ## 2025-03-31 / 2025-04-01
 - **FIXED**: Error de sintaxis en `Compras.js` - código JSX duplicado/corrupto eliminado (~260 líneas)
 - **VERIFIED**: Layout compacto de formulario de Auditoría funcionando correctamente
@@ -89,6 +96,8 @@ Aplicación web ERP modular para gestionar múltiples sucursales con bases de da
 
 ## P0 - Critical
 - [x] Fix error de sintaxis en Compras.js
+- [x] Normalización de nombres: "EDARSA HUB" y "130° MERIDA"
+- [ ] **Integraciones SaaS** (Toast, QuickBooks, MarginEdge) - ESPERANDO CREDENCIALES
 
 ## P1 - High Priority
 - [ ] **🛡️ MÓDULO DE SEGURIDAD Y MONITOREO** (NUEVO - PRIORITARIO)
