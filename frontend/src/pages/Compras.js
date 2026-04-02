@@ -61,8 +61,9 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, selected
   const [loading, setLoading] = useState(false);
   const [topProveedores, setTopProveedores] = useState([]);
   const [selectedMeses, setSelectedMeses] = useState([String(new Date().getMonth() + 1).padStart(2, '0')]);
-  const [selectedAnio, setSelectedAnio] = useState(new Date().getFullYear().toString());
+  const [selectedAnios, setSelectedAnios] = useState([new Date().getFullYear().toString()]);
   const [showMesesDropdown, setShowMesesDropdown] = useState(false);
+  const [showAniosDropdown, setShowAniosDropdown] = useState(false);
   
   const ANIOS = getAniosDisponibles();
 
@@ -70,14 +71,14 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, selected
     if (selectedServer && selectedSucursal) {
       cargarDashboard();
     }
-  }, [selectedServer, selectedSucursal, selectedMeses, selectedAnio]);
+  }, [selectedServer, selectedSucursal, selectedMeses, selectedAnios]);
 
   const cargarDashboard = async () => {
     if (!selectedSucursal) return;
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/compras/dashboard/${selectedServer}?sucursal=${encodeURIComponent(selectedSucursal)}&meses=${selectedMeses.join(',')}&anio=${selectedAnio}`, {
+      const response = await axios.get(`${API_URL}/api/compras/dashboard/${selectedServer}?sucursal=${encodeURIComponent(selectedSucursal)}&meses=${selectedMeses.join(',')}&anios=${selectedAnios.join(',')}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setKpis(response.data.kpis);
@@ -108,6 +109,16 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, selected
     });
   };
 
+  const toggleAnio = (anio) => {
+    setSelectedAnios(prev => {
+      if (prev.includes(anio)) {
+        if (prev.length === 1) return prev;
+        return prev.filter(a => a !== anio);
+      }
+      return [...prev, anio].sort().reverse();
+    });
+  };
+
   const getMesesLabel = () => {
     if (selectedMeses.length === 0) return 'Seleccionar';
     if (selectedMeses.length === 1) {
@@ -117,13 +128,21 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, selected
     return `${selectedMeses.length} meses`;
   };
 
+  const getAniosLabel = () => {
+    if (selectedAnios.length === 0) return 'Seleccionar';
+    if (selectedAnios.length === 1) {
+      return selectedAnios[0];
+    }
+    return `${selectedAnios.length} años`;
+  };
+
   return (
     <div className="space-y-4">
-      {/* Selector de servidor, sucursal y período */}
+      {/* Selector de servidor, sucursal y período - TODO EN UNA FILA */}
       <Card className="border">
         <CardContent className="py-4">
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex-1 min-w-[200px] max-w-xs">
+            <div className="flex-1 min-w-[180px] max-w-xs">
               <Label className="text-xs mb-1 block">Servidor</Label>
               <Select value={selectedServer} onValueChange={setSelectedServer}>
                 <SelectTrigger>
@@ -136,7 +155,7 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, selected
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-1 min-w-[200px] max-w-xs">
+            <div className="flex-1 min-w-[180px] max-w-xs">
               <Label className="text-xs mb-1 block">Sucursal</Label>
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer || sucursales.length === 0}>
                 <SelectTrigger>
@@ -149,13 +168,6 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, selected
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={cargarDashboard} disabled={!selectedServer || !selectedSucursal || loading} variant="outline" className="mt-5">
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Actualizar
-            </Button>
-          </div>
-          {/* Selectores de período */}
-          <div className="flex items-center gap-4 flex-wrap mt-4 pt-4 border-t">
             {/* Selector de Meses (multiselección) */}
             <div className="flex-1 min-w-[150px] max-w-[200px] relative">
               <Label className="text-xs mb-1 block">Mes(es)</Label>
@@ -205,18 +217,59 @@ function DashboardCompras({ servers, selectedServer, setSelectedServer, selected
                 </div>
               )}
             </div>
-            {/* Selector de Año */}
-            <div className="flex-1 min-w-[100px] max-w-[130px]">
-              <Label className="text-xs mb-1 block">Año</Label>
-              <Select value={selectedAnio} onValueChange={setSelectedAnio}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ANIOS.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            {/* Selector de Año (multiselección) */}
+            <div className="flex-1 min-w-[120px] max-w-[160px] relative">
+              <Label className="text-xs mb-1 block">Año(s)</Label>
+              <button
+                type="button"
+                onClick={() => setShowAniosDropdown(!showAniosDropdown)}
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <span>{getAniosLabel()}</span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </button>
+              {showAniosDropdown && (
+                <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg max-h-60 overflow-auto">
+                  <div className="p-2 border-b">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAnios([new Date().getFullYear().toString(), (new Date().getFullYear() - 1).toString()])}
+                      className="text-xs text-blue-600 hover:underline mr-3"
+                    >
+                      Actual + Anterior
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAnios([new Date().getFullYear().toString()])}
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      Solo actual
+                    </button>
+                  </div>
+                  {ANIOS.map(anio => (
+                    <label
+                      key={anio.value}
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-100 cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={selectedAnios.includes(anio.value)}
+                        onCheckedChange={() => toggleAnio(anio.value)}
+                      />
+                      <span className="text-sm">{anio.label}</span>
+                    </label>
+                  ))}
+                  <div className="p-2 border-t">
+                    <Button size="sm" onClick={() => setShowAniosDropdown(false)} className="w-full">
+                      Aplicar
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
+            <Button onClick={cargarDashboard} disabled={!selectedServer || !selectedSucursal || loading} className="mt-5">
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Actualizar
+            </Button>
           </div>
         </CardContent>
       </Card>

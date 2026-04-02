@@ -218,8 +218,9 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
   const [alertas, setAlertas] = useState([]);
   const [periodo, setPeriodo] = useState('mes'); // mes, semana, dia
   const [selectedMeses, setSelectedMeses] = useState([String(new Date().getMonth() + 1).padStart(2, '0')]);
-  const [selectedAnio, setSelectedAnio] = useState(new Date().getFullYear().toString());
+  const [selectedAnios, setSelectedAnios] = useState([new Date().getFullYear().toString()]);
   const [showMesesDropdown, setShowMesesDropdown] = useState(false);
+  const [showAniosDropdown, setShowAniosDropdown] = useState(false);
   const [detalleModal, setDetalleModal] = useState({ open: false, tipo: null });
   
   const ANIOS = getAniosDisponibles();
@@ -237,7 +238,7 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
           sucursal: selectedSucursal, 
           periodo,
           meses: selectedMeses.join(','),
-          anio: selectedAnio
+          anios: selectedAnios.join(',')
         },
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -259,7 +260,7 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
     if (selectedServer && selectedSucursal) {
       cargarDashboard();
     }
-  }, [selectedServer, selectedSucursal, periodo, selectedMeses, selectedAnio]);
+  }, [selectedServer, selectedSucursal, periodo, selectedMeses, selectedAnios]);
 
   const toggleMes = (mes) => {
     setSelectedMeses(prev => {
@@ -271,6 +272,16 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
     });
   };
 
+  const toggleAnio = (anio) => {
+    setSelectedAnios(prev => {
+      if (prev.includes(anio)) {
+        if (prev.length === 1) return prev; // Al menos un año debe estar seleccionado
+        return prev.filter(a => a !== anio);
+      }
+      return [...prev, anio].sort().reverse(); // Ordenar descendente
+    });
+  };
+
   const getMesesLabel = () => {
     if (selectedMeses.length === 0) return 'Seleccionar';
     if (selectedMeses.length === 1) {
@@ -278,6 +289,14 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
     }
     if (selectedMeses.length === 12) return 'Todo el año';
     return `${selectedMeses.length} meses`;
+  };
+
+  const getAniosLabel = () => {
+    if (selectedAnios.length === 0) return 'Seleccionar';
+    if (selectedAnios.length === 1) {
+      return selectedAnios[0];
+    }
+    return `${selectedAnios.length} años`;
   };
 
   const handleDoubleClick = (tipoKpi) => {
@@ -372,15 +391,54 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                 </div>
               )}
             </div>
-            {/* Selector de Año */}
-            <div className="flex-1 min-w-[100px] max-w-[130px]">
-              <Label className="text-xs mb-1 block">Año</Label>
-              <Select value={selectedAnio} onValueChange={setSelectedAnio}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ANIOS.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            {/* Selector de Año (multiselección) */}
+            <div className="flex-1 min-w-[120px] max-w-[160px] relative">
+              <Label className="text-xs mb-1 block">Año(s)</Label>
+              <button
+                type="button"
+                onClick={() => setShowAniosDropdown(!showAniosDropdown)}
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <span>{getAniosLabel()}</span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </button>
+              {showAniosDropdown && (
+                <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg max-h-60 overflow-auto">
+                  <div className="p-2 border-b">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAnios([new Date().getFullYear().toString(), (new Date().getFullYear() - 1).toString()])}
+                      className="text-xs text-blue-600 hover:underline mr-3"
+                    >
+                      Actual + Anterior
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAnios([new Date().getFullYear().toString()])}
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      Solo actual
+                    </button>
+                  </div>
+                  {ANIOS.map(anio => (
+                    <label
+                      key={anio.value}
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-100 cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={selectedAnios.includes(anio.value)}
+                        onCheckedChange={() => toggleAnio(anio.value)}
+                      />
+                      <span className="text-sm">{anio.label}</span>
+                    </label>
+                  ))}
+                  <div className="p-2 border-t">
+                    <Button size="sm" onClick={() => setShowAniosDropdown(false)} className="w-full">
+                      Aplicar
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
             <Button onClick={cargarDashboard} disabled={loading || !selectedServer || !selectedSucursal} className="mt-5">
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}

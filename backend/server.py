@@ -6256,12 +6256,13 @@ async def obtener_dashboard_compras(
     server_id: str, 
     sucursal: str = None, 
     meses: str = Query(default=""),  # "01,02,03" - Lista de meses separados por coma
-    anio: str = Query(default=""),  # "2025" - Año específico
+    anio: str = Query(default=""),  # "2025" - Año específico (compatibilidad)
+    anios: str = Query(default=""),  # "2025,2024" - Múltiples años
     periodo_mes: str = Query(default="actual"),  # Mantener para compatibilidad
     periodo_ano: str = Query(default="actual"),  # Mantener para compatibilidad
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
-    """Obtiene KPIs y alertas para el dashboard de compras. Soporta multiselección de meses."""
+    """Obtiene KPIs y alertas para el dashboard de compras. Soporta multiselección de meses y años."""
     verify_token(credentials.credentials)
     
     server = await db.servers.find_one({"id": server_id, "active": True})
@@ -6276,10 +6277,18 @@ async def obtener_dashboard_compras(
         from datetime import datetime
         now = datetime.now()
         
-        # Nueva lógica: meses y año específicos
-        if meses and anio:
+        # Obtener lista de años (priorizar 'anios' sobre 'anio')
+        if anios:
+            lista_anios = [int(a.strip()) for a in anios.split(',') if a.strip()]
+        elif anio:
+            lista_anios = [int(anio)]
+        else:
+            lista_anios = None
+        
+        # Nueva lógica: meses y años específicos
+        if meses and lista_anios:
             lista_meses = [m.strip() for m in meses.split(',') if m.strip()]
-            year = int(anio)
+            year = max(lista_anios)  # Usar el año más reciente
             
             mes_min = min([int(m) for m in lista_meses])
             mes_max = max([int(m) for m in lista_meses])
@@ -6660,13 +6669,14 @@ async def comercial_dashboard(
     sucursal: str = Query(default=""), 
     periodo: str = Query(default="dia"),  # dia, semana, mes
     meses: str = Query(default=""),  # "01,02,03" - Lista de meses separados por coma
-    anio: str = Query(default=""),  # "2025" - Año específico
+    anio: str = Query(default=""),  # "2025" - Año específico (compatibilidad)
+    anios: str = Query(default=""),  # "2025,2024" - Múltiples años separados por coma
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Dashboard principal de ventas con KPIs y comparativos.
     Soporta SoftRestaurant y MPRO.
-    Ahora soporta multiselección de meses y año específico.
+    Ahora soporta multiselección de meses y múltiples años.
     """
     server = await db.servers.find_one({"id": server_id, "active": True})
     if not server:
@@ -6681,10 +6691,20 @@ async def comercial_dashboard(
         from datetime import datetime, timedelta
         hoy = datetime.now()
         
-        # Si se proporcionan meses y año específicos, usar esos
-        if meses and anio:
+        # Obtener lista de años (priorizar 'anios' sobre 'anio')
+        if anios:
+            lista_anios = [int(a.strip()) for a in anios.split(',') if a.strip()]
+        elif anio:
+            lista_anios = [int(anio)]
+        else:
+            lista_anios = [hoy.year]
+        
+        # Si se proporcionan meses y años específicos, usar esos
+        if meses and lista_anios:
             lista_meses = [m.strip() for m in meses.split(',') if m.strip()]
-            year = int(anio)
+            
+            # Usar el año más reciente para la consulta principal
+            year = max(lista_anios)
             
             # Para múltiples meses, calcular rango de fechas
             mes_min = min([int(m) for m in lista_meses])
