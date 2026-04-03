@@ -1900,6 +1900,119 @@ async def get_inventarios_list(
         logging.error(f"Error obteniendo inventarios: {str(e)}")
         return []
 
+
+# ============================================================================
+# INSUMOS PENDIENTES DE DESCARGAR (SoftRestaurant)
+# ============================================================================
+@api_router.get("/inventarios/pendientes/{server_id}")
+async def get_insumos_pendientes(
+    server_id: str,
+    almacen_id: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Obtiene los insumos pendientes de descargar desde SoftRestaurant.
+    Tabla: inventariopendiente
+    """
+    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    # Solo disponible para SoftRestaurant
+    if server.get('system_type') != 'SoftRestaurant':
+        return {
+            "items": [],
+            "totales": {"cantidad": 0, "valor": 0, "items": 0},
+            "mensaje": "Este reporte solo está disponible para servidores SoftRestaurant"
+        }
+    
+    try:
+        # Construir cláusula WHERE
+        where_clause = "WHERE 1=1"
+        if almacen_id:
+            where_clause += f" AND ip.idalmacen = '{almacen_id}'"
+        
+        query = f"""
+            SELECT 
+                ip.fecha,
+                ip.idinsumo as codigo,
+                i.descripcion as insumo,
+                ISNULL(g.descripcion, 'SIN GRUPO') as grupo,
+                ip.costo,
+                ip.cantidadusada as cantidad,
+                ISNULL(i.unidadcompra, 'PZ') as unidad,
+                ip.idalmacen as almacen,
+                ip.idturno,
+                (ip.costo * ip.cantidadusada) as total
+            FROM inventariopendiente ip
+            LEFT JOIN insumos i ON ip.idinsumo = i.idinsumo
+            LEFT JOIN gruposinsumos g ON i.idgrupo = g.idgrupo
+            {where_clause}
+            ORDER BY (ip.costo * ip.cantidadusada) DESC
+        """
+        
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            query
+        )
+        
+        if not results:
+            return {
+                "items": [],
+                "totales": {"cantidad": 0, "valor": 0, "items": 0},
+                "almacenes": []
+            }
+        
+        # Calcular totales
+        total_cantidad = sum(float(r.get('cantidad') or 0) for r in results)
+        total_valor = sum(float(r.get('total') or 0) for r in results)
+        
+        # Calcular 80-20 (Pareto) - % acumulado
+        items_con_pareto = []
+        acumulado = 0
+        for idx, item in enumerate(results):
+            total_item = float(item.get('total') or 0)
+            acumulado += total_item
+            porcentaje_acumulado = (acumulado / total_valor * 100) if total_valor > 0 else 0
+            
+            items_con_pareto.append({
+                "no": idx + 1,
+                "fecha": str(item.get('fecha', ''))[:19] if item.get('fecha') else '',
+                "codigo": item.get('codigo', ''),
+                "insumo": item.get('insumo', ''),
+                "grupo": item.get('grupo', 'SIN GRUPO'),
+                "cantidad": float(item.get('cantidad') or 0),
+                "unidad": item.get('unidad', 'PZ'),
+                "costo": float(item.get('costo') or 0),
+                "total": total_item,
+                "almacen": str(item.get('almacen', '')),
+                "idturno": item.get('idturno'),
+                "pareto": round(porcentaje_acumulado, 0)
+            })
+        
+        # Obtener lista de almacenes únicos
+        almacenes_unicos = list(set(str(item.get('almacen', '')) for item in results if item.get('almacen')))
+        almacenes_unicos.sort()
+        
+        return {
+            "items": items_con_pareto,
+            "totales": {
+                "cantidad": round(total_cantidad, 2),
+                "valor": round(total_valor, 2),
+                "items": len(results)
+            },
+            "almacenes": almacenes_unicos
+        }
+        
+    except Exception as e:
+        logging.error(f"Error obteniendo insumos pendientes: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
 @api_router.post("/reports/inventory")
 async def generate_inventory_report(report_params: Dict, current_user: Dict = Depends(get_current_user)):
     server_id = report_params.get('server_id')

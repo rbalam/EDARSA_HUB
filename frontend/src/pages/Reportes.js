@@ -39,6 +39,12 @@ const Reportes = () => {
   });
   const [erroresCaptura, setErroresCaptura] = useState([]); // Errores de captura de inventario (MPRO)
   const [loading, setLoading] = useState(false);
+  
+  // Estados para Insumos Pendientes de Descargar
+  const [pendientesData, setPendientesData] = useState({ items: [], totales: { cantidad: 0, valor: 0, items: 0 }, almacenes: [] });
+  const [loadingPendientes, setLoadingPendientes] = useState(false);
+  const [almacenesPendientesSeleccionados, setAlmacenesPendientesSeleccionados] = useState([]);
+  
   const [filters, setFilters] = useState(() => {
     // Recuperar filtros desde sessionStorage
     try {
@@ -240,6 +246,14 @@ const Reportes = () => {
     }
   }, [filters.server_id, filters.sucursal_id, selectedServer]);
 
+  // Cargar insumos pendientes cuando se selecciona ese tipo de consulta
+  useEffect(() => {
+    if (filters.query_type === 'pendientes' && filters.server_id && selectedServer?.system_type === 'SoftRestaurant') {
+      const almacenFiltro = almacenesPendientesSeleccionados.length === 1 ? almacenesPendientesSeleccionados[0] : null;
+      loadInsumosPendientes(almacenFiltro);
+    }
+  }, [filters.query_type, filters.server_id, almacenesPendientesSeleccionados, selectedServer]);
+
   useEffect(() => {
     // Cargar inventarios cuando hay almacén(es) seleccionado(s)
     const loadAllInventarios = async () => {
@@ -411,6 +425,27 @@ const Reportes = () => {
     } catch (error) {
       console.error('Error al cargar inventarios:', error);
       setInventarios([]);
+    }
+  };
+
+  // Función para cargar Insumos Pendientes de Descargar
+  const loadInsumosPendientes = async (almacenId = null) => {
+    if (!filters.server_id) return;
+    
+    setLoadingPendientes(true);
+    try {
+      let url = `/api/inventarios/pendientes/${filters.server_id}`;
+      if (almacenId) {
+        url += `?almacen_id=${almacenId}`;
+      }
+      const response = await api.get(url);
+      setPendientesData(response.data || { items: [], totales: { cantidad: 0, valor: 0, items: 0 }, almacenes: [] });
+    } catch (error) {
+      console.error('Error al cargar insumos pendientes:', error);
+      toast.error('Error al cargar insumos pendientes');
+      setPendientesData({ items: [], totales: { cantidad: 0, valor: 0, items: 0 }, almacenes: [] });
+    } finally {
+      setLoadingPendientes(false);
     }
   };
 
@@ -963,6 +998,9 @@ const Reportes = () => {
                 <option value="movimientos">Movimientos</option>
                 <option value="productos">Productos</option>
                 <option value="inventarios">Inventarios Físicos</option>
+                {selectedServer?.system_type === 'SoftRestaurant' && (
+                  <option value="pendientes">Insumos Pendientes de Descargar</option>
+                )}
               </select>
             </div>
 
@@ -1765,7 +1803,159 @@ const Reportes = () => {
         </Card>
       )}
 
-      {reportData.length === 0 && !loading && (
+      {/* ==================== SECCIÓN: INSUMOS PENDIENTES DE DESCARGAR ==================== */}
+      {filters.query_type === 'pendientes' && selectedServer?.system_type === 'SoftRestaurant' && (
+        <div className="space-y-4">
+          {/* KPIs */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border bg-gradient-to-br from-blue-50 to-white" data-testid="kpi-total-items">
+              <CardContent className="py-4">
+                <p className="text-xs text-zinc-500">Total Insumos</p>
+                <p className="text-2xl font-bold text-blue-600">{pendientesData.totales.items}</p>
+              </CardContent>
+            </Card>
+            <Card className="border bg-gradient-to-br from-red-50 to-white" data-testid="kpi-total-cantidad">
+              <CardContent className="py-4">
+                <p className="text-xs text-zinc-500">Cantidad Total</p>
+                <p className="text-2xl font-bold text-red-600">{pendientesData.totales.cantidad.toLocaleString('es-MX', {maximumFractionDigits: 2})}</p>
+              </CardContent>
+            </Card>
+            <Card className="border bg-gradient-to-br from-green-50 to-white" data-testid="kpi-total-valor">
+              <CardContent className="py-4">
+                <p className="text-xs text-zinc-500">Valor Total</p>
+                <p className="text-2xl font-bold text-green-600">${pendientesData.totales.valor.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Filtro por Almacén */}
+          {pendientesData.almacenes.length > 0 && (
+            <Card className="border">
+              <CardContent className="py-3">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <Label className="text-sm font-medium">Filtrar por Almacén:</Label>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      variant={almacenesPendientesSeleccionados.length === 0 ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAlmacenesPendientesSeleccionados([])}
+                    >
+                      Todos
+                    </Button>
+                    {pendientesData.almacenes.map(alm => (
+                      <Button
+                        key={alm}
+                        variant={almacenesPendientesSeleccionados.includes(alm) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          if (almacenesPendientesSeleccionados.includes(alm)) {
+                            setAlmacenesPendientesSeleccionados(prev => prev.filter(a => a !== alm));
+                          } else {
+                            setAlmacenesPendientesSeleccionados([alm]);
+                          }
+                        }}
+                      >
+                        {alm}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Tabla de Insumos Pendientes */}
+          <Card className="border">
+            <CardHeader className="py-3 bg-blue-800 text-white rounded-t-lg">
+              <CardTitle className="text-base flex items-center justify-between">
+                <span>INSUMOS PENDIENTES A DESCARGAR</span>
+                {loadingPendientes && <Loader2 className="h-5 w-5 animate-spin" />}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loadingPendientes ? (
+                <div className="py-12 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-blue-600" />
+                  <p className="text-zinc-500">Cargando insumos pendientes...</p>
+                </div>
+              ) : pendientesData.items.length === 0 ? (
+                <div className="py-12 text-center text-zinc-500">
+                  <AlertCircle className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                  <p>No hay insumos pendientes de descargar</p>
+                </div>
+              ) : (
+                <div className="max-h-[600px] overflow-auto">
+                  <table className="w-full text-sm" data-testid="tabla-pendientes">
+                    <thead className="sticky top-0 bg-blue-700 text-white">
+                      <tr>
+                        <th className="py-2 px-2 text-left w-12">No</th>
+                        <th className="py-2 px-2 text-center w-16">ALM</th>
+                        <th className="py-2 px-2 text-left">GRUPO</th>
+                        <th className="py-2 px-2 text-left w-24">CODIGO</th>
+                        <th className="py-2 px-2 text-left">INSUMO</th>
+                        <th className="py-2 px-2 text-right w-24">CANTIDAD</th>
+                        <th className="py-2 px-2 text-center w-16">UM</th>
+                        <th className="py-2 px-2 text-right w-24">COSTO</th>
+                        <th className="py-2 px-2 text-right w-28">TOTAL</th>
+                        <th className="py-2 px-2 text-right w-16">80-20</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendientesData.items
+                        .filter(item => almacenesPendientesSeleccionados.length === 0 || almacenesPendientesSeleccionados.includes(item.almacen))
+                        .map((item, idx) => (
+                        <tr 
+                          key={idx} 
+                          className={`border-b hover:bg-blue-50 ${item.pareto <= 80 ? 'bg-yellow-50' : ''}`}
+                        >
+                          <td className="py-1.5 px-2 text-zinc-500">{item.no}</td>
+                          <td className="py-1.5 px-2 text-center font-mono">{item.almacen}</td>
+                          <td className="py-1.5 px-2 text-xs">{item.grupo}</td>
+                          <td className="py-1.5 px-2 font-mono text-xs">{item.codigo}</td>
+                          <td className="py-1.5 px-2 font-medium">{item.insumo}</td>
+                          <td className="py-1.5 px-2 text-right text-red-600 font-semibold">
+                            {item.cantidad.toLocaleString('es-MX', {maximumFractionDigits: 2})}
+                          </td>
+                          <td className="py-1.5 px-2 text-center text-xs text-zinc-500">{item.unidad}</td>
+                          <td className="py-1.5 px-2 text-right">
+                            ${item.costo.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 4})}
+                          </td>
+                          <td className="py-1.5 px-2 text-right font-semibold text-green-700">
+                            ${item.total.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                          </td>
+                          <td className="py-1.5 px-2 text-right">
+                            <span className={`px-1.5 py-0.5 rounded text-xs ${
+                              item.pareto <= 80 ? 'bg-yellow-200 text-yellow-800' : 'text-zinc-500'
+                            }`}>
+                              {item.pareto}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-zinc-800 text-white sticky bottom-0">
+                      <tr>
+                        <td colSpan={5} className="py-2 px-2 font-bold">TOTALES</td>
+                        <td className="py-2 px-2 text-right font-bold text-red-300">
+                          {pendientesData.totales.cantidad.toLocaleString('es-MX', {maximumFractionDigits: 2})}
+                        </td>
+                        <td></td>
+                        <td></td>
+                        <td className="py-2 px-2 text-right font-bold text-green-300">
+                          ${pendientesData.totales.valor.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {reportData.length === 0 && !loading && filters.query_type !== 'pendientes' && (
         <Card className="border border-zinc-200 shadow-sm">
           <CardContent className="py-12">
             <div className="text-center text-zinc-500">
