@@ -739,7 +739,7 @@ function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer, se
 // ============ TAB 3: ANÁLISIS DE COMPRAS ============
 function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
   const [loading, setLoading] = useState(false);
-  const [anio, setAnio] = useState(new Date().getFullYear());
+  const [aniosSeleccionados, setAniosSeleccionados] = useState([new Date().getFullYear().toString()]);
   const [mesesSeleccionados, setMesesSeleccionados] = useState(['01', '02', '03']);
   const [comprasPorProveedor, setComprasPorProveedor] = useState([]);
   const [expandedProveedor, setExpandedProveedor] = useState(null);
@@ -756,9 +756,21 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
     { value: '10', label: 'Oct' }, { value: '11', label: 'Nov' }, { value: '12', label: 'Dic' },
   ];
 
+  const aniosDisponibles = [
+    { value: '2024', label: '2024' },
+    { value: '2025', label: '2025' },
+    { value: '2026', label: '2026' },
+  ];
+
+  // Auto-analizar cuando cambian los filtros
+  useEffect(() => {
+    if (selectedServer && selectedSucursal && mesesSeleccionados.length > 0 && aniosSeleccionados.length > 0) {
+      cargarAnalisis();
+    }
+  }, [selectedServer, selectedSucursal, mesesSeleccionados, aniosSeleccionados]);
+
   const cargarAnalisis = async () => {
     if (!selectedServer || !selectedSucursal) {
-      toast.error('Selecciona servidor y sucursal');
       return;
     }
     setLoading(true);
@@ -767,7 +779,7 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
       const response = await axios.post(`${API_URL}/api/compras/analisis`, {
         server_id: selectedServer,
         sucursal: selectedSucursal,
-        anio: anio,
+        anios: aniosSeleccionados,
         meses: mesesSeleccionados
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -776,27 +788,32 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
       setAlertasDesviacion(response.data.alertas || []);
     } catch (error) {
       console.error('Error:', error);
-      // Datos de ejemplo
-      setComprasPorProveedor([
-        { codigo: 'B0734', nombre: 'VINO PA TODOS/CAZA GOURMET', '01': 7115, '02': 4805, '03': 7865, total: 19785 },
-        { codigo: 'B0013', nombre: 'CAVA DEL 10', '01': 5568, '02': 5568, '03': 8352, total: 19488 },
-        { codigo: 'B0823', nombre: 'DIFRUTA/MONICA APONTE', '01': 6820, '02': 6175, '03': 5765, total: 18760 },
-        { codigo: 'B0158', nombre: 'COMESUR-CAFE MUSI', '01': 0, '02': 8600, '03': 8600, total: 17200 },
-        { codigo: 'B0677', nombre: 'CASA LAMBAR (LICORES)', '01': 0, '02': 11592, '03': 2494, total: 14086 },
-      ]);
-      setAlertasDesviacion([
-        { producto: 'Vino Tinto Reserva', tipo: 'sobrecompra', var_ventas: -35, var_compras: 12 },
-        { producto: 'Aguacate Hass', tipo: 'desabasto', var_ventas: 45, var_compras: -20 },
-      ]);
+      // Limpiar datos en caso de error
+      setComprasPorProveedor([]);
+      setAlertasDesviacion([]);
     } finally {
       setLoading(false);
     }
   };
 
   const toggleMes = (mes) => {
-    setMesesSeleccionados(prev => 
-      prev.includes(mes) ? prev.filter(m => m !== mes) : [...prev, mes]
-    );
+    setMesesSeleccionados(prev => {
+      if (prev.includes(mes)) {
+        if (prev.length === 1) return prev; // Al menos un mes
+        return prev.filter(m => m !== mes);
+      }
+      return [...prev, mes].sort();
+    });
+  };
+
+  const toggleAnio = (anio) => {
+    setAniosSeleccionados(prev => {
+      if (prev.includes(anio)) {
+        if (prev.length === 1) return prev; // Al menos un año
+        return prev.filter(a => a !== anio);
+      }
+      return [...prev, anio].sort();
+    });
   };
 
   const verDetalleProveedor = async (proveedor) => {
@@ -833,8 +850,8 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
       {/* Filtros */}
       <Card className="border">
         <CardContent className="py-4 space-y-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-1">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex-1 min-w-[180px] max-w-xs space-y-1">
               <Label className="text-xs">Servidor</Label>
               <Select value={selectedServer} onValueChange={setSelectedServer}>
                 <SelectTrigger className="h-9">
@@ -847,7 +864,7 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
+            <div className="flex-1 min-w-[180px] max-w-xs space-y-1">
               <Label className="text-xs">Sucursal</Label>
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger className="h-9">
@@ -860,24 +877,29 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Año</Label>
-              <Select value={String(anio)} onValueChange={(v) => setAnio(Number(v))}>
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2024">2024</SelectItem>
-                  <SelectItem value="2025">2025</SelectItem>
-                  <SelectItem value="2026">2026</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end">
-              <Button onClick={cargarAnalisis} disabled={loading || !selectedServer || !selectedSucursal} className="w-full">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <BarChart3 className="h-4 w-4 mr-2" />}
-                Analizar
-              </Button>
+            {loading && (
+              <div className="flex items-center text-sm text-zinc-500 mt-5">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Cargando...
+              </div>
+            )}
+          </div>
+          
+          {/* Selector de años (multiselección) */}
+          <div className="space-y-1">
+            <Label className="text-xs">Año(s)</Label>
+            <div className="flex flex-wrap gap-1">
+              {aniosDisponibles.map(a => (
+                <Button
+                  key={a.value}
+                  variant={aniosSeleccionados.includes(a.value) ? "default" : "outline"}
+                  size="sm"
+                  className="h-8 px-4"
+                  onClick={() => toggleAnio(a.value)}
+                >
+                  {a.label}
+                </Button>
+              ))}
             </div>
           </div>
           

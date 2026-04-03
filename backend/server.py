@@ -6288,7 +6288,8 @@ ORDER BY C.fecha DESC
 class AnalisisComprasRequest(BaseModel):
     server_id: str
     sucursal: str
-    anio: int
+    anio: Optional[int] = None  # Mantener para compatibilidad
+    anios: Optional[List[str]] = None  # Nuevo: múltiples años
     meses: List[str]
 
 @api_router.get("/compras/dashboard/{server_id}")
@@ -6538,28 +6539,43 @@ async def obtener_analisis_compras(request: AnalisisComprasRequest, credentials:
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
+    # Obtener años (priorizar lista de años sobre año único)
+    if request.anios and len(request.anios) > 0:
+        anios = [int(a) for a in request.anios]
+    elif request.anio:
+        anios = [request.anio]
+    else:
+        anios = [datetime.now().year]
+    
+    anio_principal = max(anios)  # Usar el año más reciente para la consulta principal
+    
+    logging.info(f"Análisis compras: {server['name']} - Años: {anios}, Meses: {request.meses}")
+    
     try:
         if server['system_type'] == 'MPRO':
             # Construir condición de meses
             meses_cond = " OR ".join([f"MONTH(M.Mv_Fecha) = {int(m)}" for m in request.meses])
+            # Construir condición de años
+            anios_cond = " OR ".join([f"YEAR(M.Mv_Fecha) = {a}" for a in anios])
             
             query = f"""
 SELECT 
     P.Pv_Cve_Proveedor as codigo,
     P.Pv_Nombre as nombre,
     MONTH(M.Mv_Fecha) as mes,
+    YEAR(M.Mv_Fecha) as anio,
     SUM(M.Mv_Costo_Importe) as total
 FROM Movimiento M
 INNER JOIN Proveedor P ON P.Pv_Cve_Proveedor = M.Pv_Cve_Proveedor
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
 WHERE TM.Tm_Tipo = 'E'
-    AND YEAR(M.Mv_Fecha) = {request.anio}
+    AND ({anios_cond})
     AND ({meses_cond})
     AND S.Sc_Descripcion LIKE '%{request.sucursal}%'
     AND ISNULL(M.Es_Cve_Estado, '') <> 'CA'
-GROUP BY P.Pv_Cve_Proveedor, P.Pv_Nombre, MONTH(M.Mv_Fecha)
-ORDER BY P.Pv_Nombre, MONTH(M.Mv_Fecha)
+GROUP BY P.Pv_Cve_Proveedor, P.Pv_Nombre, MONTH(M.Mv_Fecha), YEAR(M.Mv_Fecha)
+ORDER BY P.Pv_Nombre, YEAR(M.Mv_Fecha), MONTH(M.Mv_Fecha)
 """
             result = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -6581,15 +6597,69 @@ ORDER BY P.Pv_Nombre, MONTH(M.Mv_Fecha)
                 
                 mes_str = str(row['mes']).zfill(2)
                 if mes_str in request.meses:
-                    proveedores[codigo][mes_str] = float(row['total'])
-                    proveedores[codigo]['total'] += float(row['total'])
+                    proveedores[codigo][mes_str] += float(row['total'] or 0)
+                    proveedores[codigo]['total'] += float(row['total'] or 0)
             
             # Ordenar por total descendente
             proveedores_list = sorted(proveedores.values(), key=lambda x: x['total'], reverse=True)
             
             return {
-                "proveedores": proveedores_list[:50],  # Top 50
-                "alertas": []  # TODO: calcular alertas de desviación
+                "proveedores": proveedores_list[:100],  # Top 100
+                "alertas": []
+            }
+        
+        elif server['system_type'] == 'SoftRestaurant':
+            # SoftRestaurant - Compras por proveedor usando tabla compras
+            meses_cond = " OR ".join([f"MONTH(c.fechaaplicacion) = {int(m)}" for m in request.meses])
+            anios_cond = " OR ".join([f"YEAR(c.fechaaplicacion) = {a}" for a in anios])
+            
+            query = f"""
+SELECT 
+    ISNULL(p.idproveedor, 0) as codigo,
+    ISNULL(p.nombre, 'Sin proveedor') as nombre,
+    MONTH(c.fechaaplicacion) as mes,
+    YEAR(c.fechaaplicacion) as anio,
+    SUM(c.total) as total
+FROM compras c
+LEFT JOIN proveedores p ON p.idproveedor = c.idproveedor
+WHERE ({anios_cond})
+    AND ({meses_cond})
+    AND ISNULL(c.cancelado, 0) = 0
+GROUP BY p.idproveedor, p.nombre, MONTH(c.fechaaplicacion), YEAR(c.fechaaplicacion)
+ORDER BY p.nombre, YEAR(c.fechaaplicacion), MONTH(c.fechaaplicacion)
+"""
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query
+            )
+            
+            if not result:
+                return {"proveedores": [], "alertas": []}
+            
+            # Pivot por proveedor y mes
+            proveedores = {}
+            for row in result:
+                codigo = str(row['codigo'])
+                if codigo not in proveedores:
+                    proveedores[codigo] = {
+                        'codigo': codigo,
+                        'nombre': row['nombre'],
+                        'total': 0
+                    }
+                    for m in request.meses:
+                        proveedores[codigo][m] = 0
+                
+                mes_str = str(row['mes']).zfill(2)
+                if mes_str in request.meses:
+                    proveedores[codigo][mes_str] += float(row['total'] or 0)
+                    proveedores[codigo]['total'] += float(row['total'] or 0)
+            
+            # Ordenar por total descendente
+            proveedores_list = sorted(proveedores.values(), key=lambda x: x['total'], reverse=True)
+            
+            return {
+                "proveedores": proveedores_list[:100],  # Top 100
+                "alertas": []
             }
         
         return {"proveedores": [], "alertas": []}
