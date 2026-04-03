@@ -736,11 +736,13 @@ function AutorizacionComprasTab({ servers, selectedServer, setSelectedServer, se
   );
 }
 
-// ============ TAB 3: ANÁLISIS DE COMPRAS ============
+// ============ TAB 3: ANÁLISIS DE COMPRAS (MultiAnálisis) ============
 function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
   const [loading, setLoading] = useState(false);
+  const [loadingFacturas, setLoadingFacturas] = useState(false);
+  const [loadingProductos, setLoadingProductos] = useState(false);
   const [aniosSeleccionados, setAniosSeleccionados] = useState([new Date().getFullYear().toString()]);
-  const [mesesSeleccionados, setMesesSeleccionados] = useState(['01', '02', '03']);
+  const [mesesSeleccionados, setMesesSeleccionados] = useState([String(new Date().getMonth() + 1).padStart(2, '0')]);
   const [comprasPorProveedor, setComprasPorProveedor] = useState([]);
   const [expandedProveedor, setExpandedProveedor] = useState(null);
   const [detalleFacturas, setDetalleFacturas] = useState([]);
@@ -748,6 +750,9 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
   const [detalleProductos, setDetalleProductos] = useState([]);
   const [alertasDesviacion, setAlertasDesviacion] = useState([]);
   const [modalDocumento, setModalDocumento] = useState({ open: false, tipo: '', url: '', data: null });
+  
+  // Nuevos estados para KPIs
+  const [kpis, setKpis] = useState({ totalCompras: 0, numProveedores: 0, numFacturas: 0, promedioFactura: 0 });
 
   const meses = [
     { value: '01', label: 'Ene' }, { value: '02', label: 'Feb' }, { value: '03', label: 'Mar' },
@@ -756,11 +761,7 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
     { value: '10', label: 'Oct' }, { value: '11', label: 'Nov' }, { value: '12', label: 'Dic' },
   ];
 
-  const aniosDisponibles = [
-    { value: '2024', label: '2024' },
-    { value: '2025', label: '2025' },
-    { value: '2026', label: '2026' },
-  ];
+  const aniosDisponibles = getAniosDisponibles();
 
   // Auto-analizar cuando cambian los filtros
   useEffect(() => {
@@ -774,6 +775,8 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
       return;
     }
     setLoading(true);
+    setExpandedProveedor(null);
+    setExpandedFactura(null);
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(`${API_URL}/api/compras/analisis`, {
@@ -784,13 +787,23 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setComprasPorProveedor(response.data.proveedores || []);
+      const proveedores = response.data.proveedores || [];
+      setComprasPorProveedor(proveedores);
       setAlertasDesviacion(response.data.alertas || []);
+      
+      // Calcular KPIs
+      const total = proveedores.reduce((sum, p) => sum + (p.total || 0), 0);
+      setKpis({
+        totalCompras: total,
+        numProveedores: proveedores.length,
+        numFacturas: 0, // Se actualizará cuando se carguen facturas
+        promedioFactura: proveedores.length > 0 ? total / proveedores.length : 0
+      });
     } catch (error) {
       console.error('Error:', error);
-      // Limpiar datos en caso de error
       setComprasPorProveedor([]);
       setAlertasDesviacion([]);
+      setKpis({ totalCompras: 0, numProveedores: 0, numFacturas: 0, promedioFactura: 0 });
     } finally {
       setLoading(false);
     }
@@ -799,7 +812,7 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
   const toggleMes = (mes) => {
     setMesesSeleccionados(prev => {
       if (prev.includes(mes)) {
-        if (prev.length === 1) return prev; // Al menos un mes
+        if (prev.length === 1) return prev;
         return prev.filter(m => m !== mes);
       }
       return [...prev, mes].sort();
@@ -809,49 +822,81 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
   const toggleAnio = (anio) => {
     setAniosSeleccionados(prev => {
       if (prev.includes(anio)) {
-        if (prev.length === 1) return prev; // Al menos un año
+        if (prev.length === 1) return prev;
         return prev.filter(a => a !== anio);
       }
       return [...prev, anio].sort();
     });
   };
 
+  // Cargar facturas reales del backend
   const verDetalleProveedor = async (proveedor) => {
     if (expandedProveedor === proveedor.codigo) {
       setExpandedProveedor(null);
+      setDetalleFacturas([]);
       return;
     }
     setExpandedProveedor(proveedor.codigo);
-    // Cargar facturas del proveedor
-    setDetalleFacturas([
-      { folio: 'FAC-2024-001', fecha: '2024-01-15', productos: 8, importe: 3250, status: 'pagada', tiene_pdf: true, tiene_xml: true },
-      { folio: 'FAC-2024-002', fecha: '2024-01-22', productos: 12, importe: 3865, status: 'pagada', tiene_pdf: true, tiene_xml: true },
-      { folio: 'FAC-2024-003', fecha: '2024-02-08', productos: 5, importe: 2105, status: 'pendiente', tiene_pdf: false, tiene_xml: true },
-    ]);
+    setExpandedFactura(null);
+    setDetalleFacturas([]);
+    setLoadingFacturas(true);
+    
+    try {
+      const token = localStorage.getItem('token');
+      const anioPrincipal = Math.max(...aniosSeleccionados.map(a => parseInt(a)));
+      const response = await axios.get(`${API_URL}/api/compras/facturas-proveedor/${selectedServer}`, {
+        params: {
+          proveedor_codigo: proveedor.codigo,
+          anio: anioPrincipal,
+          meses: mesesSeleccionados.join(',')
+        },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDetalleFacturas(response.data || []);
+    } catch (error) {
+      console.error('Error cargando facturas:', error);
+      toast.error('Error al cargar facturas del proveedor');
+      setDetalleFacturas([]);
+    } finally {
+      setLoadingFacturas(false);
+    }
   };
 
+  // Cargar productos reales del backend
   const verDetalleFactura = async (factura) => {
     if (expandedFactura === factura.folio) {
       setExpandedFactura(null);
+      setDetalleProductos([]);
       return;
     }
     setExpandedFactura(factura.folio);
-    setDetalleProductos([
-      { codigo: '0000001234', producto: 'Vino Tinto Reserva 750ml', cantidad: 24, costo: 85, importe: 2040 },
-      { codigo: '0000001235', producto: 'Vino Blanco Chardonnay', cantidad: 12, costo: 72.50, importe: 870 },
-      { codigo: '0000001236', producto: 'Vino Rosado 750ml', cantidad: 6, costo: 56.67, importe: 340 },
-    ]);
+    setDetalleProductos([]);
+    setLoadingProductos(true);
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/compras/detalle-factura/${selectedServer}/${encodeURIComponent(factura.folio)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDetalleProductos(response.data || []);
+    } catch (error) {
+      console.error('Error cargando detalle:', error);
+      toast.error('Error al cargar detalle de factura');
+      setDetalleProductos([]);
+    } finally {
+      setLoadingProductos(false);
+    }
   };
 
   const totalGeneral = comprasPorProveedor.reduce((sum, p) => sum + (p.total || 0), 0);
 
   return (
     <div className="space-y-4">
-      {/* Filtros */}
+      {/* Filtros compactos */}
       <Card className="border">
-        <CardContent className="py-4 space-y-3">
+        <CardContent className="py-4">
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex-1 min-w-[180px] max-w-xs space-y-1">
+            <div className="flex-1 min-w-[160px] max-w-[200px] space-y-1">
               <Label className="text-xs">Servidor</Label>
               <Select value={selectedServer} onValueChange={setSelectedServer}>
                 <SelectTrigger className="h-9">
@@ -864,7 +909,7 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-1 min-w-[180px] max-w-xs space-y-1">
+            <div className="flex-1 min-w-[160px] max-w-[200px] space-y-1">
               <Label className="text-xs">Sucursal</Label>
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger className="h-9">
@@ -877,51 +922,82 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* Años inline */}
+            <div className="space-y-1">
+              <Label className="text-xs">Año(s)</Label>
+              <div className="flex gap-1">
+                {aniosDisponibles.slice(0, 4).map(a => (
+                  <Button
+                    key={a.value}
+                    variant={aniosSeleccionados.includes(a.value) ? "default" : "outline"}
+                    size="sm"
+                    className="h-9 px-3"
+                    onClick={() => toggleAnio(a.value)}
+                  >
+                    {a.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Meses inline */}
+            <div className="flex-1 space-y-1">
+              <Label className="text-xs">Meses</Label>
+              <div className="flex flex-wrap gap-1">
+                {meses.map(m => (
+                  <Button
+                    key={m.value}
+                    variant={mesesSeleccionados.includes(m.value) ? "default" : "outline"}
+                    size="sm"
+                    className="h-9 px-2 text-xs"
+                    onClick={() => toggleMes(m.value)}
+                  >
+                    {m.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            
             {loading && (
-              <div className="flex items-center text-sm text-zinc-500 mt-5">
+              <div className="flex items-center text-sm text-zinc-500">
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 Cargando...
               </div>
             )}
           </div>
-          
-          {/* Selector de años (multiselección) */}
-          <div className="space-y-1">
-            <Label className="text-xs">Año(s)</Label>
-            <div className="flex flex-wrap gap-1">
-              {aniosDisponibles.map(a => (
-                <Button
-                  key={a.value}
-                  variant={aniosSeleccionados.includes(a.value) ? "default" : "outline"}
-                  size="sm"
-                  className="h-8 px-4"
-                  onClick={() => toggleAnio(a.value)}
-                >
-                  {a.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-          
-          {/* Selector de meses */}
-          <div className="space-y-1">
-            <Label className="text-xs">Meses</Label>
-            <div className="flex flex-wrap gap-1">
-              {meses.map(m => (
-                <Button
-                  key={m.value}
-                  variant={mesesSeleccionados.includes(m.value) ? "default" : "outline"}
-                  size="sm"
-                  className="h-8 px-3"
-                  onClick={() => toggleMes(m.value)}
-                >
-                  {m.label}
-                </Button>
-              ))}
-            </div>
-          </div>
         </CardContent>
       </Card>
+      
+      {/* KPIs */}
+      {comprasPorProveedor.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Card className="border bg-gradient-to-br from-green-50 to-white" data-testid="kpi-total-compras">
+            <CardContent className="py-3">
+              <p className="text-xs text-zinc-500">Total Compras</p>
+              <p className="text-xl font-bold text-green-600">{formatCurrency(kpis.totalCompras)}</p>
+            </CardContent>
+          </Card>
+          <Card className="border bg-gradient-to-br from-blue-50 to-white" data-testid="kpi-proveedores">
+            <CardContent className="py-3">
+              <p className="text-xs text-zinc-500">Proveedores</p>
+              <p className="text-xl font-bold text-blue-600">{kpis.numProveedores}</p>
+            </CardContent>
+          </Card>
+          <Card className="border bg-gradient-to-br from-purple-50 to-white" data-testid="kpi-promedio">
+            <CardContent className="py-3">
+              <p className="text-xs text-zinc-500">Promedio x Proveedor</p>
+              <p className="text-xl font-bold text-purple-600">{formatCurrency(kpis.promedioFactura)}</p>
+            </CardContent>
+          </Card>
+          <Card className="border bg-gradient-to-br from-orange-50 to-white" data-testid="kpi-meses">
+            <CardContent className="py-3">
+              <p className="text-xs text-zinc-500">Meses Seleccionados</p>
+              <p className="text-xl font-bold text-orange-600">{mesesSeleccionados.length}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Alertas de desviación */}
       {alertasDesviacion.length > 0 && (
@@ -959,13 +1035,16 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
         <Card className="border">
           <CardHeader className="py-2">
             <CardTitle className="text-base flex items-center justify-between">
-              <span>Compras por Proveedor</span>
-              <span className="text-green-600">{formatCurrency(totalGeneral)}</span>
+              <span className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+                Compras por Proveedor
+              </span>
+              <span className="text-green-600 font-bold">{formatCurrency(totalGeneral)}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="max-h-[500px] overflow-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" data-testid="tabla-proveedores">
                 <thead className="sticky top-0 bg-zinc-800 text-white">
                   <tr>
                     <th className="py-2 px-3 text-left w-8"></th>
@@ -980,114 +1059,153 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
                   {comprasPorProveedor.map((prov, idx) => (
                     <React.Fragment key={idx}>
                       <tr 
-                        className="border-b hover:bg-zinc-50 cursor-pointer"
+                        className="border-b hover:bg-zinc-50 cursor-pointer transition-colors"
                         onClick={() => verDetalleProveedor(prov)}
+                        data-testid={`proveedor-row-${idx}`}
                       >
                         <td className="py-2 px-3">
                           {expandedProveedor === prov.codigo ? (
-                            <ChevronDown className="h-4 w-4" />
+                            <ChevronDown className="h-4 w-4 text-blue-600" />
                           ) : (
                             <ChevronRight className="h-4 w-4" />
                           )}
                         </td>
-                        <td className="py-2 px-3 font-medium">{prov.codigo} {prov.nombre}</td>
+                        <td className="py-2 px-3">
+                          <span className="font-mono text-xs text-zinc-400 mr-2">{prov.codigo}</span>
+                          <span className="font-medium">{prov.nombre}</span>
+                        </td>
                         {mesesSeleccionados.map(m => (
                           <td key={m} className="py-2 px-3 text-right">
-                            {prov[m] ? formatCurrency(prov[m]) : '-'}
+                            {prov[m] ? formatCurrency(prov[m]) : <span className="text-zinc-300">-</span>}
                           </td>
                         ))}
                         <td className="py-2 px-3 text-right font-bold text-green-600">{formatCurrency(prov.total)}</td>
                       </tr>
                       
-                      {/* Detalle de facturas */}
+                      {/* Detalle de facturas (drill-down nivel 1) */}
                       {expandedProveedor === prov.codigo && (
                         <tr>
                           <td colSpan={mesesSeleccionados.length + 3} className="bg-zinc-100 p-0">
                             <div className="p-3">
-                              <p className="text-xs font-semibold text-zinc-500 mb-2">FACTURAS / ENTRADAS</p>
-                              <table className="w-full text-xs">
-                                <thead className="bg-zinc-200">
-                                  <tr>
-                                    <th className="py-1 px-2 text-left w-6"></th>
-                                    <th className="py-1 px-2 text-left">Folio</th>
-                                    <th className="py-1 px-2 text-left">Fecha</th>
-                                    <th className="py-1 px-2 text-right">Productos</th>
-                                    <th className="py-1 px-2 text-right">Importe</th>
-                                    <th className="py-1 px-2 text-center">Status</th>
-                                    <th className="py-1 px-2 text-center">Docs</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {detalleFacturas.map((fac, fidx) => (
-                                    <React.Fragment key={fidx}>
-                                      <tr 
-                                        className="border-b hover:bg-white cursor-pointer"
-                                        onClick={(e) => { e.stopPropagation(); verDetalleFactura(fac); }}
-                                      >
-                                        <td className="py-1 px-2">
-                                          {expandedFactura === fac.folio ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                                        </td>
-                                        <td className="py-1 px-2 font-mono">{fac.folio}</td>
-                                        <td className="py-1 px-2">{fac.fecha}</td>
-                                        <td className="py-1 px-2 text-right">{fac.productos}</td>
-                                        <td className="py-1 px-2 text-right">{formatCurrency(fac.importe)}</td>
-                                        <td className="py-1 px-2 text-center">
-                                          <span className={`px-2 py-0.5 rounded text-xs ${fac.status === 'pagada' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                            {fac.status}
-                                          </span>
-                                        </td>
-                                        <td className="py-1 px-2 text-center">
-                                          <div className="flex gap-1 justify-center">
-                                            {fac.tiene_pdf && (
-                                              <Button variant="ghost" size="sm" className="h-6 px-2" onClick={(e) => { e.stopPropagation(); setModalDocumento({ open: true, tipo: 'pdf', url: '#', data: fac }); }}>
-                                                <FileText className="h-3 w-3 text-red-600" />
-                                              </Button>
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-xs font-semibold text-zinc-600 flex items-center gap-2">
+                                  <FileText className="h-4 w-4" />
+                                  FACTURAS / ENTRADAS DE {prov.nombre}
+                                </p>
+                                {loadingFacturas && <Loader2 className="h-4 w-4 animate-spin text-blue-600" />}
+                              </div>
+                              
+                              {loadingFacturas ? (
+                                <div className="py-4 text-center text-zinc-500">
+                                  <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                                  Cargando facturas...
+                                </div>
+                              ) : detalleFacturas.length === 0 ? (
+                                <div className="py-4 text-center text-zinc-500">
+                                  No se encontraron facturas en el período seleccionado
+                                </div>
+                              ) : (
+                                <table className="w-full text-xs">
+                                  <thead className="bg-zinc-200">
+                                    <tr>
+                                      <th className="py-1 px-2 text-left w-6"></th>
+                                      <th className="py-1 px-2 text-left">Folio</th>
+                                      <th className="py-1 px-2 text-left">Fecha</th>
+                                      <th className="py-1 px-2 text-right">Productos</th>
+                                      <th className="py-1 px-2 text-right">Importe</th>
+                                      <th className="py-1 px-2 text-center">Status</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {detalleFacturas.map((fac, fidx) => (
+                                      <React.Fragment key={fidx}>
+                                        <tr 
+                                          className="border-b hover:bg-white cursor-pointer transition-colors"
+                                          onClick={(e) => { e.stopPropagation(); verDetalleFactura(fac); }}
+                                          data-testid={`factura-row-${fidx}`}
+                                        >
+                                          <td className="py-1 px-2">
+                                            {expandedFactura === fac.folio ? (
+                                              <ChevronDown className="h-3 w-3 text-blue-600" />
+                                            ) : (
+                                              <ChevronRight className="h-3 w-3" />
                                             )}
-                                            {fac.tiene_xml && (
-                                              <Button variant="ghost" size="sm" className="h-6 px-2" onClick={(e) => { e.stopPropagation(); setModalDocumento({ open: true, tipo: 'xml', url: '#', data: fac }); }}>
-                                                <FileText className="h-3 w-3 text-green-600" />
-                                              </Button>
-                                            )}
-                                            {!fac.tiene_pdf && !fac.tiene_xml && (
-                                              <FileWarning className="h-3 w-3 text-zinc-400" />
-                                            )}
-                                          </div>
-                                        </td>
-                                      </tr>
-                                      
-                                      {/* Detalle de productos */}
-                                      {expandedFactura === fac.folio && (
-                                        <tr>
-                                          <td colSpan={7} className="bg-white p-2">
-                                            <table className="w-full text-xs">
-                                              <thead className="bg-zinc-100">
-                                                <tr>
-                                                  <th className="py-1 px-2 text-left">Código</th>
-                                                  <th className="py-1 px-2 text-left">Producto</th>
-                                                  <th className="py-1 px-2 text-right">Cant</th>
-                                                  <th className="py-1 px-2 text-right">Costo</th>
-                                                  <th className="py-1 px-2 text-right">Importe</th>
-                                                </tr>
-                                              </thead>
-                                              <tbody>
-                                                {detalleProductos.map((prod, pidx) => (
-                                                  <tr key={pidx} className="border-b">
-                                                    <td className="py-1 px-2 font-mono">{prod.codigo}</td>
-                                                    <td className="py-1 px-2">{prod.producto}</td>
-                                                    <td className="py-1 px-2 text-right">{prod.cantidad}</td>
-                                                    <td className="py-1 px-2 text-right">{formatCurrency(prod.costo)}</td>
-                                                    <td className="py-1 px-2 text-right">{formatCurrency(prod.importe)}</td>
-                                                  </tr>
-                                                ))}
-                                              </tbody>
-                                            </table>
+                                          </td>
+                                          <td className="py-1 px-2 font-mono font-medium">{fac.folio}</td>
+                                          <td className="py-1 px-2">{fac.fecha?.split('T')[0] || fac.fecha}</td>
+                                          <td className="py-1 px-2 text-right">{fac.productos}</td>
+                                          <td className="py-1 px-2 text-right font-semibold">{formatCurrency(fac.importe)}</td>
+                                          <td className="py-1 px-2 text-center">
+                                            <span className={`px-2 py-0.5 rounded text-xs ${
+                                              fac.status === 'pagada' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                            }`}>
+                                              {fac.status || 'pendiente'}
+                                            </span>
                                           </td>
                                         </tr>
-                                      )}
-                                    </React.Fragment>
-                                  ))}
-                                </tbody>
-                              </table>
+                                        
+                                        {/* Detalle de productos (drill-down nivel 2) */}
+                                        {expandedFactura === fac.folio && (
+                                          <tr>
+                                            <td colSpan={6} className="bg-white p-2">
+                                              {loadingProductos ? (
+                                                <div className="py-4 text-center text-zinc-500">
+                                                  <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
+                                                  Cargando productos...
+                                                </div>
+                                              ) : detalleProductos.length === 0 ? (
+                                                <div className="py-3 text-center text-zinc-500 text-xs">
+                                                  No se encontraron productos
+                                                </div>
+                                              ) : (
+                                                <table className="w-full text-xs">
+                                                  <thead className="bg-blue-50">
+                                                    <tr>
+                                                      <th className="py-1 px-2 text-left">Código</th>
+                                                      <th className="py-1 px-2 text-left">Producto</th>
+                                                      <th className="py-1 px-2 text-right">Cantidad</th>
+                                                      <th className="py-1 px-2 text-right">Costo Unit.</th>
+                                                      <th className="py-1 px-2 text-right">Importe</th>
+                                                    </tr>
+                                                  </thead>
+                                                  <tbody>
+                                                    {detalleProductos.map((prod, pidx) => (
+                                                      <tr key={pidx} className="border-b hover:bg-blue-50/50">
+                                                        <td className="py-1 px-2 font-mono text-zinc-500">{prod.codigo}</td>
+                                                        <td className="py-1 px-2">{prod.producto}</td>
+                                                        <td className="py-1 px-2 text-right">{formatNumber(prod.cantidad)}</td>
+                                                        <td className="py-1 px-2 text-right">{formatCurrency(prod.costo)}</td>
+                                                        <td className="py-1 px-2 text-right font-semibold text-green-600">{formatCurrency(prod.importe)}</td>
+                                                      </tr>
+                                                    ))}
+                                                  </tbody>
+                                                  <tfoot className="bg-zinc-100">
+                                                    <tr>
+                                                      <td colSpan={4} className="py-1 px-2 text-right font-semibold">Total:</td>
+                                                      <td className="py-1 px-2 text-right font-bold text-green-600">
+                                                        {formatCurrency(detalleProductos.reduce((sum, p) => sum + (p.importe || 0), 0))}
+                                                      </td>
+                                                    </tr>
+                                                  </tfoot>
+                                                </table>
+                                              )}
+                                            </td>
+                                          </tr>
+                                        )}
+                                      </React.Fragment>
+                                    ))}
+                                  </tbody>
+                                  <tfoot className="bg-zinc-200">
+                                    <tr>
+                                      <td colSpan={4} className="py-1 px-2 text-right font-semibold">Total Facturas:</td>
+                                      <td className="py-1 px-2 text-right font-bold text-green-700">
+                                        {formatCurrency(detalleFacturas.reduce((sum, f) => sum + (f.importe || 0), 0))}
+                                      </td>
+                                      <td></td>
+                                    </tr>
+                                  </tfoot>
+                                </table>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1095,8 +1213,33 @@ function AnalisisCompras({ servers, selectedServer, setSelectedServer, selectedS
                     </React.Fragment>
                   ))}
                 </tbody>
+                <tfoot className="bg-zinc-800 text-white">
+                  <tr>
+                    <td colSpan={2} className="py-2 px-3 font-bold">TOTAL GENERAL</td>
+                    {mesesSeleccionados.map(m => {
+                      const totalMes = comprasPorProveedor.reduce((sum, p) => sum + (p[m] || 0), 0);
+                      return (
+                        <td key={m} className="py-2 px-3 text-right font-semibold">
+                          {formatCurrency(totalMes)}
+                        </td>
+                      );
+                    })}
+                    <td className="py-2 px-3 text-right font-bold text-green-400">{formatCurrency(totalGeneral)}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Estado vacío */}
+      {!loading && comprasPorProveedor.length === 0 && selectedServer && selectedSucursal && (
+        <Card className="border">
+          <CardContent className="py-12 text-center text-zinc-500">
+            <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
+            <p className="font-medium">No hay compras registradas</p>
+            <p className="text-sm">en el período seleccionado</p>
           </CardContent>
         </Card>
       )}
