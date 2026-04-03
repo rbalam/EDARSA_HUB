@@ -201,9 +201,12 @@ const Reportes = () => {
   }, [filters.server_id, servers]);
 
   // Cargar almacenes para SoftRestaurant (no requiere sucursal)
-  const loadAlmacenesSoftRestaurant = async () => {
+  const loadAlmacenesSoftRestaurant = async (soloConsumo = false) => {
     try {
-      const response = await api.get(`/servers/${filters.server_id}/almacenes-softrestaurant`);
+      const url = soloConsumo 
+        ? `/servers/${filters.server_id}/almacenes-softrestaurant?solo_consumo=true`
+        : `/servers/${filters.server_id}/almacenes-softrestaurant`;
+      const response = await api.get(url);
       setAlmacenes(response.data);
       // Establecer una sucursal "ficticia" para que el flujo continúe
       setFilters(prev => ({
@@ -249,10 +252,21 @@ const Reportes = () => {
   // Cargar insumos pendientes cuando se selecciona ese tipo de consulta
   useEffect(() => {
     if (filters.query_type === 'pendientes' && filters.server_id && selectedServer?.system_type === 'SoftRestaurant') {
+      // Recargar almacenes solo de consumo para pendientes
+      loadAlmacenesSoftRestaurant(true);
+    } else if (filters.server_id && selectedServer?.system_type === 'SoftRestaurant' && filters.query_type !== 'pendientes') {
+      // Recargar todos los almacenes para otros tipos de consulta
+      loadAlmacenesSoftRestaurant(false);
+    }
+  }, [filters.query_type, filters.server_id, selectedServer]);
+
+  // Recargar pendientes cuando cambia selección de almacén
+  useEffect(() => {
+    if (filters.query_type === 'pendientes' && filters.server_id && selectedServer?.system_type === 'SoftRestaurant') {
       const almacenFiltro = almacenesPendientesSeleccionados.length === 1 ? almacenesPendientesSeleccionados[0] : null;
       loadInsumosPendientes(almacenFiltro);
     }
-  }, [filters.query_type, filters.server_id, almacenesPendientesSeleccionados, selectedServer]);
+  }, [almacenesPendientesSeleccionados, filters.query_type, filters.server_id, selectedServer]);
 
   useEffect(() => {
     // Cargar inventarios cuando hay almacén(es) seleccionado(s)
@@ -1621,26 +1635,29 @@ const Reportes = () => {
             </div>
           )}
 
-          <div className="flex gap-2 mt-4">
-            <Button 
-              onClick={handleGenerateReport}
-              disabled={loading}
-              className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
-              data-testid="generate-report-button"
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Generando...
-                </>
-              ) : (
-                <>
-                  <Search className="h-4 w-4 mr-2" />
-                  Generar Reporte
-                </>
-              )}
-            </Button>
-          </div>
+          {/* Ocultar botón para pendientes (se carga automáticamente) */}
+          {filters.query_type !== 'pendientes' && (
+            <div className="flex gap-2 mt-4">
+              <Button 
+                onClick={handleGenerateReport}
+                disabled={loading}
+                className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
+                data-testid="generate-report-button"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Generando...
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 mr-2" />
+                    Generar Reporte
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -1796,7 +1796,11 @@ ORDER BY nombre
         return []
 
 @api_router.get("/servers/{server_id}/almacenes-softrestaurant")
-async def get_almacenes_softrestaurant(server_id: str, current_user: Dict = Depends(get_current_user)):
+async def get_almacenes_softrestaurant(
+    server_id: str, 
+    solo_consumo: bool = False,  # Filtrar solo almacenes de consumo (tipo=1)
+    current_user: Dict = Depends(get_current_user)
+):
     """Obtiene la lista de almacenes de SoftRestaurant (no requiere sucursal)"""
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
     if not server:
@@ -1807,14 +1811,16 @@ async def get_almacenes_softrestaurant(server_id: str, current_user: Dict = Depe
     
     try:
         # Query para obtener almacenes de SoftRestaurant incluyendo el tipo
-        # TIPO = 1: Almacén de consumo (tiene ventas)
+        # TIPO = 1: Almacén de consumo (tiene ventas) - Se usa para pendientes de descargar
         # TIPO = 2: Almacén de presentaciones (NO tiene ventas)
-        query = """
+        where_clause = "WHERE ISNULL(tipo, 1) = 1" if solo_consumo else ""
+        query = f"""
 SELECT 
     idalmacen as id, 
     nombre,
     ISNULL(tipo, 1) as tipo
 FROM almacen
+{where_clause}
 ORDER BY nombre
 """
         results = execute_sql_query(
