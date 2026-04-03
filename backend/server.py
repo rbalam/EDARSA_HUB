@@ -1939,16 +1939,16 @@ async def get_insumos_pendientes(
                 i.descripcion as insumo,
                 ISNULL(g.descripcion, 'SIN GRUPO') as grupo,
                 ip.costo,
-                ip.cantidadusada as cantidad,
-                ISNULL(i.unidadcompra, 'PZ') as unidad,
+                ip.cantidad,
+                ISNULL(i.unidad, 'PZ') as unidad,
                 ip.idalmacen as almacen,
                 ip.idturno,
-                (ip.costo * ip.cantidadusada) as total
+                ABS(ip.costo * ip.cantidad) as total
             FROM inventariopendiente ip
             LEFT JOIN insumos i ON ip.idinsumo = i.idinsumo
-            LEFT JOIN gruposinsumos g ON i.idgrupo = g.idgrupo
+            LEFT JOIN gruposi g ON i.idgruposi = g.idgruposi
             {where_clause}
-            ORDER BY (ip.costo * ip.cantidadusada) DESC
+            ORDER BY ABS(ip.costo * ip.cantidad) DESC
         """
         
         results = execute_sql_query(
@@ -1967,8 +1967,8 @@ async def get_insumos_pendientes(
                 "almacenes": []
             }
         
-        # Calcular totales
-        total_cantidad = sum(float(r.get('cantidad') or 0) for r in results)
+        # Calcular totales (usar valor absoluto de cantidad para total de unidades)
+        total_cantidad = sum(abs(float(r.get('cantidad') or 0)) for r in results)
         total_valor = sum(float(r.get('total') or 0) for r in results)
         
         # Calcular 80-20 (Pareto) - % acumulado
@@ -1985,17 +1985,17 @@ async def get_insumos_pendientes(
                 "codigo": item.get('codigo', ''),
                 "insumo": item.get('insumo', ''),
                 "grupo": item.get('grupo', 'SIN GRUPO'),
-                "cantidad": float(item.get('cantidad') or 0),
-                "unidad": item.get('unidad', 'PZ'),
+                "cantidad": abs(float(item.get('cantidad') or 0)),  # Valor absoluto
+                "unidad": item.get('unidad', 'PZ').strip() if item.get('unidad') else 'PZ',
                 "costo": float(item.get('costo') or 0),
                 "total": total_item,
-                "almacen": str(item.get('almacen', '')),
+                "almacen": str(item.get('almacen', '')).strip(),  # Limpiar espacios
                 "idturno": item.get('idturno'),
                 "pareto": round(porcentaje_acumulado, 0)
             })
         
-        # Obtener lista de almacenes únicos
-        almacenes_unicos = list(set(str(item.get('almacen', '')) for item in results if item.get('almacen')))
+        # Obtener lista de almacenes únicos (limpiar espacios)
+        almacenes_unicos = list(set(str(item.get('almacen', '')).strip() for item in results if item.get('almacen')))
         almacenes_unicos.sort()
         
         return {
