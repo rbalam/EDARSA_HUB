@@ -16,7 +16,7 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 
 ---
 
-## What's Been Implemented (as of April 3, 2026)
+## What's Been Implemented (as of April 6, 2026)
 
 ### ✅ Core Infrastructure
 - Multi-server architecture with dynamic SQL Server connections
@@ -57,18 +57,47 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 - KPIs consolidados de todas las sucursales
 - Gráficos de tendencias
 
+### ✅ Portal de Proveedores (NEW - April 6, 2026)
+- **Subproyecto separado** en `/portal-proveedores`
+- **Dashboard** conectado a datos reales de SQL Server:
+  - KPIs: Total Facturado, Total Pagado, Saldo Pendiente, Facturas Pendientes
+  - Filtros por Sistema y Sucursal
+  - Resumen por Sistema con status de conexión
+  - Saldo por Sucursal con desglose MPRO/SoftRestaurant
+  - Facturas Pendientes con drill-down por sucursal
+- **Autenticación**: Login/Registro por RFC con JWT
+- **Mis Facturas**: Listado de facturas subidas
+- **Subir Factura**: Carga de XML CFDI con validación
+- **Carga Masiva**: Placeholder para carga múltiple
+- **Mis Pagos**: Historial de pagos (placeholder)
+- **Endpoints Backend**:
+  - `/api/portal/auth/*` - Autenticación
+  - `/api/portal/saldos` - Saldos reales desde SQL Server
+  - `/api/portal/invoices` - CRUD de facturas
+  - `/api/portal/admin/*` - Administración
+
+### ✅ Administración de Proveedores en EDARSA HUB (NEW - April 6, 2026)
+- Nueva sección: **Sistema → Portal Proveedores**
+- Tabla de proveedores con filtros (Todos/Pendientes/Aprobados/Rechazados)
+- Búsqueda por RFC, razón social, email
+- Modal de aprobación con asignación de sucursales
+- Botón directo al portal externo
+
 ---
 
 ## Prioritized Backlog
 
 ### P0 (Critical)
-- [ ] Drill-down Compras para SoftRestaurant (implementar queries para `compras` y `comprasdetalle`)
+- [x] ~~Portal de Proveedores - Dashboard con datos reales~~ ✅
+- [x] ~~Administración de Proveedores en EDARSA HUB~~ ✅
+- [ ] Drill-down Compras para SoftRestaurant (implementar queries)
 
 ### P1 (High Priority)
 - [ ] Dashboard Comercial estilo Power BI (gráficos de líneas, distribución por área, top 10 productos)
 - [ ] Ventas sin inflación (valuación con precios año anterior)
 - [ ] Módulo Seguridad y Monitoreo (log de logins, alertas de IPs)
 - [ ] Rentabilidad con integración OpenTable
+- [ ] Diseño visual del Portal coincida exactamente con capturas del usuario
 
 ### P2 (Medium Priority)
 - [ ] Infraestructura de Presupuestos (Budgets CRUD)
@@ -80,16 +109,44 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 - [ ] Toast POS integration (requiere API Key)
 - [ ] QuickBooks Online integration (requiere OAuth credentials)
 - [ ] MarginEdge integration (requiere API Key)
-- [ ] Portal Proveedores (requiere código fuente)
-- [ ] Bitácora Activos (requiere código fuente)
 
 ---
 
+## Architecture
+
+```
+/app/
+├── backend/
+│   ├── server.py                   # Monolito principal (~10,000 líneas)
+│   ├── models/
+│   │   └── portal_models.py        # Modelos Pydantic del Portal
+│   └── routes/
+│       └── portal_proveedores.py   # Endpoints API del portal
+├── frontend/
+│   └── src/
+│       ├── App.js                  # Enrutador principal
+│       ├── pages/
+│       │   ├── Proveedores.js      # Administración de proveedores (NEW)
+│       │   └── ...
+│       └── portal/                 # Subproyecto Portal Proveedores
+│           ├── App.jsx
+│           └── pages/
+│               ├── DashboardPage.jsx  # Dashboard con saldos reales
+│               ├── LoginPage.jsx
+│               ├── InvoicesPage.jsx
+│               ├── UploadInvoicePage.jsx
+│               ├── BatchUploadPage.jsx
+│               └── PaymentsPage.jsx
+└── memory/
+    └── PRD.md
+```
+
 ## Key Technical Concepts
 - FastAPI con conexiones dinámicas a múltiples SQL Server usando `pytds`
-- MongoDB collections: `servers`, `users`, `kpis_cache`, `script_logs`
+- MongoDB collections: `servers`, `users`, `kpis_cache`, `portal_suppliers`, `portal_invoices`
 - SoftRestaurant y MPRO tienen esquemas de BD diferentes
 - Hot reload habilitado para desarrollo
+- Portal Proveedores usa JWT separado con type="portal_supplier"
 
 ## Areas Needing Refactor
 - `/app/backend/server.py` tiene >10,000 líneas - dividir en routers

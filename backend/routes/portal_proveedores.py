@@ -3,7 +3,7 @@ Rutas del Portal de Proveedores
 NO modifica nada de EDARSA HUB - Router completamente separado
 Usa la misma conexión MongoDB y los servidores configurados en EDARSA HUB
 """
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, Header
 from typing import Optional, List, Dict
 from datetime import datetime, timezone
 from passlib.context import CryptContext
@@ -17,17 +17,19 @@ import base64
 # Importar db desde server.py (se configurará en el registro del router)
 db = None
 JWT_SECRET = None
+execute_sql_fn = None  # Función de ejecución SQL (se configurará desde server.py)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Router del Portal de Proveedores
 portal_router = APIRouter(prefix="/portal", tags=["Portal Proveedores"])
 
 
-def init_portal_db(database, jwt_secret):
+def init_portal_db(database, jwt_secret, execute_sql_query_fn=None):
     """Inicializa la conexión a la base de datos para el portal"""
-    global db, JWT_SECRET
+    global db, JWT_SECRET, execute_sql_fn
     db = database
     JWT_SECRET = jwt_secret
+    execute_sql_fn = execute_sql_query_fn
 
 
 def create_portal_token(data: dict):
@@ -38,7 +40,7 @@ def create_portal_token(data: dict):
     return jwt.encode(to_encode, JWT_SECRET, algorithm="HS256")
 
 
-async def get_current_supplier(authorization: str = None):
+async def get_current_supplier(authorization: Optional[str] = Header(None)):
     """Obtiene el proveedor actual desde el token"""
     if not authorization:
         raise HTTPException(status_code=401, detail="Token requerido")
@@ -366,6 +368,341 @@ async def get_account_status(
             "saldo_pendiente": sum_total - sum_paid
         }
     }
+
+
+# ============================================================================
+# SALDOS REALES (consulta a SQL Server de EDARSA HUB)
+# ============================================================================
+
+@portal_router.get("/saldos")
+async def get_saldos_proveedor(
+    current_supplier: dict = Depends(get_current_supplier)
+):
+    """
+    Obtiene los saldos del proveedor desde los servidores SQL Server configurados.
+    Agrupa por servidor y sucursal.
+    """
+    if current_supplier.get("status") != "approved":
+        raise HTTPException(status_code=403, detail="Cuenta no aprobada")
+    
+    if not execute_sql_fn:
+        raise HTTPException(status_code=500, detail="Función SQL no configurada")
+    
+    rfc_proveedor = current_supplier["rfc"]
+    
+    # Obtener todos los servidores activos
+    servers = await db.servers.find({"active": True}, {"_id": 0}).to_list(50)
+    
+    if not servers:
+        return {
+            "sistemas": [],
+            "sucursales": [],
+            "facturas_pendientes": [],
+            "totales": {"importe": 0, "pagado": 0, "saldo": 0, "facturas": 0}
+        }
+    
+    sistemas_data = []
+    sucursales_data = []
+    facturas_pendientes = []
+    
+    for server in servers:
+        server_name = server.get("name", "Desconocido")
+        system_type = server.get("system_type", "UNKNOWN")
+        
+        try:
+            if system_type == 'MPRO':
+                # MPRO: Consultar saldos desde tabla Movimiento
+                # Buscar el código de proveedor por RFC
+                query_proveedor = f"""
+                SELECT TOP 1 Pv_Cve_Proveedor as codigo, Pv_RazonSocial as nombre
+                FROM Proveedor 
+                WHERE Pv_RFC = '{rfc_proveedor}'
+                """
+                
+                prov_result = execute_sql_fn(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_proveedor
+                )
+                
+                if not prov_result:
+                    # Proveedor no encontrado en este servidor
+                    sistemas_data.append({
+                        "id": server['id'],
+                        "name": server_name,
+                        "system_type": system_type,
+                        "facturas": 0,
+                        "importe": 0,
+                        "pagado": 0,
+                        "saldo": 0,
+                        "status": "not_found"
+                    })
+                    continue
+                
+                codigo_proveedor = prov_result[0]['codigo']
+                
+                # Obtener saldos por sucursal de este servidor
+                # Sucursales en MPRO vienen de la tabla Empresa
+                query_sucursales = f"""
+                SELECT 
+                    E.Em_Cve_Empresa as sucursal_id,
+                    E.Em_RazonSocial as sucursal,
+                    COUNT(DISTINCT M.Mv_Documento) as facturas,
+                    ISNULL(SUM(MD.Md_Importe), 0) as importe,
+                    ISNULL(SUM(CASE WHEN M.Es_Cve_Estado = 'PA' THEN MD.Md_Importe ELSE 0 END), 0) as pagado,
+                    ISNULL(SUM(CASE WHEN M.Es_Cve_Estado <> 'PA' THEN MD.Md_Importe ELSE 0 END), 0) as saldo
+                FROM Movimiento M
+                INNER JOIN Movimiento_Detalle MD ON MD.Mv_Folio = M.Mv_Folio
+                INNER JOIN Empresa E ON E.Em_Cve_Empresa = M.Em_Cve_Empresa
+                WHERE M.Pv_Cve_Proveedor = '{codigo_proveedor}'
+                    AND M.Es_Cve_Estado <> 'CA'
+                GROUP BY E.Em_Cve_Empresa, E.Em_RazonSocial
+                ORDER BY saldo DESC
+                """
+                
+                suc_result = execute_sql_fn(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_sucursales
+                )
+                
+                total_facturas = 0
+                total_importe = 0
+                total_pagado = 0
+                total_saldo = 0
+                
+                for suc in (suc_result or []):
+                    facturas = int(suc['facturas'] or 0)
+                    importe = float(suc['importe'] or 0)
+                    pagado = float(suc['pagado'] or 0)
+                    saldo = float(suc['saldo'] or 0)
+                    
+                    sucursales_data.append({
+                        "id": f"{server['id']}_{suc['sucursal_id']}",
+                        "name": suc['sucursal'],
+                        "sistema": server_name,
+                        "sistema_id": server['id'],
+                        "system_type": system_type,
+                        "facturas": facturas,
+                        "importe": importe,
+                        "pagado": pagado,
+                        "saldo": saldo
+                    })
+                    
+                    total_facturas += facturas
+                    total_importe += importe
+                    total_pagado += pagado
+                    total_saldo += saldo
+                
+                # Obtener facturas pendientes con detalle
+                query_facturas = f"""
+                SELECT TOP 50
+                    E.Em_RazonSocial as sucursal,
+                    M.Mv_Documento as folio,
+                    LEFT(M.Mv_Referencia, 8) as referencia,
+                    M.Mv_Documento as documento,
+                    M.Mv_Fecha as fecha,
+                    DATEADD(DAY, 30, M.Mv_Fecha) as vencimiento,
+                    DATEDIFF(DAY, DATEADD(DAY, 30, M.Mv_Fecha), GETDATE()) as dias_vencido,
+                    ISNULL(SUM(MD.Md_Importe), 0) as importe,
+                    ISNULL(SUM(MD.Md_Importe), 0) as saldo
+                FROM Movimiento M
+                INNER JOIN Movimiento_Detalle MD ON MD.Mv_Folio = M.Mv_Folio
+                INNER JOIN Empresa E ON E.Em_Cve_Empresa = M.Em_Cve_Empresa
+                WHERE M.Pv_Cve_Proveedor = '{codigo_proveedor}'
+                    AND M.Es_Cve_Estado <> 'PA'
+                    AND M.Es_Cve_Estado <> 'CA'
+                GROUP BY E.Em_RazonSocial, M.Mv_Documento, M.Mv_Referencia, M.Mv_Fecha
+                ORDER BY E.Em_RazonSocial, M.Mv_Fecha
+                """
+                
+                fact_result = execute_sql_fn(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_facturas
+                )
+                
+                for fact in (fact_result or []):
+                    facturas_pendientes.append({
+                        "sucursal": fact['sucursal'],
+                        "sistema": server_name,
+                        "sistema_id": server['id'],
+                        "folio": fact['folio'],
+                        "referencia": fact['referencia'] or '',
+                        "documento": fact['documento'],
+                        "fecha": str(fact['fecha'])[:10] if fact['fecha'] else '',
+                        "vencimiento": str(fact['vencimiento'])[:10] if fact['vencimiento'] else '',
+                        "dias_vencido": int(fact['dias_vencido'] or 0),
+                        "importe": float(fact['importe'] or 0),
+                        "saldo": float(fact['saldo'] or 0)
+                    })
+                
+                sistemas_data.append({
+                    "id": server['id'],
+                    "name": server_name,
+                    "system_type": system_type,
+                    "facturas": total_facturas,
+                    "importe": total_importe,
+                    "pagado": total_pagado,
+                    "saldo": total_saldo,
+                    "status": "connected"
+                })
+                
+            elif system_type == 'SoftRestaurant':
+                # SoftRestaurant: Consultar saldos desde tabla compras
+                query_proveedor = f"""
+                SELECT TOP 1 idproveedor as codigo, nombre
+                FROM proveedores 
+                WHERE rfc = '{rfc_proveedor}'
+                """
+                
+                prov_result = execute_sql_fn(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_proveedor
+                )
+                
+                if not prov_result:
+                    sistemas_data.append({
+                        "id": server['id'],
+                        "name": server_name,
+                        "system_type": system_type,
+                        "facturas": 0,
+                        "importe": 0,
+                        "pagado": 0,
+                        "saldo": 0,
+                        "status": "not_found"
+                    })
+                    continue
+                
+                id_proveedor = prov_result[0]['codigo']
+                
+                # SoftRestaurant no tiene sucursales típicamente (es monobranch)
+                # pero obtenemos los totales
+                query_totales = f"""
+                SELECT 
+                    COUNT(DISTINCT c.idcompra) as facturas,
+                    ISNULL(SUM(c.importetotal), 0) as importe,
+                    ISNULL(SUM(CASE WHEN c.pagada = 1 THEN c.importetotal ELSE 0 END), 0) as pagado,
+                    ISNULL(SUM(CASE WHEN c.pagada = 0 OR c.pagada IS NULL THEN c.importetotal ELSE 0 END), 0) as saldo
+                FROM compras c
+                WHERE c.idproveedor = {id_proveedor}
+                    AND c.cancelada = 0
+                """
+                
+                tot_result = execute_sql_fn(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_totales
+                )
+                
+                if tot_result:
+                    total_facturas = int(tot_result[0]['facturas'] or 0)
+                    total_importe = float(tot_result[0]['importe'] or 0)
+                    total_pagado = float(tot_result[0]['pagado'] or 0)
+                    total_saldo = float(tot_result[0]['saldo'] or 0)
+                    
+                    # Agregar como una sola "sucursal"
+                    sucursales_data.append({
+                        "id": f"{server['id']}_main",
+                        "name": server_name,
+                        "sistema": server_name,
+                        "sistema_id": server['id'],
+                        "system_type": system_type,
+                        "facturas": total_facturas,
+                        "importe": total_importe,
+                        "pagado": total_pagado,
+                        "saldo": total_saldo
+                    })
+                    
+                    sistemas_data.append({
+                        "id": server['id'],
+                        "name": server_name,
+                        "system_type": system_type,
+                        "facturas": total_facturas,
+                        "importe": total_importe,
+                        "pagado": total_pagado,
+                        "saldo": total_saldo,
+                        "status": "connected"
+                    })
+                    
+                    # Facturas pendientes
+                    query_facturas = f"""
+                    SELECT TOP 50
+                        '{server_name}' as sucursal,
+                        c.foliofactura as folio,
+                        LEFT(c.uuid, 8) as referencia,
+                        c.foliofactura as documento,
+                        c.fechaaplicacion as fecha,
+                        DATEADD(DAY, 30, c.fechaaplicacion) as vencimiento,
+                        DATEDIFF(DAY, DATEADD(DAY, 30, c.fechaaplicacion), GETDATE()) as dias_vencido,
+                        c.importetotal as importe,
+                        c.importetotal as saldo
+                    FROM compras c
+                    WHERE c.idproveedor = {id_proveedor}
+                        AND (c.pagada = 0 OR c.pagada IS NULL)
+                        AND c.cancelada = 0
+                    ORDER BY c.fechaaplicacion
+                    """
+                    
+                    fact_result = execute_sql_fn(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query_facturas
+                    )
+                    
+                    for fact in (fact_result or []):
+                        facturas_pendientes.append({
+                            "sucursal": fact['sucursal'],
+                            "sistema": server_name,
+                            "sistema_id": server['id'],
+                            "folio": fact['folio'] or '',
+                            "referencia": fact['referencia'] or '',
+                            "documento": fact['documento'] or '',
+                            "fecha": str(fact['fecha'])[:10] if fact['fecha'] else '',
+                            "vencimiento": str(fact['vencimiento'])[:10] if fact['vencimiento'] else '',
+                            "dias_vencido": int(fact['dias_vencido'] or 0),
+                            "importe": float(fact['importe'] or 0),
+                            "saldo": float(fact['saldo'] or 0)
+                        })
+                else:
+                    sistemas_data.append({
+                        "id": server['id'],
+                        "name": server_name,
+                        "system_type": system_type,
+                        "facturas": 0,
+                        "importe": 0,
+                        "pagado": 0,
+                        "saldo": 0,
+                        "status": "not_found"
+                    })
+                    
+        except Exception as e:
+            logging.error(f"Error consultando saldos de {server_name}: {str(e)}")
+            sistemas_data.append({
+                "id": server['id'],
+                "name": server_name,
+                "system_type": system_type,
+                "facturas": 0,
+                "importe": 0,
+                "pagado": 0,
+                "saldo": 0,
+                "status": "error",
+                "error": str(e)
+            })
+    
+    # Calcular totales generales
+    total_importe = sum(s['importe'] for s in sistemas_data)
+    total_pagado = sum(s['pagado'] for s in sistemas_data)
+    total_saldo = sum(s['saldo'] for s in sistemas_data)
+    total_facturas = sum(s['facturas'] for s in sistemas_data)
+    
+    return {
+        "sistemas": sistemas_data,
+        "sucursales": sucursales_data,
+        "facturas_pendientes": facturas_pendientes,
+        "totales": {
+            "importe": total_importe,
+            "pagado": total_pagado,
+            "saldo": total_saldo,
+            "facturas": total_facturas
+        }
+    }
+
 
 
 # ============================================================================

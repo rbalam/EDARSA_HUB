@@ -1,11 +1,13 @@
 /**
  * SupplierHub - Dashboard con KPIs y Saldos por Sucursal
+ * Conectado a datos reales de MPRO y SoftRestaurant
  */
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { 
   FileText, DollarSign, Clock, CheckCircle, RefreshCw, 
-  ChevronDown, ChevronRight, Upload, Download, FileSpreadsheet
+  ChevronDown, ChevronRight, Upload, Download, FileSpreadsheet,
+  AlertCircle, Server
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
@@ -14,34 +16,22 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
   const [stats, setStats] = useState(null);
   const [recentInvoices, setRecentInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingSaldos, setLoadingSaldos] = useState(false);
   const [selectedSystem, setSelectedSystem] = useState('all');
   const [selectedUnit, setSelectedUnit] = useState('all');
   const [expandedSucursal, setExpandedSucursal] = useState(null);
-  const [sucursalDetails, setSucursalDetails] = useState({});
 
-  // Datos de ejemplo (se conectarán a los servidores reales de EDARSA HUB)
-  const [systemsData, setSystemsData] = useState({
-    sistemas: [
-      { id: 'mpro', name: 'Management Pro', facturas: 15, importe: 1852397.25, saldo: 141255.85 },
-      { id: 'estelar', name: 'La Estelar', facturas: 0, importe: 0, saldo: 0 },
-      { id: 'cienfuegos', name: 'Cienfuegos', facturas: 68, importe: 210376.11, saldo: 4122.68 }
-    ],
-    sucursales: [
-      { id: 'origen', name: 'ORIGEN', sistema: 'MPro', facturas: 10, importe: 131450.01, pagado: 17250.00, saldo: 114200.01 },
-      { id: 'meca', name: 'MECA', sistema: 'MPro', facturas: 1, importe: 3224.80, pagado: 0, saldo: 3224.80 },
-      { id: 'tulum', name: '130° TULUM', sistema: 'MPro', facturas: 4, importe: 23831.04, pagado: 0, saldo: 23831.04 },
-      { id: 'cienfuegos', name: 'Cienfuegos', sistema: 'SR', facturas: 68, importe: 210376.11, pagado: 206253.43, saldo: 4122.68 }
-    ],
-    facturasPendientes: [
-      { sucursal: 'ORIGEN', sistema: 'MPro', facturas: 10, importe: 131450.01, saldo: 114200.01 },
-      { sucursal: '130° TULUM', sistema: 'MPro', facturas: 4, importe: 23831.04, saldo: 23831.04 },
-      { sucursal: 'Cienfuegos', sistema: 'SR', facturas: 3, importe: 4122.68, saldo: 4122.68 },
-      { sucursal: 'MECA', sistema: 'MPro', facturas: 1, importe: 3224.80, saldo: 3224.80 }
-    ]
+  // Datos reales de saldos desde SQL Server
+  const [saldosData, setSaldosData] = useState({
+    sistemas: [],
+    sucursales: [],
+    facturas_pendientes: [],
+    totales: { importe: 0, pagado: 0, saldo: 0, facturas: 0 }
   });
 
   useEffect(() => {
     loadDashboardData();
+    loadSaldosReales();
   }, []);
 
   const loadDashboardData = async () => {
@@ -68,6 +58,27 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
     }
   };
 
+  const loadSaldosReales = async () => {
+    setLoadingSaldos(true);
+    try {
+      const res = await fetch(`${API_URL}/api/portal/saldos`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSaldosData(data);
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || 'Error cargando saldos');
+      }
+    } catch (error) {
+      console.error('Error cargando saldos:', error);
+      toast.error('Error de conexión al cargar saldos');
+    } finally {
+      setLoadingSaldos(false);
+    }
+  };
+
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
@@ -76,21 +87,35 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
   };
 
   const toggleSucursalDetails = (sucursalId) => {
-    if (expandedSucursal === sucursalId) {
-      setExpandedSucursal(null);
-    } else {
-      setExpandedSucursal(sucursalId);
-      // Simular carga de detalles
-      if (!sucursalDetails[sucursalId]) {
-        setSucursalDetails(prev => ({
-          ...prev,
-          [sucursalId]: [
-            { folio: 'MC-0000086', ref: '385DCBBD', documento: 'MC-0000100', fecha: '2023-04-04', vencimiento: '2023-04-11', dias: 1091, importe: 3224.80, saldo: 3224.80 }
-          ]
-        }));
-      }
-    }
+    setExpandedSucursal(expandedSucursal === sucursalId ? null : sucursalId);
   };
+
+  // Obtener facturas de una sucursal específica
+  const getFacturasSucursal = (sucursalName, sistemaId) => {
+    return saldosData.facturas_pendientes.filter(
+      f => f.sucursal === sucursalName && f.sistema_id === sistemaId
+    );
+  };
+
+  // Agrupar facturas por sucursal para la sección de pendientes
+  const facturasAgrupadas = saldosData.sucursales
+    .filter(s => s.saldo > 0)
+    .map(suc => ({
+      ...suc,
+      facturas_detalle: getFacturasSucursal(suc.name, suc.sistema_id)
+    }))
+    .sort((a, b) => b.saldo - a.saldo);
+
+  // Filtrar sistemas y sucursales según selección
+  const sistemasFiltrados = selectedSystem === 'all' 
+    ? saldosData.sistemas 
+    : saldosData.sistemas.filter(s => s.id === selectedSystem);
+  
+  const sucursalesFiltradas = selectedUnit === 'all'
+    ? (selectedSystem === 'all' 
+        ? saldosData.sucursales 
+        : saldosData.sucursales.filter(s => s.sistema_id === selectedSystem))
+    : saldosData.sucursales.filter(s => s.id === selectedUnit);
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -105,10 +130,23 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
     return <span className="px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-700">{status}</span>;
   };
 
-  // Calcular totales
-  const totalFacturado = systemsData.sistemas.reduce((sum, s) => sum + s.importe, 0);
-  const totalSaldo = systemsData.sistemas.reduce((sum, s) => sum + s.saldo, 0);
-  const totalFacturas = systemsData.facturasPendientes.reduce((sum, f) => sum + f.facturas, 0);
+  const getSystemBadge = (systemType) => {
+    return systemType === 'MPRO' 
+      ? <span className="px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-700">Management Pro</span>
+      : <span className="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">Soft Restaurant</span>;
+  };
+
+  const getStatusIcon = (status) => {
+    if (status === 'connected') return <span className="w-2 h-2 bg-green-500 rounded-full"></span>;
+    if (status === 'not_found') return <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>;
+    return <span className="w-2 h-2 bg-red-500 rounded-full"></span>;
+  };
+
+  // Totales para KPIs
+  const totalFacturado = saldosData.totales.importe;
+  const totalPagado = saldosData.totales.pagado;
+  const totalSaldo = saldosData.totales.saldo;
+  const totalFacturas = saldosData.totales.facturas;
 
   if (loading) {
     return (
@@ -189,14 +227,16 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
       <div className="bg-white rounded-xl border p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-zinc-400" />
+            <Server className="h-5 w-5 text-zinc-400" />
             <h2 className="font-semibold text-zinc-900">Fuente de Datos</h2>
+            {loadingSaldos && <RefreshCw className="h-4 w-4 animate-spin text-zinc-400" />}
           </div>
           <button 
-            onClick={loadDashboardData}
-            className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-700"
+            onClick={loadSaldosReales}
+            disabled={loadingSaldos}
+            className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-700 disabled:opacity-50"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className={`h-4 w-4 ${loadingSaldos ? 'animate-spin' : ''}`} />
             Actualizar
           </button>
         </div>
@@ -204,19 +244,20 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
         {/* Filtros por Sistema */}
         <div className="mb-4">
           <p className="text-xs text-zinc-500 mb-2">Por Sistema</p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button 
-              onClick={() => setSelectedSystem('all')}
+              onClick={() => { setSelectedSystem('all'); setSelectedUnit('all'); }}
               className={`px-3 py-1.5 rounded text-sm ${selectedSystem === 'all' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
             >
               Todos los Sistemas
             </button>
-            {systemsData.sistemas.map(s => (
+            {saldosData.sistemas.map(s => (
               <button 
                 key={s.id}
-                onClick={() => setSelectedSystem(s.id)}
-                className={`px-3 py-1.5 rounded text-sm ${selectedSystem === s.id ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+                onClick={() => { setSelectedSystem(s.id); setSelectedUnit('all'); }}
+                className={`px-3 py-1.5 rounded text-sm flex items-center gap-2 ${selectedSystem === s.id ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
               >
+                {getStatusIcon(s.status)}
                 {s.name}
               </button>
             ))}
@@ -224,200 +265,219 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
         </div>
 
         {/* Filtros por Unidad */}
-        <div className="mb-6">
-          <p className="text-xs text-zinc-500 mb-2">Por Unidad / Empresa</p>
-          <div className="flex gap-2 flex-wrap">
-            <button 
-              onClick={() => setSelectedUnit('all')}
-              className={`px-3 py-1.5 rounded text-sm ${selectedUnit === 'all' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
-            >
-              Todas las Unidades
-            </button>
-            {systemsData.sucursales.map(s => (
+        {saldosData.sucursales.length > 0 && (
+          <div className="mb-6">
+            <p className="text-xs text-zinc-500 mb-2">Por Unidad / Empresa</p>
+            <div className="flex gap-2 flex-wrap">
               <button 
-                key={s.id}
-                onClick={() => setSelectedUnit(s.id)}
-                className={`px-3 py-1.5 rounded text-sm ${selectedUnit === s.id ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+                onClick={() => setSelectedUnit('all')}
+                className={`px-3 py-1.5 rounded text-sm ${selectedUnit === 'all' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
               >
-                {s.name}
+                Todas las Unidades
               </button>
-            ))}
+              {(selectedSystem === 'all' ? saldosData.sucursales : saldosData.sucursales.filter(s => s.sistema_id === selectedSystem)).map(s => (
+                <button 
+                  key={s.id}
+                  onClick={() => setSelectedUnit(s.id)}
+                  className={`px-3 py-1.5 rounded text-sm ${selectedUnit === s.id ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Resumen por Sistema */}
         <div className="mb-4">
           <p className="text-sm font-medium text-zinc-700 mb-3">Resumen por Sistema</p>
-          <div className="grid grid-cols-3 gap-4">
-            {systemsData.sistemas.map(s => (
+          {saldosData.sistemas.length === 0 ? (
+            <div className="text-center py-8 text-zinc-500">
+              <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>No se encontró tu RFC en ningún sistema configurado</p>
+              <p className="text-sm mt-2">Contacta al administrador para verificar tu registro</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {sistemasFiltrados.map(s => (
+                  <div key={s.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-zinc-900">{s.name}</h3>
+                      {getStatusIcon(s.status)}
+                    </div>
+                    {s.status === 'not_found' ? (
+                      <p className="text-sm text-zinc-500">RFC no encontrado en este sistema</p>
+                    ) : s.status === 'error' ? (
+                      <p className="text-sm text-red-500">Error de conexión</p>
+                    ) : (
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-zinc-500">Facturas</span>
+                          <span className="font-medium">{s.facturas}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-500">Importe</span>
+                          <span className="font-medium">{formatCurrency(s.importe)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-500">Pagado</span>
+                          <span className="font-medium text-green-600">{formatCurrency(s.pagado)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-500">Saldo</span>
+                          <span className="font-medium text-orange-500">{formatCurrency(s.saldo)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-4 mt-3 text-xs text-zinc-500 flex-wrap">
+                {saldosData.sistemas.map(s => (
+                  <span key={s.id} className="flex items-center gap-1">
+                    {getStatusIcon(s.status)}
+                    {s.name}: {s.facturas} registros
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Saldo por Sucursal */}
+      {sucursalesFiltradas.length > 0 && (
+        <div className="bg-white rounded-xl border p-5">
+          <h2 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-zinc-400" />
+            Saldo por Sucursal
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {sucursalesFiltradas.map(s => (
               <div key={s.id} className="border rounded-lg p-4">
-                <h3 className="font-semibold text-zinc-900 mb-3">{s.name}</h3>
-                <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-semibold text-zinc-900">{s.name}</h3>
+                </div>
+                {getSystemBadge(s.system_type)}
+                <div className="space-y-2 text-sm mt-3">
                   <div className="flex justify-between">
-                    <span className="text-zinc-500">Facturas</span>
+                    <span className="text-zinc-500">Facturas:</span>
                     <span className="font-medium">{s.facturas}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-zinc-500">Importe</span>
+                    <span className="text-zinc-500">Importe:</span>
                     <span className="font-medium">{formatCurrency(s.importe)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-zinc-500">Saldo</span>
+                    <span className="text-zinc-500">Pagado:</span>
+                    <span className="font-medium text-green-600">{formatCurrency(s.pagado)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Saldo:</span>
                     <span className="font-medium text-orange-500">{formatCurrency(s.saldo)}</span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-          <div className="flex gap-4 mt-3 text-xs text-zinc-500">
-            {systemsData.sistemas.map(s => (
-              <span key={s.id} className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                {s.name}: {s.facturas} registros
-              </span>
-            ))}
-          </div>
         </div>
-      </div>
-
-      {/* Saldo por Sucursal */}
-      <div className="bg-white rounded-xl border p-5">
-        <h2 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
-          <FileText className="h-5 w-5 text-zinc-400" />
-          Saldo por Sucursal
-        </h2>
-        <div className="grid grid-cols-3 gap-4">
-          {systemsData.sucursales.map(s => (
-            <div key={s.id} className="border rounded-lg p-4">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="font-semibold text-zinc-900">{s.name}</h3>
-              </div>
-              <span className={`inline-block px-2 py-0.5 rounded text-xs mb-3 ${
-                s.sistema === 'MPro' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
-              }`}>
-                {s.sistema === 'MPro' ? 'Management Pro' : 'Soft Restaurant'}
-              </span>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Facturas:</span>
-                  <span className="font-medium">{s.facturas}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Importe:</span>
-                  <span className="font-medium">{formatCurrency(s.importe)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Pagado:</span>
-                  <span className="font-medium text-green-600">{formatCurrency(s.pagado)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Saldo:</span>
-                  <span className="font-medium text-orange-500">{formatCurrency(s.saldo)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* Facturas Pendientes de Pago */}
-      <div className="bg-white rounded-xl border p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-zinc-900">Facturas Pendientes de Pago ({totalFacturas})</h2>
-          <div className="flex gap-2">
-            <input 
-              type="text" 
-              placeholder="Buscar folio, documento..." 
-              className="px-3 py-1.5 border rounded-lg text-sm w-64"
-            />
-            <button className="flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm hover:bg-zinc-50">
-              <FileText className="h-4 w-4" />
-              Conciliar
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          {systemsData.facturasPendientes.map((f, idx) => (
-            <div key={idx} className="border rounded-lg">
-              <button 
-                onClick={() => toggleSucursalDetails(f.sucursal)}
-                className="w-full flex items-center justify-between p-4 hover:bg-zinc-50"
-              >
-                <div className="flex items-center gap-3">
-                  {expandedSucursal === f.sucursal ? (
-                    <ChevronDown className="h-4 w-4 text-zinc-400" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-zinc-400" />
-                  )}
-                  <div className="text-left">
-                    <span className="font-medium text-zinc-900">{f.sucursal}</span>
-                    <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
-                      f.sistema === 'MPro' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                    }`}>
-                      {f.sistema}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-8 text-sm">
-                  <span>Facturas: <strong>{f.facturas}</strong></span>
-                  <span>Importe: <strong>{formatCurrency(f.importe)}</strong></span>
-                  <span>Saldo: <strong className="text-orange-500">{formatCurrency(f.saldo)}</strong></span>
-                </div>
-              </button>
-              
-              {expandedSucursal === f.sucursal && sucursalDetails[f.sucursal] && (
-                <div className="border-t bg-zinc-50 p-4">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-zinc-500">
-                        <th className="py-2">Folio</th>
-                        <th className="py-2">Ref (8)</th>
-                        <th className="py-2">Documento</th>
-                        <th className="py-2">Fecha</th>
-                        <th className="py-2">Vencimiento</th>
-                        <th className="py-2">Días</th>
-                        <th className="py-2 text-right">Importe</th>
-                        <th className="py-2 text-right">Saldo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sucursalDetails[f.sucursal].map((det, i) => (
-                        <tr key={i} className="border-t">
-                          <td className="py-2">{det.folio}</td>
-                          <td className="py-2">{det.ref}</td>
-                          <td className="py-2">{det.documento}</td>
-                          <td className="py-2">{det.fecha}</td>
-                          <td className="py-2">{det.vencimiento}</td>
-                          <td className="py-2 text-orange-500">{det.dias}</td>
-                          <td className="py-2 text-right">{formatCurrency(det.importe)}</td>
-                          <td className="py-2 text-right text-orange-500">{formatCurrency(det.saldo)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t font-medium">
-                        <td colSpan={6} className="py-2 text-right">Sub-total {f.sucursal}:</td>
-                        <td className="py-2 text-right">{formatCurrency(f.importe)}</td>
-                        <td className="py-2 text-right text-orange-500">{formatCurrency(f.saldo)}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
+      {facturasAgrupadas.length > 0 && (
+        <div className="bg-white rounded-xl border p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-zinc-900">Facturas Pendientes de Pago ({saldosData.facturas_pendientes.length})</h2>
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                placeholder="Buscar folio, documento..." 
+                className="px-3 py-1.5 border rounded-lg text-sm w-64"
+              />
             </div>
-          ))}
-        </div>
+          </div>
 
-        {/* Total General */}
-        <div className="mt-4 p-4 bg-zinc-100 rounded-lg flex items-center justify-between">
-          <span className="font-semibold">TOTAL GENERAL ({totalFacturas} facturas)</span>
-          <div className="flex gap-8 text-sm">
-            <span>Importe: <strong>{formatCurrency(systemsData.facturasPendientes.reduce((sum, f) => sum + f.importe, 0))}</strong></span>
-            <span>Saldo: <strong className="text-orange-500">{formatCurrency(totalSaldo)}</strong></span>
+          <div className="space-y-2">
+            {facturasAgrupadas.map((suc, idx) => (
+              <div key={idx} className="border rounded-lg">
+                <button 
+                  onClick={() => toggleSucursalDetails(suc.id)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-zinc-50"
+                >
+                  <div className="flex items-center gap-3">
+                    {expandedSucursal === suc.id ? (
+                      <ChevronDown className="h-4 w-4 text-zinc-400" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-zinc-400" />
+                    )}
+                    <div className="text-left">
+                      <span className="font-medium text-zinc-900">{suc.name}</span>
+                      <span className="ml-2">{getSystemBadge(suc.system_type)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-8 text-sm">
+                    <span>Facturas: <strong>{suc.facturas_detalle.length || suc.facturas}</strong></span>
+                    <span>Importe: <strong>{formatCurrency(suc.importe)}</strong></span>
+                    <span>Saldo: <strong className="text-orange-500">{formatCurrency(suc.saldo)}</strong></span>
+                  </div>
+                </button>
+                
+                {expandedSucursal === suc.id && suc.facturas_detalle.length > 0 && (
+                  <div className="border-t bg-zinc-50 p-4 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-zinc-500">
+                          <th className="py-2">Folio</th>
+                          <th className="py-2">Ref (8)</th>
+                          <th className="py-2">Documento</th>
+                          <th className="py-2">Fecha</th>
+                          <th className="py-2">Vencimiento</th>
+                          <th className="py-2">Días Venc.</th>
+                          <th className="py-2 text-right">Importe</th>
+                          <th className="py-2 text-right">Saldo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {suc.facturas_detalle.map((det, i) => (
+                          <tr key={i} className="border-t">
+                            <td className="py-2">{det.folio}</td>
+                            <td className="py-2">{det.referencia}</td>
+                            <td className="py-2">{det.documento}</td>
+                            <td className="py-2">{det.fecha}</td>
+                            <td className="py-2">{det.vencimiento}</td>
+                            <td className={`py-2 ${det.dias_vencido > 0 ? 'text-red-500 font-medium' : 'text-green-600'}`}>
+                              {det.dias_vencido > 0 ? `+${det.dias_vencido}` : det.dias_vencido}
+                            </td>
+                            <td className="py-2 text-right">{formatCurrency(det.importe)}</td>
+                            <td className="py-2 text-right text-orange-500">{formatCurrency(det.saldo)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t font-medium">
+                          <td colSpan={6} className="py-2 text-right">Sub-total {suc.name}:</td>
+                          <td className="py-2 text-right">{formatCurrency(suc.importe)}</td>
+                          <td className="py-2 text-right text-orange-500">{formatCurrency(suc.saldo)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Total General */}
+          <div className="mt-4 p-4 bg-zinc-100 rounded-lg flex items-center justify-between">
+            <span className="font-semibold">TOTAL GENERAL ({saldosData.facturas_pendientes.length} facturas)</span>
+            <div className="flex gap-8 text-sm">
+              <span>Importe: <strong>{formatCurrency(totalFacturado)}</strong></span>
+              <span>Saldo: <strong className="text-orange-500">{formatCurrency(totalSaldo)}</strong></span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Facturas Recientes */}
       <div className="bg-white rounded-xl border p-5">

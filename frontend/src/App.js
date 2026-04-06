@@ -12,6 +12,7 @@ import CatalogoConsultas from '@/pages/CatalogoConsultas';
 import ExploradorBD from '@/pages/ExploradorBD';
 import Alertas from '@/pages/Alertas';
 import Usuarios from '@/pages/Usuarios';
+import Proveedores from '@/pages/Proveedores';
 import Finanzas from '@/pages/Finanzas';
 import Produccion from '@/pages/Produccion';
 import RecursosHumanos from '@/pages/RecursosHumanos';
@@ -43,6 +44,7 @@ function App() {
             <Route path="explorador-bd" element={<ExploradorBD />} />
             <Route path="alertas" element={<Alertas />} />
             <Route path="usuarios" element={<Usuarios />} />
+            <Route path="proveedores" element={<Proveedores />} />
             {/* Nuevos módulos ERP */}
             <Route path="finanzas" element={<Finanzas />} />
             <Route path="produccion" element={<Produccion />} />

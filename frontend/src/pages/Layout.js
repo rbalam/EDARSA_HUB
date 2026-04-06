@@ -19,7 +19,8 @@ import {
   DollarSign,
   Factory,
   UserCircle,
-  BarChart3
+  BarChart3,
+  Truck
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -107,6 +108,7 @@ const Layout = () => {
     { name: 'Explorador BD', href: '/explorador-bd', icon: TableProperties, roles: ['Administrador'] },
     { name: 'Alertas', href: '/alertas', icon: Bell, roles: ['Supervisor', 'Administrador'] },
     { name: 'Usuarios', href: '/usuarios', icon: Users, roles: ['Administrador'] },
+    { name: 'Portal Proveedores', href: '/proveedores', icon: Truck, roles: ['Administrador'] },
   ];
 
   const filteredModulos = modulos.filter(item => item.roles.includes(user?.role));
