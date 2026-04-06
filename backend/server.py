@@ -1685,6 +1685,7 @@ async def get_sucursales(server_id: str, current_user: Dict = Depends(get_curren
             # Intentar obtener sucursales de MPRO
             query = "SELECT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal WHERE Es_Cve_Estado <> 'BA'"
             try:
+                logging.info(f"[MPRO Sucursales] Consultando sucursales para {server['name']}...")
                 results = execute_sql_query(
                     server['host'],
                     server['port'],
@@ -1693,6 +1694,7 @@ async def get_sucursales(server_id: str, current_user: Dict = Depends(get_curren
                     server['password'],
                     query
                 )
+                logging.info(f"[MPRO Sucursales] Resultado: {len(results) if results else 0} sucursales")
                 if results and len(results) > 0:
                     return filter_sucursales_by_permissions(results, current_user, server_id)
             except Exception as e:

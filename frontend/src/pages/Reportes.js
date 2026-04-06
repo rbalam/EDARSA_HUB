@@ -397,11 +397,13 @@ const Reportes = () => {
 
   const loadSucursales = async () => {
     try {
+      console.log('[loadSucursales] Cargando sucursales para server:', filters.server_id);
       const response = await api.get(`/servers/${filters.server_id}/sucursales`);
       const data = Array.isArray(response.data) ? response.data : [];
+      console.log('[loadSucursales] Sucursales recibidas:', data.length, data);
       setSucursales(data);
     } catch (error) {
-      console.error('Error al cargar sucursales:', error);
+      console.error('[loadSucursales] Error al cargar sucursales:', error);
       setSucursales([]);
     }
   };
