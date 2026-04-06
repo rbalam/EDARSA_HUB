@@ -1,9 +1,12 @@
 /**
- * Portal Proveedores - Dashboard Principal
+ * SupplierHub - Dashboard con KPIs y Saldos por Sucursal
  */
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { FileText, Upload, DollarSign, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { 
+  FileText, DollarSign, Clock, CheckCircle, RefreshCw, 
+  ChevronDown, ChevronRight, Upload, Download, FileSpreadsheet
+} from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -11,6 +14,31 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
   const [stats, setStats] = useState(null);
   const [recentInvoices, setRecentInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSystem, setSelectedSystem] = useState('all');
+  const [selectedUnit, setSelectedUnit] = useState('all');
+  const [expandedSucursal, setExpandedSucursal] = useState(null);
+  const [sucursalDetails, setSucursalDetails] = useState({});
+
+  // Datos de ejemplo (se conectarán a los servidores reales de EDARSA HUB)
+  const [systemsData, setSystemsData] = useState({
+    sistemas: [
+      { id: 'mpro', name: 'Management Pro', facturas: 15, importe: 1852397.25, saldo: 141255.85 },
+      { id: 'estelar', name: 'La Estelar', facturas: 0, importe: 0, saldo: 0 },
+      { id: 'cienfuegos', name: 'Cienfuegos', facturas: 68, importe: 210376.11, saldo: 4122.68 }
+    ],
+    sucursales: [
+      { id: 'origen', name: 'ORIGEN', sistema: 'MPro', facturas: 10, importe: 131450.01, pagado: 17250.00, saldo: 114200.01 },
+      { id: 'meca', name: 'MECA', sistema: 'MPro', facturas: 1, importe: 3224.80, pagado: 0, saldo: 3224.80 },
+      { id: 'tulum', name: '130° TULUM', sistema: 'MPro', facturas: 4, importe: 23831.04, pagado: 0, saldo: 23831.04 },
+      { id: 'cienfuegos', name: 'Cienfuegos', sistema: 'SR', facturas: 68, importe: 210376.11, pagado: 206253.43, saldo: 4122.68 }
+    ],
+    facturasPendientes: [
+      { sucursal: 'ORIGEN', sistema: 'MPro', facturas: 10, importe: 131450.01, saldo: 114200.01 },
+      { sucursal: '130° TULUM', sistema: 'MPro', facturas: 4, importe: 23831.04, saldo: 23831.04 },
+      { sucursal: 'Cienfuegos', sistema: 'SR', facturas: 3, importe: 4122.68, saldo: 4122.68 },
+      { sucursal: 'MECA', sistema: 'MPro', facturas: 1, importe: 3224.80, saldo: 3224.80 }
+    ]
+  });
 
   useEffect(() => {
     loadDashboardData();
@@ -18,7 +46,6 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
 
   const loadDashboardData = async () => {
     try {
-      // Cargar estado de cuenta
       const statsRes = await fetch(`${API_URL}/api/portal/account-status`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -27,7 +54,6 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
         setStats(statsData.resumen);
       }
 
-      // Cargar facturas recientes
       const invoicesRes = await fetch(`${API_URL}/api/portal/invoices`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -49,173 +75,389 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
     }).format(value || 0);
   };
 
+  const toggleSucursalDetails = (sucursalId) => {
+    if (expandedSucursal === sucursalId) {
+      setExpandedSucursal(null);
+    } else {
+      setExpandedSucursal(sucursalId);
+      // Simular carga de detalles
+      if (!sucursalDetails[sucursalId]) {
+        setSucursalDetails(prev => ({
+          ...prev,
+          [sucursalId]: [
+            { folio: 'MC-0000086', ref: '385DCBBD', documento: 'MC-0000100', fecha: '2023-04-04', vencimiento: '2023-04-11', dias: 1091, importe: 3224.80, saldo: 3224.80 }
+          ]
+        }));
+      }
+    }
+  };
+
   const getStatusBadge = (status) => {
     const badges = {
-      uploaded: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Subida' },
-      validated: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Validada' },
-      matched: { bg: 'bg-green-100', text: 'text-green-700', label: 'Conciliada' },
-      rejected: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rechazada' },
-      paid: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Pagada' }
+      'Pendiente': { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+      'Validada': { bg: 'bg-green-100', text: 'text-green-700' }
     };
-    const badge = badges[status] || badges.uploaded;
-    return (
-      <span className={`px-2 py-0.5 rounded-full text-xs ${badge.bg} ${badge.text}`}>
-        {badge.label}
-      </span>
-    );
+    const badge = badges[status] || badges['Pendiente'];
+    return <span className={`px-2 py-0.5 rounded text-xs ${badge.bg} ${badge.text}`}>{status}</span>;
   };
+
+  const getPaymentBadge = (status) => {
+    return <span className="px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-700">{status}</span>;
+  };
+
+  // Calcular totales
+  const totalFacturado = systemsData.sistemas.reduce((sum, s) => sum + s.importe, 0);
+  const totalSaldo = systemsData.sistemas.reduce((sum, s) => sum + s.saldo, 0);
+  const totalFacturas = systemsData.facturasPendientes.reduce((sum, f) => sum + f.facturas, 0);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-zinc-800"></div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Bienvenida */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
-        <h2 className="text-2xl font-bold text-zinc-800">
-          Bienvenido, {supplier?.nombre_contacto}
-        </h2>
-        <p className="text-zinc-500 mt-1">{supplier?.razon_social}</p>
-        <p className="text-sm text-zinc-400">RFC: {supplier?.rfc}</p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900">Mi Dashboard</h1>
+          <p className="text-zinc-500">Bienvenido, {supplier?.razon_social}</p>
+        </div>
+        <div className="flex gap-2">
+          <button className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-zinc-50 text-sm">
+            <FileSpreadsheet className="h-4 w-4" />
+            Excel
+          </button>
+          <button className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-zinc-50 text-sm">
+            <Download className="h-4 w-4" />
+            PDF
+          </button>
+          <button 
+            onClick={() => onNavigate('upload')}
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 text-sm"
+          >
+            <Upload className="h-4 w-4" />
+            Subir Factura
+          </button>
+        </div>
       </div>
 
       {/* KPIs */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl p-5 shadow-sm border">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <FileText className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-zinc-500">Facturas Subidas</p>
-                <p className="text-2xl font-bold text-zinc-800">{stats.facturas_subidas}</p>
-              </div>
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl p-5 border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-zinc-500">Total Facturado</p>
+              <p className="text-2xl font-bold text-zinc-900">{formatCurrency(stats?.total_facturado || totalFacturado)}</p>
             </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-5 shadow-sm border">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-zinc-500">Conciliadas</p>
-                <p className="text-2xl font-bold text-zinc-800">{stats.facturas_conciliadas}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-5 shadow-sm border">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-emerald-100 rounded-lg">
-                <DollarSign className="h-6 w-6 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-sm text-zinc-500">Total Facturado</p>
-                <p className="text-xl font-bold text-zinc-800">{formatCurrency(stats.total_facturado)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-5 shadow-sm border">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <Clock className="h-6 w-6 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-zinc-500">Saldo Pendiente</p>
-                <p className="text-xl font-bold text-orange-600">{formatCurrency(stats.saldo_pendiente)}</p>
-              </div>
-            </div>
+            <FileText className="h-10 w-10 text-zinc-300" />
           </div>
         </div>
-      )}
-
-      {/* Acciones rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <button
-          onClick={() => onNavigate('upload')}
-          className="bg-blue-600 text-white rounded-xl p-6 shadow-sm hover:bg-blue-700 transition-colors text-left"
-        >
-          <Upload className="h-8 w-8 mb-3" />
-          <h3 className="text-lg font-semibold">Subir Factura</h3>
-          <p className="text-blue-200 text-sm mt-1">Carga tu XML y PDF de factura</p>
-        </button>
-
-        <button
-          onClick={() => onNavigate('account')}
-          className="bg-white border rounded-xl p-6 shadow-sm hover:bg-zinc-50 transition-colors text-left"
-        >
-          <DollarSign className="h-8 w-8 mb-3 text-green-600" />
-          <h3 className="text-lg font-semibold text-zinc-800">Estado de Cuenta</h3>
-          <p className="text-zinc-500 text-sm mt-1">Consulta tus pagos y saldos</p>
-        </button>
+        <div className="bg-white rounded-xl p-5 border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-zinc-500">Total Pagado</p>
+              <p className="text-2xl font-bold text-zinc-900">{formatCurrency(stats?.total_pagado || (totalFacturado - totalSaldo))}</p>
+            </div>
+            <CheckCircle className="h-10 w-10 text-zinc-300" />
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-5 border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-zinc-500">Saldo Pendiente</p>
+              <p className="text-2xl font-bold text-orange-500">{formatCurrency(stats?.saldo_pendiente || totalSaldo)}</p>
+            </div>
+            <Clock className="h-10 w-10 text-zinc-300" />
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-5 border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-zinc-500">Facturas Pendientes</p>
+              <p className="text-2xl font-bold text-zinc-900">{totalFacturas}</p>
+            </div>
+            <DollarSign className="h-10 w-10 text-zinc-300" />
+          </div>
+        </div>
       </div>
 
-      {/* Facturas recientes */}
-      <div className="bg-white rounded-xl shadow-sm border">
-        <div className="p-4 border-b flex items-center justify-between">
-          <h3 className="font-semibold text-zinc-800">Facturas Recientes</h3>
-          <button
-            onClick={() => onNavigate('invoices')}
-            className="text-blue-600 text-sm hover:underline"
+      {/* Fuente de Datos */}
+      <div className="bg-white rounded-xl border p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-zinc-400" />
+            <h2 className="font-semibold text-zinc-900">Fuente de Datos</h2>
+          </div>
+          <button 
+            onClick={loadDashboardData}
+            className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-700"
           >
+            <RefreshCw className="h-4 w-4" />
+            Actualizar
+          </button>
+        </div>
+
+        {/* Filtros por Sistema */}
+        <div className="mb-4">
+          <p className="text-xs text-zinc-500 mb-2">Por Sistema</p>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setSelectedSystem('all')}
+              className={`px-3 py-1.5 rounded text-sm ${selectedSystem === 'all' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+            >
+              Todos los Sistemas
+            </button>
+            {systemsData.sistemas.map(s => (
+              <button 
+                key={s.id}
+                onClick={() => setSelectedSystem(s.id)}
+                className={`px-3 py-1.5 rounded text-sm ${selectedSystem === s.id ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Filtros por Unidad */}
+        <div className="mb-6">
+          <p className="text-xs text-zinc-500 mb-2">Por Unidad / Empresa</p>
+          <div className="flex gap-2 flex-wrap">
+            <button 
+              onClick={() => setSelectedUnit('all')}
+              className={`px-3 py-1.5 rounded text-sm ${selectedUnit === 'all' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+            >
+              Todas las Unidades
+            </button>
+            {systemsData.sucursales.map(s => (
+              <button 
+                key={s.id}
+                onClick={() => setSelectedUnit(s.id)}
+                className={`px-3 py-1.5 rounded text-sm ${selectedUnit === s.id ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Resumen por Sistema */}
+        <div className="mb-4">
+          <p className="text-sm font-medium text-zinc-700 mb-3">Resumen por Sistema</p>
+          <div className="grid grid-cols-3 gap-4">
+            {systemsData.sistemas.map(s => (
+              <div key={s.id} className="border rounded-lg p-4">
+                <h3 className="font-semibold text-zinc-900 mb-3">{s.name}</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Facturas</span>
+                    <span className="font-medium">{s.facturas}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Importe</span>
+                    <span className="font-medium">{formatCurrency(s.importe)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Saldo</span>
+                    <span className="font-medium text-orange-500">{formatCurrency(s.saldo)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-4 mt-3 text-xs text-zinc-500">
+            {systemsData.sistemas.map(s => (
+              <span key={s.id} className="flex items-center gap-1">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                {s.name}: {s.facturas} registros
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Saldo por Sucursal */}
+      <div className="bg-white rounded-xl border p-5">
+        <h2 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
+          <FileText className="h-5 w-5 text-zinc-400" />
+          Saldo por Sucursal
+        </h2>
+        <div className="grid grid-cols-3 gap-4">
+          {systemsData.sucursales.map(s => (
+            <div key={s.id} className="border rounded-lg p-4">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-semibold text-zinc-900">{s.name}</h3>
+              </div>
+              <span className={`inline-block px-2 py-0.5 rounded text-xs mb-3 ${
+                s.sistema === 'MPro' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
+              }`}>
+                {s.sistema === 'MPro' ? 'Management Pro' : 'Soft Restaurant'}
+              </span>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Facturas:</span>
+                  <span className="font-medium">{s.facturas}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Importe:</span>
+                  <span className="font-medium">{formatCurrency(s.importe)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Pagado:</span>
+                  <span className="font-medium text-green-600">{formatCurrency(s.pagado)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Saldo:</span>
+                  <span className="font-medium text-orange-500">{formatCurrency(s.saldo)}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Facturas Pendientes de Pago */}
+      <div className="bg-white rounded-xl border p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-zinc-900">Facturas Pendientes de Pago ({totalFacturas})</h2>
+          <div className="flex gap-2">
+            <input 
+              type="text" 
+              placeholder="Buscar folio, documento..." 
+              className="px-3 py-1.5 border rounded-lg text-sm w-64"
+            />
+            <button className="flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm hover:bg-zinc-50">
+              <FileText className="h-4 w-4" />
+              Conciliar
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {systemsData.facturasPendientes.map((f, idx) => (
+            <div key={idx} className="border rounded-lg">
+              <button 
+                onClick={() => toggleSucursalDetails(f.sucursal)}
+                className="w-full flex items-center justify-between p-4 hover:bg-zinc-50"
+              >
+                <div className="flex items-center gap-3">
+                  {expandedSucursal === f.sucursal ? (
+                    <ChevronDown className="h-4 w-4 text-zinc-400" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-zinc-400" />
+                  )}
+                  <div className="text-left">
+                    <span className="font-medium text-zinc-900">{f.sucursal}</span>
+                    <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
+                      f.sistema === 'MPro' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                    }`}>
+                      {f.sistema}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-8 text-sm">
+                  <span>Facturas: <strong>{f.facturas}</strong></span>
+                  <span>Importe: <strong>{formatCurrency(f.importe)}</strong></span>
+                  <span>Saldo: <strong className="text-orange-500">{formatCurrency(f.saldo)}</strong></span>
+                </div>
+              </button>
+              
+              {expandedSucursal === f.sucursal && sucursalDetails[f.sucursal] && (
+                <div className="border-t bg-zinc-50 p-4">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-zinc-500">
+                        <th className="py-2">Folio</th>
+                        <th className="py-2">Ref (8)</th>
+                        <th className="py-2">Documento</th>
+                        <th className="py-2">Fecha</th>
+                        <th className="py-2">Vencimiento</th>
+                        <th className="py-2">Días</th>
+                        <th className="py-2 text-right">Importe</th>
+                        <th className="py-2 text-right">Saldo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sucursalDetails[f.sucursal].map((det, i) => (
+                        <tr key={i} className="border-t">
+                          <td className="py-2">{det.folio}</td>
+                          <td className="py-2">{det.ref}</td>
+                          <td className="py-2">{det.documento}</td>
+                          <td className="py-2">{det.fecha}</td>
+                          <td className="py-2">{det.vencimiento}</td>
+                          <td className="py-2 text-orange-500">{det.dias}</td>
+                          <td className="py-2 text-right">{formatCurrency(det.importe)}</td>
+                          <td className="py-2 text-right text-orange-500">{formatCurrency(det.saldo)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t font-medium">
+                        <td colSpan={6} className="py-2 text-right">Sub-total {f.sucursal}:</td>
+                        <td className="py-2 text-right">{formatCurrency(f.importe)}</td>
+                        <td className="py-2 text-right text-orange-500">{formatCurrency(f.saldo)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Total General */}
+        <div className="mt-4 p-4 bg-zinc-100 rounded-lg flex items-center justify-between">
+          <span className="font-semibold">TOTAL GENERAL ({totalFacturas} facturas)</span>
+          <div className="flex gap-8 text-sm">
+            <span>Importe: <strong>{formatCurrency(systemsData.facturasPendientes.reduce((sum, f) => sum + f.importe, 0))}</strong></span>
+            <span>Saldo: <strong className="text-orange-500">{formatCurrency(totalSaldo)}</strong></span>
+          </div>
+        </div>
+      </div>
+
+      {/* Facturas Recientes */}
+      <div className="bg-white rounded-xl border p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-zinc-900">Facturas Recientes</h2>
+          <button onClick={() => onNavigate('invoices')} className="text-sm text-zinc-500 hover:text-zinc-700">
             Ver todas →
           </button>
         </div>
         
         {recentInvoices.length === 0 ? (
-          <div className="p-8 text-center text-zinc-500">
+          <div className="text-center py-8 text-zinc-500">
             <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p>No tienes facturas subidas</p>
-            <button
-              onClick={() => onNavigate('upload')}
-              className="text-blue-600 mt-2 hover:underline"
-            >
-              Subir primera factura
-            </button>
           </div>
         ) : (
-          <div className="divide-y">
-            {recentInvoices.map((invoice) => (
-              <div key={invoice.id} className="p-4 hover:bg-zinc-50 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-zinc-800">
-                    {invoice.serie || ''}{invoice.folio || invoice.uuid?.substring(0, 8)}
-                  </p>
-                  <p className="text-sm text-zinc-500">
-                    {new Date(invoice.fecha_emision).toLocaleDateString('es-MX')}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-zinc-800">{formatCurrency(invoice.total)}</p>
-                  {getStatusBadge(invoice.status)}
-                </div>
-              </div>
-            ))}
-          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-zinc-500 border-b">
+                <th className="py-3">FOLIO</th>
+                <th className="py-3">FECHA</th>
+                <th className="py-3">TOTAL</th>
+                <th className="py-3">VALIDACIÓN</th>
+                <th className="py-3">PAGO</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentInvoices.map((inv, idx) => (
+                <tr key={idx} className="border-b hover:bg-zinc-50">
+                  <td className="py-3">{inv.serie}{inv.folio || inv.uuid?.substring(0, 8)}</td>
+                  <td className="py-3">{new Date(inv.fecha_emision).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                  <td className="py-3">{formatCurrency(inv.total)}</td>
+                  <td className="py-3">{getStatusBadge(inv.status === 'validated' ? 'Validada' : 'Pendiente')}</td>
+                  <td className="py-3">{getPaymentBadge('Sin Pagar')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
-
-      {/* Sucursales asignadas */}
-      {supplier?.sucursales_asignadas?.length > 0 && (
-        <div className="bg-white rounded-xl p-4 shadow-sm border">
-          <h3 className="font-semibold text-zinc-800 mb-3">Sucursales Asignadas</h3>
-          <div className="flex flex-wrap gap-2">
-            {supplier.sucursales_asignadas.map((suc, idx) => (
-              <span key={idx} className="px-3 py-1 bg-zinc-100 rounded-full text-sm">
-                {suc}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
