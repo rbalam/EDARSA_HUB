@@ -18,11 +18,17 @@ import RecursosHumanos from '@/pages/RecursosHumanos';
 import ReportesBI from '@/pages/ReportesBI';
 import { isAuthenticated } from '@/lib/auth';
 
+// Portal de Proveedores (Subproyecto separado)
+import PortalProveedoresApp from '@/portal/App';
+
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
         <Routes>
+          {/* Portal de Proveedores - Ruta separada */}
+          <Route path="/portal-proveedores/*" element={<PortalProveedoresApp />} />
+          
           <Route path="/login" element={<Login />} />
           
           <Route path="/" element={<Layout />}>

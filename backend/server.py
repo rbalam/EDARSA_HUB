@@ -10160,6 +10160,13 @@ async def ejecutar_consulta_custom(
 # Incluir el router después de definir todos los endpoints
 app.include_router(api_router)
 
+# ============================================================================
+# PORTAL DE PROVEEDORES (Subproyecto separado)
+# ============================================================================
+from routes.portal_proveedores import portal_router, init_portal_db
+init_portal_db(db, JWT_SECRET)
+app.include_router(portal_router, prefix="/api")
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
