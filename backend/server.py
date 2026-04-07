@@ -197,6 +197,93 @@ class EmailReportRequest(BaseModel):
     subject: str
     format_type: str  # "excel" o "pdf"
 
+# ============= MODELOS DE INFORMES DE AUDITORÍA =============
+
+class EvidenciaAuditoria(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nombre_archivo: str
+    tipo_archivo: str  # "image", "pdf", "word", "excel"
+    mime_type: str
+    tamanio: int  # en bytes
+    data_base64: str  # archivo codificado en base64
+    fecha_subida: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InformeAuditoriaCreate(BaseModel):
+    server_id: str
+    sucursal_id: str
+    sucursal_nombre: str
+    establecimiento: str
+    gerente_responsable: str
+    auditor: str
+    periodo_inicio: str
+    periodo_fin: str
+    # Datos del reporte de inventario
+    datos_inventario: List[Dict[str, Any]] = []
+    resumen_situacion: str = ""
+    ajustes_tecnicos: str = ""
+    # Comparativo 4 cortes (opcional)
+    incluir_comparativo: bool = False
+    datos_comparativo: List[Dict[str, Any]] = []
+    # Campos del auditor
+    comentarios: str = ""
+    conclusiones: str = ""
+    recomendaciones: str = ""
+    dictamen_economico: Dict[str, Any] = {}
+    # Compromisos
+    compromisos_almacen: str = ""
+    compromisos_personal: str = ""
+    compromisos_gerencia: str = ""
+
+class InformeAuditoriaUpdate(BaseModel):
+    establecimiento: Optional[str] = None
+    gerente_responsable: Optional[str] = None
+    resumen_situacion: Optional[str] = None
+    ajustes_tecnicos: Optional[str] = None
+    comentarios: Optional[str] = None
+    conclusiones: Optional[str] = None
+    recomendaciones: Optional[str] = None
+    dictamen_economico: Optional[Dict[str, Any]] = None
+    compromisos_almacen: Optional[str] = None
+    compromisos_personal: Optional[str] = None
+    compromisos_gerencia: Optional[str] = None
+    incluir_comparativo: Optional[bool] = None
+    datos_comparativo: Optional[List[Dict[str, Any]]] = None
+
+class InformeAuditoria(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    server_id: str
+    sucursal_id: str
+    sucursal_nombre: str
+    establecimiento: str
+    gerente_responsable: str
+    auditor: str
+    auditor_id: str
+    periodo_inicio: str
+    periodo_fin: str
+    fecha_emision: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # Datos del reporte
+    datos_inventario: List[Dict[str, Any]] = []
+    resumen_situacion: str = ""
+    ajustes_tecnicos: str = ""
+    # Comparativo
+    incluir_comparativo: bool = False
+    datos_comparativo: List[Dict[str, Any]] = []
+    # Campos del auditor
+    comentarios: str = ""
+    conclusiones: str = ""
+    recomendaciones: str = ""
+    dictamen_economico: Dict[str, Any] = {}
+    # Compromisos
+    compromisos_almacen: str = ""
+    compromisos_personal: str = ""
+    compromisos_gerencia: str = ""
+    # Evidencias
+    evidencias: List[Dict[str, Any]] = []
+    # Metadata
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    estado: str = "borrador"  # borrador, finalizado
+
 # ============= AUTHENTICATION =============
 
 def hash_password(password: str) -> str:
@@ -11922,6 +12009,491 @@ async def ejecutar_consulta_custom(
     except Exception as e:
         logging.error(f"Error ejecutando consulta custom: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# INFORMES DE AUDITORÍA
+# ============================================================================
+
+@api_router.post("/informes-auditoria")
+async def crear_informe_auditoria(
+    informe: InformeAuditoriaCreate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea un nuevo informe de auditoría"""
+    # Verificar rol
+    if current_user.get('role') not in ['Administrador', 'Auditor']:
+        raise HTTPException(status_code=403, detail="Solo administradores y auditores pueden crear informes")
+    
+    # Crear documento
+    informe_doc = {
+        "id": str(uuid.uuid4()),
+        "server_id": informe.server_id,
+        "sucursal_id": informe.sucursal_id,
+        "sucursal_nombre": informe.sucursal_nombre,
+        "establecimiento": informe.establecimiento,
+        "gerente_responsable": informe.gerente_responsable,
+        "auditor": informe.auditor,
+        "auditor_id": current_user.get('user_id'),
+        "periodo_inicio": informe.periodo_inicio,
+        "periodo_fin": informe.periodo_fin,
+        "fecha_emision": datetime.now(timezone.utc).isoformat(),
+        "datos_inventario": informe.datos_inventario,
+        "resumen_situacion": informe.resumen_situacion,
+        "ajustes_tecnicos": informe.ajustes_tecnicos,
+        "incluir_comparativo": informe.incluir_comparativo,
+        "datos_comparativo": informe.datos_comparativo,
+        "comentarios": informe.comentarios,
+        "conclusiones": informe.conclusiones,
+        "recomendaciones": informe.recomendaciones,
+        "dictamen_economico": informe.dictamen_economico,
+        "compromisos_almacen": informe.compromisos_almacen,
+        "compromisos_personal": informe.compromisos_personal,
+        "compromisos_gerencia": informe.compromisos_gerencia,
+        "evidencias": [],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "estado": "borrador"
+    }
+    
+    await db.informes_auditoria.insert_one(informe_doc)
+    informe_doc.pop('_id', None)
+    
+    return {"message": "Informe creado exitosamente", "informe": informe_doc}
+
+
+@api_router.get("/informes-auditoria")
+async def listar_informes_auditoria(
+    server_id: Optional[str] = None,
+    sucursal_id: Optional[str] = None,
+    auditor_id: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    estado: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista informes de auditoría con filtros opcionales, agrupados por sucursal"""
+    # Verificar rol
+    if current_user.get('role') not in ['Administrador', 'Auditor', 'Supervisor']:
+        raise HTTPException(status_code=403, detail="No tiene permisos para ver informes")
+    
+    # Construir filtro
+    filtro = {}
+    if server_id:
+        filtro["server_id"] = server_id
+    if sucursal_id:
+        filtro["sucursal_id"] = sucursal_id
+    if auditor_id:
+        filtro["auditor_id"] = auditor_id
+    if estado:
+        filtro["estado"] = estado
+    if fecha_desde:
+        filtro["fecha_emision"] = {"$gte": fecha_desde}
+    if fecha_hasta:
+        if "fecha_emision" in filtro:
+            filtro["fecha_emision"]["$lte"] = fecha_hasta
+        else:
+            filtro["fecha_emision"] = {"$lte": fecha_hasta}
+    
+    # Obtener informes
+    cursor = db.informes_auditoria.find(filtro, {"_id": 0, "datos_inventario": 0, "datos_comparativo": 0, "evidencias": 0}).sort("fecha_emision", -1)
+    informes = await cursor.to_list(500)
+    
+    # Agrupar por sucursal
+    por_sucursal = {}
+    for inf in informes:
+        suc = inf.get('sucursal_nombre', 'Sin Sucursal')
+        if suc not in por_sucursal:
+            por_sucursal[suc] = []
+        por_sucursal[suc].append(inf)
+    
+    return {
+        "total": len(informes),
+        "informes": informes,
+        "por_sucursal": por_sucursal
+    }
+
+
+@api_router.get("/informes-auditoria/{informe_id}")
+async def obtener_informe_auditoria(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Obtiene un informe de auditoría específico"""
+    informe = await db.informes_auditoria.find_one({"id": informe_id}, {"_id": 0})
+    if not informe:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    return informe
+
+
+@api_router.put("/informes-auditoria/{informe_id}")
+async def actualizar_informe_auditoria(
+    informe_id: str,
+    datos: InformeAuditoriaUpdate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza un informe de auditoría"""
+    # Verificar rol
+    if current_user.get('role') not in ['Administrador', 'Auditor']:
+        raise HTTPException(status_code=403, detail="No tiene permisos para editar informes")
+    
+    # Verificar que existe
+    informe = await db.informes_auditoria.find_one({"id": informe_id})
+    if not informe:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    # Solo el auditor que lo creó o un admin puede editarlo
+    if current_user.get('role') != 'Administrador' and informe.get('auditor_id') != current_user.get('user_id'):
+        raise HTTPException(status_code=403, detail="Solo puede editar sus propios informes")
+    
+    # Construir actualización
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    for field, value in datos.model_dump(exclude_unset=True).items():
+        if value is not None:
+            update_data[field] = value
+    
+    await db.informes_auditoria.update_one({"id": informe_id}, {"$set": update_data})
+    
+    # Retornar actualizado
+    informe_updated = await db.informes_auditoria.find_one({"id": informe_id}, {"_id": 0})
+    return {"message": "Informe actualizado", "informe": informe_updated}
+
+
+@api_router.delete("/informes-auditoria/{informe_id}")
+async def eliminar_informe_auditoria(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina un informe de auditoría"""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden eliminar informes")
+    
+    result = await db.informes_auditoria.delete_one({"id": informe_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    return {"message": "Informe eliminado"}
+
+
+@api_router.post("/informes-auditoria/{informe_id}/evidencias")
+async def subir_evidencia(
+    informe_id: str,
+    archivo: UploadFile = File(...),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Sube una evidencia al informe de auditoría"""
+    # Verificar rol
+    if current_user.get('role') not in ['Administrador', 'Auditor']:
+        raise HTTPException(status_code=403, detail="No tiene permisos")
+    
+    # Verificar informe existe
+    informe = await db.informes_auditoria.find_one({"id": informe_id})
+    if not informe:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    # Verificar cantidad de evidencias (máximo 5)
+    if len(informe.get('evidencias', [])) >= 5:
+        raise HTTPException(status_code=400, detail="Máximo 5 evidencias por informe")
+    
+    # Verificar tamaño (máximo 10MB)
+    contenido = await archivo.read()
+    if len(contenido) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="El archivo excede 10MB")
+    
+    # Determinar tipo
+    extension = archivo.filename.split('.')[-1].lower() if '.' in archivo.filename else ''
+    tipo_archivo = "otro"
+    if extension in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
+        tipo_archivo = "image"
+    elif extension == 'pdf':
+        tipo_archivo = "pdf"
+    elif extension in ['doc', 'docx']:
+        tipo_archivo = "word"
+    elif extension in ['xls', 'xlsx']:
+        tipo_archivo = "excel"
+    
+    # Crear evidencia
+    evidencia = {
+        "id": str(uuid.uuid4()),
+        "nombre_archivo": archivo.filename,
+        "tipo_archivo": tipo_archivo,
+        "mime_type": archivo.content_type or "application/octet-stream",
+        "tamanio": len(contenido),
+        "data_base64": base64.b64encode(contenido).decode('utf-8'),
+        "fecha_subida": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Agregar al informe
+    await db.informes_auditoria.update_one(
+        {"id": informe_id},
+        {
+            "$push": {"evidencias": evidencia},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    # Retornar sin el data_base64 para no sobrecargar
+    evidencia_response = {k: v for k, v in evidencia.items() if k != 'data_base64'}
+    return {"message": "Evidencia subida", "evidencia": evidencia_response}
+
+
+@api_router.delete("/informes-auditoria/{informe_id}/evidencias/{evidencia_id}")
+async def eliminar_evidencia(
+    informe_id: str,
+    evidencia_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina una evidencia del informe"""
+    if current_user.get('role') not in ['Administrador', 'Auditor']:
+        raise HTTPException(status_code=403, detail="No tiene permisos")
+    
+    result = await db.informes_auditoria.update_one(
+        {"id": informe_id},
+        {
+            "$pull": {"evidencias": {"id": evidencia_id}},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Evidencia no encontrada")
+    
+    return {"message": "Evidencia eliminada"}
+
+
+@api_router.get("/informes-auditoria/{informe_id}/evidencias/{evidencia_id}")
+async def descargar_evidencia(
+    informe_id: str,
+    evidencia_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Descarga una evidencia"""
+    informe = await db.informes_auditoria.find_one({"id": informe_id})
+    if not informe:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    evidencia = next((e for e in informe.get('evidencias', []) if e['id'] == evidencia_id), None)
+    if not evidencia:
+        raise HTTPException(status_code=404, detail="Evidencia no encontrada")
+    
+    contenido = base64.b64decode(evidencia['data_base64'])
+    
+    return StreamingResponse(
+        io.BytesIO(contenido),
+        media_type=evidencia['mime_type'],
+        headers={"Content-Disposition": f"attachment; filename={evidencia['nombre_archivo']}"}
+    )
+
+
+@api_router.put("/informes-auditoria/{informe_id}/estado")
+async def cambiar_estado_informe(
+    informe_id: str,
+    estado: str = Query(..., regex="^(borrador|finalizado)$"),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Cambia el estado del informe (borrador/finalizado)"""
+    if current_user.get('role') not in ['Administrador', 'Auditor']:
+        raise HTTPException(status_code=403, detail="No tiene permisos")
+    
+    result = await db.informes_auditoria.update_one(
+        {"id": informe_id},
+        {"$set": {"estado": estado, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    return {"message": f"Estado cambiado a {estado}"}
+
+
+@api_router.get("/informes-auditoria/{informe_id}/export-pdf")
+async def exportar_informe_pdf(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Exporta el informe de auditoría a PDF"""
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+    from reportlab.lib.units import inch, cm
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+    
+    informe = await db.informes_auditoria.find_one({"id": informe_id}, {"_id": 0})
+    if not informe:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=1.5*cm, leftMargin=1.5*cm, topMargin=1.5*cm, bottomMargin=1.5*cm)
+    
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='TitleCustom', fontSize=16, fontName='Helvetica-Bold', alignment=TA_CENTER, spaceAfter=20))
+    styles.add(ParagraphStyle(name='Subtitle', fontSize=12, fontName='Helvetica-Bold', spaceAfter=10, spaceBefore=15))
+    styles.add(ParagraphStyle(name='BodyCustom', fontSize=10, fontName='Helvetica', alignment=TA_JUSTIFY, spaceAfter=8))
+    styles.add(ParagraphStyle(name='SmallText', fontSize=9, fontName='Helvetica', spaceAfter=5))
+    
+    elements = []
+    
+    # Título
+    elements.append(Paragraph("INFORME DE AUDITORÍA DE INVENTARIO", styles['TitleCustom']))
+    elements.append(Paragraph("EDARSA HUB", styles['TitleCustom']))
+    elements.append(Spacer(1, 20))
+    
+    # Información del encabezado
+    header_data = [
+        ["Establecimiento:", informe.get('establecimiento', '')],
+        ["Gerente Responsable:", informe.get('gerente_responsable', '')],
+        ["Auditor:", informe.get('auditor', '')],
+        ["Fecha de Emisión:", informe.get('fecha_emision', '')[:10] if informe.get('fecha_emision') else ''],
+        ["Período:", f"{informe.get('periodo_inicio', '')} a {informe.get('periodo_fin', '')}"],
+    ]
+    header_table = Table(header_data, colWidths=[4*cm, 12*cm])
+    header_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(header_table)
+    elements.append(Spacer(1, 20))
+    
+    # 1. Resumen de Situación
+    if informe.get('resumen_situacion'):
+        elements.append(Paragraph("1. RESUMEN DE SITUACIÓN", styles['Subtitle']))
+        elements.append(Paragraph(informe.get('resumen_situacion', '').replace('\n', '<br/>'), styles['BodyCustom']))
+        elements.append(Spacer(1, 10))
+    
+    # 2. Ajustes Técnicos y Operativos
+    if informe.get('ajustes_tecnicos'):
+        elements.append(Paragraph("2. AJUSTES TÉCNICOS Y OPERATIVOS", styles['Subtitle']))
+        elements.append(Paragraph(informe.get('ajustes_tecnicos', '').replace('\n', '<br/>'), styles['BodyCustom']))
+        elements.append(Spacer(1, 10))
+    
+    # 3. Cuadro de Diferencias
+    datos_inv = informe.get('datos_inventario', [])
+    if datos_inv:
+        elements.append(Paragraph("3. CUADRO INFORMATIVO DE DIFERENCIAS", styles['Subtitle']))
+        
+        # Crear tabla de inventario (simplificada)
+        table_data = [["Producto", "Unidad", "Inv.Ini", "Mov", "Ventas", "Teórico", "Final", "Dif", "Importe"]]
+        for item in datos_inv[:50]:  # Limitar a 50 productos para no sobrecargar el PDF
+            dif = item.get('Diferencia_Cantidad', 0)
+            if dif != 0:  # Solo mostrar productos con diferencia
+                table_data.append([
+                    str(item.get('Producto', ''))[:30],
+                    str(item.get('Unidad', ''))[:5],
+                    str(round(item.get('Inv_Inicial', 0), 2)),
+                    str(round(item.get('Movimientos', 0), 2)),
+                    str(round(item.get('Ventas', 0), 2)),
+                    str(round(item.get('Inv_Teorico', 0), 2)),
+                    str(round(item.get('Inv_Final', 0), 2)),
+                    str(round(dif, 2)),
+                    f"${round(item.get('Diferencia_Costo', 0), 2)}"
+                ])
+        
+        if len(table_data) > 1:
+            inv_table = Table(table_data, colWidths=[4.5*cm, 1.2*cm, 1.5*cm, 1.5*cm, 1.5*cm, 1.5*cm, 1.5*cm, 1.2*cm, 2*cm])
+            inv_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e3a5f')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 7),
+                ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f5f5f5')]),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ]))
+            elements.append(inv_table)
+        elements.append(Spacer(1, 10))
+    
+    # Dictamen Económico
+    dictamen = informe.get('dictamen_economico', {})
+    if dictamen:
+        elements.append(Paragraph("DICTAMEN ECONÓMICO", styles['Subtitle']))
+        dictamen_text = f"Total a comandear: ${dictamen.get('total_diferencia', 0):,.2f} MXN"
+        if dictamen.get('responsable'):
+            dictamen_text += f"<br/>Responsable: {dictamen.get('responsable')}"
+        if dictamen.get('observaciones'):
+            dictamen_text += f"<br/>Observaciones: {dictamen.get('observaciones')}"
+        elements.append(Paragraph(dictamen_text, styles['BodyCustom']))
+        elements.append(Spacer(1, 10))
+    
+    # 4. Comentarios del Auditor
+    if informe.get('comentarios'):
+        elements.append(Paragraph("4. COMENTARIOS DEL AUDITOR", styles['Subtitle']))
+        elements.append(Paragraph(informe.get('comentarios', '').replace('\n', '<br/>'), styles['BodyCustom']))
+        elements.append(Spacer(1, 10))
+    
+    # 5. Conclusiones
+    if informe.get('conclusiones'):
+        elements.append(Paragraph("5. CONCLUSIONES", styles['Subtitle']))
+        elements.append(Paragraph(informe.get('conclusiones', '').replace('\n', '<br/>'), styles['BodyCustom']))
+        elements.append(Spacer(1, 10))
+    
+    # 6. Recomendaciones
+    if informe.get('recomendaciones'):
+        elements.append(Paragraph("6. RECOMENDACIONES", styles['Subtitle']))
+        elements.append(Paragraph(informe.get('recomendaciones', '').replace('\n', '<br/>'), styles['BodyCustom']))
+        elements.append(Spacer(1, 10))
+    
+    # 7. Compromisos
+    if informe.get('compromisos_almacen') or informe.get('compromisos_personal') or informe.get('compromisos_gerencia'):
+        elements.append(Paragraph("7. COMPROMISOS", styles['Subtitle']))
+        if informe.get('compromisos_almacen'):
+            elements.append(Paragraph(f"<b>Almacén:</b> {informe.get('compromisos_almacen')}", styles['SmallText']))
+        if informe.get('compromisos_personal'):
+            elements.append(Paragraph(f"<b>Personal de Barra:</b> {informe.get('compromisos_personal')}", styles['SmallText']))
+        if informe.get('compromisos_gerencia'):
+            elements.append(Paragraph(f"<b>Gerencia:</b> {informe.get('compromisos_gerencia')}", styles['SmallText']))
+        elements.append(Spacer(1, 10))
+    
+    # Comparativo 4 Cortes
+    if informe.get('incluir_comparativo') and informe.get('datos_comparativo'):
+        elements.append(Paragraph("ANEXO: COMPARATIVO DE 4 CORTES", styles['Subtitle']))
+        comp_data = informe.get('datos_comparativo', [])
+        if comp_data:
+            # Simplificar para el PDF
+            comp_table_data = [["Producto", "Corte 1", "Corte 2", "Corte 3", "Corte 4", "Total"]]
+            for item in comp_data[:30]:
+                comp_table_data.append([
+                    str(item.get('Producto', ''))[:25],
+                    str(item.get('corte_1', 0)),
+                    str(item.get('corte_2', 0)),
+                    str(item.get('corte_3', 0)),
+                    str(item.get('corte_4', 0)),
+                    str(item.get('total', 0))
+                ])
+            if len(comp_table_data) > 1:
+                comp_table = Table(comp_table_data, colWidths=[5*cm, 2*cm, 2*cm, 2*cm, 2*cm, 2*cm])
+                comp_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d4a6f')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 8),
+                    ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ]))
+                elements.append(comp_table)
+    
+    # Firma
+    elements.append(Spacer(1, 30))
+    elements.append(Paragraph("_" * 40, styles['BodyCustom']))
+    elements.append(Paragraph(f"{informe.get('auditor', '')}<br/>Auditor EDARSA HUB", styles['SmallText']))
+    
+    # Generar PDF
+    doc.build(elements)
+    buffer.seek(0)
+    
+    filename = f"Informe_Auditoria_{informe.get('sucursal_nombre', 'SN').replace(' ', '_')}_{informe.get('periodo_fin', 'fecha')}.pdf"
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 
 # Incluir el router después de definir todos los endpoints
