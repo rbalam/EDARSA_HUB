@@ -8,7 +8,8 @@ import {
   Search, Plus, ChevronRight, Building2, Briefcase, Clock,
   CheckCircle2, XCircle, RefreshCw, Filter, ArrowUpDown,
   X, Save, Upload, Trash2, Eye, Edit, UserPlus, FileSpreadsheet,
-  Inbox, Star, Phone, Mail, Copy, ExternalLink
+  Inbox, Star, Phone, Mail, Copy, ExternalLink, Settings, Lock,
+  Tag, DollarSign, Database
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,6 +31,16 @@ export default function RecursosHumanos() {
   const [vacantes, setVacantes] = useState([]);
   const [candidatos, setCandidatos] = useState([]);
   const [reclutamientoDash, setReclutamientoDash] = useState(null);
+  
+  // Estados para Catálogos (Puestos e Incidencias)
+  const [catalogoPuestos, setCatalogoPuestos] = useState([]);
+  const [catalogoIncidencias, setCatalogoIncidencias] = useState([]);
+  const [catalogoSubTab, setCatalogoSubTab] = useState('puestos');
+  const [loadingCatalogos, setLoadingCatalogos] = useState(false);
+  
+  // Verificar si es Administrador
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = currentUser?.role === 'Administrador' || currentUser?.role === 'admin';
   
   // Filters
   const [filtroSucursal, setFiltroSucursal] = useState('');
@@ -59,6 +70,14 @@ export default function RecursosHumanos() {
   const [editingVacante, setEditingVacante] = useState(null);
   const [selectedVacante, setSelectedVacante] = useState(null);
   const [scriptRecl, setScriptRecl] = useState(null);
+  
+  // Estados para Catálogos RRHH
+  const [modalPuesto, setModalPuesto] = useState(false);
+  const [modalTipoIncidencia, setModalTipoIncidencia] = useState(false);
+  const [modalScriptCatalogos, setModalScriptCatalogos] = useState(false);
+  const [editingPuesto, setEditingPuesto] = useState(null);
+  const [editingTipoIncidencia, setEditingTipoIncidencia] = useState(null);
+  const [scriptCatalogos, setScriptCatalogos] = useState(null);
   
   // Form states
   const [formColaborador, setFormColaborador] = useState({
@@ -96,6 +115,24 @@ export default function RecursosHumanos() {
     email: '',
     telefono: '',
     cv_url: ''
+  });
+
+  // Formularios para Catálogos
+  const [formPuesto, setFormPuesto] = useState({
+    descripcion: '',
+    departamento: '',
+    sueldo_base: 0,
+    nomipaq_id: '',
+    mpro_id: ''
+  });
+
+  const [formTipoIncidencia, setFormTipoIncidencia] = useState({
+    codigo: '',
+    descripcion: '',
+    categoria: 'Descuento',
+    calculo_monto: 'Manual',
+    nomipaq_id: '',
+    mpro_id: ''
   });
 
   const token = localStorage.getItem('token');
@@ -197,6 +234,7 @@ export default function RecursosHumanos() {
     if (activeTab === 'incidencias') loadIncidencias();
     if (activeTab === 'nomina') loadFlujos();
     if (activeTab === 'reclutamiento') loadReclutamiento();
+    if (activeTab === 'catalogos') loadCatalogosCompleto();
   }, [activeTab, loadColaboradores, loadIncidencias, loadFlujos]);
 
   // Cargar datos de reclutamiento
@@ -217,6 +255,237 @@ export default function RecursosHumanos() {
       setLoading(false);
     }
   }, [fetchWithAuth]);
+
+  // ===================== FUNCIONES CATÁLOGOS RRHH =====================
+  
+  // Cargar catálogos completos (Puestos e Incidencias)
+  const loadCatalogosCompleto = useCallback(async () => {
+    try {
+      setLoadingCatalogos(true);
+      const [puestosData, incidenciasData] = await Promise.all([
+        fetchWithAuth('/api/rrhh/catalogos/puestos'),
+        fetchWithAuth('/api/rrhh/catalogos/tipos-incidencias')
+      ]);
+      setCatalogoPuestos(puestosData.puestos || []);
+      setCatalogoIncidencias(incidenciasData.tipos_incidencias || []);
+    } catch (error) {
+      console.error('Error cargando catálogos:', error);
+      toast.error('Error cargando catálogos');
+    } finally {
+      setLoadingCatalogos(false);
+    }
+  }, [fetchWithAuth]);
+  
+  // Cargar script SQL de catálogos
+  const loadScriptCatalogos = async () => {
+    try {
+      const data = await fetchWithAuth('/api/rrhh/catalogos/script-inicializacion');
+      setScriptCatalogos(data);
+      setModalScriptCatalogos(true);
+    } catch (error) {
+      toast.error('Error cargando script SQL');
+    }
+  };
+  
+  // Abrir modal para nuevo puesto
+  const handleNuevoPuesto = () => {
+    if (!isAdmin) {
+      toast.error('Solo administradores pueden crear puestos');
+      return;
+    }
+    setEditingPuesto(null);
+    setFormPuesto({
+      descripcion: '',
+      departamento: '',
+      sueldo_base: 0,
+      nomipaq_id: '',
+      mpro_id: ''
+    });
+    setModalPuesto(true);
+  };
+  
+  // Abrir modal para editar puesto
+  const handleEditarPuesto = (puesto) => {
+    if (!isAdmin) {
+      toast.error('Solo administradores pueden editar puestos');
+      return;
+    }
+    setEditingPuesto(puesto);
+    setFormPuesto({
+      descripcion: puesto.Descripcion || '',
+      departamento: puesto.Departamento || '',
+      sueldo_base: puesto.Sueldo_Base_Seman_SBC || 0,
+      nomipaq_id: puesto.NomiPAQ_ID || '',
+      mpro_id: puesto.MPRO_ID || ''
+    });
+    setModalPuesto(true);
+  };
+  
+  // Guardar puesto
+  const handleGuardarPuesto = async () => {
+    if (!formPuesto.descripcion.trim()) {
+      toast.error('La descripción del puesto es requerida');
+      return;
+    }
+    
+    setSavingForm(true);
+    try {
+      const url = editingPuesto 
+        ? `${API_URL}/api/rrhh/catalogos/puestos/${editingPuesto.PuestoID}`
+        : `${API_URL}/api/rrhh/catalogos/puestos`;
+      
+      const response = await fetch(url, {
+        method: editingPuesto ? 'PUT' : 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formPuesto)
+      });
+      
+      if (response.status === 403) {
+        toast.error('Solo administradores pueden realizar esta acción');
+        return;
+      }
+      if (!response.ok) throw new Error('Error al guardar');
+      
+      toast.success(editingPuesto ? 'Puesto actualizado' : 'Puesto creado');
+      setModalPuesto(false);
+      loadCatalogosCompleto();
+    } catch (error) {
+      toast.error('Error al guardar puesto');
+    } finally {
+      setSavingForm(false);
+    }
+  };
+  
+  // Eliminar puesto
+  const handleEliminarPuesto = async (puestoId) => {
+    if (!isAdmin) {
+      toast.error('Solo administradores pueden eliminar puestos');
+      return;
+    }
+    if (!window.confirm('¿Está seguro de eliminar este puesto?')) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/api/rrhh/catalogos/puestos/${puestoId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.status === 403) {
+        toast.error('Solo administradores pueden eliminar puestos');
+        return;
+      }
+      if (!response.ok) throw new Error('Error al eliminar');
+      
+      toast.success('Puesto eliminado');
+      loadCatalogosCompleto();
+    } catch (error) {
+      toast.error('Error al eliminar puesto');
+    }
+  };
+  
+  // Abrir modal para nuevo tipo de incidencia
+  const handleNuevoTipoIncidencia = () => {
+    if (!isAdmin) {
+      toast.error('Solo administradores pueden crear tipos de incidencia');
+      return;
+    }
+    setEditingTipoIncidencia(null);
+    setFormTipoIncidencia({
+      codigo: '',
+      descripcion: '',
+      categoria: 'Descuento',
+      calculo_monto: 'Manual',
+      nomipaq_id: '',
+      mpro_id: ''
+    });
+    setModalTipoIncidencia(true);
+  };
+  
+  // Abrir modal para editar tipo de incidencia
+  const handleEditarTipoIncidencia = (tipo) => {
+    if (!isAdmin) {
+      toast.error('Solo administradores pueden editar tipos de incidencia');
+      return;
+    }
+    setEditingTipoIncidencia(tipo);
+    setFormTipoIncidencia({
+      codigo: tipo.Codigo || '',
+      descripcion: tipo.Descripcion || '',
+      categoria: tipo.Categoria || 'Descuento',
+      calculo_monto: tipo.Calculo_Monto || 'Manual',
+      nomipaq_id: tipo.NomiPAQ_ID || '',
+      mpro_id: tipo.MPRO_ID || ''
+    });
+    setModalTipoIncidencia(true);
+  };
+  
+  // Guardar tipo de incidencia
+  const handleGuardarTipoIncidencia = async () => {
+    if (!formTipoIncidencia.codigo.trim() || !formTipoIncidencia.descripcion.trim()) {
+      toast.error('Código y descripción son requeridos');
+      return;
+    }
+    
+    setSavingForm(true);
+    try {
+      const url = editingTipoIncidencia 
+        ? `${API_URL}/api/rrhh/catalogos/tipos-incidencias/${editingTipoIncidencia.TipoIncidenciaID}`
+        : `${API_URL}/api/rrhh/catalogos/tipos-incidencias`;
+      
+      const response = await fetch(url, {
+        method: editingTipoIncidencia ? 'PUT' : 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formTipoIncidencia)
+      });
+      
+      if (response.status === 403) {
+        toast.error('Solo administradores pueden realizar esta acción');
+        return;
+      }
+      if (!response.ok) throw new Error('Error al guardar');
+      
+      toast.success(editingTipoIncidencia ? 'Tipo de incidencia actualizado' : 'Tipo de incidencia creado');
+      setModalTipoIncidencia(false);
+      loadCatalogosCompleto();
+    } catch (error) {
+      toast.error('Error al guardar tipo de incidencia');
+    } finally {
+      setSavingForm(false);
+    }
+  };
+  
+  // Eliminar tipo de incidencia (desactivar)
+  const handleEliminarTipoIncidencia = async (tipoId) => {
+    if (!isAdmin) {
+      toast.error('Solo administradores pueden eliminar tipos de incidencia');
+      return;
+    }
+    if (!window.confirm('¿Está seguro de desactivar este tipo de incidencia?')) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/api/rrhh/catalogos/tipos-incidencias/${tipoId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.status === 403) {
+        toast.error('Solo administradores pueden eliminar tipos');
+        return;
+      }
+      if (!response.ok) throw new Error('Error al eliminar');
+      
+      toast.success('Tipo de incidencia desactivado');
+      loadCatalogosCompleto();
+    } catch (error) {
+      toast.error('Error al eliminar tipo de incidencia');
+    }
+  };
 
   // ===================== FUNCIONES CRUD - FASE 2 =====================
   
@@ -484,6 +753,7 @@ export default function RecursosHumanos() {
     { id: 'nomina', label: 'Flujo Nómina', icon: Wallet },
     { id: 'asistencia', label: 'Asistencia', icon: Clock },
     { id: 'reclutamiento', label: 'Reclutamiento', icon: Inbox },
+    { id: 'catalogos', label: 'Catálogos', icon: Settings },
   ];
 
   // Render Dashboard
@@ -1303,6 +1573,261 @@ export default function RecursosHumanos() {
     );
   };
 
+  // ===================== RENDER CATÁLOGOS =====================
+  const renderCatalogos = () => {
+    return (
+      <div className="space-y-6" data-testid="catalogos-section">
+        {/* Header con aviso de permisos */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-800">Catálogos de RRHH</h2>
+            <p className="text-sm text-zinc-500">Administración de Puestos y Tipos de Incidencias</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {!isAdmin && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm">
+                <Lock className="h-4 w-4" />
+                <span>Solo lectura (requiere rol Administrador para editar)</span>
+              </div>
+            )}
+            <Button variant="outline" size="sm" onClick={loadCatalogosCompleto}>
+              <RefreshCw className={`h-4 w-4 mr-1 ${loadingCatalogos ? 'animate-spin' : ''}`} />
+              Actualizar
+            </Button>
+            <Button variant="outline" size="sm" onClick={loadScriptCatalogos}>
+              <Database className="h-4 w-4 mr-1" />
+              Script SQL
+            </Button>
+          </div>
+        </div>
+
+        {/* Sub-pestañas: Puestos | Incidencias */}
+        <div className="flex gap-2 border-b border-zinc-200">
+          <button
+            onClick={() => setCatalogoSubTab('puestos')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-all ${
+              catalogoSubTab === 'puestos'
+                ? 'border-zinc-900 text-zinc-900'
+                : 'border-transparent text-zinc-500 hover:text-zinc-700'
+            }`}
+          >
+            <Briefcase className="h-4 w-4 inline mr-2" />
+            Puestos
+          </button>
+          <button
+            onClick={() => setCatalogoSubTab('incidencias')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-all ${
+              catalogoSubTab === 'incidencias'
+                ? 'border-zinc-900 text-zinc-900'
+                : 'border-transparent text-zinc-500 hover:text-zinc-700'
+            }`}
+          >
+            <Tag className="h-4 w-4 inline mr-2" />
+            Tipos de Incidencias
+          </button>
+        </div>
+
+        {/* Contenido según sub-pestaña */}
+        {catalogoSubTab === 'puestos' && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between py-4">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Briefcase className="h-5 w-5 text-zinc-600" />
+                Catálogo de Puestos ({catalogoPuestos.length})
+              </CardTitle>
+              {isAdmin && (
+                <Button size="sm" onClick={handleNuevoPuesto} data-testid="btn-nuevo-puesto">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Nuevo Puesto
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-zinc-50 border-y">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-medium text-zinc-600">ID</th>
+                      <th className="px-4 py-3 text-left font-medium text-zinc-600">Descripción</th>
+                      <th className="px-4 py-3 text-left font-medium text-zinc-600">Departamento</th>
+                      <th className="px-4 py-3 text-right font-medium text-zinc-600">Sueldo Base</th>
+                      <th className="px-4 py-3 text-center font-medium text-zinc-600">NomiPAQ</th>
+                      <th className="px-4 py-3 text-center font-medium text-zinc-600">MPRO</th>
+                      {isAdmin && <th className="px-4 py-3 text-center font-medium text-zinc-600">Acciones</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {loadingCatalogos ? (
+                      <tr>
+                        <td colSpan={isAdmin ? 7 : 6} className="px-4 py-8 text-center text-zinc-500">
+                          <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2" />
+                          Cargando...
+                        </td>
+                      </tr>
+                    ) : catalogoPuestos.length === 0 ? (
+                      <tr>
+                        <td colSpan={isAdmin ? 7 : 6} className="px-4 py-8 text-center text-zinc-500">
+                          No hay puestos registrados. Ejecute el script SQL si la tabla no existe.
+                        </td>
+                      </tr>
+                    ) : (
+                      catalogoPuestos.map((p) => (
+                        <tr key={p.PuestoID} className="hover:bg-zinc-50">
+                          <td className="px-4 py-3 text-zinc-600">{p.PuestoID}</td>
+                          <td className="px-4 py-3 font-medium text-zinc-800">{p.Descripcion}</td>
+                          <td className="px-4 py-3 text-zinc-600">{p.Departamento || '-'}</td>
+                          <td className="px-4 py-3 text-right text-zinc-800">
+                            ${(p.Sueldo_Base_Seman_SBC || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {p.NomiPAQ_ID ? (
+                              <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded">{p.NomiPAQ_ID}</span>
+                            ) : (
+                              <span className="text-zinc-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {p.MPRO_ID ? (
+                              <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded">{p.MPRO_ID}</span>
+                            ) : (
+                              <span className="text-zinc-400">-</span>
+                            )}
+                          </td>
+                          {isAdmin && (
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex justify-center gap-1">
+                                <Button variant="ghost" size="sm" onClick={() => handleEditarPuesto(p)} data-testid={`btn-edit-puesto-${p.PuestoID}`}>
+                                  <Edit className="h-4 w-4 text-blue-600" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleEliminarPuesto(p.PuestoID)} data-testid={`btn-delete-puesto-${p.PuestoID}`}>
+                                  <Trash2 className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {catalogoSubTab === 'incidencias' && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between py-4">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Tag className="h-5 w-5 text-zinc-600" />
+                Tipos de Incidencias ({catalogoIncidencias.length})
+              </CardTitle>
+              {isAdmin && (
+                <Button size="sm" onClick={handleNuevoTipoIncidencia} data-testid="btn-nuevo-tipo-incidencia">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Nuevo Tipo
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-zinc-50 border-y">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-medium text-zinc-600">Código</th>
+                      <th className="px-4 py-3 text-left font-medium text-zinc-600">Descripción</th>
+                      <th className="px-4 py-3 text-center font-medium text-zinc-600">Categoría</th>
+                      <th className="px-4 py-3 text-center font-medium text-zinc-600">Cálculo</th>
+                      <th className="px-4 py-3 text-center font-medium text-zinc-600">NomiPAQ</th>
+                      <th className="px-4 py-3 text-center font-medium text-zinc-600">MPRO</th>
+                      {isAdmin && <th className="px-4 py-3 text-center font-medium text-zinc-600">Acciones</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {loadingCatalogos ? (
+                      <tr>
+                        <td colSpan={isAdmin ? 7 : 6} className="px-4 py-8 text-center text-zinc-500">
+                          <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2" />
+                          Cargando...
+                        </td>
+                      </tr>
+                    ) : catalogoIncidencias.length === 0 ? (
+                      <tr>
+                        <td colSpan={isAdmin ? 7 : 6} className="px-4 py-8 text-center text-zinc-500">
+                          No hay tipos de incidencia registrados. Ejecute el script SQL para crear la tabla.
+                        </td>
+                      </tr>
+                    ) : (
+                      catalogoIncidencias.map((t) => (
+                        <tr key={t.TipoIncidenciaID} className="hover:bg-zinc-50">
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-1 bg-zinc-100 text-zinc-700 font-mono text-xs rounded">{t.Codigo}</span>
+                          </td>
+                          <td className="px-4 py-3 font-medium text-zinc-800">{t.Descripcion}</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              t.Categoria === 'Ingreso' 
+                                ? 'bg-green-100 text-green-700' 
+                                : 'bg-red-100 text-red-700'
+                            }`}>
+                              {t.Categoria === 'Ingreso' ? '+ Ingreso' : '- Descuento'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center text-zinc-600 text-xs">
+                            {t.Calculo_Monto || 'Manual'}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {t.NomiPAQ_ID ? (
+                              <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded">{t.NomiPAQ_ID}</span>
+                            ) : (
+                              <span className="text-zinc-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {t.MPRO_ID ? (
+                              <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded">{t.MPRO_ID}</span>
+                            ) : (
+                              <span className="text-zinc-400">-</span>
+                            )}
+                          </td>
+                          {isAdmin && (
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex justify-center gap-1">
+                                <Button variant="ghost" size="sm" onClick={() => handleEditarTipoIncidencia(t)} data-testid={`btn-edit-tipo-${t.TipoIncidenciaID}`}>
+                                  <Edit className="h-4 w-4 text-blue-600" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleEliminarTipoIncidencia(t.TipoIncidenciaID)} data-testid={`btn-delete-tipo-${t.TipoIncidenciaID}`}>
+                                  <Trash2 className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Nota informativa */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Integración con Sistemas Externos
+          </h4>
+          <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+            <li><strong>NomiPAQ:</strong> Use el campo NomiPAQ_ID para mapear con conceptos de nómina.</li>
+            <li><strong>MPRO:</strong> Use el campo MPRO_ID para sincronizar con el sistema MPRO.</li>
+            <li><strong>Excel:</strong> Los códigos se usan como referencia en las importaciones de nómina.</li>
+          </ul>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="p-6" data-testid="rrhh-page">
       {/* Header */}
@@ -1347,6 +1872,7 @@ export default function RecursosHumanos() {
           {activeTab === 'nomina' && renderFlujoNomina()}
           {activeTab === 'asistencia' && renderAsistencia()}
           {activeTab === 'reclutamiento' && renderReclutamiento()}
+          {activeTab === 'catalogos' && renderCatalogos()}
         </>
       )}
 
@@ -2087,6 +2613,259 @@ export default function RecursosHumanos() {
             
             <div className="border-t px-6 py-4 flex justify-end bg-zinc-50">
               <Button variant="outline" onClick={() => setModalScriptRecl(false)}>Cerrar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODALES CATÁLOGOS RRHH ==================== */}
+      
+      {/* Modal Nuevo/Editar Puesto */}
+      {modalPuesto && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Briefcase className="h-5 w-5" />
+                {editingPuesto ? 'Editar Puesto' : 'Nuevo Puesto'}
+              </h2>
+              <button onClick={() => setModalPuesto(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              <div className="space-y-2">
+                <Label htmlFor="puesto-descripcion">Descripción del Puesto *</Label>
+                <Input
+                  id="puesto-descripcion"
+                  value={formPuesto.descripcion}
+                  onChange={(e) => setFormPuesto({...formPuesto, descripcion: e.target.value})}
+                  placeholder="Ej: Gerente de Operaciones"
+                  data-testid="input-puesto-descripcion"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="puesto-departamento">Departamento</Label>
+                <Input
+                  id="puesto-departamento"
+                  value={formPuesto.departamento}
+                  onChange={(e) => setFormPuesto({...formPuesto, departamento: e.target.value})}
+                  placeholder="Ej: Administración, Cocina, Servicio"
+                  data-testid="input-puesto-departamento"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="puesto-sueldo">Sueldo Base Semanal (SBC)</Label>
+                <Input
+                  id="puesto-sueldo"
+                  type="number"
+                  value={formPuesto.sueldo_base}
+                  onChange={(e) => setFormPuesto({...formPuesto, sueldo_base: parseFloat(e.target.value) || 0})}
+                  placeholder="0.00"
+                  data-testid="input-puesto-sueldo"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="puesto-nomipaq">ID NomiPAQ</Label>
+                  <Input
+                    id="puesto-nomipaq"
+                    value={formPuesto.nomipaq_id}
+                    onChange={(e) => setFormPuesto({...formPuesto, nomipaq_id: e.target.value})}
+                    placeholder="Código NomiPAQ"
+                    data-testid="input-puesto-nomipaq"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="puesto-mpro">ID MPRO</Label>
+                  <Input
+                    id="puesto-mpro"
+                    value={formPuesto.mpro_id}
+                    onChange={(e) => setFormPuesto({...formPuesto, mpro_id: e.target.value})}
+                    placeholder="Código MPRO"
+                    data-testid="input-puesto-mpro"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end gap-2 bg-zinc-50">
+              <Button variant="outline" onClick={() => setModalPuesto(false)}>Cancelar</Button>
+              <Button onClick={handleGuardarPuesto} disabled={savingForm} data-testid="btn-guardar-puesto">
+                {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                {editingPuesto ? 'Actualizar' : 'Guardar'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Nuevo/Editar Tipo de Incidencia */}
+      {modalTipoIncidencia && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Tag className="h-5 w-5" />
+                {editingTipoIncidencia ? 'Editar Tipo de Incidencia' : 'Nuevo Tipo de Incidencia'}
+              </h2>
+              <button onClick={() => setModalTipoIncidencia(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tipo-codigo">Código *</Label>
+                  <Input
+                    id="tipo-codigo"
+                    value={formTipoIncidencia.codigo}
+                    onChange={(e) => setFormTipoIncidencia({...formTipoIncidencia, codigo: e.target.value.toUpperCase()})}
+                    placeholder="Ej: BON, FAL, HEX"
+                    maxLength={10}
+                    data-testid="input-tipo-codigo"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tipo-categoria">Categoría *</Label>
+                  <select
+                    id="tipo-categoria"
+                    value={formTipoIncidencia.categoria}
+                    onChange={(e) => setFormTipoIncidencia({...formTipoIncidencia, categoria: e.target.value})}
+                    className="w-full h-10 px-3 border rounded-md bg-white text-sm"
+                    data-testid="select-tipo-categoria"
+                  >
+                    <option value="Ingreso">+ Ingreso</option>
+                    <option value="Descuento">- Descuento</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="tipo-descripcion">Descripción *</Label>
+                <Input
+                  id="tipo-descripcion"
+                  value={formTipoIncidencia.descripcion}
+                  onChange={(e) => setFormTipoIncidencia({...formTipoIncidencia, descripcion: e.target.value})}
+                  placeholder="Ej: Bono de productividad"
+                  data-testid="input-tipo-descripcion"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="tipo-calculo">Tipo de Cálculo</Label>
+                <select
+                  id="tipo-calculo"
+                  value={formTipoIncidencia.calculo_monto}
+                  onChange={(e) => setFormTipoIncidencia({...formTipoIncidencia, calculo_monto: e.target.value})}
+                  className="w-full h-10 px-3 border rounded-md bg-white text-sm"
+                  data-testid="select-tipo-calculo"
+                >
+                  <option value="Manual">Manual</option>
+                  <option value="Porcentaje">Porcentaje</option>
+                  <option value="Formula">Fórmula</option>
+                </select>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tipo-nomipaq">ID NomiPAQ</Label>
+                  <Input
+                    id="tipo-nomipaq"
+                    value={formTipoIncidencia.nomipaq_id}
+                    onChange={(e) => setFormTipoIncidencia({...formTipoIncidencia, nomipaq_id: e.target.value})}
+                    placeholder="Concepto NomiPAQ"
+                    data-testid="input-tipo-nomipaq"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tipo-mpro">ID MPRO</Label>
+                  <Input
+                    id="tipo-mpro"
+                    value={formTipoIncidencia.mpro_id}
+                    onChange={(e) => setFormTipoIncidencia({...formTipoIncidencia, mpro_id: e.target.value})}
+                    placeholder="Código MPRO"
+                    data-testid="input-tipo-mpro"
+                  />
+                </div>
+              </div>
+              
+              {/* Preview de la categoría */}
+              <div className={`p-3 rounded-lg border ${
+                formTipoIncidencia.categoria === 'Ingreso' 
+                  ? 'bg-green-50 border-green-200' 
+                  : 'bg-red-50 border-red-200'
+              }`}>
+                <p className={`text-sm font-medium ${
+                  formTipoIncidencia.categoria === 'Ingreso' ? 'text-green-700' : 'text-red-700'
+                }`}>
+                  {formTipoIncidencia.categoria === 'Ingreso' 
+                    ? '✓ Esta incidencia SUMA al sueldo del colaborador' 
+                    : '✗ Esta incidencia RESTA al sueldo del colaborador'}
+                </p>
+              </div>
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end gap-2 bg-zinc-50">
+              <Button variant="outline" onClick={() => setModalTipoIncidencia(false)}>Cancelar</Button>
+              <Button onClick={handleGuardarTipoIncidencia} disabled={savingForm} data-testid="btn-guardar-tipo">
+                {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                {editingTipoIncidencia ? 'Actualizar' : 'Guardar'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Script SQL Catálogos RRHH */}
+      {modalScriptCatalogos && scriptCatalogos && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                Script de Inicialización - Catálogos RRHH
+              </h2>
+              <button onClick={() => setModalScriptCatalogos(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="font-medium text-amber-800 mb-2">⚠️ Instrucciones importantes:</p>
+                <ol className="list-decimal list-inside text-sm text-amber-700 space-y-1">
+                  <li>Ejecute este script en la base de datos <strong>EDARSA HUB</strong></li>
+                  <li>El script verifica si las tablas/columnas ya existen antes de crearlas</li>
+                  <li>Crea columnas de mapeo para NomiPAQ y MPRO</li>
+                  <li>Inserta tipos de incidencias por defecto si la tabla está vacía</li>
+                </ol>
+              </div>
+              
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="font-medium">Script SQL:</Label>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    navigator.clipboard.writeText(scriptCatalogos.script);
+                    toast.success('Script copiado al portapapeles');
+                  }}>
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copiar Script
+                  </Button>
+                </div>
+                <pre className="bg-zinc-900 text-green-400 p-4 rounded-lg text-xs overflow-x-auto max-h-[400px] overflow-y-auto font-mono whitespace-pre-wrap">
+                  {scriptCatalogos.script}
+                </pre>
+              </div>
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end bg-zinc-50">
+              <Button variant="outline" onClick={() => setModalScriptCatalogos(false)}>Cerrar</Button>
             </div>
           </div>
         </div>
