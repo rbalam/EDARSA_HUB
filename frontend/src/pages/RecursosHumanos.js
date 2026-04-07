@@ -7,7 +7,8 @@ import {
   Users, Wallet, Calendar, UserCheck, FileText, AlertTriangle,
   Search, Plus, ChevronRight, Building2, Briefcase, Clock,
   CheckCircle2, XCircle, RefreshCw, Filter, ArrowUpDown,
-  X, Save, Upload, Trash2, Eye, Edit, UserPlus, FileSpreadsheet
+  X, Save, Upload, Trash2, Eye, Edit, UserPlus, FileSpreadsheet,
+  Inbox, Star, Phone, Mail, Copy, ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,6 +25,11 @@ export default function RecursosHumanos() {
   const [flujos, setFlujos] = useState([]);
   const [sucursales, setSucursales] = useState([]);
   const [puestos, setPuestos] = useState([]);
+  
+  // Estados para Reclutamiento (Fase 5)
+  const [vacantes, setVacantes] = useState([]);
+  const [candidatos, setCandidatos] = useState([]);
+  const [reclutamientoDash, setReclutamientoDash] = useState(null);
   
   // Filters
   const [filtroSucursal, setFiltroSucursal] = useState('');
@@ -46,6 +52,14 @@ export default function RecursosHumanos() {
   const [importLoading, setImportLoading] = useState(false);
   const [importResult, setImportResult] = useState(null);
   
+  // Estados para Reclutamiento (Fase 5)
+  const [modalVacante, setModalVacante] = useState(false);
+  const [modalCandidato, setModalCandidato] = useState(false);
+  const [modalScriptRecl, setModalScriptRecl] = useState(false);
+  const [editingVacante, setEditingVacante] = useState(null);
+  const [selectedVacante, setSelectedVacante] = useState(null);
+  const [scriptRecl, setScriptRecl] = useState(null);
+  
   // Form states
   const [formColaborador, setFormColaborador] = useState({
     nombre_completo: '',
@@ -63,6 +77,25 @@ export default function RecursosHumanos() {
     monto: 0,
     unidades: 0,
     fecha_incidencia: new Date().toISOString().split('T')[0]
+  });
+  
+  const [formVacante, setFormVacante] = useState({
+    sucursal_id: '',
+    puesto_id: '',
+    titulo: '',
+    descripcion: '',
+    requisitos: '',
+    salario_min: 0,
+    salario_max: 0,
+    tipo_contrato: 'Tiempo Completo'
+  });
+  
+  const [formCandidato, setFormCandidato] = useState({
+    vacante_id: '',
+    nombre: '',
+    email: '',
+    telefono: '',
+    cv_url: ''
   });
 
   const token = localStorage.getItem('token');
@@ -163,7 +196,27 @@ export default function RecursosHumanos() {
     if (activeTab === 'colaboradores') loadColaboradores();
     if (activeTab === 'incidencias') loadIncidencias();
     if (activeTab === 'nomina') loadFlujos();
+    if (activeTab === 'reclutamiento') loadReclutamiento();
   }, [activeTab, loadColaboradores, loadIncidencias, loadFlujos]);
+
+  // Cargar datos de reclutamiento
+  const loadReclutamiento = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [dashData, vacData, candData] = await Promise.all([
+        fetchWithAuth('/api/rrhh/reclutamiento/dashboard'),
+        fetchWithAuth('/api/rrhh/vacantes'),
+        fetchWithAuth('/api/rrhh/candidatos')
+      ]);
+      setReclutamientoDash(dashData);
+      setVacantes(vacData.vacantes || []);
+      setCandidatos(candData.candidatos || []);
+    } catch (error) {
+      console.error('Error cargando reclutamiento:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchWithAuth]);
 
   // ===================== FUNCIONES CRUD - FASE 2 =====================
   
@@ -407,6 +460,7 @@ export default function RecursosHumanos() {
     { id: 'incidencias', label: 'Incidencias', icon: AlertTriangle },
     { id: 'nomina', label: 'Flujo Nómina', icon: Wallet },
     { id: 'asistencia', label: 'Asistencia', icon: Clock },
+    { id: 'reclutamiento', label: 'Reclutamiento', icon: Inbox },
   ];
 
   // Render Dashboard
@@ -879,6 +933,349 @@ export default function RecursosHumanos() {
     </Card>
   );
 
+  // ===================== FUNCIONES RECLUTAMIENTO - FASE 5 =====================
+  
+  const handleNuevaVacante = () => {
+    setEditingVacante(null);
+    setFormVacante({
+      sucursal_id: '',
+      puesto_id: '',
+      titulo: '',
+      descripcion: '',
+      requisitos: '',
+      salario_min: 0,
+      salario_max: 0,
+      tipo_contrato: 'Tiempo Completo'
+    });
+    setModalVacante(true);
+  };
+
+  const handleGuardarVacante = async () => {
+    if (!formVacante.sucursal_id || !formVacante.puesto_id || !formVacante.titulo) {
+      toast.error('Sucursal, puesto y título son requeridos');
+      return;
+    }
+    
+    setSavingForm(true);
+    try {
+      const url = editingVacante 
+        ? `${API_URL}/api/rrhh/vacantes/${editingVacante.VacanteID}`
+        : `${API_URL}/api/rrhh/vacantes`;
+      
+      const response = await fetch(url, {
+        method: editingVacante ? 'PUT' : 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formVacante)
+      });
+      
+      if (!response.ok) throw new Error('Error al guardar');
+      
+      toast.success(editingVacante ? 'Vacante actualizada' : 'Vacante creada');
+      setModalVacante(false);
+      loadReclutamiento();
+    } catch (error) {
+      toast.error('Error al guardar vacante');
+    } finally {
+      setSavingForm(false);
+    }
+  };
+
+  const handleNuevoCandidato = (vacanteId = '') => {
+    setFormCandidato({
+      vacante_id: vacanteId?.toString() || '',
+      nombre: '',
+      email: '',
+      telefono: '',
+      cv_url: ''
+    });
+    setModalCandidato(true);
+  };
+
+  const handleGuardarCandidato = async () => {
+    if (!formCandidato.vacante_id || !formCandidato.nombre || !formCandidato.email) {
+      toast.error('Vacante, nombre y email son requeridos');
+      return;
+    }
+    
+    setSavingForm(true);
+    try {
+      const response = await fetch(`${API_URL}/api/rrhh/candidatos`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formCandidato)
+      });
+      
+      if (!response.ok) throw new Error('Error al guardar');
+      
+      toast.success('Candidato registrado');
+      setModalCandidato(false);
+      loadReclutamiento();
+    } catch (error) {
+      toast.error('Error al guardar candidato');
+    } finally {
+      setSavingForm(false);
+    }
+  };
+
+  const handleCambiarEstatusCandidato = async (candidatoId, nuevoEstatus) => {
+    try {
+      const response = await fetch(`${API_URL}/api/rrhh/candidatos/${candidatoId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ estatus: nuevoEstatus })
+      });
+      
+      if (!response.ok) throw new Error('Error');
+      toast.success('Estatus actualizado');
+      loadReclutamiento();
+    } catch (error) {
+      toast.error('Error al actualizar');
+    }
+  };
+
+  const handleVerScriptRecl = async () => {
+    try {
+      const data = await fetchWithAuth('/api/rrhh/reclutamiento/script-inicializacion');
+      setScriptRecl(data);
+      setModalScriptRecl(true);
+    } catch (error) {
+      toast.error('Error al obtener script');
+    }
+  };
+
+  const estatusCandidato = [
+    { value: 'Recibido', color: 'bg-zinc-100 text-zinc-700' },
+    { value: 'En Revision', color: 'bg-blue-100 text-blue-700' },
+    { value: 'Entrevista Programada', color: 'bg-purple-100 text-purple-700' },
+    { value: 'Entrevistado', color: 'bg-amber-100 text-amber-700' },
+    { value: 'Seleccionado', color: 'bg-green-100 text-green-700' },
+    { value: 'Rechazado', color: 'bg-red-100 text-red-700' },
+    { value: 'Contratado', color: 'bg-emerald-100 text-emerald-700' },
+  ];
+
+  // Render Reclutamiento
+  const renderReclutamiento = () => {
+    const vacAbiertas = vacantes.filter(v => v.Estatus === 'Abierta').length;
+    const candPendientes = candidatos.filter(c => c.Estatus === 'Recibido' || c.Estatus === 'En Revision').length;
+    
+    return (
+      <div className="space-y-6">
+        {/* KPIs */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="border-l-4 border-l-blue-500">
+            <CardContent className="pt-4">
+              <p className="text-xs text-zinc-500 uppercase">Vacantes Abiertas</p>
+              <p className="text-2xl font-bold text-blue-600">{vacAbiertas}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-purple-500">
+            <CardContent className="pt-4">
+              <p className="text-xs text-zinc-500 uppercase">Total Candidatos</p>
+              <p className="text-2xl font-bold text-purple-600">{candidatos.length}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-amber-500">
+            <CardContent className="pt-4">
+              <p className="text-xs text-zinc-500 uppercase">Pendientes Revisión</p>
+              <p className="text-2xl font-bold text-amber-600">{candPendientes}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-green-500">
+            <CardContent className="pt-4">
+              <p className="text-xs text-zinc-500 uppercase">Contratados</p>
+              <p className="text-2xl font-bold text-green-600">
+                {candidatos.filter(c => c.Estatus === 'Contratado').length}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Acciones */}
+        <div className="flex flex-wrap gap-3 justify-between">
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleVerScriptRecl}>
+              <FileText className="h-4 w-4 mr-1" />
+              Ver Script SQL
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => handleNuevoCandidato()}>
+              <UserPlus className="h-4 w-4 mr-1" />
+              Nuevo Candidato
+            </Button>
+            <Button size="sm" className="bg-zinc-900 text-white" onClick={handleNuevaVacante}>
+              <Plus className="h-4 w-4 mr-1" />
+              Nueva Vacante
+            </Button>
+          </div>
+        </div>
+
+        {/* Vacantes */}
+        <Card>
+          <CardHeader className="py-3 bg-zinc-800 text-white rounded-t-lg">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Briefcase className="h-5 w-5" />
+              Vacantes ({vacantes.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {vacantes.length === 0 ? (
+              <div className="text-center py-8 text-zinc-400">
+                <Inbox className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No hay vacantes registradas</p>
+                <p className="text-xs">Ejecuta el script SQL para crear las tablas</p>
+              </div>
+            ) : (
+              <div className="divide-y">
+                {vacantes.map((vac, i) => (
+                  <div key={vac.VacanteID || i} className="p-4 hover:bg-zinc-50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium">{vac.Titulo}</h4>
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            vac.Estatus === 'Abierta' ? 'bg-green-100 text-green-700' :
+                            vac.Estatus === 'En Proceso' ? 'bg-blue-100 text-blue-700' :
+                            'bg-zinc-100 text-zinc-700'
+                          }`}>
+                            {vac.Estatus}
+                          </span>
+                        </div>
+                        <div className="text-sm text-zinc-500 flex flex-wrap gap-3">
+                          <span className="flex items-center gap-1">
+                            <Building2 className="h-3 w-3" />
+                            {vac.Nombre_Sucursal}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Briefcase className="h-3 w-3" />
+                            {vac.Nombre_Puesto}
+                          </span>
+                          {vac.Salario_Max > 0 && (
+                            <span className="text-green-600">
+                              ${vac.Salario_Min?.toLocaleString()} - ${vac.Salario_Max?.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                          {vac.Total_Candidatos || 0} candidatos
+                        </span>
+                        <Button variant="ghost" size="sm" onClick={() => {
+                          setSelectedVacante(vac);
+                          handleNuevoCandidato(vac.VacanteID);
+                        }}>
+                          <UserPlus className="h-4 w-4 text-blue-600" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Candidatos */}
+        <Card>
+          <CardHeader className="py-3 bg-zinc-800 text-white rounded-t-lg">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Candidatos ({candidatos.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-zinc-100">
+                  <tr>
+                    <th className="text-left p-3 font-medium">Candidato</th>
+                    <th className="text-left p-3 font-medium">Vacante</th>
+                    <th className="text-left p-3 font-medium">Contacto</th>
+                    <th className="text-left p-3 font-medium">Fecha</th>
+                    <th className="text-left p-3 font-medium">Estatus</th>
+                    <th className="text-center p-3 font-medium">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {candidatos.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-8 text-zinc-400">
+                        No hay candidatos registrados
+                      </td>
+                    </tr>
+                  ) : (
+                    candidatos.map((cand, i) => {
+                      const estatusInfo = estatusCandidato.find(e => e.value === cand.Estatus) || estatusCandidato[0];
+                      return (
+                        <tr key={cand.CandidatoID || i} className="border-b hover:bg-zinc-50">
+                          <td className="p-3">
+                            <div className="font-medium">{cand.Nombre_Completo}</div>
+                            {cand.Puntuacion && (
+                              <div className="flex items-center gap-1 text-xs text-amber-600">
+                                <Star className="h-3 w-3 fill-amber-400" />
+                                {cand.Puntuacion}/100
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-3 text-zinc-600">{cand.Vacante_Titulo}</td>
+                          <td className="p-3">
+                            <div className="flex flex-col gap-1 text-xs">
+                              <span className="flex items-center gap-1">
+                                <Mail className="h-3 w-3 text-zinc-400" />
+                                {cand.Email}
+                              </span>
+                              {cand.Telefono && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3 text-zinc-400" />
+                                  {cand.Telefono}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-3 text-xs text-zinc-500">
+                            {cand.Fecha_Aplicacion ? new Date(cand.Fecha_Aplicacion).toLocaleDateString('es-MX') : '-'}
+                          </td>
+                          <td className="p-3">
+                            <select
+                              value={cand.Estatus}
+                              onChange={(e) => handleCambiarEstatusCandidato(cand.CandidatoID, e.target.value)}
+                              className={`px-2 py-1 rounded text-xs font-medium border-0 cursor-pointer ${estatusInfo.color}`}
+                            >
+                              {estatusCandidato.map(e => (
+                                <option key={e.value} value={e.value}>{e.value}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="p-3 text-center">
+                            {cand.CV_URL && (
+                              <Button variant="ghost" size="sm" onClick={() => window.open(cand.CV_URL, '_blank')}>
+                                <ExternalLink className="h-4 w-4 text-blue-600" />
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
   return (
     <div className="p-6" data-testid="rrhh-page">
       {/* Header */}
@@ -922,6 +1319,7 @@ export default function RecursosHumanos() {
           {activeTab === 'incidencias' && renderIncidencias()}
           {activeTab === 'nomina' && renderFlujoNomina()}
           {activeTab === 'asistencia' && renderAsistencia()}
+          {activeTab === 'reclutamiento' && renderReclutamiento()}
         </>
       )}
 
@@ -1379,6 +1777,263 @@ export default function RecursosHumanos() {
                   )}
                 </Button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODALES RECLUTAMIENTO - FASE 5 ==================== */}
+      
+      {/* Modal Nueva Vacante */}
+      {modalVacante && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Briefcase className="h-5 w-5" />
+                {editingVacante ? 'Editar Vacante' : 'Nueva Vacante'}
+              </h2>
+              <button onClick={() => setModalVacante(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 overflow-y-auto">
+              <div>
+                <Label className="text-sm font-medium">Título del Puesto *</Label>
+                <Input
+                  value={formVacante.titulo}
+                  onChange={(e) => setFormVacante({...formVacante, titulo: e.target.value})}
+                  placeholder="Ej: Chef de Partida"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Sucursal *</Label>
+                  <select
+                    value={formVacante.sucursal_id}
+                    onChange={(e) => setFormVacante({...formVacante, sucursal_id: e.target.value})}
+                    className="mt-1 w-full px-3 py-2 border rounded-lg text-sm"
+                  >
+                    <option value="">Seleccionar...</option>
+                    {sucursales.map(s => (
+                      <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Puesto *</Label>
+                  <select
+                    value={formVacante.puesto_id}
+                    onChange={(e) => setFormVacante({...formVacante, puesto_id: e.target.value})}
+                    className="mt-1 w-full px-3 py-2 border rounded-lg text-sm"
+                  >
+                    <option value="">Seleccionar...</option>
+                    {puestos.map(p => (
+                      <option key={p.PuestoID} value={p.PuestoID}>{p.Nombre_Puesto}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Descripción</Label>
+                <textarea
+                  value={formVacante.descripcion}
+                  onChange={(e) => setFormVacante({...formVacante, descripcion: e.target.value})}
+                  className="mt-1 w-full px-3 py-2 border rounded-lg text-sm resize-none"
+                  rows={3}
+                  placeholder="Descripción de las funciones..."
+                />
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Requisitos</Label>
+                <textarea
+                  value={formVacante.requisitos}
+                  onChange={(e) => setFormVacante({...formVacante, requisitos: e.target.value})}
+                  className="mt-1 w-full px-3 py-2 border rounded-lg text-sm resize-none"
+                  rows={2}
+                  placeholder="Experiencia, habilidades..."
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Salario Mínimo</Label>
+                  <Input
+                    type="number"
+                    value={formVacante.salario_min}
+                    onChange={(e) => setFormVacante({...formVacante, salario_min: parseFloat(e.target.value) || 0})}
+                    className="mt-1"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Salario Máximo</Label>
+                  <Input
+                    type="number"
+                    value={formVacante.salario_max}
+                    onChange={(e) => setFormVacante({...formVacante, salario_max: parseFloat(e.target.value) || 0})}
+                    className="mt-1"
+                    min="0"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Tipo de Contrato</Label>
+                <select
+                  value={formVacante.tipo_contrato}
+                  onChange={(e) => setFormVacante({...formVacante, tipo_contrato: e.target.value})}
+                  className="mt-1 w-full px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="Tiempo Completo">Tiempo Completo</option>
+                  <option value="Medio Tiempo">Medio Tiempo</option>
+                  <option value="Temporal">Temporal</option>
+                  <option value="Por Proyecto">Por Proyecto</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end gap-3 bg-zinc-50">
+              <Button variant="outline" onClick={() => setModalVacante(false)}>Cancelar</Button>
+              <Button onClick={handleGuardarVacante} disabled={savingForm} className="bg-zinc-900 text-white">
+                {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                {editingVacante ? 'Actualizar' : 'Publicar'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Nuevo Candidato */}
+      {modalCandidato && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between rounded-t-xl">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Nuevo Candidato
+              </h2>
+              <button onClick={() => setModalCandidato(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Vacante *</Label>
+                <select
+                  value={formCandidato.vacante_id}
+                  onChange={(e) => setFormCandidato({...formCandidato, vacante_id: e.target.value})}
+                  className="mt-1 w-full px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="">Seleccionar vacante...</option>
+                  {vacantes.filter(v => v.Estatus === 'Abierta').map(v => (
+                    <option key={v.VacanteID} value={v.VacanteID}>{v.Titulo} - {v.Nombre_Sucursal}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Nombre Completo *</Label>
+                <Input
+                  value={formCandidato.nombre}
+                  onChange={(e) => setFormCandidato({...formCandidato, nombre: e.target.value})}
+                  placeholder="Nombre del candidato"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Email *</Label>
+                <Input
+                  type="email"
+                  value={formCandidato.email}
+                  onChange={(e) => setFormCandidato({...formCandidato, email: e.target.value})}
+                  placeholder="correo@ejemplo.com"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Teléfono</Label>
+                <Input
+                  value={formCandidato.telefono}
+                  onChange={(e) => setFormCandidato({...formCandidato, telefono: e.target.value})}
+                  placeholder="10 dígitos"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">URL del CV</Label>
+                <Input
+                  value={formCandidato.cv_url}
+                  onChange={(e) => setFormCandidato({...formCandidato, cv_url: e.target.value})}
+                  placeholder="https://drive.google.com/..."
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end gap-3 bg-zinc-50 rounded-b-xl">
+              <Button variant="outline" onClick={() => setModalCandidato(false)}>Cancelar</Button>
+              <Button onClick={handleGuardarCandidato} disabled={savingForm} className="bg-zinc-900 text-white">
+                {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                Registrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Script SQL Reclutamiento */}
+      {modalScriptRecl && scriptRecl && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Script de Inicialización - Reclutamiento
+              </h2>
+              <button onClick={() => setModalScriptRecl(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="font-medium text-blue-800 mb-2">Instrucciones:</p>
+                <ol className="list-decimal list-inside text-sm text-blue-700 space-y-1">
+                  {scriptRecl.instrucciones?.map((inst, i) => (
+                    <li key={i}>{inst}</li>
+                  ))}
+                </ol>
+              </div>
+              
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="font-medium">Script SQL:</Label>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    navigator.clipboard.writeText(scriptRecl.script);
+                    toast.success('Script copiado');
+                  }}>
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copiar
+                  </Button>
+                </div>
+                <pre className="bg-zinc-900 text-green-400 p-4 rounded-lg text-xs overflow-x-auto max-h-[400px] overflow-y-auto font-mono">
+                  {scriptRecl.script}
+                </pre>
+              </div>
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end bg-zinc-50">
+              <Button variant="outline" onClick={() => setModalScriptRecl(false)}>Cerrar</Button>
             </div>
           </div>
         </div>

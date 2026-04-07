@@ -7,11 +7,18 @@ import {
   DollarSign, TrendingUp, TrendingDown, Building2, 
   Plus, RefreshCw, Filter, X, Save, Edit, Trash2,
   ChevronUp, ChevronDown, AlertCircle, FileText, Copy,
-  PieChart, BarChart3, Calendar
+  PieChart, BarChart3, Calendar, Download, Printer
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart as RechartsPie, Pie, Cell, LineChart, Line
+} from 'recharts';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+
+// Colores para gráficos
+const COLORS = ['#10b981', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
 
 export default function Finanzas() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -248,6 +255,7 @@ export default function Finanzas() {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: PieChart },
     { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign },
+    { id: 'reportes', label: 'Reportes', icon: FileText },
   ];
   
   // Format currency
@@ -390,6 +398,112 @@ export default function Finanzas() {
           </Card>
         </div>
         
+        {/* Gráficos */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Gráfico de Barras - Comparativo Presupuesto vs Real */}
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Presupuesto vs Ejecutado por Sucursal
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {porSucursal.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={porSucursal.map(s => ({
+                    name: s.Nombre_Sucursal?.substring(0, 10) || 'N/A',
+                    Presupuesto: (s.Ingresos_Pres || 0) - (s.Egresos_Pres || 0),
+                    Ejecutado: (s.Ingresos || 0) - (s.Egresos || 0)
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                    <Legend />
+                    <Bar dataKey="Presupuesto" fill="#94a3b8" name="Presupuesto" />
+                    <Bar dataKey="Ejecutado" fill="#3b82f6" name="Ejecutado" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[250px] flex items-center justify-center text-zinc-400">
+                  Sin datos para graficar
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Gráfico de Pie - Distribución de Egresos */}
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <PieChart className="h-4 w-4" />
+                Distribución de Egresos por Sucursal
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {porSucursal.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <RechartsPie>
+                    <Pie
+                      data={porSucursal.map(s => ({
+                        name: s.Nombre_Sucursal || 'N/A',
+                        value: s.Egresos || 0
+                      })).filter(d => d.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name.substring(0, 8)} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {porSucursal.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                  </RechartsPie>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[250px] flex items-center justify-center text-zinc-400">
+                  Sin datos para graficar
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Alertas de Sobregiro */}
+        {porSucursal.some(s => (s.Egresos || 0) > (s.Egresos_Pres || 0)) && (
+          <Card className="border-red-200 bg-red-50">
+            <CardHeader className="py-2">
+              <CardTitle className="text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Alertas de Sobregiro
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-1">
+                {porSucursal
+                  .filter(s => (s.Egresos || 0) > (s.Egresos_Pres || 0))
+                  .map((s, i) => {
+                    const exceso = (s.Egresos || 0) - (s.Egresos_Pres || 0);
+                    const porcExceso = s.Egresos_Pres > 0 ? Math.round((exceso / s.Egresos_Pres) * 100) : 0;
+                    return (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <span className="text-red-700">{s.Nombre_Sucursal}</span>
+                        <span className="font-medium text-red-600">
+                          Exceso: {formatCurrency(exceso)} (+{porcExceso}%)
+                        </span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Por Sucursal */}
         <Card>
           <CardHeader className="py-3 bg-zinc-800 text-white rounded-t-lg">
@@ -590,6 +704,158 @@ export default function Finanzas() {
     </div>
   );
   
+  // Render Reportes
+  const renderReportes = () => {
+    const kpis = dashboard?.kpis || {};
+    const porSucursal = dashboard?.por_sucursal || [];
+    
+    // Preparar datos para el reporte
+    const totalIngresos = porSucursal.reduce((acc, s) => acc + (s.Ingresos || 0), 0);
+    const totalEgresos = porSucursal.reduce((acc, s) => acc + (s.Egresos || 0), 0);
+    const totalUtilidad = totalIngresos - totalEgresos;
+    
+    return (
+      <div className="space-y-6">
+        {/* Encabezado del reporte */}
+        <Card className="border-2">
+          <CardHeader className="bg-zinc-800 text-white rounded-t-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Reporte Financiero</CardTitle>
+                <p className="text-zinc-300 text-sm">{meses[filtroMes - 1]} {filtroAnio}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4 mr-1" />
+                  Imprimir
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            {/* Resumen Ejecutivo */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3 border-b pb-2">Resumen Ejecutivo</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <p className="text-xs text-green-600 uppercase">Total Ingresos</p>
+                  <p className="text-xl font-bold text-green-700">{formatCurrency(totalIngresos)}</p>
+                </div>
+                <div className="text-center p-4 bg-red-50 rounded-lg">
+                  <p className="text-xs text-red-600 uppercase">Total Egresos</p>
+                  <p className="text-xl font-bold text-red-700">{formatCurrency(totalEgresos)}</p>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <p className="text-xs text-blue-600 uppercase">Utilidad Neta</p>
+                  <p className={`text-xl font-bold ${totalUtilidad >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+                    {formatCurrency(totalUtilidad)}
+                  </p>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <p className="text-xs text-purple-600 uppercase">Margen</p>
+                  <p className="text-xl font-bold text-purple-700">
+                    {totalIngresos > 0 ? Math.round((totalUtilidad / totalIngresos) * 100) : 0}%
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Gráfico de tendencia */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3 border-b pb-2">Comparativo por Sucursal</h3>
+              {porSucursal.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={porSucursal.map(s => ({
+                    name: s.Nombre_Sucursal || 'N/A',
+                    Ingresos: s.Ingresos || 0,
+                    Egresos: s.Egresos || 0,
+                    Utilidad: (s.Ingresos || 0) - (s.Egresos || 0)
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={80} />
+                    <YAxis tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                    <Legend />
+                    <Bar dataKey="Ingresos" fill="#10b981" />
+                    <Bar dataKey="Egresos" fill="#ef4444" />
+                    <Bar dataKey="Utilidad" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-zinc-400">
+                  Sin datos para el periodo
+                </div>
+              )}
+            </div>
+            
+            {/* Tabla detalle */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3 border-b pb-2">Detalle por Sucursal</h3>
+              <table className="w-full text-sm border">
+                <thead className="bg-zinc-100">
+                  <tr>
+                    <th className="text-left p-2 border">Sucursal</th>
+                    <th className="text-right p-2 border">Ingresos Pres.</th>
+                    <th className="text-right p-2 border">Ingresos Real</th>
+                    <th className="text-right p-2 border">Var %</th>
+                    <th className="text-right p-2 border">Egresos Pres.</th>
+                    <th className="text-right p-2 border">Egresos Real</th>
+                    <th className="text-right p-2 border">Var %</th>
+                    <th className="text-right p-2 border">Utilidad</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {porSucursal.map((s, i) => {
+                    const varIng = s.Ingresos_Pres > 0 ? Math.round(((s.Ingresos - s.Ingresos_Pres) / s.Ingresos_Pres) * 100) : 0;
+                    const varEgr = s.Egresos_Pres > 0 ? Math.round(((s.Egresos - s.Egresos_Pres) / s.Egresos_Pres) * 100) : 0;
+                    const utilidad = (s.Ingresos || 0) - (s.Egresos || 0);
+                    
+                    return (
+                      <tr key={i} className="border-b">
+                        <td className="p-2 border font-medium">{s.Nombre_Sucursal}</td>
+                        <td className="p-2 border text-right">{formatCurrency(s.Ingresos_Pres)}</td>
+                        <td className="p-2 border text-right text-green-600">{formatCurrency(s.Ingresos)}</td>
+                        <td className={`p-2 border text-right ${varIng >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {varIng >= 0 ? '+' : ''}{varIng}%
+                        </td>
+                        <td className="p-2 border text-right">{formatCurrency(s.Egresos_Pres)}</td>
+                        <td className="p-2 border text-right text-red-600">{formatCurrency(s.Egresos)}</td>
+                        <td className={`p-2 border text-right ${varEgr <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {varEgr >= 0 ? '+' : ''}{varEgr}%
+                        </td>
+                        <td className={`p-2 border text-right font-bold ${utilidad >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                          {formatCurrency(utilidad)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {/* Totales */}
+                  <tr className="bg-zinc-100 font-bold">
+                    <td className="p-2 border">TOTALES</td>
+                    <td className="p-2 border text-right">{formatCurrency(porSucursal.reduce((a, s) => a + (s.Ingresos_Pres || 0), 0))}</td>
+                    <td className="p-2 border text-right text-green-600">{formatCurrency(totalIngresos)}</td>
+                    <td className="p-2 border"></td>
+                    <td className="p-2 border text-right">{formatCurrency(porSucursal.reduce((a, s) => a + (s.Egresos_Pres || 0), 0))}</td>
+                    <td className="p-2 border text-right text-red-600">{formatCurrency(totalEgresos)}</td>
+                    <td className="p-2 border"></td>
+                    <td className={`p-2 border text-right ${totalUtilidad >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      {formatCurrency(totalUtilidad)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            {/* Pie de página */}
+            <div className="mt-6 pt-4 border-t text-xs text-zinc-400 text-center">
+              Reporte generado el {new Date().toLocaleString('es-MX')} | EDARSA HUB - Control Presupuestal
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+  
   return (
     <div className="p-6" data-testid="finanzas-page">
       {/* Header */}
@@ -631,6 +897,7 @@ export default function Finanzas() {
         <>
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'presupuestos' && renderPresupuestos()}
+          {activeTab === 'reportes' && renderReportes()}
         </>
       )}
       

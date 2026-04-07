@@ -13750,6 +13750,415 @@ PRINT '=== Script de inicialización completado ===';
     }
 
 
+# ============================================================================
+# ========================= MÓDULO DE RECLUTAMIENTO ==========================
+# ============================================================================
+
+@api_router.get("/rrhh/vacantes")
+async def rrhh_listar_vacantes(
+    sucursal_id: Optional[int] = None,
+    estatus: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista vacantes disponibles"""
+    
+    conditions = ["1=1"]
+    if sucursal_id:
+        conditions.append(f"v.SucursalID = {sucursal_id}")
+    if estatus:
+        conditions.append(f"v.Estatus = '{estatus}'")
+    
+    where_clause = " AND ".join(conditions)
+    
+    query = f"""
+        SELECT 
+            v.VacanteID,
+            v.SucursalID,
+            s.Nombre_Sucursal,
+            v.PuestoID,
+            p.Nombre_Puesto,
+            p.Departamento,
+            v.Titulo,
+            v.Descripcion,
+            v.Requisitos,
+            v.Salario_Min,
+            v.Salario_Max,
+            v.Tipo_Contrato,
+            v.Estatus,
+            v.Fecha_Publicacion,
+            v.Fecha_Cierre,
+            v.Creado_Por,
+            (SELECT COUNT(*) FROM RH_Candidatos c WHERE c.VacanteID = v.VacanteID) as Total_Candidatos
+        FROM RH_Vacantes v
+        LEFT JOIN RH_Cat_Sucursales s ON v.SucursalID = s.SucursalID
+        LEFT JOIN RH_Cat_Puestos p ON v.PuestoID = p.PuestoID
+        WHERE {where_clause}
+        ORDER BY v.Fecha_Publicacion DESC
+    """
+    
+    try:
+        result = await execute_edarsa_hub_query(query)
+        return {
+            "vacantes": result.get('datos', []),
+            "total": result.get('registros', 0)
+        }
+    except:
+        return {"vacantes": [], "total": 0, "nota": "Tablas no disponibles"}
+
+
+@api_router.post("/rrhh/vacantes")
+async def rrhh_crear_vacante(
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea una nueva vacante"""
+    
+    sucursal_id = body.get('sucursal_id')
+    puesto_id = body.get('puesto_id')
+    titulo = body.get('titulo', '').strip()
+    descripcion = body.get('descripcion', '').strip()
+    requisitos = body.get('requisitos', '').strip()
+    salario_min = body.get('salario_min', 0)
+    salario_max = body.get('salario_max', 0)
+    tipo_contrato = body.get('tipo_contrato', 'Tiempo Completo')
+    
+    if not sucursal_id or not puesto_id or not titulo:
+        raise HTTPException(status_code=400, detail="Sucursal, puesto y título son requeridos")
+    
+    query = f"""
+        INSERT INTO RH_Vacantes 
+        (SucursalID, PuestoID, Titulo, Descripcion, Requisitos, Salario_Min, Salario_Max, Tipo_Contrato, Estatus, Fecha_Publicacion, Creado_Por)
+        VALUES 
+        ({sucursal_id}, {puesto_id}, '{titulo}', '{descripcion}', '{requisitos}', {salario_min}, {salario_max}, '{tipo_contrato}', 'Abierta', GETDATE(), '{current_user.get("email", "")}')
+    """
+    
+    await execute_edarsa_hub_query(query)
+    
+    return {"success": True, "message": "Vacante creada"}
+
+
+@api_router.put("/rrhh/vacantes/{vacante_id}")
+async def rrhh_actualizar_vacante(
+    vacante_id: int,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza una vacante"""
+    
+    updates = []
+    
+    if 'titulo' in body:
+        updates.append(f"Titulo = '{body['titulo']}'")
+    if 'descripcion' in body:
+        updates.append(f"Descripcion = '{body['descripcion']}'")
+    if 'requisitos' in body:
+        updates.append(f"Requisitos = '{body['requisitos']}'")
+    if 'salario_min' in body:
+        updates.append(f"Salario_Min = {body['salario_min']}")
+    if 'salario_max' in body:
+        updates.append(f"Salario_Max = {body['salario_max']}")
+    if 'estatus' in body:
+        updates.append(f"Estatus = '{body['estatus']}'")
+        if body['estatus'] == 'Cerrada':
+            updates.append("Fecha_Cierre = GETDATE()")
+    
+    if not updates:
+        raise HTTPException(status_code=400, detail="No hay campos para actualizar")
+    
+    query = f"""
+        UPDATE RH_Vacantes
+        SET {', '.join(updates)}
+        WHERE VacanteID = {vacante_id}
+    """
+    
+    await execute_edarsa_hub_query(query)
+    
+    return {"success": True, "message": "Vacante actualizada"}
+
+
+@api_router.delete("/rrhh/vacantes/{vacante_id}")
+async def rrhh_eliminar_vacante(
+    vacante_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina una vacante"""
+    
+    # Primero eliminar candidatos asociados
+    await execute_edarsa_hub_query(f"DELETE FROM RH_Candidatos WHERE VacanteID = {vacante_id}")
+    await execute_edarsa_hub_query(f"DELETE FROM RH_Vacantes WHERE VacanteID = {vacante_id}")
+    
+    return {"success": True, "message": "Vacante eliminada"}
+
+
+@api_router.get("/rrhh/candidatos")
+async def rrhh_listar_candidatos(
+    vacante_id: Optional[int] = None,
+    estatus: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista candidatos"""
+    
+    conditions = ["1=1"]
+    if vacante_id:
+        conditions.append(f"c.VacanteID = {vacante_id}")
+    if estatus:
+        conditions.append(f"c.Estatus = '{estatus}'")
+    
+    where_clause = " AND ".join(conditions)
+    
+    query = f"""
+        SELECT 
+            c.CandidatoID,
+            c.VacanteID,
+            v.Titulo as Vacante_Titulo,
+            s.Nombre_Sucursal,
+            c.Nombre_Completo,
+            c.Email,
+            c.Telefono,
+            c.CV_URL,
+            c.Estatus,
+            c.Puntuacion,
+            c.Notas,
+            c.Fecha_Aplicacion,
+            c.Fecha_Entrevista,
+            c.Entrevistador
+        FROM RH_Candidatos c
+        LEFT JOIN RH_Vacantes v ON c.VacanteID = v.VacanteID
+        LEFT JOIN RH_Cat_Sucursales s ON v.SucursalID = s.SucursalID
+        WHERE {where_clause}
+        ORDER BY c.Fecha_Aplicacion DESC
+    """
+    
+    try:
+        result = await execute_edarsa_hub_query(query)
+        return {
+            "candidatos": result.get('datos', []),
+            "total": result.get('registros', 0)
+        }
+    except:
+        return {"candidatos": [], "total": 0, "nota": "Tablas no disponibles"}
+
+
+@api_router.post("/rrhh/candidatos")
+async def rrhh_crear_candidato(
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Registra un nuevo candidato"""
+    
+    vacante_id = body.get('vacante_id')
+    nombre = body.get('nombre', '').strip()
+    email = body.get('email', '').strip()
+    telefono = body.get('telefono', '').strip()
+    cv_url = body.get('cv_url', '').strip()
+    
+    if not vacante_id or not nombre or not email:
+        raise HTTPException(status_code=400, detail="Vacante, nombre y email son requeridos")
+    
+    query = f"""
+        INSERT INTO RH_Candidatos 
+        (VacanteID, Nombre_Completo, Email, Telefono, CV_URL, Estatus, Fecha_Aplicacion)
+        VALUES 
+        ({vacante_id}, '{nombre}', '{email}', '{telefono}', '{cv_url}', 'Recibido', GETDATE())
+    """
+    
+    await execute_edarsa_hub_query(query)
+    
+    return {"success": True, "message": "Candidato registrado"}
+
+
+@api_router.put("/rrhh/candidatos/{candidato_id}")
+async def rrhh_actualizar_candidato(
+    candidato_id: int,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza el estatus de un candidato"""
+    
+    updates = []
+    
+    if 'estatus' in body:
+        updates.append(f"Estatus = '{body['estatus']}'")
+    if 'puntuacion' in body:
+        updates.append(f"Puntuacion = {body['puntuacion']}")
+    if 'notas' in body:
+        updates.append(f"Notas = '{body['notas']}'")
+    if 'fecha_entrevista' in body:
+        updates.append(f"Fecha_Entrevista = '{body['fecha_entrevista']}'")
+    if 'entrevistador' in body:
+        updates.append(f"Entrevistador = '{body['entrevistador']}'")
+    
+    if not updates:
+        raise HTTPException(status_code=400, detail="No hay campos para actualizar")
+    
+    query = f"""
+        UPDATE RH_Candidatos
+        SET {', '.join(updates)}
+        WHERE CandidatoID = {candidato_id}
+    """
+    
+    await execute_edarsa_hub_query(query)
+    
+    return {"success": True, "message": "Candidato actualizado"}
+
+
+@api_router.delete("/rrhh/candidatos/{candidato_id}")
+async def rrhh_eliminar_candidato(
+    candidato_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina un candidato"""
+    
+    await execute_edarsa_hub_query(f"DELETE FROM RH_Candidatos WHERE CandidatoID = {candidato_id}")
+    
+    return {"success": True, "message": "Candidato eliminado"}
+
+
+@api_router.get("/rrhh/reclutamiento/dashboard")
+async def rrhh_reclutamiento_dashboard(
+    current_user: Dict = Depends(get_current_user)
+):
+    """Dashboard de reclutamiento con métricas"""
+    
+    try:
+        # Vacantes por estatus
+        query_vacantes = """
+            SELECT 
+                Estatus,
+                COUNT(*) as cantidad
+            FROM RH_Vacantes
+            GROUP BY Estatus
+        """
+        
+        # Candidatos por estatus
+        query_candidatos = """
+            SELECT 
+                Estatus,
+                COUNT(*) as cantidad
+            FROM RH_Candidatos
+            GROUP BY Estatus
+        """
+        
+        # Candidatos por vacante (top 5)
+        query_top = """
+            SELECT TOP 5
+                v.Titulo,
+                COUNT(c.CandidatoID) as Total_Candidatos
+            FROM RH_Vacantes v
+            LEFT JOIN RH_Candidatos c ON v.VacanteID = c.VacanteID
+            WHERE v.Estatus = 'Abierta'
+            GROUP BY v.VacanteID, v.Titulo
+            ORDER BY Total_Candidatos DESC
+        """
+        
+        result_vac = await execute_edarsa_hub_query(query_vacantes)
+        result_cand = await execute_edarsa_hub_query(query_candidatos)
+        result_top = await execute_edarsa_hub_query(query_top)
+        
+        return {
+            "vacantes_por_estatus": result_vac.get('datos', []),
+            "candidatos_por_estatus": result_cand.get('datos', []),
+            "top_vacantes": result_top.get('datos', [])
+        }
+    except:
+        return {
+            "vacantes_por_estatus": [],
+            "candidatos_por_estatus": [],
+            "top_vacantes": [],
+            "nota": "Tablas no disponibles"
+        }
+
+
+@api_router.get("/rrhh/reclutamiento/script-inicializacion")
+async def rrhh_reclutamiento_script(
+    current_user: Dict = Depends(get_current_user)
+):
+    """Retorna el script SQL para crear las tablas de reclutamiento"""
+    
+    script = """
+-- ============================================
+-- SCRIPT DE INICIALIZACIÓN - MÓDULO RECLUTAMIENTO
+-- Ejecutar en la base de datos EDARSA HUB
+-- ============================================
+
+-- Tabla de Vacantes
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='RH_Vacantes' AND xtype='U')
+BEGIN
+    CREATE TABLE RH_Vacantes (
+        VacanteID INT IDENTITY(1,1) PRIMARY KEY,
+        SucursalID INT NOT NULL,
+        PuestoID INT NOT NULL,
+        Titulo NVARCHAR(200) NOT NULL,
+        Descripcion NVARCHAR(MAX),
+        Requisitos NVARCHAR(MAX),
+        Salario_Min DECIMAL(18,2) DEFAULT 0,
+        Salario_Max DECIMAL(18,2) DEFAULT 0,
+        Tipo_Contrato NVARCHAR(50) DEFAULT 'Tiempo Completo',
+        Estatus NVARCHAR(20) DEFAULT 'Abierta' CHECK (Estatus IN ('Abierta', 'En Proceso', 'Cerrada', 'Cancelada')),
+        Fecha_Publicacion DATETIME DEFAULT GETDATE(),
+        Fecha_Cierre DATETIME,
+        Creado_Por NVARCHAR(100),
+        
+        CONSTRAINT FK_Vacante_Sucursal FOREIGN KEY (SucursalID) 
+            REFERENCES RH_Cat_Sucursales(SucursalID),
+        CONSTRAINT FK_Vacante_Puesto FOREIGN KEY (PuestoID) 
+            REFERENCES RH_Cat_Puestos(PuestoID)
+    );
+    
+    CREATE INDEX IX_Vacantes_Estatus ON RH_Vacantes(Estatus);
+    CREATE INDEX IX_Vacantes_Sucursal ON RH_Vacantes(SucursalID);
+    
+    PRINT 'Tabla RH_Vacantes creada exitosamente';
+END
+ELSE
+    PRINT 'Tabla RH_Vacantes ya existe';
+GO
+
+-- Tabla de Candidatos
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='RH_Candidatos' AND xtype='U')
+BEGIN
+    CREATE TABLE RH_Candidatos (
+        CandidatoID INT IDENTITY(1,1) PRIMARY KEY,
+        VacanteID INT NOT NULL,
+        Nombre_Completo NVARCHAR(200) NOT NULL,
+        Email NVARCHAR(100) NOT NULL,
+        Telefono NVARCHAR(20),
+        CV_URL NVARCHAR(500),
+        Estatus NVARCHAR(30) DEFAULT 'Recibido' CHECK (Estatus IN ('Recibido', 'En Revision', 'Entrevista Programada', 'Entrevistado', 'Seleccionado', 'Rechazado', 'Contratado')),
+        Puntuacion INT CHECK (Puntuacion BETWEEN 0 AND 100),
+        Notas NVARCHAR(MAX),
+        Fecha_Aplicacion DATETIME DEFAULT GETDATE(),
+        Fecha_Entrevista DATETIME,
+        Entrevistador NVARCHAR(100),
+        
+        CONSTRAINT FK_Candidato_Vacante FOREIGN KEY (VacanteID) 
+            REFERENCES RH_Vacantes(VacanteID)
+    );
+    
+    CREATE INDEX IX_Candidatos_Vacante ON RH_Candidatos(VacanteID);
+    CREATE INDEX IX_Candidatos_Estatus ON RH_Candidatos(Estatus);
+    
+    PRINT 'Tabla RH_Candidatos creada exitosamente';
+END
+ELSE
+    PRINT 'Tabla RH_Candidatos ya existe';
+GO
+
+PRINT '=== Script de reclutamiento completado ===';
+"""
+    
+    return {
+        "script": script,
+        "instrucciones": [
+            "1. Copia el script SQL",
+            "2. Ve a 'Explorador BD' en el menú lateral",
+            "3. Selecciona el servidor EDARSA HUB",
+            "4. Pega y ejecuta el script con credenciales de administrador",
+            "5. Regresa a Recursos Humanos > Reclutamiento"
+        ]
+    }
+
+
 @api_router.get("/explorador/buscar/{server_id}")
 async def buscar_en_bd(
     server_id: str,

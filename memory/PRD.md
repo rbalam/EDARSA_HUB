@@ -295,3 +295,35 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 - **Estructura SQL** (Tabla `Finanzas_Presupuestos`):
   - PresupuestoID, SucursalID, Categoria, SubCategoria, Tipo, Monto_Presupuestado, Monto_Ejecutado, Anio, Mes, Notas
 - **Nota**: Las tablas deben crearse ejecutando el script SQL en EDARSA HUB via "Explorador BD"
+
+### April 7, 2026 - Fase 4 Finanzas: Gráficos y Reportes Avanzados
+- **Implementado**: Dashboard con gráficos interactivos y pestaña de Reportes
+- **Gráficos agregados** (`/app/frontend/src/pages/Finanzas.js`):
+  - Gráfico de Barras: "Presupuesto vs Ejecutado por Sucursal" (Recharts BarChart)
+  - Gráfico de Pie: "Distribución de Egresos por Sucursal" (Recharts PieChart)
+  - Alertas de Sobregiro: Notificación cuando egresos > presupuesto
+- **Pestaña Reportes**:
+  - Reporte Financiero con encabezado y botón "Imprimir"
+  - Resumen Ejecutivo: Total Ingresos, Total Egresos, Utilidad Neta, Margen
+  - Comparativo por Sucursal con gráfico de barras (Ingresos, Egresos, Utilidad)
+  - Detalle por Sucursal: Tabla con variaciones porcentuales
+  - Pie de página con fecha de generación
+
+### April 7, 2026 - Fase 5 RRHH: Módulo de Reclutamiento (Vacantes y Candidatos)
+- **Backend** (`/app/backend/server.py`):
+  - `GET/POST/PUT/DELETE /api/rrhh/vacantes`: CRUD de vacantes
+  - `GET/POST/PUT/DELETE /api/rrhh/candidatos`: CRUD de candidatos
+  - `GET /api/rrhh/reclutamiento/dashboard`: Métricas de reclutamiento
+  - `GET /api/rrhh/reclutamiento/script-inicializacion`: Script SQL para crear tablas
+- **Frontend** (`/app/frontend/src/pages/RecursosHumanos.js`):
+  - Nueva pestaña **"Reclutamiento"**
+  - KPIs: Vacantes Abiertas, Total Candidatos, Pendientes Revisión, Contratados
+  - Lista de Vacantes con indicador de candidatos
+  - Tabla de Candidatos con cambio de estatus en línea (dropdown)
+  - **Modal Nueva Vacante**: Título, Sucursal, Puesto, Descripción, Requisitos, Salarios, Tipo Contrato
+  - **Modal Nuevo Candidato**: Vacante, Nombre, Email, Teléfono, URL del CV
+  - **Modal Script SQL**: Con instrucciones y botón copiar
+- **Estructura SQL** (Tablas `RH_Vacantes` y `RH_Candidatos`):
+  - RH_Vacantes: VacanteID, SucursalID, PuestoID, Titulo, Descripcion, Requisitos, Salario_Min, Salario_Max, Tipo_Contrato, Estatus, Fechas
+  - RH_Candidatos: CandidatoID, VacanteID, Nombre_Completo, Email, Telefono, CV_URL, Estatus, Puntuacion, Notas, Fecha_Entrevista
+- **Estatus de Candidato**: Recibido, En Revision, Entrevista Programada, Entrevistado, Seleccionado, Rechazado, Contratado
