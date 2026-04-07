@@ -235,3 +235,15 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - Tabla de Insumos Pendientes: `bg-blue-800` → `bg-zinc-800`, `bg-blue-700` → `bg-zinc-700`
   - Hover de filas: `hover:bg-blue-50` → `hover:bg-zinc-50`
 - **Nota**: Los botones de acción (Guardar Informe, Generar Informe) permanecen en azul según preferencia del usuario
+
+### April 7, 2026 - Tabla Insumos Pendientes en Dashboard de Inventarios
+- **Problema**: La tabla de "Insumos Pendientes a Descargar" no aparecía en el Dashboard de Inventarios
+- **Solución**: Integrada la tabla directamente en el componente `Dashboard.js`
+- **Funcionalidad**:
+  - Se carga automáticamente al seleccionar un servidor SoftRestaurant
+  - KPIs: Total Insumos, Cantidad Total, Valor Total
+  - Filtros por Almacén (Todos, 100, 200, etc.)
+  - Tabla completa con: No, ALM, GRUPO, CODIGO, INSUMO, CANTIDAD, UM, COSTO, TOTAL, 80-20
+  - Items con Pareto ≤80% resaltados en amarillo
+  - Fila de totales sticky al final
+- **Pendiente**: Implementar misma funcionalidad para MPRO (usuario proporcionará query SQL)
