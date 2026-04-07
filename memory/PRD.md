@@ -420,3 +420,51 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   5. Se notifica al solicitante del resultado
 - **MongoDB Collections**: solicitudes_catalogos, tareas_sistema, permisos_catalogos
 - **Testing**: 100% backend (20/20 tests), 100% frontend validado
+
+### April 7, 2026 - Módulo de Gestión de Nóminas
+- **Implementado**: Sistema completo de ciclo de nóminas con flujo de trabajo de 7 etapas
+- **Nueva página** (`/app/frontend/src/pages/Nominas.js`):
+  - **Vista Kanban**: 7 columnas representando cada etapa del flujo
+    - Headcount (Gerencia) → Incidencias (Gerencia) → Validación RH → Maquilador → Autorización (Gerencia) → Tesorería → Pagada
+  - **Vista Lista**: Tabla con historial y acciones por ciclo
+  - **Vista Configuración** (Solo Admin): 
+    - Día de corte de nómina (default: Domingo)
+    - Día de pago (default: Lunes)
+    - Horarios límite: Headcount 10:00 AM, Maquilador 12:00 PM, Tesorería 2:00 PM
+    - Diagrama visual del flujo de nómina
+  - **Tarjetas de ciclo**: Muestran sucursal, tipo, fecha corte, deadline, colaboradores, movimientos
+  - **Indicadores de tiempo**: Verde (en tiempo), Amarillo (próximo a vencer), Rojo (vencido)
+  - **Modal "Nuevo Ciclo"**: Sucursal, Fecha de Corte, Tipo de Nómina, Notas
+  - **Modal "Autorizar Avance"**: Requiere firma (contraseña), permite devolver para corrección
+  - **Modal "Historial de Trazabilidad"**: Timeline visual con todos los eventos del ciclo
+  - **Modal "Movimientos"**: Lista de incidencias/percepciones del ciclo
+- **Backend** (`/app/backend/server.py`):
+  - `GET /api/nomina/ciclos`: Lista ciclos con filtros (sucursal, periodo)
+  - `GET /api/nomina/ciclos/{id}`: Detalle de ciclo con historial
+  - `POST /api/nomina/ciclos`: Crear nuevo ciclo (Supervisor+)
+  - `POST /api/nomina/ciclos/{id}/avanzar`: Avanzar etapa con firma de contraseña
+  - `POST /api/nomina/ciclos/{id}/rechazar`: Devolver a etapa Validación RH con motivo
+  - `GET /api/nomina/ciclos/{id}/movimientos`: Listar movimientos del ciclo
+  - `POST /api/nomina/ciclos/{id}/movimientos`: Agregar movimiento (incidencia)
+  - `DELETE /api/nomina/movimientos/{id}`: Eliminar movimiento
+  - `GET /api/nomina/configuracion`: Obtener configuración de tiempos
+  - `POST /api/nomina/configuracion`: Guardar configuración (Solo Admin)
+  - `GET /api/nomina/kpis`: Listar KPIs por puesto
+  - `POST /api/nomina/kpis`: Crear/actualizar KPIs por puesto (Solo Admin)
+  - `GET /api/nomina/script-tablas`: Script SQL opcional para tablas auxiliares
+- **Flujo de Nómina** (7 etapas):
+  1. **Headcount** (Gerencia): RH actualiza plantilla de empleados
+  2. **Incidencias** (Gerencia): Gerencia captura bonos, faltas, deducciones
+  3. **Validación RH**: RH valida los movimientos
+  4. **Maquilador**: Procesa y calcula la nómina (interno o externo)
+  5. **Autorización** (Gerencia): Gerencia autoriza o rechaza
+  6. **Tesorería**: Prepara dispersión de pago
+  7. **Pagada**: Nómina completada
+- **Trazabilidad**: Cada ciclo guarda historial con tipo de evento, descripción, usuario, timestamp, comentarios
+- **Permisos por Rol**:
+  - Gerencia (Administrador/Supervisor): Headcount, Incidencias, Autorización
+  - RH (Administrador/Supervisor): Validación
+  - Maquilador: Procesamiento
+  - Tesorería: Pago
+- **MongoDB Collections**: nomina_ciclos, nomina_movimientos, nomina_configuracion, nomina_kpis_puestos
+- **Testing**: 94% backend (16/17 tests), 100% frontend validado
