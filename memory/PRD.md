@@ -261,6 +261,13 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - Información completa del expediente
   - Últimas incidencias
   - Últimas asistencias
+- **Modal Importar Excel** (NUEVO):
+  - Instrucciones de formato (RFC/ID, Tipo, Fecha, Monto, Unidades)
+  - Botón "Descargar Plantilla" genera Excel con formato y ejemplos
+  - Selector de archivo con validación .xlsx/.xls
+  - Procesamiento de filas con mapeo RFC → ColaboradorID
+  - Reporte de importación con errores detallados
+  - Endpoints: `/api/rrhh/incidencias/importar-excel`, `/api/rrhh/incidencias/plantilla-excel`
 - **Acciones en tabla de colaboradores**:
   - Ver detalle (ojo azul)
   - Editar (lápiz amarillo)

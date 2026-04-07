@@ -12392,6 +12392,186 @@ async def rrhh_crear_incidencia(
     }
 
 
+@api_router.post("/rrhh/incidencias/importar-excel")
+async def rrhh_importar_incidencias_excel(
+    file: UploadFile = File(...),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Importa incidencias de nómina desde un archivo Excel.
+    
+    Formato esperado del Excel:
+    - Columna A: RFC o ColaboradorID
+    - Columna B: Tipo de Incidencia (Falta, Retardo, Bono, Descuento, Horas Extra, Vacaciones, Incapacidad, Permiso, Comision, Otro)
+    - Columna C: Fecha (YYYY-MM-DD o DD/MM/YYYY)
+    - Columna D: Monto (opcional)
+    - Columna E: Unidades (opcional)
+    """
+    import openpyxl
+    from io import BytesIO
+    from datetime import datetime
+    
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Solo se aceptan archivos Excel (.xlsx, .xls)")
+    
+    try:
+        contents = await file.read()
+        wb = openpyxl.load_workbook(BytesIO(contents))
+        ws = wb.active
+        
+        # Obtener mapeo de RFC -> ColaboradorID
+        query_colaboradores = """
+            SELECT ColaboradorID, RFC, Nombre_Completo 
+            FROM RH_Colaboradores_Expediente 
+            WHERE Colaborador_Activo = 1
+        """
+        result_col = await execute_edarsa_hub_query(query_colaboradores)
+        colaboradores_map = {}
+        for c in result_col.get("datos", []):
+            if c.get("RFC"):
+                colaboradores_map[c["RFC"].strip().upper()] = c["ColaboradorID"]
+            colaboradores_map[str(c["ColaboradorID"])] = c["ColaboradorID"]
+        
+        tipos_validos = ['Falta', 'Retardo', 'Bono', 'Descuento', 'Horas Extra', 
+                        'Vacaciones', 'Incapacidad', 'Permiso', 'Comision', 'Otro']
+        
+        registros_importados = 0
+        errores = []
+        
+        # Leer filas (empezando en la 2 para saltar encabezado)
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            if not row or not row[0]:  # Fila vacía
+                continue
+            
+            try:
+                # Columna A: RFC o ID
+                identificador = str(row[0]).strip().upper()
+                colaborador_id = colaboradores_map.get(identificador)
+                
+                if not colaborador_id:
+                    errores.append(f"Fila {row_idx}: Colaborador '{row[0]}' no encontrado")
+                    continue
+                
+                # Columna B: Tipo
+                tipo = str(row[1]).strip() if row[1] else None
+                if not tipo or tipo not in tipos_validos:
+                    errores.append(f"Fila {row_idx}: Tipo de incidencia inválido '{tipo}'")
+                    continue
+                
+                # Columna C: Fecha
+                fecha_raw = row[2]
+                if isinstance(fecha_raw, datetime):
+                    fecha = fecha_raw.strftime('%Y-%m-%d')
+                elif fecha_raw:
+                    # Intentar parsear diferentes formatos
+                    fecha_str = str(fecha_raw).strip()
+                    try:
+                        if '/' in fecha_str:
+                            fecha = datetime.strptime(fecha_str, '%d/%m/%Y').strftime('%Y-%m-%d')
+                        else:
+                            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').strftime('%Y-%m-%d')
+                    except:
+                        errores.append(f"Fila {row_idx}: Formato de fecha inválido '{fecha_raw}'")
+                        continue
+                else:
+                    errores.append(f"Fila {row_idx}: Fecha requerida")
+                    continue
+                
+                # Columna D: Monto (opcional)
+                monto = float(row[3]) if row[3] and len(row) > 3 else 0
+                
+                # Columna E: Unidades (opcional)
+                unidades = float(row[4]) if len(row) > 4 and row[4] else 0
+                
+                # Insertar incidencia
+                query_insert = f"""
+                    INSERT INTO RH_Incidencias_Nomina 
+                    (ColaboradorID, Tipo_Incidencia, Monto, Unidades, Fecha_Incidencia, Fecha_Registro)
+                    VALUES 
+                    ({colaborador_id}, '{tipo}', {monto}, {unidades}, '{fecha}', GETDATE())
+                """
+                await execute_edarsa_hub_query(query_insert)
+                registros_importados += 1
+                
+            except Exception as e:
+                errores.append(f"Fila {row_idx}: Error - {str(e)}")
+        
+        return {
+            "success": True,
+            "registros_importados": registros_importados,
+            "errores": errores[:20],  # Limitar a 20 errores
+            "total_errores": len(errores)
+        }
+        
+    except Exception as e:
+        logging.error(f"Error importando Excel: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error procesando archivo: {str(e)}")
+
+
+@api_router.get("/rrhh/incidencias/plantilla-excel")
+async def rrhh_descargar_plantilla_excel(
+    current_user: Dict = Depends(get_current_user)
+):
+    """Genera y descarga una plantilla Excel para importar incidencias"""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from io import BytesIO
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Incidencias"
+    
+    # Encabezados
+    headers = ["RFC/ID Colaborador", "Tipo Incidencia", "Fecha (DD/MM/YYYY)", "Monto", "Unidades"]
+    header_fill = PatternFill(start_color="1F2937", end_color="1F2937", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center")
+    
+    # Ejemplos
+    ejemplos = [
+        ["XAXX010101000", "Falta", "01/04/2026", 0, 1],
+        ["XAXX010101001", "Bono", "01/04/2026", 500, 0],
+        ["XAXX010101002", "Horas Extra", "01/04/2026", 150, 2],
+    ]
+    
+    for row_idx, ejemplo in enumerate(ejemplos, 2):
+        for col_idx, value in enumerate(ejemplo, 1):
+            ws.cell(row=row_idx, column=col_idx, value=value)
+    
+    # Ajustar anchos
+    ws.column_dimensions['A'].width = 20
+    ws.column_dimensions['B'].width = 18
+    ws.column_dimensions['C'].width = 18
+    ws.column_dimensions['D'].width = 12
+    ws.column_dimensions['E'].width = 12
+    
+    # Hoja de tipos válidos
+    ws2 = wb.create_sheet(title="Tipos Válidos")
+    ws2.cell(row=1, column=1, value="Tipos de Incidencia Válidos")
+    ws2.cell(row=1, column=1).font = Font(bold=True)
+    
+    tipos = ['Falta', 'Retardo', 'Bono', 'Descuento', 'Horas Extra', 
+             'Vacaciones', 'Incapacidad', 'Permiso', 'Comision', 'Otro']
+    for i, tipo in enumerate(tipos, 2):
+        ws2.cell(row=i, column=1, value=tipo)
+    
+    # Guardar en memoria
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=plantilla_incidencias.xlsx"}
+    )
+
+
 # ------------ ASISTENCIA (RELOJ CHECADOR) ------------
 
 @api_router.get("/rrhh/asistencia")

@@ -41,6 +41,11 @@ export default function RecursosHumanos() {
   const [loadingDetalle, setLoadingDetalle] = useState(false);
   const [savingForm, setSavingForm] = useState(false);
   
+  // Estados para importar Excel
+  const [importFile, setImportFile] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  
   // Form states
   const [formColaborador, setFormColaborador] = useState({
     nombre_completo: '',
@@ -312,6 +317,86 @@ export default function RecursosHumanos() {
     'Falta', 'Retardo', 'Bono', 'Descuento', 'Horas Extra', 
     'Vacaciones', 'Incapacidad', 'Permiso', 'Comision', 'Otro'
   ];
+
+  // ===================== FUNCIONES IMPORTAR EXCEL =====================
+  
+  // Abrir modal importar Excel
+  const handleAbrirImportExcel = () => {
+    setImportFile(null);
+    setImportResult(null);
+    setModalImportExcel(true);
+  };
+  
+  // Descargar plantilla Excel
+  const handleDescargarPlantilla = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/rrhh/incidencias/plantilla-excel`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) throw new Error('Error al descargar');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'plantilla_incidencias.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Plantilla descargada');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al descargar plantilla');
+    }
+  };
+  
+  // Importar archivo Excel
+  const handleImportarExcel = async () => {
+    if (!importFile) {
+      toast.error('Selecciona un archivo Excel');
+      return;
+    }
+    
+    setImportLoading(true);
+    setImportResult(null);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+      
+      const response = await fetch(`${API_URL}/api/rrhh/incidencias/importar-excel`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.detail || 'Error al importar');
+      }
+      
+      setImportResult(data);
+      
+      if (data.registros_importados > 0) {
+        toast.success(`${data.registros_importados} incidencias importadas`);
+        loadIncidencias();
+      }
+      
+      if (data.total_errores > 0) {
+        toast.warning(`${data.total_errores} errores encontrados`);
+      }
+      
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error(error.message || 'Error al importar archivo');
+    } finally {
+      setImportLoading(false);
+    }
+  };
 
   // ===================== FIN FUNCIONES CRUD =====================
 
@@ -610,7 +695,7 @@ export default function RecursosHumanos() {
   // Render Incidencias
   const renderIncidencias = () => (
     <div className="space-y-4">
-      <div className="flex justify-between">
+      <div className="flex flex-wrap gap-3 justify-between">
         <select
           value={filtroSucursal}
           onChange={(e) => setFiltroSucursal(e.target.value)}
@@ -621,10 +706,16 @@ export default function RecursosHumanos() {
             <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
           ))}
         </select>
-        <Button size="sm" className="bg-zinc-900 text-white" onClick={() => handleNuevaIncidencia()}>
-          <Plus className="h-4 w-4 mr-1" />
-          Nueva Incidencia
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleAbrirImportExcel}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" />
+            Importar Excel
+          </Button>
+          <Button size="sm" className="bg-zinc-900 text-white" onClick={() => handleNuevaIncidencia()}>
+            <Plus className="h-4 w-4 mr-1" />
+            Nueva Incidencia
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -1176,6 +1267,118 @@ export default function RecursosHumanos() {
               <Button variant="outline" onClick={() => setModalDetalle(false)}>
                 Cerrar
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Importar Excel */}
+      {modalImportExcel && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between rounded-t-xl">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <FileSpreadsheet className="h-5 w-5" />
+                Importar Incidencias desde Excel
+              </h2>
+              <button onClick={() => setModalImportExcel(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {/* Instrucciones */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+                <p className="font-medium text-blue-800 mb-2">Formato del archivo Excel:</p>
+                <ul className="list-disc list-inside text-blue-700 space-y-1">
+                  <li><strong>Columna A:</strong> RFC o ID del Colaborador</li>
+                  <li><strong>Columna B:</strong> Tipo de Incidencia</li>
+                  <li><strong>Columna C:</strong> Fecha (DD/MM/YYYY)</li>
+                  <li><strong>Columna D:</strong> Monto (opcional)</li>
+                  <li><strong>Columna E:</strong> Unidades (opcional)</li>
+                </ul>
+              </div>
+              
+              {/* Descargar plantilla */}
+              <div className="flex items-center justify-between py-3 border-b">
+                <span className="text-sm text-zinc-600">¿No tienes el formato?</span>
+                <Button variant="outline" size="sm" onClick={handleDescargarPlantilla}>
+                  <FileText className="h-4 w-4 mr-1" />
+                  Descargar Plantilla
+                </Button>
+              </div>
+              
+              {/* Selección de archivo */}
+              <div>
+                <Label className="text-sm font-medium">Seleccionar archivo Excel</Label>
+                <div className="mt-2">
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                    className="block w-full text-sm text-zinc-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-lg file:border-0
+                      file:text-sm file:font-medium
+                      file:bg-zinc-100 file:text-zinc-700
+                      hover:file:bg-zinc-200
+                      cursor-pointer"
+                  />
+                </div>
+                {importFile && (
+                  <p className="mt-2 text-sm text-green-600 flex items-center gap-1">
+                    <CheckCircle2 className="h-4 w-4" />
+                    {importFile.name}
+                  </p>
+                )}
+              </div>
+              
+              {/* Resultado de importación */}
+              {importResult && (
+                <div className={`rounded-lg p-4 ${importResult.total_errores > 0 ? 'bg-amber-50 border border-amber-200' : 'bg-green-50 border border-green-200'}`}>
+                  <p className="font-medium text-green-700 mb-2">
+                    ✓ {importResult.registros_importados} incidencias importadas
+                  </p>
+                  
+                  {importResult.total_errores > 0 && (
+                    <div className="mt-2">
+                      <p className="text-amber-700 font-medium text-sm mb-1">
+                        ⚠ {importResult.total_errores} errores encontrados:
+                      </p>
+                      <ul className="text-xs text-amber-600 space-y-1 max-h-32 overflow-y-auto">
+                        {importResult.errores.map((err, i) => (
+                          <li key={i}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end gap-3 bg-zinc-50 rounded-b-xl">
+              <Button variant="outline" onClick={() => setModalImportExcel(false)}>
+                {importResult ? 'Cerrar' : 'Cancelar'}
+              </Button>
+              {!importResult && (
+                <Button 
+                  onClick={handleImportarExcel} 
+                  disabled={!importFile || importLoading}
+                  className="bg-zinc-900 text-white"
+                >
+                  {importLoading ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Importar
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </div>
