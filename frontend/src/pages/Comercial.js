@@ -1588,21 +1588,20 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
   
   // Filtros
   const [periodoActual, setPeriodoActual] = useState(() => {
-    const hoy = new Date();
-    return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+    // Por defecto usar 2024 ya que es el año con datos más recientes
+    return '2024-06';
   });
   const [periodoBase, setPeriodoBase] = useState(() => {
-    const hoy = new Date();
-    return `${hoy.getFullYear() - 1}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+    return '2023-06';
   });
   const [modoComparacion, setModoComparacion] = useState('manual'); // manual, auto (año anterior)
   const [granularidad, setGranularidad] = useState('categoria');
   
   // Multiselección de meses
-  const [mesesActual, setMesesActual] = useState([new Date().getMonth() + 1]);
-  const [mesesBase, setMesesBase] = useState([new Date().getMonth() + 1]);
-  const [anioActual, setAnioActual] = useState(new Date().getFullYear());
-  const [anioBase, setAnioBase] = useState(new Date().getFullYear() - 1);
+  const [mesesActual, setMesesActual] = useState([6]); // Junio por defecto
+  const [mesesBase, setMesesBase] = useState([6]);
+  const [anioActual, setAnioActual] = useState(2024); // Año con datos
+  const [anioBase, setAnioBase] = useState(2023);
 
   const meses = [
     { num: 1, nombre: 'Ene' }, { num: 2, nombre: 'Feb' }, { num: 3, nombre: 'Mar' },
