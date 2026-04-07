@@ -910,10 +910,26 @@ const Reportes = () => {
         fecha_referencia: fechaReferencia,
         categorias: selectedCategorias.length > 0 ? selectedCategorias : null
       }, {
-        responseType: 'blob'
+        responseType: 'blob',
+        validateStatus: function (status) {
+          return status < 500; // Aceptar todas las respuestas que no sean 5xx
+        }
       });
       
-      // Descargar el archivo
+      // Verificar si la respuesta es un error (4xx)
+      if (response.status >= 400) {
+        // Leer el blob como texto para extraer el mensaje de error
+        const text = await response.data.text();
+        try {
+          const json = JSON.parse(text);
+          toast.error(json.detail || 'Error al generar el comparativo', { duration: 8000 });
+        } catch {
+          toast.error(text || 'Error al generar el comparativo', { duration: 8000 });
+        }
+        return;
+      }
+      
+      // Descargar el archivo (respuesta exitosa)
       const blob = new Blob([response.data], { 
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
       });
@@ -929,8 +945,7 @@ const Reportes = () => {
       toast.success('Reporte comparativo descargado correctamente (desde cache)');
     } catch (error) {
       console.error('Error al exportar comparativo:', error);
-      const errorMsg = error.response?.data?.detail || error.message || 'Error desconocido';
-      toast.error(`Error al generar comparativo: ${errorMsg}`);
+      toast.error(error.message || 'Error de conexión al servidor', { duration: 5000 });
     } finally {
       setLoadingComparativo(false);
     }
