@@ -275,3 +275,23 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - Dar de baja (trash rojo)
 - **Estilos actualizados**: Headers de tabla en zinc-800 (consistente con el resto del proyecto)
 - **Nota**: Las tablas SQL de RRHH están integradas pero vacías en la BD de producción
+
+### April 7, 2026 - Fase 3 Finanzas: Módulo de Control Presupuestal
+- **Implementado**: Módulo completo de Finanzas con Dashboard y CRUD de presupuestos
+- **Backend** (`/app/backend/server.py`):
+  - `GET /api/finanzas/dashboard`: KPIs financieros (Ingresos, Egresos, Utilidad, Margen) con comparativo vs mes anterior
+  - `GET /api/finanzas/presupuestos`: Lista presupuestos con filtros (año, mes, sucursal, categoría)
+  - `POST /api/finanzas/presupuestos`: Crear nuevo presupuesto
+  - `PUT /api/finanzas/presupuestos/{id}`: Actualizar presupuesto
+  - `DELETE /api/finanzas/presupuestos/{id}`: Eliminar presupuesto
+  - `GET /api/finanzas/categorias`: Listar categorías únicas de presupuestos
+  - `POST /api/finanzas/registrar-movimiento`: Registrar movimiento y actualizar ejecutado
+  - `GET /api/finanzas/script-inicializacion`: Obtener script SQL para crear tablas
+- **Frontend** (`/app/frontend/src/pages/Finanzas.js`):
+  - **Dashboard**: KPIs con variación vs mes anterior, Comparativo por Sucursal
+  - **Presupuestos**: Tabla CRUD con filtros, botón "Ver Script SQL"
+  - **Modal Nuevo/Editar Presupuesto**: Sucursal, Tipo, Categoría, Subcategoría, Mes, Año, Monto, Notas
+  - **Modal Script SQL**: Instrucciones paso a paso + Script completo con botón "Copiar"
+- **Estructura SQL** (Tabla `Finanzas_Presupuestos`):
+  - PresupuestoID, SucursalID, Categoria, SubCategoria, Tipo, Monto_Presupuestado, Monto_Ejecutado, Anio, Mes, Notas
+- **Nota**: Las tablas deben crearse ejecutando el script SQL en EDARSA HUB via "Explorador BD"

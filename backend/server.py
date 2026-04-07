@@ -13315,6 +13315,441 @@ async def ejecutar_script_con_credenciales(
     }
 
 
+# ============================================================================
+# ========================= MÓDULO DE FINANZAS ===============================
+# ============================================================================
+
+@api_router.get("/finanzas/dashboard")
+async def finanzas_dashboard(
+    anio: int = Query(default=None),
+    mes: int = Query(default=None),
+    sucursal_id: Optional[int] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Dashboard general de finanzas con KPIs y comparativos"""
+    from datetime import datetime
+    
+    if not anio:
+        anio = datetime.now().year
+    if not mes:
+        mes = datetime.now().month
+    
+    suc_filter = f"AND p.SucursalID = {sucursal_id}" if sucursal_id else ""
+    
+    # Obtener presupuestos del periodo
+    query_presupuestos = f"""
+        SELECT 
+            p.PresupuestoID,
+            p.SucursalID,
+            s.Nombre_Sucursal,
+            p.Categoria,
+            p.SubCategoria,
+            p.Tipo,
+            p.Monto_Presupuestado,
+            p.Monto_Ejecutado,
+            p.Anio,
+            p.Mes,
+            CASE 
+                WHEN p.Monto_Presupuestado > 0 
+                THEN ROUND((p.Monto_Ejecutado / p.Monto_Presupuestado) * 100, 2)
+                ELSE 0 
+            END as Porcentaje_Ejecucion
+        FROM Finanzas_Presupuestos p
+        LEFT JOIN RH_Cat_Sucursales s ON p.SucursalID = s.SucursalID
+        WHERE p.Anio = {anio} AND p.Mes = {mes} {suc_filter}
+        ORDER BY s.Nombre_Sucursal, p.Categoria
+    """
+    
+    # Totales por tipo (Ingreso/Egreso)
+    query_totales = f"""
+        SELECT 
+            Tipo,
+            SUM(Monto_Presupuestado) as Total_Presupuestado,
+            SUM(Monto_Ejecutado) as Total_Ejecutado
+        FROM Finanzas_Presupuestos
+        WHERE Anio = {anio} AND Mes = {mes} {suc_filter.replace('p.', '')}
+        GROUP BY Tipo
+    """
+    
+    # Comparativo mes anterior
+    mes_ant = mes - 1 if mes > 1 else 12
+    anio_ant = anio if mes > 1 else anio - 1
+    
+    query_comparativo = f"""
+        SELECT 
+            Tipo,
+            SUM(Monto_Ejecutado) as Total_Ejecutado
+        FROM Finanzas_Presupuestos
+        WHERE Anio = {anio_ant} AND Mes = {mes_ant} {suc_filter.replace('p.', '')}
+        GROUP BY Tipo
+    """
+    
+    # Por sucursal
+    query_por_sucursal = f"""
+        SELECT 
+            p.SucursalID,
+            s.Nombre_Sucursal,
+            SUM(CASE WHEN p.Tipo = 'Ingreso' THEN p.Monto_Ejecutado ELSE 0 END) as Ingresos,
+            SUM(CASE WHEN p.Tipo = 'Egreso' THEN p.Monto_Ejecutado ELSE 0 END) as Egresos,
+            SUM(CASE WHEN p.Tipo = 'Ingreso' THEN p.Monto_Presupuestado ELSE 0 END) as Ingresos_Pres,
+            SUM(CASE WHEN p.Tipo = 'Egreso' THEN p.Monto_Presupuestado ELSE 0 END) as Egresos_Pres
+        FROM Finanzas_Presupuestos p
+        LEFT JOIN RH_Cat_Sucursales s ON p.SucursalID = s.SucursalID
+        WHERE p.Anio = {anio} AND p.Mes = {mes}
+        GROUP BY p.SucursalID, s.Nombre_Sucursal
+        ORDER BY s.Nombre_Sucursal
+    """
+    
+    try:
+        result_pres = await execute_edarsa_hub_query(query_presupuestos)
+        result_totales = await execute_edarsa_hub_query(query_totales)
+        result_comp = await execute_edarsa_hub_query(query_comparativo)
+        result_suc = await execute_edarsa_hub_query(query_por_sucursal)
+        
+        # Calcular KPIs
+        totales_dict = {r['Tipo']: r for r in result_totales.get('datos', [])}
+        comp_dict = {r['Tipo']: r for r in result_comp.get('datos', [])}
+        
+        ingresos_pres = totales_dict.get('Ingreso', {}).get('Total_Presupuestado', 0) or 0
+        ingresos_real = totales_dict.get('Ingreso', {}).get('Total_Ejecutado', 0) or 0
+        egresos_pres = totales_dict.get('Egreso', {}).get('Total_Presupuestado', 0) or 0
+        egresos_real = totales_dict.get('Egreso', {}).get('Total_Ejecutado', 0) or 0
+        
+        ingresos_ant = comp_dict.get('Ingreso', {}).get('Total_Ejecutado', 0) or 0
+        egresos_ant = comp_dict.get('Egreso', {}).get('Total_Ejecutado', 0) or 0
+        
+        return {
+            "periodo": {"anio": anio, "mes": mes},
+            "kpis": {
+                "ingresos_presupuestados": ingresos_pres,
+                "ingresos_ejecutados": ingresos_real,
+                "ingresos_var_mes_ant": round(((ingresos_real - ingresos_ant) / ingresos_ant * 100) if ingresos_ant > 0 else 0, 2),
+                "egresos_presupuestados": egresos_pres,
+                "egresos_ejecutados": egresos_real,
+                "egresos_var_mes_ant": round(((egresos_real - egresos_ant) / egresos_ant * 100) if egresos_ant > 0 else 0, 2),
+                "utilidad_presupuestada": ingresos_pres - egresos_pres,
+                "utilidad_real": ingresos_real - egresos_real,
+                "margen_utilidad": round(((ingresos_real - egresos_real) / ingresos_real * 100) if ingresos_real > 0 else 0, 2)
+            },
+            "presupuestos": result_pres.get('datos', []),
+            "por_sucursal": result_suc.get('datos', []),
+            "totales": result_totales.get('datos', [])
+        }
+    except Exception as e:
+        logging.error(f"Error en dashboard finanzas: {str(e)}")
+        # Retornar estructura vacía si las tablas no existen
+        return {
+            "periodo": {"anio": anio, "mes": mes},
+            "kpis": {
+                "ingresos_presupuestados": 0,
+                "ingresos_ejecutados": 0,
+                "ingresos_var_mes_ant": 0,
+                "egresos_presupuestados": 0,
+                "egresos_ejecutados": 0,
+                "egresos_var_mes_ant": 0,
+                "utilidad_presupuestada": 0,
+                "utilidad_real": 0,
+                "margen_utilidad": 0
+            },
+            "presupuestos": [],
+            "por_sucursal": [],
+            "totales": [],
+            "nota": "Las tablas de finanzas aún no han sido creadas. Ejecute el script de inicialización."
+        }
+
+
+@api_router.get("/finanzas/presupuestos")
+async def finanzas_listar_presupuestos(
+    anio: int = Query(default=None),
+    mes: int = Query(default=None),
+    sucursal_id: Optional[int] = None,
+    categoria: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista presupuestos con filtros"""
+    from datetime import datetime
+    
+    if not anio:
+        anio = datetime.now().year
+    
+    conditions = [f"p.Anio = {anio}"]
+    if mes:
+        conditions.append(f"p.Mes = {mes}")
+    if sucursal_id:
+        conditions.append(f"p.SucursalID = {sucursal_id}")
+    if categoria:
+        conditions.append(f"p.Categoria = '{categoria}'")
+    
+    where_clause = " AND ".join(conditions)
+    
+    query = f"""
+        SELECT 
+            p.PresupuestoID,
+            p.SucursalID,
+            s.Nombre_Sucursal,
+            p.Categoria,
+            p.SubCategoria,
+            p.Tipo,
+            p.Monto_Presupuestado,
+            p.Monto_Ejecutado,
+            p.Anio,
+            p.Mes,
+            p.Notas,
+            p.Fecha_Creacion,
+            p.Creado_Por
+        FROM Finanzas_Presupuestos p
+        LEFT JOIN RH_Cat_Sucursales s ON p.SucursalID = s.SucursalID
+        WHERE {where_clause}
+        ORDER BY p.Mes, s.Nombre_Sucursal, p.Categoria
+    """
+    
+    try:
+        result = await execute_edarsa_hub_query(query)
+        return {
+            "presupuestos": result.get('datos', []),
+            "total": result.get('registros', 0)
+        }
+    except:
+        return {"presupuestos": [], "total": 0, "nota": "Tablas no disponibles"}
+
+
+@api_router.post("/finanzas/presupuestos")
+async def finanzas_crear_presupuesto(
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea un nuevo presupuesto"""
+    
+    sucursal_id = body.get('sucursal_id')
+    categoria = body.get('categoria', '').strip()
+    subcategoria = body.get('subcategoria', '').strip()
+    tipo = body.get('tipo', 'Egreso')  # Ingreso o Egreso
+    monto = body.get('monto', 0)
+    anio = body.get('anio')
+    mes = body.get('mes')
+    notas = body.get('notas', '').strip()
+    
+    if not sucursal_id or not categoria or not anio or not mes:
+        raise HTTPException(status_code=400, detail="Sucursal, categoría, año y mes son requeridos")
+    
+    if tipo not in ['Ingreso', 'Egreso']:
+        raise HTTPException(status_code=400, detail="Tipo debe ser 'Ingreso' o 'Egreso'")
+    
+    query = f"""
+        INSERT INTO Finanzas_Presupuestos 
+        (SucursalID, Categoria, SubCategoria, Tipo, Monto_Presupuestado, Monto_Ejecutado, Anio, Mes, Notas, Fecha_Creacion, Creado_Por)
+        VALUES 
+        ({sucursal_id}, '{categoria}', '{subcategoria}', '{tipo}', {monto}, 0, {anio}, {mes}, '{notas}', GETDATE(), '{current_user.get("email", "")}')
+    """
+    
+    await execute_edarsa_hub_query(query)
+    
+    return {"success": True, "message": "Presupuesto creado"}
+
+
+@api_router.put("/finanzas/presupuestos/{presupuesto_id}")
+async def finanzas_actualizar_presupuesto(
+    presupuesto_id: int,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza un presupuesto existente"""
+    
+    updates = []
+    
+    if 'monto_presupuestado' in body:
+        updates.append(f"Monto_Presupuestado = {body['monto_presupuestado']}")
+    if 'monto_ejecutado' in body:
+        updates.append(f"Monto_Ejecutado = {body['monto_ejecutado']}")
+    if 'categoria' in body:
+        updates.append(f"Categoria = '{body['categoria']}'")
+    if 'subcategoria' in body:
+        updates.append(f"SubCategoria = '{body['subcategoria']}'")
+    if 'notas' in body:
+        updates.append(f"Notas = '{body['notas']}'")
+    
+    if not updates:
+        raise HTTPException(status_code=400, detail="No hay campos para actualizar")
+    
+    query = f"""
+        UPDATE Finanzas_Presupuestos
+        SET {', '.join(updates)}, Fecha_Modificacion = GETDATE()
+        WHERE PresupuestoID = {presupuesto_id}
+    """
+    
+    await execute_edarsa_hub_query(query)
+    
+    return {"success": True, "message": "Presupuesto actualizado"}
+
+
+@api_router.delete("/finanzas/presupuestos/{presupuesto_id}")
+async def finanzas_eliminar_presupuesto(
+    presupuesto_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina un presupuesto"""
+    
+    query = f"DELETE FROM Finanzas_Presupuestos WHERE PresupuestoID = {presupuesto_id}"
+    await execute_edarsa_hub_query(query)
+    
+    return {"success": True, "message": "Presupuesto eliminado"}
+
+
+@api_router.get("/finanzas/categorias")
+async def finanzas_listar_categorias(
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista las categorías únicas de presupuestos"""
+    
+    query = """
+        SELECT DISTINCT Categoria, Tipo
+        FROM Finanzas_Presupuestos
+        ORDER BY Tipo, Categoria
+    """
+    
+    try:
+        result = await execute_edarsa_hub_query(query)
+        return {"categorias": result.get('datos', [])}
+    except:
+        # Categorías por defecto si no existe la tabla
+        return {
+            "categorias": [
+                {"Categoria": "Ventas", "Tipo": "Ingreso"},
+                {"Categoria": "Servicios", "Tipo": "Ingreso"},
+                {"Categoria": "Otros Ingresos", "Tipo": "Ingreso"},
+                {"Categoria": "Nómina", "Tipo": "Egreso"},
+                {"Categoria": "Materia Prima", "Tipo": "Egreso"},
+                {"Categoria": "Servicios Básicos", "Tipo": "Egreso"},
+                {"Categoria": "Renta", "Tipo": "Egreso"},
+                {"Categoria": "Marketing", "Tipo": "Egreso"},
+                {"Categoria": "Mantenimiento", "Tipo": "Egreso"},
+                {"Categoria": "Gastos Administrativos", "Tipo": "Egreso"},
+            ]
+        }
+
+
+@api_router.post("/finanzas/registrar-movimiento")
+async def finanzas_registrar_movimiento(
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Registra un movimiento y actualiza el monto ejecutado del presupuesto"""
+    
+    presupuesto_id = body.get('presupuesto_id')
+    monto = body.get('monto', 0)
+    descripcion = body.get('descripcion', '').strip()
+    
+    if not presupuesto_id or monto == 0:
+        raise HTTPException(status_code=400, detail="Presupuesto y monto son requeridos")
+    
+    # Actualizar monto ejecutado
+    query_update = f"""
+        UPDATE Finanzas_Presupuestos
+        SET Monto_Ejecutado = Monto_Ejecutado + {monto}
+        WHERE PresupuestoID = {presupuesto_id}
+    """
+    
+    await execute_edarsa_hub_query(query_update)
+    
+    return {"success": True, "message": "Movimiento registrado"}
+
+
+@api_router.get("/finanzas/script-inicializacion")
+async def finanzas_obtener_script_inicializacion(
+    current_user: Dict = Depends(get_current_user)
+):
+    """Retorna el script SQL para crear las tablas de finanzas en EDARSA HUB"""
+    
+    script = """
+-- ============================================
+-- SCRIPT DE INICIALIZACIÓN - MÓDULO FINANZAS
+-- Ejecutar en la base de datos EDARSA HUB
+-- ============================================
+
+-- Tabla de Presupuestos
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Finanzas_Presupuestos' AND xtype='U')
+BEGIN
+    CREATE TABLE Finanzas_Presupuestos (
+        PresupuestoID INT IDENTITY(1,1) PRIMARY KEY,
+        SucursalID INT NOT NULL,
+        Categoria NVARCHAR(100) NOT NULL,
+        SubCategoria NVARCHAR(100),
+        Tipo NVARCHAR(20) NOT NULL CHECK (Tipo IN ('Ingreso', 'Egreso')),
+        Monto_Presupuestado DECIMAL(18,2) DEFAULT 0,
+        Monto_Ejecutado DECIMAL(18,2) DEFAULT 0,
+        Anio INT NOT NULL,
+        Mes INT NOT NULL CHECK (Mes BETWEEN 1 AND 12),
+        Notas NVARCHAR(500),
+        Fecha_Creacion DATETIME DEFAULT GETDATE(),
+        Fecha_Modificacion DATETIME,
+        Creado_Por NVARCHAR(100),
+        
+        CONSTRAINT FK_Presupuesto_Sucursal FOREIGN KEY (SucursalID) 
+            REFERENCES RH_Cat_Sucursales(SucursalID)
+    );
+    
+    CREATE INDEX IX_Presupuestos_Periodo ON Finanzas_Presupuestos(Anio, Mes);
+    CREATE INDEX IX_Presupuestos_Sucursal ON Finanzas_Presupuestos(SucursalID);
+    
+    PRINT 'Tabla Finanzas_Presupuestos creada exitosamente';
+END
+ELSE
+    PRINT 'Tabla Finanzas_Presupuestos ya existe';
+GO
+
+-- Insertar presupuestos de ejemplo para el mes actual
+DECLARE @Anio INT = YEAR(GETDATE())
+DECLARE @Mes INT = MONTH(GETDATE())
+
+-- Solo insertar si no hay datos del periodo actual
+IF NOT EXISTS (SELECT 1 FROM Finanzas_Presupuestos WHERE Anio = @Anio AND Mes = @Mes)
+BEGIN
+    -- Obtener sucursales activas
+    INSERT INTO Finanzas_Presupuestos (SucursalID, Categoria, SubCategoria, Tipo, Monto_Presupuestado, Anio, Mes, Creado_Por)
+    SELECT 
+        s.SucursalID,
+        'Ventas',
+        'Ventas Generales',
+        'Ingreso',
+        100000.00,
+        @Anio,
+        @Mes,
+        'SISTEMA'
+    FROM RH_Cat_Sucursales s
+    WHERE s.Nombre_Sucursal IS NOT NULL;
+    
+    INSERT INTO Finanzas_Presupuestos (SucursalID, Categoria, SubCategoria, Tipo, Monto_Presupuestado, Anio, Mes, Creado_Por)
+    SELECT 
+        s.SucursalID,
+        'Nómina',
+        'Sueldos y Salarios',
+        'Egreso',
+        50000.00,
+        @Anio,
+        @Mes,
+        'SISTEMA'
+    FROM RH_Cat_Sucursales s
+    WHERE s.Nombre_Sucursal IS NOT NULL;
+    
+    PRINT 'Presupuestos de ejemplo insertados';
+END
+GO
+
+PRINT '=== Script de inicialización completado ===';
+"""
+    
+    return {
+        "script": script,
+        "instrucciones": [
+            "1. Copia el script SQL",
+            "2. Ve a 'Explorador BD' en el menú lateral",
+            "3. Selecciona el servidor EDARSA HUB",
+            "4. Pega y ejecuta el script con credenciales de administrador",
+            "5. Regresa a Finanzas para ver los datos"
+        ]
+    }
+
+
 @api_router.get("/explorador/buscar/{server_id}")
 async def buscar_en_bd(
     server_id: str,
