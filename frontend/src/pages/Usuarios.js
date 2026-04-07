@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, User, Shield, Eye, Settings, Server, Building2, Warehouse, Edit, Key, Lock } from 'lucide-react';
+import { Plus, Trash2, User, Shield, Eye, Settings, Server, Building2, Warehouse, Edit, Key, Lock, CheckCircle2, XCircle, RefreshCw, Layers, X, Check } from 'lucide-react';
 import { toast } from 'sonner';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const Usuarios = () => {
   // ============= ESTADOS USUARIOS =============
@@ -34,6 +36,17 @@ const Usuarios = () => {
     descripcion: '',
     permisos: []
   });
+  
+  // ============= ESTADOS PERMISOS CATÁLOGOS =============
+  const [usuariosCatalogos, setUsuariosCatalogos] = useState([]);
+  const [catalogosDisponibles, setCatalogosDisponibles] = useState([]);
+  const [modalPermisosCatalogos, setModalPermisosCatalogos] = useState(false);
+  const [usuarioSeleccionadoCat, setUsuarioSeleccionadoCat] = useState(null);
+  const [formPermisosCat, setFormPermisosCat] = useState({
+    catalogos_permitidos: [],
+    puede_solicitar: true
+  });
+  const [savingPermisosCat, setSavingPermisosCat] = useState(false);
   
   // ============= ESTADOS FORMULARIO USUARIOS =============
   const [formData, setFormData] = useState({
@@ -81,7 +94,98 @@ const Usuarios = () => {
     loadServers();
     loadRoles();
     loadModulos();
+    loadUsuariosCatalogos();
+    loadCatalogosDisponibles();
   }, [loadUsers, loadServers]);
+
+  // ============= FUNCIONES PERMISOS CATÁLOGOS =============
+  const loadUsuariosCatalogos = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/sistema/usuarios-asignables`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsuariosCatalogos(data.usuarios || []);
+      }
+    } catch (error) {
+      console.error('Error cargando usuarios para catálogos:', error);
+    }
+  };
+
+  const loadCatalogosDisponibles = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/sistema/catalogos-disponibles`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCatalogosDisponibles(data.catalogos || []);
+      }
+    } catch (error) {
+      console.error('Error cargando catálogos:', error);
+    }
+  };
+
+  const handleAbrirPermisosCatalogos = (usuario) => {
+    setUsuarioSeleccionadoCat(usuario);
+    setFormPermisosCat({
+      catalogos_permitidos: usuario.permisos_catalogos || [],
+      puede_solicitar: usuario.puede_solicitar || false
+    });
+    setModalPermisosCatalogos(true);
+  };
+
+  const handleGuardarPermisosCatalogos = async () => {
+    setSavingPermisosCat(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/sistema/permisos-catalogos`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          user_id: usuarioSeleccionadoCat.id,
+          ...formPermisosCat
+        })
+      });
+      
+      if (!response.ok) throw new Error('Error al guardar');
+      
+      toast.success('Permisos asignados correctamente');
+      setModalPermisosCatalogos(false);
+      loadUsuariosCatalogos();
+    } catch (error) {
+      toast.error('Error al guardar permisos');
+    } finally {
+      setSavingPermisosCat(false);
+    }
+  };
+
+  const handleConfigurarNiveles = async (catalogoId, niveles) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/sistema/catalogos/${catalogoId}/niveles`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ niveles_aprobacion: niveles })
+      });
+      
+      if (!response.ok) throw new Error('Error al configurar');
+      
+      toast.success(`Niveles de aprobación actualizados a ${niveles}`);
+      loadCatalogosDisponibles();
+    } catch (error) {
+      toast.error('Error al configurar niveles');
+    }
+  };
 
   // ============= FUNCIONES ROLES =============
   const loadRoles = async () => {
@@ -349,7 +453,7 @@ const Usuarios = () => {
       </div>
 
       <Tabs defaultValue="usuarios" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="usuarios" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Usuarios
@@ -357,6 +461,10 @@ const Usuarios = () => {
           <TabsTrigger value="roles" className="flex items-center gap-2">
             <Key className="h-4 w-4" />
             Roles
+          </TabsTrigger>
+          <TabsTrigger value="permisos-catalogos" className="flex items-center gap-2">
+            <Layers className="h-4 w-4" />
+            Permisos Catálogos
           </TabsTrigger>
         </TabsList>
 
@@ -517,7 +625,198 @@ const Usuarios = () => {
             </div>
           )}
         </TabsContent>
+
+        {/* ============= TAB PERMISOS CATÁLOGOS ============= */}
+        <TabsContent value="permisos-catalogos" className="mt-6 space-y-6">
+          {/* Sección: Configurar Permisos de Catálogos por Usuario */}
+          <Card>
+            <CardHeader className="py-4">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Settings className="h-5 w-5 text-blue-500" />
+                Configurar Permisos de Catálogos por Usuario
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-4 font-medium text-zinc-500">Usuario</th>
+                      <th className="text-left py-3 px-4 font-medium text-zinc-500">Email</th>
+                      <th className="text-left py-3 px-4 font-medium text-zinc-500">Rol</th>
+                      <th className="text-left py-3 px-4 font-medium text-zinc-500">Puede Solicitar</th>
+                      <th className="text-left py-3 px-4 font-medium text-zinc-500">Catálogos</th>
+                      <th className="text-right py-3 px-4 font-medium text-zinc-500">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usuariosCatalogos.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-zinc-500">
+                          No hay usuarios disponibles
+                        </td>
+                      </tr>
+                    ) : (
+                      usuariosCatalogos.map((usuario) => (
+                        <tr key={usuario.id} className="border-b hover:bg-zinc-50">
+                          <td className="py-3 px-4 font-medium">{usuario.name}</td>
+                          <td className="py-3 px-4 text-zinc-500">{usuario.email}</td>
+                          <td className="py-3 px-4">
+                            <Badge className={getRoleBadge(usuario.role)}>
+                              {getRoleIcon(usuario.role)}
+                              <span className="ml-1">{usuario.role}</span>
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            {usuario.puede_solicitar ? (
+                              <span className="flex items-center gap-1 text-green-600">
+                                <CheckCircle2 className="h-4 w-4" /> Sí
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-zinc-400">
+                                <XCircle className="h-4 w-4" /> No
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-xs text-zinc-500">
+                              {(usuario.permisos_catalogos || []).length} catálogo(s)
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAbrirPermisosCatalogos(usuario)}
+                              data-testid={`btn-permisos-cat-${usuario.id}`}
+                            >
+                              <Settings className="h-4 w-4 mr-1" />
+                              Configurar
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Sección: Configurar Niveles de Aprobación por Catálogo */}
+          <Card>
+            <CardHeader className="py-4">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Layers className="h-5 w-5 text-purple-500" />
+                Configurar Niveles de Aprobación por Catálogo
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {catalogosDisponibles.map((cat) => (
+                  <div key={cat.id} className="border rounded-lg p-4 hover:bg-zinc-50">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-sm">{cat.nombre}</p>
+                        <p className="text-xs text-zinc-500">{cat.modulo}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={cat.niveles_aprobacion || 1}
+                          onChange={(e) => handleConfigurarNiveles(cat.id, parseInt(e.target.value))}
+                          className="h-8 px-2 border rounded text-sm bg-white"
+                        >
+                          <option value={1}>1 Nivel</option>
+                          <option value={2}>2 Niveles</option>
+                          <option value={3}>3 Niveles</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 mt-2">
+                      {Array.from({length: cat.niveles_aprobacion || 1}).map((_, i) => (
+                        <div key={i} className={`flex-1 h-1 rounded ${
+                          i === 0 ? 'bg-green-400' : i === 1 ? 'bg-blue-400' : 'bg-purple-400'
+                        }`} />
+                      ))}
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1">
+                      {cat.niveles_aprobacion === 1 ? 'Supervisor o Admin aprueba' :
+                       cat.niveles_aprobacion === 2 ? 'Supervisor → Admin' :
+                       'Supervisor → Admin → Admin final'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Modal Configurar Permisos Catálogos */}
+      {modalPermisosCatalogos && usuarioSeleccionadoCat && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Permisos de {usuarioSeleccionadoCat.name || usuarioSeleccionadoCat.email}
+              </h2>
+              <button onClick={() => setModalPermisosCatalogos(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="puede-solicitar"
+                  checked={formPermisosCat.puede_solicitar}
+                  onChange={(e) => setFormPermisosCat({...formPermisosCat, puede_solicitar: e.target.checked})}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="puede-solicitar" className="cursor-pointer">
+                  Puede solicitar altas en catálogos
+                </Label>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Catálogos Permitidos:</Label>
+                <div className="grid grid-cols-2 gap-2 p-3 border rounded-lg max-h-[300px] overflow-y-auto">
+                  {catalogosDisponibles.map((cat) => (
+                    <label key={cat.id} className="flex items-center gap-2 p-2 hover:bg-zinc-50 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formPermisosCat.catalogos_permitidos.includes(cat.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormPermisosCat({...formPermisosCat, catalogos_permitidos: [...formPermisosCat.catalogos_permitidos, cat.id]});
+                          } else {
+                            setFormPermisosCat({...formPermisosCat, catalogos_permitidos: formPermisosCat.catalogos_permitidos.filter(c => c !== cat.id)});
+                          }
+                        }}
+                        className="h-4 w-4"
+                      />
+                      <div>
+                        <span className="text-sm font-medium">{cat.nombre}</span>
+                        <span className="text-xs text-zinc-500 block">{cat.modulo}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end gap-2 bg-zinc-50">
+              <Button variant="outline" onClick={() => setModalPermisosCatalogos(false)}>Cancelar</Button>
+              <Button onClick={handleGuardarPermisosCatalogos} disabled={savingPermisosCat} data-testid="btn-guardar-permisos-cat">
+                {savingPermisosCat ? <RefreshCw className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1" />}
+                Guardar Permisos
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dialog para crear usuario */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

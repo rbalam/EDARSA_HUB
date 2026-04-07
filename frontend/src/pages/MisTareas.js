@@ -7,7 +7,8 @@ import {
   ClipboardList, CheckCircle2, Clock, XCircle, Bell, 
   RefreshCw, Eye, Check, X, FileText, Users, Settings,
   Plus, ChevronRight, Lock, AlertTriangle, Filter, History,
-  Edit, RotateCcw, Layers, ArrowRight
+  Edit, RotateCcw, Layers, ArrowRight, Building2, Mail, Phone,
+  ExternalLink, Search
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -28,6 +29,15 @@ export default function MisTareas() {
   const [misPermisos, setMisPermisos] = useState({ puede_solicitar: false, puede_aprobar: false, catalogos_permitidos: [] });
   const [catalogosDisponibles, setCatalogosDisponibles] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
+  
+  // Estados Portal Proveedores
+  const [proveedores, setProveedores] = useState([]);
+  const [filtroProveedores, setFiltroProveedores] = useState('pending');
+  const [searchProveedores, setSearchProveedores] = useState('');
+  const [modalProveedor, setModalProveedor] = useState(false);
+  const [proveedorSeleccionado, setProveedorSeleccionado] = useState(null);
+  const [sucursalesProveedor, setSucursalesProveedor] = useState([]);
+  const [serversDisponibles, setServersDisponibles] = useState([]);
   
   // Modales
   const [modalSolicitud, setModalSolicitud] = useState(false);
@@ -125,9 +135,43 @@ export default function MisTareas() {
     }
   };
   
+  // Cargar proveedores
+  const loadProveedores = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/portal/admin/all-suppliers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProveedores(data || []);
+      }
+    } catch (error) {
+      console.error('Error cargando proveedores:', error);
+    }
+  };
+  
+  // Cargar servers para sucursales
+  const loadServersProveedor = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/servers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setServersDisponibles(data.filter(s => s.active) || []);
+      }
+    } catch (error) {
+      console.error('Error cargando servers:', error);
+    }
+  };
+  
   useEffect(() => {
     loadData();
-    if (canApprove) loadUsuarios();
+    if (canApprove) {
+      loadUsuarios();
+      loadProveedores();
+      loadServersProveedor();
+    }
   }, [loadData, canApprove]);
   
   // Abrir modal de nueva solicitud
@@ -555,6 +599,114 @@ export default function MisTareas() {
     acc[cat.modulo].push(cat);
     return acc;
   }, {});
+  
+  // Filtrar proveedores
+  const proveedoresFiltrados = proveedores
+    .filter(s => filtroProveedores === 'all' || s.status === filtroProveedores)
+    .filter(s => 
+      s.rfc?.toLowerCase().includes(searchProveedores.toLowerCase()) ||
+      s.razon_social?.toLowerCase().includes(searchProveedores.toLowerCase()) ||
+      s.email?.toLowerCase().includes(searchProveedores.toLowerCase())
+    );
+  
+  const proveedoresPendientesCount = proveedores.filter(s => s.status === 'pending').length;
+  
+  // Aprobar proveedor
+  const handleAprobarProveedor = async () => {
+    if (!proveedorSeleccionado) return;
+    
+    setSavingForm(true);
+    try {
+      const response = await fetch(`${API_URL}/api/portal/admin/approve-supplier`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          supplier_id: proveedorSeleccionado.id,
+          action: 'approve',
+          sucursales: sucursalesProveedor,
+          approved_by: currentUser?.email
+        })
+      });
+      
+      if (response.ok) {
+        toast.success(`Proveedor ${proveedorSeleccionado.rfc} aprobado`);
+        loadProveedores();
+        setModalProveedor(false);
+        setProveedorSeleccionado(null);
+        setSucursalesProveedor([]);
+      } else {
+        const err = await response.json();
+        toast.error(err.detail || 'Error al aprobar');
+      }
+    } catch (error) {
+      toast.error('Error de conexión');
+    } finally {
+      setSavingForm(false);
+    }
+  };
+  
+  // Rechazar proveedor
+  const handleRechazarProveedor = async (supplier) => {
+    if (!confirm(`¿Rechazar proveedor ${supplier.rfc}?`)) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/api/portal/admin/approve-supplier`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          supplier_id: supplier.id,
+          action: 'reject',
+          notes: 'Rechazado por administrador',
+          approved_by: currentUser?.email
+        })
+      });
+      
+      if (response.ok) {
+        toast.success(`Proveedor ${supplier.rfc} rechazado`);
+        loadProveedores();
+      } else {
+        const err = await response.json();
+        toast.error(err.detail || 'Error al rechazar');
+      }
+    } catch (error) {
+      toast.error('Error de conexión');
+    }
+  };
+  
+  // Abrir modal de aprobación de proveedor
+  const openProveedorModal = (supplier) => {
+    setProveedorSeleccionado(supplier);
+    setSucursalesProveedor(supplier.sucursales_asignadas || []);
+    setModalProveedor(true);
+  };
+  
+  // Formatear fecha
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+  
+  // Badge de status proveedor
+  const getProveedorStatusBadge = (status) => {
+    const styles = {
+      pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Pendiente' },
+      approved: { bg: 'bg-green-100', text: 'text-green-700', label: 'Aprobado' },
+      rejected: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rechazado' },
+      suspended: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Suspendido' }
+    };
+    const s = styles[status] || styles.pending;
+    return <span className={`px-2 py-1 rounded text-xs font-medium ${s.bg} ${s.text}`}>{s.label}</span>;
+  };
 
   if (loading) {
     return (
@@ -860,73 +1012,252 @@ export default function MisTareas() {
         </CardContent>
       </Card>
 
-      {/* Sección de Configuración de Permisos (Solo Supervisor/Admin) */}
+      {/* Portal Proveedores (Solo Supervisor/Admin) */}
       {canApprove && (
         <Card>
           <CardHeader className="py-4">
-            <CardTitle className="text-base font-medium flex items-center gap-2">
-              <Settings className="h-5 w-5 text-zinc-600" />
-              Configurar Permisos de Catálogos por Usuario
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-emerald-500" />
+                Portal Proveedores
+                {proveedoresPendientesCount > 0 && (
+                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                    {proveedoresPendientesCount} pendientes
+                  </span>
+                )}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <a 
+                  href="/portal-proveedores" 
+                  target="_blank"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-zinc-600 hover:text-zinc-900"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Ir al Portal
+                </a>
+                <Button size="sm" variant="outline" onClick={loadProveedores}>
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
+          <CardContent>
+            {/* Filtros */}
+            <div className="flex flex-wrap items-center gap-4 mb-4">
+              <div className="flex gap-2">
+                {['all', 'pending', 'approved', 'rejected'].map(f => (
+                  <Button
+                    key={f}
+                    onClick={() => setFiltroProveedores(f)}
+                    variant={filtroProveedores === f ? 'default' : 'outline'}
+                    size="sm"
+                  >
+                    {f === 'all' ? 'Todos' : f === 'pending' ? 'Pendientes' : f === 'approved' ? 'Aprobados' : 'Rechazados'}
+                    {f === 'pending' && proveedoresPendientesCount > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 bg-yellow-500 text-white rounded-full text-xs">
+                        {proveedoresPendientesCount}
+                      </span>
+                    )}
+                  </Button>
+                ))}
+              </div>
+              <div className="relative flex-1 max-w-xs">
+                <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400" />
+                <Input
+                  type="text"
+                  placeholder="Buscar RFC, razón social..."
+                  value={searchProveedores}
+                  onChange={(e) => setSearchProveedores(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
+            {/* Tabla de proveedores */}
+            <div className="overflow-x-auto border rounded-lg">
               <table className="w-full text-sm">
-                <thead className="bg-zinc-50 border-y">
+                <thead className="bg-zinc-50 border-b">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-zinc-600">Usuario</th>
-                    <th className="px-4 py-3 text-left font-medium text-zinc-600">Email</th>
-                    <th className="px-4 py-3 text-center font-medium text-zinc-600">Rol</th>
-                    <th className="px-4 py-3 text-center font-medium text-zinc-600">Puede Solicitar</th>
-                    <th className="px-4 py-3 text-left font-medium text-zinc-600">Catálogos Permitidos</th>
-                    <th className="px-4 py-3 text-center font-medium text-zinc-600">Acciones</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">RFC</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Razón Social</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Contacto</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Estado</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Sucursales</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Registro</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {usuarios.filter(u => u.role !== 'Administrador').map((u) => (
-                    <tr key={u.id} className="hover:bg-zinc-50">
-                      <td className="px-4 py-3 font-medium text-zinc-800">{u.name || u.email}</td>
-                      <td className="px-4 py-3 text-zinc-600">{u.email}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${
-                          u.role === 'Supervisor' ? 'bg-purple-100 text-purple-700' : 'bg-zinc-100 text-zinc-700'
-                        }`}>
-                          {u.role}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {u.puede_solicitar ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto" />
-                        ) : (
-                          <XCircle className="h-5 w-5 text-zinc-300 mx-auto" />
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {u.permisos_catalogos.length === 0 ? (
-                            <span className="text-zinc-400 text-xs">Ninguno</span>
-                          ) : (
-                            u.permisos_catalogos.slice(0, 3).map((c) => (
-                              <span key={c} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded">{c}</span>
-                            ))
-                          )}
-                          {u.permisos_catalogos.length > 3 && (
-                            <span className="text-xs text-zinc-500">+{u.permisos_catalogos.length - 3} más</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Button variant="ghost" size="sm" onClick={() => handleAbrirPermisos(u)} data-testid={`btn-permisos-${u.id}`}>
-                          <Settings className="h-4 w-4" />
-                        </Button>
+                  {proveedoresFiltrados.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-8 text-center text-zinc-500">
+                        <Users className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                        <p>No se encontraron proveedores</p>
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    proveedoresFiltrados.map(supplier => (
+                      <tr key={supplier.id} className="hover:bg-zinc-50">
+                        <td className="px-4 py-3">
+                          <span className="font-mono font-medium text-zinc-900">{supplier.rfc}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div>
+                            <p className="font-medium text-zinc-900">{supplier.razon_social || '-'}</p>
+                            <p className="text-sm text-zinc-500">{supplier.nombre_contacto}</p>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm">
+                            <p className="flex items-center gap-1 text-zinc-600">
+                              <Mail className="h-3 w-3" /> {supplier.email || '-'}
+                            </p>
+                            <p className="flex items-center gap-1 text-zinc-500">
+                              <Phone className="h-3 w-3" /> {supplier.telefono || '-'}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {getProveedorStatusBadge(supplier.status)}
+                        </td>
+                        <td className="px-4 py-3">
+                          {supplier.sucursales_asignadas?.length > 0 ? (
+                            <span className="text-sm text-zinc-600">
+                              {supplier.sucursales_asignadas.length} asignada{supplier.sucursales_asignadas.length > 1 ? 's' : ''}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-zinc-400">Sin asignar</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-zinc-500">
+                          {formatDate(supplier.created_at)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-1">
+                            {supplier.status === 'pending' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                  onClick={() => openProveedorModal(supplier)}
+                                >
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Aprobar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-red-600 hover:bg-red-50"
+                                  onClick={() => handleRechazarProveedor(supplier)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                            {supplier.status === 'approved' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openProveedorModal(supplier)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Ver
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Modal Aprobar Proveedor */}
+      {modalProveedor && proveedorSeleccionado && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-emerald-600 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                {proveedorSeleccionado.status === 'pending' ? 'Aprobar Proveedor' : 'Detalle Proveedor'}
+              </h2>
+              <button onClick={() => setModalProveedor(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-zinc-500">RFC</p>
+                  <p className="font-mono font-medium">{proveedorSeleccionado.rfc}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500">Razón Social</p>
+                  <p className="font-medium">{proveedorSeleccionado.razon_social || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500">Contacto</p>
+                  <p className="font-medium">{proveedorSeleccionado.nombre_contacto || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500">Email</p>
+                  <p className="font-medium">{proveedorSeleccionado.email || '-'}</p>
+                </div>
+              </div>
+              
+              {proveedorSeleccionado.status === 'pending' && (
+                <div className="space-y-2">
+                  <Label>Sucursales Asignadas:</Label>
+                  <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+                    {serversDisponibles.map(server => (
+                      <div key={server.id}>
+                        <p className="font-medium text-sm text-zinc-700 mb-1">{server.name}</p>
+                        <div className="grid grid-cols-2 gap-1 ml-4">
+                          {(server.sucursales || []).map(suc => (
+                            <label key={suc.codigo} className="flex items-center gap-2 text-sm cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={sucursalesProveedor.includes(suc.codigo)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSucursalesProveedor([...sucursalesProveedor, suc.codigo]);
+                                  } else {
+                                    setSucursalesProveedor(sucursalesProveedor.filter(s => s !== suc.codigo));
+                                  }
+                                }}
+                                className="h-4 w-4"
+                              />
+                              {suc.nombre || suc.codigo}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end gap-2 bg-zinc-50">
+              <Button variant="outline" onClick={() => setModalProveedor(false)}>Cancelar</Button>
+              {proveedorSeleccionado.status === 'pending' && (
+                <Button 
+                  onClick={handleAprobarProveedor} 
+                  disabled={savingForm}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1" />}
+                  Aprobar Proveedor
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal Nueva Solicitud */}
@@ -1079,72 +1410,6 @@ export default function MisTareas() {
               <Button onClick={handleRechazar} disabled={savingForm} variant="destructive" data-testid="btn-confirmar-rechazar">
                 {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-1" /> : <X className="h-4 w-4 mr-1" />}
                 Rechazar
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Configurar Permisos */}
-      {modalPermisos && usuarioSeleccionado && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Permisos de {usuarioSeleccionado.name || usuarioSeleccionado.email}
-              </h2>
-              <button onClick={() => setModalPermisos(false)} className="p-1 hover:bg-white/20 rounded">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-4 overflow-y-auto flex-1">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="puede-solicitar"
-                  checked={formPermisos.puede_solicitar}
-                  onChange={(e) => setFormPermisos({...formPermisos, puede_solicitar: e.target.checked})}
-                  className="h-4 w-4"
-                />
-                <Label htmlFor="puede-solicitar" className="cursor-pointer">
-                  Puede solicitar altas en catálogos
-                </Label>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Catálogos Permitidos:</Label>
-                <div className="grid grid-cols-2 gap-2 p-3 border rounded-lg max-h-[300px] overflow-y-auto">
-                  {catalogosDisponibles.map((cat) => (
-                    <label key={cat.id} className="flex items-center gap-2 p-2 hover:bg-zinc-50 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formPermisos.catalogos_permitidos.includes(cat.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFormPermisos({...formPermisos, catalogos_permitidos: [...formPermisos.catalogos_permitidos, cat.id]});
-                          } else {
-                            setFormPermisos({...formPermisos, catalogos_permitidos: formPermisos.catalogos_permitidos.filter(c => c !== cat.id)});
-                          }
-                        }}
-                        className="h-4 w-4"
-                      />
-                      <div>
-                        <span className="text-sm font-medium">{cat.nombre}</span>
-                        <span className="text-xs text-zinc-500 block">{cat.modulo}</span>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            <div className="border-t px-6 py-4 flex justify-end gap-2 bg-zinc-50">
-              <Button variant="outline" onClick={() => setModalPermisos(false)}>Cancelar</Button>
-              <Button onClick={handleGuardarPermisos} disabled={savingForm} data-testid="btn-guardar-permisos">
-                {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1" />}
-                Guardar Permisos
               </Button>
             </div>
           </div>
@@ -1409,55 +1674,6 @@ export default function MisTareas() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Sección Configuración de Niveles por Catálogo (Solo Admin) */}
-      {isAdmin && (
-        <Card className="mt-6">
-          <CardHeader className="py-4">
-            <CardTitle className="text-base font-medium flex items-center gap-2">
-              <Layers className="h-5 w-5 text-purple-500" />
-              Configurar Niveles de Aprobación por Catálogo
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {catalogosDisponibles.map((cat) => (
-                <div key={cat.id} className="border rounded-lg p-4 hover:bg-zinc-50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{cat.nombre}</p>
-                      <p className="text-xs text-zinc-500">{cat.modulo}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={cat.niveles_aprobacion || 1}
-                        onChange={(e) => handleConfigurarNiveles(cat.id, parseInt(e.target.value))}
-                        className="h-8 px-2 border rounded text-sm bg-white"
-                      >
-                        <option value={1}>1 Nivel</option>
-                        <option value={2}>2 Niveles</option>
-                        <option value={3}>3 Niveles</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 mt-2">
-                    {Array.from({length: cat.niveles_aprobacion || 1}).map((_, i) => (
-                      <div key={i} className={`flex-1 h-1 rounded ${
-                        i === 0 ? 'bg-green-400' : i === 1 ? 'bg-blue-400' : 'bg-purple-400'
-                      }`} />
-                    ))}
-                  </div>
-                  <p className="text-xs text-zinc-400 mt-1">
-                    {cat.niveles_aprobacion === 1 ? 'Supervisor o Admin aprueba' :
-                     cat.niveles_aprobacion === 2 ? 'Supervisor → Admin' :
-                     'Supervisor → Admin → Admin final'}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       )}
     </div>
   );
