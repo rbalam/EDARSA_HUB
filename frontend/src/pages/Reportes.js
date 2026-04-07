@@ -1745,7 +1745,7 @@ const Reportes = () => {
                       .filter(key => mostrarCostos || !key.toLowerCase().includes('costo'))
                       .map((key) => (
                       <th key={key} className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">
-                        {key.replace(/_/g, ' ')}
+                        {key.replace(/_/g, ' ').replace(/Cantidad/gi, 'Qty')}
                       </th>
                     ))}
                   </tr>
