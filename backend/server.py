@@ -7373,11 +7373,78 @@ WHERE VE.Vn_Fecha >= '{fecha_ini}'
             # Query para MPRO - usar Venta_Encabezado con Comanda para PAX
             sucursal_join = ""
             sucursal_filter = ""
-            if sucursal:
-                sucursal_join = "INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal"
-                sucursal_filter = f" AND S.Sc_Descripcion LIKE '%{sucursal}%'"
+            sucursal_filter_simple = ""
+            if sucursal and sucursal != 'all':
+                # Si es un ID de sucursal (formato numérico como "0021"), usar directamente
+                # Si es un nombre, usar LIKE
+                if sucursal.isdigit() or (len(sucursal) == 4 and sucursal[0] == '0'):
+                    sucursal_join = ""
+                    sucursal_filter = f" AND VE.Sc_Cve_Sucursal = '{sucursal}'"
+                else:
+                    sucursal_join = "INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal"
+                    sucursal_filter = f" AND S.Sc_Descripcion LIKE '%{sucursal}%'"
             
-            # Query con PAX de tabla Comanda
+            # PASO CRÍTICO: Detectar último día con ventas PARA ESTA SUCURSAL ESPECÍFICA
+            import calendar
+            query_ultimo_dia_suc = f"""
+SELECT MAX(CONVERT(DATE, VE.Vn_Fecha)) as ultimo_dia_venta
+FROM Venta_Encabezado VE
+{sucursal_join}
+WHERE VE.Vn_Fecha >= '{fecha_ini}'
+  AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+  {sucursal_filter}
+"""
+            try:
+                result_ultimo_suc = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_ultimo_dia_suc
+                )
+                if result_ultimo_suc and result_ultimo_suc[0]['ultimo_dia_venta']:
+                    ultimo_dia_suc = result_ultimo_suc[0]['ultimo_dia_venta']
+                    if isinstance(ultimo_dia_suc, str):
+                        dia_con_datos = int(ultimo_dia_suc.split('-')[2]) if '-' in ultimo_dia_suc else int(ultimo_dia_suc[-2:])
+                    else:
+                        dia_con_datos = ultimo_dia_suc.day
+                    
+                    print(f"*** MPRO Dashboard {sucursal} - Ultimo dia con ventas: dia {dia_con_datos} ***")
+                    
+                    # Actualizar fecha_fin al último día con ventas de esta sucursal
+                    mes_actual = int(fecha_ini[5:7])
+                    anio_actual = int(fecha_ini[:4])
+                    fecha_fin = f"{anio_actual}-{str(mes_actual).zfill(2)}-{str(dia_con_datos).zfill(2)}"
+                    
+                    # Recalcular fechas de comparación
+                    if mes_actual == 1:
+                        mes_ant = 12
+                        anio_ant = anio_actual - 1
+                    else:
+                        mes_ant = mes_actual - 1
+                        anio_ant = anio_actual
+                    
+                    max_dia_mes_ant = calendar.monthrange(anio_ant, mes_ant)[1]
+                    dia_comparar = min(dia_con_datos, max_dia_mes_ant)
+                    fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
+                    fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
+                    
+                    anio_pasado = anio_actual - 1
+                    max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_actual)[1]
+                    dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
+                    fecha_ini_ano_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-01"
+                    fecha_fin_ano_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+                    
+                    print(f"*** Fechas ajustadas: Actual hasta {fecha_fin}, MesAnt {fecha_ini_ant} a {fecha_fin_ant}, AnoAnt {fecha_ini_ano_ant} a {fecha_fin_ano_ant} ***")
+            except Exception as e:
+                print(f"Error detectando ultimo dia para sucursal {sucursal}: {e}")
+            
+            # Query con PAX de tabla Comanda - usar formato YYYYMMDD para MPRO
+            fi_mpro = fecha_ini.replace('-', '')
+            ff_mpro = fecha_fin.replace('-', '')
+            fia_mpro = fecha_ini_ant.replace('-', '')
+            ffa_mpro = fecha_fin_ant.replace('-', '')
+            fiaa_mpro = fecha_ini_ano_ant.replace('-', '')
+            ffaa_mpro = fecha_fin_ano_ant.replace('-', '')
+            
             query_kpis = f"""
 SELECT 
     COUNT(DISTINCT VE.Vn_Folio) as cheques_total,
@@ -7386,11 +7453,12 @@ SELECT
 FROM Venta_Encabezado VE
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 {sucursal_join}
-WHERE VE.Vn_Fecha >= '{fecha_ini}'
-  AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
+WHERE VE.Vn_Fecha >= '{fi_mpro}'
+  AND VE.Vn_Fecha <= '{ff_mpro} 23:59:59'
   AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
   {sucursal_filter}
 """
+            print(f"*** MPRO Query sucursal_filter={sucursal_filter}, fi={fi_mpro}, ff={ff_mpro} ***")
             result = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], query_kpis
@@ -7412,8 +7480,8 @@ SELECT
 FROM Venta_Encabezado VE
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 {sucursal_join}
-WHERE VE.Vn_Fecha >= '{fecha_ini_ant}'
-  AND VE.Vn_Fecha <= '{fecha_fin_ant} 23:59:59'
+WHERE VE.Vn_Fecha >= '{fia_mpro}'
+  AND VE.Vn_Fecha <= '{ffa_mpro} 23:59:59'
   AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
   {sucursal_filter}
 """
@@ -7437,8 +7505,8 @@ SELECT
 FROM Venta_Encabezado VE
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 {sucursal_join}
-WHERE VE.Vn_Fecha >= '{fecha_ini_ano_ant}'
-  AND VE.Vn_Fecha <= '{fecha_fin_ano_ant} 23:59:59'
+WHERE VE.Vn_Fecha >= '{fiaa_mpro}'
+  AND VE.Vn_Fecha <= '{ffaa_mpro} 23:59:59'
   AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
   {sucursal_filter}
 """

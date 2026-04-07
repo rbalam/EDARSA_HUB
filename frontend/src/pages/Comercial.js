@@ -333,7 +333,7 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
                 <SelectContent>
-                  {sucursales.map(s => <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>)}
+                  {sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -769,7 +769,7 @@ function TicketPerfecto({ servers, selectedServer, setSelectedServer, selectedSu
               <Label className="text-xs mb-1 block">Sucursal</Label>
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
-                <SelectContent>{sucursales.map(s => <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
+                <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <Button onClick={cargarDatos} disabled={loading} className="mt-5">
@@ -927,7 +927,7 @@ function MetasVentas({ servers, selectedServer, setSelectedServer, selectedSucur
               <Label className="text-xs mb-1 block">Sucursal</Label>
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
-                <SelectContent>{sucursales.map(s => <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
+                <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <Button onClick={cargarMetas} disabled={loading} className="mt-5">
@@ -1042,7 +1042,7 @@ function VentasPorTiempo({ servers, selectedServer, setSelectedServer, selectedS
               <Label className="text-xs mb-1 block">Sucursal</Label>
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
-                <SelectContent>{sucursales.map(s => <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
+                <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <Button onClick={cargarDatos} disabled={loading} className="mt-5">
@@ -1155,7 +1155,7 @@ function MesasComensales({ servers, selectedServer, setSelectedServer, selectedS
               <Label className="text-xs mb-1 block">Sucursal</Label>
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
-                <SelectContent>{sucursales.map(s => <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
+                <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <Button onClick={cargarDatos} disabled={loading} className="mt-5">
@@ -1378,7 +1378,7 @@ function ReportePax({ servers, selectedServer, setSelectedServer, selectedSucurs
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
                 <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
                 <SelectContent>
-                  {sucursales.map(s => <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>)}
+                  {sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
