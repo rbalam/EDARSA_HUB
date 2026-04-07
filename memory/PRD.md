@@ -343,3 +343,13 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - almacen, codigo, categoria, grupo, insumo, unidad
   - cantidad_vendida, existencia, diferencia (pendiente)
   - costo, total, pareto (80-20)
+
+### April 7, 2026 - Incidencias Clasificadas (Ingresos/Descuentos)
+- **Implementado**: Clasificación de incidencias por tipo (suma o resta al salario)
+- **INGRESOS (+)**: Bono, Horas Extra, Comisión, Incentivo, Gratificación
+- **DESCUENTOS (-)**: Falta, Retardo, Descuento, Vacaciones, Incapacidad, Permiso, Préstamo, Otro Descuento
+- **UI Mejorada**:
+  - Dropdown con optgroups separados (verde para +, rojo para -)
+  - Indicador visual al seleccionar: "Este tipo SUMA/RESTA al salario"
+  - Campo Monto con borde verde/rojo según tipo
+  - Tabla de incidencias con badge +/- coloreado y monto con signo

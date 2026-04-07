@@ -365,11 +365,34 @@ export default function RecursosHumanos() {
     }
   };
 
-  // Tipos de incidencia
-  const tiposIncidencia = [
-    'Falta', 'Retardo', 'Bono', 'Descuento', 'Horas Extra', 
-    'Vacaciones', 'Incapacidad', 'Permiso', 'Comision', 'Otro'
+  // Tipos de incidencia clasificados por categoría
+  const tiposIncidenciaIngresos = [
+    { value: 'Bono', label: 'Bono' },
+    { value: 'Horas Extra', label: 'Horas Extra' },
+    { value: 'Comision', label: 'Comisión' },
+    { value: 'Incentivo', label: 'Incentivo' },
+    { value: 'Gratificacion', label: 'Gratificación' },
   ];
+  
+  const tiposIncidenciaDescuentos = [
+    { value: 'Falta', label: 'Falta' },
+    { value: 'Retardo', label: 'Retardo' },
+    { value: 'Descuento', label: 'Descuento' },
+    { value: 'Vacaciones', label: 'Vacaciones' },
+    { value: 'Incapacidad', label: 'Incapacidad' },
+    { value: 'Permiso', label: 'Permiso' },
+    { value: 'Prestamo', label: 'Préstamo' },
+    { value: 'Otro', label: 'Otro Descuento' },
+  ];
+  
+  // Lista combinada para validación
+  const tiposIncidencia = [
+    ...tiposIncidenciaIngresos.map(t => t.value), 
+    ...tiposIncidenciaDescuentos.map(t => t.value)
+  ];
+  
+  // Función para determinar si es ingreso o descuento
+  const esIncidenciaIngreso = (tipo) => tiposIncidenciaIngresos.some(t => t.value === tipo);
 
   // ===================== FUNCIONES IMPORTAR EXCEL =====================
   
@@ -794,26 +817,30 @@ export default function RecursosHumanos() {
                     </td>
                   </tr>
                 ) : (
-                  incidencias.map((inc, i) => (
-                    <tr key={inc.IncidenciaID || i} className="border-b hover:bg-zinc-50">
-                      <td className="p-3 font-medium">{inc.Nombre_Completo}</td>
-                      <td className="p-3">{inc.Nombre_Sucursal || '-'}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          inc.Tipo_Incidencia === 'Falta' ? 'bg-red-100 text-red-700' :
-                          inc.Tipo_Incidencia === 'Bono' ? 'bg-green-100 text-green-700' :
-                          'bg-zinc-100 text-zinc-700'
-                        }`}>
-                          {inc.Tipo_Incidencia}
-                        </span>
-                      </td>
-                      <td className="p-3 text-zinc-600">
-                        {inc.Fecha_Incidencia ? new Date(inc.Fecha_Incidencia).toLocaleDateString('es-MX') : '-'}
-                      </td>
-                      <td className="p-3 text-right">${(inc.Monto || 0).toLocaleString()}</td>
-                      <td className="p-3 text-right">{inc.Unidades || 0}</td>
-                    </tr>
-                  ))
+                  incidencias.map((inc, i) => {
+                    const esIngreso = esIncidenciaIngreso(inc.Tipo_Incidencia);
+                    return (
+                      <tr key={inc.IncidenciaID || i} className="border-b hover:bg-zinc-50">
+                        <td className="p-3 font-medium">{inc.Nombre_Completo}</td>
+                        <td className="p-3">{inc.Nombre_Sucursal || '-'}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 w-fit ${
+                            esIngreso ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            <span className="font-bold">{esIngreso ? '+' : '-'}</span>
+                            {inc.Tipo_Incidencia}
+                          </span>
+                        </td>
+                        <td className="p-3 text-zinc-600">
+                          {inc.Fecha_Incidencia ? new Date(inc.Fecha_Incidencia).toLocaleDateString('es-MX') : '-'}
+                        </td>
+                        <td className={`p-3 text-right font-medium ${esIngreso ? 'text-green-600' : 'text-red-600'}`}>
+                          {esIngreso ? '+' : '-'}${(inc.Monto || 0).toLocaleString()}
+                        </td>
+                        <td className="p-3 text-right">{inc.Unidades || 0}</td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -1476,13 +1503,33 @@ export default function RecursosHumanos() {
                 <select
                   value={formIncidencia.tipo_incidencia}
                   onChange={(e) => setFormIncidencia({...formIncidencia, tipo_incidencia: e.target.value})}
-                  className="mt-1 w-full px-3 py-2 border rounded-lg text-sm"
+                  className={`mt-1 w-full px-3 py-2 border rounded-lg text-sm ${
+                    formIncidencia.tipo_incidencia 
+                      ? esIncidenciaIngreso(formIncidencia.tipo_incidencia)
+                        ? 'border-green-300 bg-green-50'
+                        : 'border-red-300 bg-red-50'
+                      : ''
+                  }`}
                 >
                   <option value="">Seleccionar tipo...</option>
-                  {tiposIncidencia.map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
+                  <optgroup label="➕ INGRESOS (+)" className="font-semibold text-green-700">
+                    {tiposIncidenciaIngresos.map(t => (
+                      <option key={t.value} value={t.value} className="text-green-700">+ {t.label}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="➖ DESCUENTOS (-)" className="font-semibold text-red-700">
+                    {tiposIncidenciaDescuentos.map(t => (
+                      <option key={t.value} value={t.value} className="text-red-700">- {t.label}</option>
+                    ))}
+                  </optgroup>
                 </select>
+                {formIncidencia.tipo_incidencia && (
+                  <p className={`mt-1 text-xs font-medium ${esIncidenciaIngreso(formIncidencia.tipo_incidencia) ? 'text-green-600' : 'text-red-600'}`}>
+                    {esIncidenciaIngreso(formIncidencia.tipo_incidencia) 
+                      ? '✓ Este tipo SUMA al salario del colaborador'
+                      : '✓ Este tipo RESTA del salario del colaborador'}
+                  </p>
+                )}
               </div>
               
               <div>
@@ -1497,12 +1544,18 @@ export default function RecursosHumanos() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium">Monto ($)</Label>
+                  <Label className="text-sm font-medium">
+                    Monto ($) {formIncidencia.tipo_incidencia && (
+                      <span className={esIncidenciaIngreso(formIncidencia.tipo_incidencia) ? 'text-green-600' : 'text-red-600'}>
+                        {esIncidenciaIngreso(formIncidencia.tipo_incidencia) ? '(+)' : '(-)'}
+                      </span>
+                    )}
+                  </Label>
                   <Input
                     type="number"
                     value={formIncidencia.monto}
                     onChange={(e) => setFormIncidencia({...formIncidencia, monto: parseFloat(e.target.value) || 0})}
-                    className="mt-1"
+                    className={`mt-1 ${formIncidencia.tipo_incidencia && (esIncidenciaIngreso(formIncidencia.tipo_incidencia) ? 'border-green-300' : 'border-red-300')}`}
                     min="0"
                     step="0.01"
                   />
