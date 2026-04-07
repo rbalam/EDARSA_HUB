@@ -21,8 +21,7 @@ import {
   UserCircle,
   BarChart3,
   Truck,
-  ClipboardList,
-  Wallet
+  ClipboardList
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -90,12 +89,6 @@ const Layout = () => {
       icon: UserCircle, 
       roles: ['Supervisor', 'Administrador'],
       badge: 'Próx.'
-    },
-    { 
-      name: 'Nóminas', 
-      href: '/nominas', 
-      icon: Wallet, 
-      roles: ['Supervisor', 'Administrador'],
     },
     { 
       name: 'Reportes BI', 

@@ -9,7 +9,8 @@ import {
   CheckCircle2, XCircle, RefreshCw, Filter, ArrowUpDown,
   X, Save, Upload, Trash2, Eye, Edit, UserPlus, FileSpreadsheet,
   Inbox, Star, Phone, Mail, Copy, ExternalLink, Settings, Lock,
-  Tag, DollarSign, Database
+  Tag, DollarSign, Database, Timer, ArrowRight, RotateCcw, Layers,
+  Target, ClipboardList, Send, History
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -78,6 +79,36 @@ export default function RecursosHumanos() {
   const [editingPuesto, setEditingPuesto] = useState(null);
   const [editingTipoIncidencia, setEditingTipoIncidencia] = useState(null);
   const [scriptCatalogos, setScriptCatalogos] = useState(null);
+  
+  // ============= ESTADOS MÓDULO NÓMINAS =============
+  const [ciclosNomina, setCiclosNomina] = useState([]);
+  const [configNomina, setConfigNomina] = useState(null);
+  const [loadingNominas, setLoadingNominas] = useState(false);
+  const [modalNuevoCiclo, setModalNuevoCiclo] = useState(false);
+  const [modalAprobarCiclo, setModalAprobarCiclo] = useState(false);
+  const [modalRechazarCiclo, setModalRechazarCiclo] = useState(false);
+  const [modalHistorialCiclo, setModalHistorialCiclo] = useState(false);
+  const [modalMovimientos, setModalMovimientos] = useState(false);
+  const [modalConfigNomina, setModalConfigNomina] = useState(false);
+  const [cicloSeleccionado, setCicloSeleccionado] = useState(null);
+  const [movimientosCiclo, setMovimientosCiclo] = useState([]);
+  const [passwordAprobacion, setPasswordAprobacion] = useState('');
+  const [comentarioAprobacion, setComentarioAprobacion] = useState('');
+  const [motivoRechazo, setMotivoRechazo] = useState('');
+  const [nominaSubTab, setNominaSubTab] = useState('kanban');
+  const [formNuevoCiclo, setFormNuevoCiclo] = useState({
+    sucursal_id: '',
+    fecha_corte: '',
+    tipo_nomina: 'quincenal',
+    notas: ''
+  });
+  const [formConfigNomina, setFormConfigNomina] = useState({
+    dia_corte: 0,
+    dia_pago: 1,
+    horario_headcount: '10:00',
+    horario_maquilador: '12:00',
+    horario_tesoreria: '14:00'
+  });
   
   // Form states
   const [formColaborador, setFormColaborador] = useState({
@@ -232,10 +263,165 @@ export default function RecursosHumanos() {
   useEffect(() => {
     if (activeTab === 'colaboradores') loadColaboradores();
     if (activeTab === 'incidencias') loadIncidencias();
-    if (activeTab === 'nomina') loadFlujos();
+    if (activeTab === 'nomina') loadCiclosNomina();
     if (activeTab === 'reclutamiento') loadReclutamiento();
     if (activeTab === 'catalogos') loadCatalogosCompleto();
   }, [activeTab, loadColaboradores, loadIncidencias, loadFlujos]);
+
+  // ============= FUNCIONES MÓDULO NÓMINAS =============
+  const ETAPAS_NOMINA = [
+    { id: 'headcount', nombre: 'Headcount', icon: Users, color: 'bg-blue-500', responsable: 'Gerencia' },
+    { id: 'incidencias', nombre: 'Incidencias', icon: ClipboardList, color: 'bg-purple-500', responsable: 'Gerencia' },
+    { id: 'validacion_rh', nombre: 'Validación RH', icon: UserCheck, color: 'bg-amber-500', responsable: 'RH' },
+    { id: 'maquilador', nombre: 'Maquilador', icon: FileSpreadsheet, color: 'bg-cyan-500', responsable: 'Maquilador' },
+    { id: 'autorizacion', nombre: 'Autorización', icon: CheckCircle2, color: 'bg-green-500', responsable: 'Gerencia' },
+    { id: 'tesoreria', nombre: 'Tesorería', icon: Wallet, color: 'bg-emerald-500', responsable: 'Tesorería' },
+    { id: 'pagada', nombre: 'Pagada', icon: DollarSign, color: 'bg-zinc-500', responsable: 'Sistema' }
+  ];
+  
+  const loadCiclosNomina = async () => {
+    try {
+      setLoadingNominas(true);
+      const [ciclosData, configData] = await Promise.all([
+        fetchWithAuth('/api/nomina/ciclos'),
+        fetchWithAuth('/api/nomina/configuracion')
+      ]);
+      setCiclosNomina(ciclosData.ciclos || []);
+      setConfigNomina(configData.configuracion);
+      if (configData.configuracion) {
+        setFormConfigNomina({
+          dia_corte: configData.configuracion.dia_corte || 0,
+          dia_pago: configData.configuracion.dia_pago || 1,
+          horario_headcount: configData.configuracion.horario_headcount || '10:00',
+          horario_maquilador: configData.configuracion.horario_maquilador || '12:00',
+          horario_tesoreria: configData.configuracion.horario_tesoreria || '14:00'
+        });
+      }
+    } catch (error) {
+      console.error('Error cargando nóminas:', error);
+    } finally {
+      setLoadingNominas(false);
+    }
+  };
+  
+  const getCiclosPorEtapa = (etapaId) => ciclosNomina.filter(c => c.etapa_actual === etapaId);
+  
+  const calcularTiempoRestante = (ciclo) => {
+    if (!ciclo.deadline_actual) return null;
+    const deadline = new Date(ciclo.deadline_actual);
+    const ahora = new Date();
+    const diff = deadline - ahora;
+    if (diff < 0) return { texto: 'Vencido', color: 'text-red-600', vencido: true };
+    const horas = Math.floor(diff / (1000 * 60 * 60));
+    const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    if (horas < 2) return { texto: `${horas}h ${minutos}m`, color: 'text-red-500', vencido: false };
+    if (horas < 6) return { texto: `${horas}h ${minutos}m`, color: 'text-amber-500', vencido: false };
+    return { texto: `${horas}h ${minutos}m`, color: 'text-green-500', vencido: false };
+  };
+  
+  const handleCrearCicloNomina = async () => {
+    if (!formNuevoCiclo.sucursal_id || !formNuevoCiclo.fecha_corte) {
+      toast.error('Complete todos los campos requeridos');
+      return;
+    }
+    setSavingForm(true);
+    try {
+      const response = await fetch(`${API_URL}/api/nomina/ciclos`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(formNuevoCiclo)
+      });
+      if (!response.ok) throw new Error('Error al crear ciclo');
+      toast.success('Ciclo de nómina creado correctamente');
+      setModalNuevoCiclo(false);
+      setFormNuevoCiclo({ sucursal_id: '', fecha_corte: '', tipo_nomina: 'quincenal', notas: '' });
+      loadCiclosNomina();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setSavingForm(false);
+    }
+  };
+  
+  const handleAvanzarCiclo = async () => {
+    if (!passwordAprobacion) {
+      toast.error('Ingrese su contraseña para autorizar');
+      return;
+    }
+    setSavingForm(true);
+    try {
+      const response = await fetch(`${API_URL}/api/nomina/ciclos/${cicloSeleccionado.id}/avanzar`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: passwordAprobacion, comentario: comentarioAprobacion })
+      });
+      if (response.status === 401) { toast.error('Contraseña incorrecta'); return; }
+      if (!response.ok) throw new Error('Error al avanzar etapa');
+      const data = await response.json();
+      toast.success(data.message || 'Etapa avanzada correctamente');
+      setModalAprobarCiclo(false);
+      setPasswordAprobacion('');
+      setComentarioAprobacion('');
+      loadCiclosNomina();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setSavingForm(false);
+    }
+  };
+  
+  const handleRechazarCiclo = async () => {
+    if (!motivoRechazo) { toast.error('Ingrese el motivo del rechazo'); return; }
+    setSavingForm(true);
+    try {
+      const response = await fetch(`${API_URL}/api/nomina/ciclos/${cicloSeleccionado.id}/rechazar`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motivo: motivoRechazo })
+      });
+      if (!response.ok) throw new Error('Error al rechazar');
+      toast.success('Nómina devuelta para corrección');
+      setModalRechazarCiclo(false);
+      setMotivoRechazo('');
+      loadCiclosNomina();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setSavingForm(false);
+    }
+  };
+  
+  const handleVerMovimientosCiclo = async (ciclo) => {
+    setCicloSeleccionado(ciclo);
+    try {
+      const data = await fetchWithAuth(`/api/nomina/ciclos/${ciclo.id}/movimientos`);
+      setMovimientosCiclo(data.movimientos || []);
+      setModalMovimientos(true);
+    } catch (error) {
+      toast.error('Error cargando movimientos');
+    }
+  };
+  
+  const handleGuardarConfigNomina = async () => {
+    setSavingForm(true);
+    try {
+      const response = await fetch(`${API_URL}/api/nomina/configuracion`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(formConfigNomina)
+      });
+      if (!response.ok) throw new Error('Error al guardar');
+      toast.success('Configuración guardada correctamente');
+      setModalConfigNomina(false);
+      loadCiclosNomina();
+    } catch (error) {
+      toast.error('Error al guardar configuración');
+    } finally {
+      setSavingForm(false);
+    }
+  };
+  
+  const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
   // Cargar datos de reclutamiento
   const loadReclutamiento = useCallback(async () => {
@@ -750,7 +936,7 @@ export default function RecursosHumanos() {
     { id: 'dashboard', label: 'Dashboard', icon: Building2 },
     { id: 'colaboradores', label: 'Colaboradores', icon: Users },
     { id: 'incidencias', label: 'Incidencias', icon: AlertTriangle },
-    { id: 'nomina', label: 'Flujo Nómina', icon: Wallet },
+    { id: 'nomina', label: 'Gestión Nóminas', icon: Wallet },
     { id: 'asistencia', label: 'Asistencia', icon: Clock },
     { id: 'reclutamiento', label: 'Reclutamiento', icon: Inbox },
     { id: 'catalogos', label: 'Catálogos', icon: Settings },
@@ -1120,98 +1306,250 @@ export default function RecursosHumanos() {
     </div>
   );
 
-  // Render Flujo Nómina
+  // Render Flujo Nómina (NUEVO MÓDULO KANBAN)
   const renderFlujoNomina = () => {
-    const estatusConfig = {
-      'Captura': { color: 'bg-zinc-100 text-zinc-700', icon: FileText },
-      'Enviado_RH': { color: 'bg-blue-100 text-blue-700', icon: Clock },
-      'Validacion_Gerente': { color: 'bg-amber-100 text-amber-700', icon: UserCheck },
-      'Rechazado_Gerente': { color: 'bg-red-100 text-red-700', icon: XCircle },
-      'Autorizacion_DG': { color: 'bg-purple-100 text-purple-700', icon: CheckCircle2 },
-      'Enviado_Tesoreria': { color: 'bg-indigo-100 text-indigo-700', icon: Wallet },
-      'Pagado': { color: 'bg-green-100 text-green-700', icon: CheckCircle2 },
-    };
-
+    if (loadingNominas) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <RefreshCw className="h-8 w-8 animate-spin text-zinc-400" />
+        </div>
+      );
+    }
+    
     return (
       <div className="space-y-4">
-        <div className="flex justify-between">
-          <select
-            value={filtroSucursal}
-            onChange={(e) => setFiltroSucursal(e.target.value)}
-            className="px-3 py-2 border rounded-lg text-sm"
-          >
-            <option value="">Todas las sucursales</option>
-            {sucursales.map(s => (
-              <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+        {/* Sub-Tabs */}
+        <div className="flex items-center justify-between border-b pb-2">
+          <div className="flex gap-2">
+            {['kanban', 'lista', 'config'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setNominaSubTab(tab)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  nominaSubTab === tab ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                }`}
+              >
+                {tab === 'kanban' ? 'Tablero Kanban' : tab === 'lista' ? 'Lista' : 'Configuración'}
+              </button>
             ))}
-          </select>
-          <Button size="sm" className="bg-zinc-900 text-white">
-            <Plus className="h-4 w-4 mr-1" />
-            Nuevo Periodo
-          </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={loadCiclosNomina}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            {(isAdmin || isSupervisor) && (
+              <Button size="sm" className="bg-zinc-900 text-white" onClick={() => setModalNuevoCiclo(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                Nuevo Ciclo
+              </Button>
+            )}
+          </div>
         </div>
-
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-zinc-50 border-b">
-                  <tr>
-                    <th className="text-left p-3 font-medium">Sucursal</th>
-                    <th className="text-left p-3 font-medium">Semana/Año</th>
-                    <th className="text-left p-3 font-medium">Estatus</th>
-                    <th className="text-left p-3 font-medium">Entrega RH</th>
-                    <th className="text-left p-3 font-medium">Validación</th>
-                    <th className="text-left p-3 font-medium">Autorización</th>
-                    <th className="text-left p-3 font-medium">Pago</th>
-                    <th className="text-left p-3 font-medium">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {flujos.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="text-center py-8 text-zinc-400">
-                        No hay flujos de nómina registrados
-                      </td>
-                    </tr>
-                  ) : (
-                    flujos.map((f, i) => {
-                      const config = estatusConfig[f.Estatus_Flujo] || estatusConfig['Captura'];
-                      return (
-                        <tr key={f.FlujoID || i} className="border-b hover:bg-zinc-50">
-                          <td className="p-3 font-medium">{f.Nombre_Sucursal}</td>
-                          <td className="p-3">{f.Semana_Anio}</td>
-                          <td className="p-3">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${config.color}`}>
-                              {f.Estatus_Flujo?.replace('_', ' ')}
-                            </span>
-                          </td>
-                          <td className="p-3 text-xs text-zinc-500">
-                            {f.Hora_Entrega_RH ? new Date(f.Hora_Entrega_RH).toLocaleString('es-MX') : '-'}
-                          </td>
-                          <td className="p-3 text-xs text-zinc-500">
-                            {f.Hora_Validacion_Gerente ? new Date(f.Hora_Validacion_Gerente).toLocaleString('es-MX') : '-'}
-                          </td>
-                          <td className="p-3 text-xs text-zinc-500">
-                            {f.Hora_Autorizacion_DG ? new Date(f.Hora_Autorizacion_DG).toLocaleString('es-MX') : '-'}
-                          </td>
-                          <td className="p-3 text-xs text-zinc-500">
-                            {f.Hora_Pago_Ejecutado ? new Date(f.Hora_Pago_Ejecutado).toLocaleString('es-MX') : '-'}
-                          </td>
-                          <td className="p-3">
-                            <Button variant="ghost" size="sm">
-                              <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+        
+        {/* Vista Kanban */}
+        {nominaSubTab === 'kanban' && (
+          <div className="overflow-x-auto pb-4">
+            <div className="flex gap-4 min-w-max">
+              {ETAPAS_NOMINA.map(etapa => {
+                const ciclosEtapa = getCiclosPorEtapa(etapa.id);
+                const IconoEtapa = etapa.icon;
+                return (
+                  <div key={etapa.id} className="w-64 bg-zinc-50 rounded-xl p-3 flex-shrink-0">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className={`p-2 rounded-lg ${etapa.color}`}>
+                        <IconoEtapa className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-zinc-900 text-sm">{etapa.nombre}</h3>
+                        <p className="text-xs text-zinc-500">{etapa.responsable}</p>
+                      </div>
+                      <span className="bg-zinc-200 text-zinc-700 text-xs font-medium px-2 py-1 rounded-full">
+                        {ciclosEtapa.length}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {ciclosEtapa.length === 0 ? (
+                        <div className="text-center py-6 text-zinc-400 text-xs">Sin nóminas</div>
+                      ) : (
+                        ciclosEtapa.map(ciclo => {
+                          const tiempoRestante = calcularTiempoRestante(ciclo);
+                          return (
+                            <Card key={ciclo.id} className={`cursor-pointer hover:shadow-md transition-shadow ${
+                              tiempoRestante?.vencido ? 'border-red-300 bg-red-50' : ''
+                            }`}>
+                              <CardContent className="p-3">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div>
+                                    <p className="font-medium text-sm text-zinc-900">{ciclo.sucursal_nombre || 'Sucursal'}</p>
+                                    <p className="text-xs text-zinc-500 capitalize">{ciclo.tipo_nomina}</p>
+                                  </div>
+                                  {tiempoRestante && (
+                                    <div className={`flex items-center gap-1 text-xs ${tiempoRestante.color}`}>
+                                      <Timer className="h-3 w-3" />{tiempoRestante.texto}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-xs text-zinc-500 mb-2">
+                                  <Calendar className="h-3 w-3 inline mr-1" />
+                                  Corte: {new Date(ciclo.fecha_corte).toLocaleDateString()}
+                                </div>
+                                <div className="flex items-center justify-between text-xs text-zinc-500 mb-2">
+                                  <span>{ciclo.total_colaboradores || 0} colab.</span>
+                                  <span>{ciclo.total_movimientos || 0} mov.</span>
+                                </div>
+                                {etapa.id !== 'pagada' && (
+                                  <div className="flex gap-1 pt-2 border-t">
+                                    <Button size="sm" variant="outline" className="flex-1 text-xs h-7"
+                                      onClick={() => handleVerMovimientosCiclo(ciclo)}>
+                                      <Eye className="h-3 w-3 mr-1" />Ver
+                                    </Button>
+                                    <Button size="sm" className="flex-1 text-xs h-7 bg-green-600 hover:bg-green-700"
+                                      onClick={() => { setCicloSeleccionado(ciclo); setPasswordAprobacion(''); setComentarioAprobacion(''); setModalAprobarCiclo(true); }}>
+                                      <ArrowRight className="h-3 w-3 mr-1" />Avanzar
+                                    </Button>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        )}
+        
+        {/* Vista Lista */}
+        {nominaSubTab === 'lista' && (
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-zinc-50 border-b">
+                    <tr>
+                      <th className="text-left p-3 font-medium">Sucursal</th>
+                      <th className="text-left p-3 font-medium">Tipo</th>
+                      <th className="text-left p-3 font-medium">Fecha Corte</th>
+                      <th className="text-left p-3 font-medium">Etapa</th>
+                      <th className="text-left p-3 font-medium">Deadline</th>
+                      <th className="text-left p-3 font-medium">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ciclosNomina.length === 0 ? (
+                      <tr><td colSpan={6} className="text-center py-8 text-zinc-400">No hay ciclos de nómina</td></tr>
+                    ) : (
+                      ciclosNomina.map(ciclo => {
+                        const etapa = ETAPAS_NOMINA.find(e => e.id === ciclo.etapa_actual);
+                        const tiempoRestante = calcularTiempoRestante(ciclo);
+                        return (
+                          <tr key={ciclo.id} className="border-b hover:bg-zinc-50">
+                            <td className="p-3 font-medium">{ciclo.sucursal_nombre}</td>
+                            <td className="p-3 capitalize">{ciclo.tipo_nomina}</td>
+                            <td className="p-3">{new Date(ciclo.fecha_corte).toLocaleDateString()}</td>
+                            <td className="p-3">
+                              {etapa && <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white ${etapa.color}`}>
+                                <etapa.icon className="h-3 w-3" />{etapa.nombre}
+                              </span>}
+                            </td>
+                            <td className="p-3">{tiempoRestante && <span className={`${tiempoRestante.color} font-medium`}>{tiempoRestante.texto}</span>}</td>
+                            <td className="p-3">
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="sm" onClick={() => { setCicloSeleccionado(ciclo); setModalHistorialCiclo(true); }}>
+                                  <History className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleVerMovimientosCiclo(ciclo)}>
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Vista Configuración */}
+        {nominaSubTab === 'config' && isAdmin && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="py-4">
+                <CardTitle className="text-base flex items-center gap-2"><Clock className="h-5 w-5" />Configuración de Tiempos</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Día de Corte</Label>
+                    <select value={formConfigNomina.dia_corte} onChange={(e) => setFormConfigNomina({...formConfigNomina, dia_corte: parseInt(e.target.value)})} className="w-full border rounded-lg px-3 py-2 mt-1">
+                      {diasSemana.map((dia, idx) => <option key={idx} value={idx}>{dia}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <Label>Día de Pago</Label>
+                    <select value={formConfigNomina.dia_pago} onChange={(e) => setFormConfigNomina({...formConfigNomina, dia_pago: parseInt(e.target.value)})} className="w-full border rounded-lg px-3 py-2 mt-1">
+                      {diasSemana.map((dia, idx) => <option key={idx} value={idx}>{dia}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>Horario Headcount</Label>
+                    <Input type="time" value={formConfigNomina.horario_headcount} onChange={(e) => setFormConfigNomina({...formConfigNomina, horario_headcount: e.target.value})} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label>Horario Maquilador</Label>
+                    <Input type="time" value={formConfigNomina.horario_maquilador} onChange={(e) => setFormConfigNomina({...formConfigNomina, horario_maquilador: e.target.value})} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label>Horario Tesorería</Label>
+                    <Input type="time" value={formConfigNomina.horario_tesoreria} onChange={(e) => setFormConfigNomina({...formConfigNomina, horario_tesoreria: e.target.value})} className="mt-1" />
+                  </div>
+                </div>
+                <Button onClick={handleGuardarConfigNomina} disabled={savingForm} className="w-full">
+                  {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}Guardar Configuración
+                </Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="py-4">
+                <CardTitle className="text-base flex items-center gap-2"><ArrowRight className="h-5 w-5" />Flujo de Nómina</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {ETAPAS_NOMINA.map((etapa, idx) => {
+                    const IconoEtapa = etapa.icon;
+                    return (
+                      <div key={etapa.id} className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${etapa.color}`}><IconoEtapa className="h-4 w-4 text-white" /></div>
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{idx + 1}. {etapa.nombre}</p>
+                          <p className="text-xs text-zinc-500">Responsable: {etapa.responsable}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        {nominaSubTab === 'config' && !isAdmin && (
+          <Card className="border-2 border-dashed border-zinc-300">
+            <CardContent className="py-12 text-center">
+              <Lock className="h-12 w-12 text-zinc-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-zinc-600 mb-2">Acceso Restringido</h3>
+              <p className="text-zinc-400 text-sm">Solo Administradores pueden modificar la configuración.</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   };
@@ -2838,7 +3176,7 @@ export default function RecursosHumanos() {
             
             <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <p className="font-medium text-amber-800 mb-2">⚠️ Instrucciones importantes:</p>
+                <p className="font-medium text-amber-800 mb-2">Instrucciones importantes:</p>
                 <ol className="list-decimal list-inside text-sm text-amber-700 space-y-1">
                   <li>Ejecute este script en la base de datos <strong>EDARSA HUB</strong></li>
                   <li>El script verifica si las tablas/columnas ya existen antes de crearlas</li>
@@ -2866,6 +3204,200 @@ export default function RecursosHumanos() {
             
             <div className="border-t px-6 py-4 flex justify-end bg-zinc-50">
               <Button variant="outline" onClick={() => setModalScriptCatalogos(false)}>Cerrar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============= MODALES MÓDULO NÓMINAS ============= */}
+      
+      {/* Modal Nuevo Ciclo */}
+      {modalNuevoCiclo && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Nuevo Ciclo de Nómina</h2>
+              <button onClick={() => setModalNuevoCiclo(false)} className="p-1 hover:bg-white/20 rounded"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <Label>Sucursal *</Label>
+                <select value={formNuevoCiclo.sucursal_id} onChange={(e) => setFormNuevoCiclo({...formNuevoCiclo, sucursal_id: e.target.value})} className="w-full border rounded-lg px-3 py-2 mt-1">
+                  <option value="">Seleccione sucursal</option>
+                  {sucursales.map(s => <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label>Fecha de Corte *</Label>
+                <Input type="date" value={formNuevoCiclo.fecha_corte} onChange={(e) => setFormNuevoCiclo({...formNuevoCiclo, fecha_corte: e.target.value})} className="mt-1" />
+              </div>
+              <div>
+                <Label>Tipo de Nómina</Label>
+                <select value={formNuevoCiclo.tipo_nomina} onChange={(e) => setFormNuevoCiclo({...formNuevoCiclo, tipo_nomina: e.target.value})} className="w-full border rounded-lg px-3 py-2 mt-1">
+                  <option value="quincenal">Quincenal</option>
+                  <option value="semanal">Semanal</option>
+                  <option value="mensual">Mensual</option>
+                </select>
+              </div>
+              <div>
+                <Label>Notas</Label>
+                <textarea value={formNuevoCiclo.notas} onChange={(e) => setFormNuevoCiclo({...formNuevoCiclo, notas: e.target.value})} className="w-full border rounded-lg px-3 py-2 mt-1 min-h-[60px]" placeholder="Observaciones..." />
+              </div>
+            </div>
+            <div className="border-t px-6 py-4 flex justify-end gap-2 bg-zinc-50">
+              <Button variant="outline" onClick={() => setModalNuevoCiclo(false)}>Cancelar</Button>
+              <Button onClick={handleCrearCicloNomina} disabled={savingForm}>
+                {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}Crear
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Aprobar/Avanzar */}
+      {modalAprobarCiclo && cicloSeleccionado && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="bg-green-600 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2"><Lock className="h-5 w-5" />Autorizar Avance</h2>
+              <button onClick={() => setModalAprobarCiclo(false)} className="p-1 hover:bg-white/20 rounded"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="p-4 bg-zinc-100 rounded-lg">
+                <p className="text-sm"><strong>Sucursal:</strong> {cicloSeleccionado.sucursal_nombre}</p>
+                <p className="text-sm"><strong>Etapa actual:</strong> {ETAPAS_NOMINA.find(e => e.id === cicloSeleccionado.etapa_actual)?.nombre}</p>
+              </div>
+              <div>
+                <Label className="flex items-center gap-2"><Lock className="h-4 w-4" />Contraseña de Autorización *</Label>
+                <Input type="password" value={passwordAprobacion} onChange={(e) => setPasswordAprobacion(e.target.value)} placeholder="Ingrese su contraseña" className="mt-1" />
+              </div>
+              <div>
+                <Label>Comentario (opcional)</Label>
+                <textarea value={comentarioAprobacion} onChange={(e) => setComentarioAprobacion(e.target.value)} className="w-full border rounded-lg px-3 py-2 mt-1" placeholder="Observaciones..." />
+              </div>
+            </div>
+            <div className="border-t px-6 py-4 flex justify-end gap-2 bg-zinc-50">
+              <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => { setModalAprobarCiclo(false); setMotivoRechazo(''); setModalRechazarCiclo(true); }}>
+                <RotateCcw className="h-4 w-4 mr-1" />Devolver
+              </Button>
+              <Button onClick={handleAvanzarCiclo} disabled={savingForm || !passwordAprobacion} className="bg-green-600 hover:bg-green-700">
+                {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-1" /> : <ArrowRight className="h-4 w-4 mr-1" />}Avanzar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Rechazar */}
+      {modalRechazarCiclo && cicloSeleccionado && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="bg-red-600 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2"><RotateCcw className="h-5 w-5" />Devolver para Corrección</h2>
+              <button onClick={() => setModalRechazarCiclo(false)} className="p-1 hover:bg-white/20 rounded"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">La nómina será devuelta a <strong>Validación RH</strong> para correcciones.</p>
+              </div>
+              <div>
+                <Label>Motivo del Rechazo *</Label>
+                <textarea value={motivoRechazo} onChange={(e) => setMotivoRechazo(e.target.value)} className="w-full border border-red-200 rounded-lg px-3 py-2 mt-1 min-h-[80px]" placeholder="Describa el motivo..." />
+              </div>
+            </div>
+            <div className="border-t px-6 py-4 flex justify-end gap-2 bg-zinc-50">
+              <Button variant="outline" onClick={() => setModalRechazarCiclo(false)}>Cancelar</Button>
+              <Button onClick={handleRechazarCiclo} disabled={savingForm || !motivoRechazo} className="bg-red-600 hover:bg-red-700">
+                {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-1" /> : <RotateCcw className="h-4 w-4 mr-1" />}Devolver
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Historial */}
+      {modalHistorialCiclo && cicloSeleccionado && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2"><History className="h-5 w-5" />Historial de Trazabilidad</h2>
+              <button onClick={() => setModalHistorialCiclo(false)} className="p-1 hover:bg-white/20 rounded"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="mb-4 p-3 bg-zinc-100 rounded-lg">
+                <p className="text-sm"><strong>Sucursal:</strong> {cicloSeleccionado.sucursal_nombre}</p>
+                <p className="text-sm"><strong>Fecha Corte:</strong> {new Date(cicloSeleccionado.fecha_corte).toLocaleDateString()}</p>
+              </div>
+              {(cicloSeleccionado.historial || []).length === 0 ? (
+                <div className="text-center py-8 text-zinc-500"><History className="h-12 w-12 mx-auto mb-2 opacity-50" /><p>Sin eventos registrados</p></div>
+              ) : (
+                <div className="relative">
+                  <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-zinc-200"></div>
+                  <div className="space-y-4">
+                    {(cicloSeleccionado.historial || []).map((evento, idx) => (
+                      <div key={evento.id || idx} className="relative pl-10">
+                        <div className={`absolute left-2 w-4 h-4 rounded-full ${evento.tipo === 'creacion' ? 'bg-blue-500' : evento.tipo === 'avance' ? 'bg-green-500' : evento.tipo === 'rechazo' ? 'bg-red-500' : 'bg-zinc-400'}`}></div>
+                        <div className="bg-white border rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium text-sm">{evento.accion}</span>
+                            <span className="text-xs text-zinc-500">{new Date(evento.timestamp).toLocaleString()}</span>
+                          </div>
+                          <p className="text-sm text-zinc-600">{evento.descripcion}</p>
+                          <p className="text-xs text-zinc-400 mt-1">Por: {evento.usuario_nombre || evento.usuario_email}</p>
+                          {evento.comentario && <p className="text-xs text-zinc-500 mt-1 italic">"{evento.comentario}"</p>}
+                          {evento.motivo && <p className="text-xs text-red-500 mt-1">Motivo: {evento.motivo}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Movimientos */}
+      {modalMovimientos && cicloSeleccionado && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2"><FileText className="h-5 w-5" />Movimientos de Nómina</h2>
+              <button onClick={() => setModalMovimientos(false)} className="p-1 hover:bg-white/20 rounded"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="mb-4 p-3 bg-zinc-100 rounded-lg">
+                <p className="text-sm"><strong>Sucursal:</strong> {cicloSeleccionado.sucursal_nombre}</p>
+                <p className="text-sm"><strong>Etapa:</strong> {ETAPAS_NOMINA.find(e => e.id === cicloSeleccionado.etapa_actual)?.nombre}</p>
+              </div>
+              {movimientosCiclo.length === 0 ? (
+                <div className="text-center py-8 text-zinc-500"><FileText className="h-12 w-12 mx-auto mb-2 opacity-50" /><p>Sin movimientos registrados</p></div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-zinc-50 border-b">
+                      <tr>
+                        <th className="text-left py-2 px-3 font-medium text-zinc-500">Colaborador</th>
+                        <th className="text-left py-2 px-3 font-medium text-zinc-500">Tipo</th>
+                        <th className="text-right py-2 px-3 font-medium text-zinc-500">Monto</th>
+                        <th className="text-right py-2 px-3 font-medium text-zinc-500">Unidades</th>
+                        <th className="text-left py-2 px-3 font-medium text-zinc-500">Notas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {movimientosCiclo.map((mov, idx) => (
+                        <tr key={mov.id || idx} className="border-b hover:bg-zinc-50">
+                          <td className="py-2 px-3 font-medium">{mov.colaborador_nombre}</td>
+                          <td className="py-2 px-3"><span className={`px-2 py-1 rounded text-xs ${mov.categoria === 'Ingreso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{mov.tipo_incidencia}</span></td>
+                          <td className="py-2 px-3 text-right font-mono">${(mov.monto || 0).toLocaleString()}</td>
+                          <td className="py-2 px-3 text-right">{mov.unidades || '-'}</td>
+                          <td className="py-2 px-3 text-zinc-500 text-xs">{mov.notas || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>
