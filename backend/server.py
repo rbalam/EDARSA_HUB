@@ -3701,6 +3701,7 @@ class ComparativoInventariosRequest(BaseModel):
     almacen_nombre: str = ""
     sucursal_id: Optional[str] = None
     sucursal_nombre: str = ""
+    comentario: Optional[str] = None  # Para MPRO: filtrar por comentario (CAVA, BARRA, BODEGA, etc.)
     fecha_referencia: str  # Fecha de referencia para buscar hacia atrás
     categorias: Optional[List[str]] = None
 
@@ -3757,6 +3758,7 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
         ("Servidor:", metadata.get('servidor_nombre', 'N/A')),
         ("Sucursal:", metadata.get('sucursal_nombre', 'N/A')),
         ("Almacén:", metadata.get('almacen_nombre', 'N/A')),
+        ("Comentario/Tipo:", metadata.get('comentario', 'N/A')),
         ("Fecha de Elaboración:", datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
     ]
     
@@ -3898,20 +3900,29 @@ async def export_comparativo_inventarios(request: ComparativoInventariosRequest,
     try:
         # 1. Obtener los últimos 4 folios de inventario para el almacén especificado
         if server['system_type'] == 'MPRO':
-            # Para MPRO
+            # Para MPRO - Filtrar por almacén, sucursal Y comentario (naturaleza del inventario)
             sucursal_filtro = f"AND F.Sc_Cve_Sucursal = '{request.sucursal_id}'" if request.sucursal_id else ""
+            
+            # Filtro por comentario - CRÍTICO para comparar inventarios de la misma naturaleza
+            comentario_filtro = ""
+            if request.comentario:
+                # Escapar comillas simples en el comentario
+                comentario_limpio = request.comentario.replace("'", "''")
+                comentario_filtro = f"AND F.Fi_Comentario = '{comentario_limpio}'"
             
             query_cortes = f"""
             SELECT TOP 4 
                 F.Fi_Folio as folio,
                 CONVERT(varchar, F.Fi_Fecha, 120) as fecha,
-                A.Al_Descripcion as almacen
+                A.Al_Descripcion as almacen,
+                ISNULL(F.Fi_Comentario, '') as comentario
             FROM Fisico F
             INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
             WHERE A.Al_Cve_Almacen = '{request.almacen_id}'
                 {sucursal_filtro}
+                {comentario_filtro}
                 AND F.Fi_Fecha <= '{request.fecha_referencia}'
-            GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion
+            GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, F.Fi_Comentario
             ORDER BY F.Fi_Fecha DESC
             """
             
@@ -4073,12 +4084,13 @@ async def export_comparativo_inventarios(request: ComparativoInventariosRequest,
         # Filtrar productos sin diferencias significativas (opcional)
         productos_list = [p for p in productos_list if any(d is not None and d != 0 for d in p.get('diferencias', []))]
         
-        # Metadata
+        # Metadata - incluir comentario para MPRO
         metadata = {
             'servidor_nombre': server.get('name', 'N/A'),
             'sucursal_nombre': request.sucursal_nombre or 'N/A',
             'almacen_nombre': request.almacen_nombre or 'N/A',
-            'cortes': [{'folio': c['folio'], 'fecha': c['fecha']} for c in cortes_result]
+            'comentario': request.comentario or 'TODOS',
+            'cortes': [{'folio': c['folio'], 'fecha': c['fecha'], 'comentario': c.get('comentario', '')} for c in cortes_result]
         }
         
         # Generar Excel

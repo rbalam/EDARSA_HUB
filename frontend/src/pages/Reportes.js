@@ -871,9 +871,17 @@ const Reportes = () => {
       return;
     }
     
+    // Para MPRO: obtener comentario del inventario inicial seleccionado (para filtrar por misma naturaleza)
+    // Si hay un inventario inicial seleccionado, usar su comentario
+    let comentarioFiltro = null;
+    if (selectedInventariosIni.length > 0 && selectedInventariosIni[0].comentario) {
+      comentarioFiltro = selectedInventariosIni[0].comentario;
+    }
+    
     try {
       setLoadingComparativo(true);
-      toast.info('Generando reporte comparativo de 4 cortes...');
+      const comentarioMsg = comentarioFiltro ? ` (${comentarioFiltro})` : '';
+      toast.info(`Generando reporte comparativo de 4 cortes${comentarioMsg}...`);
       
       // Usar fecha actual si no hay fecha seleccionada
       const fechaReferencia = filters.fecha_fin || new Date().toISOString().split('T')[0];
@@ -884,6 +892,7 @@ const Reportes = () => {
         almacen_nombre: almacenSeleccionado.nombre || almacenSeleccionado.Al_Descripcion || 'Almacen',
         sucursal_id: filters.sucursal_id || '',
         sucursal_nombre: filters.sucursal || '',
+        comentario: comentarioFiltro,  // Filtrar por comentario para MPRO
         fecha_referencia: fechaReferencia,
         categorias: selectedCategorias.length > 0 ? selectedCategorias : null
       }, {
@@ -897,7 +906,10 @@ const Reportes = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `comparativo_4cortes_${almacenSeleccionado.nombre || 'inventario'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      const nombreArchivo = comentarioFiltro 
+        ? `comparativo_4cortes_${almacenSeleccionado.nombre || 'inventario'}_${comentarioFiltro}_${new Date().toISOString().split('T')[0]}.xlsx`
+        : `comparativo_4cortes_${almacenSeleccionado.nombre || 'inventario'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.download = nombreArchivo;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1724,7 +1736,9 @@ const Reportes = () => {
                 variant="outline"
                 className="border-emerald-500 text-emerald-700 hover:bg-emerald-50"
                 data-testid="export-comparativo-4cortes-button"
-                title="Genera un Excel comparando las diferencias de los últimos 4 inventarios físicos para detectar patrones de faltantes/sobrantes"
+                title={selectedInventariosIni.length > 0 && selectedInventariosIni[0].comentario 
+                  ? `Genera comparativo de los últimos 4 inventarios tipo "${selectedInventariosIni[0].comentario}" para detectar patrones`
+                  : "Selecciona un Inventario Inicial para filtrar por tipo (MPRO). Para SoftRestaurant, solo necesitas el almacén."}
               >
                 {loadingComparativo ? (
                   <>
@@ -1735,6 +1749,9 @@ const Reportes = () => {
                   <>
                     <FileSpreadsheet className="h-4 w-4 mr-2" />
                     Comparativo 4 Cortes
+                    {selectedInventariosIni.length > 0 && selectedInventariosIni[0].comentario && (
+                      <span className="ml-1 text-xs opacity-70">({selectedInventariosIni[0].comentario})</span>
+                    )}
                   </>
                 )}
               </Button>
