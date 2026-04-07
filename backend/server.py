@@ -16394,6 +16394,619 @@ GO
     }
 
 
+# ============================================================================
+# MÓDULO DE NÓMINAS - GESTIÓN DE CICLOS
+# ============================================================================
+
+# Etapas del flujo de nómina
+ETAPAS_NOMINA = [
+    {"id": "headcount", "nombre": "Headcount", "responsable": "Gerencia", "orden": 1},
+    {"id": "incidencias", "nombre": "Incidencias", "responsable": "Gerencia", "orden": 2},
+    {"id": "validacion_rh", "nombre": "Validación RH", "responsable": "RH", "orden": 3},
+    {"id": "maquilador", "nombre": "Maquilador", "responsable": "Maquilador", "orden": 4},
+    {"id": "autorizacion", "nombre": "Autorización", "responsable": "Gerencia", "orden": 5},
+    {"id": "tesoreria", "nombre": "Tesorería", "responsable": "Tesorería", "orden": 6},
+    {"id": "pagada", "nombre": "Pagada", "responsable": "Sistema", "orden": 7}
+]
+
+# Mapeo de roles permitidos por responsable
+ROLES_NOMINA = {
+    "Gerencia": ["Administrador", "Supervisor"],
+    "RH": ["Administrador", "Supervisor"],
+    "Maquilador": ["Administrador", "Supervisor", "Maquilador"],
+    "Tesorería": ["Administrador", "Tesoreria"],
+    "Sistema": ["Administrador"]
+}
+
+
+async def agregar_evento_nomina(ciclo_id: str, evento: Dict):
+    """Agrega un evento al historial de trazabilidad de un ciclo de nómina"""
+    evento["id"] = str(uuid.uuid4())
+    evento["timestamp"] = datetime.now(timezone.utc).isoformat()
+    await db.nomina_ciclos.update_one(
+        {"id": ciclo_id},
+        {"$push": {"historial": evento}}
+    )
+
+
+def calcular_deadline(fecha_base: datetime, horario: str, dia_objetivo: int = None) -> datetime:
+    """Calcula el deadline basado en la configuración"""
+    hora, minuto = map(int, horario.split(':'))
+    deadline = fecha_base.replace(hour=hora, minute=minuto, second=0, microsecond=0)
+    if dia_objetivo is not None:
+        dias_adelante = (dia_objetivo - fecha_base.weekday()) % 7
+        if dias_adelante == 0 and fecha_base.hour >= hora:
+            dias_adelante = 7
+        deadline = deadline + timedelta(days=dias_adelante)
+    return deadline
+
+
+@api_router.get("/nomina/ciclos")
+async def listar_ciclos_nomina(
+    sucursal_id: str = Query(default=None),
+    periodo: str = Query(default="actual"),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista los ciclos de nómina con filtros opcionales"""
+    filtro = {}
+    
+    if sucursal_id:
+        filtro["sucursal_id"] = sucursal_id
+    
+    # Filtrar por periodo
+    ahora = datetime.now(timezone.utc)
+    if periodo == "actual":
+        # Últimos 30 días
+        fecha_inicio = ahora - timedelta(days=30)
+        filtro["fecha_creacion"] = {"$gte": fecha_inicio.isoformat()}
+    elif periodo == "anterior":
+        fecha_inicio = ahora - timedelta(days=60)
+        fecha_fin = ahora - timedelta(days=30)
+        filtro["fecha_creacion"] = {"$gte": fecha_inicio.isoformat(), "$lt": fecha_fin.isoformat()}
+    
+    cursor = db.nomina_ciclos.find(filtro).sort("fecha_creacion", -1)
+    ciclos = await cursor.to_list(length=100)
+    
+    # Limpiar _id de MongoDB
+    for ciclo in ciclos:
+        ciclo.pop("_id", None)
+    
+    return {"ciclos": ciclos, "total": len(ciclos)}
+
+
+@api_router.get("/nomina/ciclos/{ciclo_id}")
+async def obtener_ciclo_nomina(ciclo_id: str, current_user: Dict = Depends(get_current_user)):
+    """Obtiene el detalle de un ciclo de nómina"""
+    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+    if not ciclo:
+        raise HTTPException(status_code=404, detail="Ciclo no encontrado")
+    
+    ciclo.pop("_id", None)
+    return {"ciclo": ciclo}
+
+
+@api_router.post("/nomina/ciclos")
+async def crear_ciclo_nomina(body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Crea un nuevo ciclo de nómina"""
+    if current_user.get('role') not in ['Administrador', 'Supervisor']:
+        raise HTTPException(status_code=403, detail="No autorizado para crear ciclos de nómina")
+    
+    sucursal_id = body.get('sucursal_id')
+    fecha_corte = body.get('fecha_corte')
+    tipo_nomina = body.get('tipo_nomina', 'quincenal')
+    notas = body.get('notas', '')
+    
+    if not sucursal_id or not fecha_corte:
+        raise HTTPException(status_code=400, detail="Sucursal y fecha de corte son requeridos")
+    
+    # Obtener nombre de sucursal
+    sucursal_nombre = "Sucursal"
+    try:
+        query_suc = f"SELECT Nombre FROM RH_Cat_Sucursales WHERE SucursalID = {sucursal_id}"
+        result_suc = await execute_edarsa_hub_query(query_suc)
+        if result_suc.get("datos"):
+            sucursal_nombre = result_suc["datos"][0].get("Nombre", "Sucursal")
+    except:
+        pass
+    
+    # Verificar si ya existe un ciclo activo para esta sucursal en la misma fecha
+    ciclo_existente = await db.nomina_ciclos.find_one({
+        "sucursal_id": sucursal_id,
+        "fecha_corte": fecha_corte,
+        "etapa_actual": {"$ne": "pagada"}
+    })
+    if ciclo_existente:
+        raise HTTPException(status_code=400, detail="Ya existe un ciclo activo para esta sucursal y fecha de corte")
+    
+    # Obtener configuración
+    config = await db.nomina_configuracion.find_one({"tipo": "general"})
+    config = config or {}
+    
+    ahora = datetime.now(timezone.utc)
+    
+    # Calcular deadline inicial (para headcount)
+    horario_headcount = config.get('horario_headcount', '10:00')
+    deadline_inicial = calcular_deadline(ahora, horario_headcount)
+    
+    ciclo_id = str(uuid.uuid4())
+    ciclo = {
+        "id": ciclo_id,
+        "sucursal_id": sucursal_id,
+        "sucursal_nombre": sucursal_nombre,
+        "fecha_corte": fecha_corte,
+        "tipo_nomina": tipo_nomina,
+        "notas": notas,
+        "etapa_actual": "headcount",
+        "deadline_actual": deadline_inicial.isoformat(),
+        "total_colaboradores": 0,
+        "total_movimientos": 0,
+        "fecha_creacion": ahora.isoformat(),
+        "creado_por_id": current_user.get("id"),
+        "creado_por_email": current_user.get("email"),
+        "historial": [{
+            "id": str(uuid.uuid4()),
+            "tipo": "creacion",
+            "accion": "CICLO_CREADO",
+            "descripcion": f"Ciclo de nómina {tipo_nomina} creado para {sucursal_nombre}",
+            "usuario_id": current_user.get("id"),
+            "usuario_email": current_user.get("email"),
+            "usuario_nombre": current_user.get("name"),
+            "timestamp": ahora.isoformat()
+        }]
+    }
+    
+    await db.nomina_ciclos.insert_one(ciclo)
+    
+    return {"success": True, "ciclo_id": ciclo_id, "message": "Ciclo de nómina creado correctamente"}
+
+
+@api_router.post("/nomina/ciclos/{ciclo_id}/avanzar")
+async def avanzar_etapa_nomina(ciclo_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Avanza el ciclo de nómina a la siguiente etapa (requiere firma de autorización)"""
+    password = body.get('password')
+    comentario = body.get('comentario', '')
+    
+    if not password:
+        raise HTTPException(status_code=400, detail="Se requiere contraseña de autorización")
+    
+    # Verificar contraseña
+    user = await db.users.find_one({"id": current_user.get("id")})
+    if not user or not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+        raise HTTPException(status_code=401, detail="Contraseña incorrecta")
+    
+    # Obtener ciclo
+    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+    if not ciclo:
+        raise HTTPException(status_code=404, detail="Ciclo no encontrado")
+    
+    etapa_actual = ciclo.get("etapa_actual")
+    if etapa_actual == "pagada":
+        raise HTTPException(status_code=400, detail="El ciclo ya está finalizado")
+    
+    # Verificar permisos para la etapa actual
+    etapa_info = next((e for e in ETAPAS_NOMINA if e["id"] == etapa_actual), None)
+    if not etapa_info:
+        raise HTTPException(status_code=400, detail="Etapa no válida")
+    
+    roles_permitidos = ROLES_NOMINA.get(etapa_info["responsable"], [])
+    if current_user.get("role") not in roles_permitidos:
+        raise HTTPException(status_code=403, detail=f"No tiene permisos para actuar en la etapa {etapa_info['nombre']}")
+    
+    # Determinar siguiente etapa
+    idx_actual = next((i for i, e in enumerate(ETAPAS_NOMINA) if e["id"] == etapa_actual), -1)
+    if idx_actual == -1 or idx_actual >= len(ETAPAS_NOMINA) - 1:
+        raise HTTPException(status_code=400, detail="No hay siguiente etapa")
+    
+    siguiente_etapa = ETAPAS_NOMINA[idx_actual + 1]
+    
+    # Obtener configuración para calcular nuevo deadline
+    config = await db.nomina_configuracion.find_one({"tipo": "general"})
+    config = config or {}
+    
+    ahora = datetime.now(timezone.utc)
+    nuevo_deadline = None
+    
+    # Calcular deadline según la etapa
+    if siguiente_etapa["id"] == "incidencias":
+        nuevo_deadline = calcular_deadline(ahora, config.get('horario_headcount', '10:00'))
+    elif siguiente_etapa["id"] == "validacion_rh":
+        nuevo_deadline = calcular_deadline(ahora, config.get('horario_maquilador', '12:00'))
+    elif siguiente_etapa["id"] == "maquilador":
+        nuevo_deadline = calcular_deadline(ahora, config.get('horario_maquilador', '12:00'))
+    elif siguiente_etapa["id"] == "autorizacion":
+        nuevo_deadline = calcular_deadline(ahora, config.get('horario_maquilador', '12:00'))
+    elif siguiente_etapa["id"] == "tesoreria":
+        nuevo_deadline = calcular_deadline(ahora, config.get('horario_tesoreria', '14:00'))
+    
+    # Actualizar ciclo
+    update_data = {
+        "etapa_actual": siguiente_etapa["id"],
+        "fecha_ultima_actualizacion": ahora.isoformat()
+    }
+    if nuevo_deadline:
+        update_data["deadline_actual"] = nuevo_deadline.isoformat()
+    
+    await db.nomina_ciclos.update_one(
+        {"id": ciclo_id},
+        {"$set": update_data}
+    )
+    
+    # Registrar evento
+    await agregar_evento_nomina(ciclo_id, {
+        "tipo": "avance",
+        "accion": "ETAPA_AVANZADA",
+        "descripcion": f"Avance de '{etapa_info['nombre']}' a '{siguiente_etapa['nombre']}'",
+        "etapa_anterior": etapa_actual,
+        "etapa_nueva": siguiente_etapa["id"],
+        "usuario_id": current_user.get("id"),
+        "usuario_email": current_user.get("email"),
+        "usuario_nombre": current_user.get("name"),
+        "comentario": comentario
+    })
+    
+    return {
+        "success": True, 
+        "message": f"Nómina avanzada a etapa: {siguiente_etapa['nombre']}",
+        "etapa_anterior": etapa_actual,
+        "etapa_nueva": siguiente_etapa["id"]
+    }
+
+
+@api_router.post("/nomina/ciclos/{ciclo_id}/rechazar")
+async def rechazar_ciclo_nomina(ciclo_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Rechaza/devuelve el ciclo de nómina a la etapa de validación RH"""
+    motivo = body.get('motivo', '')
+    
+    if not motivo:
+        raise HTTPException(status_code=400, detail="Se requiere motivo del rechazo")
+    
+    # Obtener ciclo
+    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+    if not ciclo:
+        raise HTTPException(status_code=404, detail="Ciclo no encontrado")
+    
+    etapa_actual = ciclo.get("etapa_actual")
+    
+    # Solo se puede rechazar desde autorizacion
+    if etapa_actual not in ["autorizacion", "maquilador"]:
+        raise HTTPException(status_code=400, detail="Solo se puede devolver desde las etapas de Autorización o Maquilador")
+    
+    # Verificar permisos
+    etapa_info = next((e for e in ETAPAS_NOMINA if e["id"] == etapa_actual), None)
+    roles_permitidos = ROLES_NOMINA.get(etapa_info["responsable"], [])
+    if current_user.get("role") not in roles_permitidos:
+        raise HTTPException(status_code=403, detail="No tiene permisos para rechazar en esta etapa")
+    
+    ahora = datetime.now(timezone.utc)
+    
+    # Devolver a validación RH
+    await db.nomina_ciclos.update_one(
+        {"id": ciclo_id},
+        {"$set": {
+            "etapa_actual": "validacion_rh",
+            "fecha_ultima_actualizacion": ahora.isoformat()
+        }}
+    )
+    
+    # Registrar evento
+    await agregar_evento_nomina(ciclo_id, {
+        "tipo": "rechazo",
+        "accion": "NOMINA_DEVUELTA",
+        "descripcion": f"Nómina devuelta para corrección desde '{etapa_info['nombre']}' a 'Validación RH'",
+        "etapa_anterior": etapa_actual,
+        "etapa_nueva": "validacion_rh",
+        "motivo": motivo,
+        "usuario_id": current_user.get("id"),
+        "usuario_email": current_user.get("email"),
+        "usuario_nombre": current_user.get("name")
+    })
+    
+    return {"success": True, "message": "Nómina devuelta para corrección"}
+
+
+@api_router.get("/nomina/ciclos/{ciclo_id}/movimientos")
+async def listar_movimientos_nomina(ciclo_id: str, current_user: Dict = Depends(get_current_user)):
+    """Lista los movimientos de un ciclo de nómina"""
+    # Verificar que el ciclo existe
+    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+    if not ciclo:
+        raise HTTPException(status_code=404, detail="Ciclo no encontrado")
+    
+    cursor = db.nomina_movimientos.find({"ciclo_id": ciclo_id}).sort("fecha_registro", -1)
+    movimientos = await cursor.to_list(length=500)
+    
+    for mov in movimientos:
+        mov.pop("_id", None)
+    
+    return {"movimientos": movimientos, "total": len(movimientos)}
+
+
+@api_router.post("/nomina/ciclos/{ciclo_id}/movimientos")
+async def agregar_movimiento_nomina(ciclo_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Agrega un movimiento de nómina (incidencia) a un ciclo"""
+    # Verificar que el ciclo existe y está en etapa correcta
+    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+    if not ciclo:
+        raise HTTPException(status_code=404, detail="Ciclo no encontrado")
+    
+    etapa_actual = ciclo.get("etapa_actual")
+    if etapa_actual not in ["headcount", "incidencias", "validacion_rh"]:
+        raise HTTPException(status_code=400, detail="No se pueden agregar movimientos en esta etapa")
+    
+    colaborador_id = body.get('colaborador_id')
+    tipo_incidencia = body.get('tipo_incidencia')
+    monto = body.get('monto', 0)
+    unidades = body.get('unidades', 0)
+    notas = body.get('notas', '')
+    
+    if not colaborador_id or not tipo_incidencia:
+        raise HTTPException(status_code=400, detail="Colaborador y tipo de incidencia son requeridos")
+    
+    # Obtener nombre del colaborador
+    colaborador_nombre = "Colaborador"
+    try:
+        query_col = f"SELECT NombreCompleto FROM RH_Colaboradores_Expediente WHERE ColaboradorID = {colaborador_id}"
+        result_col = await execute_edarsa_hub_query(query_col)
+        if result_col.get("datos"):
+            colaborador_nombre = result_col["datos"][0].get("NombreCompleto", "Colaborador")
+    except:
+        pass
+    
+    ahora = datetime.now(timezone.utc)
+    movimiento_id = str(uuid.uuid4())
+    
+    movimiento = {
+        "id": movimiento_id,
+        "ciclo_id": ciclo_id,
+        "colaborador_id": str(colaborador_id),
+        "colaborador_nombre": colaborador_nombre,
+        "tipo_incidencia": tipo_incidencia,
+        "categoria": "Ingreso" if tipo_incidencia in ["BON", "HEX", "COM", "Bono", "Horas Extra", "Comisión"] else "Descuento",
+        "monto": float(monto),
+        "unidades": float(unidades),
+        "notas": notas,
+        "fecha_registro": ahora.isoformat(),
+        "registrado_por_id": current_user.get("id"),
+        "registrado_por": current_user.get("email")
+    }
+    
+    await db.nomina_movimientos.insert_one(movimiento)
+    
+    # Actualizar contador en el ciclo
+    await db.nomina_ciclos.update_one(
+        {"id": ciclo_id},
+        {"$inc": {"total_movimientos": 1}}
+    )
+    
+    return {"success": True, "movimiento_id": movimiento_id, "message": "Movimiento agregado"}
+
+
+@api_router.delete("/nomina/movimientos/{movimiento_id}")
+async def eliminar_movimiento_nomina(movimiento_id: str, current_user: Dict = Depends(get_current_user)):
+    """Elimina un movimiento de nómina"""
+    movimiento = await db.nomina_movimientos.find_one({"id": movimiento_id})
+    if not movimiento:
+        raise HTTPException(status_code=404, detail="Movimiento no encontrado")
+    
+    ciclo_id = movimiento.get("ciclo_id")
+    
+    # Verificar etapa del ciclo
+    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+    if ciclo and ciclo.get("etapa_actual") not in ["headcount", "incidencias", "validacion_rh"]:
+        raise HTTPException(status_code=400, detail="No se pueden eliminar movimientos en esta etapa")
+    
+    await db.nomina_movimientos.delete_one({"id": movimiento_id})
+    
+    # Actualizar contador
+    await db.nomina_ciclos.update_one(
+        {"id": ciclo_id},
+        {"$inc": {"total_movimientos": -1}}
+    )
+    
+    return {"success": True, "message": "Movimiento eliminado"}
+
+
+@api_router.get("/nomina/configuracion")
+async def obtener_configuracion_nomina(current_user: Dict = Depends(get_current_user)):
+    """Obtiene la configuración de nóminas"""
+    config = await db.nomina_configuracion.find_one({"tipo": "general"})
+    
+    if not config:
+        # Configuración por defecto
+        config = {
+            "tipo": "general",
+            "dia_corte": 0,  # Domingo
+            "dia_pago": 1,  # Lunes
+            "dias_inhabiles": [],
+            "horario_headcount": "10:00",
+            "horario_maquilador": "12:00",
+            "horario_tesoreria": "14:00"
+        }
+    
+    config.pop("_id", None)
+    return {"configuracion": config}
+
+
+@api_router.post("/nomina/configuracion")
+async def guardar_configuracion_nomina(body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Guarda la configuración de nóminas (Solo Admin)"""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo Administradores pueden configurar nóminas")
+    
+    config = {
+        "tipo": "general",
+        "dia_corte": body.get('dia_corte', 0),
+        "dia_pago": body.get('dia_pago', 1),
+        "dias_inhabiles": body.get('dias_inhabiles', []),
+        "horario_headcount": body.get('horario_headcount', '10:00'),
+        "horario_maquilador": body.get('horario_maquilador', '12:00'),
+        "horario_tesoreria": body.get('horario_tesoreria', '14:00'),
+        "actualizado_por": current_user.get("email"),
+        "fecha_actualizacion": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.nomina_configuracion.update_one(
+        {"tipo": "general"},
+        {"$set": config},
+        upsert=True
+    )
+    
+    return {"success": True, "message": "Configuración guardada correctamente"}
+
+
+@api_router.get("/nomina/kpis")
+async def listar_kpis_nomina(current_user: Dict = Depends(get_current_user)):
+    """Lista los KPIs configurados por puesto"""
+    cursor = db.nomina_kpis_puestos.find({})
+    kpis = await cursor.to_list(length=100)
+    
+    for kpi in kpis:
+        kpi.pop("_id", None)
+    
+    return {"kpis": kpis, "total": len(kpis)}
+
+
+@api_router.post("/nomina/kpis")
+async def crear_kpi_nomina(body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Crea o actualiza KPIs para un puesto"""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo Administradores pueden configurar KPIs")
+    
+    puesto_id = body.get('puesto_id')
+    indicadores = body.get('indicadores', [])
+    
+    if not puesto_id:
+        raise HTTPException(status_code=400, detail="Puesto es requerido")
+    
+    # Obtener nombre del puesto
+    puesto_nombre = "Puesto"
+    try:
+        query = f"SELECT Descripcion FROM RH_Cat_Puestos WHERE PuestoID = {puesto_id}"
+        result = await execute_edarsa_hub_query(query)
+        if result.get("datos"):
+            puesto_nombre = result["datos"][0].get("Descripcion", "Puesto")
+    except:
+        pass
+    
+    kpi_id = str(uuid.uuid4())
+    kpi = {
+        "id": kpi_id,
+        "puesto_id": str(puesto_id),
+        "puesto_nombre": puesto_nombre,
+        "indicadores": indicadores,
+        "actualizado_por": current_user.get("email"),
+        "fecha_actualizacion": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Upsert por puesto
+    await db.nomina_kpis_puestos.update_one(
+        {"puesto_id": str(puesto_id)},
+        {"$set": kpi},
+        upsert=True
+    )
+    
+    return {"success": True, "message": "KPIs guardados correctamente"}
+
+
+@api_router.get("/nomina/script-tablas")
+async def obtener_script_tablas_nomina(current_user: Dict = Depends(get_current_user)):
+    """Retorna el script SQL para crear tablas de nómina en EDARSA HUB"""
+    script = """
+-- ============================================
+-- SCRIPT DE TABLAS - MÓDULO DE NÓMINAS
+-- Base de datos: EDARSA HUB (SQL Server)
+-- NOTA: Las tablas principales se manejan en MongoDB.
+-- Este script es para tablas auxiliares opcionales.
+-- ============================================
+
+-- ========== TABLA DE CONCEPTOS DE NÓMINA ==========
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Nomina_Cat_Conceptos' AND xtype='U')
+BEGIN
+    CREATE TABLE Nomina_Cat_Conceptos (
+        ConceptoID INT IDENTITY(1,1) PRIMARY KEY,
+        Codigo NVARCHAR(20) NOT NULL UNIQUE,
+        Descripcion NVARCHAR(200) NOT NULL,
+        Tipo NVARCHAR(50) NOT NULL, -- 'Percepcion', 'Deduccion', 'Obligacion'
+        Categoria NVARCHAR(100), -- 'Legal', 'Empresa', 'Sindical'
+        Afectacion INT DEFAULT 1, -- 1 = Suma, -1 = Resta
+        Formula NVARCHAR(500), -- Fórmula de cálculo si aplica
+        NomiPAQ_ID NVARCHAR(50),
+        MPRO_ID NVARCHAR(50),
+        Activo BIT DEFAULT 1,
+        Fecha_Creacion DATETIME DEFAULT GETDATE()
+    );
+    
+    -- Conceptos base
+    INSERT INTO Nomina_Cat_Conceptos (Codigo, Descripcion, Tipo, Categoria, Afectacion) VALUES
+    ('SUELDO', 'Sueldo Base', 'Percepcion', 'Empresa', 1),
+    ('BONO', 'Bono', 'Percepcion', 'Empresa', 1),
+    ('COMISION', 'Comisión', 'Percepcion', 'Empresa', 1),
+    ('HEXTRA', 'Horas Extra', 'Percepcion', 'Legal', 1),
+    ('AGUINALDO', 'Aguinaldo', 'Percepcion', 'Legal', 1),
+    ('VACACIONES', 'Prima Vacacional', 'Percepcion', 'Legal', 1),
+    ('ISR', 'ISR', 'Deduccion', 'Legal', -1),
+    ('IMSS', 'IMSS Trabajador', 'Deduccion', 'Legal', -1),
+    ('INFONAVIT', 'INFONAVIT', 'Deduccion', 'Legal', -1),
+    ('FONACOT', 'FONACOT', 'Deduccion', 'Legal', -1),
+    ('PENSION', 'Pensión Alimenticia', 'Deduccion', 'Legal', -1),
+    ('FALTA', 'Descuento por Falta', 'Deduccion', 'Empresa', -1),
+    ('RETARDO', 'Descuento por Retardo', 'Deduccion', 'Empresa', -1),
+    ('PRESTAMO', 'Préstamo Empresa', 'Deduccion', 'Empresa', -1),
+    ('UNIFORME', 'Descuento Uniforme', 'Deduccion', 'Empresa', -1);
+    
+    PRINT 'Tabla Nomina_Cat_Conceptos creada';
+END
+GO
+
+-- ========== TABLA DE PERIODOS DE NÓMINA ==========
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Nomina_Periodos' AND xtype='U')
+BEGIN
+    CREATE TABLE Nomina_Periodos (
+        PeriodoID INT IDENTITY(1,1) PRIMARY KEY,
+        Año INT NOT NULL,
+        Numero INT NOT NULL, -- Número de periodo en el año
+        Tipo NVARCHAR(20) NOT NULL, -- 'Semanal', 'Quincenal', 'Mensual'
+        Fecha_Inicio DATE NOT NULL,
+        Fecha_Fin DATE NOT NULL,
+        Fecha_Pago DATE,
+        Estatus NVARCHAR(20) DEFAULT 'Abierto', -- 'Abierto', 'Cerrado', 'Pagado'
+        CONSTRAINT UQ_Periodo UNIQUE (Año, Numero, Tipo)
+    );
+    
+    CREATE INDEX IX_Periodos_Año ON Nomina_Periodos(Año);
+    PRINT 'Tabla Nomina_Periodos creada';
+END
+GO
+
+-- ========== TABLA DE RESUMEN DE NÓMINA ==========
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Nomina_Resumen' AND xtype='U')
+BEGIN
+    CREATE TABLE Nomina_Resumen (
+        ResumenID INT IDENTITY(1,1) PRIMARY KEY,
+        CicloID NVARCHAR(50) NOT NULL, -- ID del ciclo en MongoDB
+        SucursalID INT NOT NULL,
+        PeriodoID INT,
+        Total_Percepciones DECIMAL(18,2) DEFAULT 0,
+        Total_Deducciones DECIMAL(18,2) DEFAULT 0,
+        Total_Neto DECIMAL(18,2) DEFAULT 0,
+        Total_Colaboradores INT DEFAULT 0,
+        Fecha_Calculo DATETIME DEFAULT GETDATE(),
+        Calculado_Por NVARCHAR(100)
+    );
+    
+    CREATE INDEX IX_Resumen_Ciclo ON Nomina_Resumen(CicloID);
+    PRINT 'Tabla Nomina_Resumen creada';
+END
+GO
+
+PRINT 'Script de nóminas ejecutado correctamente';
+"""
+    return {
+        "script": script,
+        "nota": "Este script es OPCIONAL. El sistema de nóminas funciona principalmente con MongoDB. Use estas tablas para integración con NomiPAQ o reportes SQL."
+    }
+
+
 # Incluir el router después de definir TODOS los endpoints
 app.include_router(api_router)
 
