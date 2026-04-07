@@ -382,3 +382,41 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - Excel_Columna para importación de nómina
   - Tipos por defecto incluyen: BON, HEX, COM, INC, GRA, AGU, PTU, PVA (Ingresos) y FAL, RET, DES, VAC, INA, PER, PRE, INF, FON, ISR, IMSS (Descuentos)
 - **Testing**: 100% backend (11/11 tests), 100% frontend validado
+
+### April 7, 2026 - Sistema de Flujo de Aprobación y Panel de Tareas
+- **Implementado**: Sistema completo para solicitudes de alta en catálogos con workflow de aprobación
+- **Nueva página** (`/app/frontend/src/pages/MisTareas.js`):
+  - KPIs: Pendientes, En Proceso, Por Aprobar, Completadas
+  - Panel de Notificaciones Pendientes
+  - Sección "Solicitudes Pendientes de Aprobar" (solo Supervisor/Admin)
+  - Tabla "Configurar Permisos de Catálogos por Usuario" (solo Supervisor/Admin)
+  - Modal "Nueva Solicitud": Formulario dinámico según catálogo seleccionado
+  - Modal "Aprobar Solicitud": Requiere firma (contraseña del aprobador)
+  - Modal "Rechazar Solicitud": Campo para motivo del rechazo
+  - Modal "Configurar Permisos": Checkboxes de 9 catálogos + toggle "Puede solicitar"
+- **Backend** (`/app/backend/server.py`, líneas 15665-16100):
+  - `GET /api/sistema/catalogos-disponibles`: 9 catálogos del sistema
+  - `GET /api/sistema/mis-permisos-catalogos`: Permisos del usuario actual
+  - `GET /api/sistema/permisos-catalogos/{user_id}`: Permisos de un usuario (Supervisor+)
+  - `POST /api/sistema/permisos-catalogos`: Asignar permisos a usuario (Supervisor+)
+  - `GET /api/sistema/usuarios-asignables`: Lista usuarios con sus permisos
+  - `GET /api/sistema/mis-tareas`: Tareas asignadas al usuario (por usuario o por rol)
+  - `PUT /api/sistema/tareas/{id}/marcar-leida`: Marcar notificación como leída
+  - `POST /api/sistema/solicitudes`: Crear solicitud de alta (valida permisos)
+  - `GET /api/sistema/solicitudes`: Listar solicitudes (filtro por estatus, catálogo)
+  - `GET /api/sistema/solicitudes/{id}`: Detalle de solicitud
+  - `POST /api/sistema/solicitudes/{id}/aprobar`: Aprobar con firma de contraseña
+  - `POST /api/sistema/solicitudes/{id}/rechazar`: Rechazar con motivo
+- **Catálogos del Sistema** (9 disponibles):
+  - RRHH: Puestos, Tipos de Incidencias, Sucursales, Departamentos
+  - Compras: Proveedores
+  - Finanzas: Categorías Presupuesto
+  - Inventarios: Almacenes, Familias de Productos, Categorías de Productos
+- **Flujo de Aprobación**:
+  1. Usuario con permiso crea solicitud
+  2. Se genera tarea para Supervisores/Admins
+  3. Aprobador ingresa su contraseña para autorizar
+  4. Si aprobada, se inserta en la tabla SQL correspondiente
+  5. Se notifica al solicitante del resultado
+- **MongoDB Collections**: solicitudes_catalogos, tareas_sistema, permisos_catalogos
+- **Testing**: 100% backend (20/20 tests), 100% frontend validado
