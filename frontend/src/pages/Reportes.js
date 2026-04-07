@@ -287,7 +287,15 @@ const Reportes = () => {
         auditor: informeData.auditor,
         cargo_auditor: informeData.cargo_auditor,
         incluir_comparativo_4_cortes: informeData.incluir_comparativo,
-        productos_diferencias: productosConDif
+        productos_diferencias: productosConDif,
+        // Errores de captura detectados
+        errores_captura: erroresCaptura.map(e => ({
+          codigo: e.CODIGO_INSUMO || e.codigo || '',
+          producto: e.PRODUCTO || e.producto || '',
+          tipo_error: e.TIPO_ERROR || e.tipo || 'Error de captura',
+          inv_capturado: e.INV_CAPTURADO || e.cantidad || 0,
+          detalle: e.DETALLE || e.mensaje || ''
+        }))
       };
       
       const response = await api.post('/auditoria/informes', payload);
@@ -2654,9 +2662,14 @@ const Reportes = () => {
                               }`}>
                                 {informe.estatus === 'finalizado' ? 'Finalizado' : 'Borrador'}
                               </span>
+                              {informe.num_errores_captura > 0 && (
+                                <span className="ml-2 px-1.5 py-0.5 bg-red-100 text-red-600 text-xs rounded" title="Errores de captura">
+                                  {informe.num_errores_captura} err
+                                </span>
+                              )}
                               {informe.num_evidencias > 0 && (
-                                <span className="ml-2 text-xs text-zinc-500">
-                                  {informe.num_evidencias} archivo(s)
+                                <span className="ml-1 text-xs text-zinc-500">
+                                  {informe.num_evidencias} arch
                                 </span>
                               )}
                             </TableCell>
@@ -2822,6 +2835,37 @@ const Reportes = () => {
                   className="mt-1 w-full h-28 px-3 py-2 border rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
+
+              {/* Errores de Captura Detectados - Se incluyen automáticamente */}
+              {erroresCaptura.length > 0 && (
+                <div className="border border-red-200 bg-red-50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertCircle className="h-5 w-5 text-red-600" />
+                    <span className="font-semibold text-red-800">
+                      Errores de Captura Detectados ({erroresCaptura.length})
+                    </span>
+                    <span className="text-xs text-red-600 bg-red-100 px-2 py-0.5 rounded">
+                      Se incluirán automáticamente
+                    </span>
+                  </div>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {erroresCaptura.slice(0, 10).map((error, idx) => (
+                      <div key={idx} className="text-sm text-red-700 flex items-start gap-2">
+                        <span className="text-red-400">•</span>
+                        <span>
+                          <strong>{error.CODIGO_INSUMO || error.codigo}</strong>: {error.PRODUCTO || error.producto}
+                          {error.TIPO_ERROR && <span className="text-red-500 ml-1">({error.TIPO_ERROR})</span>}
+                        </span>
+                      </div>
+                    ))}
+                    {erroresCaptura.length > 10 && (
+                      <p className="text-xs text-red-500 mt-2">
+                        ... y {erroresCaptura.length - 10} errores más
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Opción de comparativo */}
               <div className="flex items-center gap-2 p-3 bg-zinc-50 rounded-lg">
@@ -3065,6 +3109,49 @@ const Reportes = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Errores de Captura de Inventario */}
+              {selectedInforme.errores_captura && selectedInforme.errores_captura.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-red-800 mb-2 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    Errores de Captura Detectados ({selectedInforme.errores_captura.length})
+                  </h3>
+                  <div className="border border-red-200 rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-red-50">
+                          <TableHead className="text-red-800">Código</TableHead>
+                          <TableHead className="text-red-800">Producto</TableHead>
+                          <TableHead className="text-red-800">Tipo Error</TableHead>
+                          <TableHead className="text-red-800 text-right">Cantidad</TableHead>
+                          <TableHead className="text-red-800">Detalle</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedInforme.errores_captura.slice(0, 15).map((error, idx) => (
+                          <TableRow key={idx} className="bg-red-50/50">
+                            <TableCell className="font-mono text-xs">{error.codigo}</TableCell>
+                            <TableCell className="text-sm">{error.producto}</TableCell>
+                            <TableCell>
+                              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded">
+                                {error.tipo_error || 'Error'}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right font-mono">{error.inv_capturado}</TableCell>
+                            <TableCell className="text-xs text-red-600">{error.detalle || '-'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {selectedInforme.errores_captura.length > 15 && (
+                    <p className="text-xs text-red-500 mt-2 text-center">
+                      Mostrando 15 de {selectedInforme.errores_captura.length} errores
+                    </p>
+                  )}
                 </div>
               )}
 

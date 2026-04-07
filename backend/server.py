@@ -11289,6 +11289,7 @@ async def crear_informe_auditoria(
             "incluir_comparativo_4_cortes": body.get("incluir_comparativo_4_cortes", False),
             "datos_comparativo": body.get("datos_comparativo"),
             "productos_diferencias": body.get("productos_diferencias"),
+            "errores_captura": body.get("errores_captura", []),
             
             # Auditor
             "auditor": body.get("auditor") or current_user.get("name", ""),
@@ -11367,6 +11368,7 @@ async def listar_informes_auditoria(
                 "valor_diferencias": inf.get("valor_total_diferencias", 0),
                 "tiene_evidencias": len(inf.get("evidencias", [])) > 0,
                 "num_evidencias": len(inf.get("evidencias", [])),
+                "num_errores_captura": len(inf.get("errores_captura", [])),
                 "estatus": inf.get("estatus", "borrador")
             })
         
@@ -11863,6 +11865,50 @@ async def generar_pdf_informe(
                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
             ]))
             elements.append(table_prod)
+        
+        # === ERRORES DE CAPTURA DE INVENTARIO ===
+        errores_captura = informe.get('errores_captura', [])
+        if errores_captura and len(errores_captura) > 0:
+            elements.append(Spacer(1, 20))
+            elements.append(Paragraph(
+                f"ERRORES DE CAPTURA DE INVENTARIO ({len(errores_captura)} detectados)", 
+                styles['SectionTitle']
+            ))
+            
+            # Encabezados
+            err_headers = ['Código', 'Producto', 'Tipo Error', 'Cantidad', 'Detalle']
+            err_data = [err_headers]
+            
+            # Mostrar hasta 15 errores
+            for err in errores_captura[:15]:
+                err_data.append([
+                    str(err.get('codigo', ''))[:12],
+                    str(err.get('producto', ''))[:30],
+                    str(err.get('tipo_error', 'Error'))[:15],
+                    str(err.get('inv_capturado', '')),
+                    str(err.get('detalle', ''))[:25]
+                ])
+            
+            err_col_widths = [0.9*inch, 2.2*inch, 1*inch, 0.7*inch, 1.7*inch]
+            table_err = Table(err_data, colWidths=err_col_widths)
+            table_err.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#dc3545')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 8),
+                ('FONTSIZE', (0, 1), (-1, -1), 7),
+                ('ALIGN', (3, 1), (3, -1), 'RIGHT'),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#fff5f5')),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#f5c6cb')),
+                ('PADDING', (0, 0), (-1, -1), 5),
+            ]))
+            elements.append(table_err)
+            
+            if len(errores_captura) > 15:
+                elements.append(Paragraph(
+                    f"... y {len(errores_captura) - 15} errores adicionales no mostrados en este documento.",
+                    styles['SmallGray']
+                ))
         
         # === EVIDENCIAS ===
         evidencias = informe.get('evidencias', [])
