@@ -5,17 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter, FileSpreadsheet } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter, FileSpreadsheet, LayoutDashboard, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import DashboardInventarios from './Dashboard'; // Importar el Dashboard de Inventarios
 
 // Estilos para los selectores nativos
 const selectStyle = "w-full h-10 px-3 py-2 text-sm border border-zinc-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-zinc-100 disabled:cursor-not-allowed";
 
 const Reportes = () => {
+  const [activeTab, setActiveTab] = useState('analisis');
   const [servers, setServers] = useState([]);
   const [sucursales, setSucursales] = useState([]);
   const [almacenes, setAlmacenes] = useState([]);
@@ -1050,10 +1053,31 @@ const Reportes = () => {
     <div className="space-y-6" data-testid="reportes-page">
       <div className="text-center">
         <h1 className="text-2xl font-bold text-zinc-800">
-          Análisis de Inventarios
+          Inventarios
         </h1>
-        <p className="text-sm text-zinc-500">Genera y analiza reportes de inventario</p>
+        <p className="text-sm text-zinc-500">Gestión y análisis de inventarios</p>
       </div>
+
+      {/* Tabs de Inventarios */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+            <LayoutDashboard className="h-4 w-4" />
+            Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="analisis" className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            Análisis de Inventarios
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab: Dashboard de Inventarios */}
+        <TabsContent value="dashboard">
+          <DashboardInventarios />
+        </TabsContent>
+
+        {/* Tab: Análisis de Inventarios */}
+        <TabsContent value="analisis">
 
       {/* Filters */}
       <Card className="border border-zinc-200 shadow-sm">
@@ -2227,6 +2251,8 @@ const Reportes = () => {
           </div>
         </div>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

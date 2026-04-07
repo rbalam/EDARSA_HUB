@@ -20,10 +20,7 @@ import {
   Factory,
   UserCircle,
   BarChart3,
-  Truck,
-  ChevronDown,
-  ChevronRight,
-  ClipboardList
+  Truck
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -31,19 +28,10 @@ const Layout = () => {
   const location = useLocation();
   const user = getUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [expandedMenus, setExpandedMenus] = useState(['inventarios']); // Inventarios expandido por defecto
 
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />;
   }
-
-  const toggleMenu = (menuId) => {
-    setExpandedMenus(prev => 
-      prev.includes(menuId) 
-        ? prev.filter(id => id !== menuId)
-        : [...prev, menuId]
-    );
-  };
 
   // ============================================
   // MÓDULOS OPERATIVOS (Estructura ERP)
@@ -69,14 +57,10 @@ const Layout = () => {
       roles: ['Usuario', 'Supervisor', 'Administrador'],
     },
     { 
-      id: 'inventarios',
       name: 'Inventarios', 
+      href: '/reportes', 
       icon: Warehouse, 
       roles: ['Usuario', 'Supervisor', 'Administrador'],
-      submenu: [
-        { name: 'Análisis de Inventarios', href: '/reportes', icon: ClipboardList },
-        { name: 'Dashboard Inventarios', href: '/dashboard', icon: LayoutDashboard },
-      ]
     },
     { 
       name: 'Finanzas', 
@@ -162,63 +146,6 @@ const Layout = () => {
               <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider px-4 mb-2">Módulos</p>
               {filteredModulos.map((item) => {
                 const Icon = item.icon;
-                
-                // Si tiene submenú, renderizar como menú expandible
-                if (item.submenu) {
-                  const isExpanded = expandedMenus.includes(item.id);
-                  const hasActiveChild = item.submenu.some(sub => location.pathname === sub.href);
-                  
-                  return (
-                    <div key={item.id}>
-                      <button
-                        onClick={() => toggleMenu(item.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
-                          hasActiveChild 
-                            ? 'bg-zinc-800 text-white' 
-                            : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                        }`}
-                        data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
-                      >
-                        <Icon className="h-5 w-5" />
-                        <span className="font-medium flex-1 text-left">{item.name}</span>
-                        {isExpanded ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                      </button>
-                      
-                      {/* Submenú */}
-                      {isExpanded && (
-                        <div className="ml-4 mt-1 space-y-1">
-                          {item.submenu.map((subItem) => {
-                            const SubIcon = subItem.icon;
-                            const isActive = location.pathname === subItem.href;
-                            
-                            return (
-                              <Link
-                                key={subItem.name}
-                                to={subItem.href}
-                                onClick={() => setSidebarOpen(false)}
-                                className={`flex items-center gap-3 px-4 py-2 rounded-md transition-colors text-sm ${
-                                  isActive 
-                                    ? 'bg-zinc-700 text-white' 
-                                    : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                                }`}
-                                data-testid={`nav-${subItem.name.toLowerCase().replace(/\s+/g, '-')}`}
-                              >
-                                <SubIcon className="h-4 w-4" />
-                                <span>{subItem.name}</span>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-                
-                // Módulo normal sin submenú
                 const isActive = location.pathname === item.href;
                 
                 return (

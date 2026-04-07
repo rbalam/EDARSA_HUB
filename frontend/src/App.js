@@ -34,7 +34,7 @@ function App() {
           
           <Route path="/" element={<Layout />}>
             <Route index element={<Navigate to="/tablero-ejecutivo" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="dashboard" element={<Navigate to="/reportes" replace />} />
             <Route path="servidores" element={<Servidores />} />
             <Route path="reportes" element={<Reportes />} />
             <Route path="compras" element={<Compras />} />
@@ -52,7 +52,7 @@ function App() {
             <Route path="reportes-bi" element={<ReportesBI />} />
           </Route>
           
-          <Route path="*" element={<Navigate to={isAuthenticated() ? "/dashboard" : "/login"} replace />} />
+          <Route path="*" element={<Navigate to={isAuthenticated() ? "/reportes" : "/login"} replace />} />
         </Routes>
       </BrowserRouter>
       
