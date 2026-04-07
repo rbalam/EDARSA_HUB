@@ -2365,7 +2365,7 @@ WHERE ({almacenes_like_conditions})
             # 2. Obtener productos que se controlan en inventario:
             # a) INSUMOS (Dp_Cve_Departamento = '0007') que tienen presentaciones configuradas
             # b) Productos de COMPRA (cualquier depto != 0007) que NO están como presentación de ningún insumo
-            # NOTA: Solo obtenemos productos que tienen inventario en los folios seleccionados (optimización)
+            # NOTA: Traemos productos que tengan inventario físico O movimientos O ventas en el período
             productos_query = f"""
 SELECT DISTINCT
     P.Pr_Cve_Producto as Codigo,
@@ -2400,12 +2400,35 @@ WHERE P.Es_Cve_Estado <> 'BA'
     {filtro_categorias_p}
     {filtro_familias_p}
     {filtro_subfamilias_p}
-    -- Solo productos que tienen inventario en los folios seleccionados
-    AND EXISTS (
-        SELECT 1 FROM Fisico FIS 
-        WHERE FIS.Pr_Cve_Producto = P.Pr_Cve_Producto 
-        AND FIS.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql})
-        AND FIS.Al_Cve_Almacen IN ({almacenes_sql})
+    -- Productos que tienen: inventario físico O movimientos en el período
+    AND (
+        -- Tiene inventario físico capturado
+        EXISTS (
+            SELECT 1 FROM Fisico FIS 
+            WHERE FIS.Pr_Cve_Producto = P.Pr_Cve_Producto 
+            AND FIS.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql})
+            AND FIS.Al_Cve_Almacen IN ({almacenes_sql})
+        )
+        OR
+        -- Tiene movimientos en el período (entradas/salidas/traspasos)
+        EXISTS (
+            SELECT 1 FROM Movimiento MOV
+            INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = MOV.Sc_Cve_Sucursal
+            WHERE MOV.Pr_Cve_Producto = P.Pr_Cve_Producto
+            AND S.Sc_Descripcion LIKE '%{sucursal}%'
+            AND MOV.Al_Cve_Almacen IN ({almacenes_sql})
+            AND MOV.Es_Cve_Estado <> 'CA'
+            AND MOV.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+        )
+        OR
+        -- Tiene ventas en el período (a través de recetas Producto_Kit)
+        EXISTS (
+            SELECT 1 FROM Producto_Kit PK 
+            INNER JOIN Venta V ON V.Pr_Cve_Producto = PK.Pr_Cve_Producto
+            WHERE PK.Pk_Producto = P.Pr_Cve_Producto
+            AND V.Es_Cve_Estado <> 'CA'
+            AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+        )
     )
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
 """

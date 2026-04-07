@@ -219,7 +219,10 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 - **Bug corregido**: Los Whiskys y otras familias (VODKAS, VINOS TINTOS) no aparecían en el reporte de análisis de inventarios
 - **Causa raíz**: La query usaba `TOP 3000` con `ORDER BY Familia`, y familias que empiezan con W, V quedaban fuera del límite alfabético (3,856 productos pasaban el filtro)
 - **Solución**: 
-  - Eliminado `TOP 3000` y agregado filtro `EXISTS` que solo trae productos con inventario físico en folios seleccionados
+  - Eliminado `TOP 3000` y agregado filtro `EXISTS` que trae productos con:
+    1. Inventario físico en folios seleccionados
+    2. O movimientos en el período (entradas/salidas/traspasos)
+    3. O ventas en el período (a través de recetas Producto_Kit)
   - Cambiado `NOT IN` a `NOT EXISTS` para mejor compatibilidad con SQL Server
   - Corregido error `strptime() argument 1 must be str, not None` con fallbacks de fecha
-- **Resultado**: De 288 productos/0 Whiskys a 418 productos/21 Whiskys
+- **Resultado**: De 288 productos/0 Whiskys a 418 productos/21 Whiskys (ahora incluye productos con movimientos pero sin inventario capturado)
