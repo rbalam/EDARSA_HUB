@@ -198,3 +198,11 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 - **Excel**: Muestra diferencias por SKU entre cortes consecutivos, total acumulado, y detección de patrones (FALTANTE/SOBRANTE CONSTANTE)
 - **Frontend**: Botón verde esmeralda junto a "Generar Reporte"
 - Cambio: Headers de tabla de inventarios ahora muestran "Qty" en lugar de "CANTIDAD"
+
+### April 7, 2026 - Cache de Diferencias en MongoDB
+- **Nuevo**: Colección `inventario_diferencias_cache` en MongoDB para almacenar diferencias calculadas
+- **Optimización**: Primera generación calcula y guarda en cache; siguientes generaciones usan cache (instantáneo)
+- **Multi-almacén**: Soporta múltiples almacenes/comentarios en un solo reporte
+- **MPRO**: Filtra por comentario (CAVA, BARRA, BODEGA) para comparar inventarios de misma naturaleza
+- **Velocidad**: De ~5-10s (SQL Server) a ~0.3s (cache MongoDB)
+- **Detección automática**: Si hay nuevos inventarios, recalcula y actualiza cache

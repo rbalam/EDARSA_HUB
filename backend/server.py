@@ -3695,15 +3695,253 @@ async def export_pdf(data: Dict, current_user: Dict = Depends(get_current_user))
 
 
 # ============= REPORTE COMPARATIVO DE 4 ÚLTIMOS INVENTARIOS (AUDITORÍA) =============
+class AlmacenComparativo(BaseModel):
+    id: str
+    nombre: str = ""
+    comentario: Optional[str] = None  # Para MPRO
+
 class ComparativoInventariosRequest(BaseModel):
     server_id: str
-    almacen_id: str
-    almacen_nombre: str = ""
     sucursal_id: Optional[str] = None
     sucursal_nombre: str = ""
-    comentario: Optional[str] = None  # Para MPRO: filtrar por comentario (CAVA, BARRA, BODEGA, etc.)
-    fecha_referencia: str  # Fecha de referencia para buscar hacia atrás
+    # Soporta múltiples almacenes (multi-selección)
+    almacenes: List[AlmacenComparativo]
+    fecha_referencia: str
     categorias: Optional[List[str]] = None
+    # Para compatibilidad con versión anterior (single almacén)
+    almacen_id: Optional[str] = None
+    almacen_nombre: Optional[str] = ""
+    comentario: Optional[str] = None
+
+
+async def get_or_create_diferencias_cache(
+    server: Dict,
+    almacen_id: str,
+    almacen_nombre: str,
+    sucursal_id: Optional[str],
+    comentario: Optional[str],
+    fecha_referencia: str
+) -> Optional[Dict]:
+    """
+    Busca en cache MongoDB las diferencias calculadas.
+    Si no existe o hay nuevos inventarios, calcula y guarda.
+    Retorna el documento de cache con productos y diferencias.
+    """
+    # Crear clave única para el cache
+    cache_key = {
+        "server_id": server['id'],
+        "almacen_id": almacen_id,
+        "sucursal_id": sucursal_id or "",
+        "comentario": comentario or ""
+    }
+    
+    # Buscar en cache
+    cached = await db.inventario_diferencias_cache.find_one(cache_key, {"_id": 0})
+    
+    # Obtener el folio más reciente de SQL Server para verificar si cache está actualizado
+    if server['system_type'] == 'MPRO':
+        sucursal_filtro = f"AND F.Sc_Cve_Sucursal = '{sucursal_id}'" if sucursal_id else ""
+        comentario_filtro = f"AND F.Fi_Comentario = '{comentario.replace(chr(39), chr(39)+chr(39))}'" if comentario else ""
+        
+        query_ultimo = f"""
+        SELECT TOP 1 F.Fi_Folio as folio, CONVERT(varchar, F.Fi_Fecha, 120) as fecha
+        FROM Fisico F
+        INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
+        WHERE A.Al_Cve_Almacen = '{almacen_id}'
+            {sucursal_filtro}
+            {comentario_filtro}
+            AND F.Fi_Fecha <= '{fecha_referencia}'
+        ORDER BY F.Fi_Fecha DESC
+        """
+    else:  # SoftRestaurant
+        query_ultimo = f"""
+        SELECT TOP 1 INV.folio as folio, CONVERT(varchar, INV.fecha, 120) as fecha
+        FROM invfisico INV
+        WHERE INV.idalmacen1 = '{almacen_id}'
+            AND INV.fecha <= '{fecha_referencia}'
+        ORDER BY INV.fecha DESC
+        """
+    
+    try:
+        ultimo_result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query_ultimo
+        )
+        
+        if not ultimo_result:
+            return None
+            
+        ultimo_folio = ultimo_result[0]['folio']
+        
+        # Verificar si cache está actualizado
+        if cached and cached.get('folio_mas_reciente') == ultimo_folio:
+            logging.info(f"Cache HIT para {almacen_id}/{comentario} - folio {ultimo_folio}")
+            return cached
+        
+        logging.info(f"Cache MISS para {almacen_id}/{comentario} - calculando diferencias...")
+        
+        # Calcular diferencias desde SQL Server
+        if server['system_type'] == 'MPRO':
+            query_cortes = f"""
+            SELECT TOP 4 
+                F.Fi_Folio as folio,
+                CONVERT(varchar, F.Fi_Fecha, 120) as fecha,
+                A.Al_Descripcion as almacen,
+                ISNULL(F.Fi_Comentario, '') as comentario
+            FROM Fisico F
+            INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
+            WHERE A.Al_Cve_Almacen = '{almacen_id}'
+                {sucursal_filtro}
+                {comentario_filtro}
+                AND F.Fi_Fecha <= '{fecha_referencia}'
+            GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, F.Fi_Comentario
+            ORDER BY F.Fi_Fecha DESC
+            """
+            
+            cortes_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_cortes
+            )
+            
+            if not cortes_result:
+                return None
+            
+            productos_dict = {}
+            
+            for idx, corte in enumerate(cortes_result):
+                folio = corte['folio']
+                query_productos = f"""
+                SELECT 
+                    P.Pr_Cve_Producto as codigo,
+                    P.Pr_Descripcion as producto,
+                    ISNULL(SUM(F.Fi_Cantidad_Control_1), 0) as cantidad_fisica
+                FROM Fisico F
+                INNER JOIN Producto P ON P.Pr_Cve_Producto = F.Pr_Cve_Producto
+                WHERE F.Fi_Folio = '{folio}'
+                    AND F.Al_Cve_Almacen = '{almacen_id}'
+                    {sucursal_filtro}
+                GROUP BY P.Pr_Cve_Producto, P.Pr_Descripcion
+                """
+                
+                productos_result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_productos
+                )
+                
+                for prod in productos_result:
+                    codigo = prod['codigo']
+                    if codigo not in productos_dict:
+                        productos_dict[codigo] = {
+                            'codigo': codigo,
+                            'producto': prod['producto'],
+                            'cantidades': [None] * len(cortes_result),
+                            'diferencias': [None] * len(cortes_result)
+                        }
+                    productos_dict[codigo]['cantidades'][idx] = float(prod['cantidad_fisica'] or 0)
+        
+        else:  # SoftRestaurant
+            query_cortes = f"""
+            SELECT TOP 4 
+                INV.folio as folio,
+                CONVERT(varchar, INV.fecha, 120) as fecha,
+                A.nombre as almacen
+            FROM invfisico INV
+            INNER JOIN almacen A ON A.idalmacen = INV.idalmacen1
+            WHERE INV.idalmacen1 = '{almacen_id}'
+                AND INV.fecha <= '{fecha_referencia}'
+            GROUP BY INV.folio, INV.fecha, A.nombre
+            ORDER BY INV.fecha DESC
+            """
+            
+            cortes_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_cortes
+            )
+            
+            if not cortes_result:
+                return None
+            
+            productos_dict = {}
+            
+            for idx, corte in enumerate(cortes_result):
+                folio = corte['folio']
+                query_productos = f"""
+                SELECT 
+                    P.idproducto as codigo,
+                    P.descripcion as producto,
+                    ISNULL(SUM(D.cantidad), 0) as cantidad_fisica
+                FROM invfisicodet D
+                INNER JOIN productos P ON P.idproducto = D.idproducto
+                WHERE D.folio = '{folio}'
+                GROUP BY P.idproducto, P.descripcion
+                """
+                
+                productos_result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_productos
+                )
+                
+                for prod in productos_result:
+                    codigo = str(prod['codigo'])
+                    if codigo not in productos_dict:
+                        productos_dict[codigo] = {
+                            'codigo': codigo,
+                            'producto': prod['producto'],
+                            'cantidades': [None] * len(cortes_result),
+                            'diferencias': [None] * len(cortes_result)
+                        }
+                    productos_dict[codigo]['cantidades'][idx] = float(prod['cantidad_fisica'] or 0)
+        
+        # Calcular diferencias entre cortes consecutivos
+        for codigo, data in productos_dict.items():
+            cantidades = data['cantidades']
+            for i in range(len(cantidades) - 1):
+                if cantidades[i] is not None and cantidades[i + 1] is not None:
+                    data['diferencias'][i] = round(cantidades[i] - cantidades[i + 1], 2)
+            
+            difs_validas = [d for d in data['diferencias'] if d is not None]
+            data['total_diferencia'] = round(sum(difs_validas), 2) if difs_validas else 0
+            
+            if len(difs_validas) >= 2:
+                todos_negativos = all(d < 0 for d in difs_validas if d != 0)
+                todos_positivos = all(d > 0 for d in difs_validas if d != 0)
+                if todos_negativos:
+                    data['patron'] = 'FALTANTE CONSTANTE'
+                elif todos_positivos:
+                    data['patron'] = 'SOBRANTE CONSTANTE'
+                else:
+                    data['patron'] = ''
+            else:
+                data['patron'] = ''
+        
+        # Filtrar productos sin diferencias significativas
+        productos_list = [p for p in productos_dict.values() if any(d is not None and d != 0 for d in p.get('diferencias', []))]
+        
+        # Guardar en cache
+        cache_doc = {
+            **cache_key,
+            "almacen_nombre": almacen_nombre,
+            "sucursal_nombre": "",
+            "folio_mas_reciente": ultimo_folio,
+            "fecha_cache": datetime.now(timezone.utc).isoformat(),
+            "cortes": [{'folio': c['folio'], 'fecha': c['fecha'], 'comentario': c.get('comentario', '')} for c in cortes_result],
+            "productos": productos_list
+        }
+        
+        # Upsert en MongoDB
+        await db.inventario_diferencias_cache.update_one(
+            cache_key,
+            {"$set": cache_doc},
+            upsert=True
+        )
+        
+        logging.info(f"Cache SAVED para {almacen_id}/{comentario} - {len(productos_list)} productos")
+        
+        return cache_doc
+        
+    except Exception as e:
+        logging.error(f"Error en cache de diferencias: {str(e)}")
+        return None
 
 
 def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> bytes:
@@ -3891,212 +4129,100 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
 async def export_comparativo_inventarios(request: ComparativoInventariosRequest, current_user: Dict = Depends(get_current_user)):
     """
     Genera un Excel comparativo con las diferencias de los últimos 4 cortes de inventario.
-    Útil para auditoría y detección de patrones de faltantes/sobrantes.
+    Usa cache en MongoDB para evitar recalcular.
+    Soporta múltiples almacenes (multi-selección).
     """
     server = await db.servers.find_one({"id": request.server_id, "active": True})
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     try:
-        # 1. Obtener los últimos 4 folios de inventario para el almacén especificado
-        if server['system_type'] == 'MPRO':
-            # Para MPRO - Filtrar por almacén, sucursal Y comentario (naturaleza del inventario)
-            sucursal_filtro = f"AND F.Sc_Cve_Sucursal = '{request.sucursal_id}'" if request.sucursal_id else ""
-            
-            # Filtro por comentario - CRÍTICO para comparar inventarios de la misma naturaleza
-            comentario_filtro = ""
-            if request.comentario:
-                # Escapar comillas simples en el comentario
-                comentario_limpio = request.comentario.replace("'", "''")
-                comentario_filtro = f"AND F.Fi_Comentario = '{comentario_limpio}'"
-            
-            query_cortes = f"""
-            SELECT TOP 4 
-                F.Fi_Folio as folio,
-                CONVERT(varchar, F.Fi_Fecha, 120) as fecha,
-                A.Al_Descripcion as almacen,
-                ISNULL(F.Fi_Comentario, '') as comentario
-            FROM Fisico F
-            INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
-            WHERE A.Al_Cve_Almacen = '{request.almacen_id}'
-                {sucursal_filtro}
-                {comentario_filtro}
-                AND F.Fi_Fecha <= '{request.fecha_referencia}'
-            GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, F.Fi_Comentario
-            ORDER BY F.Fi_Fecha DESC
-            """
-            
-            cortes_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_cortes
+        # Construir lista de almacenes a procesar
+        almacenes_a_procesar = []
+        
+        # Soportar nuevo formato (lista de almacenes) y formato anterior (single almacén)
+        if request.almacenes and len(request.almacenes) > 0:
+            almacenes_a_procesar = request.almacenes
+        elif request.almacen_id:
+            # Compatibilidad con versión anterior
+            almacenes_a_procesar = [AlmacenComparativo(
+                id=request.almacen_id,
+                nombre=request.almacen_nombre or '',
+                comentario=request.comentario
+            )]
+        
+        if not almacenes_a_procesar:
+            raise HTTPException(status_code=400, detail="Debe seleccionar al menos un almacén")
+        
+        # Procesar cada almacén usando cache
+        all_productos = []
+        all_cortes = []
+        almacenes_procesados = []
+        
+        for almacen in almacenes_a_procesar:
+            cache_result = await get_or_create_diferencias_cache(
+                server=server,
+                almacen_id=almacen.id,
+                almacen_nombre=almacen.nombre,
+                sucursal_id=request.sucursal_id,
+                comentario=almacen.comentario,
+                fecha_referencia=request.fecha_referencia
             )
             
-            if not cortes_result or len(cortes_result) == 0:
-                raise HTTPException(status_code=404, detail="No se encontraron inventarios físicos para este almacén")
-            
-            # 2. Para cada corte, obtener los productos y sus diferencias
-            productos_dict = {}  # {codigo: {'producto': nombre, 'diferencias': [dif1, dif2, ...]}}
-            
-            for idx, corte in enumerate(cortes_result):
-                folio = corte['folio']
+            if cache_result:
+                # Agregar prefijo de almacén/comentario a los productos si hay múltiples
+                productos = cache_result.get('productos', [])
+                if len(almacenes_a_procesar) > 1:
+                    prefijo = f"{almacen.nombre}"
+                    if almacen.comentario:
+                        prefijo += f" ({almacen.comentario})"
+                    for prod in productos:
+                        prod['almacen_comentario'] = prefijo
                 
-                # Query para obtener las diferencias de este corte
-                # La diferencia se calcula comparando con el corte anterior (si existe)
-                query_productos = f"""
-                SELECT 
-                    P.Pr_Cve_Producto as codigo,
-                    P.Pr_Descripcion as producto,
-                    ISNULL(SUM(F.Fi_Cantidad_Control_1), 0) as cantidad_fisica
-                FROM Fisico F
-                INNER JOIN Producto P ON P.Pr_Cve_Producto = F.Pr_Cve_Producto
-                WHERE F.Fi_Folio = '{folio}'
-                    AND F.Al_Cve_Almacen = '{request.almacen_id}'
-                    {sucursal_filtro.replace('F.', 'F.')}
-                GROUP BY P.Pr_Cve_Producto, P.Pr_Descripcion
-                """
+                all_productos.extend(productos)
                 
-                productos_result = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_productos
-                )
+                # Guardar info de cortes (solo del primer almacén para simplificar)
+                if not all_cortes:
+                    all_cortes = cache_result.get('cortes', [])
                 
-                # Procesar productos
-                for prod in productos_result:
-                    codigo = prod['codigo']
-                    if codigo not in productos_dict:
-                        productos_dict[codigo] = {
-                            'codigo': codigo,
-                            'producto': prod['producto'],
-                            'cantidades': [None] * len(cortes_result),
-                            'diferencias': [None] * len(cortes_result)
-                        }
-                    productos_dict[codigo]['cantidades'][idx] = float(prod['cantidad_fisica'] or 0)
-            
-            # 3. Calcular diferencias entre cortes consecutivos
-            for codigo, data in productos_dict.items():
-                cantidades = data['cantidades']
-                for i in range(len(cantidades) - 1):
-                    if cantidades[i] is not None and cantidades[i + 1] is not None:
-                        # Diferencia = cantidad corte actual - cantidad corte anterior
-                        # Si es negativa = faltante, positiva = sobrante
-                        data['diferencias'][i] = round(cantidades[i] - cantidades[i + 1], 2)
-                
-                # Calcular total de diferencias
-                difs_validas = [d for d in data['diferencias'] if d is not None]
-                data['total_diferencia'] = round(sum(difs_validas), 2) if difs_validas else 0
-                
-                # Detectar patrón (si todas las diferencias son del mismo signo)
-                if len(difs_validas) >= 2:
-                    todos_negativos = all(d < 0 for d in difs_validas if d != 0)
-                    todos_positivos = all(d > 0 for d in difs_validas if d != 0)
-                    if todos_negativos:
-                        data['patron'] = 'FALTANTE CONSTANTE'
-                    elif todos_positivos:
-                        data['patron'] = 'SOBRANTE CONSTANTE'
-                    else:
-                        data['patron'] = ''
-                else:
-                    data['patron'] = ''
+                almacenes_procesados.append({
+                    'nombre': almacen.nombre,
+                    'comentario': almacen.comentario or '',
+                    'productos_count': len(productos)
+                })
         
-        elif server['system_type'] == 'SoftRestaurant':
-            # Para SoftRestaurant
-            query_cortes = f"""
-            SELECT TOP 4 
-                INV.folio as folio,
-                CONVERT(varchar, INV.fecha, 120) as fecha,
-                A.nombre as almacen
-            FROM invfisico INV
-            INNER JOIN almacen A ON A.idalmacen = INV.idalmacen1
-            WHERE INV.idalmacen1 = '{request.almacen_id}'
-                AND INV.fecha <= '{request.fecha_referencia}'
-            GROUP BY INV.folio, INV.fecha, A.nombre
-            ORDER BY INV.fecha DESC
-            """
-            
-            cortes_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_cortes
-            )
-            
-            if not cortes_result or len(cortes_result) == 0:
-                raise HTTPException(status_code=404, detail="No se encontraron inventarios físicos para este almacén")
-            
-            productos_dict = {}
-            
-            for idx, corte in enumerate(cortes_result):
-                folio = corte['folio']
-                
-                query_productos = f"""
-                SELECT 
-                    P.idproducto as codigo,
-                    P.descripcion as producto,
-                    ISNULL(SUM(D.cantidad), 0) as cantidad_fisica
-                FROM invfisicodet D
-                INNER JOIN productos P ON P.idproducto = D.idproducto
-                WHERE D.folio = '{folio}'
-                GROUP BY P.idproducto, P.descripcion
-                """
-                
-                productos_result = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_productos
-                )
-                
-                for prod in productos_result:
-                    codigo = str(prod['codigo'])
-                    if codigo not in productos_dict:
-                        productos_dict[codigo] = {
-                            'codigo': codigo,
-                            'producto': prod['producto'],
-                            'cantidades': [None] * len(cortes_result),
-                            'diferencias': [None] * len(cortes_result)
-                        }
-                    productos_dict[codigo]['cantidades'][idx] = float(prod['cantidad_fisica'] or 0)
-            
-            # Calcular diferencias
-            for codigo, data in productos_dict.items():
-                cantidades = data['cantidades']
-                for i in range(len(cantidades) - 1):
-                    if cantidades[i] is not None and cantidades[i + 1] is not None:
-                        data['diferencias'][i] = round(cantidades[i] - cantidades[i + 1], 2)
-                
-                difs_validas = [d for d in data['diferencias'] if d is not None]
-                data['total_diferencia'] = round(sum(difs_validas), 2) if difs_validas else 0
-                
-                if len(difs_validas) >= 2:
-                    todos_negativos = all(d < 0 for d in difs_validas if d != 0)
-                    todos_positivos = all(d > 0 for d in difs_validas if d != 0)
-                    if todos_negativos:
-                        data['patron'] = 'FALTANTE CONSTANTE'
-                    elif todos_positivos:
-                        data['patron'] = 'SOBRANTE CONSTANTE'
-                    else:
-                        data['patron'] = ''
-                else:
-                    data['patron'] = ''
+        if not all_productos:
+            raise HTTPException(status_code=404, detail="No se encontraron diferencias de inventario para los almacenes seleccionados")
         
+        # Preparar metadata para el Excel
+        if len(almacenes_procesados) == 1:
+            almacen_info = almacenes_procesados[0]['nombre']
+            comentario_info = almacenes_procesados[0]['comentario'] or 'TODOS'
         else:
-            raise HTTPException(status_code=400, detail="Tipo de sistema no soportado")
+            almacen_info = f"{len(almacenes_procesados)} almacenes"
+            comentario_info = ', '.join([f"{a['nombre']}({a['comentario']})" if a['comentario'] else a['nombre'] for a in almacenes_procesados])
         
-        # 4. Preparar datos para Excel
-        productos_list = list(productos_dict.values())
-        
-        # Filtrar productos sin diferencias significativas (opcional)
-        productos_list = [p for p in productos_list if any(d is not None and d != 0 for d in p.get('diferencias', []))]
-        
-        # Metadata - incluir comentario para MPRO
         metadata = {
             'servidor_nombre': server.get('name', 'N/A'),
             'sucursal_nombre': request.sucursal_nombre or 'N/A',
-            'almacen_nombre': request.almacen_nombre or 'N/A',
-            'comentario': request.comentario or 'TODOS',
-            'cortes': [{'folio': c['folio'], 'fecha': c['fecha'], 'comentario': c.get('comentario', '')} for c in cortes_result]
+            'almacen_nombre': almacen_info,
+            'comentario': comentario_info,
+            'cortes': all_cortes,
+            'desde_cache': True
         }
         
         # Generar Excel
-        excel_bytes = generate_excel_comparativo_inventarios(productos_list, metadata)
+        excel_bytes = generate_excel_comparativo_inventarios(all_productos, metadata)
         
-        filename = f"comparativo_inventarios_{request.almacen_nombre}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        # Nombre del archivo
+        if len(almacenes_procesados) == 1:
+            nombre_archivo = almacenes_procesados[0]['nombre']
+            if almacenes_procesados[0]['comentario']:
+                nombre_archivo += f"_{almacenes_procesados[0]['comentario']}"
+        else:
+            nombre_archivo = f"{len(almacenes_procesados)}_almacenes"
+        
+        filename = f"comparativo_inventarios_{nombre_archivo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         
         return StreamingResponse(
             io.BytesIO(excel_bytes),
@@ -4109,7 +4235,6 @@ async def export_comparativo_inventarios(request: ComparativoInventariosRequest,
     except Exception as e:
         logging.error(f"Error generando comparativo de inventarios: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error al generar reporte: {str(e)}")
-
 
 @api_router.post("/reports/email")
 async def email_report(request: EmailReportRequest, background_tasks: BackgroundTasks, current_user: Dict = Depends(get_current_user)):

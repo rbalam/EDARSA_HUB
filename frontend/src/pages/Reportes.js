@@ -864,35 +864,46 @@ const Reportes = () => {
       return;
     }
     
-    // Obtener almacén seleccionado
-    const almacenSeleccionado = selectedAlmacenes.length > 0 ? selectedAlmacenes[0] : null;
-    if (!almacenSeleccionado) {
+    // Validar que haya almacenes seleccionados
+    if (selectedAlmacenes.length === 0) {
       toast.error('Selecciona al menos un almacén para generar el comparativo');
       return;
     }
     
-    // Para MPRO: obtener comentario del inventario inicial seleccionado (para filtrar por misma naturaleza)
-    // Si hay un inventario inicial seleccionado, usar su comentario
-    let comentarioFiltro = null;
-    if (selectedInventariosIni.length > 0 && selectedInventariosIni[0].comentario) {
-      comentarioFiltro = selectedInventariosIni[0].comentario;
-    }
-    
     try {
       setLoadingComparativo(true);
-      const comentarioMsg = comentarioFiltro ? ` (${comentarioFiltro})` : '';
-      toast.info(`Generando reporte comparativo de 4 cortes${comentarioMsg}...`);
+      
+      // Construir lista de almacenes con sus comentarios
+      // Para MPRO: cada almacén puede tener un comentario específico del inventario seleccionado
+      const almacenesParaComparativo = selectedAlmacenes.map(almacen => {
+        // Buscar si hay inventarios iniciales seleccionados para este almacén
+        const invIniDeEsteAlmacen = selectedInventariosIni.find(inv => 
+          (inv.almacen_id === almacen.id || inv.almacen_id === almacen.Al_Cve_Almacen) ||
+          (inv.almacen === almacen.nombre || inv.almacen === almacen.Al_Descripcion)
+        );
+        
+        return {
+          id: almacen.id || almacen.Al_Cve_Almacen || '',
+          nombre: almacen.nombre || almacen.Al_Descripcion || 'Almacen',
+          comentario: invIniDeEsteAlmacen?.comentario || null
+        };
+      });
+      
+      // Mensaje informativo
+      const almacenesMsg = almacenesParaComparativo.length === 1 
+        ? almacenesParaComparativo[0].nombre + (almacenesParaComparativo[0].comentario ? ` (${almacenesParaComparativo[0].comentario})` : '')
+        : `${almacenesParaComparativo.length} almacenes`;
+      
+      toast.info(`Generando comparativo: ${almacenesMsg}...`);
       
       // Usar fecha actual si no hay fecha seleccionada
       const fechaReferencia = filters.fecha_fin || new Date().toISOString().split('T')[0];
       
       const response = await api.post('/reports/export/comparativo-inventarios', {
         server_id: filters.server_id,
-        almacen_id: almacenSeleccionado.id || almacenSeleccionado.Al_Cve_Almacen || '',
-        almacen_nombre: almacenSeleccionado.nombre || almacenSeleccionado.Al_Descripcion || 'Almacen',
         sucursal_id: filters.sucursal_id || '',
         sucursal_nombre: filters.sucursal || '',
-        comentario: comentarioFiltro,  // Filtrar por comentario para MPRO
+        almacenes: almacenesParaComparativo,
         fecha_referencia: fechaReferencia,
         categorias: selectedCategorias.length > 0 ? selectedCategorias : null
       }, {
@@ -906,16 +917,13 @@ const Reportes = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      const nombreArchivo = comentarioFiltro 
-        ? `comparativo_4cortes_${almacenSeleccionado.nombre || 'inventario'}_${comentarioFiltro}_${new Date().toISOString().split('T')[0]}.xlsx`
-        : `comparativo_4cortes_${almacenSeleccionado.nombre || 'inventario'}_${new Date().toISOString().split('T')[0]}.xlsx`;
-      link.download = nombreArchivo;
+      link.download = `comparativo_4cortes_${new Date().toISOString().split('T')[0]}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      toast.success('Reporte comparativo descargado correctamente');
+      toast.success('Reporte comparativo descargado correctamente (desde cache)');
     } catch (error) {
       console.error('Error al exportar comparativo:', error);
       const errorMsg = error.response?.data?.detail || error.message || 'Error desconocido';
@@ -1736,9 +1744,7 @@ const Reportes = () => {
                 variant="outline"
                 className="border-emerald-500 text-emerald-700 hover:bg-emerald-50"
                 data-testid="export-comparativo-4cortes-button"
-                title={selectedInventariosIni.length > 0 && selectedInventariosIni[0].comentario 
-                  ? `Genera comparativo de los últimos 4 inventarios tipo "${selectedInventariosIni[0].comentario}" para detectar patrones`
-                  : "Selecciona un Inventario Inicial para filtrar por tipo (MPRO). Para SoftRestaurant, solo necesitas el almacén."}
+                title={`Genera Excel comparativo de los últimos 4 inventarios para ${selectedAlmacenes.length} almacén(es). Usa cache para rapidez.`}
               >
                 {loadingComparativo ? (
                   <>
@@ -1749,8 +1755,10 @@ const Reportes = () => {
                   <>
                     <FileSpreadsheet className="h-4 w-4 mr-2" />
                     Comparativo 4 Cortes
-                    {selectedInventariosIni.length > 0 && selectedInventariosIni[0].comentario && (
-                      <span className="ml-1 text-xs opacity-70">({selectedInventariosIni[0].comentario})</span>
+                    {selectedAlmacenes.length > 0 && (
+                      <span className="ml-1 text-xs bg-emerald-100 px-1 rounded">
+                        {selectedAlmacenes.length}
+                      </span>
                     )}
                   </>
                 )}
