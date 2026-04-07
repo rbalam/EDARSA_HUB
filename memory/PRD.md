@@ -353,3 +353,32 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - Indicador visual al seleccionar: "Este tipo SUMA/RESTA al salario"
   - Campo Monto con borde verde/rojo según tipo
   - Tabla de incidencias con badge +/- coloreado y monto con signo
+
+### April 7, 2026 - Catálogos de Puestos e Incidencias (RRHH)
+- **Implementado**: Nueva pestaña "Catálogos" en módulo de Recursos Humanos
+- **Backend** (`/app/backend/server.py`, líneas 12094-12460):
+  - `GET /api/rrhh/catalogos/puestos`: Lista catálogo de puestos
+  - `POST /api/rrhh/catalogos/puestos`: Crear puesto (Solo Administrador)
+  - `PUT /api/rrhh/catalogos/puestos/{id}`: Actualizar puesto (Solo Administrador)
+  - `DELETE /api/rrhh/catalogos/puestos/{id}`: Eliminar puesto (Solo Administrador)
+  - `GET /api/rrhh/catalogos/tipos-incidencias`: Lista tipos de incidencias
+  - `POST /api/rrhh/catalogos/tipos-incidencias`: Crear tipo (Solo Administrador)
+  - `PUT /api/rrhh/catalogos/tipos-incidencias/{id}`: Actualizar tipo (Solo Administrador)
+  - `DELETE /api/rrhh/catalogos/tipos-incidencias/{id}`: Desactivar tipo (Solo Administrador)
+  - `GET /api/rrhh/catalogos/script-inicializacion`: Script SQL para crear tablas
+- **Frontend** (`/app/frontend/src/pages/RecursosHumanos.js`):
+  - Nueva pestaña "Catálogos" con ícono de configuración
+  - Sub-pestañas: "Puestos" | "Tipos de Incidencias"
+  - Tabla de Puestos: ID, Descripción, Departamento, Sueldo Base, NomiPAQ, MPRO, Acciones
+  - Tabla de Tipos Incidencias: Código, Descripción, Categoría (+/-), Cálculo, NomiPAQ, MPRO, Acciones
+  - **Control de Permisos**:
+    - Administrador: Ve botones Nuevo/Editar/Eliminar
+    - Supervisor/Usuario: Ve mensaje "Solo lectura (requiere rol Administrador para editar)" y NO ve botones de acción
+  - Modal "Nuevo/Editar Puesto": Descripción, Departamento, Sueldo Base, ID NomiPAQ, ID MPRO
+  - Modal "Nuevo/Editar Tipo Incidencia": Código, Categoría (Ingreso/Descuento), Descripción, Tipo Cálculo, NomiPAQ, MPRO
+  - Modal "Script SQL": Instrucciones + Script con botón "Copiar"
+- **Integración Externa**:
+  - Campos NomiPAQ_ID y MPRO_ID para mapeo con sistemas de nómina
+  - Excel_Columna para importación de nómina
+  - Tipos por defecto incluyen: BON, HEX, COM, INC, GRA, AGU, PTU, PVA (Ingresos) y FAL, RET, DES, VAC, INA, PER, PRE, INF, FON, ISR, IMSS (Descuentos)
+- **Testing**: 100% backend (11/11 tests), 100% frontend validado
