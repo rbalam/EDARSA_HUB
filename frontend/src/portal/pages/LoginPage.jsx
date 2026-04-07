@@ -7,8 +7,8 @@ import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
-// Imagen de fondo - almacén/logística
-const BACKGROUND_IMAGE = 'https://images.unsplash.com/photo-1771530789155-b1f03fbf82b5?auto=format&fit=crop&w=1920&q=80';
+// Imagen de fondo - cajas y suministros (diferente a EDARSA HUB)
+const BACKGROUND_IMAGE = 'https://images.unsplash.com/photo-1769355104335-acef3aa4c9b6?auto=format&fit=crop&w=1920&q=80';
 
 export default function LoginPage({ onLogin, onRegister }) {
   const [rfc, setRfc] = useState('');
