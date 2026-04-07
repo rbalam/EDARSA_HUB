@@ -8933,6 +8933,459 @@ async def tablero_ejecutivo(
     }
 
 
+
+# ============================================================================
+# ANÁLISIS DE VENTAS A PRECIOS CONSTANTES (Sin efecto inflación)
+# ============================================================================
+
+@api_router.get("/comercial/precios-constantes/{server_id}")
+async def ventas_precios_constantes(
+    server_id: str,
+    periodo_actual: str = Query(..., description="Período actual: YYYY-MM o YYYY-MM,YYYY-MM"),
+    periodo_base: str = Query(..., description="Período base para precios: YYYY-MM o YYYY-MM,YYYY-MM"),
+    granularidad: str = Query(default="categoria", description="categoria, familia, producto"),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Análisis de ventas valuando a precios constantes de un período base.
+    Permite comparar ventas eliminando el efecto inflacionario.
+    
+    - periodo_actual: Mes(es) de ventas a analizar (ej: "2025-03" o "2025-01,2025-02,2025-03")
+    - periodo_base: Período de donde tomar los precios de referencia (ej: "2024-03")
+    - granularidad: Nivel de detalle (categoria, familia, producto)
+    
+    Productos In/Out:
+    - Nuevos (no existían en período base): Usan precio actual
+    - Descontinuados (no existen en período actual): Usan último precio conocido
+    """
+    from datetime import datetime, timedelta
+    import calendar
+    
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if not user_has_server_access(current_user, server_id):
+        raise HTTPException(status_code=403, detail="Sin acceso a este servidor")
+    
+    try:
+        # Parsear períodos (pueden ser múltiples meses separados por coma)
+        def parse_periodos(periodo_str):
+            meses = [m.strip() for m in periodo_str.split(',')]
+            fechas = []
+            for mes in meses:
+                year, month = mes.split('-')
+                year, month = int(year), int(month)
+                ultimo_dia = calendar.monthrange(year, month)[1]
+                fechas.append({
+                    'mes': mes,
+                    'year': year,
+                    'month': month,
+                    'fecha_ini': f"{year}-{month:02d}-01",
+                    'fecha_fin': f"{year}-{month:02d}-{ultimo_dia:02d}"
+                })
+            return fechas
+        
+        periodos_actual = parse_periodos(periodo_actual)
+        periodos_base = parse_periodos(periodo_base)
+        
+        # Fechas consolidadas
+        fecha_ini_actual = min(p['fecha_ini'] for p in periodos_actual)
+        fecha_fin_actual = max(p['fecha_fin'] for p in periodos_actual)
+        fecha_ini_base = min(p['fecha_ini'] for p in periodos_base)
+        fecha_fin_base = max(p['fecha_fin'] for p in periodos_base)
+        
+        logging.info(f"Precios Constantes - Actual: {fecha_ini_actual} a {fecha_fin_actual}, Base: {fecha_ini_base} a {fecha_fin_base}")
+        
+        if server['system_type'] == 'SoftRestaurant':
+            # Formato YYYYMMDD para SoftRestaurant
+            f_ini_actual = fecha_ini_actual.replace('-', '')
+            f_fin_actual = fecha_fin_actual.replace('-', '')
+            f_ini_base = fecha_ini_base.replace('-', '')
+            f_fin_base = fecha_fin_base.replace('-', '')
+            
+            # Query para ventas del período ACTUAL con precios actuales
+            # Agrupa por producto y calcula precio promedio
+            query_ventas_actual = f"""
+SELECT 
+    p.idproducto as producto_id,
+    p.descripcion as producto,
+    ISNULL(g.nombre, 'Sin Categoría') as categoria,
+    ISNULL(f.nombre, 'Sin Familia') as familia,
+    SUM(cd.cantidad) as cantidad,
+    SUM(cd.precio * cd.cantidad) as importe_actual,
+    AVG(cd.precio) as precio_promedio_actual
+FROM chequedetalle cd
+INNER JOIN cheques c ON c.folio = cd.folio
+INNER JOIN turnos t ON t.idturno = c.idturno
+INNER JOIN productos p ON p.idproducto = cd.idproducto
+LEFT JOIN gruposi g ON g.idgrupo = p.idgrupo
+LEFT JOIN familias f ON f.idfamilia = p.idfamilia
+WHERE t.apertura >= '{f_ini_actual} 00:00:00'
+  AND t.apertura <= '{f_fin_actual} 23:59:59'
+  AND c.cancelado = 0
+  AND cd.cantidad > 0
+GROUP BY p.idproducto, p.descripcion, g.nombre, f.nombre
+"""
+            
+            # Query para precios del período BASE
+            query_precios_base = f"""
+SELECT 
+    p.idproducto as producto_id,
+    p.descripcion as producto,
+    AVG(cd.precio) as precio_promedio_base
+FROM chequedetalle cd
+INNER JOIN cheques c ON c.folio = cd.folio
+INNER JOIN turnos t ON t.idturno = c.idturno
+INNER JOIN productos p ON p.idproducto = cd.idproducto
+WHERE t.apertura >= '{f_ini_base} 00:00:00'
+  AND t.apertura <= '{f_fin_base} 23:59:59'
+  AND c.cancelado = 0
+  AND cd.cantidad > 0
+GROUP BY p.idproducto, p.descripcion
+"""
+            
+            # Ejecutar queries
+            ventas_actual = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_ventas_actual
+            ) or []
+            
+            precios_base = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_precios_base
+            ) or []
+            
+            # Crear diccionario de precios base
+            precios_base_dict = {str(p['producto_id']): float(p['precio_promedio_base'] or 0) for p in precios_base}
+            
+            # Procesar resultados
+            productos_detalle = []
+            total_actual = 0
+            total_constante = 0
+            
+            for venta in ventas_actual:
+                producto_id = str(venta['producto_id'])
+                cantidad = float(venta['cantidad'] or 0)
+                precio_actual = float(venta['precio_promedio_actual'] or 0)
+                importe_actual = float(venta['importe_actual'] or 0)
+                
+                # Determinar precio a usar para valuación constante
+                if producto_id in precios_base_dict:
+                    precio_base = precios_base_dict[producto_id]
+                    es_nuevo = False
+                else:
+                    # Producto nuevo - usar precio actual
+                    precio_base = precio_actual
+                    es_nuevo = True
+                
+                importe_constante = cantidad * precio_base
+                efecto_precio = importe_actual - importe_constante
+                variacion_precio_pct = ((precio_actual - precio_base) / precio_base * 100) if precio_base > 0 else 0
+                
+                productos_detalle.append({
+                    'producto_id': producto_id,
+                    'producto': venta['producto'],
+                    'categoria': venta['categoria'],
+                    'familia': venta['familia'],
+                    'cantidad': cantidad,
+                    'precio_actual': precio_actual,
+                    'precio_base': precio_base,
+                    'importe_actual': importe_actual,
+                    'importe_constante': importe_constante,
+                    'efecto_precio': efecto_precio,
+                    'variacion_precio_pct': round(variacion_precio_pct, 2),
+                    'es_nuevo': es_nuevo,
+                    'es_descontinuado': False
+                })
+                
+                total_actual += importe_actual
+                total_constante += importe_constante
+            
+            # Buscar productos descontinuados (estaban en base pero no en actual)
+            productos_actuales_ids = {str(v['producto_id']) for v in ventas_actual}
+            for producto_id, precio_base in precios_base_dict.items():
+                if producto_id not in productos_actuales_ids:
+                    # Obtener info del producto descontinuado
+                    query_info = f"SELECT TOP 1 descripcion FROM productos WHERE idproducto = {producto_id}"
+                    info_result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query_info
+                    )
+                    nombre_producto = info_result[0]['descripcion'] if info_result else f'Producto {producto_id}'
+                    
+                    productos_detalle.append({
+                        'producto_id': producto_id,
+                        'producto': nombre_producto,
+                        'categoria': 'Descontinuado',
+                        'familia': '-',
+                        'cantidad': 0,
+                        'precio_actual': 0,
+                        'precio_base': precio_base,
+                        'importe_actual': 0,
+                        'importe_constante': 0,
+                        'efecto_precio': 0,
+                        'variacion_precio_pct': 0,
+                        'es_nuevo': False,
+                        'es_descontinuado': True
+                    })
+            
+            # Agrupar según granularidad
+            if granularidad == 'categoria':
+                agrupado = {}
+                for p in productos_detalle:
+                    key = p['categoria']
+                    if key not in agrupado:
+                        agrupado[key] = {
+                            'nombre': key,
+                            'cantidad': 0,
+                            'importe_actual': 0,
+                            'importe_constante': 0,
+                            'efecto_precio': 0,
+                            'productos_nuevos': 0,
+                            'productos_descontinuados': 0
+                        }
+                    agrupado[key]['cantidad'] += p['cantidad']
+                    agrupado[key]['importe_actual'] += p['importe_actual']
+                    agrupado[key]['importe_constante'] += p['importe_constante']
+                    agrupado[key]['efecto_precio'] += p['efecto_precio']
+                    if p['es_nuevo']:
+                        agrupado[key]['productos_nuevos'] += 1
+                    if p['es_descontinuado']:
+                        agrupado[key]['productos_descontinuados'] += 1
+                
+                datos_agrupados = sorted(agrupado.values(), key=lambda x: x['importe_actual'], reverse=True)
+            
+            elif granularidad == 'familia':
+                agrupado = {}
+                for p in productos_detalle:
+                    key = f"{p['categoria']} > {p['familia']}"
+                    if key not in agrupado:
+                        agrupado[key] = {
+                            'nombre': key,
+                            'categoria': p['categoria'],
+                            'familia': p['familia'],
+                            'cantidad': 0,
+                            'importe_actual': 0,
+                            'importe_constante': 0,
+                            'efecto_precio': 0,
+                            'productos_nuevos': 0,
+                            'productos_descontinuados': 0
+                        }
+                    agrupado[key]['cantidad'] += p['cantidad']
+                    agrupado[key]['importe_actual'] += p['importe_actual']
+                    agrupado[key]['importe_constante'] += p['importe_constante']
+                    agrupado[key]['efecto_precio'] += p['efecto_precio']
+                    if p['es_nuevo']:
+                        agrupado[key]['productos_nuevos'] += 1
+                    if p['es_descontinuado']:
+                        agrupado[key]['productos_descontinuados'] += 1
+                
+                datos_agrupados = sorted(agrupado.values(), key=lambda x: x['importe_actual'], reverse=True)
+            
+            else:  # producto
+                datos_agrupados = sorted(productos_detalle, key=lambda x: x['importe_actual'], reverse=True)
+            
+            # Calcular métricas resumen
+            efecto_precio_total = total_actual - total_constante
+            variacion_real = round(((total_constante - total_actual) / total_actual * 100), 2) if total_actual > 0 else 0
+            efecto_inflacion_pct = round((efecto_precio_total / total_constante * 100), 2) if total_constante > 0 else 0
+            
+            return {
+                'servidor': server['name'],
+                'system_type': server['system_type'],
+                'periodo_actual': periodo_actual,
+                'periodo_base': periodo_base,
+                'granularidad': granularidad,
+                'kpis': {
+                    'ventas_actuales': round(total_actual, 2),
+                    'ventas_constantes': round(total_constante, 2),
+                    'efecto_precio': round(efecto_precio_total, 2),
+                    'efecto_inflacion_pct': efecto_inflacion_pct,
+                    'variacion_real_pct': variacion_real,
+                    'productos_analizados': len([p for p in productos_detalle if not p['es_descontinuado']]),
+                    'productos_nuevos': len([p for p in productos_detalle if p.get('es_nuevo')]),
+                    'productos_descontinuados': len([p for p in productos_detalle if p.get('es_descontinuado')])
+                },
+                'datos': datos_agrupados,
+                'detalle_productos': productos_detalle if granularidad == 'producto' else None
+            }
+        
+        elif server['system_type'] == 'MPRO':
+            # Para MPRO - Adaptar la query a su estructura
+            # Las ventas están en Venta y Venta_Detalle
+            
+            query_ventas_actual = f"""
+SELECT 
+    VD.Pr_Cve_Producto as producto_id,
+    P.Pr_Descripcion as producto,
+    ISNULL(C.Cp_Nombre, 'Sin Categoría') as categoria,
+    ISNULL(G.Gp_Nombre, 'Sin Familia') as familia,
+    SUM(VD.Vd_Cantidad) as cantidad,
+    SUM(VD.Vd_Importe) as importe_actual,
+    AVG(VD.Vd_Importe / NULLIF(VD.Vd_Cantidad, 0)) as precio_promedio_actual
+FROM Venta_Detalle VD
+INNER JOIN Venta V ON V.Vn_Folio = VD.Vn_Folio
+INNER JOIN Producto P ON P.Pr_Cve_Producto = VD.Pr_Cve_Producto
+LEFT JOIN Grupo_Producto G ON G.Gp_Cve_Grupo = P.Gp_Cve_Grupo
+LEFT JOIN Clasificacion_Producto C ON C.Cp_Cve_Clasificacion = P.Cp_Cve_Clasificacion
+WHERE V.Vn_Fecha >= '{fecha_ini_actual}'
+  AND V.Vn_Fecha <= '{fecha_fin_actual}'
+  AND V.Es_Cve_Estado <> 'CA'
+  AND VD.Vd_Cantidad > 0
+GROUP BY VD.Pr_Cve_Producto, P.Pr_Descripcion, C.Cp_Nombre, G.Gp_Nombre
+"""
+            
+            query_precios_base = f"""
+SELECT 
+    VD.Pr_Cve_Producto as producto_id,
+    AVG(VD.Vd_Importe / NULLIF(VD.Vd_Cantidad, 0)) as precio_promedio_base
+FROM Venta_Detalle VD
+INNER JOIN Venta V ON V.Vn_Folio = VD.Vn_Folio
+WHERE V.Vn_Fecha >= '{fecha_ini_base}'
+  AND V.Vn_Fecha <= '{fecha_fin_base}'
+  AND V.Es_Cve_Estado <> 'CA'
+  AND VD.Vd_Cantidad > 0
+GROUP BY VD.Pr_Cve_Producto
+"""
+            
+            # Ejecutar queries
+            ventas_actual = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_ventas_actual
+            ) or []
+            
+            precios_base = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_precios_base
+            ) or []
+            
+            # Mismo procesamiento que SoftRestaurant
+            precios_base_dict = {str(p['producto_id']): float(p['precio_promedio_base'] or 0) for p in precios_base}
+            
+            productos_detalle = []
+            total_actual = 0
+            total_constante = 0
+            
+            for venta in ventas_actual:
+                producto_id = str(venta['producto_id'])
+                cantidad = float(venta['cantidad'] or 0)
+                precio_actual = float(venta['precio_promedio_actual'] or 0)
+                importe_actual = float(venta['importe_actual'] or 0)
+                
+                if producto_id in precios_base_dict:
+                    precio_base = precios_base_dict[producto_id]
+                    es_nuevo = False
+                else:
+                    precio_base = precio_actual
+                    es_nuevo = True
+                
+                importe_constante = cantidad * precio_base
+                efecto_precio = importe_actual - importe_constante
+                variacion_precio_pct = ((precio_actual - precio_base) / precio_base * 100) if precio_base > 0 else 0
+                
+                productos_detalle.append({
+                    'producto_id': producto_id,
+                    'producto': venta['producto'],
+                    'categoria': venta['categoria'],
+                    'familia': venta['familia'],
+                    'cantidad': cantidad,
+                    'precio_actual': precio_actual,
+                    'precio_base': precio_base,
+                    'importe_actual': importe_actual,
+                    'importe_constante': importe_constante,
+                    'efecto_precio': efecto_precio,
+                    'variacion_precio_pct': round(variacion_precio_pct, 2),
+                    'es_nuevo': es_nuevo,
+                    'es_descontinuado': False
+                })
+                
+                total_actual += importe_actual
+                total_constante += importe_constante
+            
+            # Agrupar según granularidad (mismo código)
+            if granularidad == 'categoria':
+                agrupado = {}
+                for p in productos_detalle:
+                    key = p['categoria']
+                    if key not in agrupado:
+                        agrupado[key] = {
+                            'nombre': key,
+                            'cantidad': 0,
+                            'importe_actual': 0,
+                            'importe_constante': 0,
+                            'efecto_precio': 0,
+                            'productos_nuevos': 0,
+                            'productos_descontinuados': 0
+                        }
+                    agrupado[key]['cantidad'] += p['cantidad']
+                    agrupado[key]['importe_actual'] += p['importe_actual']
+                    agrupado[key]['importe_constante'] += p['importe_constante']
+                    agrupado[key]['efecto_precio'] += p['efecto_precio']
+                    if p['es_nuevo']:
+                        agrupado[key]['productos_nuevos'] += 1
+                datos_agrupados = sorted(agrupado.values(), key=lambda x: x['importe_actual'], reverse=True)
+            elif granularidad == 'familia':
+                agrupado = {}
+                for p in productos_detalle:
+                    key = f"{p['categoria']} > {p['familia']}"
+                    if key not in agrupado:
+                        agrupado[key] = {
+                            'nombre': key,
+                            'categoria': p['categoria'],
+                            'familia': p['familia'],
+                            'cantidad': 0,
+                            'importe_actual': 0,
+                            'importe_constante': 0,
+                            'efecto_precio': 0,
+                            'productos_nuevos': 0,
+                            'productos_descontinuados': 0
+                        }
+                    agrupado[key]['cantidad'] += p['cantidad']
+                    agrupado[key]['importe_actual'] += p['importe_actual']
+                    agrupado[key]['importe_constante'] += p['importe_constante']
+                    agrupado[key]['efecto_precio'] += p['efecto_precio']
+                    if p['es_nuevo']:
+                        agrupado[key]['productos_nuevos'] += 1
+                datos_agrupados = sorted(agrupado.values(), key=lambda x: x['importe_actual'], reverse=True)
+            else:
+                datos_agrupados = sorted(productos_detalle, key=lambda x: x['importe_actual'], reverse=True)
+            
+            efecto_precio_total = total_actual - total_constante
+            variacion_real = round(((total_constante - total_actual) / total_actual * 100), 2) if total_actual > 0 else 0
+            efecto_inflacion_pct = round((efecto_precio_total / total_constante * 100), 2) if total_constante > 0 else 0
+            
+            return {
+                'servidor': server['name'],
+                'system_type': server['system_type'],
+                'periodo_actual': periodo_actual,
+                'periodo_base': periodo_base,
+                'granularidad': granularidad,
+                'kpis': {
+                    'ventas_actuales': round(total_actual, 2),
+                    'ventas_constantes': round(total_constante, 2),
+                    'efecto_precio': round(efecto_precio_total, 2),
+                    'efecto_inflacion_pct': efecto_inflacion_pct,
+                    'variacion_real_pct': variacion_real,
+                    'productos_analizados': len([p for p in productos_detalle if not p['es_descontinuado']]),
+                    'productos_nuevos': len([p for p in productos_detalle if p.get('es_nuevo')]),
+                    'productos_descontinuados': len([p for p in productos_detalle if p.get('es_descontinuado')])
+                },
+                'datos': datos_agrupados,
+                'detalle_productos': productos_detalle if granularidad == 'producto' else None
+            }
+        
+        else:
+            raise HTTPException(status_code=400, detail=f"Sistema no soportado: {server['system_type']}")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error en precios constantes: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+
 # ============================================================================
 # EXPLORADOR DE BASE DE DATOS - Ver tablas y estructuras
 # ============================================================================

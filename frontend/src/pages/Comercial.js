@@ -15,7 +15,7 @@ import {
   AlertTriangle, BarChart3, PieChart, ShoppingBag, Utensils, Coffee,
   Wine, Award, RefreshCw, Calendar, ArrowUpRight, ArrowDownRight,
   Receipt, ChevronLeft, ChevronRight, X, Search, ChevronDown, ChevronUp,
-  UserCheck, Download, FileSpreadsheet, FileText, Share2, Mail
+  UserCheck, Download, FileSpreadsheet, FileText, Share2, Mail, Scale
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -1580,6 +1580,427 @@ function ReportePax({ servers, selectedServer, setSelectedServer, selectedSucurs
   );
 }
 
+// ============ VENTAS A PRECIOS CONSTANTES ============
+function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  
+  // Filtros
+  const [periodoActual, setPeriodoActual] = useState(() => {
+    const hoy = new Date();
+    return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [periodoBase, setPeriodoBase] = useState(() => {
+    const hoy = new Date();
+    return `${hoy.getFullYear() - 1}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [modoComparacion, setModoComparacion] = useState('manual'); // manual, auto (año anterior)
+  const [granularidad, setGranularidad] = useState('categoria');
+  
+  // Multiselección de meses
+  const [mesesActual, setMesesActual] = useState([new Date().getMonth() + 1]);
+  const [mesesBase, setMesesBase] = useState([new Date().getMonth() + 1]);
+  const [anioActual, setAnioActual] = useState(new Date().getFullYear());
+  const [anioBase, setAnioBase] = useState(new Date().getFullYear() - 1);
+
+  const meses = [
+    { num: 1, nombre: 'Ene' }, { num: 2, nombre: 'Feb' }, { num: 3, nombre: 'Mar' },
+    { num: 4, nombre: 'Abr' }, { num: 5, nombre: 'May' }, { num: 6, nombre: 'Jun' },
+    { num: 7, nombre: 'Jul' }, { num: 8, nombre: 'Ago' }, { num: 9, nombre: 'Sep' },
+    { num: 10, nombre: 'Oct' }, { num: 11, nombre: 'Nov' }, { num: 12, nombre: 'Dic' }
+  ];
+
+  const aniosDisponibles = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+
+  const toggleMes = (mes, tipo) => {
+    if (tipo === 'actual') {
+      if (mesesActual.includes(mes)) {
+        if (mesesActual.length > 1) {
+          setMesesActual(mesesActual.filter(m => m !== mes));
+        }
+      } else {
+        setMesesActual([...mesesActual, mes].sort((a, b) => a - b));
+      }
+    } else {
+      if (mesesBase.includes(mes)) {
+        if (mesesBase.length > 1) {
+          setMesesBase(mesesBase.filter(m => m !== mes));
+        }
+      } else {
+        setMesesBase([...mesesBase, mes].sort((a, b) => a - b));
+      }
+    }
+  };
+
+  const cargarAnalisis = async () => {
+    if (!selectedServer) {
+      toast.error('Selecciona un servidor');
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Construir períodos
+      let pActual, pBase;
+      if (modoComparacion === 'auto') {
+        // Automático: mismo mes del año anterior
+        pActual = mesesActual.map(m => `${anioActual}-${String(m).padStart(2, '0')}`).join(',');
+        pBase = mesesActual.map(m => `${anioActual - 1}-${String(m).padStart(2, '0')}`).join(',');
+      } else {
+        // Manual: selección libre
+        pActual = mesesActual.map(m => `${anioActual}-${String(m).padStart(2, '0')}`).join(',');
+        pBase = mesesBase.map(m => `${anioBase}-${String(m).padStart(2, '0')}`).join(',');
+      }
+      
+      const response = await axios.get(`${API_URL}/api/comercial/precios-constantes/${selectedServer}`, {
+        params: {
+          periodo_actual: pActual,
+          periodo_base: pBase,
+          granularidad: granularidad
+        },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setData(response.data);
+    } catch (err) {
+      console.error('Error:', err);
+      setError(err.response?.data?.detail || 'Error al cargar análisis');
+      toast.error('Error al cargar análisis de precios constantes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getVariacionClass = (valor) => {
+    if (valor > 0) return 'text-red-600';
+    if (valor < 0) return 'text-green-600';
+    return 'text-zinc-600';
+  };
+
+  return (
+    <div className="space-y-4" data-testid="precios-constantes">
+      {/* Filtros */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Scale className="h-5 w-5 text-blue-600" />
+            Análisis de Ventas a Precios Constantes
+          </CardTitle>
+          <p className="text-sm text-zinc-500">
+            Compara ventas eliminando el efecto inflacionario de los cambios de precios
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Selector de servidor */}
+          <div className="flex gap-4 items-end">
+            <div className="w-64">
+              <Label className="text-xs">Servidor</Label>
+              <Select value={selectedServer} onValueChange={setSelectedServer}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar servidor" /></SelectTrigger>
+                <SelectContent>
+                  {servers.filter(s => s.active).map(s => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="w-48">
+              <Label className="text-xs">Modo de Comparación</Label>
+              <Select value={modoComparacion} onValueChange={setModoComparacion}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manual">Selección Manual</SelectItem>
+                  <SelectItem value="auto">Año Anterior (auto)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="w-48">
+              <Label className="text-xs">Granularidad</Label>
+              <Select value={granularidad} onValueChange={setGranularidad}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="categoria">Por Categoría</SelectItem>
+                  <SelectItem value="familia">Por Familia</SelectItem>
+                  <SelectItem value="producto">Por Producto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Período Actual */}
+          <div className="border rounded-lg p-4 bg-blue-50/50">
+            <div className="flex items-center gap-3 mb-3">
+              <Label className="text-sm font-medium">Período Actual (Ventas a Analizar)</Label>
+              <Select value={String(anioActual)} onValueChange={(v) => setAnioActual(Number(v))}>
+                <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {aniosDisponibles.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-1 flex-wrap">
+              {meses.map(m => (
+                <Button
+                  key={m.num}
+                  size="sm"
+                  variant={mesesActual.includes(m.num) ? 'default' : 'outline'}
+                  className="w-12 h-8 text-xs"
+                  onClick={() => toggleMes(m.num, 'actual')}
+                >
+                  {m.nombre}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Período Base (solo si es manual) */}
+          {modoComparacion === 'manual' && (
+            <div className="border rounded-lg p-4 bg-orange-50/50">
+              <div className="flex items-center gap-3 mb-3">
+                <Label className="text-sm font-medium">Período Base (Precios de Referencia)</Label>
+                <Select value={String(anioBase)} onValueChange={(v) => setAnioBase(Number(v))}>
+                  <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {aniosDisponibles.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-1 flex-wrap">
+                {meses.map(m => (
+                  <Button
+                    key={m.num}
+                    size="sm"
+                    variant={mesesBase.includes(m.num) ? 'default' : 'outline'}
+                    className="w-12 h-8 text-xs"
+                    onClick={() => toggleMes(m.num, 'base')}
+                  >
+                    {m.nombre}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {modoComparacion === 'auto' && (
+            <div className="bg-zinc-100 rounded-lg p-3 text-sm text-zinc-600">
+              <strong>Modo Automático:</strong> Se compararán las ventas de {mesesActual.map(m => meses[m-1].nombre).join(', ')} {anioActual} 
+              {' '}usando precios de {mesesActual.map(m => meses[m-1].nombre).join(', ')} {anioActual - 1}
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <Button onClick={cargarAnalisis} disabled={loading || !selectedServer}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              Analizar
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Error */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="py-4">
+            <p className="text-red-600 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              {error}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* KPIs */}
+      {data && (
+        <>
+          <div className="grid grid-cols-5 gap-4">
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-xs text-zinc-500">Ventas Actuales</p>
+                <p className="text-xl font-bold text-zinc-900">{formatCurrency(data.kpis.ventas_actuales)}</p>
+                <p className="text-xs text-zinc-400">Precios del período seleccionado</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-xs text-zinc-500">Ventas a Precios Constantes</p>
+                <p className="text-xl font-bold text-blue-600">{formatCurrency(data.kpis.ventas_constantes)}</p>
+                <p className="text-xs text-zinc-400">Valuadas con precios base</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-xs text-zinc-500">Efecto Precio (Inflación)</p>
+                <p className={`text-xl font-bold ${getVariacionClass(data.kpis.efecto_precio)}`}>
+                  {formatCurrency(data.kpis.efecto_precio)}
+                </p>
+                <p className="text-xs text-zinc-400">
+                  {data.kpis.efecto_inflacion_pct >= 0 ? '+' : ''}{data.kpis.efecto_inflacion_pct}%
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-xs text-zinc-500">Productos Nuevos</p>
+                <p className="text-xl font-bold text-green-600">{data.kpis.productos_nuevos}</p>
+                <p className="text-xs text-zinc-400">No existían en período base</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-xs text-zinc-500">Productos Descontinuados</p>
+                <p className="text-xl font-bold text-orange-600">{data.kpis.productos_descontinuados}</p>
+                <p className="text-xs text-zinc-400">Ya no se venden</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Interpretación */}
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardContent className="py-4">
+              <div className="flex items-start gap-3">
+                <Scale className="h-6 w-6 text-blue-600 mt-1" />
+                <div>
+                  <h4 className="font-medium text-zinc-900">Interpretación del Análisis</h4>
+                  <p className="text-sm text-zinc-600 mt-1">
+                    {data.kpis.efecto_precio > 0 ? (
+                      <>
+                        Las ventas actuales incluyen <strong>{formatCurrency(data.kpis.efecto_precio)}</strong> ({data.kpis.efecto_inflacion_pct}%) 
+                        por efecto de incremento de precios. Sin este efecto inflacionario, las ventas reales serían{' '}
+                        <strong>{formatCurrency(data.kpis.ventas_constantes)}</strong>.
+                      </>
+                    ) : data.kpis.efecto_precio < 0 ? (
+                      <>
+                        Los precios han disminuido respecto al período base. Las ventas a precios constantes serían{' '}
+                        <strong>{formatCurrency(data.kpis.ventas_constantes)}</strong>, {Math.abs(data.kpis.efecto_inflacion_pct)}% más que el importe actual.
+                      </>
+                    ) : (
+                      <>No hay diferencia significativa en precios entre ambos períodos.</>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tabla de resultados */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">
+                Detalle por {granularidad === 'categoria' ? 'Categoría' : granularidad === 'familia' ? 'Familia' : 'Producto'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto max-h-[500px]">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-zinc-100">
+                    <tr>
+                      <th className="text-left p-2">{granularidad === 'producto' ? 'Producto' : 'Nombre'}</th>
+                      <th className="text-right p-2">Cantidad</th>
+                      <th className="text-right p-2">Importe Actual</th>
+                      <th className="text-right p-2">Importe Constante</th>
+                      <th className="text-right p-2">Efecto Precio</th>
+                      {granularidad !== 'producto' && (
+                        <>
+                          <th className="text-right p-2">Nuevos</th>
+                          <th className="text-right p-2">Desc.</th>
+                        </>
+                      )}
+                      {granularidad === 'producto' && (
+                        <>
+                          <th className="text-right p-2">Precio Actual</th>
+                          <th className="text-right p-2">Precio Base</th>
+                          <th className="text-right p-2">Var. %</th>
+                        </>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.datos?.map((item, idx) => (
+                      <tr key={idx} className="border-b hover:bg-zinc-50">
+                        <td className="p-2">
+                          {item.nombre || item.producto}
+                          {item.es_nuevo && <span className="ml-2 px-1 py-0.5 bg-green-100 text-green-700 text-xs rounded">NUEVO</span>}
+                          {item.es_descontinuado && <span className="ml-2 px-1 py-0.5 bg-orange-100 text-orange-700 text-xs rounded">DESC.</span>}
+                        </td>
+                        <td className="text-right p-2">{formatNumber(item.cantidad)}</td>
+                        <td className="text-right p-2">{formatCurrency(item.importe_actual)}</td>
+                        <td className="text-right p-2">{formatCurrency(item.importe_constante)}</td>
+                        <td className={`text-right p-2 font-medium ${getVariacionClass(item.efecto_precio)}`}>
+                          {formatCurrency(item.efecto_precio)}
+                        </td>
+                        {granularidad !== 'producto' && (
+                          <>
+                            <td className="text-right p-2 text-green-600">{item.productos_nuevos || 0}</td>
+                            <td className="text-right p-2 text-orange-600">{item.productos_descontinuados || 0}</td>
+                          </>
+                        )}
+                        {granularidad === 'producto' && (
+                          <>
+                            <td className="text-right p-2">{formatCurrency(item.precio_actual)}</td>
+                            <td className="text-right p-2">{formatCurrency(item.precio_base)}</td>
+                            <td className={`text-right p-2 ${getVariacionClass(item.variacion_precio_pct)}`}>
+                              {item.variacion_precio_pct >= 0 ? '+' : ''}{item.variacion_precio_pct}%
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-zinc-100 font-medium">
+                    <tr>
+                      <td className="p-2">TOTAL</td>
+                      <td className="text-right p-2">-</td>
+                      <td className="text-right p-2">{formatCurrency(data.kpis.ventas_actuales)}</td>
+                      <td className="text-right p-2">{formatCurrency(data.kpis.ventas_constantes)}</td>
+                      <td className={`text-right p-2 ${getVariacionClass(data.kpis.efecto_precio)}`}>
+                        {formatCurrency(data.kpis.efecto_precio)}
+                      </td>
+                      {granularidad !== 'producto' && (
+                        <>
+                          <td className="text-right p-2 text-green-600">{data.kpis.productos_nuevos}</td>
+                          <td className="text-right p-2 text-orange-600">{data.kpis.productos_descontinuados}</td>
+                        </>
+                      )}
+                      {granularidad === 'producto' && <td colSpan={3}></td>}
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* Estado inicial */}
+      {!data && !loading && !error && (
+        <Card>
+          <CardContent className="py-12 text-center text-zinc-500">
+            <Scale className="h-16 w-16 mx-auto mb-4 opacity-30" />
+            <h3 className="text-lg font-medium text-zinc-700 mb-2">Análisis de Precios Constantes</h3>
+            <p className="text-sm max-w-md mx-auto">
+              Selecciona un servidor, configura los períodos a comparar y haz clic en "Analizar" 
+              para ver las ventas valuadas sin efecto inflacionario.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+
+
 // ============ COMPONENTE PRINCIPAL ============
 export default function Comercial() {
   const [servers, setServers] = useState([]);
@@ -1691,8 +2112,9 @@ export default function Comercial() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6 mb-4">
+        <TabsList className="grid w-full grid-cols-7 mb-4">
           <TabsTrigger value="dashboard" className="text-xs"><BarChart3 className="h-4 w-4 mr-1" />Dashboard</TabsTrigger>
+          <TabsTrigger value="constantes" className="text-xs"><Scale className="h-4 w-4 mr-1" />Precios Const.</TabsTrigger>
           <TabsTrigger value="pax" className="text-xs"><Users className="h-4 w-4 mr-1" />Reporte PAX</TabsTrigger>
           <TabsTrigger value="ticket" className="text-xs"><Award className="h-4 w-4 mr-1" />Ticket Perfecto</TabsTrigger>
           <TabsTrigger value="metas" className="text-xs"><Target className="h-4 w-4 mr-1" />Metas</TabsTrigger>
@@ -1701,6 +2123,7 @@ export default function Comercial() {
         </TabsList>
 
         <TabsContent value="dashboard"><DashboardVentas {...commonProps} /></TabsContent>
+        <TabsContent value="constantes"><VentasPreciosConstantes {...commonProps} /></TabsContent>
         <TabsContent value="pax"><ReportePax {...commonProps} /></TabsContent>
         <TabsContent value="ticket"><TicketPerfecto {...commonProps} /></TabsContent>
         <TabsContent value="metas"><MetasVentas {...commonProps} /></TabsContent>
