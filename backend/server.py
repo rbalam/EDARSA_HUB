@@ -15649,22 +15649,74 @@ async def exportar_informe_pdf(
 # ============================================================================
 
 # Lista de catálogos del sistema disponibles para solicitudes
+# niveles_aprobacion: 1 = Solo Supervisor/Admin, 2 = Supervisor + Admin, etc.
 CATALOGOS_SISTEMA = [
-    {"id": "puestos", "nombre": "Puestos", "modulo": "RRHH", "tabla": "RH_Cat_Puestos"},
-    {"id": "tipos_incidencias", "nombre": "Tipos de Incidencias", "modulo": "RRHH", "tabla": "RH_Cat_Tipos_Incidencias"},
-    {"id": "sucursales", "nombre": "Sucursales", "modulo": "RRHH", "tabla": "RH_Cat_Sucursales"},
-    {"id": "departamentos", "nombre": "Departamentos", "modulo": "RRHH", "tabla": "RH_Cat_Departamentos"},
-    {"id": "proveedores", "nombre": "Proveedores", "modulo": "Compras", "tabla": "Proveedores"},
-    {"id": "categorias_presupuesto", "nombre": "Categorías Presupuesto", "modulo": "Finanzas", "tabla": "Finanzas_Categorias"},
-    {"id": "almacenes", "nombre": "Almacenes", "modulo": "Inventarios", "tabla": "Almacenes"},
-    {"id": "familias", "nombre": "Familias de Productos", "modulo": "Inventarios", "tabla": "Familias"},
-    {"id": "categorias", "nombre": "Categorías de Productos", "modulo": "Inventarios", "tabla": "Categorias"},
+    {"id": "puestos", "nombre": "Puestos", "modulo": "RRHH", "tabla": "RH_Cat_Puestos", "niveles_aprobacion": 1},
+    {"id": "tipos_incidencias", "nombre": "Tipos de Incidencias", "modulo": "RRHH", "tabla": "RH_Cat_Tipos_Incidencias", "niveles_aprobacion": 1},
+    {"id": "sucursales", "nombre": "Sucursales", "modulo": "RRHH", "tabla": "RH_Cat_Sucursales", "niveles_aprobacion": 2},
+    {"id": "departamentos", "nombre": "Departamentos", "modulo": "RRHH", "tabla": "RH_Cat_Departamentos", "niveles_aprobacion": 1},
+    {"id": "proveedores", "nombre": "Proveedores", "modulo": "Compras", "tabla": "Proveedores", "niveles_aprobacion": 2},
+    {"id": "categorias_presupuesto", "nombre": "Categorías Presupuesto", "modulo": "Finanzas", "tabla": "Finanzas_Categorias", "niveles_aprobacion": 2},
+    {"id": "almacenes", "nombre": "Almacenes", "modulo": "Inventarios", "tabla": "Almacenes", "niveles_aprobacion": 1},
+    {"id": "familias", "nombre": "Familias de Productos", "modulo": "Inventarios", "tabla": "Familias", "niveles_aprobacion": 1},
+    {"id": "categorias", "nombre": "Categorías de Productos", "modulo": "Inventarios", "tabla": "Categorias", "niveles_aprobacion": 1},
 ]
+
+# Función para agregar evento al historial de una solicitud
+async def agregar_evento_historial(solicitud_id: str, evento: Dict):
+    """Agrega un evento al historial de trazabilidad de una solicitud"""
+    evento["id"] = str(uuid.uuid4())
+    evento["timestamp"] = datetime.now(timezone.utc).isoformat()
+    await db.solicitudes_catalogos.update_one(
+        {"id": solicitud_id},
+        {"$push": {"historial": evento}}
+    )
 
 @api_router.get("/sistema/catalogos-disponibles")
 async def listar_catalogos_sistema(current_user: Dict = Depends(get_current_user)):
     """Lista todos los catálogos del sistema disponibles para solicitudes"""
-    return {"catalogos": CATALOGOS_SISTEMA}
+    # Obtener configuración personalizada de niveles desde MongoDB
+    config = await db.config_catalogos.find_one({"tipo": "niveles_aprobacion"})
+    config_niveles = config.get("niveles", {}) if config else {}
+    
+    catalogos_con_config = []
+    for cat in CATALOGOS_SISTEMA:
+        cat_copy = cat.copy()
+        # Usar configuración personalizada si existe, sino usar el default
+        cat_copy["niveles_aprobacion"] = config_niveles.get(cat["id"], cat.get("niveles_aprobacion", 1))
+        catalogos_con_config.append(cat_copy)
+    
+    return {"catalogos": catalogos_con_config}
+
+
+@api_router.put("/sistema/catalogos/{catalogo_id}/niveles")
+async def configurar_niveles_catalogo(catalogo_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Configura los niveles de aprobación de un catálogo (Solo Admin)"""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo Administradores pueden configurar niveles")
+    
+    niveles = body.get("niveles_aprobacion", 1)
+    if niveles < 1 or niveles > 3:
+        raise HTTPException(status_code=400, detail="Niveles debe ser entre 1 y 3")
+    
+    # Guardar/actualizar configuración
+    await db.config_catalogos.update_one(
+        {"tipo": "niveles_aprobacion"},
+        {"$set": {f"niveles.{catalogo_id}": niveles}},
+        upsert=True
+    )
+    
+    # Registrar en log
+    await agregar_evento_historial("CONFIG", {
+        "accion": "CONFIGURACION_NIVELES",
+        "usuario_id": current_user.get("id"),
+        "usuario_email": current_user.get("email"),
+        "catalogo_id": catalogo_id,
+        "niveles_nuevos": niveles,
+        "descripcion": f"Configuración de {niveles} nivel(es) de aprobación para {catalogo_id}"
+    })
+    
+    return {"success": True, "message": f"Niveles de aprobación actualizados a {niveles}"}
 
 
 @api_router.get("/sistema/permisos-catalogos/{user_id}")
@@ -15770,12 +15822,32 @@ async def crear_solicitud_catalogo(body: Dict, current_user: Dict = Depends(get_
         if catalogo_id not in permisos.get("catalogos_permitidos", []):
             raise HTTPException(status_code=403, detail=f"No tiene permiso para solicitar altas en el catálogo: {catalogo_id}")
     
-    # Obtener info del catálogo
+    # Obtener info del catálogo incluyendo niveles configurados
     catalogo_info = next((c for c in CATALOGOS_SISTEMA if c["id"] == catalogo_id), None)
     if not catalogo_info:
         raise HTTPException(status_code=400, detail="Catálogo no válido")
     
+    # Obtener configuración de niveles personalizada
+    config = await db.config_catalogos.find_one({"tipo": "niveles_aprobacion"})
+    niveles_requeridos = config.get("niveles", {}).get(catalogo_id, catalogo_info.get("niveles_aprobacion", 1)) if config else catalogo_info.get("niveles_aprobacion", 1)
+    
     solicitud_id = str(uuid.uuid4())
+    ahora = datetime.now(timezone.utc).isoformat()
+    
+    # Evento inicial del historial
+    evento_creacion = {
+        "id": str(uuid.uuid4()),
+        "timestamp": ahora,
+        "accion": "CREACION",
+        "usuario_id": user_id,
+        "usuario_email": current_user.get("email"),
+        "usuario_nombre": current_user.get("name", current_user.get("email")),
+        "descripcion": "Solicitud creada",
+        "datos_snapshot": datos.copy(),
+        "estatus_anterior": None,
+        "estatus_nuevo": "Pendiente Nivel 1"
+    }
+    
     solicitud = {
         "id": solicitud_id,
         "catalogo_id": catalogo_id,
@@ -15783,15 +15855,21 @@ async def crear_solicitud_catalogo(body: Dict, current_user: Dict = Depends(get_
         "modulo": catalogo_info["modulo"],
         "datos": datos,
         "notas": notas,
-        "estatus": "Pendiente",  # Pendiente, Aprobada, Rechazada
+        "version": 1,  # Versión de la solicitud (incrementa con correcciones)
+        "estatus": "Pendiente Nivel 1",
+        "nivel_actual": 1,
+        "niveles_requeridos": niveles_requeridos,
+        "aprobaciones": [],  # Lista de aprobaciones por nivel
         "solicitante_id": user_id,
         "solicitante_email": current_user.get("email"),
         "solicitante_nombre": current_user.get("name", current_user.get("email")),
-        "fecha_solicitud": datetime.now(timezone.utc).isoformat(),
-        "aprobador_id": None,
-        "aprobador_email": None,
-        "fecha_aprobacion": None,
-        "motivo_rechazo": None
+        "fecha_solicitud": ahora,
+        "fecha_ultima_modificacion": ahora,
+        "aprobador_final_id": None,
+        "aprobador_final_email": None,
+        "fecha_aprobacion_final": None,
+        "motivo_rechazo": None,
+        "historial": [evento_creacion]
     }
     
     await db.solicitudes_catalogos.insert_one(solicitud)
@@ -15800,9 +15878,10 @@ async def crear_solicitud_catalogo(body: Dict, current_user: Dict = Depends(get_
     tarea = {
         "id": str(uuid.uuid4()),
         "tipo": "aprobacion_catalogo",
-        "titulo": f"Aprobar alta en {catalogo_info['nombre']}",
+        "titulo": f"Aprobar alta en {catalogo_info['nombre']} (Nivel 1/{niveles_requeridos})",
         "descripcion": f"Solicitud de {current_user.get('name', current_user.get('email'))} para agregar elemento al catálogo {catalogo_info['nombre']}",
         "solicitud_id": solicitud_id,
+        "nivel_aprobacion": 1,
         "estatus": "Pendiente",
         "prioridad": "Normal",
         "asignado_a_roles": ["Supervisor", "Administrador"],
@@ -15855,16 +15934,16 @@ async def obtener_solicitud(solicitud_id: str, current_user: Dict = Depends(get_
 
 @api_router.post("/sistema/solicitudes/{solicitud_id}/aprobar")
 async def aprobar_solicitud(solicitud_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
-    """Aprueba una solicitud con firma (contraseña del aprobador)"""
+    """Aprueba una solicitud con firma (contraseña del aprobador) - Soporta múltiples niveles"""
     if current_user.get('role') not in ['Supervisor', 'Administrador']:
         raise HTTPException(status_code=403, detail="Solo Supervisores o Administradores pueden aprobar")
     
     password = body.get("password")
+    comentario = body.get("comentario", "")
     if not password:
         raise HTTPException(status_code=400, detail="Contraseña de autorización requerida")
     
-    # El current_user ya tiene toda la info del usuario de MongoDB
-    # Verificar password usando la función existente
+    # Verificar password
     if not verify_password(password, current_user.get("password")):
         raise HTTPException(status_code=401, detail="Contraseña incorrecta")
     
@@ -15873,81 +15952,168 @@ async def aprobar_solicitud(solicitud_id: str, body: Dict, current_user: Dict = 
     if not solicitud:
         raise HTTPException(status_code=404, detail="Solicitud no encontrada")
     
-    if solicitud.get("estatus") != "Pendiente":
-        raise HTTPException(status_code=400, detail="La solicitud ya fue procesada")
+    estatus_actual = solicitud.get("estatus", "")
+    if "Pendiente" not in estatus_actual and estatus_actual != "Reenviada":
+        raise HTTPException(status_code=400, detail="La solicitud no está pendiente de aprobación")
     
-    # Actualizar solicitud
-    await db.solicitudes_catalogos.update_one(
-        {"id": solicitud_id},
-        {"$set": {
-            "estatus": "Aprobada",
-            "aprobador_id": current_user.get("id"),
-            "aprobador_email": current_user.get("email"),
-            "fecha_aprobacion": datetime.now(timezone.utc).isoformat()
-        }}
-    )
+    ahora = datetime.now(timezone.utc).isoformat()
+    nivel_actual = solicitud.get("nivel_actual", 1)
+    niveles_requeridos = solicitud.get("niveles_requeridos", 1)
+    aprobaciones = solicitud.get("aprobaciones", [])
     
-    # Actualizar tarea relacionada
-    await db.tareas_sistema.update_many(
-        {"solicitud_id": solicitud_id},
-        {"$set": {
-            "estatus": "Completada",
-            "completado_por": current_user.get("id"),
-            "fecha_completado": datetime.now(timezone.utc).isoformat()
-        }}
-    )
+    # Verificar que no haya aprobado ya este nivel
+    ya_aprobo = any(a.get("aprobador_id") == current_user.get("id") and a.get("nivel") == nivel_actual for a in aprobaciones)
+    if ya_aprobo:
+        raise HTTPException(status_code=400, detail="Ya aprobó este nivel")
     
-    # INSERTAR EN LA TABLA SQL CORRESPONDIENTE
-    catalogo_id = solicitud.get("catalogo_id")
-    datos = solicitud.get("datos", {})
+    # Restricción: Supervisores solo pueden aprobar nivel 1, Admins pueden aprobar cualquier nivel
+    if current_user.get('role') == 'Supervisor' and nivel_actual > 1:
+        raise HTTPException(status_code=403, detail="Solo Administradores pueden aprobar niveles superiores al 1")
     
-    try:
-        if catalogo_id == "puestos":
-            query = f"""
-                INSERT INTO RH_Cat_Puestos (Descripcion, Departamento, Sueldo_Base_Seman_SBC, NomiPAQ_ID, MPRO_ID, Fecha_Creacion, Creado_Por)
-                VALUES ('{datos.get("descripcion", "")}', '{datos.get("departamento", "")}', {datos.get("sueldo_base", 0)}, 
-                        '{datos.get("nomipaq_id", "")}', '{datos.get("mpro_id", "")}', GETDATE(), '{current_user.get("email")}')
-            """
-            await execute_edarsa_hub_query(query)
-        
-        elif catalogo_id == "tipos_incidencias":
-            categoria = datos.get("categoria", "Descuento")
-            afectacion = 1 if categoria == "Ingreso" else -1
-            query = f"""
-                INSERT INTO RH_Cat_Tipos_Incidencias (Codigo, Descripcion, Categoria, Afectacion, Calculo_Monto, Activo, NomiPAQ_ID, MPRO_ID, Fecha_Creacion, Creado_Por)
-                VALUES ('{datos.get("codigo", "").upper()}', '{datos.get("descripcion", "")}', '{categoria}', {afectacion},
-                        '{datos.get("calculo_monto", "Manual")}', 1, '{datos.get("nomipaq_id", "")}', '{datos.get("mpro_id", "")}', 
-                        GETDATE(), '{current_user.get("email")}')
-            """
-            await execute_edarsa_hub_query(query)
-        
-        # Agregar más catálogos según se necesite...
-        
-    except Exception as e:
-        # Log error pero no fallar la aprobación
-        print(f"Error insertando en SQL: {e}")
-    
-    # Notificar al solicitante (crear tarea de notificación)
-    notificacion = {
-        "id": str(uuid.uuid4()),
-        "tipo": "notificacion",
-        "titulo": f"Tu solicitud fue aprobada",
-        "descripcion": f"La solicitud de alta en {solicitud.get('catalogo_nombre')} fue aprobada por {current_user.get('name', current_user.get('email'))}",
-        "solicitud_id": solicitud_id,
-        "estatus": "Pendiente",
-        "prioridad": "Baja",
-        "asignado_a_usuario": solicitud.get("solicitante_id"),
-        "creado_por": current_user.get("id"),
-        "fecha_creacion": datetime.now(timezone.utc).isoformat()
+    # Registrar aprobación de este nivel
+    aprobacion = {
+        "nivel": nivel_actual,
+        "aprobador_id": current_user.get("id"),
+        "aprobador_email": current_user.get("email"),
+        "aprobador_nombre": current_user.get("name", current_user.get("email")),
+        "fecha": ahora,
+        "comentario": comentario
     }
-    await db.tareas_sistema.insert_one(notificacion)
+    aprobaciones.append(aprobacion)
     
-    return {"success": True, "message": "Solicitud aprobada e insertada en el catálogo"}
+    estatus_anterior = estatus_actual
+    
+    # Determinar si ya completó todos los niveles
+    if nivel_actual >= niveles_requeridos:
+        # Aprobación final
+        nuevo_estatus = "Aprobada"
+        nuevo_nivel = nivel_actual
+        
+        # Insertar en SQL
+        catalogo_id = solicitud.get("catalogo_id")
+        datos = solicitud.get("datos", {})
+        
+        try:
+            if catalogo_id == "puestos":
+                query = f"""
+                    INSERT INTO RH_Cat_Puestos (Descripcion, Departamento, Sueldo_Base_Seman_SBC, NomiPAQ_ID, MPRO_ID, Fecha_Creacion, Creado_Por)
+                    VALUES ('{datos.get("descripcion", "")}', '{datos.get("departamento", "")}', {datos.get("sueldo_base", 0)}, 
+                            '{datos.get("nomipaq_id", "")}', '{datos.get("mpro_id", "")}', GETDATE(), '{current_user.get("email")}')
+                """
+                await execute_edarsa_hub_query(query)
+            
+            elif catalogo_id == "tipos_incidencias":
+                categoria = datos.get("categoria", "Descuento")
+                afectacion = 1 if categoria == "Ingreso" else -1
+                query = f"""
+                    INSERT INTO RH_Cat_Tipos_Incidencias (Codigo, Descripcion, Categoria, Afectacion, Calculo_Monto, Activo, NomiPAQ_ID, MPRO_ID, Fecha_Creacion, Creado_Por)
+                    VALUES ('{datos.get("codigo", "").upper()}', '{datos.get("descripcion", "")}', '{categoria}', {afectacion},
+                            '{datos.get("calculo_monto", "Manual")}', 1, '{datos.get("nomipaq_id", "")}', '{datos.get("mpro_id", "")}', 
+                            GETDATE(), '{current_user.get("email")}')
+                """
+                await execute_edarsa_hub_query(query)
+        except Exception as e:
+            print(f"Error insertando en SQL: {e}")
+        
+        # Actualizar solicitud como aprobada final
+        await db.solicitudes_catalogos.update_one(
+            {"id": solicitud_id},
+            {"$set": {
+                "estatus": nuevo_estatus,
+                "nivel_actual": nuevo_nivel,
+                "aprobaciones": aprobaciones,
+                "aprobador_final_id": current_user.get("id"),
+                "aprobador_final_email": current_user.get("email"),
+                "fecha_aprobacion_final": ahora,
+                "fecha_ultima_modificacion": ahora
+            },
+            "$push": {"historial": {
+                "id": str(uuid.uuid4()),
+                "timestamp": ahora,
+                "accion": "APROBACION_FINAL",
+                "usuario_id": current_user.get("id"),
+                "usuario_email": current_user.get("email"),
+                "usuario_nombre": current_user.get("name", current_user.get("email")),
+                "descripcion": f"Aprobación final (Nivel {nivel_actual}/{niveles_requeridos})",
+                "comentario": comentario,
+                "estatus_anterior": estatus_anterior,
+                "estatus_nuevo": nuevo_estatus
+            }}}
+        )
+        
+        # Notificar al solicitante
+        notificacion = {
+            "id": str(uuid.uuid4()),
+            "tipo": "notificacion",
+            "titulo": f"Tu solicitud fue APROBADA",
+            "descripcion": f"La solicitud de alta en {solicitud.get('catalogo_nombre')} fue aprobada y registrada en el sistema.",
+            "solicitud_id": solicitud_id,
+            "estatus": "Pendiente",
+            "prioridad": "Normal",
+            "asignado_a_usuario": solicitud.get("solicitante_id"),
+            "creado_por": current_user.get("id"),
+            "fecha_creacion": ahora
+        }
+        await db.tareas_sistema.insert_one(notificacion)
+        
+        mensaje = "Solicitud aprobada e insertada en el catálogo"
+    else:
+        # Pasar al siguiente nivel
+        nuevo_nivel = nivel_actual + 1
+        nuevo_estatus = f"Pendiente Nivel {nuevo_nivel}"
+        
+        await db.solicitudes_catalogos.update_one(
+            {"id": solicitud_id},
+            {"$set": {
+                "estatus": nuevo_estatus,
+                "nivel_actual": nuevo_nivel,
+                "aprobaciones": aprobaciones,
+                "fecha_ultima_modificacion": ahora
+            },
+            "$push": {"historial": {
+                "id": str(uuid.uuid4()),
+                "timestamp": ahora,
+                "accion": "APROBACION_NIVEL",
+                "usuario_id": current_user.get("id"),
+                "usuario_email": current_user.get("email"),
+                "usuario_nombre": current_user.get("name", current_user.get("email")),
+                "descripcion": f"Aprobación de Nivel {nivel_actual}/{niveles_requeridos}",
+                "comentario": comentario,
+                "estatus_anterior": estatus_anterior,
+                "estatus_nuevo": nuevo_estatus
+            }}}
+        )
+        
+        # Crear tarea para el siguiente nivel (solo Admins si nivel > 1)
+        tarea = {
+            "id": str(uuid.uuid4()),
+            "tipo": "aprobacion_catalogo",
+            "titulo": f"Aprobar alta en {solicitud.get('catalogo_nombre')} (Nivel {nuevo_nivel}/{niveles_requeridos})",
+            "descripcion": f"Solicitud requiere aprobación de Nivel {nuevo_nivel}",
+            "solicitud_id": solicitud_id,
+            "nivel_aprobacion": nuevo_nivel,
+            "estatus": "Pendiente",
+            "prioridad": "Alta",
+            "asignado_a_roles": ["Administrador"] if nuevo_nivel > 1 else ["Supervisor", "Administrador"],
+            "creado_por": current_user.get("id"),
+            "fecha_creacion": ahora
+        }
+        await db.tareas_sistema.insert_one(tarea)
+        
+        mensaje = f"Nivel {nivel_actual} aprobado. Pendiente aprobación de Nivel {nuevo_nivel}"
+    
+    # Actualizar tareas anteriores como completadas
+    await db.tareas_sistema.update_many(
+        {"solicitud_id": solicitud_id, "nivel_aprobacion": nivel_actual},
+        {"$set": {"estatus": "Completada", "completado_por": current_user.get("id"), "fecha_completado": ahora}}
+    )
+    
+    return {"success": True, "message": mensaje, "estatus": nuevo_estatus if nivel_actual < niveles_requeridos else "Aprobada"}
 
 
 @api_router.post("/sistema/solicitudes/{solicitud_id}/rechazar")
 async def rechazar_solicitud(solicitud_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
-    """Rechaza una solicitud"""
+    """Rechaza una solicitud - El solicitante podrá corregir y reenviar"""
     if current_user.get('role') not in ['Supervisor', 'Administrador']:
         raise HTTPException(status_code=403, detail="Solo Supervisores o Administradores pueden rechazar")
     
@@ -15957,47 +16123,166 @@ async def rechazar_solicitud(solicitud_id: str, body: Dict, current_user: Dict =
     if not solicitud:
         raise HTTPException(status_code=404, detail="Solicitud no encontrada")
     
-    if solicitud.get("estatus") != "Pendiente":
-        raise HTTPException(status_code=400, detail="La solicitud ya fue procesada")
+    estatus_actual = solicitud.get("estatus", "")
+    if "Pendiente" not in estatus_actual and estatus_actual != "Reenviada":
+        raise HTTPException(status_code=400, detail="La solicitud no está pendiente de revisión")
     
-    # Actualizar solicitud
+    ahora = datetime.now(timezone.utc).isoformat()
+    
+    # Actualizar solicitud - queda en estado "Rechazada - Pendiente Corrección"
     await db.solicitudes_catalogos.update_one(
         {"id": solicitud_id},
         {"$set": {
-            "estatus": "Rechazada",
-            "aprobador_id": current_user.get("id"),
-            "aprobador_email": current_user.get("email"),
-            "fecha_aprobacion": datetime.now(timezone.utc).isoformat(),
-            "motivo_rechazo": motivo
-        }}
+            "estatus": "Rechazada - Pendiente Corrección",
+            "motivo_rechazo": motivo,
+            "rechazado_por_id": current_user.get("id"),
+            "rechazado_por_email": current_user.get("email"),
+            "fecha_rechazo": ahora,
+            "fecha_ultima_modificacion": ahora
+        },
+        "$push": {"historial": {
+            "id": str(uuid.uuid4()),
+            "timestamp": ahora,
+            "accion": "RECHAZO",
+            "usuario_id": current_user.get("id"),
+            "usuario_email": current_user.get("email"),
+            "usuario_nombre": current_user.get("name", current_user.get("email")),
+            "descripcion": f"Solicitud rechazada",
+            "motivo": motivo,
+            "estatus_anterior": estatus_actual,
+            "estatus_nuevo": "Rechazada - Pendiente Corrección"
+        }}}
     )
     
-    # Actualizar tarea relacionada
+    # Actualizar tareas relacionadas
     await db.tareas_sistema.update_many(
-        {"solicitud_id": solicitud_id},
-        {"$set": {
-            "estatus": "Rechazada",
-            "completado_por": current_user.get("id"),
-            "fecha_completado": datetime.now(timezone.utc).isoformat()
-        }}
+        {"solicitud_id": solicitud_id, "estatus": "Pendiente"},
+        {"$set": {"estatus": "Rechazada", "completado_por": current_user.get("id"), "fecha_completado": ahora}}
     )
     
-    # Notificar al solicitante
+    # Notificar al solicitante que puede corregir
     notificacion = {
         "id": str(uuid.uuid4()),
-        "tipo": "notificacion",
-        "titulo": f"Tu solicitud fue rechazada",
-        "descripcion": f"La solicitud de alta en {solicitud.get('catalogo_nombre')} fue rechazada. Motivo: {motivo}",
+        "tipo": "notificacion_correccion",
+        "titulo": f"Solicitud rechazada - Puede corregir y reenviar",
+        "descripcion": f"La solicitud de alta en {solicitud.get('catalogo_nombre')} requiere correcciones. Motivo: {motivo}",
         "solicitud_id": solicitud_id,
         "estatus": "Pendiente",
-        "prioridad": "Baja",
+        "prioridad": "Alta",
         "asignado_a_usuario": solicitud.get("solicitante_id"),
         "creado_por": current_user.get("id"),
-        "fecha_creacion": datetime.now(timezone.utc).isoformat()
+        "fecha_creacion": ahora,
+        "permite_correccion": True
     }
     await db.tareas_sistema.insert_one(notificacion)
     
-    return {"success": True, "message": "Solicitud rechazada"}
+    return {"success": True, "message": "Solicitud rechazada. El solicitante podrá corregir y reenviar."}
+
+
+@api_router.put("/sistema/solicitudes/{solicitud_id}/corregir")
+async def corregir_solicitud(solicitud_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Permite al solicitante corregir una solicitud rechazada y reenviarla"""
+    solicitud = await db.solicitudes_catalogos.find_one({"id": solicitud_id})
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    
+    # Verificar que sea el solicitante original
+    if solicitud.get("solicitante_id") != current_user.get("id"):
+        raise HTTPException(status_code=403, detail="Solo el solicitante original puede corregir")
+    
+    # Verificar que esté en estado de corrección
+    if solicitud.get("estatus") != "Rechazada - Pendiente Corrección":
+        raise HTTPException(status_code=400, detail="La solicitud no está pendiente de corrección")
+    
+    nuevos_datos = body.get("datos")
+    nuevas_notas = body.get("notas", solicitud.get("notas", ""))
+    
+    if not nuevos_datos:
+        raise HTTPException(status_code=400, detail="Debe proporcionar los datos corregidos")
+    
+    ahora = datetime.now(timezone.utc).isoformat()
+    version_anterior = solicitud.get("version", 1)
+    nueva_version = version_anterior + 1
+    
+    # Actualizar solicitud con datos corregidos
+    await db.solicitudes_catalogos.update_one(
+        {"id": solicitud_id},
+        {"$set": {
+            "datos": nuevos_datos,
+            "notas": nuevas_notas,
+            "version": nueva_version,
+            "estatus": "Reenviada",
+            "nivel_actual": 1,  # Vuelve al nivel 1
+            "aprobaciones": [],  # Limpiar aprobaciones anteriores
+            "motivo_rechazo": None,
+            "fecha_ultima_modificacion": ahora
+        },
+        "$push": {"historial": {
+            "id": str(uuid.uuid4()),
+            "timestamp": ahora,
+            "accion": "CORRECCION",
+            "usuario_id": current_user.get("id"),
+            "usuario_email": current_user.get("email"),
+            "usuario_nombre": current_user.get("name", current_user.get("email")),
+            "descripcion": f"Solicitud corregida y reenviada (v{nueva_version})",
+            "datos_anteriores": solicitud.get("datos"),
+            "datos_nuevos": nuevos_datos,
+            "estatus_anterior": "Rechazada - Pendiente Corrección",
+            "estatus_nuevo": "Reenviada"
+        }}}
+    )
+    
+    # Crear nueva tarea para aprobadores
+    niveles_requeridos = solicitud.get("niveles_requeridos", 1)
+    tarea = {
+        "id": str(uuid.uuid4()),
+        "tipo": "aprobacion_catalogo",
+        "titulo": f"Revisar corrección: {solicitud.get('catalogo_nombre')} (v{nueva_version})",
+        "descripcion": f"Solicitud corregida por {current_user.get('name', current_user.get('email'))} - Nivel 1/{niveles_requeridos}",
+        "solicitud_id": solicitud_id,
+        "nivel_aprobacion": 1,
+        "estatus": "Pendiente",
+        "prioridad": "Alta",
+        "asignado_a_roles": ["Supervisor", "Administrador"],
+        "creado_por": current_user.get("id"),
+        "fecha_creacion": ahora
+    }
+    await db.tareas_sistema.insert_one(tarea)
+    
+    return {"success": True, "message": f"Solicitud corregida y reenviada (versión {nueva_version})"}
+
+
+@api_router.get("/sistema/solicitudes/{solicitud_id}/historial")
+async def obtener_historial_solicitud(solicitud_id: str, current_user: Dict = Depends(get_current_user)):
+    """Obtiene el historial completo de trazabilidad de una solicitud"""
+    solicitud = await db.solicitudes_catalogos.find_one({"id": solicitud_id}, {"_id": 0})
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    
+    # Verificar acceso
+    if current_user.get('role') not in ['Supervisor', 'Administrador']:
+        if solicitud.get("solicitante_id") != current_user.get("id"):
+            raise HTTPException(status_code=403, detail="No autorizado")
+    
+    historial = solicitud.get("historial", [])
+    aprobaciones = solicitud.get("aprobaciones", [])
+    
+    return {
+        "solicitud_id": solicitud_id,
+        "catalogo": solicitud.get("catalogo_nombre"),
+        "version_actual": solicitud.get("version", 1),
+        "estatus_actual": solicitud.get("estatus"),
+        "nivel_actual": solicitud.get("nivel_actual", 1),
+        "niveles_requeridos": solicitud.get("niveles_requeridos", 1),
+        "solicitante": {
+            "id": solicitud.get("solicitante_id"),
+            "email": solicitud.get("solicitante_email"),
+            "nombre": solicitud.get("solicitante_nombre")
+        },
+        "aprobaciones": aprobaciones,
+        "historial": sorted(historial, key=lambda x: x.get("timestamp", ""), reverse=True),
+        "total_eventos": len(historial)
+    }
 
 
 @api_router.get("/sistema/mis-tareas")

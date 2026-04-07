@@ -6,7 +6,8 @@ import { Label } from '../components/ui/label';
 import { 
   ClipboardList, CheckCircle2, Clock, XCircle, Bell, 
   RefreshCw, Eye, Check, X, FileText, Users, Settings,
-  Plus, ChevronRight, Lock, AlertTriangle, Filter
+  Plus, ChevronRight, Lock, AlertTriangle, Filter, History,
+  Edit, RotateCcw, Layers, ArrowRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -23,6 +24,7 @@ export default function MisTareas() {
     solicitudes_pendientes_aprobar: 0
   });
   const [solicitudesPendientes, setSolicitudesPendientes] = useState([]);
+  const [misSolicitudes, setMisSolicitudes] = useState([]); // Solicitudes del usuario actual
   const [misPermisos, setMisPermisos] = useState({ puede_solicitar: false, puede_aprobar: false, catalogos_permitidos: [] });
   const [catalogosDisponibles, setCatalogosDisponibles] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
@@ -33,8 +35,12 @@ export default function MisTareas() {
   const [modalRechazar, setModalRechazar] = useState(false);
   const [modalPermisos, setModalPermisos] = useState(false);
   const [modalDetalle, setModalDetalle] = useState(false);
+  const [modalHistorial, setModalHistorial] = useState(false);
+  const [modalCorregir, setModalCorregir] = useState(false);
+  const [modalConfigNiveles, setModalConfigNiveles] = useState(false);
   
   const [solicitudSeleccionada, setSolicitudSeleccionada] = useState(null);
+  const [historialSolicitud, setHistorialSolicitud] = useState(null);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [savingForm, setSavingForm] = useState(false);
   
@@ -45,8 +51,15 @@ export default function MisTareas() {
     notas: ''
   });
   
+  // Form corrección
+  const [formCorreccion, setFormCorreccion] = useState({
+    datos: {},
+    notas: ''
+  });
+  
   // Form aprobación
   const [passwordAprobacion, setPasswordAprobacion] = useState('');
+  const [comentarioAprobacion, setComentarioAprobacion] = useState('');
   const [motivoRechazo, setMotivoRechazo] = useState('');
   
   // Form permisos
@@ -73,20 +86,26 @@ export default function MisTareas() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [tareasData, permisosData, catalogosData] = await Promise.all([
+      const [tareasData, permisosData, catalogosData, misSolicitudesData] = await Promise.all([
         fetchWithAuth('/api/sistema/mis-tareas'),
         fetchWithAuth('/api/sistema/mis-permisos-catalogos'),
-        fetchWithAuth('/api/sistema/catalogos-disponibles')
+        fetchWithAuth('/api/sistema/catalogos-disponibles'),
+        fetchWithAuth('/api/sistema/solicitudes')  // Mis solicitudes
       ]);
       
       setTareas(tareasData);
       setMisPermisos(permisosData);
       setCatalogosDisponibles(catalogosData.catalogos || []);
+      setMisSolicitudes(misSolicitudesData.solicitudes || []);
       
-      // Si puede aprobar, cargar solicitudes pendientes
+      // Si puede aprobar, cargar solicitudes pendientes de aprobar
       if (canApprove) {
-        const solicitudesData = await fetchWithAuth('/api/sistema/solicitudes?estatus=Pendiente');
-        setSolicitudesPendientes(solicitudesData.solicitudes || []);
+        // Cargar solicitudes en cualquier estado "Pendiente" o "Reenviada"
+        const solicitudesData = await fetchWithAuth('/api/sistema/solicitudes');
+        const pendientes = (solicitudesData.solicitudes || []).filter(s => 
+          s.estatus?.includes('Pendiente') || s.estatus === 'Reenviada'
+        );
+        setSolicitudesPendientes(pendientes);
       }
     } catch (error) {
       console.error('Error cargando tareas:', error);
@@ -159,6 +178,7 @@ export default function MisTareas() {
   const handleAbrirAprobar = (solicitud) => {
     setSolicitudSeleccionada(solicitud);
     setPasswordAprobacion('');
+    setComentarioAprobacion('');
     setModalAprobar(true);
   };
   
@@ -177,7 +197,7 @@ export default function MisTareas() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ password: passwordAprobacion })
+        body: JSON.stringify({ password: passwordAprobacion, comentario: comentarioAprobacion })
       });
       
       if (response.status === 401) {
@@ -186,7 +206,8 @@ export default function MisTareas() {
       }
       if (!response.ok) throw new Error('Error al aprobar');
       
-      toast.success('Solicitud aprobada e insertada en el catálogo');
+      const result = await response.json();
+      toast.success(result.message || 'Solicitud procesada');
       setModalAprobar(false);
       loadData();
     } catch (error) {
@@ -218,7 +239,7 @@ export default function MisTareas() {
       
       if (!response.ok) throw new Error('Error al rechazar');
       
-      toast.success('Solicitud rechazada');
+      toast.success('Solicitud rechazada. El solicitante puede corregir y reenviar.');
       setModalRechazar(false);
       loadData();
     } catch (error) {
@@ -274,6 +295,74 @@ export default function MisTareas() {
       setModalDetalle(true);
     } catch (error) {
       toast.error('Error cargando detalle');
+    }
+  };
+  
+  // Ver historial de trazabilidad
+  const handleVerHistorial = async (solicitudId) => {
+    try {
+      const data = await fetchWithAuth(`/api/sistema/solicitudes/${solicitudId}/historial`);
+      setHistorialSolicitud(data);
+      setModalHistorial(true);
+    } catch (error) {
+      toast.error('Error cargando historial');
+    }
+  };
+  
+  // Abrir modal de corrección (para solicitudes rechazadas)
+  const handleAbrirCorregir = (solicitud) => {
+    setSolicitudSeleccionada(solicitud);
+    setFormCorreccion({
+      datos: { ...solicitud.datos },
+      notas: solicitud.notas || ''
+    });
+    setModalCorregir(true);
+  };
+  
+  // Corregir y reenviar solicitud
+  const handleCorregirYReenviar = async () => {
+    setSavingForm(true);
+    try {
+      const response = await fetch(`${API_URL}/api/sistema/solicitudes/${solicitudSeleccionada.id}/corregir`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formCorreccion)
+      });
+      
+      if (!response.ok) throw new Error('Error al corregir');
+      
+      const result = await response.json();
+      toast.success(result.message || 'Solicitud corregida y reenviada');
+      setModalCorregir(false);
+      loadData();
+    } catch (error) {
+      toast.error('Error al corregir solicitud');
+    } finally {
+      setSavingForm(false);
+    }
+  };
+  
+  // Configurar niveles de aprobación de un catálogo
+  const handleConfigurarNiveles = async (catalogoId, niveles) => {
+    try {
+      const response = await fetch(`${API_URL}/api/sistema/catalogos/${catalogoId}/niveles`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ niveles_aprobacion: niveles })
+      });
+      
+      if (!response.ok) throw new Error('Error al configurar');
+      
+      toast.success(`Niveles de aprobación actualizados a ${niveles}`);
+      loadData();  // Recargar catálogos con nueva config
+    } catch (error) {
+      toast.error('Error al configurar niveles');
     }
   };
   
@@ -367,6 +456,91 @@ export default function MisTareas() {
               <Input 
                 value={formSolicitud.datos.descripcion || formSolicitud.datos.nombre || ''}
                 onChange={(e) => setFormSolicitud({...formSolicitud, datos: {...formSolicitud.datos, descripcion: e.target.value, nombre: e.target.value}})}
+                placeholder="Ingrese el valor a agregar"
+              />
+            </div>
+          </div>
+        );
+    }
+  };
+  
+  // Obtener campos para corrección (similar pero usa formCorreccion)
+  const getCamposCorreccion = () => {
+    const catalogo = solicitudSeleccionada?.catalogo_id;
+    switch(catalogo) {
+      case 'puestos':
+        return (
+          <div className="space-y-3">
+            <div>
+              <Label>Descripción del Puesto *</Label>
+              <Input 
+                value={formCorreccion.datos.descripcion || ''}
+                onChange={(e) => setFormCorreccion({...formCorreccion, datos: {...formCorreccion.datos, descripcion: e.target.value}})}
+                placeholder="Ej: Gerente de Operaciones"
+              />
+            </div>
+            <div>
+              <Label>Departamento</Label>
+              <Input 
+                value={formCorreccion.datos.departamento || ''}
+                onChange={(e) => setFormCorreccion({...formCorreccion, datos: {...formCorreccion.datos, departamento: e.target.value}})}
+                placeholder="Ej: Administración"
+              />
+            </div>
+            <div>
+              <Label>Sueldo Base Semanal</Label>
+              <Input 
+                type="number"
+                value={formCorreccion.datos.sueldo_base || ''}
+                onChange={(e) => setFormCorreccion({...formCorreccion, datos: {...formCorreccion.datos, sueldo_base: parseFloat(e.target.value) || 0}})}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+        );
+      case 'tipos_incidencias':
+        return (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Código *</Label>
+                <Input 
+                  value={formCorreccion.datos.codigo || ''}
+                  onChange={(e) => setFormCorreccion({...formCorreccion, datos: {...formCorreccion.datos, codigo: e.target.value.toUpperCase()}})}
+                  placeholder="Ej: BON"
+                  maxLength={10}
+                />
+              </div>
+              <div>
+                <Label>Categoría *</Label>
+                <select
+                  value={formCorreccion.datos.categoria || 'Descuento'}
+                  onChange={(e) => setFormCorreccion({...formCorreccion, datos: {...formCorreccion.datos, categoria: e.target.value}})}
+                  className="w-full h-10 px-3 border rounded-md bg-white text-sm"
+                >
+                  <option value="Ingreso">+ Ingreso</option>
+                  <option value="Descuento">- Descuento</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <Label>Descripción *</Label>
+              <Input 
+                value={formCorreccion.datos.descripcion || ''}
+                onChange={(e) => setFormCorreccion({...formCorreccion, datos: {...formCorreccion.datos, descripcion: e.target.value}})}
+                placeholder="Ej: Bono de productividad"
+              />
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div className="space-y-3">
+            <div>
+              <Label>Descripción/Nombre *</Label>
+              <Input 
+                value={formCorreccion.datos.descripcion || formCorreccion.datos.nombre || ''}
+                onChange={(e) => setFormCorreccion({...formCorreccion, datos: {...formCorreccion.datos, descripcion: e.target.value, nombre: e.target.value}})}
                 placeholder="Ingrese el valor a agregar"
               />
             </div>
@@ -538,9 +712,17 @@ export default function MisTareas() {
                     <div key={s.id} className="p-4 hover:bg-zinc-50">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="px-2 py-0.5 bg-zinc-100 text-zinc-700 text-xs rounded">{s.catalogo_nombre}</span>
                             <span className="text-xs text-zinc-400">{s.modulo}</span>
+                            {/* Indicador de nivel */}
+                            <span className={`px-2 py-0.5 text-xs rounded-full flex items-center gap-1 ${
+                              s.estatus === 'Reenviada' ? 'bg-blue-100 text-blue-700' :
+                              s.nivel_actual > 1 ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              <Layers className="h-3 w-3" />
+                              {s.estatus === 'Reenviada' ? `v${s.version || 1} - Reenviada` : `Nivel ${s.nivel_actual || 1}/${s.niveles_requeridos || 1}`}
+                            </span>
                           </div>
                           <p className="font-medium text-zinc-800 text-sm mt-1">
                             {s.datos?.descripcion || s.datos?.nombre || JSON.stringify(s.datos)}
@@ -550,6 +732,15 @@ export default function MisTareas() {
                           </p>
                         </div>
                         <div className="flex gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleVerHistorial(s.id)}
+                            className="text-zinc-500 hover:bg-zinc-100"
+                            title="Ver historial"
+                          >
+                            <History className="h-4 w-4" />
+                          </Button>
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -578,6 +769,96 @@ export default function MisTareas() {
           </Card>
         )}
       </div>
+
+      {/* Mis Solicitudes - Para ver estado y corregir rechazadas */}
+      <Card>
+        <CardHeader className="py-4">
+          <CardTitle className="text-base font-medium flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-blue-500" />
+            Mis Solicitudes ({misSolicitudes.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {misSolicitudes.length === 0 ? (
+            <div className="p-6 text-center text-zinc-500">
+              <FileText className="h-12 w-12 mx-auto mb-2 text-zinc-300" />
+              <p>No ha creado solicitudes</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-zinc-50 border-y">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-medium text-zinc-600">Catálogo</th>
+                    <th className="px-4 py-3 text-left font-medium text-zinc-600">Descripción</th>
+                    <th className="px-4 py-3 text-center font-medium text-zinc-600">Versión</th>
+                    <th className="px-4 py-3 text-center font-medium text-zinc-600">Nivel</th>
+                    <th className="px-4 py-3 text-center font-medium text-zinc-600">Estatus</th>
+                    <th className="px-4 py-3 text-left font-medium text-zinc-600">Fecha</th>
+                    <th className="px-4 py-3 text-center font-medium text-zinc-600">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {misSolicitudes.map((s) => (
+                    <tr key={s.id} className="hover:bg-zinc-50">
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-0.5 bg-zinc-100 text-zinc-700 text-xs rounded">{s.catalogo_nombre}</span>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-zinc-800">
+                        {s.datos?.descripcion || s.datos?.nombre || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="px-2 py-0.5 bg-zinc-100 text-zinc-600 text-xs rounded">v{s.version || 1}</span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          {Array.from({length: s.niveles_requeridos || 1}).map((_, i) => (
+                            <div key={i} className={`w-2 h-2 rounded-full ${
+                              i < (s.aprobaciones?.length || 0) ? 'bg-green-500' :
+                              i < (s.nivel_actual || 1) ? 'bg-amber-500' : 'bg-zinc-200'
+                            }`} title={`Nivel ${i+1}`} />
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          s.estatus === 'Aprobada' ? 'bg-green-100 text-green-700' :
+                          s.estatus?.includes('Rechazada') ? 'bg-red-100 text-red-700' :
+                          s.estatus === 'Reenviada' ? 'bg-blue-100 text-blue-700' :
+                          'bg-amber-100 text-amber-700'
+                        }`}>
+                          {s.estatus}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-zinc-500 text-xs">
+                        {new Date(s.fecha_solicitud).toLocaleDateString('es-MX')}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex justify-center gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleVerHistorial(s.id)} title="Ver historial">
+                            <History className="h-4 w-4 text-zinc-500" />
+                          </Button>
+                          {s.estatus === 'Rechazada - Pendiente Corrección' && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleAbrirCorregir(s)}
+                              className="text-blue-600 hover:bg-blue-50"
+                              title="Corregir y reenviar"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Sección de Configuración de Permisos (Solo Supervisor/Admin) */}
       {canApprove && (
@@ -939,6 +1220,244 @@ export default function MisTareas() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal Historial de Trazabilidad */}
+      {modalHistorial && historialSolicitud && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Historial de Trazabilidad
+              </h2>
+              <button onClick={() => setModalHistorial(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              {/* Info general */}
+              <div className="bg-zinc-50 rounded-lg p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-xs text-zinc-500">Catálogo</p>
+                  <p className="font-medium text-sm">{historialSolicitud.catalogo}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500">Versión Actual</p>
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">v{historialSolicitud.version_actual}</span>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500">Estatus</p>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                    historialSolicitud.estatus_actual === 'Aprobada' ? 'bg-green-100 text-green-700' :
+                    historialSolicitud.estatus_actual?.includes('Rechazada') ? 'bg-red-100 text-red-700' :
+                    'bg-amber-100 text-amber-700'
+                  }`}>
+                    {historialSolicitud.estatus_actual}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500">Nivel</p>
+                  <div className="flex items-center gap-1">
+                    {Array.from({length: historialSolicitud.niveles_requeridos}).map((_, i) => (
+                      <div key={i} className={`w-3 h-3 rounded-full ${
+                        i < (historialSolicitud.aprobaciones?.length || 0) ? 'bg-green-500' :
+                        i < historialSolicitud.nivel_actual ? 'bg-amber-500' : 'bg-zinc-200'
+                      }`} />
+                    ))}
+                    <span className="text-xs text-zinc-500 ml-1">
+                      ({historialSolicitud.nivel_actual}/{historialSolicitud.niveles_requeridos})
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Timeline de eventos */}
+              <div className="space-y-1">
+                <h3 className="font-medium text-sm text-zinc-700 mb-3">Línea de Tiempo ({historialSolicitud.total_eventos} eventos)</h3>
+                <div className="relative">
+                  {historialSolicitud.historial.map((evento, idx) => (
+                    <div key={evento.id} className="flex gap-4 pb-6 relative">
+                      {/* Línea vertical */}
+                      {idx < historialSolicitud.historial.length - 1 && (
+                        <div className="absolute left-4 top-8 w-0.5 h-full bg-zinc-200" />
+                      )}
+                      
+                      {/* Icono del evento */}
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                        evento.accion === 'CREACION' ? 'bg-blue-100 text-blue-600' :
+                        evento.accion === 'APROBACION_FINAL' ? 'bg-green-100 text-green-600' :
+                        evento.accion === 'APROBACION_NIVEL' ? 'bg-green-50 text-green-500' :
+                        evento.accion === 'RECHAZO' ? 'bg-red-100 text-red-600' :
+                        evento.accion === 'CORRECCION' ? 'bg-amber-100 text-amber-600' :
+                        'bg-zinc-100 text-zinc-600'
+                      }`}>
+                        {evento.accion === 'CREACION' ? <Plus className="h-4 w-4" /> :
+                         evento.accion?.includes('APROBACION') ? <Check className="h-4 w-4" /> :
+                         evento.accion === 'RECHAZO' ? <X className="h-4 w-4" /> :
+                         evento.accion === 'CORRECCION' ? <Edit className="h-4 w-4" /> :
+                         <Clock className="h-4 w-4" />}
+                      </div>
+                      
+                      {/* Contenido del evento */}
+                      <div className="flex-1 min-w-0 bg-white border rounded-lg p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-medium text-sm text-zinc-800">{evento.descripcion}</p>
+                            <p className="text-xs text-zinc-500">
+                              {evento.usuario_nombre || evento.usuario_email}
+                            </p>
+                          </div>
+                          <span className="text-xs text-zinc-400 shrink-0">
+                            {new Date(evento.timestamp).toLocaleString('es-MX', {
+                              day: '2-digit', month: 'short', year: 'numeric',
+                              hour: '2-digit', minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        
+                        {/* Cambio de estatus */}
+                        {evento.estatus_anterior && evento.estatus_nuevo && (
+                          <div className="flex items-center gap-2 mt-2 text-xs">
+                            <span className="text-zinc-500">{evento.estatus_anterior || 'Nuevo'}</span>
+                            <ArrowRight className="h-3 w-3 text-zinc-400" />
+                            <span className="font-medium text-zinc-700">{evento.estatus_nuevo}</span>
+                          </div>
+                        )}
+                        
+                        {/* Motivo de rechazo */}
+                        {evento.motivo && (
+                          <div className="mt-2 text-xs bg-red-50 text-red-700 p-2 rounded">
+                            <strong>Motivo:</strong> {evento.motivo}
+                          </div>
+                        )}
+                        
+                        {/* Comentario */}
+                        {evento.comentario && (
+                          <div className="mt-2 text-xs bg-zinc-50 text-zinc-600 p-2 rounded italic">
+                            "{evento.comentario}"
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end bg-zinc-50">
+              <Button variant="outline" onClick={() => setModalHistorial(false)}>Cerrar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Corregir y Reenviar */}
+      {modalCorregir && solicitudSeleccionada && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-blue-600 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <RotateCcw className="h-5 w-5" />
+                Corregir y Reenviar Solicitud
+              </h2>
+              <button onClick={() => setModalCorregir(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              {/* Motivo de rechazo anterior */}
+              {solicitudSeleccionada.motivo_rechazo && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="font-medium text-red-800 text-sm flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Motivo del rechazo:
+                  </p>
+                  <p className="text-sm text-red-700 mt-1">{solicitudSeleccionada.motivo_rechazo}</p>
+                </div>
+              )}
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-700">
+                  <strong>Catálogo:</strong> {solicitudSeleccionada.catalogo_nombre} • 
+                  <strong> Versión actual:</strong> {solicitudSeleccionada.version || 1}
+                </p>
+              </div>
+              
+              {/* Campos de corrección */}
+              {getCamposCorreccion()}
+              
+              <div className="space-y-2">
+                <Label>Notas adicionales</Label>
+                <textarea
+                  value={formCorreccion.notas}
+                  onChange={(e) => setFormCorreccion({...formCorreccion, notas: e.target.value})}
+                  className="w-full h-20 px-3 py-2 border rounded-md text-sm resize-none"
+                  placeholder="Explique las correcciones realizadas..."
+                />
+              </div>
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end gap-2 bg-zinc-50">
+              <Button variant="outline" onClick={() => setModalCorregir(false)}>Cancelar</Button>
+              <Button onClick={handleCorregirYReenviar} disabled={savingForm} className="bg-blue-600 hover:bg-blue-700">
+                {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-1" /> : <RotateCcw className="h-4 w-4 mr-1" />}
+                Corregir y Reenviar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sección Configuración de Niveles por Catálogo (Solo Admin) */}
+      {isAdmin && (
+        <Card className="mt-6">
+          <CardHeader className="py-4">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <Layers className="h-5 w-5 text-purple-500" />
+              Configurar Niveles de Aprobación por Catálogo
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {catalogosDisponibles.map((cat) => (
+                <div key={cat.id} className="border rounded-lg p-4 hover:bg-zinc-50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">{cat.nombre}</p>
+                      <p className="text-xs text-zinc-500">{cat.modulo}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={cat.niveles_aprobacion || 1}
+                        onChange={(e) => handleConfigurarNiveles(cat.id, parseInt(e.target.value))}
+                        className="h-8 px-2 border rounded text-sm bg-white"
+                      >
+                        <option value={1}>1 Nivel</option>
+                        <option value={2}>2 Niveles</option>
+                        <option value={3}>3 Niveles</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 mt-2">
+                    {Array.from({length: cat.niveles_aprobacion || 1}).map((_, i) => (
+                      <div key={i} className={`flex-1 h-1 rounded ${
+                        i === 0 ? 'bg-green-400' : i === 1 ? 'bg-blue-400' : 'bg-purple-400'
+                      }`} />
+                    ))}
+                  </div>
+                  <p className="text-xs text-zinc-400 mt-1">
+                    {cat.niveles_aprobacion === 1 ? 'Supervisor o Admin aprueba' :
+                     cat.niveles_aprobacion === 2 ? 'Supervisor → Admin' :
+                     'Supervisor → Admin → Admin final'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
