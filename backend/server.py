@@ -9135,7 +9135,8 @@ SELECT
 FROM Venta_Encabezado VE
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND VE.Vn_Fecha >= '{fia}' AND VE.Vn_Fecha <= '{ffa}'
+  AND VE.Vn_Fecha >= '{fia}' AND VE.Vn_Fecha <= '{ffa} 23:59:59'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
 """
         try:
             r_ant = execute_sql_query(server['host'], server['port'], server['database'], 
@@ -9157,7 +9158,8 @@ SELECT
 FROM Venta_Encabezado VE
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND VE.Vn_Fecha >= '{fiaa}' AND VE.Vn_Fecha <= '{ffaa}'
+  AND VE.Vn_Fecha >= '{fiaa}' AND VE.Vn_Fecha <= '{ffaa} 23:59:59'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
 """
         try:
             r_año = execute_sql_query(server['host'], server['port'], server['database'], 
@@ -9178,6 +9180,8 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
         # Variaciones %
         var_vs_mes_ant = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
         var_vs_año_ant = round(((ventas - ventas_año) / ventas_año * 100), 1) if ventas_año > 0 else 0
+        
+        logging.info(f"MPRO {sucursal_nombre}: Actual={ventas:.2f}, MesAnt({fia}-{ffa})={ventas_ant:.2f} → {var_vs_mes_ant}%, AñoAnt({fiaa}-{ffaa})={ventas_año:.2f} → {var_vs_año_ant}%")
         var_pax_mes = round(((pax - pax_ant) / pax_ant * 100), 1) if pax_ant > 0 else 0
         var_pax_año = round(((pax - pax_año) / pax_año * 100), 1) if pax_año > 0 else 0
         var_cheques_mes = round(((cheques - cheques_ant) / cheques_ant * 100), 1) if cheques_ant > 0 else 0
