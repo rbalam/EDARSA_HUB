@@ -2,10 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 import { 
   Users, Wallet, Calendar, UserCheck, FileText, AlertTriangle,
   Search, Plus, ChevronRight, Building2, Briefcase, Clock,
-  CheckCircle2, XCircle, RefreshCw, Filter, ArrowUpDown
+  CheckCircle2, XCircle, RefreshCw, Filter, ArrowUpDown,
+  X, Save, Upload, Trash2, Eye, Edit, UserPlus, FileSpreadsheet
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -28,6 +30,35 @@ export default function RecursosHumanos() {
   const [filtroBuscar, setFiltroBuscar] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  
+  // Modal states - FASE 2
+  const [modalColaborador, setModalColaborador] = useState(false);
+  const [modalIncidencia, setModalIncidencia] = useState(false);
+  const [modalDetalle, setModalDetalle] = useState(false);
+  const [modalImportExcel, setModalImportExcel] = useState(false);
+  const [editingColaborador, setEditingColaborador] = useState(null);
+  const [detalleColaborador, setDetalleColaborador] = useState(null);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [savingForm, setSavingForm] = useState(false);
+  
+  // Form states
+  const [formColaborador, setFormColaborador] = useState({
+    nombre_completo: '',
+    curp: '',
+    rfc: '',
+    clabe_bancaria: '',
+    sucursal_id: '',
+    puesto_id: '',
+    estatus_laboral: 'Activo'
+  });
+  
+  const [formIncidencia, setFormIncidencia] = useState({
+    colaborador_id: '',
+    tipo_incidencia: '',
+    monto: 0,
+    unidades: 0,
+    fecha_incidencia: new Date().toISOString().split('T')[0]
+  });
 
   const token = localStorage.getItem('token');
 
@@ -128,6 +159,161 @@ export default function RecursosHumanos() {
     if (activeTab === 'incidencias') loadIncidencias();
     if (activeTab === 'nomina') loadFlujos();
   }, [activeTab, loadColaboradores, loadIncidencias, loadFlujos]);
+
+  // ===================== FUNCIONES CRUD - FASE 2 =====================
+  
+  // Abrir modal para nuevo colaborador
+  const handleNuevoColaborador = () => {
+    setEditingColaborador(null);
+    setFormColaborador({
+      nombre_completo: '',
+      curp: '',
+      rfc: '',
+      clabe_bancaria: '',
+      sucursal_id: '',
+      puesto_id: '',
+      estatus_laboral: 'Activo'
+    });
+    setModalColaborador(true);
+  };
+  
+  // Abrir modal para editar colaborador
+  const handleEditarColaborador = (col) => {
+    setEditingColaborador(col);
+    setFormColaborador({
+      nombre_completo: col.Nombre_Completo || '',
+      curp: col.CURP || '',
+      rfc: col.RFC || '',
+      clabe_bancaria: col.CLABE_Bancaria || '',
+      sucursal_id: col.SucursalID?.toString() || '',
+      puesto_id: col.PuestoID?.toString() || '',
+      estatus_laboral: col.Estatus_Laboral || 'Activo'
+    });
+    setModalColaborador(true);
+  };
+  
+  // Guardar colaborador (crear o actualizar)
+  const handleGuardarColaborador = async () => {
+    if (!formColaborador.nombre_completo || !formColaborador.sucursal_id || !formColaborador.puesto_id) {
+      toast.error('Nombre, sucursal y puesto son requeridos');
+      return;
+    }
+    
+    setSavingForm(true);
+    try {
+      const url = editingColaborador 
+        ? `${API_URL}/api/rrhh/colaboradores/${editingColaborador.ColaboradorID}`
+        : `${API_URL}/api/rrhh/colaboradores`;
+      
+      const method = editingColaborador ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formColaborador)
+      });
+      
+      if (!response.ok) throw new Error('Error al guardar');
+      
+      toast.success(editingColaborador ? 'Colaborador actualizado' : 'Colaborador creado');
+      setModalColaborador(false);
+      loadColaboradores();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al guardar colaborador');
+    } finally {
+      setSavingForm(false);
+    }
+  };
+  
+  // Ver detalle de colaborador
+  const handleVerDetalle = async (col) => {
+    setLoadingDetalle(true);
+    setModalDetalle(true);
+    try {
+      const data = await fetchWithAuth(`/api/rrhh/colaboradores/${col.ColaboradorID}`);
+      setDetalleColaborador(data);
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al cargar detalle');
+    } finally {
+      setLoadingDetalle(false);
+    }
+  };
+  
+  // Dar de baja colaborador
+  const handleDarBaja = async (col) => {
+    if (!window.confirm(`¿Seguro que deseas dar de baja a ${col.Nombre_Completo}?`)) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/api/rrhh/colaboradores/${col.ColaboradorID}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) throw new Error('Error al dar de baja');
+      
+      toast.success('Colaborador dado de baja');
+      loadColaboradores();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al dar de baja');
+    }
+  };
+  
+  // Abrir modal nueva incidencia
+  const handleNuevaIncidencia = (colaboradorId = '') => {
+    setFormIncidencia({
+      colaborador_id: colaboradorId?.toString() || '',
+      tipo_incidencia: '',
+      monto: 0,
+      unidades: 0,
+      fecha_incidencia: new Date().toISOString().split('T')[0]
+    });
+    setModalIncidencia(true);
+  };
+  
+  // Guardar incidencia
+  const handleGuardarIncidencia = async () => {
+    if (!formIncidencia.colaborador_id || !formIncidencia.tipo_incidencia || !formIncidencia.fecha_incidencia) {
+      toast.error('Colaborador, tipo y fecha son requeridos');
+      return;
+    }
+    
+    setSavingForm(true);
+    try {
+      const response = await fetch(`${API_URL}/api/rrhh/incidencias`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formIncidencia)
+      });
+      
+      if (!response.ok) throw new Error('Error al guardar');
+      
+      toast.success('Incidencia registrada');
+      setModalIncidencia(false);
+      loadIncidencias();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al guardar incidencia');
+    } finally {
+      setSavingForm(false);
+    }
+  };
+
+  // Tipos de incidencia
+  const tiposIncidencia = [
+    'Falta', 'Retardo', 'Bono', 'Descuento', 'Horas Extra', 
+    'Vacaciones', 'Incapacidad', 'Permiso', 'Comision', 'Otro'
+  ];
+
+  // ===================== FIN FUNCIONES CRUD =====================
 
   // Tabs config
   const tabs = [
@@ -323,9 +509,9 @@ export default function RecursosHumanos() {
           <RefreshCw className="h-4 w-4 mr-1" />
           Actualizar
         </Button>
-        <Button size="sm" className="bg-zinc-900 text-white">
-          <Plus className="h-4 w-4 mr-1" />
-          Nuevo
+        <Button size="sm" className="bg-zinc-900 text-white" onClick={handleNuevoColaborador}>
+          <UserPlus className="h-4 w-4 mr-1" />
+          Nuevo Colaborador
         </Button>
       </div>
 
@@ -334,14 +520,14 @@ export default function RecursosHumanos() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-zinc-50 border-b">
+              <thead className="bg-zinc-800 text-white">
                 <tr>
                   <th className="text-left p-3 font-medium">Nombre</th>
                   <th className="text-left p-3 font-medium">RFC</th>
                   <th className="text-left p-3 font-medium">Sucursal</th>
                   <th className="text-left p-3 font-medium">Puesto</th>
                   <th className="text-left p-3 font-medium">Estatus</th>
-                  <th className="text-left p-3 font-medium">Acciones</th>
+                  <th className="text-center p-3 font-medium">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -355,7 +541,7 @@ export default function RecursosHumanos() {
                   colaboradores.map((col, i) => (
                     <tr key={col.ColaboradorID || i} className="border-b hover:bg-zinc-50">
                       <td className="p-3 font-medium">{col.Nombre_Completo}</td>
-                      <td className="p-3 text-zinc-600">{col.RFC || '-'}</td>
+                      <td className="p-3 text-zinc-600 font-mono text-xs">{col.RFC || '-'}</td>
                       <td className="p-3">{col.Nombre_Sucursal || '-'}</td>
                       <td className="p-3">{col.Puesto || '-'}</td>
                       <td className="p-3">
@@ -368,9 +554,22 @@ export default function RecursosHumanos() {
                         </span>
                       </td>
                       <td className="p-3">
-                        <Button variant="ghost" size="sm">
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleVerDetalle(col)} title="Ver detalle">
+                            <Eye className="h-4 w-4 text-blue-600" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleEditarColaborador(col)} title="Editar">
+                            <Edit className="h-4 w-4 text-amber-600" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleNuevaIncidencia(col.ColaboradorID)} title="Nueva incidencia">
+                            <AlertTriangle className="h-4 w-4 text-purple-600" />
+                          </Button>
+                          {col.Estatus_Laboral === 'Activo' && (
+                            <Button variant="ghost" size="sm" onClick={() => handleDarBaja(col)} title="Dar de baja">
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -422,7 +621,7 @@ export default function RecursosHumanos() {
             <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
           ))}
         </select>
-        <Button size="sm" className="bg-zinc-900 text-white">
+        <Button size="sm" className="bg-zinc-900 text-white" onClick={() => handleNuevaIncidencia()}>
           <Plus className="h-4 w-4 mr-1" />
           Nueva Incidencia
         </Button>
@@ -432,7 +631,7 @@ export default function RecursosHumanos() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-zinc-50 border-b">
+              <thead className="bg-zinc-800 text-white">
                 <tr>
                   <th className="text-left p-3 font-medium">Colaborador</th>
                   <th className="text-left p-3 font-medium">Sucursal</th>
@@ -633,6 +832,353 @@ export default function RecursosHumanos() {
           {activeTab === 'nomina' && renderFlujoNomina()}
           {activeTab === 'asistencia' && renderAsistencia()}
         </>
+      )}
+
+      {/* ==================== MODALES FASE 2 ==================== */}
+      
+      {/* Modal Nuevo/Editar Colaborador */}
+      {modalColaborador && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                {editingColaborador ? 'Editar Colaborador' : 'Nuevo Colaborador'}
+              </h2>
+              <button onClick={() => setModalColaborador(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 overflow-y-auto">
+              <div>
+                <Label className="text-sm font-medium">Nombre Completo *</Label>
+                <Input
+                  value={formColaborador.nombre_completo}
+                  onChange={(e) => setFormColaborador({...formColaborador, nombre_completo: e.target.value})}
+                  placeholder="Nombre completo del colaborador"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">CURP</Label>
+                  <Input
+                    value={formColaborador.curp}
+                    onChange={(e) => setFormColaborador({...formColaborador, curp: e.target.value.toUpperCase()})}
+                    placeholder="CURP"
+                    maxLength={18}
+                    className="mt-1 font-mono"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">RFC</Label>
+                  <Input
+                    value={formColaborador.rfc}
+                    onChange={(e) => setFormColaborador({...formColaborador, rfc: e.target.value.toUpperCase()})}
+                    placeholder="RFC"
+                    maxLength={13}
+                    className="mt-1 font-mono"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">CLABE Bancaria</Label>
+                <Input
+                  value={formColaborador.clabe_bancaria}
+                  onChange={(e) => setFormColaborador({...formColaborador, clabe_bancaria: e.target.value.replace(/\D/g, '')})}
+                  placeholder="18 dígitos"
+                  maxLength={18}
+                  className="mt-1 font-mono"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Sucursal *</Label>
+                  <select
+                    value={formColaborador.sucursal_id}
+                    onChange={(e) => setFormColaborador({...formColaborador, sucursal_id: e.target.value})}
+                    className="mt-1 w-full px-3 py-2 border rounded-lg text-sm"
+                  >
+                    <option value="">Seleccionar...</option>
+                    {sucursales.map(s => (
+                      <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Puesto *</Label>
+                  <select
+                    value={formColaborador.puesto_id}
+                    onChange={(e) => setFormColaborador({...formColaborador, puesto_id: e.target.value})}
+                    className="mt-1 w-full px-3 py-2 border rounded-lg text-sm"
+                  >
+                    <option value="">Seleccionar...</option>
+                    {puestos.map(p => (
+                      <option key={p.PuestoID} value={p.PuestoID}>{p.Nombre_Puesto}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Estatus Laboral</Label>
+                <select
+                  value={formColaborador.estatus_laboral}
+                  onChange={(e) => setFormColaborador({...formColaborador, estatus_laboral: e.target.value})}
+                  className="mt-1 w-full px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="Activo">Activo</option>
+                  <option value="Vacaciones">Vacaciones</option>
+                  <option value="Incapacidad">Incapacidad</option>
+                  <option value="Permiso">Permiso</option>
+                  <option value="Baja">Baja</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end gap-3 bg-zinc-50">
+              <Button variant="outline" onClick={() => setModalColaborador(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleGuardarColaborador} disabled={savingForm} className="bg-zinc-900 text-white">
+                {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                {editingColaborador ? 'Actualizar' : 'Guardar'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Nueva Incidencia */}
+      {modalIncidencia && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between rounded-t-xl">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Nueva Incidencia
+              </h2>
+              <button onClick={() => setModalIncidencia(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Colaborador *</Label>
+                <select
+                  value={formIncidencia.colaborador_id}
+                  onChange={(e) => setFormIncidencia({...formIncidencia, colaborador_id: e.target.value})}
+                  className="mt-1 w-full px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="">Seleccionar colaborador...</option>
+                  {colaboradores.map(c => (
+                    <option key={c.ColaboradorID} value={c.ColaboradorID}>{c.Nombre_Completo}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Tipo de Incidencia *</Label>
+                <select
+                  value={formIncidencia.tipo_incidencia}
+                  onChange={(e) => setFormIncidencia({...formIncidencia, tipo_incidencia: e.target.value})}
+                  className="mt-1 w-full px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="">Seleccionar tipo...</option>
+                  {tiposIncidencia.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Fecha *</Label>
+                <Input
+                  type="date"
+                  value={formIncidencia.fecha_incidencia}
+                  onChange={(e) => setFormIncidencia({...formIncidencia, fecha_incidencia: e.target.value})}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Monto ($)</Label>
+                  <Input
+                    type="number"
+                    value={formIncidencia.monto}
+                    onChange={(e) => setFormIncidencia({...formIncidencia, monto: parseFloat(e.target.value) || 0})}
+                    className="mt-1"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Unidades</Label>
+                  <Input
+                    type="number"
+                    value={formIncidencia.unidades}
+                    onChange={(e) => setFormIncidencia({...formIncidencia, unidades: parseFloat(e.target.value) || 0})}
+                    className="mt-1"
+                    min="0"
+                    step="0.5"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end gap-3 bg-zinc-50 rounded-b-xl">
+              <Button variant="outline" onClick={() => setModalIncidencia(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleGuardarIncidencia} disabled={savingForm} className="bg-zinc-900 text-white">
+                {savingForm ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                Registrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Detalle Colaborador */}
+      {modalDetalle && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-zinc-800 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Detalle del Colaborador
+              </h2>
+              <button onClick={() => setModalDetalle(false)} className="p-1 hover:bg-white/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1">
+              {loadingDetalle ? (
+                <div className="flex justify-center py-8">
+                  <RefreshCw className="h-8 w-8 animate-spin text-zinc-400" />
+                </div>
+              ) : detalleColaborador ? (
+                <div className="space-y-6">
+                  {/* Datos básicos */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">{detalleColaborador.colaborador?.Nombre_Completo}</h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-zinc-500">RFC:</span>
+                        <span className="ml-2 font-mono">{detalleColaborador.colaborador?.RFC || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500">CURP:</span>
+                        <span className="ml-2 font-mono">{detalleColaborador.colaborador?.CURP || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500">Sucursal:</span>
+                        <span className="ml-2">{detalleColaborador.colaborador?.Nombre_Sucursal || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500">Puesto:</span>
+                        <span className="ml-2">{detalleColaborador.colaborador?.Puesto || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500">Estatus:</span>
+                        <span className={`ml-2 px-2 py-0.5 rounded text-xs font-medium ${
+                          detalleColaborador.colaborador?.Estatus_Laboral === 'Activo' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {detalleColaborador.colaborador?.Estatus_Laboral}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500">CLABE:</span>
+                        <span className="ml-2 font-mono text-xs">{detalleColaborador.colaborador?.CLABE_Bancaria || '-'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Incidencias recientes */}
+                  <div>
+                    <h4 className="font-medium mb-2 flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      Últimas Incidencias
+                    </h4>
+                    {detalleColaborador.incidencias?.length === 0 ? (
+                      <p className="text-sm text-zinc-400">Sin incidencias registradas</p>
+                    ) : (
+                      <div className="border rounded-lg overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead className="bg-zinc-50">
+                            <tr>
+                              <th className="text-left p-2">Tipo</th>
+                              <th className="text-left p-2">Fecha</th>
+                              <th className="text-right p-2">Monto</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {detalleColaborador.incidencias?.slice(0, 5).map((inc, i) => (
+                              <tr key={i} className="border-t">
+                                <td className="p-2">{inc.Tipo_Incidencia}</td>
+                                <td className="p-2 text-zinc-500">{inc.Fecha_Incidencia ? new Date(inc.Fecha_Incidencia).toLocaleDateString('es-MX') : '-'}</td>
+                                <td className="p-2 text-right">${(inc.Monto || 0).toLocaleString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Asistencias recientes */}
+                  <div>
+                    <h4 className="font-medium mb-2 flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Últimas Asistencias
+                    </h4>
+                    {detalleColaborador.asistencias?.length === 0 ? (
+                      <p className="text-sm text-zinc-400">Sin registros de asistencia</p>
+                    ) : (
+                      <div className="border rounded-lg overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead className="bg-zinc-50">
+                            <tr>
+                              <th className="text-left p-2">Fecha/Hora</th>
+                              <th className="text-left p-2">Tipo</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {detalleColaborador.asistencias?.slice(0, 5).map((a, i) => (
+                              <tr key={i} className="border-t">
+                                <td className="p-2 font-mono text-xs">{a.FechaHora ? new Date(a.FechaHora).toLocaleString('es-MX') : '-'}</td>
+                                <td className="p-2">
+                                  <span className={`px-2 py-0.5 rounded text-xs ${a.Tipo_Registro === 'Entrada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    {a.Tipo_Registro}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-center text-zinc-400">No se encontró información</p>
+              )}
+            </div>
+            
+            <div className="border-t px-6 py-4 flex justify-end bg-zinc-50">
+              <Button variant="outline" onClick={() => setModalDetalle(false)}>
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

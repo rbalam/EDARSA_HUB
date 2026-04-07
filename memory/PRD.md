@@ -247,3 +247,24 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - Items con Pareto ≤80% resaltados en amarillo
   - Fila de totales sticky al final
 - **Pendiente**: Implementar misma funcionalidad para MPRO (usuario proporcionará query SQL)
+
+### April 7, 2026 - Fase 2 RRHH: UI Completa con Modales
+- **Implementado**: Módulo completo de Recursos Humanos con CRUD funcional
+- **Modal Nuevo/Editar Colaborador**:
+  - Campos: Nombre Completo, CURP, RFC, CLABE Bancaria, Sucursal, Puesto, Estatus Laboral
+  - Validación de campos requeridos
+  - Creación y actualización via API
+- **Modal Nueva Incidencia**:
+  - Campos: Colaborador, Tipo de Incidencia, Fecha, Monto, Unidades
+  - 10 tipos de incidencia: Falta, Retardo, Bono, Descuento, Horas Extra, Vacaciones, Incapacidad, Permiso, Comision, Otro
+- **Modal Detalle Colaborador**:
+  - Información completa del expediente
+  - Últimas incidencias
+  - Últimas asistencias
+- **Acciones en tabla de colaboradores**:
+  - Ver detalle (ojo azul)
+  - Editar (lápiz amarillo)
+  - Nueva incidencia (triángulo púrpura)
+  - Dar de baja (trash rojo)
+- **Estilos actualizados**: Headers de tabla en zinc-800 (consistente con el resto del proyecto)
+- **Nota**: Las tablas SQL de RRHH están integradas pero vacías en la BD de producción
