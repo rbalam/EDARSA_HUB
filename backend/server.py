@@ -9063,6 +9063,22 @@ async def ventas_precios_constantes(
             f_ini_base = fecha_ini_base.replace('-', '')
             f_fin_base = fecha_fin_base.replace('-', '')
             
+            # PASO 1: Obtener VENTAS REALES del período (misma lógica que Dashboard)
+            # Esto asegura que los totales coincidan con el Tablero Ejecutivo
+            query_ventas_reales = f"""
+SELECT SUM(cheques.total) as ventas_reales
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{f_ini_actual} 00:00:00'
+  AND turnos.apertura <= '{f_fin_actual} 23:59:59'
+  AND cheques.cancelado = 0
+"""
+            result_ventas_reales = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_ventas_reales
+            )
+            ventas_reales_periodo = float(result_ventas_reales[0]['ventas_reales'] or 0) if result_ventas_reales else 0
+            
             # Query para ventas del período ACTUAL con precios actuales
             # Agrupa por producto y calcula precio promedio
             # NOTA: En SoftRestaurant la tabla de detalle es 'cheqdet' (no 'chequedetalle')
@@ -9117,7 +9133,15 @@ GROUP BY p.idproducto, p.descripcion
             # Crear diccionario de precios base
             precios_base_dict = {str(p['producto_id']): float(p['precio_promedio_base'] or 0) for p in precios_base}
             
-            # Procesar resultados
+            # PASO 2: Calcular suma de productos para obtener factor de ajuste
+            suma_productos_actual = sum(float(v['importe_actual'] or 0) for v in ventas_actual)
+            
+            # Factor de ajuste: ventas reales / suma de productos
+            # Esto distribuye propinas, impuestos, descuentos proporcionalmente
+            factor_ajuste = ventas_reales_periodo / suma_productos_actual if suma_productos_actual > 0 else 1
+            logging.info(f"SoftRestaurant - Ventas reales: {ventas_reales_periodo}, Suma productos: {suma_productos_actual}, Factor: {factor_ajuste}")
+            
+            # Procesar resultados aplicando factor de ajuste
             productos_detalle = []
             total_actual = 0
             total_constante = 0
@@ -9126,7 +9150,8 @@ GROUP BY p.idproducto, p.descripcion
                 producto_id = str(venta['producto_id'])
                 cantidad = float(venta['cantidad'] or 0)
                 precio_actual = float(venta['precio_promedio_actual'] or 0)
-                importe_actual = float(venta['importe_actual'] or 0)
+                # Aplicar factor de ajuste al importe para que coincida con ventas reales
+                importe_actual = float(venta['importe_actual'] or 0) * factor_ajuste
                 
                 # Determinar precio a usar para valuación constante
                 if producto_id in precios_base_dict:
@@ -9137,7 +9162,8 @@ GROUP BY p.idproducto, p.descripcion
                     precio_base = precio_actual
                     es_nuevo = True
                 
-                importe_constante = cantidad * precio_base
+                # El importe constante también debe ajustarse con el factor
+                importe_constante = (cantidad * precio_base) * factor_ajuste
                 efecto_precio = importe_actual - importe_constante
                 variacion_precio_pct = ((precio_actual - precio_base) / precio_base * 100) if precio_base > 0 else 0
                 
@@ -9275,6 +9301,23 @@ GROUP BY p.idproducto, p.descripcion
             
             # Filtro de sucursal - en MPRO se relaciona venta con sucursal
             filtro_sucursal = f"AND V.Sc_Cve_Sucursal = '{sucursal}'" if sucursal != 'all' else ""
+            filtro_sucursal_ve = f"AND VE.Sc_Cve_Sucursal = '{sucursal}'" if sucursal != 'all' else ""
+            
+            # PASO 1: Obtener VENTAS REALES del período (misma lógica que Dashboard)
+            # Esto asegura que los totales coincidan con el Tablero Ejecutivo
+            query_ventas_reales_mpro = f"""
+SELECT ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas_reales
+FROM Venta_Encabezado VE
+WHERE VE.Vn_Fecha >= '{fecha_ini_actual}'
+  AND VE.Vn_Fecha <= '{fecha_fin_actual} 23:59:59'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+  {filtro_sucursal_ve}
+"""
+            result_ventas_reales = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_ventas_reales_mpro
+            )
+            ventas_reales_periodo = float(result_ventas_reales[0]['ventas_reales'] or 0) if result_ventas_reales else 0
             
             query_ventas_actual = f"""
 SELECT 
@@ -9320,8 +9363,15 @@ GROUP BY V.Pr_Cve_Producto
                 server['username'], server['password'], query_precios_base
             ) or []
             
-            # Mismo procesamiento que SoftRestaurant
+            # Crear diccionario de precios base
             precios_base_dict = {str(p['producto_id']): float(p['precio_promedio_base'] or 0) for p in precios_base}
+            
+            # PASO 2: Calcular suma de productos para obtener factor de ajuste
+            suma_productos_actual = sum(float(v['importe_actual'] or 0) for v in ventas_actual)
+            
+            # Factor de ajuste: ventas reales / suma de productos
+            factor_ajuste = ventas_reales_periodo / suma_productos_actual if suma_productos_actual > 0 else 1
+            logging.info(f"MPRO - Ventas reales: {ventas_reales_periodo}, Suma productos: {suma_productos_actual}, Factor: {factor_ajuste}")
             
             productos_detalle = []
             total_actual = 0
@@ -9331,7 +9381,8 @@ GROUP BY V.Pr_Cve_Producto
                 producto_id = str(venta['producto_id'])
                 cantidad = float(venta['cantidad'] or 0)
                 precio_actual = float(venta['precio_promedio_actual'] or 0)
-                importe_actual = float(venta['importe_actual'] or 0)
+                # Aplicar factor de ajuste al importe para que coincida con ventas reales
+                importe_actual = float(venta['importe_actual'] or 0) * factor_ajuste
                 
                 if producto_id in precios_base_dict:
                     precio_base = precios_base_dict[producto_id]
@@ -9340,7 +9391,8 @@ GROUP BY V.Pr_Cve_Producto
                     precio_base = precio_actual
                     es_nuevo = True
                 
-                importe_constante = cantidad * precio_base
+                # El importe constante también debe ajustarse con el factor
+                importe_constante = (cantidad * precio_base) * factor_ajuste
                 efecto_precio = importe_actual - importe_constante
                 variacion_precio_pct = ((precio_actual - precio_base) / precio_base * 100) if precio_base > 0 else 0
                 

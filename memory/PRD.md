@@ -37,6 +37,11 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - Productos In/Out: Nuevos usan precio actual, Descontinuados usan último precio
   - Tabla detallada con efecto precio por ítem
   - **Funciona con MPRO y SoftRestaurant** (queries corregidas para ambos sistemas)
+  - **Cálculo de Ventas Unificado** (Completado April 7, 2026):
+    - Ventas ahora coinciden exactamente con el Tablero Ejecutivo
+    - SoftRestaurant: Usa `SUM(cheques.total)` como referencia
+    - MPRO: Usa `SUM(Venta_Encabezado.Vn_Precio_Neto_Importe)` como referencia
+    - Factor de ajuste aplicado a productos individuales para incluir propinas/impuestos
   - **Crecimiento Real vs Año Anterior** (Completado April 7, 2026):
     - KPIs: Crecimiento Nominal, Crecimiento Real, Ventas Año Anterior, Diferencia Real
     - Compara automáticamente con el mismo periodo del año pasado
