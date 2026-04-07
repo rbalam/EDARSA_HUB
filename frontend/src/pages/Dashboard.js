@@ -77,6 +77,11 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [error, setError] = useState(null);
   const [serversLoading, setServersLoading] = useState(true); // Nuevo estado para carga de servidores
+  
+  // Estados para Insumos Pendientes
+  const [pendientesData, setPendientesData] = useState({ items: [], totales: { cantidad: 0, valor: 0, items: 0 }, almacenes: [] });
+  const [loadingPendientes, setLoadingPendientes] = useState(false);
+  const [almacenesPendientesSeleccionados, setAlmacenesPendientesSeleccionados] = useState([]);
 
   // Cargar servidores configurados (sin cargar datos automáticamente)
   useEffect(() => {
@@ -87,6 +92,8 @@ const Dashboard = () => {
   useEffect(() => {
     if (selectedServer) {
       loadDashboardData(selectedServer);
+      // Cargar insumos pendientes para el servidor seleccionado
+      loadInsumosPendientes(selectedServer);
     }
   }, [selectedServer]);
 
@@ -126,10 +133,26 @@ const Dashboard = () => {
     }
   };
 
+  // Función para cargar Insumos Pendientes de Descargar
+  const loadInsumosPendientes = async (serverId) => {
+    setLoadingPendientes(true);
+    setAlmacenesPendientesSeleccionados([]);
+    try {
+      const response = await api.get(`/inventarios/pendientes/${serverId}`);
+      setPendientesData(response.data);
+    } catch (error) {
+      console.error('Error cargando insumos pendientes:', error);
+      setPendientesData({ items: [], totales: { cantidad: 0, valor: 0, items: 0 }, almacenes: [] });
+    } finally {
+      setLoadingPendientes(false);
+    }
+  };
+
   const handleRefresh = () => {
     setRefreshing(true);
     if (selectedServer) {
       loadDashboardData(selectedServer);
+      loadInsumosPendientes(selectedServer);
     }
   };
 
@@ -589,6 +612,131 @@ const Dashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* ==================== SECCIÓN: INSUMOS PENDIENTES DE DESCARGAR ==================== */}
+      {pendientesData.items.length > 0 && (
+        <Card className="border border-zinc-200">
+          <CardHeader className="py-3 bg-zinc-800 text-white rounded-t-lg">
+            <CardTitle className="text-base flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                INSUMOS PENDIENTES A DESCARGAR
+              </span>
+              <div className="flex items-center gap-2">
+                {loadingPendientes && <Loader2 className="h-5 w-5 animate-spin" />}
+                <Badge className="bg-white/20 text-white">{pendientesData.totales.items} items</Badge>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {/* KPIs de Pendientes */}
+            <div className="grid grid-cols-3 gap-4 p-4 border-b border-zinc-200 bg-zinc-50">
+              <div className="text-center">
+                <p className="text-xs text-zinc-500">Total Insumos</p>
+                <p className="text-xl font-bold text-blue-600">{pendientesData.totales.items}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-zinc-500">Cantidad Total</p>
+                <p className="text-xl font-bold text-red-600">{pendientesData.totales.cantidad.toLocaleString('es-MX', {maximumFractionDigits: 2})}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-zinc-500">Valor Total</p>
+                <p className="text-xl font-bold text-green-600">${pendientesData.totales.valor.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+              </div>
+            </div>
+            
+            {/* Filtro por Almacén */}
+            {pendientesData.almacenes.length > 0 && (
+              <div className="p-3 border-b border-zinc-200 bg-white">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <span className="text-sm font-medium text-zinc-700">Filtrar por Almacén:</span>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      className={`px-3 py-1 rounded text-sm ${almacenesPendientesSeleccionados.length === 0 ? 'bg-zinc-800 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+                      onClick={() => setAlmacenesPendientesSeleccionados([])}
+                    >
+                      Todos
+                    </button>
+                    {pendientesData.almacenes.map(alm => (
+                      <button
+                        key={alm}
+                        className={`px-3 py-1 rounded text-sm ${almacenesPendientesSeleccionados.includes(alm) ? 'bg-zinc-800 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}
+                        onClick={() => {
+                          if (almacenesPendientesSeleccionados.includes(alm)) {
+                            setAlmacenesPendientesSeleccionados(prev => prev.filter(a => a !== alm));
+                          } else {
+                            setAlmacenesPendientesSeleccionados([alm]);
+                          }
+                        }}
+                      >
+                        {alm}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tabla */}
+            <div className="max-h-[400px] overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-zinc-700 text-white">
+                  <tr>
+                    <th className="py-2 px-2 text-left w-12">No</th>
+                    <th className="py-2 px-2 text-center w-16">ALM</th>
+                    <th className="py-2 px-2 text-left">GRUPO</th>
+                    <th className="py-2 px-2 text-left w-24">CODIGO</th>
+                    <th className="py-2 px-2 text-left">INSUMO</th>
+                    <th className="py-2 px-2 text-right w-24">CANTIDAD</th>
+                    <th className="py-2 px-2 text-center w-16">UM</th>
+                    <th className="py-2 px-2 text-right w-24">COSTO</th>
+                    <th className="py-2 px-2 text-right w-28">TOTAL</th>
+                    <th className="py-2 px-2 text-right w-16">80-20</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendientesData.items
+                    .filter(item => almacenesPendientesSeleccionados.length === 0 || almacenesPendientesSeleccionados.includes(item.almacen))
+                    .map((item, idx) => (
+                    <tr 
+                      key={idx} 
+                      className={`border-b hover:bg-zinc-50 ${item.pareto <= 80 ? 'bg-yellow-50' : ''}`}
+                    >
+                      <td className="py-1.5 px-2 text-zinc-500">{item.no}</td>
+                      <td className="py-1.5 px-2 text-center font-mono">{item.almacen}</td>
+                      <td className="py-1.5 px-2 text-xs">{item.grupo}</td>
+                      <td className="py-1.5 px-2 font-mono text-xs">{item.codigo}</td>
+                      <td className="py-1.5 px-2 text-xs">{item.insumo}</td>
+                      <td className="py-1.5 px-2 text-right font-mono">{item.cantidad.toLocaleString('es-MX', {maximumFractionDigits: 2})}</td>
+                      <td className="py-1.5 px-2 text-center text-xs">{item.unidad}</td>
+                      <td className="py-1.5 px-2 text-right font-mono">${item.costo.toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+                      <td className="py-1.5 px-2 text-right font-mono font-medium">${item.total.toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+                      <td className="py-1.5 px-2 text-right">
+                        <span className={`px-1.5 py-0.5 rounded text-xs ${item.pareto <= 80 ? 'bg-yellow-100 text-yellow-700' : 'bg-zinc-100 text-zinc-600'}`}>
+                          {item.pareto}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {/* Fila de totales */}
+                  <tr className="bg-zinc-100 font-semibold sticky bottom-0">
+                    <td colSpan="5" className="py-2 px-2 text-right">TOTALES:</td>
+                    <td className="py-2 px-2 text-right font-mono">
+                      {pendientesData.totales.cantidad.toLocaleString('es-MX', {maximumFractionDigits: 2})}
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td className="py-2 px-2 text-right font-mono">
+                      ${pendientesData.totales.valor.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
