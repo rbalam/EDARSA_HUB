@@ -28,7 +28,7 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 - Dashboard de ventas con KPIs (Ventas, PAX, Ticket Promedio)
 - Multiselección de años y meses con comparación histórica
 - Datos de SoftRestaurant y MPRO
-- **Análisis de Ventas a Precios Constantes** (NEW - April 7, 2026):
+- **Análisis de Ventas a Precios Constantes** (Implementado April 7, 2026):
   - Compara ventas eliminando el efecto inflacionario
   - Modo Manual: selección libre de períodos actual y base
   - Modo Automático: año actual vs mismo mes año anterior
@@ -36,6 +36,7 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - KPIs: Ventas Actuales, Ventas Constantes, Efecto Precio, Productos Nuevos/Descontinuados
   - Productos In/Out: Nuevos usan precio actual, Descontinuados usan último precio
   - Tabla detallada con efecto precio por ítem
+  - **Funciona con MPRO y SoftRestaurant** (queries corregidas para ambos sistemas)
 
 ### ✅ Módulo Compras
 - Dashboard de compras por servidor/sucursal

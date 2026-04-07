@@ -9006,26 +9006,25 @@ async def ventas_precios_constantes(
             
             # Query para ventas del período ACTUAL con precios actuales
             # Agrupa por producto y calcula precio promedio
+            # NOTA: En SoftRestaurant la tabla de detalle es 'cheqdet' (no 'chequedetalle')
             query_ventas_actual = f"""
 SELECT 
     p.idproducto as producto_id,
     p.descripcion as producto,
-    ISNULL(g.nombre, 'Sin Categoría') as categoria,
-    ISNULL(f.nombre, 'Sin Familia') as familia,
+    'SoftRestaurant' as categoria,
+    'Productos' as familia,
     SUM(cd.cantidad) as cantidad,
     SUM(cd.precio * cd.cantidad) as importe_actual,
     AVG(cd.precio) as precio_promedio_actual
-FROM chequedetalle cd
-INNER JOIN cheques c ON c.folio = cd.folio
+FROM cheqdet cd
+INNER JOIN cheques c ON c.folio = cd.foliodet
 INNER JOIN turnos t ON t.idturno = c.idturno
 INNER JOIN productos p ON p.idproducto = cd.idproducto
-LEFT JOIN gruposi g ON g.idgrupo = p.idgrupo
-LEFT JOIN familias f ON f.idfamilia = p.idfamilia
 WHERE t.apertura >= '{f_ini_actual} 00:00:00'
   AND t.apertura <= '{f_fin_actual} 23:59:59'
   AND c.cancelado = 0
   AND cd.cantidad > 0
-GROUP BY p.idproducto, p.descripcion, g.nombre, f.nombre
+GROUP BY p.idproducto, p.descripcion
 """
             
             # Query para precios del período BASE
@@ -9034,8 +9033,8 @@ SELECT
     p.idproducto as producto_id,
     p.descripcion as producto,
     AVG(cd.precio) as precio_promedio_base
-FROM chequedetalle cd
-INNER JOIN cheques c ON c.folio = cd.folio
+FROM cheqdet cd
+INNER JOIN cheques c ON c.folio = cd.foliodet
 INNER JOIN turnos t ON t.idturno = c.idturno
 INNER JOIN productos p ON p.idproducto = cd.idproducto
 WHERE t.apertura >= '{f_ini_base} 00:00:00'
@@ -9212,41 +9211,38 @@ GROUP BY p.idproducto, p.descripcion
             }
         
         elif server['system_type'] == 'MPRO':
-            # Para MPRO - Adaptar la query a su estructura
-            # Las ventas están en Venta y Venta_Detalle
+            # Para MPRO - Las ventas están en la tabla 'venta' directamente
+            # Usamos Vn_Precio_Lista y Vn_Cantidad_Control_1 para calcular importes
+            # MPRO no tiene tablas de grupos/clasificaciones separadas como SoftRestaurant
             
             query_ventas_actual = f"""
 SELECT 
-    VD.Pr_Cve_Producto as producto_id,
+    V.Pr_Cve_Producto as producto_id,
     P.Pr_Descripcion as producto,
-    ISNULL(C.Cp_Nombre, 'Sin Categoría') as categoria,
-    ISNULL(G.Gp_Nombre, 'Sin Familia') as familia,
-    SUM(VD.Vd_Cantidad) as cantidad,
-    SUM(VD.Vd_Importe) as importe_actual,
-    AVG(VD.Vd_Importe / NULLIF(VD.Vd_Cantidad, 0)) as precio_promedio_actual
-FROM Venta_Detalle VD
-INNER JOIN Venta V ON V.Vn_Folio = VD.Vn_Folio
-INNER JOIN Producto P ON P.Pr_Cve_Producto = VD.Pr_Cve_Producto
-LEFT JOIN Grupo_Producto G ON G.Gp_Cve_Grupo = P.Gp_Cve_Grupo
-LEFT JOIN Clasificacion_Producto C ON C.Cp_Cve_Clasificacion = P.Cp_Cve_Clasificacion
+    'MPRO' as categoria,
+    'Productos' as familia,
+    SUM(V.Vn_Cantidad_Control_1) as cantidad,
+    SUM(V.Vn_Precio_Lista * V.Vn_Cantidad_Control_1) as importe_actual,
+    AVG(V.Vn_Precio_Lista) as precio_promedio_actual
+FROM venta V
+INNER JOIN Producto P ON P.Pr_Cve_Producto = V.Pr_Cve_Producto
 WHERE V.Vn_Fecha >= '{fecha_ini_actual}'
-  AND V.Vn_Fecha <= '{fecha_fin_actual}'
-  AND V.Es_Cve_Estado <> 'CA'
-  AND VD.Vd_Cantidad > 0
-GROUP BY VD.Pr_Cve_Producto, P.Pr_Descripcion, C.Cp_Nombre, G.Gp_Nombre
+  AND V.Vn_Fecha <= '{fecha_fin_actual} 23:59:59'
+  AND ISNULL(V.Es_Cve_Estado, '') <> 'CA'
+  AND V.Vn_Cantidad_Control_1 > 0
+GROUP BY V.Pr_Cve_Producto, P.Pr_Descripcion
 """
             
             query_precios_base = f"""
 SELECT 
-    VD.Pr_Cve_Producto as producto_id,
-    AVG(VD.Vd_Importe / NULLIF(VD.Vd_Cantidad, 0)) as precio_promedio_base
-FROM Venta_Detalle VD
-INNER JOIN Venta V ON V.Vn_Folio = VD.Vn_Folio
+    V.Pr_Cve_Producto as producto_id,
+    AVG(V.Vn_Precio_Lista) as precio_promedio_base
+FROM venta V
 WHERE V.Vn_Fecha >= '{fecha_ini_base}'
-  AND V.Vn_Fecha <= '{fecha_fin_base}'
-  AND V.Es_Cve_Estado <> 'CA'
-  AND VD.Vd_Cantidad > 0
-GROUP BY VD.Pr_Cve_Producto
+  AND V.Vn_Fecha <= '{fecha_fin_base} 23:59:59'
+  AND ISNULL(V.Es_Cve_Estado, '') <> 'CA'
+  AND V.Vn_Cantidad_Control_1 > 0
+GROUP BY V.Pr_Cve_Producto
 """
             
             # Ejecutar queries
