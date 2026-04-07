@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter, FileSpreadsheet, LayoutDashboard, ClipboardList, FileText, FolderOpen } from 'lucide-react';
+import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter, FileSpreadsheet, LayoutDashboard, ClipboardList, FileText, FolderOpen, Upload, Trash2, Eye, Download, CheckCircle, FileImage, File } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -172,6 +172,222 @@ const Reportes = () => {
   
   // Estado para mostrar/ocultar columnas de costos (oculto por defecto)
   const [mostrarCostos, setMostrarCostos] = useState(false);
+
+  // ============================================================================
+  // ESTADOS PARA INFORMES DE AUDITORÍA
+  // ============================================================================
+  const [modalInforme, setModalInforme] = useState(false);
+  const [informeData, setInformeData] = useState({
+    comentarios: '',
+    conclusiones: '',
+    recomendaciones: '',
+    auditor: '',
+    cargo_auditor: '',
+    incluir_comparativo: false
+  });
+  const [savingInforme, setSavingInforme] = useState(false);
+  const [informesList, setInformesList] = useState([]);
+  const [loadingInformes, setLoadingInformes] = useState(false);
+  const [evidenciasTemp, setEvidenciasTemp] = useState([]); // Archivos seleccionados antes de guardar
+  const [uploadingEvidencia, setUploadingEvidencia] = useState(false);
+  
+  // Estado para ver informe completo
+  const [viewInformeModal, setViewInformeModal] = useState(false);
+  const [selectedInforme, setSelectedInforme] = useState(null);
+
+  // Cargar informes de auditoría
+  const loadInformesAuditoria = async () => {
+    try {
+      setLoadingInformes(true);
+      const response = await api.get('/auditoria/informes');
+      setInformesList(response.data.informes || []);
+    } catch (error) {
+      console.error('Error cargando informes:', error);
+    } finally {
+      setLoadingInformes(false);
+    }
+  };
+
+  // Cargar informes cuando se abre el tab
+  useEffect(() => {
+    if (activeTab === 'informes') {
+      loadInformesAuditoria();
+    }
+  }, [activeTab]);
+
+  // Abrir modal para generar informe
+  const handleAbrirModalInforme = () => {
+    // Pre-llenar datos del reporte actual
+    const totalProductos = reportData.length;
+    const productosConDiferencia = reportData.filter(p => Math.abs(p.DIFERENCIA_QTY || 0) > 0).length;
+    const valorDiferencias = reportData.reduce((sum, p) => sum + Math.abs(p.DIFERENCIA_VALOR || 0), 0);
+    const precision = totalProductos > 0 ? ((totalProductos - productosConDiferencia) / totalProductos * 100) : 0;
+    
+    setInformeData({
+      comentarios: '',
+      conclusiones: `El análisis de inventarios para ${filters.sucursal || 'la sucursal seleccionada'} muestra un total de ${totalProductos} productos analizados, de los cuales ${productosConDiferencia} presentan diferencias con un valor total de $${valorDiferencias.toLocaleString('es-MX', { minimumFractionDigits: 2 })}. El porcentaje de precisión es del ${precision.toFixed(1)}%.`,
+      recomendaciones: '',
+      auditor: '',
+      cargo_auditor: '',
+      incluir_comparativo: false,
+      // Datos calculados
+      total_productos: totalProductos,
+      productos_con_diferencia: productosConDiferencia,
+      valor_total_diferencias: valorDiferencias,
+      porcentaje_precision: precision
+    });
+    setEvidenciasTemp([]);
+    setModalInforme(true);
+  };
+
+  // Guardar informe de auditoría
+  const handleGuardarInforme = async () => {
+    if (!informeData.comentarios && !informeData.conclusiones) {
+      toast.error('Agrega al menos comentarios o conclusiones');
+      return;
+    }
+    
+    try {
+      setSavingInforme(true);
+      
+      // Preparar productos con diferencias (top 50)
+      const productosConDif = reportData
+        .filter(p => Math.abs(p.DIFERENCIA_QTY || 0) > 0)
+        .sort((a, b) => Math.abs(b.DIFERENCIA_VALOR || 0) - Math.abs(a.DIFERENCIA_VALOR || 0))
+        .slice(0, 50)
+        .map(p => ({
+          codigo: p.CODIGO_INSUMO || p.ID_PRODUCTO || '',
+          producto: p.PRODUCTO || p.NOMBRE || '',
+          inv_inicial: p.INV_INICIAL || 0,
+          inv_final: p.INV_FINAL || 0,
+          diferencia: p.DIFERENCIA_QTY || 0,
+          valor_diferencia: Math.abs(p.DIFERENCIA_VALOR || 0)
+        }));
+      
+      const payload = {
+        sucursal_id: filters.sucursal_id,
+        sucursal_nombre: filters.sucursal || sucursales.find(s => s.id === filters.sucursal_id)?.nombre || '',
+        almacen_id: selectedAlmacenes[0]?.id || filters.almacen_id,
+        almacen_nombre: selectedAlmacenes[0]?.nombre || filters.almacen || '',
+        servidor_id: filters.server_id,
+        servidor_nombre: selectedServer?.name || '',
+        inventario_inicial_id: selectedInventariosIni[0]?.id || filters.inventario_inicial,
+        inventario_inicial_fecha: selectedInventariosIni[0]?.fecha?.split('T')[0] || filters.inventario_inicial_fecha,
+        inventario_final_id: selectedInventariosFin[0]?.id || filters.inventario_final,
+        inventario_final_fecha: selectedInventariosFin[0]?.fecha?.split('T')[0] || filters.inventario_final_fecha,
+        fecha_inicio_movimientos: filters.fecha_ini,
+        fecha_fin_movimientos: filters.fecha_fin,
+        total_productos: informeData.total_productos,
+        productos_con_diferencia: informeData.productos_con_diferencia,
+        valor_total_diferencias: informeData.valor_total_diferencias,
+        porcentaje_precision: informeData.porcentaje_precision,
+        comentarios: informeData.comentarios,
+        conclusiones: informeData.conclusiones,
+        recomendaciones: informeData.recomendaciones,
+        auditor: informeData.auditor,
+        cargo_auditor: informeData.cargo_auditor,
+        incluir_comparativo_4_cortes: informeData.incluir_comparativo,
+        productos_diferencias: productosConDif
+      };
+      
+      const response = await api.post('/auditoria/informes', payload);
+      
+      if (response.data.success) {
+        const informeId = response.data.informe_id;
+        
+        // Subir evidencias si hay
+        for (const file of evidenciasTemp) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('descripcion', file.descripcion || '');
+          
+          await api.post(`/auditoria/informes/${informeId}/evidencias`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+        }
+        
+        toast.success('Informe guardado exitosamente');
+        setModalInforme(false);
+        loadInformesAuditoria();
+        setActiveTab('informes'); // Ir al tab de informes
+      }
+    } catch (error) {
+      console.error('Error guardando informe:', error);
+      toast.error('Error al guardar el informe');
+    } finally {
+      setSavingInforme(false);
+    }
+  };
+
+  // Manejar selección de archivos de evidencia
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    const validFiles = files.filter(f => {
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 
+        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+      return validTypes.includes(f.type);
+    });
+    
+    if (validFiles.length !== files.length) {
+      toast.warning('Algunos archivos no son válidos (solo imágenes, PDF, Word, Excel)');
+    }
+    
+    setEvidenciasTemp(prev => [...prev, ...validFiles]);
+    e.target.value = ''; // Reset input
+  };
+
+  // Eliminar evidencia temporal
+  const handleRemoveEvidencia = (index) => {
+    setEvidenciasTemp(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Ver informe completo
+  const handleVerInforme = async (informeId) => {
+    try {
+      const response = await api.get(`/auditoria/informes/${informeId}`);
+      setSelectedInforme(response.data);
+      setViewInformeModal(true);
+    } catch (error) {
+      toast.error('Error al cargar el informe');
+    }
+  };
+
+  // Descargar PDF del informe
+  const handleDescargarPDF = async (informeId) => {
+    try {
+      toast.info('Generando PDF...');
+      const response = await api.get(`/auditoria/informes/${informeId}/pdf`, {
+        responseType: 'blob'
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Informe_Auditoria_${informeId.slice(0, 8)}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      toast.success('PDF descargado');
+    } catch (error) {
+      toast.error('Error al generar el PDF');
+    }
+  };
+
+  // Eliminar informe
+  const handleEliminarInforme = async (informeId) => {
+    if (!window.confirm('¿Estás seguro de eliminar este informe?')) return;
+    
+    try {
+      await api.delete(`/auditoria/informes/${informeId}`);
+      toast.success('Informe eliminado');
+      loadInformesAuditoria();
+    } catch (error) {
+      toast.error('Error al eliminar el informe');
+    }
+  };
+
+  // ============================================================================
 
   // Guardar estado en sessionStorage cuando cambie
   useEffect(() => {
@@ -1860,10 +2076,7 @@ const Reportes = () => {
                 <Button
                   variant="default"
                   className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => {
-                    toast.info('Función de Informe de Auditoría en desarrollo');
-                    setActiveTab('informes');
-                  }}
+                  onClick={handleAbrirModalInforme}
                 >
                   <FileText className="h-4 w-4 mr-2" />
                   Generar Informe
@@ -2380,7 +2593,7 @@ const Reportes = () => {
                   </div>
                 </div>
 
-                {/* Lista de informes (placeholder) */}
+                {/* Lista de informes */}
                 <div className="border rounded-lg">
                   <Table>
                     <TableHeader>
@@ -2388,23 +2601,97 @@ const Reportes = () => {
                         <TableHead className="font-semibold">Fecha</TableHead>
                         <TableHead className="font-semibold">Sucursal</TableHead>
                         <TableHead className="font-semibold">Almacén</TableHead>
-                        <TableHead className="font-semibold">Periodo</TableHead>
+                        <TableHead className="font-semibold">Productos</TableHead>
+                        <TableHead className="font-semibold">Diferencias</TableHead>
                         <TableHead className="font-semibold">Auditor</TableHead>
-                        <TableHead className="font-semibold">Evidencias</TableHead>
+                        <TableHead className="font-semibold">Estatus</TableHead>
                         <TableHead className="font-semibold text-right">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-12 text-zinc-400">
-                          <FolderOpen className="h-12 w-12 mx-auto mb-3 text-zinc-300" />
-                          <p className="text-base font-medium">No hay informes de auditoría</p>
-                          <p className="text-sm mt-1">
-                            Los informes se generarán desde la pestaña "Análisis de Inventarios" 
-                            usando el botón "Generar Informe"
-                          </p>
-                        </TableCell>
-                      </TableRow>
+                      {loadingInformes ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin mx-auto text-zinc-400" />
+                          </TableCell>
+                        </TableRow>
+                      ) : informesList.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-12 text-zinc-400">
+                            <FolderOpen className="h-12 w-12 mx-auto mb-3 text-zinc-300" />
+                            <p className="text-base font-medium">No hay informes de auditoría</p>
+                            <p className="text-sm mt-1">
+                              Los informes se generarán desde la pestaña "Análisis de Inventarios" 
+                              usando el botón "Generar Informe"
+                            </p>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        informesList.map((informe) => (
+                          <TableRow key={informe.id} className="hover:bg-zinc-50">
+                            <TableCell className="text-sm">
+                              {informe.fecha_creacion?.split('T')[0]}
+                            </TableCell>
+                            <TableCell className="font-medium">{informe.sucursal_nombre}</TableCell>
+                            <TableCell>{informe.almacen_nombre}</TableCell>
+                            <TableCell>
+                              <span className="font-mono">{informe.total_productos}</span>
+                              {informe.productos_con_diferencia > 0 && (
+                                <span className="text-red-500 text-xs ml-1">
+                                  ({informe.productos_con_diferencia} dif)
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              ${(informe.valor_diferencias || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                            </TableCell>
+                            <TableCell>{informe.auditor || '-'}</TableCell>
+                            <TableCell>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                informe.estatus === 'finalizado' 
+                                  ? 'bg-green-100 text-green-700' 
+                                  : 'bg-amber-100 text-amber-700'
+                              }`}>
+                                {informe.estatus === 'finalizado' ? 'Finalizado' : 'Borrador'}
+                              </span>
+                              {informe.num_evidencias > 0 && (
+                                <span className="ml-2 text-xs text-zinc-500">
+                                  {informe.num_evidencias} archivo(s)
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex gap-1 justify-end">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleVerInforme(informe.id)}
+                                  title="Ver informe"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleDescargarPDF(informe.id)}
+                                  title="Descargar PDF"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="text-red-500 hover:text-red-700"
+                                  onClick={() => handleEliminarInforme(informe.id)}
+                                  title="Eliminar"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -2432,6 +2719,404 @@ const Reportes = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* ================================================================= */}
+      {/* MODAL: GENERAR INFORME DE AUDITORÍA */}
+      {/* ================================================================= */}
+      {modalInforme && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold">Generar Informe de Auditoría</h2>
+                  <p className="text-blue-100 text-sm mt-1">
+                    {filters.sucursal} - {selectedAlmacenes[0]?.nombre || filters.almacen}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setModalInforme(false)}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Resumen del análisis */}
+              <div className="grid grid-cols-4 gap-4">
+                <div className="bg-zinc-50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-zinc-800">{informeData.total_productos}</p>
+                  <p className="text-xs text-zinc-500">Total Productos</p>
+                </div>
+                <div className="bg-red-50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-red-600">{informeData.productos_con_diferencia}</p>
+                  <p className="text-xs text-zinc-500">Con Diferencia</p>
+                </div>
+                <div className="bg-amber-50 rounded-lg p-3 text-center">
+                  <p className="text-lg font-bold text-amber-600">
+                    ${(informeData.valor_total_diferencias || 0).toLocaleString('es-MX', { minimumFractionDigits: 0 })}
+                  </p>
+                  <p className="text-xs text-zinc-500">Valor Diferencias</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-green-600">{(informeData.porcentaje_precision || 0).toFixed(1)}%</p>
+                  <p className="text-xs text-zinc-500">Precisión</p>
+                </div>
+              </div>
+
+              {/* Datos del auditor */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Nombre del Auditor</Label>
+                  <Input
+                    value={informeData.auditor}
+                    onChange={(e) => setInformeData(prev => ({ ...prev, auditor: e.target.value }))}
+                    placeholder="Nombre completo del auditor"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Cargo</Label>
+                  <Input
+                    value={informeData.cargo_auditor}
+                    onChange={(e) => setInformeData(prev => ({ ...prev, cargo_auditor: e.target.value }))}
+                    placeholder="Ej: Auditor Senior, Contralor"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* Comentarios */}
+              <div>
+                <Label className="text-sm font-medium">Comentarios del Auditor</Label>
+                <textarea
+                  value={informeData.comentarios}
+                  onChange={(e) => setInformeData(prev => ({ ...prev, comentarios: e.target.value }))}
+                  placeholder="Observaciones generales sobre el análisis de inventarios..."
+                  className="mt-1 w-full h-24 px-3 py-2 border rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Conclusiones */}
+              <div>
+                <Label className="text-sm font-medium">Conclusiones</Label>
+                <textarea
+                  value={informeData.conclusiones}
+                  onChange={(e) => setInformeData(prev => ({ ...prev, conclusiones: e.target.value }))}
+                  placeholder="Conclusiones principales del análisis..."
+                  className="mt-1 w-full h-24 px-3 py-2 border rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Recomendaciones */}
+              <div>
+                <Label className="text-sm font-medium">Recomendaciones</Label>
+                <textarea
+                  value={informeData.recomendaciones}
+                  onChange={(e) => setInformeData(prev => ({ ...prev, recomendaciones: e.target.value }))}
+                  placeholder="1. Primera recomendación&#10;2. Segunda recomendación&#10;3. Tercera recomendación"
+                  className="mt-1 w-full h-28 px-3 py-2 border rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Opción de comparativo */}
+              <div className="flex items-center gap-2 p-3 bg-zinc-50 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="incluir_comparativo"
+                  checked={informeData.incluir_comparativo}
+                  onChange={(e) => setInformeData(prev => ({ ...prev, incluir_comparativo: e.target.checked }))}
+                  className="h-4 w-4 rounded border-zinc-300"
+                />
+                <label htmlFor="incluir_comparativo" className="text-sm">
+                  Incluir datos del Comparativo de 4 Cortes (si está disponible)
+                </label>
+              </div>
+
+              {/* Evidencias */}
+              <div>
+                <Label className="text-sm font-medium mb-2 block">Evidencias (Fotos, PDFs, Documentos)</Label>
+                
+                <div className="border-2 border-dashed border-zinc-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="evidencias-input"
+                  />
+                  <label htmlFor="evidencias-input" className="cursor-pointer">
+                    <Upload className="h-8 w-8 mx-auto text-zinc-400 mb-2" />
+                    <p className="text-sm text-zinc-600">Arrastra archivos o haz clic para seleccionar</p>
+                    <p className="text-xs text-zinc-400 mt-1">Imágenes, PDF, Word, Excel (máx. 10MB c/u)</p>
+                  </label>
+                </div>
+
+                {/* Lista de archivos seleccionados */}
+                {evidenciasTemp.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {evidenciasTemp.map((file, index) => (
+                      <div key={index} className="flex items-center gap-3 p-2 bg-zinc-50 rounded-lg">
+                        {file.type.startsWith('image/') ? (
+                          <FileImage className="h-5 w-5 text-blue-500" />
+                        ) : (
+                          <File className="h-5 w-5 text-zinc-500" />
+                        )}
+                        <span className="flex-1 text-sm truncate">{file.name}</span>
+                        <span className="text-xs text-zinc-400">
+                          {(file.size / 1024).toFixed(0)} KB
+                        </span>
+                        <button 
+                          onClick={() => handleRemoveEvidencia(index)}
+                          className="p-1 hover:bg-red-100 rounded text-red-500"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t px-6 py-4 bg-zinc-50 flex justify-between items-center">
+              <p className="text-xs text-zinc-500">
+                Los informes se guardan en el repositorio de auditorías
+              </p>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setModalInforme(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleGuardarInforme}
+                  disabled={savingInforme}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {savingInforme ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Guardar Informe
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================= */}
+      {/* MODAL: VER INFORME COMPLETO */}
+      {/* ================================================================= */}
+      {viewInformeModal && selectedInforme && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-zinc-800 to-zinc-900 text-white px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold">Informe de Auditoría</h2>
+                  <p className="text-zinc-300 text-sm mt-1">
+                    {selectedInforme.sucursal_nombre} - {selectedInforme.almacen_nombre}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    onClick={() => handleDescargarPDF(selectedInforme.id)}
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    PDF
+                  </Button>
+                  <button 
+                    onClick={() => setViewInformeModal(false)}
+                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Info general */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-xs text-zinc-500">Fecha del Informe</p>
+                  <p className="font-medium">{selectedInforme.fecha_creacion?.split('T')[0]}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500">Auditor</p>
+                  <p className="font-medium">{selectedInforme.auditor || 'No especificado'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500">Periodo Analizado</p>
+                  <p className="font-medium text-sm">
+                    {selectedInforme.inventario_inicial_fecha} al {selectedInforme.inventario_final_fecha}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500">Estatus</p>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    selectedInforme.estatus === 'finalizado' 
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-amber-100 text-amber-700'
+                  }`}>
+                    {selectedInforme.estatus === 'finalizado' ? 'Finalizado' : 'Borrador'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Resumen */}
+              <div className="grid grid-cols-4 gap-4">
+                <div className="bg-zinc-50 rounded-lg p-4 text-center">
+                  <p className="text-3xl font-bold text-zinc-800">{selectedInforme.total_productos}</p>
+                  <p className="text-sm text-zinc-500">Total Productos</p>
+                </div>
+                <div className="bg-red-50 rounded-lg p-4 text-center">
+                  <p className="text-3xl font-bold text-red-600">{selectedInforme.productos_con_diferencia}</p>
+                  <p className="text-sm text-zinc-500">Con Diferencia</p>
+                </div>
+                <div className="bg-amber-50 rounded-lg p-4 text-center">
+                  <p className="text-2xl font-bold text-amber-600">
+                    ${(selectedInforme.valor_total_diferencias || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-sm text-zinc-500">Valor Diferencias</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-4 text-center">
+                  <p className="text-3xl font-bold text-green-600">
+                    {(selectedInforme.porcentaje_precision || 0).toFixed(1)}%
+                  </p>
+                  <p className="text-sm text-zinc-500">Precisión</p>
+                </div>
+              </div>
+
+              {/* Comentarios */}
+              {selectedInforme.comentarios && (
+                <div>
+                  <h3 className="font-semibold text-zinc-800 mb-2 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-blue-600" />
+                    Comentarios del Auditor
+                  </h3>
+                  <p className="text-sm text-zinc-600 bg-zinc-50 p-4 rounded-lg whitespace-pre-wrap">
+                    {selectedInforme.comentarios}
+                  </p>
+                </div>
+              )}
+
+              {/* Conclusiones */}
+              {selectedInforme.conclusiones && (
+                <div>
+                  <h3 className="font-semibold text-zinc-800 mb-2 flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    Conclusiones
+                  </h3>
+                  <p className="text-sm text-zinc-600 bg-green-50 p-4 rounded-lg whitespace-pre-wrap">
+                    {selectedInforme.conclusiones}
+                  </p>
+                </div>
+              )}
+
+              {/* Recomendaciones */}
+              {selectedInforme.recomendaciones && (
+                <div>
+                  <h3 className="font-semibold text-zinc-800 mb-2 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    Recomendaciones
+                  </h3>
+                  <p className="text-sm text-zinc-600 bg-amber-50 p-4 rounded-lg whitespace-pre-wrap">
+                    {selectedInforme.recomendaciones}
+                  </p>
+                </div>
+              )}
+
+              {/* Evidencias */}
+              {selectedInforme.evidencias && selectedInforme.evidencias.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-zinc-800 mb-2 flex items-center gap-2">
+                    <Upload className="h-4 w-4 text-blue-600" />
+                    Evidencias Adjuntas ({selectedInforme.evidencias.length})
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {selectedInforme.evidencias.map((ev, idx) => (
+                      <div key={idx} className="border rounded-lg p-3 flex items-center gap-3">
+                        {ev.content_type?.startsWith('image/') ? (
+                          <FileImage className="h-8 w-8 text-blue-500" />
+                        ) : (
+                          <File className="h-8 w-8 text-zinc-500" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{ev.filename}</p>
+                          <p className="text-xs text-zinc-400">{(ev.size / 1024).toFixed(0)} KB</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Productos con diferencias (Top 10) */}
+              {selectedInforme.productos_diferencias && selectedInforme.productos_diferencias.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-zinc-800 mb-2">
+                    Top Productos con Diferencias
+                  </h3>
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-zinc-50">
+                          <TableHead>Código</TableHead>
+                          <TableHead>Producto</TableHead>
+                          <TableHead className="text-right">Inv. Ini</TableHead>
+                          <TableHead className="text-right">Inv. Fin</TableHead>
+                          <TableHead className="text-right">Diferencia</TableHead>
+                          <TableHead className="text-right">Valor</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedInforme.productos_diferencias.slice(0, 10).map((prod, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-mono text-xs">{prod.codigo}</TableCell>
+                            <TableCell className="text-sm">{prod.producto}</TableCell>
+                            <TableCell className="text-right">{prod.inv_inicial}</TableCell>
+                            <TableCell className="text-right">{prod.inv_final}</TableCell>
+                            <TableCell className={`text-right font-medium ${prod.diferencia < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              {prod.diferencia}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              ${(prod.valor_diferencia || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t px-6 py-4 bg-zinc-50 flex justify-end">
+              <Button variant="outline" onClick={() => setViewInformeModal(false)}>
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

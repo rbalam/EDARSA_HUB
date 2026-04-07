@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, BackgroundTasks, UploadFile, File, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, BackgroundTasks, UploadFile, File, Query, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
@@ -11171,6 +11171,755 @@ async def ejecutar_script_sql(
         "fallidos": fallidos,
         "resultados": resultados
     }
+
+
+
+# ============================================================================
+# MÓDULO DE INFORMES DE AUDITORÍA
+# Sistema completo para generar, guardar y gestionar informes profesionales
+# ============================================================================
+
+import os
+import uuid
+from datetime import datetime, timezone
+
+# Directorio para almacenar evidencias
+EVIDENCIAS_DIR = "/app/uploads/evidencias"
+os.makedirs(EVIDENCIAS_DIR, exist_ok=True)
+
+# Modelos Pydantic para Informes de Auditoría
+class InformeAuditoriaCreate(BaseModel):
+    """Modelo para crear un nuevo informe de auditoría"""
+    sucursal_id: str
+    sucursal_nombre: str
+    almacen_id: str
+    almacen_nombre: str
+    servidor_id: str
+    servidor_nombre: str
+    
+    # Periodo del análisis
+    inventario_inicial_id: str
+    inventario_inicial_fecha: str
+    inventario_final_id: str
+    inventario_final_fecha: str
+    fecha_inicio_movimientos: Optional[str] = None
+    fecha_fin_movimientos: Optional[str] = None
+    
+    # Resumen del análisis
+    total_productos: int = 0
+    productos_con_diferencia: int = 0
+    valor_total_diferencias: float = 0
+    porcentaje_precision: float = 0
+    
+    # Contenido del informe
+    comentarios: str = ""
+    conclusiones: str = ""
+    recomendaciones: str = ""
+    
+    # Opciones
+    incluir_comparativo_4_cortes: bool = False
+    datos_comparativo: Optional[List[Dict]] = None
+    
+    # Datos del reporte (productos con diferencias)
+    productos_diferencias: Optional[List[Dict]] = None
+    
+    # Metadatos
+    auditor: str = ""
+    cargo_auditor: str = ""
+
+class InformeAuditoriaResponse(BaseModel):
+    """Modelo de respuesta para informes"""
+    id: str
+    fecha_creacion: str
+    sucursal_nombre: str
+    almacen_nombre: str
+    periodo: str
+    auditor: str
+    total_productos: int
+    valor_diferencias: float
+    tiene_evidencias: bool
+    estatus: str
+
+
+@api_router.post("/auditoria/informes")
+async def crear_informe_auditoria(
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea un nuevo informe de auditoría y lo guarda en MongoDB"""
+    try:
+        informe_id = str(uuid.uuid4())
+        ahora = datetime.now(timezone.utc)
+        
+        # Construir documento del informe
+        informe_doc = {
+            "id": informe_id,
+            "fecha_creacion": ahora.isoformat(),
+            "fecha_actualizacion": ahora.isoformat(),
+            "estatus": "borrador",
+            
+            # Ubicación
+            "sucursal_id": body.get("sucursal_id"),
+            "sucursal_nombre": body.get("sucursal_nombre"),
+            "almacen_id": body.get("almacen_id"),
+            "almacen_nombre": body.get("almacen_nombre"),
+            "servidor_id": body.get("servidor_id"),
+            "servidor_nombre": body.get("servidor_nombre"),
+            
+            # Periodo
+            "inventario_inicial_id": body.get("inventario_inicial_id"),
+            "inventario_inicial_fecha": body.get("inventario_inicial_fecha"),
+            "inventario_final_id": body.get("inventario_final_id"),
+            "inventario_final_fecha": body.get("inventario_final_fecha"),
+            "fecha_inicio_movimientos": body.get("fecha_inicio_movimientos"),
+            "fecha_fin_movimientos": body.get("fecha_fin_movimientos"),
+            
+            # Resumen numérico
+            "total_productos": body.get("total_productos", 0),
+            "productos_con_diferencia": body.get("productos_con_diferencia", 0),
+            "valor_total_diferencias": body.get("valor_total_diferencias", 0),
+            "porcentaje_precision": body.get("porcentaje_precision", 0),
+            
+            # Contenido textual
+            "comentarios": body.get("comentarios", ""),
+            "conclusiones": body.get("conclusiones", ""),
+            "recomendaciones": body.get("recomendaciones", ""),
+            
+            # Datos del reporte
+            "incluir_comparativo_4_cortes": body.get("incluir_comparativo_4_cortes", False),
+            "datos_comparativo": body.get("datos_comparativo"),
+            "productos_diferencias": body.get("productos_diferencias"),
+            
+            # Auditor
+            "auditor": body.get("auditor") or current_user.get("name", ""),
+            "cargo_auditor": body.get("cargo_auditor", ""),
+            "usuario_id": current_user.get("id"),
+            
+            # Evidencias (se agregan después)
+            "evidencias": []
+        }
+        
+        # Guardar en MongoDB
+        result = await db.informes_auditoria.insert_one(informe_doc)
+        
+        return {
+            "success": True,
+            "message": "Informe creado exitosamente",
+            "informe_id": informe_id,
+            "mongo_id": str(result.inserted_id)
+        }
+        
+    except Exception as e:
+        logging.error(f"Error creando informe de auditoría: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/auditoria/informes")
+async def listar_informes_auditoria(
+    sucursal_id: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    estatus: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista informes de auditoría con filtros opcionales"""
+    try:
+        # Construir filtro
+        filtro = {}
+        if sucursal_id:
+            filtro["sucursal_id"] = sucursal_id
+        if estatus:
+            filtro["estatus"] = estatus
+        if fecha_desde:
+            filtro["fecha_creacion"] = {"$gte": fecha_desde}
+        if fecha_hasta:
+            if "fecha_creacion" in filtro:
+                filtro["fecha_creacion"]["$lte"] = fecha_hasta
+            else:
+                filtro["fecha_creacion"] = {"$lte": fecha_hasta}
+        
+        # Contar total
+        total = await db.informes_auditoria.count_documents(filtro)
+        
+        # Obtener informes paginados
+        skip = (page - 1) * limit
+        cursor = db.informes_auditoria.find(
+            filtro,
+            {"_id": 0}  # Excluir _id de MongoDB
+        ).sort("fecha_creacion", -1).skip(skip).limit(limit)
+        
+        informes = await cursor.to_list(length=limit)
+        
+        # Formatear respuesta
+        informes_response = []
+        for inf in informes:
+            informes_response.append({
+                "id": inf.get("id"),
+                "fecha_creacion": inf.get("fecha_creacion"),
+                "sucursal_nombre": inf.get("sucursal_nombre"),
+                "almacen_nombre": inf.get("almacen_nombre"),
+                "periodo": f"{inf.get('inventario_inicial_fecha', '')} - {inf.get('inventario_final_fecha', '')}",
+                "auditor": inf.get("auditor"),
+                "total_productos": inf.get("total_productos", 0),
+                "productos_con_diferencia": inf.get("productos_con_diferencia", 0),
+                "valor_diferencias": inf.get("valor_total_diferencias", 0),
+                "tiene_evidencias": len(inf.get("evidencias", [])) > 0,
+                "num_evidencias": len(inf.get("evidencias", [])),
+                "estatus": inf.get("estatus", "borrador")
+            })
+        
+        return {
+            "informes": informes_response,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": (total + limit - 1) // limit if total > 0 else 1
+        }
+        
+    except Exception as e:
+        logging.error(f"Error listando informes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/auditoria/informes/{informe_id}")
+async def obtener_informe_auditoria(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Obtiene un informe de auditoría completo por su ID"""
+    try:
+        informe = await db.informes_auditoria.find_one(
+            {"id": informe_id},
+            {"_id": 0}
+        )
+        
+        if not informe:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        return informe
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error obteniendo informe: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.put("/auditoria/informes/{informe_id}")
+async def actualizar_informe_auditoria(
+    informe_id: str,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza un informe de auditoría existente"""
+    try:
+        # Campos actualizables
+        update_fields = {
+            "fecha_actualizacion": datetime.now(timezone.utc).isoformat()
+        }
+        
+        campos_permitidos = [
+            "comentarios", "conclusiones", "recomendaciones",
+            "auditor", "cargo_auditor", "estatus"
+        ]
+        
+        for campo in campos_permitidos:
+            if campo in body:
+                update_fields[campo] = body[campo]
+        
+        result = await db.informes_auditoria.update_one(
+            {"id": informe_id},
+            {"$set": update_fields}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        return {"success": True, "message": "Informe actualizado"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error actualizando informe: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.delete("/auditoria/informes/{informe_id}")
+async def eliminar_informe_auditoria(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina un informe de auditoría"""
+    try:
+        # Primero obtener el informe para eliminar evidencias
+        informe = await db.informes_auditoria.find_one({"id": informe_id})
+        
+        if not informe:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        # Eliminar archivos de evidencias
+        for evidencia in informe.get("evidencias", []):
+            filepath = evidencia.get("filepath")
+            if filepath and os.path.exists(filepath):
+                try:
+                    os.remove(filepath)
+                except:
+                    pass
+        
+        # Eliminar de MongoDB
+        await db.informes_auditoria.delete_one({"id": informe_id})
+        
+        return {"success": True, "message": "Informe eliminado"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error eliminando informe: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/auditoria/informes/{informe_id}/evidencias")
+async def subir_evidencia(
+    informe_id: str,
+    file: UploadFile = File(...),
+    descripcion: str = Form(""),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Sube una evidencia (foto, PDF, documento) a un informe"""
+    try:
+        # Verificar que el informe existe
+        informe = await db.informes_auditoria.find_one({"id": informe_id})
+        if not informe:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        # Validar tipo de archivo
+        allowed_types = [
+            "image/jpeg", "image/png", "image/gif", "image/webp",
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ]
+        
+        if file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Tipo de archivo no permitido: {file.content_type}"
+            )
+        
+        # Generar nombre único para el archivo
+        ext = os.path.splitext(file.filename)[1]
+        unique_filename = f"{informe_id}_{uuid.uuid4().hex[:8]}{ext}"
+        filepath = os.path.join(EVIDENCIAS_DIR, unique_filename)
+        
+        # Guardar archivo
+        content = await file.read()
+        with open(filepath, "wb") as f:
+            f.write(content)
+        
+        # Crear registro de evidencia
+        evidencia = {
+            "id": str(uuid.uuid4()),
+            "filename": file.filename,
+            "filepath": filepath,
+            "content_type": file.content_type,
+            "size": len(content),
+            "descripcion": descripcion,
+            "fecha_subida": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Agregar al informe
+        await db.informes_auditoria.update_one(
+            {"id": informe_id},
+            {
+                "$push": {"evidencias": evidencia},
+                "$set": {"fecha_actualizacion": datetime.now(timezone.utc).isoformat()}
+            }
+        )
+        
+        return {
+            "success": True,
+            "message": "Evidencia subida exitosamente",
+            "evidencia": {
+                "id": evidencia["id"],
+                "filename": evidencia["filename"],
+                "size": evidencia["size"]
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error subiendo evidencia: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.delete("/auditoria/informes/{informe_id}/evidencias/{evidencia_id}")
+async def eliminar_evidencia(
+    informe_id: str,
+    evidencia_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina una evidencia de un informe"""
+    try:
+        # Obtener informe
+        informe = await db.informes_auditoria.find_one({"id": informe_id})
+        if not informe:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        # Buscar evidencia
+        evidencia_encontrada = None
+        for ev in informe.get("evidencias", []):
+            if ev.get("id") == evidencia_id:
+                evidencia_encontrada = ev
+                break
+        
+        if not evidencia_encontrada:
+            raise HTTPException(status_code=404, detail="Evidencia no encontrada")
+        
+        # Eliminar archivo físico
+        filepath = evidencia_encontrada.get("filepath")
+        if filepath and os.path.exists(filepath):
+            os.remove(filepath)
+        
+        # Eliminar de MongoDB
+        await db.informes_auditoria.update_one(
+            {"id": informe_id},
+            {
+                "$pull": {"evidencias": {"id": evidencia_id}},
+                "$set": {"fecha_actualizacion": datetime.now(timezone.utc).isoformat()}
+            }
+        )
+        
+        return {"success": True, "message": "Evidencia eliminada"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error eliminando evidencia: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.put("/auditoria/informes/{informe_id}/finalizar")
+async def finalizar_informe(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Marca un informe como finalizado"""
+    try:
+        result = await db.informes_auditoria.update_one(
+            {"id": informe_id},
+            {
+                "$set": {
+                    "estatus": "finalizado",
+                    "fecha_finalizacion": datetime.now(timezone.utc).isoformat(),
+                    "finalizado_por": current_user.get("name", "")
+                }
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        return {"success": True, "message": "Informe finalizado"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error finalizando informe: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/auditoria/informes/{informe_id}/pdf")
+async def generar_pdf_informe(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Genera un PDF profesional del informe de auditoría"""
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
+    from io import BytesIO
+    
+    try:
+        # Obtener informe
+        informe = await db.informes_auditoria.find_one({"id": informe_id}, {"_id": 0})
+        if not informe:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        # Crear buffer para el PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=letter,
+            rightMargin=0.75*inch,
+            leftMargin=0.75*inch,
+            topMargin=0.75*inch,
+            bottomMargin=0.75*inch
+        )
+        
+        # Estilos
+        styles = getSampleStyleSheet()
+        
+        styles.add(ParagraphStyle(
+            name='TitleCustom',
+            parent=styles['Heading1'],
+            fontSize=18,
+            spaceAfter=12,
+            alignment=TA_CENTER,
+            textColor=colors.HexColor('#1a1a1a')
+        ))
+        
+        styles.add(ParagraphStyle(
+            name='Subtitle',
+            parent=styles['Heading2'],
+            fontSize=12,
+            spaceAfter=6,
+            textColor=colors.HexColor('#666666'),
+            alignment=TA_CENTER
+        ))
+        
+        styles.add(ParagraphStyle(
+            name='SectionTitle',
+            parent=styles['Heading2'],
+            fontSize=13,
+            spaceBefore=16,
+            spaceAfter=8,
+            textColor=colors.HexColor('#2563eb'),
+            borderColor=colors.HexColor('#2563eb'),
+            borderWidth=0,
+            borderPadding=0
+        ))
+        
+        styles.add(ParagraphStyle(
+            name='BodyJustified',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=8,
+            alignment=TA_JUSTIFY,
+            leading=14
+        ))
+        
+        styles.add(ParagraphStyle(
+            name='SmallGray',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.HexColor('#666666')
+        ))
+        
+        # Contenido del PDF
+        elements = []
+        
+        # === ENCABEZADO ===
+        elements.append(Paragraph("INFORME DE AUDITORÍA DE INVENTARIOS", styles['TitleCustom']))
+        elements.append(Paragraph("EDARSA HUB - Sistema de Gestión", styles['Subtitle']))
+        elements.append(Spacer(1, 20))
+        
+        # === DATOS GENERALES ===
+        fecha_creacion = informe.get('fecha_creacion', '')[:10] if informe.get('fecha_creacion') else ''
+        
+        datos_generales = [
+            ['INFORMACIÓN GENERAL', ''],
+            ['Sucursal:', informe.get('sucursal_nombre', 'N/A')],
+            ['Almacén:', informe.get('almacen_nombre', 'N/A')],
+            ['Fecha del Informe:', fecha_creacion],
+            ['Auditor:', informe.get('auditor', 'N/A')],
+            ['Cargo:', informe.get('cargo_auditor', 'N/A')],
+        ]
+        
+        table_datos = Table(datos_generales, colWidths=[2*inch, 4.5*inch])
+        table_datos.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e3a5f')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('SPAN', (0, 0), (-1, 0)),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 11),
+            ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8f9fa')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+            ('PADDING', (0, 0), (-1, -1), 8),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        elements.append(table_datos)
+        elements.append(Spacer(1, 15))
+        
+        # === PERIODO ANALIZADO ===
+        periodo_data = [
+            ['PERIODO ANALIZADO', ''],
+            ['Inventario Inicial:', f"{informe.get('inventario_inicial_fecha', 'N/A')}"],
+            ['Inventario Final:', f"{informe.get('inventario_final_fecha', 'N/A')}"],
+            ['Inicio Movimientos:', f"{informe.get('fecha_inicio_movimientos', 'N/A')}"],
+            ['Fin Movimientos:', f"{informe.get('fecha_fin_movimientos', 'N/A')}"],
+        ]
+        
+        table_periodo = Table(periodo_data, colWidths=[2*inch, 4.5*inch])
+        table_periodo.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0d6efd')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('SPAN', (0, 0), (-1, 0)),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+            ('PADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(table_periodo)
+        elements.append(Spacer(1, 15))
+        
+        # === RESUMEN EJECUTIVO ===
+        total_prod = informe.get('total_productos', 0)
+        prod_dif = informe.get('productos_con_diferencia', 0)
+        valor_dif = informe.get('valor_total_diferencias', 0)
+        precision = informe.get('porcentaje_precision', 0)
+        
+        resumen_data = [
+            ['RESUMEN EJECUTIVO', '', '', ''],
+            ['Total Productos', 'Con Diferencia', 'Valor Diferencias', '% Precisión'],
+            [str(total_prod), str(prod_dif), f"${valor_dif:,.2f}", f"{precision:.1f}%"],
+        ]
+        
+        table_resumen = Table(resumen_data, colWidths=[1.625*inch]*4)
+        table_resumen.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#198754')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('SPAN', (0, 0), (-1, 0)),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 11),
+            ('FONTSIZE', (0, 1), (-1, 1), 9),
+            ('FONTSIZE', (0, 2), (-1, 2), 14),
+            ('BACKGROUND', (0, 1), (-1, 1), colors.HexColor('#e9ecef')),
+            ('BACKGROUND', (0, 2), (-1, 2), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+            ('PADDING', (0, 0), (-1, -1), 10),
+        ]))
+        elements.append(table_resumen)
+        elements.append(Spacer(1, 20))
+        
+        # === COMENTARIOS ===
+        if informe.get('comentarios'):
+            elements.append(Paragraph("COMENTARIOS DEL AUDITOR", styles['SectionTitle']))
+            elements.append(Paragraph(informe.get('comentarios', ''), styles['BodyJustified']))
+            elements.append(Spacer(1, 10))
+        
+        # === CONCLUSIONES ===
+        if informe.get('conclusiones'):
+            elements.append(Paragraph("CONCLUSIONES", styles['SectionTitle']))
+            elements.append(Paragraph(informe.get('conclusiones', ''), styles['BodyJustified']))
+            elements.append(Spacer(1, 10))
+        
+        # === RECOMENDACIONES ===
+        if informe.get('recomendaciones'):
+            elements.append(Paragraph("RECOMENDACIONES", styles['SectionTitle']))
+            elements.append(Paragraph(informe.get('recomendaciones', ''), styles['BodyJustified']))
+            elements.append(Spacer(1, 10))
+        
+        # === PRODUCTOS CON DIFERENCIAS (Top 20) ===
+        productos = informe.get('productos_diferencias', [])
+        if productos and len(productos) > 0:
+            elements.append(PageBreak())
+            elements.append(Paragraph("DETALLE DE PRODUCTOS CON DIFERENCIAS", styles['SectionTitle']))
+            elements.append(Paragraph(f"Mostrando los primeros {min(20, len(productos))} productos con mayor diferencia", styles['SmallGray']))
+            elements.append(Spacer(1, 10))
+            
+            # Encabezados de tabla
+            prod_headers = ['Código', 'Producto', 'Inv. Ini', 'Inv. Fin', 'Diferencia', 'Valor']
+            prod_data = [prod_headers]
+            
+            # Top 20 productos
+            for prod in productos[:20]:
+                prod_data.append([
+                    str(prod.get('codigo', ''))[:10],
+                    str(prod.get('producto', ''))[:25],
+                    str(prod.get('inv_inicial', 0)),
+                    str(prod.get('inv_final', 0)),
+                    str(prod.get('diferencia', 0)),
+                    f"${prod.get('valor_diferencia', 0):,.2f}"
+                ])
+            
+            col_widths = [0.8*inch, 2.5*inch, 0.7*inch, 0.7*inch, 0.8*inch, 1*inch]
+            table_prod = Table(prod_data, colWidths=col_widths)
+            table_prod.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#343a40')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 8),
+                ('FONTSIZE', (0, 1), (-1, -1), 7),
+                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                ('ALIGN', (2, 1), (-1, -1), 'RIGHT'),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+                ('PADDING', (0, 0), (-1, -1), 5),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+            ]))
+            elements.append(table_prod)
+        
+        # === EVIDENCIAS ===
+        evidencias = informe.get('evidencias', [])
+        if evidencias:
+            elements.append(Spacer(1, 20))
+            elements.append(Paragraph("EVIDENCIAS ADJUNTAS", styles['SectionTitle']))
+            
+            ev_data = [['#', 'Archivo', 'Descripción', 'Fecha']]
+            for i, ev in enumerate(evidencias, 1):
+                fecha_ev = ev.get('fecha_subida', '')[:10] if ev.get('fecha_subida') else ''
+                ev_data.append([
+                    str(i),
+                    ev.get('filename', '')[:30],
+                    ev.get('descripcion', '')[:40],
+                    fecha_ev
+                ])
+            
+            table_ev = Table(ev_data, colWidths=[0.4*inch, 2.5*inch, 2.5*inch, 1.1*inch])
+            table_ev.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6c757d')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+                ('PADDING', (0, 0), (-1, -1), 6),
+            ]))
+            elements.append(table_ev)
+        
+        # === PIE DE PÁGINA ===
+        elements.append(Spacer(1, 30))
+        elements.append(Paragraph("_" * 80, styles['SmallGray']))
+        elements.append(Paragraph(
+            f"Documento generado el {datetime.now().strftime('%d/%m/%Y %H:%M')} | EDARSA HUB | Confidencial",
+            styles['SmallGray']
+        ))
+        
+        # Generar PDF
+        doc.build(elements)
+        
+        # Preparar respuesta
+        buffer.seek(0)
+        filename = f"Informe_Auditoria_{informe.get('sucursal_nombre', 'X')}_{fecha_creacion}.pdf"
+        
+        from fastapi.responses import StreamingResponse
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error generando PDF: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
