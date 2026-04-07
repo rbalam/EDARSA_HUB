@@ -2317,7 +2317,7 @@ const Reportes = () => {
 
           {/* Tabla de Insumos Pendientes */}
           <Card className="border">
-            <CardHeader className="py-3 bg-blue-800 text-white rounded-t-lg">
+            <CardHeader className="py-3 bg-zinc-800 text-white rounded-t-lg">
               <CardTitle className="text-base flex items-center justify-between">
                 <span>INSUMOS PENDIENTES A DESCARGAR</span>
                 {loadingPendientes && <Loader2 className="h-5 w-5 animate-spin" />}
@@ -2337,7 +2337,7 @@ const Reportes = () => {
               ) : (
                 <div className="max-h-[600px] overflow-auto">
                   <table className="w-full text-sm" data-testid="tabla-pendientes">
-                    <thead className="sticky top-0 bg-blue-700 text-white">
+                    <thead className="sticky top-0 bg-zinc-700 text-white">
                       <tr>
                         <th className="py-2 px-2 text-left w-12">No</th>
                         <th className="py-2 px-2 text-center w-16">ALM</th>
@@ -2357,7 +2357,7 @@ const Reportes = () => {
                         .map((item, idx) => (
                         <tr 
                           key={idx} 
-                          className={`border-b hover:bg-blue-50 ${item.pareto <= 80 ? 'bg-yellow-50' : ''}`}
+                          className={`border-b hover:bg-zinc-50 ${item.pareto <= 80 ? 'bg-yellow-50' : ''}`}
                         >
                           <td className="py-1.5 px-2 text-zinc-500">{item.no}</td>
                           <td className="py-1.5 px-2 text-center font-mono">{item.almacen}</td>
@@ -2740,11 +2740,11 @@ const Reportes = () => {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4">
+            <div className="bg-gradient-to-r from-zinc-800 to-zinc-900 text-white px-6 py-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold">Generar Informe de Auditoría</h2>
-                  <p className="text-blue-100 text-sm mt-1">
+                  <p className="text-zinc-300 text-sm mt-1">
                     {filters.sucursal} - {selectedAlmacenes[0]?.nombre || filters.almacen}
                   </p>
                 </div>

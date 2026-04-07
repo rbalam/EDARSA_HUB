@@ -226,3 +226,12 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - Cambiado `NOT IN` a `NOT EXISTS` para mejor compatibilidad con SQL Server
   - Corregido error `strptime() argument 1 must be str, not None` con fallbacks de fecha
 - **Resultado**: De 288 productos/0 Whiskys a 418 productos/21 Whiskys (ahora incluye productos con movimientos pero sin inventario capturado)
+
+### April 7, 2026 - Fix: Color Azul Chillante en Modal de Auditoría
+- **Problema**: El header del modal "Generar Informe de Auditoría" usaba un azul eléctrico (blue-600/700) que rompía con la paleta de colores del proyecto
+- **Solución**: Cambio a tonos zinc (zinc-800/900) consistentes con el resto del proyecto
+- **Cambios aplicados**:
+  - Header del modal de auditoría: `from-blue-600 to-blue-700` → `from-zinc-800 to-zinc-900`
+  - Tabla de Insumos Pendientes: `bg-blue-800` → `bg-zinc-800`, `bg-blue-700` → `bg-zinc-700`
+  - Hover de filas: `hover:bg-blue-50` → `hover:bg-zinc-50`
+- **Nota**: Los botones de acción (Guardar Informe, Generar Informe) permanecen en azul según preferencia del usuario
