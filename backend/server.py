@@ -12126,6 +12126,394 @@ async def rrhh_listar_sucursales(current_user: Dict = Depends(get_current_user))
     return {"sucursales": result.get("datos", []), "total": result.get("registros", 0)}
 
 
+# ------------ CATÁLOGOS CRUD (ADMIN ONLY) ------------
+
+def check_admin_role(current_user: Dict):
+    """Verifica que el usuario tenga rol de Administrador"""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden realizar esta acción")
+
+
+@api_router.post("/rrhh/catalogos/puestos")
+async def rrhh_crear_puesto(
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea un nuevo puesto en el catálogo (Solo Administrador)"""
+    check_admin_role(current_user)
+    
+    descripcion = body.get('descripcion', '').strip()
+    departamento = body.get('departamento', '').strip()
+    sueldo_base = body.get('sueldo_base', 0)
+    nomipaq_id = body.get('nomipaq_id', '')  # ID para mapeo con NomiPAQ
+    mpro_id = body.get('mpro_id', '')  # ID para mapeo con MPRO
+    
+    if not descripcion:
+        raise HTTPException(status_code=400, detail="La descripción del puesto es requerida")
+    
+    query = f"""
+        INSERT INTO RH_Cat_Puestos 
+        (Descripcion, Departamento, Sueldo_Base_Seman_SBC, NomiPAQ_ID, MPRO_ID, Fecha_Creacion, Creado_Por)
+        OUTPUT INSERTED.PuestoID
+        VALUES 
+        ('{descripcion}', '{departamento}', {sueldo_base}, '{nomipaq_id}', '{mpro_id}', GETDATE(), '{current_user.get("email", "")}')
+    """
+    
+    await execute_edarsa_hub_query(query)
+    return {"success": True, "message": "Puesto creado"}
+
+
+@api_router.put("/rrhh/catalogos/puestos/{puesto_id}")
+async def rrhh_actualizar_puesto(
+    puesto_id: int,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza un puesto existente (Solo Administrador)"""
+    check_admin_role(current_user)
+    
+    updates = []
+    if 'descripcion' in body:
+        updates.append(f"Descripcion = '{body['descripcion']}'")
+    if 'departamento' in body:
+        updates.append(f"Departamento = '{body['departamento']}'")
+    if 'sueldo_base' in body:
+        updates.append(f"Sueldo_Base_Seman_SBC = {body['sueldo_base']}")
+    if 'nomipaq_id' in body:
+        updates.append(f"NomiPAQ_ID = '{body['nomipaq_id']}'")
+    if 'mpro_id' in body:
+        updates.append(f"MPRO_ID = '{body['mpro_id']}'")
+    
+    if not updates:
+        raise HTTPException(status_code=400, detail="No hay campos para actualizar")
+    
+    query = f"""
+        UPDATE RH_Cat_Puestos
+        SET {', '.join(updates)}, Fecha_Modificacion = GETDATE()
+        WHERE PuestoID = {puesto_id}
+    """
+    
+    await execute_edarsa_hub_query(query)
+    return {"success": True, "message": "Puesto actualizado"}
+
+
+@api_router.delete("/rrhh/catalogos/puestos/{puesto_id}")
+async def rrhh_eliminar_puesto(
+    puesto_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina un puesto del catálogo (Solo Administrador)"""
+    check_admin_role(current_user)
+    
+    # Verificar si hay colaboradores con este puesto
+    query_check = f"SELECT COUNT(*) as total FROM RH_Colaboradores_Expediente WHERE PuestoID = {puesto_id}"
+    result = await execute_edarsa_hub_query(query_check)
+    if result.get('datos', [{}])[0].get('total', 0) > 0:
+        raise HTTPException(status_code=400, detail="No se puede eliminar: hay colaboradores asignados a este puesto")
+    
+    query = f"DELETE FROM RH_Cat_Puestos WHERE PuestoID = {puesto_id}"
+    await execute_edarsa_hub_query(query)
+    return {"success": True, "message": "Puesto eliminado"}
+
+
+# ------------ CATÁLOGO DE TIPOS DE INCIDENCIAS ------------
+
+@api_router.get("/rrhh/catalogos/tipos-incidencias")
+async def rrhh_listar_tipos_incidencias(current_user: Dict = Depends(get_current_user)):
+    """Lista catálogo de tipos de incidencias"""
+    query = """
+        SELECT 
+            TipoIncidenciaID,
+            Codigo,
+            Descripcion,
+            Categoria,
+            Afectacion,
+            Calculo_Monto,
+            Activo,
+            NomiPAQ_ID,
+            MPRO_ID
+        FROM RH_Cat_Tipos_Incidencias
+        WHERE Activo = 1
+        ORDER BY Categoria, Descripcion
+    """
+    try:
+        result = await execute_edarsa_hub_query(query)
+        return {"tipos_incidencias": result.get("datos", []), "total": result.get("registros", 0)}
+    except:
+        # Si la tabla no existe, retornar tipos por defecto
+        tipos_default = [
+            {"TipoIncidenciaID": 1, "Codigo": "BON", "Descripcion": "Bono", "Categoria": "Ingreso", "Afectacion": 1, "Activo": True},
+            {"TipoIncidenciaID": 2, "Codigo": "HEX", "Descripcion": "Horas Extra", "Categoria": "Ingreso", "Afectacion": 1, "Activo": True},
+            {"TipoIncidenciaID": 3, "Codigo": "COM", "Descripcion": "Comisión", "Categoria": "Ingreso", "Afectacion": 1, "Activo": True},
+            {"TipoIncidenciaID": 4, "Codigo": "FAL", "Descripcion": "Falta", "Categoria": "Descuento", "Afectacion": -1, "Activo": True},
+            {"TipoIncidenciaID": 5, "Codigo": "RET", "Descripcion": "Retardo", "Categoria": "Descuento", "Afectacion": -1, "Activo": True},
+            {"TipoIncidenciaID": 6, "Codigo": "DES", "Descripcion": "Descuento", "Categoria": "Descuento", "Afectacion": -1, "Activo": True},
+        ]
+        return {"tipos_incidencias": tipos_default, "total": len(tipos_default), "nota": "Usando tipos por defecto - Ejecute script SQL"}
+
+
+@api_router.post("/rrhh/catalogos/tipos-incidencias")
+async def rrhh_crear_tipo_incidencia(
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea un nuevo tipo de incidencia (Solo Administrador)"""
+    check_admin_role(current_user)
+    
+    codigo = body.get('codigo', '').strip().upper()
+    descripcion = body.get('descripcion', '').strip()
+    categoria = body.get('categoria', 'Descuento')  # Ingreso o Descuento
+    afectacion = 1 if categoria == 'Ingreso' else -1
+    calculo_monto = body.get('calculo_monto', 'Manual')  # Manual, Porcentaje, Formula
+    nomipaq_id = body.get('nomipaq_id', '')
+    mpro_id = body.get('mpro_id', '')
+    
+    if not codigo or not descripcion:
+        raise HTTPException(status_code=400, detail="Código y descripción son requeridos")
+    
+    query = f"""
+        INSERT INTO RH_Cat_Tipos_Incidencias 
+        (Codigo, Descripcion, Categoria, Afectacion, Calculo_Monto, Activo, NomiPAQ_ID, MPRO_ID, Fecha_Creacion, Creado_Por)
+        VALUES 
+        ('{codigo}', '{descripcion}', '{categoria}', {afectacion}, '{calculo_monto}', 1, '{nomipaq_id}', '{mpro_id}', GETDATE(), '{current_user.get("email", "")}')
+    """
+    
+    await execute_edarsa_hub_query(query)
+    return {"success": True, "message": "Tipo de incidencia creado"}
+
+
+@api_router.put("/rrhh/catalogos/tipos-incidencias/{tipo_id}")
+async def rrhh_actualizar_tipo_incidencia(
+    tipo_id: int,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza un tipo de incidencia (Solo Administrador)"""
+    check_admin_role(current_user)
+    
+    updates = []
+    if 'codigo' in body:
+        updates.append(f"Codigo = '{body['codigo'].upper()}'")
+    if 'descripcion' in body:
+        updates.append(f"Descripcion = '{body['descripcion']}'")
+    if 'categoria' in body:
+        updates.append(f"Categoria = '{body['categoria']}'")
+        updates.append(f"Afectacion = {1 if body['categoria'] == 'Ingreso' else -1}")
+    if 'calculo_monto' in body:
+        updates.append(f"Calculo_Monto = '{body['calculo_monto']}'")
+    if 'activo' in body:
+        updates.append(f"Activo = {1 if body['activo'] else 0}")
+    if 'nomipaq_id' in body:
+        updates.append(f"NomiPAQ_ID = '{body['nomipaq_id']}'")
+    if 'mpro_id' in body:
+        updates.append(f"MPRO_ID = '{body['mpro_id']}'")
+    
+    if not updates:
+        raise HTTPException(status_code=400, detail="No hay campos para actualizar")
+    
+    query = f"""
+        UPDATE RH_Cat_Tipos_Incidencias
+        SET {', '.join(updates)}, Fecha_Modificacion = GETDATE()
+        WHERE TipoIncidenciaID = {tipo_id}
+    """
+    
+    await execute_edarsa_hub_query(query)
+    return {"success": True, "message": "Tipo de incidencia actualizado"}
+
+
+@api_router.delete("/rrhh/catalogos/tipos-incidencias/{tipo_id}")
+async def rrhh_eliminar_tipo_incidencia(
+    tipo_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Desactiva un tipo de incidencia (Solo Administrador) - No elimina para mantener histórico"""
+    check_admin_role(current_user)
+    
+    query = f"UPDATE RH_Cat_Tipos_Incidencias SET Activo = 0, Fecha_Modificacion = GETDATE() WHERE TipoIncidenciaID = {tipo_id}"
+    await execute_edarsa_hub_query(query)
+    return {"success": True, "message": "Tipo de incidencia desactivado"}
+
+
+# ------------ SCRIPT INICIALIZACIÓN CATÁLOGOS RRHH ------------
+
+@api_router.get("/rrhh/catalogos/script-inicializacion")
+async def rrhh_catalogos_script(current_user: Dict = Depends(get_current_user)):
+    """Retorna el script SQL para crear/actualizar las tablas de catálogos RRHH"""
+    
+    script = """
+-- ============================================
+-- SCRIPT DE INICIALIZACIÓN - CATÁLOGOS RRHH
+-- Compatible con: NomiPAQ, MPRO, Excel
+-- Base de datos: EDARSA HUB
+-- ============================================
+
+-- ========== MODIFICAR TABLA PUESTOS ==========
+-- Agregar columnas de mapeo si no existen
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'RH_Cat_Puestos' AND COLUMN_NAME = 'NomiPAQ_ID')
+BEGIN
+    ALTER TABLE RH_Cat_Puestos ADD NomiPAQ_ID NVARCHAR(50) NULL;
+    PRINT 'Columna NomiPAQ_ID agregada a RH_Cat_Puestos';
+END
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'RH_Cat_Puestos' AND COLUMN_NAME = 'MPRO_ID')
+BEGIN
+    ALTER TABLE RH_Cat_Puestos ADD MPRO_ID NVARCHAR(50) NULL;
+    PRINT 'Columna MPRO_ID agregada a RH_Cat_Puestos';
+END
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'RH_Cat_Puestos' AND COLUMN_NAME = 'Fecha_Creacion')
+BEGIN
+    ALTER TABLE RH_Cat_Puestos ADD Fecha_Creacion DATETIME DEFAULT GETDATE();
+    ALTER TABLE RH_Cat_Puestos ADD Fecha_Modificacion DATETIME NULL;
+    ALTER TABLE RH_Cat_Puestos ADD Creado_Por NVARCHAR(100) NULL;
+    PRINT 'Columnas de auditoría agregadas a RH_Cat_Puestos';
+END
+GO
+
+-- ========== TABLA TIPOS DE INCIDENCIAS ==========
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='RH_Cat_Tipos_Incidencias' AND xtype='U')
+BEGIN
+    CREATE TABLE RH_Cat_Tipos_Incidencias (
+        TipoIncidenciaID INT IDENTITY(1,1) PRIMARY KEY,
+        Codigo NVARCHAR(10) NOT NULL UNIQUE,
+        Descripcion NVARCHAR(100) NOT NULL,
+        Categoria NVARCHAR(20) NOT NULL CHECK (Categoria IN ('Ingreso', 'Descuento')),
+        Afectacion INT NOT NULL DEFAULT -1,  -- 1 = suma, -1 = resta
+        Calculo_Monto NVARCHAR(20) DEFAULT 'Manual',  -- Manual, Porcentaje, Formula
+        Formula NVARCHAR(500) NULL,  -- Fórmula personalizada si aplica
+        Activo BIT DEFAULT 1,
+        
+        -- Mapeo con sistemas externos
+        NomiPAQ_ID NVARCHAR(50) NULL,  -- ID en NomiPAQ
+        NomiPAQ_Tipo NVARCHAR(50) NULL,  -- Tipo de concepto en NomiPAQ
+        MPRO_ID NVARCHAR(50) NULL,  -- ID en MPRO
+        Excel_Columna NVARCHAR(50) NULL,  -- Nombre de columna en Excel
+        
+        -- Auditoría
+        Fecha_Creacion DATETIME DEFAULT GETDATE(),
+        Fecha_Modificacion DATETIME NULL,
+        Creado_Por NVARCHAR(100) NULL
+    );
+    
+    CREATE INDEX IX_TiposIncidencias_Categoria ON RH_Cat_Tipos_Incidencias(Categoria);
+    CREATE INDEX IX_TiposIncidencias_Activo ON RH_Cat_Tipos_Incidencias(Activo);
+    
+    PRINT 'Tabla RH_Cat_Tipos_Incidencias creada exitosamente';
+END
+GO
+
+-- ========== INSERTAR TIPOS DE INCIDENCIAS POR DEFECTO ==========
+IF NOT EXISTS (SELECT 1 FROM RH_Cat_Tipos_Incidencias)
+BEGIN
+    -- INGRESOS (+)
+    INSERT INTO RH_Cat_Tipos_Incidencias (Codigo, Descripcion, Categoria, Afectacion, Calculo_Monto) VALUES
+    ('BON', 'Bono', 'Ingreso', 1, 'Manual'),
+    ('HEX', 'Horas Extra', 'Ingreso', 1, 'Formula'),
+    ('COM', 'Comisión', 'Ingreso', 1, 'Porcentaje'),
+    ('INC', 'Incentivo', 'Ingreso', 1, 'Manual'),
+    ('GRA', 'Gratificación', 'Ingreso', 1, 'Manual'),
+    ('AGU', 'Aguinaldo', 'Ingreso', 1, 'Formula'),
+    ('PTU', 'PTU', 'Ingreso', 1, 'Formula'),
+    ('PVA', 'Prima Vacacional', 'Ingreso', 1, 'Formula');
+    
+    -- DESCUENTOS (-)
+    INSERT INTO RH_Cat_Tipos_Incidencias (Codigo, Descripcion, Categoria, Afectacion, Calculo_Monto) VALUES
+    ('FAL', 'Falta', 'Descuento', -1, 'Formula'),
+    ('RET', 'Retardo', 'Descuento', -1, 'Manual'),
+    ('DES', 'Descuento General', 'Descuento', -1, 'Manual'),
+    ('VAC', 'Vacaciones', 'Descuento', -1, 'Formula'),
+    ('INA', 'Incapacidad', 'Descuento', -1, 'Formula'),
+    ('PER', 'Permiso', 'Descuento', -1, 'Manual'),
+    ('PRE', 'Préstamo', 'Descuento', -1, 'Manual'),
+    ('INF', 'INFONAVIT', 'Descuento', -1, 'Porcentaje'),
+    ('FON', 'FONACOT', 'Descuento', -1, 'Manual'),
+    ('ISR', 'ISR', 'Descuento', -1, 'Formula'),
+    ('IMSS', 'IMSS', 'Descuento', -1, 'Formula');
+    
+    PRINT 'Tipos de incidencias por defecto insertados';
+END
+GO
+
+-- ========== MODIFICAR TABLA INCIDENCIAS NÓMINA ==========
+-- Agregar columna para vincular con catálogo de tipos
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'RH_Incidencias_Nomina' AND COLUMN_NAME = 'TipoIncidenciaID')
+BEGIN
+    ALTER TABLE RH_Incidencias_Nomina ADD TipoIncidenciaID INT NULL;
+    ALTER TABLE RH_Incidencias_Nomina ADD CONSTRAINT FK_Incidencia_Tipo 
+        FOREIGN KEY (TipoIncidenciaID) REFERENCES RH_Cat_Tipos_Incidencias(TipoIncidenciaID);
+    PRINT 'Columna TipoIncidenciaID agregada a RH_Incidencias_Nomina';
+END
+
+-- Agregar columnas de mapeo externo
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'RH_Incidencias_Nomina' AND COLUMN_NAME = 'Origen_Sistema')
+BEGIN
+    ALTER TABLE RH_Incidencias_Nomina ADD Origen_Sistema NVARCHAR(20) DEFAULT 'EDARSA_HUB';  -- EDARSA_HUB, NomiPAQ, MPRO, Excel
+    ALTER TABLE RH_Incidencias_Nomina ADD Origen_ID NVARCHAR(50) NULL;  -- ID en sistema origen
+    ALTER TABLE RH_Incidencias_Nomina ADD Fecha_Importacion DATETIME NULL;
+    PRINT 'Columnas de origen agregadas a RH_Incidencias_Nomina';
+END
+GO
+
+-- ========== TABLA DE MAPEO SISTEMAS EXTERNOS ==========
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='RH_Mapeo_Sistemas' AND xtype='U')
+BEGIN
+    CREATE TABLE RH_Mapeo_Sistemas (
+        MapeoID INT IDENTITY(1,1) PRIMARY KEY,
+        Sistema_Origen NVARCHAR(20) NOT NULL,  -- NomiPAQ, MPRO, Excel
+        Tabla_Origen NVARCHAR(100) NOT NULL,
+        Campo_Origen NVARCHAR(100) NOT NULL,
+        Tabla_Destino NVARCHAR(100) NOT NULL,  -- Tabla en EDARSA HUB
+        Campo_Destino NVARCHAR(100) NOT NULL,
+        Transformacion NVARCHAR(500) NULL,  -- SQL o fórmula de transformación
+        Activo BIT DEFAULT 1,
+        Fecha_Creacion DATETIME DEFAULT GETDATE()
+    );
+    
+    PRINT 'Tabla RH_Mapeo_Sistemas creada para configurar importaciones';
+END
+GO
+
+-- ========== INSERTAR MAPEOS POR DEFECTO PARA NOMIPAQ ==========
+IF NOT EXISTS (SELECT 1 FROM RH_Mapeo_Sistemas WHERE Sistema_Origen = 'NomiPAQ')
+BEGIN
+    INSERT INTO RH_Mapeo_Sistemas (Sistema_Origen, Tabla_Origen, Campo_Origen, Tabla_Destino, Campo_Destino) VALUES
+    ('NomiPAQ', 'nom10001', 'numtrab', 'RH_Colaboradores_Expediente', 'NomiPAQ_ID'),
+    ('NomiPAQ', 'nom10001', 'nombre', 'RH_Colaboradores_Expediente', 'Nombre_Completo'),
+    ('NomiPAQ', 'nom10001', 'rfc', 'RH_Colaboradores_Expediente', 'RFC'),
+    ('NomiPAQ', 'nom10001', 'curp', 'RH_Colaboradores_Expediente', 'CURP'),
+    ('NomiPAQ', 'nom10003', 'idconcepto', 'RH_Cat_Tipos_Incidencias', 'NomiPAQ_ID'),
+    ('NomiPAQ', 'nom10007', 'idmovto', 'RH_Incidencias_Nomina', 'Origen_ID');
+    
+    PRINT 'Mapeos NomiPAQ insertados';
+END
+GO
+
+PRINT '=== Script de catálogos RRHH completado ===';
+PRINT 'Las tablas están listas para importar datos de NomiPAQ, MPRO o Excel';
+"""
+    
+    return {
+        "script": script,
+        "instrucciones": [
+            "1. Copia el script SQL completo",
+            "2. Ve a 'Explorador BD' en el menú lateral",
+            "3. Selecciona el servidor EDARSA HUB",
+            "4. Ejecuta el script con credenciales de administrador",
+            "5. Las tablas quedarán preparadas para:",
+            "   - Gestionar catálogos de Puestos e Incidencias",
+            "   - Importar datos desde NomiPAQ",
+            "   - Importar datos desde MPRO",
+            "   - Importar datos desde Excel",
+            "   - Migrar a EDARSA HUB sin pérdida de datos"
+        ],
+        "compatibilidad": {
+            "nomipaq": "Mapeo con nom10001 (empleados), nom10003 (conceptos), nom10007 (movimientos)",
+            "mpro": "Campos MPRO_ID en todas las tablas para vincular registros",
+            "excel": "Campo Excel_Columna para mapear columnas de importación"
+        }
+    }
+
+
 # ------------ COLABORADORES ------------
 
 @api_router.get("/rrhh/colaboradores")
