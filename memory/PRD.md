@@ -200,9 +200,17 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 - Cambio: Headers de tabla de inventarios ahora muestran "Qty" en lugar de "CANTIDAD"
 
 ### April 7, 2026 - Cache de Diferencias en MongoDB
-- **Nuevo**: Colección `inventario_diferencias_cache` en MongoDB para almacenar diferencias calculadas
+- **Nuevo**: Colección `inventario_diferencias_detalle` en MongoDB para almacenar diferencias calculadas
 - **Optimización**: Primera generación calcula y guarda en cache; siguientes generaciones usan cache (instantáneo)
 - **Multi-almacén**: Soporta múltiples almacenes/comentarios en un solo reporte
 - **MPRO**: Filtra por comentario (CAVA, BARRA, BODEGA) para comparar inventarios de misma naturaleza
 - **Velocidad**: De ~5-10s (SQL Server) a ~0.3s (cache MongoDB)
 - **Detección automática**: Si hay nuevos inventarios, recalcula y actualiza cache
+
+### April 7, 2026 - Fix: Comparativo 4 Cortes Bug
+- **Bug corregido**: El endpoint de exportación retornaba folios antiguos (2025) en lugar de recientes (2026)
+- **Causa raíz**: La comparación de fechas en SQL Server (`Fi_Fecha <= 'YYYY-MM-DD'`) no funcionaba correctamente con formato string
+- **Solución**: Usar `CONVERT(date, F.Fi_Fecha) <= CONVERT(date, '{fecha}')` en la query SQL
+- **Frontend Fix**: Ahora envía `almacen_id` y `fecha` en `inventarios_finales_info` para guardar cache correctamente
+- **Backend Fix**: Logging mejorado para depuración de cache
+- **Aclaración Badge**: El número "1" en el botón representa almacenes seleccionados, no reportes cacheados (diseño intencionado)
