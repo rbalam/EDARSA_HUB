@@ -1586,6 +1586,11 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   
+  // Estado local para sucursales del servidor seleccionado
+  const [localSucursales, setLocalSucursales] = useState([]);
+  const [localSucursal, setLocalSucursal] = useState('all');
+  const [loadingSucursales, setLoadingSucursales] = useState(false);
+  
   // Filtros
   const [periodoActual, setPeriodoActual] = useState(() => {
     // Por defecto usar Enero 2026 (datos más recientes confirmados)
@@ -1612,12 +1617,36 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
 
   const aniosDisponibles = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
-  // Auto-cargar cuando cambia la sucursal
+  // Cargar sucursales cuando cambia el servidor
   useEffect(() => {
     if (selectedServer) {
-      cargarAnalisis();
+      cargarSucursales();
     }
   }, [selectedServer]);
+
+  // Auto-cargar análisis cuando cambia la sucursal
+  useEffect(() => {
+    if (selectedServer && localSucursal) {
+      cargarAnalisis();
+    }
+  }, [localSucursal]);
+
+  const cargarSucursales = async () => {
+    setLoadingSucursales(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/comercial/sucursales/${selectedServer}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setLocalSucursales(response.data.sucursales || []);
+      setLocalSucursal('all'); // Reset a "todas"
+    } catch (err) {
+      console.error('Error cargando sucursales:', err);
+      setLocalSucursales([{ id: 'all', nombre: 'Todas' }]);
+    } finally {
+      setLoadingSucursales(false);
+    }
+  };
 
   const toggleMes = (mes, tipo) => {
     if (tipo === 'actual') {
@@ -1641,7 +1670,7 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
 
   const cargarAnalisis = async () => {
     if (!selectedServer) {
-      return; // No mostrar error, simplemente no cargar si no hay sucursal
+      return; // No mostrar error, simplemente no cargar si no hay servidor
     }
     
     setLoading(true);
@@ -1666,7 +1695,8 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
         params: {
           periodo_actual: pActual,
           periodo_base: pBase,
-          granularidad: granularidad
+          granularidad: granularidad,
+          sucursal: localSucursal
         },
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -1701,12 +1731,12 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Selector de sucursal */}
-          <div className="flex gap-4 items-end">
-            <div className="w-64">
-              <Label className="text-xs">Sucursal</Label>
+          {/* Selectores de servidor y sucursal */}
+          <div className="flex gap-4 items-end flex-wrap">
+            <div className="w-56">
+              <Label className="text-xs">Servidor</Label>
               <Select value={selectedServer} onValueChange={setSelectedServer}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar sucursal" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Seleccionar servidor" /></SelectTrigger>
                 <SelectContent>
                   {servers.filter(s => s.active).map(s => (
                     <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
@@ -1714,6 +1744,27 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* Selector de sucursal (solo visible si hay servidor seleccionado y es MPRO) */}
+            {selectedServer && localSucursales.length > 1 && (
+              <div className="w-56">
+                <Label className="text-xs">Sucursal</Label>
+                <Select 
+                  value={localSucursal} 
+                  onValueChange={setLocalSucursal}
+                  disabled={loadingSucursales}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingSucursales ? "Cargando..." : "Seleccionar sucursal"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {localSucursales.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             
             <div className="w-48">
               <Label className="text-xs">Modo de Comparación</Label>

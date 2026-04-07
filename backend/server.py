@@ -8934,6 +8934,63 @@ async def tablero_ejecutivo(
 
 
 
+@api_router.get("/comercial/sucursales/{server_id}")
+async def obtener_sucursales(
+    server_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Obtiene las sucursales/empresas de un servidor"""
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if not user_has_server_access(current_user, server_id):
+        raise HTTPException(status_code=403, detail="Sin acceso a este servidor")
+    
+    try:
+        if server['system_type'] == 'MPRO':
+            # MPRO: Tabla sucursal (relacionada con venta por Sc_Cve_Sucursal)
+            query = """
+            SELECT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre 
+            FROM sucursal 
+            WHERE Es_Cve_Estado = 'AC' 
+            ORDER BY Sc_Descripcion
+            """
+        else:
+            # SoftRestaurant: No tiene múltiples sucursales, devolver el servidor como única opción
+            return {
+                "servidor": server['name'],
+                "sucursales": [{
+                    "id": "all",
+                    "nombre": server['name']
+                }]
+            }
+        
+        result = execute_sql_query(
+            server['host'], server['port'], server['database'],
+            server['username'], server['password'], query
+        ) or []
+        
+        sucursales = [{"id": r['id'], "nombre": r['nombre']} for r in result]
+        
+        # Agregar opción "Todas" al inicio
+        sucursales.insert(0, {"id": "all", "nombre": "Todas las sucursales"})
+        
+        return {
+            "servidor": server['name'],
+            "system_type": server['system_type'],
+            "sucursales": sucursales
+        }
+    except Exception as e:
+        logging.error(f"Error obteniendo sucursales: {str(e)}")
+        return {
+            "servidor": server['name'],
+            "sucursales": [{"id": "all", "nombre": server['name']}],
+            "error": str(e)
+        }
+
+
+
 # ============================================================================
 # ANÁLISIS DE VENTAS A PRECIOS CONSTANTES (Sin efecto inflación)
 # ============================================================================
@@ -8944,6 +9001,7 @@ async def ventas_precios_constantes(
     periodo_actual: str = Query(..., description="Período actual: YYYY-MM o YYYY-MM,YYYY-MM"),
     periodo_base: str = Query(..., description="Período base para precios: YYYY-MM o YYYY-MM,YYYY-MM"),
     granularidad: str = Query(default="categoria", description="categoria, familia, producto"),
+    sucursal: str = Query(default="all", description="ID de sucursal o 'all' para todas"),
     current_user: Dict = Depends(get_current_user)
 ):
     """
@@ -8953,6 +9011,7 @@ async def ventas_precios_constantes(
     - periodo_actual: Mes(es) de ventas a analizar (ej: "2025-03" o "2025-01,2025-02,2025-03")
     - periodo_base: Período de donde tomar los precios de referencia (ej: "2024-03")
     - granularidad: Nivel de detalle (categoria, familia, producto)
+    - sucursal: ID de la sucursal a filtrar o 'all' para todas
     
     Productos In/Out:
     - Nuevos (no existían en período base): Usan precio actual
@@ -9212,25 +9271,29 @@ GROUP BY p.idproducto, p.descripcion
         
         elif server['system_type'] == 'MPRO':
             # Para MPRO - Las ventas están en la tabla 'venta' directamente
-            # Usamos Vn_Precio_Lista y Vn_Cantidad_Control_1 para calcular importes
-            # MPRO no tiene tablas de grupos/clasificaciones separadas como SoftRestaurant
+            # La sucursal está en la tabla 'sucursal' relacionada por Sc_Cve_Sucursal
+            
+            # Filtro de sucursal - en MPRO se relaciona venta con sucursal
+            filtro_sucursal = f"AND V.Sc_Cve_Sucursal = '{sucursal}'" if sucursal != 'all' else ""
             
             query_ventas_actual = f"""
 SELECT 
     V.Pr_Cve_Producto as producto_id,
     P.Pr_Descripcion as producto,
-    'MPRO' as categoria,
+    ISNULL(S.Sc_Descripcion, 'Sin Sucursal') as categoria,
     'Productos' as familia,
     SUM(V.Vn_Cantidad_Control_1) as cantidad,
     SUM(V.Vn_Precio_Lista * V.Vn_Cantidad_Control_1) as importe_actual,
     AVG(V.Vn_Precio_Lista) as precio_promedio_actual
 FROM venta V
 INNER JOIN Producto P ON P.Pr_Cve_Producto = V.Pr_Cve_Producto
+LEFT JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
 WHERE V.Vn_Fecha >= '{fecha_ini_actual}'
   AND V.Vn_Fecha <= '{fecha_fin_actual} 23:59:59'
   AND ISNULL(V.Es_Cve_Estado, '') <> 'CA'
   AND V.Vn_Cantidad_Control_1 > 0
-GROUP BY V.Pr_Cve_Producto, P.Pr_Descripcion
+  {filtro_sucursal}
+GROUP BY V.Pr_Cve_Producto, P.Pr_Descripcion, S.Sc_Descripcion
 """
             
             query_precios_base = f"""
@@ -9242,6 +9305,7 @@ WHERE V.Vn_Fecha >= '{fecha_ini_base}'
   AND V.Vn_Fecha <= '{fecha_fin_base} 23:59:59'
   AND ISNULL(V.Es_Cve_Estado, '') <> 'CA'
   AND V.Vn_Cantidad_Control_1 > 0
+  {filtro_sucursal}
 GROUP BY V.Pr_Cve_Producto
 """
             
