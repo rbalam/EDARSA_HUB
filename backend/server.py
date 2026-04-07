@@ -9126,6 +9126,60 @@ ORDER BY SUM(VE.Vn_Precio_Neto_Importe) DESC
         if pax == 0 and cheques > 0:
             pax = cheques
         
+        # PASO 2: Detectar el último día con ventas PARA ESTA SUCURSAL específica
+        query_ultimo_dia_suc = f"""
+SELECT MAX(CONVERT(DATE, VE.Vn_Fecha)) as ultimo_dia_venta
+FROM Venta_Encabezado VE
+WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND VE.Vn_Fecha >= '{fi}' AND VE.Vn_Fecha <= '{ff}'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+"""
+        try:
+            result_ultimo_suc = execute_sql_query(server['host'], server['port'], server['database'], 
+                                                  server['username'], server['password'], query_ultimo_dia_suc)
+            if result_ultimo_suc and result_ultimo_suc[0]['ultimo_dia_venta']:
+                ultimo_dia_suc = result_ultimo_suc[0]['ultimo_dia_venta']
+                if isinstance(ultimo_dia_suc, str):
+                    dia_suc = int(ultimo_dia_suc.split('-')[2]) if '-' in ultimo_dia_suc else int(ultimo_dia_suc[-2:])
+                else:
+                    dia_suc = ultimo_dia_suc.day
+                
+                print(f"*** MPRO {sucursal_nombre} - Ultimo dia con ventas: dia {dia_suc} ***")
+                
+                # Recalcular fechas de comparación para esta sucursal
+                mes_actual = int(fi[4:6])
+                anio_actual = int(fi[:4])
+                
+                # Mes anterior
+                if mes_actual == 1:
+                    mes_ant = 12
+                    anio_ant = anio_actual - 1
+                else:
+                    mes_ant = mes_actual - 1
+                    anio_ant = anio_actual
+                
+                max_dia_mes_ant = calendar.monthrange(anio_ant, mes_ant)[1]
+                dia_comparar = min(dia_suc, max_dia_mes_ant)
+                fia_suc = f"{anio_ant}{str(mes_ant).zfill(2)}01"
+                ffa_suc = f"{anio_ant}{str(mes_ant).zfill(2)}{str(dia_comparar).zfill(2)}"
+                
+                # Año anterior
+                anio_pasado = anio_actual - 1
+                max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_actual)[1]
+                dia_ano_ant = min(dia_suc, max_dia_ano_ant)
+                fiaa_suc = f"{anio_pasado}{str(mes_actual).zfill(2)}01"
+                ffaa_suc = f"{anio_pasado}{str(mes_actual).zfill(2)}{str(dia_ano_ant).zfill(2)}"
+            else:
+                # Si no hay datos, usar fechas globales
+                fia_suc, ffa_suc = fia, ffa
+                fiaa_suc, ffaa_suc = fiaa, ffaa
+                dia_suc = dias_transcurridos
+        except Exception as e:
+            print(f"Error detectando ultimo dia para {sucursal_nombre}: {e}")
+            fia_suc, ffa_suc = fia, ffa
+            fiaa_suc, ffaa_suc = fiaa, ffaa
+            dia_suc = dias_transcurridos
+        
         # Query mes anterior para esta sucursal - con PAX (formato YYYYMMDD)
         query_ant = f"""
 SELECT 
@@ -9135,7 +9189,7 @@ SELECT
 FROM Venta_Encabezado VE
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND VE.Vn_Fecha >= '{fia}' AND VE.Vn_Fecha <= '{ffa} 23:59:59'
+  AND VE.Vn_Fecha >= '{fia_suc}' AND VE.Vn_Fecha <= '{ffa_suc} 23:59:59'
   AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
 """
         try:
@@ -9158,7 +9212,7 @@ SELECT
 FROM Venta_Encabezado VE
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND VE.Vn_Fecha >= '{fiaa}' AND VE.Vn_Fecha <= '{ffaa} 23:59:59'
+  AND VE.Vn_Fecha >= '{fiaa_suc}' AND VE.Vn_Fecha <= '{ffaa_suc} 23:59:59'
   AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
 """
         try:
@@ -9181,7 +9235,7 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
         var_vs_mes_ant = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
         var_vs_año_ant = round(((ventas - ventas_año) / ventas_año * 100), 1) if ventas_año > 0 else 0
         
-        logging.info(f"MPRO {sucursal_nombre}: Actual={ventas:.2f}, MesAnt({fia}-{ffa})={ventas_ant:.2f} → {var_vs_mes_ant}%, AñoAnt({fiaa}-{ffaa})={ventas_año:.2f} → {var_vs_año_ant}%")
+        print(f"MPRO {sucursal_nombre}: Dia={dia_suc}, Actual={ventas:.2f}, MesAnt({fia_suc}-{ffa_suc})={ventas_ant:.2f} -> {var_vs_mes_ant}%, AnoAnt({fiaa_suc}-{ffaa_suc})={ventas_año:.2f} -> {var_vs_año_ant}%")
         var_pax_mes = round(((pax - pax_ant) / pax_ant * 100), 1) if pax_ant > 0 else 0
         var_pax_año = round(((pax - pax_año) / pax_año * 100), 1) if pax_año > 0 else 0
         var_cheques_mes = round(((cheques - cheques_ant) / cheques_ant * 100), 1) if cheques_ant > 0 else 0
