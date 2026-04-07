@@ -3810,17 +3810,19 @@ async def get_or_create_diferencias_cache(
             
             for idx, corte in enumerate(cortes_result):
                 folio = corte['folio']
+                # Query para obtener la DIFERENCIA REAL de cada inventario (Física - Teórica)
                 query_productos = f"""
                 SELECT 
                     P.Pr_Cve_Producto as codigo,
                     P.Pr_Descripcion as producto,
-                    ISNULL(SUM(F.Fi_Cantidad_Control_1), 0) as cantidad_fisica
+                    F.Fi_Cantidad_Control_1 as cantidad_fisica,
+                    F.Fi_Cantidad_1 as cantidad_teorica,
+                    (F.Fi_Cantidad_Control_1 - F.Fi_Cantidad_1) as diferencia_qty
                 FROM Fisico F
                 INNER JOIN Producto P ON P.Pr_Cve_Producto = F.Pr_Cve_Producto
                 WHERE F.Fi_Folio = '{folio}'
                     AND F.Al_Cve_Almacen = '{almacen_id}'
                     {sucursal_filtro}
-                GROUP BY P.Pr_Cve_Producto, P.Pr_Descripcion
                 """
                 
                 productos_result = execute_sql_query(
@@ -3828,16 +3830,25 @@ async def get_or_create_diferencias_cache(
                     server['username'], server['password'], query_productos
                 )
                 
+                logging.info(f"Corte {folio}: {len(productos_result)} productos encontrados")
+                
+                # Debug: mostrar algunas diferencias
+                difs_no_cero = [p for p in productos_result if p.get('diferencia_qty') and p.get('diferencia_qty') != 0]
+                logging.info(f"Corte {folio}: {len(difs_no_cero)} productos con diferencia != 0")
+                if difs_no_cero[:3]:
+                    for p in difs_no_cero[:3]:
+                        logging.info(f"  Ejemplo: {p.get('codigo')} - dif={p.get('diferencia_qty')}")
+                
                 for prod in productos_result:
                     codigo = prod['codigo']
                     if codigo not in productos_dict:
                         productos_dict[codigo] = {
                             'codigo': codigo,
                             'producto': prod['producto'],
-                            'cantidades': [None] * len(cortes_result),
                             'diferencias': [None] * len(cortes_result)
                         }
-                    productos_dict[codigo]['cantidades'][idx] = float(prod['cantidad_fisica'] or 0)
+                    # Guardar la diferencia REAL del inventario (Física - Teórica)
+                    productos_dict[codigo]['diferencias'][idx] = float(prod['diferencia_qty'] or 0)
         
         else:  # SoftRestaurant
             query_cortes = f"""
@@ -3865,15 +3876,29 @@ async def get_or_create_diferencias_cache(
             
             for idx, corte in enumerate(cortes_result):
                 folio = corte['folio']
+                # Para SR: obtener la diferencia real de invfisicomovtos
                 query_productos = f"""
                 SELECT 
-                    P.idproducto as codigo,
-                    P.descripcion as producto,
-                    ISNULL(SUM(D.cantidad), 0) as cantidad_fisica
-                FROM invfisicodet D
-                INNER JOIN productos P ON P.idproducto = D.idproducto
+                    CASE 
+                        WHEN RTRIM(ISNULL(D.idinsumo,'')) = '' 
+                        THEN RTRIM(LTRIM(D.idpresentacion))
+                        ELSE RTRIM(LTRIM(D.idinsumo))
+                    END as codigo,
+                    CASE 
+                        WHEN RTRIM(ISNULL(D.idinsumo,'')) = '' 
+                        THEN ISNULL(IP.descripcion, 'SIN DESCRIPCION')
+                        ELSE ISNULL(I.descripcion, 'SIN DESCRIPCION')
+                    END as producto,
+                    ISNULL(SUM(D.fisicoalmacen1), 0) as cantidad_fisica,
+                    ISNULL(SUM(D.teorico), 0) as cantidad_teorica,
+                    ISNULL(SUM(D.fisicoalmacen1 - D.teorico), 0) as diferencia_qty
+                FROM invfisicomovtos D
+                LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = D.idpresentacion
+                LEFT JOIN insumos I ON I.idinsumo = D.idinsumo
                 WHERE D.folio = '{folio}'
-                GROUP BY P.idproducto, P.descripcion
+                GROUP BY 
+                    CASE WHEN RTRIM(ISNULL(D.idinsumo,'')) = '' THEN RTRIM(LTRIM(D.idpresentacion)) ELSE RTRIM(LTRIM(D.idinsumo)) END,
+                    CASE WHEN RTRIM(ISNULL(D.idinsumo,'')) = '' THEN ISNULL(IP.descripcion, 'SIN DESCRIPCION') ELSE ISNULL(I.descripcion, 'SIN DESCRIPCION') END
                 """
                 
                 productos_result = execute_sql_query(
@@ -3887,19 +3912,15 @@ async def get_or_create_diferencias_cache(
                         productos_dict[codigo] = {
                             'codigo': codigo,
                             'producto': prod['producto'],
-                            'cantidades': [None] * len(cortes_result),
                             'diferencias': [None] * len(cortes_result)
                         }
-                    productos_dict[codigo]['cantidades'][idx] = float(prod['cantidad_fisica'] or 0)
+                    # Guardar la diferencia REAL del inventario (Física - Teórica)
+                    productos_dict[codigo]['diferencias'][idx] = float(prod['diferencia_qty'] or 0)
         
-        # Calcular diferencias entre cortes consecutivos
+        # Calcular totales y patrones (ya tenemos las diferencias reales, no hay que calcularlas)
         for codigo, data in productos_dict.items():
-            cantidades = data['cantidades']
-            for i in range(len(cantidades) - 1):
-                if cantidades[i] is not None and cantidades[i + 1] is not None:
-                    data['diferencias'][i] = round(cantidades[i] - cantidades[i + 1], 2)
-            
-            difs_validas = [d for d in data['diferencias'] if d is not None]
+            diferencias = data['diferencias']
+            difs_validas = [d for d in diferencias if d is not None and d != 0]
             data['total_diferencia'] = round(sum(difs_validas), 2) if difs_validas else 0
             
             if len(difs_validas) >= 2:
