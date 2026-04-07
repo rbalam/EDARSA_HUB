@@ -3693,6 +3693,412 @@ async def export_pdf(data: Dict, current_user: Dict = Depends(get_current_user))
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
+
+# ============= REPORTE COMPARATIVO DE 4 ÚLTIMOS INVENTARIOS (AUDITORÍA) =============
+class ComparativoInventariosRequest(BaseModel):
+    server_id: str
+    almacen_id: str
+    almacen_nombre: str = ""
+    sucursal_id: Optional[str] = None
+    sucursal_nombre: str = ""
+    fecha_referencia: str  # Fecha de referencia para buscar hacia atrás
+    categorias: Optional[List[str]] = None
+
+
+def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> bytes:
+    """
+    Genera Excel comparativo de los últimos 4 cortes de inventario.
+    Columnas: Código | Producto | Dif Corte 1 | Dif Corte 2 | Dif Corte 3 | Dif Corte 4 | Total
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from datetime import datetime
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Comparativo 4 Cortes"
+    
+    if not data:
+        ws.cell(row=1, column=1, value="No hay datos para mostrar")
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return output.getvalue()
+    
+    # Estilos
+    titulo_font = Font(size=14, bold=True, color="18181b")
+    header_fill = PatternFill(start_color="18181b", end_color="18181b", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True, size=10)
+    label_font = Font(bold=True, size=10)
+    value_font = Font(size=10)
+    verde_fill = PatternFill(start_color="22c55e", end_color="22c55e", fill_type="solid")
+    rojo_fill = PatternFill(start_color="ef4444", end_color="ef4444", fill_type="solid")
+    amarillo_fill = PatternFill(start_color="fbbf24", end_color="fbbf24", fill_type="solid")
+    gris_fill = PatternFill(start_color="e4e4e7", end_color="e4e4e7", fill_type="solid")
+    
+    thin_border = Border(
+        left=Side(style='thin', color='d4d4d8'),
+        right=Side(style='thin', color='d4d4d8'),
+        top=Side(style='thin', color='d4d4d8'),
+        bottom=Side(style='thin', color='d4d4d8')
+    )
+    
+    row_num = 1
+    
+    # Título
+    ws.merge_cells(start_row=row_num, start_column=1, end_row=row_num, end_column=8)
+    ws.cell(row=row_num, column=1, value="REPORTE COMPARATIVO DE AUDITORÍA - 4 ÚLTIMOS INVENTARIOS").font = titulo_font
+    ws.cell(row=row_num, column=1).alignment = Alignment(horizontal="center")
+    row_num += 2
+    
+    # Metadatos
+    info_data = [
+        ("Servidor:", metadata.get('servidor_nombre', 'N/A')),
+        ("Sucursal:", metadata.get('sucursal_nombre', 'N/A')),
+        ("Almacén:", metadata.get('almacen_nombre', 'N/A')),
+        ("Fecha de Elaboración:", datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+    ]
+    
+    for label, value in info_data:
+        ws.cell(row=row_num, column=1, value=label).font = label_font
+        ws.cell(row=row_num, column=2, value=value).font = value_font
+        row_num += 1
+    
+    row_num += 1
+    
+    # Fechas de los cortes
+    cortes = metadata.get('cortes', [])
+    ws.cell(row=row_num, column=1, value="FECHAS DE CORTES:").font = label_font
+    row_num += 1
+    for i, corte in enumerate(cortes, 1):
+        ws.cell(row=row_num, column=1, value=f"Corte {i}:").font = label_font
+        ws.cell(row=row_num, column=2, value=f"{corte.get('fecha', 'N/A')} (Folio: {corte.get('folio', 'N/A')})").font = value_font
+        row_num += 1
+    
+    row_num += 1
+    
+    # Headers dinámicos
+    headers = ['Código', 'Producto']
+    for i, corte in enumerate(cortes, 1):
+        fecha_corta = corte.get('fecha', '')[:10] if corte.get('fecha') else f'Corte {i}'
+        headers.append(f'Dif {fecha_corta}')
+    headers.append('TOTAL DIF')
+    headers.append('PATRÓN')
+    
+    header_row = row_num
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=row_num, column=col_num, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = thin_border
+    
+    row_num += 1
+    
+    # Datos ordenados por Total (de mayor faltante a mayor sobrante)
+    data_sorted = sorted(data, key=lambda x: float(x.get('total_diferencia', 0) or 0))
+    
+    for row_data in data_sorted:
+        # Código
+        cell = ws.cell(row=row_num, column=1, value=row_data.get('codigo', ''))
+        cell.border = thin_border
+        
+        # Producto
+        cell = ws.cell(row=row_num, column=2, value=row_data.get('producto', ''))
+        cell.border = thin_border
+        
+        # Diferencias por corte
+        diferencias = row_data.get('diferencias', [])
+        for i, dif in enumerate(diferencias):
+            col = 3 + i
+            cell = ws.cell(row=row_num, column=col, value=dif if dif is not None else '-')
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal="right")
+            
+            if dif is not None:
+                try:
+                    num_val = float(dif)
+                    if num_val < 0:
+                        cell.fill = rojo_fill
+                        cell.font = Font(bold=True, color="FFFFFF")
+                    elif num_val > 0:
+                        cell.fill = verde_fill
+                        cell.font = Font(bold=True, color="FFFFFF")
+                except (ValueError, TypeError):
+                    pass
+        
+        # Rellenar columnas faltantes si hay menos de 4 cortes
+        for i in range(len(diferencias), 4):
+            col = 3 + i
+            cell = ws.cell(row=row_num, column=col, value='-')
+            cell.border = thin_border
+            cell.fill = gris_fill
+        
+        # Total
+        total = row_data.get('total_diferencia', 0)
+        col_total = 3 + len(cortes)
+        cell = ws.cell(row=row_num, column=col_total, value=total)
+        cell.border = thin_border
+        cell.alignment = Alignment(horizontal="right")
+        cell.font = Font(bold=True)
+        
+        if total is not None:
+            try:
+                num_val = float(total)
+                if num_val < 0:
+                    cell.fill = rojo_fill
+                    cell.font = Font(bold=True, color="FFFFFF")
+                elif num_val > 0:
+                    cell.fill = verde_fill
+                    cell.font = Font(bold=True, color="FFFFFF")
+            except (ValueError, TypeError):
+                pass
+        
+        # Patrón (si hay faltante constante)
+        patron = row_data.get('patron', '')
+        col_patron = col_total + 1
+        cell = ws.cell(row=row_num, column=col_patron, value=patron)
+        cell.border = thin_border
+        if 'CONSTANTE' in patron.upper():
+            cell.fill = amarillo_fill
+            cell.font = Font(bold=True)
+        
+        row_num += 1
+    
+    # Autofiltro
+    last_col = get_column_letter(len(headers))
+    ws.auto_filter.ref = f"A{header_row}:{last_col}{row_num - 1}"
+    
+    # Ajustar anchos
+    ws.column_dimensions['A'].width = 15
+    ws.column_dimensions['B'].width = 40
+    for i in range(3, len(headers) + 1):
+        ws.column_dimensions[get_column_letter(i)].width = 15
+    
+    # Congelar encabezado
+    ws.freeze_panes = f"A{header_row + 1}"
+    
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output.getvalue()
+
+
+@api_router.post("/reports/export/comparativo-inventarios")
+async def export_comparativo_inventarios(request: ComparativoInventariosRequest, current_user: Dict = Depends(get_current_user)):
+    """
+    Genera un Excel comparativo con las diferencias de los últimos 4 cortes de inventario.
+    Útil para auditoría y detección de patrones de faltantes/sobrantes.
+    """
+    server = await db.servers.find_one({"id": request.server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        # 1. Obtener los últimos 4 folios de inventario para el almacén especificado
+        if server['system_type'] == 'MPRO':
+            # Para MPRO
+            sucursal_filtro = f"AND F.Sc_Cve_Sucursal = '{request.sucursal_id}'" if request.sucursal_id else ""
+            
+            query_cortes = f"""
+            SELECT TOP 4 
+                F.Fi_Folio as folio,
+                CONVERT(varchar, F.Fi_Fecha, 120) as fecha,
+                A.Al_Descripcion as almacen
+            FROM Fisico F
+            INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
+            WHERE A.Al_Cve_Almacen = '{request.almacen_id}'
+                {sucursal_filtro}
+                AND F.Fi_Fecha <= '{request.fecha_referencia}'
+            GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion
+            ORDER BY F.Fi_Fecha DESC
+            """
+            
+            cortes_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_cortes
+            )
+            
+            if not cortes_result or len(cortes_result) == 0:
+                raise HTTPException(status_code=404, detail="No se encontraron inventarios físicos para este almacén")
+            
+            # 2. Para cada corte, obtener los productos y sus diferencias
+            productos_dict = {}  # {codigo: {'producto': nombre, 'diferencias': [dif1, dif2, ...]}}
+            
+            for idx, corte in enumerate(cortes_result):
+                folio = corte['folio']
+                
+                # Query para obtener las diferencias de este corte
+                # La diferencia se calcula comparando con el corte anterior (si existe)
+                query_productos = f"""
+                SELECT 
+                    P.Pr_Cve_Producto as codigo,
+                    P.Pr_Descripcion as producto,
+                    ISNULL(SUM(F.Fi_Cantidad_Control_1), 0) as cantidad_fisica
+                FROM Fisico F
+                INNER JOIN Producto P ON P.Pr_Cve_Producto = F.Pr_Cve_Producto
+                WHERE F.Fi_Folio = '{folio}'
+                    AND F.Al_Cve_Almacen = '{request.almacen_id}'
+                    {sucursal_filtro.replace('F.', 'F.')}
+                GROUP BY P.Pr_Cve_Producto, P.Pr_Descripcion
+                """
+                
+                productos_result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_productos
+                )
+                
+                # Procesar productos
+                for prod in productos_result:
+                    codigo = prod['codigo']
+                    if codigo not in productos_dict:
+                        productos_dict[codigo] = {
+                            'codigo': codigo,
+                            'producto': prod['producto'],
+                            'cantidades': [None] * len(cortes_result),
+                            'diferencias': [None] * len(cortes_result)
+                        }
+                    productos_dict[codigo]['cantidades'][idx] = float(prod['cantidad_fisica'] or 0)
+            
+            # 3. Calcular diferencias entre cortes consecutivos
+            for codigo, data in productos_dict.items():
+                cantidades = data['cantidades']
+                for i in range(len(cantidades) - 1):
+                    if cantidades[i] is not None and cantidades[i + 1] is not None:
+                        # Diferencia = cantidad corte actual - cantidad corte anterior
+                        # Si es negativa = faltante, positiva = sobrante
+                        data['diferencias'][i] = round(cantidades[i] - cantidades[i + 1], 2)
+                
+                # Calcular total de diferencias
+                difs_validas = [d for d in data['diferencias'] if d is not None]
+                data['total_diferencia'] = round(sum(difs_validas), 2) if difs_validas else 0
+                
+                # Detectar patrón (si todas las diferencias son del mismo signo)
+                if len(difs_validas) >= 2:
+                    todos_negativos = all(d < 0 for d in difs_validas if d != 0)
+                    todos_positivos = all(d > 0 for d in difs_validas if d != 0)
+                    if todos_negativos:
+                        data['patron'] = 'FALTANTE CONSTANTE'
+                    elif todos_positivos:
+                        data['patron'] = 'SOBRANTE CONSTANTE'
+                    else:
+                        data['patron'] = ''
+                else:
+                    data['patron'] = ''
+        
+        elif server['system_type'] == 'SoftRestaurant':
+            # Para SoftRestaurant
+            query_cortes = f"""
+            SELECT TOP 4 
+                INV.folio as folio,
+                CONVERT(varchar, INV.fecha, 120) as fecha,
+                A.nombre as almacen
+            FROM invfisico INV
+            INNER JOIN almacen A ON A.idalmacen = INV.idalmacen1
+            WHERE INV.idalmacen1 = '{request.almacen_id}'
+                AND INV.fecha <= '{request.fecha_referencia}'
+            GROUP BY INV.folio, INV.fecha, A.nombre
+            ORDER BY INV.fecha DESC
+            """
+            
+            cortes_result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_cortes
+            )
+            
+            if not cortes_result or len(cortes_result) == 0:
+                raise HTTPException(status_code=404, detail="No se encontraron inventarios físicos para este almacén")
+            
+            productos_dict = {}
+            
+            for idx, corte in enumerate(cortes_result):
+                folio = corte['folio']
+                
+                query_productos = f"""
+                SELECT 
+                    P.idproducto as codigo,
+                    P.descripcion as producto,
+                    ISNULL(SUM(D.cantidad), 0) as cantidad_fisica
+                FROM invfisicodet D
+                INNER JOIN productos P ON P.idproducto = D.idproducto
+                WHERE D.folio = '{folio}'
+                GROUP BY P.idproducto, P.descripcion
+                """
+                
+                productos_result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_productos
+                )
+                
+                for prod in productos_result:
+                    codigo = str(prod['codigo'])
+                    if codigo not in productos_dict:
+                        productos_dict[codigo] = {
+                            'codigo': codigo,
+                            'producto': prod['producto'],
+                            'cantidades': [None] * len(cortes_result),
+                            'diferencias': [None] * len(cortes_result)
+                        }
+                    productos_dict[codigo]['cantidades'][idx] = float(prod['cantidad_fisica'] or 0)
+            
+            # Calcular diferencias
+            for codigo, data in productos_dict.items():
+                cantidades = data['cantidades']
+                for i in range(len(cantidades) - 1):
+                    if cantidades[i] is not None and cantidades[i + 1] is not None:
+                        data['diferencias'][i] = round(cantidades[i] - cantidades[i + 1], 2)
+                
+                difs_validas = [d for d in data['diferencias'] if d is not None]
+                data['total_diferencia'] = round(sum(difs_validas), 2) if difs_validas else 0
+                
+                if len(difs_validas) >= 2:
+                    todos_negativos = all(d < 0 for d in difs_validas if d != 0)
+                    todos_positivos = all(d > 0 for d in difs_validas if d != 0)
+                    if todos_negativos:
+                        data['patron'] = 'FALTANTE CONSTANTE'
+                    elif todos_positivos:
+                        data['patron'] = 'SOBRANTE CONSTANTE'
+                    else:
+                        data['patron'] = ''
+                else:
+                    data['patron'] = ''
+        
+        else:
+            raise HTTPException(status_code=400, detail="Tipo de sistema no soportado")
+        
+        # 4. Preparar datos para Excel
+        productos_list = list(productos_dict.values())
+        
+        # Filtrar productos sin diferencias significativas (opcional)
+        productos_list = [p for p in productos_list if any(d is not None and d != 0 for d in p.get('diferencias', []))]
+        
+        # Metadata
+        metadata = {
+            'servidor_nombre': server.get('name', 'N/A'),
+            'sucursal_nombre': request.sucursal_nombre or 'N/A',
+            'almacen_nombre': request.almacen_nombre or 'N/A',
+            'cortes': [{'folio': c['folio'], 'fecha': c['fecha']} for c in cortes_result]
+        }
+        
+        # Generar Excel
+        excel_bytes = generate_excel_comparativo_inventarios(productos_list, metadata)
+        
+        filename = f"comparativo_inventarios_{request.almacen_nombre}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        
+        return StreamingResponse(
+            io.BytesIO(excel_bytes),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error generando comparativo de inventarios: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al generar reporte: {str(e)}")
+
+
 @api_router.post("/reports/email")
 async def email_report(request: EmailReportRequest, background_tasks: BackgroundTasks, current_user: Dict = Depends(get_current_user)):
     report_data = request.report_data.get('data', [])

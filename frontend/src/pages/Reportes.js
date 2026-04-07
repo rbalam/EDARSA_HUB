@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter } from 'lucide-react';
+import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -106,6 +106,7 @@ const Reportes = () => {
     return saved ? JSON.parse(saved) : [];
   });
   const [loadingFilters, setLoadingFilters] = useState(false);
+  const [loadingComparativo, setLoadingComparativo] = useState(false);
   
   // Estados para búsqueda en filtros
   const [searchCategorias, setSearchCategorias] = useState('');
@@ -852,6 +853,63 @@ const Reportes = () => {
     } catch (error) {
       console.error('Error al exportar PDF:', error);
       toast.error('Error al exportar a PDF: ' + error.message);
+    }
+  };
+
+  // Exportar comparativo de últimos 4 cortes de inventario (Auditoría)
+  const handleExportComparativo4Cortes = async () => {
+    // Validar que tengamos los filtros necesarios
+    if (!filters.server_id) {
+      toast.error('Selecciona un servidor primero');
+      return;
+    }
+    
+    // Obtener almacén seleccionado
+    const almacenSeleccionado = selectedAlmacenes.length > 0 ? selectedAlmacenes[0] : null;
+    if (!almacenSeleccionado) {
+      toast.error('Selecciona al menos un almacén para generar el comparativo');
+      return;
+    }
+    
+    try {
+      setLoadingComparativo(true);
+      toast.info('Generando reporte comparativo de 4 cortes...');
+      
+      // Usar fecha actual si no hay fecha seleccionada
+      const fechaReferencia = filters.fecha_fin || new Date().toISOString().split('T')[0];
+      
+      const response = await api.post('/reports/export/comparativo-inventarios', {
+        server_id: filters.server_id,
+        almacen_id: almacenSeleccionado.id || almacenSeleccionado.Al_Cve_Almacen || '',
+        almacen_nombre: almacenSeleccionado.nombre || almacenSeleccionado.Al_Descripcion || 'Almacen',
+        sucursal_id: filters.sucursal_id || '',
+        sucursal_nombre: filters.sucursal || '',
+        fecha_referencia: fechaReferencia,
+        categorias: selectedCategorias.length > 0 ? selectedCategorias : null
+      }, {
+        responseType: 'blob'
+      });
+      
+      // Descargar el archivo
+      const blob = new Blob([response.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `comparativo_4cortes_${almacenSeleccionado.nombre || 'inventario'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Reporte comparativo descargado correctamente');
+    } catch (error) {
+      console.error('Error al exportar comparativo:', error);
+      const errorMsg = error.response?.data?.detail || error.message || 'Error desconocido';
+      toast.error(`Error al generar comparativo: ${errorMsg}`);
+    } finally {
+      setLoadingComparativo(false);
     }
   };
 
@@ -1655,6 +1713,28 @@ const Reportes = () => {
                   <>
                     <Search className="h-4 w-4 mr-2" />
                     Generar Reporte
+                  </>
+                )}
+              </Button>
+              
+              {/* Botón para exportar comparativo de últimos 4 cortes */}
+              <Button 
+                onClick={handleExportComparativo4Cortes}
+                disabled={loadingComparativo || !filters.server_id || selectedAlmacenes.length === 0}
+                variant="outline"
+                className="border-emerald-500 text-emerald-700 hover:bg-emerald-50"
+                data-testid="export-comparativo-4cortes-button"
+                title="Genera un Excel comparando las diferencias de los últimos 4 inventarios físicos para detectar patrones de faltantes/sobrantes"
+              >
+                {loadingComparativo ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generando...
+                  </>
+                ) : (
+                  <>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Comparativo 4 Cortes
                   </>
                 )}
               </Button>

@@ -187,3 +187,14 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 ## Known Issues
 - Bug en "Rendimiento" para códigos duplicados en Insumos/Presentaciones (postponed)
 - Arquitectura Local-First (IndexedDB) en evaluación - no tocar sin permiso
+
+---
+
+## Changelog
+
+### April 7, 2026 - Reporte Comparativo de Auditoría
+- **Nuevo**: Botón "Comparativo 4 Cortes" en Análisis de Inventarios
+- **Backend**: Endpoint `/api/reports/export/comparativo-inventarios` para generar Excel con los últimos 4 cortes de inventario
+- **Excel**: Muestra diferencias por SKU entre cortes consecutivos, total acumulado, y detección de patrones (FALTANTE/SOBRANTE CONSTANTE)
+- **Frontend**: Botón verde esmeralda junto a "Generar Reporte"
+- Cambio: Headers de tabla de inventarios ahora muestran "Qty" en lugar de "CANTIDAD"
