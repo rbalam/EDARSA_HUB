@@ -1591,6 +1591,11 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
   const [localSucursal, setLocalSucursal] = useState('all');
   const [loadingSucursales, setLoadingSucursales] = useState(false);
   
+  // Estado para comparación con año anterior y serie histórica
+  const [dataAnioAnterior, setDataAnioAnterior] = useState(null);
+  const [serieHistorica, setSerieHistorica] = useState([]);
+  const [loadingHistorico, setLoadingHistorico] = useState(false);
+  
   // Filtros
   const [periodoActual, setPeriodoActual] = useState(() => {
     // Por defecto usar Enero 2026 (datos más recientes confirmados)
@@ -1702,12 +1707,83 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
       });
       
       setData(response.data);
+      
+      // Cargar datos del año anterior para comparar crecimiento real
+      const pAnioAnterior = mesesActual.map(m => `${anioActual - 1}-${String(m).padStart(2, '0')}`).join(',');
+      const pBaseAnterior = mesesActual.map(m => `${anioActual - 2}-${String(m).padStart(2, '0')}`).join(',');
+      
+      try {
+        const responseAnterior = await axios.get(`${API_URL}/api/comercial/precios-constantes/${selectedServer}`, {
+          params: {
+            periodo_actual: pAnioAnterior,
+            periodo_base: pBaseAnterior,
+            granularidad: 'categoria',
+            sucursal: localSucursal
+          },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setDataAnioAnterior(responseAnterior.data);
+      } catch (e) {
+        console.log('No hay datos del año anterior');
+        setDataAnioAnterior(null);
+      }
+      
+      // Cargar serie histórica de 5 años
+      cargarSerieHistorica(token);
+      
     } catch (err) {
       console.error('Error:', err);
       setError(err.response?.data?.detail || 'Error al cargar análisis');
       toast.error('Error al cargar análisis de precios constantes');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const cargarSerieHistorica = async (token) => {
+    setLoadingHistorico(true);
+    const serie = [];
+    const anioBase = anioActual - 5; // Año más antiguo como referencia
+    
+    try {
+      // Cargar datos de los últimos 5 años usando el año -5 como base de precios
+      for (let i = 0; i < 5; i++) {
+        const anio = anioActual - 4 + i; // Del -4 al actual
+        const pPeriodo = mesesActual.map(m => `${anio}-${String(m).padStart(2, '0')}`).join(',');
+        const pRef = mesesActual.map(m => `${anioBase}-${String(m).padStart(2, '0')}`).join(',');
+        
+        try {
+          const res = await axios.get(`${API_URL}/api/comercial/precios-constantes/${selectedServer}`, {
+            params: {
+              periodo_actual: pPeriodo,
+              periodo_base: pRef,
+              granularidad: 'categoria',
+              sucursal: localSucursal
+            },
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          serie.push({
+            anio: anio,
+            ventas_actuales: res.data.kpis?.ventas_actuales || 0,
+            ventas_constantes: res.data.kpis?.ventas_constantes || 0,
+            efecto_precio: res.data.kpis?.efecto_precio || 0
+          });
+        } catch (e) {
+          serie.push({
+            anio: anio,
+            ventas_actuales: 0,
+            ventas_constantes: 0,
+            efecto_precio: 0
+          });
+        }
+      }
+      
+      setSerieHistorica(serie);
+    } catch (err) {
+      console.error('Error cargando serie histórica:', err);
+    } finally {
+      setLoadingHistorico(false);
     }
   };
 
