@@ -85,6 +85,10 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 ### ✅ Tablero Ejecutivo
 - KPIs consolidados de todas las sucursales
 - Gráficos de tendencias
+- **Detección automática de último día con ventas** (Implementado April 7, 2026):
+  - Compara días equivalentes (1-5 vs 1-5 si último día con datos = día 5)
+  - Aplica a todas las unidades automáticamente (SoftRestaurant + MPRO)
+  - Corrige el cálculo de variaciones % vs Mes y vs Año
 
 ### ✅ Portal de Proveedores (NEW - April 6, 2026)
 - **Subproyecto separado** en `/portal-proveedores`
