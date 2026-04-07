@@ -2006,45 +2006,107 @@ async def get_insumos_pendientes(
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    Obtiene los insumos pendientes de descargar desde SoftRestaurant.
-    Tabla: inventariopendiente
+    Obtiene los insumos pendientes de descargar.
+    - SoftRestaurant: Usa tabla inventariopendiente
+    - MPRO: Calcula diferencia entre ventas/consumos y existencias
     """
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
-    # Solo disponible para SoftRestaurant
-    if server.get('system_type') != 'SoftRestaurant':
-        return {
-            "items": [],
-            "totales": {"cantidad": 0, "valor": 0, "items": 0},
-            "mensaje": "Este reporte solo está disponible para servidores SoftRestaurant"
-        }
+    system_type = server.get('system_type', '')
     
     try:
-        # Construir cláusula WHERE
-        where_clause = "WHERE 1=1"
-        if almacen_id:
-            where_clause += f" AND ip.idalmacen = '{almacen_id}'"
-        
-        query = f"""
-            SELECT 
-                ip.fecha,
-                ip.idinsumo as codigo,
-                i.descripcion as insumo,
-                ISNULL(g.descripcion, 'SIN GRUPO') as grupo,
-                ip.costo,
-                ip.cantidad,
-                ISNULL(i.unidad, 'PZ') as unidad,
-                ip.idalmacen as almacen,
-                ip.idturno,
-                ABS(ip.costo * ip.cantidad) as total
-            FROM inventariopendiente ip
-            LEFT JOIN insumos i ON ip.idinsumo = i.idinsumo
-            LEFT JOIN gruposi g ON i.idgruposi = g.idgruposi
-            {where_clause}
-            ORDER BY ABS(ip.costo * ip.cantidad) DESC
-        """
+        if system_type == 'SoftRestaurant':
+            # Query para SoftRestaurant
+            where_clause = "WHERE 1=1"
+            if almacen_id:
+                where_clause += f" AND ip.idalmacen = '{almacen_id}'"
+            
+            query = f"""
+                SELECT 
+                    ip.fecha,
+                    ip.idinsumo as codigo,
+                    i.descripcion as insumo,
+                    ISNULL(g.descripcion, 'SIN GRUPO') as grupo,
+                    ip.costo,
+                    ip.cantidad,
+                    ISNULL(i.unidad, 'PZ') as unidad,
+                    ip.idalmacen as almacen,
+                    ip.idturno,
+                    ABS(ip.costo * ip.cantidad) as total
+                FROM inventariopendiente ip
+                LEFT JOIN insumos i ON ip.idinsumo = i.idinsumo
+                LEFT JOIN gruposi g ON i.idgruposi = g.idgruposi
+                {where_clause}
+                ORDER BY ABS(ip.costo * ip.cantidad) DESC
+            """
+            
+        elif system_type == 'ManagmentPro':
+            # Query para MPRO - Insumos vendidos sin existencia suficiente
+            # Obtener nombre de sucursal desde el servidor
+            sucursal_nombre = server.get('name', '').split(' ')[0]  # Tomar primera palabra del nombre
+            
+            almacen_filter = f"AND venta.Al_Cve_Almacen = '{almacen_id}'" if almacen_id else ""
+            
+            query = f"""
+                DECLARE @sucursal NVARCHAR(50) = '{sucursal_nombre}'
+                DECLARE @fecha_ini NVARCHAR(12) = (SELECT TOP 1 CONVERT(DATETIME, DATEFROMPARTS(YEAR(Pr_Fecha_Inicial), MONTH(Pr_Fecha_Inicial), 1), 103) FROM Periodo_Operativo WHERE Pr_Compras = 'NO' ORDER BY Pr_Fecha_final ASC)
+                DECLARE @fecha_fin NVARCHAR(12) = (SELECT TOP 1 Pr_Fecha_final FROM Periodo_Operativo WHERE Pr_Compras = 'NO' ORDER BY Pr_Fecha_final DESC)
+                
+                SELECT  
+                    venta.Al_Cve_Almacen AS almacen,
+                    Producto_Kit.Pk_Producto AS codigo,
+                    categoria.Ct_Descripcion AS categoria,
+                    familia.Fm_Descripcion AS grupo,
+                    producto.Pr_Descripcion AS insumo,
+                    Producto_Kit.Un_Cve_Unidad AS unidad,
+                    ROUND(SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad), 3) AS cantidad_vendida,
+                    ROUND(MOV.CANT, 3) AS existencia,
+                    ROUND(SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) - MOV.CANT, 3) AS diferencia,
+                    ISNULL(producto.Pr_Precio_Lista, 0) AS costo,
+                    ROUND((SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) - MOV.CANT) * ISNULL(producto.Pr_Precio_Lista, 0), 2) AS total
+                FROM venta 
+                LEFT JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
+                LEFT JOIN producto ON producto.Pr_Cve_Producto = Producto_kit.Pk_Producto
+                INNER JOIN Categoria ON categoria.Ct_Cve_Categoria = producto.Ct_Cve_Categoria
+                INNER JOIN Familia ON familia.Fm_Cve_Familia = Producto.Fm_Cve_Familia
+                INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
+                INNER JOIN (
+                    SELECT  
+                        Pr_Cve_Producto,
+                        SUM(Mv_Cantidad_Control_1) CANT
+                    FROM Movimiento 
+                    INNER JOIN Sucursal ON SUCURSAL.Sc_Cve_Sucursal = MOVIMIENTO.Sc_Cve_Sucursal
+                    WHERE MV_FECHA <= @fecha_fin 
+                    AND SUCURSAL.Sc_Descripcion LIKE '%' + @sucursal + '%'
+                    AND Movimiento.Al_Cve_Almacen = '0001'
+                    GROUP BY MOVIMIENTO.Pr_Cve_Producto
+                ) MOV ON MOV.Pr_Cve_Producto = Producto_Kit.Pk_Producto
+                WHERE sucursal.Sc_Descripcion LIKE '%' + @sucursal + '%'
+                AND venta.Es_Cve_Estado <> 'CA' 
+                AND venta.Vn_Fecha BETWEEN @fecha_ini AND @fecha_fin
+                AND producto.Ct_Cve_Categoria IN ('0001','0002','0004')
+                AND producto.Dp_Cve_Departamento IN ('0003','0004','0007','0002')
+                {almacen_filter}
+                GROUP BY 
+                    MOV.CANT,
+                    Producto_Kit.Pk_Producto,
+                    producto.Pr_Descripcion,
+                    Producto_Kit.Un_Cve_Unidad,
+                    categoria.Ct_Descripcion,
+                    familia.Fm_Descripcion,
+                    venta.Al_Cve_Almacen,
+                    producto.Pr_Precio_Lista
+                HAVING (SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) - MOV.CANT) > 0 
+                ORDER BY categoria.Ct_Descripcion, familia.Fm_Descripcion, diferencia DESC
+            """
+        else:
+            return {
+                "items": [],
+                "totales": {"cantidad": 0, "valor": 0, "items": 0},
+                "mensaje": f"Este reporte no está disponible para {system_type}"
+            }
         
         results = execute_sql_query(
             server['host'],
@@ -2062,34 +2124,62 @@ async def get_insumos_pendientes(
                 "almacenes": []
             }
         
-        # Calcular totales (usar valor absoluto de cantidad para total de unidades)
-        total_cantidad = sum(abs(float(r.get('cantidad') or 0)) for r in results)
-        total_valor = sum(float(r.get('total') or 0) for r in results)
-        
-        # Calcular 80-20 (Pareto) - % acumulado
-        items_con_pareto = []
-        acumulado = 0
-        for idx, item in enumerate(results):
-            total_item = float(item.get('total') or 0)
-            acumulado += total_item
-            porcentaje_acumulado = (acumulado / total_valor * 100) if total_valor > 0 else 0
+        # Procesar resultados según el tipo de sistema
+        if system_type == 'ManagmentPro':
+            # Para MPRO, usar 'diferencia' como cantidad y 'total' como valor
+            total_cantidad = sum(abs(float(r.get('diferencia') or 0)) for r in results)
+            total_valor = sum(abs(float(r.get('total') or 0)) for r in results)
             
-            items_con_pareto.append({
-                "no": idx + 1,
-                "fecha": str(item.get('fecha', ''))[:19] if item.get('fecha') else '',
-                "codigo": item.get('codigo', ''),
-                "insumo": item.get('insumo', ''),
-                "grupo": item.get('grupo', 'SIN GRUPO'),
-                "cantidad": abs(float(item.get('cantidad') or 0)),  # Valor absoluto
-                "unidad": item.get('unidad', 'PZ').strip() if item.get('unidad') else 'PZ',
-                "costo": float(item.get('costo') or 0),
-                "total": total_item,
-                "almacen": str(item.get('almacen', '')).strip(),  # Limpiar espacios
-                "idturno": item.get('idturno'),
-                "pareto": round(porcentaje_acumulado, 0)
-            })
+            items_con_pareto = []
+            acumulado = 0
+            for idx, item in enumerate(results):
+                total_item = abs(float(item.get('total') or 0))
+                acumulado += total_item
+                porcentaje_acumulado = (acumulado / total_valor * 100) if total_valor > 0 else 0
+                
+                items_con_pareto.append({
+                    "no": idx + 1,
+                    "codigo": str(item.get('codigo', '')).strip(),
+                    "insumo": item.get('insumo', ''),
+                    "grupo": item.get('grupo', 'SIN GRUPO'),
+                    "categoria": item.get('categoria', ''),
+                    "cantidad": abs(float(item.get('diferencia') or 0)),
+                    "existencia": float(item.get('existencia') or 0),
+                    "cantidad_vendida": float(item.get('cantidad_vendida') or 0),
+                    "unidad": str(item.get('unidad', 'PZ')).strip(),
+                    "costo": float(item.get('costo') or 0),
+                    "total": total_item,
+                    "almacen": str(item.get('almacen', '')).strip(),
+                    "pareto": round(porcentaje_acumulado, 0)
+                })
+        else:
+            # Para SoftRestaurant
+            total_cantidad = sum(abs(float(r.get('cantidad') or 0)) for r in results)
+            total_valor = sum(float(r.get('total') or 0) for r in results)
+            
+            items_con_pareto = []
+            acumulado = 0
+            for idx, item in enumerate(results):
+                total_item = float(item.get('total') or 0)
+                acumulado += total_item
+                porcentaje_acumulado = (acumulado / total_valor * 100) if total_valor > 0 else 0
+                
+                items_con_pareto.append({
+                    "no": idx + 1,
+                    "fecha": str(item.get('fecha', ''))[:19] if item.get('fecha') else '',
+                    "codigo": item.get('codigo', ''),
+                    "insumo": item.get('insumo', ''),
+                    "grupo": item.get('grupo', 'SIN GRUPO'),
+                    "cantidad": abs(float(item.get('cantidad') or 0)),
+                    "unidad": item.get('unidad', 'PZ').strip() if item.get('unidad') else 'PZ',
+                    "costo": float(item.get('costo') or 0),
+                    "total": total_item,
+                    "almacen": str(item.get('almacen', '')).strip(),
+                    "idturno": item.get('idturno'),
+                    "pareto": round(porcentaje_acumulado, 0)
+                })
         
-        # Obtener lista de almacenes únicos (limpiar espacios)
+        # Obtener lista de almacenes únicos
         almacenes_unicos = list(set(str(item.get('almacen', '')).strip() for item in results if item.get('almacen')))
         almacenes_unicos.sort()
         
@@ -2100,7 +2190,8 @@ async def get_insumos_pendientes(
                 "valor": round(total_valor, 2),
                 "items": len(results)
             },
-            "almacenes": almacenes_unicos
+            "almacenes": almacenes_unicos,
+            "system_type": system_type
         }
         
     except Exception as e:

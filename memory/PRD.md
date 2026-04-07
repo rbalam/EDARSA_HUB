@@ -327,3 +327,19 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - RH_Vacantes: VacanteID, SucursalID, PuestoID, Titulo, Descripcion, Requisitos, Salario_Min, Salario_Max, Tipo_Contrato, Estatus, Fechas
   - RH_Candidatos: CandidatoID, VacanteID, Nombre_Completo, Email, Telefono, CV_URL, Estatus, Puntuacion, Notas, Fecha_Entrevista
 - **Estatus de Candidato**: Recibido, En Revision, Entrevista Programada, Entrevistado, Seleccionado, Rechazado, Contratado
+
+### April 7, 2026 - Insumos Pendientes MPRO (Dashboard Inventarios)
+- **Implementado**: Soporte de "Insumos Pendientes a Descargar" para ManagmentPro
+- **Backend** (`/app/backend/server.py`):
+  - Endpoint `/api/inventarios/pendientes/{server_id}` ahora soporta ambos sistemas
+  - SoftRestaurant: Usa tabla `inventariopendiente`
+  - MPRO: Calcula diferencia entre ventas/consumos y existencias teóricas
+- **Query MPRO**: Guardada en MongoDB (`catalogos_sql.mpro_insumos_pendientes`)
+  - Compara `venta * producto_kit` vs `movimiento`
+  - Filtra por categorías (0001,0002,0004) y departamentos (0003,0004,0007,0002)
+  - Solo muestra items con diferencia > 0 (consumido > existencia)
+  - Usa periodo operativo abierto (Pr_Compras = 'NO')
+- **Columnas retornadas**:
+  - almacen, codigo, categoria, grupo, insumo, unidad
+  - cantidad_vendida, existencia, diferencia (pendiente)
+  - costo, total, pareto (80-20)
