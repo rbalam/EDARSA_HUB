@@ -1078,30 +1078,29 @@ const Reportes = () => {
 
         {/* Tab: Análisis de Inventarios */}
         <TabsContent value="analisis">
-
-      {/* Filters */}
-      <Card className="border border-zinc-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Servidor {servers.length === 0 && <span className="text-red-500 text-xs">(Cargando...)</span>}</Label>
-              <select 
-                className={selectStyle}
-                data-testid="server-select"
-                value={filters.server_id}
-                onChange={(e) => setFilters({...filters, server_id: e.target.value, sucursal_id: '', almacen_id: '', sucursal: '', almacen: ''})}
-              >
-                <option value="">{servers.length === 0 ? "Cargando servidores..." : "Selecciona un servidor"}</option>
-                {servers.map((server) => (
-                  <option key={server.id} value={server.id}>
-                    {server.name} ({server.system_type})
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Filters */}
+          <Card className="border border-zinc-200 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Filtros</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Servidor {servers.length === 0 && <span className="text-red-500 text-xs">(Cargando...)</span>}</Label>
+                  <select 
+                    className={selectStyle}
+                    data-testid="server-select"
+                    value={filters.server_id}
+                    onChange={(e) => setFilters({...filters, server_id: e.target.value, sucursal_id: '', almacen_id: '', sucursal: '', almacen: ''})}
+                  >
+                    <option value="">{servers.length === 0 ? "Cargando servidores..." : "Selecciona un servidor"}</option>
+                    {servers.map((server) => (
+                      <option key={server.id} value={server.id}>
+                        {server.name} ({server.system_type})
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
             <div className="space-y-2">
               <Label>Tipo de Consulta</Label>
