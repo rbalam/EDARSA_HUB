@@ -1012,165 +1012,55 @@ export default function MisTareas() {
         </CardContent>
       </Card>
 
-      {/* Portal Proveedores (Solo Supervisor/Admin) */}
-      {canApprove && (
-        <Card>
+      {/* Proveedores Pendientes de Aprobación (Solo Supervisor/Admin) */}
+      {canApprove && proveedoresPendientesCount > 0 && (
+        <Card className="border-yellow-200 bg-yellow-50/50">
           <CardHeader className="py-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-medium flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-emerald-500" />
-                Portal Proveedores
-                {proveedoresPendientesCount > 0 && (
-                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
-                    {proveedoresPendientesCount} pendientes
-                  </span>
-                )}
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                <a 
-                  href="/portal-proveedores" 
-                  target="_blank"
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-zinc-600 hover:text-zinc-900"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Ir al Portal
-                </a>
-                <Button size="sm" variant="outline" onClick={loadProveedores}>
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-yellow-600" />
+              Proveedores Pendientes de Aprobación
+              <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                {proveedoresPendientesCount}
+              </span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Filtros */}
-            <div className="flex flex-wrap items-center gap-4 mb-4">
-              <div className="flex gap-2">
-                {['all', 'pending', 'approved', 'rejected'].map(f => (
-                  <Button
-                    key={f}
-                    onClick={() => setFiltroProveedores(f)}
-                    variant={filtroProveedores === f ? 'default' : 'outline'}
-                    size="sm"
-                  >
-                    {f === 'all' ? 'Todos' : f === 'pending' ? 'Pendientes' : f === 'approved' ? 'Aprobados' : 'Rechazados'}
-                    {f === 'pending' && proveedoresPendientesCount > 0 && (
-                      <span className="ml-1 px-1.5 py-0.5 bg-yellow-500 text-white rounded-full text-xs">
-                        {proveedoresPendientesCount}
-                      </span>
-                    )}
-                  </Button>
-                ))}
-              </div>
-              <div className="relative flex-1 max-w-xs">
-                <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400" />
-                <Input
-                  type="text"
-                  placeholder="Buscar RFC, razón social..."
-                  value={searchProveedores}
-                  onChange={(e) => setSearchProveedores(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            {/* Tabla de proveedores */}
-            <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="bg-zinc-50 border-b">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">RFC</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Razón Social</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Contacto</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Estado</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Sucursales</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Registro</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {proveedoresFiltrados.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-zinc-500">
-                        <Users className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                        <p>No se encontraron proveedores</p>
-                      </td>
-                    </tr>
-                  ) : (
-                    proveedoresFiltrados.map(supplier => (
-                      <tr key={supplier.id} className="hover:bg-zinc-50">
-                        <td className="px-4 py-3">
-                          <span className="font-mono font-medium text-zinc-900">{supplier.rfc}</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div>
-                            <p className="font-medium text-zinc-900">{supplier.razon_social || '-'}</p>
-                            <p className="text-sm text-zinc-500">{supplier.nombre_contacto}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="text-sm">
-                            <p className="flex items-center gap-1 text-zinc-600">
-                              <Mail className="h-3 w-3" /> {supplier.email || '-'}
-                            </p>
-                            <p className="flex items-center gap-1 text-zinc-500">
-                              <Phone className="h-3 w-3" /> {supplier.telefono || '-'}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          {getProveedorStatusBadge(supplier.status)}
-                        </td>
-                        <td className="px-4 py-3">
-                          {supplier.sucursales_asignadas?.length > 0 ? (
-                            <span className="text-sm text-zinc-600">
-                              {supplier.sucursales_asignadas.length} asignada{supplier.sucursales_asignadas.length > 1 ? 's' : ''}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-zinc-400">Sin asignar</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-500">
-                          {formatDate(supplier.created_at)}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-1">
-                            {supplier.status === 'pending' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700 text-white"
-                                  onClick={() => openProveedorModal(supplier)}
-                                >
-                                  <Check className="h-4 w-4 mr-1" />
-                                  Aprobar
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-red-600 hover:bg-red-50"
-                                  onClick={() => handleRechazarProveedor(supplier)}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                            {supplier.status === 'approved' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => openProveedorModal(supplier)}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Ver
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div className="space-y-3">
+              {proveedores.filter(p => p.status === 'pending').map(supplier => (
+                <div key={supplier.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-yellow-200">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-yellow-100 p-2 rounded-lg">
+                      <Building2 className="h-5 w-5 text-yellow-600" />
+                    </div>
+                    <div>
+                      <p className="font-mono font-medium text-zinc-900">{supplier.rfc}</p>
+                      <p className="text-sm text-zinc-600">{supplier.razon_social || supplier.nombre_contacto}</p>
+                      <p className="text-xs text-zinc-500">{supplier.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-zinc-500">
+                      {formatDate(supplier.created_at)}
+                    </span>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => openProveedorModal(supplier)}
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Aprobar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 hover:bg-red-50"
+                      onClick={() => handleRechazarProveedor(supplier)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
