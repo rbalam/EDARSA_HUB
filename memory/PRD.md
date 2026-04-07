@@ -28,6 +28,12 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 - Dashboard de ventas con KPIs (Ventas, PAX, Ticket Promedio)
 - Multiselección de años y meses con comparación histórica
 - Datos de SoftRestaurant y MPRO
+- **Selector de Tipo de Comparación** (Implementado April 7, 2026):
+  - Botón toggle: "Días Equiv." vs "Mes Completo"
+  - **Días Equivalentes**: Compara días 1-N del período actual vs días 1-N del período anterior
+  - **Mes Completo**: Compara vs el mes/año anterior completo
+  - Se aplica a "vs Mes Ant" y "vs Año Ant"
+  - Funciona con SoftRestaurant y MPRO
 - **Análisis de Ventas a Precios Constantes** (Implementado April 7, 2026):
   - Compara ventas eliminando el efecto inflacionario
   - Modo Manual: selección libre de períodos actual y base

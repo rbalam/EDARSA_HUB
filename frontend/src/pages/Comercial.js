@@ -226,6 +226,7 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
   const [showMesesDropdown, setShowMesesDropdown] = useState(false);
   const [showAniosDropdown, setShowAniosDropdown] = useState(false);
   const [detalleModal, setDetalleModal] = useState({ open: false, tipo: null });
+  const [tipoComparacion, setTipoComparacion] = useState('dias_equiv'); // dias_equiv o mes_completo
   
   const ANIOS = getAniosDisponibles();
 
@@ -242,7 +243,8 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
           sucursal: selectedSucursal, 
           periodo,
           meses: selectedMeses.join(','),
-          anios: selectedAnios.join(',')
+          anios: selectedAnios.join(','),
+          tipo_comparacion: tipoComparacion
         },
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -264,7 +266,7 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
     if (selectedServer && selectedSucursal) {
       cargarDashboard();
     }
-  }, [selectedServer, selectedSucursal, periodo, selectedMeses, selectedAnios]);
+  }, [selectedServer, selectedSucursal, periodo, selectedMeses, selectedAnios, tipoComparacion]);
 
   const toggleMes = (mes) => {
     setSelectedMeses(prev => {
@@ -448,6 +450,34 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
               Actualizar
             </Button>
+            {/* Selector de Tipo de Comparación */}
+            <div className="flex-1 min-w-[180px] max-w-[220px]">
+              <Label className="text-xs mb-1 block">Comparar con:</Label>
+              <div className="flex rounded-md border border-input overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setTipoComparacion('dias_equiv')}
+                  className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                    tipoComparacion === 'dias_equiv' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-background hover:bg-zinc-100'
+                  }`}
+                >
+                  Días Equiv.
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipoComparacion('mes_completo')}
+                  className={`flex-1 px-3 py-2 text-xs font-medium transition-colors border-l ${
+                    tipoComparacion === 'mes_completo' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-background hover:bg-zinc-100'
+                  }`}
+                >
+                  Mes Completo
+                </button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

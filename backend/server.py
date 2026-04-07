@@ -6901,12 +6901,15 @@ async def comercial_dashboard(
     meses: str = Query(default=""),  # "01,02,03" - Lista de meses separados por coma
     anio: str = Query(default=""),  # "2025" - Año específico (compatibilidad)
     anios: str = Query(default=""),  # "2025,2024" - Múltiples años separados por coma
+    tipo_comparacion: str = Query(default="dias_equiv"),  # dias_equiv o mes_completo
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Dashboard principal de ventas con KPIs y comparativos.
     Soporta SoftRestaurant y MPRO.
     Ahora soporta multiselección de meses y múltiples años.
+    tipo_comparacion: 'dias_equiv' compara días 1-N vs días 1-N del período anterior
+                      'mes_completo' compara vs el mes completo anterior
     """
     server = await db.servers.find_one({"id": server_id, "active": True})
     if not server:
@@ -6940,30 +6943,89 @@ async def comercial_dashboard(
             mes_min = min([int(m) for m in lista_meses])
             mes_max = max([int(m) for m in lista_meses])
             
+            # Verificar si estamos consultando el mes actual
+            es_mes_actual = (year == hoy.year and mes_max == hoy.month and len(lista_meses) == 1)
+            
             fecha_ini = f"{year}-{str(mes_min).zfill(2)}-01"
             
-            # Último día del mes máximo
-            if mes_max == 12:
-                ultimo_dia = datetime(year + 1, 1, 1) - timedelta(days=1)
+            if es_mes_actual:
+                # Mes actual: usar hasta el día de hoy
+                fecha_fin = hoy.strftime('%Y-%m-%d')
+                dia_actual = hoy.day
             else:
-                ultimo_dia = datetime(year, mes_max + 1, 1) - timedelta(days=1)
-            fecha_fin = ultimo_dia.strftime('%Y-%m-%d')
+                # Meses pasados: usar mes completo
+                if mes_max == 12:
+                    ultimo_dia = datetime(year + 1, 1, 1) - timedelta(days=1)
+                else:
+                    ultimo_dia = datetime(year, mes_max + 1, 1) - timedelta(days=1)
+                fecha_fin = ultimo_dia.strftime('%Y-%m-%d')
+                dia_actual = ultimo_dia.day
             
-            # Para comparativo: mismo período del año anterior
-            fecha_ini_ant = f"{year - 1}-{str(mes_min).zfill(2)}-01"
-            if mes_max == 12:
-                ultimo_dia_ant = datetime(year, 1, 1) - timedelta(days=1)
+            # Calcular período anterior según tipo de comparación
+            if tipo_comparacion == "dias_equiv" and es_mes_actual:
+                # Días equivalentes: comparar días 1-N del mes anterior
+                primer_dia_mes = datetime(year, mes_min, 1)
+                ultimo_dia_mes_ant = primer_dia_mes - timedelta(days=1)
+                fecha_ini_ant = ultimo_dia_mes_ant.replace(day=1).strftime('%Y-%m-%d')
+                dia_max_mes_ant = ultimo_dia_mes_ant.day
+                dia_comparar = min(dia_actual - 1, dia_max_mes_ant)
+                if dia_comparar < 1:
+                    dia_comparar = 1
+                fecha_fin_ant = ultimo_dia_mes_ant.replace(day=dia_comparar).strftime('%Y-%m-%d')
+                
+                # Año anterior con días equivalentes
+                try:
+                    fecha_ini_ano_ant = f"{year - 1}-{str(mes_min).zfill(2)}-01"
+                    # Calcular último día del mes en año anterior
+                    if mes_max == 12:
+                        ultimo_dia_ano_ant = datetime(year, 1, 1) - timedelta(days=1)
+                    else:
+                        ultimo_dia_ano_ant = datetime(year - 1, mes_max + 1, 1) - timedelta(days=1)
+                    dia_ano_ant = min(dia_actual - 1, ultimo_dia_ano_ant.day)
+                    if dia_ano_ant < 1:
+                        dia_ano_ant = 1
+                    fecha_fin_ano_ant = f"{year - 1}-{str(mes_max).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+                except:
+                    fecha_ini_ano_ant = f"{year - 1}-{str(mes_min).zfill(2)}-01"
+                    fecha_fin_ano_ant = f"{year - 1}-{str(mes_max).zfill(2)}-28"
             else:
-                ultimo_dia_ant = datetime(year - 1, mes_max + 1, 1) - timedelta(days=1)
-            fecha_fin_ant = ultimo_dia_ant.strftime('%Y-%m-%d')
+                # Mes completo: comparar vs mes(es) completo(s) anteriores
+                # Mes anterior (mismo año)
+                if mes_min == 1:
+                    # Si es enero, el mes anterior es diciembre del año anterior
+                    fecha_ini_ant = f"{year - 1}-12-01"
+                    fecha_fin_ant = f"{year - 1}-12-31"
+                else:
+                    mes_ant = mes_min - 1
+                    fecha_ini_ant = f"{year}-{str(mes_ant).zfill(2)}-01"
+                    if mes_ant == 12:
+                        ultimo_dia_ant = datetime(year + 1, 1, 1) - timedelta(days=1)
+                    else:
+                        ultimo_dia_ant = datetime(year, mes_ant + 1, 1) - timedelta(days=1)
+                    fecha_fin_ant = ultimo_dia_ant.strftime('%Y-%m-%d')
+                
+                # Año anterior (mismo mes del año pasado - completo)
+                fecha_ini_ano_ant = f"{year - 1}-{str(mes_min).zfill(2)}-01"
+                if mes_max == 12:
+                    ultimo_dia_ano_ant = datetime(year, 1, 1) - timedelta(days=1)
+                else:
+                    ultimo_dia_ano_ant = datetime(year - 1, mes_max + 1, 1) - timedelta(days=1)
+                fecha_fin_ano_ant = ultimo_dia_ano_ant.strftime('%Y-%m-%d')
             
-            logging.info(f"Comercial Dashboard (multiselección): {server['name']} - Meses: {lista_meses} Año: {year} ({fecha_ini} a {fecha_fin})")
+            logging.info(f"Comercial Dashboard (multiselección): {server['name']} - Meses: {lista_meses} Año: {year} ({fecha_ini} a {fecha_fin}) - Tipo: {tipo_comparacion}")
         elif periodo == "dia":
             fecha_ini = hoy.strftime('%Y-%m-%d')
             fecha_fin = hoy.strftime('%Y-%m-%d')
             # Para comparativo: día anterior
             fecha_ini_ant = (hoy - timedelta(days=1)).strftime('%Y-%m-%d')
             fecha_fin_ant = fecha_ini_ant
+            # Año anterior - mismo día
+            try:
+                fecha_ini_ano_ant = hoy.replace(year=hoy.year - 1).strftime('%Y-%m-%d')
+                fecha_fin_ano_ant = fecha_ini_ano_ant
+            except ValueError:
+                fecha_ini_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-28"
+                fecha_fin_ano_ant = fecha_ini_ano_ant
         elif periodo == "semana":
             # Semana actual (lunes a hoy)
             inicio_semana = hoy - timedelta(days=hoy.weekday())
@@ -6972,17 +7034,67 @@ async def comercial_dashboard(
             # Semana anterior
             fecha_ini_ant = (inicio_semana - timedelta(days=7)).strftime('%Y-%m-%d')
             fecha_fin_ant = (inicio_semana - timedelta(days=1)).strftime('%Y-%m-%d')
+            # Año anterior - misma semana aproximada
+            try:
+                fecha_ini_ano_ant = inicio_semana.replace(year=hoy.year - 1).strftime('%Y-%m-%d')
+                fecha_fin_ano_ant = hoy.replace(year=hoy.year - 1).strftime('%Y-%m-%d')
+            except ValueError:
+                fecha_ini_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-01"
+                fecha_fin_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-07"
         else:  # mes
             # Mes actual
             fecha_ini = hoy.replace(day=1).strftime('%Y-%m-%d')
             fecha_fin = hoy.strftime('%Y-%m-%d')
-            # Mes anterior
+            dia_actual = hoy.day  # Día del mes actual (1-31)
+            
+            # Mes anterior - depende del tipo de comparación
             primer_dia_mes = hoy.replace(day=1)
             ultimo_dia_mes_ant = primer_dia_mes - timedelta(days=1)
-            fecha_ini_ant = ultimo_dia_mes_ant.replace(day=1).strftime('%Y-%m-%d')
-            fecha_fin_ant = ultimo_dia_mes_ant.strftime('%Y-%m-%d')
+            
+            if tipo_comparacion == "dias_equiv":
+                # Días equivalentes: comparar días 1-N vs días 1-N del mes anterior
+                fecha_ini_ant = ultimo_dia_mes_ant.replace(day=1).strftime('%Y-%m-%d')
+                # Usar el mismo número de días (o el máximo del mes anterior si es menor)
+                dia_max_mes_ant = ultimo_dia_mes_ant.day
+                dia_comparar = min(dia_actual - 1, dia_max_mes_ant)  # -1 porque comparamos hasta ayer equivalente
+                if dia_comparar < 1:
+                    dia_comparar = 1
+                fecha_fin_ant = ultimo_dia_mes_ant.replace(day=dia_comparar).strftime('%Y-%m-%d')
+                
+                # Año anterior - días equivalentes
+                try:
+                    fecha_ini_ano_ant = hoy.replace(year=hoy.year - 1, day=1).strftime('%Y-%m-%d')
+                    # Para año anterior, usar el mismo día o el máximo del mes
+                    ano_ant_ultimo_dia = (datetime(hoy.year - 1, hoy.month + 1, 1) - timedelta(days=1)).day if hoy.month < 12 else 31
+                    dia_ano_ant = min(dia_actual - 1, ano_ant_ultimo_dia)
+                    if dia_ano_ant < 1:
+                        dia_ano_ant = 1
+                    fecha_fin_ano_ant = hoy.replace(year=hoy.year - 1, day=dia_ano_ant).strftime('%Y-%m-%d')
+                except ValueError:
+                    # En caso de día inválido (ej. 31 de feb)
+                    fecha_ini_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-01"
+                    fecha_fin_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-28"
+            else:
+                # Mes completo: comparar vs todo el mes anterior
+                fecha_ini_ant = ultimo_dia_mes_ant.replace(day=1).strftime('%Y-%m-%d')
+                fecha_fin_ant = ultimo_dia_mes_ant.strftime('%Y-%m-%d')
+                
+                # Año anterior - mes completo
+                try:
+                    fecha_ini_ano_ant = hoy.replace(year=hoy.year - 1, day=1).strftime('%Y-%m-%d')
+                    if hoy.month == 12:
+                        ultimo_dia_ano_ant = datetime(hoy.year, 1, 1) - timedelta(days=1)
+                    else:
+                        ultimo_dia_ano_ant = datetime(hoy.year - 1, hoy.month + 1, 1) - timedelta(days=1)
+                    fecha_fin_ano_ant = ultimo_dia_ano_ant.strftime('%Y-%m-%d')
+                except ValueError:
+                    fecha_ini_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-01"
+                    fecha_fin_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-28"
         
-        logging.info(f"Comercial Dashboard: {server['name']} - Período: {periodo} ({fecha_ini} a {fecha_fin})")
+        # Logging con tipo de comparación
+        logging.info(f"Comercial Dashboard: {server['name']} - Período: {periodo} ({fecha_ini} a {fecha_fin}) - Tipo: {tipo_comparacion}")
+        logging.info(f"Comparación mes ant: {fecha_ini_ant} a {fecha_fin_ant}")
+        logging.info(f"Comparación año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant}")
         
         if server['system_type'] == 'SoftRestaurant':
             # Formato de fecha compatible con SQL Server en español (YYYYMMDD)
@@ -6990,6 +7102,9 @@ async def comercial_dashboard(
             f_fin = fecha_fin.replace('-', '')
             f_ini_ant = fecha_ini_ant.replace('-', '')
             f_fin_ant = fecha_fin_ant.replace('-', '')
+            # Año anterior
+            f_ini_ano_ant = fecha_ini_ano_ant.replace('-', '')
+            f_fin_ano_ant = fecha_fin_ano_ant.replace('-', '')
             
             # Query principal para KPIs de ventas SoftRestaurant
             # MISMA LÓGICA QUE ANÁLISIS DE INVENTARIOS: usa turnos.apertura
@@ -7071,6 +7186,29 @@ WHERE turnos.apertura >= '{f_ini_ant} 00:00:00'
             pax_promedio_actual = ventas_periodo / pax_total if pax_total > 0 else 0
             vs_pax_mes_anterior = round(((pax_promedio_actual - pax_promedio_anterior) / pax_promedio_anterior * 100), 1) if pax_promedio_anterior > 0 else 0
             
+            # Query para año anterior
+            query_ano_ant = f"""
+SELECT 
+    SUM(cheques.total) as ventas_periodo,
+    ISNULL(SUM(cheques.nopersonas), 0) as pax_total
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{f_ini_ano_ant} 00:00:00'
+  AND turnos.apertura <= '{f_fin_ano_ant} 23:59:59'
+  AND cheques.cancelado = 0
+"""
+            result_ano_ant = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_ano_ant
+            )
+            
+            ventas_ano_anterior = float(result_ano_ant[0]['ventas_periodo'] or 0) if result_ano_ant and result_ano_ant[0]['ventas_periodo'] else 0
+            pax_ano_anterior = int(result_ano_ant[0]['pax_total'] or 0) if result_ano_ant else 0
+            
+            # Calcular variación vs año anterior
+            vs_ano_anterior = round(((ventas_periodo - ventas_ano_anterior) / ventas_ano_anterior * 100), 1) if ventas_ano_anterior > 0 else 0
+            pax_vs_ano_anterior = round(((pax_total - pax_ano_anterior) / pax_ano_anterior * 100), 1) if pax_ano_anterior > 0 else 0
+            
             # KPIs
             kpis = {
                 "ventas_periodo": ventas_periodo,
@@ -7086,9 +7224,13 @@ WHERE turnos.apertura >= '{f_ini_ant} 00:00:00'
             
             comparativo = {
                 "vs_periodo_anterior": vs_periodo_anterior,
-                "vs_ano_anterior": 0,  # TODO: calcular año anterior
+                "vs_ano_anterior": vs_ano_anterior,
                 "vs_presupuesto": 0,  # TODO: calcular vs meta/presupuesto
-                "pax_vs_mes_anterior": vs_pax_mes_anterior
+                "pax_vs_mes_anterior": vs_pax_mes_anterior,
+                "pax_vs_ano_anterior": pax_vs_ano_anterior,
+                "tipo_comparacion": tipo_comparacion,
+                "periodo_anterior": f"{fecha_ini_ant} a {fecha_fin_ant}",
+                "periodo_ano_ant": f"{fecha_ini_ano_ant} a {fecha_fin_ano_ant}"
             }
             
             return {
@@ -7157,6 +7299,29 @@ WHERE VE.Vn_Fecha >= '{fecha_ini_ant}'
                 vs_pax_mes_anterior = round(((pax_promedio_actual - pax_promedio_anterior) / pax_promedio_anterior * 100), 1) if pax_promedio_anterior > 0 else 0
                 vs_periodo_anterior = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
                 
+                # Query para año anterior MPRO
+                query_ano_ant_mpro = f"""
+SELECT 
+    ISNULL(SUM(C.Co_Personas), 0) as pax_total,
+    ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas
+FROM Venta_Encabezado VE
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+{sucursal_join}
+WHERE VE.Vn_Fecha >= '{fecha_ini_ano_ant}'
+  AND VE.Vn_Fecha <= '{fecha_fin_ano_ant} 23:59:59'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+  {sucursal_filter}
+"""
+                result_ano_ant = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_ano_ant_mpro
+                )
+                
+                pax_ano_ant = int(result_ano_ant[0]['pax_total'] or 0) if result_ano_ant else 0
+                ventas_ano_ant = float(result_ano_ant[0]['ventas'] or 0) if result_ano_ant else 0
+                vs_ano_anterior = round(((ventas - ventas_ano_ant) / ventas_ano_ant * 100), 1) if ventas_ano_ant > 0 else 0
+                pax_vs_ano_anterior = round(((pax - pax_ano_ant) / pax_ano_ant * 100), 1) if pax_ano_ant > 0 else 0
+                
                 kpis = {
                     "ventas_periodo": round(ventas, 2),
                     "ticket_promedio": round(ticket_promedio, 2),
@@ -7168,12 +7333,16 @@ WHERE VE.Vn_Fecha >= '{fecha_ini_ant}'
                     "mesas_atendidas": 0
                 }
                 
-                # Comparativo para MPRO con PAX
+                # Comparativo para MPRO con PAX y año anterior
                 comparativo = {
                     "vs_periodo_anterior": vs_periodo_anterior,
-                    "vs_ano_anterior": 0,
+                    "vs_ano_anterior": vs_ano_anterior,
                     "vs_presupuesto": 0,
-                    "pax_vs_mes_anterior": vs_pax_mes_anterior
+                    "pax_vs_mes_anterior": vs_pax_mes_anterior,
+                    "pax_vs_ano_anterior": pax_vs_ano_anterior,
+                    "tipo_comparacion": tipo_comparacion,
+                    "periodo_anterior": f"{fecha_ini_ant} a {fecha_fin_ant}",
+                    "periodo_ano_ant": f"{fecha_ini_ano_ant} a {fecha_fin_ano_ant}"
                 }
                 
                 return {
