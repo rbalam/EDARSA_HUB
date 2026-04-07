@@ -30,8 +30,9 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 - Datos de SoftRestaurant y MPRO
 - **Selector de Tipo de Comparación** (Implementado April 7, 2026):
   - Botón toggle: "Días Equiv." vs "Mes Completo"
-  - **Días Equivalentes**: Compara días 1-N del período actual vs días 1-N del período anterior
+  - **Días Equivalentes**: Detecta automáticamente el último día con ventas en la BD y compara ese mismo número de días
   - **Mes Completo**: Compara vs el mes/año anterior completo
+  - **Lógica inteligente de corte**: Si último día con venta = día 5 y estamos en día 6/7 → compara 1-5 vs 1-5
   - Se aplica a "vs Mes Ant" y "vs Año Ant"
   - Funciona con SoftRestaurant y MPRO
 - **Análisis de Ventas a Precios Constantes** (Implementado April 7, 2026):

@@ -6948,51 +6948,27 @@ async def comercial_dashboard(
             
             fecha_ini = f"{year}-{str(mes_min).zfill(2)}-01"
             
+            # Para días equivalentes, necesitamos saber el último día con ventas reales
+            # Esto se determinará después de consultar la base de datos
+            # Por ahora, establecemos fecha_fin provisional
             if es_mes_actual:
-                # Mes actual: usar hasta el día de hoy
                 fecha_fin = hoy.strftime('%Y-%m-%d')
-                dia_actual = hoy.day
+                dia_provisional = hoy.day
             else:
-                # Meses pasados: usar mes completo
                 if mes_max == 12:
                     ultimo_dia = datetime(year + 1, 1, 1) - timedelta(days=1)
                 else:
                     ultimo_dia = datetime(year, mes_max + 1, 1) - timedelta(days=1)
                 fecha_fin = ultimo_dia.strftime('%Y-%m-%d')
-                dia_actual = ultimo_dia.day
+                dia_provisional = ultimo_dia.day
             
-            # Calcular período anterior según tipo de comparación
-            if tipo_comparacion == "dias_equiv" and es_mes_actual:
-                # Días equivalentes: comparar días 1-N del mes anterior
-                primer_dia_mes = datetime(year, mes_min, 1)
-                ultimo_dia_mes_ant = primer_dia_mes - timedelta(days=1)
-                fecha_ini_ant = ultimo_dia_mes_ant.replace(day=1).strftime('%Y-%m-%d')
-                dia_max_mes_ant = ultimo_dia_mes_ant.day
-                dia_comparar = min(dia_actual - 1, dia_max_mes_ant)
-                if dia_comparar < 1:
-                    dia_comparar = 1
-                fecha_fin_ant = ultimo_dia_mes_ant.replace(day=dia_comparar).strftime('%Y-%m-%d')
-                
-                # Año anterior con días equivalentes
-                try:
-                    fecha_ini_ano_ant = f"{year - 1}-{str(mes_min).zfill(2)}-01"
-                    # Calcular último día del mes en año anterior
-                    if mes_max == 12:
-                        ultimo_dia_ano_ant = datetime(year, 1, 1) - timedelta(days=1)
-                    else:
-                        ultimo_dia_ano_ant = datetime(year - 1, mes_max + 1, 1) - timedelta(days=1)
-                    dia_ano_ant = min(dia_actual - 1, ultimo_dia_ano_ant.day)
-                    if dia_ano_ant < 1:
-                        dia_ano_ant = 1
-                    fecha_fin_ano_ant = f"{year - 1}-{str(mes_max).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
-                except:
-                    fecha_ini_ano_ant = f"{year - 1}-{str(mes_min).zfill(2)}-01"
-                    fecha_fin_ano_ant = f"{year - 1}-{str(mes_max).zfill(2)}-28"
-            else:
+            # NOTA: dia_con_datos se calculará después de consultar la BD
+            # y se usará para ajustar los períodos de comparación en modo "dias_equiv"
+            
+            # Por ahora, establecemos los valores por defecto para mes_completo
+            if tipo_comparacion == "mes_completo" or not es_mes_actual:
                 # Mes completo: comparar vs mes(es) completo(s) anteriores
-                # Mes anterior (mismo año)
                 if mes_min == 1:
-                    # Si es enero, el mes anterior es diciembre del año anterior
                     fecha_ini_ant = f"{year - 1}-12-01"
                     fecha_fin_ant = f"{year - 1}-12-31"
                 else:
@@ -7004,13 +6980,20 @@ async def comercial_dashboard(
                         ultimo_dia_ant = datetime(year, mes_ant + 1, 1) - timedelta(days=1)
                     fecha_fin_ant = ultimo_dia_ant.strftime('%Y-%m-%d')
                 
-                # Año anterior (mismo mes del año pasado - completo)
+                # Año anterior completo
                 fecha_ini_ano_ant = f"{year - 1}-{str(mes_min).zfill(2)}-01"
                 if mes_max == 12:
                     ultimo_dia_ano_ant = datetime(year, 1, 1) - timedelta(days=1)
                 else:
                     ultimo_dia_ano_ant = datetime(year - 1, mes_max + 1, 1) - timedelta(days=1)
                 fecha_fin_ano_ant = ultimo_dia_ano_ant.strftime('%Y-%m-%d')
+            else:
+                # dias_equiv: se calcularán después de obtener el último día con ventas
+                # Valores temporales que se actualizarán
+                fecha_ini_ant = "PENDIENTE"
+                fecha_fin_ant = "PENDIENTE"
+                fecha_ini_ano_ant = "PENDIENTE"
+                fecha_fin_ano_ant = "PENDIENTE"
             
             logging.info(f"Comercial Dashboard (multiselección): {server['name']} - Meses: {lista_meses} Año: {year} ({fecha_ini} a {fecha_fin}) - Tipo: {tipo_comparacion}")
         elif periodo == "dia":
@@ -7100,11 +7083,89 @@ async def comercial_dashboard(
             # Formato de fecha compatible con SQL Server en español (YYYYMMDD)
             f_ini = fecha_ini.replace('-', '')
             f_fin = fecha_fin.replace('-', '')
+            
+            # Para días equivalentes: consultar el último día con ventas reales
+            if tipo_comparacion == "dias_equiv" and fecha_ini_ant == "PENDIENTE":
+                # Query para obtener el último día con ventas en el período actual
+                query_ultimo_dia = f"""
+SELECT MAX(CONVERT(DATE, turnos.apertura)) as ultimo_dia_venta
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{f_ini} 00:00:00'
+  AND turnos.apertura <= '{f_fin} 23:59:59'
+  AND cheques.cancelado = 0
+"""
+                result_ultimo = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_ultimo_dia
+                )
+                
+                if result_ultimo and result_ultimo[0]['ultimo_dia_venta']:
+                    ultimo_dia_venta = result_ultimo[0]['ultimo_dia_venta']
+                    # Puede venir como string o como date
+                    if isinstance(ultimo_dia_venta, str):
+                        dia_con_datos = int(ultimo_dia_venta.split('-')[2]) if '-' in ultimo_dia_venta else int(ultimo_dia_venta[-2:])
+                    else:
+                        dia_con_datos = ultimo_dia_venta.day
+                    
+                    logging.info(f"SoftRestaurant - Último día con ventas: {ultimo_dia_venta} (día {dia_con_datos})")
+                    
+                    # Actualizar fecha_fin al último día con ventas
+                    f_fin = f"{f_ini[:6]}{str(dia_con_datos).zfill(2)}"
+                    
+                    # Calcular períodos de comparación basados en días con datos reales
+                    # Mes anterior
+                    mes_actual = int(f_ini[4:6])
+                    anio_actual = int(f_ini[:4])
+                    if mes_actual == 1:
+                        mes_ant = 12
+                        anio_ant = anio_actual - 1
+                    else:
+                        mes_ant = mes_actual - 1
+                        anio_ant = anio_actual
+                    
+                    # Calcular máximo día del mes anterior
+                    if mes_ant == 12:
+                        max_dia_mes_ant = 31
+                    elif mes_ant in [4, 6, 9, 11]:
+                        max_dia_mes_ant = 30
+                    elif mes_ant == 2:
+                        max_dia_mes_ant = 29 if (anio_ant % 4 == 0 and (anio_ant % 100 != 0 or anio_ant % 400 == 0)) else 28
+                    else:
+                        max_dia_mes_ant = 31
+                    
+                    dia_comparar = min(dia_con_datos, max_dia_mes_ant)
+                    fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
+                    fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
+                    
+                    # Año anterior - mismo mes
+                    anio_pasado = anio_actual - 1
+                    if mes_actual == 2:
+                        max_dia_ano_ant = 29 if (anio_pasado % 4 == 0 and (anio_pasado % 100 != 0 or anio_pasado % 400 == 0)) else 28
+                    elif mes_actual in [4, 6, 9, 11]:
+                        max_dia_ano_ant = 30
+                    else:
+                        max_dia_ano_ant = 31
+                    
+                    dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
+                    fecha_ini_ano_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-01"
+                    fecha_fin_ano_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+                    
+                    logging.info(f"Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant}")
+                else:
+                    # Si no hay datos, usar valores por defecto
+                    dia_con_datos = 1
+                    fecha_ini_ant = fecha_ini.replace(f"-{str(mes_max).zfill(2)}-", f"-{str(mes_max-1).zfill(2)}-") if mes_max > 1 else fecha_ini.replace(f"{year}-01-", f"{year-1}-12-")
+                    fecha_fin_ant = fecha_ini_ant
+                    fecha_ini_ano_ant = fecha_ini.replace(str(year), str(year-1))
+                    fecha_fin_ano_ant = fecha_ini_ano_ant
+            
             f_ini_ant = fecha_ini_ant.replace('-', '')
             f_fin_ant = fecha_fin_ant.replace('-', '')
-            # Año anterior
             f_ini_ano_ant = fecha_ini_ano_ant.replace('-', '')
             f_fin_ano_ant = fecha_fin_ano_ant.replace('-', '')
+            
+            logging.info(f"SoftRestaurant Query - Período: {f_ini} a {f_fin}, Mes ant: {f_ini_ant} a {f_fin_ant}, Año ant: {f_ini_ano_ant} a {f_fin_ano_ant}")
             
             # Query principal para KPIs de ventas SoftRestaurant
             # MISMA LÓGICA QUE ANÁLISIS DE INVENTARIOS: usa turnos.apertura
@@ -7240,6 +7301,75 @@ WHERE turnos.apertura >= '{f_ini_ano_ant} 00:00:00'
             }
         
         elif server['system_type'] == 'MPRO':
+            # Para días equivalentes: consultar el último día con ventas reales
+            if tipo_comparacion == "dias_equiv" and fecha_ini_ant == "PENDIENTE":
+                # Query para MPRO - usar Venta_Encabezado para obtener último día
+                sucursal_filter_check = f" AND VE.Sc_Cve_Sucursal IN (SELECT Sc_Cve_Sucursal FROM Sucursal WHERE Sc_Descripcion LIKE '%{sucursal}%')" if sucursal else ""
+                
+                query_ultimo_dia_mpro = f"""
+SELECT MAX(CONVERT(DATE, VE.Vn_Fecha)) as ultimo_dia_venta
+FROM Venta_Encabezado VE
+WHERE VE.Vn_Fecha >= '{fecha_ini}'
+  AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+  {sucursal_filter_check}
+"""
+                result_ultimo = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_ultimo_dia_mpro
+                )
+                
+                if result_ultimo and result_ultimo[0]['ultimo_dia_venta']:
+                    ultimo_dia_venta = result_ultimo[0]['ultimo_dia_venta']
+                    if isinstance(ultimo_dia_venta, str):
+                        dia_con_datos = int(ultimo_dia_venta.split('-')[2]) if '-' in ultimo_dia_venta else int(ultimo_dia_venta[-2:])
+                    else:
+                        dia_con_datos = ultimo_dia_venta.day
+                    
+                    logging.info(f"MPRO - Último día con ventas: {ultimo_dia_venta} (día {dia_con_datos})")
+                    
+                    # Actualizar fecha_fin al último día con ventas
+                    mes_actual = int(fecha_ini[5:7])
+                    anio_actual = int(fecha_ini[:4])
+                    fecha_fin = f"{anio_actual}-{str(mes_actual).zfill(2)}-{str(dia_con_datos).zfill(2)}"
+                    
+                    # Calcular períodos de comparación basados en días con datos reales
+                    if mes_actual == 1:
+                        mes_ant = 12
+                        anio_ant = anio_actual - 1
+                    else:
+                        mes_ant = mes_actual - 1
+                        anio_ant = anio_actual
+                    
+                    # Calcular máximo día del mes anterior
+                    if mes_ant == 12:
+                        max_dia_mes_ant = 31
+                    elif mes_ant in [4, 6, 9, 11]:
+                        max_dia_mes_ant = 30
+                    elif mes_ant == 2:
+                        max_dia_mes_ant = 29 if (anio_ant % 4 == 0 and (anio_ant % 100 != 0 or anio_ant % 400 == 0)) else 28
+                    else:
+                        max_dia_mes_ant = 31
+                    
+                    dia_comparar = min(dia_con_datos, max_dia_mes_ant)
+                    fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
+                    fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
+                    
+                    # Año anterior - mismo mes
+                    anio_pasado = anio_actual - 1
+                    if mes_actual == 2:
+                        max_dia_ano_ant = 29 if (anio_pasado % 4 == 0 and (anio_pasado % 100 != 0 or anio_pasado % 400 == 0)) else 28
+                    elif mes_actual in [4, 6, 9, 11]:
+                        max_dia_ano_ant = 30
+                    else:
+                        max_dia_ano_ant = 31
+                    
+                    dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
+                    fecha_ini_ano_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-01"
+                    fecha_fin_ano_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+                    
+                    logging.info(f"MPRO Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant}")
+            
             # Query para MPRO - usar Venta_Encabezado con Comanda para PAX
             sucursal_join = ""
             sucursal_filter = ""
