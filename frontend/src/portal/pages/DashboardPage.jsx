@@ -111,11 +111,12 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
     ? saldosData.sistemas 
     : saldosData.sistemas.filter(s => s.id === selectedSystem);
   
-  const sucursalesFiltradas = selectedUnit === 'all'
+  const sucursalesFiltradas = (selectedUnit === 'all'
     ? (selectedSystem === 'all' 
         ? saldosData.sucursales 
         : saldosData.sucursales.filter(s => s.sistema_id === selectedSystem))
-    : saldosData.sucursales.filter(s => s.id === selectedUnit);
+    : saldosData.sucursales.filter(s => s.id === selectedUnit))
+    .sort((a, b) => b.saldo - a.saldo);
 
   const getStatusBadge = (status) => {
     const badges = {
