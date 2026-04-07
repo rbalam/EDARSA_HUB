@@ -17,6 +17,10 @@ import {
   Receipt, ChevronLeft, ChevronRight, X, Search, ChevronDown, ChevronUp,
   UserCheck, Download, FileSpreadsheet, FileText, Share2, Mail, Scale
 } from 'lucide-react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
+  ResponsiveContainer, Cell, ReferenceLine 
+} from 'recharts';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -2024,6 +2028,165 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
               </div>
             </CardContent>
           </Card>
+
+          {/* Crecimiento Real vs Año Anterior */}
+          {dataAnioAnterior && (
+            <Card className="border-2 border-indigo-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-indigo-600" />
+                  Crecimiento Real (vs Año Anterior)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-4 gap-4">
+                  {/* Crecimiento Nominal */}
+                  <div className="text-center p-4 bg-zinc-50 rounded-lg">
+                    <p className="text-xs text-zinc-500 mb-1">Crecimiento Nominal</p>
+                    <p className={`text-2xl font-bold ${
+                      ((data.kpis.ventas_actuales - dataAnioAnterior.kpis?.ventas_actuales) / (dataAnioAnterior.kpis?.ventas_actuales || 1) * 100) >= 0 
+                        ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {dataAnioAnterior.kpis?.ventas_actuales > 0 
+                        ? `${((data.kpis.ventas_actuales - dataAnioAnterior.kpis.ventas_actuales) / dataAnioAnterior.kpis.ventas_actuales * 100).toFixed(1)}%`
+                        : 'N/A'
+                      }
+                    </p>
+                    <p className="text-xs text-zinc-400">Incluye efecto precio</p>
+                  </div>
+
+                  {/* Crecimiento Real (Precios Constantes) */}
+                  <div className="text-center p-4 bg-indigo-50 rounded-lg border-2 border-indigo-300">
+                    <p className="text-xs text-indigo-700 mb-1 font-medium">Crecimiento Real</p>
+                    <p className={`text-2xl font-bold ${
+                      ((data.kpis.ventas_constantes - dataAnioAnterior.kpis?.ventas_constantes) / (dataAnioAnterior.kpis?.ventas_constantes || 1) * 100) >= 0 
+                        ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {dataAnioAnterior.kpis?.ventas_constantes > 0 
+                        ? `${((data.kpis.ventas_constantes - dataAnioAnterior.kpis.ventas_constantes) / dataAnioAnterior.kpis.ventas_constantes * 100).toFixed(1)}%`
+                        : 'N/A'
+                      }
+                    </p>
+                    <p className="text-xs text-indigo-500">Sin efecto inflacionario</p>
+                  </div>
+
+                  {/* Ventas Año Anterior */}
+                  <div className="text-center p-4 bg-zinc-50 rounded-lg">
+                    <p className="text-xs text-zinc-500 mb-1">Ventas {anioActual - 1}</p>
+                    <p className="text-xl font-bold text-zinc-700">
+                      {formatCurrency(dataAnioAnterior.kpis?.ventas_actuales || 0)}
+                    </p>
+                    <p className="text-xs text-zinc-400">Año anterior</p>
+                  </div>
+
+                  {/* Diferencia en $ */}
+                  <div className="text-center p-4 bg-zinc-50 rounded-lg">
+                    <p className="text-xs text-zinc-500 mb-1">Diferencia Real</p>
+                    <p className={`text-xl font-bold ${
+                      (data.kpis.ventas_constantes - (dataAnioAnterior.kpis?.ventas_constantes || 0)) >= 0 
+                        ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {formatCurrency(data.kpis.ventas_constantes - (dataAnioAnterior.kpis?.ventas_constantes || 0))}
+                    </p>
+                    <p className="text-xs text-zinc-400">A precios constantes</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Gráfico Histórico de 5 Años */}
+          {serieHistorica.length > 0 && serieHistorica.some(s => s.ventas_actuales > 0) && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-purple-600" />
+                  Histórico de 5 Años: Ventas Actuales vs Precios Constantes
+                  {loadingHistorico && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                </CardTitle>
+                <p className="text-xs text-zinc-500">
+                  Comparación usando precios base del año {anioActual - 5} para eliminar el efecto inflacionario acumulado
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div style={{ width: '100%', height: 350, minHeight: 350 }}>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <BarChart
+                      data={serieHistorica}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="anio" 
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => value.toString()}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 11 }}
+                        tickFormatter={(value) => {
+                          if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+                          if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+                          return `$${value}`;
+                        }}
+                      />
+                      <Tooltip 
+                        formatter={(value, name) => [
+                          formatCurrency(value),
+                          name === 'ventas_actuales' ? 'Ventas Actuales' : 
+                          name === 'ventas_constantes' ? 'Precios Constantes' : 'Efecto Precio'
+                        ]}
+                        labelFormatter={(label) => `Año ${label}`}
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                        }}
+                      />
+                      <Legend 
+                        formatter={(value) => 
+                          value === 'ventas_actuales' ? 'Ventas Actuales' : 
+                          value === 'ventas_constantes' ? 'Precios Constantes' : 'Efecto Precio'
+                        }
+                      />
+                      <Bar 
+                        dataKey="ventas_actuales" 
+                        fill="#3b82f6" 
+                        name="ventas_actuales"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar 
+                        dataKey="ventas_constantes" 
+                        fill="#8b5cf6" 
+                        name="ventas_constantes"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Leyenda de interpretación */}
+                <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+                  {serieHistorica.filter(s => s.ventas_actuales > 0).slice(-3).map((item, idx) => (
+                    <div key={idx} className="p-3 bg-zinc-50 rounded-lg">
+                      <p className="text-sm font-medium text-zinc-700">{item.anio}</p>
+                      <p className="text-xs text-zinc-500">
+                        Efecto Inflación: <span className={item.efecto_precio > 0 ? 'text-red-600 font-medium' : 'text-green-600 font-medium'}>
+                          {formatCurrency(item.efecto_precio)}
+                        </span>
+                      </p>
+                      <p className="text-xs text-zinc-400">
+                        {item.ventas_actuales > 0 && item.ventas_constantes > 0 
+                          ? `${((item.efecto_precio / item.ventas_constantes) * 100).toFixed(1)}% del total`
+                          : '-'
+                        }
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Tabla de resultados */}
           <Card>

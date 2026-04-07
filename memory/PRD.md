@@ -37,6 +37,14 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - Productos In/Out: Nuevos usan precio actual, Descontinuados usan último precio
   - Tabla detallada con efecto precio por ítem
   - **Funciona con MPRO y SoftRestaurant** (queries corregidas para ambos sistemas)
+  - **Crecimiento Real vs Año Anterior** (Completado April 7, 2026):
+    - KPIs: Crecimiento Nominal, Crecimiento Real, Ventas Año Anterior, Diferencia Real
+    - Compara automáticamente con el mismo periodo del año pasado
+  - **Gráfico Histórico de 5 Años** (Completado April 7, 2026):
+    - Gráfico de barras comparativo: Ventas Actuales vs Precios Constantes
+    - Años: T-4 hasta T (últimos 5 años)
+    - Tooltip con valores exactos
+    - Leyenda de interpretación con efecto inflación % por año
 
 ### ✅ Módulo Compras
 - Dashboard de compras por servidor/sucursal
@@ -99,6 +107,7 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 ### P0 (Critical)
 - [x] ~~Portal de Proveedores - Dashboard con datos reales~~ ✅
 - [x] ~~Administración de Proveedores en EDARSA HUB~~ ✅
+- [x] ~~Gráfico histórico 5 años + Crecimiento Real en Precios Constantes~~ ✅
 - [ ] Drill-down Compras para SoftRestaurant (implementar queries)
 
 ### P1 (High Priority)
