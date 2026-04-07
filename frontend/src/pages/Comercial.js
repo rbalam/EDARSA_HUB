@@ -1588,20 +1588,20 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
   
   // Filtros
   const [periodoActual, setPeriodoActual] = useState(() => {
-    // Por defecto usar 2024 ya que es el año con datos más recientes
-    return '2024-06';
+    // Por defecto usar Enero 2026 (datos más recientes confirmados)
+    return '2026-01';
   });
   const [periodoBase, setPeriodoBase] = useState(() => {
-    return '2023-06';
+    return '2025-01';
   });
   const [modoComparacion, setModoComparacion] = useState('manual'); // manual, auto (año anterior)
   const [granularidad, setGranularidad] = useState('categoria');
   
   // Multiselección de meses
-  const [mesesActual, setMesesActual] = useState([6]); // Junio por defecto
-  const [mesesBase, setMesesBase] = useState([6]);
-  const [anioActual, setAnioActual] = useState(2024); // Año con datos
-  const [anioBase, setAnioBase] = useState(2023);
+  const [mesesActual, setMesesActual] = useState([1]); // Enero por defecto
+  const [mesesBase, setMesesBase] = useState([1]);
+  const [anioActual, setAnioActual] = useState(2026); // Año con datos recientes
+  const [anioBase, setAnioBase] = useState(2025);
 
   const meses = [
     { num: 1, nombre: 'Ene' }, { num: 2, nombre: 'Feb' }, { num: 3, nombre: 'Mar' },
@@ -1611,6 +1611,13 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
   ];
 
   const aniosDisponibles = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+
+  // Auto-cargar cuando cambia la sucursal
+  useEffect(() => {
+    if (selectedServer) {
+      cargarAnalisis();
+    }
+  }, [selectedServer]);
 
   const toggleMes = (mes, tipo) => {
     if (tipo === 'actual') {
@@ -1634,8 +1641,7 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
 
   const cargarAnalisis = async () => {
     if (!selectedServer) {
-      toast.error('Selecciona un servidor');
-      return;
+      return; // No mostrar error, simplemente no cargar si no hay sucursal
     }
     
     setLoading(true);
@@ -1695,12 +1701,12 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Selector de servidor */}
+          {/* Selector de sucursal */}
           <div className="flex gap-4 items-end">
             <div className="w-64">
-              <Label className="text-xs">Servidor</Label>
+              <Label className="text-xs">Sucursal</Label>
               <Select value={selectedServer} onValueChange={setSelectedServer}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar servidor" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Seleccionar sucursal" /></SelectTrigger>
                 <SelectContent>
                   {servers.filter(s => s.active).map(s => (
                     <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
