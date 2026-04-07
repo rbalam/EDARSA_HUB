@@ -121,9 +121,30 @@ const Reportes = () => {
   const [dropdownInvFin, setDropdownInvFin] = useState(false);
   
   // Estados para selección múltiple de almacenes e inventarios
-  const [selectedAlmacenes, setSelectedAlmacenes] = useState([]);
-  const [selectedInventariosIni, setSelectedInventariosIni] = useState([]);
-  const [selectedInventariosFin, setSelectedInventariosFin] = useState([]);
+  const [selectedAlmacenes, setSelectedAlmacenes] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('selectedAlmacenes');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [selectedInventariosIni, setSelectedInventariosIni] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('selectedInventariosIni');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [selectedInventariosFin, setSelectedInventariosFin] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('selectedInventariosFin');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   
   // Calcular fecha mínima de inventarios iniciales para filtrar finales
   const fechaMinimaInvInicial = useMemo(() => {
@@ -172,6 +193,19 @@ const Reportes = () => {
   useEffect(() => {
     sessionStorage.setItem('selectedSubfamilias', JSON.stringify(selectedSubfamilias));
   }, [selectedSubfamilias]);
+
+  // Guardar almacenes e inventarios seleccionados
+  useEffect(() => {
+    sessionStorage.setItem('selectedAlmacenes', JSON.stringify(selectedAlmacenes));
+  }, [selectedAlmacenes]);
+
+  useEffect(() => {
+    sessionStorage.setItem('selectedInventariosIni', JSON.stringify(selectedInventariosIni));
+  }, [selectedInventariosIni]);
+
+  useEffect(() => {
+    sessionStorage.setItem('selectedInventariosFin', JSON.stringify(selectedInventariosFin));
+  }, [selectedInventariosFin]);
 
   // Cerrar dropdowns de inventarios al hacer clic fuera
   useEffect(() => {
