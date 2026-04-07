@@ -11173,6 +11173,856 @@ async def ejecutar_script_sql(
     }
 
 
+
+# ============================================================================
+# MÓDULO DE RECURSOS HUMANOS - Endpoints
+# Conecta con tablas RH_* en EDARSAHUB SQL Server
+# ============================================================================
+
+# ID del servidor EDARSA HUB
+EDARSA_HUB_SERVER_ID = "bea40259-35f1-4693-bda2-d2d10e13e56a"
+
+async def execute_edarsa_hub_query(query: str):
+    """Helper para ejecutar queries en EDARSA HUB"""
+    server = await db.servers.find_one({"id": EDARSA_HUB_SERVER_ID, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor EDARSA HUB no configurado")
+    
+    try:
+        result = execute_sql_query(
+            server['host'], 
+            server['port'], 
+            server['database'], 
+            server['username'], 
+            server['password'], 
+            query
+        )
+        return {"datos": result, "registros": len(result)}
+    except Exception as e:
+        logging.error(f"Error en query EDARSA HUB: {e}")
+        raise HTTPException(status_code=500, detail=f"Error en consulta: {str(e)}")
+
+
+# ------------ CATÁLOGOS ------------
+
+@api_router.get("/rrhh/catalogos/puestos")
+async def rrhh_listar_puestos(current_user: Dict = Depends(get_current_user)):
+    """Lista catálogo de puestos desde RH_Cat_Puestos"""
+    query = """
+        SELECT 
+            PuestoID,
+            Descripcion,
+            Departamento,
+            Sueldo_Base_Seman_SBC
+        FROM RH_Cat_Puestos
+        ORDER BY Departamento, Descripcion
+    """
+    result = await execute_edarsa_hub_query(query)
+    return {"puestos": result.get("datos", []), "total": result.get("registros", 0)}
+
+
+@api_router.get("/rrhh/catalogos/sucursales")
+async def rrhh_listar_sucursales(current_user: Dict = Depends(get_current_user)):
+    """Lista catálogo de sucursales desde RH_Cat_Sucursales"""
+    query = """
+        SELECT 
+            s.SucursalID,
+            s.Nombre_Sucursal,
+            s.Ciudad,
+            s.Activa,
+            sf.RFC,
+            sf.RazonSocial
+        FROM RH_Cat_Sucursales s
+        LEFT JOIN RH_Cat_SucursalesFiscal sf ON s.SucursalID = sf.SucursalID AND sf.Activo = 1
+        ORDER BY s.Nombre_Sucursal
+    """
+    result = await execute_edarsa_hub_query(query)
+    return {"sucursales": result.get("datos", []), "total": result.get("registros", 0)}
+
+
+# ------------ COLABORADORES ------------
+
+@api_router.get("/rrhh/colaboradores")
+async def rrhh_listar_colaboradores(
+    sucursal_id: Optional[int] = None,
+    puesto_id: Optional[int] = None,
+    estatus: Optional[str] = None,
+    buscar: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista colaboradores con filtros opcionales"""
+    
+    conditions = ["1=1"]
+    if sucursal_id:
+        conditions.append(f"c.SucursalID = {sucursal_id}")
+    if puesto_id:
+        conditions.append(f"c.PuestoID = {puesto_id}")
+    if estatus:
+        conditions.append(f"c.Estatus_Laboral = '{estatus}'")
+    if buscar:
+        conditions.append(f"(c.Nombre_Completo LIKE '%{buscar}%' OR c.RFC LIKE '%{buscar}%' OR c.CURP LIKE '%{buscar}%')")
+    
+    where_clause = " AND ".join(conditions)
+    offset = (page - 1) * limit
+    
+    query = f"""
+        SELECT 
+            c.ColaboradorID,
+            c.Nombre_Completo,
+            c.CURP,
+            c.RFC,
+            c.CLABE_Bancaria,
+            c.SucursalID,
+            s.Nombre_Sucursal,
+            c.PuestoID,
+            p.Descripcion as Puesto,
+            p.Departamento,
+            c.Colaborador_Activo,
+            c.Fecha_Alta,
+            c.Estatus_Laboral,
+            c.Validacion_IA_RFC,
+            c.Validacion_IA_CURP,
+            c.Validacion_IA_EdoCta,
+            c.Validacion_IA_Contrato
+        FROM RH_Colaboradores_Expediente c
+        LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
+        LEFT JOIN RH_Cat_Puestos p ON c.PuestoID = p.PuestoID
+        WHERE {where_clause}
+        ORDER BY c.Nombre_Completo
+        OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+    """
+    
+    count_query = f"""
+        SELECT COUNT(*) as total
+        FROM RH_Colaboradores_Expediente c
+        WHERE {where_clause}
+    """
+    
+    result = await execute_edarsa_hub_query(query)
+    count_result = await execute_edarsa_hub_query(count_query)
+    
+    total = count_result.get("datos", [{}])[0].get("total", 0) if count_result.get("datos") else 0
+    
+    return {
+        "colaboradores": result.get("datos", []),
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit if total > 0 else 1
+    }
+
+
+@api_router.get("/rrhh/colaboradores/{colaborador_id}")
+async def rrhh_obtener_colaborador(
+    colaborador_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Obtiene detalle de un colaborador con incidencias y asistencias"""
+    
+    query_colaborador = f"""
+        SELECT 
+            c.ColaboradorID,
+            c.Nombre_Completo,
+            c.CURP,
+            c.RFC,
+            c.CLABE_Bancaria,
+            c.SucursalID,
+            s.Nombre_Sucursal,
+            s.Ciudad,
+            c.PuestoID,
+            p.Descripcion as Puesto,
+            p.Departamento,
+            p.Sueldo_Base_Seman_SBC,
+            c.Colaborador_Activo,
+            c.Fecha_Alta,
+            c.Estatus_Laboral,
+            c.Validacion_IA_RFC,
+            c.Validacion_IA_CURP,
+            c.Validacion_IA_EdoCta,
+            c.Validacion_IA_Contrato
+        FROM RH_Colaboradores_Expediente c
+        LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
+        LEFT JOIN RH_Cat_Puestos p ON c.PuestoID = p.PuestoID
+        WHERE c.ColaboradorID = {colaborador_id}
+    """
+    
+    query_incidencias = f"""
+        SELECT TOP 20
+            IncidenciaID,
+            Tipo_Incidencia,
+            Monto,
+            Unidades,
+            Fecha_Incidencia,
+            Fecha_Registro
+        FROM RH_Incidencias_Nomina
+        WHERE ColaboradorID = {colaborador_id}
+        ORDER BY Fecha_Incidencia DESC
+    """
+    
+    query_asistencias = f"""
+        SELECT TOP 30
+            CheckID,
+            Tipo_Registro,
+            FechaHora,
+            Geolocalizacion,
+            Validado_Gerencia
+        FROM RH_Reloj_Checador
+        WHERE ColaboradorID = {colaborador_id}
+        ORDER BY FechaHora DESC
+    """
+    
+    query_auditoria = f"""
+        SELECT TOP 10
+            AuditoriaID,
+            Semana,
+            Monto_Dispersado_Banco,
+            Monto_Timbrado_XML,
+            Monto_IMSS_EBA_EMA,
+            Diferencia,
+            Alerta_Fraude
+        FROM RH_Auditoria_Fiscal
+        WHERE ColaboradorID = {colaborador_id}
+        ORDER BY Semana DESC
+    """
+    
+    result_col = await execute_edarsa_hub_query(query_colaborador)
+    result_inc = await execute_edarsa_hub_query(query_incidencias)
+    result_asis = await execute_edarsa_hub_query(query_asistencias)
+    result_aud = await execute_edarsa_hub_query(query_auditoria)
+    
+    if not result_col.get("datos"):
+        raise HTTPException(status_code=404, detail="Colaborador no encontrado")
+    
+    return {
+        "colaborador": result_col.get("datos", [])[0],
+        "incidencias": result_inc.get("datos", []),
+        "asistencias": result_asis.get("datos", []),
+        "auditoria_fiscal": result_aud.get("datos", [])
+    }
+
+
+@api_router.post("/rrhh/colaboradores")
+async def rrhh_crear_colaborador(
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea un nuevo colaborador"""
+    
+    nombre = body.get('nombre_completo', '').strip()
+    curp = body.get('curp')
+    rfc = body.get('rfc')
+    clabe = body.get('clabe_bancaria')
+    sucursal_id = body.get('sucursal_id')
+    puesto_id = body.get('puesto_id')
+    estatus = body.get('estatus_laboral', 'Activo')
+    
+    if not nombre or not sucursal_id or not puesto_id:
+        raise HTTPException(status_code=400, detail="Nombre, sucursal y puesto son requeridos")
+    
+    query = f"""
+        INSERT INTO RH_Colaboradores_Expediente 
+        (Nombre_Completo, CURP, RFC, CLABE_Bancaria, SucursalID, PuestoID, 
+         Colaborador_Activo, Fecha_Alta, Estatus_Laboral)
+        OUTPUT INSERTED.ColaboradorID
+        VALUES 
+        ('{nombre}', 
+         {f"'{curp}'" if curp else 'NULL'}, 
+         {f"'{rfc}'" if rfc else 'NULL'}, 
+         {f"'{clabe}'" if clabe else 'NULL'}, 
+         {sucursal_id}, 
+         {puesto_id}, 
+         1, 
+         GETDATE(), 
+         '{estatus}')
+    """
+    
+    result = await execute_edarsa_hub_query(query)
+    
+    return {
+        "success": True,
+        "message": "Colaborador creado exitosamente",
+        "colaborador_id": result.get("datos", [{}])[0].get("ColaboradorID") if result.get("datos") else None
+    }
+
+
+@api_router.put("/rrhh/colaboradores/{colaborador_id}")
+async def rrhh_actualizar_colaborador(
+    colaborador_id: int,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza datos de un colaborador"""
+    
+    updates = []
+    if body.get('nombre_completo'):
+        updates.append(f"Nombre_Completo = '{body['nombre_completo']}'")
+    if 'curp' in body:
+        updates.append(f"CURP = '{body['curp']}'" if body['curp'] else "CURP = NULL")
+    if 'rfc' in body:
+        updates.append(f"RFC = '{body['rfc']}'" if body['rfc'] else "RFC = NULL")
+    if 'clabe_bancaria' in body:
+        updates.append(f"CLABE_Bancaria = '{body['clabe_bancaria']}'" if body['clabe_bancaria'] else "CLABE_Bancaria = NULL")
+    if body.get('sucursal_id'):
+        updates.append(f"SucursalID = {body['sucursal_id']}")
+    if body.get('puesto_id'):
+        updates.append(f"PuestoID = {body['puesto_id']}")
+    if body.get('estatus_laboral'):
+        updates.append(f"Estatus_Laboral = '{body['estatus_laboral']}'")
+    
+    if not updates:
+        raise HTTPException(status_code=400, detail="No hay datos para actualizar")
+    
+    query = f"""
+        UPDATE RH_Colaboradores_Expediente
+        SET {', '.join(updates)}
+        WHERE ColaboradorID = {colaborador_id}
+    """
+    
+    await execute_edarsa_hub_query(query)
+    
+    return {"success": True, "message": "Colaborador actualizado"}
+
+
+@api_router.delete("/rrhh/colaboradores/{colaborador_id}")
+async def rrhh_dar_baja_colaborador(
+    colaborador_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Da de baja lógica a un colaborador"""
+    
+    query = f"""
+        UPDATE RH_Colaboradores_Expediente
+        SET Colaborador_Activo = 0, Estatus_Laboral = 'Baja'
+        WHERE ColaboradorID = {colaborador_id}
+    """
+    
+    await execute_edarsa_hub_query(query)
+    
+    return {"success": True, "message": "Colaborador dado de baja"}
+
+
+# ------------ INCIDENCIAS ------------
+
+@api_router.get("/rrhh/incidencias")
+async def rrhh_listar_incidencias(
+    colaborador_id: Optional[int] = None,
+    tipo: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    sucursal_id: Optional[int] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista incidencias con filtros"""
+    
+    conditions = ["1=1"]
+    if colaborador_id:
+        conditions.append(f"i.ColaboradorID = {colaborador_id}")
+    if tipo:
+        conditions.append(f"i.Tipo_Incidencia = '{tipo}'")
+    if fecha_desde:
+        conditions.append(f"i.Fecha_Incidencia >= '{fecha_desde}'")
+    if fecha_hasta:
+        conditions.append(f"i.Fecha_Incidencia <= '{fecha_hasta}'")
+    if sucursal_id:
+        conditions.append(f"c.SucursalID = {sucursal_id}")
+    
+    where_clause = " AND ".join(conditions)
+    offset = (page - 1) * limit
+    
+    query = f"""
+        SELECT 
+            i.IncidenciaID,
+            i.ColaboradorID,
+            c.Nombre_Completo,
+            c.SucursalID,
+            s.Nombre_Sucursal,
+            i.Tipo_Incidencia,
+            i.Monto,
+            i.Unidades,
+            i.Fecha_Incidencia,
+            i.Capturado_Por,
+            i.Fecha_Registro
+        FROM RH_Incidencias_Nomina i
+        LEFT JOIN RH_Colaboradores_Expediente c ON i.ColaboradorID = c.ColaboradorID
+        LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
+        WHERE {where_clause}
+        ORDER BY i.Fecha_Incidencia DESC
+        OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+    """
+    
+    result = await execute_edarsa_hub_query(query)
+    
+    return {
+        "incidencias": result.get("datos", []),
+        "total": result.get("registros", 0),
+        "page": page,
+        "limit": limit
+    }
+
+
+@api_router.post("/rrhh/incidencias")
+async def rrhh_crear_incidencia(
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea una nueva incidencia"""
+    
+    colaborador_id = body.get('colaborador_id')
+    tipo = body.get('tipo_incidencia')
+    monto = body.get('monto', 0)
+    unidades = body.get('unidades', 0)
+    fecha = body.get('fecha_incidencia')
+    
+    if not colaborador_id or not tipo or not fecha:
+        raise HTTPException(status_code=400, detail="Colaborador, tipo y fecha son requeridos")
+    
+    query = f"""
+        INSERT INTO RH_Incidencias_Nomina 
+        (ColaboradorID, Tipo_Incidencia, Monto, Unidades, Fecha_Incidencia, Fecha_Registro)
+        OUTPUT INSERTED.IncidenciaID
+        VALUES 
+        ({colaborador_id}, '{tipo}', {monto}, {unidades}, '{fecha}', GETDATE())
+    """
+    
+    result = await execute_edarsa_hub_query(query)
+    
+    return {
+        "success": True,
+        "message": "Incidencia registrada",
+        "incidencia_id": result.get("datos", [{}])[0].get("IncidenciaID") if result.get("datos") else None
+    }
+
+
+# ------------ ASISTENCIA (RELOJ CHECADOR) ------------
+
+@api_router.get("/rrhh/asistencia")
+async def rrhh_listar_asistencias(
+    colaborador_id: Optional[int] = None,
+    sucursal_id: Optional[int] = None,
+    fecha: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(100, ge=1, le=500),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista registros del reloj checador"""
+    
+    conditions = ["1=1"]
+    if colaborador_id:
+        conditions.append(f"r.ColaboradorID = {colaborador_id}")
+    if sucursal_id:
+        conditions.append(f"c.SucursalID = {sucursal_id}")
+    if fecha:
+        conditions.append(f"CAST(r.FechaHora AS DATE) = '{fecha}'")
+    if fecha_desde:
+        conditions.append(f"CAST(r.FechaHora AS DATE) >= '{fecha_desde}'")
+    if fecha_hasta:
+        conditions.append(f"CAST(r.FechaHora AS DATE) <= '{fecha_hasta}'")
+    
+    where_clause = " AND ".join(conditions)
+    offset = (page - 1) * limit
+    
+    query = f"""
+        SELECT 
+            r.CheckID,
+            r.ColaboradorID,
+            c.Nombre_Completo,
+            c.SucursalID,
+            s.Nombre_Sucursal,
+            p.Descripcion as Puesto,
+            r.Tipo_Registro,
+            r.FechaHora,
+            r.Geolocalizacion,
+            r.Validado_Gerencia
+        FROM RH_Reloj_Checador r
+        LEFT JOIN RH_Colaboradores_Expediente c ON r.ColaboradorID = c.ColaboradorID
+        LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
+        LEFT JOIN RH_Cat_Puestos p ON c.PuestoID = p.PuestoID
+        WHERE {where_clause}
+        ORDER BY r.FechaHora DESC
+        OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+    """
+    
+    result = await execute_edarsa_hub_query(query)
+    
+    return {
+        "asistencias": result.get("datos", []),
+        "total": result.get("registros", 0),
+        "page": page,
+        "limit": limit
+    }
+
+
+@api_router.post("/rrhh/asistencia")
+async def rrhh_registrar_asistencia(
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Registra una entrada o salida"""
+    
+    colaborador_id = body.get('colaborador_id')
+    tipo = body.get('tipo_registro')  # "Entrada" o "Salida"
+    geo = body.get('geolocalizacion')
+    
+    if not colaborador_id or not tipo:
+        raise HTTPException(status_code=400, detail="Colaborador y tipo son requeridos")
+    
+    query = f"""
+        INSERT INTO RH_Reloj_Checador 
+        (ColaboradorID, Tipo_Registro, FechaHora, Geolocalizacion, Validado_Gerencia)
+        OUTPUT INSERTED.CheckID
+        VALUES 
+        ({colaborador_id}, '{tipo}', GETDATE(), {f"'{geo}'" if geo else 'NULL'}, 0)
+    """
+    
+    result = await execute_edarsa_hub_query(query)
+    
+    return {
+        "success": True,
+        "message": "Asistencia registrada",
+        "check_id": result.get("datos", [{}])[0].get("CheckID") if result.get("datos") else None
+    }
+
+
+@api_router.put("/rrhh/asistencia/{check_id}/validar")
+async def rrhh_validar_asistencia(
+    check_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Valida un registro de asistencia (gerencia)"""
+    
+    query = f"""
+        UPDATE RH_Reloj_Checador
+        SET Validado_Gerencia = 1
+        WHERE CheckID = {check_id}
+    """
+    
+    await execute_edarsa_hub_query(query)
+    
+    return {"success": True, "message": "Asistencia validada"}
+
+
+# ------------ FLUJO DE NÓMINA ------------
+
+@api_router.get("/rrhh/nominas/flujo")
+async def rrhh_listar_flujos_nomina(
+    sucursal_id: Optional[int] = None,
+    semana_anio: Optional[int] = None,
+    estatus: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista flujos de nómina por sucursal"""
+    
+    conditions = ["1=1"]
+    if sucursal_id:
+        conditions.append(f"f.SucursalID = {sucursal_id}")
+    if semana_anio:
+        conditions.append(f"f.Semana_Anio = {semana_anio}")
+    if estatus:
+        conditions.append(f"f.Estatus_Flujo = '{estatus}'")
+    
+    where_clause = " AND ".join(conditions)
+    
+    query = f"""
+        SELECT 
+            f.FlujoID,
+            f.SucursalID,
+            s.Nombre_Sucursal,
+            f.Semana_Anio,
+            f.Estatus_Flujo,
+            f.Hora_Entrega_RH,
+            f.Hora_Validacion_Gerente,
+            f.Hora_Autorizacion_DG,
+            f.Hora_Envio_Tesoreria,
+            f.Hora_Pago_Ejecutado,
+            f.Motivo_Rechazo_Gerente,
+            f.Intentos_Reenvio
+        FROM RH_Flujo_Nomina_Sucursal f
+        LEFT JOIN RH_Cat_Sucursales s ON f.SucursalID = s.SucursalID
+        WHERE {where_clause}
+        ORDER BY f.Semana_Anio DESC, s.Nombre_Sucursal
+    """
+    
+    result = await execute_edarsa_hub_query(query)
+    
+    return {
+        "flujos": result.get("datos", []),
+        "total": result.get("registros", 0)
+    }
+
+
+@api_router.post("/rrhh/nominas/flujo")
+async def rrhh_crear_flujo_nomina(
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea un nuevo periodo de nómina para una sucursal"""
+    
+    sucursal_id = body.get('sucursal_id')
+    semana_anio = body.get('semana_anio')  # Formato: 202614 (año + semana)
+    
+    if not sucursal_id or not semana_anio:
+        raise HTTPException(status_code=400, detail="Sucursal y semana son requeridos")
+    
+    # Verificar si ya existe
+    check_query = f"""
+        SELECT FlujoID FROM RH_Flujo_Nomina_Sucursal 
+        WHERE SucursalID = {sucursal_id} AND Semana_Anio = {semana_anio}
+    """
+    existing = await execute_edarsa_hub_query(check_query)
+    
+    if existing.get("datos"):
+        raise HTTPException(status_code=400, detail="Ya existe un flujo para esta sucursal y semana")
+    
+    query = f"""
+        INSERT INTO RH_Flujo_Nomina_Sucursal 
+        (SucursalID, Semana_Anio, Estatus_Flujo, Intentos_Reenvio)
+        OUTPUT INSERTED.FlujoID
+        VALUES 
+        ({sucursal_id}, {semana_anio}, 'Captura', 0)
+    """
+    
+    result = await execute_edarsa_hub_query(query)
+    
+    return {
+        "success": True,
+        "message": "Flujo de nómina creado",
+        "flujo_id": result.get("datos", [{}])[0].get("FlujoID") if result.get("datos") else None
+    }
+
+
+@api_router.put("/rrhh/nominas/flujo/{flujo_id}/enviar-rh")
+async def rrhh_enviar_nomina_rh(
+    flujo_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Marca la nómina como enviada a RH"""
+    query = f"""
+        UPDATE RH_Flujo_Nomina_Sucursal
+        SET Estatus_Flujo = 'Enviado_RH', Hora_Entrega_RH = GETDATE()
+        WHERE FlujoID = {flujo_id}
+    """
+    await execute_edarsa_hub_query(query)
+    return {"success": True, "message": "Nómina enviada a RH"}
+
+
+@api_router.put("/rrhh/nominas/flujo/{flujo_id}/validar-gerente")
+async def rrhh_validar_nomina_gerente(
+    flujo_id: int,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Validación de nómina por gerente"""
+    aprobado = body.get('aprobado', True)
+    motivo = body.get('motivo_rechazo', '')
+    
+    if aprobado:
+        query = f"""
+            UPDATE RH_Flujo_Nomina_Sucursal
+            SET Estatus_Flujo = 'Validacion_Gerente', 
+                Hora_Validacion_Gerente = GETDATE(),
+                Motivo_Rechazo_Gerente = NULL
+            WHERE FlujoID = {flujo_id}
+        """
+    else:
+        query = f"""
+            UPDATE RH_Flujo_Nomina_Sucursal
+            SET Estatus_Flujo = 'Rechazado_Gerente', 
+                Motivo_Rechazo_Gerente = '{motivo or "Sin especificar"}',
+                Intentos_Reenvio = Intentos_Reenvio + 1
+            WHERE FlujoID = {flujo_id}
+        """
+    
+    await execute_edarsa_hub_query(query)
+    return {"success": True, "message": "Nómina validada" if aprobado else "Nómina rechazada"}
+
+
+@api_router.put("/rrhh/nominas/flujo/{flujo_id}/autorizar-dg")
+async def rrhh_autorizar_nomina_dg(
+    flujo_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Autorización de nómina por Dirección General"""
+    query = f"""
+        UPDATE RH_Flujo_Nomina_Sucursal
+        SET Estatus_Flujo = 'Autorizacion_DG', Hora_Autorizacion_DG = GETDATE()
+        WHERE FlujoID = {flujo_id}
+    """
+    await execute_edarsa_hub_query(query)
+    return {"success": True, "message": "Nómina autorizada por DG"}
+
+
+@api_router.put("/rrhh/nominas/flujo/{flujo_id}/enviar-tesoreria")
+async def rrhh_enviar_nomina_tesoreria(
+    flujo_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Envía nómina a tesorería para pago"""
+    query = f"""
+        UPDATE RH_Flujo_Nomina_Sucursal
+        SET Estatus_Flujo = 'Enviado_Tesoreria', Hora_Envio_Tesoreria = GETDATE()
+        WHERE FlujoID = {flujo_id}
+    """
+    await execute_edarsa_hub_query(query)
+    return {"success": True, "message": "Nómina enviada a tesorería"}
+
+
+@api_router.put("/rrhh/nominas/flujo/{flujo_id}/marcar-pagado")
+async def rrhh_marcar_nomina_pagada(
+    flujo_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Marca la nómina como pagada"""
+    query = f"""
+        UPDATE RH_Flujo_Nomina_Sucursal
+        SET Estatus_Flujo = 'Pagado', Hora_Pago_Ejecutado = GETDATE()
+        WHERE FlujoID = {flujo_id}
+    """
+    await execute_edarsa_hub_query(query)
+    return {"success": True, "message": "Nómina marcada como pagada"}
+
+
+# ------------ AUDITORÍA FISCAL ------------
+
+@api_router.get("/rrhh/auditoria-fiscal")
+async def rrhh_listar_auditoria_fiscal(
+    colaborador_id: Optional[int] = None,
+    semana: Optional[int] = None,
+    solo_alertas: bool = False,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista auditoría fiscal de nóminas"""
+    
+    conditions = ["1=1"]
+    if colaborador_id:
+        conditions.append(f"a.ColaboradorID = {colaborador_id}")
+    if semana:
+        conditions.append(f"a.Semana = {semana}")
+    if solo_alertas:
+        conditions.append("a.Alerta_Fraude = 1")
+    
+    where_clause = " AND ".join(conditions)
+    
+    query = f"""
+        SELECT 
+            a.AuditoriaID,
+            a.ColaboradorID,
+            c.Nombre_Completo,
+            c.RFC,
+            s.Nombre_Sucursal,
+            a.Semana,
+            a.Monto_Dispersado_Banco,
+            a.Monto_Timbrado_XML,
+            a.Monto_IMSS_EBA_EMA,
+            a.Diferencia,
+            a.Alerta_Fraude
+        FROM RH_Auditoria_Fiscal a
+        LEFT JOIN RH_Colaboradores_Expediente c ON a.ColaboradorID = c.ColaboradorID
+        LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
+        WHERE {where_clause}
+        ORDER BY a.Alerta_Fraude DESC, a.Semana DESC
+    """
+    
+    result = await execute_edarsa_hub_query(query)
+    alertas = sum(1 for r in result.get("datos", []) if r.get("Alerta_Fraude") == 1)
+    
+    return {
+        "auditoria": result.get("datos", []),
+        "total": result.get("registros", 0),
+        "total_alertas": alertas
+    }
+
+
+# ------------ DASHBOARD RRHH ------------
+
+@api_router.get("/rrhh/dashboard")
+async def rrhh_dashboard(
+    sucursal_id: Optional[int] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Dashboard con métricas de RRHH"""
+    
+    suc_filter = f"AND SucursalID = {sucursal_id}" if sucursal_id else ""
+    suc_filter_c = f"AND c.SucursalID = {sucursal_id}" if sucursal_id else ""
+    
+    # Total colaboradores
+    query_total = f"""
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN Colaborador_Activo = 1 THEN 1 ELSE 0 END) as activos,
+            SUM(CASE WHEN Estatus_Laboral = 'Vacaciones' THEN 1 ELSE 0 END) as vacaciones,
+            SUM(CASE WHEN Estatus_Laboral = 'Incapacidad' THEN 1 ELSE 0 END) as incapacidad,
+            SUM(CASE WHEN Colaborador_Activo = 0 THEN 1 ELSE 0 END) as bajas
+        FROM RH_Colaboradores_Expediente
+        WHERE 1=1 {suc_filter}
+    """
+    
+    # Por departamento
+    query_depto = f"""
+        SELECT 
+            ISNULL(p.Departamento, 'Sin asignar') as Departamento,
+            COUNT(*) as total
+        FROM RH_Colaboradores_Expediente c
+        LEFT JOIN RH_Cat_Puestos p ON c.PuestoID = p.PuestoID
+        WHERE c.Colaborador_Activo = 1 {suc_filter_c}
+        GROUP BY p.Departamento
+        ORDER BY total DESC
+    """
+    
+    # Incidencias del mes
+    query_incidencias = f"""
+        SELECT 
+            Tipo_Incidencia,
+            COUNT(*) as cantidad,
+            SUM(ISNULL(Monto, 0)) as monto_total
+        FROM RH_Incidencias_Nomina i
+        LEFT JOIN RH_Colaboradores_Expediente c ON i.ColaboradorID = c.ColaboradorID
+        WHERE MONTH(Fecha_Incidencia) = MONTH(GETDATE()) 
+          AND YEAR(Fecha_Incidencia) = YEAR(GETDATE())
+          {suc_filter_c}
+        GROUP BY Tipo_Incidencia
+    """
+    
+    # Flujos pendientes
+    query_flujos = f"""
+        SELECT 
+            Estatus_Flujo,
+            COUNT(*) as cantidad
+        FROM RH_Flujo_Nomina_Sucursal
+        WHERE Estatus_Flujo NOT IN ('Pagado')
+          {suc_filter}
+        GROUP BY Estatus_Flujo
+    """
+    
+    # Alertas fraude
+    query_alertas = f"""
+        SELECT COUNT(*) as alertas
+        FROM RH_Auditoria_Fiscal a
+        LEFT JOIN RH_Colaboradores_Expediente c ON a.ColaboradorID = c.ColaboradorID
+        WHERE a.Alerta_Fraude = 1 {suc_filter_c}
+    """
+    
+    result_total = await execute_edarsa_hub_query(query_total)
+    result_depto = await execute_edarsa_hub_query(query_depto)
+    result_incidencias = await execute_edarsa_hub_query(query_incidencias)
+    result_flujos = await execute_edarsa_hub_query(query_flujos)
+    result_alertas = await execute_edarsa_hub_query(query_alertas)
+    
+    return {
+        "resumen": result_total.get("datos", [{}])[0] if result_total.get("datos") else {},
+        "por_departamento": result_depto.get("datos", []),
+        "incidencias_mes": result_incidencias.get("datos", []),
+        "flujos_pendientes": result_flujos.get("datos", []),
+        "alertas_fraude": result_alertas.get("datos", [{}])[0].get("alertas", 0) if result_alertas.get("datos") else 0
+    }
+
+
+
 # ============ SCRIPTS PENDIENTES (STAND-BY) ============
 
 @api_router.post("/explorador/guardar-script/{server_id}")
