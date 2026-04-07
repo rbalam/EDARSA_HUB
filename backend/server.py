@@ -2733,19 +2733,25 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
             
             # ===== GUARDAR DIFERENCIAS EN CACHE PARA COMPARATIVO DE 4 CORTES =====
             try:
-                # Extraer info de los inventarios para el cache
+                # Extraer info de los inventarios FINALES para el cache
+                # El comparativo requiere las diferencias del inventario FINAL (físico vs teórico)
+                logging.info(f"CACHE: Procesando {len(inventarios_finales_info)} inventarios finales para cache")
+                
                 for inv_info in inventarios_finales_info:
                     folio_cache = inv_info.get('folio', '')
                     comentario_cache = inv_info.get('comentario', '')
-                    almacen_id_cache = inv_info.get('almacen_id', '')
+                    almacen_id_cache = inv_info.get('almacen_id', '') or almacen_codigo
+                    fecha_cache = inv_info.get('fecha', '')
                     
                     if not folio_cache:
+                        logging.warning(f"CACHE: Inventario sin folio, saltando")
                         continue
                     
-                    # Filtrar productos que corresponden a este folio (por comentario)
+                    logging.info(f"CACHE: Procesando folio {folio_cache}, comentario: {comentario_cache}, almacen_id: {almacen_id_cache}")
+                    
+                    # Guardar TODOS los productos con diferencia != 0
                     productos_cache = []
                     for r in results:
-                        # Solo guardar productos con diferencia != 0
                         dif = r.get('Diferencia_Cantidad', 0)
                         if dif != 0:
                             productos_cache.append({
@@ -2755,18 +2761,20 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                                 'diferencia_costo': round(r.get('Diferencia_Costo', 0), 2)
                             })
                     
+                    logging.info(f"CACHE: {len(productos_cache)} productos con diferencia para folio {folio_cache}")
+                    
                     if productos_cache:
                         cache_key = {
                             "server_id": server_id,
-                            "almacen_id": almacen_id_cache or almacen,
-                            "sucursal_id": sucursal_id or "",
+                            "almacen_id": almacen_id_cache,
+                            "sucursal_id": sucursal_codigo or "",
                             "comentario": comentario_cache or "",
                             "folio": folio_cache
                         }
                         
                         cache_doc = {
                             **cache_key,
-                            "fecha_inventario": inv_info.get('fecha', ''),
+                            "fecha_inventario": fecha_cache,
                             "fecha_cache": datetime.now(timezone.utc).isoformat(),
                             "productos": productos_cache
                         }
@@ -2776,9 +2784,13 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                             {"$set": cache_doc},
                             upsert=True
                         )
-                        logging.info(f"Cache guardado para folio {folio_cache} ({comentario_cache}): {len(productos_cache)} productos con diferencia")
+                        logging.info(f"CACHE: ✅ Guardado folio {folio_cache} ({comentario_cache}): {len(productos_cache)} productos")
+                    else:
+                        logging.info(f"CACHE: ⚠️ Folio {folio_cache} sin productos con diferencia, no se guarda")
             except Exception as cache_error:
-                logging.warning(f"Error guardando cache de diferencias: {str(cache_error)}")
+                logging.error(f"CACHE ERROR: {str(cache_error)}")
+                import traceback
+                logging.error(traceback.format_exc())
             # ===== FIN CACHE =====
             
             return {"data": results, "count": len(results), "errores_captura": errores_list}
@@ -3828,10 +3840,18 @@ async def get_diferencias_from_cache(
     Retorna los últimos 4 cortes con sus diferencias.
     """
     try:
+        logging.info(f"get_diferencias_from_cache: almacen_id={almacen_id}, sucursal_id={sucursal_id}, comentario={comentario}, fecha_ref={fecha_referencia}")
+        
         # 1. Obtener los últimos 4 folios de inventario para este almacén/comentario
         if server['system_type'] == 'MPRO':
             sucursal_filtro = f"AND F.Sc_Cve_Sucursal = '{sucursal_id}'" if sucursal_id else ""
             comentario_filtro = f"AND F.Fi_Comentario = '{comentario.replace(chr(39), chr(39)+chr(39))}'" if comentario else ""
+            
+            logging.info(f"Filtros: sucursal_filtro=[{sucursal_filtro}], comentario_filtro=[{comentario_filtro}]")
+            
+            # Asegurar formato de fecha correcto para SQL Server
+            # Formato: YYYY-MM-DD o YYYYMMDD
+            fecha_ref_clean = fecha_referencia.replace('T', ' ')[:10] if fecha_referencia else '2099-12-31'
             
             query_cortes = f"""
             SELECT TOP 4 
@@ -3844,11 +3864,16 @@ async def get_diferencias_from_cache(
             WHERE A.Al_Cve_Almacen = '{almacen_id}'
                 {sucursal_filtro}
                 {comentario_filtro}
-                AND F.Fi_Fecha <= '{fecha_referencia}'
+                AND CONVERT(date, F.Fi_Fecha) <= CONVERT(date, '{fecha_ref_clean}')
             GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, F.Fi_Comentario
             ORDER BY F.Fi_Fecha DESC
             """
+            
+            logging.info(f"Query SQL para cortes (fecha_ref={fecha_ref_clean}): folios TOP 4...")
         else:  # SoftRestaurant
+            # Asegurar formato de fecha correcto para SQL Server
+            fecha_ref_clean_sr = fecha_referencia.replace('T', ' ')[:10] if fecha_referencia else '2099-12-31'
+            
             query_cortes = f"""
             SELECT TOP 4 
                 INV.folio as folio,
@@ -3858,7 +3883,7 @@ async def get_diferencias_from_cache(
             FROM invfisico INV
             INNER JOIN almacen A ON A.idalmacen = INV.idalmacen1
             WHERE INV.idalmacen1 = '{almacen_id}'
-                AND INV.fecha <= '{fecha_referencia}'
+                AND CONVERT(date, INV.fecha) <= CONVERT(date, '{fecha_ref_clean_sr}')
             GROUP BY INV.folio, INV.fecha, A.nombre
             ORDER BY INV.fecha DESC
             """
@@ -3872,7 +3897,7 @@ async def get_diferencias_from_cache(
             logging.warning(f"No se encontraron inventarios para almacén {almacen_id}/{comentario}")
             return None
         
-        logging.info(f"Encontrados {len(cortes_result)} cortes para {almacen_id}/{comentario}")
+        logging.info(f"Encontrados {len(cortes_result)} cortes para {almacen_id}/{comentario}: {[c['folio'] for c in cortes_result]}")
         
         # 2. Buscar cada folio en el cache de diferencias
         productos_dict = {}

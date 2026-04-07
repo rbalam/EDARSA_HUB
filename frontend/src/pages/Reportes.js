@@ -554,9 +554,19 @@ const Reportes = () => {
           folios_finales: foliosFinales
         });
         
-        // Preparar info de inventarios para MPRO (folio + comentario)
-        const inventariosIniInfo = selectedInventariosIni.map(i => ({ folio: i.folio, comentario: i.comentario || '' }));
-        const inventariosFinInfo = selectedInventariosFin.map(i => ({ folio: i.folio, comentario: i.comentario || '' }));
+        // Preparar info de inventarios para MPRO (folio + comentario + almacen_id para el cache)
+        const inventariosIniInfo = selectedInventariosIni.map(i => ({ 
+          folio: i.folio, 
+          comentario: i.comentario || '',
+          almacen_id: i.almacen_id || '',
+          fecha: i.fecha || ''
+        }));
+        const inventariosFinInfo = selectedInventariosFin.map(i => ({ 
+          folio: i.folio, 
+          comentario: i.comentario || '',
+          almacen_id: i.almacen_id || '',
+          fecha: i.fecha || ''
+        }));
         
         // Llamar al endpoint de análisis completo con filtros adicionales
         response = await api.post('/reports/inventory-analysis', {
