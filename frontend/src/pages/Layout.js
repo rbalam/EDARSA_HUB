@@ -20,7 +20,8 @@ import {
   Factory,
   UserCircle,
   BarChart3,
-  Truck
+  Truck,
+  ClipboardList
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -38,6 +39,12 @@ const Layout = () => {
   // ============================================
   
   const modulos = [
+    { 
+      name: 'Mis Tareas', 
+      href: '/mis-tareas', 
+      icon: ClipboardList, 
+      roles: ['Usuario', 'Supervisor', 'Administrador'],
+    },
     { 
       name: 'Tablero Ejecutivo', 
       href: '/tablero-ejecutivo', 

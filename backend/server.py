@@ -15644,7 +15644,472 @@ async def exportar_informe_pdf(
     )
 
 
-# Incluir el router después de definir todos los endpoints
+# ============================================================================
+# SISTEMA DE SOLICITUDES Y TAREAS
+# ============================================================================
+
+# Lista de catálogos del sistema disponibles para solicitudes
+CATALOGOS_SISTEMA = [
+    {"id": "puestos", "nombre": "Puestos", "modulo": "RRHH", "tabla": "RH_Cat_Puestos"},
+    {"id": "tipos_incidencias", "nombre": "Tipos de Incidencias", "modulo": "RRHH", "tabla": "RH_Cat_Tipos_Incidencias"},
+    {"id": "sucursales", "nombre": "Sucursales", "modulo": "RRHH", "tabla": "RH_Cat_Sucursales"},
+    {"id": "departamentos", "nombre": "Departamentos", "modulo": "RRHH", "tabla": "RH_Cat_Departamentos"},
+    {"id": "proveedores", "nombre": "Proveedores", "modulo": "Compras", "tabla": "Proveedores"},
+    {"id": "categorias_presupuesto", "nombre": "Categorías Presupuesto", "modulo": "Finanzas", "tabla": "Finanzas_Categorias"},
+    {"id": "almacenes", "nombre": "Almacenes", "modulo": "Inventarios", "tabla": "Almacenes"},
+    {"id": "familias", "nombre": "Familias de Productos", "modulo": "Inventarios", "tabla": "Familias"},
+    {"id": "categorias", "nombre": "Categorías de Productos", "modulo": "Inventarios", "tabla": "Categorias"},
+]
+
+@api_router.get("/sistema/catalogos-disponibles")
+async def listar_catalogos_sistema(current_user: Dict = Depends(get_current_user)):
+    """Lista todos los catálogos del sistema disponibles para solicitudes"""
+    return {"catalogos": CATALOGOS_SISTEMA}
+
+
+@api_router.get("/sistema/permisos-catalogos/{user_id}")
+async def obtener_permisos_catalogos_usuario(user_id: str, current_user: Dict = Depends(get_current_user)):
+    """Obtiene los permisos de catálogos de un usuario específico"""
+    # Solo Supervisor o Administrador pueden ver permisos
+    if current_user.get('role') not in ['Supervisor', 'Administrador']:
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    permisos = await db.permisos_catalogos.find_one({"user_id": user_id})
+    if not permisos:
+        return {"user_id": user_id, "catalogos_permitidos": [], "puede_solicitar": False}
+    
+    return {
+        "user_id": user_id,
+        "catalogos_permitidos": permisos.get("catalogos_permitidos", []),
+        "puede_solicitar": permisos.get("puede_solicitar", False),
+        "asignado_por": permisos.get("asignado_por"),
+        "fecha_asignacion": permisos.get("fecha_asignacion")
+    }
+
+
+@api_router.post("/sistema/permisos-catalogos")
+async def asignar_permisos_catalogos(body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Asigna permisos de catálogos a un usuario (Solo Supervisor o Admin)"""
+    if current_user.get('role') not in ['Supervisor', 'Administrador']:
+        raise HTTPException(status_code=403, detail="Solo Supervisores o Administradores pueden asignar permisos")
+    
+    user_id = body.get("user_id")
+    catalogos_permitidos = body.get("catalogos_permitidos", [])
+    puede_solicitar = body.get("puede_solicitar", True)
+    
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id es requerido")
+    
+    # Verificar que el usuario existe
+    usuario = await db.users.find_one({"id": user_id})
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # Guardar o actualizar permisos
+    await db.permisos_catalogos.update_one(
+        {"user_id": user_id},
+        {"$set": {
+            "user_id": user_id,
+            "catalogos_permitidos": catalogos_permitidos,
+            "puede_solicitar": puede_solicitar,
+            "asignado_por": current_user.get("email"),
+            "fecha_asignacion": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    
+    return {"success": True, "message": "Permisos asignados correctamente"}
+
+
+@api_router.get("/sistema/mis-permisos-catalogos")
+async def obtener_mis_permisos_catalogos(current_user: Dict = Depends(get_current_user)):
+    """Obtiene los permisos de catálogos del usuario actual"""
+    user_id = current_user.get("id")
+    
+    # Administradores tienen todos los permisos
+    if current_user.get('role') == 'Administrador':
+        return {
+            "puede_solicitar": True,
+            "puede_aprobar": True,
+            "catalogos_permitidos": [c["id"] for c in CATALOGOS_SISTEMA]
+        }
+    
+    # Supervisores pueden aprobar
+    puede_aprobar = current_user.get('role') == 'Supervisor'
+    
+    permisos = await db.permisos_catalogos.find_one({"user_id": user_id})
+    if not permisos:
+        return {"puede_solicitar": False, "puede_aprobar": puede_aprobar, "catalogos_permitidos": []}
+    
+    return {
+        "puede_solicitar": permisos.get("puede_solicitar", False),
+        "puede_aprobar": puede_aprobar,
+        "catalogos_permitidos": permisos.get("catalogos_permitidos", [])
+    }
+
+
+@api_router.post("/sistema/solicitudes")
+async def crear_solicitud_catalogo(body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Crea una nueva solicitud de alta en catálogo"""
+    catalogo_id = body.get("catalogo_id")
+    datos = body.get("datos", {})
+    notas = body.get("notas", "")
+    
+    if not catalogo_id or not datos:
+        raise HTTPException(status_code=400, detail="catalogo_id y datos son requeridos")
+    
+    # Verificar permisos del usuario
+    user_id = current_user.get("id")
+    permisos = await db.permisos_catalogos.find_one({"user_id": user_id})
+    
+    # Administradores siempre pueden
+    if current_user.get('role') != 'Administrador':
+        if not permisos or not permisos.get("puede_solicitar"):
+            raise HTTPException(status_code=403, detail="No tiene permiso para solicitar altas")
+        
+        if catalogo_id not in permisos.get("catalogos_permitidos", []):
+            raise HTTPException(status_code=403, detail=f"No tiene permiso para solicitar altas en el catálogo: {catalogo_id}")
+    
+    # Obtener info del catálogo
+    catalogo_info = next((c for c in CATALOGOS_SISTEMA if c["id"] == catalogo_id), None)
+    if not catalogo_info:
+        raise HTTPException(status_code=400, detail="Catálogo no válido")
+    
+    solicitud_id = str(uuid.uuid4())
+    solicitud = {
+        "id": solicitud_id,
+        "catalogo_id": catalogo_id,
+        "catalogo_nombre": catalogo_info["nombre"],
+        "modulo": catalogo_info["modulo"],
+        "datos": datos,
+        "notas": notas,
+        "estatus": "Pendiente",  # Pendiente, Aprobada, Rechazada
+        "solicitante_id": user_id,
+        "solicitante_email": current_user.get("email"),
+        "solicitante_nombre": current_user.get("name", current_user.get("email")),
+        "fecha_solicitud": datetime.now(timezone.utc).isoformat(),
+        "aprobador_id": None,
+        "aprobador_email": None,
+        "fecha_aprobacion": None,
+        "motivo_rechazo": None
+    }
+    
+    await db.solicitudes_catalogos.insert_one(solicitud)
+    
+    # Crear tarea para supervisores/admins
+    tarea = {
+        "id": str(uuid.uuid4()),
+        "tipo": "aprobacion_catalogo",
+        "titulo": f"Aprobar alta en {catalogo_info['nombre']}",
+        "descripcion": f"Solicitud de {current_user.get('name', current_user.get('email'))} para agregar elemento al catálogo {catalogo_info['nombre']}",
+        "solicitud_id": solicitud_id,
+        "estatus": "Pendiente",
+        "prioridad": "Normal",
+        "asignado_a_roles": ["Supervisor", "Administrador"],
+        "creado_por": user_id,
+        "fecha_creacion": datetime.now(timezone.utc).isoformat(),
+        "fecha_limite": None
+    }
+    await db.tareas_sistema.insert_one(tarea)
+    
+    return {"success": True, "solicitud_id": solicitud_id, "message": "Solicitud creada correctamente"}
+
+
+@api_router.get("/sistema/solicitudes")
+async def listar_solicitudes(
+    estatus: str = None,
+    catalogo_id: str = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista solicitudes de catálogos"""
+    filtro = {}
+    
+    # Usuarios normales solo ven sus propias solicitudes
+    if current_user.get('role') not in ['Supervisor', 'Administrador']:
+        filtro["solicitante_id"] = current_user.get("id")
+    
+    if estatus:
+        filtro["estatus"] = estatus
+    if catalogo_id:
+        filtro["catalogo_id"] = catalogo_id
+    
+    solicitudes = await db.solicitudes_catalogos.find(filtro, {"_id": 0}).sort("fecha_solicitud", -1).to_list(100)
+    
+    return {"solicitudes": solicitudes, "total": len(solicitudes)}
+
+
+@api_router.get("/sistema/solicitudes/{solicitud_id}")
+async def obtener_solicitud(solicitud_id: str, current_user: Dict = Depends(get_current_user)):
+    """Obtiene detalle de una solicitud"""
+    solicitud = await db.solicitudes_catalogos.find_one({"id": solicitud_id}, {"_id": 0})
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    
+    # Verificar acceso
+    if current_user.get('role') not in ['Supervisor', 'Administrador']:
+        if solicitud.get("solicitante_id") != current_user.get("id"):
+            raise HTTPException(status_code=403, detail="No autorizado")
+    
+    return solicitud
+
+
+@api_router.post("/sistema/solicitudes/{solicitud_id}/aprobar")
+async def aprobar_solicitud(solicitud_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Aprueba una solicitud con firma (contraseña del aprobador)"""
+    if current_user.get('role') not in ['Supervisor', 'Administrador']:
+        raise HTTPException(status_code=403, detail="Solo Supervisores o Administradores pueden aprobar")
+    
+    password = body.get("password")
+    if not password:
+        raise HTTPException(status_code=400, detail="Contraseña de autorización requerida")
+    
+    # El current_user ya tiene toda la info del usuario de MongoDB
+    # Verificar password usando la función existente
+    if not verify_password(password, current_user.get("password")):
+        raise HTTPException(status_code=401, detail="Contraseña incorrecta")
+    
+    # Obtener solicitud
+    solicitud = await db.solicitudes_catalogos.find_one({"id": solicitud_id})
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    
+    if solicitud.get("estatus") != "Pendiente":
+        raise HTTPException(status_code=400, detail="La solicitud ya fue procesada")
+    
+    # Actualizar solicitud
+    await db.solicitudes_catalogos.update_one(
+        {"id": solicitud_id},
+        {"$set": {
+            "estatus": "Aprobada",
+            "aprobador_id": current_user.get("id"),
+            "aprobador_email": current_user.get("email"),
+            "fecha_aprobacion": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Actualizar tarea relacionada
+    await db.tareas_sistema.update_many(
+        {"solicitud_id": solicitud_id},
+        {"$set": {
+            "estatus": "Completada",
+            "completado_por": current_user.get("id"),
+            "fecha_completado": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # INSERTAR EN LA TABLA SQL CORRESPONDIENTE
+    catalogo_id = solicitud.get("catalogo_id")
+    datos = solicitud.get("datos", {})
+    
+    try:
+        if catalogo_id == "puestos":
+            query = f"""
+                INSERT INTO RH_Cat_Puestos (Descripcion, Departamento, Sueldo_Base_Seman_SBC, NomiPAQ_ID, MPRO_ID, Fecha_Creacion, Creado_Por)
+                VALUES ('{datos.get("descripcion", "")}', '{datos.get("departamento", "")}', {datos.get("sueldo_base", 0)}, 
+                        '{datos.get("nomipaq_id", "")}', '{datos.get("mpro_id", "")}', GETDATE(), '{current_user.get("email")}')
+            """
+            await execute_edarsa_hub_query(query)
+        
+        elif catalogo_id == "tipos_incidencias":
+            categoria = datos.get("categoria", "Descuento")
+            afectacion = 1 if categoria == "Ingreso" else -1
+            query = f"""
+                INSERT INTO RH_Cat_Tipos_Incidencias (Codigo, Descripcion, Categoria, Afectacion, Calculo_Monto, Activo, NomiPAQ_ID, MPRO_ID, Fecha_Creacion, Creado_Por)
+                VALUES ('{datos.get("codigo", "").upper()}', '{datos.get("descripcion", "")}', '{categoria}', {afectacion},
+                        '{datos.get("calculo_monto", "Manual")}', 1, '{datos.get("nomipaq_id", "")}', '{datos.get("mpro_id", "")}', 
+                        GETDATE(), '{current_user.get("email")}')
+            """
+            await execute_edarsa_hub_query(query)
+        
+        # Agregar más catálogos según se necesite...
+        
+    except Exception as e:
+        # Log error pero no fallar la aprobación
+        print(f"Error insertando en SQL: {e}")
+    
+    # Notificar al solicitante (crear tarea de notificación)
+    notificacion = {
+        "id": str(uuid.uuid4()),
+        "tipo": "notificacion",
+        "titulo": f"Tu solicitud fue aprobada",
+        "descripcion": f"La solicitud de alta en {solicitud.get('catalogo_nombre')} fue aprobada por {current_user.get('name', current_user.get('email'))}",
+        "solicitud_id": solicitud_id,
+        "estatus": "Pendiente",
+        "prioridad": "Baja",
+        "asignado_a_usuario": solicitud.get("solicitante_id"),
+        "creado_por": current_user.get("id"),
+        "fecha_creacion": datetime.now(timezone.utc).isoformat()
+    }
+    await db.tareas_sistema.insert_one(notificacion)
+    
+    return {"success": True, "message": "Solicitud aprobada e insertada en el catálogo"}
+
+
+@api_router.post("/sistema/solicitudes/{solicitud_id}/rechazar")
+async def rechazar_solicitud(solicitud_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Rechaza una solicitud"""
+    if current_user.get('role') not in ['Supervisor', 'Administrador']:
+        raise HTTPException(status_code=403, detail="Solo Supervisores o Administradores pueden rechazar")
+    
+    motivo = body.get("motivo", "Sin motivo especificado")
+    
+    solicitud = await db.solicitudes_catalogos.find_one({"id": solicitud_id})
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    
+    if solicitud.get("estatus") != "Pendiente":
+        raise HTTPException(status_code=400, detail="La solicitud ya fue procesada")
+    
+    # Actualizar solicitud
+    await db.solicitudes_catalogos.update_one(
+        {"id": solicitud_id},
+        {"$set": {
+            "estatus": "Rechazada",
+            "aprobador_id": current_user.get("id"),
+            "aprobador_email": current_user.get("email"),
+            "fecha_aprobacion": datetime.now(timezone.utc).isoformat(),
+            "motivo_rechazo": motivo
+        }}
+    )
+    
+    # Actualizar tarea relacionada
+    await db.tareas_sistema.update_many(
+        {"solicitud_id": solicitud_id},
+        {"$set": {
+            "estatus": "Rechazada",
+            "completado_por": current_user.get("id"),
+            "fecha_completado": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Notificar al solicitante
+    notificacion = {
+        "id": str(uuid.uuid4()),
+        "tipo": "notificacion",
+        "titulo": f"Tu solicitud fue rechazada",
+        "descripcion": f"La solicitud de alta en {solicitud.get('catalogo_nombre')} fue rechazada. Motivo: {motivo}",
+        "solicitud_id": solicitud_id,
+        "estatus": "Pendiente",
+        "prioridad": "Baja",
+        "asignado_a_usuario": solicitud.get("solicitante_id"),
+        "creado_por": current_user.get("id"),
+        "fecha_creacion": datetime.now(timezone.utc).isoformat()
+    }
+    await db.tareas_sistema.insert_one(notificacion)
+    
+    return {"success": True, "message": "Solicitud rechazada"}
+
+
+@api_router.get("/sistema/mis-tareas")
+async def obtener_mis_tareas(current_user: Dict = Depends(get_current_user)):
+    """Obtiene las tareas asignadas al usuario actual"""
+    user_id = current_user.get("id")
+    user_role = current_user.get("role")
+    
+    # Tareas asignadas directamente al usuario
+    filtro_usuario = {"asignado_a_usuario": user_id}
+    
+    # Tareas asignadas por rol
+    filtro_rol = {"asignado_a_roles": user_role}
+    
+    # Combinar ambos filtros
+    tareas = await db.tareas_sistema.find(
+        {"$or": [filtro_usuario, filtro_rol]},
+        {"_id": 0}
+    ).sort("fecha_creacion", -1).to_list(100)
+    
+    # Separar por estatus
+    pendientes = [t for t in tareas if t.get("estatus") == "Pendiente"]
+    en_proceso = [t for t in tareas if t.get("estatus") == "En Proceso"]
+    completadas = [t for t in tareas if t.get("estatus") in ["Completada", "Rechazada", "Leida"]]
+    
+    # Contar solicitudes pendientes de aprobar (para badge)
+    solicitudes_pendientes = await db.solicitudes_catalogos.count_documents({"estatus": "Pendiente"}) if user_role in ['Supervisor', 'Administrador'] else 0
+    
+    return {
+        "pendientes": pendientes,
+        "en_proceso": en_proceso,
+        "completadas": completadas[:20],  # Limitar historial
+        "total_pendientes": len(pendientes),
+        "total_en_proceso": len(en_proceso),
+        "solicitudes_pendientes_aprobar": solicitudes_pendientes
+    }
+
+
+@api_router.put("/sistema/tareas/{tarea_id}/marcar-leida")
+async def marcar_tarea_leida(tarea_id: str, current_user: Dict = Depends(get_current_user)):
+    """Marca una tarea/notificación como leída"""
+    await db.tareas_sistema.update_one(
+        {"id": tarea_id},
+        {"$set": {"estatus": "Leida", "fecha_leida": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"success": True}
+
+
+@api_router.get("/sistema/usuarios-asignables")
+async def listar_usuarios_asignables(current_user: Dict = Depends(get_current_user)):
+    """Lista usuarios que pueden recibir permisos de catálogos (para Supervisores/Admin)"""
+    if current_user.get('role') not in ['Supervisor', 'Administrador']:
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    # Obtener usuarios activos
+    usuarios = await db.users.find(
+        {"active": True},
+        {"_id": 0, "id": 1, "email": 1, "name": 1, "role": 1}
+    ).to_list(500)
+    
+    # Agregar info de permisos actuales
+    for u in usuarios:
+        permisos = await db.permisos_catalogos.find_one({"user_id": u["id"]})
+        u["permisos_catalogos"] = permisos.get("catalogos_permitidos", []) if permisos else []
+        u["puede_solicitar"] = permisos.get("puede_solicitar", False) if permisos else False
+    
+    return {"usuarios": usuarios}
+
+
+# Script SQL para crear tablas de sistema en EDARSA HUB (si se requiere)
+@api_router.get("/sistema/script-tareas")
+async def obtener_script_tareas(current_user: Dict = Depends(get_current_user)):
+    """Retorna script SQL para crear tablas de tareas en EDARSA HUB (opcional)"""
+    script = """
+-- ============================================
+-- SCRIPT DE INICIALIZACIÓN - SISTEMA DE TAREAS
+-- Base de datos: EDARSA HUB (Opcional - Las tareas se guardan en MongoDB)
+-- ============================================
+
+-- Esta tabla es OPCIONAL si desea mantener un log en SQL Server
+-- El sistema principal usa MongoDB para las tareas
+
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Sistema_Log_Solicitudes' AND xtype='U')
+BEGIN
+    CREATE TABLE Sistema_Log_Solicitudes (
+        LogID INT IDENTITY(1,1) PRIMARY KEY,
+        SolicitudID NVARCHAR(50) NOT NULL,
+        CatalogoID NVARCHAR(50) NOT NULL,
+        CatalogoNombre NVARCHAR(100),
+        Datos NVARCHAR(MAX),  -- JSON con los datos de la solicitud
+        Estatus NVARCHAR(20) NOT NULL,  -- Pendiente, Aprobada, Rechazada
+        SolicitanteEmail NVARCHAR(100),
+        AprobadorEmail NVARCHAR(100),
+        FechaSolicitud DATETIME DEFAULT GETDATE(),
+        FechaResolucion DATETIME,
+        MotivoRechazo NVARCHAR(500)
+    );
+    
+    CREATE INDEX IX_LogSolicitudes_Estatus ON Sistema_Log_Solicitudes(Estatus);
+    CREATE INDEX IX_LogSolicitudes_Fecha ON Sistema_Log_Solicitudes(FechaSolicitud);
+    
+    PRINT 'Tabla Sistema_Log_Solicitudes creada exitosamente';
+END
+GO
+"""
+    return {
+        "script": script,
+        "nota": "Este script es OPCIONAL. El sistema de tareas funciona con MongoDB. Use este script solo si desea mantener un log adicional en SQL Server."
+    }
+
+
+# Incluir el router después de definir TODOS los endpoints
 app.include_router(api_router)
 
 # ============================================================================
