@@ -9045,7 +9045,7 @@ WHERE VE.Vn_Fecha >= '{fi}' AND VE.Vn_Fecha <= '{ff}'
             else:
                 dia_con_datos = ultimo_dia_venta.day
             
-            logging.info(f"MPRO por sucursal {server['name']} - Último día con ventas: día {dia_con_datos}")
+            print(f"*** MPRO por sucursal {server['name']} - Ultimo dia con ventas: dia {dia_con_datos} ***")
             
             # Actualizar fecha_fin y recalcular días transcurridos
             ff = f"{fi[:6]}{str(dia_con_datos).zfill(2)}"
