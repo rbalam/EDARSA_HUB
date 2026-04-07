@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter, FileSpreadsheet, LayoutDashboard, ClipboardList } from 'lucide-react';
+import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter, FileSpreadsheet, LayoutDashboard, ClipboardList, FileText, FolderOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -280,12 +280,15 @@ const Reportes = () => {
 
   useEffect(() => {
     if (filters.server_id && filters.sucursal_id) {
+      // Buscar el servidor actual para verificar el tipo
+      const currentServer = selectedServer || servers.find(s => s.id === filters.server_id);
       // Solo cargar almacenes si NO es SoftRestaurant (que ya los carga directamente)
-      if (selectedServer?.system_type !== 'SoftRestaurant') {
+      if (currentServer?.system_type !== 'SoftRestaurant') {
+        console.log('[loadAlmacenes useEffect] Cargando almacenes para:', filters.sucursal_id);
         loadAlmacenes();
       }
     }
-  }, [filters.server_id, filters.sucursal_id, selectedServer]);
+  }, [filters.server_id, filters.sucursal_id, selectedServer, servers]);
 
   // Cargar insumos pendientes cuando se selecciona ese tipo de consulta
   useEffect(() => {
@@ -448,9 +451,11 @@ const Reportes = () => {
 
   const loadAlmacenes = async () => {
     try {
+      console.log('[loadAlmacenes] Llamando API con sucursal_id:', filters.sucursal_id);
       const response = await api.get(`/servers/${filters.server_id}/almacenes`, {
         params: { sucursal_id: filters.sucursal_id }
       });
+      console.log('[loadAlmacenes] Respuesta:', response.data);
       setAlmacenes(response.data);
     } catch (error) {
       console.error('Error al cargar almacenes:', error);
@@ -1119,7 +1124,7 @@ const Reportes = () => {
 
       {/* Tabs de Inventarios */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-4">
+        <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
@@ -1127,6 +1132,10 @@ const Reportes = () => {
           <TabsTrigger value="analisis" className="flex items-center gap-2">
             <ClipboardList className="h-4 w-4" />
             Análisis de Inventarios
+          </TabsTrigger>
+          <TabsTrigger value="informes" className="flex items-center gap-2">
+            <FolderOpen className="h-4 w-4" />
+            Informes de Auditoría
           </TabsTrigger>
         </TabsList>
 
@@ -1845,6 +1854,21 @@ const Reportes = () => {
                   </>
                 )}
               </Button>
+              
+              {/* Botón Generar Informe de Auditoría */}
+              {reportData.length > 0 && (
+                <Button
+                  variant="default"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => {
+                    toast.info('Función de Informe de Auditoría en desarrollo');
+                    setActiveTab('informes');
+                  }}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Generar Informe
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
@@ -2309,6 +2333,103 @@ const Reportes = () => {
           </div>
         </div>
       )}
+        </TabsContent>
+
+        {/* Tab: Informes de Auditoría */}
+        <TabsContent value="informes">
+          <div className="space-y-6">
+            {/* Header */}
+            <Card className="border border-zinc-200 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <FolderOpen className="h-5 w-5" />
+                  Repositorio de Informes de Auditoría
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-zinc-500 mb-4">
+                  Aquí se almacenan todos los informes de auditoría generados. Los informes incluyen 
+                  el análisis de inventarios, comentarios del auditor, conclusiones, recomendaciones 
+                  y evidencias adjuntas (fotos, PDFs, documentos).
+                </p>
+                
+                {/* Filtros de búsqueda */}
+                <div className="flex flex-wrap gap-4 mb-6">
+                  <div className="flex-1 min-w-[200px]">
+                    <Label className="text-xs text-zinc-500">Sucursal</Label>
+                    <select className={selectStyle}>
+                      <option value="">Todas las sucursales</option>
+                      {sucursales.map(s => (
+                        <option key={s.id} value={s.id}>{s.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1 min-w-[150px]">
+                    <Label className="text-xs text-zinc-500">Fecha Desde</Label>
+                    <Input type="date" className="h-10" />
+                  </div>
+                  <div className="flex-1 min-w-[150px]">
+                    <Label className="text-xs text-zinc-500">Fecha Hasta</Label>
+                    <Input type="date" className="h-10" />
+                  </div>
+                  <div className="flex items-end">
+                    <Button variant="outline">
+                      <Search className="h-4 w-4 mr-2" />
+                      Buscar
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Lista de informes (placeholder) */}
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-zinc-50">
+                        <TableHead className="font-semibold">Fecha</TableHead>
+                        <TableHead className="font-semibold">Sucursal</TableHead>
+                        <TableHead className="font-semibold">Almacén</TableHead>
+                        <TableHead className="font-semibold">Periodo</TableHead>
+                        <TableHead className="font-semibold">Auditor</TableHead>
+                        <TableHead className="font-semibold">Evidencias</TableHead>
+                        <TableHead className="font-semibold text-right">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-12 text-zinc-400">
+                          <FolderOpen className="h-12 w-12 mx-auto mb-3 text-zinc-300" />
+                          <p className="text-base font-medium">No hay informes de auditoría</p>
+                          <p className="text-sm mt-1">
+                            Los informes se generarán desde la pestaña "Análisis de Inventarios" 
+                            usando el botón "Generar Informe"
+                          </p>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Instrucciones */}
+            <Card className="border border-blue-200 bg-blue-50">
+              <CardContent className="pt-4">
+                <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  ¿Cómo generar un informe de auditoría?
+                </h4>
+                <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                  <li>Ve a la pestaña "Análisis de Inventarios"</li>
+                  <li>Selecciona el servidor, sucursal, almacén e inventario</li>
+                  <li>Genera el reporte de análisis</li>
+                  <li>Haz clic en el botón "Generar Informe"</li>
+                  <li>Agrega comentarios, conclusiones y recomendaciones</li>
+                  <li>Adjunta evidencias (fotos, PDFs) si lo requieres</li>
+                  <li>Guarda el informe para consultarlo posteriormente</li>
+                </ol>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
