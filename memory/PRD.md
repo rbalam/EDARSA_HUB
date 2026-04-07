@@ -214,3 +214,12 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 - **Frontend Fix**: Ahora envía `almacen_id` y `fecha` en `inventarios_finales_info` para guardar cache correctamente
 - **Backend Fix**: Logging mejorado para depuración de cache
 - **Aclaración Badge**: El número "1" en el botón representa almacenes seleccionados, no reportes cacheados (diseño intencionado)
+
+### April 7, 2026 - Fix: Whiskys y Familias de COMPRA No Aparecían en Inventarios
+- **Bug corregido**: Los Whiskys y otras familias (VODKAS, VINOS TINTOS) no aparecían en el reporte de análisis de inventarios
+- **Causa raíz**: La query usaba `TOP 3000` con `ORDER BY Familia`, y familias que empiezan con W, V quedaban fuera del límite alfabético (3,856 productos pasaban el filtro)
+- **Solución**: 
+  - Eliminado `TOP 3000` y agregado filtro `EXISTS` que solo trae productos con inventario físico en folios seleccionados
+  - Cambiado `NOT IN` a `NOT EXISTS` para mejor compatibilidad con SQL Server
+  - Corregido error `strptime() argument 1 must be str, not None` con fallbacks de fecha
+- **Resultado**: De 288 productos/0 Whiskys a 418 productos/21 Whiskys

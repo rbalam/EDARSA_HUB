@@ -2281,8 +2281,38 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             # - Ejemplo: Si inventario inicial es 28-Feb-2026, movimientos/ventas desde 01-Mar-2026
             # ===============================================================
             
-            # Calcular fecha de inicio para movimientos/ventas (fecha_ini + 1 día)
+            # Obtener fechas de los inventarios si no se proporcionan explícitamente
             from datetime import datetime, timedelta
+            
+            # Si no hay fecha_ini, intentar obtenerla de inventarios_iniciales_info o del folio
+            if not fecha_ini:
+                if inventarios_iniciales_info and inventarios_iniciales_info[0].get('fecha'):
+                    fecha_ini = inventarios_iniciales_info[0]['fecha'][:10]  # YYYY-MM-DD
+                elif lista_folios_ini:
+                    # Obtener fecha del primer folio inicial
+                    fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio = '{lista_folios_ini[0]}'"
+                    fecha_result = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], fecha_folio_query)
+                    if fecha_result:
+                        fecha_ini = fecha_result[0]['fecha'][:10]
+                    else:
+                        raise HTTPException(status_code=400, detail="No se pudo determinar la fecha inicial")
+                else:
+                    raise HTTPException(status_code=400, detail="Se requiere fecha_ini o inventarios_iniciales_info")
+            
+            if not fecha_fin:
+                if inventarios_finales_info and inventarios_finales_info[0].get('fecha'):
+                    fecha_fin = inventarios_finales_info[0]['fecha'][:10]
+                elif lista_folios_fin:
+                    fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio = '{lista_folios_fin[0]}'"
+                    fecha_result = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], fecha_folio_query)
+                    if fecha_result:
+                        fecha_fin = fecha_result[0]['fecha'][:10]
+                    else:
+                        raise HTTPException(status_code=400, detail="No se pudo determinar la fecha final")
+                else:
+                    raise HTTPException(status_code=400, detail="Se requiere fecha_fin o inventarios_finales_info")
+            
+            # Calcular fecha de inicio para movimientos/ventas (fecha_ini + 1 día)
             fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
             fecha_ini_mov = (fecha_ini_dt + timedelta(days=1)).strftime('%Y-%m-%d')
             logging.info(f"MPRO - Fecha movimientos/ventas: {fecha_ini_mov} a {fecha_fin}")
@@ -2332,40 +2362,12 @@ WHERE ({almacenes_like_conditions})
             logging.info(f"Almacenes encontrados: {almacenes_codigos} - {almacenes_nombres} (Sucursal: {sucursal_codigo})")
             logging.info(f"MPRO - Incluye almacén BODEGA: {es_almacen_bodega}")
             
-            # 2. Obtener productos del departamento INSUMOS (0007)
-            # Solo mostramos productos que:
-            # a) Son INSUMOS (Dp_Cve_Departamento = '0007') Y tienen presentaciones
-            # b) Son productos de COMPRA que NO están como presentación de ningún insumo
-            # NOTA: Usamos GROUP BY y SUM para agrupar inventarios duplicados
+            # 2. Obtener productos que se controlan en inventario:
+            # a) INSUMOS (Dp_Cve_Departamento = '0007') que tienen presentaciones configuradas
+            # b) Productos de COMPRA (cualquier depto != 0007) que NO están como presentación de ningún insumo
+            # NOTA: Solo obtenemos productos que tienen inventario en los folios seleccionados (optimización)
             productos_query = f"""
-WITH InsumosConPresentaciones AS (
-    -- INSUMOS que tienen al menos una presentación
-    SELECT DISTINCT P.Pr_Cve_Producto
-    FROM Producto P
-    INNER JOIN Producto_Presentacion PP ON PP.Pr_Cve_Producto = P.Pr_Cve_Producto
-    WHERE P.Dp_Cve_Departamento = '0007'
-      AND P.Es_Cve_Estado <> 'BA'
-),
-ProductosComoPresentacion AS (
-    -- Productos que están registrados como presentación de algún insumo
-    SELECT DISTINCT Pp_Producto as Pr_Cve_Producto
-    FROM Producto_Presentacion
-),
-InventarioInicial AS (
-    -- Sumar inventarios iniciales duplicados por producto (multi-folio, multi-almacén)
-    SELECT Pr_Cve_Producto, SUM(Fi_Cantidad_Control_1) as Cantidad
-    FROM Fisico
-    WHERE Fi_Folio IN ({folios_ini_sql}) AND Al_Cve_Almacen IN ({almacenes_sql})
-    GROUP BY Pr_Cve_Producto
-),
-InventarioFinal AS (
-    -- Sumar inventarios finales duplicados por producto (multi-folio, multi-almacén)
-    SELECT Pr_Cve_Producto, SUM(Fi_Cantidad_Control_1) as Cantidad
-    FROM Fisico
-    WHERE Fi_Folio IN ({folios_fin_sql}) AND Al_Cve_Almacen IN ({almacenes_sql})
-    GROUP BY Pr_Cve_Producto
-)
-SELECT TOP 3000
+SELECT DISTINCT
     P.Pr_Cve_Producto as Codigo,
     P.Pr_Descripcion as Producto,
     F.Fm_Descripcion as Familia,
@@ -2379,34 +2381,35 @@ SELECT TOP 3000
         ELSE 'COMPRA'
     END as Tipo_Producto,
     CASE 
-        WHEN ICP.Pr_Cve_Producto IS NOT NULL THEN 1
+        WHEN EXISTS (SELECT 1 FROM Producto_Presentacion PP WHERE PP.Pr_Cve_Producto = P.Pr_Cve_Producto) THEN 1
         ELSE 0
-    END as Tiene_Presentaciones,
-    ISNULL(FI.Cantidad, 0) as Inv_Inicial_Cantidad,
-    ISNULL(FF.Cantidad, 0) as Inv_Final_Cantidad
+    END as Tiene_Presentaciones
 FROM Producto P
 INNER JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
 INNER JOIN SubFamilia SF ON SF.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
 INNER JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
 INNER JOIN Departamento D ON D.Dp_Cve_Departamento = P.Dp_Cve_Departamento
-LEFT JOIN InsumosConPresentaciones ICP ON ICP.Pr_Cve_Producto = P.Pr_Cve_Producto
-LEFT JOIN ProductosComoPresentacion PCP ON PCP.Pr_Cve_Producto = P.Pr_Cve_Producto
-LEFT JOIN InventarioInicial FI ON FI.Pr_Cve_Producto = P.Pr_Cve_Producto
-LEFT JOIN InventarioFinal FF ON FF.Pr_Cve_Producto = P.Pr_Cve_Producto
 WHERE P.Es_Cve_Estado <> 'BA'
     AND (
-        -- Caso A: Es un INSUMO con presentaciones
-        (P.Dp_Cve_Departamento = '0007' AND ICP.Pr_Cve_Producto IS NOT NULL)
+        -- Caso A: Es un INSUMO (depto 0007) que tiene presentaciones configuradas
+        (P.Dp_Cve_Departamento = '0007' AND EXISTS (SELECT 1 FROM Producto_Presentacion PP WHERE PP.Pr_Cve_Producto = P.Pr_Cve_Producto))
         OR
-        -- Caso B: Es un producto de COMPRA que NO está como presentación de ningún insumo
-        (P.Dp_Cve_Departamento <> '0007' AND PCP.Pr_Cve_Producto IS NULL)
+        -- Caso B: Es un producto de COMPRA (depto != 0007) que NO está registrado como presentación de otro producto
+        (P.Dp_Cve_Departamento <> '0007' AND NOT EXISTS (SELECT 1 FROM Producto_Presentacion PP WHERE PP.Pp_Producto = P.Pr_Cve_Producto))
     )
     {filtro_categorias_p}
     {filtro_familias_p}
     {filtro_subfamilias_p}
+    -- Solo productos que tienen inventario en los folios seleccionados
+    AND EXISTS (
+        SELECT 1 FROM Fisico FIS 
+        WHERE FIS.Pr_Cve_Producto = P.Pr_Cve_Producto 
+        AND FIS.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql})
+        AND FIS.Al_Cve_Almacen IN ({almacenes_sql})
+    )
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
 """
-            logging.info("Obteniendo catálogo de productos MPRO (INSUMOS con presentaciones + COMPRAS sin presentación)...")
+            logging.info("Obteniendo catalogo de productos MPRO (INSUMOS con presentaciones + COMPRAS sin presentacion)...")
             productos = execute_sql_query(
                 server['host'], server['port'], server['database'],
                 server['username'], server['password'], productos_query
