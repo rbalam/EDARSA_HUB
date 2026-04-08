@@ -7932,20 +7932,26 @@ WHERE turnos.apertura >= '{f_ini} 00:00:00'
                     fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
                     fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
                     
-                    # Año anterior - mismo mes
-                    anio_pasado = anio_actual - 1
-                    if mes_actual == 2:
+                    # Año anterior - mismo RANGO de meses (no solo mes_actual)
+                    # Si multiselección (mes_min != mes_max), comparar con el mismo rango del año anterior
+                    anio_pasado = year - 1  # Usar 'year' de la selección, no anio_actual del bucle
+                    
+                    # CORRECCIÓN: Para multiselección, usar mes_min y mes_max
+                    # El año anterior debe abarcar el mismo rango de meses
+                    fecha_ini_ano_ant = f"{anio_pasado}-{str(mes_min).zfill(2)}-01"
+                    
+                    # Calcular el día final del año anterior
+                    if mes_max == 2:
                         max_dia_ano_ant = 29 if (anio_pasado % 4 == 0 and (anio_pasado % 100 != 0 or anio_pasado % 400 == 0)) else 28
-                    elif mes_actual in [4, 6, 9, 11]:
+                    elif mes_max in [4, 6, 9, 11]:
                         max_dia_ano_ant = 30
                     else:
                         max_dia_ano_ant = 31
                     
                     dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
-                    fecha_ini_ano_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-01"
-                    fecha_fin_ano_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+                    fecha_fin_ano_ant = f"{anio_pasado}-{str(mes_max).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
                     
-                    logging.info(f"Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant}")
+                    logging.info(f"Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant} (multiselección: {mes_min}-{mes_max})")
                 else:
                     # Si no hay datos, usar valores por defecto
                     dia_con_datos = 1
@@ -8149,20 +8155,23 @@ WHERE VE.Vn_Fecha >= '{fecha_ini}'
                     fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
                     fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
                     
-                    # Año anterior - mismo mes
-                    anio_pasado = anio_actual - 1
-                    if mes_actual == 2:
+                    # Año anterior - mismo RANGO de meses (no solo mes_actual)
+                    # CORRECCIÓN: Para multiselección, usar mes_min y mes_max
+                    anio_pasado = year - 1  # Usar 'year' de la selección
+                    
+                    fecha_ini_ano_ant = f"{anio_pasado}-{str(mes_min).zfill(2)}-01"
+                    
+                    if mes_max == 2:
                         max_dia_ano_ant = 29 if (anio_pasado % 4 == 0 and (anio_pasado % 100 != 0 or anio_pasado % 400 == 0)) else 28
-                    elif mes_actual in [4, 6, 9, 11]:
+                    elif mes_max in [4, 6, 9, 11]:
                         max_dia_ano_ant = 30
                     else:
                         max_dia_ano_ant = 31
                     
                     dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
-                    fecha_ini_ano_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-01"
-                    fecha_fin_ano_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+                    fecha_fin_ano_ant = f"{anio_pasado}-{str(mes_max).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
                     
-                    logging.info(f"MPRO Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant}")
+                    logging.info(f"MPRO Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant} (multiselección: {mes_min}-{mes_max})")
             
             # Query para MPRO - usar Venta_Encabezado con Comanda para PAX
             sucursal_join = ""
