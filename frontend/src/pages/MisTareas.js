@@ -30,6 +30,15 @@ export default function MisTareas() {
   const [catalogosDisponibles, setCatalogosDisponibles] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   
+  // Estados BANDEJA UNIFICADA
+  const [pendientesUnificados, setPendientesUnificados] = useState({
+    urgentes: [],
+    catalogos: [],
+    proveedores: [],
+    nominas: [],
+    contadores: { urgentes: 0, catalogos: 0, proveedores: 0, nominas: 0, total: 0 }
+  });
+  
   // Estados Portal Proveedores
   const [proveedores, setProveedores] = useState([]);
   const [filtroProveedores, setFiltroProveedores] = useState('pending');
@@ -96,17 +105,19 @@ export default function MisTareas() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [tareasData, permisosData, catalogosData, misSolicitudesData] = await Promise.all([
+      const [tareasData, permisosData, catalogosData, misSolicitudesData, unificadosData] = await Promise.all([
         fetchWithAuth('/api/sistema/mis-tareas'),
         fetchWithAuth('/api/sistema/mis-permisos-catalogos'),
         fetchWithAuth('/api/sistema/catalogos-disponibles'),
-        fetchWithAuth('/api/sistema/solicitudes')  // Mis solicitudes
+        fetchWithAuth('/api/sistema/solicitudes'),  // Mis solicitudes
+        fetchWithAuth('/api/sistema/pendientes-unificados')  // NUEVO: Bandeja unificada
       ]);
       
       setTareas(tareasData);
       setMisPermisos(permisosData);
       setCatalogosDisponibles(catalogosData.catalogos || []);
       setMisSolicitudes(misSolicitudesData.solicitudes || []);
+      setPendientesUnificados(unificadosData);  // NUEVO
       
       // Si puede aprobar, cargar solicitudes pendientes de aprobar
       if (canApprove) {
@@ -738,16 +749,30 @@ export default function MisTareas() {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-amber-50 border-amber-200">
+      {/* KPIs - BANDEJA UNIFICADA */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card className={`border-2 ${pendientesUnificados.contadores.urgentes > 0 ? 'bg-red-50 border-red-300' : 'bg-zinc-50 border-zinc-200'}`}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-amber-700">Pendientes</p>
-                <p className="text-2xl font-bold text-amber-800">{tareas.total_pendientes}</p>
+                <p className={`text-sm ${pendientesUnificados.contadores.urgentes > 0 ? 'text-red-700' : 'text-zinc-600'}`}>Urgentes</p>
+                <p className={`text-2xl font-bold ${pendientesUnificados.contadores.urgentes > 0 ? 'text-red-800' : 'text-zinc-800'}`}>
+                  {pendientesUnificados.contadores.urgentes}
+                </p>
               </div>
-              <Clock className="h-8 w-8 text-amber-500" />
+              <AlertTriangle className={`h-8 w-8 ${pendientesUnificados.contadores.urgentes > 0 ? 'text-red-500' : 'text-zinc-400'}`} />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-purple-50 border-purple-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-purple-700">Catálogos</p>
+                <p className="text-2xl font-bold text-purple-800">{pendientesUnificados.contadores.catalogos}</p>
+              </div>
+              <FileText className="h-8 w-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
@@ -756,40 +781,111 @@ export default function MisTareas() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-700">En Proceso</p>
-                <p className="text-2xl font-bold text-blue-800">{tareas.total_en_proceso}</p>
+                <p className="text-sm text-blue-700">Proveedores</p>
+                <p className="text-2xl font-bold text-blue-800">{pendientesUnificados.contadores.proveedores}</p>
               </div>
-              <RefreshCw className="h-8 w-8 text-blue-500" />
+              <Building2 className="h-8 w-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
         
-        {canApprove && (
-          <Card className="bg-purple-50 border-purple-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-purple-700">Por Aprobar</p>
-                  <p className="text-2xl font-bold text-purple-800">{tareas.solicitudes_pendientes_aprobar}</p>
-                </div>
-                <FileText className="h-8 w-8 text-purple-500" />
+        <Card className="bg-amber-50 border-amber-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-amber-700">Nóminas</p>
+                <p className="text-2xl font-bold text-amber-800">{pendientesUnificados.contadores.nominas}</p>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <Users className="h-8 w-8 text-amber-500" />
+            </div>
+          </CardContent>
+        </Card>
         
         <Card className="bg-green-50 border-green-200">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-green-700">Completadas</p>
-                <p className="text-2xl font-bold text-green-800">{tareas.completadas.length}</p>
+                <p className="text-sm text-green-700">Total Pendiente</p>
+                <p className="text-2xl font-bold text-green-800">{pendientesUnificados.contadores.total}</p>
               </div>
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
+              <ClipboardList className="h-8 w-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* SECCIÓN URGENTES/VENCIDOS */}
+      {pendientesUnificados.urgentes.length > 0 && (
+        <Card className="border-red-300 bg-red-50/50">
+          <CardHeader className="py-3 bg-red-100/50">
+            <CardTitle className="text-base font-medium flex items-center gap-2 text-red-800">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              Urgentes / Vencidos ({pendientesUnificados.urgentes.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-red-100">
+              {pendientesUnificados.urgentes.map((item) => (
+                <div key={`${item.tipo}-${item.id}`} className="p-4 hover:bg-red-50 transition-colors">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className={`p-2 rounded-lg ${
+                        item.tipo === 'catalogo' ? 'bg-purple-100' :
+                        item.tipo === 'proveedor' ? 'bg-blue-100' : 'bg-amber-100'
+                      }`}>
+                        {item.tipo === 'catalogo' && <FileText className="h-5 w-5 text-purple-600" />}
+                        {item.tipo === 'proveedor' && <Building2 className="h-5 w-5 text-blue-600" />}
+                        {item.tipo === 'nomina' && <Users className="h-5 w-5 text-amber-600" />}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-zinc-800">{item.titulo}</p>
+                          {item.vencido && (
+                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-600 text-white">VENCIDO</span>
+                          )}
+                          {item.proximo_vencer && !item.vencido && (
+                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-yellow-500 text-white">Próximo a vencer</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-zinc-500">{item.descripcion}</p>
+                        <p className="text-xs text-zinc-400 mt-1">
+                          {item.tipo === 'nomina' 
+                            ? `Deadline: ${item.deadline ? new Date(item.deadline).toLocaleString('es-MX') : 'N/A'}`
+                            : `Hace ${item.horas_pendiente}h`
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {item.tipo === 'catalogo' && (
+                        <Button size="sm" variant="outline" onClick={() => {
+                          setSolicitudSeleccionada(item.data);
+                          setModalAprobar(true);
+                        }}>
+                          <Eye className="h-4 w-4 mr-1" />
+                          Revisar
+                        </Button>
+                      )}
+                      {item.tipo === 'proveedor' && (
+                        <Button size="sm" variant="outline" onClick={() => openProveedorModal(item.data)}>
+                          <Eye className="h-4 w-4 mr-1" />
+                          Revisar
+                        </Button>
+                      )}
+                      {item.tipo === 'nomina' && (
+                        <Button size="sm" variant="outline" onClick={() => window.location.href = '/recursos-humanos'}>
+                          <ArrowRight className="h-4 w-4 mr-1" />
+                          Ir a Nóminas
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Notificaciones/Tareas Pendientes */}
@@ -920,6 +1016,120 @@ export default function MisTareas() {
             </CardContent>
           </Card>
         )}
+      </div>
+
+      {/* ===== SECCIONES AGRUPADAS POR TIPO ===== */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* CATÁLOGOS PENDIENTES */}
+        <Card className="border-purple-200">
+          <CardHeader className="py-3 bg-purple-50">
+            <CardTitle className="text-base font-medium flex items-center gap-2 text-purple-800">
+              <FileText className="h-5 w-5 text-purple-600" />
+              Catálogos ({pendientesUnificados.contadores.catalogos})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 max-h-[350px] overflow-y-auto">
+            {pendientesUnificados.catalogos.length === 0 ? (
+              <div className="p-6 text-center text-zinc-500">
+                <CheckCircle2 className="h-10 w-10 mx-auto mb-2 text-green-300" />
+                <p className="text-sm">Sin pendientes</p>
+              </div>
+            ) : (
+              <div className="divide-y">
+                {pendientesUnificados.catalogos.map((item) => (
+                  <div key={item.id} className="p-3 hover:bg-purple-50/50">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-zinc-800 truncate">{item.titulo}</p>
+                        <p className="text-xs text-zinc-500 truncate">{item.descripcion}</p>
+                        <p className="text-xs text-zinc-400 mt-1">Por: {item.solicitante}</p>
+                      </div>
+                      <Button size="sm" variant="ghost" onClick={() => {
+                        setSolicitudSeleccionada(item.data);
+                        setModalAprobar(true);
+                      }}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        {/* PROVEEDORES PENDIENTES */}
+        <Card className="border-blue-200">
+          <CardHeader className="py-3 bg-blue-50">
+            <CardTitle className="text-base font-medium flex items-center gap-2 text-blue-800">
+              <Building2 className="h-5 w-5 text-blue-600" />
+              Proveedores ({pendientesUnificados.contadores.proveedores})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 max-h-[350px] overflow-y-auto">
+            {pendientesUnificados.proveedores.length === 0 ? (
+              <div className="p-6 text-center text-zinc-500">
+                <CheckCircle2 className="h-10 w-10 mx-auto mb-2 text-green-300" />
+                <p className="text-sm">Sin pendientes</p>
+              </div>
+            ) : (
+              <div className="divide-y">
+                {pendientesUnificados.proveedores.map((item) => (
+                  <div key={item.id} className="p-3 hover:bg-blue-50/50">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-zinc-800 truncate">{item.titulo}</p>
+                        <p className="text-xs text-zinc-500 truncate">{item.descripcion}</p>
+                        <p className="text-xs text-zinc-400 mt-1">Hace {item.horas_pendiente}h</p>
+                      </div>
+                      <Button size="sm" variant="ghost" onClick={() => openProveedorModal(item.data)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        {/* NÓMINAS PENDIENTES */}
+        <Card className="border-amber-200">
+          <CardHeader className="py-3 bg-amber-50">
+            <CardTitle className="text-base font-medium flex items-center gap-2 text-amber-800">
+              <Users className="h-5 w-5 text-amber-600" />
+              Nóminas ({pendientesUnificados.contadores.nominas})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 max-h-[350px] overflow-y-auto">
+            {pendientesUnificados.nominas.length === 0 ? (
+              <div className="p-6 text-center text-zinc-500">
+                <CheckCircle2 className="h-10 w-10 mx-auto mb-2 text-green-300" />
+                <p className="text-sm">Sin pendientes</p>
+              </div>
+            ) : (
+              <div className="divide-y">
+                {pendientesUnificados.nominas.map((item) => (
+                  <div key={item.id} className="p-3 hover:bg-amber-50/50">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-zinc-800 truncate">{item.titulo}</p>
+                        <p className="text-xs text-zinc-500 truncate">{item.descripcion}</p>
+                        <p className="text-xs text-zinc-400 mt-1">
+                          {item.deadline ? `Límite: ${new Date(item.deadline).toLocaleString('es-MX', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'})}` : ''}
+                        </p>
+                      </div>
+                      <Button size="sm" variant="ghost" onClick={() => window.location.href = '/recursos-humanos'}>
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Mis Solicitudes - Para ver estado y corregir rechazadas */}

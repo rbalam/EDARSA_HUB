@@ -16335,7 +16335,185 @@ async def obtener_mis_tareas(current_user: Dict = Depends(get_current_user)):
     }
 
 
-@api_router.put("/sistema/tareas/{tarea_id}/marcar-leida")
+@api_router.get("/sistema/pendientes-unificados")
+async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current_user)):
+    """
+    Obtiene TODOS los pendientes del usuario en una bandeja unificada.
+    Incluye: Solicitudes de catálogos, Proveedores, Nóminas, etc.
+    Ordenados por: Urgentes/Vencidos primero, luego agrupados por tipo.
+    """
+    user_id = current_user.get("id")
+    user_role = current_user.get("role")
+    ahora = datetime.now(timezone.utc)
+    
+    urgentes = []  # Vencidos y próximos a vencer (< 24h)
+    pendientes_catalogos = []
+    pendientes_proveedores = []
+    pendientes_nominas = []
+    
+    # ===== 1. SOLICITUDES DE CATÁLOGOS =====
+    if user_role in ['Supervisor', 'Administrador']:
+        solicitudes = await db.solicitudes_catalogos.find(
+            {"estatus": "Pendiente"},
+            {"_id": 0}
+        ).sort("fecha_solicitud", -1).to_list(100)
+        
+        for sol in solicitudes:
+            fecha_sol = datetime.fromisoformat(sol.get("fecha_solicitud", ahora.isoformat()).replace("Z", "+00:00"))
+            horas_pendiente = (ahora - fecha_sol).total_seconds() / 3600
+            
+            item = {
+                "id": sol.get("id"),
+                "tipo": "catalogo",
+                "titulo": f"Solicitud de {sol.get('catalogo_nombre', 'Catálogo')}",
+                "descripcion": sol.get("notas", "Sin descripción"),
+                "solicitante": sol.get("solicitante_nombre", "Usuario"),
+                "fecha": sol.get("fecha_solicitud"),
+                "horas_pendiente": round(horas_pendiente, 1),
+                "vencido": horas_pendiente > 48,  # Más de 48h = vencido
+                "proximo_vencer": 24 < horas_pendiente <= 48,
+                "data": sol
+            }
+            
+            if item["vencido"] or item["proximo_vencer"]:
+                urgentes.append(item)
+            else:
+                pendientes_catalogos.append(item)
+    
+    # ===== 2. PROVEEDORES PENDIENTES DE APROBAR =====
+    if user_role in ['Supervisor', 'Administrador']:
+        proveedores = await db.portal_proveedores.find(
+            {"status": "pending"},
+            {"_id": 0}
+        ).sort("fecha_registro", -1).to_list(100)
+        
+        for prov in proveedores:
+            fecha_reg = prov.get("fecha_registro")
+            if fecha_reg:
+                try:
+                    fecha_prov = datetime.fromisoformat(fecha_reg.replace("Z", "+00:00"))
+                    horas_pendiente = (ahora - fecha_prov).total_seconds() / 3600
+                except:
+                    horas_pendiente = 0
+            else:
+                horas_pendiente = 0
+            
+            item = {
+                "id": prov.get("id"),
+                "tipo": "proveedor",
+                "titulo": f"Proveedor: {prov.get('razon_social', 'Sin nombre')}",
+                "descripcion": f"RFC: {prov.get('rfc', 'N/A')} - {prov.get('email', '')}",
+                "solicitante": prov.get("razon_social"),
+                "fecha": fecha_reg,
+                "horas_pendiente": round(horas_pendiente, 1),
+                "vencido": horas_pendiente > 72,  # Más de 72h = vencido
+                "proximo_vencer": 48 < horas_pendiente <= 72,
+                "data": prov
+            }
+            
+            if item["vencido"] or item["proximo_vencer"]:
+                urgentes.append(item)
+            else:
+                pendientes_proveedores.append(item)
+    
+    # ===== 3. NÓMINAS PENDIENTES POR ROL =====
+    # Mapeo de etapas a roles
+    etapas_por_rol = {
+        "Administrador": ["headcount", "incidencias", "validacion_rh", "maquilador", "autorizacion", "tesoreria"],
+        "Supervisor": ["headcount", "incidencias", "validacion_rh", "autorizacion"],
+        "Gerente": ["headcount", "incidencias", "autorizacion"],
+        "Maquilador": ["maquilador"],
+        "Tesoreria": ["tesoreria"],
+        "RH": ["validacion_rh"]
+    }
+    
+    etapas_usuario = etapas_por_rol.get(user_role, [])
+    
+    if etapas_usuario:
+        ciclos = await db.nomina_ciclos.find(
+            {"etapa_actual": {"$in": etapas_usuario}, "estatus": {"$ne": "cancelado"}},
+            {"_id": 0}
+        ).to_list(100)
+        
+        # Obtener configuración para calcular vencimientos
+        config = await db.nomina_configuracion.find_one({}, {"_id": 0})
+        horarios = {
+            "headcount": config.get("horario_headcount", "10:00") if config else "10:00",
+            "incidencias": config.get("horario_headcount", "10:00") if config else "10:00",
+            "validacion_rh": config.get("horario_autorizacion", "11:00") if config else "11:00",
+            "autorizacion": config.get("horario_autorizacion", "11:00") if config else "11:00",
+            "maquilador": config.get("horario_maquilador", "12:00") if config else "12:00",
+            "tesoreria": config.get("horario_tesoreria", "14:00") if config else "14:00"
+        }
+        
+        etapa_nombres = {
+            "headcount": "Headcount",
+            "incidencias": "Incidencias",
+            "validacion_rh": "Validación RH",
+            "maquilador": "Maquilador",
+            "autorizacion": "Autorización",
+            "tesoreria": "Tesorería"
+        }
+        
+        for ciclo in ciclos:
+            etapa = ciclo.get("etapa_actual", "")
+            fecha_corte = ciclo.get("fecha_corte", "")
+            sucursal = ciclo.get("sucursal_nombre", "Sucursal")
+            
+            # Calcular si está vencido basado en deadline
+            try:
+                deadline_str = ciclo.get(f"deadline_{etapa}")
+                if deadline_str:
+                    deadline = datetime.fromisoformat(deadline_str.replace("Z", "+00:00"))
+                    horas_restantes = (deadline - ahora).total_seconds() / 3600
+                    vencido = horas_restantes < 0
+                    proximo_vencer = 0 <= horas_restantes < 24
+                else:
+                    horas_restantes = 0
+                    vencido = True
+                    proximo_vencer = False
+            except:
+                horas_restantes = 0
+                vencido = True
+                proximo_vencer = False
+            
+            item = {
+                "id": ciclo.get("id"),
+                "tipo": "nomina",
+                "subtipo": etapa,
+                "titulo": f"Nómina {sucursal} - {etapa_nombres.get(etapa, etapa)}",
+                "descripcion": f"Corte: {fecha_corte} | {ciclo.get('tipo_nomina', 'Quincenal')}",
+                "solicitante": sucursal,
+                "fecha": ciclo.get("fecha_creacion"),
+                "deadline": ciclo.get(f"deadline_{etapa}"),
+                "horas_restantes": round(horas_restantes, 1),
+                "vencido": vencido,
+                "proximo_vencer": proximo_vencer,
+                "data": ciclo
+            }
+            
+            if item["vencido"] or item["proximo_vencer"]:
+                urgentes.append(item)
+            else:
+                pendientes_nominas.append(item)
+    
+    # ===== ORDENAR URGENTES =====
+    # Primero los vencidos (más antiguos primero), luego próximos a vencer
+    urgentes.sort(key=lambda x: (not x["vencido"], x.get("horas_restantes", 0) if x["tipo"] == "nomina" else -x.get("horas_pendiente", 0)))
+    
+    return {
+        "urgentes": urgentes,
+        "catalogos": pendientes_catalogos,
+        "proveedores": pendientes_proveedores,
+        "nominas": pendientes_nominas,
+        "contadores": {
+            "urgentes": len(urgentes),
+            "catalogos": len(pendientes_catalogos),
+            "proveedores": len(pendientes_proveedores),
+            "nominas": len(pendientes_nominas),
+            "total": len(urgentes) + len(pendientes_catalogos) + len(pendientes_proveedores) + len(pendientes_nominas)
+        }
+    }
 async def marcar_tarea_leida(tarea_id: str, current_user: Dict = Depends(get_current_user)):
     """Marca una tarea/notificación como leída"""
     await db.tareas_sistema.update_one(
