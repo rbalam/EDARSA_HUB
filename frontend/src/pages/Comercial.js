@@ -230,6 +230,9 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
   const [tipoComparacion, setTipoComparacion] = useState('dias_equiv'); // dias_equiv o mes_completo
   
   const ANIOS = getAniosDisponibles();
+  
+  // Detectar si hay multiselección de meses (para deshabilitar "vs mes")
+  const esMultiMes = selectedMeses.length > 1;
 
   const cargarDashboard = async () => {
     if (!selectedServer || !selectedSucursal) {
@@ -532,9 +535,11 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   <DollarSign className="h-8 w-8 text-green-200" />
                 </div>
                 <div className="flex gap-3 mt-2 text-xs">
-                  <span className={comparativo?.vs_periodo_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {formatPercent(comparativo?.vs_periodo_anterior || 0)} vs mes
-                  </span>
+                  {!esMultiMes && (
+                    <span className={comparativo?.vs_periodo_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {formatPercent(comparativo?.vs_periodo_anterior || 0)} vs mes
+                    </span>
+                  )}
                   <span className={comparativo?.vs_ano_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
                     {formatPercent(comparativo?.vs_ano_anterior || 0)} vs año
                   </span>
@@ -560,9 +565,11 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   <Users className="h-8 w-8 text-purple-200" />
                 </div>
                 <div className="flex gap-3 mt-2 text-xs">
-                  <span className={comparativo?.pax_vs_mes_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {formatPercent(comparativo?.pax_vs_mes_anterior || 0)} vs mes
-                  </span>
+                  {!esMultiMes && (
+                    <span className={comparativo?.pax_vs_mes_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {formatPercent(comparativo?.pax_vs_mes_anterior || 0)} vs mes
+                    </span>
+                  )}
                   <span className={comparativo?.pax_vs_ano_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
                     {formatPercent(comparativo?.pax_vs_ano_anterior || 0)} vs año
                   </span>
@@ -586,9 +593,11 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   <Receipt className="h-8 w-8 text-blue-200" />
                 </div>
                 <div className="flex gap-3 mt-2 text-xs">
-                  <span className={comparativo?.cheque_vs_mes_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {formatPercent(comparativo?.cheque_vs_mes_anterior || 0)} vs mes
-                  </span>
+                  {!esMultiMes && (
+                    <span className={comparativo?.cheque_vs_mes_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {formatPercent(comparativo?.cheque_vs_mes_anterior || 0)} vs mes
+                    </span>
+                  )}
                   <span className={comparativo?.cheque_vs_ano_anterior >= 0 ? 'text-green-600' : 'text-red-600'}>
                     {formatPercent(comparativo?.cheque_vs_ano_anterior || 0)} vs año
                   </span>
@@ -615,9 +624,11 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   <Utensils className="h-8 w-8 text-green-200" />
                 </div>
                 <div className="flex gap-3 mt-2 text-xs">
-                  <span className={comparativo?.rotacion_vs_mes >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {formatPercent(comparativo?.rotacion_vs_mes || 0)} vs mes
-                  </span>
+                  {!esMultiMes && (
+                    <span className={comparativo?.rotacion_vs_mes >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {formatPercent(comparativo?.rotacion_vs_mes || 0)} vs mes
+                    </span>
+                  )}
                   <span className={comparativo?.rotacion_vs_ano >= 0 ? 'text-green-600' : 'text-red-600'}>
                     {formatPercent(comparativo?.rotacion_vs_ano || 0)} vs año
                   </span>
@@ -640,9 +651,11 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   <Users className="h-8 w-8 text-purple-200" />
                 </div>
                 <div className="flex gap-3 mt-2 text-xs">
-                  <span className={comparativo?.pax_total_vs_mes >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {formatPercent(comparativo?.pax_total_vs_mes || 0)} vs mes
-                  </span>
+                  {!esMultiMes && (
+                    <span className={comparativo?.pax_total_vs_mes >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {formatPercent(comparativo?.pax_total_vs_mes || 0)} vs mes
+                    </span>
+                  )}
                   <span className={comparativo?.pax_total_vs_ano >= 0 ? 'text-green-600' : 'text-red-600'}>
                     {formatPercent(comparativo?.pax_total_vs_ano || 0)} vs año
                   </span>
@@ -665,9 +678,11 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                   <Receipt className="h-8 w-8 text-blue-200" />
                 </div>
                 <div className="flex gap-3 mt-2 text-xs">
-                  <span className={comparativo?.cheques_total_vs_mes >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {formatPercent(comparativo?.cheques_total_vs_mes || 0)} vs mes
-                  </span>
+                  {!esMultiMes && (
+                    <span className={comparativo?.cheques_total_vs_mes >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {formatPercent(comparativo?.cheques_total_vs_mes || 0)} vs mes
+                    </span>
+                  )}
                   <span className={comparativo?.cheques_total_vs_ano >= 0 ? 'text-green-600' : 'text-red-600'}>
                     {formatPercent(comparativo?.cheques_total_vs_ano || 0)} vs año
                   </span>

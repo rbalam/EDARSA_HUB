@@ -484,6 +484,49 @@ dias_transcurridos = (fecha_ultimo_dt - fecha_ini_dt).days + 1  # 97 días ✅
 
 ---
 
+#### ⚠️ REGLA VISUALIZACIÓN: KPIs "vs Mes" en Multiselección de Meses
+
+**IMPLEMENTACIÓN (2025-04-08):**
+
+Cuando se seleccionan **múltiples meses** (ej: "Todo el año" o "Ene, Feb, Mar"), los KPIs de comparación "vs Mes Anterior" **no tienen sentido matemático** (comparar un acumulado de 4 meses contra 1 solo mes es inválido).
+
+**Comportamiento implementado:**
+
+| Selección | KPIs "vs Mes" | KPIs "vs Año" | Etiqueta Proyección |
+|-----------|---------------|---------------|---------------------|
+| 1 solo mes | ✅ Visibles | ✅ Visibles | "Proyección Mes" |
+| 2+ meses | ❌ Ocultos | ✅ Visibles | "Proyección Periodo" |
+
+**Lógica en Frontend:**
+```javascript
+// TableroEjecutivo.js y Comercial.js
+const esMultiMes = selectedMeses.length > 1;
+
+// En los KPIs:
+{!esMultiMes && (
+  <div className="text-center">
+    <span>vs Mes</span>
+    <p>{formatPercent(data.var_vs_mes_ant)}</p>
+  </div>
+)}
+
+// En la etiqueta de Proyección:
+<p>{esMultiMes ? 'Proyección Periodo' : 'Proyección Mes'}</p>
+```
+
+**Archivos modificados:**
+- ✅ `/app/frontend/src/pages/TableroEjecutivo.js` - Corregido 2025-04-08
+- ✅ `/app/frontend/src/pages/Comercial.js` - Corregido 2025-04-08
+
+**KPIs afectados:**
+1. Ventas Consolidadas - "vs Mes" → Oculto en multiselección
+2. PAX Total - "vs Mes" → Oculto en multiselección
+3. Cheques - "vs Mes" → Oculto en multiselección
+4. Rotación Mesas - "vs Mes" → Oculto en multiselección
+5. Etiqueta "Proyección Mes" → "Proyección Periodo"
+
+---
+
 ### C.6 FILTRO: `almacen`
 
 #### Información General
@@ -758,6 +801,7 @@ const validateFilters = (filters) => {
 | 2025-04-08 | 1.1 | Corrección aplicada en `/compras/pedidos-vigentes/` - Filtro sucursal MPRO | E1 Agent |
 | 2025-04-08 | 1.2 | Agregada REGLA CRÍTICA: Multiselección de Meses en filtro periodo/fechas | E1 Agent |
 | 2025-04-08 | 1.3 | Agregada REGLA CRÍTICA: Función get_kpis_softrestaurant - Conversión de Fechas | E1 Agent |
+| 2025-04-08 | 1.4 | REGLA VISUALIZACIÓN: KPIs "vs Mes" deshabilitados en multiselección de meses | E1 Agent |
 
 ---
 

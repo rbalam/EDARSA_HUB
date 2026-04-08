@@ -89,6 +89,11 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - Compara días equivalentes (1-5 vs 1-5 si último día con datos = día 5)
   - Aplica a todas las unidades automáticamente (SoftRestaurant + MPRO)
   - Corrige el cálculo de variaciones % vs Mes y vs Año
+- **Visualización de KPIs en Multiselección de Meses** (Implementado April 8, 2026):
+  - KPIs "vs Mes" se ocultan automáticamente cuando se seleccionan múltiples meses
+  - Etiqueta "Proyección Mes" cambia a "Proyección Periodo"
+  - KPIs "vs Año" permanecen visibles comparando contra el mismo periodo del año anterior
+  - Aplica a: Ventas Consolidadas, PAX Total, Cheques, Rotación Mesas
 
 ### ✅ Portal de Proveedores (NEW - April 6, 2026)
 - **Subproyecto separado** en `/portal-proveedores`
@@ -124,6 +129,7 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
 - [x] ~~Portal de Proveedores - Dashboard con datos reales~~ ✅
 - [x] ~~Administración de Proveedores en EDARSA HUB~~ ✅
 - [x] ~~Gráfico histórico 5 años + Crecimiento Real en Precios Constantes~~ ✅
+- [x] ~~KPIs "vs Mes" deshabilitados en multiselección de meses~~ ✅ (April 8, 2026)
 - [ ] Drill-down Compras para SoftRestaurant (implementar queries)
 
 ### P1 (High Priority)

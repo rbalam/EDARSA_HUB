@@ -486,6 +486,9 @@ export default function TableroEjecutivo() {
 
   // Detectar si es modo "Ventas del Día"
   const esVentasDelDia = selectedAnios.includes('-1');
+  
+  // Detectar si hay multiselección de meses (para deshabilitar "vs mes")
+  const esMultiMes = selectedMeses.length > 1;
 
   const cargarDatos = async (retry = 0) => {
     const token = localStorage.getItem('token');
@@ -719,12 +722,14 @@ export default function TableroEjecutivo() {
                 <p className="text-3xl font-bold text-green-400">{formatCurrency(data.totales.ventas)}</p>
                 <p className="text-xs text-zinc-400 mt-1">&nbsp;</p>
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
-                  <div className="text-center">
-                    <span className="text-xs text-zinc-400 block">vs Mes</span>
-                    <p className={`font-bold ${data.totales.var_vs_mes_ant >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatPercent(data.totales.var_vs_mes_ant)}
-                    </p>
-                  </div>
+                  {!esMultiMes && (
+                    <div className="text-center">
+                      <span className="text-xs text-zinc-400 block">vs Mes</span>
+                      <p className={`font-bold ${data.totales.var_vs_mes_ant >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {formatPercent(data.totales.var_vs_mes_ant)}
+                      </p>
+                    </div>
+                  )}
                   <div className="text-center">
                     <span className="text-xs text-zinc-400 block">vs Año</span>
                     <p className={`font-bold ${data.totales.var_vs_año_ant >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -740,12 +745,14 @@ export default function TableroEjecutivo() {
                 <p className="text-2xl font-bold">{data.totales.pax?.toLocaleString()}</p>
                 <p className="text-xs text-zinc-400 mt-1">Ticket: {formatCurrency(data.totales.ticket_prom)}</p>
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
-                  <div className="text-center">
-                    <span className="text-xs text-zinc-400 block">vs Mes</span>
-                    <p className={`text-sm font-bold ${(data.totales.var_pax_mes || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatPercent(data.totales.var_pax_mes || 0)}
-                    </p>
-                  </div>
+                  {!esMultiMes && (
+                    <div className="text-center">
+                      <span className="text-xs text-zinc-400 block">vs Mes</span>
+                      <p className={`text-sm font-bold ${(data.totales.var_pax_mes || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {formatPercent(data.totales.var_pax_mes || 0)}
+                      </p>
+                    </div>
+                  )}
                   <div className="text-center">
                     <span className="text-xs text-zinc-400 block">vs Año</span>
                     <p className={`text-sm font-bold ${(data.totales.var_pax_año || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -761,12 +768,14 @@ export default function TableroEjecutivo() {
                 <p className="text-2xl font-bold">{data.totales.cheques?.toLocaleString()}</p>
                 <p className="text-xs text-zinc-400 mt-1">Promedio: {formatCurrency(data.totales.cheque_prom)}</p>
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
-                  <div className="text-center">
-                    <span className="text-xs text-zinc-400 block">vs Mes</span>
-                    <p className={`text-sm font-bold ${(data.totales.var_cheques_mes || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatPercent(data.totales.var_cheques_mes || 0)}
-                    </p>
-                  </div>
+                  {!esMultiMes && (
+                    <div className="text-center">
+                      <span className="text-xs text-zinc-400 block">vs Mes</span>
+                      <p className={`text-sm font-bold ${(data.totales.var_cheques_mes || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {formatPercent(data.totales.var_cheques_mes || 0)}
+                      </p>
+                    </div>
+                  )}
                   <div className="text-center">
                     <span className="text-xs text-zinc-400 block">vs Año</span>
                     <p className={`text-sm font-bold ${(data.totales.var_cheques_año || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -776,9 +785,11 @@ export default function TableroEjecutivo() {
                 </div>
               </div>
               
-              {/* Proyección Mes */}
+              {/* Proyección Mes/Periodo */}
               <div className="flex flex-col text-center">
-                <p className="text-xs text-zinc-400 uppercase tracking-wide">Proyección Mes</p>
+                <p className="text-xs text-zinc-400 uppercase tracking-wide">
+                  {esMultiMes ? 'Proyección Periodo' : 'Proyección Mes'}
+                </p>
                 <p className="text-2xl font-bold text-orange-400">{formatCurrency(data.totales.proyeccion)}</p>
                 <p className="text-xs text-zinc-400 mt-1">Si mantiene ritmo</p>
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
