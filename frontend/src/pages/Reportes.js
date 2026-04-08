@@ -650,7 +650,7 @@ const Reportes = () => {
       const data = Array.isArray(response.data) ? response.data : [];
       // Filtrar servidores de tablajería (no operativos)
       const serversOperativos = data.filter(s => 
-        !s.name?.toUpperCase().includes('TABLAJERIA')
+        s.visible_en_operaciones !== false
       );
       console.log('Servidores cargados (operativos):', serversOperativos.length);
       setServers(serversOperativos);

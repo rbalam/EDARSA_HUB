@@ -830,7 +830,7 @@ export default function ExploradorBD() {
       });
       // Filtrar servidores de tablajería (no operativos)
       const serversOperativos = response.data.filter(s => 
-        !s.name?.toUpperCase().includes('TABLAJERIA')
+        s.visible_en_operaciones !== false
       );
       setServers(serversOperativos);
     } catch (error) {

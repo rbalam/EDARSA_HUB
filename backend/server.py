@@ -5241,7 +5241,7 @@ async def get_dashboard_servers(current_user: Dict = Depends(get_current_user)):
     """
     servers = await db.servers.find(
         {"active": True, "queries_configured": True},
-        {"_id": 0, "id": 1, "name": 1, "system_type": 1}
+        {"_id": 0, "id": 1, "name": 1, "system_type": 1, "visible_en_operaciones": 1}
     ).to_list(100)
     
     return servers
@@ -10183,8 +10183,11 @@ async def tablero_ejecutivo(
     
     logging.info(f"Tablero Ejecutivo: {mes}/{anio} ({fecha_ini} a {fecha_fin}), días: {dias_transcurridos}/{dias_mes}")
     
-    # Obtener todos los servidores activos
-    servers = await db.servers.find({"active": True}).to_list(100)
+    # Obtener todos los servidores activos Y visibles en operaciones
+    servers = await db.servers.find({
+        "active": True, 
+        "visible_en_operaciones": {"$ne": False}  # Incluye True y documentos sin el campo
+    }).to_list(100)
     logging.info(f"Servidores encontrados: {len(servers)} - Tipos: {[s['system_type'] for s in servers]}")
     
     # Filtrar por permisos del usuario

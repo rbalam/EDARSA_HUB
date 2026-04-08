@@ -468,3 +468,34 @@ ERP modular para gestionar múltiples sucursales con bases de datos SQL Server e
   - Tesorería: Pago
 - **MongoDB Collections**: nomina_ciclos, nomina_movimientos, nomina_configuracion, nomina_kpis_puestos
 - **Testing**: 94% backend (16/17 tests), 100% frontend validado
+
+### April 8, 2026 - Control Dinámico de Visibilidad de Servidores
+- **Implementado**: Campo `visible_en_operaciones` para controlar qué servidores aparecen en dashboards y menús operativos
+- **Backend** (`/app/backend/server.py`):
+  - Modelo `Server` actualizado con campo `visible_en_operaciones: bool = True`
+  - Endpoint `/api/comercial/tablero-ejecutivo`: Filtra servidores con `visible_en_operaciones != False`
+  - Endpoint `/api/dashboard/servers-configured`: Devuelve campo `visible_en_operaciones` para filtrado frontend
+  - Endpoint `PUT /api/servers/{id}`: Acepta actualización del campo `visible_en_operaciones`
+- **Frontend**:
+  - `Servidores.js`: Toggle visual para activar/desactivar visibilidad en operaciones
+  - `Dashboard.js`: Filtro dinámico `server.visible_en_operaciones !== false`
+  - `Reportes.js`: Filtro dinámico `server.visible_en_operaciones !== false`
+  - `ExploradorBD.js`: Filtro dinámico `server.visible_en_operaciones !== false`
+  - `Compras.js`, `Comercial.js`, `CatalogoConsultas.js`, `AutorizacionCompras.js`: Ya tenían filtro implementado
+- **Resultado**: Servidores de TABLAJERIA (MPRO TABLAJERIA, CIENFUEGOS TABLAJERIA) ahora están marcados como `visible_en_operaciones: false` y no aparecen en:
+  - Tablero Ejecutivo (6 unidades sin TABLAJERIA)
+  - Dashboards operativos
+  - Selectores de servidores en módulos de reportes y compras
+- **Beneficio**: Administrador puede controlar dinámicamente qué servidores aparecen sin modificar código
+
+---
+
+## Pending Issues (P1-P2)
+- **P1**: Drill-down de Compras para SoftRestaurant (endpoints faltantes)
+- **P2**: Bug en "Rendimiento" para códigos duplicados en Insumos
+- **P2**: Integración QuickBooks/Toast/MarginEdge (bloqueado por API Keys)
+
+## Upcoming Tasks
+- **P1**: Integración/migración de NomiPAQ y Excel hacia EDARSA HUB
+- **P1**: Módulo Rentabilidad - Integración con OpenTable
+- **P2**: Módulo CRM, Comisionistas, Exportación PDF/WA/Email
