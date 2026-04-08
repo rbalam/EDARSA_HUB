@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import api from '@/lib/api';
+import { fetchServersOperativos } from '@/services/serversService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -644,22 +645,16 @@ const Reportes = () => {
 
   const loadServers = async () => {
     try {
-      console.log('Cargando servidores...');
-      const response = await api.get('/servers');
-      console.log('Respuesta servers:', response.status, response.data);
-      const data = Array.isArray(response.data) ? response.data : [];
-      // Filtrar servidores de tablajería (no operativos)
-      const serversOperativos = data.filter(s => 
-        s.visible_en_operaciones !== false
-      );
+      console.log('Cargando servidores operativos via serversService...');
+      const serversOperativos = await fetchServersOperativos();
       console.log('Servidores cargados (operativos):', serversOperativos.length);
       setServers(serversOperativos);
       if (serversOperativos.length === 0) {
         console.warn('No se recibieron servidores operativos');
       }
     } catch (error) {
-      console.error('Error al cargar servidores:', error.response?.status, error.response?.data);
-      toast.error('Error al cargar servidores: ' + (error.response?.data?.detail || error.message));
+      console.error('Error al cargar servidores:', error);
+      toast.error('Error al cargar servidores: ' + (error.message || 'Error desconocido'));
       setServers([]);
     }
   };
