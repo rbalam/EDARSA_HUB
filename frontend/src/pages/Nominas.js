@@ -74,6 +74,7 @@ export default function Nominas() {
     dia_corte: 0, // 0 = Domingo
     dias_inhabiles: [],
     horario_headcount: '10:00',
+    horario_autorizacion: '11:00',
     horario_maquilador: '12:00',
     horario_tesoreria: '14:00',
     dia_pago: 1 // 1 = Lunes
@@ -125,6 +126,7 @@ export default function Nominas() {
           dia_corte: configData.configuracion.dia_corte || 0,
           dias_inhabiles: configData.configuracion.dias_inhabiles || [],
           horario_headcount: configData.configuracion.horario_headcount || '10:00',
+          horario_autorizacion: configData.configuracion.horario_autorizacion || '11:00',
           horario_maquilador: configData.configuracion.horario_maquilador || '12:00',
           horario_tesoreria: configData.configuracion.horario_tesoreria || '14:00',
           dia_pago: configData.configuracion.dia_pago || 1
@@ -742,7 +744,7 @@ export default function Nominas() {
                 </select>
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div>
                   <Label>Horario Headcount</Label>
                   <Input
@@ -753,6 +755,17 @@ export default function Nominas() {
                     data-testid="config-horario-headcount"
                   />
                   <p className="text-xs text-zinc-500 mt-1">Límite para Gerencia</p>
+                </div>
+                <div>
+                  <Label>Horario Autorización</Label>
+                  <Input
+                    type="time"
+                    value={formConfiguracion.horario_autorizacion}
+                    onChange={(e) => setFormConfiguracion({...formConfiguracion, horario_autorizacion: e.target.value})}
+                    className="mt-1"
+                    data-testid="config-horario-autorizacion"
+                  />
+                  <p className="text-xs text-zinc-500 mt-1">Límite Gerente/Autorizador</p>
                 </div>
                 <div>
                   <Label>Horario Maquilador</Label>

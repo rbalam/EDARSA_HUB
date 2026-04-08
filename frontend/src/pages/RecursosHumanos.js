@@ -106,6 +106,7 @@ export default function RecursosHumanos() {
     dia_corte: 0,
     dia_pago: 1,
     horario_headcount: '10:00',
+    horario_autorizacion: '11:00',
     horario_maquilador: '12:00',
     horario_tesoreria: '14:00'
   });
@@ -293,6 +294,7 @@ export default function RecursosHumanos() {
           dia_corte: configData.configuracion.dia_corte || 0,
           dia_pago: configData.configuracion.dia_pago || 1,
           horario_headcount: configData.configuracion.horario_headcount || '10:00',
+          horario_autorizacion: configData.configuracion.horario_autorizacion || '11:00',
           horario_maquilador: configData.configuracion.horario_maquilador || '12:00',
           horario_tesoreria: configData.configuracion.horario_tesoreria || '14:00'
         });
@@ -1499,10 +1501,14 @@ export default function RecursosHumanos() {
                     </select>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   <div>
                     <Label>Horario Headcount</Label>
                     <Input type="time" value={formConfigNomina.horario_headcount} onChange={(e) => setFormConfigNomina({...formConfigNomina, horario_headcount: e.target.value})} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label>Horario Autorización</Label>
+                    <Input type="time" value={formConfigNomina.horario_autorizacion} onChange={(e) => setFormConfigNomina({...formConfigNomina, horario_autorizacion: e.target.value})} className="mt-1" />
                   </div>
                   <div>
                     <Label>Horario Maquilador</Label>
