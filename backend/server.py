@@ -9875,6 +9875,10 @@ def get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fe
     fi = fecha_ini.replace('-', '')
     ff = fecha_fin.replace('-', '')
     
+    # Extraer mes y año de fecha_fin para usarlos en recálculos (importante para multiselección de meses)
+    mes_final = int(fecha_fin[5:7])  # Mes de fecha_fin (ej: 04 para abril)
+    anio_final = int(fecha_fin[:4])  # Año de fecha_fin
+    
     # PASO 1: Detectar el último día real con ventas en el período
     query_ultimo_dia = f"""
 SELECT MAX(CONVERT(DATE, Vn_Fecha)) as ultimo_dia_venta
@@ -9888,19 +9892,37 @@ WHERE Vn_Fecha >= '{fi}' AND Vn_Fecha <= '{ff} 23:59:59'
         if result_ultimo and result_ultimo[0]['ultimo_dia_venta']:
             ultimo_dia_venta = result_ultimo[0]['ultimo_dia_venta']
             if isinstance(ultimo_dia_venta, str):
-                dia_con_datos = int(ultimo_dia_venta.split('-')[2]) if '-' in ultimo_dia_venta else int(ultimo_dia_venta[-2:])
+                # Parsear la fecha completa (YYYY-MM-DD)
+                partes = ultimo_dia_venta.split('-') if '-' in ultimo_dia_venta else None
+                if partes and len(partes) == 3:
+                    anio_ultimo = int(partes[0])
+                    mes_ultimo = int(partes[1])
+                    dia_con_datos = int(partes[2])
+                else:
+                    dia_con_datos = int(ultimo_dia_venta[-2:])
+                    mes_ultimo = mes_final
+                    anio_ultimo = anio_final
             else:
                 dia_con_datos = ultimo_dia_venta.day
+                mes_ultimo = ultimo_dia_venta.month
+                anio_ultimo = ultimo_dia_venta.year
             
-            logging.info(f"MPRO {server['name']} - Último día con ventas: día {dia_con_datos}")
+            logging.info(f"MPRO {server['name']} - Último día con ventas: {anio_ultimo}-{mes_ultimo:02d}-{dia_con_datos:02d}")
             
-            # Actualizar fecha_fin y recalcular días transcurridos
-            ff = f"{fi[:6]}{str(dia_con_datos).zfill(2)}"
-            dias_transcurridos = dia_con_datos
+            # CORRECCIÓN: Usar el mes y año del último día con ventas, no del mes inicial
+            ff = f"{anio_ultimo}{str(mes_ultimo).zfill(2)}{str(dia_con_datos).zfill(2)}"
+            
+            # Calcular días transcurridos desde fecha_ini hasta el último día con ventas
+            from datetime import datetime
+            fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
+            fecha_ultimo_dt = datetime(anio_ultimo, mes_ultimo, dia_con_datos)
+            dias_transcurridos = (fecha_ultimo_dt - fecha_ini_dt).days + 1
+            
+            logging.info(f"MPRO {server['name']} - Período ajustado: {fi} a {ff}, días: {dias_transcurridos}")
             
             # Recalcular fechas de comparación basadas en días reales
-            mes_actual = int(fi[4:6])
-            anio_actual = int(fi[:4])
+            mes_actual = mes_ultimo  # Usar el mes del último día con ventas
+            anio_actual = anio_ultimo
             
             # Mes anterior
             if mes_actual == 1:
@@ -9915,12 +9937,18 @@ WHERE Vn_Fecha >= '{fi}' AND Vn_Fecha <= '{ff} 23:59:59'
             fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
             fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
             
-            # Año anterior
-            anio_pasado = anio_actual - 1
-            max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_actual)[1]
+            # Año anterior - usar el RANGO completo de meses (desde mes_min hasta mes_max)
+            # Extraer mes_min de fecha_ini
+            mes_min = int(fecha_ini[5:7])
+            anio_pasado = int(fecha_ini[:4]) - 1
+            
+            # fecha_ini_año_ant: primer día del primer mes del año anterior
+            fecha_ini_año_ant = f"{anio_pasado}-{str(mes_min).zfill(2)}-01"
+            
+            # fecha_fin_año_ant: mismo día del año anterior
+            max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_ultimo)[1]
             dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
-            fecha_ini_año_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-01"
-            fecha_fin_año_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+            fecha_fin_año_ant = f"{anio_pasado}-{str(mes_ultimo).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
             
             logging.info(f"MPRO Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_año_ant} a {fecha_fin_año_ant}")
     except Exception as e:
@@ -10027,6 +10055,10 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
     fi = fecha_ini.replace('-', '')
     ff = fecha_fin.replace('-', '')
     
+    # Extraer mes y año de fecha_fin para usarlos en recálculos (importante para multiselección de meses)
+    mes_final = int(fecha_fin[5:7])  # Mes de fecha_fin (ej: 04 para abril)
+    anio_final = int(fecha_fin[:4])  # Año de fecha_fin
+    
     # PASO 1: Detectar el último día real con ventas en el período
     query_ultimo_dia = f"""
 SELECT MAX(CONVERT(DATE, VE.Vn_Fecha)) as ultimo_dia_venta
@@ -10040,19 +10072,37 @@ WHERE VE.Vn_Fecha >= '{fi}' AND VE.Vn_Fecha <= '{ff}'
         if result_ultimo and result_ultimo[0]['ultimo_dia_venta']:
             ultimo_dia_venta = result_ultimo[0]['ultimo_dia_venta']
             if isinstance(ultimo_dia_venta, str):
-                dia_con_datos = int(ultimo_dia_venta.split('-')[2]) if '-' in ultimo_dia_venta else int(ultimo_dia_venta[-2:])
+                # Parsear la fecha completa (YYYY-MM-DD)
+                partes = ultimo_dia_venta.split('-') if '-' in ultimo_dia_venta else None
+                if partes and len(partes) == 3:
+                    anio_ultimo = int(partes[0])
+                    mes_ultimo = int(partes[1])
+                    dia_con_datos = int(partes[2])
+                else:
+                    dia_con_datos = int(ultimo_dia_venta[-2:])
+                    mes_ultimo = mes_final
+                    anio_ultimo = anio_final
             else:
                 dia_con_datos = ultimo_dia_venta.day
+                mes_ultimo = ultimo_dia_venta.month
+                anio_ultimo = ultimo_dia_venta.year
             
-            print(f"*** MPRO por sucursal {server['name']} - Ultimo dia con ventas: dia {dia_con_datos} ***")
+            print(f"*** MPRO por sucursal {server['name']} - Ultimo dia con ventas: {anio_ultimo}-{mes_ultimo:02d}-{dia_con_datos:02d} ***")
             
-            # Actualizar fecha_fin y recalcular días transcurridos
-            ff = f"{fi[:6]}{str(dia_con_datos).zfill(2)}"
-            dias_transcurridos = dia_con_datos
+            # CORRECCIÓN: Usar el mes y año del último día con ventas, no del mes inicial
+            ff = f"{anio_ultimo}{str(mes_ultimo).zfill(2)}{str(dia_con_datos).zfill(2)}"
+            
+            # Calcular días transcurridos desde fecha_ini hasta el último día con ventas
+            from datetime import datetime
+            fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
+            fecha_ultimo_dt = datetime(anio_ultimo, mes_ultimo, dia_con_datos)
+            dias_transcurridos = (fecha_ultimo_dt - fecha_ini_dt).days + 1
+            
+            print(f"*** MPRO por sucursal {server['name']} - Período ajustado: {fi} a {ff}, días: {dias_transcurridos} ***")
             
             # Recalcular fechas de comparación basadas en días reales
-            mes_actual = int(fi[4:6])
-            anio_actual = int(fi[:4])
+            mes_actual = mes_ultimo  # Usar el mes del último día con ventas
+            anio_actual = anio_ultimo
             
             # Mes anterior
             if mes_actual == 1:
@@ -10067,12 +10117,15 @@ WHERE VE.Vn_Fecha >= '{fi}' AND VE.Vn_Fecha <= '{ff}'
             fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
             fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
             
-            # Año anterior
-            anio_pasado = anio_actual - 1
-            max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_actual)[1]
+            # Año anterior - usar el RANGO completo de meses (desde mes_min hasta mes_max)
+            mes_min = int(fecha_ini[5:7])
+            anio_pasado = int(fecha_ini[:4]) - 1
+            
+            fecha_ini_año_ant = f"{anio_pasado}-{str(mes_min).zfill(2)}-01"
+            
+            max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_ultimo)[1]
             dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
-            fecha_ini_año_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-01"
-            fecha_fin_año_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+            fecha_fin_año_ant = f"{anio_pasado}-{str(mes_ultimo).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
             
             logging.info(f"MPRO por sucursal Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_año_ant} a {fecha_fin_año_ant}")
     except Exception as e:
