@@ -416,7 +416,71 @@ fecha_fin_año_ant = f"{anio-1}-{mes_max:02d}-{dia_actual:02d}"  # Mismo día de
 
 **Endpoints corregidos:**
 - ✅ `/comercial/tablero-ejecutivo` - Corregido 2025-04-08
-- ⚠️ `/comercial/dashboard/{server_id}` - Verificar implementación
+- ✅ `/comercial/dashboard/{server_id}` - Corregido 2025-04-08
+
+---
+
+#### ⚠️ REGLA CRÍTICA: Función get_kpis_softrestaurant - Conversión de Fechas
+
+**BUG HISTÓRICO CORREGIDO (2025-04-08):**
+
+La función `get_kpis_softrestaurant()` recibe `fecha_ini` y `fecha_fin` como strings (ej: `"2026-01-01"` y `"2026-04-07"`), pero internamente las convierte a formato sin guiones (`fi` y `ff`). 
+
+**Problema crítico:** Cuando detecta el último día con ventas en SQL Server, **sobrescribía** `ff` y `dias_transcurridos` usando el prefijo del **mes inicial**, no del **mes final**.
+
+**❌ PATRÓN INCORRECTO (NO USAR):**
+```python
+# ERROR: Usa fi[:6] que es "202601" (enero), no "202604" (abril)
+fi = fecha_ini.replace('-', '')  # "20260101"
+ff = fecha_fin.replace('-', '')  # "20260407"
+
+# Al detectar último día con ventas:
+dia_con_datos = 7  # Día 7 de abril
+ff = f"{fi[:6]}{str(dia_con_datos).zfill(2)}"  # "20260107" - ¡INCORRECTO!
+# Resultado: Consulta solo datos de ENERO (mes 01), no de TODO el rango
+
+dias_transcurridos = dia_con_datos  # 7 - ¡INCORRECTO! Debería ser ~97 días
+```
+
+**Consecuencias del bug:**
+- CIENFUEGOS mostraba $784K en lugar de $15.49M
+- Solo consultaba datos del primer mes (enero) en lugar de todo el rango (enero-abril)
+- Los días transcurridos eran incorrectos (7 en lugar de 97)
+
+**✅ PATRÓN CORRECTO (OBLIGATORIO):**
+```python
+fi = fecha_ini.replace('-', '')  # "20260101"
+ff = fecha_fin.replace('-', '')  # "20260407"
+
+# Extraer mes y año de fecha_fin para usarlos en recálculos
+mes_final = int(fecha_fin[5:7])  # 4 (abril)
+anio_final = int(fecha_fin[:4])  # 2026
+
+# Al detectar último día con ventas:
+# Parsear la fecha completa del último día (YYYY-MM-DD)
+ultimo_dia_venta = "2026-04-07"  # Ejemplo de resultado de SQL
+anio_ultimo = 2026
+mes_ultimo = 4
+dia_con_datos = 7
+
+# CORRECTO: Usar el mes y año del último día con ventas
+ff = f"{anio_ultimo}{str(mes_ultimo).zfill(2)}{str(dia_con_datos).zfill(2)}"  # "20260407" ✅
+
+# Calcular días transcurridos desde fecha_ini hasta último día con ventas
+from datetime import datetime
+fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
+fecha_ultimo_dt = datetime(anio_ultimo, mes_ultimo, dia_con_datos)
+dias_transcurridos = (fecha_ultimo_dt - fecha_ini_dt).days + 1  # 97 días ✅
+```
+
+**Verificación de la corrección:**
+| Unidad | Antes (bug) | Después (correcto) |
+|--------|-------------|-------------------|
+| CIENFUEGOS (Ene-Abr 2026) | $784,330 | $15,490,862 ✅ |
+| Total Consolidado | $3.7M | $42.1M ✅ |
+
+**Funciones afectadas:**
+- ✅ `get_kpis_softrestaurant()` - Corregido 2025-04-08 (líneas ~9671-9740)
 
 ---
 
@@ -693,6 +757,7 @@ const validateFilters = (filters) => {
 | 2025-04-08 | 1.0 | Creación inicial del catálogo | E1 Agent |
 | 2025-04-08 | 1.1 | Corrección aplicada en `/compras/pedidos-vigentes/` - Filtro sucursal MPRO | E1 Agent |
 | 2025-04-08 | 1.2 | Agregada REGLA CRÍTICA: Multiselección de Meses en filtro periodo/fechas | E1 Agent |
+| 2025-04-08 | 1.3 | Agregada REGLA CRÍTICA: Función get_kpis_softrestaurant - Conversión de Fechas | E1 Agent |
 
 ---
 
