@@ -98,7 +98,11 @@ export default function CatalogoConsultas() {
       const response = await axios.get(`${API_URL}/api/servers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setServers(response.data);
+      // Filtrar servidores de tablajería (no operativos)
+      const serversOperativos = response.data.filter(s => 
+        !s.name?.toUpperCase().includes('TABLAJERIA')
+      );
+      setServers(serversOperativos);
     } catch (error) {
       console.error('Error cargando servers:', error);
     }

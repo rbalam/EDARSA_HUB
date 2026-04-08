@@ -87,12 +87,16 @@ export default function AutorizacionCompras() {
         const response = await axios.get(`${API_URL}/api/servers`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setServers(response.data);
+        // Filtrar servidores de tablajería (no operativos)
+        const serversOperativos = response.data.filter(s => 
+          !s.name?.toUpperCase().includes('TABLAJERIA')
+        );
+        setServers(serversOperativos);
         
         // Restaurar parámetros guardados
         const saved = loadParams();
-        if (saved && response.data.length > 0) {
-          const serverExists = response.data.find(s => s.id === saved.server);
+        if (saved && serversOperativos.length > 0) {
+          const serverExists = serversOperativos.find(s => s.id === saved.server);
           if (serverExists) {
             setSelectedServer(saved.server);
             setMetodoCalculo(saved.metodo || 'consumo');

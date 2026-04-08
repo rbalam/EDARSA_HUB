@@ -648,10 +648,14 @@ const Reportes = () => {
       const response = await api.get('/servers');
       console.log('Respuesta servers:', response.status, response.data);
       const data = Array.isArray(response.data) ? response.data : [];
-      console.log('Servidores cargados:', data.length);
-      setServers(data);
-      if (data.length === 0) {
-        console.warn('No se recibieron servidores');
+      // Filtrar servidores de tablajería (no operativos)
+      const serversOperativos = data.filter(s => 
+        !s.name?.toUpperCase().includes('TABLAJERIA')
+      );
+      console.log('Servidores cargados (operativos):', serversOperativos.length);
+      setServers(serversOperativos);
+      if (serversOperativos.length === 0) {
+        console.warn('No se recibieron servidores operativos');
       }
     } catch (error) {
       console.error('Error al cargar servidores:', error.response?.status, error.response?.data);

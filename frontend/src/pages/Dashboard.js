@@ -101,7 +101,11 @@ const Dashboard = () => {
     setServersLoading(true);
     try {
       const response = await api.get('/dashboard/servers-configured');
-      setServers(response.data);
+      // Filtrar servidores de tablajería (no operativos)
+      const serversOperativos = response.data.filter(s => 
+        !s.name?.toUpperCase().includes('TABLAJERIA')
+      );
+      setServers(serversOperativos);
       // NO seleccionar automáticamente - dejar que el usuario elija
       // if (response.data.length > 0) {
       //   setSelectedServer(response.data[0].id);

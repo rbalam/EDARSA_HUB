@@ -2760,13 +2760,17 @@ export default function Compras() {
         const response = await axios.get(`${API_URL}/api/servers`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setServers(response.data);
+        // Filtrar servidores de tablajería (no operativos)
+        const serversOperativos = response.data.filter(s => 
+          !s.name?.toUpperCase().includes('TABLAJERIA')
+        );
+        setServers(serversOperativos);
         
         // Restaurar servidor guardado
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const params = JSON.parse(saved);
-          if (params.server && response.data.find(s => s.id === params.server)) {
+          if (params.server && serversOperativos.find(s => s.id === params.server)) {
             setSelectedServer(params.server);
           }
         }
