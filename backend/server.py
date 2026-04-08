@@ -10242,28 +10242,45 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
 
 @api_router.get("/comercial/tablero-ejecutivo")
 async def tablero_ejecutivo(
-    mes: int = Query(default=0),  # 0 = mes actual
-    anio: int = Query(default=0),  # 0 = año actual, -1 = ventas del día
+    mes: int = Query(default=0),  # 0 = mes actual (legacy, compatibilidad)
+    anio: int = Query(default=0),  # 0 = año actual, -1 = ventas del día (legacy)
+    meses: str = Query(default=""),  # "01,02,03" - Lista de meses (nuevo, multiselección)
+    anios: str = Query(default=""),  # "2025,2024" - Lista de años (nuevo, multiselección)
+    periodo: str = Query(default="mes"),  # dia, semana, mes (nuevo)
+    tipo_comparacion: str = Query(default="dias_equiv"),  # dias_equiv o mes_completo (nuevo)
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Tablero ejecutivo con KPIs de TODAS las unidades.
     Comparativo vs mes anterior y año anterior (mismos días).
-    anio=-1: Modo "Ventas del Día" - solo tempcheques (ventas sin corte) de SoftRestaurant.
+    Soporta multiselección de meses y años (homologado con Dashboard Comercial).
+    anio=-1 o anios="-1": Modo "Ventas del Día" - solo tempcheques (ventas sin corte).
     """
     from datetime import datetime, timedelta
     import calendar
     
     hoy = datetime.now()
     
-    # Modo especial: Ventas del Día (anio = -1)
-    solo_ventas_dia = (anio == -1)
+    # Detectar modo "Ventas del Día" (anio=-1 legacy o anios="-1" nuevo)
+    solo_ventas_dia = (anio == -1) or (anios == "-1")
     
-    # Determinar período
-    if anio == 0:
-        anio = hoy.year
-    if mes == 0:
+    # Procesar parámetros nuevos (multiselección) o legacy (simple)
+    if meses and not solo_ventas_dia:
+        # Nuevo formato: multiselección de meses
+        lista_meses = [int(m.strip()) for m in meses.split(',') if m.strip()]
+        mes = max(lista_meses)  # Usar el mes más reciente para cálculos
+    elif mes == 0:
         mes = hoy.month
+    
+    if anios and anios != "-1":
+        # Nuevo formato: multiselección de años
+        lista_anios = [int(a.strip()) for a in anios.split(',') if a.strip()]
+        anio = max(lista_anios)  # Usar el año más reciente
+    elif anio == 0 or anio == -1:
+        if not solo_ventas_dia:
+            anio = hoy.year
+        else:
+            anio = hoy.year  # Para ventas del día, usar año actual
     
     # Fechas del período actual
     fecha_ini = f"{anio}-{mes:02d}-01"

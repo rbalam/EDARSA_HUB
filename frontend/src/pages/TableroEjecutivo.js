@@ -5,15 +5,44 @@ import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Checkbox } from '../components/ui/checkbox';
+import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 import { 
   Loader2, TrendingUp, TrendingDown, RefreshCw, Building2, Users, Receipt, 
   DollarSign, ArrowLeft, ChevronRight, Target, Clock, Utensils, X,
-  BarChart3, Wallet, UserCircle, Award
+  BarChart3, Wallet, UserCircle, Award, ChevronDown
 } from 'lucide-react';
 import { formatNombreSucursal } from '../lib/formatSucursal';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Constantes para meses y años (homologado con Dashboard Comercial)
+const MESES = [
+  { value: '01', label: 'Enero' },
+  { value: '02', label: 'Febrero' },
+  { value: '03', label: 'Marzo' },
+  { value: '04', label: 'Abril' },
+  { value: '05', label: 'Mayo' },
+  { value: '06', label: 'Junio' },
+  { value: '07', label: 'Julio' },
+  { value: '08', label: 'Agosto' },
+  { value: '09', label: 'Septiembre' },
+  { value: '10', label: 'Octubre' },
+  { value: '11', label: 'Noviembre' },
+  { value: '12', label: 'Diciembre' }
+];
+
+const getAniosDisponibles = () => {
+  const currentYear = new Date().getFullYear();
+  const years = [
+    { value: '-1', label: '📊 Ventas del Día' }
+  ];
+  for (let y = currentYear; y >= currentYear - 3; y--) {
+    years.push({ value: y.toString(), label: y.toString() });
+  }
+  return years;
+};
 
 const formatCurrency = (num) => {
   if (num === null || num === undefined) return '-';
@@ -368,44 +397,95 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
 export default function TableroEjecutivo() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
-  const [mes, setMes] = useState(() => {
-    const saved = localStorage.getItem('tablero_filtros');
+  
+  // Estados para filtros multiselección (homologado con Dashboard Comercial)
+  const [selectedMeses, setSelectedMeses] = useState(() => {
+    const saved = localStorage.getItem('tablero_filtros_v2');
     if (saved) {
       try {
-        return JSON.parse(saved).mes || 0;
-      } catch (e) { return 0; }
+        const parsed = JSON.parse(saved);
+        return parsed.selectedMeses || [String(new Date().getMonth() + 1).padStart(2, '0')];
+      } catch (e) { return [String(new Date().getMonth() + 1).padStart(2, '0')]; }
     }
-    return 0;
+    return [String(new Date().getMonth() + 1).padStart(2, '0')];
   });
-  const [anio, setAnio] = useState(() => {
-    const saved = localStorage.getItem('tablero_filtros');
+  
+  const [selectedAnios, setSelectedAnios] = useState(() => {
+    const saved = localStorage.getItem('tablero_filtros_v2');
     if (saved) {
       try {
-        return JSON.parse(saved).anio || 0;
-      } catch (e) { return 0; }
+        const parsed = JSON.parse(saved);
+        return parsed.selectedAnios || [new Date().getFullYear().toString()];
+      } catch (e) { return [new Date().getFullYear().toString()]; }
     }
-    return 0;
+    return [new Date().getFullYear().toString()];
   });
+  
+  const [tipoComparacion, setTipoComparacion] = useState('dias_equiv');
+  const [showMesesDropdown, setShowMesesDropdown] = useState(false);
+  const [showAniosDropdown, setShowAniosDropdown] = useState(false);
+  
+  const ANIOS = getAniosDisponibles();
+  
   const [unidadSeleccionada, setUnidadSeleccionada] = useState(null);
 
   // Guardar filtros cuando cambien
   useEffect(() => {
-    localStorage.setItem('tablero_filtros', JSON.stringify({ mes, anio }));
-  }, [mes, anio]);
+    localStorage.setItem('tablero_filtros_v2', JSON.stringify({ selectedMeses, selectedAnios, tipoComparacion }));
+  }, [selectedMeses, selectedAnios, tipoComparacion]);
 
-  const meses = [
-    { value: '0', label: 'Mes Actual' },
-    { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' }, { value: '3', label: 'Marzo' },
-    { value: '4', label: 'Abril' }, { value: '5', label: 'Mayo' }, { value: '6', label: 'Junio' },
-    { value: '7', label: 'Julio' }, { value: '8', label: 'Agosto' }, { value: '9', label: 'Septiembre' },
-    { value: '10', label: 'Octubre' }, { value: '11', label: 'Noviembre' }, { value: '12', label: 'Diciembre' }
-  ];
+  // Funciones para toggle de selección
+  const toggleMes = (mesValue) => {
+    if (selectedMeses.includes(mesValue)) {
+      if (selectedMeses.length > 1) {
+        setSelectedMeses(selectedMeses.filter(m => m !== mesValue));
+      }
+    } else {
+      setSelectedMeses([...selectedMeses, mesValue].sort());
+    }
+  };
 
-  const anios = [
-    { value: '0', label: 'Año Actual' },
-    { value: '-1', label: '📊 Ventas del Día' },
-    { value: '2026', label: '2026' }, { value: '2025', label: '2025' }, { value: '2024', label: '2024' }
-  ];
+  const toggleAnio = (anioValue) => {
+    // Si es "Ventas del Día", selección exclusiva
+    if (anioValue === '-1') {
+      setSelectedAnios(['-1']);
+      return;
+    }
+    // Si ya está en "Ventas del Día" y selecciona otro año, quitar -1
+    if (selectedAnios.includes('-1')) {
+      setSelectedAnios([anioValue]);
+      return;
+    }
+    if (selectedAnios.includes(anioValue)) {
+      if (selectedAnios.length > 1) {
+        setSelectedAnios(selectedAnios.filter(a => a !== anioValue));
+      }
+    } else {
+      setSelectedAnios([...selectedAnios, anioValue].sort().reverse());
+    }
+  };
+
+  // Labels para los dropdowns
+  const getMesesLabel = () => {
+    if (selectedMeses.length === 0) return 'Seleccionar';
+    if (selectedMeses.length === 1) {
+      return MESES.find(m => m.value === selectedMeses[0])?.label || 'Mes';
+    }
+    if (selectedMeses.length === 12) return 'Todo el año';
+    return `${selectedMeses.length} meses`;
+  };
+
+  const getAniosLabel = () => {
+    if (selectedAnios.includes('-1')) return '📊 Ventas del Día';
+    if (selectedAnios.length === 0) return 'Seleccionar';
+    if (selectedAnios.length === 1) {
+      return selectedAnios[0];
+    }
+    return `${selectedAnios.length} años`;
+  };
+
+  // Detectar si es modo "Ventas del Día"
+  const esVentasDelDia = selectedAnios.includes('-1');
 
   const cargarDatos = async (retry = 0) => {
     const token = localStorage.getItem('token');
@@ -418,7 +498,11 @@ export default function TableroEjecutivo() {
     
     try {
       const response = await axios.get(`${API_URL}/api/comercial/tablero-ejecutivo`, {
-        params: { mes, anio },
+        params: { 
+          meses: selectedMeses.join(','),
+          anios: selectedAnios.join(','),
+          tipo_comparacion: tipoComparacion
+        },
         headers: { Authorization: `Bearer ${token}` },
         timeout: 30000
       });
@@ -451,8 +535,6 @@ export default function TableroEjecutivo() {
     cargarDatos();
   }, []);
 
-  const nombreMes = data?.periodo?.mes ? meses.find(m => m.value === String(data.periodo.mes))?.label : '';
-
   return (
     <div className="space-y-4" data-testid="tablero-ejecutivo">
       {/* Header */}
@@ -484,31 +566,120 @@ export default function TableroEjecutivo() {
 
         {/* Tab Comercial (Actual) */}
         <TabsContent value="comercial">
-          {/* Filtros */}
+          {/* Filtros - Homologados con Dashboard Comercial */}
           <Card className="border bg-white">
             <CardContent className="py-3">
               <div className="flex items-center gap-4 flex-wrap">
-                <div className="w-36">
-                  <Select value={String(mes)} onValueChange={(v) => setMes(parseInt(v))}>
-                    <SelectTrigger className="h-9"><SelectValue placeholder="Mes" /></SelectTrigger>
-                    <SelectContent>{meses.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
-                  </Select>
+                {/* Selector de Meses (multiselección) */}
+                <div className="flex-1 min-w-[140px] max-w-[180px] relative">
+                  <Label className="text-xs mb-1 block">Mes(es)</Label>
+                  <button
+                    type="button"
+                    onClick={() => { setShowMesesDropdown(!showMesesDropdown); setShowAniosDropdown(false); }}
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    disabled={esVentasDelDia}
+                  >
+                    <span>{esVentasDelDia ? 'N/A' : getMesesLabel()}</span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </button>
+                  {showMesesDropdown && !esVentasDelDia && (
+                    <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg max-h-60 overflow-auto">
+                      <div className="p-2 border-b">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedMeses(MESES.map(m => m.value))}
+                          className="text-xs text-blue-600 hover:underline mr-3"
+                        >
+                          Todos
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedMeses([String(new Date().getMonth() + 1).padStart(2, '0')])}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          Solo actual
+                        </button>
+                      </div>
+                      {MESES.map(mes => (
+                        <label
+                          key={mes.value}
+                          className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-100 cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={selectedMeses.includes(mes.value)}
+                            onCheckedChange={() => toggleMes(mes.value)}
+                          />
+                          <span className="text-sm">{mes.label}</span>
+                        </label>
+                      ))}
+                      <div className="p-2 border-t">
+                        <Button size="sm" onClick={() => setShowMesesDropdown(false)} className="w-full">
+                          Aplicar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="w-28">
-                  <Select value={String(anio)} onValueChange={(v) => setAnio(parseInt(v))}>
-                    <SelectTrigger className="h-9"><SelectValue placeholder="Año" /></SelectTrigger>
-                    <SelectContent>{anios.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}</SelectContent>
-                  </Select>
+
+                {/* Selector de Año (multiselección + Ventas del Día) */}
+                <div className="flex-1 min-w-[140px] max-w-[180px] relative">
+                  <Label className="text-xs mb-1 block">Año(s)</Label>
+                  <button
+                    type="button"
+                    onClick={() => { setShowAniosDropdown(!showAniosDropdown); setShowMesesDropdown(false); }}
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    <span>{getAniosLabel()}</span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </button>
+                  {showAniosDropdown && (
+                    <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg max-h-60 overflow-auto">
+                      <div className="p-2 border-b">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAnios([new Date().getFullYear().toString(), (new Date().getFullYear() - 1).toString()])}
+                          className="text-xs text-blue-600 hover:underline mr-3"
+                        >
+                          Actual + Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAnios([new Date().getFullYear().toString()])}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          Solo actual
+                        </button>
+                      </div>
+                      {ANIOS.map(anio => (
+                        <label
+                          key={anio.value}
+                          className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-100 cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={selectedAnios.includes(anio.value)}
+                            onCheckedChange={() => toggleAnio(anio.value)}
+                          />
+                          <span className="text-sm">{anio.label}</span>
+                        </label>
+                      ))}
+                      <div className="p-2 border-t">
+                        <Button size="sm" onClick={() => setShowAniosDropdown(false)} className="w-full">
+                          Aplicar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <Button onClick={cargarDatos} disabled={loading} size="sm">
+
+                <Button onClick={cargarDatos} disabled={loading} size="sm" className="mt-5">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                   Actualizar
                 </Button>
                 {data?.periodo && (
-                  <span className="text-xs text-zinc-500 ml-auto bg-zinc-100 px-2 py-1 rounded">
+                  <span className="text-xs text-zinc-500 ml-auto bg-zinc-100 px-2 py-1 rounded mt-5">
                     {data.periodo.modo_ventas_dia 
                       ? <span className="text-amber-600 font-medium">🔴 Ventas del Día (sin corte)</span>
-                      : `${nombreMes} ${data.periodo.anio} • Día ${data.periodo.dias_transcurridos} de ${data.periodo.dias_mes}`
+                      : `${data.periodo.mes ? MESES.find(m => m.value === String(data.periodo.mes).padStart(2, '0'))?.label : ''} ${data.periodo.anio} • Día ${data.periodo.dias_transcurridos} de ${data.periodo.dias_mes}`
                     }
                   </span>
                 )}
