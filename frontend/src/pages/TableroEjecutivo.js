@@ -535,6 +535,18 @@ export default function TableroEjecutivo() {
     cargarDatos();
   }, []);
 
+  // Cerrar dropdowns cuando se hace click fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('[data-dropdown="meses"]') && !event.target.closest('[data-dropdown="anios"]')) {
+        setShowMesesDropdown(false);
+        setShowAniosDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <div className="space-y-4" data-testid="tablero-ejecutivo">
       {/* Header */}
@@ -571,7 +583,7 @@ export default function TableroEjecutivo() {
             <CardContent className="py-3">
               <div className="flex items-center gap-4 flex-wrap">
                 {/* Selector de Meses (multiselección) */}
-                <div className="flex-1 min-w-[140px] max-w-[180px] relative">
+                <div className="flex-1 min-w-[140px] max-w-[180px] relative" data-dropdown="meses">
                   <Label className="text-xs mb-1 block">Mes(es)</Label>
                   <button
                     type="button"
@@ -622,7 +634,7 @@ export default function TableroEjecutivo() {
                 </div>
 
                 {/* Selector de Año (multiselección + Ventas del Día) */}
-                <div className="flex-1 min-w-[140px] max-w-[180px] relative">
+                <div className="flex-1 min-w-[140px] max-w-[180px] relative" data-dropdown="anios">
                   <Label className="text-xs mb-1 block">Año(s)</Label>
                   <button
                     type="button"
@@ -671,7 +683,16 @@ export default function TableroEjecutivo() {
                   )}
                 </div>
 
-                <Button onClick={cargarDatos} disabled={loading} size="sm" className="mt-5">
+                <Button 
+                  onClick={() => {
+                    setShowMesesDropdown(false);
+                    setShowAniosDropdown(false);
+                    cargarDatos();
+                  }} 
+                  disabled={loading} 
+                  size="sm" 
+                  className="mt-5"
+                >
                   {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                   Actualizar
                 </Button>
