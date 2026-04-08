@@ -9112,8 +9112,13 @@ WHERE turnos.apertura >= '{f_ini} 00:00:00'
             )
             
             if sucursal and not skip_sucursal_filter:
-                # Buscar por descripción parcial (puede incluir caracteres especiales como °)
-                sucursal_filter = f"AND S.Sc_Descripcion LIKE '%{sucursal}%'"
+                # Detectar si es un código de sucursal (4 dígitos como "0021") o un nombre
+                if len(sucursal) == 4 and sucursal.isdigit():
+                    # Es un código de sucursal - buscar por Sc_Cve_Sucursal
+                    sucursal_filter = f"AND VE.Sc_Cve_Sucursal = '{sucursal}'"
+                else:
+                    # Es un nombre - buscar por descripción parcial
+                    sucursal_filter = f"AND S.Sc_Descripcion LIKE '%{sucursal}%'"
             
             logging.info(f"Detalle MPRO: f_ini={f_ini}, f_fin={f_fin}, sucursal={sucursal}, skip_filter={skip_sucursal_filter}, sucursal_filter={sucursal_filter}")
             
