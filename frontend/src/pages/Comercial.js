@@ -2365,9 +2365,9 @@ export default function Comercial() {
         const response = await axios.get(`${API_URL}/api/servers`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        // Filtrar servidores de tablajería (no operativos)
+        // Filtrar servidores no visibles en operaciones
         const serversOperativos = response.data.filter(s => 
-          !s.name?.toUpperCase().includes('TABLAJERIA')
+          s.visible_en_operaciones !== false
         );
         setServers(serversOperativos);
       } catch (error) {

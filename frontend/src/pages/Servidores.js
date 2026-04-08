@@ -48,7 +48,8 @@ const Servidores = () => {
     sucursales: [],
     tipos_movimiento: [],
     categorias: [],
-    departamentos: []
+    departamentos: [],
+    visible_en_operaciones: true
   });
 
   // Estado para los filtros seleccionados en configuración
@@ -226,6 +227,18 @@ const Servidores = () => {
       setConnectionValid(false);
     } finally {
       setTestingConnection(false);
+    }
+  };
+
+  // Toggle visibilidad en operaciones
+  const toggleVisibilidadOperaciones = async (server) => {
+    try {
+      const newValue = server.visible_en_operaciones === false ? true : false;
+      await api.put(`/servers/${server.id}`, { visible_en_operaciones: newValue });
+      toast.success(newValue ? 'Servidor visible en operaciones' : 'Servidor oculto en operaciones');
+      loadServers();
+    } catch (error) {
+      toast.error('Error al cambiar visibilidad');
     }
   };
 
@@ -543,6 +556,31 @@ const Servidores = () => {
                         </span>
                       </div>
                     )}
+                  </div>
+                  
+                  {/* Mostrar visibilidad en operaciones */}
+                  <div className="pt-2 border-t border-zinc-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-zinc-500">Visible en Operaciones:</span>
+                      <button
+                        onClick={() => toggleVisibilidadOperaciones(server)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                          server.visible_en_operaciones !== false ? 'bg-green-500' : 'bg-zinc-300'
+                        }`}
+                        title={server.visible_en_operaciones !== false ? 'Visible en dashboards' : 'Oculto en dashboards'}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                            server.visible_en_operaciones !== false ? 'translate-x-4' : 'translate-x-0.5'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1">
+                      {server.visible_en_operaciones !== false 
+                        ? 'Aparece en reportes, compras, comercial, etc.' 
+                        : 'Solo visible aquí para administración'}
+                    </p>
                   </div>
                 </div>
                 

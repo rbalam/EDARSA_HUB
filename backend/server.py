@@ -108,6 +108,7 @@ class Server(BaseModel):
     query_ventas: Optional[Dict] = None  # Consulta para obtener ventas
     query_movimientos: Optional[Dict] = None  # Consulta para obtener movimientos/entradas
     queries_configured: bool = False  # Si todas las consultas están configuradas y validadas
+    visible_en_operaciones: bool = True  # Si se muestra en dashboards y menús operativos
     active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -124,6 +125,7 @@ class ServerCreate(BaseModel):
     tipos_movimiento: List[str] = []
     categorias: List[str] = []
     departamentos: List[str] = []
+    visible_en_operaciones: bool = True  # Por defecto visible
     # Consultas SQL opcionales (se pueden configurar después)
     query_inventario: Optional[Dict] = None
     query_ventas: Optional[Dict] = None
