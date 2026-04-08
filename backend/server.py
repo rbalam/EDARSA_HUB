@@ -9099,12 +9099,23 @@ WHERE turnos.apertura >= '{f_ini} 00:00:00'
             f_ini = fecha_ini.replace('-', '')
             f_fin = fecha_fin.replace('-', '')
             
-            # Filtro de sucursal si viene
+            # Filtro de sucursal si viene - no filtrar si es "default" o nombre del servidor
             sucursal_filter = ""
-            if sucursal:
+            nombre_servidor = server.get('name', '').lower()
+            sucursal_lower = (sucursal or '').lower()
+            skip_sucursal_filter = (
+                not sucursal or 
+                sucursal_lower == 'default' or 
+                sucursal_lower == nombre_servidor or
+                sucursal_lower == 'managmentpro' or
+                sucursal_lower == 'mpro'
+            )
+            
+            if sucursal and not skip_sucursal_filter:
+                # Buscar por descripción parcial (puede incluir caracteres especiales como °)
                 sucursal_filter = f"AND S.Sc_Descripcion LIKE '%{sucursal}%'"
             
-            logging.info(f"Detalle MPRO: f_ini={f_ini}, f_fin={f_fin}, sucursal_filter={sucursal_filter}")
+            logging.info(f"Detalle MPRO: f_ini={f_ini}, f_fin={f_fin}, sucursal={sucursal}, skip_filter={skip_sucursal_filter}, sucursal_filter={sucursal_filter}")
             
             # Query para MPRO - usa Venta_Encabezado con Comanda para PAX
             query_detalle = f"""
