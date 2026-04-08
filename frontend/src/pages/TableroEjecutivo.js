@@ -413,7 +413,8 @@ export default function TableroEjecutivo() {
       return;
     }
     
-    setLoading(true);
+    if (retry === 0) setLoading(true);
+    
     try {
       const response = await axios.get(`${API_URL}/api/comercial/tablero-ejecutivo`, {
         params: { mes, anio },
@@ -421,21 +422,21 @@ export default function TableroEjecutivo() {
         timeout: 30000
       });
       setData(response.data);
+      setLoading(false); // Siempre apagar loading al recibir datos
     } catch (error) {
       console.error('Error cargando tablero:', error);
       if (error.response?.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
+        setLoading(false);
       } else if (retry < 2) {
         console.log(`Reintentando (${retry + 1}/2)...`);
         setTimeout(() => cargarDatos(retry + 1), 1000);
+        // No apagar loading durante reintentos
       } else {
         toast.error('Error al cargar datos. Intenta actualizar.');
-      }
-    } finally {
-      if (retry === 0 || retry >= 2) {
-        setLoading(false);
+        setLoading(false); // Apagar loading después de todos los reintentos fallidos
       }
     }
   };
