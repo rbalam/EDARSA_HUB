@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/api';
+import { filterServersOperativos } from '@/services/serversService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -101,10 +102,8 @@ const Dashboard = () => {
     setServersLoading(true);
     try {
       const response = await api.get('/dashboard/servers-configured');
-      // Filtrar servidores no visibles en operaciones (usa campo dinámico)
-      const serversOperativos = response.data.filter(s => 
-        s.visible_en_operaciones !== false
-      );
+      // Usar helper centralizado para filtrar servidores operativos
+      const serversOperativos = filterServersOperativos(response.data);
       setServers(serversOperativos);
       // NO seleccionar automáticamente - dejar que el usuario elija
       // if (response.data.length > 0) {
