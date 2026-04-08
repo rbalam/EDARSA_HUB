@@ -9672,6 +9672,10 @@ WHERE cancelado = 0
     fi = fecha_ini.replace('-', '')
     ff = fecha_fin.replace('-', '')
     
+    # Extraer mes y año de fecha_fin para usarlos en recálculos (importante para multiselección de meses)
+    mes_final = int(fecha_fin[5:7])  # Mes de fecha_fin (ej: 04 para abril)
+    anio_final = int(fecha_fin[:4])  # Año de fecha_fin
+    
     # PASO 1: Detectar el último día real con ventas en el período
     query_ultimo_dia = f"""
 SELECT MAX(CONVERT(DATE, turnos.apertura)) as ultimo_dia_venta
@@ -9687,19 +9691,38 @@ WHERE turnos.apertura >= '{fi} 00:00:00'
         if result_ultimo and result_ultimo[0]['ultimo_dia_venta']:
             ultimo_dia_venta = result_ultimo[0]['ultimo_dia_venta']
             if isinstance(ultimo_dia_venta, str):
-                dia_con_datos = int(ultimo_dia_venta.split('-')[2]) if '-' in ultimo_dia_venta else int(ultimo_dia_venta[-2:])
+                # Parsear la fecha completa (YYYY-MM-DD)
+                partes = ultimo_dia_venta.split('-') if '-' in ultimo_dia_venta else None
+                if partes and len(partes) == 3:
+                    anio_ultimo = int(partes[0])
+                    mes_ultimo = int(partes[1])
+                    dia_con_datos = int(partes[2])
+                else:
+                    dia_con_datos = int(ultimo_dia_venta[-2:])
+                    mes_ultimo = mes_final
+                    anio_ultimo = anio_final
             else:
                 dia_con_datos = ultimo_dia_venta.day
+                mes_ultimo = ultimo_dia_venta.month
+                anio_ultimo = ultimo_dia_venta.year
             
-            logging.info(f"SoftRestaurant {server['name']} - Último día con ventas: día {dia_con_datos}")
+            logging.info(f"SoftRestaurant {server['name']} - Último día con ventas: {anio_ultimo}-{mes_ultimo:02d}-{dia_con_datos:02d}")
             
-            # Actualizar fecha_fin y recalcular días transcurridos
-            ff = f"{fi[:6]}{str(dia_con_datos).zfill(2)}"
-            dias_transcurridos = dia_con_datos
+            # Actualizar fecha_fin usando el MES CORRECTO del último día con ventas
+            # CORRECCIÓN: Usar el mes y año del último día con ventas, no del mes inicial
+            ff = f"{anio_ultimo}{str(mes_ultimo).zfill(2)}{str(dia_con_datos).zfill(2)}"
+            
+            # Calcular días transcurridos desde fecha_ini hasta el último día con ventas
+            from datetime import datetime
+            fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
+            fecha_ultimo_dt = datetime(anio_ultimo, mes_ultimo, dia_con_datos)
+            dias_transcurridos = (fecha_ultimo_dt - fecha_ini_dt).days + 1
+            
+            logging.info(f"SoftRestaurant {server['name']} - Período ajustado: {fi} a {ff}, días: {dias_transcurridos}")
             
             # Recalcular fechas de comparación basadas en días reales
-            mes_actual = int(fi[4:6])
-            anio_actual = int(fi[:4])
+            mes_actual = mes_ultimo  # Usar el mes del último día con ventas
+            anio_actual = anio_ultimo
             
             # Mes anterior
             if mes_actual == 1:
