@@ -10181,6 +10181,10 @@ async def tablero_ejecutivo(
     fecha_ini_año_ant = f"{anio-1}-{mes:02d}-01"
     fecha_fin_año_ant = f"{anio-1}-{mes:02d}-{min(dias_transcurridos, calendar.monthrange(anio-1, mes)[1]):02d}"
     
+    # Año anterior MES COMPLETO (para comparar proyección vs mes completo)
+    ultimo_dia_año_ant = calendar.monthrange(anio-1, mes)[1]
+    fecha_fin_año_ant_completo = f"{anio-1}-{mes:02d}-{ultimo_dia_año_ant:02d}"
+    
     logging.info(f"Tablero Ejecutivo: {mes}/{anio} ({fecha_ini} a {fecha_fin}), días: {dias_transcurridos}/{dias_mes}")
     
     # Obtener todos los servidores activos Y visibles en operaciones
@@ -10196,7 +10200,7 @@ async def tablero_ejecutivo(
         servers = [s for s in servers if s['id'] in allowed]
     
     resultados = []
-    totales = {"ventas": 0, "ventas_ant": 0, "ventas_año": 0, "pax": 0, "pax_ant": 0, "pax_año": 0, 
+    totales = {"ventas": 0, "ventas_ant": 0, "ventas_año": 0, "ventas_año_completo": 0, "pax": 0, "pax_ant": 0, "pax_año": 0, 
                "cheques": 0, "cheques_ant": 0, "cheques_año": 0, "proyeccion": 0}
     
     periodo_key = f"{anio}-{mes:02d}"
@@ -10301,8 +10305,13 @@ async def tablero_ejecutivo(
     totales["ticket_prom"] = round(totales["ventas"] / totales["pax"], 2) if totales["pax"] > 0 else 0
     totales["cheque_prom"] = round(totales["ventas"] / totales["cheques"], 2) if totales["cheques"] > 0 else 0
     
-    # Proyección vs ventas año anterior (comparar proyección con ventas_año)
-    totales["var_proy_vs_año"] = round(((totales["proyeccion"] - totales["ventas_año"]) / totales["ventas_año"] * 100), 1) if totales["ventas_año"] > 0 else 0
+    # Estimar ventas del año anterior MES COMPLETO (proyección proporcional)
+    # Si tenemos 7 días de año anterior con X ventas, el mes completo sería X * (días_mes / días_transcurridos)
+    ventas_año_completo_estimado = (totales["ventas_año"] / dias_transcurridos * dias_mes) if dias_transcurridos > 0 and totales["ventas_año"] > 0 else 0
+    totales["ventas_año_completo"] = round(ventas_año_completo_estimado, 0)
+    
+    # Proyección vs ventas año anterior MES COMPLETO (no solo los días equivalentes)
+    totales["var_proy_vs_año"] = round(((totales["proyeccion"] - ventas_año_completo_estimado) / ventas_año_completo_estimado * 100), 1) if ventas_año_completo_estimado > 0 else 0
     
     # Contar unidades que tenían ventas el año anterior (ventas_año > 0)
     totales["unidades_año_ant"] = sum(1 for u in resultados if u.get("ventas_año", 0) > 0)
