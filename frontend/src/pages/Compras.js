@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import { fetchServersOperativos } from '../services/serversService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -2754,16 +2755,10 @@ export default function Compras() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
-    const fetchServers = async () => {
+    // Usar servicio centralizado para obtener servidores operativos
+    const loadServers = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`${API_URL}/api/servers`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        // Filtrar servidores no visibles en operaciones
-        const serversOperativos = response.data.filter(s => 
-          s.visible_en_operaciones !== false
-        );
+        const serversOperativos = await fetchServersOperativos();
         setServers(serversOperativos);
         
         // Restaurar servidor guardado
@@ -2778,7 +2773,7 @@ export default function Compras() {
         console.error('Error cargando servidores:', error);
       }
     };
-    fetchServers();
+    loadServers();
   }, []);
 
   // Cargar sucursales cuando cambia el servidor
