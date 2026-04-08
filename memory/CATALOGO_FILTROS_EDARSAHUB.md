@@ -641,6 +641,27 @@ const validateFilters = (filters) => {
 | Fecha | Versión | Cambio | Autor |
 |-------|---------|--------|-------|
 | 2025-04-08 | 1.0 | Creación inicial del catálogo | E1 Agent |
+| 2025-04-08 | 1.1 | Corrección aplicada en `/compras/pedidos-vigentes/` - Filtro sucursal MPRO | E1 Agent |
+
+---
+
+## REGLAS ESPECÍFICAS POR SISTEMA
+
+### MPRO - Reglas de Sucursal
+
+**Endpoints corregidos:**
+- ✅ `/compras/pedidos-vigentes/{server_id}` (línea 5394) - CORREGIDO 2025-04-08
+
+**Patrón obligatorio para MPRO:**
+```sql
+WHERE (S.Sc_Cve_Sucursal = '{sucursal}' OR S.Sc_Descripcion LIKE '%{sucursal}%')
+```
+
+**Sucursales de referencia (Querétaro y Origen):**
+| Código | Nombre Completo | Búsquedas válidas |
+|--------|-----------------|-------------------|
+| `0021` | `130° QUERETARO` | "0021", "QUERETARO", "QRO", "130°" |
+| `0001` | `ORIGEN` | "0001", "ORIGEN", "Origen" |
 
 ---
 
