@@ -8166,7 +8166,17 @@ WHERE VE.Vn_Fecha >= '{fecha_ini}'
             sucursal_join = ""
             sucursal_filter = ""
             sucursal_filter_simple = ""
-            if sucursal and sucursal != 'all':
+            # No filtrar por sucursal si es "default", "all" o coincide con el nombre del servidor
+            nombre_servidor = server.get('name', '').lower()
+            sucursal_lower = (sucursal or '').lower()
+            skip_sucursal_filter = (
+                not sucursal or 
+                sucursal == 'all' or 
+                sucursal_lower == 'default' or 
+                sucursal_lower == nombre_servidor
+            )
+            
+            if not skip_sucursal_filter:
                 # Si es un ID de sucursal (formato numérico como "0021"), usar directamente
                 # Si es un nombre, usar LIKE
                 if sucursal.isdigit() or (len(sucursal) == 4 and sucursal[0] == '0'):
@@ -8662,9 +8672,12 @@ ORDER BY DATEPART(WEEKDAY, turnos.apertura)
             }
         
         elif server['system_type'] == 'ManagmentPro' or server['system_type'] == 'MPRO':
-            # Filtro de sucursal para MPRO
+            # Filtro de sucursal para MPRO - no filtrar si es "default" o nombre del servidor
             sucursal_filter = ""
-            if sucursal:
+            nombre_servidor_1 = server.get('name', '').lower()
+            sucursal_lower_1 = (sucursal or '').lower()
+            skip_filter_1 = (not sucursal or sucursal_lower_1 == 'default' or sucursal_lower_1 == nombre_servidor_1)
+            if sucursal and not skip_filter_1:
                 sucursal_filter = f"AND S.Sc_Descripcion LIKE '%{sucursal}%'"
             
             # Ventas por hora para MPRO
@@ -8862,8 +8875,12 @@ ORDER BY COUNT(*) DESC
         
         elif server['system_type'] == 'ManagmentPro' or server['system_type'] == 'MPRO':
             # Filtro de sucursal para MPRO
+            # Filtro de sucursal para MPRO - no filtrar si es "default" o nombre del servidor
             sucursal_filter = ""
-            if sucursal:
+            nombre_servidor_2 = server.get('name', '').lower()
+            sucursal_lower_2 = (sucursal or '').lower()
+            skip_filter_2 = (not sucursal or sucursal_lower_2 == 'default' or sucursal_lower_2 == nombre_servidor_2)
+            if sucursal and not skip_filter_2:
                 sucursal_filter = f"AND S.Sc_Descripcion LIKE '%{sucursal}%'"
             
             # KPIs generales de mesas para MPRO

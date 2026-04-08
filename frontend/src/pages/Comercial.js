@@ -2391,12 +2391,14 @@ export default function Comercial() {
           const sucursalesData = response.data || [];
           setSucursales(sucursalesData);
           
-          // Auto-seleccionar si solo hay una sucursal (CIENFUEGOS, LA ESTELAR)
+          // Auto-seleccionar si solo hay una sucursal (CIENFUEGOS, LA ESTELAR, MPRO con default)
           if (sucursalesData.length === 1) {
+            // Usar el mismo formato que el SelectItem: id || codigo || nombre
+            const valorSucursal = sucursalesData[0].id || sucursalesData[0].codigo || sucursalesData[0].nombre;
             // Usar setTimeout para asegurar que el estado se actualice después del clear
             setTimeout(() => {
-              setSelectedSucursal(sucursalesData[0].nombre);
-            }, 50);
+              setSelectedSucursal(valorSucursal);
+            }, 100);
             setShowSucursalSelector(false);
           } else if (sucursalesData.length > 1) {
             setShowSucursalSelector(true);
@@ -2405,10 +2407,14 @@ export default function Comercial() {
             if (savedFilters) {
               try {
                 const filters = JSON.parse(savedFilters);
-                if (filters.sucursal && sucursalesData.some(s => s.nombre === filters.sucursal)) {
+                // Buscar por id, codigo o nombre
+                const sucursalGuardada = sucursalesData.find(s => 
+                  (s.id || s.codigo || s.nombre) === filters.sucursal
+                );
+                if (sucursalGuardada) {
                   setTimeout(() => {
-                    setSelectedSucursal(filters.sucursal);
-                  }, 50);
+                    setSelectedSucursal(sucursalGuardada.id || sucursalGuardada.codigo || sucursalGuardada.nombre);
+                  }, 100);
                 }
               } catch (e) {
                 // mantener vacío
