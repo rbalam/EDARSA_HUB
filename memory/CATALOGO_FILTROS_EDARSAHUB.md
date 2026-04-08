@@ -368,6 +368,56 @@ WHERE Mv_Fecha = '08/04/2025'  -- Ambiguo: ¿DD/MM o MM/DD?
 - **Particionamiento:** Considerar partición por fecha en tablas grandes
 - **Timeout:** Queries de más de 1 año pueden requerir paginación
 
+#### ⚠️ REGLA CRÍTICA: Multiselección de Meses
+
+**BUG HISTÓRICO CORREGIDO (2025-04-08):**
+
+Cuando se selecciona **todo el año** o **múltiples meses** (ej: "01,02,03,04"), la lógica **INCORRECTA** era usar solo el mes más reciente (`max(lista_meses)`) para calcular fechas. Esto causaba que:
+- Solo se consultaran datos del último mes seleccionado
+- Los comparativos vs año anterior fueran incorrectos
+
+**❌ PATRÓN INCORRECTO (NO USAR):**
+```python
+# ERROR: Solo usa el mes más reciente, ignora los demás
+lista_meses = [1, 2, 3, 4]
+mes = max(lista_meses)  # mes = 4
+fecha_ini = f"{anio}-{mes:02d}-01"  # "2026-04-01" - INCORRECTO, debería ser "2026-01-01"
+```
+
+**✅ PATRÓN CORRECTO (OBLIGATORIO):**
+```python
+# CORRECTO: Usa el rango completo de meses
+lista_meses = [1, 2, 3, 4]
+mes_min = min(lista_meses)  # 1 (enero)
+mes_max = max(lista_meses)  # 4 (abril)
+
+# Fecha inicio: primer día del PRIMER mes
+fecha_ini = f"{anio}-{mes_min:02d}-01"  # "2026-01-01"
+
+# Fecha fin: día actual del ÚLTIMO mes (si es mes actual) o último día (si ya pasó)
+if anio == hoy.year and mes_max == hoy.month:
+    fecha_fin = (hoy - timedelta(days=1)).strftime('%Y-%m-%d')  # Hasta ayer
+else:
+    ultimo_dia = calendar.monthrange(anio, mes_max)[1]
+    fecha_fin = f"{anio}-{mes_max:02d}-{ultimo_dia:02d}"
+
+# Comparativo año anterior: MISMO RANGO de meses y días
+# Si es 01-ene a 08-abr 2026, comparar con 01-ene a 08-abr 2025
+fecha_ini_año_ant = f"{anio-1}-{mes_min:02d}-01"
+fecha_fin_año_ant = f"{anio-1}-{mes_max:02d}-{dia_actual:02d}"  # Mismo día del año anterior
+```
+
+**Ejemplo de cálculo correcto:**
+| Selección | Período Actual | Año Anterior |
+|-----------|----------------|--------------|
+| Ene-Abr 2026 | 01-ene-2026 a 07-abr-2026 (97 días) | 01-ene-2025 a 07-abr-2025 (97 días) |
+| Todo 2026 | 01-ene-2026 a 07-abr-2026 (97 días) | 01-ene-2025 a 07-abr-2025 (97 días) |
+| Solo Abril | 01-abr-2026 a 07-abr-2026 (7 días) | 01-abr-2025 a 07-abr-2025 (7 días) |
+
+**Endpoints corregidos:**
+- ✅ `/comercial/tablero-ejecutivo` - Corregido 2025-04-08
+- ⚠️ `/comercial/dashboard/{server_id}` - Verificar implementación
+
 ---
 
 ### C.6 FILTRO: `almacen`
@@ -642,6 +692,7 @@ const validateFilters = (filters) => {
 |-------|---------|--------|-------|
 | 2025-04-08 | 1.0 | Creación inicial del catálogo | E1 Agent |
 | 2025-04-08 | 1.1 | Corrección aplicada en `/compras/pedidos-vigentes/` - Filtro sucursal MPRO | E1 Agent |
+| 2025-04-08 | 1.2 | Agregada REGLA CRÍTICA: Multiselección de Meses en filtro periodo/fechas | E1 Agent |
 
 ---
 
