@@ -10265,12 +10265,22 @@ async def tablero_ejecutivo(
     solo_ventas_dia = (anio == -1) or (anios == "-1")
     
     # Procesar parámetros nuevos (multiselección) o legacy (simple)
+    mes_min = None  # Para multiselección de meses
+    mes_max = None
+    
     if meses and not solo_ventas_dia:
         # Nuevo formato: multiselección de meses
         lista_meses = [int(m.strip()) for m in meses.split(',') if m.strip()]
-        mes = max(lista_meses)  # Usar el mes más reciente para cálculos
+        mes_min = min(lista_meses)  # Primer mes del rango
+        mes_max = max(lista_meses)  # Último mes del rango
+        mes = mes_max  # Para compatibilidad con lógica existente
     elif mes == 0:
         mes = hoy.month
+        mes_min = mes
+        mes_max = mes
+    else:
+        mes_min = mes
+        mes_max = mes
     
     if anios and anios != "-1":
         # Nuevo formato: multiselección de años
@@ -10282,38 +10292,85 @@ async def tablero_ejecutivo(
         else:
             anio = hoy.year  # Para ventas del día, usar año actual
     
-    # Fechas del período actual
-    fecha_ini = f"{anio}-{mes:02d}-01"
-    if anio == hoy.year and mes == hoy.month:
+    # Fechas del período actual - CORREGIDO para multiselección de meses
+    # fecha_ini: primer día del PRIMER mes seleccionado
+    fecha_ini = f"{anio}-{mes_min:02d}-01"
+    
+    # fecha_fin: depende de si el último mes es el actual o ya pasó
+    if anio == hoy.year and mes_max == hoy.month:
         # Mes actual incompleto - ventas hasta AYER (hoy no se cuenta)
         ayer = hoy - timedelta(days=1)
         fecha_fin = ayer.strftime('%Y-%m-%d')
-        dias_transcurridos = ayer.day  # Días hasta ayer, no hasta hoy
+        # Calcular días transcurridos desde inicio del rango hasta ayer
+        fecha_inicio_dt = datetime(anio, mes_min, 1)
+        dias_transcurridos = (ayer - fecha_inicio_dt).days + 1
+    elif anio == hoy.year and mes_max > hoy.month:
+        # Meses futuros seleccionados - usar hasta el día actual
+        fecha_fin = hoy.strftime('%Y-%m-%d')
+        fecha_inicio_dt = datetime(anio, mes_min, 1)
+        dias_transcurridos = (hoy - fecha_inicio_dt).days + 1
     else:
-        # Mes completo
-        ultimo_dia = calendar.monthrange(anio, mes)[1]
-        fecha_fin = f"{anio}-{mes:02d}-{ultimo_dia:02d}"
-        dias_transcurridos = ultimo_dia
+        # Todos los meses seleccionados ya pasaron - usar meses completos
+        ultimo_dia = calendar.monthrange(anio, mes_max)[1]
+        fecha_fin = f"{anio}-{mes_max:02d}-{ultimo_dia:02d}"
+        # Calcular días totales del rango completo
+        fecha_inicio_dt = datetime(anio, mes_min, 1)
+        fecha_fin_dt = datetime(anio, mes_max, ultimo_dia)
+        dias_transcurridos = (fecha_fin_dt - fecha_inicio_dt).days + 1
     
-    dias_mes = calendar.monthrange(anio, mes)[1]
-    
-    # Mes anterior (mismos días para comparar proporcional)
-    if mes == 1:
-        mes_ant, anio_mes_ant = 12, anio - 1
+    # Calcular días totales del período (si todo el rango estuviera completo)
+    if mes_max == 12:
+        fecha_fin_completo = datetime(anio + 1, 1, 1) - timedelta(days=1)
     else:
-        mes_ant, anio_mes_ant = mes - 1, anio
-    fecha_ini_ant = f"{anio_mes_ant}-{mes_ant:02d}-01"
-    fecha_fin_ant = f"{anio_mes_ant}-{mes_ant:02d}-{min(dias_transcurridos, calendar.monthrange(anio_mes_ant, mes_ant)[1]):02d}"
+        fecha_fin_completo = datetime(anio, mes_max + 1, 1) - timedelta(days=1)
+    fecha_inicio_dt = datetime(anio, mes_min, 1)
+    dias_mes = (fecha_fin_completo - fecha_inicio_dt).days + 1
     
-    # Año anterior (mismo mes, mismos días)
-    fecha_ini_año_ant = f"{anio-1}-{mes:02d}-01"
-    fecha_fin_año_ant = f"{anio-1}-{mes:02d}-{min(dias_transcurridos, calendar.monthrange(anio-1, mes)[1]):02d}"
+    # Mes anterior (para comparar vs período anterior)
+    if mes_min == 1:
+        mes_ant_ini = 12 - (mes_max - mes_min)  # Mismo número de meses, pero del año anterior
+        if mes_ant_ini < 1:
+            mes_ant_ini = 1
+        mes_ant_fin = 12
+        anio_mes_ant = anio - 1
+    else:
+        # Período anterior del mismo año
+        meses_en_rango = mes_max - mes_min + 1
+        mes_ant_ini = mes_min - meses_en_rango
+        if mes_ant_ini < 1:
+            mes_ant_ini = 1
+        mes_ant_fin = mes_min - 1
+        anio_mes_ant = anio
     
-    # Año anterior MES COMPLETO (para comparar proyección vs mes completo)
-    ultimo_dia_año_ant = calendar.monthrange(anio-1, mes)[1]
-    fecha_fin_año_ant_completo = f"{anio-1}-{mes:02d}-{ultimo_dia_año_ant:02d}"
+    fecha_ini_ant = f"{anio_mes_ant}-{mes_ant_ini:02d}-01"
+    # Para período anterior, usar mismos días transcurridos
+    ultimo_dia_ant = calendar.monthrange(anio_mes_ant, mes_ant_fin)[1]
+    fecha_fin_ant = f"{anio_mes_ant}-{mes_ant_fin:02d}-{ultimo_dia_ant:02d}"
     
-    logging.info(f"Tablero Ejecutivo: {mes}/{anio} ({fecha_ini} a {fecha_fin}), días: {dias_transcurridos}/{dias_mes}")
+    # Año anterior (MISMO RANGO DE MESES Y DÍAS - esto es lo que estaba mal)
+    # Si estamos viendo 01-ene a 08-abr 2026, comparar con 01-ene a 08-abr 2025
+    fecha_ini_año_ant = f"{anio-1}-{mes_min:02d}-01"
+    
+    # Calcular el día final del año anterior equivalente
+    if anio == hoy.year and mes_max >= hoy.month:
+        # Si estamos en el año actual y el mes actual está en el rango,
+        # comparar hasta el mismo día del año anterior
+        if mes_max == hoy.month:
+            dia_fin_año_ant = min(hoy.day - 1, calendar.monthrange(anio-1, mes_max)[1])
+        else:
+            dia_fin_año_ant = min(hoy.day, calendar.monthrange(anio-1, mes_max)[1])
+        fecha_fin_año_ant = f"{anio-1}-{mes_max:02d}-{dia_fin_año_ant:02d}"
+    else:
+        # Meses completos, comparar con meses completos del año anterior
+        ultimo_dia_año_ant = calendar.monthrange(anio-1, mes_max)[1]
+        fecha_fin_año_ant = f"{anio-1}-{mes_max:02d}-{ultimo_dia_año_ant:02d}"
+    
+    # Año anterior MES COMPLETO (para comparar proyección vs período completo)
+    ultimo_dia_año_ant_completo = calendar.monthrange(anio-1, mes_max)[1]
+    fecha_fin_año_ant_completo = f"{anio-1}-{mes_max:02d}-{ultimo_dia_año_ant_completo:02d}"
+    
+    logging.info(f"Tablero Ejecutivo: {mes_min}-{mes_max}/{anio} ({fecha_ini} a {fecha_fin}), días: {dias_transcurridos}/{dias_mes}")
+    logging.info(f"Tablero Ejecutivo - Año anterior: {fecha_ini_año_ant} a {fecha_fin_año_ant}")
     
     # Obtener todos los servidores activos Y visibles en operaciones
     servers = await db.servers.find({
@@ -10464,7 +10521,7 @@ async def tablero_ejecutivo(
     
     return {
         "periodo": periodo_info,
-        "comparativo_con": {"mes_anterior": f"{mes_ant}/{anio_mes_ant}", "año_anterior": f"{mes}/{anio-1}"},
+        "comparativo_con": {"mes_anterior": f"{mes_ant_ini}-{mes_ant_fin}/{anio_mes_ant}", "año_anterior": f"{mes_min}-{mes_max}/{anio-1}"},
         "unidades": resultados_ordenados,
         "totales": totales
     }
