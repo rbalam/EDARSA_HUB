@@ -9605,9 +9605,57 @@ async def save_kpis_cache(server_id: str, periodo_key: str, kpis: dict):
         upsert=True
     )
 
-def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes):
+def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia=False):
     """Query reutilizable para SoftRestaurant - misma lógica análisis inventarios"""
     import calendar
+    
+    # Si solo_ventas_dia es True, consultar SOLO tempcheques (ventas sin corte)
+    if solo_ventas_dia:
+        query_temp = """
+SELECT 
+    COUNT(DISTINCT folio) as cheques,
+    ISNULL(SUM(total), 0) as ventas,
+    ISNULL(SUM(nopersonas), 0) as pax
+FROM tempcheques
+WHERE cancelado = 0
+"""
+        try:
+            result_temp = execute_sql_query(server['host'], server['port'], server['database'], 
+                                            server['username'], server['password'], query_temp)
+            if result_temp and len(result_temp) > 0:
+                ventas = float(result_temp[0]['ventas'] or 0)
+                pax = int(result_temp[0]['pax'] or 0)
+                cheques = int(result_temp[0]['cheques'] or 0)
+            else:
+                ventas, pax, cheques = 0, 0, 0
+            
+            ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
+            cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
+            
+            return {
+                "ventas": ventas,
+                "ventas_ant": 0,
+                "ventas_año": 0,
+                "var_vs_mes_ant": 0,
+                "var_vs_año_ant": 0,
+                "proyeccion": 0,
+                "pax": pax,
+                "pax_ant": 0,
+                "pax_año": 0,
+                "var_pax_mes": 0,
+                "var_pax_año": 0,
+                "cheques": cheques,
+                "cheques_ant": 0,
+                "cheques_año": 0,
+                "var_cheques_mes": 0,
+                "var_cheques_año": 0,
+                "ticket_prom": ticket_prom,
+                "cheque_prom": cheque_prom,
+                "es_ventas_dia": True  # Flag para identificar datos de ventas del día
+            }
+        except Exception as e:
+            logging.warning(f"Error consultando tempcheques {server['name']}: {e}")
+            return None
     
     # Usar formato YYYYMMDD sin guiones para evitar problemas de conversión de fecha
     fi = fecha_ini.replace('-', '')
@@ -9691,6 +9739,30 @@ WHERE turnos.apertura >= '{fi} 00:00:00'
     except Exception as e:
         logging.warning(f"Error consultando {server['name']}: {e}")
         return None
+    
+    # SUMAR ventas del día sin corte (tempcheques) a las ventas históricas
+    try:
+        query_temp = """
+SELECT 
+    COUNT(DISTINCT folio) as cheques,
+    ISNULL(SUM(total), 0) as ventas,
+    ISNULL(SUM(nopersonas), 0) as pax
+FROM tempcheques
+WHERE cancelado = 0
+"""
+        result_temp = execute_sql_query(server['host'], server['port'], server['database'], 
+                                        server['username'], server['password'], query_temp)
+        if result_temp and len(result_temp) > 0:
+            ventas_temp = float(result_temp[0]['ventas'] or 0)
+            pax_temp = int(result_temp[0]['pax'] or 0)
+            cheques_temp = int(result_temp[0]['cheques'] or 0)
+            # Sumar a los totales
+            ventas += ventas_temp
+            pax += pax_temp
+            cheques += cheques_temp
+            logging.info(f"SoftRestaurant {server['name']} - Tempcheques sumados: ventas={ventas_temp}, pax={pax_temp}, cheques={cheques_temp}")
+    except Exception as e:
+        logging.warning(f"Error consultando tempcheques {server['name']}: {e} - continuando sin ventas del día")
     
     # Mes anterior (mismos días)
     fia = fecha_ini_ant.replace('-', '')
@@ -10169,17 +10241,21 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
 @api_router.get("/comercial/tablero-ejecutivo")
 async def tablero_ejecutivo(
     mes: int = Query(default=0),  # 0 = mes actual
-    anio: int = Query(default=0),  # 0 = año actual
+    anio: int = Query(default=0),  # 0 = año actual, -1 = ventas del día
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Tablero ejecutivo con KPIs de TODAS las unidades.
     Comparativo vs mes anterior y año anterior (mismos días).
+    anio=-1: Modo "Ventas del Día" - solo tempcheques (ventas sin corte) de SoftRestaurant.
     """
     from datetime import datetime, timedelta
     import calendar
     
     hoy = datetime.now()
+    
+    # Modo especial: Ventas del Día (anio = -1)
+    solo_ventas_dia = (anio == -1)
     
     # Determinar período
     if anio == 0:
@@ -10250,7 +10326,7 @@ async def tablero_ejecutivo(
             # Solo intentar conexión si el servidor NO está marcado como offline recientemente
             if not server_offline:
                 kpis = get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
-                                               fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
+                                               fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia)
                 if kpis:
                     # Conexión exitosa - marcar como online
                     await save_server_connection_status(server['id'], True)
@@ -10352,8 +10428,23 @@ async def tablero_ejecutivo(
     # Ordenar unidades de mayor a menor venta
     resultados_ordenados = sorted(resultados, key=lambda x: x.get('ventas', 0), reverse=True)
     
+    # Período para respuesta
+    periodo_info = {
+        "mes": mes, 
+        "anio": anio, 
+        "dias_transcurridos": dias_transcurridos, 
+        "dias_mes": dias_mes,
+        "modo_ventas_dia": solo_ventas_dia
+    }
+    
+    # Si es modo ventas del día, ajustar el período para mostrarlo diferente
+    if solo_ventas_dia:
+        periodo_info["mes"] = 0
+        periodo_info["anio"] = -1
+        periodo_info["label"] = "Ventas del Día (sin corte)"
+    
     return {
-        "periodo": {"mes": mes, "anio": anio, "dias_transcurridos": dias_transcurridos, "dias_mes": dias_mes},
+        "periodo": periodo_info,
         "comparativo_con": {"mes_anterior": f"{mes_ant}/{anio_mes_ant}", "año_anterior": f"{mes}/{anio-1}"},
         "unidades": resultados_ordenados,
         "totales": totales

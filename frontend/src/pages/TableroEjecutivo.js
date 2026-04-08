@@ -403,6 +403,7 @@ export default function TableroEjecutivo() {
 
   const anios = [
     { value: '0', label: 'Año Actual' },
+    { value: '-1', label: '📊 Ventas del Día' },
     { value: '2026', label: '2026' }, { value: '2025', label: '2025' }, { value: '2024', label: '2024' }
   ];
 
@@ -505,7 +506,10 @@ export default function TableroEjecutivo() {
                 </Button>
                 {data?.periodo && (
                   <span className="text-xs text-zinc-500 ml-auto bg-zinc-100 px-2 py-1 rounded">
-                    {nombreMes} {data.periodo.anio} • Día {data.periodo.dias_transcurridos} de {data.periodo.dias_mes}
+                    {data.periodo.modo_ventas_dia 
+                      ? <span className="text-amber-600 font-medium">🔴 Ventas del Día (sin corte)</span>
+                      : `${nombreMes} ${data.periodo.anio} • Día ${data.periodo.dias_transcurridos} de ${data.periodo.dias_mes}`
+                    }
                   </span>
                 )}
               </div>
