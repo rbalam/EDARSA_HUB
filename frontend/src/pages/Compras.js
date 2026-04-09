@@ -2957,6 +2957,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
               </tbody>
             </table>
           </div>
+        </div>
         </DialogContent>
       </Dialog>
       
