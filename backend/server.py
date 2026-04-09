@@ -144,15 +144,27 @@ def obtener_ventas_dia_api_local(api_config: dict) -> dict:
         ISNULL(SUM(co_personas), 0) as pax
     FROM Comanda 
     INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio 
-    WHERE CONVERT(date, co_fecha, 101) = CONVERT(date, GETDATE(), 101)
+    WHERE CONVERT(date, co_fecha, 103) = CONVERT(date, GETDATE(), 103)
     """
     
     result = query_api_mpro_local(api_config, sql_ventas_hoy)
     
     if result["success"] and result["data"]:
         data = result["data"]
-        # La respuesta puede ser una lista o un dict directo
-        if isinstance(data, list) and len(data) > 0:
+        
+        # Manejar diferentes formatos de respuesta
+        # Formato 1: {"total_registros":1,"data":[{"ventas":1590.0}]}
+        # Formato 2: [{"ventas": 1590.0}]
+        # Formato 3: {"ventas": 1590.0}
+        
+        if isinstance(data, dict) and "data" in data:
+            # Formato con wrapper "data"
+            inner_data = data.get("data", [])
+            if isinstance(inner_data, list) and len(inner_data) > 0:
+                row = inner_data[0]
+            else:
+                row = {}
+        elif isinstance(data, list) and len(data) > 0:
             row = data[0]
         elif isinstance(data, dict):
             row = data
@@ -290,9 +302,13 @@ async def test_api_connection(request: TestApiRequest):
                     "ventas_hoy": 0
                 }
             
-            # Extraer ventas
+            # Extraer ventas - manejar formato {"total_registros":1,"data":[{"ventas":1590.0}]}
             ventas = 0
-            if isinstance(data, list) and len(data) > 0:
+            if isinstance(data, dict) and "data" in data:
+                inner_data = data.get("data", [])
+                if isinstance(inner_data, list) and len(inner_data) > 0:
+                    ventas = float(inner_data[0].get("ventas", 0) or 0)
+            elif isinstance(data, list) and len(data) > 0:
                 ventas = float(data[0].get("ventas", 0) or 0)
             elif isinstance(data, dict):
                 ventas = float(data.get("ventas", 0) or 0)
