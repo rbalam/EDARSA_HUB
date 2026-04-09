@@ -1943,9 +1943,22 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
       
       setResultados(resultadosCorregidos);
       
-      // === FIX: Recalcular resumen con importes corregidos ===
+      // === FIX: Recalcular resumen completo con valores corregidos ===
       const resumenCorregido = {
         ...response.data.resumen,
+        // Recalcular totales monetarios usando (cantidad / rendimiento) * costo_presentacion
+        total_teorico: resultadosCorregidos.reduce((sum, r) => {
+          const rendimiento = Math.max(parseFloat(r.rendimiento) || 1, 1);
+          const teorico = parseFloat(r.existencia_teorica) || 0;
+          const costoPres = parseFloat(r.costo_presentacion) || parseFloat(r.costo) || 0;
+          return sum + (teorico / rendimiento) * costoPres;
+        }, 0),
+        total_fisico: resultadosCorregidos.reduce((sum, r) => {
+          const rendimiento = Math.max(parseFloat(r.rendimiento) || 1, 1);
+          const fisico = parseFloat(r.inv_fisico) || 0;
+          const costoPres = parseFloat(r.costo_presentacion) || parseFloat(r.costo) || 0;
+          return sum + (fisico / rendimiento) * costoPres;
+        }, 0),
         importe_favor: resultadosCorregidos
           .filter(r => r.importe_diferencia >= 0)
           .reduce((sum, r) => sum + r.importe_diferencia, 0),
