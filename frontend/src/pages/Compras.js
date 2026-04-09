@@ -1927,6 +1927,27 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
       setResultados(response.data.resultados);
       setResumen(response.data.resumen);
       
+      // === DEBUG TEMPORAL: Ver datos crudos del backend ===
+      console.log('=== DATOS CRUDOS DEL BACKEND ===');
+      response.data.resultados.forEach(r => {
+        if (r.producto?.includes('CHATEAU GRAND') || r.producto?.includes('ALION')) {
+          console.log(`[${r.producto}]`, {
+            codigo: r.codigo,
+            diferencia: r.diferencia,
+            rendimiento: r.rendimiento,
+            costo: r.costo,
+            costo_presentacion: r.costo_presentacion,
+            costo_insumo: r.costo_insumo,
+            importe_diferencia: r.importe_diferencia,
+            inv_inicial: r.inv_inicial,
+            inv_fisico: r.inv_fisico,
+            existencia_teorica: r.existencia_teorica
+          });
+        }
+      });
+      console.log('================================');
+      // === FIN DEBUG TEMPORAL ===
+      
       if (response.data.resumen?.requiere_acta) {
         toast.warning('Se detectaron diferencias en contra. Se requiere Acta de Auditoría.');
       } else {
