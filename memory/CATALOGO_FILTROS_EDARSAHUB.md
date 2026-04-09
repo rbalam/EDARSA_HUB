@@ -862,6 +862,7 @@ const validateFilters = (filters) => {
 | 2025-04-09 | 2.1 | REGLA UX: Scroll horizontal en modal de Pantalla Completa (I.7) | E1 Agent |
 | 2025-04-09 | 2.2 | REGLA UX: Auto-scroll con Tab en Captura Manual de Inventario (I.8) | E1 Agent |
 | 2025-04-09 | 2.3 | REGLA UX: Scroll horizontal en tabla Detalle de Auditoría (vista normal) (I.9) | E1 Agent |
+| 2025-04-09 | 2.4 | REGLA UX: Modo Pantalla Completa en Explorador BD (ocultar sidebar) (I.10) | E1 Agent |
 
 ---
 
@@ -1358,6 +1359,65 @@ Se agregó scroll horizontal al contenedor de la tabla:
 
 **Archivo afectado:**
 - ✅ `/app/frontend/src/pages/Compras.js` (líneas 2473-2474)
+
+---
+
+### I.10 Modo Pantalla Completa en Explorador BD (Ocultar Sidebar)
+
+**IMPLEMENTACIÓN (2025-04-09):**
+
+El módulo "Explorador de Base de Datos" permite activar un **modo pantalla completa** que oculta el sidebar para maximizar el espacio de visualización de tablas y resultados.
+
+**Problema original:**
+- El sidebar ocupaba ~256px del lado izquierdo
+- En pantallas pequeñas o con muchas columnas, el espacio era insuficiente
+- No había forma de ocultar temporalmente el menú
+
+**Solución implementada:**
+Se agregó un botón "Pantalla Completa" / "Minimizar" que activa un modo fullscreen usando `position: fixed`:
+
+```jsx
+// Estado para modo pantalla completa
+const [fullscreenMode, setFullscreenMode] = useState(false);
+
+// Contenedor principal con clases condicionales
+<div 
+  className={fullscreenMode 
+    ? "fixed inset-0 z-[100] bg-white overflow-auto p-6" 
+    : "space-y-4"
+  }
+>
+  {/* Botón toggle */}
+  <Button onClick={() => setFullscreenMode(!fullscreenMode)}>
+    {fullscreenMode ? <Minimize2 /> : <Maximize2 />}
+    {fullscreenMode ? "Minimizar" : "Pantalla Completa"}
+  </Button>
+  {/* Contenido... */}
+</div>
+```
+
+**Clases CSS clave:**
+
+| Clase | Propósito |
+|-------|-----------|
+| `fixed inset-0` | Cubre toda la pantalla |
+| `z-[100]` | Superpone el sidebar (z-40) |
+| `bg-white` | Fondo blanco sólido |
+| `overflow-auto` | Permite scroll si el contenido excede |
+| `p-6` | Padding interno |
+
+**Comportamiento:**
+- **Modo Normal:** El módulo respeta el layout con sidebar
+- **Modo Pantalla Completa:** El contenido ocupa 100% de la pantalla, el sidebar queda oculto detrás
+- **Toggle:** El botón permite alternar entre ambos modos
+
+**Archivo afectado:**
+- ✅ `/app/frontend/src/pages/ExploradorBD.js`
+
+**Archivos NO modificados:**
+- ❌ `Layout.js` - El sidebar global NO fue alterado
+- ❌ `serversService.js` - NO fue modificado
+- ❌ `server.py` - NO fue modificado
 
 ---
 

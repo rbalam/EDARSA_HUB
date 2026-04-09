@@ -13,7 +13,8 @@ import { toast } from 'sonner';
 import { 
   Loader2, Database, Table, Columns, Link2, Eye, Play, 
   ChevronRight, Search, Download, Server, X, FileText,
-  Plus, Upload, Terminal, CheckCircle2, XCircle, AlertTriangle, Pencil
+  Plus, Upload, Terminal, CheckCircle2, XCircle, AlertTriangle, Pencil,
+  Maximize2, Minimize2
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -988,6 +989,9 @@ export default function ExploradorBD() {
 
   // Estado para grupos expandidos/colapsados
   const [gruposExpandidos, setGruposExpandidos] = useState({});
+  
+  // Estado para modo pantalla completa (ocultar sidebar)
+  const [fullscreenMode, setFullscreenMode] = useState(false);
 
   // Función para agrupar tablas por categoría
   const agruparTablas = (tablasList) => {
@@ -1062,12 +1066,41 @@ export default function ExploradorBD() {
   }, [tablas]);
 
   return (
-    <div className="space-y-4" data-testid="explorador-bd">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-800">Explorador de Base de Datos</h1>
-        <p className="text-sm text-zinc-500">Explora tablas, columnas y relaciones de tus sistemas</p>
+    <div 
+      className={fullscreenMode 
+        ? "fixed inset-0 z-[100] bg-white overflow-auto p-6" 
+        : "space-y-4"
+      } 
+      data-testid="explorador-bd"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-800">Explorador de Base de Datos</h1>
+          <p className="text-sm text-zinc-500">Explora tablas, columnas y relaciones de tus sistemas</p>
+        </div>
+        {/* Botón Pantalla Completa / Minimizar */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setFullscreenMode(!fullscreenMode)}
+          className="h-8 px-3"
+          title={fullscreenMode ? "Salir de pantalla completa" : "Ver en pantalla completa"}
+        >
+          {fullscreenMode ? (
+            <>
+              <Minimize2 className="h-4 w-4 mr-2" />
+              Minimizar
+            </>
+          ) : (
+            <>
+              <Maximize2 className="h-4 w-4 mr-2" />
+              Pantalla Completa
+            </>
+          )}
+        </Button>
       </div>
 
+      <div className={fullscreenMode ? "space-y-4 mt-4" : "space-y-4"}>
       {/* Selector de servidor */}
       <Card className="border">
         <CardContent className="py-4">
@@ -1475,6 +1508,7 @@ export default function ExploradorBD() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }
