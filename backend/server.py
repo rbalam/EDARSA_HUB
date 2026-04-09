@@ -7738,7 +7738,8 @@ async def comercial_dashboard(
             mes_max = max([int(m) for m in lista_meses])
             
             # Verificar si estamos consultando el mes actual
-            es_mes_actual = (year == hoy.year and mes_max == hoy.month and len(lista_meses) == 1)
+            # CORRECCIÓN: Si el rango incluye el mes actual, usar días equivalentes
+            es_mes_actual = (year == hoy.year and mes_max == hoy.month)
             
             fecha_ini = f"{year}-{str(mes_min).zfill(2)}-01"
             
@@ -7905,12 +7906,13 @@ WHERE turnos.apertura >= '{f_ini} 00:00:00'
                     logging.info(f"SoftRestaurant - Último día con ventas: {ultimo_dia_venta} (día {dia_con_datos})")
                     
                     # Actualizar fecha_fin al último día con ventas
-                    f_fin = f"{f_ini[:6]}{str(dia_con_datos).zfill(2)}"
+                    # CORRECCIÓN: Usar el mes máximo (mes_max) para multiselección, no el mes de f_ini
+                    f_fin = f"{year}{str(mes_max).zfill(2)}{str(dia_con_datos).zfill(2)}"
                     
                     # Calcular períodos de comparación basados en días con datos reales
-                    # Mes anterior
-                    mes_actual = int(f_ini[4:6])
-                    anio_actual = int(f_ini[:4])
+                    # Mes anterior - usar mes_max (el último mes del rango), no mes de f_ini
+                    mes_actual = mes_max  # CORRECCIÓN: Usar mes_max para multiselección
+                    anio_actual = year
                     if mes_actual == 1:
                         mes_ant = 12
                         anio_ant = anio_actual - 1
