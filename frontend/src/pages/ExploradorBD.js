@@ -1141,10 +1141,36 @@ export default function ExploradorBD() {
           {/* Lista de tablas */}
           <Card className="border">
             <CardHeader className="py-2 bg-zinc-100">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Database className="h-4 w-4" />
-                Tablas ({tablasFiltradas.length})
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Tablas ({tablasFiltradas.length})
+                </CardTitle>
+                <div className="flex gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 px-2 text-xs"
+                    onClick={() => {
+                      const todosExpandidos = {};
+                      Object.keys(tablasAgrupadas).forEach(g => todosExpandidos[g] = true);
+                      setGruposExpandidos(todosExpandidos);
+                    }}
+                    title="Expandir todo"
+                  >
+                    <ChevronRight className="h-3 w-3 rotate-90" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 px-2 text-xs"
+                    onClick={() => setGruposExpandidos({})}
+                    title="Contraer todo"
+                  >
+                    <ChevronRight className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="p-2">
               <div className="mb-2">
