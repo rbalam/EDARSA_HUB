@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter, FileSpreadsheet, LayoutDashboard, ClipboardList, FileText, FolderOpen, Upload, Trash2, Eye, Download, CheckCircle, FileImage, File } from 'lucide-react';
+import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter, FileSpreadsheet, LayoutDashboard, ClipboardList, FileText, FolderOpen, Upload, Trash2, Eye, Download, CheckCircle, FileImage, File, Maximize2, Minimize2 } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -195,6 +196,9 @@ const Reportes = () => {
   // Estado para ver informe completo
   const [viewInformeModal, setViewInformeModal] = useState(false);
   const [selectedInforme, setSelectedInforme] = useState(null);
+  
+  // Estado para pantalla completa de resultados
+  const [showFullscreenResultados, setShowFullscreenResultados] = useState(false);
 
   // Cargar informes de auditoría
   const loadInformesAuditoria = async () => {
@@ -2135,9 +2139,20 @@ const Reportes = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold">Resultados</CardTitle>
-              <span className="text-sm text-zinc-600">
-                Total: <span className="font-data font-semibold">{reportData.length}</span> registros
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-zinc-600">
+                  Total: <span className="font-data font-semibold">{reportData.length}</span> registros
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFullscreenResultados(true)}
+                  className="h-7 px-2"
+                  title="Ver en pantalla completa"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -3203,6 +3218,97 @@ const Reportes = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Pantalla Completa - Resultados de Auditoría */}
+      <Dialog open={showFullscreenResultados} onOpenChange={setShowFullscreenResultados}>
+        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden">
+          <DialogHeader className="px-4 py-3 border-b bg-zinc-100 flex flex-row items-center justify-between">
+            <DialogTitle className="text-lg font-semibold">
+              Resultados de Auditoría ({reportData.length} registros)
+            </DialogTitle>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="rounded border-zinc-300"
+                  checked={mostrarCostos}
+                  onChange={(e) => setMostrarCostos(e.target.checked)}
+                />
+                <span>Mostrar Costos</span>
+              </label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFullscreenResultados(false)}
+                className="h-8 px-2"
+              >
+                <Minimize2 className="h-4 w-4 mr-1" />
+                Minimizar
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto" style={{ height: 'calc(95vh - 70px)' }}>
+            {reportData.length > 0 && (
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-10 bg-zinc-800 text-white">
+                  <tr>
+                    {Object.keys(reportData[0])
+                      .filter(key => mostrarCostos || !key.toLowerCase().includes('costo'))
+                      .map((key) => (
+                      <th key={key} className="text-xs uppercase tracking-wider font-semibold whitespace-nowrap py-3 px-3 text-left">
+                        {key.replace(/_/g, ' ').replace(/Cantidad/gi, 'Qty')}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.map((row, idx) => (
+                    <tr key={idx} className="border-b hover:bg-zinc-50">
+                      {Object.entries(row)
+                        .filter(([key]) => mostrarCostos || !key.toLowerCase().includes('costo'))
+                        .map(([key, value], cellIdx) => {
+                        const isDiferencia = key.toLowerCase().includes('diferencia');
+                        const isCosto = key.toLowerCase().includes('costo');
+                        const isPorcentaje = key.toLowerCase().includes('porcentaje');
+                        
+                        let displayValue = value;
+                        let className = "py-2 px-3 text-zinc-700";
+                        
+                        if (typeof value === 'number') {
+                          if (isCosto) {
+                            displayValue = `$${value.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                            className += " text-right font-mono";
+                          } else if (isPorcentaje) {
+                            displayValue = `${value.toFixed(2)}%`;
+                            className += " text-right";
+                          } else {
+                            displayValue = value.toLocaleString('es-MX', { maximumFractionDigits: 2 });
+                            className += " text-right";
+                          }
+                        }
+                        
+                        if (isDiferencia && typeof value === 'number') {
+                          if (value > 0) {
+                            className += " text-green-600 font-semibold";
+                          } else if (value < 0) {
+                            className += " text-red-600 font-semibold";
+                          }
+                        }
+                        
+                        return (
+                          <td key={cellIdx} className={className}>
+                            {displayValue ?? '-'}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
