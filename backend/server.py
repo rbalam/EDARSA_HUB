@@ -118,17 +118,23 @@ def obtener_ventas_dia_api_local(api_config: dict) -> dict:
     Obtiene las ventas del día actual desde una API MPRO local.
     Retorna dict con ventas, cheques, pax.
     """
-    from datetime import datetime
+    from datetime import datetime, timezone, timedelta
     
-    hoy = datetime.now()
-    hora_actual = hoy.hour
+    # Usar zona horaria de México (UTC-6) para determinar si ya pasó la hora de réplica
+    mexico_tz = timezone(timedelta(hours=-6))
+    ahora_mexico = datetime.now(timezone.utc).astimezone(mexico_tz)
+    hora_actual = ahora_mexico.hour
     hora_replica = api_config.get("hora_replica", 4)
     
-    # Si ya pasó la hora de réplica, los datos ya están en la nube
+    logging.info(f"API Local {api_config['nombre']}: Hora México = {ahora_mexico.strftime('%H:%M')}, Hora réplica = {hora_replica}:00")
+    
+    # Si ya pasó la hora de réplica EN MÉXICO, los datos ya están en la nube
     # No consultar la API local para evitar duplicación
     if hora_actual >= hora_replica:
-        logging.info(f"API Local {api_config['nombre']}: Hora actual ({hora_actual}) >= hora réplica ({hora_replica}), omitiendo")
+        logging.info(f"API Local {api_config['nombre']}: Hora actual ({hora_actual}) >= hora réplica ({hora_replica}), omitiendo (datos ya replicados)")
         return {"ventas": 0, "cheques": 0, "pax": 0, "omitido": True, "razon": "post_replica"}
+    
+    logging.info(f"API Local {api_config['nombre']}: Consultando ventas del día (hora {hora_actual} < {hora_replica})")
     
     # Query para obtener ventas del día actual
     sql_ventas_hoy = """
@@ -157,47 +163,77 @@ def obtener_ventas_dia_api_local(api_config: dict) -> dict:
         cheques = int(row.get("cheques", 0) or 0)
         pax = int(row.get("pax", 0) or 0)
         
-        logging.info(f"API Local {api_config['nombre']}: Ventas HOY = ${ventas:,.2f}, Cheques = {cheques}")
+        logging.info(f"API Local {api_config['nombre']}: Ventas HOY = ${ventas:,.2f}, Cheques = {cheques}, PAX = {pax}")
+        print(f"*** API Local {api_config['nombre']}: Ventas HOY = ${ventas:,.2f}, Cheques = {cheques}, PAX = {pax} ***")
         return {"ventas": ventas, "cheques": cheques, "pax": pax, "omitido": False}
     else:
-        logging.warning(f"API Local {api_config['nombre']}: Error obteniendo ventas - {result.get('error')}")
-        return {"ventas": 0, "cheques": 0, "pax": 0, "omitido": True, "razon": "error", "error": result.get("error")}
+        error_msg = result.get('error', 'desconocido')
+        logging.warning(f"API Local {api_config['nombre']}: Error obteniendo ventas - {error_msg}")
+        print(f"*** API Local {api_config['nombre']}: ERROR - {error_msg} ***")
+        return {"ventas": 0, "cheques": 0, "pax": 0, "omitido": True, "razon": "error", "error": error_msg}
 
-def sumar_ventas_api_local_a_sucursal(server_host: str, sucursal_nombre: str, fecha_fin: str) -> dict:
+def sumar_ventas_api_local_a_sucursal(server_host: str, sucursal_nombre: str, fecha_fin: str, mes_solicitado: int = None, anio_solicitado: int = None) -> dict:
     """
     Busca si hay una API local asociada a esta sucursal y servidor,
-    y si la fecha_fin es HOY, suma las ventas del día.
+    y si el período solicitado incluye HOY, suma las ventas del día.
     
     Retorna dict con ventas_adicionales, cheques_adicionales, pax_adicionales
     """
-    from datetime import datetime
+    from datetime import datetime, timezone, timedelta
     
-    hoy = datetime.now().strftime("%Y-%m-%d")
+    # Usar zona horaria de México para determinar "hoy"
+    mexico_tz = timezone(timedelta(hours=-6))
+    ahora_mexico = datetime.now(timezone.utc).astimezone(mexico_tz)
+    hoy = ahora_mexico.strftime("%Y-%m-%d")
+    mes_actual = ahora_mexico.month
+    anio_actual = ahora_mexico.year
     
-    # Solo sumar si fecha_fin es HOY (o incluye hoy)
-    if fecha_fin < hoy:
+    print(f"*** API Local Check: server_host={server_host}, sucursal={sucursal_nombre}, fecha_fin={fecha_fin}, hoy_mexico={hoy} ***")
+    print(f"*** API Local: mes_solicitado={mes_solicitado}, anio_solicitado={anio_solicitado}, mes_actual={mes_actual}, anio_actual={anio_actual} ***")
+    
+    # Determinar si el período incluye HOY
+    # Opción 1: fecha_fin >= hoy
+    # Opción 2: mes/año solicitado es el mes/año actual
+    periodo_incluye_hoy = False
+    
+    if fecha_fin >= hoy:
+        periodo_incluye_hoy = True
+        print(f"*** API Local: fecha_fin >= hoy, período incluye HOY ***")
+    elif mes_solicitado and anio_solicitado:
+        if mes_solicitado == mes_actual and anio_solicitado == anio_actual:
+            periodo_incluye_hoy = True
+            print(f"*** API Local: mes/año solicitado = mes/año actual, período incluye HOY ***")
+    
+    if not periodo_incluye_hoy:
+        print(f"*** API Local: período NO incluye hoy, omitiendo ***")
         return {"ventas": 0, "cheques": 0, "pax": 0, "aplicado": False, "razon": "fecha_no_incluye_hoy"}
     
     # Buscar API local que corresponda a este servidor y sucursal
+    print(f"*** API Local: Buscando API para host={server_host}, sucursal={sucursal_nombre} ***")
     for api_id, api_config in APIS_MPRO_LOCALES.items():
         if not api_config.get("activo", False):
+            print(f"*** API Local: {api_id} desactivada, omitiendo ***")
             continue
             
         # Verificar si el servidor padre coincide
         if api_config.get("servidor_padre_host") != server_host:
+            print(f"*** API Local: {api_id} host {api_config.get('servidor_padre_host')} != {server_host}, omitiendo ***")
             continue
         
         # Verificar si la sucursal destino coincide (comparación flexible)
         sucursal_destino = api_config.get("sucursal_destino", "").upper()
         sucursal_actual = sucursal_nombre.upper()
         
+        print(f"*** API Local: Comparando '{sucursal_destino}' con '{sucursal_actual}' ***")
+        
         # Matching flexible: "QUERETARO" debe matchear con "130 GRADOS QUERETARO", "QRO", etc.
         if sucursal_destino in sucursal_actual or sucursal_actual in sucursal_destino:
-            logging.info(f"API Local match: {api_config['nombre']} -> Sucursal {sucursal_nombre}")
+            print(f"*** API Local MATCH: {api_config['nombre']} -> Sucursal {sucursal_nombre} ***")
             
             ventas_api = obtener_ventas_dia_api_local(api_config)
             
             if not ventas_api.get("omitido", True):
+                print(f"*** API Local SUMANDO: +${ventas_api['ventas']:,.2f} de {api_config['nombre']} ***")
                 return {
                     "ventas": ventas_api["ventas"],
                     "cheques": ventas_api["cheques"],
@@ -206,12 +242,15 @@ def sumar_ventas_api_local_a_sucursal(server_host: str, sucursal_nombre: str, fe
                     "api": api_config["nombre"]
                 }
             else:
+                print(f"*** API Local OMITIDO: {ventas_api.get('razon', 'desconocido')} ***")
                 return {
                     "ventas": 0, "cheques": 0, "pax": 0,
                     "aplicado": False,
                     "razon": ventas_api.get("razon", "omitido"),
                     "api": api_config["nombre"]
                 }
+        else:
+            print(f"*** API Local: NO match '{sucursal_destino}' vs '{sucursal_actual}' ***")
     
     # No se encontró API local para esta sucursal
     return {"ventas": 0, "cheques": 0, "pax": 0, "aplicado": False, "razon": "sin_api_local"}
@@ -10498,11 +10537,13 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
         
         # ============= INTEGRACIÓN API LOCAL =============
         # Sumar ventas del día desde API local si aplica
-        # Solo se suma si: fecha_fin incluye HOY y estamos ANTES de la hora de réplica
+        # Solo se suma si: el período incluye HOY y estamos ANTES de la hora de réplica
         ventas_api_local = sumar_ventas_api_local_a_sucursal(
             server_host=server['host'],
             sucursal_nombre=sucursal_nombre,
-            fecha_fin=fecha_fin  # fecha_fin original en formato YYYY-MM-DD
+            fecha_fin=fecha_fin,  # fecha_fin original en formato YYYY-MM-DD
+            mes_solicitado=mes_final,
+            anio_solicitado=anio_final
         )
         
         if ventas_api_local.get("aplicado", False):
