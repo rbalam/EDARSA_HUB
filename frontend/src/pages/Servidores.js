@@ -39,6 +39,7 @@ const Servidores = () => {
       hora_replica: '04:00',
       solo_ventas_dia: true,
       activo: true,
+      visible_en_operaciones: false,
       status: null
     },
     {
@@ -51,6 +52,7 @@ const Servidores = () => {
       hora_replica: '04:00',
       solo_ventas_dia: true,
       activo: true,
+      visible_en_operaciones: false,
       status: null
     }
   ]);
@@ -65,7 +67,8 @@ const Servidores = () => {
     sucursal_destino: '',
     hora_replica: '04:00',
     solo_ventas_dia: true,
-    activo: true
+    activo: true,
+    visible_en_operaciones: false
   });
   
   // Estado para ping de servidores
@@ -711,7 +714,8 @@ const Servidores = () => {
                   sucursal_destino: '',
                   hora_replica: '04:00',
                   solo_ventas_dia: true,
-                  activo: true
+                  activo: true,
+                  visible_en_operaciones: false
                 });
                 setApiDialogOpen(true);
               }}
@@ -796,62 +800,101 @@ const Servidores = () => {
                       </div>
                     </div>
                     
+                    {/* Toggle Visible en Operaciones */}
                     <div className="pt-2 border-t border-zinc-100">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-zinc-500">Visible en Operaciones:</span>
-                        <span className="text-xs text-zinc-400">No (solo interno)</span>
+                        <button
+                          onClick={() => {
+                            setApiConnections(prev => prev.map(a => 
+                              a.id === apiConn.id 
+                                ? {...a, visible_en_operaciones: !a.visible_en_operaciones} 
+                                : a
+                            ));
+                            toast.success(apiConn.visible_en_operaciones ? 'Oculto en operaciones' : 'Visible en operaciones');
+                          }}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                            apiConn.visible_en_operaciones ? 'bg-green-500' : 'bg-zinc-300'
+                          }`}
+                          title={apiConn.visible_en_operaciones ? 'Visible en dashboards' : 'Oculto en dashboards'}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                              apiConn.visible_en_operaciones ? 'translate-x-4' : 'translate-x-0.5'
+                            }`}
+                          />
+                        </button>
                       </div>
+                      <p className="text-xs text-zinc-400 mt-1">
+                        {apiConn.visible_en_operaciones 
+                          ? 'Aparece en reportes, compras, comercial, etc.' 
+                          : 'Solo visible aquí para administración'}
+                      </p>
                     </div>
                   </div>
                   
-                  <div className="flex gap-2 mt-4">
+                  {/* Botones de acciones */}
+                  <div className="flex flex-col gap-2 mt-4">
+                    {/* Botón principal: Editar Consultas SQL */}
                     <Button 
-                      variant="outline" 
-                      size="sm"
+                      variant="outline"
+                      size="sm" 
+                      className="w-full"
                       onClick={() => {
-                        setEditingApi(apiConn);
-                        setApiFormData({
-                          name: apiConn.name,
-                          url: apiConn.url,
-                          api_key: '',
-                          tipo: apiConn.tipo,
-                          servidor_padre: apiConn.servidor_padre,
-                          sucursal_destino: apiConn.sucursal_destino,
-                          hora_replica: apiConn.hora_replica,
-                          solo_ventas_dia: apiConn.solo_ventas_dia,
-                          activo: apiConn.activo
-                        });
-                        setApiDialogOpen(true);
+                        toast.info('Configuración de consultas SQL para APIs próximamente');
                       }}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Code className="h-4 w-4 mr-1" />
+                      Editar Consultas SQL
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => {
-                        // Toggle activo/inactivo
-                        setApiConnections(prev => prev.map(a => 
-                          a.id === apiConn.id ? {...a, activo: !a.activo} : a
-                        ));
-                        toast.success(apiConn.activo ? 'Conexión desactivada' : 'Conexión activada');
-                      }}
-                    >
-                      {apiConn.activo ? 'Desactivar' : 'Activar'}
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        if (window.confirm('¿Eliminar esta conexión API?')) {
-                          setApiConnections(prev => prev.filter(a => a.id !== apiConn.id));
-                          toast.success('Conexión eliminada');
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setEditingApi(apiConn);
+                          setApiFormData({
+                            name: apiConn.name,
+                            url: apiConn.url,
+                            api_key: '',
+                            tipo: apiConn.tipo,
+                            servidor_padre: apiConn.servidor_padre,
+                            sucursal_destino: apiConn.sucursal_destino,
+                            hora_replica: apiConn.hora_replica,
+                            solo_ventas_dia: apiConn.solo_ventas_dia,
+                            activo: apiConn.activo,
+                            visible_en_operaciones: apiConn.visible_en_operaciones
+                          });
+                          setApiDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          toast.info('Configuración de filtros para APIs próximamente');
+                        }}
+                      >
+                        <Filter className="h-4 w-4 mr-1" />
+                        Filtros
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          if (window.confirm('¿Eliminar esta conexión API?')) {
+                            setApiConnections(prev => prev.filter(a => a.id !== apiConn.id));
+                            toast.success('Conexión eliminada');
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
