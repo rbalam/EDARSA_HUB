@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import api from '@/lib/api';
 import { fetchServersOperativos } from '@/services/serversService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -10,7 +9,6 @@ import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 import { 
   Loader2, Database, Table, Columns, Link2, Eye, Play, 
@@ -822,82 +820,35 @@ export default function ExploradorBD() {
   
   // Modal Agregar Servidor
   const [showAgregarServidor, setShowAgregarServidor] = useState(false);
-  const [testingConnection, setTestingConnection] = useState(false);
-  const [connectionValid, setConnectionValid] = useState(false);
-  const [nuevoServidor, setNuevoServidor] = useState({
-    name: '',
-    system_type: '',
-    host: '',
-    port: '1433',
-    database: '',
-    username: '',
-    password: ''
-  });
+  const [todosLosServidores, setTodosLosServidores] = useState([]);
+  const [loadingServidores, setLoadingServidores] = useState(false);
 
-  // Función para probar conexión
-  const testConnection = async () => {
-    if (!nuevoServidor.host || !nuevoServidor.database || !nuevoServidor.username || !nuevoServidor.password) {
-      toast.error('Completa todos los campos de conexión');
-      return;
-    }
-    
-    setTestingConnection(true);
-    setConnectionValid(false);
-    
+  // Cargar todos los servidores para el modal
+  const cargarTodosLosServidores = async () => {
+    setLoadingServidores(true);
     try {
-      const response = await api.post('/servers/test-connection', {
-        host: nuevoServidor.host,
-        port: parseInt(nuevoServidor.port) || 1433,
-        database: nuevoServidor.database,
-        username: nuevoServidor.username,
-        password: nuevoServidor.password
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/servers`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      
-      if (response.data.success) {
-        setConnectionValid(true);
-        toast.success('Conexión exitosa');
-      } else {
-        toast.error(response.data.message || 'Error de conexión');
-      }
+      // Filtrar los que NO están ya en el explorador
+      const servidoresDisponibles = response.data.filter(
+        s => !servers.some(existing => existing.id === s.id)
+      );
+      setTodosLosServidores(servidoresDisponibles);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error probando conexión');
+      toast.error('Error cargando servidores');
     } finally {
-      setTestingConnection(false);
+      setLoadingServidores(false);
     }
   };
 
-  // Función para guardar servidor
-  const guardarServidor = async () => {
-    if (!nuevoServidor.name || !nuevoServidor.system_type || !nuevoServidor.host || !nuevoServidor.database) {
-      toast.error('Completa los campos obligatorios');
-      return;
-    }
-    
-    try {
-      const response = await api.post('/servers', {
-        ...nuevoServidor,
-        port: parseInt(nuevoServidor.port) || 1433,
-        visible_en_operaciones: false // Solo para explorar BD
-      });
-      
-      toast.success('Servidor agregado correctamente');
-      setShowAgregarServidor(false);
-      setNuevoServidor({
-        name: '',
-        system_type: '',
-        host: '',
-        port: '1433',
-        database: '',
-        username: '',
-        password: ''
-      });
-      setConnectionValid(false);
-      
-      // Recargar lista de servidores
-      cargarServers();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error guardando servidor');
-    }
+  // Agregar servidor al explorador
+  const agregarServidorAlExplorador = (servidor) => {
+    // Agregar a la lista local de servidores del explorador
+    setServers(prev => [...prev, servidor]);
+    toast.success(`${servidor.name} agregado al explorador`);
+    setShowAgregarServidor(false);
   };
 
   useEffect(() => {
@@ -1059,7 +1010,10 @@ export default function ExploradorBD() {
             {/* Botón Agregar BD */}
             <Button 
               variant="outline"
-              onClick={() => setShowAgregarServidor(true)}
+              onClick={() => {
+                cargarTodosLosServidores();
+                setShowAgregarServidor(true);
+              }}
               className="border-blue-200 text-blue-700 hover:bg-blue-50"
               data-testid="btn-agregar-bd"
             >
@@ -1327,138 +1281,67 @@ export default function ExploradorBD() {
         </>
       )}
       
-      {/* Modal Agregar Servidor */}
+      {/* Modal Agregar Servidor al Explorador */}
       <Dialog open={showAgregarServidor} onOpenChange={setShowAgregarServidor}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Database className="h-5 w-5" />
-              Agregar Base de Datos
+              Agregar BD al Explorador
             </DialogTitle>
             <DialogDescription>
-              Configura la conexión a un servidor SQL Server para explorar sus tablas
+              Selecciona un servidor para agregarlo al explorador
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="server_name">Nombre *</Label>
-                <Input
-                  id="server_name"
-                  value={nuevoServidor.name}
-                  onChange={(e) => setNuevoServidor({...nuevoServidor, name: e.target.value})}
-                  placeholder="Mi Servidor"
-                />
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {loadingServidores ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="system_type">Tipo de Sistema *</Label>
-                <Select 
-                  value={nuevoServidor.system_type} 
-                  onValueChange={(value) => setNuevoServidor({...nuevoServidor, system_type: value})}
+            ) : todosLosServidores.length === 0 ? (
+              <div className="text-center py-8 text-zinc-500">
+                <Database className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                <p>No hay servidores adicionales disponibles</p>
+                <p className="text-sm mt-1">Todos los servidores ya están en el explorador</p>
+                <Button 
+                  variant="link" 
+                  className="mt-2"
+                  onClick={() => {
+                    setShowAgregarServidor(false);
+                    navigate('/servidores');
+                  }}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="MPRO">MPRO</SelectItem>
-                    <SelectItem value="SoftRestaurant">SoftRestaurant</SelectItem>
-                    <SelectItem value="Otro">Otro</SelectItem>
-                  </SelectContent>
-                </Select>
+                  Ir a configurar servidores →
+                </Button>
               </div>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-2 space-y-2">
-                <Label htmlFor="host">Host / IP *</Label>
-                <Input
-                  id="host"
-                  value={nuevoServidor.host}
-                  onChange={(e) => setNuevoServidor({...nuevoServidor, host: e.target.value})}
-                  placeholder="192.168.1.100 o servidor.dominio.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="port">Puerto</Label>
-                <Input
-                  id="port"
-                  value={nuevoServidor.port}
-                  onChange={(e) => setNuevoServidor({...nuevoServidor, port: e.target.value})}
-                  placeholder="1433"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="database">Base de Datos *</Label>
-              <Input
-                id="database"
-                value={nuevoServidor.database}
-                onChange={(e) => setNuevoServidor({...nuevoServidor, database: e.target.value})}
-                placeholder="NombreBD"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="username">Usuario *</Label>
-                <Input
-                  id="username"
-                  value={nuevoServidor.username}
-                  onChange={(e) => setNuevoServidor({...nuevoServidor, username: e.target.value})}
-                  placeholder="sa"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Contraseña *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={nuevoServidor.password}
-                  onChange={(e) => setNuevoServidor({...nuevoServidor, password: e.target.value})}
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-            
-            {/* Indicador de conexión */}
-            {connectionValid && (
-              <div className="flex items-center gap-2 p-3 bg-green-50 text-green-700 rounded-lg border border-green-200">
-                <CheckCircle2 className="h-5 w-5" />
-                <span className="font-medium">Conexión verificada</span>
-              </div>
+            ) : (
+              todosLosServidores.map(servidor => (
+                <div 
+                  key={servidor.id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-zinc-50 cursor-pointer transition-colors"
+                  onClick={() => agregarServidorAlExplorador(servidor)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-50 p-2 rounded-lg">
+                      <Server className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-zinc-900">{servidor.name}</p>
+                      <p className="text-xs text-zinc-500">{servidor.system_type} • {servidor.host}</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))
             )}
           </div>
           
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={testConnection}
-              disabled={testingConnection}
-            >
-              {testingConnection ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Link2 className="h-4 w-4 mr-2" />
-              )}
-              Probar Conexión
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setShowAgregarServidor(false);
-                setConnectionValid(false);
-              }}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              onClick={guardarServidor}
-              className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Agregar
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAgregarServidor(false)}>
+              Cerrar
             </Button>
           </DialogFooter>
         </DialogContent>
