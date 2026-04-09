@@ -541,6 +541,17 @@ export default function TableroEjecutivo() {
     cargarDatos();
   }, []);
 
+  // Auto-actualizar cuando cambian los filtros de mes o año
+  useEffect(() => {
+    // Solo ejecutar si ya se cargó inicialmente (data existe o hubo un error previo)
+    // Esto evita doble carga al montar el componente
+    const token = localStorage.getItem('token');
+    if (token && (data || loading === false)) {
+      cargarDatos();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMeses, selectedAnios]);
+
   // Cerrar dropdowns cuando se hace click fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
