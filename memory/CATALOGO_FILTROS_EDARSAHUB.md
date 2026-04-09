@@ -859,6 +859,8 @@ const validateFilters = (filters) => {
 | 2025-04-09 | 1.8 | FIX: Multiselección de meses en Dashboard Comercial (MPRO + SoftRestaurant) | E1 Agent |
 | 2025-04-09 | 1.9 | REGLA CRÍTICA: Captura de inventario solo con productos de requisiciones seleccionadas | E1 Agent |
 | 2025-04-09 | 2.0 | REGLA UX: Modal de captura arrastrable + botón Limpiar + persistencia | E1 Agent |
+| 2025-04-09 | 2.1 | REGLA UX: Scroll horizontal en modal de Pantalla Completa (I.7) | E1 Agent |
+| 2025-04-09 | 2.2 | REGLA UX: Auto-scroll con Tab en Captura Manual de Inventario (I.8) | E1 Agent |
 
 ---
 
@@ -1191,6 +1193,132 @@ import { Maximize2, Minimize2 } from 'lucide-react';
 
 **Archivos afectados:**
 - ✅ `/app/frontend/src/pages/Compras.js`
+
+---
+
+### I.7 Scroll Horizontal en Modal de Pantalla Completa
+
+**IMPLEMENTACIÓN (2025-04-09):**
+
+Cuando una tabla tiene muchas columnas (ej: Auditoría de Inventarios con ~19 columnas), el modal de Pantalla Completa debe permitir **scroll horizontal** para visualizar todas las columnas.
+
+**Problema original:**
+- Al abrir el modal de pantalla completa, la tabla se recortaba horizontalmente
+- La columna "Recomendar" (última columna) no era visible
+- No había barra de desplazamiento horizontal
+
+**Solución implementada:**
+Se agregó un wrapper `<div>` con `overflow-x-auto` alrededor de la tabla:
+
+```jsx
+// Estructura CORRECTA con scroll horizontal
+<div className="flex-1 overflow-auto p-0" style={{ height: 'calc(95vh - 70px)' }}>
+  <div className="overflow-x-auto min-w-full">  {/* ← WRAPPER PARA SCROLL HORIZONTAL */}
+    <table className="w-max min-w-full text-sm">
+      {/* thead, tbody... */}
+    </table>
+  </div>  {/* ← Cierre del wrapper */}
+</div>
+```
+
+**Clases CSS aplicadas:**
+
+| Elemento | Clase | Propósito |
+|----------|-------|-----------|
+| Contenedor externo | `overflow-auto` | Scroll vertical |
+| Wrapper interno | `overflow-x-auto min-w-full` | Scroll horizontal |
+| Tabla | `w-max min-w-full` | Ancho automático según contenido |
+
+**Comportamiento:**
+- **Scroll vertical:** Permite navegar por todas las filas
+- **Scroll horizontal:** Permite ver todas las columnas de la tabla
+- **Header sticky:** El encabezado de la tabla permanece visible al hacer scroll vertical
+
+**⚠️ ERROR COMÚN A EVITAR:**
+```jsx
+// ❌ INCORRECTO - Falta un </div> de cierre
+<div className="flex-1 overflow-auto">
+  <div className="overflow-x-auto">
+    <table>...</table>
+  </div>
+</DialogContent>  // ← Error: falta cerrar el div externo
+
+// ✅ CORRECTO - Todos los divs cerrados
+<div className="flex-1 overflow-auto">
+  <div className="overflow-x-auto">
+    <table>...</table>
+  </div>
+</div>  // ← Cierre correcto
+</DialogContent>
+```
+
+**Archivo afectado:**
+- ✅ `/app/frontend/src/pages/Compras.js` (líneas ~2844-2960)
+
+---
+
+### I.8 Auto-Scroll en Captura Manual de Inventario (Navegación con Tab)
+
+**IMPLEMENTACIÓN (2025-04-09):**
+
+En el modal de "Captura Manual de Inventario Físico", al navegar entre los campos de captura usando la tecla **Tab**, la tabla debe hacer scroll automático para mantener visible el campo activo y los siguientes.
+
+**Comportamiento implementado:**
+
+| Situación | Acción automática |
+|-----------|-------------------|
+| Cursor llega al borde **inferior** | Scroll automático hacia abajo (~100px) |
+| Cursor llega al borde **superior** | Scroll automático hacia arriba (~100px) |
+
+**Código de implementación (Compras.js):**
+
+```jsx
+// Función para manejar el auto-scroll cuando se navega con Tab
+const handleInputFocus = (e) => {
+  const input = e.target;
+  const tableContainer = input.closest('.overflow-y-auto');
+  
+  if (tableContainer) {
+    const inputRect = input.getBoundingClientRect();
+    const containerRect = tableContainer.getBoundingClientRect();
+    
+    // Si el input está cerca del borde inferior, hacer scroll hacia abajo
+    if (inputRect.bottom > containerRect.bottom - 50) {
+      tableContainer.scrollTop += 100;
+    }
+    // Si el input está cerca del borde superior, hacer scroll hacia arriba
+    else if (inputRect.top < containerRect.top + 50) {
+      tableContainer.scrollTop -= 100;
+    }
+  }
+};
+
+// Aplicar en los inputs de la tabla
+<input
+  type="number"
+  value={item.cantidadInsumos || ''}
+  onChange={(e) => handleCantidadChange(idx, 'cantidadInsumos', e.target.value)}
+  onFocus={handleInputFocus}  // ← Handler de auto-scroll
+  className="..."
+/>
+```
+
+**Experiencia de usuario:**
+1. Usuario hace clic en el primer campo de captura
+2. Ingresa cantidad y presiona **Tab**
+3. El cursor se mueve al siguiente campo
+4. Si el siguiente campo está cerca del borde, la tabla hace scroll automáticamente
+5. El campo activo siempre permanece visible
+
+**Parámetros de configuración:**
+
+| Parámetro | Valor | Descripción |
+|-----------|-------|-------------|
+| Umbral de detección | 50px | Distancia al borde para activar scroll |
+| Cantidad de scroll | 100px | Píxeles de desplazamiento por cada activación |
+
+**Archivo afectado:**
+- ✅ `/app/frontend/src/pages/Compras.js` - Modal de Captura Manual
 
 ---
 
