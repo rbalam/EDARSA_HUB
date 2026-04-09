@@ -860,8 +860,12 @@ export default function ExploradorBD() {
 
   const cargarServers = async () => {
     try {
-      const serversOperativos = await fetchServersOperativos();
-      setServers(serversOperativos);
+      // Cargar TODOS los servidores (no solo los operativos) para el Explorador de BD
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/servers`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setServers(response.data || []);
     } catch (error) {
       toast.error('Error cargando servidores');
     }
