@@ -807,7 +807,7 @@ export default function ExploradorBD() {
   const [columnas, setColumnas] = useState([]);
   const [relaciones, setRelaciones] = useState([]);
   const [preview, setPreview] = useState(null);
-  const [loading, setLoading] = useState({});
+  const [loading, setLoading] = useState({ tablas: false, columnas: false, relaciones: false });
   
   // Query libre
   const [queryLibre, setQueryLibre] = useState('SELECT TOP 10 * FROM ');
