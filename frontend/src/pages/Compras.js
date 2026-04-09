@@ -1924,29 +1924,25 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setResultados(response.data.resultados);
-      setResumen(response.data.resumen);
-      
-      // === DEBUG TEMPORAL: Ver datos crudos del backend ===
-      console.log('=== DATOS CRUDOS DEL BACKEND ===');
-      response.data.resultados.forEach(r => {
-        if (r.producto?.includes('CHATEAU GRAND') || r.producto?.includes('ALION')) {
-          console.log(`[${r.producto}]`, {
-            codigo: r.codigo,
-            diferencia: r.diferencia,
-            rendimiento: r.rendimiento,
-            costo: r.costo,
-            costo_presentacion: r.costo_presentacion,
-            costo_insumo: r.costo_insumo,
-            importe_diferencia: r.importe_diferencia,
-            inv_inicial: r.inv_inicial,
-            inv_fisico: r.inv_fisico,
-            existencia_teorica: r.existencia_teorica
-          });
-        }
+      // === FIX: Recalcular importe_diferencia de forma consistente ===
+      // El backend puede enviar 'costo' inconsistente (a veces insumo, a veces presentación)
+      // Solución: Siempre calcular como (diferencia / rendimiento) * costo_presentacion
+      const resultadosCorregidos = response.data.resultados.map(r => {
+        const rendimiento = Math.max(parseFloat(r.rendimiento) || 1, 1);
+        const diferencia = parseFloat(r.diferencia) || 0;
+        const costoPresentacion = parseFloat(r.costo_presentacion) || parseFloat(r.costo) || 0;
+        
+        // Calcular importe correcto: convertir diferencia a presentaciones × costo presentación
+        const importeCorregido = (diferencia / rendimiento) * costoPresentacion;
+        
+        return {
+          ...r,
+          importe_diferencia: Math.round(importeCorregido * 100) / 100 // Redondear a 2 decimales
+        };
       });
-      console.log('================================');
-      // === FIN DEBUG TEMPORAL ===
+      
+      setResultados(resultadosCorregidos);
+      setResumen(response.data.resumen);
       
       if (response.data.resumen?.requiere_acta) {
         toast.warning('Se detectaron diferencias en contra. Se requiere Acta de Auditoría.');
