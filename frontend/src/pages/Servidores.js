@@ -86,7 +86,7 @@ const Servidores = () => {
     
     try {
       // Llamar al endpoint de prueba en el backend
-      const response = await api.post('/api/test-api-connection', {
+      const response = await api.post('/test-api-connection', {
         url: apiConn.url,
         api_key: 'EDARSA_2026_SECURE_KEY' // Por ahora hardcoded, después de .env
       });
