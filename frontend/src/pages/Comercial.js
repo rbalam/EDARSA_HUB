@@ -32,7 +32,12 @@ const formatNumber = (num) => {
 
 const formatCurrency = (num) => {
   if (num === null || num === undefined) return '-';
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(num);
+  return new Intl.NumberFormat('es-MX', { 
+    style: 'currency', 
+    currency: 'MXN',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(num);
 };
 
 const formatPercent = (num) => {
