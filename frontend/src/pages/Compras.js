@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { fetchServersOperativos } from '../services/serversService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
@@ -1373,6 +1373,9 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   // Estados para modal arrastrable de captura
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  
+  // Ref para auto-scroll en modal de captura
+  const capturaScrollRef = useRef(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
   // Función para limpiar inventario capturado
@@ -2982,7 +2985,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
               </button>
             </div>
             
-            <div className="overflow-y-auto max-h-[65vh]">
+            <div ref={capturaScrollRef} className="overflow-y-auto max-h-[65vh]">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-zinc-100">
                   <tr>
@@ -3001,7 +3004,7 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                     const totalPresentaciones = rendimiento > 0 ? item.totalInsumos / rendimiento : 0;
                     
                     return (
-                      <tr key={item.codigo} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-zinc-50'}`}>
+                      <tr key={item.codigo} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-zinc-50'}`} data-row-index={idx}>
                         <td className="py-2 px-3 font-mono text-xs">{item.codigo}</td>
                         <td className="py-2 px-3">{item.producto}</td>
                         <td className="py-2 px-3 text-center text-zinc-500">{rendimiento}</td>
@@ -3019,7 +3022,25 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                                 return i;
                               }));
                             }}
-                            onFocus={(e) => e.target.select()}
+                            onFocus={(e) => {
+                              e.target.select();
+                              // Auto-scroll para mantener la fila visible
+                              const row = e.target.closest('tr');
+                              if (row && capturaScrollRef.current) {
+                                const container = capturaScrollRef.current;
+                                const rowRect = row.getBoundingClientRect();
+                                const containerRect = container.getBoundingClientRect();
+                                
+                                // Si la fila está cerca del borde inferior, hacer scroll
+                                if (rowRect.bottom > containerRect.bottom - 50) {
+                                  container.scrollTop += rowRect.bottom - containerRect.bottom + 100;
+                                }
+                                // Si la fila está cerca del borde superior, hacer scroll hacia arriba
+                                if (rowRect.top < containerRect.top + 50) {
+                                  container.scrollTop -= containerRect.top - rowRect.top + 100;
+                                }
+                              }
+                            }}
                             className="h-8 w-24 text-right"
                           />
                         </td>
@@ -3037,7 +3058,25 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                                 return i;
                               }));
                             }}
-                            onFocus={(e) => e.target.select()}
+                            onFocus={(e) => {
+                              e.target.select();
+                              // Auto-scroll para mantener la fila visible
+                              const row = e.target.closest('tr');
+                              if (row && capturaScrollRef.current) {
+                                const container = capturaScrollRef.current;
+                                const rowRect = row.getBoundingClientRect();
+                                const containerRect = container.getBoundingClientRect();
+                                
+                                // Si la fila está cerca del borde inferior, hacer scroll
+                                if (rowRect.bottom > containerRect.bottom - 50) {
+                                  container.scrollTop += rowRect.bottom - containerRect.bottom + 100;
+                                }
+                                // Si la fila está cerca del borde superior, hacer scroll hacia arriba
+                                if (rowRect.top < containerRect.top + 50) {
+                                  container.scrollTop -= containerRect.top - rowRect.top + 100;
+                                }
+                              }
+                            }}
                             className="h-8 w-24 text-right"
                           />
                         </td>
