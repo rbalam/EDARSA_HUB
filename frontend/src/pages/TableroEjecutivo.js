@@ -96,7 +96,7 @@ const formatLastUpdate = (isoDate) => {
 };
 
 // Tarjeta de Unidad clickeable
-const UnidadCard = ({ unidad, onClick }) => {
+const UnidadCard = ({ unidad, onClick, esMultiMes = false }) => {
   const isPositive = unidad.var_vs_mes_ant >= 0;
   const isOnline = unidad.status === 'online';
   const isOffline = unidad.status === 'offline';
@@ -139,13 +139,16 @@ const UnidadCard = ({ unidad, onClick }) => {
             <span className="font-bold text-green-600">{formatCurrency(unidad.ventas)}</span>
           </div>
           
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-zinc-500">vs Mes Ant</span>
-            <VariacionBadge valor={unidad.var_vs_mes_ant} />
-          </div>
+          {/* Ocultar "vs Mes Ant" cuando hay multiselección de meses */}
+          {!esMultiMes && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-zinc-500">vs Mes Ant</span>
+              <VariacionBadge valor={unidad.var_vs_mes_ant} />
+            </div>
+          )}
           
           <div className="flex justify-between items-center">
-            <span className="text-xs text-zinc-500">vs Año Ant</span>
+            <span className="text-xs text-zinc-500">{esMultiMes ? 'vs Periodo Ant' : 'vs Año Ant'}</span>
             <VariacionBadge valor={unidad.var_vs_año_ant} />
           </div>
           
@@ -863,6 +866,7 @@ export default function TableroEjecutivo() {
                 key={idx} 
                 unidad={unidad} 
                 onClick={setUnidadSeleccionada}
+                esMultiMes={esMultiMes}
               />
             ))}
           </div>
