@@ -857,6 +857,7 @@ const validateFilters = (filters) => {
 | 2025-04-09 | 1.6 | Verificación de fechas recibidas en get_kpis_softrestaurant (log debug) | E1 Agent |
 | 2025-04-09 | 1.7 | REGLA UX: Auto-actualización de filtros en Tablero Ejecutivo | E1 Agent |
 | 2025-04-09 | 1.8 | FIX: Multiselección de meses en Dashboard Comercial (MPRO + SoftRestaurant) | E1 Agent |
+| 2025-04-09 | 1.9 | REGLA CRÍTICA: Captura de inventario solo con productos de requisiciones seleccionadas | E1 Agent |
 
 ---
 
@@ -968,6 +969,63 @@ es_mes_actual = (year == hoy.year and mes_max == hoy.month and len(lista_meses) 
 # ✅ CORRECTO - Funciona con multiselección
 es_mes_actual = (year == hoy.year and mes_max == hoy.month)
 ```
+
+---
+
+## I. REGLAS CRÍTICAS - MÓDULO COMPRAS
+
+### I.1 Captura de Inventario Físico - Filtro por Requisiciones
+
+**⚠️ REGLA CRÍTICA - NO MODIFICAR NUNCA ⚠️**
+
+**IMPLEMENTACIÓN (2025-04-09):**
+
+En el modal de "Captura Manual de Inventario Físico", **SOLO SE DEBEN MOSTRAR** los productos que están en las **requisiciones seleccionadas**.
+
+**❌ COMPORTAMIENTO INCORRECTO (PROHIBIDO):**
+- Mostrar TODOS los productos del catálogo (ej: 1764 productos)
+- Mezclar productos de inventarios iniciales con requisiciones
+- Ignorar las requisiciones seleccionadas
+
+**✅ COMPORTAMIENTO CORRECTO (OBLIGATORIO):**
+1. Si hay **requisiciones seleccionadas** (`folioPedido.length > 0`):
+   - Mostrar **SOLO** productos de esas requisiciones
+   - **IGNORAR** inventarios iniciales
+   
+2. Si **NO hay requisiciones** pero hay **inventarios iniciales**:
+   - Mostrar productos de los inventarios iniciales
+
+3. Si **NO hay nada seleccionado**:
+   - Mostrar alert pidiendo selección
+
+**Código CORRECTO (Compras.js - función iniciarCapturaManual):**
+
+```javascript
+// REGLA CRÍTICA: Solo mostrar productos de las REQUISICIONES SELECCIONADAS
+// Si hay requisiciones seleccionadas, ignorar inventarios iniciales
+if (folioPedido.length > 0) {
+  const response = await axios.post(`${API_URL}/api/compras/productos-para-captura`, {
+    server_id: selectedServer,
+    folios_inv_inicial: [],  // IMPORTANTE: Array vacío - ignorar inventarios
+    folios_requisiciones: folioPedido
+  }, { headers: { Authorization: `Bearer ${token}` } });
+  // ...
+}
+```
+
+**Prioridad de filtros:**
+| Prioridad | Condición | Acción |
+|-----------|-----------|--------|
+| 1 (Alta) | `folioPedido.length > 0` | Solo productos de requisiciones |
+| 2 (Media) | `selectedInvIniciales.length > 0` | Solo productos de inv. iniciales |
+| 3 (Baja) | Nada seleccionado | Alert de error |
+
+**Archivo afectado:**
+- ✅ `/app/frontend/src/pages/Compras.js` - Función `iniciarCapturaManual`
+
+**⚠️ ADVERTENCIA:**
+Esta regla ha sido modificada incorrectamente 3 veces anteriormente.
+**NO MODIFICAR** sin aprobación explícita del usuario.
 
 ---
 

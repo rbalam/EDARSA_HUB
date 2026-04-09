@@ -1540,17 +1540,54 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
       return;
     }
     
-    // Si no hay resultados pero hay inventarios iniciales, obtener productos del backend
-    if (selectedInvIniciales.length > 0 || folioPedido.length > 0) {
+    // REGLA CRÍTICA: Solo mostrar productos de las REQUISICIONES SELECCIONADAS
+    // Si hay requisiciones seleccionadas, ignorar inventarios iniciales
+    if (folioPedido.length > 0) {
+      try {
+        const token = localStorage.getItem('token');
+        
+        // Obtener SOLO productos de las requisiciones seleccionadas
+        const response = await axios.post(`${API_URL}/api/compras/productos-para-captura`, {
+          server_id: selectedServer,
+          folios_inv_inicial: [],  // Ignorar inventarios iniciales cuando hay requisiciones
+          folios_requisiciones: folioPedido
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        console.log('Productos de requisiciones:', response.data);
+        
+        if (response.data.productos && response.data.productos.length > 0) {
+          const capturaInicial = response.data.productos.map(p => ({
+            codigo: p.codigo,
+            producto: p.producto,
+            rendimiento: p.rendimiento || 1,
+            cantidadInsumos: 0,
+            cantidadPresentaciones: 0,
+            totalInsumos: 0
+          }));
+          setInventarioManualCaptura(capturaInicial);
+          setMostrarCapturaManual(true);
+        } else {
+          alert('No se encontraron productos en las requisiciones seleccionadas');
+        }
+      } catch (error) {
+        console.error('Error obteniendo productos de requisiciones:', error);
+        alert('Error al obtener productos de las requisiciones.');
+      }
+      return;
+    }
+    
+    // Si no hay requisiciones pero sí inventarios iniciales, usar esos
+    if (selectedInvIniciales.length > 0) {
       try {
         const token = localStorage.getItem('token');
         const foliosIni = selectedInvIniciales.map(inv => inv.folio);
         
-        // Obtener productos de los inventarios iniciales y/o requisiciones
         const response = await axios.post(`${API_URL}/api/compras/productos-para-captura`, {
           server_id: selectedServer,
           folios_inv_inicial: foliosIni,
-          folios_requisiciones: folioPedido
+          folios_requisiciones: []
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -1567,16 +1604,16 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
           setInventarioManualCaptura(capturaInicial);
           setMostrarCapturaManual(true);
         } else {
-          alert('No se encontraron productos en los inventarios/requisiciones seleccionados');
+          alert('No se encontraron productos en los inventarios iniciales seleccionados');
         }
       } catch (error) {
         console.error('Error obteniendo productos:', error);
-        alert('Error al obtener productos. Verifique que haya seleccionado inventarios iniciales o requisiciones.');
+        alert('Error al obtener productos de inventarios iniciales.');
       }
       return;
     }
     
-    alert('Seleccione primero inventarios iniciales o requisiciones para obtener la lista de productos');
+    alert('Seleccione primero requisiciones o inventarios iniciales para obtener la lista de productos');
   };
   
   // Función para abrir calculadora de un producto específico
