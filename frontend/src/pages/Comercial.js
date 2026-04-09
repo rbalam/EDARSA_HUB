@@ -698,15 +698,18 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
                 <CardTitle className="text-base">Comparativo de Ventas</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 gap-4">
+                <div className={`grid ${esMultiMes ? 'grid-cols-2' : 'grid-cols-3'} gap-4`}>
+                  {/* Ocultar "vs Período Anterior" cuando hay multiselección de meses */}
+                  {!esMultiMes && (
+                    <div className="text-center p-4 bg-zinc-50 rounded">
+                      <p className="text-xs text-zinc-500 mb-1">vs Período Anterior</p>
+                      <p className={`text-xl font-bold ${comparativo.vs_periodo_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatPercent(comparativo.vs_periodo_anterior)}
+                      </p>
+                    </div>
+                  )}
                   <div className="text-center p-4 bg-zinc-50 rounded">
-                    <p className="text-xs text-zinc-500 mb-1">vs Período Anterior</p>
-                    <p className={`text-xl font-bold ${comparativo.vs_periodo_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatPercent(comparativo.vs_periodo_anterior)}
-                    </p>
-                  </div>
-                  <div className="text-center p-4 bg-zinc-50 rounded">
-                    <p className="text-xs text-zinc-500 mb-1">vs Año Anterior</p>
+                    <p className="text-xs text-zinc-500 mb-1">{esMultiMes ? 'vs Mismo Periodo Año Ant.' : 'vs Año Anterior'}</p>
                     <p className={`text-xl font-bold ${comparativo.vs_ano_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatPercent(comparativo.vs_ano_anterior)}
                     </p>
