@@ -2842,31 +2842,32 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
             </div>
           </DialogHeader>
           <div className="flex-1 overflow-auto p-0" style={{ height: 'calc(95vh - 70px)' }}>
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-zinc-800 text-white z-10">
-                <tr>
-                  {agruparPorProveedor && <th className="py-3 px-3 text-left">Proveedor</th>}
-                  {agruparPorProveedor && <th className="py-3 px-3 text-left">Folio Pedido</th>}
-                  <th className="py-3 px-3 text-left">Producto</th>
-                  <th className="py-3 px-3 text-right">{unidadAnalisis === 'presentaciones' ? 'Inv.Ini (Pres)' : 'Inv.Ini (Ins)'}</th>
-                  <th className="py-3 px-3 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
-                  <th className="py-3 px-3 text-right">{unidadAnalisis === 'presentaciones' ? '+Mov (Pres)' : '+Mov (Ins)'}</th>
-                  <th className="py-3 px-3 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
-                  <th className="py-3 px-3 text-right">{unidadAnalisis === 'presentaciones' ? '-Cons (Pres)' : '-Cons (Ins)'}</th>
-                  <th className="py-3 px-3 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
-                  <th className="py-3 px-3 text-right">{unidadAnalisis === 'presentaciones' ? 'Teórico (Pres)' : 'Teórico (Ins)'}</th>
-                  <th className="py-3 px-3 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
-                  <th className="py-3 px-3 text-right">Físico</th>
-                  <th className="py-3 px-3 text-right">Diferencia</th>
-                  <th className="py-3 px-3 text-right">Costo Unit</th>
-                  <th className="py-3 px-3 text-right">Importe</th>
-                  <th className="py-3 px-3 text-center">Días Inv</th>
-                  <th className="py-3 px-3 text-center">Días Obj</th>
-                  <th className="py-3 px-3 text-right">Pedido</th>
-                  <th className="py-3 px-3 text-right">Ajuste</th>
-                  <th className="py-3 px-3 text-center">Recomendar</th>
-                </tr>
-              </thead>
+            <div className="overflow-x-auto min-w-full">
+              <table className="w-max min-w-full text-sm">
+                <thead className="sticky top-0 bg-zinc-800 text-white z-10">
+                  <tr>
+                    {agruparPorProveedor && <th className="py-3 px-3 text-left whitespace-nowrap">Proveedor</th>}
+                    {agruparPorProveedor && <th className="py-3 px-3 text-left whitespace-nowrap">Folio Pedido</th>}
+                    <th className="py-3 px-3 text-left whitespace-nowrap">Producto</th>
+                    <th className="py-3 px-3 text-right whitespace-nowrap">{unidadAnalisis === 'presentaciones' ? 'Inv.Ini (Pres)' : 'Inv.Ini (Ins)'}</th>
+                    <th className="py-3 px-3 text-right text-zinc-400 whitespace-nowrap">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
+                    <th className="py-3 px-3 text-right whitespace-nowrap">{unidadAnalisis === 'presentaciones' ? '+Mov (Pres)' : '+Mov (Ins)'}</th>
+                    <th className="py-3 px-3 text-right text-zinc-400 whitespace-nowrap">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
+                    <th className="py-3 px-3 text-right whitespace-nowrap">{unidadAnalisis === 'presentaciones' ? '-Cons (Pres)' : '-Cons (Ins)'}</th>
+                    <th className="py-3 px-3 text-right text-zinc-400 whitespace-nowrap">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
+                    <th className="py-3 px-3 text-right whitespace-nowrap">{unidadAnalisis === 'presentaciones' ? 'Teórico (Pres)' : 'Teórico (Ins)'}</th>
+                    <th className="py-3 px-3 text-right text-zinc-400 whitespace-nowrap">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
+                    <th className="py-3 px-3 text-right whitespace-nowrap">Físico</th>
+                    <th className="py-3 px-3 text-right whitespace-nowrap">Diferencia</th>
+                    <th className="py-3 px-3 text-right whitespace-nowrap">Costo Unit</th>
+                    <th className="py-3 px-3 text-right whitespace-nowrap">Importe</th>
+                    <th className="py-3 px-3 text-center whitespace-nowrap">Días Inv</th>
+                    <th className="py-3 px-3 text-center whitespace-nowrap">Días Obj</th>
+                    <th className="py-3 px-3 text-right whitespace-nowrap">Pedido</th>
+                    <th className="py-3 px-3 text-right whitespace-nowrap">Ajuste</th>
+                    <th className="py-3 px-3 text-center whitespace-nowrap">Recomendar</th>
+                  </tr>
+                </thead>
               <tbody>
                 {resultados && (() => {
                   let lastProveedor = null;
