@@ -9672,6 +9672,9 @@ WHERE cancelado = 0
     fi = fecha_ini.replace('-', '')
     ff = fecha_fin.replace('-', '')
     
+    # DEBUG: Log para verificar fechas recibidas
+    logging.info(f"SoftRestaurant {server['name']} - Fechas recibidas: fecha_ini={fecha_ini}, fecha_fin={fecha_fin}, fecha_ini_año_ant={fecha_ini_año_ant}, fecha_fin_año_ant={fecha_fin_año_ant}")
+    
     # Extraer mes y año de fecha_fin para usarlos en recálculos (importante para multiselección de meses)
     mes_final = int(fecha_fin[5:7])  # Mes de fecha_fin (ej: 04 para abril)
     anio_final = int(fecha_fin[:4])  # Año de fecha_fin
@@ -9737,14 +9740,17 @@ WHERE turnos.apertura >= '{fi} 00:00:00'
             fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
             fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
             
-            # Año anterior
+            # Año anterior - CORRECCIÓN: NO sobrescribir fecha_ini_año_ant
+            # El Tablero Ejecutivo ya calcula correctamente el rango completo (ej: 01-ene-2025 a 08-abr-2025)
+            # Solo ajustamos fecha_fin_año_ant al día correcto del mes final
             anio_pasado = anio_actual - 1
-            max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_actual)[1]
+            max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_ultimo)[1]
             dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
-            fecha_ini_año_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-01"
-            fecha_fin_año_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+            # PRESERVAR fecha_ini_año_ant original (viene del Tablero con el mes inicial correcto)
+            # Solo actualizar fecha_fin_año_ant con el día ajustado del mes final
+            fecha_fin_año_ant = f"{anio_pasado}-{str(mes_ultimo).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
             
-            logging.info(f"Períodos ajustados - Actual: {fi[:4]}-{fi[4:6]}-01 a {fi[:6]}{str(dia_con_datos).zfill(2)}, Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_año_ant} a {fecha_fin_año_ant}")
+            logging.info(f"Períodos ajustados - Actual: {fi[:4]}-{fi[4:6]}-01 a {ff}, Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_año_ant} a {fecha_fin_año_ant}")
     except Exception as e:
         logging.warning(f"Error detectando último día: {e}")
         # Si falla, continuar con las fechas originales
@@ -17296,6 +17302,7 @@ async def obtener_configuracion_nomina(current_user: Dict = Depends(get_current_
             "dia_pago": 1,  # Lunes
             "dias_inhabiles": [],
             "horario_headcount": "10:00",
+            "horario_autorizacion": "11:00",
             "horario_maquilador": "12:00",
             "horario_tesoreria": "14:00"
         }
@@ -17316,6 +17323,7 @@ async def guardar_configuracion_nomina(body: Dict, current_user: Dict = Depends(
         "dia_pago": body.get('dia_pago', 1),
         "dias_inhabiles": body.get('dias_inhabiles', []),
         "horario_headcount": body.get('horario_headcount', '10:00'),
+        "horario_autorizacion": body.get('horario_autorizacion', '11:00'),
         "horario_maquilador": body.get('horario_maquilador', '12:00'),
         "horario_tesoreria": body.get('horario_tesoreria', '14:00'),
         "actualizado_por": current_user.get("email"),

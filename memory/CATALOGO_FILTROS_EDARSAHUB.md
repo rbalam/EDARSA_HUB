@@ -484,6 +484,57 @@ dias_transcurridos = (fecha_ultimo_dt - fecha_ini_dt).days + 1  # 97 días ✅
 
 ---
 
+#### ⚠️ REGLA CRÍTICA: NO sobrescribir fecha_ini_año_ant en get_kpis_softrestaurant
+
+**BUG HISTÓRICO CORREGIDO (2025-04-08):**
+
+Cuando el Tablero Ejecutivo llama a `get_kpis_softrestaurant()` con un **rango de múltiples meses** (ej: Ene-Abr 2026), ya envía correctamente:
+- `fecha_ini_año_ant = "2025-01-01"` (primer día del primer mes del rango, año anterior)
+- `fecha_fin_año_ant = "2025-04-08"` (mismo día del último mes, año anterior)
+
+**El bug:** Dentro de la función, al detectar el último día con ventas, se **sobrescribía** `fecha_ini_año_ant` usando solo el mes del último día con ventas (`mes_actual`), ignorando el rango completo.
+
+**❌ PATRÓN INCORRECTO (NO USAR):**
+```python
+# ERROR: Sobrescribe fecha_ini_año_ant usando solo el mes actual (abril)
+# Esto compara "01-abr-2025 a 08-abr-2025" en vez de "01-ene-2025 a 08-abr-2025"
+anio_pasado = anio_actual - 1
+fecha_ini_año_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-01"  # ❌ INCORRECTO
+fecha_fin_año_ant = f"{anio_pasado}-{str(mes_actual).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+```
+
+**Consecuencias del bug:**
+- CIENFUEGOS (Ene-Abr 2026) comparaba vs solo abril 2025, no vs Ene-Abr 2025
+- KPI "vs año" mostraba variaciones incorrectas
+- Ventas año anterior truncadas a un solo mes
+
+**✅ PATRÓN CORRECTO (OBLIGATORIO):**
+```python
+# CORRECTO: PRESERVAR fecha_ini_año_ant original (viene del Tablero con el rango correcto)
+# Solo actualizar fecha_fin_año_ant con el día ajustado del mes final
+anio_pasado = anio_actual - 1
+max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_ultimo)[1]
+dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
+# NO TOCAR fecha_ini_año_ant - ya viene correctamente calculada
+fecha_fin_año_ant = f"{anio_pasado}-{str(mes_ultimo).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+```
+
+**Ejemplo de comparación correcta:**
+| Selección Usuario | Período Actual | Año Anterior (CORRECTO) |
+|-------------------|----------------|-------------------------|
+| Ene-Abr 2026 | 01-ene-2026 a 08-abr-2026 | 01-ene-2025 a 08-abr-2025 ✅ |
+| Todo 2026 | 01-ene-2026 a 08-abr-2026 | 01-ene-2025 a 08-abr-2025 ✅ |
+
+**Verificación esperada:**
+| Unidad | Antes (bug) | Después (correcto) |
+|--------|-------------|-------------------|
+| CIENFUEGOS (Ene-Abr 2026) | vs Año incorrecto | vs Año correcto ✅ |
+
+**Funciones corregidas:**
+- ✅ `get_kpis_softrestaurant()` - Corregido 2025-04-08 (línea ~9744)
+
+---
+
 #### ⚠️ REGLA VISUALIZACIÓN: KPIs "vs Mes" en Multiselección de Meses
 
 **IMPLEMENTACIÓN (2025-04-08):**
@@ -802,6 +853,8 @@ const validateFilters = (filters) => {
 | 2025-04-08 | 1.2 | Agregada REGLA CRÍTICA: Multiselección de Meses en filtro periodo/fechas | E1 Agent |
 | 2025-04-08 | 1.3 | Agregada REGLA CRÍTICA: Función get_kpis_softrestaurant - Conversión de Fechas | E1 Agent |
 | 2025-04-08 | 1.4 | REGLA VISUALIZACIÓN: KPIs "vs Mes" deshabilitados en multiselección de meses | E1 Agent |
+| 2025-04-08 | 1.5 | REGLA CRÍTICA: NO sobrescribir fecha_ini_año_ant en get_kpis_softrestaurant | E1 Agent |
+| 2025-04-09 | 1.6 | Verificación de fechas recibidas en get_kpis_softrestaurant (log debug) | E1 Agent |
 
 ---
 
