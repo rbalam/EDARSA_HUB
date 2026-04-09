@@ -982,6 +982,81 @@ export default function ExploradorBD() {
     t.tabla.toLowerCase().includes(filtroTabla.toLowerCase())
   );
 
+  // Estado para grupos expandidos/colapsados
+  const [gruposExpandidos, setGruposExpandidos] = useState({});
+
+  // Función para agrupar tablas por categoría
+  const agruparTablas = (tablasList) => {
+    const categorias = {
+      'Usuario': ['usuario', 'user', 'empleado', 'personal', 'rrhh', 'nomina', 'colaborador', 'login', 'sesion', 'rol', 'permiso'],
+      'Ventas': ['venta', 'comanda', 'cheque', 'ticket', 'folio', 'pedido', 'orden', 'factura', 'cuenta', 'pago', 'cobro', 'caja', 'corte', 'propina', 'descuento', 'turno'],
+      'Proveedor': ['proveedor', 'compra', 'requisicion', 'recepcion', 'devolucion', 'supplier'],
+      'Producto': ['producto', 'articulo', 'insumo', 'presentacion', 'inventario', 'almacen', 'existencia', 'receta', 'ingrediente', 'menu', 'platillo', 'bebida', 'item'],
+      'Catálogos': ['catalogo', 'categoria', 'familia', 'subfamilia', 'grupo', 'tipo', 'unidad', 'medida', 'moneda', 'impuesto', 'iva', 'forma_pago', 'metodo'],
+      'Configuración': ['config', 'parametro', 'opcion', 'setting', 'sistema', 'empresa', 'sucursal', 'restaurante', 'negocio'],
+      'Clientes': ['cliente', 'customer', 'membresia', 'fidelidad', 'puntos', 'reservacion', 'mesa'],
+      'Reportes': ['reporte', 'bitacora', 'log', 'historico', 'auditoria', 'movimiento']
+    };
+
+    const grupos = {};
+    const sinCategoria = [];
+
+    tablasList.forEach(tabla => {
+      const nombreTabla = tabla.tabla.toLowerCase();
+      let categoriaEncontrada = null;
+
+      // Buscar en qué categoría encaja
+      for (const [categoria, palabrasClave] of Object.entries(categorias)) {
+        if (palabrasClave.some(palabra => nombreTabla.includes(palabra))) {
+          categoriaEncontrada = categoria;
+          break;
+        }
+      }
+
+      if (categoriaEncontrada) {
+        if (!grupos[categoriaEncontrada]) {
+          grupos[categoriaEncontrada] = [];
+        }
+        grupos[categoriaEncontrada].push(tabla);
+      } else {
+        sinCategoria.push(tabla);
+      }
+    });
+
+    // Ordenar las tablas dentro de cada grupo
+    Object.keys(grupos).forEach(cat => {
+      grupos[cat].sort((a, b) => a.tabla.localeCompare(b.tabla));
+    });
+
+    // Agregar las tablas sin categoría al final
+    if (sinCategoria.length > 0) {
+      sinCategoria.sort((a, b) => a.tabla.localeCompare(b.tabla));
+      grupos['Otras Tablas'] = sinCategoria;
+    }
+
+    return grupos;
+  };
+
+  const tablasAgrupadas = agruparTablas(tablasFiltradas);
+
+  const toggleGrupo = (grupo) => {
+    setGruposExpandidos(prev => ({
+      ...prev,
+      [grupo]: !prev[grupo]
+    }));
+  };
+
+  // Expandir todos los grupos por defecto cuando cambian las tablas
+  useEffect(() => {
+    if (Object.keys(tablasAgrupadas).length > 0) {
+      const todosExpandidos = {};
+      Object.keys(tablasAgrupadas).forEach(grupo => {
+        todosExpandidos[grupo] = true;
+      });
+      setGruposExpandidos(todosExpandidos);
+    }
+  }, [tablas]);
+
   return (
     <div className="space-y-4" data-testid="explorador-bd">
       <div>
@@ -1085,19 +1160,43 @@ export default function ExploradorBD() {
                   <div className="flex justify-center py-4">
                     <Loader2 className="h-5 w-5 animate-spin" />
                   </div>
+                ) : Object.keys(tablasAgrupadas).length === 0 ? (
+                  <div className="text-center py-4 text-zinc-400 text-sm">
+                    No se encontraron tablas
+                  </div>
                 ) : (
-                  tablasFiltradas.map(t => (
-                    <div 
-                      key={t.tabla}
-                      className={`p-2 rounded cursor-pointer text-sm flex items-center gap-2 ${
-                        tablaSeleccionada === t.tabla 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'hover:bg-zinc-50'
-                      }`}
-                      onClick={() => seleccionarTabla(t.tabla)}
-                    >
-                      <Table className="h-3 w-3" />
-                      <span className="truncate">{t.tabla}</span>
+                  Object.entries(tablasAgrupadas).map(([grupo, tablasGrupo]) => (
+                    <div key={grupo} className="mb-2">
+                      {/* Header del grupo */}
+                      <div 
+                        className="flex items-center gap-2 p-2 bg-zinc-100 rounded cursor-pointer hover:bg-zinc-200 transition-colors"
+                        onClick={() => toggleGrupo(grupo)}
+                      >
+                        <ChevronRight className={`h-3 w-3 transition-transform ${gruposExpandidos[grupo] ? 'rotate-90' : ''}`} />
+                        <Database className="h-3 w-3 text-zinc-600" />
+                        <span className="text-xs font-semibold text-zinc-700 flex-1">{grupo}</span>
+                        <span className="text-xs text-zinc-500 bg-zinc-200 px-1.5 py-0.5 rounded">{tablasGrupo.length}</span>
+                      </div>
+                      
+                      {/* Tablas del grupo */}
+                      {gruposExpandidos[grupo] && (
+                        <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-zinc-200 pl-2">
+                          {tablasGrupo.map(t => (
+                            <div 
+                              key={t.tabla}
+                              className={`p-1.5 rounded cursor-pointer text-sm flex items-center gap-2 ${
+                                tablaSeleccionada === t.tabla 
+                                  ? 'bg-blue-100 text-blue-800' 
+                                  : 'hover:bg-zinc-50'
+                              }`}
+                              onClick={() => seleccionarTabla(t.tabla)}
+                            >
+                              <Table className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate text-xs">{t.tabla}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
