@@ -48,6 +48,174 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production'
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24
 
+# ============= CONFIGURACIÓN APIs LOCALES MPRO =============
+# Estas APIs obtienen ventas del día en tiempo real desde servidores locales.
+# Los datos se replican al servidor en la nube por la noche (hora_replica).
+# Solo se consultan si la fecha incluye HOY y estamos ANTES de la hora de réplica.
+
+import requests
+
+APIS_MPRO_LOCALES = {
+    "130_qro": {
+        "nombre": "130° QRO LOCAL",
+        "url": os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query"),
+        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
+        "sucursal_destino": "QUERETARO",  # Nombre de sucursal en MPRO a la que se suman las ventas
+        "servidor_padre_host": "54.39.104.176",  # Host del servidor ManagementPro (nube)
+        "hora_replica": 4,  # 4 AM - hora en que se replican los datos a la nube
+        "activo": True
+    },
+    "origen": {
+        "nombre": "ORIGEN LOCAL",
+        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query"),
+        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
+        "sucursal_destino": "ORIGEN",  # Nombre de sucursal en MPRO
+        "servidor_padre_host": "54.39.104.176",  # Host del servidor ManagementPro (nube)
+        "hora_replica": 4,  # 4 AM
+        "activo": True
+    }
+}
+
+def query_api_mpro_local(api_config: dict, sql_query: str, timeout: int = 30) -> dict:
+    """
+    Consulta una API MPRO local y retorna los resultados.
+    Retorna dict con 'success', 'data' o 'error'.
+    """
+    if not api_config.get("activo", False):
+        return {"success": False, "error": "API desactivada", "data": None}
+    
+    try:
+        headers = {"x-api-key": api_config["api_key"]}
+        params = {"sql": sql_query}
+        
+        response = requests.get(
+            api_config["url"],
+            headers=headers,
+            params=params,
+            timeout=timeout
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            logging.info(f"API Local {api_config['nombre']}: Query exitoso")
+            return {"success": True, "data": data, "error": None}
+        else:
+            logging.warning(f"API Local {api_config['nombre']}: HTTP {response.status_code}")
+            return {"success": False, "error": f"HTTP {response.status_code}", "data": None}
+            
+    except requests.exceptions.Timeout:
+        logging.warning(f"API Local {api_config['nombre']}: Timeout")
+        return {"success": False, "error": "Timeout", "data": None}
+    except requests.exceptions.ConnectionError:
+        logging.warning(f"API Local {api_config['nombre']}: Error de conexión")
+        return {"success": False, "error": "Sin conexión", "data": None}
+    except Exception as e:
+        logging.warning(f"API Local {api_config['nombre']}: Error - {str(e)}")
+        return {"success": False, "error": str(e), "data": None}
+
+def obtener_ventas_dia_api_local(api_config: dict) -> dict:
+    """
+    Obtiene las ventas del día actual desde una API MPRO local.
+    Retorna dict con ventas, cheques, pax.
+    """
+    from datetime import datetime
+    
+    hoy = datetime.now()
+    hora_actual = hoy.hour
+    hora_replica = api_config.get("hora_replica", 4)
+    
+    # Si ya pasó la hora de réplica, los datos ya están en la nube
+    # No consultar la API local para evitar duplicación
+    if hora_actual >= hora_replica:
+        logging.info(f"API Local {api_config['nombre']}: Hora actual ({hora_actual}) >= hora réplica ({hora_replica}), omitiendo")
+        return {"ventas": 0, "cheques": 0, "pax": 0, "omitido": True, "razon": "post_replica"}
+    
+    # Query para obtener ventas del día actual
+    sql_ventas_hoy = """
+    SELECT 
+        ISNULL(SUM(cd_importe), 0) as ventas,
+        COUNT(DISTINCT co_folio) as cheques,
+        ISNULL(SUM(co_personas), 0) as pax
+    FROM Comanda 
+    INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio 
+    WHERE CONVERT(date, co_fecha, 101) = CONVERT(date, GETDATE(), 101)
+    """
+    
+    result = query_api_mpro_local(api_config, sql_ventas_hoy)
+    
+    if result["success"] and result["data"]:
+        data = result["data"]
+        # La respuesta puede ser una lista o un dict directo
+        if isinstance(data, list) and len(data) > 0:
+            row = data[0]
+        elif isinstance(data, dict):
+            row = data
+        else:
+            row = {}
+        
+        ventas = float(row.get("ventas", 0) or 0)
+        cheques = int(row.get("cheques", 0) or 0)
+        pax = int(row.get("pax", 0) or 0)
+        
+        logging.info(f"API Local {api_config['nombre']}: Ventas HOY = ${ventas:,.2f}, Cheques = {cheques}")
+        return {"ventas": ventas, "cheques": cheques, "pax": pax, "omitido": False}
+    else:
+        logging.warning(f"API Local {api_config['nombre']}: Error obteniendo ventas - {result.get('error')}")
+        return {"ventas": 0, "cheques": 0, "pax": 0, "omitido": True, "razon": "error", "error": result.get("error")}
+
+def sumar_ventas_api_local_a_sucursal(server_host: str, sucursal_nombre: str, fecha_fin: str) -> dict:
+    """
+    Busca si hay una API local asociada a esta sucursal y servidor,
+    y si la fecha_fin es HOY, suma las ventas del día.
+    
+    Retorna dict con ventas_adicionales, cheques_adicionales, pax_adicionales
+    """
+    from datetime import datetime
+    
+    hoy = datetime.now().strftime("%Y-%m-%d")
+    
+    # Solo sumar si fecha_fin es HOY (o incluye hoy)
+    if fecha_fin < hoy:
+        return {"ventas": 0, "cheques": 0, "pax": 0, "aplicado": False, "razon": "fecha_no_incluye_hoy"}
+    
+    # Buscar API local que corresponda a este servidor y sucursal
+    for api_id, api_config in APIS_MPRO_LOCALES.items():
+        if not api_config.get("activo", False):
+            continue
+            
+        # Verificar si el servidor padre coincide
+        if api_config.get("servidor_padre_host") != server_host:
+            continue
+        
+        # Verificar si la sucursal destino coincide (comparación flexible)
+        sucursal_destino = api_config.get("sucursal_destino", "").upper()
+        sucursal_actual = sucursal_nombre.upper()
+        
+        # Matching flexible: "QUERETARO" debe matchear con "130 GRADOS QUERETARO", "QRO", etc.
+        if sucursal_destino in sucursal_actual or sucursal_actual in sucursal_destino:
+            logging.info(f"API Local match: {api_config['nombre']} -> Sucursal {sucursal_nombre}")
+            
+            ventas_api = obtener_ventas_dia_api_local(api_config)
+            
+            if not ventas_api.get("omitido", True):
+                return {
+                    "ventas": ventas_api["ventas"],
+                    "cheques": ventas_api["cheques"],
+                    "pax": ventas_api["pax"],
+                    "aplicado": True,
+                    "api": api_config["nombre"]
+                }
+            else:
+                return {
+                    "ventas": 0, "cheques": 0, "pax": 0,
+                    "aplicado": False,
+                    "razon": ventas_api.get("razon", "omitido"),
+                    "api": api_config["nombre"]
+                }
+    
+    # No se encontró API local para esta sucursal
+    return {"ventas": 0, "cheques": 0, "pax": 0, "aplicado": False, "razon": "sin_api_local"}
+
 # ============= MODELS =============
 
 class UserRole(BaseModel):
@@ -10327,6 +10495,22 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
                 pax_año = cheques_año
         except:
             ventas_año, cheques_año, pax_año = 0, 0, 0
+        
+        # ============= INTEGRACIÓN API LOCAL =============
+        # Sumar ventas del día desde API local si aplica
+        # Solo se suma si: fecha_fin incluye HOY y estamos ANTES de la hora de réplica
+        ventas_api_local = sumar_ventas_api_local_a_sucursal(
+            server_host=server['host'],
+            sucursal_nombre=sucursal_nombre,
+            fecha_fin=fecha_fin  # fecha_fin original en formato YYYY-MM-DD
+        )
+        
+        if ventas_api_local.get("aplicado", False):
+            ventas += ventas_api_local["ventas"]
+            cheques += ventas_api_local["cheques"]
+            pax += ventas_api_local["pax"]
+            logging.info(f"API Local sumada a {sucursal_nombre}: +${ventas_api_local['ventas']:,.2f} de {ventas_api_local.get('api', 'N/A')}")
+        # ============= FIN INTEGRACIÓN API LOCAL =============
         
         # Cálculos
         ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
