@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { fetchServersOperativos } from '@/services/serversService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
@@ -797,6 +798,7 @@ function BuscadorGlobal({ serverSeleccionado, onSelectTabla }) {
 }
 
 export default function ExploradorBD() {
+  const navigate = useNavigate();
   const [servers, setServers] = useState([]);
   const [serverSeleccionado, setServerSeleccionado] = useState('');
   const [serverInfo, setServerInfo] = useState(null);
@@ -971,6 +973,18 @@ export default function ExploradorBD() {
                 ))}
               </SelectContent>
             </Select>
+            
+            {/* Botón Agregar BD */}
+            <Button 
+              variant="outline"
+              onClick={() => navigate('/servidores')}
+              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+              data-testid="btn-agregar-bd"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar BD
+            </Button>
+            
             {serverInfo && (
               <div className="text-sm text-zinc-500">
                 <span className="font-medium">{serverInfo.sistema}</span> • {serverInfo.database}
