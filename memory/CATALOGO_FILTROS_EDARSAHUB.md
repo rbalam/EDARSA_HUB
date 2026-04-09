@@ -855,6 +855,8 @@ const validateFilters = (filters) => {
 | 2025-04-08 | 1.4 | REGLA VISUALIZACIÓN: KPIs "vs Mes" deshabilitados en multiselección de meses | E1 Agent |
 | 2025-04-08 | 1.5 | REGLA CRÍTICA: NO sobrescribir fecha_ini_año_ant en get_kpis_softrestaurant | E1 Agent |
 | 2025-04-09 | 1.6 | Verificación de fechas recibidas en get_kpis_softrestaurant (log debug) | E1 Agent |
+| 2025-04-09 | 1.7 | REGLA UX: Auto-actualización de filtros en Tablero Ejecutivo | E1 Agent |
+| 2025-04-09 | 1.8 | FIX: Multiselección de meses en Dashboard Comercial (MPRO + SoftRestaurant) | E1 Agent |
 
 ---
 
@@ -875,6 +877,97 @@ WHERE (S.Sc_Cve_Sucursal = '{sucursal}' OR S.Sc_Descripcion LIKE '%{sucursal}%')
 |--------|-----------------|-------------------|
 | `0021` | `130° QUERETARO` | "0021", "QUERETARO", "QRO", "130°" |
 | `0001` | `ORIGEN` | "0001", "ORIGEN", "Origen" |
+
+---
+
+## G. REGLAS DE UX - FILTROS AUTOMÁTICOS
+
+### G.1 Auto-actualización en Tablero Ejecutivo
+
+**IMPLEMENTACIÓN (2025-04-09):**
+
+Cuando el usuario cambia los filtros de **Mes(es)** o **Año(s)** en el Tablero Ejecutivo, el dashboard se actualiza **automáticamente** sin necesidad de hacer clic en el botón "Actualizar".
+
+**Comportamiento:**
+
+| Acción | ANTES | DESPUÉS |
+|--------|-------|---------|
+| Cambiar mes(es) | Requería clic en "Actualizar" | ✅ Se actualiza automáticamente |
+| Cambiar año(s) | Requería clic en "Actualizar" | ✅ Se actualiza automáticamente |
+
+**Implementación técnica (TableroEjecutivo.js):**
+
+```javascript
+// Auto-actualizar cuando cambian los filtros de mes o año
+useEffect(() => {
+  // Solo ejecutar si ya se cargó inicialmente (data existe o hubo un error previo)
+  // Esto evita doble carga al montar el componente
+  const token = localStorage.getItem('token');
+  if (token && (data || loading === false)) {
+    cargarDatos();
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [selectedMeses, selectedAnios]);
+```
+
+**Consideraciones:**
+- Se evita doble carga al montar el componente verificando si ya existe `data`
+- El `eslint-disable` es necesario porque `cargarDatos` se define dentro del componente
+
+**Archivos afectados:**
+- ✅ `/app/frontend/src/pages/TableroEjecutivo.js`
+
+---
+
+## H. FIXES DE MULTISELECCIÓN DE MESES (2025-04-09)
+
+### H.1 Dashboard Comercial - Cálculo de fechas multiselección
+
+**PROBLEMA:**
+Al seleccionar múltiples meses (Ene-Abr 2026) en el Dashboard Comercial, las fechas se calculaban incorrectamente:
+- **Período actual**: `20260101 a 20260107` (solo 7 días de enero!)
+- **Año anterior**: `20250101 a 20250130` (solo enero)
+
+**CAUSA:**
+El código usaba `int(fecha_ini[5:7])` para obtener el mes, pero esto tomaba el mes de `fecha_ini` (enero) en lugar del mes máximo del rango (abril).
+
+**SOLUCIÓN:**
+Usar `mes_max` (el mes máximo del rango seleccionado) en lugar de extraer el mes de `fecha_ini`.
+
+**Código corregido (server.py):**
+
+```python
+# ❌ INCORRECTO - Solo tomaba el mes de fecha_ini (enero)
+mes_actual = int(fecha_ini[5:7])
+anio_actual = int(fecha_ini[:4])
+fecha_fin = f"{anio_actual}-{str(mes_actual).zfill(2)}-{str(dia_con_datos).zfill(2)}"
+
+# ✅ CORRECTO - Usa mes_max para multiselección
+mes_actual = mes_max  # CORRECCIÓN: Usar mes_max para multiselección
+anio_actual = year
+fecha_fin = f"{year}-{str(mes_max).zfill(2)}-{str(dia_con_datos).zfill(2)}"
+```
+
+**Lugares corregidos en server.py:**
+1. SoftRestaurant Dashboard (líneas ~7908-7914)
+2. MPRO Dashboard sin filtro de sucursal (líneas ~8150-8155)
+3. MPRO Dashboard con filtro de sucursal (líneas ~8249-8270)
+
+### H.2 Condición es_mes_actual para multiselección
+
+**PROBLEMA:**
+La condición `es_mes_actual` requería `len(lista_meses) == 1`, lo que excluía multiselección de meses.
+
+**SOLUCIÓN:**
+Remover la restricción de `len(lista_meses) == 1`:
+
+```python
+# ❌ INCORRECTO - Solo funcionaba con 1 mes
+es_mes_actual = (year == hoy.year and mes_max == hoy.month and len(lista_meses) == 1)
+
+# ✅ CORRECTO - Funciona con multiselección
+es_mes_actual = (year == hoy.year and mes_max == hoy.month)
+```
 
 ---
 
