@@ -1289,8 +1289,8 @@ export default function ExploradorBD() {
                         <Loader2 className="h-5 w-5 animate-spin" />
                       </div>
                     ) : (
-                      <div className="overflow-x-auto max-h-[250px]">
-                        <table className="w-full text-xs">
+                      <div className={`overflow-x-auto overflow-y-auto ${fullscreenMode ? 'max-h-[60vh]' : 'max-h-[250px]'}`}>
+                        <table className="w-full min-w-max text-xs">
                           <thead className="bg-zinc-100 sticky top-0">
                             <tr>
                               <th className="py-2 px-3 text-left">Columna</th>
@@ -1351,8 +1351,8 @@ export default function ExploradorBD() {
                       </Button>
                     </CardHeader>
                     <CardContent className="p-0">
-                      <div className="overflow-x-auto max-h-[300px]">
-                        <table className="w-full text-xs">
+                      <div className={`overflow-x-auto overflow-y-auto ${fullscreenMode ? 'max-h-[70vh]' : 'max-h-[300px]'}`}>
+                        <table className="w-full min-w-max text-xs">
                           <thead className="bg-zinc-100 sticky top-0">
                             <tr>
                               {preview.datos.length > 0 && Object.keys(preview.datos[0]).map(col => (

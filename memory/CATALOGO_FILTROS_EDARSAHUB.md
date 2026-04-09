@@ -863,6 +863,7 @@ const validateFilters = (filters) => {
 | 2025-04-09 | 2.2 | REGLA UX: Auto-scroll con Tab en Captura Manual de Inventario (I.8) | E1 Agent |
 | 2025-04-09 | 2.3 | REGLA UX: Scroll horizontal en tabla Detalle de Auditoría (vista normal) (I.9) | E1 Agent |
 | 2025-04-09 | 2.4 | REGLA UX: Modo Pantalla Completa en Explorador BD (ocultar sidebar) (I.10) | E1 Agent |
+| 2025-04-09 | 2.5 | REGLA UX: Scroll horizontal y altura expandida en Pantalla Completa de Explorador BD (I.11) | E1 Agent |
 
 ---
 
@@ -1418,6 +1419,52 @@ const [fullscreenMode, setFullscreenMode] = useState(false);
 - ❌ `Layout.js` - El sidebar global NO fue alterado
 - ❌ `serversService.js` - NO fue modificado
 - ❌ `server.py` - NO fue modificado
+
+---
+
+### I.11 Scroll Horizontal y Altura Expandida en Pantalla Completa de Explorador BD
+
+**IMPLEMENTACIÓN (2025-04-09):**
+
+En el modo Pantalla Completa del Explorador BD, las tablas de **Columnas** y **Preview de datos** ahora tienen:
+1. **Scroll horizontal** garantizado con `min-w-max`
+2. **Altura expandida** condicional según el modo (normal vs fullscreen)
+
+**Problema original:**
+- En modo Pantalla Completa, las tablas mantenían alturas fijas pequeñas (`max-h-[250px]` y `max-h-[300px]`)
+- No se aprovechaba el espacio adicional disponible al ocultar el sidebar
+- Tablas con muchas columnas podían recortarse horizontalmente
+
+**Solución implementada:**
+
+```jsx
+// ANTES (altura fija)
+<div className="overflow-x-auto max-h-[250px]">
+  <table className="w-full text-xs">
+
+// DESPUÉS (altura condicional por fullscreenMode)
+<div className={`overflow-x-auto overflow-y-auto ${fullscreenMode ? 'max-h-[60vh]' : 'max-h-[250px]'}`}>
+  <table className="w-full min-w-max text-xs">
+```
+
+**Alturas configuradas:**
+
+| Tabla | Modo Normal | Modo Pantalla Completa |
+|-------|-------------|------------------------|
+| Columnas | `max-h-[250px]` | `max-h-[60vh]` |
+| Preview de datos | `max-h-[300px]` | `max-h-[70vh]` |
+
+**Clases CSS aplicadas:**
+
+| Clase | Propósito |
+|-------|-----------|
+| `overflow-x-auto` | Scroll horizontal cuando el contenido excede |
+| `overflow-y-auto` | Scroll vertical dentro del contenedor |
+| `min-w-max` | Fuerza ancho mínimo según contenido de columnas |
+| `max-h-[60vh]` / `max-h-[70vh]` | Altura máxima como porcentaje del viewport |
+
+**Archivo afectado:**
+- ✅ `/app/frontend/src/pages/ExploradorBD.js` (líneas 1292 y 1354)
 
 ---
 
