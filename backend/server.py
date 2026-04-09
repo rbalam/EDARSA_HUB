@@ -10253,12 +10253,17 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
                 fia_suc = f"{anio_ant}{str(mes_ant).zfill(2)}01"
                 ffa_suc = f"{anio_ant}{str(mes_ant).zfill(2)}{str(dia_comparar).zfill(2)}"
                 
-                # Año anterior
+                # Año anterior - CORRECCIÓN: Usar el RANGO COMPLETO de meses
+                # fiaa y ffaa ya están calculadas correctamente a nivel global (desde mes_min hasta mes_max del año anterior)
+                # Solo necesitamos ajustar ffaa al día correcto de esta sucursal específica
                 anio_pasado = anio_actual - 1
-                max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_actual)[1]
+                # Obtener el mes final del rango (mes del último día con ventas global)
+                mes_final_rango = int(ffaa[4:6])  # ffaa tiene formato YYYYMMDD
+                max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_final_rango)[1]
                 dia_ano_ant = min(dia_suc, max_dia_ano_ant)
-                fiaa_suc = f"{anio_pasado}{str(mes_actual).zfill(2)}01"
-                ffaa_suc = f"{anio_pasado}{str(mes_actual).zfill(2)}{str(dia_ano_ant).zfill(2)}"
+                # PRESERVAR el mes inicial de fiaa (rango completo desde enero o el mes inicial seleccionado)
+                fiaa_suc = fiaa  # Ya tiene el formato correcto con mes inicial
+                ffaa_suc = f"{anio_pasado}{str(mes_final_rango).zfill(2)}{str(dia_ano_ant).zfill(2)}"
             else:
                 # Si no hay datos, usar fechas globales
                 fia_suc, ffa_suc = fia, ffa
