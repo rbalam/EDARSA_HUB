@@ -8047,11 +8047,12 @@ WHERE turnos.apertura >= '{f_ini_ant} 00:00:00'
             pax_promedio_actual = ventas_periodo / pax_total if pax_total > 0 else 0
             vs_pax_mes_anterior = round(((pax_promedio_actual - pax_promedio_anterior) / pax_promedio_anterior * 100), 1) if pax_promedio_anterior > 0 else 0
             
-            # Query para año anterior
+            # Query para año anterior (CON CHEQUES Y DATOS COMPLETOS)
             query_ano_ant = f"""
 SELECT 
     SUM(cheques.total) as ventas_periodo,
-    ISNULL(SUM(cheques.nopersonas), 0) as pax_total
+    ISNULL(SUM(cheques.nopersonas), 0) as pax_total,
+    COUNT(DISTINCT cheques.folio) as cheques_total
 FROM cheques
 INNER JOIN turnos ON turnos.idturno = cheques.idturno
 WHERE turnos.apertura >= '{f_ini_ano_ant} 00:00:00'
@@ -8065,10 +8066,23 @@ WHERE turnos.apertura >= '{f_ini_ano_ant} 00:00:00'
             
             ventas_ano_anterior = float(result_ano_ant[0]['ventas_periodo'] or 0) if result_ano_ant and result_ano_ant[0]['ventas_periodo'] else 0
             pax_ano_anterior = int(result_ano_ant[0]['pax_total'] or 0) if result_ano_ant else 0
+            cheques_ano_anterior = int(result_ano_ant[0]['cheques_total'] or 0) if result_ano_ant else 0
             
             # Calcular variación vs año anterior
             vs_ano_anterior = round(((ventas_periodo - ventas_ano_anterior) / ventas_ano_anterior * 100), 1) if ventas_ano_anterior > 0 else 0
             pax_vs_ano_anterior = round(((pax_total - pax_ano_anterior) / pax_ano_anterior * 100), 1) if pax_ano_anterior > 0 else 0
+            
+            # Calcular KPIs adicionales para comparativo vs año
+            # PAX Total vs Año
+            pax_total_vs_ano = round(((pax_total - pax_ano_anterior) / pax_ano_anterior * 100), 1) if pax_ano_anterior > 0 else 0
+            # Cheques Total vs Año
+            cheques_total_vs_ano = round(((cheques_total - cheques_ano_anterior) / cheques_ano_anterior * 100), 1) if cheques_ano_anterior > 0 else 0
+            # Cheque Promedio vs Año (ticket promedio)
+            ticket_ano_anterior = ventas_ano_anterior / cheques_ano_anterior if cheques_ano_anterior > 0 else 0
+            cheque_vs_ano_anterior = round(((ticket_promedio - ticket_ano_anterior) / ticket_ano_anterior * 100), 1) if ticket_ano_anterior > 0 else 0
+            # Rotación vs Año (aproximado - usando proporciones de pax/cheques)
+            rotacion_ano_anterior = pax_ano_anterior / cheques_ano_anterior if cheques_ano_anterior > 0 else 0
+            rotacion_vs_ano = round(((rotacion_mesas - rotacion_ano_anterior) / rotacion_ano_anterior * 100), 1) if rotacion_ano_anterior > 0 else 0
             
             # KPIs
             kpis = {
@@ -8089,6 +8103,11 @@ WHERE turnos.apertura >= '{f_ini_ano_ant} 00:00:00'
                 "vs_presupuesto": 0,  # TODO: calcular vs meta/presupuesto
                 "pax_vs_mes_anterior": vs_pax_mes_anterior,
                 "pax_vs_ano_anterior": pax_vs_ano_anterior,
+                # KPIs adicionales para comparativo vs año
+                "pax_total_vs_ano": pax_total_vs_ano,
+                "cheques_total_vs_ano": cheques_total_vs_ano,
+                "cheque_vs_ano_anterior": cheque_vs_ano_anterior,
+                "rotacion_vs_ano": rotacion_vs_ano,
                 "tipo_comparacion": tipo_comparacion,
                 "periodo_anterior": f"{fecha_ini_ant} a {fecha_fin_ant}",
                 "periodo_ano_ant": f"{fecha_ini_ano_ant} a {fecha_fin_ano_ant}"
@@ -8310,11 +8329,12 @@ WHERE VE.Vn_Fecha >= '{fia_mpro}'
                 vs_pax_mes_anterior = round(((pax_promedio_actual - pax_promedio_anterior) / pax_promedio_anterior * 100), 1) if pax_promedio_anterior > 0 else 0
                 vs_periodo_anterior = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
                 
-                # Query para año anterior MPRO
+                # Query para año anterior MPRO (CON CHEQUES)
                 query_ano_ant_mpro = f"""
 SELECT 
     ISNULL(SUM(C.Co_Personas), 0) as pax_total,
-    ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas
+    ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas,
+    COUNT(DISTINCT VE.Vn_Folio) as cheques_total
 FROM Venta_Encabezado VE
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 {sucursal_join}
@@ -8330,8 +8350,15 @@ WHERE VE.Vn_Fecha >= '{fiaa_mpro}'
                 
                 pax_ano_ant = int(result_ano_ant[0]['pax_total'] or 0) if result_ano_ant else 0
                 ventas_ano_ant = float(result_ano_ant[0]['ventas'] or 0) if result_ano_ant else 0
+                cheques_ano_ant = int(result_ano_ant[0]['cheques_total'] or 0) if result_ano_ant else 0
                 vs_ano_anterior = round(((ventas - ventas_ano_ant) / ventas_ano_ant * 100), 1) if ventas_ano_ant > 0 else 0
                 pax_vs_ano_anterior = round(((pax - pax_ano_ant) / pax_ano_ant * 100), 1) if pax_ano_ant > 0 else 0
+                
+                # KPIs adicionales para MPRO
+                pax_total_vs_ano = round(((pax - pax_ano_ant) / pax_ano_ant * 100), 1) if pax_ano_ant > 0 else 0
+                cheques_total_vs_ano = round(((cheques - cheques_ano_ant) / cheques_ano_ant * 100), 1) if cheques_ano_ant > 0 else 0
+                ticket_ano_ant = ventas_ano_ant / cheques_ano_ant if cheques_ano_ant > 0 else 0
+                cheque_vs_ano_anterior = round(((ticket_promedio - ticket_ano_ant) / ticket_ano_ant * 100), 1) if ticket_ano_ant > 0 else 0
                 
                 kpis = {
                     "ventas_periodo": round(ventas, 2),
@@ -8351,6 +8378,11 @@ WHERE VE.Vn_Fecha >= '{fiaa_mpro}'
                     "vs_presupuesto": 0,
                     "pax_vs_mes_anterior": vs_pax_mes_anterior,
                     "pax_vs_ano_anterior": pax_vs_ano_anterior,
+                    # KPIs adicionales para comparativo vs año
+                    "pax_total_vs_ano": pax_total_vs_ano,
+                    "cheques_total_vs_ano": cheques_total_vs_ano,
+                    "cheque_vs_ano_anterior": cheque_vs_ano_anterior,
+                    "rotacion_vs_ano": 0,  # MPRO no tiene rotación de mesas
                     "tipo_comparacion": tipo_comparacion,
                     "periodo_anterior": f"{fecha_ini_ant} a {fecha_fin_ant}",
                     "periodo_ano_ant": f"{fecha_ini_ano_ant} a {fecha_fin_ano_ant}"
