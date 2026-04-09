@@ -14,7 +14,7 @@ import {
   Loader2, ShoppingCart, Package, TrendingUp, AlertTriangle, Download, 
   AlertCircle, Calendar, Edit3, RefreshCw, Search, BarChart3, FileText,
   ChevronRight, ChevronDown, ExternalLink, FileWarning, CheckCircle2, XCircle, X,
-  Calculator, Check, Plus, Trash2
+  Calculator, Check, Plus, Trash2, Maximize2, Minimize2
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -1475,6 +1475,9 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   const [showDetalleModal, setShowDetalleModal] = useState(false);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
   const [tipoDetalle, setTipoDetalle] = useState('movimientos'); // 'movimientos' o 'consumos'
+  
+  // Modal pantalla completa para detalle de auditoría
+  const [showFullscreenAuditoria, setShowFullscreenAuditoria] = useState(false);
 
   // Cargar filtros guardados al montar
   useEffect(() => {
@@ -2451,6 +2454,16 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                 />
                 <span>Agrupar por Proveedor</span>
               </label>
+              {/* Botón pantalla completa */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFullscreenAuditoria(true)}
+                className="h-7 px-2"
+                title="Ver en pantalla completa"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -2781,6 +2794,167 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
           </div>
         </div>
       )}
+      
+      {/* Modal Pantalla Completa - Detalle de Auditoría */}
+      <Dialog open={showFullscreenAuditoria} onOpenChange={setShowFullscreenAuditoria}>
+        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden">
+          <DialogHeader className="px-4 py-3 border-b bg-zinc-100 flex flex-row items-center justify-between">
+            <DialogTitle className="text-lg font-semibold">
+              Detalle de Auditoría ({resultados?.length || 0} productos)
+            </DialogTitle>
+            <div className="flex items-center gap-4">
+              {/* Selector de unidad de análisis */}
+              <div className="flex items-center gap-2 bg-white rounded-lg p-1 shadow-sm">
+                <button
+                  className={`px-3 py-1 text-xs rounded ${unidadAnalisis === 'presentaciones' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-zinc-600 hover:bg-zinc-100'}`}
+                  onClick={() => setUnidadAnalisis('presentaciones')}
+                >
+                  Presentaciones
+                </button>
+                <button
+                  className={`px-3 py-1 text-xs rounded ${unidadAnalisis === 'insumos' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-zinc-600 hover:bg-zinc-100'}`}
+                  onClick={() => setUnidadAnalisis('insumos')}
+                >
+                  Insumos
+                </button>
+              </div>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="rounded border-zinc-300"
+                  checked={agruparPorProveedor}
+                  onChange={(e) => setAgruparPorProveedor(e.target.checked)}
+                />
+                <span>Agrupar por Proveedor</span>
+              </label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFullscreenAuditoria(false)}
+                className="h-8 px-2"
+              >
+                <Minimize2 className="h-4 w-4 mr-1" />
+                Minimizar
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto p-0" style={{ height: 'calc(95vh - 70px)' }}>
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-zinc-800 text-white z-10">
+                <tr>
+                  {agruparPorProveedor && <th className="py-3 px-3 text-left">Proveedor</th>}
+                  {agruparPorProveedor && <th className="py-3 px-3 text-left">Folio Pedido</th>}
+                  <th className="py-3 px-3 text-left">Producto</th>
+                  <th className="py-3 px-3 text-right">{unidadAnalisis === 'presentaciones' ? 'Inv.Ini (Pres)' : 'Inv.Ini (Ins)'}</th>
+                  <th className="py-3 px-3 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
+                  <th className="py-3 px-3 text-right">{unidadAnalisis === 'presentaciones' ? '+Mov (Pres)' : '+Mov (Ins)'}</th>
+                  <th className="py-3 px-3 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
+                  <th className="py-3 px-3 text-right">{unidadAnalisis === 'presentaciones' ? '-Cons (Pres)' : '-Cons (Ins)'}</th>
+                  <th className="py-3 px-3 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
+                  <th className="py-3 px-3 text-right">{unidadAnalisis === 'presentaciones' ? 'Teórico (Pres)' : 'Teórico (Ins)'}</th>
+                  <th className="py-3 px-3 text-right text-zinc-400">{unidadAnalisis === 'presentaciones' ? '(Ins)' : '(Pres)'}</th>
+                  <th className="py-3 px-3 text-right">Físico</th>
+                  <th className="py-3 px-3 text-right">Diferencia</th>
+                  <th className="py-3 px-3 text-right">Costo Unit</th>
+                  <th className="py-3 px-3 text-right">Importe</th>
+                  <th className="py-3 px-3 text-center">Días Inv</th>
+                  <th className="py-3 px-3 text-center">Días Obj</th>
+                  <th className="py-3 px-3 text-right">Pedido</th>
+                  <th className="py-3 px-3 text-right">Ajuste</th>
+                  <th className="py-3 px-3 text-center">Recomendar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resultados && (() => {
+                  let lastProveedor = null;
+                  let lastFolio = null;
+                  
+                  return resultados.map((r, idx) => {
+                    const rendimiento = parseFloat(r.rendimiento) || 1;
+                    
+                    const invIniValues = getConversionValues(r.inv_inicial, rendimiento);
+                    const movValues = getConversionValuesMovimientos(r.movimientos || r.entradas || 0, rendimiento);
+                    const consValues = getConversionValuesConsumo(Math.abs(r.consumos || 0), rendimiento);
+                    const teoricoValues = getConversionValuesInventario(r.existencia_teorica, rendimiento);
+                    const fisicoValues = getConversionValuesInventario(r.inv_fisico, rendimiento);
+                    const difValues = getConversionValuesInventario(r.diferencia, rendimiento);
+                    const costoUnit = getCostoSegunUnidad(r);
+                    
+                    const isNewProveedor = agruparPorProveedor && r.proveedor !== lastProveedor;
+                    const isNewFolio = agruparPorProveedor && r.folio_pedido !== lastFolio;
+                    
+                    if (agruparPorProveedor) {
+                      lastProveedor = r.proveedor;
+                      lastFolio = r.folio_pedido;
+                    }
+                    
+                    const diasObj = diasObjetivoPorSku[r.codigo] !== undefined 
+                      ? diasObjetivoPorSku[r.codigo] 
+                      : (r.dias_objetivo || diasObjetivoDefault);
+                    const diasInv = r.dias_inventario === 'N/A' ? 999 : parseFloat(r.dias_inventario);
+                    const esBajo = diasInv < diasObj;
+                    
+                    return (
+                      <tr key={idx} className={`border-b hover:bg-zinc-50 ${r.tipo_diferencia === 'contra' ? 'bg-red-50' : ''} ${isNewProveedor ? 'border-t-2 border-t-zinc-400' : ''}`}>
+                        {agruparPorProveedor && (
+                          <td className={`py-2 px-3 ${isNewProveedor ? 'font-semibold text-blue-700' : 'text-zinc-400'}`}>
+                            {isNewProveedor ? r.proveedor || 'Sin proveedor' : ''}
+                          </td>
+                        )}
+                        {agruparPorProveedor && (
+                          <td className={`py-2 px-3 ${isNewFolio ? 'font-medium' : 'text-zinc-400'}`}>
+                            {isNewFolio ? r.folio_pedido || '-' : ''}
+                          </td>
+                        )}
+                        <td className="py-2 px-3 font-medium">{r.producto}</td>
+                        <td className="py-2 px-3 text-right">{invIniValues.principal}</td>
+                        <td className="py-2 px-3 text-right text-zinc-400">{invIniValues.alternativo}</td>
+                        <td className="py-2 px-3 text-right text-green-600">+{movValues.principal}</td>
+                        <td className="py-2 px-3 text-right text-zinc-400">{movValues.alternativo}</td>
+                        <td className="py-2 px-3 text-right text-red-600">-{consValues.principal}</td>
+                        <td className="py-2 px-3 text-right text-zinc-400">{consValues.alternativo}</td>
+                        <td className="py-2 px-3 text-right font-medium">{teoricoValues.principal}</td>
+                        <td className="py-2 px-3 text-right text-zinc-400">{teoricoValues.alternativo}</td>
+                        <td className="py-2 px-3 text-right">{fisicoValues.principal}</td>
+                        <td className={`py-2 px-3 text-right font-bold ${r.diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {r.diferencia >= 0 ? '+' : ''}{difValues.principal}
+                        </td>
+                        <td className="py-2 px-3 text-right text-zinc-500">{formatCurrency(costoUnit)}</td>
+                        <td className={`py-2 px-3 text-right font-semibold ${r.importe_diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(r.importe_diferencia)}
+                        </td>
+                        <td className="py-2 px-3 text-center">
+                          <span className={`px-2 py-0.5 rounded text-xs ${
+                            r.dias_inventario === 'N/A' ? 'bg-zinc-100' :
+                            esBajo ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                          }`}>
+                            {r.dias_inventario}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-center">{diasObj}</td>
+                        <td className="py-2 px-3 text-right">{r.cantidad_pedido || '-'}</td>
+                        <td className="py-2 px-3 text-right">
+                          {r.ajuste_sugerido ? formatNumber(r.ajuste_sugerido) : '-'}
+                        </td>
+                        <td className="py-2 px-3 text-center">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            r.recomendacion === 'COMPRAR' ? 'bg-orange-100 text-orange-700' :
+                            r.recomendacion === 'OK' ? 'bg-green-100 text-green-700' :
+                            r.recomendacion === 'REDUCIR' ? 'bg-blue-100 text-blue-700' :
+                            'bg-zinc-100 text-zinc-600'
+                          }`}>
+                            {r.recomendacion || '-'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       {/* Modal de Captura Manual de Inventario Físico - ARRASTRABLE */}
       {mostrarCapturaManual && (
