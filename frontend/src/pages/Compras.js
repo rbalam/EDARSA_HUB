@@ -2470,8 +2470,8 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="max-h-[400px] overflow-auto">
-              <table className="w-full text-xs">
+            <div className="max-h-[400px] overflow-auto overflow-x-auto">
+              <table className="w-full min-w-max text-xs">
                 <thead className="sticky top-0 bg-zinc-800 text-white">
                   <tr>
                     {agruparPorProveedor && <th className="py-2 px-2 text-left">Proveedor</th>}

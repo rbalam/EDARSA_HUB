@@ -861,6 +861,7 @@ const validateFilters = (filters) => {
 | 2025-04-09 | 2.0 | REGLA UX: Modal de captura arrastrable + botón Limpiar + persistencia | E1 Agent |
 | 2025-04-09 | 2.1 | REGLA UX: Scroll horizontal en modal de Pantalla Completa (I.7) | E1 Agent |
 | 2025-04-09 | 2.2 | REGLA UX: Auto-scroll con Tab en Captura Manual de Inventario (I.8) | E1 Agent |
+| 2025-04-09 | 2.3 | REGLA UX: Scroll horizontal en tabla Detalle de Auditoría (vista normal) (I.9) | E1 Agent |
 
 ---
 
@@ -1319,6 +1320,44 @@ const handleInputFocus = (e) => {
 
 **Archivo afectado:**
 - ✅ `/app/frontend/src/pages/Compras.js` - Modal de Captura Manual
+
+---
+
+### I.9 Scroll Horizontal en Tabla "Detalle de Auditoría" (Vista Normal)
+
+**IMPLEMENTACIÓN (2025-04-09):**
+
+La tabla de "Detalle de Auditoría" en la vista normal (Card dentro del módulo Compras) tiene ~19 columnas. En pantallas con resolución menor, las últimas columnas (Días Inv, Días Obj, Pedido, Ajuste, Recomendar) se recortaban sin posibilidad de verlas.
+
+**Solución implementada:**
+Se agregó scroll horizontal al contenedor de la tabla:
+
+```jsx
+// ANTES (sin scroll horizontal)
+<CardContent className="p-0">
+  <div className="max-h-[400px] overflow-auto">
+    <table className="w-full text-xs">
+
+// DESPUÉS (con scroll horizontal)
+<CardContent className="p-0">
+  <div className="max-h-[400px] overflow-auto overflow-x-auto">
+    <table className="w-full min-w-max text-xs">
+```
+
+**Clases CSS modificadas:**
+
+| Elemento | Antes | Después | Propósito |
+|----------|-------|---------|-----------|
+| Div contenedor | `overflow-auto` | `overflow-auto overflow-x-auto` | Habilita scroll horizontal |
+| Tabla | `w-full` | `w-full min-w-max` | Fuerza ancho mínimo según contenido |
+
+**Comportamiento:**
+- **Scroll vertical:** Se mantiene igual (max-height 400px)
+- **Scroll horizontal:** Nueva barra de desplazamiento cuando las columnas exceden el ancho visible
+- **Header sticky:** Se mantiene fijo al hacer scroll vertical
+
+**Archivo afectado:**
+- ✅ `/app/frontend/src/pages/Compras.js` (líneas 2473-2474)
 
 ---
 
