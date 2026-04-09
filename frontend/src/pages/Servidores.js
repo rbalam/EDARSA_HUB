@@ -114,15 +114,32 @@ const Servidores = () => {
           toast.warning(`${apiConn.name}: API OK pero SQL Server no disponible`);
         }
       } else {
-        setApiTestStatus(prev => ({
-          ...prev,
-          [apiConn.id]: { 
-            loading: false, 
-            status: 'error', 
-            message: `❌ Error: ${response.data.error || 'Sin respuesta'}` 
-          }
-        }));
-        toast.error(`${apiConn.name}: Error de conexión`);
+        // La API respondió pero con success: false
+        // Verificar si es un error de SQL Server (HTTP 500 en la respuesta)
+        const errorText = response.data.error || 'Sin respuesta';
+        const isSqlError = errorText.includes('HTTP 500') || errorText.includes('SQL Server') || errorText.includes('ODBC');
+        
+        if (isSqlError) {
+          setApiTestStatus(prev => ({
+            ...prev,
+            [apiConn.id]: { 
+              loading: false, 
+              status: 'warning', 
+              message: `⚠️ API responde pero SQL Server local no disponible (timeout o apagado)` 
+            }
+          }));
+          toast.warning(`${apiConn.name}: API OK pero SQL Server local no disponible`);
+        } else {
+          setApiTestStatus(prev => ({
+            ...prev,
+            [apiConn.id]: { 
+              loading: false, 
+              status: 'error', 
+              message: `❌ Error: ${errorText.substring(0, 100)}` 
+            }
+          }));
+          toast.error(`${apiConn.name}: Error de conexión`);
+        }
       }
     } catch (error) {
       const errorMsg = error.response?.data?.detail || error.message || 'Error de conexión';
