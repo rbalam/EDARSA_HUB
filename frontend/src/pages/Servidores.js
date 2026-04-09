@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import QueryConfigWizard from '@/components/QueryConfigWizard';
 import { formatNombreSucursal } from '@/lib/formatSucursal';
@@ -23,6 +23,50 @@ const Servidores = () => {
   const [selectedServer, setSelectedServer] = useState(null);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionValid, setConnectionValid] = useState(false);
+  
+  // Estado para el tab activo (SQL Servers o Conexiones API)
+  const [activeMainTab, setActiveMainTab] = useState('sql');
+  
+  // Estado para Conexiones API
+  const [apiConnections, setApiConnections] = useState([
+    {
+      id: 'api_qro_local',
+      name: '130° QRO LOCAL',
+      url: 'http://54.39.104.176:8001/query',
+      tipo: 'MPRO',
+      servidor_padre: 'ManagementPro',
+      sucursal_destino: 'Querétaro',
+      hora_replica: '04:00',
+      solo_ventas_dia: true,
+      activo: true,
+      status: null
+    },
+    {
+      id: 'api_origen_local',
+      name: 'ORIGEN LOCAL',
+      url: 'http://54.39.104.176:8000/query',
+      tipo: 'MPRO',
+      servidor_padre: 'ManagementPro',
+      sucursal_destino: 'Origen',
+      hora_replica: '04:00',
+      solo_ventas_dia: true,
+      activo: true,
+      status: null
+    }
+  ]);
+  const [apiDialogOpen, setApiDialogOpen] = useState(false);
+  const [editingApi, setEditingApi] = useState(null);
+  const [apiFormData, setApiFormData] = useState({
+    name: '',
+    url: '',
+    api_key: '',
+    tipo: 'MPRO',
+    servidor_padre: '',
+    sucursal_destino: '',
+    hora_replica: '04:00',
+    solo_ventas_dia: true,
+    activo: true
+  });
   
   // Estado para ping de servidores
   const [pingStatus, setPingStatus] = useState({}); // { server_id: { status, message, loading } }
@@ -394,40 +438,56 @@ const Servidores = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-extrabold text-zinc-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Servidores SQL
+            Servidores
           </h1>
-          <p className="text-zinc-600 mt-1">Gestiona las conexiones a bases de datos</p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={pingAllServers}
-            variant="outline"
-            className="border-blue-200 text-blue-700 hover:bg-blue-50"
-          >
-            <Wifi className="h-4 w-4 mr-2" />
-            Ping Todos
-          </Button>
-          <Button 
-            onClick={() => {
-              resetForm();
-              setDialogOpen(true);
-            }}
-            className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
-            data-testid="add-server-button"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Agregar Servidor
-          </Button>
+          <p className="text-zinc-600 mt-1">Gestiona las conexiones a bases de datos y APIs</p>
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-900"></div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {servers.map((server) => (
+      {/* Tabs principales: SQL Servers | Conexiones API */}
+      <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+          <TabsTrigger value="sql" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            SQL Servers
+          </TabsTrigger>
+          <TabsTrigger value="api" className="flex items-center gap-2">
+            <Globe className="h-4 w-4" />
+            Conexiones API
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab: SQL Servers */}
+        <TabsContent value="sql">
+          <div className="flex items-center justify-end mb-4 gap-2">
+            <Button 
+              onClick={pingAllServers}
+              variant="outline"
+              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+            >
+              <Wifi className="h-4 w-4 mr-2" />
+              Ping Todos
+            </Button>
+            <Button 
+              onClick={() => {
+                resetForm();
+                setDialogOpen(true);
+              }}
+              className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
+              data-testid="add-server-button"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar Servidor
+            </Button>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-900"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {servers.map((server) => (
             <Card key={server.id} className="border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors" data-testid="server-card">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
@@ -634,6 +694,339 @@ const Servidores = () => {
           ))}
         </div>
       )}
+        </TabsContent>
+
+        {/* Tab: Conexiones API */}
+        <TabsContent value="api">
+          <div className="flex items-center justify-end mb-4 gap-2">
+            <Button 
+              onClick={() => {
+                setEditingApi(null);
+                setApiFormData({
+                  name: '',
+                  url: '',
+                  api_key: '',
+                  tipo: 'MPRO',
+                  servidor_padre: '',
+                  sucursal_destino: '',
+                  hora_replica: '04:00',
+                  solo_ventas_dia: true,
+                  activo: true
+                });
+                setApiDialogOpen(true);
+              }}
+              className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar Conexión API
+            </Button>
+          </div>
+
+          {/* Info Box */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-blue-900">Conexiones API Locales</h4>
+                <p className="text-sm text-blue-800 mt-1">
+                  Estas conexiones obtienen las <strong>ventas del día en tiempo real</strong> desde servidores locales. 
+                  Los datos se replican al servidor en la nube por la noche, evitando duplicación automáticamente.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {apiConnections.map((apiConn) => (
+              <Card key={apiConn.id} className="border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="bg-purple-50 p-2 rounded-lg">
+                          <Globe className="h-5 w-5 text-purple-600" />
+                        </div>
+                        {apiConn.activo ? (
+                          <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white" title="Activo" />
+                        ) : (
+                          <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-zinc-400 border-2 border-white" title="Inactivo" />
+                        )}
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-semibold">{apiConn.name}</CardTitle>
+                        <p className="text-xs text-zinc-500 mt-1">API {apiConn.tipo}</p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className={apiConn.activo ? "bg-green-50 text-green-700 border-green-200" : "bg-zinc-100 text-zinc-500"}>
+                      {apiConn.activo ? 'Activo' : 'Inactivo'}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600">URL:</span>
+                      <span className="font-mono text-zinc-900 text-xs truncate max-w-[180px]">{apiConn.url}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600">Servidor Padre:</span>
+                      <span className="text-zinc-900">{apiConn.servidor_padre}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600">Sucursal Destino:</span>
+                      <span className="font-medium text-zinc-900">{apiConn.sucursal_destino}</span>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-zinc-100">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-zinc-500 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Hora de Réplica:
+                        </span>
+                        <span className="text-xs font-mono bg-zinc-100 px-2 py-0.5 rounded">{apiConn.hora_replica}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-zinc-100">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-zinc-500">Solo Ventas del Día:</span>
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          {apiConn.solo_ventas_dia ? 'Sí' : 'No'}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-zinc-100">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-zinc-500">Visible en Operaciones:</span>
+                        <span className="text-xs text-zinc-400">No (solo interno)</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 mt-4">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setEditingApi(apiConn);
+                        setApiFormData({
+                          name: apiConn.name,
+                          url: apiConn.url,
+                          api_key: '',
+                          tipo: apiConn.tipo,
+                          servidor_padre: apiConn.servidor_padre,
+                          sucursal_destino: apiConn.sucursal_destino,
+                          hora_replica: apiConn.hora_replica,
+                          solo_ventas_dia: apiConn.solo_ventas_dia,
+                          activo: apiConn.activo
+                        });
+                        setApiDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => {
+                        // Toggle activo/inactivo
+                        setApiConnections(prev => prev.map(a => 
+                          a.id === apiConn.id ? {...a, activo: !a.activo} : a
+                        ));
+                        toast.success(apiConn.activo ? 'Conexión desactivada' : 'Conexión activada');
+                      }}
+                    >
+                      {apiConn.activo ? 'Desactivar' : 'Activar'}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        if (window.confirm('¿Eliminar esta conexión API?')) {
+                          setApiConnections(prev => prev.filter(a => a.id !== apiConn.id));
+                          toast.success('Conexión eliminada');
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {apiConnections.length === 0 && (
+            <div className="text-center py-12 text-zinc-500">
+              <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No hay conexiones API configuradas</p>
+              <p className="text-sm mt-1">Agrega una conexión para obtener datos en tiempo real</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Dialog para agregar/editar Conexión API */}
+      <Dialog open={apiDialogOpen} onOpenChange={setApiDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              {editingApi ? 'Editar Conexión API' : 'Nueva Conexión API'}
+            </DialogTitle>
+            <DialogDescription>
+              Configura la conexión a una API local para obtener ventas en tiempo real
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="api_name">Nombre</Label>
+              <Input
+                id="api_name"
+                value={apiFormData.name}
+                onChange={(e) => setApiFormData({...apiFormData, name: e.target.value})}
+                placeholder="130° QRO LOCAL"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="api_url">URL del Endpoint</Label>
+              <Input
+                id="api_url"
+                value={apiFormData.url}
+                onChange={(e) => setApiFormData({...apiFormData, url: e.target.value})}
+                placeholder="http://54.39.104.176:8001/query"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="api_key">API Key</Label>
+              <Input
+                id="api_key"
+                type="password"
+                value={apiFormData.api_key}
+                onChange={(e) => setApiFormData({...apiFormData, api_key: e.target.value})}
+                placeholder={editingApi ? '••••••••' : 'EDARSA_2026_SECURE_KEY'}
+              />
+              <p className="text-xs text-zinc-500">Se almacena de forma segura en variables de entorno</p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="api_tipo">Tipo de Sistema</Label>
+                <Select 
+                  value={apiFormData.tipo} 
+                  onValueChange={(value) => setApiFormData({...apiFormData, tipo: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MPRO">MPRO</SelectItem>
+                    <SelectItem value="SoftRestaurant">SoftRestaurant</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="api_hora">Hora de Réplica</Label>
+                <Input
+                  id="api_hora"
+                  type="time"
+                  value={apiFormData.hora_replica}
+                  onChange={(e) => setApiFormData({...apiFormData, hora_replica: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="api_servidor">Servidor Padre (Nube)</Label>
+                <Select 
+                  value={apiFormData.servidor_padre} 
+                  onValueChange={(value) => setApiFormData({...apiFormData, servidor_padre: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {servers.map(s => (
+                      <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="api_sucursal">Sucursal Destino</Label>
+                <Input
+                  id="api_sucursal"
+                  value={apiFormData.sucursal_destino}
+                  onChange={(e) => setApiFormData({...apiFormData, sucursal_destino: e.target.value})}
+                  placeholder="Querétaro"
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="api_solo_ventas"
+                checked={apiFormData.solo_ventas_dia}
+                onCheckedChange={(checked) => setApiFormData({...apiFormData, solo_ventas_dia: checked})}
+              />
+              <Label htmlFor="api_solo_ventas" className="text-sm">
+                Solo obtener ventas del día actual (evita duplicación)
+              </Label>
+            </div>
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+              <p className="text-xs text-amber-900">
+                <strong>Nota:</strong> Esta conexión obtiene ventas del día que se suman a las del servidor padre. 
+                Por la noche (a las {apiFormData.hora_replica || '04:00'}) los datos se replican al servidor en la nube, 
+                momento en que esta API deja de sumar para evitar duplicación.
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApiDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => {
+                if (!apiFormData.name || !apiFormData.url) {
+                  toast.error('Completa nombre y URL');
+                  return;
+                }
+                
+                if (editingApi) {
+                  setApiConnections(prev => prev.map(a => 
+                    a.id === editingApi.id 
+                      ? {...a, ...apiFormData, id: editingApi.id}
+                      : a
+                  ));
+                  toast.success('Conexión actualizada');
+                } else {
+                  const newApi = {
+                    ...apiFormData,
+                    id: `api_${Date.now()}`,
+                    status: null
+                  };
+                  setApiConnections(prev => [...prev, newApi]);
+                  toast.success('Conexión agregada');
+                }
+                setApiDialogOpen(false);
+              }}
+              className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
+            >
+              {editingApi ? 'Guardar Cambios' : 'Agregar Conexión'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add/Edit Server Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
