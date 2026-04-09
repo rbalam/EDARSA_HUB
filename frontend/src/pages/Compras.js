@@ -1942,9 +1942,22 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
       });
       
       setResultados(resultadosCorregidos);
-      setResumen(response.data.resumen);
       
-      if (response.data.resumen?.requiere_acta) {
+      // === FIX: Recalcular resumen con importes corregidos ===
+      const resumenCorregido = {
+        ...response.data.resumen,
+        importe_favor: resultadosCorregidos
+          .filter(r => r.importe_diferencia >= 0)
+          .reduce((sum, r) => sum + r.importe_diferencia, 0),
+        importe_contra: Math.abs(resultadosCorregidos
+          .filter(r => r.importe_diferencia < 0)
+          .reduce((sum, r) => sum + r.importe_diferencia, 0)),
+        total_diferencia: resultadosCorregidos
+          .reduce((sum, r) => sum + r.importe_diferencia, 0)
+      };
+      setResumen(resumenCorregido);
+      
+      if (resumenCorregido?.requiere_acta) {
         toast.warning('Se detectaron diferencias en contra. Se requiere Acta de Auditoría.');
       } else {
         toast.success('Auditoría completada sin diferencias significativas');
