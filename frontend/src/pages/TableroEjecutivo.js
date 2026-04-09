@@ -807,14 +807,24 @@ export default function TableroEjecutivo() {
                     <span className="text-xs text-zinc-400 block">
                       {esMultiMes ? 'vs Ventas Año Ant.' : 'vs Año Ant.'}
                     </span>
-                    <p className={`text-sm font-bold ${(esMultiMes 
-                        ? ((((data.totales.ventas / (data.periodo?.dias_transcurridos || 1)) * 365) - (data.totales.ventas_año_completo || 0)) / (data.totales.ventas_año_completo || 1) * 100)
-                        : (data.totales.var_proy_vs_año || 0)
-                      ) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatPercent(esMultiMes 
-                        ? ((((data.totales.ventas / (data.periodo?.dias_transcurridos || 1)) * 365) - (data.totales.ventas_año_completo || 0)) / (data.totales.ventas_año_completo || 1) * 100)
-                        : (data.totales.var_proy_vs_año || 0)
-                      )}
+                    <p className={`text-sm font-bold ${(() => {
+                      if (esMultiMes) {
+                        // Proyección 2026 vs Proyección 2025 (ambas anualizadas)
+                        const proy2026 = (data.totales.ventas / (data.periodo?.dias_transcurridos || 1)) * 365;
+                        const proy2025 = (data.totales.ventas_año / (data.periodo?.dias_transcurridos || 1)) * 365;
+                        return proy2025 > 0 ? ((proy2026 - proy2025) / proy2025 * 100) : 0;
+                      }
+                      return data.totales.var_proy_vs_año || 0;
+                    })() >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {formatPercent((() => {
+                        if (esMultiMes) {
+                          // Proyección 2026 vs Proyección 2025 (ambas anualizadas)
+                          const proy2026 = (data.totales.ventas / (data.periodo?.dias_transcurridos || 1)) * 365;
+                          const proy2025 = (data.totales.ventas_año / (data.periodo?.dias_transcurridos || 1)) * 365;
+                          return proy2025 > 0 ? ((proy2026 - proy2025) / proy2025 * 100) : 0;
+                        }
+                        return data.totales.var_proy_vs_año || 0;
+                      })())}
                     </p>
                   </div>
                 </div>
