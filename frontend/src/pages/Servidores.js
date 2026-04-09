@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock } from 'lucide-react';
+import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import QueryConfigWizard from '@/components/QueryConfigWizard';
 import { formatNombreSucursal } from '@/lib/formatSucursal';
@@ -73,6 +73,79 @@ const Servidores = () => {
   
   // Estado para ping de servidores
   const [pingStatus, setPingStatus] = useState({}); // { server_id: { status, message, loading } }
+  
+  // Estado para testing de APIs locales
+  const [apiTestStatus, setApiTestStatus] = useState({}); // { api_id: { status: 'success'|'warning'|'error', message, loading } }
+  
+  // Función para probar conexión de API local
+  const testApiConnection = async (apiConn) => {
+    setApiTestStatus(prev => ({
+      ...prev,
+      [apiConn.id]: { loading: true, status: null, message: 'Probando conexión...' }
+    }));
+    
+    try {
+      // Llamar al endpoint de prueba en el backend
+      const response = await api.post('/api/test-api-connection', {
+        url: apiConn.url,
+        api_key: 'EDARSA_2026_SECURE_KEY' // Por ahora hardcoded, después de .env
+      });
+      
+      if (response.data.success) {
+        if (response.data.sql_connected) {
+          setApiTestStatus(prev => ({
+            ...prev,
+            [apiConn.id]: { 
+              loading: false, 
+              status: 'success', 
+              message: `✅ API y SQL Server conectados. Ventas hoy: $${response.data.ventas_hoy?.toLocaleString() || 0}` 
+            }
+          }));
+          toast.success(`${apiConn.name}: Conexión exitosa`);
+        } else {
+          setApiTestStatus(prev => ({
+            ...prev,
+            [apiConn.id]: { 
+              loading: false, 
+              status: 'warning', 
+              message: `⚠️ API responde pero SQL Server no disponible: ${response.data.sql_error || 'Error desconocido'}` 
+            }
+          }));
+          toast.warning(`${apiConn.name}: API OK pero SQL Server no disponible`);
+        }
+      } else {
+        setApiTestStatus(prev => ({
+          ...prev,
+          [apiConn.id]: { 
+            loading: false, 
+            status: 'error', 
+            message: `❌ Error: ${response.data.error || 'Sin respuesta'}` 
+          }
+        }));
+        toast.error(`${apiConn.name}: Error de conexión`);
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || error.message || 'Error de conexión';
+      setApiTestStatus(prev => ({
+        ...prev,
+        [apiConn.id]: { 
+          loading: false, 
+          status: 'error', 
+          message: `❌ ${errorMsg}` 
+        }
+      }));
+      toast.error(`${apiConn.name}: ${errorMsg}`);
+    }
+  };
+  
+  // Función para probar todas las APIs
+  const testAllApis = async () => {
+    for (const apiConn of apiConnections) {
+      if (apiConn.activo) {
+        await testApiConnection(apiConn);
+      }
+    }
+  };
   
   // Estado para modo edición
   const [editingServer, setEditingServer] = useState(null);
@@ -724,6 +797,14 @@ const Servidores = () => {
               <Plus className="h-4 w-4 mr-2" />
               Agregar Conexión API
             </Button>
+            <Button 
+              onClick={testAllApis}
+              variant="outline"
+              className="border-purple-200 text-purple-700 hover:bg-purple-50"
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Probar Todas
+            </Button>
           </div>
 
           {/* Info Box */}
@@ -833,9 +914,49 @@ const Servidores = () => {
                     </div>
                   </div>
                   
+                  {/* Estado del test de conexión */}
+                  {apiTestStatus[apiConn.id] && (
+                    <div className={`mt-3 p-2 rounded-lg text-xs ${
+                      apiTestStatus[apiConn.id].status === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
+                      apiTestStatus[apiConn.id].status === 'warning' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
+                      apiTestStatus[apiConn.id].status === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
+                      'bg-zinc-50 text-zinc-600 border border-zinc-200'
+                    }`}>
+                      {apiTestStatus[apiConn.id].loading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span>Probando conexión...</span>
+                        </div>
+                      ) : (
+                        <span>{apiTestStatus[apiConn.id].message}</span>
+                      )}
+                    </div>
+                  )}
+                  
                   {/* Botones de acciones */}
                   <div className="flex flex-col gap-2 mt-4">
-                    {/* Botón principal: Editar Consultas SQL */}
+                    {/* Botón Probar Conexión */}
+                    <Button 
+                      variant="outline"
+                      size="sm" 
+                      className={`w-full ${
+                        apiTestStatus[apiConn.id]?.status === 'success' ? 'border-green-300 text-green-700 hover:bg-green-50' :
+                        apiTestStatus[apiConn.id]?.status === 'warning' ? 'border-amber-300 text-amber-700 hover:bg-amber-50' :
+                        apiTestStatus[apiConn.id]?.status === 'error' ? 'border-red-300 text-red-700 hover:bg-red-50' :
+                        ''
+                      }`}
+                      onClick={() => testApiConnection(apiConn)}
+                      disabled={apiTestStatus[apiConn.id]?.loading}
+                    >
+                      {apiTestStatus[apiConn.id]?.loading ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Zap className="h-4 w-4 mr-1" />
+                      )}
+                      Probar Conexión
+                    </Button>
+                    
+                    {/* Botón: Editar Consultas SQL */}
                     <Button 
                       variant="outline"
                       size="sm" 

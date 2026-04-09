@@ -255,6 +255,67 @@ def sumar_ventas_api_local_a_sucursal(server_host: str, sucursal_nombre: str, fe
     # No se encontró API local para esta sucursal
     return {"ventas": 0, "cheques": 0, "pax": 0, "aplicado": False, "razon": "sin_api_local"}
 
+# ============= ENDPOINT: Test API Connection =============
+class TestApiRequest(BaseModel):
+    url: str
+    api_key: str
+
+@api_router.post("/test-api-connection")
+async def test_api_connection(request: TestApiRequest):
+    """
+    Prueba la conexión a una API MPRO local.
+    Retorna el estado de la API y del SQL Server local.
+    """
+    import requests
+    
+    try:
+        # Query simple para probar conexión
+        test_query = "SELECT ISNULL(SUM(cd_importe), 0) as ventas FROM Comanda INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio WHERE CONVERT(date, co_fecha, 101) = CONVERT(date, GETDATE(), 101)"
+        
+        headers = {"x-api-key": request.api_key}
+        params = {"sql": test_query}
+        
+        response = requests.get(request.url, headers=headers, params=params, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Verificar si hubo error de SQL
+            if isinstance(data, dict) and "detail" in data:
+                # La API respondió pero hubo error en SQL
+                return {
+                    "success": True,
+                    "sql_connected": False,
+                    "sql_error": data.get("detail", "Error desconocido"),
+                    "ventas_hoy": 0
+                }
+            
+            # Extraer ventas
+            ventas = 0
+            if isinstance(data, list) and len(data) > 0:
+                ventas = float(data[0].get("ventas", 0) or 0)
+            elif isinstance(data, dict):
+                ventas = float(data.get("ventas", 0) or 0)
+            
+            return {
+                "success": True,
+                "sql_connected": True,
+                "ventas_hoy": ventas,
+                "message": f"Conexión exitosa. Ventas hoy: ${ventas:,.2f}"
+            }
+        else:
+            return {
+                "success": False,
+                "error": f"HTTP {response.status_code}: {response.text[:200]}"
+            }
+            
+    except requests.exceptions.Timeout:
+        return {"success": False, "error": "Timeout - La API no responde"}
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "error": "Sin conexión - No se puede alcanzar la API"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 # ============= MODELS =============
 
 class UserRole(BaseModel):
