@@ -1,8 +1,8 @@
 # CATÁLOGO MAESTRO DE REGLAS DE FILTROS - EDARSA HUB
 
-**Versión:** 1.0  
+**Versión:** 1.1  
 **Fecha de creación:** 2025-04-08  
-**Última actualización:** 2025-04-08  
+**Última actualización:** 2025-04-09  
 **Estado:** ACTIVO - Fuente de Verdad del Sistema
 
 ---
@@ -1104,6 +1104,92 @@ useEffect(() => {
 ```
 
 **Archivo afectado:**
+- ✅ `/app/frontend/src/pages/Compras.js`
+
+---
+
+## I. FUNCIONALIDAD: VISTA PANTALLA COMPLETA EN REPORTES
+
+### I.1 Descripción General
+
+Todos los reportes con tablas de datos extensas deben incluir un botón de **"Pantalla Completa"** para mejorar la experiencia de análisis de datos.
+
+### I.2 Especificación Técnica
+
+| Atributo | Valor |
+|----------|-------|
+| **Propósito** | Visualizar tablas de datos al 95% de la pantalla |
+| **Trigger** | Botón con icono `Maximize2` en el header de la tabla |
+| **Cerrar** | Botón "Minimizar" con icono `Minimize2` |
+| **Componente UI** | Dialog de shadcn/ui |
+
+### I.3 Implementación Estándar
+
+```jsx
+// === Estado requerido ===
+const [showFullscreen, setShowFullscreen] = useState(false);
+
+// === Imports de iconos ===
+import { Maximize2, Minimize2 } from 'lucide-react';
+
+// === Botón en header de Card ===
+<Button
+  variant="outline"
+  size="sm"
+  onClick={() => setShowFullscreen(true)}
+  className="h-7 px-2"
+  title="Ver en pantalla completa"
+>
+  <Maximize2 className="h-4 w-4" />
+</Button>
+
+// === Modal de pantalla completa ===
+<Dialog open={showFullscreen} onOpenChange={setShowFullscreen}>
+  <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden">
+    <DialogHeader className="px-4 py-3 border-b bg-zinc-100 flex flex-row items-center justify-between">
+      <DialogTitle>Título del Reporte ({data?.length || 0} registros)</DialogTitle>
+      <div className="flex items-center gap-4">
+        {/* Controles del reporte (filtros, toggles) */}
+        <Button variant="ghost" size="sm" onClick={() => setShowFullscreen(false)}>
+          <Minimize2 className="h-4 w-4 mr-1" />
+          Minimizar
+        </Button>
+      </div>
+    </DialogHeader>
+    <div className="flex-1 overflow-auto" style={{ height: 'calc(95vh - 70px)' }}>
+      {/* Tabla completa aquí */}
+    </div>
+  </DialogContent>
+</Dialog>
+```
+
+### I.4 Módulos con Pantalla Completa Implementada
+
+| Módulo | Componente | Estado | Fecha |
+|--------|------------|--------|-------|
+| Compras | `showFullscreenAuditoria` | ✅ Implementado | 2025-04-09 |
+| Comercial | Pendiente | 🔲 Por implementar | - |
+| Nóminas | Pendiente | 🔲 Por implementar | - |
+| RRHH | Pendiente | 🔲 Por implementar | - |
+
+### I.5 Características del Modal Fullscreen
+
+1. **Dimensiones:** 95vw × 95vh (casi toda la pantalla)
+2. **Header fijo:** Contiene título, controles y botón minimizar
+3. **Tabla con scroll:** Header sticky, cuerpo scrolleable
+4. **Controles replicados:** Los mismos filtros/toggles que en la vista normal
+5. **Cierre:** Click en "Minimizar" o fuera del modal
+
+### I.6 Archivos Modificados para Compras.js
+
+| Cambio | Descripción |
+|--------|-------------|
+| Estado | `const [showFullscreenAuditoria, setShowFullscreenAuditoria] = useState(false)` |
+| Iconos | `Maximize2, Minimize2` agregados a imports de lucide-react |
+| Botón | Agregado en `CardHeader` del "Detalle de Auditoría" |
+| Modal | `<Dialog>` con tabla completa replicada |
+
+**Archivos afectados:**
 - ✅ `/app/frontend/src/pages/Compras.js`
 
 ---
