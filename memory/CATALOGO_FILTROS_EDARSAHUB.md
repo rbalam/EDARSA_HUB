@@ -858,6 +858,7 @@ const validateFilters = (filters) => {
 | 2025-04-09 | 1.7 | REGLA UX: Auto-actualización de filtros en Tablero Ejecutivo | E1 Agent |
 | 2025-04-09 | 1.8 | FIX: Multiselección de meses en Dashboard Comercial (MPRO + SoftRestaurant) | E1 Agent |
 | 2025-04-09 | 1.9 | REGLA CRÍTICA: Captura de inventario solo con productos de requisiciones seleccionadas | E1 Agent |
+| 2025-04-09 | 2.0 | REGLA UX: Modal de captura arrastrable + botón Limpiar + persistencia | E1 Agent |
 
 ---
 
@@ -1026,6 +1027,84 @@ if (folioPedido.length > 0) {
 **⚠️ ADVERTENCIA:**
 Esta regla ha sido modificada incorrectamente 3 veces anteriormente.
 **NO MODIFICAR** sin aprobación explícita del usuario.
+
+---
+
+### I.2 Modal de Captura - Arrastrable y Persistente
+
+**IMPLEMENTACIÓN (2025-04-09):**
+
+El modal de "Captura Manual de Inventario Físico" debe ser **arrastrable** para poder ver el fondo, y debe **conservar el inventario capturado** hasta que se limpie explícitamente.
+
+**Características implementadas:**
+
+| Característica | Descripción |
+|----------------|-------------|
+| **Arrastrable** | Arrastrar desde la barra de título (bg-blue-50) |
+| **Persistencia** | Inventario guardado en localStorage |
+| **Botón Limpiar** | Resetea todos los valores a 0 |
+| **Fondo semi-transparente** | `bg-black/30` permite ver el contenido detrás |
+
+**Código de implementación (Compras.js):**
+
+```javascript
+// Estados para modal arrastrable
+const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+const [isDragging, setIsDragging] = useState(false);
+const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+// Handlers para arrastrar
+const handleMouseDown = (e) => {
+  if (e.target.closest('.modal-header-drag')) {
+    setIsDragging(true);
+    setDragOffset({
+      x: e.clientX - modalPosition.x,
+      y: e.clientY - modalPosition.y
+    });
+  }
+};
+
+// Función para limpiar inventario
+const limpiarInventarioCaptura = () => {
+  setInventarioManualCaptura(prev => prev.map(item => ({
+    ...item,
+    cantidadInsumos: 0,
+    cantidadPresentaciones: 0,
+    totalInsumos: 0
+  })));
+  localStorage.removeItem('inventarioManualCaptura_backup');
+};
+
+// Guardar en localStorage cuando cambia
+useEffect(() => {
+  if (inventarioManualCaptura.length > 0 && 
+      inventarioManualCaptura.some(i => i.totalInsumos > 0)) {
+    localStorage.setItem('inventarioManualCaptura_backup', 
+      JSON.stringify(inventarioManualCaptura));
+  }
+}, [inventarioManualCaptura]);
+```
+
+**Estructura del modal:**
+```jsx
+<div 
+  className="bg-white rounded-lg shadow-xl..."
+  style={{
+    transform: `translate(${modalPosition.x}px, ${modalPosition.y}px)`,
+    cursor: isDragging ? 'grabbing' : 'default'
+  }}
+>
+  <div 
+    className="modal-header-drag ... cursor-grab"
+    onMouseDown={handleMouseDown}
+  >
+    {/* Contenido del header */}
+  </div>
+</div>
+```
+
+**Archivo afectado:**
+- ✅ `/app/frontend/src/pages/Compras.js`
 
 ---
 

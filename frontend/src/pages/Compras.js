@@ -14,7 +14,7 @@ import {
   Loader2, ShoppingCart, Package, TrendingUp, AlertTriangle, Download, 
   AlertCircle, Calendar, Edit3, RefreshCw, Search, BarChart3, FileText,
   ChevronRight, ChevronDown, ExternalLink, FileWarning, CheckCircle2, XCircle, X,
-  Calculator, Check, Plus
+  Calculator, Check, Plus, Trash2
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -1370,6 +1370,68 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   const [calculadoraInsumos, setCalculadoraInsumos] = useState('');
   const [calculadoraPresentaciones, setCalculadoraPresentaciones] = useState('');
   
+  // Estados para modal arrastrable de captura
+  const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  
+  // Función para limpiar inventario capturado
+  const limpiarInventarioCaptura = () => {
+    setInventarioManualCaptura(prev => prev.map(item => ({
+      ...item,
+      cantidadInsumos: 0,
+      cantidadPresentaciones: 0,
+      totalInsumos: 0
+    })));
+    localStorage.removeItem('inventarioManualCaptura_backup');
+  };
+  
+  // Guardar inventario en localStorage cuando cambia
+  useEffect(() => {
+    if (inventarioManualCaptura.length > 0 && inventarioManualCaptura.some(i => i.totalInsumos > 0)) {
+      localStorage.setItem('inventarioManualCaptura_backup', JSON.stringify(inventarioManualCaptura));
+    }
+  }, [inventarioManualCaptura]);
+  
+  // Handlers para arrastrar modal
+  const handleMouseDown = (e) => {
+    if (e.target.closest('.modal-header-drag')) {
+      setIsDragging(true);
+      setDragOffset({
+        x: e.clientX - modalPosition.x,
+        y: e.clientY - modalPosition.y
+      });
+    }
+  };
+  
+  const handleMouseMove = (e) => {
+    if (isDragging) {
+      setModalPosition({
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y
+      });
+    }
+  };
+  
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+  
+  // Efecto para listeners de mouse
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset]);
+  
   // Estados para días objetivo de inventario
   const [diasObjetivoDefault, setDiasObjetivoDefault] = useState(10);
   const [diasObjetivoPorSku, setDiasObjetivoPorSku] = useState({}); // {codigo: dias}
@@ -2677,14 +2739,23 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
         </div>
       )}
       
-      {/* Modal de Captura Manual de Inventario Físico */}
+      {/* Modal de Captura Manual de Inventario Físico - ARRASTRABLE */}
       {mostrarCapturaManual && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            <div className="px-4 py-3 border-b flex items-center justify-between bg-blue-50">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div 
+            className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+            style={{
+              transform: `translate(${modalPosition.x}px, ${modalPosition.y}px)`,
+              cursor: isDragging ? 'grabbing' : 'default'
+            }}
+          >
+            <div 
+              className="modal-header-drag px-4 py-3 border-b flex items-center justify-between bg-blue-50 cursor-grab"
+              onMouseDown={handleMouseDown}
+            >
               <div>
                 <h3 className="font-semibold text-blue-800">Captura Manual de Inventario Físico</h3>
-                <p className="text-xs text-blue-600">Ingrese cantidades en insumos y/o presentaciones. El total se calcula automáticamente.</p>
+                <p className="text-xs text-blue-600">Arrastre esta barra para mover • Ingrese cantidades en insumos y/o presentaciones</p>
               </div>
               <button 
                 onClick={() => setMostrarCapturaManual(false)}
@@ -2763,8 +2834,19 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
             </div>
             
             <div className="px-4 py-3 border-t bg-zinc-50 flex justify-between items-center">
-              <div className="text-sm text-zinc-600">
-                Total productos con inventario: {inventarioManualCaptura.filter(i => i.totalInsumos > 0).length} de {inventarioManualCaptura.length}
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-zinc-600">
+                  Total productos con inventario: {inventarioManualCaptura.filter(i => i.totalInsumos > 0).length} de {inventarioManualCaptura.length}
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={limpiarInventarioCaptura}
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Limpiar Todo
+                </Button>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setMostrarCapturaManual(false)}>
