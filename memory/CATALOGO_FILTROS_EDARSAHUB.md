@@ -864,6 +864,7 @@ const validateFilters = (filters) => {
 | 2025-04-09 | 2.3 | REGLA UX: Scroll horizontal en tabla Detalle de Auditoría (vista normal) (I.9) | E1 Agent |
 | 2025-04-09 | 2.4 | REGLA UX: Modo Pantalla Completa en Explorador BD (ocultar sidebar) (I.10) | E1 Agent |
 | 2025-04-09 | 2.5 | REGLA UX: Scroll horizontal y altura expandida en Pantalla Completa de Explorador BD (I.11) | E1 Agent |
+| 2025-04-10 | 2.6 | REGLA UX: Indicadores de estado en filtros de Auditoría (loading, vacío, sucursal) (I.12) | E1 Agent |
 
 ---
 
@@ -1465,6 +1466,65 @@ En el modo Pantalla Completa del Explorador BD, las tablas de **Columnas** y **P
 
 **Archivo afectado:**
 - ✅ `/app/frontend/src/pages/ExploradorBD.js` (líneas 1292 y 1354)
+
+---
+
+### I.12 Indicadores de Estado en Filtros de Auditoría de Inventarios
+
+**IMPLEMENTACIÓN (2025-04-10):**
+
+Los dropdowns de filtros en la sección "Auditoría Operativa de Inventarios" ahora muestran indicadores visuales de estado para ayudar al usuario a entender qué está pasando.
+
+**Problema original:**
+- Cuando no había requisiciones o inventarios, el dropdown aparecía vacío sin explicación
+- El usuario no sabía si los datos estaban cargando o si simplemente no había datos
+- No había feedback visual de qué sucursal estaba seleccionada
+
+**Solución implementada:**
+
+1. **Estados de carga** (`loadingPedidos`, `loadingInventarios`)
+2. **Mensajes contextuales** cuando no hay datos
+3. **Indicador de sucursal** activa en el mensaje vacío
+4. **Logs de consola** para diagnóstico (F12 → Console)
+
+**Nuevos estados agregados:**
+```jsx
+const [loadingPedidos, setLoadingPedidos] = useState(false);
+const [loadingInventarios, setLoadingInventarios] = useState(false);
+```
+
+**Mensajes mostrados en los dropdowns:**
+
+| Estado | Mensaje en Requisiciones | Mensaje en Inventarios |
+|--------|-------------------------|------------------------|
+| Cargando | "Cargando..." + spinner | "Cargando..." + spinner |
+| Sin datos | "Sin requisiciones" | "Sin inventarios" |
+| Con datos | "Seleccionar" | "Seleccionar inventario(s)" |
+| Seleccionado | "N seleccionada(s)" | "N seleccionado(s)" |
+
+**Diagnóstico en consola:**
+```javascript
+// Al cargar requisiciones
+console.log(`[Auditoría] Requisiciones cargadas para sucursal "${parentSucursal}":`, response.data.length);
+
+// Al cargar inventarios
+console.log(`[Auditoría] Inventarios cargados para sucursal "${parentSucursal}":`, response.data.length);
+```
+
+**Mensaje cuando dropdown está vacío:**
+```jsx
+<div className="py-4 px-3 text-center text-zinc-500">
+  <p className="text-xs font-medium">No hay requisiciones pendientes</p>
+  <p className="text-xs mt-1">Sucursal: {parentSucursal || 'No seleccionada'}</p>
+</div>
+```
+
+**Archivo afectado:**
+- ✅ `/app/frontend/src/pages/Compras.js`
+
+**Archivos NO modificados:**
+- ❌ `server.py` - NO fue modificado
+- ❌ `serversService.js` - NO fue modificado
 
 ---
 

@@ -1355,6 +1355,10 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   const [usarCapturaManual, setUsarCapturaManual] = useState(false);
   const [inventarioManual, setInventarioManual] = useState([]);
   
+  // Estados de carga para diagnóstico
+  const [loadingPedidos, setLoadingPedidos] = useState(false);
+  const [loadingInventarios, setLoadingInventarios] = useState(false);
+  
   // Estados para selección múltiple de inventarios
   const [selectedInvIniciales, setSelectedInvIniciales] = useState([]);
   const [selectedInvFinales, setSelectedInvFinales] = useState([]);
@@ -1538,26 +1542,36 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
   };
 
   const fetchInventariosFisicos = async () => {
+    setLoadingInventarios(true);
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API_URL}/api/compras/inventarios-fisicos/${selectedServer}?sucursal=${encodeURIComponent(parentSucursal)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log(`[Auditoría] Inventarios cargados para sucursal "${parentSucursal}":`, response.data.length);
       setInventariosFisicos(response.data);
     } catch (error) {
       console.error('Error cargando inventarios físicos:', error);
+      setInventariosFisicos([]);
+    } finally {
+      setLoadingInventarios(false);
     }
   };
 
   const fetchPedidosVigentes = async () => {
+    setLoadingPedidos(true);
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API_URL}/api/compras/pedidos-vigentes/${selectedServer}?sucursal=${encodeURIComponent(parentSucursal)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log(`[Auditoría] Requisiciones cargadas para sucursal "${parentSucursal}":`, response.data.length);
       setPedidosVigentes(response.data);
     } catch (error) {
       console.error('Error cargando pedidos:', error);
+      setPedidosVigentes([]);
+    } finally {
+      setLoadingPedidos(false);
     }
   };
 
@@ -2041,11 +2055,17 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
               <details className="relative">
                 <summary className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-sm cursor-pointer">
                   <span className="truncate text-left text-xs">
-                    {folioPedido.length === 0 
-                      ? "Seleccionar" 
-                      : `${folioPedido.length} seleccionada(s)`}
+                    {loadingPedidos 
+                      ? "Cargando..." 
+                      : folioPedido.length === 0 
+                        ? (pedidosVigentes.length === 0 ? "Sin requisiciones" : "Seleccionar")
+                        : `${folioPedido.length} seleccionada(s)`}
                   </span>
-                  <ChevronDown className="h-3 w-3 opacity-50" />
+                  {loadingPedidos ? (
+                    <Loader2 className="h-3 w-3 animate-spin opacity-50" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 opacity-50" />
+                  )}
                 </summary>
                 <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-64 overflow-hidden">
                   {folioPedido.length > 0 && (
@@ -2058,23 +2078,35 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                     </button>
                   )}
                   <div className="max-h-52 overflow-y-auto">
-                    {pedidosVigentes.map(p => (
-                      <label key={`${p.tipo}-${p.folio}`} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="rounded border-zinc-300"
-                          checked={folioPedido.includes(p.folio)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFolioPedido([...folioPedido, p.folio]);
-                            } else {
-                              setFolioPedido(folioPedido.filter(f => f !== p.folio));
-                            }
-                          }}
-                        />
-                        <span className="text-sm">{p.folio} - {p.comprador || 'Sin proveedor'}</span>
-                      </label>
-                    ))}
+                    {loadingPedidos ? (
+                      <div className="flex items-center justify-center py-4 text-zinc-500">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <span className="text-xs">Cargando requisiciones...</span>
+                      </div>
+                    ) : pedidosVigentes.length === 0 ? (
+                      <div className="py-4 px-3 text-center text-zinc-500">
+                        <p className="text-xs font-medium">No hay requisiciones pendientes</p>
+                        <p className="text-xs mt-1">Sucursal: {parentSucursal || 'No seleccionada'}</p>
+                      </div>
+                    ) : (
+                      pedidosVigentes.map(p => (
+                        <label key={`${p.tipo}-${p.folio}`} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="rounded border-zinc-300"
+                            checked={folioPedido.includes(p.folio)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFolioPedido([...folioPedido, p.folio]);
+                              } else {
+                                setFolioPedido(folioPedido.filter(f => f !== p.folio));
+                              }
+                            }}
+                          />
+                          <span className="text-sm">{p.folio} - {p.comprador || 'Sin proveedor'}</span>
+                        </label>
+                      ))
+                    )}
                   </div>
                 </div>
               </details>
@@ -2120,11 +2152,17 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                   className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-sm cursor-pointer hover:border-zinc-400"
                 >
                   <span className="truncate text-left text-xs">
-                    {selectedInvIniciales.length === 0 
-                      ? "Seleccionar inventario(s)" 
-                      : `${selectedInvIniciales.length} seleccionado(s)`}
+                    {loadingInventarios 
+                      ? "Cargando..." 
+                      : selectedInvIniciales.length === 0 
+                        ? (inventariosFisicos.length === 0 ? "Sin inventarios" : "Seleccionar inventario(s)")
+                        : `${selectedInvIniciales.length} seleccionado(s)`}
                   </span>
-                  <ChevronDown className={`h-3 w-3 opacity-50 transition-transform ${showDropdownInvIni ? 'rotate-180' : ''}`} />
+                  {loadingInventarios ? (
+                    <Loader2 className="h-3 w-3 animate-spin opacity-50" />
+                  ) : (
+                    <ChevronDown className={`h-3 w-3 opacity-50 transition-transform ${showDropdownInvIni ? 'rotate-180' : ''}`} />
+                  )}
                 </button>
                 {showDropdownInvIni && (
                   <>
@@ -2161,34 +2199,45 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                         </span>
                       </div>
                       <div className="max-h-60 overflow-y-auto">
-                        {inventariosFisicos
-                          .filter(inv => 
-                            !busquedaInvIni || 
-                            String(inv.folio).includes(busquedaInvIni) ||
-                            (inv.almacen || '').toLowerCase().includes(busquedaInvIni.toLowerCase())
-                          )
-                          .map(inv => (
-                            <label 
-                              key={inv.folio} 
-                              className={`flex items-center space-x-2 py-2 px-3 hover:bg-blue-50 cursor-pointer border-b border-zinc-100 ${
-                                selectedInvIniciales.some(i => i.folio === inv.folio) ? 'bg-blue-50' : ''
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                className="rounded border-zinc-300 h-3 w-3"
-                                checked={selectedInvIniciales.some(i => i.folio === inv.folio)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    const newSelected = [...selectedInvIniciales, inv];
-                                    setSelectedInvIniciales(newSelected);
-                                    if (newSelected.length === 1) {
-                                      setFolioInvInicial(String(inv.folio));
-                                      if (inv.fecha) {
-                                        setFechaInicial(inv.fecha.split('T')[0]);
+                        {loadingInventarios ? (
+                          <div className="flex items-center justify-center py-4 text-zinc-500">
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <span className="text-xs">Cargando inventarios...</span>
+                          </div>
+                        ) : inventariosFisicos.length === 0 ? (
+                          <div className="py-4 px-3 text-center text-zinc-500">
+                            <p className="text-xs font-medium">No hay inventarios físicos</p>
+                            <p className="text-xs mt-1">Sucursal: {parentSucursal || 'No seleccionada'}</p>
+                          </div>
+                        ) : (
+                          inventariosFisicos
+                            .filter(inv => 
+                              !busquedaInvIni || 
+                              String(inv.folio).includes(busquedaInvIni) ||
+                              (inv.almacen || '').toLowerCase().includes(busquedaInvIni.toLowerCase())
+                            )
+                            .map(inv => (
+                              <label 
+                                key={inv.folio} 
+                                className={`flex items-center space-x-2 py-2 px-3 hover:bg-blue-50 cursor-pointer border-b border-zinc-100 ${
+                                  selectedInvIniciales.some(i => i.folio === inv.folio) ? 'bg-blue-50' : ''
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="rounded border-zinc-300 h-3 w-3"
+                                  checked={selectedInvIniciales.some(i => i.folio === inv.folio)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      const newSelected = [...selectedInvIniciales, inv];
+                                      setSelectedInvIniciales(newSelected);
+                                      if (newSelected.length === 1) {
+                                        setFolioInvInicial(String(inv.folio));
+                                        if (inv.fecha) {
+                                          setFechaInicial(inv.fecha.split('T')[0]);
+                                        }
                                       }
-                                    }
-                                  } else {
+                                    } else {
                                     const newSelected = selectedInvIniciales.filter(i => i.folio !== inv.folio);
                                     setSelectedInvIniciales(newSelected);
                                     if (newSelected.length === 0) {
@@ -2203,7 +2252,8 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                                 <div className="text-xs text-zinc-500 truncate">{inv.almacen}</div>
                               </div>
                             </label>
-                          ))}
+                          ))
+                        )}
                       </div>
                     </div>
                   </>
@@ -2239,11 +2289,17 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                     className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-sm cursor-pointer hover:border-zinc-400"
                   >
                     <span className="truncate text-left text-xs">
-                      {selectedInvFinales.length === 0 
-                        ? "Seleccionar inventario(s)" 
-                        : `${selectedInvFinales.length} seleccionado(s)`}
+                      {loadingInventarios 
+                        ? "Cargando..." 
+                        : selectedInvFinales.length === 0 
+                          ? (inventariosFinalesFiltrados.length === 0 ? "Sin inventarios" : "Seleccionar inventario(s)")
+                          : `${selectedInvFinales.length} seleccionado(s)`}
                     </span>
-                    <ChevronDown className={`h-3 w-3 opacity-50 transition-transform ${showDropdownInvFin ? 'rotate-180' : ''}`} />
+                    {loadingInventarios ? (
+                      <Loader2 className="h-3 w-3 animate-spin opacity-50" />
+                    ) : (
+                      <ChevronDown className={`h-3 w-3 opacity-50 transition-transform ${showDropdownInvFin ? 'rotate-180' : ''}`} />
+                    )}
                   </button>
                   {showDropdownInvFin && (
                     <>
@@ -2280,20 +2336,31 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                           </span>
                         </div>
                         <div className="max-h-60 overflow-y-auto">
-                          {inventariosFinalesFiltrados
-                            .filter(inv => 
-                              !busquedaInvFin || 
-                              String(inv.folio).includes(busquedaInvFin) ||
-                              (inv.almacen || '').toLowerCase().includes(busquedaInvFin.toLowerCase())
-                            )
-                            .map(inv => (
-                              <label 
-                                key={inv.folio} 
-                                className={`flex items-center space-x-2 py-2 px-3 hover:bg-green-50 cursor-pointer border-b border-zinc-100 ${
-                                  selectedInvFinales.some(i => i.folio === inv.folio) ? 'bg-green-50' : ''
-                                }`}
-                              >
-                                <input
+                          {loadingInventarios ? (
+                            <div className="flex items-center justify-center py-4 text-zinc-500">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              <span className="text-xs">Cargando inventarios...</span>
+                            </div>
+                          ) : inventariosFinalesFiltrados.length === 0 ? (
+                            <div className="py-4 px-3 text-center text-zinc-500">
+                              <p className="text-xs font-medium">No hay inventarios finales</p>
+                              <p className="text-xs mt-1">Sucursal: {parentSucursal || 'No seleccionada'}</p>
+                            </div>
+                          ) : (
+                            inventariosFinalesFiltrados
+                              .filter(inv => 
+                                !busquedaInvFin || 
+                                String(inv.folio).includes(busquedaInvFin) ||
+                                (inv.almacen || '').toLowerCase().includes(busquedaInvFin.toLowerCase())
+                              )
+                              .map(inv => (
+                                <label 
+                                  key={inv.folio} 
+                                  className={`flex items-center space-x-2 py-2 px-3 hover:bg-green-50 cursor-pointer border-b border-zinc-100 ${
+                                    selectedInvFinales.some(i => i.folio === inv.folio) ? 'bg-green-50' : ''
+                                  }`}
+                                >
+                                  <input
                                   type="checkbox"
                                   className="rounded border-zinc-300 h-3 w-3"
                                   checked={selectedInvFinales.some(i => i.folio === inv.folio)}
@@ -2318,7 +2385,8 @@ function AuditoriaOperativaTab({ servers, selectedServer, setSelectedServer, sel
                                   <div className="text-xs text-zinc-500 truncate">{inv.almacen}</div>
                                 </div>
                               </label>
-                            ))}
+                            ))
+                          )}
                         </div>
                       </div>
                     </>
