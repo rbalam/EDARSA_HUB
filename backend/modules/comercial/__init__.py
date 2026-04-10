@@ -3,21 +3,22 @@ EDARSA HUB - Comercial Module
 =============================
 Módulo comercial: dashboards, ventas, metas, ticket perfecto.
 
-FASE 5 DEL REFACTOR MODULAR (Diciembre 2025)
+FASE 5B DEL REFACTOR MODULAR (Diciembre 2025)
 
 Componentes:
-- routes.py: Router vacío (endpoints en server.py)
+- routes.py: Endpoints de comercial (migrados de server.py)
 - schemas.py: Modelos Pydantic definidos
-- service.py: Funciones auxiliares
+- service.py: Lógica de negocio y helpers
 - repository.py: Queries SQL y acceso a MongoDB
+- adapters.py: Integración con APIs locales MPRO
 
-Estado: ESTRUCTURA LISTA, ENDPOINTS PENDIENTES EN SERVER.PY
+Estado: MIGRACIÓN EN PROGRESO (Fase 5B)
 
-Razón: Los endpoints de comercial (~3300 líneas) tienen lógica
-de homologación multi-origen muy compleja que requiere:
-- Funciones globales de APIs locales
-- Tests exhaustivos antes de migrar
-- Validación de la regla J de homologación
+Funciones migradas en Fase 5B:
+- APIS_MPRO_LOCALES (configuración)
+- query_api_mpro_local()
+- obtener_ventas_dia_api_local()
+- sumar_ventas_api_local_a_sucursal()
 
 Inicialización:
     from modules.comercial import init_comercial_module
@@ -33,6 +34,12 @@ from modules.comercial.schemas import (
     DashboardComercialResponse,
     TableroEjecutivoResponse,
     ReportePaxRequest,
+)
+from modules.comercial.adapters import (
+    APIS_MPRO_LOCALES,
+    query_api_mpro_local,
+    obtener_ventas_dia_api_local,
+    sumar_ventas_api_local_a_sucursal,
 )
 
 
@@ -56,4 +63,9 @@ __all__ = [
     'DashboardComercialResponse',
     'TableroEjecutivoResponse',
     'ReportePaxRequest',
+    # Adapters (APIs locales MPRO)
+    'APIS_MPRO_LOCALES',
+    'query_api_mpro_local',
+    'obtener_ventas_dia_api_local',
+    'sumar_ventas_api_local_a_sucursal',
 ]

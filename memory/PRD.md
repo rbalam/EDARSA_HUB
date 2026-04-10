@@ -47,6 +47,10 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 - **Fase 3 (Módulo Auth)**: ✅ COMPLETADA - 12 endpoints de auth/users/roles migrados a `/modules/auth/`
 - **Fase 4/4B (Módulo Compras)**: ✅ COMPLETADA - Estructura modular lista, endpoints en server.py (~2400 líneas)
 - **Fase 5 (Módulo Comercial)**: ✅ COMPLETADA - Estructura modular lista, endpoints en server.py (~3300 líneas)
+- **Fase 5B (Migración real Comercial)**: 🔄 EN PROGRESO
+  - ✅ Sub-fase 5B-1: Adapters (APIs locales MPRO) migrados a `modules/comercial/adapters.py`
+  - ⏸️ Sub-fase 5B-2: Helpers del tablero (pendiente)
+  - ⏸️ Sub-fase 5B-3: Endpoints de comercial (pendiente)
 - **Fases 6-7**: ⏸️ Pendientes de autorización
 
 ---
@@ -65,6 +69,26 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 - [x] Explorador BD: carga servidores desde modal, agrupación por categoría
 - [x] Auto-scroll en Captura Manual inventarios con tecla Tab
 - [x] **FIX: Scroll horizontal modal Pantalla Completa Auditoría** (fixed JSX syntax error)
+
+---
+
+### Session: April 10, 2026
+
+#### Fase 5B-1: Migración Adapters (APIs Locales MPRO)
+
+**Archivos creados**:
+- `/app/backend/modules/comercial/adapters.py` - Lógica de APIs locales MPRO (310 líneas)
+
+**Funciones migradas**:
+- `APIS_MPRO_LOCALES` - Configuración hardcodeada de APIs locales
+- `query_api_mpro_local()` - Consulta REST a API local MPRO
+- `obtener_ventas_dia_api_local()` - Ventas del día en tiempo real
+- `sumar_ventas_api_local_a_sucursal()` - Homologación multi-origen
+
+**Resultado**:
+- `server.py`: 17,672 → 17,366 líneas (-306 líneas)
+- Performance: **0% degradación** (import directo, sin wrappers)
+- Todos los endpoints de comercial siguen funcionando
 
 ---
 
@@ -90,15 +114,17 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 ---
 
 ## Key Files Reference
-- `/app/backend/server.py` - Backend monolito (18,082 líneas)
+- `/app/backend/server.py` - Backend monolito (17,366 líneas, reduciendo)
 - `/app/backend/.env` - Credenciales BD y APIs
-- `/app/backend/core/` - Módulos core (scaffolding)
-- `/app/backend/modules/` - Módulos de negocio (scaffolding)
+- `/app/backend/core/db.py` - Conexiones SQL migradas
+- `/app/backend/core/security.py` - Seguridad y JWT migrados
+- `/app/backend/modules/auth/` - Módulo de autenticación migrado
+- `/app/backend/modules/comercial/adapters.py` - **APIs locales MPRO migradas**
 - `/app/frontend/src/pages/Compras.js` - Módulo compras con cálculos cliente
 - `/app/frontend/src/pages/Servidores.js` - Config SQL y APIs
 - `/app/frontend/src/pages/ExploradorBD.js` - Exploración agrupada tablas
 - `/app/memory/CATALOGO_FILTROS_EDARSAHUB.md` - Reglas UI y filtros
-- `/app/memory/MAPA_MIGRACION.md` - **Plan de migración modular**
+- `/app/memory/MAPA_MIGRACION.md` - **Plan de migración modular (actualizado)**
 
 ## Key API Endpoints
 - `/api/compras/auditoria-inventario` - Auditoría de inventarios

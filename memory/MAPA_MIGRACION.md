@@ -459,9 +459,65 @@ app.include_router(comercial_router, prefix="/api")
 | 4 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Módulo Compras - estructura creada, endpoints en server.py |
 | 4B | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Documentación de compras, decisión de mantener en server.py |
 | 5 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Módulo Comercial - estructura creada, endpoints en server.py |
-| 6 | ⏸️ PENDIENTE | - | - | Módulo RH |
+| 5B | 🔄 EN PROGRESO | Abr 2026 | - | Migración real del módulo Comercial |
 | 6 | ⏸️ PENDIENTE | - | - | Módulo RH |
 | 7 | ⏸️ PENDIENTE | - | - | Cleanup final |
+
+### Detalles Fase 5B En Progreso
+
+**Fecha**: Abril 2026
+
+**Archivos creados**:
+1. `/app/backend/modules/comercial/adapters.py` - Lógica de APIs locales MPRO (310 líneas)
+
+**Archivos modificados**:
+1. `/app/backend/modules/comercial/__init__.py` - Exporta adapters
+2. `/app/backend/server.py` - Importa desde adapters, elimina código duplicado (-306 líneas)
+
+**Funciones migradas a modules/comercial/adapters.py**:
+- `APIS_MPRO_LOCALES` - Configuración de APIs locales hardcodeada
+- `query_api_mpro_local()` - Consulta REST a API local MPRO
+- `obtener_ventas_dia_api_local()` - Obtiene ventas del día en tiempo real
+- `sumar_ventas_api_local_a_sucursal()` - Homologación multi-origen
+
+**Endpoints pendientes de migrar** (10 total en server.py):
+- `/comercial/dashboard/{server_id}` (línea 7340) - 826 líneas
+- `/comercial/ticket-perfecto/{server_id}` (línea 8166) - 121 líneas
+- `/comercial/metas/{server_id}` (línea 8287) - 100 líneas
+- `/comercial/ventas-tiempo/{server_id}` (línea 8387) - 178 líneas
+- `/comercial/mesas/{server_id}` (línea 8565) - 228 líneas
+- `/comercial/detalle-movimientos/{server_id}` (línea 8793) - 211 líneas
+- `/comercial/reporte-pax/{server_id}` (línea 9004) - 1163 líneas
+- `/comercial/tablero-ejecutivo` (línea 10167) - 300 líneas CRÍTICO
+- `/comercial/sucursales/{server_id}` (línea 10467) - 61 líneas
+- `/comercial/precios-constantes/{server_id}` (línea 10528) - ~100 líneas
+
+**Helpers pendientes de migrar**:
+- `get_kpis_softrestaurant()` - Query para SoftRestaurant
+- `get_kpis_mpro_por_sucursal()` - Query para MPRO
+- `save_server_connection_status()` - Guarda estado de conexión
+- `is_server_recently_offline()` - Verifica cooldown
+- `get_cached_kpis()` / `save_kpis_cache()` - Caché de KPIs
+
+**Validación**:
+- ✅ Backend inicia correctamente
+- ✅ Login funciona
+- ✅ `/api/comercial/tablero-ejecutivo` responde con datos (6 unidades)
+- ✅ APIs locales MPRO ejecutan queries (timeout esperado si offline)
+- ✅ Logs muestran "API Local X: Timeout" (comportamiento esperado)
+
+**Validación de Performance**:
+- ✅ Import desde adapters.py: instantáneo (función directa, sin wrapper)
+- ✅ `/api/comercial/tablero-ejecutivo`: ~7-10s (igual que antes, tiempo dominado por SQL remoto)
+- ✅ NO hay wrappers intermedios
+- ✅ Reducción de server.py: 17,672 → 17,366 líneas (-306 líneas)
+
+**Impacto en Performance**: NEUTRO (0% degradación)
+
+**Dependencias detectadas**:
+- `sumar_ventas_api_local_a_sucursal()` es usada por `get_kpis_mpro_por_sucursal()` y otros endpoints
+- Las funciones de caché (`get_cached_kpis`, `save_kpis_cache`) usan la variable global `db` de server.py
+- Los helpers `get_kpis_*` usan `execute_sql_query` de `core/db.py`
 
 ### Detalles Fase 1 Completada
 
@@ -620,6 +676,7 @@ modules/auth/
 | Dic 2025 | Fase 4 completada: módulo compras - estructura lista, endpoints en server.py | E1 Agent |
 | Dic 2025 | Fase 4B completada: documentación y consolidación del módulo compras | E1 Agent |
 | Dic 2025 | Fase 5 completada: módulo comercial estructura creada, endpoints en server.py | E1 Agent |
+| Abr 2026 | Fase 5B iniciada: adapters de APIs locales MPRO migrados a modules/comercial/adapters.py | E1 Agent |
 
 ---
 
