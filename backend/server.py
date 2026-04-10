@@ -699,272 +699,39 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return user
 
 # ============= SQL SERVER FUNCTIONS =============
+# 
+# FASE 1 DEL REFACTOR MODULAR (Diciembre 2025):
+# Las funciones de SQL Server han sido migradas a /core/db.py
+# Este bloque mantiene imports de compatibilidad para que todo el código
+# existente siga funcionando sin cambios.
+#
+# Funciones migradas:
+#   - execute_sql_query()
+#   - test_sql_connection()
+#   - parse_sql_server_host()
+#   - mark_server_offline()
+#   - mark_server_online()
+#   - is_server_offline_in_memory()
+#   - get_server_cooldown_info()
+#   - _server_status_cache (variable global)
+#
+# LIMPIEZA FUTURA: Este bloque puede eliminarse cuando todos los imports
+# en server.py sean actualizados para usar directamente core.db
+# =============================================================================
 
-def parse_sql_server_host(host: str, default_port: int = 1433) -> tuple:
-    """
-    Parsea cadenas de conexión SQL Server en varios formatos:
-    - hostname
-    - hostname,port
-    - hostname\instance
-    - hostname,port\instance
-    - hostname\instance,port
-    
-    Retorna: (hostname_only, port, instance)
-    - hostname_only: solo el hostname sin instancia
-    - port: puerto como entero
-    - instance: nombre de la instancia o None
-    """
-    import re
-    
-    # Remover espacios
-    host = host.strip()
-    port = default_port
-    instance = None
-    hostname = host
-    
-    # Caso 1: hostname,port\instance (ej: server.ddns.net,6669\nationalsoft)
-    match = re.match(r'^([^,\\]+),(\d+)\\(.+)$', host)
-    if match:
-        hostname = match.group(1)
-        port = int(match.group(2))
-        instance = match.group(3)
-        logging.info(f"Parsed DDNS format: hostname={hostname}, port={port}, instance={instance}")
-        return (hostname, port, instance)
-    
-    # Caso 2: hostname\instance,port (ej: server\instance,1433)
-    match = re.match(r'^([^,\\]+)\\([^,]+),(\d+)$', host)
-    if match:
-        hostname = match.group(1)
-        instance = match.group(2)
-        port = int(match.group(3))
-        logging.info(f"Parsed instance,port format: hostname={hostname}, instance={instance}, port={port}")
-        return (hostname, port, instance)
-    
-    # Caso 3: hostname\instance (ej: server\SQLEXPRESS)
-    match = re.match(r'^([^,\\]+)\\(.+)$', host)
-    if match:
-        hostname = match.group(1)
-        instance = match.group(2)
-        logging.info(f"Parsed instance format: hostname={hostname}, instance={instance}")
-        return (hostname, port, instance)
-    
-    # Caso 4: hostname,port (ej: server.com,1433)
-    match = re.match(r'^([^,\\]+),(\d+)$', host)
-    if match:
-        hostname = match.group(1)
-        port = int(match.group(2))
-        logging.info(f"Parsed host,port format: hostname={hostname}, port={port}")
-        return (hostname, port, None)
-    
-    # Caso 5: Solo hostname
-    logging.info(f"Using simple hostname: {host}")
-    return (host, port, None)
+from core.db import (
+    execute_sql_query,
+    test_sql_connection,
+    parse_sql_server_host,
+    mark_server_offline,
+    mark_server_online,
+    is_server_offline_in_memory,
+    get_server_cooldown_info,
+)
 
-
-def test_sql_connection(host: str, port: int, database: str, username: str, password: str) -> bool:
-    """
-    Prueba la conexión a SQL Server usando pytds (preferido) con fallback a pymssql.
-    """
-    hostname, parsed_port, instance = parse_sql_server_host(host, port)
-    logging.info(f"Testing connection to: hostname={hostname}, port={parsed_port}, instance={instance}, db={database}")
-    
-    # Primero intentar con pytds (mejor soporte para conexiones complejas)
-    try:
-        logging.info("Intentando conexión con pytds...")
-        conn = pytds.connect(
-            server=hostname,
-            port=parsed_port,
-            database=database,
-            user=username,
-            password=password,
-            timeout=30,
-            login_timeout=30
-        )
-        conn.close()
-        logging.info("Conexión exitosa con pytds")
-        return True
-    except Exception as pytds_error:
-        logging.warning(f"pytds falló: {str(pytds_error)}, intentando pymssql...")
-    
-    # Fallback a pymssql
-    try:
-        server_string = f"{hostname}\\{instance}" if instance else hostname
-        conn = pymssql.connect(
-            server=server_string, 
-            port=parsed_port, 
-            user=username, 
-            password=password, 
-            database=database
-        )
-        conn.close()
-        logging.info("Conexión exitosa con pymssql")
-        return True
-    except Exception as pymssql_error:
-        logging.error(f"pymssql también falló: {str(pymssql_error)}")
-        return False
-
-
-# Diccionario en memoria para tracking rápido de estado de servidores
-_server_status_cache = {}
-
-def mark_server_offline(host: str):
-    """Marca un servidor como offline en caché de memoria con backoff exponencial"""
-    current = _server_status_cache.get(host, {})
-    fail_count = current.get("fail_count", 0) + 1
-    
-    # Backoff exponencial: 5min, 10min, 20min, 30min máximo
-    wait_minutes = min(5 * (2 ** (fail_count - 1)), 30)
-    
-    _server_status_cache[host] = {
-        "is_online": False,
-        "last_check": datetime.now(timezone.utc),
-        "fail_count": fail_count,
-        "wait_minutes": wait_minutes
-    }
-    logging.info(f"Servidor {host} marcado offline (intento {fail_count}) - próximo reintento en {wait_minutes} min")
-
-def mark_server_online(host: str):
-    """Marca un servidor como online en caché de memoria"""
-    _server_status_cache[host] = {
-        "is_online": True,
-        "last_check": datetime.now(timezone.utc),
-        "fail_count": 0,
-        "wait_minutes": 0
-    }
-
-def is_server_offline_in_memory(host: str) -> bool:
-    """
-    Verifica si un servidor está marcado como offline.
-    Usa backoff exponencial para evitar parecer un ataque.
-    """
-    status = _server_status_cache.get(host)
-    if not status:
-        return False
-    
-    if status.get("is_online", True):
-        return False
-    
-    # Verificar si ha pasado suficiente tiempo según el backoff
-    last_check = status.get("last_check")
-    wait_minutes = status.get("wait_minutes", 5)
-    
-    if last_check:
-        diff = (datetime.now(timezone.utc) - last_check).total_seconds() / 60
-        if diff < wait_minutes:
-            logging.debug(f"Servidor {host} en cooldown - esperar {wait_minutes - diff:.1f} min más")
-            return True
-    
-    return False
-
-def get_server_cooldown_info(host: str) -> dict:
-    """Obtiene información del cooldown de un servidor"""
-    status = _server_status_cache.get(host, {})
-    if not status or status.get("is_online", True):
-        return {"is_offline": False}
-    
-    last_check = status.get("last_check")
-    wait_minutes = status.get("wait_minutes", 5)
-    
-    if last_check:
-        diff = (datetime.now(timezone.utc) - last_check).total_seconds() / 60
-        remaining = max(0, wait_minutes - diff)
-        return {
-            "is_offline": True,
-            "fail_count": status.get("fail_count", 0),
-            "wait_minutes": wait_minutes,
-            "remaining_minutes": round(remaining, 1)
-        }
-    
-    return {"is_offline": True}
-
-
-def execute_sql_query(host: str, port: int, database: str, username: str, password: str, query: str, timeout_seconds: int = 45) -> List[Dict]:
-    """
-    Ejecuta una consulta SQL usando pytds (preferido) con fallback a pymssql.
-    Incluye verificación de estado offline con backoff exponencial para evitar
-    comportamiento de bot/malware.
-    """
-    # Verificar si el servidor está en cooldown (offline con backoff)
-    if is_server_offline_in_memory(host):
-        cooldown = get_server_cooldown_info(host)
-        logging.info(f"Servidor {host} en cooldown - {cooldown.get('remaining_minutes', 0):.1f} min restantes")
-        return []
-    
-    hostname, parsed_port, instance = parse_sql_server_host(host, port)
-    logging.info(f"Conectando a SQL Server: hostname={hostname}, port={parsed_port}, db={database}")
-    
-    # Primero intentar con pytds
-    try:
-        logging.info("Ejecutando query con pytds...")
-        conn = pytds.connect(
-            server=hostname,
-            port=parsed_port,
-            database=database,
-            user=username,
-            password=password,
-            timeout=timeout_seconds,
-            login_timeout=15  # Reducido de 30 a 15 segundos
-        )
-        cursor = conn.cursor()
-        cursor.execute(query)
-        
-        # Obtener nombres de columnas
-        columns = [desc[0] for desc in cursor.description] if cursor.description else []
-        rows = cursor.fetchall()
-        
-        # Convertir a lista de diccionarios
-        results = []
-        for row in rows:
-            row_dict = {}
-            for i, col in enumerate(columns):
-                value = row[i]
-                # Convertir datetime a string
-                if isinstance(value, datetime):
-                    value = value.isoformat()
-                row_dict[col] = value
-            results.append(row_dict)
-        
-        conn.close()
-        logging.info(f"Query exitosa con pytds: {len(results)} registros")
-        mark_server_online(host)  # Marcar como online
-        return results
-        
-    except Exception as pytds_error:
-        logging.warning(f"pytds falló: {str(pytds_error)}, intentando pymssql...")
-    
-    # Fallback a pymssql
-    try:
-        server_string = f"{hostname}\\{instance}" if instance else hostname
-        logging.info(f"Ejecutando query con pymssql en {server_string}:{parsed_port}...")
-        conn = pymssql.connect(
-            server=server_string, 
-            port=parsed_port, 
-            user=username, 
-            password=password, 
-            database=database, 
-            timeout=timeout_seconds, 
-            login_timeout=15  # Reducido de 30 a 15 segundos
-        )
-        cursor = conn.cursor(as_dict=True)
-        cursor.execute(query)
-        results = cursor.fetchall()
-        conn.close()
-        
-        # Convertir datetime a string
-        for row in results:
-            for key, value in row.items():
-                if isinstance(value, datetime):
-                    row[key] = value.isoformat()
-        
-        logging.info(f"Query exitosa con pymssql: {len(results)} registros")
-        mark_server_online(host)  # Marcar como online
-        return results
-        
-    except Exception as pymssql_error:
-        error_msg = f"Error ejecutando consulta. pytds y pymssql fallaron: {str(pymssql_error)}"
-        logging.error(error_msg)
-        mark_server_offline(host)  # Marcar como offline
-        return []  # Devolver lista vacía en lugar de lanzar excepción
+# Re-exportar para compatibilidad con código que importa desde server.py
+# Nota: _server_status_cache ya no está disponible directamente, usar funciones
+# get_server_cache_status() y reset_server_cache() de core.db si es necesario
 
 # ============= EXPORT FUNCTIONS =============
 
