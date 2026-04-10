@@ -10483,19 +10483,31 @@ async def tablero_ejecutivo(
     
     hoy = datetime.now()
     
-    # Detectar modo "Ventas del Día" (anio=-1 legacy o anios="-1" nuevo)
-    solo_ventas_dia = (anio == -1) or (anios == "-1")
+    # Detectar modo "Ventas del Día" (anio=-1 legacy o anios="-1" nuevo o meses="ventas_dia")
+    solo_ventas_dia = (anio == -1) or (anios == "-1") or (meses == "ventas_dia")
     
     # Procesar parámetros nuevos (multiselección) o legacy (simple)
     mes_min = None  # Para multiselección de meses
     mes_max = None
     
-    if meses and not solo_ventas_dia:
-        # Nuevo formato: multiselección de meses
-        lista_meses = [int(m.strip()) for m in meses.split(',') if m.strip()]
-        mes_min = min(lista_meses)  # Primer mes del rango
-        mes_max = max(lista_meses)  # Último mes del rango
-        mes = mes_max  # Para compatibilidad con lógica existente
+    if meses and meses != "ventas_dia" and not solo_ventas_dia:
+        # Nuevo formato: multiselección de meses (solo si son números)
+        try:
+            lista_meses = [int(m.strip()) for m in meses.split(',') if m.strip() and m.strip().isdigit()]
+            if lista_meses:
+                mes_min = min(lista_meses)  # Primer mes del rango
+                mes_max = max(lista_meses)  # Último mes del rango
+                mes = mes_max  # Para compatibilidad con lógica existente
+            else:
+                # Si no hay meses válidos, usar mes actual
+                mes = hoy.month
+                mes_min = mes
+                mes_max = mes
+        except ValueError:
+            # Si falla la conversión, usar mes actual
+            mes = hoy.month
+            mes_min = mes
+            mes_max = mes
     elif mes == 0:
         mes = hoy.month
         mes_min = mes
