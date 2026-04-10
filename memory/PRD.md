@@ -118,13 +118,16 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 - `/app/backend/.env` - Credenciales BD y APIs
 - `/app/backend/core/db.py` - Conexiones SQL migradas
 - `/app/backend/core/security.py` - Seguridad y JWT migrados
+- `/app/backend/core/cerebro.py` - **CEREBRO CENTRAL: Modelos, Enums, Constantes (FUENTE DE VERDAD)**
 - `/app/backend/modules/auth/` - Módulo de autenticación migrado
-- `/app/backend/modules/comercial/adapters.py` - **APIs locales MPRO migradas**
+- `/app/backend/modules/comercial/adapters.py` - APIs locales MPRO migradas
 - `/app/frontend/src/pages/Compras.js` - Módulo compras con cálculos cliente
 - `/app/frontend/src/pages/Servidores.js` - Config SQL y APIs
 - `/app/frontend/src/pages/ExploradorBD.js` - Exploración agrupada tablas
 - `/app/memory/CATALOGO_FILTROS_EDARSAHUB.md` - Reglas UI y filtros
-- `/app/memory/MAPA_MIGRACION.md` - **Plan de migración modular (actualizado)**
+- `/app/memory/MAPA_MIGRACION.md` - Plan de migración modular
+- `/app/memory/ESPEJO_BASE_DATOS.md` - **ESPEJO COMPLETO: Toda la estructura MongoDB**
+- `/app/memory/DIAGNOSTICO_ARQUITECTURA.md` - Diagnóstico técnico
 
 ## Key API Endpoints
 - `/api/compras/auditoria-inventario` - Auditoría de inventarios
