@@ -457,6 +457,7 @@ app.include_router(comercial_router, prefix="/api")
 | 2 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Migración seguridad a core/security.py |
 | 3 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Migración módulo Auth a modules/auth/ |
 | 4 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Módulo Compras - estructura creada, endpoints en server.py |
+| 4B | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Documentación de compras, decisión de mantener en server.py |
 | 5 | ⏸️ PENDIENTE | - | - | Módulo Comercial |
 | 6 | ⏸️ PENDIENTE | - | - | Módulo RH |
 | 7 | ⏸️ PENDIENTE | - | - | Cleanup final |
