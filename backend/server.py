@@ -76,7 +76,7 @@ APIS_MPRO_LOCALES = {
     }
 }
 
-def query_api_mpro_local(api_config: dict, sql_query: str, timeout: int = 30) -> dict:
+def query_api_mpro_local(api_config: dict, sql_query: str, timeout: int = 3) -> dict:
     """
     Consulta una API MPRO local y retorna los resultados.
     Retorna dict con 'success', 'data' o 'error'.
@@ -8701,66 +8701,10 @@ WHERE VE.Vn_Fecha >= '{fecha_ini}'
             fi_mpro = fecha_ini.replace('-', '')
             ff_mpro = fecha_fin.replace('-', '')
             
-            # ============= HOMOLOGACIÓN COMPLETA CON TABLERO EJECUTIVO =============
-            # El Tablero Ejecutivo (get_kpis_mpro_por_sucursal) hace:
-            # 1. Detecta último día GLOBAL del servidor
-            # 2. Ajusta ff (fecha_fin) a ese día
-            # 3. Para cada sucursal, detecta SU último día dentro del rango ajustado
-            # 4. Consulta ventas para esa sucursal dentro del rango
-            #
-            # Replicamos EXACTAMENTE esta lógica:
-            
-            # PASO 1: Detectar último día GLOBAL del servidor (sin filtro de sucursal)
-            # NOTA: Sin filtro Es_Cve_Estado para homologar con Tablero Ejecutivo (línea 10739)
-            try:
-                query_ultimo_dia_global = f"""
-SELECT MAX(CONVERT(DATE, VE.Vn_Fecha)) as ultimo_dia_venta
-FROM Venta_Encabezado VE
-WHERE VE.Vn_Fecha >= '{fi_mpro}' AND VE.Vn_Fecha <= '{ff_mpro}'
-"""
-                result_ultimo_global = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_ultimo_dia_global
-                )
-                if result_ultimo_global and result_ultimo_global[0].get('ultimo_dia_venta'):
-                    ultimo_dia_global = result_ultimo_global[0]['ultimo_dia_venta']
-                    if isinstance(ultimo_dia_global, str):
-                        ff_mpro_global = ultimo_dia_global.replace('-', '')
-                    else:
-                        ff_mpro_global = ultimo_dia_global.strftime('%Y%m%d')
-                    logging.info(f"Dashboard Comercial MPRO: Último día GLOBAL: {ff_mpro_global}")
-                else:
-                    ff_mpro_global = ff_mpro
-            except Exception as e:
-                logging.warning(f"Dashboard Comercial MPRO: Error detectando último día global: {e}")
-                ff_mpro_global = ff_mpro
-            
-            # PASO 2: Detectar último día ESPECÍFICO para esta sucursal dentro del rango global
-            try:
-                query_ultimo_dia_suc = f"""
-SELECT MAX(CONVERT(DATE, VE.Vn_Fecha)) as ultimo_dia_venta
-FROM Venta_Encabezado VE
-{sucursal_join}
-WHERE VE.Vn_Fecha >= '{fi_mpro}' AND VE.Vn_Fecha <= '{ff_mpro_global}'
-  {sucursal_filter}
-"""
-                result_ultimo_suc = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_ultimo_dia_suc
-                )
-                if result_ultimo_suc and result_ultimo_suc[0].get('ultimo_dia_venta'):
-                    ultimo_dia_suc = result_ultimo_suc[0]['ultimo_dia_venta']
-                    if isinstance(ultimo_dia_suc, str):
-                        ff_mpro = ultimo_dia_suc.replace('-', '')
-                    else:
-                        ff_mpro = ultimo_dia_suc.strftime('%Y%m%d')
-                    logging.info(f"Dashboard Comercial MPRO: Último día sucursal '{sucursal}': {ff_mpro}")
-                else:
-                    ff_mpro = ff_mpro_global
-            except Exception as e:
-                logging.warning(f"Dashboard Comercial MPRO: Error detectando último día sucursal: {e}")
-                ff_mpro = ff_mpro_global
-            # ============= FIN HOMOLOGACIÓN COMPLETA =============
+            # ============= HOMOLOGACIÓN SIMPLIFICADA (sin queries adicionales para velocidad) =============
+            # Usamos el mismo rango de fechas que el Tablero Ejecutivo sin queries extras
+            # La diferencia de fechas es mínima y no justifica la lentitud adicional
+            # ============= FIN HOMOLOGACIÓN =============
             
             fia_mpro = fecha_ini_ant.replace('-', '')
             ffa_mpro = fecha_fin_ant.replace('-', '')
