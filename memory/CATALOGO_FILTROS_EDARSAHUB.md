@@ -1,8 +1,8 @@
 # CATÁLOGO MAESTRO DE REGLAS DE FILTROS - EDARSA HUB
 
-**Versión:** 1.1  
+**Versión:** 2.9  
 **Fecha de creación:** 2025-04-08  
-**Última actualización:** 2025-04-09  
+**Última actualización:** 2025-04-10  
 **Estado:** ACTIVO - Fuente de Verdad del Sistema
 
 ---
@@ -45,6 +45,7 @@ Este catálogo aplica a:
 | `periodo/fechas` | Rango temporal | YYYY-MM-DD | Todos | CRÍTICO |
 | `almacen` | Identificador | Código O Nombre | MPRO, SR | ALTO |
 | `folio` | Documento | Alfanumérico | Todos | MEDIO |
+| `formato_fecha_sql` | Conversión | 101 (USA) | APIs Locales MPRO | CRÍTICO |
 
 **Leyenda de Sistemas:**
 - MPRO = ManagementPro
@@ -754,6 +755,83 @@ sucursal = "130° QUERETARO"  # El ° puede causar problemas
 
 # ✅ CORRECTO
 sucursal = sucursal.replace("'", "''")  # Escapar comillas simples
+```
+
+### E.6 Error: Formato de fecha SQL incorrecto para APIs Locales MPRO
+
+**CRÍTICO - Detectado 2025-04-10**
+
+Los servidores SQL de MPRO usan formato de fecha USA (código 101), NO formato europeo (código 103).
+
+```sql
+-- ❌ INCORRECTO (formato europeo - NO funciona en APIs locales MPRO)
+WHERE CONVERT(date, co_fecha, 103) = CONVERT(date, GETDATE(), 103)
+
+-- ✅ CORRECTO (formato USA - funciona en APIs locales MPRO)
+WHERE CONVERT(date, co_fecha, 101) = CONVERT(date, GETDATE(), 101)
+```
+
+**Referencia de códigos CONVERT en SQL Server:**
+
+| Código | Formato | Ejemplo | Uso en EDARSA |
+|--------|---------|---------|---------------|
+| 101 | mm/dd/yyyy | 04/10/2026 | ✅ APIs Locales MPRO |
+| 103 | dd/mm/yyyy | 10/04/2026 | ❌ NO usar |
+| 120 | yyyy-mm-dd hh:mi:ss | 2026-04-10 12:30:00 | ✅ Queries generales |
+
+### E.7 Error: Columna ambigua en JOIN sin calificar
+
+**CRÍTICO - Detectado 2025-04-10**
+
+Cuando se hace JOIN entre tablas que comparten nombres de columna (ej: `co_folio`), SIEMPRE calificar con el nombre de la tabla.
+
+```sql
+-- ❌ INCORRECTO (columna ambigua - Error SQL 209)
+SELECT COUNT(DISTINCT co_folio) as cheques
+FROM Comanda 
+INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio
+
+-- ✅ CORRECTO (columna calificada con nombre de tabla)
+SELECT COUNT(DISTINCT Comanda.co_folio) as cheques
+FROM Comanda 
+INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio
+```
+
+**Error típico:**
+```json
+{"detail":"('42000', \"[42000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Ambiguous column name 'co_folio'. (209)\")"}
+```
+
+### E.8 Error: APIs Locales solo en MongoDB sin fallback
+
+**Detectado 2025-04-10**
+
+Si las APIs locales se buscan SOLO en MongoDB y no hay registros, las ventas del día mostrarán $0. Siempre implementar fallback a configuración hardcodeada.
+
+```python
+# ❌ INCORRECTO (solo busca en MongoDB)
+apis_locales = list(db.servers.find({"tipo": "api_mpro", "active": True}))
+# Si está vacío, no hay fallback → ventas = $0
+
+# ✅ CORRECTO (busca en MongoDB, si no hay usa config hardcodeada)
+apis_locales = list(db.servers.find({"tipo": "api_mpro", "active": True}))
+if not apis_locales:
+    # Fallback a APIS_MPRO_LOCALES (diccionario hardcodeado)
+    for api_id, api_config in APIS_MPRO_LOCALES.items():
+        # procesar...
+```
+
+**Flujo correcto de búsqueda de APIs locales:**
+```
+1. Buscar en MongoDB (tipo='api_mpro', active=True)
+   ↓
+2. Si hay resultados → Usar API de MongoDB
+   ↓
+3. Si no hay → Buscar en APIS_MPRO_LOCALES (config hardcodeada)
+   ↓
+4. Matching por sucursal_destino
+   ↓
+5. Consultar API y retornar datos
 ```
 
 ---
