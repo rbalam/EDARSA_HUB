@@ -1,6 +1,6 @@
 # CATÁLOGO MAESTRO DE REGLAS DE FILTROS - EDARSA HUB
 
-**Versión:** 3.0  
+**Versión:** 3.1  
 **Fecha de creación:** 2025-04-08  
 **Última actualización:** 2025-04-10  
 **Estado:** ACTIVO - Fuente de Verdad del Sistema
@@ -802,6 +802,43 @@ INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio
 {"detail":"('42000', \"[42000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Ambiguous column name 'co_folio'. (209)\")"}
 ```
 
+### E.7.1 Error: PAX multiplicado por líneas de detalle en JOIN
+
+**CRÍTICO - Detectado 2025-04-10**
+
+Al hacer JOIN entre `Comanda` y `Comanda_Detalle`, el `SUM(co_personas)` se multiplica por el número de líneas de detalle de cada comanda.
+
+**Ejemplo:** Si una comanda tiene 5 personas y 10 líneas de detalle, `SUM(co_personas)` sumará 5 × 10 = 50 en lugar de 5.
+
+```sql
+-- ❌ INCORRECTO (PAX multiplicado por líneas de detalle)
+SELECT 
+    ISNULL(SUM(cd_importe), 0) as ventas,
+    COUNT(DISTINCT Comanda.co_folio) as cheques,
+    ISNULL(SUM(co_personas), 0) as pax  -- ← ERROR: se multiplica
+FROM Comanda 
+INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio 
+WHERE CONVERT(date, co_fecha, 101) = CONVERT(date, GETDATE(), 101)
+
+-- ✅ CORRECTO (PAX con subquery independiente)
+SELECT 
+    ISNULL(SUM(cd_importe), 0) as ventas,
+    COUNT(DISTINCT Comanda.co_folio) as cheques,
+    (SELECT ISNULL(SUM(co_personas), 0) FROM Comanda 
+     WHERE CONVERT(date, co_fecha, 101) = CONVERT(date, GETDATE(), 101)) as pax
+FROM Comanda 
+INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio 
+WHERE CONVERT(date, co_fecha, 101) = CONVERT(date, GETDATE(), 101)
+```
+
+**Valores corregidos:**
+
+| Sucursal | PAX Antes (incorrecto) | PAX Después (correcto) |
+|----------|------------------------|------------------------|
+| ORIGEN | 2,555 | 89 ✅ |
+| 130° QUERETARO | 1,519 | 62 ✅ |
+```
+
 ### E.8 Error: APIs Locales solo en MongoDB sin fallback
 
 **Detectado 2025-04-10**
@@ -947,6 +984,7 @@ const validateFilters = (filters) => {
 | 2025-04-10 | 2.8 | FIX CRÍTICO: Query SQL con columna ambigua co_folio (I.14) | E1 Agent |
 | 2025-04-10 | 2.9 | Búsqueda de APIs locales desde MongoDB con fallback a config hardcodeada | E1 Agent |
 | 2025-04-10 | 3.0 | FIX: Dashboard Comercial período "Hoy" integra APIs locales (I.16) | E1 Agent |
+| 2025-04-10 | 3.1 | FIX CRÍTICO: PAX calculado con subquery para evitar multiplicación en JOIN (E.7.1) | E1 Agent |
 
 ---
 

@@ -155,7 +155,7 @@ def obtener_ventas_dia_api_local(api_config: dict, forzar_consulta: bool = False
     SELECT 
         ISNULL(SUM(cd_importe), 0) as ventas,
         COUNT(DISTINCT Comanda.co_folio) as cheques,
-        ISNULL(SUM(co_personas), 0) as pax
+        (SELECT ISNULL(SUM(co_personas), 0) FROM Comanda WHERE CONVERT(date, co_fecha, 101) = CONVERT(date, GETDATE(), 101)) as pax
     FROM Comanda 
     INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio 
     WHERE CONVERT(date, co_fecha, 101) = CONVERT(date, GETDATE(), 101)
