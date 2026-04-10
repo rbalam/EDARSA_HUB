@@ -43,7 +43,8 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 #### Status
 - **Fase 0 (Preparación)**: ✅ COMPLETADA
 - **Fase 1 (Core Database)**: ✅ COMPLETADA - `execute_sql_query` migrado a `/core/db.py`
-- **Fases 2-7**: ⏸️ Pendientes de autorización
+- **Fase 2 (Core Security)**: ✅ COMPLETADA - `get_current_user` y seguridad migrados a `/core/security.py`
+- **Fases 3-7**: ⏸️ Pendientes de autorización
 
 ---
 

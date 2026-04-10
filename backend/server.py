@@ -41,12 +41,51 @@ db = client[os.environ['DB_NAME']]
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
-security = HTTPBearer()
 
-# JWT Configuration
-JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
-JWT_ALGORITHM = 'HS256'
-JWT_EXPIRATION_HOURS = 24
+# ============= SEGURIDAD Y AUTENTICACIÓN =============
+# 
+# FASE 2 DEL REFACTOR MODULAR (Diciembre 2025):
+# Las funciones de seguridad han sido migradas a /core/security.py
+# Este bloque importa y re-exporta para compatibilidad con código existente.
+#
+# Funciones migradas:
+#   - hash_password(), verify_password()
+#   - create_token(), verify_token()
+#   - get_current_user()
+#   - user_has_server_access()
+#   - filter_servers_by_permissions()
+#   - filter_sucursales_by_permissions()
+#   - JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRATION_HOURS
+#   - security (HTTPBearer)
+#
+# LIMPIEZA FUTURA: Los re-exports pueden eliminarse cuando todos los imports
+# en server.py sean actualizados para usar directamente core.security
+# =============================================================================
+
+from core.security import (
+    # Configuración JWT
+    JWT_SECRET,
+    JWT_ALGORITHM,
+    JWT_EXPIRATION_HOURS,
+    security,
+    # Hashing
+    hash_password,
+    verify_password,
+    # JWT
+    create_token,
+    verify_token,
+    # Dependency
+    get_current_user,
+    # Permisos
+    user_has_server_access,
+    filter_servers_by_permissions,
+    filter_sucursales_by_permissions,
+    # Inicialización
+    init_security,
+)
+
+# Inicializar módulo de seguridad con conexión a MongoDB
+init_security(db)
 
 # ============= CONFIGURACIÓN APIs LOCALES MPRO =============
 # Estas APIs obtienen ventas del día en tiempo real desde servidores locales.
@@ -664,40 +703,6 @@ class InformeAuditoria(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     estado: str = "borrador"  # borrador, finalizado
 
-# ============= AUTHENTICATION =============
-
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-def verify_password(password: str, hashed: str) -> bool:
-    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
-
-def create_token(user_id: str, email: str, role: str) -> str:
-    payload = {
-        'user_id': user_id,
-        'email': email,
-        'role': role,
-        'exp': datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
-    }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
-
-def verify_token(token: str) -> Dict:
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expirado")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Token inválido")
-
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict:
-    token = credentials.credentials
-    payload = verify_token(token)
-    user = await db.users.find_one({"email": payload['email']}, {"_id": 0})
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    return user
-
 # ============= SQL SERVER FUNCTIONS =============
 # 
 # FASE 1 DEL REFACTOR MODULAR (Diciembre 2025):
@@ -1248,39 +1253,6 @@ async def delete_role(role_id: str, current_user: Dict = Depends(get_current_use
     
     await db.roles.delete_one({"id": role_id})
     return {"message": "Rol eliminado"}
-
-# ============= PERMISSION HELPERS =============
-
-def user_has_server_access(user: Dict, server_id: str) -> bool:
-    """Verifica si un usuario tiene acceso a un servidor"""
-    if user.get('role') == 'Administrador':
-        return True
-    allowed = user.get('allowed_servers', [])
-    return server_id in allowed if allowed else False
-
-def filter_servers_by_permissions(servers: List[Dict], user: Dict) -> List[Dict]:
-    """Filtra servidores según permisos del usuario"""
-    role = user.get('role', '')
-    logging.info(f"filter_servers: role={role}, total_servers={len(servers)}")
-    if role == 'Administrador':
-        logging.info("Usuario es Admin, retornando todos los servidores")
-        return servers
-    allowed = user.get('allowed_servers', [])
-    if not allowed:
-        logging.info("Usuario sin servidores asignados, retornando lista vacía")
-        return []
-    filtered = [s for s in servers if s.get('id') in allowed]
-    logging.info(f"Filtrado: {len(filtered)} servidores")
-    return filtered
-
-def filter_sucursales_by_permissions(sucursales: List[Dict], user: Dict, server_id: str) -> List[Dict]:
-    """Filtra sucursales según permisos del usuario"""
-    if user.get('role') == 'Administrador':
-        return sucursales
-    allowed_suc = user.get('allowed_sucursales', {})
-    if server_id not in allowed_suc or not allowed_suc[server_id]:
-        return sucursales  # Sin restricción = ver todas
-    return [s for s in sucursales if s.get('id') in allowed_suc[server_id]]
 
 # ============= SERVERS =============
 

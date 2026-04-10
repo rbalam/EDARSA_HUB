@@ -454,8 +454,8 @@ app.include_router(comercial_router, prefix="/api")
 |------|--------|--------------|-----------|-------|
 | 0 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Auditoría y documentación |
 | 1 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Migración execute_sql_query a core/db.py |
-| 2 | ⏸️ PENDIENTE | - | - | Seguridad (get_current_user, JWT) |
-| 3 | ⏸️ PENDIENTE | - | - | Módulo Auth |
+| 2 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Migración seguridad a core/security.py |
+| 3 | ⏸️ PENDIENTE | - | - | Módulo Auth (routes) |
 | 4 | ⏸️ PENDIENTE | - | - | Módulo Compras |
 | 5 | ⏸️ PENDIENTE | - | - | Módulo Comercial |
 | 6 | ⏸️ PENDIENTE | - | - | Módulo RH |
@@ -506,6 +506,51 @@ app.include_router(comercial_router, prefix="/api")
 
 **Impacto en Performance**: NEUTRO (0% degradación)
 
+### Detalles Fase 2 Completada
+
+**Fecha**: Diciembre 2025
+
+**Archivos modificados**:
+1. `/app/backend/core/security.py` - Implementación completa (270 líneas)
+2. `/app/backend/server.py` - Import directo + init_security(db)
+
+**Funciones migradas a core/security.py**:
+- `hash_password()` - Hashing bcrypt
+- `verify_password()` - Verificación bcrypt
+- `create_token()` - Creación de JWT
+- `verify_token()` - Verificación de JWT
+- `get_current_user()` - Dependency de FastAPI (183 endpoints)
+- `user_has_server_access()` - Verificación de permisos
+- `filter_servers_by_permissions()` - Filtrado de servidores
+- `filter_sucursales_by_permissions()` - Filtrado de sucursales
+- `JWT_SECRET`, `JWT_ALGORITHM`, `JWT_EXPIRATION_HOURS` - Configuración
+- `security` (HTTPBearer) - Extractor de token
+
+**Patrón de inyección de dependencia**:
+- `init_security(db)` se llama desde server.py después de crear conexión MongoDB
+- Evita imports circulares y mantiene una sola instancia de conexión
+
+**Compatibilidad mantenida**:
+- 183 endpoints con `Depends(get_current_user)` siguen funcionando
+- `portal_proveedores.py` recibe `JWT_SECRET` vía init_portal_db (sin cambios)
+
+**Validación**:
+- ✅ Login funciona
+- ✅ `/api/auth/me` retorna usuario
+- ✅ `/api/servers` filtra por permisos
+- ✅ Token inválido retorna 401
+- ✅ Sin errores en logs
+
+**Validación de Performance**:
+- ✅ verify_token: ~0.013ms por llamada
+- ✅ filter_servers_by_permissions: ~0.004ms por llamada
+- ✅ `/api/auth/me`: ~100ms (sin cambio)
+- ✅ `/api/servers`: ~100ms (sin cambio)
+- ✅ `/api/users`: ~100ms (sin cambio)
+- ✅ NO hay wrappers intermedios
+
+**Impacto en Performance**: NEUTRO (0% degradación)
+
 ---
 
 ## 10. Historial de Cambios
@@ -514,6 +559,7 @@ app.include_router(comercial_router, prefix="/api")
 |-------|--------|-------|
 | Dic 2025 | Documento inicial creado | E1 Agent |
 | Dic 2025 | Fase 1 completada: execute_sql_query migrado a core/db.py | E1 Agent |
+| Dic 2025 | Fase 2 completada: seguridad migrada a core/security.py | E1 Agent |
 
 ---
 
