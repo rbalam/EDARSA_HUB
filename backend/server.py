@@ -10883,24 +10883,22 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
         if ventas_api_local.get("aplicado", False):
             if ventas_api_local.get("reemplazar", False):
                 # Modo "Ventas del Día": REEMPLAZAR datos de nube con API local
-                ventas = ventas_api_local["ventas"]
-                cheques = ventas_api_local["cheques"]
-                pax = ventas_api_local["pax"]
-                logging.info(f"API Local REEMPLAZÓ datos de {sucursal_nombre}: ${ventas_api_local['ventas']:,.2f} de {ventas_api_local.get('api', 'N/A')}")
+                # PERO solo si hay ventas reales en la API local
+                if ventas_api_local["ventas"] > 0 or ventas_api_local["cheques"] > 0:
+                    ventas = ventas_api_local["ventas"]
+                    cheques = ventas_api_local["cheques"]
+                    pax = ventas_api_local["pax"]
+                    logging.info(f"API Local REEMPLAZÓ datos de {sucursal_nombre}: ${ventas_api_local['ventas']:,.2f} de {ventas_api_local.get('api', 'N/A')}")
+                else:
+                    # API local retornó $0 - mantener datos de la nube como fallback
+                    logging.info(f"API Local retornó $0 para {sucursal_nombre} - manteniendo datos de nube: ${ventas:,.2f}")
             else:
                 # Modo normal: SUMAR ventas de API local a las de nube
                 ventas += ventas_api_local["ventas"]
                 cheques += ventas_api_local["cheques"]
                 pax += ventas_api_local["pax"]
                 logging.info(f"API Local sumada a {sucursal_nombre}: +${ventas_api_local['ventas']:,.2f} de {ventas_api_local.get('api', 'N/A')}")
-        elif solo_ventas_dia and ventas_api_local.get("reemplazar", False):
-            # Modo "Ventas del Día" con API local configurada pero no aplicada (error/omitido): usar $0
-            # Las sucursales con API local deben obtener datos SOLO de la API local
-            razon = ventas_api_local.get("razon", "desconocido")
-            logging.warning(f"API Local {razon} para {sucursal_nombre} en modo Ventas del Día - usando ${ventas_api_local['ventas']:.2f}")
-            ventas = ventas_api_local["ventas"]  # Será $0
-            cheques = ventas_api_local["cheques"]
-            pax = ventas_api_local["pax"]
+        # Si la API local no está aplicada, mantener datos de la nube (ya asignados)
         # ============= FIN INTEGRACIÓN API LOCAL =============
         
         # Cálculos
