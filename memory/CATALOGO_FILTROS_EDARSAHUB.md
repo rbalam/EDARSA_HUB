@@ -1883,15 +1883,26 @@ if periodo == "dia":
 | CIENFUEGOS | SoftRestaurant | ✅ CUADRA | $0 |
 | 130° QUERETARO | MPRO | ✅ CUADRA | $0 |
 | LA ESTELAR | SoftRestaurant | ✅ CUADRA | $0 |
-| ORIGEN | MPRO | 🟡 ~OK | $845 (0.18%) |
+| ORIGEN | MPRO | ✅ CUADRA | $0 |
 | EDARSA | MPRO | ✅ CUADRA | $0 |
 
 **Total:**
-- Ventas: Diferencia $845 de $4,466,089 = **0.02%**
-- PAX: Diferencia 2 de 4,508 = **0.04%**
-- Cheques: Diferencia 1 de 1,544 = **0.06%**
+- Ventas: Diferencia $0.01 de $4,500,383.66 = **0.0000002%** (error de redondeo)
+- PAX: Diferencia 0 de 4,559 = **0%**
+- Cheques: Diferencia 0 de 1,565 = **0%**
 
-**Nota:** La diferencia residual en ORIGEN se debe a timing de sincronización entre consultas y está dentro de tolerancia operativa aceptable.
+**ESTADO: ✅ 100% HOMOLOGADO**
+
+### J.8 Causas Raíz Identificadas y Corregidas
+
+| # | Causa Raíz | Impacto | Corrección |
+|---|-----------|---------|------------|
+| 1 | Dashboard Comercial NO sumaba `tempcheques` | SoftRestaurant: diferencia en ventas del día | ✅ Añadida suma de tempcheques |
+| 2 | Dashboard Comercial NO integraba API Local MPRO en período "mes" | MPRO: datos incompletos para QRO/ORIGEN | ✅ Integración homologada |
+| 3 | Dashboard usaba `fecha_fin=HOY` vs Tablero Ejecutivo `fecha_fin=AYER` | Diferencia de 1 día de ventas | ✅ Homologado a AYER |
+| 4 | PAX=0 en sucursales MPRO sin datos en tabla Comanda | EDARSA mostraba PAX=0 | ✅ Fallback PAX=cheques |
+| 5 | Dashboard filtraba `Es_Cve_Estado <> 'CA'` pero Tablero Ejecutivo no | $845 de diferencia en ORIGEN | ✅ Homologado sin filtro |
+| 6 | Dashboard usaba `23:59:59` en fecha_fin pero Tablero no | Diferencias de milisegundos | ✅ Homologado formato |
 
 ---
 

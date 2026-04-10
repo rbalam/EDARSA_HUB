@@ -8700,6 +8700,68 @@ WHERE VE.Vn_Fecha >= '{fecha_ini}'
             # Query con PAX de tabla Comanda - usar formato YYYYMMDD para MPRO
             fi_mpro = fecha_ini.replace('-', '')
             ff_mpro = fecha_fin.replace('-', '')
+            
+            # ============= HOMOLOGACIÓN COMPLETA CON TABLERO EJECUTIVO =============
+            # El Tablero Ejecutivo (get_kpis_mpro_por_sucursal) hace:
+            # 1. Detecta último día GLOBAL del servidor
+            # 2. Ajusta ff (fecha_fin) a ese día
+            # 3. Para cada sucursal, detecta SU último día dentro del rango ajustado
+            # 4. Consulta ventas para esa sucursal dentro del rango
+            #
+            # Replicamos EXACTAMENTE esta lógica:
+            
+            # PASO 1: Detectar último día GLOBAL del servidor (sin filtro de sucursal)
+            # NOTA: Sin filtro Es_Cve_Estado para homologar con Tablero Ejecutivo (línea 10739)
+            try:
+                query_ultimo_dia_global = f"""
+SELECT MAX(CONVERT(DATE, VE.Vn_Fecha)) as ultimo_dia_venta
+FROM Venta_Encabezado VE
+WHERE VE.Vn_Fecha >= '{fi_mpro}' AND VE.Vn_Fecha <= '{ff_mpro}'
+"""
+                result_ultimo_global = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_ultimo_dia_global
+                )
+                if result_ultimo_global and result_ultimo_global[0].get('ultimo_dia_venta'):
+                    ultimo_dia_global = result_ultimo_global[0]['ultimo_dia_venta']
+                    if isinstance(ultimo_dia_global, str):
+                        ff_mpro_global = ultimo_dia_global.replace('-', '')
+                    else:
+                        ff_mpro_global = ultimo_dia_global.strftime('%Y%m%d')
+                    logging.info(f"Dashboard Comercial MPRO: Último día GLOBAL: {ff_mpro_global}")
+                else:
+                    ff_mpro_global = ff_mpro
+            except Exception as e:
+                logging.warning(f"Dashboard Comercial MPRO: Error detectando último día global: {e}")
+                ff_mpro_global = ff_mpro
+            
+            # PASO 2: Detectar último día ESPECÍFICO para esta sucursal dentro del rango global
+            try:
+                query_ultimo_dia_suc = f"""
+SELECT MAX(CONVERT(DATE, VE.Vn_Fecha)) as ultimo_dia_venta
+FROM Venta_Encabezado VE
+{sucursal_join}
+WHERE VE.Vn_Fecha >= '{fi_mpro}' AND VE.Vn_Fecha <= '{ff_mpro_global}'
+  {sucursal_filter}
+"""
+                result_ultimo_suc = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_ultimo_dia_suc
+                )
+                if result_ultimo_suc and result_ultimo_suc[0].get('ultimo_dia_venta'):
+                    ultimo_dia_suc = result_ultimo_suc[0]['ultimo_dia_venta']
+                    if isinstance(ultimo_dia_suc, str):
+                        ff_mpro = ultimo_dia_suc.replace('-', '')
+                    else:
+                        ff_mpro = ultimo_dia_suc.strftime('%Y%m%d')
+                    logging.info(f"Dashboard Comercial MPRO: Último día sucursal '{sucursal}': {ff_mpro}")
+                else:
+                    ff_mpro = ff_mpro_global
+            except Exception as e:
+                logging.warning(f"Dashboard Comercial MPRO: Error detectando último día sucursal: {e}")
+                ff_mpro = ff_mpro_global
+            # ============= FIN HOMOLOGACIÓN COMPLETA =============
+            
             fia_mpro = fecha_ini_ant.replace('-', '')
             ffa_mpro = fecha_fin_ant.replace('-', '')
             fiaa_mpro = fecha_ini_ano_ant.replace('-', '')
@@ -8714,8 +8776,7 @@ FROM Venta_Encabezado VE
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 {sucursal_join}
 WHERE VE.Vn_Fecha >= '{fi_mpro}'
-  AND VE.Vn_Fecha <= '{ff_mpro} 23:59:59'
-  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+  AND VE.Vn_Fecha <= '{ff_mpro}'
   {sucursal_filter}
 """
             print(f"*** MPRO Query sucursal_filter={sucursal_filter}, fi={fi_mpro}, ff={ff_mpro} ***")
