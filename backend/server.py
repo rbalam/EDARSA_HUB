@@ -15822,6 +15822,63 @@ async def agregar_evento_historial(solicitud_id: str, evento: Dict):
         {"$push": {"historial": evento}}
     )
 
+# ============= ENDPOINTS DE DIAGNÓSTICO DEL SISTEMA =============
+# Añadidos en Prioridad 1 - Connection Pooling (Abril 2026)
+
+@api_router.get("/sistema/pool-stats")
+async def get_pool_statistics(current_user: Dict = Depends(get_current_user)):
+    """
+    Obtiene estadísticas del connection pool de SQL Server.
+    Solo accesible para Administradores.
+    """
+    if current_user.get("role") != "Administrador":
+        raise HTTPException(status_code=403, detail="Solo administradores pueden ver estadísticas del pool")
+    
+    try:
+        from core.pool import get_pool_statistics, get_pool_manager
+        from core.db import get_server_cache_status
+        
+        stats = get_pool_statistics()
+        server_cache = get_server_cache_status()
+        
+        return {
+            "pool_stats": stats,
+            "server_cooldown_cache": server_cache,
+            "mensaje": "Connection pooling activo - reduce overhead de conexiones SQL"
+        }
+    except Exception as e:
+        return {
+            "pool_stats": {"error": str(e)},
+            "server_cooldown_cache": {},
+            "mensaje": "Error obteniendo estadísticas"
+        }
+
+@api_router.post("/sistema/pool-reset")
+async def reset_pool_connections(current_user: Dict = Depends(get_current_user)):
+    """
+    Resetea todos los pools de conexiones SQL Server.
+    Solo accesible para Administradores. Usar con precaución.
+    """
+    if current_user.get("role") != "Administrador":
+        raise HTTPException(status_code=403, detail="Solo administradores pueden resetear pools")
+    
+    try:
+        from core.pool import close_all_pools
+        from core.db import reset_server_cache
+        
+        close_all_pools()
+        reset_server_cache()
+        
+        return {
+            "success": True,
+            "mensaje": "Todos los pools de conexiones han sido reseteados"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 @api_router.get("/sistema/catalogos-disponibles")
 async def listar_catalogos_sistema(current_user: Dict = Depends(get_current_user)):
     """Lista todos los catálogos del sistema disponibles para solicitudes"""

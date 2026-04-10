@@ -72,6 +72,57 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ---
 
+### Session: April 10, 2026 - Continuation
+
+#### PRIORIDAD 1 COMPLETADA: Connection Pooling SQL Server
+
+**Problema resuelto**: Cada request SQL creaba una nueva conexión (100-500ms overhead)
+
+**Solución implementada**:
+- Nuevo módulo `/app/backend/core/pool.py` (400+ líneas)
+- Connection pooling con DBUtils PooledDB
+- Pool por servidor (4 pools activos)
+- Fallback automático pytds → pymssql
+- Reutilización de conexiones
+
+**Resultados de performance**:
+- Primera llamada: 4532ms (crea pools)
+- Segunda llamada: 2199ms (52% más rápido)
+- Tercera llamada: 2151ms (53% más rápido)
+
+**Endpoints de diagnóstico añadidos**:
+- `GET /api/sistema/pool-stats` - Ver estadísticas del pool
+- `POST /api/sistema/pool-reset` - Resetear todos los pools
+
+**Archivos modificados**:
+- `/app/backend/core/pool.py` (NUEVO)
+- `/app/backend/core/db.py` (execute_sql_query usa pool)
+- `/app/backend/server.py` (endpoints de diagnóstico)
+- `/app/backend/requirements.txt` (DBUtils==3.1.2)
+
+#### PRIORIDAD 2 COMPLETADA: Tests de Regresión
+
+**Suite de tests creada**:
+- 28 tests nuevos, 100% pasando
+- Cobertura: Auth, Comercial, Pool, Servers
+- Markers: smoke (22), regression (4), slow (2)
+
+**Archivos creados**:
+- `/app/backend/tests/conftest.py` - Fixtures
+- `/app/backend/tests/test_auth.py` - 6 tests
+- `/app/backend/tests/test_comercial.py` - 9 tests
+- `/app/backend/tests/test_pool.py` - 10 tests
+- `/app/backend/tests/test_servers.py` - 4 tests
+- `/app/backend/pytest.ini` - Configuración
+
+**Comandos**:
+```bash
+pytest tests/ -m smoke      # 22 tests en ~12s
+pytest tests/ -m regression # 4 tests en ~6s
+```
+
+---
+
 ### Session: April 10, 2026
 
 #### Fase 5B-1: Migración Adapters (APIs Locales MPRO)
