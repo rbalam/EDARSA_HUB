@@ -115,9 +115,16 @@ from modules.compras import init_compras_module
 # Inicializar módulo compras (para schemas y utils, no rutas aún)
 init_compras_module(db)
 
-# NOTA: No se registra compras_router porque los endpoints aún están en server.py
-# from modules.compras import router as compras_router
-# api_router.include_router(compras_router)
+# MÓDULO COMERCIAL: Dashboard comercial, tablero ejecutivo, metas
+# - Fase 5: Estructura creada, endpoints permanecen en server.py
+# - ~3300 líneas de lógica compleja con homologación multi-origen
+# - Incluye integración con APIs locales MPRO
+# ===========================================
+
+from modules.comercial import init_comercial_module
+
+# Inicializar módulo comercial
+init_comercial_module(db)
 
 # ============= CONFIGURACIÓN APIs LOCALES MPRO =============
 # Estas APIs obtienen ventas del día en tiempo real desde servidores locales.
