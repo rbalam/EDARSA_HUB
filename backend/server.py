@@ -103,19 +103,21 @@ init_auth_module(db)
 # Registrar router de auth
 api_router.include_router(auth_router)
 
-# MÓDULO COMPRAS: Compras, pedidos, inventarios
-# - Migrado en Fase 4 del refactor modular
-# - Endpoints migrados: inventarios-fisicos, pedidos-vigentes, parametros, detalle-factura, facturas-proveedor
-# - Endpoints pendientes en server.py: calculo-pedido, auditoria-operativa, dashboard, analisis
+# MÓDULO COMPRAS: Estado de migración
+# - Fase 4B: Los endpoints de compras permanecen en server.py por complejidad
+# - La estructura del módulo (schemas, repository, service) está lista
+# - Los endpoints se migrarán gradualmente en fases posteriores
+# - Por ahora, server.py sigue siendo la fuente de verdad para compras
 # ===========================================
 
-from modules.compras import router as compras_router, init_compras_module
+from modules.compras import init_compras_module
 
-# Inicializar módulo compras con conexión a MongoDB
+# Inicializar módulo compras (para schemas y utils, no rutas aún)
 init_compras_module(db)
 
-# Registrar router de compras
-api_router.include_router(compras_router)
+# NOTA: No se registra compras_router porque los endpoints aún están en server.py
+# from modules.compras import router as compras_router
+# api_router.include_router(compras_router)
 
 # ============= CONFIGURACIÓN APIs LOCALES MPRO =============
 # Estas APIs obtienen ventas del día en tiempo real desde servidores locales.
@@ -5196,24 +5198,42 @@ class CalculoPedidoRequest(BaseModel):
 
 # ============= MÓDULO DE COMPRAS - ENDPOINTS =============
 #
-# FASE 4 DEL REFACTOR MODULAR (Diciembre 2025):
-# Los siguientes endpoints HAN SIDO MIGRADOS a modules/compras/routes.py
-# pero se mantienen aquí comentados como referencia y respaldo.
+# FASE 4B DEL REFACTOR MODULAR (Diciembre 2025):
+# 
+# ESTADO ACTUAL:
+# - La estructura modular está creada (schemas, repository, service)
+# - Los ENDPOINTS permanecen aquí por su complejidad (~2000 líneas de lógica)
+# - Se migrarán gradualmente en fases posteriores
 #
-# ENDPOINTS MIGRADOS (ahora servidos desde modules/compras/):
+# ENDPOINTS EN ESTE ARCHIVO:
 # - GET /compras/inventarios-fisicos/{server_id}
 # - GET /compras/pedidos-vigentes/{server_id}  
 # - GET /compras/parametros/{server_id}
 # - POST /compras/parametros
+# - GET /compras/detalle-pedido/{server_id}/{folio}
+# - GET /compras/detalle-pedido-manual/{server_id}
+# - GET /compras/detalle-movimientos/{server_id}
+# - GET /compras/detalle-consumos/{server_id}
+# - POST /compras/calculo-pedido (~420 líneas)
+# - POST /compras/productos-para-captura
+# - POST /compras/auditoria-operativa (~710 líneas)
+# - POST /compras/detalle-movimientos
+# - POST /compras/detalle-consumos
+# - GET /compras/dashboard/{server_id}
+# - POST /compras/analisis
 # - GET /compras/facturas-proveedor/{server_id}
 # - GET /compras/detalle-factura/{server_id}/{folio}
 #
-# NOTA: El código original permanece abajo por si se necesita rollback.
-# FastAPI usa el primer router registrado, que es modules/compras.
+# JUSTIFICACIÓN:
+# Estos endpoints contienen lógica de negocio crítica para:
+# - Cálculo de pedidos sugeridos
+# - Auditoría operativa
+# - Dashboard de compras
+# - Análisis de compras
+# La migración debe hacerse con cuidado para no romper funcionalidad.
 # =============================================================================
 
-# MIGRADO A modules/compras/routes.py - Este endpoint ya no se usa
-# @api_router.get("/compras/inventarios-fisicos/{server_id}")
+@api_router.get("/compras/inventarios-fisicos/{server_id}")
 async def obtener_inventarios_fisicos(server_id: str, sucursal: str = None, sucursal_id: str = None, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Obtiene la lista de inventarios físicos disponibles para seleccionar, filtrado por almacén y sucursal"""
     verify_token(credentials.credentials)
