@@ -866,6 +866,8 @@ const validateFilters = (filters) => {
 | 2025-04-09 | 2.5 | REGLA UX: Scroll horizontal y altura expandida en Pantalla Completa de Explorador BD (I.11) | E1 Agent |
 | 2025-04-10 | 2.6 | REGLA UX: Indicadores de estado en filtros de Auditoría (loading, vacío, sucursal) (I.12) | E1 Agent |
 | 2025-04-10 | 2.7 | FIX CRÍTICO: Formato de fecha SQL para APIs locales (101 en lugar de 103) (I.13) | E1 Agent |
+| 2025-04-10 | 2.8 | FIX CRÍTICO: Query SQL con columna ambigua co_folio (I.14) | E1 Agent |
+| 2025-04-10 | 2.9 | Búsqueda de APIs locales desde MongoDB con fallback a config hardcodeada | E1 Agent |
 
 ---
 
@@ -1566,6 +1568,76 @@ Siempre usar formato `101` para consultas de fecha en servidores MPRO de EDARSA.
 
 **Archivo modificado:**
 - ✅ `/app/backend/server.py` (línea 152)
+
+---
+
+### I.14 Fix Crítico: Columna Ambigua co_folio en Query de APIs Locales
+
+**IMPLEMENTACIÓN (2025-04-10):**
+
+**Problema identificado:**
+La query SQL para obtener ventas del día desde APIs locales tenía un error: `Ambiguous column name 'co_folio'`.
+
+**Causa:**
+Tanto la tabla `Comanda` como `Comanda_Detalle` tienen una columna llamada `co_folio`. Al hacer JOIN y usar `COUNT(DISTINCT co_folio)` sin calificar, SQL Server no sabe de qué tabla es.
+
+**Error del servidor:**
+```json
+{"detail":"('42000', \"[42000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Ambiguous column name 'co_folio'. (209)\")"} 
+```
+
+**Solución aplicada:**
+
+```sql
+-- ANTES (columna ambigua)
+SELECT 
+    ISNULL(SUM(cd_importe), 0) as ventas,
+    COUNT(DISTINCT co_folio) as cheques,  -- ← ERROR
+    ISNULL(SUM(co_personas), 0) as pax
+FROM Comanda 
+INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio 
+
+-- DESPUÉS (columna calificada)
+SELECT 
+    ISNULL(SUM(cd_importe), 0) as ventas,
+    COUNT(DISTINCT Comanda.co_folio) as cheques,  -- ← CORRECTO
+    ISNULL(SUM(co_personas), 0) as pax
+FROM Comanda 
+INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio 
+```
+
+**REGLA CRÍTICA:**
+Siempre calificar columnas con el nombre de la tabla cuando se hace JOIN entre tablas que comparten nombres de columna.
+
+**Archivo modificado:**
+- ✅ `/app/backend/server.py` (línea 148)
+
+---
+
+### I.15 Búsqueda de APIs Locales desde MongoDB con Fallback
+
+**IMPLEMENTACIÓN (2025-04-10):**
+
+Se mejoró la función `sumar_ventas_api_local_a_sucursal()` para buscar APIs locales en el siguiente orden:
+
+1. **Primero**: Buscar en MongoDB servidores con `tipo: 'api_mpro'` y `active: True`
+2. **Fallback**: Si no hay en MongoDB, usar configuración hardcodeada en `APIS_MPRO_LOCALES`
+
+**Flujo de búsqueda:**
+```
+1. Buscar en MongoDB (db.servers.find({tipo: 'api_mpro', active: True}))
+   ↓
+2. Si hay resultados → Usar API de MongoDB
+   ↓
+3. Si no hay → Buscar en APIS_MPRO_LOCALES (hardcoded)
+   ↓
+4. Matching por sucursal_destino
+   ↓
+5. Consultar API y retornar datos
+```
+
+**Archivo modificado:**
+- ✅ `/app/backend/server.py` (función sumar_ventas_api_local_a_sucursal)
 
 ---
 
