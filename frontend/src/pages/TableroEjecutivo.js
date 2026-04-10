@@ -932,8 +932,8 @@ export default function TableroEjecutivo() {
         <DetalleUnidad 
           unidad={unidadSeleccionada} 
           onClose={() => setUnidadSeleccionada(null)}
-          mes={mes}
-          anio={anio}
+          mes={selectedMeses.length > 0 ? selectedMeses[0] : null}
+          anio={selectedAnios.length > 0 ? selectedAnios[0] : null}
         />
       )}
     </div>
