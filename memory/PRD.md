@@ -26,6 +26,26 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
+### Session: December 2025 (Refactor Modular)
+
+#### Completed Work
+- [x] **Auditoría técnica completa de `server.py`** (18,082 líneas analizadas)
+- [x] **Mapa de Migración documentado**: `/app/memory/MAPA_MIGRACION.md`
+  - Inventario de 101 endpoints, 214 funciones async, 31 modelos Pydantic
+  - Clasificación por dominio y módulo destino
+  - Acoplamientos críticos identificados
+  - Plan de 7 fases con riesgos y mitigaciones
+  - Checklists de validación pre/durante/post migración
+  - Reglas de no ruptura documentadas
+- [x] **Scaffolding modular creado**: `/app/backend/core/` y `/app/backend/modules/`
+  - 36 archivos base inicializados (sin lógica aún)
+
+#### Status
+- **Fase 0 (Preparación)**: ✅ COMPLETADA
+- **Fases 1-7**: ⏸️ Pendientes de autorización
+
+---
+
 ### Session: April 9, 2026
 
 #### Completed Features
@@ -65,12 +85,15 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 ---
 
 ## Key Files Reference
-- `/app/backend/server.py` - Backend monolito
+- `/app/backend/server.py` - Backend monolito (18,082 líneas)
 - `/app/backend/.env` - Credenciales BD y APIs
+- `/app/backend/core/` - Módulos core (scaffolding)
+- `/app/backend/modules/` - Módulos de negocio (scaffolding)
 - `/app/frontend/src/pages/Compras.js` - Módulo compras con cálculos cliente
 - `/app/frontend/src/pages/Servidores.js` - Config SQL y APIs
 - `/app/frontend/src/pages/ExploradorBD.js` - Exploración agrupada tablas
 - `/app/memory/CATALOGO_FILTROS_EDARSAHUB.md` - Reglas UI y filtros
+- `/app/memory/MAPA_MIGRACION.md` - **Plan de migración modular**
 
 ## Key API Endpoints
 - `/api/compras/auditoria-inventario` - Auditoría de inventarios
