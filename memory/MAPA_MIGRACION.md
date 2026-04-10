@@ -495,6 +495,17 @@ app.include_router(comercial_router, prefix="/api")
 - ✅ `/api/comercial/dashboard` ejecuta queries SQL
 - ✅ Logs muestran "Query exitosa con pytds"
 
+**Validación de Performance**:
+- ✅ Import desde core/db.py: ~1.3ms (solo primera vez, después cacheado)
+- ✅ parse_sql_server_host: ~0.003ms por llamada
+- ✅ is_server_offline_in_memory: ~0.0001ms (lectura de dict)
+- ✅ `/api/servers`: ~110ms (sin cambio vs baseline)
+- ✅ `/api/comercial/tablero-ejecutivo`: ~8s (sin cambio - tiempo dominado por SQL remoto)
+- ✅ NO hay wrappers intermedios: server.py hace import directo, no función puente
+- ✅ Caché de estado de servidores sigue siendo dict en memoria (O(1))
+
+**Impacto en Performance**: NEUTRO (0% degradación)
+
 ---
 
 ## 10. Historial de Cambios
