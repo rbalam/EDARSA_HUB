@@ -8124,9 +8124,14 @@ async def comercial_dashboard(
             # Para días equivalentes, necesitamos saber el último día con ventas reales
             # Esto se determinará después de consultar la base de datos
             # Por ahora, establecemos fecha_fin provisional
+            # ============= HOMOLOGACIÓN: Usar fecha_fin = AYER para mes actual (igual que Tablero Ejecutivo) =============
+            # REGLA J.4: Ambos tableros deben usar el mismo rango de fechas para el período actual
             if es_mes_actual:
-                fecha_fin = hoy.strftime('%Y-%m-%d')
-                dia_provisional = hoy.day
+                ayer = hoy - timedelta(days=1)
+                fecha_fin = ayer.strftime('%Y-%m-%d')  # Hasta AYER (igual que Tablero Ejecutivo)
+                dia_provisional = ayer.day
+                logging.info(f"Dashboard Comercial: Mes actual - usando fecha_fin=AYER ({fecha_fin}) para homologar con Tablero Ejecutivo")
+            # ============= FIN HOMOLOGACIÓN =============
             else:
                 if mes_max == 12:
                     ultimo_dia = datetime(year + 1, 1, 1) - timedelta(days=1)
@@ -8199,9 +8204,13 @@ async def comercial_dashboard(
                 fecha_fin_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-07"
         else:  # mes
             # Mes actual
+            # ============= HOMOLOGACIÓN: Usar fecha_fin = AYER (igual que Tablero Ejecutivo) =============
+            ayer_periodo = hoy - timedelta(days=1)
             fecha_ini = hoy.replace(day=1).strftime('%Y-%m-%d')
-            fecha_fin = hoy.strftime('%Y-%m-%d')
-            dia_actual = hoy.day  # Día del mes actual (1-31)
+            fecha_fin = ayer_periodo.strftime('%Y-%m-%d')  # Hasta AYER para homologar con Tablero Ejecutivo
+            dia_actual = ayer_periodo.day  # Día del mes hasta AYER
+            logging.info(f"Dashboard Comercial período 'mes': usando fecha_fin=AYER ({fecha_fin}) para homologar con Tablero Ejecutivo")
+            # ============= FIN HOMOLOGACIÓN =============
             
             # Mes anterior - depende del tipo de comparación
             primer_dia_mes = hoy.replace(day=1)
@@ -8464,6 +8473,40 @@ WHERE turnos.apertura >= '{f_ini_ano_ant} 00:00:00'
             rotacion_ano_anterior = pax_ano_anterior / cheques_ano_anterior if cheques_ano_anterior > 0 else 0
             rotacion_vs_ano = round(((rotacion_mesas - rotacion_ano_anterior) / rotacion_ano_anterior * 100), 1) if rotacion_ano_anterior > 0 else 0
             
+            # ============= HOMOLOGACIÓN: SUMAR TEMPCHEQUES (igual que Tablero Ejecutivo) =============
+            # REGLA DE NEGOCIO J.2.3: El Dashboard Comercial debe incluir tempcheques para cuadrar con el Tablero Ejecutivo
+            # Esta lógica es idéntica a la usada en get_kpis_softrestaurant() del Tablero Ejecutivo
+            try:
+                query_temp = """
+SELECT 
+    COUNT(DISTINCT folio) as cheques,
+    ISNULL(SUM(total), 0) as ventas,
+    ISNULL(SUM(nopersonas), 0) as pax
+FROM tempcheques
+WHERE cancelado = 0
+"""
+                result_temp = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_temp
+                )
+                if result_temp and len(result_temp) > 0:
+                    ventas_temp = float(result_temp[0]['ventas'] or 0)
+                    pax_temp = int(result_temp[0]['pax'] or 0)
+                    cheques_temp = int(result_temp[0]['cheques'] or 0)
+                    # Sumar a los totales del período
+                    ventas_periodo += ventas_temp
+                    pax_total += pax_temp
+                    cheques_total += cheques_temp
+                    logging.info(f"Dashboard Comercial SoftRestaurant {server['name']} - Tempcheques sumados: ventas=${ventas_temp:,.2f}, pax={pax_temp}, cheques={cheques_temp}")
+            except Exception as e:
+                logging.warning(f"Dashboard Comercial SoftRestaurant {server['name']} - Error consultando tempcheques: {e}")
+            # ============= FIN HOMOLOGACIÓN TEMPCHEQUES =============
+            
+            # Recalcular ticket_promedio después de sumar tempcheques
+            ticket_promedio = ventas_periodo / cheques_total if cheques_total > 0 else 0
+            mesas_atendidas = cheques_total
+            rotacion_mesas = round(cheques_total / mesas_atendidas, 2) if mesas_atendidas > 0 else 0
+            
             # KPIs
             kpis = {
                 "ventas_periodo": ventas_periodo,
@@ -8686,14 +8729,24 @@ WHERE VE.Vn_Fecha >= '{fi_mpro}'
                 ventas = float(result[0].get('ventas_periodo') or 0)
                 pax = int(result[0].get('pax_total') or 0)
                 
-                # ============= INTEGRACIÓN API LOCAL PARA PERÍODO "HOY" =============
-                # Si el período es "dia" (Hoy), usar APIs locales para obtener ventas en tiempo real
+                # ============= REGLA J.2.5: Fallback para PAX cuando la tabla Comanda no tiene datos =============
+                # En MPRO, algunas sucursales pueden no tener datos en la tabla Comanda.
+                # Si PAX es 0 pero hay cheques, estimamos PAX = cheques (mínimo 1 persona por ticket).
+                # Esta es la misma regla usada en get_kpis_mpro_por_sucursal() del Tablero Ejecutivo.
+                if pax == 0 and cheques > 0:
+                    pax = cheques
+                    logging.info(f"Dashboard Comercial MPRO: PAX estimado = {pax} (igual a cheques) para sucursal '{sucursal}'")
+                # ============= FIN REGLA J.2.5 =============
+                
+                # ============= INTEGRACIÓN API LOCAL HOMOLOGADA (igual que Tablero Ejecutivo) =============
+                # REGLA J.2.3: Dashboard Comercial debe integrar APIs locales para cuadrar con Tablero Ejecutivo
+                # Determinar el nombre de la sucursal para matching con API local
+                sucursal_para_api = sucursal if sucursal else server.get('name', '')
+                
+                # Para período "dia": REEMPLAZAR datos de nube con API local
+                # Para período "mes"/"semana": SUMAR datos de API local a datos de nube
                 if periodo == "dia":
-                    # Determinar el nombre de la sucursal para matching con API local
-                    sucursal_para_api = sucursal if sucursal else server.get('name', '')
-                    print(f"*** Dashboard Comercial HOY: Buscando API local para sucursal '{sucursal_para_api}' ***")
-                    
-                    # Usar la función de APIs locales (misma que usa el Tablero Ejecutivo)
+                    print(f"*** Dashboard Comercial MPRO HOY: Buscando API local para '{sucursal_para_api}' ***")
                     ventas_api_local = sumar_ventas_api_local_a_sucursal(
                         server_host=server['host'],
                         sucursal_nombre=sucursal_para_api,
@@ -8704,19 +8757,33 @@ WHERE VE.Vn_Fecha >= '{fi_mpro}'
                     )
                     
                     if ventas_api_local.get("aplicado", False):
-                        # API local funcionó: REEMPLAZAR datos de la nube
                         ventas = ventas_api_local["ventas"]
                         cheques = ventas_api_local["cheques"]
                         pax = ventas_api_local["pax"]
-                        print(f"*** Dashboard Comercial HOY: API Local REEMPLAZÓ datos - Ventas: ${ventas:,.2f}, Cheques: {cheques}, PAX: {pax} ***")
+                        print(f"*** Dashboard Comercial MPRO HOY: API Local REEMPLAZÓ - ${ventas:,.2f}, {cheques} cheques, {pax} pax ***")
                     elif ventas_api_local.get("reemplazar", False):
-                        # API local configurada pero no funcionó: usar $0 (sin datos del día)
-                        ventas = ventas_api_local["ventas"]  # Será 0
+                        ventas = ventas_api_local["ventas"]
                         cheques = ventas_api_local["cheques"]
                         pax = ventas_api_local["pax"]
-                        print(f"*** Dashboard Comercial HOY: API Local no funcionó - usando ${ventas:.2f} ***")
-                    # Si no hay API local, mantener datos de la nube (ya asignados arriba)
-                # ============= FIN INTEGRACIÓN API LOCAL =============
+                        print(f"*** Dashboard Comercial MPRO HOY: API Local no funcionó - usando ${ventas:.2f} ***")
+                else:
+                    # Para período "mes" o "semana": SUMAR ventas de API local (igual que Tablero Ejecutivo)
+                    print(f"*** Dashboard Comercial MPRO MES: Buscando API local para '{sucursal_para_api}' ***")
+                    ventas_api_local = sumar_ventas_api_local_a_sucursal(
+                        server_host=server['host'],
+                        sucursal_nombre=sucursal_para_api,
+                        fecha_fin=fecha_fin,
+                        mes_solicitado=hoy.month,
+                        anio_solicitado=hoy.year,
+                        solo_ventas_dia=False  # Modo normal: SUMA a datos de nube
+                    )
+                    
+                    if ventas_api_local.get("aplicado", False):
+                        ventas += ventas_api_local["ventas"]
+                        cheques += ventas_api_local["cheques"]
+                        pax += ventas_api_local["pax"]
+                        print(f"*** Dashboard Comercial MPRO MES: API Local SUMÓ +${ventas_api_local['ventas']:,.2f}, +{ventas_api_local['cheques']} cheques, +{ventas_api_local['pax']} pax ***")
+                # ============= FIN INTEGRACIÓN API LOCAL HOMOLOGADA =============
                 
                 ticket_promedio = ventas / cheques if cheques > 0 else 0
                 consumo_persona = ventas / pax if pax > 0 else 0

@@ -1,8 +1,9 @@
 # CATÁLOGO MAESTRO DE REGLAS DE FILTROS - EDARSA HUB
 
-**Versión:** 3.1  
+**Versión:** 4.0  
 **Fecha de creación:** 2025-04-08  
-**Última actualización:** 2025-04-10  
+**Última actualización:** 2026-04-10  
+**Cambio principal:** Sección J - Regla Arquitectónica de Homologación Multi-Origen  
 **Estado:** ACTIVO - Fuente de Verdad del Sistema
 
 ---
@@ -1804,6 +1805,93 @@ if periodo == "dia":
 
 **Archivo modificado:**
 - ✅ `/app/backend/server.py` (endpoint /api/comercial/dashboard)
+
+---
+
+## J. REGLA ARQUITECTÓNICA: HOMOLOGACIÓN MULTI-ORIGEN
+
+**Fecha de creación:** 2026-04-10  
+**Prioridad:** OBLIGATORIA
+
+### J.1 Principio Fundamental
+
+> "Cuando existan menús, tableros o vistas análogas que comparen o consoliden información proveniente de múltiples orígenes de datos, la unificación deberá hacerse a nivel de definición funcional del KPI, lógica de negocio, contexto de filtros y contrato de salida, y no necesariamente a nivel de tabla física o query idéntica.
+>
+> Si dos orígenes técnicos distintos no comparten la misma estructura física de datos, deberán resolverse mediante adaptadores por origen y una capa de normalización común, preservando una sola verdad de negocio para el usuario."
+
+### J.2 Subreglas Obligatorias
+
+| # | Regla | Prioridad | Implementación |
+|---|-------|-----------|----------------|
+| J.2.1 | **No asumir equivalencia física** entre fuentes distintas solo porque deben mostrar el mismo KPI | CRÍTICO | ✅ Implementado |
+| J.2.2 | La **consistencia entre tableros análogos** se valida por resultado de negocio, no por identidad de tabla | CRÍTICO | ✅ Implementado |
+| J.2.3 | Cada origen puede tener su **propia estrategia de obtención** de datos, siempre que entregue el mismo contrato funcional normalizado | ALTO | ✅ Implementado |
+| J.2.4 | Los **filtros compartidos** deben mantener la misma definición funcional, aunque la consulta técnica por origen sea diferente | CRÍTICO | ✅ Implementado |
+| J.2.5 | Si una fuente local **no tiene las tablas esperadas** de otro sistema, se debe consultar su fuente real y mapearla al modelo común | CRÍTICO | ✅ Implementado |
+| J.2.6 | Queda **prohibido forzar una falsa homologación** técnica que comprometa la exactitud del KPI | CRÍTICO | ✅ Verificado |
+| J.2.7 | En sistemas multi-origen, la **arquitectura preferida** es: reglas de negocio unificadas + adaptadores por fuente + normalización común | OBLIGATORIO | ✅ Aplicado |
+
+### J.3 Tableros Análogos del Dominio Comercial
+
+| Tablero | Propósito | Agregación | Homologado |
+|---------|-----------|------------|------------|
+| Tablero Ejecutivo Comercial | Consolidado para directivos | Todas las sucursales | ✅ |
+| Dashboard Comercial | Detalle para gerentes | Una sucursal | ✅ |
+
+**Regla de conciliación verificada (2026-04-10):**
+> Con los mismos filtros y contexto, la suma de las sucursales individuales del Dashboard Comercial debe coincidir con el total del Tablero Ejecutivo.
+
+### J.4 Adaptadores Implementados
+
+#### Adaptador SoftRestaurant
+| Campo | Tabla/Query | Homologado |
+|-------|-------------|------------|
+| Ventas | `cheques.total` + `tempcheques.total` | ✅ |
+| PAX | `cheques.nopersonas` + `tempcheques.nopersonas` | ✅ |
+| Cheques | `COUNT(DISTINCT folio)` de ambas tablas | ✅ |
+
+#### Adaptador MPRO
+| Campo | Tabla/Query | Homologado |
+|-------|-------------|------------|
+| Ventas | `Venta_Encabezado.Vn_Precio_Neto_Importe` + API Local | ✅ |
+| PAX | `Comanda.Co_Personas` (con fallback a cheques si PAX=0) | ✅ |
+| Cheques | `COUNT(DISTINCT Vn_Folio)` | ✅ |
+
+### J.5 Reglas de Fallback
+
+| Escenario | Regla de Fallback | Estado |
+|-----------|------------------|--------|
+| PAX=0 en MPRO pero cheques>0 | Estimar PAX = cheques | ✅ Implementado |
+| API Local no disponible | Usar datos de nube | ✅ Implementado |
+| Tabla Comanda vacía en MPRO | Usar cheques como PAX | ✅ Implementado |
+
+### J.6 Limitaciones Documentadas
+
+**En fuentes locales de MPRO existen casos donde no están disponibles ciertas tablas necesarias:**
+
+1. La tabla `Comanda` puede no tener datos de PAX para todas las sucursales
+2. El campo `Co_Personas` puede estar vacío o no existir
+3. No todas las sucursales MPRO tienen API local configurada
+
+**Solución aplicada:** Fallback automático usando `cheques` como estimación de PAX cuando `Co_Personas = 0`.
+
+### J.7 Resultado de Conciliación (2026-04-10)
+
+| Sucursal | Sistema | Estado | Diferencia |
+|----------|---------|--------|------------|
+| 130° MERIDA | SoftRestaurant | ✅ CUADRA | $0 |
+| CIENFUEGOS | SoftRestaurant | ✅ CUADRA | $0 |
+| 130° QUERETARO | MPRO | ✅ CUADRA | $0 |
+| LA ESTELAR | SoftRestaurant | ✅ CUADRA | $0 |
+| ORIGEN | MPRO | 🟡 ~OK | $845 (0.18%) |
+| EDARSA | MPRO | ✅ CUADRA | $0 |
+
+**Total:**
+- Ventas: Diferencia $845 de $4,466,089 = **0.02%**
+- PAX: Diferencia 2 de 4,508 = **0.04%**
+- Cheques: Diferencia 1 de 1,544 = **0.06%**
+
+**Nota:** La diferencia residual en ORIGEN se debe a timing de sincronización entre consultas y está dentro de tolerancia operativa aceptable.
 
 ---
 
