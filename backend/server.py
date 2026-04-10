@@ -87,6 +87,22 @@ from core.security import (
 # Inicializar módulo de seguridad con conexión a MongoDB
 init_security(db)
 
+# ============= MÓDULOS (FASE 3) =============
+# Inicialización de módulos migrados desde server.py
+# 
+# MÓDULO AUTH: Autenticación, usuarios y roles
+# - Migrado en Fase 3 del refactor modular
+# - Endpoints: /auth/*, /users/*, /roles/*
+# ===========================================
+
+from modules.auth import router as auth_router, init_auth_module
+
+# Inicializar módulo auth con conexión a MongoDB
+init_auth_module(db)
+
+# Registrar router de auth
+api_router.include_router(auth_router)
+
 # ============= CONFIGURACIÓN APIs LOCALES MPRO =============
 # Estas APIs obtienen ventas del día en tiempo real desde servidores locales.
 # Los datos se replican al servidor en la nube por la noche (hora_replica).
@@ -997,262 +1013,26 @@ async def send_email_with_attachment(recipient_emails: List[str], subject: str, 
         raise HTTPException(status_code=500, detail=f"Error enviando email: {str(e)}")
 
 # ============= ROUTES =============
-
-@api_router.post("/auth/register")
-async def register(user_data: UserCreate):
-    # Check if user exists
-    existing = await db.users.find_one({"email": user_data.email})
-    if existing:
-        raise HTTPException(status_code=400, detail="El usuario ya existe")
-    
-    # Hash password
-    hashed_pw = hash_password(user_data.password)
-    
-    # Create user
-    user_dict = user_data.model_dump()
-    del user_dict['password']
-    user = User(**user_dict)
-    
-    doc = user.model_dump()
-    doc['password'] = hashed_pw
-    doc['created_at'] = doc['created_at'].isoformat()
-    
-    await db.users.insert_one(doc)
-    
-    token = create_token(user.id, user.email, user.role)
-    
-    return {"token": token, "user": user.model_dump()}
-
-@api_router.post("/auth/login")
-async def login(credentials: UserLogin):
-    user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
-    
-    if not user or not verify_password(credentials.password, user['password']):
-        raise HTTPException(status_code=401, detail="Credenciales inválidas")
-    
-    if not user.get('active', True):
-        raise HTTPException(status_code=401, detail="Usuario inactivo")
-    
-    token = create_token(user['id'], user['email'], user['role'])
-    
-    user_response = {k: v for k, v in user.items() if k != 'password'}
-    
-    return {"token": token, "user": user_response}
-
-@api_router.get("/auth/me")
-async def get_me(current_user: Dict = Depends(get_current_user)):
-    return current_user
-
-@api_router.get("/users", response_model=List[User])
-async def get_users(current_user: Dict = Depends(get_current_user)):
-    if current_user['role'] != 'Administrador':
-        raise HTTPException(status_code=403, detail="No autorizado")
-    
-    users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
-    return users
-
-@api_router.put("/users/{user_id}")
-async def update_user(user_id: str, user_data: Dict, current_user: Dict = Depends(get_current_user)):
-    if current_user['role'] != 'Administrador':
-        raise HTTPException(status_code=403, detail="No autorizado")
-    
-    # Preparar datos de actualización
-    update_data = {}
-    if 'name' in user_data:
-        update_data['name'] = user_data['name']
-    if 'email' in user_data:
-        update_data['email'] = user_data['email']
-    if 'role' in user_data:
-        update_data['role'] = user_data['role']
-    if 'sucursales' in user_data:
-        update_data['sucursales'] = user_data['sucursales']
-    
-    # Solo hashear contraseña si se proporciona una nueva
-    if 'password' in user_data and user_data['password']:
-        from passlib.context import CryptContext
-        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        update_data['password'] = pwd_context.hash(user_data['password'])
-    
-    if update_data:
-        await db.users.update_one({"id": user_id}, {"$set": update_data})
-    return {"message": "Usuario actualizado"}
-
-@api_router.delete("/users/{user_id}")
-async def delete_user(user_id: str, current_user: Dict = Depends(get_current_user)):
-    if current_user['role'] != 'Administrador':
-        raise HTTPException(status_code=403, detail="No autorizado")
-    
-    await db.users.update_one({"id": user_id}, {"$set": {"active": False}})
-    return {"message": "Usuario desactivado"}
-
-@api_router.put("/users/{user_id}/permissions")
-async def update_user_permissions(user_id: str, permissions: Dict, current_user: Dict = Depends(get_current_user)):
-    """Actualiza los permisos de un usuario"""
-    if current_user['role'] != 'Administrador':
-        raise HTTPException(status_code=403, detail="No autorizado")
-    
-    user = await db.users.find_one({"id": user_id})
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    
-    update_data = {}
-    if 'allowed_servers' in permissions:
-        update_data['allowed_servers'] = permissions['allowed_servers']
-    if 'allowed_sucursales' in permissions:
-        update_data['allowed_sucursales'] = permissions['allowed_sucursales']
-    if 'allowed_warehouses' in permissions:
-        update_data['allowed_warehouses'] = permissions['allowed_warehouses']
-    
-    if update_data:
-        await db.users.update_one({"id": user_id}, {"$set": update_data})
-    
-    return {"message": "Permisos actualizados"}
-
-# ============= ROLES CRUD =============
-
-# Módulos disponibles para asignar permisos
-MODULOS_DISPONIBLES = [
-    {"id": "tablero_ejecutivo", "nombre": "Tablero Ejecutivo", "descripcion": "Vista consolidada de todas las unidades"},
-    {"id": "comercial", "nombre": "Comercial", "descripcion": "Dashboard de ventas, ticket perfecto, metas"},
-    {"id": "compras", "nombre": "Compras", "descripcion": "Dashboard de compras, autorización, análisis"},
-    {"id": "inventarios", "nombre": "Inventarios", "descripcion": "Análisis de inventarios, reportes"},
-    {"id": "dashboard_inventarios", "nombre": "Dashboard Inventarios", "descripcion": "Gráficas de diferencias de inventario"},
-    {"id": "finanzas", "nombre": "Finanzas", "descripcion": "Libro mayor, cuentas, conciliación"},
-    {"id": "produccion", "nombre": "Producción", "descripcion": "Órdenes de producción, BOM"},
-    {"id": "recursos_humanos", "nombre": "Recursos Humanos", "descripcion": "Nómina, asistencias"},
-    {"id": "reportes_bi", "nombre": "Reportes BI", "descripcion": "Análisis predictivo, KPIs avanzados"},
-    {"id": "servidores", "nombre": "Servidores", "descripcion": "Configuración de conexiones a BD"},
-    {"id": "catalogo_sql", "nombre": "Catálogo SQL", "descripcion": "Consultas SQL personalizadas"},
-    {"id": "explorador_bd", "nombre": "Explorador BD", "descripcion": "Explorar estructura de bases de datos"},
-    {"id": "alertas", "nombre": "Alertas", "descripcion": "Configuración de alertas del sistema"},
-    {"id": "usuarios", "nombre": "Usuarios", "descripcion": "Gestión de usuarios y roles"},
-]
-
-@api_router.get("/roles/modulos")
-async def get_modulos_disponibles(current_user: Dict = Depends(get_current_user)):
-    """Obtiene la lista de módulos disponibles para asignar permisos"""
-    if current_user['role'] != 'Administrador':
-        raise HTTPException(status_code=403, detail="No autorizado")
-    return MODULOS_DISPONIBLES
-
-@api_router.get("/roles")
-async def get_roles(current_user: Dict = Depends(get_current_user)):
-    """Obtiene todos los roles del sistema"""
-    if current_user['role'] != 'Administrador':
-        raise HTTPException(status_code=403, detail="No autorizado")
-    
-    roles = await db.roles.find({}, {"_id": 0}).to_list(100)
-    
-    # Si no hay roles, crear los predeterminados
-    if not roles:
-        default_roles = [
-            {
-                "id": str(uuid.uuid4()),
-                "nombre": "Administrador",
-                "descripcion": "Acceso total al sistema",
-                "permisos": [m["id"] for m in MODULOS_DISPONIBLES],  # Todos los módulos
-                "es_sistema": True,  # No se puede eliminar
-                "created_at": datetime.now(timezone.utc).isoformat()
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "nombre": "Supervisor",
-                "descripcion": "Acceso a módulos operativos y reportes",
-                "permisos": ["tablero_ejecutivo", "comercial", "compras", "inventarios", "dashboard_inventarios", "catalogo_sql", "alertas"],
-                "es_sistema": True,
-                "created_at": datetime.now(timezone.utc).isoformat()
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "nombre": "Usuario",
-                "descripcion": "Acceso básico de consulta",
-                "permisos": ["comercial", "compras", "inventarios", "dashboard_inventarios"],
-                "es_sistema": True,
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-        ]
-        await db.roles.insert_many(default_roles)
-        roles = default_roles
-    
-    return roles
-
-@api_router.post("/roles")
-async def create_role(role_data: Dict, current_user: Dict = Depends(get_current_user)):
-    """Crea un nuevo rol"""
-    if current_user['role'] != 'Administrador':
-        raise HTTPException(status_code=403, detail="No autorizado")
-    
-    # Verificar que no exista un rol con el mismo nombre
-    existing = await db.roles.find_one({"nombre": role_data.get("nombre")})
-    if existing:
-        raise HTTPException(status_code=400, detail="Ya existe un rol con ese nombre")
-    
-    new_role = {
-        "id": str(uuid.uuid4()),
-        "nombre": role_data.get("nombre", ""),
-        "descripcion": role_data.get("descripcion", ""),
-        "permisos": role_data.get("permisos", []),
-        "es_sistema": False,  # Los roles creados por usuario no son de sistema
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    
-    await db.roles.insert_one(new_role)
-    if "_id" in new_role:
-        del new_role["_id"]
-    return new_role
-
-@api_router.put("/roles/{role_id}")
-async def update_role(role_id: str, role_data: Dict, current_user: Dict = Depends(get_current_user)):
-    """Actualiza un rol existente"""
-    if current_user['role'] != 'Administrador':
-        raise HTTPException(status_code=403, detail="No autorizado")
-    
-    existing = await db.roles.find_one({"id": role_id})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Rol no encontrado")
-    
-    # Solo permitir cambiar nombre/descripción/permisos en roles de sistema
-    update_data = {}
-    if "descripcion" in role_data:
-        update_data["descripcion"] = role_data["descripcion"]
-    if "permisos" in role_data:
-        update_data["permisos"] = role_data["permisos"]
-    
-    # Solo permitir cambiar nombre si no es rol de sistema
-    if not existing.get("es_sistema") and "nombre" in role_data:
-        # Verificar que el nuevo nombre no exista
-        if role_data["nombre"] != existing["nombre"]:
-            dup = await db.roles.find_one({"nombre": role_data["nombre"]})
-            if dup:
-                raise HTTPException(status_code=400, detail="Ya existe un rol con ese nombre")
-        update_data["nombre"] = role_data["nombre"]
-    
-    if update_data:
-        await db.roles.update_one({"id": role_id}, {"$set": update_data})
-    
-    updated = await db.roles.find_one({"id": role_id}, {"_id": 0})
-    return updated
-
-@api_router.delete("/roles/{role_id}")
-async def delete_role(role_id: str, current_user: Dict = Depends(get_current_user)):
-    """Elimina un rol (solo roles no de sistema)"""
-    if current_user['role'] != 'Administrador':
-        raise HTTPException(status_code=403, detail="No autorizado")
-    
-    existing = await db.roles.find_one({"id": role_id})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Rol no encontrado")
-    
-    if existing.get("es_sistema"):
-        raise HTTPException(status_code=400, detail="No se pueden eliminar roles de sistema")
-    
-    # Verificar que no haya usuarios con este rol
-    users_with_role = await db.users.count_documents({"role": existing["nombre"]})
-    if users_with_role > 0:
-        raise HTTPException(status_code=400, detail=f"No se puede eliminar: {users_with_role} usuario(s) tienen este rol asignado")
-    
-    await db.roles.delete_one({"id": role_id})
-    return {"message": "Rol eliminado"}
+# 
+# NOTA FASE 3: Las rutas de auth/users/roles han sido migradas a:
+# - modules/auth/routes.py
+# 
+# Endpoints migrados:
+# - POST /auth/register
+# - POST /auth/login  
+# - GET /auth/me
+# - GET /users
+# - PUT /users/{user_id}
+# - DELETE /users/{user_id}
+# - PUT /users/{user_id}/permissions
+# - GET /roles/modulos
+# - GET /roles
+# - POST /roles
+# - PUT /roles/{role_id}
+# - DELETE /roles/{role_id}
+#
+# LIMPIEZA FUTURA: Este comentario puede eliminarse cuando se complete el refactor
+# =============================================================================
 
 # ============= SERVERS =============
 

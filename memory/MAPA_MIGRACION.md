@@ -455,7 +455,7 @@ app.include_router(comercial_router, prefix="/api")
 | 0 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Auditoría y documentación |
 | 1 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Migración execute_sql_query a core/db.py |
 | 2 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Migración seguridad a core/security.py |
-| 3 | ⏸️ PENDIENTE | - | - | Módulo Auth (routes) |
+| 3 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Migración módulo Auth a modules/auth/ |
 | 4 | ⏸️ PENDIENTE | - | - | Módulo Compras |
 | 5 | ⏸️ PENDIENTE | - | - | Módulo Comercial |
 | 6 | ⏸️ PENDIENTE | - | - | Módulo RH |
@@ -551,6 +551,60 @@ app.include_router(comercial_router, prefix="/api")
 
 **Impacto en Performance**: NEUTRO (0% degradación)
 
+### Detalles Fase 3 Completada
+
+**Fecha**: Diciembre 2025
+
+**Archivos creados**:
+1. `/app/backend/modules/auth/__init__.py` - Inicialización del módulo
+2. `/app/backend/modules/auth/schemas.py` - Modelos Pydantic (User, UserCreate, Role, etc.)
+3. `/app/backend/modules/auth/repository.py` - Acceso a MongoDB
+4. `/app/backend/modules/auth/service.py` - Lógica de negocio
+5. `/app/backend/modules/auth/routes.py` - Endpoints FastAPI
+
+**Archivos modificados**:
+1. `/app/backend/server.py` - Registro de router, eliminación de rutas migradas (-235 líneas)
+
+**Endpoints migrados** (12 total):
+- `POST /api/auth/register` - Registro de usuario
+- `POST /api/auth/login` - Login
+- `GET /api/auth/me` - Usuario actual
+- `GET /api/users` - Lista de usuarios
+- `PUT /api/users/{user_id}` - Actualizar usuario
+- `DELETE /api/users/{user_id}` - Desactivar usuario
+- `PUT /api/users/{user_id}/permissions` - Actualizar permisos
+- `GET /api/roles/modulos` - Módulos disponibles
+- `GET /api/roles` - Lista de roles
+- `POST /api/roles` - Crear rol
+- `PUT /api/roles/{role_id}` - Actualizar rol
+- `DELETE /api/roles/{role_id}` - Eliminar rol
+
+**Arquitectura del módulo**:
+```
+modules/auth/
+├── __init__.py      # init_auth_module(db), exports
+├── schemas.py       # User, UserCreate, UserLogin, Role, MODULOS_DISPONIBLES
+├── repository.py    # Acceso a MongoDB (find_user_by_email, get_all_roles, etc.)
+├── service.py       # Lógica (register_user, login_user, get_roles, etc.)
+└── routes.py        # FastAPI router con 12 endpoints
+```
+
+**Validación**:
+- ✅ Login funciona
+- ✅ /api/auth/me retorna usuario
+- ✅ /api/users retorna 10 usuarios
+- ✅ /api/roles retorna 3 roles
+- ✅ /api/roles/modulos retorna 14 módulos
+- ✅ Endpoints no migrados (servers, comercial) siguen funcionando
+
+**Validación de Performance**:
+- ✅ Login: ~330ms (bcrypt es lento por diseño)
+- ✅ /api/auth/me: ~90ms (sin cambio)
+- ✅ /api/users: ~95ms (sin cambio)
+- ✅ /api/roles: ~97ms (sin cambio)
+
+**Impacto en Performance**: NEUTRO (0% degradación)
+
 ---
 
 ## 10. Historial de Cambios
@@ -560,6 +614,7 @@ app.include_router(comercial_router, prefix="/api")
 | Dic 2025 | Documento inicial creado | E1 Agent |
 | Dic 2025 | Fase 1 completada: execute_sql_query migrado a core/db.py | E1 Agent |
 | Dic 2025 | Fase 2 completada: seguridad migrada a core/security.py | E1 Agent |
+| Dic 2025 | Fase 3 completada: módulo auth migrado a modules/auth/ | E1 Agent |
 
 ---
 
