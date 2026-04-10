@@ -149,7 +149,7 @@ def obtener_ventas_dia_api_local(api_config: dict, forzar_consulta: bool = False
         ISNULL(SUM(co_personas), 0) as pax
     FROM Comanda 
     INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio 
-    WHERE CONVERT(date, co_fecha, 103) = CONVERT(date, GETDATE(), 103)
+    WHERE CONVERT(date, co_fecha, 101) = CONVERT(date, GETDATE(), 101)
     """
     
     result = query_api_mpro_local(api_config, sql_ventas_hoy)

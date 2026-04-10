@@ -865,6 +865,7 @@ const validateFilters = (filters) => {
 | 2025-04-09 | 2.4 | REGLA UX: Modo Pantalla Completa en Explorador BD (ocultar sidebar) (I.10) | E1 Agent |
 | 2025-04-09 | 2.5 | REGLA UX: Scroll horizontal y altura expandida en Pantalla Completa de Explorador BD (I.11) | E1 Agent |
 | 2025-04-10 | 2.6 | REGLA UX: Indicadores de estado en filtros de Auditoría (loading, vacío, sucursal) (I.12) | E1 Agent |
+| 2025-04-10 | 2.7 | FIX CRÍTICO: Formato de fecha SQL para APIs locales (101 en lugar de 103) (I.13) | E1 Agent |
 
 ---
 
@@ -1525,6 +1526,46 @@ console.log(`[Auditoría] Inventarios cargados para sucursal "${parentSucursal}"
 **Archivos NO modificados:**
 - ❌ `server.py` - NO fue modificado
 - ❌ `serversService.js` - NO fue modificado
+
+---
+
+### I.13 Fix Crítico: Formato de Fecha SQL para APIs Locales MPRO
+
+**IMPLEMENTACIÓN (2025-04-10):**
+
+**Problema identificado:**
+La función `obtener_ventas_dia_api_local()` usaba formato de fecha `103` (dd/mm/yyyy - europeo) pero los servidores SQL Server de MPRO esperan formato `101` (mm/dd/yyyy - USA).
+
+**Síntoma:**
+- El módulo "Servidores" → "Probar Conexión" funcionaba correctamente mostrando ventas del día
+- El Tablero Ejecutivo en modo "Ventas del Día" mostraba $0 para QRO y ORIGEN
+- Los logs mostraban "API Local ERROR - HTTP 500"
+
+**Causa raíz:**
+El endpoint `/api/test-api-connection` usaba formato `101` (que funcionaba), pero la función `obtener_ventas_dia_api_local()` usaba formato `103` (que fallaba).
+
+**Solución aplicada:**
+
+```sql
+-- ANTES (formato europeo - NO funcionaba)
+WHERE CONVERT(date, co_fecha, 103) = CONVERT(date, GETDATE(), 103)
+
+-- DESPUÉS (formato USA - SÍ funciona)
+WHERE CONVERT(date, co_fecha, 101) = CONVERT(date, GETDATE(), 101)
+```
+
+**Referencia de formatos SQL Server CONVERT:**
+
+| Código | Formato | Ejemplo |
+|--------|---------|---------|
+| 101 | mm/dd/yyyy (USA) | 04/10/2026 |
+| 103 | dd/mm/yyyy (Europeo) | 10/04/2026 |
+
+**REGLA CRÍTICA:**
+Siempre usar formato `101` para consultas de fecha en servidores MPRO de EDARSA.
+
+**Archivo modificado:**
+- ✅ `/app/backend/server.py` (línea 152)
 
 ---
 
