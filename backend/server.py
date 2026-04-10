@@ -8685,6 +8685,39 @@ WHERE VE.Vn_Fecha >= '{fi_mpro}'
                 cheques = int(result[0].get('cheques_total') or 0)
                 ventas = float(result[0].get('ventas_periodo') or 0)
                 pax = int(result[0].get('pax_total') or 0)
+                
+                # ============= INTEGRACIÓN API LOCAL PARA PERÍODO "HOY" =============
+                # Si el período es "dia" (Hoy), usar APIs locales para obtener ventas en tiempo real
+                if periodo == "dia":
+                    # Determinar el nombre de la sucursal para matching con API local
+                    sucursal_para_api = sucursal if sucursal else server.get('name', '')
+                    print(f"*** Dashboard Comercial HOY: Buscando API local para sucursal '{sucursal_para_api}' ***")
+                    
+                    # Usar la función de APIs locales (misma que usa el Tablero Ejecutivo)
+                    ventas_api_local = sumar_ventas_api_local_a_sucursal(
+                        server_host=server['host'],
+                        sucursal_nombre=sucursal_para_api,
+                        fecha_fin=fecha_fin,
+                        mes_solicitado=hoy.month,
+                        anio_solicitado=hoy.year,
+                        solo_ventas_dia=True  # Modo "Ventas del Día": REEMPLAZA datos de nube
+                    )
+                    
+                    if ventas_api_local.get("aplicado", False):
+                        # API local funcionó: REEMPLAZAR datos de la nube
+                        ventas = ventas_api_local["ventas"]
+                        cheques = ventas_api_local["cheques"]
+                        pax = ventas_api_local["pax"]
+                        print(f"*** Dashboard Comercial HOY: API Local REEMPLAZÓ datos - Ventas: ${ventas:,.2f}, Cheques: {cheques}, PAX: {pax} ***")
+                    elif ventas_api_local.get("reemplazar", False):
+                        # API local configurada pero no funcionó: usar $0 (sin datos del día)
+                        ventas = ventas_api_local["ventas"]  # Será 0
+                        cheques = ventas_api_local["cheques"]
+                        pax = ventas_api_local["pax"]
+                        print(f"*** Dashboard Comercial HOY: API Local no funcionó - usando ${ventas:.2f} ***")
+                    # Si no hay API local, mantener datos de la nube (ya asignados arriba)
+                # ============= FIN INTEGRACIÓN API LOCAL =============
+                
                 ticket_promedio = ventas / cheques if cheques > 0 else 0
                 consumo_persona = ventas / pax if pax > 0 else 0
                 pax_promedio = pax / cheques if cheques > 0 else 0

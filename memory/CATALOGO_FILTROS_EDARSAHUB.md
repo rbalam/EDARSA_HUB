@@ -1,6 +1,6 @@
 # CATÁLOGO MAESTRO DE REGLAS DE FILTROS - EDARSA HUB
 
-**Versión:** 2.9  
+**Versión:** 3.0  
 **Fecha de creación:** 2025-04-08  
 **Última actualización:** 2025-04-10  
 **Estado:** ACTIVO - Fuente de Verdad del Sistema
@@ -946,6 +946,7 @@ const validateFilters = (filters) => {
 | 2025-04-10 | 2.7 | FIX CRÍTICO: Formato de fecha SQL para APIs locales (101 en lugar de 103) (I.13) | E1 Agent |
 | 2025-04-10 | 2.8 | FIX CRÍTICO: Query SQL con columna ambigua co_folio (I.14) | E1 Agent |
 | 2025-04-10 | 2.9 | Búsqueda de APIs locales desde MongoDB con fallback a config hardcodeada | E1 Agent |
+| 2025-04-10 | 3.0 | FIX: Dashboard Comercial período "Hoy" integra APIs locales (I.16) | E1 Agent |
 
 ---
 
@@ -1716,6 +1717,55 @@ Se mejoró la función `sumar_ventas_api_local_a_sucursal()` para buscar APIs lo
 
 **Archivo modificado:**
 - ✅ `/app/backend/server.py` (función sumar_ventas_api_local_a_sucursal)
+
+---
+
+### I.16 Dashboard Comercial Período "Hoy" Integra APIs Locales
+
+**IMPLEMENTACIÓN (2025-04-10):**
+
+El Dashboard Comercial con período "Hoy" ahora obtiene las ventas del día desde las APIs locales, igual que el Tablero Ejecutivo.
+
+**Problema original:**
+- Dashboard Comercial con período "Hoy" mostraba ventas acumuladas (~$472K para ORIGEN)
+- Tablero Ejecutivo con "Ventas del Día" mostraba ventas correctas (~$60K para ORIGEN)
+- Inconsistencia entre ambos reportes
+
+**Solución implementada:**
+Se agregó la integración de APIs locales al endpoint `/api/comercial/dashboard/{server_id}` cuando `periodo == "dia"`:
+
+```python
+# En endpoint /api/comercial/dashboard/{server_id}
+if periodo == "dia":
+    ventas_api_local = sumar_ventas_api_local_a_sucursal(
+        server_host=server['host'],
+        sucursal_nombre=sucursal,
+        fecha_fin=fecha_fin,
+        mes_solicitado=hoy.month,
+        anio_solicitado=hoy.year,
+        solo_ventas_dia=True  # REEMPLAZA datos de nube
+    )
+    
+    if ventas_api_local.get("aplicado", False):
+        ventas = ventas_api_local["ventas"]
+        cheques = ventas_api_local["cheques"]
+        pax = ventas_api_local["pax"]
+```
+
+**Resultado:**
+
+| Sucursal | Antes (acumulado) | Después (día) |
+|----------|-------------------|---------------|
+| ORIGEN | $472,654 | $60,891.65 ✅ |
+| 130° QUERETARO | $796,534 | $92,298.00 ✅ |
+
+**Sincronización lograda:**
+- Tablero Ejecutivo "Ventas del Día" = Dashboard Comercial "Hoy"
+- Ambos usan las mismas APIs locales
+- Datos consistentes para dueños y gerentes
+
+**Archivo modificado:**
+- ✅ `/app/backend/server.py` (endpoint /api/comercial/dashboard)
 
 ---
 
