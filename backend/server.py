@@ -113,10 +113,12 @@ def query_api_mpro_local(api_config: dict, sql_query: str, timeout: int = 30) ->
         logging.warning(f"API Local {api_config['nombre']}: Error - {str(e)}")
         return {"success": False, "error": str(e), "data": None}
 
-def obtener_ventas_dia_api_local(api_config: dict) -> dict:
+def obtener_ventas_dia_api_local(api_config: dict, forzar_consulta: bool = False) -> dict:
     """
     Obtiene las ventas del día actual desde una API MPRO local.
     Retorna dict con ventas, cheques, pax.
+    
+    Si forzar_consulta=True (modo Ventas del Día), ignora la restricción de hora de réplica.
     """
     from datetime import datetime, timezone, timedelta
     
@@ -126,15 +128,18 @@ def obtener_ventas_dia_api_local(api_config: dict) -> dict:
     hora_actual = ahora_mexico.hour
     hora_replica = api_config.get("hora_replica", 4)
     
-    logging.info(f"API Local {api_config['nombre']}: Hora México = {ahora_mexico.strftime('%H:%M')}, Hora réplica = {hora_replica}:00")
+    logging.info(f"API Local {api_config['nombre']}: Hora México = {ahora_mexico.strftime('%H:%M')}, Hora réplica = {hora_replica}:00, forzar={forzar_consulta}")
     
-    # Si ya pasó la hora de réplica EN MÉXICO, los datos ya están en la nube
+    # Si ya pasó la hora de réplica EN MÉXICO Y no es modo forzado, los datos ya están en la nube
     # No consultar la API local para evitar duplicación
-    if hora_actual >= hora_replica:
+    if hora_actual >= hora_replica and not forzar_consulta:
         logging.info(f"API Local {api_config['nombre']}: Hora actual ({hora_actual}) >= hora réplica ({hora_replica}), omitiendo (datos ya replicados)")
         return {"ventas": 0, "cheques": 0, "pax": 0, "omitido": True, "razon": "post_replica"}
     
-    logging.info(f"API Local {api_config['nombre']}: Consultando ventas del día (hora {hora_actual} < {hora_replica})")
+    if forzar_consulta:
+        logging.info(f"API Local {api_config['nombre']}: FORZANDO consulta (modo Ventas del Día)")
+    else:
+        logging.info(f"API Local {api_config['nombre']}: Consultando ventas del día (hora {hora_actual} < {hora_replica})")
     
     # Query para obtener ventas del día actual
     sql_ventas_hoy = """
@@ -184,10 +189,12 @@ def obtener_ventas_dia_api_local(api_config: dict) -> dict:
         print(f"*** API Local {api_config['nombre']}: ERROR - {error_msg} ***")
         return {"ventas": 0, "cheques": 0, "pax": 0, "omitido": True, "razon": "error", "error": error_msg}
 
-def sumar_ventas_api_local_a_sucursal(server_host: str, sucursal_nombre: str, fecha_fin: str, mes_solicitado: int = None, anio_solicitado: int = None) -> dict:
+def sumar_ventas_api_local_a_sucursal(server_host: str, sucursal_nombre: str, fecha_fin: str, mes_solicitado: int = None, anio_solicitado: int = None, solo_ventas_dia: bool = False) -> dict:
     """
     Busca si hay una API local asociada a esta sucursal y servidor,
     y si el período solicitado incluye HOY, suma las ventas del día.
+    
+    Cuando solo_ventas_dia=True, las ventas de API local REEMPLAZAN (no suman) las de la nube.
     
     Retorna dict con ventas_adicionales, cheques_adicionales, pax_adicionales
     """
@@ -200,7 +207,7 @@ def sumar_ventas_api_local_a_sucursal(server_host: str, sucursal_nombre: str, fe
     mes_actual = ahora_mexico.month
     anio_actual = ahora_mexico.year
     
-    print(f"*** API Local Check: server_host={server_host}, sucursal={sucursal_nombre}, fecha_fin={fecha_fin}, hoy_mexico={hoy} ***")
+    print(f"*** API Local Check: server_host={server_host}, sucursal={sucursal_nombre}, fecha_fin={fecha_fin}, hoy_mexico={hoy}, MODO_VENTAS_DIA={solo_ventas_dia} ***")
     print(f"*** API Local: mes_solicitado={mes_solicitado}, anio_solicitado={anio_solicitado}, mes_actual={mes_actual}, anio_actual={anio_actual} ***")
     
     # Determinar si el período incluye HOY
@@ -242,30 +249,35 @@ def sumar_ventas_api_local_a_sucursal(server_host: str, sucursal_nombre: str, fe
         if sucursal_destino in sucursal_actual or sucursal_actual in sucursal_destino:
             print(f"*** API Local MATCH: {api_config['nombre']} -> Sucursal {sucursal_nombre} ***")
             
-            ventas_api = obtener_ventas_dia_api_local(api_config)
+            # En modo Ventas del Día, forzar consulta ignorando hora de réplica
+            ventas_api = obtener_ventas_dia_api_local(api_config, forzar_consulta=solo_ventas_dia)
             
             if not ventas_api.get("omitido", True):
-                print(f"*** API Local SUMANDO: +${ventas_api['ventas']:,.2f} de {api_config['nombre']} ***")
+                modo = "REEMPLAZANDO" if solo_ventas_dia else "SUMANDO"
+                print(f"*** API Local {modo}: +${ventas_api['ventas']:,.2f} de {api_config['nombre']} ***")
                 return {
                     "ventas": ventas_api["ventas"],
                     "cheques": ventas_api["cheques"],
                     "pax": ventas_api["pax"],
                     "aplicado": True,
+                    "reemplazar": solo_ventas_dia,  # True = reemplazar datos nube, False = sumar
                     "api": api_config["nombre"]
                 }
             else:
-                print(f"*** API Local OMITIDO: {ventas_api.get('razon', 'desconocido')} ***")
+                razon = ventas_api.get("razon", "omitido")
+                print(f"*** API Local OMITIDO: {razon} ***")
                 return {
                     "ventas": 0, "cheques": 0, "pax": 0,
                     "aplicado": False,
-                    "razon": ventas_api.get("razon", "omitido"),
+                    "reemplazar": solo_ventas_dia,  # Marcar para que se use $0 en modo Ventas del Día
+                    "razon": razon,
                     "api": api_config["nombre"]
                 }
         else:
             print(f"*** API Local: NO match '{sucursal_destino}' vs '{sucursal_actual}' ***")
     
     # No se encontró API local para esta sucursal
-    return {"ventas": 0, "cheques": 0, "pax": 0, "aplicado": False, "razon": "sin_api_local"}
+    return {"ventas": 0, "cheques": 0, "pax": 0, "aplicado": False, "reemplazar": False, "razon": "sin_api_local"}
 
 # ============= ENDPOINT: Test API Connection =============
 class TestApiRequest(BaseModel):
@@ -10373,7 +10385,7 @@ FROM Venta WHERE Vn_Fecha >= '{fiaa}' AND Vn_Fecha <= '{ffaa} 23:59:59' AND ISNU
     }
 
 
-def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes):
+def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia=False):
     """
     Query para MPRO que devuelve KPIs DIVIDIDOS POR SUCURSAL (como en Inventarios).
     Retorna una lista de unidades, no un solo bloque.
@@ -10615,19 +10627,37 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
         # ============= INTEGRACIÓN API LOCAL =============
         # Sumar ventas del día desde API local si aplica
         # Solo se suma si: el período incluye HOY y estamos ANTES de la hora de réplica
+        # En modo "Ventas del Día" (solo_ventas_dia=True): las ventas de API local REEMPLAZAN las de nube
         ventas_api_local = sumar_ventas_api_local_a_sucursal(
             server_host=server['host'],
             sucursal_nombre=sucursal_nombre,
             fecha_fin=fecha_fin,  # fecha_fin original en formato YYYY-MM-DD
             mes_solicitado=mes_final,
-            anio_solicitado=anio_final
+            anio_solicitado=anio_final,
+            solo_ventas_dia=solo_ventas_dia  # Pasar flag para modo Ventas del Día
         )
         
         if ventas_api_local.get("aplicado", False):
-            ventas += ventas_api_local["ventas"]
-            cheques += ventas_api_local["cheques"]
-            pax += ventas_api_local["pax"]
-            logging.info(f"API Local sumada a {sucursal_nombre}: +${ventas_api_local['ventas']:,.2f} de {ventas_api_local.get('api', 'N/A')}")
+            if ventas_api_local.get("reemplazar", False):
+                # Modo "Ventas del Día": REEMPLAZAR datos de nube con API local
+                ventas = ventas_api_local["ventas"]
+                cheques = ventas_api_local["cheques"]
+                pax = ventas_api_local["pax"]
+                logging.info(f"API Local REEMPLAZÓ datos de {sucursal_nombre}: ${ventas_api_local['ventas']:,.2f} de {ventas_api_local.get('api', 'N/A')}")
+            else:
+                # Modo normal: SUMAR ventas de API local a las de nube
+                ventas += ventas_api_local["ventas"]
+                cheques += ventas_api_local["cheques"]
+                pax += ventas_api_local["pax"]
+                logging.info(f"API Local sumada a {sucursal_nombre}: +${ventas_api_local['ventas']:,.2f} de {ventas_api_local.get('api', 'N/A')}")
+        elif solo_ventas_dia and ventas_api_local.get("reemplazar", False):
+            # Modo "Ventas del Día" con API local configurada pero no aplicada (error/omitido): usar $0
+            # Las sucursales con API local deben obtener datos SOLO de la API local
+            razon = ventas_api_local.get("razon", "desconocido")
+            logging.warning(f"API Local {razon} para {sucursal_nombre} en modo Ventas del Día - usando ${ventas_api_local['ventas']:.2f}")
+            ventas = ventas_api_local["ventas"]  # Será $0
+            cheques = ventas_api_local["cheques"]
+            pax = ventas_api_local["pax"]
         # ============= FIN INTEGRACIÓN API LOCAL =============
         
         # Cálculos
@@ -10887,7 +10917,7 @@ async def tablero_ejecutivo(
             logging.info(f"Procesando servidor MPRO: {server['name']}")
             try:
                 unidades_mpro = get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
-                                                           fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes)
+                                                           fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia)
                 logging.info(f"MPRO {server['name']}: Encontradas {len(unidades_mpro)} unidades")
                 for unidad in unidades_mpro:
                     unidad["status"] = "online"
