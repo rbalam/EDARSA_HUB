@@ -456,7 +456,7 @@ app.include_router(comercial_router, prefix="/api")
 | 1 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Migración execute_sql_query a core/db.py |
 | 2 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Migración seguridad a core/security.py |
 | 3 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Migración módulo Auth a modules/auth/ |
-| 4 | ⏸️ PENDIENTE | - | - | Módulo Compras |
+| 4 | ✅ COMPLETADA | Dic 2025 | Dic 2025 | Migración módulo Compras (parcial) a modules/compras/ |
 | 5 | ⏸️ PENDIENTE | - | - | Módulo Comercial |
 | 6 | ⏸️ PENDIENTE | - | - | Módulo RH |
 | 7 | ⏸️ PENDIENTE | - | - | Cleanup final |
@@ -615,6 +615,7 @@ modules/auth/
 | Dic 2025 | Fase 1 completada: execute_sql_query migrado a core/db.py | E1 Agent |
 | Dic 2025 | Fase 2 completada: seguridad migrada a core/security.py | E1 Agent |
 | Dic 2025 | Fase 3 completada: módulo auth migrado a modules/auth/ | E1 Agent |
+| Dic 2025 | Fase 4 completada: módulo compras parcialmente migrado a modules/compras/ | E1 Agent |
 
 ---
 

@@ -103,6 +103,20 @@ init_auth_module(db)
 # Registrar router de auth
 api_router.include_router(auth_router)
 
+# MÓDULO COMPRAS: Compras, pedidos, inventarios
+# - Migrado en Fase 4 del refactor modular
+# - Endpoints migrados: inventarios-fisicos, pedidos-vigentes, parametros, detalle-factura, facturas-proveedor
+# - Endpoints pendientes en server.py: calculo-pedido, auditoria-operativa, dashboard, analisis
+# ===========================================
+
+from modules.compras import router as compras_router, init_compras_module
+
+# Inicializar módulo compras con conexión a MongoDB
+init_compras_module(db)
+
+# Registrar router de compras
+api_router.include_router(compras_router)
+
 # ============= CONFIGURACIÓN APIs LOCALES MPRO =============
 # Estas APIs obtienen ventas del día en tiempo real desde servidores locales.
 # Los datos se replican al servidor en la nube por la noche (hora_replica).
@@ -5181,8 +5195,25 @@ class CalculoPedidoRequest(BaseModel):
     folio_pedido_comparar: Optional[str] = None  # Para comparar con pedido existente
 
 # ============= MÓDULO DE COMPRAS - ENDPOINTS =============
+#
+# FASE 4 DEL REFACTOR MODULAR (Diciembre 2025):
+# Los siguientes endpoints HAN SIDO MIGRADOS a modules/compras/routes.py
+# pero se mantienen aquí comentados como referencia y respaldo.
+#
+# ENDPOINTS MIGRADOS (ahora servidos desde modules/compras/):
+# - GET /compras/inventarios-fisicos/{server_id}
+# - GET /compras/pedidos-vigentes/{server_id}  
+# - GET /compras/parametros/{server_id}
+# - POST /compras/parametros
+# - GET /compras/facturas-proveedor/{server_id}
+# - GET /compras/detalle-factura/{server_id}/{folio}
+#
+# NOTA: El código original permanece abajo por si se necesita rollback.
+# FastAPI usa el primer router registrado, que es modules/compras.
+# =============================================================================
 
-@api_router.get("/compras/inventarios-fisicos/{server_id}")
+# MIGRADO A modules/compras/routes.py - Este endpoint ya no se usa
+# @api_router.get("/compras/inventarios-fisicos/{server_id}")
 async def obtener_inventarios_fisicos(server_id: str, sucursal: str = None, sucursal_id: str = None, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Obtiene la lista de inventarios físicos disponibles para seleccionar, filtrado por almacén y sucursal"""
     verify_token(credentials.credentials)
