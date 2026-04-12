@@ -68,6 +68,13 @@ from .aprobacion_service import (
     observar_registro,
     aprobar_lote,
 )
+from .homologacion_service import (
+    ejecutar_homologacion_completa,
+    obtener_equivalencias,
+    obtener_estadisticas_homologacion,
+    verificar_homologacion_completa,
+    actualizar_staging_con_ids,
+)
 
 
 # ============================================================================
@@ -721,4 +728,132 @@ async def post_aprobar_lote(
         }
     except Exception as e:
         logger.error(f"Error en aprobación en lote: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ============================================================================
+# ENDPOINTS DE HOMOLOGACIÓN
+# ============================================================================
+
+@router.post("/homologacion/ejecutar", summary="Ejecutar homologación completa")
+async def post_ejecutar_homologacion(current_user: dict = Depends(get_current_user)):
+    """
+    Ejecuta el proceso completo de homologación:
+    1. Crea tabla de equivalencias
+    2. Pobla catálogos de Sucursales, Puestos, Departamentos
+    3. Actualiza staging con IDs de catálogo
+    4. Verifica completitud
+    
+    IMPORTANTE: Este proceso debe ejecutarse ANTES de aprobar masivamente.
+    """
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    usuario = current_user.get('username', 'Sistema')
+    
+    try:
+        resultado = ejecutar_homologacion_completa(server, usuario)
+        return {
+            "success": resultado.get('success', False),
+            "data": resultado
+        }
+    except Exception as e:
+        logger.error(f"Error en homologación: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/homologacion/estadisticas", summary="Estadísticas de homologación")
+async def get_estadisticas_homologacion(current_user: dict = Depends(get_current_user)):
+    """
+    Obtiene estadísticas del estado de homologación:
+    - Catálogos poblados
+    - Equivalencias registradas
+    - Staging homologado vs pendiente
+    """
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    try:
+        stats = obtener_estadisticas_homologacion(server)
+        return {
+            "success": True,
+            "data": stats
+        }
+    except Exception as e:
+        logger.error(f"Error obteniendo estadísticas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/homologacion/equivalencias", summary="Listar equivalencias")
+async def get_equivalencias(
+    tipo: Optional[str] = Query(None, description="Filtrar por tipo: SUCURSAL, PUESTO, DEPARTAMENTO"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Lista las equivalencias registradas entre valores de staging y catálogos.
+    """
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    try:
+        equivalencias = obtener_equivalencias(server, tipo=tipo)
+        return {
+            "success": True,
+            "total": len(equivalencias),
+            "data": equivalencias
+        }
+    except Exception as e:
+        logger.error(f"Error obteniendo equivalencias: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/homologacion/verificar", summary="Verificar si homologación está completa")
+async def get_verificar_homologacion(current_user: dict = Depends(get_current_user)):
+    """
+    Verifica si todos los candidatos a aprobación tienen sus IDs de catálogo asignados.
+    
+    IMPORTANTE: Solo se permite aprobación masiva si esta verificación retorna completa=True.
+    """
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    try:
+        completa, mensaje, pendientes = verificar_homologacion_completa(server)
+        return {
+            "success": True,
+            "data": {
+                "homologacion_completa": completa,
+                "mensaje": mensaje,
+                "pendientes": pendientes,
+                "puede_aprobar_masivo": completa
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error verificando homologación: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/homologacion/actualizar-staging", summary="Actualizar staging con IDs")
+async def post_actualizar_staging_ids(current_user: dict = Depends(get_current_user)):
+    """
+    Actualiza los campos SucursalID y PuestoID en staging según las equivalencias aprobadas.
+    Útil para re-ejecutar después de aprobar nuevas equivalencias.
+    """
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    try:
+        resultado = actualizar_staging_con_ids(server)
+        return {
+            "success": True,
+            "data": resultado
+        }
+    except Exception as e:
+        logger.error(f"Error actualizando staging: {e}")
         raise HTTPException(status_code=500, detail=str(e))

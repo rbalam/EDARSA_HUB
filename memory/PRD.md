@@ -433,6 +433,49 @@ Todos los registros (100%) permanecen como INCOMPLETOS en staging.
 - ✅ Detección de duplicados por RFC (CURP match → UPDATE)
 - ✅ UI funcional con todas las pestañas
 
+### FASE HOMOLOGACIÓN: Homologación de Catálogos (Abril 2026)
+**Documentos creados**:
+- `/app/memory/DISENO_HOMOLOGACION_CATALOGOS.md` - Diseño funcional y técnico
+**Estado**: ✅ COMPLETADA
+
+**Diagnóstico realizado**:
+- Catálogos `RH_Cat_Sucursales`, `RH_Cat_Puestos`, `RH_Cat_Departamentos` existían pero VACÍOS
+- Valores únicos en staging: 8 sucursales, 37 puestos, 11 departamentos
+
+**Componentes implementados**:
+
+1. **Backend - Servicio de Homologación** (`/modules/rh/importador/homologacion_service.py`):
+   - `crear_tabla_equivalencias()` - Tabla RH_Homologacion_Equivalencias
+   - `poblar_catalogo_sucursales/puestos/departamentos()` - Poblar catálogos desde staging
+   - `actualizar_staging_con_ids()` - Asignar IDs de catálogo a staging
+   - `verificar_homologacion_completa()` - Validar antes de aprobación masiva
+   - `ejecutar_homologacion_completa()` - Proceso end-to-end
+
+2. **Endpoints API** (4 nuevos endpoints):
+   - `POST /api/rrhh/importar/homologacion/ejecutar` - Ejecutar homologación completa
+   - `GET /api/rrhh/importar/homologacion/estadisticas` - Estado de homologación
+   - `GET /api/rrhh/importar/homologacion/equivalencias` - Listar equivalencias
+   - `GET /api/rrhh/importar/homologacion/verificar` - Verificar completitud
+
+3. **Frontend - UI de Homologación** (pestaña en ImportadorRH.js):
+   - Dashboard con contadores de catálogos poblados
+   - Indicador de estado: "Homologación Completa" / "Pendiente"
+   - Tabla de equivalencias (Tipo, Valor Origen, Valor Normalizado, ID, Estado)
+   - Botón "Ejecutar Homologación"
+
+**Resultados de Homologación**:
+| Catálogo | Registros Creados |
+|----------|-------------------|
+| Sucursales | 8 |
+| Departamentos | 11 |
+| Puestos | 37 |
+| **Total equivalencias** | **56** |
+| **Staging actualizado** | **462 registros** |
+| **Pendientes homologación** | **0** |
+
+**Regla obligatoria implementada**:
+- ✅ Solo se permite aprobación masiva si `verificar_homologacion_completa()` retorna `true`
+
 ### FASE IMPLEMENTACIÓN-IMPORTADOR: Backend y API (Diciembre 2025)
 **Archivos creados**:
 - `modules/rh/importador/__init__.py` (66 líneas)
