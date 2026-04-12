@@ -115,6 +115,11 @@ class ActualizarDecisionPago(BaseModel):
     decision_pago: bool
     importe_a_pagar: Optional[float] = None
 
+class ActualizarDecisionPagoMasivo(BaseModel):
+    """Actualizar decisión de pago de múltiples facturas"""
+    facturas_ids: List[int]
+    decision_pago: bool
+
 # ============================================================================
 # ENDPOINTS
 # ============================================================================
@@ -323,25 +328,24 @@ async def actualizar_decision_pago(
 
 @router.put("/decision-pago-masivo")
 async def actualizar_decision_pago_masivo(
-    facturas_ids: List[int],
-    decision_pago: bool,
+    data: ActualizarDecisionPagoMasivo,
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Actualizar decisión de pago de múltiples facturas.
     """
     actualizadas = 0
-    for factura_id in facturas_ids:
+    for factura_id in data.facturas_ids:
         factura = next((f for f in _facturas_db if f["factura_id"] == factura_id), None)
         if factura:
-            factura["decision_pago"] = decision_pago
-            factura["importe_a_pagar"] = factura["saldo"] if decision_pago else 0
+            factura["decision_pago"] = data.decision_pago
+            factura["importe_a_pagar"] = factura["saldo"] if data.decision_pago else 0
             actualizadas += 1
     
     return {
         "success": True,
         "actualizadas": actualizadas,
-        "total_solicitadas": len(facturas_ids)
+        "total_solicitadas": len(data.facturas_ids)
     }
 
 

@@ -220,6 +220,91 @@ export default function Finanzas() {
     }));
   };
   
+  // Marcar todas las facturas vencidas para pago
+  const handleMarcarTodasVencidasPago = async () => {
+    // Obtener todas las facturas vencidas no marcadas
+    const facturasVencidas = [];
+    (cxpData?.proveedores || []).forEach(prov => {
+      prov.facturas.forEach(f => {
+        if (f.dias_vencida > 0 && !f.decision_pago) {
+          facturasVencidas.push(f.factura_id);
+        }
+      });
+    });
+    
+    if (facturasVencidas.length === 0) {
+      toast.info('No hay facturas vencidas sin marcar');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/finanzas/cuentas-por-pagar/decision-pago-masivo`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          facturas_ids: facturasVencidas,
+          decision_pago: true
+        })
+      });
+      
+      if (!response.ok) throw new Error('Error');
+      
+      const data = await response.json();
+      toast.success(`${data.actualizadas} facturas vencidas marcadas para pago`);
+      loadCuentasPorPagar();
+    } catch (error) {
+      toast.error('Error al marcar facturas');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Desmarcar todas las facturas
+  const handleDesmarcarTodasPago = async () => {
+    const facturasMarcadas = [];
+    (cxpData?.proveedores || []).forEach(prov => {
+      prov.facturas.forEach(f => {
+        if (f.decision_pago) {
+          facturasMarcadas.push(f.factura_id);
+        }
+      });
+    });
+    
+    if (facturasMarcadas.length === 0) {
+      toast.info('No hay facturas marcadas');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/finanzas/cuentas-por-pagar/decision-pago-masivo`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          facturas_ids: facturasMarcadas,
+          decision_pago: false
+        })
+      });
+      
+      if (!response.ok) throw new Error('Error');
+      
+      const data = await response.json();
+      toast.success(`${data.actualizadas} facturas desmarcadas`);
+      loadCuentasPorPagar();
+    } catch (error) {
+      toast.error('Error al desmarcar facturas');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   // Exportar CxP a CSV
   const exportarCxPCSV = () => {
     if (!cxpData?.proveedores?.length) {
@@ -1349,6 +1434,44 @@ export default function Finanzas() {
             </div>
           </CardContent>
         </Card>
+        
+        {/* Acciones Masivas */}
+        {(cxpData?.proveedores || []).length > 0 && (
+          <div className="flex items-center justify-between bg-zinc-100 rounded-lg p-3">
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-zinc-600">
+                <strong className="text-red-600">{cxpData?.totales?.total_vencidas || 0}</strong> facturas vencidas
+              </span>
+              <span className="text-zinc-400">|</span>
+              <span className="text-zinc-600">
+                <strong className="text-green-600">{cxpResumen?.resumen?.facturas_con_decision || 0}</strong> marcadas para pago
+              </span>
+              <span className="text-zinc-400">|</span>
+              <span className="font-bold text-blue-600">
+                Total a pagar: {formatCurrency(cxpData?.totales?.total_a_pagar || 0)}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleMarcarTodasVencidasPago}
+                disabled={loading}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Marcar Todas las Vencidas
+              </Button>
+              <Button 
+                onClick={handleDesmarcarTodasPago}
+                disabled={loading}
+                variant="outline"
+                className="text-red-600 border-red-300 hover:bg-red-50"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Desmarcar Todas
+              </Button>
+            </div>
+          </div>
+        )}
         
         {/* Resumen por Antigüedad */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
