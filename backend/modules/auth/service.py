@@ -70,9 +70,18 @@ async def login_user(email: str, password: str) -> Dict[str, Any]:
     Raises:
         HTTPException 401: Credenciales inválidas o usuario inactivo
     """
-    user = await repo.find_user_by_email(email, include_password=True)
+    import logging
+    logger = logging.getLogger(__name__)
     
-    if not user or not verify_password(password, user['password']):
+    user = await repo.find_user_by_email(email, include_password=True)
+    logger.info(f"Login attempt for {email}: user found = {user is not None}")
+    
+    if not user:
+        logger.warning(f"Login failed: user {email} not found")
+        raise HTTPException(status_code=401, detail="Credenciales inválidas")
+    
+    if not verify_password(password, user['password']):
+        logger.warning(f"Login failed: invalid password for {email}")
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
     
     if not user.get('active', True):

@@ -268,6 +268,39 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 - ✅ 6G: Auditoría + Dashboard RH (2 endpoints)
 - ✅ 6H: Reclutamiento RH (10 endpoints - incluye script inicialización)
 
+### FASE OPERATIVA-IMPORTADOR: Preview Real Excel Cienfuegos (Diciembre 2025)
+**Reporte completo**: `/app/memory/REPORTE_FASE_OPERATIVA_IMPORTADOR.md`
+**Preview JSON**: `/app/memory/PREVIEW_EXCEL_CIENFUEGOS.json`
+**Estado**: ⚠️ BLOQUEADO POR PERMISOS
+
+**Conexión establecida**:
+- Servidor: EDARSA HUB (ID: bea40259-35f1-4693-bda2-d2d10e13e56a)
+- BD: EDARSAHUB
+- Usuario: HRLectura (solo lectura)
+- Ping: ✅ EXITOSO (260.1ms)
+
+**Resultado del Preview (Excel Cienfuegos)**:
+- Total registros: 56
+- Nuevos: 0
+- Actualizar: 0
+- Duplicados probables: 0
+- **Incompletos: 56 (100%)** ← Sin CURP ni RFC
+- Rechazados: 0
+
+**🔴 HALLAZGO CRÍTICO**: El Excel de nómina NO contiene columnas CURP ni RFC.
+Todos los registros (100%) se clasifican como INCOMPLETOS.
+
+**🔴 BLOQUEO**: Usuario HRLectura no tiene permisos CREATE TABLE.
+Las tablas RH_Importacion_Staging y RH_Importacion_Bitacora NO pudieron crearse.
+
+**Acciones pendientes**:
+1. Obtener usuario con permisos de escritura en EDARSAHUB
+2. Obtener CURP/RFC de fuente alternativa (hoja RFC del Excel o sistema externo)
+3. Crear tablas staging/bitácora
+4. Re-ejecutar preview con datos completos
+
+---
+
 ### FASE DISEÑO-IMPORTACIÓN: Arquitectura de Importación de Empleados (Diciembre 2025)
 **Documento creado**: `/app/memory/DISENO_IMPORTACION_EMPLEADOS.md`
 **Estado**: ✅ IMPLEMENTACIÓN BACKEND COMPLETADA
