@@ -13,6 +13,12 @@ FASE 6C-B DEL REFACTOR MODULAR (Diciembre 2025):
 - Queries parametrizados nativos (prevención SQL Injection)
 - Validación Pydantic para CURP, RFC, CLABE
 
+FASE 6D-B DEL REFACTOR MODULAR (Diciembre 2025):
+- Incidencias RH: Listado, creación, importación Excel
+- 4 endpoints migrados desde server.py
+- Validación de tipos contra catálogo RH_Cat_Tipos_Incidencias
+- Importación PARCIAL (no transaccional) documentada
+
 Componentes:
 - routes.py: Endpoints del módulo (prefijo /rrhh/)
 - schemas.py: Modelos Pydantic para validación
@@ -25,7 +31,7 @@ Tablas reutilizadas (NO duplicadas):
 - RH_Cat_SucursalesFiscal
 - RH_Cat_Tipos_Incidencias
 - RH_Colaboradores_Expediente
-- RH_Incidencias_Nomina (solo lectura)
+- RH_Incidencias_Nomina
 - RH_Reloj_Checador (solo lectura)
 - RH_Auditoria_Fiscal (solo lectura)
 
@@ -53,12 +59,17 @@ from modules.rh.schemas import (
     ColaboradorResponse,
     ColaboradorDetalleResponse,
     ColaboradoresListResponse,
+    # Incidencias
+    IncidenciaCreate,
+    IncidenciaResponse,
+    IncidenciasListResponse,
+    ImportacionExcelResponse,
     # Genéricos
     SuccessResponse,
     SuccessWithIdResponse,
     ScriptInicializacionResponse,
 )
-from modules.rh.service import rh_catalogos_service, rh_colaboradores_service
+from modules.rh.service import rh_catalogos_service, rh_colaboradores_service, rh_incidencias_service
 
 
 def init_rh_module(database) -> None:
@@ -90,6 +101,11 @@ __all__ = [
     'ColaboradorResponse',
     'ColaboradorDetalleResponse',
     'ColaboradoresListResponse',
+    # Schemas - Incidencias
+    'IncidenciaCreate',
+    'IncidenciaResponse',
+    'IncidenciasListResponse',
+    'ImportacionExcelResponse',
     # Schemas - Genéricos
     'SuccessResponse',
     'SuccessWithIdResponse',
@@ -97,4 +113,5 @@ __all__ = [
     # Services
     'rh_catalogos_service',
     'rh_colaboradores_service',
+    'rh_incidencias_service',
 ]

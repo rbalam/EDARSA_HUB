@@ -404,3 +404,119 @@ class ColaboradorFiltros(BaseModel):
     puesto_id: Optional[int] = None
     estatus: Optional[str] = None
     buscar: Optional[str] = None
+
+
+
+# ============================================================================
+# INCIDENCIAS (FASE 6D-B)
+# ============================================================================
+
+# Lista de tipos por defecto como FALLBACK únicamente.
+# La validación principal se hace contra RH_Cat_Tipos_Incidencias.
+# Esta lista se usa solo cuando el catálogo no está disponible.
+TIPOS_INCIDENCIA_FALLBACK = [
+    'Falta', 'Retardo', 'Bono', 'Descuento', 'Horas Extra',
+    'Vacaciones', 'Incapacidad', 'Permiso', 'Comision', 'Otro'
+]
+
+
+class IncidenciaBase(BaseModel):
+    """Campos base compartidos para Incidencia."""
+    colaborador_id: int = Field(..., gt=0, description="ID del colaborador")
+    tipo_incidencia: str = Field(..., min_length=1, max_length=50, description="Tipo de incidencia")
+    monto: Decimal = Field(default=Decimal("0"), ge=0, description="Monto de la incidencia")
+    unidades: Decimal = Field(default=Decimal("0"), ge=0, description="Unidades (horas, días, etc.)")
+    fecha_incidencia: str = Field(..., description="Fecha de la incidencia (YYYY-MM-DD)")
+    
+    @field_validator('tipo_incidencia')
+    @classmethod
+    def tipo_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError('El tipo de incidencia es requerido')
+        return v.strip()
+    
+    @field_validator('fecha_incidencia')
+    @classmethod
+    def fecha_format(cls, v: str) -> str:
+        """Valida formato de fecha YYYY-MM-DD."""
+        if not v:
+            raise ValueError('La fecha es requerida')
+        v = v.strip()
+        import re
+        if not re.match(r'^\d{4}-\d{2}-\d{2}$', v):
+            raise ValueError('Formato de fecha debe ser YYYY-MM-DD')
+        # Validar que sea una fecha real
+        from datetime import datetime
+        try:
+            datetime.strptime(v, '%Y-%m-%d')
+        except ValueError:
+            raise ValueError('Fecha inválida')
+        return v
+
+
+class IncidenciaCreate(IncidenciaBase):
+    """Modelo para crear una nueva incidencia."""
+    pass
+
+
+class IncidenciaResponse(BaseModel):
+    """Modelo de respuesta para una incidencia."""
+    IncidenciaID: int
+    ColaboradorID: int
+    Nombre_Completo: Optional[str] = None
+    SucursalID: Optional[int] = None
+    Nombre_Sucursal: Optional[str] = None
+    Tipo_Incidencia: str
+    Monto: Optional[Decimal] = None
+    Unidades: Optional[Decimal] = None
+    Fecha_Incidencia: Optional[str] = None
+    Capturado_Por: Optional[str] = None
+    Fecha_Registro: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class IncidenciasListResponse(BaseModel):
+    """Modelo de respuesta para lista de incidencias."""
+    incidencias: List[IncidenciaResponse]
+    total: int
+    page: int
+    limit: int
+
+
+class ImportacionExcelResponse(BaseModel):
+    """
+    Modelo de respuesta para importación de Excel.
+    
+    COMPORTAMIENTO DOCUMENTADO:
+    - La importación es PARCIAL, NO transaccional
+    - Si una fila falla, las anteriores ya se insertaron
+    - El campo 'errores' contiene los primeros 20 errores encontrados
+    - El campo 'total_errores' indica el total de filas con error
+    """
+    success: bool
+    registros_importados: int
+    errores: List[str] = []
+    total_errores: int = 0
+
+
+class IncidenciaFiltros(BaseModel):
+    """Filtros para búsqueda de incidencias."""
+    colaborador_id: Optional[int] = Field(None, gt=0)
+    tipo: Optional[str] = Field(None, max_length=50)
+    fecha_desde: Optional[str] = None
+    fecha_hasta: Optional[str] = None
+    sucursal_id: Optional[int] = Field(None, gt=0)
+    
+    @field_validator('fecha_desde', 'fecha_hasta')
+    @classmethod
+    def fecha_format(cls, v: Optional[str]) -> Optional[str]:
+        """Valida formato de fecha YYYY-MM-DD si se proporciona."""
+        if v is None:
+            return v
+        v = v.strip()
+        import re
+        if not re.match(r'^\d{4}-\d{2}-\d{2}$', v):
+            raise ValueError('Formato de fecha debe ser YYYY-MM-DD')
+        return v

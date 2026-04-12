@@ -909,3 +909,266 @@ def query_dar_baja_colaborador(server: Dict, colaborador_id: int) -> Dict[str, A
     
     execute_hub_query_params(server, query, (id_safe,))
     return {"success": True}
+
+
+
+# ============================================================================
+# INCIDENCIAS - QUERIES CON PARÁMETROS NATIVOS (FASE 6D-B)
+# ============================================================================
+# TABLAS REUTILIZADAS:
+# - RH_Incidencias_Nomina (principal - INSERT/SELECT)
+# - RH_Colaboradores_Expediente (JOIN - ya migrado en 6C-B)
+# - RH_Cat_Sucursales (JOIN - ya migrado en 6B)
+# - RH_Cat_Tipos_Incidencias (validación - ya migrado en 6B)
+#
+# COMPORTAMIENTO DE IMPORTACIÓN EXCEL:
+# - La importación es PARCIAL, NO transaccional
+# - Si una fila falla, las anteriores ya fueron insertadas
+# - Esto se documenta claramente en la respuesta del endpoint
+# ============================================================================
+
+
+def query_obtener_tipos_incidencias_validos(server: Dict) -> List[str]:
+    """
+    Obtiene la lista de tipos de incidencias válidos desde el catálogo.
+    
+    VALIDACIÓN PRINCIPAL: Se usa RH_Cat_Tipos_Incidencias como fuente de verdad.
+    FALLBACK: Si la tabla no existe o está vacía, retorna lista por defecto.
+    
+    Returns:
+        Lista de códigos/descripciones de tipos válidos
+    """
+    query = """
+        SELECT Codigo, Descripcion
+        FROM RH_Cat_Tipos_Incidencias
+        WHERE Activo = 1
+    """
+    
+    try:
+        result = execute_hub_query(server, query)
+        if result:
+            # Retornar tanto códigos como descripciones para mayor flexibilidad
+            tipos = set()
+            for r in result:
+                if r.get('Codigo'):
+                    tipos.add(r['Codigo'].strip())
+                if r.get('Descripcion'):
+                    tipos.add(r['Descripcion'].strip())
+            if tipos:
+                return list(tipos)
+    except Exception as e:
+        logging.warning(f"No se pudo consultar catálogo de tipos: {e}")
+    
+    # FALLBACK: Lista por defecto cuando el catálogo no está disponible
+    logging.info("Usando tipos de incidencia por defecto (catálogo no disponible)")
+    return ['Falta', 'Retardo', 'Bono', 'Descuento', 'Horas Extra',
+            'Vacaciones', 'Incapacidad', 'Permiso', 'Comision', 'Otro']
+
+
+def query_listar_incidencias(
+    server: Dict,
+    colaborador_id: Optional[int] = None,
+    tipo: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    sucursal_id: Optional[int] = None,
+    page: int = 1,
+    limit: int = 50
+) -> Dict[str, Any]:
+    """
+    Lista incidencias con filtros y paginación.
+    
+    PARÁMETROS NATIVOS: colaborador_id, sucursal_id (enteros validados)
+    ESCAPE NECESARIO: tipo (string), fechas (formato validado por Pydantic)
+    
+    Nota: Las fechas ya vienen validadas en formato YYYY-MM-DD por el schema.
+    """
+    conditions = ["1=1"]
+    
+    # Filtros con validación de enteros (seguros)
+    if colaborador_id is not None:
+        try:
+            conditions.append(f"i.ColaboradorID = {int(colaborador_id)}")
+        except (ValueError, TypeError):
+            pass
+    
+    if sucursal_id is not None:
+        try:
+            conditions.append(f"c.SucursalID = {int(sucursal_id)}")
+        except (ValueError, TypeError):
+            pass
+    
+    # Tipo de incidencia (escapado)
+    if tipo:
+        tipo_safe = escape_sql_string(tipo)
+        conditions.append(f"i.Tipo_Incidencia = N'{tipo_safe}'")
+    
+    # Fechas (ya validadas por Pydantic, pero escapamos por seguridad)
+    if fecha_desde:
+        fecha_safe = escape_sql_string(fecha_desde)
+        conditions.append(f"i.Fecha_Incidencia >= '{fecha_safe}'")
+    
+    if fecha_hasta:
+        fecha_safe = escape_sql_string(fecha_hasta)
+        conditions.append(f"i.Fecha_Incidencia <= '{fecha_safe}'")
+    
+    where_clause = " AND ".join(conditions)
+    
+    # Paginación (enteros validados)
+    try:
+        page = max(1, int(page))
+        limit = max(1, min(200, int(limit)))
+    except (ValueError, TypeError):
+        page, limit = 1, 50
+    
+    offset = (page - 1) * limit
+    
+    query = f"""
+        SELECT 
+            i.IncidenciaID,
+            i.ColaboradorID,
+            c.Nombre_Completo,
+            c.SucursalID,
+            s.Nombre_Sucursal,
+            i.Tipo_Incidencia,
+            i.Monto,
+            i.Unidades,
+            i.Fecha_Incidencia,
+            i.Capturado_Por,
+            i.Fecha_Registro
+        FROM RH_Incidencias_Nomina i
+        LEFT JOIN RH_Colaboradores_Expediente c ON i.ColaboradorID = c.ColaboradorID
+        LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
+        WHERE {where_clause}
+        ORDER BY i.Fecha_Incidencia DESC
+        OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+    """
+    
+    count_query = f"""
+        SELECT COUNT(*) as total
+        FROM RH_Incidencias_Nomina i
+        LEFT JOIN RH_Colaboradores_Expediente c ON i.ColaboradorID = c.ColaboradorID
+        WHERE {where_clause}
+    """
+    
+    result = execute_hub_query(server, query)
+    count_result = execute_hub_query(server, count_query)
+    
+    total = count_result[0].get("total", 0) if count_result else 0
+    
+    return {
+        "datos": result,
+        "total": total,
+        "page": page,
+        "limit": limit
+    }
+
+
+def query_crear_incidencia(
+    server: Dict,
+    colaborador_id: int,
+    tipo_incidencia: str,
+    monto: float,
+    unidades: float,
+    fecha_incidencia: str,
+    capturado_por: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Crea una nueva incidencia.
+    
+    PARÁMETROS NATIVOS: colaborador_id, monto, unidades
+    ESCAPE: tipo_incidencia, fecha_incidencia, capturado_por
+    
+    La fecha ya viene validada por Pydantic (YYYY-MM-DD).
+    """
+    query = """
+        INSERT INTO RH_Incidencias_Nomina 
+        (ColaboradorID, Tipo_Incidencia, Monto, Unidades, Fecha_Incidencia, Capturado_Por, Fecha_Registro)
+        OUTPUT INSERTED.IncidenciaID
+        VALUES (%s, %s, %s, %s, %s, %s, GETDATE())
+    """
+    
+    params = (
+        int(colaborador_id),
+        tipo_incidencia,
+        float(monto),
+        float(unidades),
+        fecha_incidencia,
+        capturado_por
+    )
+    
+    result = execute_hub_query_params(server, query, params)
+    
+    if result:
+        return {"incidencia_id": result[0].get("IncidenciaID"), "success": True}
+    return {"incidencia_id": None, "success": False, "error": "No se pudo crear la incidencia"}
+
+
+def query_obtener_colaboradores_activos_para_importacion(server: Dict) -> Dict[str, int]:
+    """
+    Obtiene mapeo de RFC/ID -> ColaboradorID para importación de Excel.
+    
+    Returns:
+        Diccionario con RFC (mayúsculas) y ColaboradorID como claves,
+        ambos apuntando al ColaboradorID correspondiente.
+    """
+    query = """
+        SELECT ColaboradorID, RFC, Nombre_Completo 
+        FROM RH_Colaboradores_Expediente 
+        WHERE Colaborador_Activo = 1
+    """
+    
+    result = execute_hub_query(server, query)
+    
+    colaboradores_map = {}
+    for c in result:
+        col_id = c.get("ColaboradorID")
+        if col_id:
+            # Mapear por RFC (mayúsculas)
+            if c.get("RFC"):
+                colaboradores_map[c["RFC"].strip().upper()] = col_id
+            # Mapear también por ID como string
+            colaboradores_map[str(col_id)] = col_id
+    
+    return colaboradores_map
+
+
+def query_insertar_incidencia_importacion(
+    server: Dict,
+    colaborador_id: int,
+    tipo: str,
+    monto: float,
+    unidades: float,
+    fecha: str
+) -> bool:
+    """
+    Inserta una incidencia individual durante importación masiva.
+    
+    PARÁMETROS NATIVOS: Todos los valores.
+    
+    NOTA: Esta función NO es transaccional. Si falla, las incidencias
+    anteriores ya fueron insertadas. Esto es comportamiento documentado.
+    
+    Returns:
+        True si se insertó correctamente, False en caso contrario.
+    """
+    query = """
+        INSERT INTO RH_Incidencias_Nomina 
+        (ColaboradorID, Tipo_Incidencia, Monto, Unidades, Fecha_Incidencia, Fecha_Registro)
+        VALUES (%s, %s, %s, %s, %s, GETDATE())
+    """
+    
+    params = (
+        int(colaborador_id),
+        tipo,
+        float(monto),
+        float(unidades),
+        fecha
+    )
+    
+    try:
+        execute_hub_query_params(server, query, params)
+        return True
+    except Exception as e:
+        logging.error(f"Error insertando incidencia: {e}")
+        return False

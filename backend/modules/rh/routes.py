@@ -24,21 +24,31 @@ Colaboradores migrados desde server.py:
 - PUT    /rrhh/colaboradores/{colaborador_id}
 - DELETE /rrhh/colaboradores/{colaborador_id}
 
+FASE 6D-B DEL REFACTOR MODULAR (Diciembre 2025):
+Incidencias migradas desde server.py:
+- GET    /rrhh/incidencias
+- POST   /rrhh/incidencias
+- POST   /rrhh/incidencias/importar-excel
+- GET    /rrhh/incidencias/plantilla-excel
+
 CONTRATOS MANTENIDOS:
 - Prefijo: /rrhh/ (NO /rh/)
 - Formatos de respuesta idénticos a los originales
 - Compatibilidad total con frontend existente
 
 SEGURIDAD:
-- Validación de datos con Pydantic (CURP, RFC, CLABE)
+- Validación de datos con Pydantic
+- Validación de tipos de incidencia contra catálogo RH_Cat_Tipos_Incidencias
 - Queries parametrizados nativos en repository
 """
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File
+from fastapi.responses import StreamingResponse
 from typing import Dict, Optional
+from io import BytesIO
 
 from core.security import get_current_user
-from modules.rh.service import rh_catalogos_service, rh_colaboradores_service
+from modules.rh.service import rh_catalogos_service, rh_colaboradores_service, rh_incidencias_service
 from modules.rh.schemas import (
     PuestoCreate,
     PuestoUpdate,
@@ -54,6 +64,9 @@ from modules.rh.schemas import (
     ColaboradorUpdate,
     ColaboradoresListResponse,
     ColaboradorDetalleResponse,
+    IncidenciaCreate,
+    IncidenciasListResponse,
+    ImportacionExcelResponse,
 )
 
 
@@ -323,3 +336,117 @@ async def rrhh_dar_baja_colaborador(
     """
     return await rh_colaboradores_service.dar_baja_colaborador(colaborador_id)
 
+
+
+# ============================================================================
+# ENDPOINTS DE INCIDENCIAS (FASE 6D-B)
+# ============================================================================
+
+@router.get("/incidencias")
+async def rrhh_listar_incidencias(
+    colaborador_id: Optional[int] = None,
+    tipo: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    sucursal_id: Optional[int] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Lista incidencias con filtros opcionales y paginación.
+    
+    Parámetros de filtro:
+    - colaborador_id: Filtrar por colaborador
+    - tipo: Filtrar por tipo de incidencia
+    - fecha_desde: Fecha inicial (YYYY-MM-DD)
+    - fecha_hasta: Fecha final (YYYY-MM-DD)
+    - sucursal_id: Filtrar por sucursal del colaborador
+    
+    Paginación:
+    - page: Número de página (default 1)
+    - limit: Registros por página (default 50, max 200)
+    
+    Requiere autenticación.
+    """
+    return await rh_incidencias_service.listar_incidencias(
+        colaborador_id=colaborador_id,
+        tipo=tipo,
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta,
+        sucursal_id=sucursal_id,
+        page=page,
+        limit=limit
+    )
+
+
+@router.post("/incidencias")
+async def rrhh_crear_incidencia(
+    body: IncidenciaCreate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Crea una nueva incidencia.
+    
+    Campos requeridos:
+    - colaborador_id: ID del colaborador
+    - tipo_incidencia: Tipo (validado contra catálogo RH_Cat_Tipos_Incidencias)
+    - fecha_incidencia: Fecha (YYYY-MM-DD)
+    
+    Campos opcionales:
+    - monto: Monto de la incidencia (>= 0)
+    - unidades: Unidades (horas, días, etc.) (>= 0)
+    
+    Requiere autenticación.
+    """
+    return await rh_incidencias_service.crear_incidencia(body, current_user)
+
+
+@router.post("/incidencias/importar-excel", response_model=ImportacionExcelResponse)
+async def rrhh_importar_incidencias_excel(
+    file: UploadFile = File(...),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Importa incidencias desde un archivo Excel.
+    
+    COMPORTAMIENTO DOCUMENTADO:
+    - La importación es PARCIAL, NO transaccional
+    - Si una fila falla, las anteriores ya fueron insertadas
+    - La respuesta incluye lista de errores (max 20) y total de errores
+    
+    Formato esperado del Excel:
+    - Columna A: RFC o ColaboradorID
+    - Columna B: Tipo de Incidencia (validado contra catálogo)
+    - Columna C: Fecha (YYYY-MM-DD o DD/MM/YYYY)
+    - Columna D: Monto (opcional)
+    - Columna E: Unidades (opcional)
+    
+    Requiere autenticación.
+    """
+    contents = await file.read()
+    return await rh_incidencias_service.importar_desde_excel(contents, file.filename)
+
+
+@router.get("/incidencias/plantilla-excel")
+async def rrhh_plantilla_incidencias_excel(
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Descarga una plantilla Excel para importar incidencias.
+    
+    La plantilla incluye:
+    - Hoja 'Incidencias': Estructura de datos con ejemplos
+    - Hoja 'Tipos Válidos': Lista de tipos de incidencia aceptados
+    
+    Requiere autenticación.
+    """
+    excel_bytes = rh_incidencias_service.generar_plantilla_excel()
+    
+    return StreamingResponse(
+        BytesIO(excel_bytes),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": "attachment; filename=plantilla_incidencias.xlsx"
+        }
+    )

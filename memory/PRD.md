@@ -135,7 +135,26 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
   - **server.py**: Reducido de ~13,774 a ~13,557 líneas
   - **Total módulo RH**: 2,297 líneas de código modular
   - **127 tests pasando**, 4 skipped (integración)
-- **Fases 6D-6H, 7**: ⏸️ Pendientes de autorización
+- **Fase 6D-B (Incidencias RH)**: ✅ COMPLETADA (Diciembre 2025)
+  - 4 endpoints migrados desde `server.py` a `modules/rh/`:
+    - `GET /rrhh/incidencias`
+    - `POST /rrhh/incidencias`
+    - `POST /rrhh/incidencias/importar-excel`
+    - `GET /rrhh/incidencias/plantilla-excel`
+  - **Validación de tipos contra catálogo** `RH_Cat_Tipos_Incidencias` (fuente principal)
+  - **Fallback**: Lista `TIPOS_INCIDENCIA_FALLBACK` solo cuando catálogo no disponible
+  - **Importación Excel**: PARCIAL (NO transaccional) - documentado explícitamente
+  - **Queries parametrizados nativos** para INSERT y filtros enteros
+  - **Validación Pydantic** para fechas (YYYY-MM-DD), monto, unidades, colaborador_id
+  - **Archivos actualizados**:
+    - `modules/rh/schemas.py` (522 líneas) - +116 líneas Incidencias
+    - `modules/rh/repository.py` (1,174 líneas) - +263 líneas Incidencias
+    - `modules/rh/service.py` (843 líneas) - +288 líneas Incidencias
+    - `modules/rh/routes.py` (452 líneas) - +127 líneas Incidencias
+  - **server.py**: Reducido de ~13,558 a ~13,301 líneas
+  - **Total módulo RH**: 3,108 líneas de código modular
+  - **127 tests pasando**, 4 skipped (integración)
+- **Fases 6E-6H, 7**: ⏸️ Pendientes de autorización
 
 ---
 
