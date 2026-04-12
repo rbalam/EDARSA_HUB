@@ -153,12 +153,16 @@ api_router.include_router(comercial_router)
 
 from modules.rh import init_rh_module
 from modules.rh.routes import router as rh_router
+from modules.rh.importador.routes import router as rh_importador_router
 
 # Inicializar módulo RH con conexión a MongoDB
 init_rh_module(db)
 
 # FASE 6B: Registrar router de RH (catálogos)
 api_router.include_router(rh_router)
+
+# FASE IMPORTACIÓN: Registrar router de importación RH
+api_router.include_router(rh_importador_router)
 
 import requests
 

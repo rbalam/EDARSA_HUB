@@ -270,22 +270,45 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ### FASE DISEÑO-IMPORTACIÓN: Arquitectura de Importación de Empleados (Diciembre 2025)
 **Documento creado**: `/app/memory/DISENO_IMPORTACION_EMPLEADOS.md`
-**Estado**: PROPUESTA PENDIENTE DE APROBACIÓN
+**Estado**: ✅ IMPLEMENTACIÓN BACKEND COMPLETADA
 
 **Fases diseñadas**:
 - ✅ Fase 1: Diagnóstico de tablas EDARSA HUB (44 tablas RH confirmadas)
 - ✅ Fase 2: Mapeo Excel Cienfuegos → RH_Colaboradores_Expediente
-- ⚠️ Fase 3: Mapeo MPro (pendiente exploración de tablas)
+- ⚠️ Fase 3: Mapeo MPro (NO AUTORIZADO - pendiente exploración)
 - ✅ Fase 4: Reglas de deduplicación (CURP/RFC como llaves)
-- ✅ Fase 5: Propuesta tablas staging/bitácora
-- ✅ Fase 6: Propuesta técnica ejecutiva con arquitectura ETL
+- ✅ Fase 5: Tablas staging/bitácora (scripts DDL listos)
+- ✅ Fase 6: Importador backend implementado
 
-**Decisiones pendientes de aprobación del usuario**:
-1. ¿Crear tablas staging/bitácora? → Recomendado: Sí
-2. ¿Extender esquema con campos demográficos? → Recomendado: Después
-3. ¿Implementar primero Excel o MPro? → Recomendado: Excel primero
-4. ¿UI de importación completa o mínima? → Recomendado: Mínima
-5. ¿Rollback automático? → Recomendado: Sí
+### FASE IMPLEMENTACIÓN-IMPORTADOR: Backend y API (Diciembre 2025)
+**Archivos creados**:
+- `modules/rh/importador/__init__.py` (66 líneas)
+- `modules/rh/importador/schemas.py` (290 líneas) - Modelos Pydantic
+- `modules/rh/importador/repository.py` (698 líneas) - SQL y DDL
+- `modules/rh/importador/service.py` (691 líneas) - Lógica de negocio
+- `modules/rh/importador/routes.py` (467 líneas) - Endpoints FastAPI
+
+**Endpoints implementados**:
+- `GET /api/rrhh/importar/tablas/script` - Obtener scripts DDL
+- `POST /api/rrhh/importar/tablas/crear` - Crear tablas (admin)
+- `POST /api/rrhh/importar/excel/preview` - Preview sin insertar
+- `POST /api/rrhh/importar/excel/staging` - Cargar a staging
+- `GET /api/rrhh/importar/staging` - Listar registros
+- `PUT /api/rrhh/importar/staging/{id}` - Actualizar registro
+- `POST /api/rrhh/importar/staging/aprobar` - Aprobar y cargar al maestro
+- `GET /api/rrhh/importar/bitacora` - Ver historial
+
+**Flujo implementado (CONTROLADO)**:
+1. Upload Excel → Extraer datos
+2. Validar cada registro (CURP, RFC, nombre)
+3. Detectar duplicados con niveles de confianza
+4. Clasificar: nuevo / actualizar / duplicado_probable / incompleto / rechazado
+5. Cargar a staging (NO directo al maestro)
+6. Usuario revisa y aprueba
+7. Carga controlada al maestro
+8. Registro en bitácora
+
+**Documento de entregables**: `/app/memory/ENTREGABLES_IMPORTADOR_RH.md`
 
 ---
 

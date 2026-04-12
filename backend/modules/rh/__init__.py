@@ -19,11 +19,18 @@ FASE 6D-B DEL REFACTOR MODULAR (Diciembre 2025):
 - Validación de tipos contra catálogo RH_Cat_Tipos_Incidencias
 - Importación PARCIAL (no transaccional) documentada
 
+FASE IMPORTACIÓN (Diciembre 2025):
+- Importador controlado de empleados desde Excel Cienfuegos
+- Flujo: staging → validación → clasificación → aprobación → carga
+- Tablas de apoyo: RH_Importacion_Staging, RH_Importacion_Bitacora
+- Deduplicación por CURP/RFC con niveles de confianza
+
 Componentes:
 - routes.py: Endpoints del módulo (prefijo /rrhh/)
 - schemas.py: Modelos Pydantic para validación
 - service.py: Lógica de negocio
 - repository.py: Acceso a datos parametrizado
+- importador/: Submódulo de importación controlada
 
 Tablas reutilizadas (NO duplicadas):
 - RH_Cat_Puestos
@@ -35,13 +42,19 @@ Tablas reutilizadas (NO duplicadas):
 - RH_Reloj_Checador (solo lectura)
 - RH_Auditoria_Fiscal (solo lectura)
 
+Tablas de apoyo (NUEVAS):
+- RH_Importacion_Staging (registros pendientes)
+- RH_Importacion_Bitacora (historial de importaciones)
+
 Inicialización:
     from modules.rh import init_rh_module
     init_rh_module(db)
 """
 
 from modules.rh.routes import router
+from modules.rh.importador.routes import router as importador_router
 from modules.rh.repository import init_rh_repository
+from modules.rh.importador.repository import init_importador_repository
 from modules.rh.schemas import (
     # Catálogos - Puestos
     PuestoCreate,
@@ -80,10 +93,12 @@ def init_rh_module(database) -> None:
         database: Instancia de AsyncIOMotorDatabase
     """
     init_rh_repository(database)
+    init_importador_repository(database)
 
 
 __all__ = [
     'router',
+    'importador_router',
     'init_rh_module',
     # Schemas - Puestos
     'PuestoCreate',
