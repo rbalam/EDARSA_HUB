@@ -37,6 +37,16 @@ Asistencia migrada desde server.py:
 - POST   /rrhh/asistencia
 - PUT    /rrhh/asistencia/{check_id}/validar
 
+FASE 6F-B DEL REFACTOR MODULAR (Diciembre 2025):
+Flujo Nómina migrado desde server.py:
+- GET    /rrhh/nominas/flujo
+- POST   /rrhh/nominas/flujo
+- PUT    /rrhh/nominas/flujo/{flujo_id}/enviar-rh
+- PUT    /rrhh/nominas/flujo/{flujo_id}/validar-gerente
+- PUT    /rrhh/nominas/flujo/{flujo_id}/autorizar-dg
+- PUT    /rrhh/nominas/flujo/{flujo_id}/enviar-tesoreria
+- PUT    /rrhh/nominas/flujo/{flujo_id}/marcar-pagado
+
 CONTRATOS MANTENIDOS:
 - Prefijo: /rrhh/ (NO /rh/)
 - Formatos de respuesta idénticos a los originales
@@ -46,6 +56,7 @@ SEGURIDAD:
 - Validación de datos con Pydantic
 - Validación de tipos de incidencia contra catálogo RH_Cat_Tipos_Incidencias
 - Validación de tipo_registro de asistencia (Entrada/Salida)
+- Validación de transiciones de estado en flujo de nómina
 - Queries parametrizados nativos en repository
 """
 
@@ -557,3 +568,165 @@ async def rrhh_validar_asistencia(
     Requiere autenticación.
     """
     return await rh_asistencia_service.validar_asistencia(check_id)
+
+
+
+# ============================================================================
+# ENDPOINTS DE FLUJO NÓMINA (FASE 6F-B)
+# ============================================================================
+# Migrados desde server.py manteniendo el mismo contrato de API.
+#
+# TABLAS REUTILIZADAS:
+# - RH_Flujo_Nomina_Sucursal
+# - RH_Cat_Sucursales
+#
+# VALIDACIÓN DE TRANSICIONES:
+# - Se valida que la transición de estado sea permitida
+# - Previene saltos de estado absurdos (ej: Captura → Pagado)
+#
+# FLUJO DE ESTADOS:
+# Captura → Enviado_RH → Validacion_Gerente → Autorizacion_DG → Enviado_Tesoreria → Pagado
+#                  ↓
+#            Rechazado_Gerente (puede reenviar)
+# ============================================================================
+
+from modules.rh.service import rh_flujo_nomina_service
+from modules.rh.schemas import (
+    FlujoNominaCreate,
+    FlujoNominaListResponse,
+    ValidacionGerenteRequest,
+    ESTATUS_FLUJO_NOMINA,
+)
+
+
+@router.get("/nominas/flujo")
+async def rrhh_listar_flujos_nomina(
+    sucursal_id: Optional[int] = None,
+    semana_anio: Optional[int] = None,
+    estatus: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Lista flujos de nómina por sucursal con filtros opcionales.
+    
+    Parámetros de filtro:
+    - sucursal_id: Filtrar por sucursal
+    - semana_anio: Filtrar por semana/año (formato YYYYWW, ej: 202614)
+    - estatus: Filtrar por estatus del flujo
+    
+    Estatus válidos:
+    - Captura, Enviado_RH, Validacion_Gerente, Rechazado_Gerente,
+      Autorizacion_DG, Enviado_Tesoreria, Pagado
+    
+    Requiere autenticación.
+    """
+    return await rh_flujo_nomina_service.listar_flujos(
+        sucursal_id=sucursal_id,
+        semana_anio=semana_anio,
+        estatus=estatus
+    )
+
+
+@router.post("/nominas/flujo")
+async def rrhh_crear_flujo_nomina(
+    body: FlujoNominaCreate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Crea un nuevo periodo de nómina para una sucursal.
+    
+    Campos requeridos:
+    - sucursal_id: ID de la sucursal
+    - semana_anio: Semana y año en formato YYYYWW (ej: 202614)
+    
+    Validaciones:
+    - No permite crear duplicados para la misma sucursal+semana
+    - El flujo se crea en estatus 'Captura'
+    
+    Requiere autenticación.
+    """
+    return await rh_flujo_nomina_service.crear_flujo(body)
+
+
+@router.put("/nominas/flujo/{flujo_id}/enviar-rh")
+async def rrhh_enviar_nomina_rh(
+    flujo_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Marca la nómina como enviada a RH.
+    
+    Transiciones permitidas:
+    - Captura → Enviado_RH
+    - Rechazado_Gerente → Enviado_RH (reenvío después de corrección)
+    
+    Requiere autenticación.
+    """
+    return await rh_flujo_nomina_service.enviar_a_rh(flujo_id)
+
+
+@router.put("/nominas/flujo/{flujo_id}/validar-gerente")
+async def rrhh_validar_nomina_gerente(
+    flujo_id: int,
+    body: ValidacionGerenteRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Validación o rechazo de nómina por gerente.
+    
+    Campos:
+    - aprobado: True para aprobar, False para rechazar
+    - motivo_rechazo: Obligatorio si aprobado=False
+    
+    Transiciones:
+    - Si aprobado=True: Enviado_RH → Validacion_Gerente
+    - Si aprobado=False: Enviado_RH → Rechazado_Gerente (incrementa intentos)
+    
+    Requiere autenticación.
+    """
+    return await rh_flujo_nomina_service.validar_gerente(flujo_id, body)
+
+
+@router.put("/nominas/flujo/{flujo_id}/autorizar-dg")
+async def rrhh_autorizar_nomina_dg(
+    flujo_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Autorización de nómina por Dirección General.
+    
+    Transición: Validacion_Gerente → Autorizacion_DG
+    
+    Requiere autenticación.
+    """
+    return await rh_flujo_nomina_service.autorizar_dg(flujo_id)
+
+
+@router.put("/nominas/flujo/{flujo_id}/enviar-tesoreria")
+async def rrhh_enviar_nomina_tesoreria(
+    flujo_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Envía nómina a tesorería para pago.
+    
+    Transición: Autorizacion_DG → Enviado_Tesoreria
+    
+    Requiere autenticación.
+    """
+    return await rh_flujo_nomina_service.enviar_tesoreria(flujo_id)
+
+
+@router.put("/nominas/flujo/{flujo_id}/marcar-pagado")
+async def rrhh_marcar_nomina_pagada(
+    flujo_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Marca la nómina como pagada.
+    
+    Transición: Enviado_Tesoreria → Pagado (estado final)
+    
+    Requiere autenticación.
+    """
+    return await rh_flujo_nomina_service.marcar_pagado(flujo_id)

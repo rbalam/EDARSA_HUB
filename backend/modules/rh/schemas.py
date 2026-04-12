@@ -615,3 +615,136 @@ class AsistenciaFiltros(BaseModel):
         if not re.match(r'^\d{4}-\d{2}-\d{2}$', v):
             raise ValueError('Formato de fecha debe ser YYYY-MM-DD')
         return v
+
+
+
+# ============================================================================
+# FLUJO NÓMINA (FASE 6F-B)
+# ============================================================================
+# TABLAS REUTILIZADAS (NO se crean ni duplican):
+# - RH_Flujo_Nomina_Sucursal (principal)
+# - RH_Cat_Sucursales (JOIN)
+#
+# MÁQUINA DE ESTADOS DEL FLUJO:
+# Captura → Enviado_RH → Validacion_Gerente → Autorizacion_DG → Enviado_Tesoreria → Pagado
+#                  ↓
+#            Rechazado_Gerente (puede volver a Captura con +1 Intentos_Reenvio)
+#
+# TRANSICIONES VÁLIDAS (para validación mínima):
+# - Captura → Enviado_RH
+# - Enviado_RH → Validacion_Gerente | Rechazado_Gerente
+# - Rechazado_Gerente → Enviado_RH (reenvío)
+# - Validacion_Gerente → Autorizacion_DG
+# - Autorizacion_DG → Enviado_Tesoreria
+# - Enviado_Tesoreria → Pagado
+# ============================================================================
+
+# Estados válidos del flujo de nómina
+ESTATUS_FLUJO_NOMINA = [
+    "Captura",
+    "Enviado_RH",
+    "Validacion_Gerente",
+    "Rechazado_Gerente",
+    "Autorizacion_DG",
+    "Enviado_Tesoreria",
+    "Pagado"
+]
+
+# Mapa de transiciones válidas: estado_actual -> [estados_destino_permitidos]
+TRANSICIONES_FLUJO_NOMINA = {
+    "Captura": ["Enviado_RH"],
+    "Enviado_RH": ["Validacion_Gerente", "Rechazado_Gerente"],
+    "Rechazado_Gerente": ["Enviado_RH"],  # Reenvío después de corrección
+    "Validacion_Gerente": ["Autorizacion_DG"],
+    "Autorizacion_DG": ["Enviado_Tesoreria"],
+    "Enviado_Tesoreria": ["Pagado"],
+    "Pagado": []  # Estado final, no permite más transiciones
+}
+
+
+class FlujoNominaBase(BaseModel):
+    """Campos base para flujo de nómina."""
+    sucursal_id: int = Field(..., gt=0, description="ID de la sucursal")
+    semana_anio: int = Field(..., gt=0, description="Semana y año en formato YYYYWW (ej: 202614)")
+    
+    @field_validator('semana_anio')
+    @classmethod
+    def semana_anio_formato(cls, v: int) -> int:
+        """Valida formato YYYYWW (año 4 dígitos + semana 2 dígitos)."""
+        if v < 100000 or v > 999999:
+            raise ValueError('semana_anio debe tener formato YYYYWW (ej: 202614)')
+        semana = v % 100
+        if semana < 1 or semana > 53:
+            raise ValueError('La semana debe estar entre 01 y 53')
+        return v
+
+
+class FlujoNominaCreate(FlujoNominaBase):
+    """Modelo para crear un nuevo flujo de nómina."""
+    pass
+
+
+class FlujoNominaResponse(BaseModel):
+    """Modelo de respuesta para un flujo de nómina."""
+    FlujoID: int
+    SucursalID: int
+    Nombre_Sucursal: Optional[str] = None
+    Semana_Anio: int
+    Estatus_Flujo: str
+    Hora_Entrega_RH: Optional[str] = None
+    Hora_Validacion_Gerente: Optional[str] = None
+    Hora_Autorizacion_DG: Optional[str] = None
+    Hora_Envio_Tesoreria: Optional[str] = None
+    Hora_Pago_Ejecutado: Optional[str] = None
+    Motivo_Rechazo_Gerente: Optional[str] = None
+    Intentos_Reenvio: Optional[int] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class FlujoNominaListResponse(BaseModel):
+    """Modelo de respuesta para lista de flujos de nómina."""
+    flujos: List[FlujoNominaResponse]
+    total: int
+
+
+class FlujoNominaFiltros(BaseModel):
+    """Filtros para búsqueda de flujos de nómina."""
+    sucursal_id: Optional[int] = Field(None, gt=0)
+    semana_anio: Optional[int] = Field(None, gt=0)
+    estatus: Optional[str] = None
+    
+    @field_validator('estatus')
+    @classmethod
+    def estatus_valido(cls, v: Optional[str]) -> Optional[str]:
+        """Valida que el estatus sea uno de los permitidos."""
+        if v is not None and v not in ESTATUS_FLUJO_NOMINA:
+            raise ValueError(f"estatus debe ser uno de: {', '.join(ESTATUS_FLUJO_NOMINA)}")
+        return v
+
+
+class ValidacionGerenteRequest(BaseModel):
+    """
+    Modelo para validación/rechazo por gerente.
+    
+    REGLAS:
+    - Si aprobado=true: motivo_rechazo se ignora
+    - Si aprobado=false: motivo_rechazo es OBLIGATORIO
+    """
+    aprobado: bool = Field(default=True, description="True=aprobar, False=rechazar")
+    motivo_rechazo: Optional[str] = Field(None, max_length=500, description="Motivo del rechazo (obligatorio si aprobado=false)")
+    
+    @field_validator('motivo_rechazo')
+    @classmethod
+    def motivo_requerido_si_rechazado(cls, v: Optional[str], info) -> Optional[str]:
+        """Valida que motivo_rechazo sea obligatorio cuando aprobado=false."""
+        # Nota: Esta validación se complementa en el modelo validate
+        if v is not None:
+            v = v.strip()
+        return v
+    
+    def model_post_init(self, __context):
+        """Validación post-init para verificar motivo cuando hay rechazo."""
+        if not self.aprobado and (not self.motivo_rechazo or not self.motivo_rechazo.strip()):
+            raise ValueError("motivo_rechazo es obligatorio cuando aprobado=false")

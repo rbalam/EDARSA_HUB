@@ -965,3 +965,257 @@ class RHAsistenciaService:
 
 # Instancia singleton del servicio de asistencia
 rh_asistencia_service = RHAsistenciaService()
+
+
+
+# ============================================================================
+# SERVICIO DE FLUJO NÓMINA (FASE 6F-B)
+# ============================================================================
+
+from modules.rh.repository import (
+    query_listar_flujos_nomina,
+    query_verificar_flujo_existente,
+    query_obtener_estatus_flujo,
+    query_crear_flujo_nomina,
+    query_actualizar_estatus_flujo,
+)
+from modules.rh.schemas import (
+    FlujoNominaCreate,
+    ValidacionGerenteRequest,
+    TRANSICIONES_FLUJO_NOMINA,
+)
+
+
+class RHFlujoNominaService:
+    """
+    Servicio para gestionar el flujo de nómina por sucursal.
+    
+    MÁQUINA DE ESTADOS:
+    Captura → Enviado_RH → Validacion_Gerente → Autorizacion_DG → Enviado_Tesoreria → Pagado
+                     ↓
+               Rechazado_Gerente (puede reenviar)
+    
+    VALIDACIÓN DE TRANSICIONES:
+    - Se valida que la transición de estado sea permitida
+    - Esto previene saltos de estado absurdos (ej: Captura → Pagado)
+    - Las transiciones válidas están definidas en TRANSICIONES_FLUJO_NOMINA
+    """
+    
+    async def _get_server(self) -> Dict:
+        """Obtiene el servidor EDARSA HUB o lanza excepción."""
+        server = await get_edarsa_hub_server()
+        if not server:
+            raise HTTPException(status_code=404, detail="Servidor EDARSA HUB no configurado")
+        return server
+    
+    def _validar_transicion(self, estatus_actual: str, estatus_destino: str) -> bool:
+        """
+        Valida que la transición de estado sea permitida.
+        
+        Returns:
+            True si la transición es válida, False en caso contrario
+        """
+        transiciones_permitidas = TRANSICIONES_FLUJO_NOMINA.get(estatus_actual, [])
+        return estatus_destino in transiciones_permitidas
+    
+    async def listar_flujos(
+        self,
+        sucursal_id: Optional[int] = None,
+        semana_anio: Optional[int] = None,
+        estatus: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Lista flujos de nómina con filtros opcionales."""
+        server = await self._get_server()
+        
+        result = query_listar_flujos_nomina(
+            server,
+            sucursal_id=sucursal_id,
+            semana_anio=semana_anio,
+            estatus=estatus
+        )
+        
+        return {
+            "flujos": result.get("datos", []),
+            "total": result.get("total", 0)
+        }
+    
+    async def crear_flujo(self, data: FlujoNominaCreate) -> Dict[str, Any]:
+        """
+        Crea un nuevo flujo de nómina para una sucursal.
+        
+        Valida que no exista ya un flujo para la combinación sucursal+semana.
+        """
+        server = await self._get_server()
+        
+        # Verificar si ya existe
+        if query_verificar_flujo_existente(server, data.sucursal_id, data.semana_anio):
+            raise HTTPException(
+                status_code=400,
+                detail="Ya existe un flujo para esta sucursal y semana"
+            )
+        
+        result = query_crear_flujo_nomina(
+            server,
+            sucursal_id=data.sucursal_id,
+            semana_anio=data.semana_anio
+        )
+        
+        if not result.get("success"):
+            raise HTTPException(
+                status_code=500,
+                detail=result.get("error", "Error al crear flujo de nómina")
+            )
+        
+        return {
+            "success": True,
+            "message": "Flujo de nómina creado",
+            "flujo_id": result.get("flujo_id")
+        }
+    
+    async def _transicion_estado(
+        self,
+        flujo_id: int,
+        estatus_destino: str,
+        campo_hora: str,
+        mensaje_exito: str,
+        motivo_rechazo: Optional[str] = None,
+        incrementar_intentos: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Método interno para realizar transiciones de estado con validación.
+        
+        Valida que la transición sea permitida antes de ejecutarla.
+        """
+        server = await self._get_server()
+        
+        # Obtener estatus actual
+        estatus_actual = query_obtener_estatus_flujo(server, flujo_id)
+        
+        if estatus_actual is None:
+            raise HTTPException(status_code=404, detail="Flujo de nómina no encontrado")
+        
+        # Validar transición
+        if not self._validar_transicion(estatus_actual, estatus_destino):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Transición no permitida: {estatus_actual} → {estatus_destino}"
+            )
+        
+        # Ejecutar transición
+        result = query_actualizar_estatus_flujo(
+            server,
+            flujo_id=flujo_id,
+            nuevo_estatus=estatus_destino,
+            campo_hora=campo_hora,
+            motivo_rechazo=motivo_rechazo,
+            incrementar_intentos=incrementar_intentos
+        )
+        
+        if not result.get("success"):
+            raise HTTPException(
+                status_code=500,
+                detail=result.get("error", "Error al actualizar flujo")
+            )
+        
+        return {"success": True, "message": mensaje_exito}
+    
+    async def enviar_a_rh(self, flujo_id: int) -> Dict[str, Any]:
+        """
+        Marca la nómina como enviada a RH.
+        
+        Transición: Captura → Enviado_RH
+                    Rechazado_Gerente → Enviado_RH (reenvío)
+        """
+        server = await self._get_server()
+        
+        # Obtener estatus actual para manejar ambos casos
+        estatus_actual = query_obtener_estatus_flujo(server, flujo_id)
+        
+        if estatus_actual is None:
+            raise HTTPException(status_code=404, detail="Flujo de nómina no encontrado")
+        
+        # Permitir transición desde Captura o Rechazado_Gerente
+        if estatus_actual not in ["Captura", "Rechazado_Gerente"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Transición no permitida: {estatus_actual} → Enviado_RH"
+            )
+        
+        result = query_actualizar_estatus_flujo(
+            server,
+            flujo_id=flujo_id,
+            nuevo_estatus="Enviado_RH",
+            campo_hora="Hora_Entrega_RH"
+        )
+        
+        if not result.get("success"):
+            raise HTTPException(status_code=500, detail=result.get("error"))
+        
+        return {"success": True, "message": "Nómina enviada a RH"}
+    
+    async def validar_gerente(self, flujo_id: int, data: ValidacionGerenteRequest) -> Dict[str, Any]:
+        """
+        Validación o rechazo de nómina por gerente.
+        
+        Transición si aprobado=True: Enviado_RH → Validacion_Gerente
+        Transición si aprobado=False: Enviado_RH → Rechazado_Gerente (+1 intento)
+        """
+        if data.aprobado:
+            return await self._transicion_estado(
+                flujo_id=flujo_id,
+                estatus_destino="Validacion_Gerente",
+                campo_hora="Hora_Validacion_Gerente",
+                mensaje_exito="Nómina validada"
+            )
+        else:
+            return await self._transicion_estado(
+                flujo_id=flujo_id,
+                estatus_destino="Rechazado_Gerente",
+                campo_hora="Hora_Validacion_Gerente",
+                mensaje_exito="Nómina rechazada",
+                motivo_rechazo=data.motivo_rechazo,
+                incrementar_intentos=True
+            )
+    
+    async def autorizar_dg(self, flujo_id: int) -> Dict[str, Any]:
+        """
+        Autorización de nómina por Dirección General.
+        
+        Transición: Validacion_Gerente → Autorizacion_DG
+        """
+        return await self._transicion_estado(
+            flujo_id=flujo_id,
+            estatus_destino="Autorizacion_DG",
+            campo_hora="Hora_Autorizacion_DG",
+            mensaje_exito="Nómina autorizada por DG"
+        )
+    
+    async def enviar_tesoreria(self, flujo_id: int) -> Dict[str, Any]:
+        """
+        Envía nómina a tesorería para pago.
+        
+        Transición: Autorizacion_DG → Enviado_Tesoreria
+        """
+        return await self._transicion_estado(
+            flujo_id=flujo_id,
+            estatus_destino="Enviado_Tesoreria",
+            campo_hora="Hora_Envio_Tesoreria",
+            mensaje_exito="Nómina enviada a tesorería"
+        )
+    
+    async def marcar_pagado(self, flujo_id: int) -> Dict[str, Any]:
+        """
+        Marca la nómina como pagada.
+        
+        Transición: Enviado_Tesoreria → Pagado (estado final)
+        """
+        return await self._transicion_estado(
+            flujo_id=flujo_id,
+            estatus_destino="Pagado",
+            campo_hora="Hora_Pago_Ejecutado",
+            mensaje_exito="Nómina marcada como pagada"
+        )
+
+
+# Instancia singleton del servicio de flujo nómina
+rh_flujo_nomina_service = RHFlujoNominaService()

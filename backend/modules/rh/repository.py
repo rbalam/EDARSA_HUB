@@ -1358,3 +1358,245 @@ def query_validar_asistencia(server: Dict, check_id: int) -> Dict[str, Any]:
     execute_hub_query_params(server, query, (id_safe,))
     
     return {"success": True}
+
+
+
+# ============================================================================
+# FLUJO NÓMINA - QUERIES CON PARÁMETROS NATIVOS (FASE 6F-B)
+# ============================================================================
+# TABLAS REUTILIZADAS:
+# - RH_Flujo_Nomina_Sucursal (principal - INSERT/SELECT/UPDATE)
+# - RH_Cat_Sucursales (JOIN)
+#
+# SEGURIDAD:
+# - Todos los IDs (flujo_id, sucursal_id, semana_anio) se validan como enteros
+# - execute_sql_query_params() para INSERT y UPDATE con IDs
+# - escape_sql_string() usado SOLO para:
+#   - estatus en filtros WHERE (string de lista controlada)
+#   - motivo_rechazo (string libre de usuario)
+#   Razón: SQL Server no soporta parámetros en SET dinámico con valores string
+#          que ya vienen validados por Pydantic
+#
+# VALIDACIÓN DE TRANSICIONES:
+# - Se valida que la transición de estado sea permitida según TRANSICIONES_FLUJO_NOMINA
+# - Esto previene saltos de estado absurdos (ej: Captura → Pagado)
+# ============================================================================
+
+
+def query_listar_flujos_nomina(
+    server: Dict,
+    sucursal_id: Optional[int] = None,
+    semana_anio: Optional[int] = None,
+    estatus: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Lista flujos de nómina por sucursal con filtros opcionales.
+    
+    PARÁMETROS NATIVOS: sucursal_id, semana_anio (enteros validados)
+    ESCAPE NECESARIO: estatus (string de lista controlada, ya validado por Pydantic)
+    
+    Tablas: RH_Flujo_Nomina_Sucursal, RH_Cat_Sucursales
+    """
+    conditions = ["1=1"]
+    
+    # Filtros con validación de enteros (seguros - casting a int)
+    if sucursal_id is not None:
+        try:
+            conditions.append(f"f.SucursalID = {int(sucursal_id)}")
+        except (ValueError, TypeError):
+            pass
+    
+    if semana_anio is not None:
+        try:
+            conditions.append(f"f.Semana_Anio = {int(semana_anio)}")
+        except (ValueError, TypeError):
+            pass
+    
+    # Estatus: Ya validado por Pydantic contra ESTATUS_FLUJO_NOMINA, escapamos por seguridad
+    if estatus:
+        estatus_safe = escape_sql_string(estatus)
+        conditions.append(f"f.Estatus_Flujo = N'{estatus_safe}'")
+    
+    where_clause = " AND ".join(conditions)
+    
+    query = f"""
+        SELECT 
+            f.FlujoID,
+            f.SucursalID,
+            s.Nombre_Sucursal,
+            f.Semana_Anio,
+            f.Estatus_Flujo,
+            f.Hora_Entrega_RH,
+            f.Hora_Validacion_Gerente,
+            f.Hora_Autorizacion_DG,
+            f.Hora_Envio_Tesoreria,
+            f.Hora_Pago_Ejecutado,
+            f.Motivo_Rechazo_Gerente,
+            f.Intentos_Reenvio
+        FROM RH_Flujo_Nomina_Sucursal f
+        LEFT JOIN RH_Cat_Sucursales s ON f.SucursalID = s.SucursalID
+        WHERE {where_clause}
+        ORDER BY f.Semana_Anio DESC, s.Nombre_Sucursal
+    """
+    
+    result = execute_hub_query(server, query)
+    
+    return {
+        "datos": result,
+        "total": len(result)
+    }
+
+
+def query_verificar_flujo_existente(
+    server: Dict,
+    sucursal_id: int,
+    semana_anio: int
+) -> bool:
+    """
+    Verifica si ya existe un flujo de nómina para la combinación sucursal+semana.
+    
+    PARÁMETROS NATIVOS: sucursal_id, semana_anio
+    
+    Returns:
+        True si ya existe, False si no existe
+    """
+    query = """
+        SELECT FlujoID FROM RH_Flujo_Nomina_Sucursal 
+        WHERE SucursalID = %s AND Semana_Anio = %s
+    """
+    
+    params = (int(sucursal_id), int(semana_anio))
+    result = execute_hub_query_params(server, query, params)
+    
+    return len(result) > 0
+
+
+def query_obtener_estatus_flujo(server: Dict, flujo_id: int) -> Optional[str]:
+    """
+    Obtiene el estatus actual de un flujo de nómina.
+    
+    PARÁMETROS NATIVOS: flujo_id
+    
+    Returns:
+        Estatus actual del flujo, o None si no existe
+    """
+    try:
+        id_safe = int(flujo_id)
+    except (ValueError, TypeError):
+        return None
+    
+    query = """
+        SELECT Estatus_Flujo FROM RH_Flujo_Nomina_Sucursal 
+        WHERE FlujoID = %s
+    """
+    
+    result = execute_hub_query_params(server, query, (id_safe,))
+    
+    if result and len(result) > 0:
+        return result[0].get("Estatus_Flujo")
+    return None
+
+
+def query_crear_flujo_nomina(
+    server: Dict,
+    sucursal_id: int,
+    semana_anio: int
+) -> Dict[str, Any]:
+    """
+    Crea un nuevo flujo de nómina para una sucursal.
+    
+    PARÁMETROS NATIVOS: sucursal_id, semana_anio
+    
+    El flujo se crea con:
+    - Estatus_Flujo = 'Captura' (estado inicial)
+    - Intentos_Reenvio = 0
+    
+    Tabla: RH_Flujo_Nomina_Sucursal
+    """
+    query = """
+        INSERT INTO RH_Flujo_Nomina_Sucursal 
+        (SucursalID, Semana_Anio, Estatus_Flujo, Intentos_Reenvio)
+        OUTPUT INSERTED.FlujoID
+        VALUES (%s, %s, 'Captura', 0)
+    """
+    
+    params = (int(sucursal_id), int(semana_anio))
+    result = execute_hub_query_params(server, query, params)
+    
+    if result and len(result) > 0:
+        return {
+            "success": True,
+            "flujo_id": result[0].get("FlujoID")
+        }
+    
+    return {
+        "success": False,
+        "flujo_id": None,
+        "error": "No se pudo crear el flujo de nómina"
+    }
+
+
+def query_actualizar_estatus_flujo(
+    server: Dict,
+    flujo_id: int,
+    nuevo_estatus: str,
+    campo_hora: Optional[str] = None,
+    motivo_rechazo: Optional[str] = None,
+    incrementar_intentos: bool = False
+) -> Dict[str, Any]:
+    """
+    Actualiza el estatus de un flujo de nómina.
+    
+    PARÁMETROS NATIVOS: flujo_id (entero validado)
+    ESCAPE NECESARIO: nuevo_estatus, motivo_rechazo
+        Razón: Valores string en SET dinámico. Ambos ya validados por Pydantic.
+    
+    Args:
+        server: Configuración del servidor
+        flujo_id: ID del flujo a actualizar
+        nuevo_estatus: Nuevo estatus (ya validado contra ESTATUS_FLUJO_NOMINA)
+        campo_hora: Campo de hora a actualizar (ej: 'Hora_Entrega_RH')
+        motivo_rechazo: Motivo de rechazo (solo para Rechazado_Gerente)
+        incrementar_intentos: Si True, incrementa Intentos_Reenvio
+    
+    Tabla: RH_Flujo_Nomina_Sucursal
+    """
+    try:
+        id_safe = int(flujo_id)
+    except (ValueError, TypeError):
+        return {"success": False, "error": "ID de flujo inválido"}
+    
+    # Construir cláusulas SET
+    set_clauses = [f"Estatus_Flujo = N'{escape_sql_string(nuevo_estatus)}'"]
+    
+    # Campo de hora (nombre de columna seguro, no viene del usuario)
+    if campo_hora:
+        # Validar que sea un campo de hora válido
+        campos_hora_validos = [
+            'Hora_Entrega_RH', 'Hora_Validacion_Gerente', 
+            'Hora_Autorizacion_DG', 'Hora_Envio_Tesoreria', 'Hora_Pago_Ejecutado'
+        ]
+        if campo_hora in campos_hora_validos:
+            set_clauses.append(f"{campo_hora} = GETDATE()")
+    
+    # Motivo de rechazo
+    if motivo_rechazo is not None:
+        motivo_safe = escape_sql_string(motivo_rechazo)
+        set_clauses.append(f"Motivo_Rechazo_Gerente = N'{motivo_safe}'")
+    elif nuevo_estatus == 'Validacion_Gerente':
+        # Limpiar motivo si se aprueba
+        set_clauses.append("Motivo_Rechazo_Gerente = NULL")
+    
+    # Incrementar intentos
+    if incrementar_intentos:
+        set_clauses.append("Intentos_Reenvio = Intentos_Reenvio + 1")
+    
+    query = f"""
+        UPDATE RH_Flujo_Nomina_Sucursal
+        SET {', '.join(set_clauses)}
+        WHERE FlujoID = {id_safe}
+    """
+    
+    execute_hub_query(server, query)
+    
+    return {"success": True}

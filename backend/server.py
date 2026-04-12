@@ -9203,183 +9203,196 @@ async def execute_edarsa_hub_query(query: str):
 
 
 # ------------ FLUJO DE NÓMINA ------------
+# ============================================================================
+# ENDPOINTS DE FLUJO NÓMINA - COMENTADOS (FASE 6F-B)
+# ============================================================================
+# Migrados a: modules/rh/routes.py
+# Fecha: Diciembre 2025
+#
+# IMPORTANTE: No eliminar este código comentado hasta que el usuario lo autorice.
+# Los endpoints ahora funcionan desde el módulo modular con:
+# - Validación Pydantic (sucursal_id, semana_anio, motivo_rechazo)
+# - Validación de transiciones de estado (previene saltos absurdos)
+# - Queries parametrizados (prevención SQL Injection)
+# - Mismos contratos de API
+# ============================================================================
 
-@api_router.get("/rrhh/nominas/flujo")
-async def rrhh_listar_flujos_nomina(
-    sucursal_id: Optional[int] = None,
-    semana_anio: Optional[int] = None,
-    estatus: Optional[str] = None,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Lista flujos de nómina por sucursal"""
-    
-    conditions = ["1=1"]
-    if sucursal_id:
-        conditions.append(f"f.SucursalID = {sucursal_id}")
-    if semana_anio:
-        conditions.append(f"f.Semana_Anio = {semana_anio}")
-    if estatus:
-        conditions.append(f"f.Estatus_Flujo = '{estatus}'")
-    
-    where_clause = " AND ".join(conditions)
-    
-    query = f"""
-        SELECT 
-            f.FlujoID,
-            f.SucursalID,
-            s.Nombre_Sucursal,
-            f.Semana_Anio,
-            f.Estatus_Flujo,
-            f.Hora_Entrega_RH,
-            f.Hora_Validacion_Gerente,
-            f.Hora_Autorizacion_DG,
-            f.Hora_Envio_Tesoreria,
-            f.Hora_Pago_Ejecutado,
-            f.Motivo_Rechazo_Gerente,
-            f.Intentos_Reenvio
-        FROM RH_Flujo_Nomina_Sucursal f
-        LEFT JOIN RH_Cat_Sucursales s ON f.SucursalID = s.SucursalID
-        WHERE {where_clause}
-        ORDER BY f.Semana_Anio DESC, s.Nombre_Sucursal
-    """
-    
-    result = await execute_edarsa_hub_query(query)
-    
-    return {
-        "flujos": result.get("datos", []),
-        "total": result.get("registros", 0)
-    }
-
-
-@api_router.post("/rrhh/nominas/flujo")
-async def rrhh_crear_flujo_nomina(
-    body: Dict,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Crea un nuevo periodo de nómina para una sucursal"""
-    
-    sucursal_id = body.get('sucursal_id')
-    semana_anio = body.get('semana_anio')  # Formato: 202614 (año + semana)
-    
-    if not sucursal_id or not semana_anio:
-        raise HTTPException(status_code=400, detail="Sucursal y semana son requeridos")
-    
-    # Verificar si ya existe
-    check_query = f"""
-        SELECT FlujoID FROM RH_Flujo_Nomina_Sucursal 
-        WHERE SucursalID = {sucursal_id} AND Semana_Anio = {semana_anio}
-    """
-    existing = await execute_edarsa_hub_query(check_query)
-    
-    if existing.get("datos"):
-        raise HTTPException(status_code=400, detail="Ya existe un flujo para esta sucursal y semana")
-    
-    query = f"""
-        INSERT INTO RH_Flujo_Nomina_Sucursal 
-        (SucursalID, Semana_Anio, Estatus_Flujo, Intentos_Reenvio)
-        OUTPUT INSERTED.FlujoID
-        VALUES 
-        ({sucursal_id}, {semana_anio}, 'Captura', 0)
-    """
-    
-    result = await execute_edarsa_hub_query(query)
-    
-    return {
-        "success": True,
-        "message": "Flujo de nómina creado",
-        "flujo_id": result.get("datos", [{}])[0].get("FlujoID") if result.get("datos") else None
-    }
+# @api_router.get("/rrhh/nominas/flujo")
+# async def rrhh_listar_flujos_nomina(
+#     sucursal_id: Optional[int] = None,
+#     semana_anio: Optional[int] = None,
+#     estatus: Optional[str] = None,
+#     current_user: Dict = Depends(get_current_user)
+# ):
+#     """Lista flujos de nómina por sucursal"""
+#     
+#     conditions = ["1=1"]
+#     if sucursal_id:
+#         conditions.append(f"f.SucursalID = {sucursal_id}")
+#     if semana_anio:
+#         conditions.append(f"f.Semana_Anio = {semana_anio}")
+#     if estatus:
+#         conditions.append(f"f.Estatus_Flujo = '{estatus}'")
+#     
+#     where_clause = " AND ".join(conditions)
+#     
+#     query = f"""
+#         SELECT 
+#             f.FlujoID,
+#             f.SucursalID,
+#             s.Nombre_Sucursal,
+#             f.Semana_Anio,
+#             f.Estatus_Flujo,
+#             f.Hora_Entrega_RH,
+#             f.Hora_Validacion_Gerente,
+#             f.Hora_Autorizacion_DG,
+#             f.Hora_Envio_Tesoreria,
+#             f.Hora_Pago_Ejecutado,
+#             f.Motivo_Rechazo_Gerente,
+#             f.Intentos_Reenvio
+#         FROM RH_Flujo_Nomina_Sucursal f
+#         LEFT JOIN RH_Cat_Sucursales s ON f.SucursalID = s.SucursalID
+#         WHERE {where_clause}
+#         ORDER BY f.Semana_Anio DESC, s.Nombre_Sucursal
+#     """
+#     
+#     result = await execute_edarsa_hub_query(query)
+#     
+#     return {
+#         "flujos": result.get("datos", []),
+#         "total": result.get("registros", 0)
+#     }
 
 
-@api_router.put("/rrhh/nominas/flujo/{flujo_id}/enviar-rh")
-async def rrhh_enviar_nomina_rh(
-    flujo_id: int,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Marca la nómina como enviada a RH"""
-    query = f"""
-        UPDATE RH_Flujo_Nomina_Sucursal
-        SET Estatus_Flujo = 'Enviado_RH', Hora_Entrega_RH = GETDATE()
-        WHERE FlujoID = {flujo_id}
-    """
-    await execute_edarsa_hub_query(query)
-    return {"success": True, "message": "Nómina enviada a RH"}
+# @api_router.post("/rrhh/nominas/flujo")
+# async def rrhh_crear_flujo_nomina(
+#     body: Dict,
+#     current_user: Dict = Depends(get_current_user)
+# ):
+#     """Crea un nuevo periodo de nómina para una sucursal"""
+#     
+#     sucursal_id = body.get('sucursal_id')
+#     semana_anio = body.get('semana_anio')  # Formato: 202614 (año + semana)
+#     
+#     if not sucursal_id or not semana_anio:
+#         raise HTTPException(status_code=400, detail="Sucursal y semana son requeridos")
+#     
+#     # Verificar si ya existe
+#     check_query = f"""
+#         SELECT FlujoID FROM RH_Flujo_Nomina_Sucursal 
+#         WHERE SucursalID = {sucursal_id} AND Semana_Anio = {semana_anio}
+#     """
+#     existing = await execute_edarsa_hub_query(check_query)
+#     
+#     if existing.get("datos"):
+#         raise HTTPException(status_code=400, detail="Ya existe un flujo para esta sucursal y semana")
+#     
+#     query = f"""
+#         INSERT INTO RH_Flujo_Nomina_Sucursal 
+#         (SucursalID, Semana_Anio, Estatus_Flujo, Intentos_Reenvio)
+#         OUTPUT INSERTED.FlujoID
+#         VALUES 
+#         ({sucursal_id}, {semana_anio}, 'Captura', 0)
+#     """
+#     
+#     result = await execute_edarsa_hub_query(query)
+#     
+#     return {
+#         "success": True,
+#         "message": "Flujo de nómina creado",
+#         "flujo_id": result.get("datos", [{}])[0].get("FlujoID") if result.get("datos") else None
+#     }
 
 
-@api_router.put("/rrhh/nominas/flujo/{flujo_id}/validar-gerente")
-async def rrhh_validar_nomina_gerente(
-    flujo_id: int,
-    body: Dict,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Validación de nómina por gerente"""
-    aprobado = body.get('aprobado', True)
-    motivo = body.get('motivo_rechazo', '')
-    
-    if aprobado:
-        query = f"""
-            UPDATE RH_Flujo_Nomina_Sucursal
-            SET Estatus_Flujo = 'Validacion_Gerente', 
-                Hora_Validacion_Gerente = GETDATE(),
-                Motivo_Rechazo_Gerente = NULL
-            WHERE FlujoID = {flujo_id}
-        """
-    else:
-        query = f"""
-            UPDATE RH_Flujo_Nomina_Sucursal
-            SET Estatus_Flujo = 'Rechazado_Gerente', 
-                Motivo_Rechazo_Gerente = '{motivo or "Sin especificar"}',
-                Intentos_Reenvio = Intentos_Reenvio + 1
-            WHERE FlujoID = {flujo_id}
-        """
-    
-    await execute_edarsa_hub_query(query)
-    return {"success": True, "message": "Nómina validada" if aprobado else "Nómina rechazada"}
+# @api_router.put("/rrhh/nominas/flujo/{flujo_id}/enviar-rh")
+# async def rrhh_enviar_nomina_rh(
+#     flujo_id: int,
+#     current_user: Dict = Depends(get_current_user)
+# ):
+#     """Marca la nómina como enviada a RH"""
+#     query = f"""
+#         UPDATE RH_Flujo_Nomina_Sucursal
+#         SET Estatus_Flujo = 'Enviado_RH', Hora_Entrega_RH = GETDATE()
+#         WHERE FlujoID = {flujo_id}
+#     """
+#     await execute_edarsa_hub_query(query)
+#     return {"success": True, "message": "Nómina enviada a RH"}
 
 
-@api_router.put("/rrhh/nominas/flujo/{flujo_id}/autorizar-dg")
-async def rrhh_autorizar_nomina_dg(
-    flujo_id: int,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Autorización de nómina por Dirección General"""
-    query = f"""
-        UPDATE RH_Flujo_Nomina_Sucursal
-        SET Estatus_Flujo = 'Autorizacion_DG', Hora_Autorizacion_DG = GETDATE()
-        WHERE FlujoID = {flujo_id}
-    """
-    await execute_edarsa_hub_query(query)
-    return {"success": True, "message": "Nómina autorizada por DG"}
+# @api_router.put("/rrhh/nominas/flujo/{flujo_id}/validar-gerente")
+# async def rrhh_validar_nomina_gerente(
+#     flujo_id: int,
+#     body: Dict,
+#     current_user: Dict = Depends(get_current_user)
+# ):
+#     """Validación de nómina por gerente"""
+#     aprobado = body.get('aprobado', True)
+#     motivo = body.get('motivo_rechazo', '')
+#     
+#     if aprobado:
+#         query = f"""
+#             UPDATE RH_Flujo_Nomina_Sucursal
+#             SET Estatus_Flujo = 'Validacion_Gerente', 
+#                 Hora_Validacion_Gerente = GETDATE(),
+#                 Motivo_Rechazo_Gerente = NULL
+#             WHERE FlujoID = {flujo_id}
+#         """
+#     else:
+#         query = f"""
+#             UPDATE RH_Flujo_Nomina_Sucursal
+#             SET Estatus_Flujo = 'Rechazado_Gerente', 
+#                 Motivo_Rechazo_Gerente = '{motivo or "Sin especificar"}',
+#                 Intentos_Reenvio = Intentos_Reenvio + 1
+#             WHERE FlujoID = {flujo_id}
+#         """
+#     
+#     await execute_edarsa_hub_query(query)
+#     return {"success": True, "message": "Nómina validada" if aprobado else "Nómina rechazada"}
 
 
-@api_router.put("/rrhh/nominas/flujo/{flujo_id}/enviar-tesoreria")
-async def rrhh_enviar_nomina_tesoreria(
-    flujo_id: int,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Envía nómina a tesorería para pago"""
-    query = f"""
-        UPDATE RH_Flujo_Nomina_Sucursal
-        SET Estatus_Flujo = 'Enviado_Tesoreria', Hora_Envio_Tesoreria = GETDATE()
-        WHERE FlujoID = {flujo_id}
-    """
-    await execute_edarsa_hub_query(query)
-    return {"success": True, "message": "Nómina enviada a tesorería"}
+# @api_router.put("/rrhh/nominas/flujo/{flujo_id}/autorizar-dg")
+# async def rrhh_autorizar_nomina_dg(
+#     flujo_id: int,
+#     current_user: Dict = Depends(get_current_user)
+# ):
+#     """Autorización de nómina por Dirección General"""
+#     query = f"""
+#         UPDATE RH_Flujo_Nomina_Sucursal
+#         SET Estatus_Flujo = 'Autorizacion_DG', Hora_Autorizacion_DG = GETDATE()
+#         WHERE FlujoID = {flujo_id}
+#     """
+#     await execute_edarsa_hub_query(query)
+#     return {"success": True, "message": "Nómina autorizada por DG"}
 
 
-@api_router.put("/rrhh/nominas/flujo/{flujo_id}/marcar-pagado")
-async def rrhh_marcar_nomina_pagada(
-    flujo_id: int,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Marca la nómina como pagada"""
-    query = f"""
-        UPDATE RH_Flujo_Nomina_Sucursal
-        SET Estatus_Flujo = 'Pagado', Hora_Pago_Ejecutado = GETDATE()
-        WHERE FlujoID = {flujo_id}
-    """
-    await execute_edarsa_hub_query(query)
-    return {"success": True, "message": "Nómina marcada como pagada"}
+# @api_router.put("/rrhh/nominas/flujo/{flujo_id}/enviar-tesoreria")
+# async def rrhh_enviar_nomina_tesoreria(
+#     flujo_id: int,
+#     current_user: Dict = Depends(get_current_user)
+# ):
+#     """Envía nómina a tesorería para pago"""
+#     query = f"""
+#         UPDATE RH_Flujo_Nomina_Sucursal
+#         SET Estatus_Flujo = 'Enviado_Tesoreria', Hora_Envio_Tesoreria = GETDATE()
+#         WHERE FlujoID = {flujo_id}
+#     """
+#     await execute_edarsa_hub_query(query)
+#     return {"success": True, "message": "Nómina enviada a tesorería"}
+
+
+# @api_router.put("/rrhh/nominas/flujo/{flujo_id}/marcar-pagado")
+# async def rrhh_marcar_nomina_pagada(
+#     flujo_id: int,
+#     current_user: Dict = Depends(get_current_user)
+# ):
+#     """Marca la nómina como pagada"""
+#     query = f"""
+#         UPDATE RH_Flujo_Nomina_Sucursal
+#         SET Estatus_Flujo = 'Pagado', Hora_Pago_Ejecutado = GETDATE()
+#         WHERE FlujoID = {flujo_id}
+#     """
+#     await execute_edarsa_hub_query(query)
+#     return {"success": True, "message": "Nómina marcada como pagada"}
 
 
 # ------------ AUDITORÍA FISCAL ------------

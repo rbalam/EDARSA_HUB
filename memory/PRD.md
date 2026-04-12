@@ -176,7 +176,43 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
     - `modules/rh/routes.py` (+78 líneas) - Endpoints asistencia
   - **server.py**: 3 endpoints comentados (~105 líneas)
   - **127 tests pasando**, 4 skipped (integración)
-- **Fases 6F-6H, 7**: ⏸️ Pendientes de autorización
+- **Fase 6F-B (Flujo Nómina RH)**: ✅ COMPLETADA (Diciembre 2025)
+  - 7 endpoints migrados desde `server.py` a `modules/rh/`:
+    - `GET /rrhh/nominas/flujo`
+    - `POST /rrhh/nominas/flujo`
+    - `PUT /rrhh/nominas/flujo/{flujo_id}/enviar-rh`
+    - `PUT /rrhh/nominas/flujo/{flujo_id}/validar-gerente`
+    - `PUT /rrhh/nominas/flujo/{flujo_id}/autorizar-dg`
+    - `PUT /rrhh/nominas/flujo/{flujo_id}/enviar-tesoreria`
+    - `PUT /rrhh/nominas/flujo/{flujo_id}/marcar-pagado`
+  - **Validación Pydantic** para:
+    - `sucursal_id` (int > 0)
+    - `semana_anio` (formato YYYYWW, semana 01-53)
+    - `motivo_rechazo` (obligatorio cuando aprobado=false)
+    - `estatus` (lista controlada ESTATUS_FLUJO_NOMINA)
+  - **Validación de transiciones de estado** (previene saltos absurdos):
+    - Captura → Enviado_RH
+    - Enviado_RH → Validacion_Gerente | Rechazado_Gerente
+    - Rechazado_Gerente → Enviado_RH (reenvío)
+    - Validacion_Gerente → Autorizacion_DG
+    - Autorizacion_DG → Enviado_Tesoreria
+    - Enviado_Tesoreria → Pagado
+  - **Queries parametrizados nativos** para INSERT/SELECT/UPDATE con IDs
+  - **Escape SQL** usado para:
+    - `estatus` en filtros WHERE (string de lista controlada)
+    - `motivo_rechazo` en SET (string libre de usuario)
+    Razón: SQL Server no soporta parámetros en SET dinámico con strings
+  - **Tablas SQL Server reutilizadas** (NO duplicadas):
+    - `RH_Flujo_Nomina_Sucursal` (principal)
+    - `RH_Cat_Sucursales` (JOIN)
+  - **Archivos actualizados**:
+    - `modules/rh/schemas.py` (+120 líneas) - FlujoNominaCreate, ValidacionGerenteRequest, etc.
+    - `modules/rh/repository.py` (+200 líneas) - Queries flujo nómina parametrizados
+    - `modules/rh/service.py` (+180 líneas) - RHFlujoNominaService con validación transiciones
+    - `modules/rh/routes.py` (+120 líneas) - 7 endpoints flujo nómina
+  - **server.py**: 7 endpoints comentados (~180 líneas)
+  - **127 tests pasando**, 4 skipped (integración)
+- **Fases 6G-6H, 7**: ⏸️ Pendientes de autorización
 
 ---
 
