@@ -268,6 +268,36 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 - ✅ 6G: Auditoría + Dashboard RH (2 endpoints)
 - ✅ 6H: Reclutamiento RH (10 endpoints - incluye script inicialización)
 
+### FASE ENRIQUECIMIENTO-STAGING: Análisis de RFC/CURP (Diciembre 2025)
+**Reporte completo**: `/app/memory/REPORTE_ENRIQUECIMIENTO_STAGING.md`
+**Estado**: ✅ COMPLETADO - SIN ÉXITO EN ENRIQUECIMIENTO
+
+**Inventario del Excel (14 hojas)**:
+- BD Nómina, Nomipaq, Complemento, Métodos de Pago, etc.
+- Ninguna hoja contiene RFC ni CURP de empleados
+- Solo existe RFC de la empresa (DAP-170822-SE1)
+
+**Resultado de búsqueda exhaustiva**:
+- RFCs de empleados encontrados: **0**
+- CURPs de empleados encontrados: **0**
+- Porcentaje de cruce exitoso: **0%**
+
+**Clasificación final (sin cambios)**:
+- Total en staging: 56
+- Incompletos: 56 (100%)
+- Listos para alta: 0
+- Enriquecidos: 0
+
+**🔴 VEREDICTO**: El archivo Excel de Cienfuegos **NO ES VIABLE** como fuente para el catálogo maestro de empleados. Es un cálculo de nómina semanal de CONTPAQi que NO incluye identificadores fiscales.
+
+**Escenario aplicable**: D - El Excel sirve solo para apoyo operativo de prenómina
+
+**Próximo paso requerido**:
+- Obtener archivo con RFC/CURP desde CONTPAQi Nóminas
+- O explorar base de datos MPro para identificadores
+
+---
+
 ### FASE OPERATIVA-IMPORTADOR: Preview Real Excel Cienfuegos (Diciembre 2025)
 **Reporte completo**: `/app/memory/REPORTE_FASE_OPERATIVA_IMPORTADOR.md`
 **Preview JSON**: `/app/memory/PREVIEW_EXCEL_CIENFUEGOS.json`
