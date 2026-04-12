@@ -1,0 +1,20 @@
+{
+  "fecha": "2026-04-12T14:51:03.256074",
+  "bitacora_id": 4,
+  "fuente": "MPro_HR2020",
+  "estadisticas": {
+    "total": 42,
+    "insertados": 42,
+    "duplicados": 0,
+    "con_curp": 38,
+    "con_rfc": 42,
+    "incompletos": 0,
+    "errores": 0,
+    "por_empresa": {
+      "CERVEZA PATITO PENINSULAR": {
+        "total": 42,
+        "activos": 32
+      }
+    }
+  }
+}

@@ -340,10 +340,39 @@ Todos los registros (100%) permanecen como INCOMPLETOS en staging.
 **Fases diseñadas**:
 - ✅ Fase 1: Diagnóstico de tablas EDARSA HUB (44 tablas RH confirmadas)
 - ✅ Fase 2: Mapeo Excel Cienfuegos → RH_Colaboradores_Expediente
-- ⚠️ Fase 3: Mapeo MPro (NO AUTORIZADO - pendiente exploración)
+- ✅ Fase 3: Mapeo MPro (COMPLETADO - Abril 2026)
 - ✅ Fase 4: Reglas de deduplicación (CURP/RFC como llaves)
 - ✅ Fase 5: Tablas staging/bitácora (scripts DDL listos)
 - ✅ Fase 6: Importador backend implementado
+
+### FASE CARGA-STAGING: Carga Controlada MPro → Staging (Abril 2026)
+**Documentos creados**:
+- `/app/memory/DIAGNOSTICO_MPRO_EMPLEADOS.md` - Diagnóstico técnico
+- `/app/memory/REPORTE_CARGA_STAGING_FINAL.md` - Reporte ejecutivo
+**Estado**: ✅ COMPLETADA
+
+**Fuentes exploradas y cargadas**:
+| Fuente | Base de Datos | Registros | Con CURP | Listos |
+|--------|---------------|-----------|----------|--------|
+| MPro_CENTRAL2020 | CENTRAL2020 | 476 | 100% | 466 |
+| MPro_HR2020 | HR2020 | 39 | 100% | 9 (+29 duplicados) |
+| Excel_Cienfuegos | N/A | 56 | 0% | 0 |
+| **TOTAL** | | **571** | **90%** | **475** |
+
+**Empresas identificadas en CENTRAL2020**:
+- 130° QUERETARO (QUEYUKA): 208 empleados
+- ORIGEN (SIBARITAS RESTAURANTEROS): 156 empleados
+- 130° TULUM: 40 empleados
+- CIEN FUEGOS (DESARROLLOS AMARILLOS): 28 empleados
+- XCANATUN (CERVEZA PATITO): 16 empleados
+- MECA: 14 empleados
+- GARCIA LAVIN: 11 empleados
+- EDARSA: 3 empleados
+
+**Trazabilidad implementada**:
+- Campo `Fuente`: Identifica origen exacto
+- Campo `Sucursal_Nombre`: Identifica empresa/sucursal
+- Campo `Observaciones`: Contiene Razón Social completa
 
 ### FASE IMPLEMENTACIÓN-IMPORTADOR: Backend y API (Diciembre 2025)
 **Archivos creados**:
