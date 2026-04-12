@@ -476,6 +476,39 @@ Todos los registros (100%) permanecen como INCOMPLETOS en staging.
 **Regla obligatoria implementada**:
 - ✅ Solo se permite aprobación masiva si `verificar_homologacion_completa()` retorna `true`
 
+### FASE APROBACIÓN MASIVA: Carga al Maestro (Abril 2026)
+**Documentos creados**:
+- `/app/memory/REPORTE_APROBACION_MASIVA_FINAL.md` - Reporte ejecutivo completo
+- `/app/memory/RESULTADO_APROBACION_MASIVA.json` - Detalle técnico JSON
+**Estado**: ✅ COMPLETADA (97% éxito)
+
+**Resultados de Aprobación Masiva**:
+| Métrica | Cantidad |
+|---------|----------|
+| **Total candidatos iniciales** | 462 |
+| **Total procesados exitosamente** | 449 |
+| **Insertados (nuevos)** | 437 |
+| **Actualizados (existentes)** | 12 |
+| **Observados (sin RFC)** | 17 |
+| **Incompletos (sin CURP/RFC)** | 10 |
+
+**Colaboradores en Maestro por Empresa**:
+| Empresa | Nuevos | Actualizados | Total |
+|---------|--------|--------------|-------|
+| 130° QUERETARO | 185 | 6 | 191 |
+| ORIGEN | 137 | 3 | 140 |
+| 130° TULUM | 36 | 1 | 37 |
+| CIEN FUEGOS | 27 | 0 | 27 |
+| XCANATUN | 15 | 0 | 15 |
+| MECA | 12 | 1 | 13 |
+| GARCIA LAVIN | 11 | 0 | 11 |
+| **TOTAL EN MAESTRO** | | | **437** |
+
+**Incidencia detectada**:
+- 17 empleados sin RFC no pudieron insertarse (constraint UNIQUE no permite NULLs duplicados)
+- Marcados como "Observado" para decisión manual
+- Solución propuesta: Modificar constraint o insertar manualmente
+
 ### FASE IMPLEMENTACIÓN-IMPORTADOR: Backend y API (Diciembre 2025)
 **Archivos creados**:
 - `modules/rh/importador/__init__.py` (66 líneas)
