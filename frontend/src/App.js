@@ -16,6 +16,7 @@ import Proveedores from '@/pages/Proveedores';
 import Finanzas from '@/pages/Finanzas';
 import Produccion from '@/pages/Produccion';
 import RecursosHumanos from '@/pages/RecursosHumanos';
+import ImportadorRH from '@/pages/ImportadorRH';
 import ReportesBI from '@/pages/ReportesBI';
 import MisTareas from '@/pages/MisTareas';
 import { isAuthenticated } from '@/lib/auth';
@@ -50,6 +51,7 @@ function App() {
             <Route path="finanzas" element={<Finanzas />} />
             <Route path="produccion" element={<Produccion />} />
             <Route path="recursos-humanos" element={<RecursosHumanos />} />
+            <Route path="importador-rh" element={<ImportadorRH />} />
             <Route path="reportes-bi" element={<ReportesBI />} />
             <Route path="mis-tareas" element={<MisTareas />} />
           </Route>

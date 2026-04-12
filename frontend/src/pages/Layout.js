@@ -20,7 +20,8 @@ import {
   Factory,
   UserCircle,
   BarChart3,
-  ClipboardList
+  ClipboardList,
+  Upload
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -88,6 +89,12 @@ const Layout = () => {
       icon: UserCircle, 
       roles: ['Supervisor', 'Administrador'],
       badge: 'Próx.'
+    },
+    { 
+      name: 'Importador RH', 
+      href: '/importador-rh', 
+      icon: Upload, 
+      roles: ['Administrador']
     },
     { 
       name: 'Reportes BI', 

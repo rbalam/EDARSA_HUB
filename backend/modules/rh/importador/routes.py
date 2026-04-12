@@ -57,6 +57,17 @@ from .repository import (
 )
 
 from .service import ImportadorExcelService
+from .aprobacion_service import (
+    obtener_estadisticas_staging,
+    obtener_pendientes_aprobacion,
+    obtener_incompletos,
+    obtener_excluidos,
+    obtener_registro_staging,
+    aprobar_registro,
+    rechazar_registro,
+    observar_registro,
+    aprobar_lote,
+)
 
 
 # ============================================================================
@@ -464,3 +475,250 @@ async def ver_bitacora(
         raise HTTPException(status_code=500, detail=resultado.get('error', 'Error listando bitácora'))
     
     return resultado
+
+
+# ============================================================================
+# ENDPOINTS DE APROBACIÓN
+# ============================================================================
+
+@router.get("/staging/estadisticas", summary="Estadísticas del staging")
+async def get_estadisticas_staging(current_user: dict = Depends(get_current_user)):
+    """
+    Obtiene estadísticas del staging por estado, fuente y empresa.
+    Excluye automáticamente registros de MPro_HR2020.
+    """
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    try:
+        stats = obtener_estadisticas_staging(server)
+        return {
+            "success": True,
+            "data": stats
+        }
+    except Exception as e:
+        logger.error(f"Error obteniendo estadísticas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/staging/pendientes", summary="Listar candidatos a aprobación")
+async def get_pendientes_aprobacion(
+    empresa: Optional[str] = Query(None, description="Filtrar por empresa/sucursal"),
+    limite: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Obtiene registros candidatos a aprobación.
+    Solo incluye: Fuente=MPro_CENTRAL2020, Estado=Pendiente, Clasificacion=nuevo.
+    """
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    try:
+        registros = obtener_pendientes_aprobacion(server, empresa=empresa, limite=limite, offset=offset)
+        return {
+            "success": True,
+            "total": len(registros),
+            "data": registros
+        }
+    except Exception as e:
+        logger.error(f"Error obteniendo pendientes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/staging/incompletos", summary="Listar registros incompletos")
+async def get_incompletos(
+    limite: int = Query(100, ge=1, le=500),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Obtiene registros incompletos (sin CURP/RFC válidos).
+    Estos NO pueden pasar al maestro hasta ser completados.
+    """
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    try:
+        registros = obtener_incompletos(server, limite=limite)
+        return {
+            "success": True,
+            "total": len(registros),
+            "data": registros
+        }
+    except Exception as e:
+        logger.error(f"Error obteniendo incompletos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/staging/excluidos", summary="Listar registros excluidos (auditoría)")
+async def get_excluidos(
+    limite: int = Query(100, ge=1, le=500),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Obtiene registros excluidos (fuente no autorizada, ej: MPro_HR2020).
+    Solo para auditoría - NUNCA pasan al maestro.
+    """
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    try:
+        registros = obtener_excluidos(server, limite=limite)
+        return {
+            "success": True,
+            "total": len(registros),
+            "data": registros
+        }
+    except Exception as e:
+        logger.error(f"Error obteniendo excluidos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/staging/{staging_id}", summary="Obtener detalle de un registro")
+async def get_registro_detalle(
+    staging_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Obtiene el detalle completo de un registro en staging."""
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    try:
+        registro = obtener_registro_staging(server, staging_id)
+        if not registro:
+            raise HTTPException(status_code=404, detail="Registro no encontrado")
+        return {
+            "success": True,
+            "data": registro
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error obteniendo registro {staging_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/staging/aprobar/{staging_id}", summary="Aprobar un registro")
+async def post_aprobar_registro(
+    staging_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Aprueba un registro y lo inserta/actualiza en RH_Colaboradores_Expediente.
+    
+    REGLAS:
+    - Solo registros de MPro_CENTRAL2020
+    - Estado debe ser 'Pendiente'
+    - Clasificacion debe ser 'nuevo'
+    - CURP/RFC deben ser únicos (o se actualiza si existe)
+    """
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    usuario = current_user.get('username', 'Sistema')
+    
+    try:
+        resultado = aprobar_registro(server, staging_id, usuario)
+        return {
+            "success": resultado['exito'],
+            "data": resultado
+        }
+    except Exception as e:
+        logger.error(f"Error aprobando registro {staging_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/staging/rechazar/{staging_id}", summary="Rechazar un registro")
+async def post_rechazar_registro(
+    staging_id: int,
+    motivo: str = Query(..., min_length=5, description="Motivo del rechazo"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Rechaza un registro con motivo obligatorio.
+    El registro NO pasará al maestro.
+    """
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    usuario = current_user.get('username', 'Sistema')
+    
+    try:
+        resultado = rechazar_registro(server, staging_id, motivo, usuario)
+        return {
+            "success": resultado['exito'],
+            "data": resultado
+        }
+    except Exception as e:
+        logger.error(f"Error rechazando registro {staging_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/staging/observar/{staging_id}", summary="Marcar registro para revisión")
+async def post_observar_registro(
+    staging_id: int,
+    observacion: str = Query(..., min_length=5, description="Observación/razón"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Marca un registro como 'Observado' (requiere corrección/revisión).
+    El registro NO pasará al maestro hasta ser corregido y re-aprobado.
+    """
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    usuario = current_user.get('username', 'Sistema')
+    
+    try:
+        resultado = observar_registro(server, staging_id, observacion, usuario)
+        return {
+            "success": resultado['exito'],
+            "data": resultado
+        }
+    except Exception as e:
+        logger.error(f"Error observando registro {staging_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/staging/aprobar-lote", summary="Aprobar múltiples registros")
+async def post_aprobar_lote(
+    empresa: Optional[str] = Query(None, description="Filtrar por empresa (si NULL, todas)"),
+    limite: int = Query(100, ge=1, le=500, description="Máximo de registros a procesar"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Aprueba múltiples registros candidatos en lote.
+    
+    REGLAS:
+    - Solo registros de MPro_CENTRAL2020
+    - Estado = 'Pendiente'
+    - Clasificacion = 'nuevo'
+    - Se procesan en orden por empresa/nombre
+    
+    IMPORTANTE: Registros con CURP/RFC duplicados en maestro se actualizan,
+    no se insertan duplicados.
+    """
+    server = await get_edarsa_hub_server()
+    if not server:
+        raise HTTPException(status_code=503, detail="Servidor EDARSA HUB no disponible")
+    
+    usuario = current_user.get('username', 'Sistema')
+    
+    try:
+        resultado = aprobar_lote(server, empresa=empresa, limite=limite, usuario=usuario)
+        return {
+            "success": True,
+            "data": resultado
+        }
+    except Exception as e:
+        logger.error(f"Error en aprobación en lote: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -384,6 +384,55 @@ Todos los registros (100%) permanecen como INCOMPLETOS en staging.
 - Campo `Estado`: 'Excluido' para fuentes no válidas
 - Campo `Observaciones`: Contiene Razón Social + motivo exclusión si aplica
 
+### FASE APROBACIÓN: Lógica de Aprobación Colaboradores (Abril 2026)
+**Documentos creados**:
+- `/app/memory/DISENO_APROBACION_COLABORADORES.md` - Diseño funcional y técnico
+**Estado**: ✅ COMPLETADA
+
+**Componentes implementados**:
+
+1. **Backend - Servicio de Aprobación** (`/modules/rh/importador/aprobacion_service.py`):
+   - `obtener_estadisticas_staging()` - Resumen por estado/fuente/empresa
+   - `obtener_pendientes_aprobacion()` - Candidatos a aprobar con filtro empresa
+   - `obtener_incompletos()` - Registros sin CURP/RFC
+   - `obtener_excluidos()` - Registros de fuente no autorizada
+   - `aprobar_registro()` - INSERT/UPDATE individual en maestro
+   - `rechazar_registro()` - Rechazo con motivo obligatorio
+   - `observar_registro()` - Marcar para revisión
+   - `aprobar_lote()` - Aprobación masiva por empresa
+
+2. **Endpoints API** (8 nuevos endpoints):
+   - `GET /api/rrhh/importar/staging/estadisticas`
+   - `GET /api/rrhh/importar/staging/pendientes`
+   - `GET /api/rrhh/importar/staging/incompletos`
+   - `GET /api/rrhh/importar/staging/excluidos`
+   - `GET /api/rrhh/importar/staging/{id}`
+   - `POST /api/rrhh/importar/staging/aprobar/{id}`
+   - `POST /api/rrhh/importar/staging/rechazar/{id}`
+   - `POST /api/rrhh/importar/staging/observar/{id}`
+   - `POST /api/rrhh/importar/staging/aprobar-lote`
+
+3. **Frontend - UI de Aprobación** (`/pages/ImportadorRH.js`):
+   - Dashboard con estadísticas en tiempo real
+   - Distribución por empresa con filtros clicables
+   - Tabla de pendientes con acciones (aprobar/ver/rechazar)
+   - Modal de detalle con opciones de observar/rechazar
+   - Aprobación en lote por empresa
+   - Pestañas: Pendientes | Incompletos | Excluidos
+
+4. **Reglas de Negocio Implementadas**:
+   - Solo MPro_CENTRAL2020 como fuente válida
+   - Estado != 'Excluido' para ser candidato
+   - Clasificacion != 'incompleto' para aprobar
+   - CURP/RFC únicos en maestro (o UPDATE si existe)
+   - Trazabilidad completa en staging y bitácora
+
+**Pruebas ejecutadas**:
+- ✅ Aprobación individual (StagingID 333 → ColaboradorID 1)
+- ✅ Aprobación en lote (3 de EDARSA → 2 INSERT + 1 UPDATE)
+- ✅ Detección de duplicados por RFC (CURP match → UPDATE)
+- ✅ UI funcional con todas las pestañas
+
 ### FASE IMPLEMENTACIÓN-IMPORTADOR: Backend y API (Diciembre 2025)
 **Archivos creados**:
 - `modules/rh/importador/__init__.py` (66 líneas)
