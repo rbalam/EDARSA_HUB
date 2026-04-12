@@ -28,11 +28,11 @@ COMPONENTES MIGRADOS:
    - GET /comercial/tablero-ejecutivo
    - GET /comercial/sucursales/{server_id} (Fase 5B-4A)
    - GET /comercial/metas/{server_id} (Fase 5B-4A)
+   - GET /comercial/ticket-perfecto/{server_id} (Fase 5B-4C)
+   - GET /comercial/ventas-tiempo/{server_id} (Fase 5B-4C)
 
-ENDPOINTS PENDIENTES (7 total en server.py):
+ENDPOINTS PENDIENTES (5 total en server.py):
 - GET /comercial/dashboard/{server_id} - Dashboard principal (COMPLEJO)
-- GET /comercial/ticket-perfecto/{server_id} - Análisis de ticket perfecto
-- GET /comercial/ventas-tiempo/{server_id} - Ventas por tiempo
 - GET /comercial/mesas/{server_id} - Estado de mesas
 - GET /comercial/detalle-movimientos/{server_id} - Detalle de movimientos
 - GET /comercial/reporte-pax/{server_id} - Reporte PAX (más complejo)
@@ -512,6 +512,306 @@ ORDER BY SUM(cheques.total) DESC
         
     except Exception as e:
         logging.error(f"Error en metas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# ENDPOINTS MIGRADOS FASE 5B-4C (Abril 2026)
+# ============================================================================
+
+@router.get("/comercial/ticket-perfecto/{server_id}")
+async def comercial_ticket_perfecto(
+    server_id: str, 
+    sucursal: str = Query(default=""),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Análisis de ticket perfecto y rentabilidad por producto.
+    Solo SoftRestaurant tiene los datos necesarios.
+    """
+    server = await get_server_by_id(server_id)
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if not user_has_server_access(current_user, server_id):
+        raise HTTPException(status_code=403, detail="Sin acceso a este servidor")
+    
+    try:
+        hoy = datetime.now()
+        fecha_ini = hoy.replace(day=1).strftime('%Y-%m-%d')
+        fecha_fin = hoy.strftime('%Y-%m-%d')
+        
+        if server['system_type'] == 'SoftRestaurant':
+            # Análisis de categorías en los tickets (entrada, plato fuerte, postre, etc.)
+            # Basado en clasificacionventa de productos
+            query_categorias = f"""
+SELECT 
+    COUNT(DISTINCT cheques.folio) as tickets_totales,
+    COUNT(DISTINCT CASE WHEN p.clasificacionventa = 1 THEN cheques.folio END) as con_alimentos,
+    COUNT(DISTINCT CASE WHEN p.clasificacionventa = 2 THEN cheques.folio END) as con_bebidas
+FROM cheques
+INNER JOIN cheqdet cd ON cd.foliodet = cheques.folio
+INNER JOIN productos p ON p.idproducto = cd.idproducto
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{fecha_ini} 00:00:00'
+  AND turnos.apertura <= '{fecha_fin} 23:59:59'
+  AND cheques.cancelado = 0
+  AND cheques.total > 0
+"""
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_categorias
+            )
+            
+            tickets_totales = int(result[0]['tickets_totales'] or 0) if result else 0
+            con_alimentos = int(result[0]['con_alimentos'] or 0) if result else 0
+            con_bebidas = int(result[0]['con_bebidas'] or 0) if result else 0
+            
+            # Tickets "completos" = tienen alimentos Y bebidas
+            tickets_completos = min(con_alimentos, con_bebidas)  # Aproximación
+            
+            ticket_data = {
+                "tickets_totales": tickets_totales,
+                "tickets_completos": tickets_completos,
+                "pct_completos": round((tickets_completos / tickets_totales * 100), 0) if tickets_totales > 0 else 0,
+                "con_entrada": con_alimentos,
+                "pct_entrada": round((con_alimentos / tickets_totales * 100), 0) if tickets_totales > 0 else 0,
+                "con_plato_fuerte": con_alimentos,
+                "pct_plato_fuerte": round((con_alimentos / tickets_totales * 100), 0) if tickets_totales > 0 else 0,
+                "con_postre": 0,  # Necesita categoría específica
+                "pct_postre": 0,
+                "con_digestivo": con_bebidas,
+                "pct_digestivo": round((con_bebidas / tickets_totales * 100), 0) if tickets_totales > 0 else 0,
+                "oportunidad_perdida": 0
+            }
+            
+            # Top productos por rentabilidad
+            query_rentabilidad = f"""
+SELECT TOP 20
+    p.idproducto as codigo,
+    p.descripcion as producto,
+    SUM(cd.cantidad * cd.precio) as ventas,
+    SUM(cd.cantidad * ISNULL(p.costo, 0)) as costo
+FROM cheqdet cd
+INNER JOIN cheques ON cheques.folio = cd.foliodet
+INNER JOIN productos p ON p.idproducto = cd.idproducto
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{fecha_ini} 00:00:00'
+  AND turnos.apertura <= '{fecha_fin} 23:59:59'
+  AND cheques.cancelado = 0
+GROUP BY p.idproducto, p.descripcion
+HAVING SUM(cd.cantidad * cd.precio) > 0
+ORDER BY SUM(cd.cantidad * cd.precio) DESC
+"""
+            result_rent = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_rentabilidad
+            )
+            
+            rentabilidad = []
+            for r in (result_rent or []):
+                ventas = float(r['ventas'] or 0)
+                costo = float(r['costo'] or 0)
+                margen = round(((ventas - costo) / ventas * 100), 0) if ventas > 0 else 0
+                categoria = 'A' if margen >= 60 else ('B' if margen >= 40 else 'C')
+                rentabilidad.append({
+                    "codigo": str(r['codigo']),
+                    "producto": r['producto'],
+                    "ventas": ventas,
+                    "costo": costo,
+                    "margen": margen,
+                    "categoria": categoria
+                })
+            
+            return {
+                "ticket": ticket_data,
+                "rentabilidad": rentabilidad
+            }
+        
+        # Para MPRO devolvemos estructura vacía
+        return {
+            "ticket": {"tickets_totales": 0, "tickets_completos": 0, "pct_completos": 0},
+            "rentabilidad": []
+        }
+        
+    except Exception as e:
+        logging.error(f"Error en ticket perfecto: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/comercial/ventas-tiempo/{server_id}")
+async def comercial_ventas_tiempo(
+    server_id: str, 
+    sucursal: str = Query(default=""),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Ventas por hora y día de la semana.
+    """
+    server = await get_server_by_id(server_id)
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    if not user_has_server_access(current_user, server_id):
+        raise HTTPException(status_code=403, detail="Sin acceso a este servidor")
+    
+    try:
+        hoy = datetime.now()
+        # Última semana
+        fecha_ini = (hoy - timedelta(days=7)).strftime('%Y-%m-%d')
+        fecha_fin = hoy.strftime('%Y-%m-%d')
+        
+        if server['system_type'] == 'SoftRestaurant':
+            # Ventas por hora
+            query_hora = f"""
+SELECT 
+    DATEPART(HOUR, turnos.apertura) as hora,
+    SUM(cheques.total) as ventas,
+    SUM(cheques.nopersonas) as pax
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{fecha_ini} 00:00:00'
+  AND turnos.apertura <= '{fecha_fin} 23:59:59'
+  AND cheques.cancelado = 0
+GROUP BY DATEPART(HOUR, turnos.apertura)
+ORDER BY SUM(cheques.total) DESC
+"""
+            result_hora = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_hora
+            )
+            
+            ventas_por_hora = []
+            for r in (result_hora or [])[:6]:  # Top 6 horas
+                hora_int = int(r['hora'] or 0)
+                ventas_por_hora.append({
+                    "hora": f"{hora_int:02d}:00",
+                    "ventas": float(r['ventas'] or 0),
+                    "pax": int(r['pax'] or 0)
+                })
+            
+            # Ventas por día de la semana
+            query_dia = f"""
+SELECT 
+    DATEPART(WEEKDAY, turnos.apertura) as dia_num,
+    SUM(cheques.total) as ventas
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{fecha_ini} 00:00:00'
+  AND turnos.apertura <= '{fecha_fin} 23:59:59'
+  AND cheques.cancelado = 0
+GROUP BY DATEPART(WEEKDAY, turnos.apertura)
+ORDER BY DATEPART(WEEKDAY, turnos.apertura)
+"""
+            result_dia = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_dia
+            )
+            
+            # Mapeo SQL Server DATEPART(WEEKDAY): 1=Domingo, 2=Lunes, ..., 7=Sábado
+            # Reordenamos para que sea Lunes a Domingo (2,3,4,5,6,7,1)
+            dias_semana = {1: 'Dom', 2: 'Lun', 3: 'Mar', 4: 'Mié', 5: 'Jue', 6: 'Vie', 7: 'Sáb'}
+            
+            # Crear diccionario con todos los días inicializados en 0
+            ventas_dict = {dia: 0 for dia in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']}
+            
+            for r in (result_dia or []):
+                dia_num = int(r['dia_num'] or 1)
+                dia_nombre = dias_semana.get(dia_num, 'Otro')
+                if dia_nombre in ventas_dict:
+                    ventas_dict[dia_nombre] = float(r['ventas'] or 0)
+            
+            # Convertir a lista ordenada de Lunes a Domingo
+            ventas_por_dia = [{"dia": dia, "ventas": ventas_dict[dia]} for dia in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']]
+            
+            return {
+                "por_hora": ventas_por_hora,
+                "por_dia": ventas_por_dia
+            }
+        
+        elif server['system_type'] == 'ManagmentPro' or server['system_type'] == 'MPRO':
+            # Filtro de sucursal para MPRO - no filtrar si es "default" o nombre del servidor
+            sucursal_filter = ""
+            nombre_servidor_1 = server.get('name', '').lower()
+            sucursal_lower_1 = (sucursal or '').lower()
+            skip_filter_1 = (not sucursal or sucursal_lower_1 == 'default' or sucursal_lower_1 == nombre_servidor_1)
+            if sucursal and not skip_filter_1:
+                sucursal_filter = f"AND S.Sc_Descripcion LIKE '%{sucursal}%'"
+            
+            # Ventas por hora para MPRO
+            query_hora = f"""
+SELECT 
+    DATEPART(HOUR, VE.Vn_Fecha) as hora,
+    SUM(VE.Vn_Precio_Neto_Importe) as ventas,
+    ISNULL(SUM(C.Co_Personas), 0) as pax
+FROM Venta_Encabezado VE
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+WHERE VE.Vn_Fecha >= '{fecha_ini}'
+  AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
+  AND VE.Es_Cve_Estado <> 'CA'
+  {sucursal_filter}
+GROUP BY DATEPART(HOUR, VE.Vn_Fecha)
+ORDER BY SUM(VE.Vn_Precio_Neto_Importe) DESC
+"""
+            result_hora = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_hora
+            )
+            
+            ventas_por_hora = []
+            for r in (result_hora or [])[:6]:  # Top 6 horas
+                hora_int = int(r['hora'] or 0)
+                ventas_por_hora.append({
+                    "hora": f"{hora_int:02d}:00",
+                    "ventas": float(r['ventas'] or 0),
+                    "pax": int(r['pax'] or 0)
+                })
+            
+            # Ventas por día de la semana para MPRO
+            query_dia = f"""
+SELECT 
+    DATEPART(WEEKDAY, VE.Vn_Fecha) as dia_num,
+    SUM(VE.Vn_Precio_Neto_Importe) as ventas
+FROM Venta_Encabezado VE
+LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+WHERE VE.Vn_Fecha >= '{fecha_ini}'
+  AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
+  AND VE.Es_Cve_Estado <> 'CA'
+  {sucursal_filter}
+GROUP BY DATEPART(WEEKDAY, VE.Vn_Fecha)
+ORDER BY DATEPART(WEEKDAY, VE.Vn_Fecha)
+"""
+            result_dia = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_dia
+            )
+            
+            # Mapeo SQL Server DATEPART(WEEKDAY): 1=Domingo, 2=Lunes, ..., 7=Sábado
+            # Reordenamos para que sea Lunes a Domingo
+            dias_semana = {1: 'Dom', 2: 'Lun', 3: 'Mar', 4: 'Mié', 5: 'Jue', 6: 'Vie', 7: 'Sáb'}
+            
+            # Crear diccionario con todos los días inicializados en 0
+            ventas_dict = {dia: 0 for dia in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']}
+            
+            for r in (result_dia or []):
+                dia_num = int(r['dia_num'] or 1)
+                dia_nombre = dias_semana.get(dia_num, 'Otro')
+                if dia_nombre in ventas_dict:
+                    ventas_dict[dia_nombre] = float(r['ventas'] or 0)
+            
+            # Convertir a lista ordenada de Lunes a Domingo
+            ventas_por_dia = [{"dia": dia, "ventas": ventas_dict[dia]} for dia in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']]
+            
+            return {
+                "por_hora": ventas_por_hora,
+                "por_dia": ventas_por_dia
+            }
+        
+        return {"por_hora": [], "por_dia": []}
+        
+    except Exception as e:
+        logging.error(f"Error en ventas tiempo: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
