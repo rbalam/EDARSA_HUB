@@ -493,3 +493,419 @@ def query_desactivar_tipo_incidencia(server: Dict, tipo_id: int) -> Dict[str, An
     """
     result = execute_hub_query(server, query)
     return {"datos": result, "registros": 1}
+
+
+
+# ============================================================================
+# COLABORADORES - QUERIES CON PARÁMETROS NATIVOS (FASE 6C-B)
+# ============================================================================
+# IMPORTANTE: Estas funciones usan execute_sql_query_params() que pasa
+# los parámetros directamente al driver SQL (pymssql/pytds), NO usa
+# interpolación de strings. Esto es más seguro que escape_sql_string().
+#
+# TABLAS REUTILIZADAS:
+# - RH_Colaboradores_Expediente (principal)
+# - RH_Cat_Sucursales (JOIN)
+# - RH_Cat_Puestos (JOIN)
+# - RH_Incidencias_Nomina (solo lectura en detalle)
+# - RH_Reloj_Checador (solo lectura en detalle)
+# - RH_Auditoria_Fiscal (solo lectura en detalle)
+# ============================================================================
+
+from core.db import execute_sql_query_params
+
+
+def execute_hub_query_params(server: Dict, query: str, params: tuple = None) -> List[Dict]:
+    """
+    Ejecuta una query en el servidor EDARSA HUB con parámetros nativos.
+    
+    Args:
+        server: Configuración del servidor
+        query: Query SQL con placeholders %s
+        params: Tupla de parámetros
+        
+    Returns:
+        Lista de diccionarios con los resultados
+    """
+    return execute_sql_query_params(
+        server['host'],
+        server['port'],
+        server['database'],
+        server['username'],
+        server['password'],
+        query,
+        params
+    )
+
+
+def query_listar_colaboradores(
+    server: Dict,
+    sucursal_id: Optional[int] = None,
+    puesto_id: Optional[int] = None,
+    estatus: Optional[str] = None,
+    buscar: Optional[str] = None,
+    page: int = 1,
+    limit: int = 50
+) -> Dict[str, Any]:
+    """
+    Lista colaboradores con filtros y paginación.
+    
+    PARÁMETROS NATIVOS: sucursal_id, puesto_id (enteros validados)
+    ESCAPE NECESARIO: estatus, buscar (strings en cláusula LIKE)
+    
+    Nota: SQL Server no soporta parámetros en LIKE con comodines,
+    por lo que usamos escape_sql_string() solo para 'buscar'.
+    """
+    conditions = ["1=1"]
+    
+    # Parámetros enteros (seguros, validados como int)
+    if sucursal_id is not None:
+        try:
+            conditions.append(f"c.SucursalID = {int(sucursal_id)}")
+        except (ValueError, TypeError):
+            pass
+    
+    if puesto_id is not None:
+        try:
+            conditions.append(f"c.PuestoID = {int(puesto_id)}")
+        except (ValueError, TypeError):
+            pass
+    
+    # Estatus: valor de lista controlada (ya validado en schema)
+    if estatus:
+        estatus_safe = escape_sql_string(estatus)
+        conditions.append(f"c.Estatus_Laboral = N'{estatus_safe}'")
+    
+    # Búsqueda: requiere escape porque LIKE no soporta parámetros con %
+    if buscar:
+        buscar_safe = escape_sql_string(buscar)
+        conditions.append(f"(c.Nombre_Completo LIKE N'%{buscar_safe}%' OR c.RFC LIKE N'%{buscar_safe}%' OR c.CURP LIKE N'%{buscar_safe}%')")
+    
+    where_clause = " AND ".join(conditions)
+    
+    # Paginación (enteros validados)
+    try:
+        page = max(1, int(page))
+        limit = max(1, min(200, int(limit)))
+    except (ValueError, TypeError):
+        page, limit = 1, 50
+    
+    offset = (page - 1) * limit
+    
+    query = f"""
+        SELECT 
+            c.ColaboradorID,
+            c.Nombre_Completo,
+            c.CURP,
+            c.RFC,
+            c.CLABE_Bancaria,
+            c.SucursalID,
+            s.Nombre_Sucursal,
+            c.PuestoID,
+            p.Descripcion as Puesto,
+            p.Departamento,
+            c.Colaborador_Activo,
+            c.Fecha_Alta,
+            c.Estatus_Laboral,
+            c.Validacion_IA_RFC,
+            c.Validacion_IA_CURP,
+            c.Validacion_IA_EdoCta,
+            c.Validacion_IA_Contrato
+        FROM RH_Colaboradores_Expediente c
+        LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
+        LEFT JOIN RH_Cat_Puestos p ON c.PuestoID = p.PuestoID
+        WHERE {where_clause}
+        ORDER BY c.Nombre_Completo
+        OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+    """
+    
+    count_query = f"""
+        SELECT COUNT(*) as total
+        FROM RH_Colaboradores_Expediente c
+        WHERE {where_clause}
+    """
+    
+    result = execute_hub_query(server, query)
+    count_result = execute_hub_query(server, count_query)
+    
+    total = count_result[0].get("total", 0) if count_result else 0
+    
+    return {
+        "datos": result,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit if total > 0 else 1
+    }
+
+
+def query_obtener_colaborador(server: Dict, colaborador_id: int) -> Dict[str, Any]:
+    """
+    Obtiene datos de un colaborador específico.
+    
+    PARÁMETROS NATIVOS: colaborador_id (entero validado)
+    """
+    try:
+        id_safe = int(colaborador_id)
+    except (ValueError, TypeError):
+        return {"datos": None, "error": "ID de colaborador inválido"}
+    
+    # Query con parámetro nativo
+    query = """
+        SELECT 
+            c.ColaboradorID,
+            c.Nombre_Completo,
+            c.CURP,
+            c.RFC,
+            c.CLABE_Bancaria,
+            c.SucursalID,
+            s.Nombre_Sucursal,
+            s.Ciudad,
+            c.PuestoID,
+            p.Descripcion as Puesto,
+            p.Departamento,
+            p.Sueldo_Base_Seman_SBC,
+            c.Colaborador_Activo,
+            c.Fecha_Alta,
+            c.Estatus_Laboral,
+            c.Validacion_IA_RFC,
+            c.Validacion_IA_CURP,
+            c.Validacion_IA_EdoCta,
+            c.Validacion_IA_Contrato
+        FROM RH_Colaboradores_Expediente c
+        LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
+        LEFT JOIN RH_Cat_Puestos p ON c.PuestoID = p.PuestoID
+        WHERE c.ColaboradorID = %s
+    """
+    
+    result = execute_hub_query_params(server, query, (id_safe,))
+    
+    if result:
+        return {"datos": result[0]}
+    return {"datos": None}
+
+
+def query_incidencias_colaborador(server: Dict, colaborador_id: int, limit: int = 20) -> List[Dict]:
+    """
+    Obtiene las últimas incidencias de un colaborador.
+    
+    PARÁMETROS NATIVOS: colaborador_id
+    """
+    try:
+        id_safe = int(colaborador_id)
+        limit_safe = min(100, max(1, int(limit)))
+    except (ValueError, TypeError):
+        return []
+    
+    # TOP no soporta parámetros en SQL Server, pero es un int validado
+    query = f"""
+        SELECT TOP {limit_safe}
+            IncidenciaID,
+            Tipo_Incidencia,
+            Monto,
+            Unidades,
+            Fecha_Incidencia,
+            Fecha_Registro
+        FROM RH_Incidencias_Nomina
+        WHERE ColaboradorID = %s
+        ORDER BY Fecha_Incidencia DESC
+    """
+    
+    return execute_hub_query_params(server, query, (id_safe,))
+
+
+def query_asistencias_colaborador(server: Dict, colaborador_id: int, limit: int = 30) -> List[Dict]:
+    """
+    Obtiene los últimos registros de asistencia de un colaborador.
+    
+    PARÁMETROS NATIVOS: colaborador_id
+    """
+    try:
+        id_safe = int(colaborador_id)
+        limit_safe = min(100, max(1, int(limit)))
+    except (ValueError, TypeError):
+        return []
+    
+    query = f"""
+        SELECT TOP {limit_safe}
+            CheckID,
+            Tipo_Registro,
+            FechaHora,
+            Geolocalizacion,
+            Validado_Gerencia
+        FROM RH_Reloj_Checador
+        WHERE ColaboradorID = %s
+        ORDER BY FechaHora DESC
+    """
+    
+    return execute_hub_query_params(server, query, (id_safe,))
+
+
+def query_auditoria_colaborador(server: Dict, colaborador_id: int, limit: int = 10) -> List[Dict]:
+    """
+    Obtiene los últimos registros de auditoría fiscal de un colaborador.
+    
+    PARÁMETROS NATIVOS: colaborador_id
+    """
+    try:
+        id_safe = int(colaborador_id)
+        limit_safe = min(50, max(1, int(limit)))
+    except (ValueError, TypeError):
+        return []
+    
+    query = f"""
+        SELECT TOP {limit_safe}
+            AuditoriaID,
+            Semana,
+            Monto_Dispersado_Banco,
+            Monto_Timbrado_XML,
+            Monto_IMSS_EBA_EMA,
+            Diferencia,
+            Alerta_Fraude
+        FROM RH_Auditoria_Fiscal
+        WHERE ColaboradorID = %s
+        ORDER BY Semana DESC
+    """
+    
+    return execute_hub_query_params(server, query, (id_safe,))
+
+
+def query_crear_colaborador(
+    server: Dict,
+    nombre_completo: str,
+    curp: Optional[str],
+    rfc: Optional[str],
+    clabe_bancaria: Optional[str],
+    sucursal_id: int,
+    puesto_id: int,
+    estatus_laboral: str
+) -> Dict[str, Any]:
+    """
+    Crea un nuevo colaborador.
+    
+    PARÁMETROS NATIVOS: Todos los valores se pasan como parámetros al driver.
+    """
+    query = """
+        INSERT INTO RH_Colaboradores_Expediente 
+        (Nombre_Completo, CURP, RFC, CLABE_Bancaria, SucursalID, PuestoID, 
+         Colaborador_Activo, Fecha_Alta, Estatus_Laboral)
+        OUTPUT INSERTED.ColaboradorID
+        VALUES (%s, %s, %s, %s, %s, %s, 1, GETDATE(), %s)
+    """
+    
+    params = (
+        nombre_completo,
+        curp,
+        rfc,
+        clabe_bancaria,
+        int(sucursal_id),
+        int(puesto_id),
+        estatus_laboral
+    )
+    
+    result = execute_hub_query_params(server, query, params)
+    
+    if result:
+        return {"colaborador_id": result[0].get("ColaboradorID"), "success": True}
+    return {"colaborador_id": None, "success": False, "error": "No se pudo crear el colaborador"}
+
+
+def query_actualizar_colaborador(
+    server: Dict,
+    colaborador_id: int,
+    updates: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    Actualiza datos de un colaborador existente.
+    
+    ESTRATEGIA HÍBRIDA:
+    - IDs enteros: Validados como int (seguros)
+    - Strings: Se usa escape_sql_string() porque SQL Server no soporta
+      parámetros en SET dinámico con lista variable de columnas.
+    
+    Nota: Una alternativa sería generar queries separadas para cada campo,
+    pero eso aumentaría la complejidad y latencia innecesariamente.
+    """
+    try:
+        id_safe = int(colaborador_id)
+    except (ValueError, TypeError):
+        return {"success": False, "error": "ID de colaborador inválido"}
+    
+    set_clauses = []
+    
+    # Campos de texto (escapados)
+    if 'nombre_completo' in updates and updates['nombre_completo']:
+        val = escape_sql_string(updates['nombre_completo'])
+        set_clauses.append(f"Nombre_Completo = N'{val}'")
+    
+    if 'curp' in updates:
+        if updates['curp']:
+            val = escape_sql_string(updates['curp'])
+            set_clauses.append(f"CURP = N'{val}'")
+        else:
+            set_clauses.append("CURP = NULL")
+    
+    if 'rfc' in updates:
+        if updates['rfc']:
+            val = escape_sql_string(updates['rfc'])
+            set_clauses.append(f"RFC = N'{val}'")
+        else:
+            set_clauses.append("RFC = NULL")
+    
+    if 'clabe_bancaria' in updates:
+        if updates['clabe_bancaria']:
+            val = escape_sql_string(updates['clabe_bancaria'])
+            set_clauses.append(f"CLABE_Bancaria = N'{val}'")
+        else:
+            set_clauses.append("CLABE_Bancaria = NULL")
+    
+    # Campos enteros (validados)
+    if 'sucursal_id' in updates and updates['sucursal_id']:
+        try:
+            set_clauses.append(f"SucursalID = {int(updates['sucursal_id'])}")
+        except (ValueError, TypeError):
+            pass
+    
+    if 'puesto_id' in updates and updates['puesto_id']:
+        try:
+            set_clauses.append(f"PuestoID = {int(updates['puesto_id'])}")
+        except (ValueError, TypeError):
+            pass
+    
+    # Estatus laboral (valor de lista controlada, escapado por seguridad)
+    if 'estatus_laboral' in updates and updates['estatus_laboral']:
+        val = escape_sql_string(updates['estatus_laboral'])
+        set_clauses.append(f"Estatus_Laboral = N'{val}'")
+    
+    if not set_clauses:
+        return {"success": False, "error": "No hay campos para actualizar"}
+    
+    query = f"""
+        UPDATE RH_Colaboradores_Expediente
+        SET {', '.join(set_clauses)}
+        WHERE ColaboradorID = {id_safe}
+    """
+    
+    execute_hub_query(server, query)
+    return {"success": True}
+
+
+def query_dar_baja_colaborador(server: Dict, colaborador_id: int) -> Dict[str, Any]:
+    """
+    Da de baja lógica a un colaborador (soft delete).
+    
+    PARÁMETROS NATIVOS: colaborador_id (entero validado)
+    """
+    try:
+        id_safe = int(colaborador_id)
+    except (ValueError, TypeError):
+        return {"success": False, "error": "ID de colaborador inválido"}
+    
+    query = """
+        UPDATE RH_Colaboradores_Expediente
+        SET Colaborador_Activo = 0, Estatus_Laboral = N'Baja'
+        WHERE ColaboradorID = %s
+    """
+    
+    execute_hub_query_params(server, query, (id_safe,))
+    return {"success": True}

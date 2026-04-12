@@ -9014,267 +9014,51 @@ async def execute_edarsa_hub_query(query: str):
 #     return {...}
 
 
-# ------------ COLABORADORES ------------
+# ------------ COLABORADORES - MIGRADO A modules/rh/ ------------
+# FASE 6C-B (Diciembre 2025): Los siguientes 5 endpoints fueron migrados a modules/rh/
+# con queries parametrizados nativos y validación Pydantic (CURP, RFC, CLABE):
+# - GET    /rrhh/colaboradores -> modules/rh/routes.py
+# - GET    /rrhh/colaboradores/{colaborador_id} -> modules/rh/routes.py
+# - POST   /rrhh/colaboradores -> modules/rh/routes.py
+# - PUT    /rrhh/colaboradores/{colaborador_id} -> modules/rh/routes.py
+# - DELETE /rrhh/colaboradores/{colaborador_id} -> modules/rh/routes.py
 
-@api_router.get("/rrhh/colaboradores")
-async def rrhh_listar_colaboradores(
-    sucursal_id: Optional[int] = None,
-    puesto_id: Optional[int] = None,
-    estatus: Optional[str] = None,
-    buscar: Optional[str] = None,
-    page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=200),
-    current_user: Dict = Depends(get_current_user)
-):
-    """Lista colaboradores con filtros opcionales"""
-    
-    conditions = ["1=1"]
-    if sucursal_id:
-        conditions.append(f"c.SucursalID = {sucursal_id}")
-    if puesto_id:
-        conditions.append(f"c.PuestoID = {puesto_id}")
-    if estatus:
-        conditions.append(f"c.Estatus_Laboral = '{estatus}'")
-    if buscar:
-        conditions.append(f"(c.Nombre_Completo LIKE '%{buscar}%' OR c.RFC LIKE '%{buscar}%' OR c.CURP LIKE '%{buscar}%')")
-    
-    where_clause = " AND ".join(conditions)
-    offset = (page - 1) * limit
-    
-    query = f"""
-        SELECT 
-            c.ColaboradorID,
-            c.Nombre_Completo,
-            c.CURP,
-            c.RFC,
-            c.CLABE_Bancaria,
-            c.SucursalID,
-            s.Nombre_Sucursal,
-            c.PuestoID,
-            p.Descripcion as Puesto,
-            p.Departamento,
-            c.Colaborador_Activo,
-            c.Fecha_Alta,
-            c.Estatus_Laboral,
-            c.Validacion_IA_RFC,
-            c.Validacion_IA_CURP,
-            c.Validacion_IA_EdoCta,
-            c.Validacion_IA_Contrato
-        FROM RH_Colaboradores_Expediente c
-        LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
-        LEFT JOIN RH_Cat_Puestos p ON c.PuestoID = p.PuestoID
-        WHERE {where_clause}
-        ORDER BY c.Nombre_Completo
-        OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
-    """
-    
-    count_query = f"""
-        SELECT COUNT(*) as total
-        FROM RH_Colaboradores_Expediente c
-        WHERE {where_clause}
-    """
-    
-    result = await execute_edarsa_hub_query(query)
-    count_result = await execute_edarsa_hub_query(count_query)
-    
-    total = count_result.get("datos", [{}])[0].get("total", 0) if count_result.get("datos") else 0
-    
-    return {
-        "colaboradores": result.get("datos", []),
-        "total": total,
-        "page": page,
-        "limit": limit,
-        "pages": (total + limit - 1) // limit if total > 0 else 1
-    }
+# ENDPOINT /rrhh/colaboradores - MIGRADO
+# @api_router.get("/rrhh/colaboradores")
+# async def rrhh_listar_colaboradores(...):
+#     """Lista colaboradores con filtros opcionales"""
+#     # VULNERABILIDAD SQL INJECTION CORREGIDA: Queries ahora usan parámetros nativos
+#     # y escape_sql_string() solo para búsqueda LIKE
+#     pass
 
+# ENDPOINT /rrhh/colaboradores/{colaborador_id} - MIGRADO
+# @api_router.get("/rrhh/colaboradores/{colaborador_id}")
+# async def rrhh_obtener_colaborador(...):
+#     """Obtiene detalle de un colaborador con incidencias y asistencias"""
+#     # VULNERABILIDAD SQL INJECTION CORREGIDA: Queries ahora usan parámetros nativos
+#     pass
 
-@api_router.get("/rrhh/colaboradores/{colaborador_id}")
-async def rrhh_obtener_colaborador(
-    colaborador_id: int,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Obtiene detalle de un colaborador con incidencias y asistencias"""
-    
-    query_colaborador = f"""
-        SELECT 
-            c.ColaboradorID,
-            c.Nombre_Completo,
-            c.CURP,
-            c.RFC,
-            c.CLABE_Bancaria,
-            c.SucursalID,
-            s.Nombre_Sucursal,
-            s.Ciudad,
-            c.PuestoID,
-            p.Descripcion as Puesto,
-            p.Departamento,
-            p.Sueldo_Base_Seman_SBC,
-            c.Colaborador_Activo,
-            c.Fecha_Alta,
-            c.Estatus_Laboral,
-            c.Validacion_IA_RFC,
-            c.Validacion_IA_CURP,
-            c.Validacion_IA_EdoCta,
-            c.Validacion_IA_Contrato
-        FROM RH_Colaboradores_Expediente c
-        LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
-        LEFT JOIN RH_Cat_Puestos p ON c.PuestoID = p.PuestoID
-        WHERE c.ColaboradorID = {colaborador_id}
-    """
-    
-    query_incidencias = f"""
-        SELECT TOP 20
-            IncidenciaID,
-            Tipo_Incidencia,
-            Monto,
-            Unidades,
-            Fecha_Incidencia,
-            Fecha_Registro
-        FROM RH_Incidencias_Nomina
-        WHERE ColaboradorID = {colaborador_id}
-        ORDER BY Fecha_Incidencia DESC
-    """
-    
-    query_asistencias = f"""
-        SELECT TOP 30
-            CheckID,
-            Tipo_Registro,
-            FechaHora,
-            Geolocalizacion,
-            Validado_Gerencia
-        FROM RH_Reloj_Checador
-        WHERE ColaboradorID = {colaborador_id}
-        ORDER BY FechaHora DESC
-    """
-    
-    query_auditoria = f"""
-        SELECT TOP 10
-            AuditoriaID,
-            Semana,
-            Monto_Dispersado_Banco,
-            Monto_Timbrado_XML,
-            Monto_IMSS_EBA_EMA,
-            Diferencia,
-            Alerta_Fraude
-        FROM RH_Auditoria_Fiscal
-        WHERE ColaboradorID = {colaborador_id}
-        ORDER BY Semana DESC
-    """
-    
-    result_col = await execute_edarsa_hub_query(query_colaborador)
-    result_inc = await execute_edarsa_hub_query(query_incidencias)
-    result_asis = await execute_edarsa_hub_query(query_asistencias)
-    result_aud = await execute_edarsa_hub_query(query_auditoria)
-    
-    if not result_col.get("datos"):
-        raise HTTPException(status_code=404, detail="Colaborador no encontrado")
-    
-    return {
-        "colaborador": result_col.get("datos", [])[0],
-        "incidencias": result_inc.get("datos", []),
-        "asistencias": result_asis.get("datos", []),
-        "auditoria_fiscal": result_aud.get("datos", [])
-    }
+# ENDPOINT POST /rrhh/colaboradores - MIGRADO
+# @api_router.post("/rrhh/colaboradores")
+# async def rrhh_crear_colaborador(...):
+#     """Crea un nuevo colaborador"""
+#     # VULNERABILIDAD SQL INJECTION CORREGIDA: Queries ahora usan parámetros nativos
+#     # VALIDACIÓN AGREGADA: Pydantic valida CURP, RFC, CLABE
+#     pass
 
+# ENDPOINT PUT /rrhh/colaboradores/{colaborador_id} - MIGRADO
+# @api_router.put("/rrhh/colaboradores/{colaborador_id}")
+# async def rrhh_actualizar_colaborador(...):
+#     """Actualiza datos de un colaborador"""
+#     # VULNERABILIDAD SQL INJECTION CORREGIDA: escape_sql_string() + validación enteros
+#     pass
 
-@api_router.post("/rrhh/colaboradores")
-async def rrhh_crear_colaborador(
-    body: Dict,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Crea un nuevo colaborador"""
-    
-    nombre = body.get('nombre_completo', '').strip()
-    curp = body.get('curp')
-    rfc = body.get('rfc')
-    clabe = body.get('clabe_bancaria')
-    sucursal_id = body.get('sucursal_id')
-    puesto_id = body.get('puesto_id')
-    estatus = body.get('estatus_laboral', 'Activo')
-    
-    if not nombre or not sucursal_id or not puesto_id:
-        raise HTTPException(status_code=400, detail="Nombre, sucursal y puesto son requeridos")
-    
-    query = f"""
-        INSERT INTO RH_Colaboradores_Expediente 
-        (Nombre_Completo, CURP, RFC, CLABE_Bancaria, SucursalID, PuestoID, 
-         Colaborador_Activo, Fecha_Alta, Estatus_Laboral)
-        OUTPUT INSERTED.ColaboradorID
-        VALUES 
-        ('{nombre}', 
-         {f"'{curp}'" if curp else 'NULL'}, 
-         {f"'{rfc}'" if rfc else 'NULL'}, 
-         {f"'{clabe}'" if clabe else 'NULL'}, 
-         {sucursal_id}, 
-         {puesto_id}, 
-         1, 
-         GETDATE(), 
-         '{estatus}')
-    """
-    
-    result = await execute_edarsa_hub_query(query)
-    
-    return {
-        "success": True,
-        "message": "Colaborador creado exitosamente",
-        "colaborador_id": result.get("datos", [{}])[0].get("ColaboradorID") if result.get("datos") else None
-    }
-
-
-@api_router.put("/rrhh/colaboradores/{colaborador_id}")
-async def rrhh_actualizar_colaborador(
-    colaborador_id: int,
-    body: Dict,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Actualiza datos de un colaborador"""
-    
-    updates = []
-    if body.get('nombre_completo'):
-        updates.append(f"Nombre_Completo = '{body['nombre_completo']}'")
-    if 'curp' in body:
-        updates.append(f"CURP = '{body['curp']}'" if body['curp'] else "CURP = NULL")
-    if 'rfc' in body:
-        updates.append(f"RFC = '{body['rfc']}'" if body['rfc'] else "RFC = NULL")
-    if 'clabe_bancaria' in body:
-        updates.append(f"CLABE_Bancaria = '{body['clabe_bancaria']}'" if body['clabe_bancaria'] else "CLABE_Bancaria = NULL")
-    if body.get('sucursal_id'):
-        updates.append(f"SucursalID = {body['sucursal_id']}")
-    if body.get('puesto_id'):
-        updates.append(f"PuestoID = {body['puesto_id']}")
-    if body.get('estatus_laboral'):
-        updates.append(f"Estatus_Laboral = '{body['estatus_laboral']}'")
-    
-    if not updates:
-        raise HTTPException(status_code=400, detail="No hay datos para actualizar")
-    
-    query = f"""
-        UPDATE RH_Colaboradores_Expediente
-        SET {', '.join(updates)}
-        WHERE ColaboradorID = {colaborador_id}
-    """
-    
-    await execute_edarsa_hub_query(query)
-    
-    return {"success": True, "message": "Colaborador actualizado"}
-
-
-@api_router.delete("/rrhh/colaboradores/{colaborador_id}")
-async def rrhh_dar_baja_colaborador(
-    colaborador_id: int,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Da de baja lógica a un colaborador"""
-    
-    query = f"""
-        UPDATE RH_Colaboradores_Expediente
-        SET Colaborador_Activo = 0, Estatus_Laboral = 'Baja'
-        WHERE ColaboradorID = {colaborador_id}
-    """
-    
-    await execute_edarsa_hub_query(query)
-    
-    return {"success": True, "message": "Colaborador dado de baja"}
+# ENDPOINT DELETE /rrhh/colaboradores/{colaborador_id} - MIGRADO
+# @api_router.delete("/rrhh/colaboradores/{colaborador_id}")
+# async def rrhh_dar_baja_colaborador(...):
+#     """Da de baja lógica a un colaborador"""
+#     # VULNERABILIDAD SQL INJECTION CORREGIDA: Queries ahora usan parámetros nativos
+#     pass
 
 
 # ------------ INCIDENCIAS ------------

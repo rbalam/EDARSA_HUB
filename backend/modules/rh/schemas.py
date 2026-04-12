@@ -198,8 +198,209 @@ class SuccessResponse(BaseModel):
     message: str
 
 
+class SuccessWithIdResponse(BaseModel):
+    """Respuesta de éxito con ID del registro creado."""
+    success: bool = True
+    message: str
+    colaborador_id: Optional[int] = None
+
+
 class ScriptInicializacionResponse(BaseModel):
     """Respuesta para el script de inicialización SQL."""
     script: str
     instrucciones: List[str]
     compatibilidad: dict
+
+
+# ============================================================================
+# COLABORADORES (FASE 6C-B)
+# ============================================================================
+
+# Valores permitidos para estatus laboral
+ESTATUS_LABORAL_VALIDOS = ["Activo", "Baja", "Vacaciones", "Incapacidad", "Permiso", "Suspendido"]
+
+
+class ColaboradorBase(BaseModel):
+    """Campos base compartidos para Colaborador."""
+    nombre_completo: str = Field(..., min_length=2, max_length=200, description="Nombre completo del colaborador")
+    curp: Optional[str] = Field(None, min_length=18, max_length=18, description="CURP (18 caracteres)")
+    rfc: Optional[str] = Field(None, min_length=12, max_length=13, description="RFC (12-13 caracteres)")
+    clabe_bancaria: Optional[str] = Field(None, min_length=18, max_length=18, description="CLABE interbancaria (18 dígitos)")
+    sucursal_id: int = Field(..., gt=0, description="ID de sucursal")
+    puesto_id: int = Field(..., gt=0, description="ID de puesto")
+    estatus_laboral: str = Field(default="Activo", description="Estatus laboral del colaborador")
+    
+    @field_validator('nombre_completo')
+    @classmethod
+    def nombre_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError('El nombre completo es requerido')
+        return v.strip()
+    
+    @field_validator('curp')
+    @classmethod
+    def curp_format(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v = v.strip().upper()
+        if len(v) != 18:
+            raise ValueError('CURP debe tener exactamente 18 caracteres')
+        # Patrón básico: 4 letras + 6 dígitos + 1 letra (H/M) + 5 letras + 1 alfanumérico + 1 dígito
+        import re
+        pattern = r'^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$'
+        if not re.match(pattern, v):
+            raise ValueError('Formato de CURP inválido')
+        return v
+    
+    @field_validator('rfc')
+    @classmethod
+    def rfc_format(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v = v.strip().upper()
+        if len(v) not in (12, 13):
+            raise ValueError('RFC debe tener 12 o 13 caracteres')
+        # Patrón básico RFC
+        import re
+        pattern = r'^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$'
+        if not re.match(pattern, v):
+            raise ValueError('Formato de RFC inválido')
+        return v
+    
+    @field_validator('clabe_bancaria')
+    @classmethod
+    def clabe_format(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) != 18:
+            raise ValueError('CLABE debe tener exactamente 18 dígitos')
+        if not v.isdigit():
+            raise ValueError('CLABE debe contener solo dígitos')
+        return v
+    
+    @field_validator('estatus_laboral')
+    @classmethod
+    def estatus_valido(cls, v: str) -> str:
+        if v not in ESTATUS_LABORAL_VALIDOS:
+            raise ValueError(f'Estatus laboral debe ser uno de: {", ".join(ESTATUS_LABORAL_VALIDOS)}')
+        return v
+
+
+class ColaboradorCreate(ColaboradorBase):
+    """Modelo para crear un nuevo colaborador."""
+    pass
+
+
+class ColaboradorUpdate(BaseModel):
+    """Modelo para actualizar un colaborador existente (campos opcionales)."""
+    nombre_completo: Optional[str] = Field(None, min_length=2, max_length=200)
+    curp: Optional[str] = Field(None, min_length=18, max_length=18)
+    rfc: Optional[str] = Field(None, min_length=12, max_length=13)
+    clabe_bancaria: Optional[str] = Field(None, min_length=18, max_length=18)
+    sucursal_id: Optional[int] = Field(None, gt=0)
+    puesto_id: Optional[int] = Field(None, gt=0)
+    estatus_laboral: Optional[str] = None
+    
+    @field_validator('nombre_completo')
+    @classmethod
+    def nombre_not_empty(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not v.strip():
+            raise ValueError('El nombre no puede estar vacío')
+        return v.strip() if v else v
+    
+    @field_validator('curp')
+    @classmethod
+    def curp_format(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v = v.strip().upper()
+        if len(v) != 18:
+            raise ValueError('CURP debe tener exactamente 18 caracteres')
+        import re
+        pattern = r'^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$'
+        if not re.match(pattern, v):
+            raise ValueError('Formato de CURP inválido')
+        return v
+    
+    @field_validator('rfc')
+    @classmethod
+    def rfc_format(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v = v.strip().upper()
+        if len(v) not in (12, 13):
+            raise ValueError('RFC debe tener 12 o 13 caracteres')
+        import re
+        pattern = r'^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$'
+        if not re.match(pattern, v):
+            raise ValueError('Formato de RFC inválido')
+        return v
+    
+    @field_validator('clabe_bancaria')
+    @classmethod
+    def clabe_format(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) != 18:
+            raise ValueError('CLABE debe tener exactamente 18 dígitos')
+        if not v.isdigit():
+            raise ValueError('CLABE debe contener solo dígitos')
+        return v
+    
+    @field_validator('estatus_laboral')
+    @classmethod
+    def estatus_valido(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in ESTATUS_LABORAL_VALIDOS:
+            raise ValueError(f'Estatus laboral debe ser uno de: {", ".join(ESTATUS_LABORAL_VALIDOS)}')
+        return v
+
+
+class ColaboradorResponse(BaseModel):
+    """Modelo de respuesta para un colaborador (vista lista)."""
+    ColaboradorID: int
+    Nombre_Completo: str
+    CURP: Optional[str] = None
+    RFC: Optional[str] = None
+    CLABE_Bancaria: Optional[str] = None
+    SucursalID: Optional[int] = None
+    Nombre_Sucursal: Optional[str] = None
+    PuestoID: Optional[int] = None
+    Puesto: Optional[str] = None
+    Departamento: Optional[str] = None
+    Colaborador_Activo: Optional[bool] = None
+    Fecha_Alta: Optional[str] = None
+    Estatus_Laboral: Optional[str] = None
+    Validacion_IA_RFC: Optional[str] = None
+    Validacion_IA_CURP: Optional[str] = None
+    Validacion_IA_EdoCta: Optional[str] = None
+    Validacion_IA_Contrato: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class ColaboradorDetalleResponse(BaseModel):
+    """Modelo de respuesta para detalle de colaborador (incluye relacionados)."""
+    colaborador: ColaboradorResponse
+    incidencias: List[Any] = []  # Tipado flexible hasta FASE 6D
+    asistencias: List[Any] = []  # Tipado flexible hasta FASE 6E
+    auditoria_fiscal: List[Any] = []  # Tipado flexible hasta FASE 6G
+
+
+class ColaboradoresListResponse(BaseModel):
+    """Modelo de respuesta para lista paginada de colaboradores."""
+    colaboradores: List[ColaboradorResponse]
+    total: int
+    page: int
+    limit: int
+    pages: int
+
+
+class ColaboradorFiltros(BaseModel):
+    """Filtros para búsqueda de colaboradores."""
+    sucursal_id: Optional[int] = None
+    puesto_id: Optional[int] = None
+    estatus: Optional[str] = None
+    buscar: Optional[str] = None

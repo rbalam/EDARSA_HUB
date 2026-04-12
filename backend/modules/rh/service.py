@@ -400,3 +400,156 @@ class RHCatalogosService:
 
 # Instancia singleton del servicio
 rh_catalogos_service = RHCatalogosService()
+
+
+# ============================================================================
+# SERVICIO DE COLABORADORES (FASE 6C-B)
+# ============================================================================
+
+from modules.rh.repository import (
+    query_listar_colaboradores,
+    query_obtener_colaborador,
+    query_incidencias_colaborador,
+    query_asistencias_colaborador,
+    query_auditoria_colaborador,
+    query_crear_colaborador,
+    query_actualizar_colaborador,
+    query_dar_baja_colaborador,
+)
+from modules.rh.schemas import (
+    ColaboradorCreate,
+    ColaboradorUpdate,
+)
+
+
+class RHColaboradoresService:
+    """Servicio para gestionar colaboradores de Recursos Humanos."""
+    
+    async def _get_server(self) -> Dict:
+        """Obtiene el servidor EDARSA HUB o lanza excepción."""
+        server = await get_edarsa_hub_server()
+        if not server:
+            raise HTTPException(status_code=404, detail="Servidor EDARSA HUB no configurado")
+        return server
+    
+    async def listar_colaboradores(
+        self,
+        sucursal_id: Optional[int] = None,
+        puesto_id: Optional[int] = None,
+        estatus: Optional[str] = None,
+        buscar: Optional[str] = None,
+        page: int = 1,
+        limit: int = 50
+    ) -> Dict[str, Any]:
+        """Lista colaboradores con filtros y paginación."""
+        server = await self._get_server()
+        
+        result = query_listar_colaboradores(
+            server,
+            sucursal_id=sucursal_id,
+            puesto_id=puesto_id,
+            estatus=estatus,
+            buscar=buscar,
+            page=page,
+            limit=limit
+        )
+        
+        return {
+            "colaboradores": result.get("datos", []),
+            "total": result.get("total", 0),
+            "page": result.get("page", page),
+            "limit": result.get("limit", limit),
+            "pages": result.get("pages", 1)
+        }
+    
+    async def obtener_colaborador_detalle(self, colaborador_id: int) -> Dict[str, Any]:
+        """Obtiene detalle de un colaborador con incidencias, asistencias y auditoría."""
+        server = await self._get_server()
+        
+        # Datos del colaborador
+        result_col = query_obtener_colaborador(server, colaborador_id)
+        
+        if not result_col.get("datos"):
+            raise HTTPException(status_code=404, detail="Colaborador no encontrado")
+        
+        # Datos relacionados (consultas secundarias)
+        incidencias = query_incidencias_colaborador(server, colaborador_id)
+        asistencias = query_asistencias_colaborador(server, colaborador_id)
+        auditoria = query_auditoria_colaborador(server, colaborador_id)
+        
+        return {
+            "colaborador": result_col["datos"],
+            "incidencias": incidencias,
+            "asistencias": asistencias,
+            "auditoria_fiscal": auditoria
+        }
+    
+    async def crear_colaborador(self, data: ColaboradorCreate) -> Dict[str, Any]:
+        """Crea un nuevo colaborador."""
+        server = await self._get_server()
+        
+        result = query_crear_colaborador(
+            server,
+            nombre_completo=data.nombre_completo,
+            curp=data.curp,
+            rfc=data.rfc,
+            clabe_bancaria=data.clabe_bancaria,
+            sucursal_id=data.sucursal_id,
+            puesto_id=data.puesto_id,
+            estatus_laboral=data.estatus_laboral
+        )
+        
+        if not result.get("success"):
+            raise HTTPException(
+                status_code=500, 
+                detail=result.get("error", "Error al crear colaborador")
+            )
+        
+        return {
+            "success": True,
+            "message": "Colaborador creado exitosamente",
+            "colaborador_id": result.get("colaborador_id")
+        }
+    
+    async def actualizar_colaborador(
+        self, 
+        colaborador_id: int, 
+        data: ColaboradorUpdate
+    ) -> Dict[str, Any]:
+        """Actualiza datos de un colaborador existente."""
+        server = await self._get_server()
+        
+        # Convertir Pydantic model a dict excluyendo None
+        updates = data.model_dump(exclude_none=True)
+        
+        if not updates:
+            raise HTTPException(status_code=400, detail="No hay campos para actualizar")
+        
+        result = query_actualizar_colaborador(server, colaborador_id, updates)
+        
+        if not result.get("success"):
+            raise HTTPException(
+                status_code=400, 
+                detail=result.get("error", "Error al actualizar colaborador")
+            )
+        
+        return {"success": True, "message": "Colaborador actualizado"}
+    
+    async def dar_baja_colaborador(self, colaborador_id: int) -> Dict[str, Any]:
+        """Da de baja lógica a un colaborador."""
+        server = await self._get_server()
+        
+        result = query_dar_baja_colaborador(server, colaborador_id)
+        
+        if not result.get("success"):
+            raise HTTPException(
+                status_code=400, 
+                detail=result.get("error", "Error al dar de baja colaborador")
+            )
+        
+        return {"success": True, "message": "Colaborador dado de baja"}
+
+
+# Instancia singleton del servicio de colaboradores
+rh_colaboradores_service = RHColaboradoresService()
+

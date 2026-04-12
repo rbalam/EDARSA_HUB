@@ -109,7 +109,33 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
     - `modules/rh/__init__.py` (73 líneas) - Inicialización
   - **server.py**: Reducido de ~13,902 a ~13,773 líneas (endpoints comentados/marcados como migrados)
   - **127 tests pasando** (regresión completa)
-- **Fases 6C-6H, 7**: ⏸️ Pendientes de autorización
+- **Fase 6B-1 (Estabilización tests)**: ✅ COMPLETADA (Diciembre 2025)
+  - 4 tests de integración aislados con `pytest.skip()` condicional
+  - Suite obligatoria definida: 7 tests (siempre pasan)
+  - Suite de integración: 4 tests (skipped sin EDARSA HUB)
+- **Fase 6C-B (Colaboradores RH)**: ✅ COMPLETADA (Diciembre 2025)
+  - 5 endpoints migrados desde `server.py` a `modules/rh/`:
+    - `GET /rrhh/colaboradores`
+    - `GET /rrhh/colaboradores/{id}`
+    - `POST /rrhh/colaboradores`
+    - `PUT /rrhh/colaboradores/{id}`
+    - `DELETE /rrhh/colaboradores/{id}`
+  - **Queries con parámetros nativos** (`execute_sql_query_params`) - Nueva función en `core/db.py`
+  - **Validación Pydantic** para CURP (18 chars, formato), RFC (12-13 chars), CLABE (18 dígitos), estatus_laboral
+  - **Tablas SQL Server reutilizadas**:
+    - `RH_Colaboradores_Expediente` (principal)
+    - `RH_Cat_Sucursales`, `RH_Cat_Puestos` (JOIN)
+    - `RH_Incidencias_Nomina`, `RH_Reloj_Checador`, `RH_Auditoria_Fiscal` (solo lectura en detalle)
+  - **Archivos actualizados**:
+    - `core/db.py` (+170 líneas) - Nueva función `execute_sql_query_params()`
+    - `modules/rh/schemas.py` (406 líneas) - +200 líneas Colaboradores
+    - `modules/rh/repository.py` (911 líneas) - +415 líneas Colaboradores
+    - `modules/rh/service.py` (555 líneas) - +150 líneas Colaboradores
+    - `modules/rh/routes.py` (325 líneas) - +125 líneas Colaboradores
+  - **server.py**: Reducido de ~13,774 a ~13,557 líneas
+  - **Total módulo RH**: 2,297 líneas de código modular
+  - **127 tests pasando**, 4 skipped (integración)
+- **Fases 6D-6H, 7**: ⏸️ Pendientes de autorización
 
 ---
 

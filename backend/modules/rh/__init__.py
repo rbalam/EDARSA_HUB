@@ -6,8 +6,12 @@ Gestión de colaboradores, nóminas, incidencias y catálogos RH.
 FASE 6B DEL REFACTOR MODULAR (Diciembre 2025):
 - Catálogos RH: Puestos, Sucursales, Tipos de Incidencias
 - 10 endpoints migrados desde server.py
-- Queries parametrizados (seguridad SQL Injection)
-- Validación con Pydantic
+
+FASE 6C-B DEL REFACTOR MODULAR (Diciembre 2025):
+- Colaboradores RH: CRUD completo
+- 5 endpoints migrados desde server.py
+- Queries parametrizados nativos (prevención SQL Injection)
+- Validación Pydantic para CURP, RFC, CLABE
 
 Componentes:
 - routes.py: Endpoints del módulo (prefijo /rrhh/)
@@ -20,6 +24,10 @@ Tablas reutilizadas (NO duplicadas):
 - RH_Cat_Sucursales
 - RH_Cat_SucursalesFiscal
 - RH_Cat_Tipos_Incidencias
+- RH_Colaboradores_Expediente
+- RH_Incidencias_Nomina (solo lectura)
+- RH_Reloj_Checador (solo lectura)
+- RH_Auditoria_Fiscal (solo lectura)
 
 Inicialización:
     from modules.rh import init_rh_module
@@ -29,17 +37,28 @@ Inicialización:
 from modules.rh.routes import router
 from modules.rh.repository import init_rh_repository
 from modules.rh.schemas import (
+    # Catálogos - Puestos
     PuestoCreate,
     PuestoUpdate,
     PuestosListResponse,
+    # Catálogos - Sucursales
     SucursalesListResponse,
+    # Catálogos - Tipos Incidencias
     TipoIncidenciaCreate,
     TipoIncidenciaUpdate,
     TiposIncidenciasListResponse,
+    # Colaboradores
+    ColaboradorCreate,
+    ColaboradorUpdate,
+    ColaboradorResponse,
+    ColaboradorDetalleResponse,
+    ColaboradoresListResponse,
+    # Genéricos
     SuccessResponse,
+    SuccessWithIdResponse,
     ScriptInicializacionResponse,
 )
-from modules.rh.service import rh_catalogos_service
+from modules.rh.service import rh_catalogos_service, rh_colaboradores_service
 
 
 def init_rh_module(database) -> None:
@@ -65,9 +84,17 @@ __all__ = [
     'TipoIncidenciaCreate',
     'TipoIncidenciaUpdate',
     'TiposIncidenciasListResponse',
+    # Schemas - Colaboradores
+    'ColaboradorCreate',
+    'ColaboradorUpdate',
+    'ColaboradorResponse',
+    'ColaboradorDetalleResponse',
+    'ColaboradoresListResponse',
     # Schemas - Genéricos
     'SuccessResponse',
+    'SuccessWithIdResponse',
     'ScriptInicializacionResponse',
-    # Service
+    # Services
     'rh_catalogos_service',
+    'rh_colaboradores_service',
 ]

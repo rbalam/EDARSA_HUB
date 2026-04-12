@@ -380,6 +380,189 @@ def execute_sql_query(
         )
 
 
+def execute_sql_query_params(
+    host: str, 
+    port: int, 
+    database: str, 
+    username: str, 
+    password: str, 
+    query: str,
+    params: tuple = None,
+    timeout_seconds: int = 45
+) -> List[Dict]:
+    """
+    Ejecuta una consulta SQL con PARÁMETROS NATIVOS para prevenir SQL Injection.
+    
+    FASE 6C-B (Diciembre 2025):
+    - Usa parámetros nativos del driver (pymssql/pytds)
+    - Los parámetros se pasan al driver, NO se interpolan en la query
+    - Formato de placeholders: %s para pymssql, %s para pytds
+    
+    Args:
+        host: Hostname del servidor SQL
+        port: Puerto
+        database: Nombre de la base de datos
+        username: Usuario
+        password: Contraseña
+        query: Query SQL con placeholders %s (ej: "SELECT * FROM t WHERE id = %s")
+        params: Tupla de parámetros (ej: (123,) o ("valor", 456))
+        timeout_seconds: Timeout en segundos
+        
+    Returns:
+        Lista de diccionarios con los resultados.
+        
+    Ejemplo:
+        execute_sql_query_params(
+            host, port, db, user, pwd,
+            "SELECT * FROM users WHERE name = %s AND age > %s",
+            ("Juan", 18)
+        )
+    """
+    # Verificar si el servidor está en cooldown
+    if is_server_offline_in_memory(host):
+        cooldown = get_server_cooldown_info(host)
+        logging.info(f"Servidor {host} en cooldown - {cooldown.get('remaining_minutes', 0):.1f} min restantes")
+        return []
+    
+    hostname, parsed_port, instance = parse_sql_server_host(host, port)
+    logging.debug(f"Conectando a SQL Server vía pool (params): hostname={hostname}, port={parsed_port}, db={database}")
+    
+    from core.pool import pooled_connection, get_pool_manager
+    
+    try:
+        with pooled_connection(hostname, parsed_port, database, username, password, instance) as conn:
+            driver = get_pool_manager().get_pool_driver(hostname, parsed_port, database)
+            
+            if driver == "pymssql":
+                cursor = conn.cursor(as_dict=True)
+                if params:
+                    cursor.execute(query, params)
+                else:
+                    cursor.execute(query)
+                results = list(cursor.fetchall())
+            else:
+                # pytds
+                cursor = conn.cursor()
+                if params:
+                    cursor.execute(query, params)
+                else:
+                    cursor.execute(query)
+                columns = [desc[0] for desc in cursor.description] if cursor.description else []
+                rows = cursor.fetchall()
+                results = []
+                for row in rows:
+                    row_dict = {}
+                    for i, col in enumerate(columns):
+                        row_dict[col] = row[i]
+                    results.append(row_dict)
+            
+            # Convertir datetime a string ISO
+            for row in results:
+                for key, value in row.items():
+                    if isinstance(value, datetime):
+                        row[key] = value.isoformat()
+            
+            logging.debug(f"Query params exitosa via pool ({driver}): {len(results)} registros")
+            mark_server_online(host)
+            return results
+            
+    except Exception as pool_error:
+        error_str = str(pool_error)
+        logging.warning(f"Pool (params) falló para {host}: {error_str}")
+        
+        # Fallback: conexión directa
+        return _execute_sql_query_params_direct(
+            host, port, database, username, password, query, params, timeout_seconds
+        )
+
+
+def _execute_sql_query_params_direct(
+    host: str, 
+    port: int, 
+    database: str, 
+    username: str, 
+    password: str, 
+    query: str,
+    params: tuple = None,
+    timeout_seconds: int = 45
+) -> List[Dict]:
+    """
+    Ejecuta query SQL con parámetros usando conexión directa (fallback).
+    """
+    hostname, parsed_port, instance = parse_sql_server_host(host, port)
+    logging.info(f"[FALLBACK] Conexión directa con params a SQL Server: {hostname}:{parsed_port}")
+    
+    # Intentar con pytds
+    try:
+        conn = pytds.connect(
+            server=hostname,
+            port=parsed_port,
+            database=database,
+            user=username,
+            password=password,
+            timeout=timeout_seconds,
+            login_timeout=15
+        )
+        cursor = conn.cursor()
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+        
+        columns = [desc[0] for desc in cursor.description] if cursor.description else []
+        rows = cursor.fetchall()
+        
+        results = []
+        for row in rows:
+            row_dict = {}
+            for i, col in enumerate(columns):
+                value = row[i]
+                if isinstance(value, datetime):
+                    value = value.isoformat()
+                row_dict[col] = value
+            results.append(row_dict)
+        
+        conn.close()
+        mark_server_online(host)
+        return results
+        
+    except Exception as pytds_error:
+        logging.warning(f"[FALLBACK] pytds params falló: {str(pytds_error)}, intentando pymssql...")
+    
+    # Fallback a pymssql
+    try:
+        server_string = f"{hostname}\\{instance}" if instance else hostname
+        conn = pymssql.connect(
+            server=server_string, 
+            port=parsed_port, 
+            user=username, 
+            password=password, 
+            database=database, 
+            timeout=timeout_seconds, 
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+        results = list(cursor.fetchall())
+        
+        for row in results:
+            for key, value in row.items():
+                if isinstance(value, datetime):
+                    row[key] = value.isoformat()
+        
+        conn.close()
+        mark_server_online(host)
+        return results
+        
+    except Exception as pymssql_error:
+        logging.error(f"[FALLBACK] pymssql params también falló: {str(pymssql_error)}")
+        mark_server_offline(host, str(pymssql_error))
+        return []
+
+
 def _execute_sql_query_direct(
     host: str, 
     port: int, 
