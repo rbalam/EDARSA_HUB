@@ -1,0 +1,428 @@
+"""
+EDARSA HUB - Finanzas Repository
+================================
+Repositorio para acceso a datos de Finanzas en SQL Server.
+Incluye:
+- Configuración de comisiones TPV por sucursal
+- Cuentas por pagar (facturas pendientes)
+- Control de ingresos (cortes de caja)
+"""
+
+import logging
+from typing import Dict, Any, List, Optional
+from datetime import datetime, timedelta
+
+# SQL para crear las tablas necesarias en EDARSA HUB
+SQL_CREATE_TABLES = """
+-- ============================================================================
+-- TABLA: FIN_Configuracion_TPV
+-- Configuración de comisiones de terminales punto de venta por sucursal
+-- ============================================================================
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[FIN_Configuracion_TPV]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE [dbo].[FIN_Configuracion_TPV] (
+        ConfigID INT IDENTITY(1,1) PRIMARY KEY,
+        SucursalID INT NOT NULL,
+        TipoTarjeta VARCHAR(50) NOT NULL,  -- debito, credito, amex, internacional
+        ComisionPorcentaje DECIMAL(5,3) NOT NULL,  -- Ej: 1.200 para 1.2%
+        DiasDeposito INT NOT NULL DEFAULT 1,  -- Días hábiles para depósito
+        IVAPorcentaje DECIMAL(5,3) NOT NULL DEFAULT 16.000,  -- 16% IVA
+        Proveedor VARCHAR(100) DEFAULT 'NetPay',
+        Activo BIT DEFAULT 1,
+        FechaCreacion DATETIME DEFAULT GETDATE(),
+        FechaModificacion DATETIME DEFAULT GETDATE(),
+        CONSTRAINT FK_ConfigTPV_Sucursal FOREIGN KEY (SucursalID) REFERENCES RH_Sucursales(SucursalID),
+        CONSTRAINT UQ_ConfigTPV_Sucursal_Tipo UNIQUE (SucursalID, TipoTarjeta)
+    );
+    
+    PRINT 'Tabla FIN_Configuracion_TPV creada';
+END
+
+-- ============================================================================
+-- TABLA: FIN_Cortes_Caja
+-- Cortes de caja diarios por sucursal
+-- ============================================================================
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[FIN_Cortes_Caja]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE [dbo].[FIN_Cortes_Caja] (
+        CorteID INT IDENTITY(1,1) PRIMARY KEY,
+        SucursalID INT NOT NULL,
+        FechaCorte DATE NOT NULL,
+        
+        -- Montos de venta
+        MontoEfectivo DECIMAL(18,2) DEFAULT 0,
+        MontoDebito DECIMAL(18,2) DEFAULT 0,
+        MontoCredito DECIMAL(18,2) DEFAULT 0,
+        MontoAmex DECIMAL(18,2) DEFAULT 0,
+        MontoInternacional DECIMAL(18,2) DEFAULT 0,
+        
+        -- Comisiones calculadas
+        ComisionDebito DECIMAL(18,2) DEFAULT 0,
+        ComisionCredito DECIMAL(18,2) DEFAULT 0,
+        ComisionAmex DECIMAL(18,2) DEFAULT 0,
+        ComisionInternacional DECIMAL(18,2) DEFAULT 0,
+        
+        -- Fechas de depósito esperadas
+        FechaDepositoEfectivo DATE,
+        FechaDepositoTarjetas DATE,
+        
+        -- Estado de depósitos
+        EfectivoDepositado BIT DEFAULT 0,
+        TarjetasDepositadas BIT DEFAULT 0,
+        ReferenciaDepositoEfectivo VARCHAR(100),
+        ReferenciaDepositoTarjetas VARCHAR(100),
+        
+        -- Conciliación
+        Conciliado BIT DEFAULT 0,
+        FechaConciliacion DATETIME,
+        Observaciones NVARCHAR(500),
+        
+        FechaCreacion DATETIME DEFAULT GETDATE(),
+        UsuarioCreacion VARCHAR(100),
+        
+        CONSTRAINT FK_Cortes_Sucursal FOREIGN KEY (SucursalID) REFERENCES RH_Sucursales(SucursalID),
+        CONSTRAINT UQ_Corte_Sucursal_Fecha UNIQUE (SucursalID, FechaCorte)
+    );
+    
+    PRINT 'Tabla FIN_Cortes_Caja creada';
+END
+
+-- ============================================================================
+-- TABLA: FIN_Cuentas_Por_Pagar
+-- Facturas pendientes de pago a proveedores
+-- ============================================================================
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[FIN_Cuentas_Por_Pagar]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE [dbo].[FIN_Cuentas_Por_Pagar] (
+        FacturaID INT IDENTITY(1,1) PRIMARY KEY,
+        SucursalID INT NOT NULL,
+        ProveedorID INT,
+        ProveedorNombre NVARCHAR(200) NOT NULL,
+        ProveedorRFC VARCHAR(20),
+        
+        FolioEntrada VARCHAR(50),
+        FolioFactura VARCHAR(50),
+        FechaEntrada DATE NOT NULL,
+        FechaVencimiento DATE NOT NULL,
+        
+        Referencia NVARCHAR(500),
+        ImporteTotal DECIMAL(18,2) NOT NULL,
+        PagosRealizados DECIMAL(18,2) DEFAULT 0,
+        Saldo DECIMAL(18,2) NOT NULL,
+        
+        DecisionPago BIT DEFAULT 0,
+        ImporteAPagar DECIMAL(18,2) DEFAULT 0,
+        
+        -- Documentos
+        RutaPDFFactura VARCHAR(500),
+        RutaXML VARCHAR(500),
+        RutaPDFEntrada VARCHAR(500),
+        
+        Estatus VARCHAR(50) DEFAULT 'Pendiente',  -- Pendiente, Pagada, Cancelada
+        FechaPago DATETIME,
+        
+        FechaCreacion DATETIME DEFAULT GETDATE(),
+        FechaModificacion DATETIME DEFAULT GETDATE(),
+        
+        CONSTRAINT FK_CxP_Sucursal FOREIGN KEY (SucursalID) REFERENCES RH_Sucursales(SucursalID)
+    );
+    
+    CREATE INDEX IX_CxP_Sucursal ON FIN_Cuentas_Por_Pagar(SucursalID);
+    CREATE INDEX IX_CxP_Proveedor ON FIN_Cuentas_Por_Pagar(ProveedorID);
+    CREATE INDEX IX_CxP_FechaVenc ON FIN_Cuentas_Por_Pagar(FechaVencimiento);
+    CREATE INDEX IX_CxP_Estatus ON FIN_Cuentas_Por_Pagar(Estatus);
+    
+    PRINT 'Tabla FIN_Cuentas_Por_Pagar creada';
+END
+
+-- ============================================================================
+-- TABLA: FIN_Movimientos_Banco
+-- Movimientos bancarios para conciliación
+-- ============================================================================
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[FIN_Movimientos_Banco]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE [dbo].[FIN_Movimientos_Banco] (
+        MovimientoID INT IDENTITY(1,1) PRIMARY KEY,
+        Banco VARCHAR(50) NOT NULL,
+        CuentaBancaria VARCHAR(50),
+        FechaMovimiento DATE NOT NULL,
+        Concepto NVARCHAR(500),
+        Referencia VARCHAR(100),
+        Cargo DECIMAL(18,2) DEFAULT 0,
+        Abono DECIMAL(18,2) DEFAULT 0,
+        Saldo DECIMAL(18,2),
+        
+        Conciliado BIT DEFAULT 0,
+        TipoConciliacion VARCHAR(50),  -- efectivo, tarjetas, proveedor
+        CorteID INT,  -- FK a FIN_Cortes_Caja si aplica
+        FacturaID INT,  -- FK a FIN_Cuentas_Por_Pagar si aplica
+        
+        FechaCarga DATETIME DEFAULT GETDATE(),
+        ArchivoOrigen VARCHAR(200),
+        
+        CONSTRAINT FK_MovBanco_Corte FOREIGN KEY (CorteID) REFERENCES FIN_Cortes_Caja(CorteID),
+        CONSTRAINT FK_MovBanco_Factura FOREIGN KEY (FacturaID) REFERENCES FIN_Cuentas_Por_Pagar(FacturaID)
+    );
+    
+    PRINT 'Tabla FIN_Movimientos_Banco creada';
+END
+
+-- ============================================================================
+-- INSERTAR CONFIGURACIÓN INICIAL DE COMISIONES TPV
+-- ============================================================================
+-- Se insertarán cuando se ejecute el endpoint de inicialización
+"""
+
+# SQL para insertar configuración inicial de comisiones por sucursal
+SQL_INSERT_CONFIG_TPV = """
+-- Verificar si ya existe configuración para la sucursal
+IF NOT EXISTS (SELECT 1 FROM FIN_Configuracion_TPV WHERE SucursalID = {sucursal_id} AND TipoTarjeta = '{tipo}')
+BEGIN
+    INSERT INTO FIN_Configuracion_TPV (SucursalID, TipoTarjeta, ComisionPorcentaje, DiasDeposito, IVAPorcentaje, Proveedor)
+    VALUES ({sucursal_id}, '{tipo}', {comision}, {dias}, 16.000, 'NetPay');
+END
+"""
+
+# Configuración por defecto de comisiones
+COMISIONES_DEFAULT = {
+    "debito": {"comision": 1.200, "dias": 1},
+    "credito": {"comision": 1.500, "dias": 1},
+    "amex": {"comision": 2.400, "dias": 2},
+    "internacional": {"comision": 2.000, "dias": 2},
+}
+
+
+class FinanzasRepository:
+    """Repositorio para acceso a datos de Finanzas en SQL Server"""
+    
+    def __init__(self, execute_query_func):
+        """
+        Args:
+            execute_query_func: Función para ejecutar queries en EDARSA HUB
+        """
+        self.execute_query = execute_query_func
+    
+    async def crear_tablas(self) -> Dict:
+        """Crear las tablas de finanzas si no existen"""
+        try:
+            result = await self.execute_query(SQL_CREATE_TABLES)
+            return {"success": True, "message": "Tablas verificadas/creadas"}
+        except Exception as e:
+            logging.error(f"Error creando tablas de finanzas: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def inicializar_config_tpv(self, sucursales: List[int]) -> Dict:
+        """Inicializar configuración de comisiones TPV para las sucursales"""
+        try:
+            insertados = 0
+            for sucursal_id in sucursales:
+                for tipo, config in COMISIONES_DEFAULT.items():
+                    query = SQL_INSERT_CONFIG_TPV.format(
+                        sucursal_id=sucursal_id,
+                        tipo=tipo,
+                        comision=config["comision"],
+                        dias=config["dias"]
+                    )
+                    await self.execute_query(query)
+                    insertados += 1
+            
+            return {"success": True, "configuraciones": insertados}
+        except Exception as e:
+            logging.error(f"Error inicializando config TPV: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def get_config_tpv_sucursal(self, sucursal_id: int) -> List[Dict]:
+        """Obtener configuración de comisiones TPV para una sucursal"""
+        query = f"""
+            SELECT 
+                ConfigID, SucursalID, TipoTarjeta, 
+                ComisionPorcentaje, DiasDeposito, IVAPorcentaje, Proveedor
+            FROM FIN_Configuracion_TPV
+            WHERE SucursalID = {sucursal_id} AND Activo = 1
+        """
+        result = await self.execute_query(query)
+        return result.get("datos", [])
+    
+    async def get_todas_config_tpv(self) -> List[Dict]:
+        """Obtener toda la configuración de comisiones TPV"""
+        query = """
+            SELECT 
+                c.ConfigID, c.SucursalID, s.Nombre_Sucursal,
+                c.TipoTarjeta, c.ComisionPorcentaje, c.DiasDeposito, 
+                c.IVAPorcentaje, c.Proveedor
+            FROM FIN_Configuracion_TPV c
+            INNER JOIN RH_Sucursales s ON c.SucursalID = s.SucursalID
+            WHERE c.Activo = 1
+            ORDER BY s.Nombre_Sucursal, c.TipoTarjeta
+        """
+        result = await self.execute_query(query)
+        return result.get("datos", [])
+    
+    async def actualizar_config_tpv(self, config_id: int, comision: float, dias: int) -> Dict:
+        """Actualizar configuración de comisión TPV"""
+        query = f"""
+            UPDATE FIN_Configuracion_TPV
+            SET ComisionPorcentaje = {comision},
+                DiasDeposito = {dias},
+                FechaModificacion = GETDATE()
+            WHERE ConfigID = {config_id}
+        """
+        await self.execute_query(query)
+        return {"success": True}
+    
+    # =========================================================================
+    # CUENTAS POR PAGAR
+    # =========================================================================
+    
+    async def get_facturas_pendientes(
+        self,
+        sucursal_id: Optional[int] = None,
+        proveedor_id: Optional[int] = None,
+        fecha_corte: Optional[str] = None,
+        solo_vencidas: bool = False
+    ) -> List[Dict]:
+        """Obtener facturas pendientes de pago"""
+        where_clauses = ["Estatus = 'Pendiente'", "Saldo > 0"]
+        
+        if sucursal_id:
+            where_clauses.append(f"SucursalID = {sucursal_id}")
+        if proveedor_id:
+            where_clauses.append(f"ProveedorID = {proveedor_id}")
+        if fecha_corte:
+            where_clauses.append(f"FechaEntrada <= '{fecha_corte}'")
+        if solo_vencidas:
+            where_clauses.append("FechaVencimiento < CAST(GETDATE() AS DATE)")
+        
+        where = " AND ".join(where_clauses)
+        
+        query = f"""
+            SELECT 
+                f.FacturaID, f.SucursalID, s.Nombre_Sucursal,
+                f.ProveedorID, f.ProveedorNombre, f.ProveedorRFC,
+                f.FolioEntrada, f.FolioFactura,
+                CONVERT(VARCHAR, f.FechaEntrada, 23) as FechaEntrada,
+                CONVERT(VARCHAR, f.FechaVencimiento, 23) as FechaVencimiento,
+                DATEDIFF(DAY, f.FechaVencimiento, GETDATE()) as DiasVencida,
+                f.Referencia, f.ImporteTotal, f.PagosRealizados, f.Saldo,
+                f.DecisionPago, f.ImporteAPagar,
+                CASE WHEN f.RutaPDFFactura IS NOT NULL THEN 1 ELSE 0 END as TienePDFFactura,
+                CASE WHEN f.RutaXML IS NOT NULL THEN 1 ELSE 0 END as TieneXML,
+                CASE WHEN f.RutaPDFEntrada IS NOT NULL THEN 1 ELSE 0 END as TienePDFEntrada
+            FROM FIN_Cuentas_Por_Pagar f
+            INNER JOIN RH_Sucursales s ON f.SucursalID = s.SucursalID
+            WHERE {where}
+            ORDER BY f.ProveedorNombre, f.FechaVencimiento
+        """
+        result = await self.execute_query(query)
+        return result.get("datos", [])
+    
+    async def actualizar_decision_pago(self, factura_id: int, decision: bool, importe: float = None) -> Dict:
+        """Actualizar decisión de pago de una factura"""
+        if importe is None:
+            importe_sql = "Saldo" if decision else "0"
+        else:
+            importe_sql = str(importe)
+        
+        query = f"""
+            UPDATE FIN_Cuentas_Por_Pagar
+            SET DecisionPago = {1 if decision else 0},
+                ImporteAPagar = {importe_sql},
+                FechaModificacion = GETDATE()
+            WHERE FacturaID = {factura_id}
+        """
+        await self.execute_query(query)
+        return {"success": True}
+    
+    async def actualizar_decision_pago_masivo(self, facturas_ids: List[int], decision: bool) -> int:
+        """Actualizar decisión de pago de múltiples facturas"""
+        ids_str = ",".join(map(str, facturas_ids))
+        
+        query = f"""
+            UPDATE FIN_Cuentas_Por_Pagar
+            SET DecisionPago = {1 if decision else 0},
+                ImporteAPagar = CASE WHEN {1 if decision else 0} = 1 THEN Saldo ELSE 0 END,
+                FechaModificacion = GETDATE()
+            WHERE FacturaID IN ({ids_str})
+        """
+        result = await self.execute_query(query)
+        return len(facturas_ids)
+    
+    # =========================================================================
+    # CORTES DE CAJA
+    # =========================================================================
+    
+    async def get_cortes_caja(
+        self,
+        sucursal_id: Optional[int] = None,
+        fecha_inicio: Optional[str] = None,
+        fecha_fin: Optional[str] = None,
+        solo_pendientes: bool = False
+    ) -> List[Dict]:
+        """Obtener cortes de caja"""
+        where_clauses = ["1=1"]
+        
+        if sucursal_id:
+            where_clauses.append(f"c.SucursalID = {sucursal_id}")
+        if fecha_inicio:
+            where_clauses.append(f"c.FechaCorte >= '{fecha_inicio}'")
+        if fecha_fin:
+            where_clauses.append(f"c.FechaCorte <= '{fecha_fin}'")
+        if solo_pendientes:
+            where_clauses.append("c.Conciliado = 0")
+        
+        where = " AND ".join(where_clauses)
+        
+        query = f"""
+            SELECT 
+                c.CorteID, c.SucursalID, s.Nombre_Sucursal,
+                CONVERT(VARCHAR, c.FechaCorte, 23) as FechaCorte,
+                DATENAME(WEEKDAY, c.FechaCorte) as DiaSemana,
+                c.MontoEfectivo, c.MontoDebito, c.MontoCredito, c.MontoAmex, c.MontoInternacional,
+                c.ComisionDebito, c.ComisionCredito, c.ComisionAmex, c.ComisionInternacional,
+                CONVERT(VARCHAR, c.FechaDepositoEfectivo, 23) as FechaDepositoEfectivo,
+                CONVERT(VARCHAR, c.FechaDepositoTarjetas, 23) as FechaDepositoTarjetas,
+                c.EfectivoDepositado, c.TarjetasDepositadas,
+                c.ReferenciaDepositoEfectivo, c.ReferenciaDepositoTarjetas,
+                c.Conciliado, c.Observaciones
+            FROM FIN_Cortes_Caja c
+            INNER JOIN RH_Sucursales s ON c.SucursalID = s.SucursalID
+            WHERE {where}
+            ORDER BY c.FechaCorte DESC, s.Nombre_Sucursal
+        """
+        result = await self.execute_query(query)
+        return result.get("datos", [])
+    
+    async def registrar_deposito_efectivo(self, corte_id: int, referencia: str) -> Dict:
+        """Registrar depósito de efectivo"""
+        query = f"""
+            UPDATE FIN_Cortes_Caja
+            SET EfectivoDepositado = 1,
+                ReferenciaDepositoEfectivo = '{referencia}',
+                Conciliado = CASE WHEN TarjetasDepositadas = 1 THEN 1 ELSE 0 END
+            WHERE CorteID = {corte_id}
+        """
+        await self.execute_query(query)
+        return {"success": True}
+    
+    async def registrar_deposito_tarjetas(self, corte_id: int, referencia: str) -> Dict:
+        """Registrar depósito de tarjetas"""
+        query = f"""
+            UPDATE FIN_Cortes_Caja
+            SET TarjetasDepositadas = 1,
+                ReferenciaDepositoTarjetas = '{referencia}',
+                Conciliado = CASE WHEN EfectivoDepositado = 1 THEN 1 ELSE 0 END
+            WHERE CorteID = {corte_id}
+        """
+        await self.execute_query(query)
+        return {"success": True}
+
+
+# Instancia global del repositorio (se inicializa en el módulo de rutas)
+finanzas_repo: Optional[FinanzasRepository] = None
+
+
+def get_finanzas_repository() -> FinanzasRepository:
+    """Obtener instancia del repositorio"""
+    if finanzas_repo is None:
+        raise Exception("FinanzasRepository no inicializado")
+    return finanzas_repo
