@@ -42,6 +42,7 @@ export default function RecursosHumanos() {
   // Verificar si es Administrador
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = currentUser?.role === 'Administrador' || currentUser?.role === 'admin';
+  const isSupervisor = currentUser?.role === 'Supervisor';
   
   // Filters
   const [filtroSucursal, setFiltroSucursal] = useState('');
@@ -96,6 +97,16 @@ export default function RecursosHumanos() {
   const [comentarioAprobacion, setComentarioAprobacion] = useState('');
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [nominaSubTab, setNominaSubTab] = useState('kanban');
+  
+  // ============= ESTADOS CAPTURA MASIVA INCIDENCIAS =============
+  const [capturaSemana, setCapturaSemana] = useState('');
+  const [capturaFiltroSucursal, setCapturaFiltroSucursal] = useState('');
+  const [capturaFiltroDepartamento, setCapturaFiltroDepartamento] = useState('');
+  const [colaboradoresCaptura, setColaboradoresCaptura] = useState([]);
+  const [loadingCaptura, setLoadingCaptura] = useState(false);
+  const [capturaData, setCapturaData] = useState({}); // {colaboradorId: {dias_trabajados, incidencia}}
+  const [savingCaptura, setSavingCaptura] = useState(false);
+  const [departamentos, setDepartamentos] = useState([]);
   const [formNuevoCiclo, setFormNuevoCiclo] = useState({
     sucursal_id: '',
     fecha_corte: '',
@@ -425,7 +436,228 @@ export default function RecursosHumanos() {
   
   const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-  // Cargar datos de reclutamiento
+  // ============= FUNCIONES CAPTURA MASIVA INCIDENCIAS =============
+  
+  // Obtener inicio de semana actual (Lunes)
+  const getInicioSemanaActual = () => {
+    const hoy = new Date();
+    const dia = hoy.getDay();
+    const diff = hoy.getDate() - dia + (dia === 0 ? -6 : 1); // Ajustar si es domingo
+    const lunes = new Date(hoy.setDate(diff));
+    return lunes.toISOString().split('T')[0];
+  };
+
+  // Cargar colaboradores activos para captura
+  const loadColaboradoresCaptura = async () => {
+    if (!capturaFiltroSucursal) {
+      toast.error('Seleccione una sucursal');
+      return;
+    }
+    
+    setLoadingCaptura(true);
+    try {
+      // Cargar todos los colaboradores con paginación (max 200 por página)
+      let allColaboradores = [];
+      let currentPage = 1;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const url = `/api/rrhh/colaboradores?page=${currentPage}&limit=200&sucursal_id=${capturaFiltroSucursal}`;
+        
+        const response = await fetch(`${API_URL}${url}`, {
+          method: 'GET',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const colaboradores = data.colaboradores || [];
+        allColaboradores = [...allColaboradores, ...colaboradores];
+        
+        // Verificar si hay más páginas
+        hasMore = currentPage < (data.pages || 1);
+        currentPage++;
+        
+        // Seguridad: máximo 10 páginas (2000 registros)
+        if (currentPage > 10) hasMore = false;
+      }
+      const activos = allColaboradores.filter(c => 
+        c.Estatus_Laboral?.toUpperCase() === 'ACTIVO'
+      );
+      setColaboradoresCaptura(activos);
+      
+      // Inicializar capturaData con valores por defecto
+      const initialData = {};
+      activos.forEach(col => {
+        initialData[col.ColaboradorID] = {
+          dias_trabajados: 7, // Por defecto semana completa
+          incidencia: ''
+        };
+      });
+      setCapturaData(initialData);
+      
+      // Extraer departamentos únicos
+      const deptosUnicos = [...new Set(activos.map(c => c.Departamento).filter(Boolean))];
+      setDepartamentos(deptosUnicos);
+      
+    } catch (error) {
+      console.error('Error cargando colaboradores:', error);
+      toast.error('Error al cargar colaboradores');
+    } finally {
+      setLoadingCaptura(false);
+    }
+  };
+
+  // Actualizar valor de captura para un colaborador
+  const handleCapturaChange = (colaboradorId, campo, valor) => {
+    setCapturaData(prev => ({
+      ...prev,
+      [colaboradorId]: {
+        ...prev[colaboradorId],
+        [campo]: valor
+      }
+    }));
+  };
+
+  // Guardar captura individual
+  const handleGuardarCapturaIndividual = async (colaboradorId) => {
+    const datos = capturaData[colaboradorId];
+    if (!datos) return;
+    
+    if (!capturaSemana) {
+      toast.error('Seleccione la semana de captura');
+      return;
+    }
+
+    setSavingCaptura(true);
+    try {
+      // Guardar incidencia si hay alguna seleccionada
+      if (datos.incidencia) {
+        const incidenciaPayload = {
+          colaborador_id: colaboradorId.toString(),
+          tipo_incidencia: datos.incidencia,
+          monto: 0,
+          unidades: datos.incidencia === 'Falta' ? (7 - datos.dias_trabajados) : 1,
+          fecha_incidencia: capturaSemana
+        };
+        
+        const response = await fetch(`${API_URL}/api/rrhh/incidencias`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(incidenciaPayload)
+        });
+        
+        if (!response.ok) throw new Error('Error al guardar incidencia');
+      }
+      
+      toast.success('Captura guardada correctamente');
+      
+      // Marcar como guardado visualmente (opcional: agregar estado de guardado)
+      setCapturaData(prev => ({
+        ...prev,
+        [colaboradorId]: {
+          ...prev[colaboradorId],
+          guardado: true
+        }
+      }));
+      
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al guardar captura');
+    } finally {
+      setSavingCaptura(false);
+    }
+  };
+
+  // Guardar toda la captura masiva
+  const handleGuardarCapturaMasiva = async () => {
+    if (!capturaSemana) {
+      toast.error('Seleccione la semana de captura');
+      return;
+    }
+    
+    const registrosConIncidencia = Object.entries(capturaData).filter(
+      ([_, datos]) => datos.incidencia && !datos.guardado
+    );
+    
+    if (registrosConIncidencia.length === 0) {
+      toast.info('No hay incidencias nuevas para guardar');
+      return;
+    }
+    
+    setSavingCaptura(true);
+    let exitosos = 0;
+    let errores = 0;
+    
+    try {
+      for (const [colaboradorId, datos] of registrosConIncidencia) {
+        try {
+          const incidenciaPayload = {
+            colaborador_id: colaboradorId.toString(),
+            tipo_incidencia: datos.incidencia,
+            monto: 0,
+            unidades: datos.incidencia === 'Falta' ? (7 - datos.dias_trabajados) : 1,
+            fecha_incidencia: capturaSemana
+          };
+          
+          const response = await fetch(`${API_URL}/api/rrhh/incidencias`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(incidenciaPayload)
+          });
+          
+          if (response.ok) {
+            exitosos++;
+            setCapturaData(prev => ({
+              ...prev,
+              [colaboradorId]: { ...prev[colaboradorId], guardado: true }
+            }));
+          } else {
+            errores++;
+          }
+        } catch (e) {
+          errores++;
+        }
+      }
+      
+      if (exitosos > 0) {
+        toast.success(`${exitosos} incidencias guardadas correctamente`);
+      }
+      if (errores > 0) {
+        toast.error(`${errores} errores al guardar`);
+      }
+      
+    } catch (error) {
+      toast.error('Error en la captura masiva');
+    } finally {
+      setSavingCaptura(false);
+    }
+  };
+
+  // Tipos de incidencia para captura rápida
+  const tiposIncidenciaCaptura = [
+    { value: '', label: 'Sin incidencia' },
+    { value: 'Falta', label: 'Falta' },
+    { value: 'Retardo', label: 'Retardo' },
+    { value: 'Permiso', label: 'Permiso' },
+    { value: 'Vacaciones', label: 'Vacaciones' },
+    { value: 'Incapacidad', label: 'Incapacidad' },
+    { value: 'Descanso', label: 'Descanso' },
+  ];
+
+
   const loadReclutamiento = useCallback(async () => {
     try {
       setLoading(true);
@@ -1322,8 +1554,8 @@ export default function RecursosHumanos() {
       <div className="space-y-4">
         {/* Sub-Tabs */}
         <div className="flex items-center justify-between border-b pb-2">
-          <div className="flex gap-2">
-            {['kanban', 'lista', 'config'].map(tab => (
+          <div className="flex gap-2 flex-wrap">
+            {['kanban', 'captura', 'lista', 'config'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setNominaSubTab(tab)}
@@ -1331,7 +1563,9 @@ export default function RecursosHumanos() {
                   nominaSubTab === tab ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                 }`}
               >
-                {tab === 'kanban' ? 'Tablero Kanban' : tab === 'lista' ? 'Lista' : 'Configuración'}
+                {tab === 'kanban' ? 'Tablero Kanban' : 
+                 tab === 'captura' ? 'Captura Incidencias' :
+                 tab === 'lista' ? 'Lista' : 'Configuración'}
               </button>
             ))}
           </div>
@@ -1421,6 +1655,189 @@ export default function RecursosHumanos() {
                 );
               })}
             </div>
+          </div>
+        )}
+        
+        {/* Vista Captura Masiva de Incidencias */}
+        {nominaSubTab === 'captura' && (
+          <div className="space-y-4">
+            {/* Filtros */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-xs text-zinc-500">Semana (Inicio Lunes)</Label>
+                    <Input
+                      type="date"
+                      value={capturaSemana}
+                      onChange={(e) => setCapturaSemana(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-zinc-500">Sucursal *</Label>
+                    <select
+                      value={capturaFiltroSucursal}
+                      onChange={(e) => setCapturaFiltroSucursal(e.target.value)}
+                      className="w-full border rounded-lg px-3 py-2 mt-1 text-sm"
+                    >
+                      <option value="">Seleccionar sucursal...</option>
+                      {sucursales.map(s => (
+                        <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-zinc-500">Departamento</Label>
+                    <select
+                      value={capturaFiltroDepartamento}
+                      onChange={(e) => setCapturaFiltroDepartamento(e.target.value)}
+                      className="w-full border rounded-lg px-3 py-2 mt-1 text-sm"
+                    >
+                      <option value="">Todos los departamentos</option>
+                      {departamentos.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <Button 
+                      onClick={loadColaboradoresCaptura}
+                      disabled={!capturaFiltroSucursal || loadingCaptura}
+                      className="flex-1"
+                    >
+                      {loadingCaptura ? (
+                        <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Search className="h-4 w-4 mr-2" />
+                      )}
+                      Cargar Colaboradores
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Tabla de Captura */}
+            {colaboradoresCaptura.length > 0 && (
+              <Card>
+                <CardHeader className="py-3 border-b">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ClipboardList className="h-5 w-5" />
+                      Captura de Incidencias - {colaboradoresCaptura.length} colaboradores
+                    </CardTitle>
+                    <Button 
+                      onClick={handleGuardarCapturaMasiva}
+                      disabled={savingCaptura}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {savingCaptura ? (
+                        <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Save className="h-4 w-4 mr-2" />
+                      )}
+                      Guardar Todo
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-zinc-800 text-white sticky top-0">
+                        <tr>
+                          <th className="text-left p-3 font-medium w-8">#</th>
+                          <th className="text-left p-3 font-medium">Colaborador</th>
+                          <th className="text-left p-3 font-medium">Puesto</th>
+                          <th className="text-center p-3 font-medium w-32">Días Trabajados</th>
+                          <th className="text-center p-3 font-medium w-48">Incidencia</th>
+                          <th className="text-center p-3 font-medium w-24">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {colaboradoresCaptura.map((col, idx) => {
+                          const datos = capturaData[col.ColaboradorID] || { dias_trabajados: 7, incidencia: '' };
+                          const guardado = datos.guardado;
+                          
+                          return (
+                            <tr 
+                              key={col.ColaboradorID} 
+                              className={`border-b hover:bg-zinc-50 ${guardado ? 'bg-green-50' : ''}`}
+                            >
+                              <td className="p-3 text-zinc-400 text-xs">{idx + 1}</td>
+                              <td className="p-3">
+                                <div>
+                                  <p className="font-medium">{col.Nombre_Completo}</p>
+                                  <p className="text-xs text-zinc-500">{col.Departamento || 'Sin depto.'}</p>
+                                </div>
+                              </td>
+                              <td className="p-3 text-sm text-zinc-600">{col.Puesto || '-'}</td>
+                              <td className="p-3 text-center">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="7"
+                                  value={datos.dias_trabajados}
+                                  onChange={(e) => handleCapturaChange(col.ColaboradorID, 'dias_trabajados', parseInt(e.target.value) || 0)}
+                                  className="w-20 text-center mx-auto"
+                                  disabled={guardado}
+                                />
+                              </td>
+                              <td className="p-3">
+                                <select
+                                  value={datos.incidencia}
+                                  onChange={(e) => handleCapturaChange(col.ColaboradorID, 'incidencia', e.target.value)}
+                                  className={`w-full border rounded-lg px-3 py-2 text-sm ${
+                                    datos.incidencia ? 'border-amber-300 bg-amber-50' : ''
+                                  }`}
+                                  disabled={guardado}
+                                >
+                                  {tiposIncidenciaCaptura.map(t => (
+                                    <option key={t.value} value={t.value}>{t.label}</option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="p-3 text-center">
+                                {guardado ? (
+                                  <span className="text-green-600 text-xs flex items-center justify-center gap-1">
+                                    <CheckCircle2 className="h-4 w-4" /> Guardado
+                                  </span>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleGuardarCapturaIndividual(col.ColaboradorID)}
+                                    disabled={savingCaptura || !capturaSemana}
+                                    className="text-xs"
+                                  >
+                                    <Save className="h-3 w-3 mr-1" />
+                                    Guardar
+                                  </Button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Estado vacío */}
+            {colaboradoresCaptura.length === 0 && (
+              <Card className="border-2 border-dashed border-zinc-300">
+                <CardContent className="py-12 text-center">
+                  <Users className="h-12 w-12 text-zinc-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-zinc-600 mb-2">Captura Masiva de Incidencias</h3>
+                  <p className="text-zinc-400 text-sm max-w-md mx-auto">
+                    Seleccione una sucursal y la semana de captura, luego haga clic en "Cargar Colaboradores" 
+                    para ver la lista de empleados activos y registrar sus incidencias.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
         

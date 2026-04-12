@@ -26,14 +26,22 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
-### Session: April 2026 (Layout Menu Fix)
+### Session: April 2026 (Captura Masiva Incidencias)
 
 #### Completed Work
+- [x] **Tablero de Captura Masiva de Incidencias** (Abril 12, 2026)
+  - Nuevo subtab en Gestión de Nóminas > Captura Incidencias
+  - Filtros por sucursal, departamento y semana
+  - Lista colaboradores activos con paginación (hasta 2000 registros)
+  - Captura individual: días trabajados (0-7) + tipo incidencia
+  - Guardado individual y masivo
+  - Tipos: Falta, Retardo, Permiso, Vacaciones, Incapacidad, Descanso
+
 - [x] **Importador RH movido a submenú de Recursos Humanos** (Abril 12, 2026)
   - Layout.js actualizado con soporte para submenús expandibles
   - "Importador RH" ahora anidado bajo "Recursos Humanos"
   - Chevron visual indica estado expandido/colapsado
-  - Auto-expansión cuando se navega a rutas de submenú
+  - Al hacer clic en menú padre navega y expande submenús
 
 ---
 
