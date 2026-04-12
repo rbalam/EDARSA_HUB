@@ -1,0 +1,14 @@
+{
+  "fecha": "2026-04-12T14:35:42.556807",
+  "bitacora_id": "2",
+  "fuente": "MPro_CENTRAL2020",
+  "estadisticas": {
+    "total": 0,
+    "cargados": 0,
+    "con_rfc": 0,
+    "con_curp": 0,
+    "incompletos": 0,
+    "errores": 0
+  },
+  "total_staging": 56
+}
