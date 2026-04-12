@@ -505,9 +505,41 @@ Todos los registros (100%) permanecen como INCOMPLETOS en staging.
 | **TOTAL EN MAESTRO** | | | **437** |
 
 **Incidencia detectada**:
-- 17 empleados sin RFC no pudieron insertarse (constraint UNIQUE no permite NULLs duplicados)
-- Marcados como "Observado" para decisión manual
-- Solución propuesta: Modificar constraint o insertar manualmente
+- ~~17 empleados sin RFC no pudieron insertarse (constraint UNIQUE no permite NULLs duplicados)~~
+- ✅ **RESUELTO**: Constraints modificados a índices filtrados
+
+### FASE CORRECCIÓN CONSTRAINTS: Índices Únicos Filtrados (Abril 2026)
+**Documentos creados**:
+- `/app/memory/REPORTE_CORRECCION_CONSTRAINTS.md` - Reporte técnico completo
+**Estado**: ✅ COMPLETADA
+
+**Problema resuelto**:
+- Constraints UNIQUE originales no permitían múltiples NULLs
+- 17 empleados sin RFC quedaron bloqueados
+
+**Solución aplicada**:
+```sql
+-- Índices únicos FILTRADOS (permiten NULLs duplicados)
+CREATE UNIQUE INDEX IX_RFC_Unique_NotNull ON ... WHERE RFC IS NOT NULL AND RFC != '';
+CREATE UNIQUE INDEX IX_CURP_Unique_NotNull ON ... WHERE CURP IS NOT NULL AND CURP != '';
+```
+
+**Resultado del reprocesamiento**:
+| Métrica | Cantidad |
+|---------|----------|
+| Observados reprocesados | 17 |
+| Insertados exitosamente | **17** |
+| Duplicados por CURP | 0 |
+| Errores | 0 |
+
+**Estado Final del Maestro**:
+| Métrica | Cantidad |
+|---------|----------|
+| **Total en RH_Colaboradores_Expediente** | **454** |
+| Con RFC informado | 437 |
+| Sin RFC | 17 |
+| Procesados en staging | 466 |
+| Pendientes (incompletos Excel) | 10 |
 
 ### FASE IMPLEMENTACIÓN-IMPORTADOR: Backend y API (Diciembre 2025)
 **Archivos creados**:
