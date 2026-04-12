@@ -268,6 +268,28 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 - ✅ 6G: Auditoría + Dashboard RH (2 endpoints)
 - ✅ 6H: Reclutamiento RH (10 endpoints - incluye script inicialización)
 
+### FASE RH-POST-1: Estabilización y Cobertura (Diciembre 2025)
+**Archivo de tests creado**: `tests/test_rh_modular.py`
+**Cobertura**:
+- Suite Obligatoria: 21 tests (siempre pasan, no requieren SQL)
+  - 1 test autenticación
+  - 9 tests requieren auth (403)
+  - 8 tests validación Pydantic (422)
+  - 3 tests scripts estáticos
+- Suite Integración: 9 tests (skip si no hay EDARSA HUB)
+  - Colaboradores, Incidencias, Asistencia, Flujo Nómina, Auditoría, Reclutamiento
+
+**Comandos de ejecución**:
+```bash
+# Suite RH completa:
+python -m pytest tests/test_catalogos_rrhh.py tests/test_rh_modular.py -v
+
+# Suite obligatoria solamente (siempre pasa):
+python -m pytest tests/test_rh_modular.py -v -k "Auth or RequireAuth or Pydantic or Estaticos"
+```
+
+**Resultado**: 28 passed, 13 skipped
+
 ---
 
 ### Session: April 9, 2026
