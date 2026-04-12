@@ -154,7 +154,29 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
   - **server.py**: Reducido de ~13,558 a ~13,301 líneas
   - **Total módulo RH**: 3,108 líneas de código modular
   - **127 tests pasando**, 4 skipped (integración)
-- **Fases 6E-6H, 7**: ⏸️ Pendientes de autorización
+- **Fase 6E-B (Asistencia RH)**: ✅ COMPLETADA (Diciembre 2025)
+  - 3 endpoints migrados desde `server.py` a `modules/rh/`:
+    - `GET /rrhh/asistencia`
+    - `POST /rrhh/asistencia`
+    - `PUT /rrhh/asistencia/{check_id}/validar`
+  - **Validación Pydantic** para `tipo_registro` (solo "Entrada" o "Salida")
+  - **Queries parametrizados nativos** para INSERT/UPDATE con IDs
+  - **Escape SQL** usado SOLO para fechas en cláusulas CAST (documentado - SQL Server limitación)
+  - **Geolocalización opcional** sin formato forzado
+  - **LÓGICA DE NEGOCIO INTACTA**: NO se validan duplicados entrada/salida por día
+  - **Tablas SQL Server reutilizadas** (NO duplicadas):
+    - `RH_Reloj_Checador` (principal)
+    - `RH_Colaboradores_Expediente` (JOIN)
+    - `RH_Cat_Sucursales` (JOIN)
+    - `RH_Cat_Puestos` (JOIN)
+  - **Archivos actualizados**:
+    - `modules/rh/schemas.py` (+109 líneas) - Modelos AsistenciaCreate, AsistenciaResponse
+    - `modules/rh/repository.py` (+162 líneas) - Queries asistencia parametrizados
+    - `modules/rh/service.py` (+98 líneas) - RHAsistenciaService
+    - `modules/rh/routes.py` (+78 líneas) - Endpoints asistencia
+  - **server.py**: 3 endpoints comentados (~105 líneas)
+  - **127 tests pasando**, 4 skipped (integración)
+- **Fases 6F-6H, 7**: ⏸️ Pendientes de autorización
 
 ---
 

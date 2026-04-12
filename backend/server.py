@@ -9081,112 +9081,125 @@ async def execute_edarsa_hub_query(query: str):
 
 # ------------ ASISTENCIA (RELOJ CHECADOR) ------------
 
-@api_router.get("/rrhh/asistencia")
-async def rrhh_listar_asistencias(
-    colaborador_id: Optional[int] = None,
-    sucursal_id: Optional[int] = None,
-    fecha: Optional[str] = None,
-    fecha_desde: Optional[str] = None,
-    fecha_hasta: Optional[str] = None,
-    page: int = Query(1, ge=1),
-    limit: int = Query(100, ge=1, le=500),
-    current_user: Dict = Depends(get_current_user)
-):
-    """Lista registros del reloj checador"""
-    
-    conditions = ["1=1"]
-    if colaborador_id:
-        conditions.append(f"r.ColaboradorID = {colaborador_id}")
-    if sucursal_id:
-        conditions.append(f"c.SucursalID = {sucursal_id}")
-    if fecha:
-        conditions.append(f"CAST(r.FechaHora AS DATE) = '{fecha}'")
-    if fecha_desde:
-        conditions.append(f"CAST(r.FechaHora AS DATE) >= '{fecha_desde}'")
-    if fecha_hasta:
-        conditions.append(f"CAST(r.FechaHora AS DATE) <= '{fecha_hasta}'")
-    
-    where_clause = " AND ".join(conditions)
-    offset = (page - 1) * limit
-    
-    query = f"""
-        SELECT 
-            r.CheckID,
-            r.ColaboradorID,
-            c.Nombre_Completo,
-            c.SucursalID,
-            s.Nombre_Sucursal,
-            p.Descripcion as Puesto,
-            r.Tipo_Registro,
-            r.FechaHora,
-            r.Geolocalizacion,
-            r.Validado_Gerencia
-        FROM RH_Reloj_Checador r
-        LEFT JOIN RH_Colaboradores_Expediente c ON r.ColaboradorID = c.ColaboradorID
-        LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
-        LEFT JOIN RH_Cat_Puestos p ON c.PuestoID = p.PuestoID
-        WHERE {where_clause}
-        ORDER BY r.FechaHora DESC
-        OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
-    """
-    
-    result = await execute_edarsa_hub_query(query)
-    
-    return {
-        "asistencias": result.get("datos", []),
-        "total": result.get("registros", 0),
-        "page": page,
-        "limit": limit
-    }
+# ============================================================================
+# ENDPOINTS DE ASISTENCIA - COMENTADOS (FASE 6E-B)
+# ============================================================================
+# Migrados a: modules/rh/routes.py
+# Fecha: Diciembre 2025
+#
+# IMPORTANTE: No eliminar este código comentado hasta que el usuario lo autorice.
+# Los endpoints ahora funcionan desde el módulo modular con:
+# - Validación Pydantic (tipo_registro: Entrada/Salida)
+# - Queries parametrizados (prevención SQL Injection)
+# - Mismos contratos de API
+# ============================================================================
+
+# @api_router.get("/rrhh/asistencia")
+# async def rrhh_listar_asistencias(
+#     colaborador_id: Optional[int] = None,
+#     sucursal_id: Optional[int] = None,
+#     fecha: Optional[str] = None,
+#     fecha_desde: Optional[str] = None,
+#     fecha_hasta: Optional[str] = None,
+#     page: int = Query(1, ge=1),
+#     limit: int = Query(100, ge=1, le=500),
+#     current_user: Dict = Depends(get_current_user)
+# ):
+#     """Lista registros del reloj checador"""
+#     
+#     conditions = ["1=1"]
+#     if colaborador_id:
+#         conditions.append(f"r.ColaboradorID = {colaborador_id}")
+#     if sucursal_id:
+#         conditions.append(f"c.SucursalID = {sucursal_id}")
+#     if fecha:
+#         conditions.append(f"CAST(r.FechaHora AS DATE) = '{fecha}'")
+#     if fecha_desde:
+#         conditions.append(f"CAST(r.FechaHora AS DATE) >= '{fecha_desde}'")
+#     if fecha_hasta:
+#         conditions.append(f"CAST(r.FechaHora AS DATE) <= '{fecha_hasta}'")
+#     
+#     where_clause = " AND ".join(conditions)
+#     offset = (page - 1) * limit
+#     
+#     query = f"""
+#         SELECT 
+#             r.CheckID,
+#             r.ColaboradorID,
+#             c.Nombre_Completo,
+#             c.SucursalID,
+#             s.Nombre_Sucursal,
+#             p.Descripcion as Puesto,
+#             r.Tipo_Registro,
+#             r.FechaHora,
+#             r.Geolocalizacion,
+#             r.Validado_Gerencia
+#         FROM RH_Reloj_Checador r
+#         LEFT JOIN RH_Colaboradores_Expediente c ON r.ColaboradorID = c.ColaboradorID
+#         LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
+#         LEFT JOIN RH_Cat_Puestos p ON c.PuestoID = p.PuestoID
+#         WHERE {where_clause}
+#         ORDER BY r.FechaHora DESC
+#         OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+#     """
+#     
+#     result = await execute_edarsa_hub_query(query)
+#     
+#     return {
+#         "asistencias": result.get("datos", []),
+#         "total": result.get("registros", 0),
+#         "page": page,
+#         "limit": limit
+#     }
 
 
-@api_router.post("/rrhh/asistencia")
-async def rrhh_registrar_asistencia(
-    body: Dict,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Registra una entrada o salida"""
-    
-    colaborador_id = body.get('colaborador_id')
-    tipo = body.get('tipo_registro')  # "Entrada" o "Salida"
-    geo = body.get('geolocalizacion')
-    
-    if not colaborador_id or not tipo:
-        raise HTTPException(status_code=400, detail="Colaborador y tipo son requeridos")
-    
-    query = f"""
-        INSERT INTO RH_Reloj_Checador 
-        (ColaboradorID, Tipo_Registro, FechaHora, Geolocalizacion, Validado_Gerencia)
-        OUTPUT INSERTED.CheckID
-        VALUES 
-        ({colaborador_id}, '{tipo}', GETDATE(), {f"'{geo}'" if geo else 'NULL'}, 0)
-    """
-    
-    result = await execute_edarsa_hub_query(query)
-    
-    return {
-        "success": True,
-        "message": "Asistencia registrada",
-        "check_id": result.get("datos", [{}])[0].get("CheckID") if result.get("datos") else None
-    }
+# @api_router.post("/rrhh/asistencia")
+# async def rrhh_registrar_asistencia(
+#     body: Dict,
+#     current_user: Dict = Depends(get_current_user)
+# ):
+#     """Registra una entrada o salida"""
+#     
+#     colaborador_id = body.get('colaborador_id')
+#     tipo = body.get('tipo_registro')  # "Entrada" o "Salida"
+#     geo = body.get('geolocalizacion')
+#     
+#     if not colaborador_id or not tipo:
+#         raise HTTPException(status_code=400, detail="Colaborador y tipo son requeridos")
+#     
+#     query = f"""
+#         INSERT INTO RH_Reloj_Checador 
+#         (ColaboradorID, Tipo_Registro, FechaHora, Geolocalizacion, Validado_Gerencia)
+#         OUTPUT INSERTED.CheckID
+#         VALUES 
+#         ({colaborador_id}, '{tipo}', GETDATE(), {f"'{geo}'" if geo else 'NULL'}, 0)
+#     """
+#     
+#     result = await execute_edarsa_hub_query(query)
+#     
+#     return {
+#         "success": True,
+#         "message": "Asistencia registrada",
+#         "check_id": result.get("datos", [{}])[0].get("CheckID") if result.get("datos") else None
+#     }
 
 
-@api_router.put("/rrhh/asistencia/{check_id}/validar")
-async def rrhh_validar_asistencia(
-    check_id: int,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Valida un registro de asistencia (gerencia)"""
-    
-    query = f"""
-        UPDATE RH_Reloj_Checador
-        SET Validado_Gerencia = 1
-        WHERE CheckID = {check_id}
-    """
-    
-    await execute_edarsa_hub_query(query)
-    
-    return {"success": True, "message": "Asistencia validada"}
+# @api_router.put("/rrhh/asistencia/{check_id}/validar")
+# async def rrhh_validar_asistencia(
+#     check_id: int,
+#     current_user: Dict = Depends(get_current_user)
+# ):
+#     """Valida un registro de asistencia (gerencia)"""
+#     
+#     query = f"""
+#         UPDATE RH_Reloj_Checador
+#         SET Validado_Gerencia = 1
+#         WHERE CheckID = {check_id}
+#     """
+#     
+#     await execute_edarsa_hub_query(query)
+#     
+#     return {"success": True, "message": "Asistencia validada"}
 
 
 # ------------ FLUJO DE NÓMINA ------------

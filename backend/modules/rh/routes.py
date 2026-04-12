@@ -31,6 +31,12 @@ Incidencias migradas desde server.py:
 - POST   /rrhh/incidencias/importar-excel
 - GET    /rrhh/incidencias/plantilla-excel
 
+FASE 6E-B DEL REFACTOR MODULAR (Diciembre 2025):
+Asistencia migrada desde server.py:
+- GET    /rrhh/asistencia
+- POST   /rrhh/asistencia
+- PUT    /rrhh/asistencia/{check_id}/validar
+
 CONTRATOS MANTENIDOS:
 - Prefijo: /rrhh/ (NO /rh/)
 - Formatos de respuesta idénticos a los originales
@@ -39,6 +45,7 @@ CONTRATOS MANTENIDOS:
 SEGURIDAD:
 - Validación de datos con Pydantic
 - Validación de tipos de incidencia contra catálogo RH_Cat_Tipos_Incidencias
+- Validación de tipo_registro de asistencia (Entrada/Salida)
 - Queries parametrizados nativos en repository
 """
 
@@ -450,3 +457,103 @@ async def rrhh_plantilla_incidencias_excel(
             "Content-Disposition": "attachment; filename=plantilla_incidencias.xlsx"
         }
     )
+
+
+# ============================================================================
+# ENDPOINTS DE ASISTENCIA (FASE 6E-B)
+# ============================================================================
+# Migrados desde server.py manteniendo el mismo contrato de API.
+#
+# TABLAS REUTILIZADAS:
+# - RH_Reloj_Checador
+# - RH_Colaboradores_Expediente
+# - RH_Cat_Sucursales
+# - RH_Cat_Puestos
+#
+# LÓGICA DE NEGOCIO INTACTA:
+# - NO se validan duplicados de entrada/salida en el mismo día
+# - Geolocalización opcional sin formato forzado
+# ============================================================================
+
+from modules.rh.service import rh_asistencia_service
+from modules.rh.schemas import (
+    AsistenciaCreate,
+    AsistenciasListResponse,
+)
+
+
+@router.get("/asistencia")
+async def rrhh_listar_asistencias(
+    colaborador_id: Optional[int] = None,
+    sucursal_id: Optional[int] = None,
+    fecha: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(100, ge=1, le=500),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Lista registros del reloj checador con filtros opcionales y paginación.
+    
+    Parámetros de filtro:
+    - colaborador_id: Filtrar por colaborador
+    - sucursal_id: Filtrar por sucursal
+    - fecha: Fecha específica (YYYY-MM-DD)
+    - fecha_desde: Fecha inicial (YYYY-MM-DD)
+    - fecha_hasta: Fecha final (YYYY-MM-DD)
+    
+    Paginación:
+    - page: Número de página (default 1)
+    - limit: Registros por página (default 100, max 500)
+    
+    Requiere autenticación.
+    """
+    return await rh_asistencia_service.listar_asistencias(
+        colaborador_id=colaborador_id,
+        sucursal_id=sucursal_id,
+        fecha=fecha,
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta,
+        page=page,
+        limit=limit
+    )
+
+
+@router.post("/asistencia")
+async def rrhh_registrar_asistencia(
+    body: AsistenciaCreate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Registra una entrada o salida.
+    
+    Campos requeridos:
+    - colaborador_id: ID del colaborador
+    - tipo_registro: "Entrada" o "Salida" (validado)
+    
+    Campos opcionales:
+    - geolocalizacion: Coordenadas GPS (sin formato forzado)
+    
+    LÓGICA DE NEGOCIO:
+    - NO se validan duplicados de entrada/salida en el mismo día
+    - Validado_Gerencia se inicializa en 0 (pendiente)
+    
+    Requiere autenticación.
+    """
+    return await rh_asistencia_service.registrar_asistencia(body)
+
+
+@router.put("/asistencia/{check_id}/validar")
+async def rrhh_validar_asistencia(
+    check_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Valida un registro de asistencia (gerencia).
+    
+    Establece Validado_Gerencia = 1 para el registro especificado.
+    
+    Requiere autenticación.
+    """
+    return await rh_asistencia_service.validar_asistencia(check_id)

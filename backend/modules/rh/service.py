@@ -841,3 +841,127 @@ class RHIncidenciasService:
 
 # Instancia singleton del servicio de incidencias
 rh_incidencias_service = RHIncidenciasService()
+
+
+# ============================================================================
+# SERVICIO DE ASISTENCIA (FASE 6E-B)
+# ============================================================================
+
+from modules.rh.repository import (
+    query_listar_asistencias,
+    query_registrar_asistencia,
+    query_validar_asistencia,
+)
+from modules.rh.schemas import (
+    AsistenciaCreate,
+)
+
+
+class RHAsistenciaService:
+    """
+    Servicio para gestionar registros de asistencia (reloj checador).
+    
+    LÓGICA DE NEGOCIO INTACTA (FASE 6E-B):
+    - NO se validan duplicados de entrada/salida en el mismo día
+    - El sistema actual permite múltiples registros del mismo tipo
+    - Esto se documentó explícitamente en la autorización del usuario
+    """
+    
+    async def _get_server(self) -> Dict:
+        """Obtiene el servidor EDARSA HUB o lanza excepción."""
+        server = await get_edarsa_hub_server()
+        if not server:
+            raise HTTPException(status_code=404, detail="Servidor EDARSA HUB no configurado")
+        return server
+    
+    async def listar_asistencias(
+        self,
+        colaborador_id: Optional[int] = None,
+        sucursal_id: Optional[int] = None,
+        fecha: Optional[str] = None,
+        fecha_desde: Optional[str] = None,
+        fecha_hasta: Optional[str] = None,
+        page: int = 1,
+        limit: int = 100
+    ) -> Dict[str, Any]:
+        """
+        Lista registros del reloj checador con filtros y paginación.
+        
+        Parámetros de filtro:
+        - colaborador_id: Filtrar por colaborador
+        - sucursal_id: Filtrar por sucursal
+        - fecha: Fecha específica (YYYY-MM-DD)
+        - fecha_desde: Fecha inicial (YYYY-MM-DD)
+        - fecha_hasta: Fecha final (YYYY-MM-DD)
+        """
+        server = await self._get_server()
+        
+        result = query_listar_asistencias(
+            server,
+            colaborador_id=colaborador_id,
+            sucursal_id=sucursal_id,
+            fecha=fecha,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            page=page,
+            limit=limit
+        )
+        
+        return {
+            "asistencias": result.get("datos", []),
+            "total": result.get("total", 0),
+            "page": result.get("page", page),
+            "limit": result.get("limit", limit)
+        }
+    
+    async def registrar_asistencia(self, data: AsistenciaCreate) -> Dict[str, Any]:
+        """
+        Registra una entrada o salida.
+        
+        LÓGICA DE NEGOCIO INTACTA:
+        - NO se validan duplicados de entrada/salida en el mismo día
+        - El tipo_registro ya fue validado por Pydantic (Entrada/Salida)
+        - La geolocalización es opcional sin formato forzado
+        """
+        server = await self._get_server()
+        
+        result = query_registrar_asistencia(
+            server,
+            colaborador_id=data.colaborador_id,
+            tipo_registro=data.tipo_registro,
+            geolocalizacion=data.geolocalizacion
+        )
+        
+        if not result.get("success"):
+            raise HTTPException(
+                status_code=500,
+                detail=result.get("error", "Error al registrar asistencia")
+            )
+        
+        return {
+            "success": True,
+            "message": "Asistencia registrada",
+            "check_id": result.get("check_id")
+        }
+    
+    async def validar_asistencia(self, check_id: int) -> Dict[str, Any]:
+        """
+        Valida un registro de asistencia (gerencia).
+        
+        Establece Validado_Gerencia = 1 para el registro especificado.
+        """
+        server = await self._get_server()
+        
+        result = query_validar_asistencia(server, check_id)
+        
+        if not result.get("success"):
+            raise HTTPException(
+                status_code=400,
+                detail=result.get("error", "Error al validar asistencia")
+            )
+        
+        return {"success": True, "message": "Asistencia validada"}
+
+
+# Instancia singleton del servicio de asistencia
+rh_asistencia_service = RHAsistenciaService()

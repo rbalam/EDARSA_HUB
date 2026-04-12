@@ -520,3 +520,98 @@ class IncidenciaFiltros(BaseModel):
         if not re.match(r'^\d{4}-\d{2}-\d{2}$', v):
             raise ValueError('Formato de fecha debe ser YYYY-MM-DD')
         return v
+
+
+# ============================================================================
+# ASISTENCIA (FASE 6E-B)
+# ============================================================================
+# TABLAS REUTILIZADAS (NO se crean ni duplican):
+# - RH_Reloj_Checador (principal)
+# - RH_Colaboradores_Expediente (JOIN)
+# - RH_Cat_Sucursales (JOIN)
+# - RH_Cat_Puestos (JOIN)
+#
+# VALIDACIÓN DE TIPO_REGISTRO:
+# - Solo se permiten valores "Entrada" y "Salida"
+# - NO se agregan validaciones de duplicados de entrada/salida por día
+#   (eso se implementará en una fase futura si el usuario lo autoriza)
+#
+# GEOLOCALIZACIÓN:
+# - Campo opcional, sin validación de formato
+# ============================================================================
+
+# Valores permitidos para tipo de registro de asistencia
+TIPOS_REGISTRO_ASISTENCIA = ["Entrada", "Salida"]
+
+
+class AsistenciaBase(BaseModel):
+    """Campos base para registro de asistencia."""
+    colaborador_id: int = Field(..., gt=0, description="ID del colaborador")
+    tipo_registro: str = Field(..., description="Tipo de registro: Entrada o Salida")
+    geolocalizacion: Optional[str] = Field(None, max_length=500, description="Coordenadas GPS (opcional)")
+    
+    @field_validator('tipo_registro')
+    @classmethod
+    def tipo_registro_valido(cls, v: str) -> str:
+        """Valida que tipo_registro sea 'Entrada' o 'Salida'."""
+        if v not in TIPOS_REGISTRO_ASISTENCIA:
+            raise ValueError(f"tipo_registro debe ser uno de: {', '.join(TIPOS_REGISTRO_ASISTENCIA)}")
+        return v
+
+
+class AsistenciaCreate(AsistenciaBase):
+    """
+    Modelo para registrar entrada o salida.
+    
+    NOTA IMPORTANTE (FASE 6E-B):
+    - NO se validan duplicados de entrada/salida en el mismo día
+    - La lógica operativa actual permite múltiples registros del mismo tipo
+    - Cualquier cambio a esta regla debe autorizarse en fases posteriores
+    """
+    pass
+
+
+class AsistenciaResponse(BaseModel):
+    """Modelo de respuesta para un registro de asistencia."""
+    CheckID: int
+    ColaboradorID: int
+    Nombre_Completo: Optional[str] = None
+    SucursalID: Optional[int] = None
+    Nombre_Sucursal: Optional[str] = None
+    Puesto: Optional[str] = None
+    Tipo_Registro: str
+    FechaHora: Optional[str] = None
+    Geolocalizacion: Optional[str] = None
+    Validado_Gerencia: Optional[bool] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class AsistenciasListResponse(BaseModel):
+    """Modelo de respuesta para lista de asistencias."""
+    asistencias: List[AsistenciaResponse]
+    total: int
+    page: int
+    limit: int
+
+
+class AsistenciaFiltros(BaseModel):
+    """Filtros para búsqueda de asistencias."""
+    colaborador_id: Optional[int] = Field(None, gt=0)
+    sucursal_id: Optional[int] = Field(None, gt=0)
+    fecha: Optional[str] = Field(None, description="Fecha específica (YYYY-MM-DD)")
+    fecha_desde: Optional[str] = Field(None, description="Fecha inicial (YYYY-MM-DD)")
+    fecha_hasta: Optional[str] = Field(None, description="Fecha final (YYYY-MM-DD)")
+    
+    @field_validator('fecha', 'fecha_desde', 'fecha_hasta')
+    @classmethod
+    def fecha_format(cls, v: Optional[str]) -> Optional[str]:
+        """Valida formato de fecha YYYY-MM-DD si se proporciona."""
+        if v is None:
+            return v
+        v = v.strip()
+        import re
+        if not re.match(r'^\d{4}-\d{2}-\d{2}$', v):
+            raise ValueError('Formato de fecha debe ser YYYY-MM-DD')
+        return v

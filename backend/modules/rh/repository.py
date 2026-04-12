@@ -1172,3 +1172,189 @@ def query_insertar_incidencia_importacion(
     except Exception as e:
         logging.error(f"Error insertando incidencia: {e}")
         return False
+
+
+# ============================================================================
+# ASISTENCIA - QUERIES CON PARÁMETROS NATIVOS (FASE 6E-B)
+# ============================================================================
+# TABLAS REUTILIZADAS:
+# - RH_Reloj_Checador (principal - INSERT/SELECT/UPDATE)
+# - RH_Colaboradores_Expediente (JOIN)
+# - RH_Cat_Sucursales (JOIN)
+# - RH_Cat_Puestos (JOIN)
+#
+# SEGURIDAD:
+# - Todos los IDs se validan como enteros (inyección por casting)
+# - Las fechas se validan en el schema Pydantic antes de llegar aquí
+# - Se usa execute_sql_query_params() para parámetros nativos donde es posible
+# - Se usa escape_sql_string() SOLO para fechas en cláusulas CAST/WHERE
+#   porque SQL Server no soporta parámetros en expresiones CAST(... AS DATE)
+#
+# LÓGICA DE NEGOCIO INTACTA:
+# - NO se validan duplicados de entrada/salida por día
+# - La geolocalización es opcional sin validación de formato
+# ============================================================================
+
+
+def query_listar_asistencias(
+    server: Dict,
+    colaborador_id: Optional[int] = None,
+    sucursal_id: Optional[int] = None,
+    fecha: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    page: int = 1,
+    limit: int = 100
+) -> Dict[str, Any]:
+    """
+    Lista registros del reloj checador con filtros y paginación.
+    
+    PARÁMETROS NATIVOS: colaborador_id, sucursal_id (enteros validados)
+    ESCAPE NECESARIO: fecha, fecha_desde, fecha_hasta
+        - Razón: SQL Server no soporta parámetros en CAST(column AS DATE)
+        - Las fechas ya vienen validadas por Pydantic (YYYY-MM-DD)
+    
+    Tablas: RH_Reloj_Checador, RH_Colaboradores_Expediente, 
+            RH_Cat_Sucursales, RH_Cat_Puestos
+    """
+    conditions = ["1=1"]
+    
+    # Filtros con validación de enteros (seguros - casting a int)
+    if colaborador_id is not None:
+        try:
+            conditions.append(f"r.ColaboradorID = {int(colaborador_id)}")
+        except (ValueError, TypeError):
+            pass
+    
+    if sucursal_id is not None:
+        try:
+            conditions.append(f"c.SucursalID = {int(sucursal_id)}")
+        except (ValueError, TypeError):
+            pass
+    
+    # Fechas: Ya validadas por Pydantic, escapamos por seguridad adicional
+    # NOTA: No podemos usar parámetros nativos en CAST(... AS DATE) = '...'
+    if fecha:
+        fecha_safe = escape_sql_string(fecha)
+        conditions.append(f"CAST(r.FechaHora AS DATE) = '{fecha_safe}'")
+    
+    if fecha_desde:
+        fecha_safe = escape_sql_string(fecha_desde)
+        conditions.append(f"CAST(r.FechaHora AS DATE) >= '{fecha_safe}'")
+    
+    if fecha_hasta:
+        fecha_safe = escape_sql_string(fecha_hasta)
+        conditions.append(f"CAST(r.FechaHora AS DATE) <= '{fecha_safe}'")
+    
+    where_clause = " AND ".join(conditions)
+    
+    # Paginación (enteros validados)
+    try:
+        page = max(1, int(page))
+        limit = max(1, min(500, int(limit)))
+    except (ValueError, TypeError):
+        page, limit = 1, 100
+    
+    offset = (page - 1) * limit
+    
+    query = f"""
+        SELECT 
+            r.CheckID,
+            r.ColaboradorID,
+            c.Nombre_Completo,
+            c.SucursalID,
+            s.Nombre_Sucursal,
+            p.Descripcion as Puesto,
+            r.Tipo_Registro,
+            r.FechaHora,
+            r.Geolocalizacion,
+            r.Validado_Gerencia
+        FROM RH_Reloj_Checador r
+        LEFT JOIN RH_Colaboradores_Expediente c ON r.ColaboradorID = c.ColaboradorID
+        LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
+        LEFT JOIN RH_Cat_Puestos p ON c.PuestoID = p.PuestoID
+        WHERE {where_clause}
+        ORDER BY r.FechaHora DESC
+        OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+    """
+    
+    result = execute_hub_query(server, query)
+    
+    return {
+        "datos": result,
+        "total": len(result),  # Para paginación completa se necesitaría COUNT
+        "page": page,
+        "limit": limit
+    }
+
+
+def query_registrar_asistencia(
+    server: Dict,
+    colaborador_id: int,
+    tipo_registro: str,
+    geolocalizacion: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Registra una entrada o salida en el reloj checador.
+    
+    PARÁMETROS NATIVOS: colaborador_id (int), tipo_registro, geolocalizacion
+    
+    LÓGICA DE NEGOCIO INTACTA (FASE 6E-B):
+    - NO se validan duplicados de entrada/salida en el mismo día
+    - El sistema actual permite múltiples registros del mismo tipo
+    - Validado_Gerencia se inicializa en 0 (pendiente de validación)
+    
+    Tabla: RH_Reloj_Checador
+    """
+    query = """
+        INSERT INTO RH_Reloj_Checador 
+        (ColaboradorID, Tipo_Registro, FechaHora, Geolocalizacion, Validado_Gerencia)
+        OUTPUT INSERTED.CheckID
+        VALUES (%s, %s, GETDATE(), %s, 0)
+    """
+    
+    params = (
+        int(colaborador_id),
+        tipo_registro,
+        geolocalizacion  # Puede ser None, SQL lo manejará como NULL
+    )
+    
+    result = execute_hub_query_params(server, query, params)
+    
+    if result and len(result) > 0:
+        return {
+            "success": True,
+            "check_id": result[0].get("CheckID")
+        }
+    
+    return {
+        "success": False,
+        "check_id": None,
+        "error": "No se pudo registrar la asistencia"
+    }
+
+
+def query_validar_asistencia(server: Dict, check_id: int) -> Dict[str, Any]:
+    """
+    Valida un registro de asistencia (gerencia).
+    
+    PARÁMETROS NATIVOS: check_id (entero validado)
+    
+    Establece Validado_Gerencia = 1 para el registro.
+    
+    Tabla: RH_Reloj_Checador
+    """
+    try:
+        id_safe = int(check_id)
+    except (ValueError, TypeError):
+        return {"success": False, "error": "ID de registro inválido"}
+    
+    query = """
+        UPDATE RH_Reloj_Checador
+        SET Validado_Gerencia = 1
+        WHERE CheckID = %s
+    """
+    
+    execute_hub_query_params(server, query, (id_safe,))
+    
+    return {"success": True}
