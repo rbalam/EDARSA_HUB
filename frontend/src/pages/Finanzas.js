@@ -7,7 +7,9 @@ import {
   DollarSign, TrendingUp, TrendingDown, Building2, 
   Plus, RefreshCw, Filter, X, Save, Edit, Trash2,
   ChevronUp, ChevronDown, AlertCircle, FileText, Copy,
-  PieChart, BarChart3, Calendar, Download, Printer
+  PieChart, BarChart3, Calendar, Download, Printer,
+  CreditCard, Clock, CheckCircle2, XCircle, Eye,
+  FileSpreadsheet, File, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -39,6 +41,18 @@ export default function Finanzas() {
   const [editingPresupuesto, setEditingPresupuesto] = useState(null);
   const [savingForm, setSavingForm] = useState(false);
   const [scriptData, setScriptData] = useState(null);
+  
+  // Estados para Cuentas por Pagar
+  const [cxpData, setCxpData] = useState(null);
+  const [cxpResumen, setCxpResumen] = useState(null);
+  const [cxpProveedores, setCxpProveedores] = useState([]);
+  const [cxpFiltroSucursal, setCxpFiltroSucursal] = useState('');
+  const [cxpFiltroProveedor, setCxpFiltroProveedor] = useState('');
+  const [cxpFechaCorte, setCxpFechaCorte] = useState('');
+  const [cxpSoloVencidas, setCxpSoloVencidas] = useState(false);
+  const [cxpSoloDecision, setCxpSoloDecision] = useState(false);
+  const [cxpExpandidos, setCxpExpandidos] = useState({});  // Control de proveedores expandidos
+  const [savingDecision, setSavingDecision] = useState(null);
   
   // Form
   const [formPresupuesto, setFormPresupuesto] = useState({
@@ -124,6 +138,103 @@ export default function Finanzas() {
     }
   }, [fetchWithAuth]);
   
+  // Load Cuentas por Pagar
+  const loadCuentasPorPagar = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (cxpFiltroSucursal) params.append('sucursal_id', cxpFiltroSucursal);
+      if (cxpFiltroProveedor) params.append('proveedor_id', cxpFiltroProveedor);
+      if (cxpFechaCorte) params.append('fecha_corte', cxpFechaCorte);
+      if (cxpSoloVencidas) params.append('solo_vencidas', 'true');
+      if (cxpSoloDecision) params.append('solo_decision_pago', 'true');
+      
+      const [dataFacturas, dataResumen, dataProveedores] = await Promise.all([
+        fetchWithAuth(`/api/finanzas/cuentas-por-pagar?${params}`),
+        fetchWithAuth(`/api/finanzas/cuentas-por-pagar/resumen${cxpFiltroSucursal ? `?sucursal_id=${cxpFiltroSucursal}` : ''}`),
+        fetchWithAuth(`/api/finanzas/cuentas-por-pagar/proveedores${cxpFiltroSucursal ? `?sucursal_id=${cxpFiltroSucursal}` : ''}`)
+      ]);
+      
+      setCxpData(dataFacturas);
+      setCxpResumen(dataResumen);
+      setCxpProveedores(dataProveedores.proveedores || []);
+      
+      // Expandir todos los proveedores por defecto
+      const expandidos = {};
+      (dataFacturas.proveedores || []).forEach(p => {
+        expandidos[p.proveedor_id] = true;
+      });
+      setCxpExpandidos(expandidos);
+      
+    } catch (error) {
+      console.error('Error CxP:', error);
+      toast.error('Error al cargar cuentas por pagar');
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchWithAuth, cxpFiltroSucursal, cxpFiltroProveedor, cxpFechaCorte, cxpSoloVencidas, cxpSoloDecision]);
+  
+  // Actualizar decisión de pago
+  const handleDecisionPago = async (facturaId, decision, importeAPagar = null) => {
+    setSavingDecision(facturaId);
+    try {
+      const response = await fetch(`${API_URL}/api/finanzas/cuentas-por-pagar/${facturaId}/decision-pago`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          decision_pago: decision,
+          importe_a_pagar: importeAPagar
+        })
+      });
+      
+      if (!response.ok) throw new Error('Error');
+      
+      toast.success(decision ? 'Marcada para pago' : 'Desmarcada');
+      loadCuentasPorPagar();
+    } catch (error) {
+      toast.error('Error al actualizar');
+    } finally {
+      setSavingDecision(null);
+    }
+  };
+  
+  // Toggle proveedor expandido
+  const toggleProveedor = (proveedorId) => {
+    setCxpExpandidos(prev => ({
+      ...prev,
+      [proveedorId]: !prev[proveedorId]
+    }));
+  };
+  
+  // Exportar CxP a CSV
+  const exportarCxPCSV = () => {
+    if (!cxpData?.proveedores?.length) {
+      toast.error('No hay datos para exportar');
+      return;
+    }
+    
+    let csv = 'Proveedor,RFC,Folio Entrada,Folio Factura,Fecha Entrada,Fecha Vencimiento,Días Vencida,Referencia,Importe Total,Saldo,Decisión Pago,Importe a Pagar\n';
+    
+    cxpData.proveedores.forEach(prov => {
+      prov.facturas.forEach(f => {
+        csv += `"${prov.proveedor_nombre}","${prov.proveedor_rfc}","${f.folio_entrada}","${f.folio_factura}",`;
+        csv += `"${f.fecha_entrada}","${f.fecha_vencimiento}",${f.dias_vencida},"${f.referencia}",`;
+        csv += `${f.importe_total},${f.saldo},${f.decision_pago ? 'Sí' : 'No'},${f.importe_a_pagar}\n`;
+      });
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `cuentas_por_pagar_${cxpFechaCorte || new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    
+    toast.success('Archivo CSV exportado');
+  };
+  
   // Initial load
   useEffect(() => {
     loadSucursales();
@@ -136,8 +247,10 @@ export default function Finanzas() {
       loadDashboard();
     } else if (activeTab === 'presupuestos') {
       loadPresupuestos();
+    } else if (activeTab === 'cxp') {
+      loadCuentasPorPagar();
     }
-  }, [activeTab, loadDashboard, loadPresupuestos]);
+  }, [activeTab, loadDashboard, loadPresupuestos, loadCuentasPorPagar]);
   
   // CRUD handlers
   const handleNuevoPresupuesto = () => {
@@ -255,6 +368,7 @@ export default function Finanzas() {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: PieChart },
     { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign },
+    { id: 'cxp', label: 'Cuentas por Pagar', icon: CreditCard },
     { id: 'reportes', label: 'Reportes', icon: FileText },
   ];
   
@@ -704,6 +818,310 @@ export default function Finanzas() {
     </div>
   );
   
+  // Render Cuentas por Pagar
+  const renderCuentasPorPagar = () => {
+    const totales = cxpData?.totales || {};
+    const antiguedad = cxpResumen?.antiguedad || {};
+    
+    return (
+      <div className="space-y-4">
+        {/* Filtros */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+              <div>
+                <Label className="text-xs text-zinc-500">Fecha de Corte</Label>
+                <Input
+                  type="date"
+                  value={cxpFechaCorte}
+                  onChange={(e) => setCxpFechaCorte(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-zinc-500">Sucursal</Label>
+                <select
+                  value={cxpFiltroSucursal}
+                  onChange={(e) => setCxpFiltroSucursal(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-sm mt-1"
+                >
+                  <option value="">Todas</option>
+                  {sucursales.map(s => (
+                    <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs text-zinc-500">Proveedor</Label>
+                <select
+                  value={cxpFiltroProveedor}
+                  onChange={(e) => setCxpFiltroProveedor(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-sm mt-1"
+                >
+                  <option value="">Todos</option>
+                  {cxpProveedores.map(p => (
+                    <option key={p.proveedor_id} value={p.proveedor_id}>{p.proveedor_nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={cxpSoloVencidas}
+                    onChange={(e) => setCxpSoloVencidas(e.target.checked)}
+                    className="rounded"
+                  />
+                  Solo vencidas
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={cxpSoloDecision}
+                    onChange={(e) => setCxpSoloDecision(e.target.checked)}
+                    className="rounded"
+                  />
+                  Con decisión
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={loadCuentasPorPagar} disabled={loading} className="flex-1">
+                  <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+                  Filtrar
+                </Button>
+                <Button variant="outline" onClick={exportarCxPCSV}>
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Resumen por Antigüedad */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <Card className="border-l-4 border-l-green-500">
+            <CardContent className="p-3">
+              <p className="text-xs text-zinc-500">Corriente</p>
+              <p className="text-lg font-bold text-green-600">{formatCurrency(antiguedad.corriente?.monto || 0)}</p>
+              <p className="text-xs text-zinc-400">{antiguedad.corriente?.cantidad || 0} facturas</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-yellow-500">
+            <CardContent className="p-3">
+              <p className="text-xs text-zinc-500">1-30 días</p>
+              <p className="text-lg font-bold text-yellow-600">{formatCurrency(antiguedad.vencidas_1_30?.monto || 0)}</p>
+              <p className="text-xs text-zinc-400">{antiguedad.vencidas_1_30?.cantidad || 0} facturas</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-orange-500">
+            <CardContent className="p-3">
+              <p className="text-xs text-zinc-500">31-60 días</p>
+              <p className="text-lg font-bold text-orange-600">{formatCurrency(antiguedad.vencidas_31_60?.monto || 0)}</p>
+              <p className="text-xs text-zinc-400">{antiguedad.vencidas_31_60?.cantidad || 0} facturas</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-red-500">
+            <CardContent className="p-3">
+              <p className="text-xs text-zinc-500">61-90 días</p>
+              <p className="text-lg font-bold text-red-600">{formatCurrency(antiguedad.vencidas_61_90?.monto || 0)}</p>
+              <p className="text-xs text-zinc-400">{antiguedad.vencidas_61_90?.cantidad || 0} facturas</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-red-700">
+            <CardContent className="p-3">
+              <p className="text-xs text-zinc-500">+90 días</p>
+              <p className="text-lg font-bold text-red-700">{formatCurrency(antiguedad.vencidas_90_plus?.monto || 0)}</p>
+              <p className="text-xs text-zinc-400">{antiguedad.vencidas_90_plus?.cantidad || 0} facturas</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-blue-600 bg-blue-50">
+            <CardContent className="p-3">
+              <p className="text-xs text-blue-600 font-medium">TOTAL A PAGAR</p>
+              <p className="text-lg font-bold text-blue-700">{formatCurrency(totales.total_a_pagar || 0)}</p>
+              <p className="text-xs text-blue-500">{cxpResumen?.resumen?.facturas_con_decision || 0} facturas</p>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Lista agrupada por proveedor */}
+        <div className="space-y-3">
+          {(cxpData?.proveedores || []).length === 0 ? (
+            <Card className="border-2 border-dashed">
+              <CardContent className="py-12 text-center">
+                <CreditCard className="h-12 w-12 text-zinc-300 mx-auto mb-4" />
+                <p className="text-zinc-500">No hay facturas pendientes con los filtros seleccionados</p>
+              </CardContent>
+            </Card>
+          ) : (
+            (cxpData?.proveedores || []).map(proveedor => (
+              <Card key={proveedor.proveedor_id} className="overflow-hidden">
+                {/* Header del proveedor */}
+                <div
+                  className="bg-zinc-800 text-white px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-zinc-700 transition"
+                  onClick={() => toggleProveedor(proveedor.proveedor_id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <ChevronRight className={`h-5 w-5 transition-transform ${cxpExpandidos[proveedor.proveedor_id] ? 'rotate-90' : ''}`} />
+                    <div>
+                      <h3 className="font-medium">{proveedor.proveedor_nombre}</h3>
+                      <p className="text-xs text-zinc-400">RFC: {proveedor.proveedor_rfc}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6 text-sm">
+                    <div className="text-right">
+                      <p className="text-xs text-zinc-400">Facturas</p>
+                      <p className="font-medium">{proveedor.cantidad_facturas}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-zinc-400">Saldo</p>
+                      <p className="font-medium">{formatCurrency(proveedor.subtotal_saldo)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-zinc-400">A Pagar</p>
+                      <p className="font-bold text-green-400">{formatCurrency(proveedor.subtotal_a_pagar)}</p>
+                    </div>
+                    {proveedor.cantidad_vencidas > 0 && (
+                      <span className="px-2 py-1 bg-red-500 rounded text-xs">
+                        {proveedor.cantidad_vencidas} vencidas
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Facturas del proveedor */}
+                {cxpExpandidos[proveedor.proveedor_id] && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-zinc-100">
+                        <tr>
+                          <th className="text-left p-2 font-medium">Folio Entrada</th>
+                          <th className="text-left p-2 font-medium">Folio Factura</th>
+                          <th className="text-center p-2 font-medium">F. Entrada</th>
+                          <th className="text-center p-2 font-medium">F. Vencimiento</th>
+                          <th className="text-center p-2 font-medium">Días Venc.</th>
+                          <th className="text-left p-2 font-medium">Referencia</th>
+                          <th className="text-right p-2 font-medium">Importe</th>
+                          <th className="text-right p-2 font-medium">Saldo</th>
+                          <th className="text-center p-2 font-medium">Pagar</th>
+                          <th className="text-right p-2 font-medium">Importe a Pagar</th>
+                          <th className="text-center p-2 font-medium">Docs</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {proveedor.facturas.map(factura => (
+                          <tr key={factura.factura_id} className={`border-b hover:bg-zinc-50 ${factura.dias_vencida > 0 ? 'bg-red-50' : ''}`}>
+                            <td className="p-2 font-mono">{factura.folio_entrada}</td>
+                            <td className="p-2 font-mono">{factura.folio_factura}</td>
+                            <td className="p-2 text-center">{factura.fecha_entrada}</td>
+                            <td className="p-2 text-center">{factura.fecha_vencimiento}</td>
+                            <td className={`p-2 text-center font-bold ${factura.dias_vencida > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              {factura.dias_vencida > 0 ? factura.dias_vencida : '-'}
+                            </td>
+                            <td className="p-2 max-w-[150px] truncate" title={factura.referencia}>
+                              {factura.referencia}
+                            </td>
+                            <td className="p-2 text-right font-mono">{formatCurrency(factura.importe_total)}</td>
+                            <td className="p-2 text-right font-mono font-bold">{formatCurrency(factura.saldo)}</td>
+                            <td className="p-2 text-center">
+                              <button
+                                onClick={() => handleDecisionPago(factura.factura_id, !factura.decision_pago)}
+                                disabled={savingDecision === factura.factura_id}
+                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${
+                                  factura.decision_pago 
+                                    ? 'bg-green-500 border-green-500 text-white' 
+                                    : 'border-zinc-300 hover:border-green-400'
+                                }`}
+                              >
+                                {savingDecision === factura.factura_id ? (
+                                  <RefreshCw className="h-3 w-3 animate-spin" />
+                                ) : factura.decision_pago ? (
+                                  <CheckCircle2 className="h-4 w-4" />
+                                ) : null}
+                              </button>
+                            </td>
+                            <td className="p-2 text-right font-mono text-green-600 font-bold">
+                              {factura.decision_pago ? formatCurrency(factura.importe_a_pagar) : '-'}
+                            </td>
+                            <td className="p-2">
+                              <div className="flex items-center justify-center gap-1">
+                                {factura.tiene_pdf_factura && (
+                                  <button className="p-1 hover:bg-zinc-200 rounded" title="PDF Factura">
+                                    <FileText className="h-4 w-4 text-red-500" />
+                                  </button>
+                                )}
+                                {factura.tiene_xml && (
+                                  <button className="p-1 hover:bg-zinc-200 rounded" title="XML">
+                                    <File className="h-4 w-4 text-green-600" />
+                                  </button>
+                                )}
+                                {factura.tiene_pdf_entrada && (
+                                  <button className="p-1 hover:bg-zinc-200 rounded" title="Entrada Sistema">
+                                    <FileSpreadsheet className="h-4 w-4 text-blue-500" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {/* Subtotal del proveedor */}
+                        <tr className="bg-zinc-200 font-bold">
+                          <td colSpan={6} className="p-2 text-right">SUBTOTAL {proveedor.proveedor_nombre}:</td>
+                          <td className="p-2 text-right font-mono">{formatCurrency(proveedor.subtotal_importe)}</td>
+                          <td className="p-2 text-right font-mono">{formatCurrency(proveedor.subtotal_saldo)}</td>
+                          <td className="p-2"></td>
+                          <td className="p-2 text-right font-mono text-green-700">{formatCurrency(proveedor.subtotal_a_pagar)}</td>
+                          <td className="p-2"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
+            ))
+          )}
+        </div>
+        
+        {/* Totales Generales */}
+        {(cxpData?.proveedores || []).length > 0 && (
+          <Card className="bg-zinc-800 text-white">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-6">
+                  <div>
+                    <p className="text-xs text-zinc-400">Proveedores</p>
+                    <p className="text-xl font-bold">{totales.total_proveedores}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-400">Facturas</p>
+                    <p className="text-xl font-bold">{totales.total_facturas}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-400">Vencidas</p>
+                    <p className="text-xl font-bold text-red-400">{totales.total_vencidas}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6 text-right">
+                  <div>
+                    <p className="text-xs text-zinc-400">Total Importe</p>
+                    <p className="text-xl font-bold">{formatCurrency(totales.total_importe)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-400">Total Saldo</p>
+                    <p className="text-xl font-bold">{formatCurrency(totales.total_saldo)}</p>
+                  </div>
+                  <div className="bg-green-600 rounded-lg px-4 py-2">
+                    <p className="text-xs text-green-200">TOTAL A PAGAR</p>
+                    <p className="text-2xl font-bold">{formatCurrency(totales.total_a_pagar)}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
+  
   // Render Reportes
   const renderReportes = () => {
     const kpis = dashboard?.kpis || {};
@@ -897,6 +1315,7 @@ export default function Finanzas() {
         <>
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'presupuestos' && renderPresupuestos()}
+          {activeTab === 'cxp' && renderCuentasPorPagar()}
           {activeTab === 'reportes' && renderReportes()}
         </>
       )}

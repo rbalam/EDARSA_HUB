@@ -26,26 +26,23 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
-### Session: April 2026 (Sistema Solicitud Alta Catálogos)
+### Session: April 2026 (Cuentas por Pagar)
 
 #### Completed Work
+- [x] **Módulo Cuentas por Pagar en Finanzas** (Abril 12, 2026)
+  - Nuevo tab "Cuentas por Pagar" en módulo Finanzas
+  - Backend: /api/finanzas/cuentas-por-pagar
+  - Columnas: Folio entrada, Folio factura, Fechas, Días vencida, Referencia, Importe, Saldo, Decisión pago, Importe a pagar, Documentos (PDF/XML)
+  - Resumen por antigüedad (Corriente, 1-30, 31-60, 61-90, +90 días)
+  - Filtros: Sucursal, Proveedor, Fecha corte, Solo vencidas, Con decisión
+  - Agrupado por proveedor con subtotales
+  - Checkbox interactivo para decisión de pago
+  - Exportar a CSV
+  - NOTA: Datos demo (pendiente conectar a SQL Server)
+
 - [x] **Sistema de Solicitud de Alta en Catálogos** (Abril 12, 2026)
-  - Backend: /api/rrhh/solicitudes-catalogo
-  - Catálogos: Puestos, Departamentos, Sucursales, Tipos de Incidencia
-  - Flujo: Usuario → Supervisor (Crea) → Administrador (Autoriza)
-  - Frontend: Nueva pestaña en Catálogos RH
-  - Botón "Solicitar alta" en selectores de modal colaborador
-  - Integración con "Mis Tareas" para notificaciones
-  - Modal con campos dinámicos por catálogo
-  - NOTA: Almacenamiento en memoria (pendiente migrar a SQL Server)
 
 - [x] **Tablero de Captura Rediseñado - Estilo Excel** (Abril 12, 2026)
-  - 16 símbolos de incidencia con catálogo completo
-  - Captura día por día (L, M, Mi, J, V, S, D)
-  - Cálculos: Proporcional Descanso (6 días = 1), Aguinaldo (365 = 15)
-  - Exportar a Excel/CSV
-
-- [x] **Importador RH movido a submenú de Recursos Humanos** (Abril 12, 2026)
 
 ---
 
