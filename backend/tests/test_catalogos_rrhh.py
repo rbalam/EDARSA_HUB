@@ -1,6 +1,34 @@
 """
 Test suite for RRHH Catálogos module
 Tests: Puestos, Tipos de Incidencias, Script SQL, Permission control
+
+SUITES DEFINIDAS:
+================
+
+1. SUITE OBLIGATORIA (unit/mock - siempre debe pasar):
+   - TestCatalogosRRHHAuth: Autenticación básica
+   - test_get_puestos_requires_auth: Validación de seguridad
+   - test_get_tipos_incidencias_requires_auth: Validación de seguridad
+   - test_get_script_returns_sql: Script SQL estático (no requiere BD)
+   - test_supervisor_cannot_create_*: Control de permisos (403)
+
+2. SUITE DE INTEGRACIÓN (requiere EDARSA HUB SQL Server):
+   - test_get_puestos_returns_list: Lista datos reales
+   - test_get_tipos_incidencias_returns_list: Lista datos reales
+   - test_admin_can_create_*: Crea registros reales
+
+   Estos tests usan pytest.skip() si EDARSA HUB no está configurado.
+
+EJECUCIÓN:
+=========
+# Suite completa (obligatoria + integración si disponible):
+python -m pytest tests/test_catalogos_rrhh.py -v
+
+# Suite obligatoria solamente (excluye tests que requieren SQL Server):
+python -m pytest tests/test_catalogos_rrhh.py -v -k "auth or requires_auth or script or cannot_create"
+
+# Suite de integración (solo corre si hay EDARSA HUB):
+python -m pytest tests/test_catalogos_rrhh.py -v -k "returns_list or admin_can_create"
 """
 import pytest
 import requests
@@ -69,6 +97,11 @@ class TestCatalogosPuestos:
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         print(f"GET puestos status: {response.status_code}")
+        
+        # Skip if EDARSA HUB server not configured (integration test)
+        if response.status_code == 404 and "EDARSA HUB no configurado" in response.text:
+            pytest.skip("EDARSA HUB server not configured - integration test skipped")
+        
         assert response.status_code == 200, f"Failed to get puestos: {response.text}"
         
         data = response.json()
@@ -113,6 +146,11 @@ class TestCatalogosTiposIncidencias:
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         print(f"GET tipos-incidencias status: {response.status_code}")
+        
+        # Skip if EDARSA HUB server not configured (integration test)
+        if response.status_code == 404 and "EDARSA HUB no configurado" in response.text:
+            pytest.skip("EDARSA HUB server not configured - integration test skipped")
+        
         assert response.status_code == 200, f"Failed to get tipos-incidencias: {response.text}"
         
         data = response.json()
@@ -212,6 +250,11 @@ class TestPermissionControl:
             }
         )
         print(f"Admin create puesto status: {response.status_code}")
+        
+        # Skip if EDARSA HUB server not configured (integration test)
+        if response.status_code == 404 and "EDARSA HUB no configurado" in response.text:
+            pytest.skip("EDARSA HUB server not configured - integration test skipped")
+        
         # Accept 200, 201 (success) or 500 (if table doesn't exist in EDARSA HUB)
         if response.status_code == 500:
             print("Table may not exist in EDARSA HUB - this is expected")
@@ -249,6 +292,11 @@ class TestPermissionControl:
             }
         )
         print(f"Admin create tipo incidencia status: {response.status_code}")
+        
+        # Skip if EDARSA HUB server not configured (integration test)
+        if response.status_code == 404 and "EDARSA HUB no configurado" in response.text:
+            pytest.skip("EDARSA HUB server not configured - integration test skipped")
+        
         # Accept 200, 201 (success) or 500 (if table doesn't exist in EDARSA HUB)
         if response.status_code == 500:
             print("Table may not exist in EDARSA HUB - this is expected")
