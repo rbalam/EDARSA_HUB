@@ -14,7 +14,7 @@ ESTADO ACTUAL:
 - ✅ Endpoints /comercial/mesas y /comercial/detalle-movimientos migrados (Fase 5B-4E)
 - ✅ Endpoint /comercial/precios-constantes migrado (Fase 5B-4G)
 - ✅ Endpoint /comercial/reporte-pax migrado (Fase 5B-4H)
-- ⏸️ Resto de endpoints pendientes de migrar (permanecen en server.py)
+- ✅ Endpoint /comercial/dashboard migrado (Fase 5B-5B) - CIERRE MÓDULO COMERCIAL
 
 COMPONENTES MIGRADOS:
 1. adapters.py:
@@ -38,9 +38,10 @@ COMPONENTES MIGRADOS:
    - GET /comercial/detalle-movimientos/{server_id} (Fase 5B-4E)
    - GET /comercial/precios-constantes/{server_id} (Fase 5B-4G)
    - GET /comercial/reporte-pax/{server_id} (Fase 5B-4H)
+   - GET /comercial/dashboard/{server_id} (Fase 5B-5B)
 
-ENDPOINTS PENDIENTES (1 total en server.py):
-- GET /comercial/dashboard/{server_id} - Dashboard principal (MÁS COMPLEJO - FASE 5B-5)
+ENDPOINTS PENDIENTES (0 en server.py):
+- NINGUNO - Módulo Comercial 100% migrado
 """
 
 from fastapi import APIRouter, Query, Depends, HTTPException
@@ -55,6 +56,9 @@ from modules.comercial.service import (
     get_kpis_softrestaurant,
     get_kpis_mpro,
     get_kpis_mpro_por_sucursal,
+)
+from modules.comercial.adapters import (
+    sumar_ventas_api_local_a_sucursal,
 )
 from modules.comercial.repository import (
     get_servers_for_tablero,
@@ -2098,6 +2102,723 @@ WHERE V.Vn_Fecha = '{f}' AND V.Vn_Cancelacion = 0 AND V.Vn_Precio_Neto_Importe >
         
     except Exception as e:
         logging.error(f"Error en reporte PAX: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# ENDPOINTS MIGRADOS FASE 5B-5B (Abril 2026)
+# ============================================================================
+
+@router.get("/comercial/dashboard/{server_id}")
+async def comercial_dashboard(
+    server_id: str, 
+    sucursal: str = Query(default=""), 
+    periodo: str = Query(default="dia"),  # dia, semana, mes
+    meses: str = Query(default=""),  # "01,02,03" - Lista de meses separados por coma
+    anio: str = Query(default=""),  # "2025" - Año específico (compatibilidad)
+    anios: str = Query(default=""),  # "2025,2024" - Múltiples años separados por coma
+    tipo_comparacion: str = Query(default="dias_equiv"),  # dias_equiv o mes_completo
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Dashboard principal de ventas con KPIs y comparativos.
+    Soporta SoftRestaurant y MPRO.
+    Ahora soporta multiselección de meses y múltiples años.
+    tipo_comparacion: 'dias_equiv' compara días 1-N vs días 1-N del período anterior
+                      'mes_completo' compara vs el mes completo anterior
+    """
+    server = await get_server_by_id(server_id)
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    # Verificar permisos
+    if not user_has_server_access(current_user, server_id):
+        raise HTTPException(status_code=403, detail="Sin acceso a este servidor")
+    
+    try:
+        # Calcular fechas según período
+        hoy = datetime.now()
+        
+        # Obtener lista de años (priorizar 'anios' sobre 'anio')
+        if anios:
+            lista_anios = [int(a.strip()) for a in anios.split(',') if a.strip()]
+        elif anio:
+            lista_anios = [int(anio)]
+        else:
+            lista_anios = [hoy.year]
+        
+        # Si se proporcionan meses y años específicos, usar esos
+        if meses and lista_anios:
+            lista_meses = [m.strip() for m in meses.split(',') if m.strip()]
+            
+            # Usar el año más reciente para la consulta principal
+            year = max(lista_anios)
+            
+            # Para múltiples meses, calcular rango de fechas
+            mes_min = min([int(m) for m in lista_meses])
+            mes_max = max([int(m) for m in lista_meses])
+            
+            # Verificar si estamos consultando el mes actual
+            es_mes_actual = (year == hoy.year and mes_max == hoy.month)
+            
+            fecha_ini = f"{year}-{str(mes_min).zfill(2)}-01"
+            
+            # ============= HOMOLOGACIÓN: Usar fecha_fin = AYER para mes actual (igual que Tablero Ejecutivo) =============
+            if es_mes_actual:
+                ayer = hoy - timedelta(days=1)
+                fecha_fin = ayer.strftime('%Y-%m-%d')
+                dia_provisional = ayer.day
+                logging.info(f"Dashboard Comercial: Mes actual - usando fecha_fin=AYER ({fecha_fin}) para homologar con Tablero Ejecutivo")
+            else:
+                if mes_max == 12:
+                    ultimo_dia = datetime(year + 1, 1, 1) - timedelta(days=1)
+                else:
+                    ultimo_dia = datetime(year, mes_max + 1, 1) - timedelta(days=1)
+                fecha_fin = ultimo_dia.strftime('%Y-%m-%d')
+                dia_provisional = ultimo_dia.day
+            
+            if tipo_comparacion == "mes_completo" or not es_mes_actual:
+                if mes_min == 1:
+                    fecha_ini_ant = f"{year - 1}-12-01"
+                    fecha_fin_ant = f"{year - 1}-12-31"
+                else:
+                    mes_ant = mes_min - 1
+                    fecha_ini_ant = f"{year}-{str(mes_ant).zfill(2)}-01"
+                    if mes_ant == 12:
+                        ultimo_dia_ant = datetime(year + 1, 1, 1) - timedelta(days=1)
+                    else:
+                        ultimo_dia_ant = datetime(year, mes_ant + 1, 1) - timedelta(days=1)
+                    fecha_fin_ant = ultimo_dia_ant.strftime('%Y-%m-%d')
+                
+                fecha_ini_ano_ant = f"{year - 1}-{str(mes_min).zfill(2)}-01"
+                if mes_max == 12:
+                    ultimo_dia_ano_ant = datetime(year, 1, 1) - timedelta(days=1)
+                else:
+                    ultimo_dia_ano_ant = datetime(year - 1, mes_max + 1, 1) - timedelta(days=1)
+                fecha_fin_ano_ant = ultimo_dia_ano_ant.strftime('%Y-%m-%d')
+            else:
+                fecha_ini_ant = "PENDIENTE"
+                fecha_fin_ant = "PENDIENTE"
+                fecha_ini_ano_ant = "PENDIENTE"
+                fecha_fin_ano_ant = "PENDIENTE"
+            
+            logging.info(f"Comercial Dashboard (multiselección): {server['name']} - Meses: {lista_meses} Año: {year} ({fecha_ini} a {fecha_fin}) - Tipo: {tipo_comparacion}")
+        elif periodo == "dia":
+            fecha_ini = hoy.strftime('%Y-%m-%d')
+            fecha_fin = hoy.strftime('%Y-%m-%d')
+            fecha_ini_ant = (hoy - timedelta(days=1)).strftime('%Y-%m-%d')
+            fecha_fin_ant = fecha_ini_ant
+            try:
+                fecha_ini_ano_ant = hoy.replace(year=hoy.year - 1).strftime('%Y-%m-%d')
+                fecha_fin_ano_ant = fecha_ini_ano_ant
+            except ValueError:
+                fecha_ini_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-28"
+                fecha_fin_ano_ant = fecha_ini_ano_ant
+        elif periodo == "semana":
+            inicio_semana = hoy - timedelta(days=hoy.weekday())
+            fecha_ini = inicio_semana.strftime('%Y-%m-%d')
+            fecha_fin = hoy.strftime('%Y-%m-%d')
+            fecha_ini_ant = (inicio_semana - timedelta(days=7)).strftime('%Y-%m-%d')
+            fecha_fin_ant = (inicio_semana - timedelta(days=1)).strftime('%Y-%m-%d')
+            try:
+                fecha_ini_ano_ant = inicio_semana.replace(year=hoy.year - 1).strftime('%Y-%m-%d')
+                fecha_fin_ano_ant = hoy.replace(year=hoy.year - 1).strftime('%Y-%m-%d')
+            except ValueError:
+                fecha_ini_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-01"
+                fecha_fin_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-07"
+        else:  # mes
+            ayer_periodo = hoy - timedelta(days=1)
+            fecha_ini = hoy.replace(day=1).strftime('%Y-%m-%d')
+            fecha_fin = ayer_periodo.strftime('%Y-%m-%d')
+            dia_actual = ayer_periodo.day
+            logging.info(f"Dashboard Comercial período 'mes': usando fecha_fin=AYER ({fecha_fin}) para homologar con Tablero Ejecutivo")
+            
+            primer_dia_mes = hoy.replace(day=1)
+            ultimo_dia_mes_ant = primer_dia_mes - timedelta(days=1)
+            
+            if tipo_comparacion == "dias_equiv":
+                fecha_ini_ant = ultimo_dia_mes_ant.replace(day=1).strftime('%Y-%m-%d')
+                dia_max_mes_ant = ultimo_dia_mes_ant.day
+                dia_comparar = min(dia_actual - 1, dia_max_mes_ant)
+                if dia_comparar < 1:
+                    dia_comparar = 1
+                fecha_fin_ant = ultimo_dia_mes_ant.replace(day=dia_comparar).strftime('%Y-%m-%d')
+                
+                try:
+                    fecha_ini_ano_ant = hoy.replace(year=hoy.year - 1, day=1).strftime('%Y-%m-%d')
+                    ano_ant_ultimo_dia = (datetime(hoy.year - 1, hoy.month + 1, 1) - timedelta(days=1)).day if hoy.month < 12 else 31
+                    dia_ano_ant = min(dia_actual - 1, ano_ant_ultimo_dia)
+                    if dia_ano_ant < 1:
+                        dia_ano_ant = 1
+                    fecha_fin_ano_ant = hoy.replace(year=hoy.year - 1, day=dia_ano_ant).strftime('%Y-%m-%d')
+                except ValueError:
+                    fecha_ini_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-01"
+                    fecha_fin_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-28"
+            else:
+                fecha_ini_ant = ultimo_dia_mes_ant.replace(day=1).strftime('%Y-%m-%d')
+                fecha_fin_ant = ultimo_dia_mes_ant.strftime('%Y-%m-%d')
+                
+                try:
+                    fecha_ini_ano_ant = hoy.replace(year=hoy.year - 1, day=1).strftime('%Y-%m-%d')
+                    if hoy.month == 12:
+                        ultimo_dia_ano_ant = datetime(hoy.year, 1, 1) - timedelta(days=1)
+                    else:
+                        ultimo_dia_ano_ant = datetime(hoy.year - 1, hoy.month + 1, 1) - timedelta(days=1)
+                    fecha_fin_ano_ant = ultimo_dia_ano_ant.strftime('%Y-%m-%d')
+                except ValueError:
+                    fecha_ini_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-01"
+                    fecha_fin_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-28"
+        
+        logging.info(f"Comercial Dashboard: {server['name']} - Período: {periodo} ({fecha_ini} a {fecha_fin}) - Tipo: {tipo_comparacion}")
+        logging.info(f"Comparación mes ant: {fecha_ini_ant} a {fecha_fin_ant}")
+        logging.info(f"Comparación año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant}")
+        
+        if server['system_type'] == 'SoftRestaurant':
+            f_ini = fecha_ini.replace('-', '')
+            f_fin = fecha_fin.replace('-', '')
+            
+            if tipo_comparacion == "dias_equiv" and fecha_ini_ant == "PENDIENTE":
+                query_ultimo_dia = f"""
+SELECT MAX(CONVERT(DATE, turnos.apertura)) as ultimo_dia_venta
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{f_ini} 00:00:00'
+  AND turnos.apertura <= '{f_fin} 23:59:59'
+  AND cheques.cancelado = 0
+"""
+                result_ultimo = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_ultimo_dia
+                )
+                
+                if result_ultimo and result_ultimo[0]['ultimo_dia_venta']:
+                    ultimo_dia_venta = result_ultimo[0]['ultimo_dia_venta']
+                    if isinstance(ultimo_dia_venta, str):
+                        dia_con_datos = int(ultimo_dia_venta.split('-')[2]) if '-' in ultimo_dia_venta else int(ultimo_dia_venta[-2:])
+                    else:
+                        dia_con_datos = ultimo_dia_venta.day
+                    
+                    logging.info(f"SoftRestaurant - Último día con ventas: {ultimo_dia_venta} (día {dia_con_datos})")
+                    
+                    f_fin = f"{year}{str(mes_max).zfill(2)}{str(dia_con_datos).zfill(2)}"
+                    
+                    mes_actual = mes_max
+                    anio_actual = year
+                    if mes_actual == 1:
+                        mes_ant = 12
+                        anio_ant = anio_actual - 1
+                    else:
+                        mes_ant = mes_actual - 1
+                        anio_ant = anio_actual
+                    
+                    if mes_ant == 12:
+                        max_dia_mes_ant = 31
+                    elif mes_ant in [4, 6, 9, 11]:
+                        max_dia_mes_ant = 30
+                    elif mes_ant == 2:
+                        max_dia_mes_ant = 29 if (anio_ant % 4 == 0 and (anio_ant % 100 != 0 or anio_ant % 400 == 0)) else 28
+                    else:
+                        max_dia_mes_ant = 31
+                    
+                    dia_comparar = min(dia_con_datos, max_dia_mes_ant)
+                    fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
+                    fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
+                    
+                    anio_pasado = year - 1
+                    fecha_ini_ano_ant = f"{anio_pasado}-{str(mes_min).zfill(2)}-01"
+                    
+                    if mes_max == 2:
+                        max_dia_ano_ant = 29 if (anio_pasado % 4 == 0 and (anio_pasado % 100 != 0 or anio_pasado % 400 == 0)) else 28
+                    elif mes_max in [4, 6, 9, 11]:
+                        max_dia_ano_ant = 30
+                    else:
+                        max_dia_ano_ant = 31
+                    
+                    dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
+                    fecha_fin_ano_ant = f"{anio_pasado}-{str(mes_max).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+                    
+                    logging.info(f"Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant} (multiselección: {mes_min}-{mes_max})")
+                else:
+                    dia_con_datos = 1
+                    fecha_ini_ant = fecha_ini.replace(f"-{str(mes_max).zfill(2)}-", f"-{str(mes_max-1).zfill(2)}-") if mes_max > 1 else fecha_ini.replace(f"{year}-01-", f"{year-1}-12-")
+                    fecha_fin_ant = fecha_ini_ant
+                    fecha_ini_ano_ant = fecha_ini.replace(str(year), str(year-1))
+                    fecha_fin_ano_ant = fecha_ini_ano_ant
+            
+            f_ini_ant = fecha_ini_ant.replace('-', '')
+            f_fin_ant = fecha_fin_ant.replace('-', '')
+            f_ini_ano_ant = fecha_ini_ano_ant.replace('-', '')
+            f_fin_ano_ant = fecha_fin_ano_ant.replace('-', '')
+            
+            logging.info(f"SoftRestaurant Query - Período: {f_ini} a {f_fin}, Mes ant: {f_ini_ant} a {f_fin_ant}, Año ant: {f_ini_ano_ant} a {f_fin_ano_ant}")
+            
+            query_kpis = f"""
+SELECT 
+    COUNT(DISTINCT cheques.folio) as cheques_total,
+    SUM(cheques.total) as ventas_periodo,
+    AVG(cheques.total) as ticket_promedio,
+    ISNULL(SUM(cheques.nopersonas), 0) as pax_total,
+    ISNULL(AVG(CAST(cheques.nopersonas as float)), 0) as pax_promedio
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{f_ini} 00:00:00'
+  AND turnos.apertura <= '{f_fin} 23:59:59'
+  AND cheques.cancelado = 0
+"""
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_kpis
+            )
+            
+            if result and len(result) > 0:
+                row = result[0]
+                cheques_total = int(row['cheques_total'] or 0)
+                ventas_periodo = float(row['ventas_periodo'] or 0)
+                ticket_promedio = float(row['ticket_promedio'] or 0)
+                pax_total = int(row['pax_total'] or 0)
+                pax_promedio = float(row['pax_promedio'] or 0)
+            else:
+                cheques_total = 0
+                ventas_periodo = 0
+                ticket_promedio = 0
+                pax_total = 0
+                pax_promedio = 0
+            
+            mesas_atendidas = cheques_total
+            rotacion_mesas = round(cheques_total / mesas_atendidas, 2) if mesas_atendidas > 0 else 0
+            
+            query_anterior = f"""
+SELECT SUM(cheques.total) as ventas_periodo
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{f_ini_ant} 00:00:00'
+  AND turnos.apertura <= '{f_fin_ant} 23:59:59'
+  AND cheques.cancelado = 0
+"""
+            result_ant = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_anterior
+            )
+            
+            ventas_anterior = float(result_ant[0]['ventas_periodo'] or 0) if result_ant and result_ant[0]['ventas_periodo'] else 0
+            vs_periodo_anterior = round(((ventas_periodo - ventas_anterior) / ventas_anterior * 100), 1) if ventas_anterior > 0 else 0
+            
+            query_pax_ant = f"""
+SELECT ISNULL(SUM(cheques.nopersonas), 0) as pax_total, SUM(cheques.total) as ventas
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{f_ini_ant} 00:00:00'
+  AND turnos.apertura <= '{f_fin_ant} 23:59:59'
+  AND cheques.cancelado = 0
+"""
+            result_pax_ant = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_pax_ant
+            )
+            
+            pax_anterior = int(result_pax_ant[0]['pax_total'] or 0) if result_pax_ant else 0
+            ventas_pax_ant = float(result_pax_ant[0]['ventas'] or 0) if result_pax_ant else 0
+            pax_promedio_anterior = ventas_pax_ant / pax_anterior if pax_anterior > 0 else 0
+            pax_promedio_actual = ventas_periodo / pax_total if pax_total > 0 else 0
+            vs_pax_mes_anterior = round(((pax_promedio_actual - pax_promedio_anterior) / pax_promedio_anterior * 100), 1) if pax_promedio_anterior > 0 else 0
+            
+            query_ano_ant = f"""
+SELECT 
+    SUM(cheques.total) as ventas_periodo,
+    ISNULL(SUM(cheques.nopersonas), 0) as pax_total,
+    COUNT(DISTINCT cheques.folio) as cheques_total
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE turnos.apertura >= '{f_ini_ano_ant} 00:00:00'
+  AND turnos.apertura <= '{f_fin_ano_ant} 23:59:59'
+  AND cheques.cancelado = 0
+"""
+            result_ano_ant = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_ano_ant
+            )
+            
+            ventas_ano_anterior = float(result_ano_ant[0]['ventas_periodo'] or 0) if result_ano_ant and result_ano_ant[0]['ventas_periodo'] else 0
+            pax_ano_anterior = int(result_ano_ant[0]['pax_total'] or 0) if result_ano_ant else 0
+            cheques_ano_anterior = int(result_ano_ant[0]['cheques_total'] or 0) if result_ano_ant else 0
+            
+            vs_ano_anterior = round(((ventas_periodo - ventas_ano_anterior) / ventas_ano_anterior * 100), 1) if ventas_ano_anterior > 0 else 0
+            pax_vs_ano_anterior = round(((pax_total - pax_ano_anterior) / pax_ano_anterior * 100), 1) if pax_ano_anterior > 0 else 0
+            
+            pax_total_vs_ano = round(((pax_total - pax_ano_anterior) / pax_ano_anterior * 100), 1) if pax_ano_anterior > 0 else 0
+            cheques_total_vs_ano = round(((cheques_total - cheques_ano_anterior) / cheques_ano_anterior * 100), 1) if cheques_ano_anterior > 0 else 0
+            ticket_ano_anterior = ventas_ano_anterior / cheques_ano_anterior if cheques_ano_anterior > 0 else 0
+            cheque_vs_ano_anterior = round(((ticket_promedio - ticket_ano_anterior) / ticket_ano_anterior * 100), 1) if ticket_ano_anterior > 0 else 0
+            rotacion_ano_anterior = pax_ano_anterior / cheques_ano_anterior if cheques_ano_anterior > 0 else 0
+            rotacion_vs_ano = round(((rotacion_mesas - rotacion_ano_anterior) / rotacion_ano_anterior * 100), 1) if rotacion_ano_anterior > 0 else 0
+            
+            # ============= HOMOLOGACIÓN: SUMAR TEMPCHEQUES (igual que Tablero Ejecutivo) =============
+            try:
+                query_temp = """
+SELECT 
+    COUNT(DISTINCT folio) as cheques,
+    ISNULL(SUM(total), 0) as ventas,
+    ISNULL(SUM(nopersonas), 0) as pax
+FROM tempcheques
+WHERE cancelado = 0
+"""
+                result_temp = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_temp
+                )
+                if result_temp and len(result_temp) > 0:
+                    ventas_temp = float(result_temp[0]['ventas'] or 0)
+                    pax_temp = int(result_temp[0]['pax'] or 0)
+                    cheques_temp = int(result_temp[0]['cheques'] or 0)
+                    ventas_periodo += ventas_temp
+                    pax_total += pax_temp
+                    cheques_total += cheques_temp
+                    logging.info(f"Dashboard Comercial SoftRestaurant {server['name']} - Tempcheques sumados: ventas=${ventas_temp:,.2f}, pax={pax_temp}, cheques={cheques_temp}")
+            except Exception as e:
+                logging.warning(f"Dashboard Comercial SoftRestaurant {server['name']} - Error consultando tempcheques: {e}")
+            # ============= FIN HOMOLOGACIÓN TEMPCHEQUES =============
+            
+            ticket_promedio = ventas_periodo / cheques_total if cheques_total > 0 else 0
+            mesas_atendidas = cheques_total
+            rotacion_mesas = round(cheques_total / mesas_atendidas, 2) if mesas_atendidas > 0 else 0
+            
+            kpis = {
+                "ventas_periodo": ventas_periodo,
+                "ticket_promedio": round(ticket_promedio, 2),
+                "cheques_total": cheques_total,
+                "pax_total": pax_total,
+                "pax_promedio": round(pax_promedio, 1),
+                "consumo_persona": round(ventas_periodo / pax_total, 2) if pax_total > 0 else 0,
+                "mesas_atendidas": mesas_atendidas,
+                "rotacion_mesas": rotacion_mesas,
+                "venta_por_hora": round(ventas_periodo / 12, 2) if ventas_periodo > 0 else 0
+            }
+            
+            comparativo = {
+                "vs_periodo_anterior": vs_periodo_anterior,
+                "vs_ano_anterior": vs_ano_anterior,
+                "vs_presupuesto": 0,
+                "pax_vs_mes_anterior": vs_pax_mes_anterior,
+                "pax_vs_ano_anterior": pax_vs_ano_anterior,
+                "pax_total_vs_ano": pax_total_vs_ano,
+                "cheques_total_vs_ano": cheques_total_vs_ano,
+                "cheque_vs_ano_anterior": cheque_vs_ano_anterior,
+                "rotacion_vs_ano": rotacion_vs_ano,
+                "tipo_comparacion": tipo_comparacion,
+                "periodo_anterior": f"{fecha_ini_ant} a {fecha_fin_ant}",
+                "periodo_ano_ant": f"{fecha_ini_ano_ant} a {fecha_fin_ano_ant}"
+            }
+            
+            return {
+                "kpis": kpis,
+                "comparativo": comparativo,
+                "alertas": []
+            }
+        
+        elif server['system_type'] == 'MPRO':
+            if tipo_comparacion == "dias_equiv" and fecha_ini_ant == "PENDIENTE":
+                sucursal_filter_check = f" AND VE.Sc_Cve_Sucursal IN (SELECT Sc_Cve_Sucursal FROM Sucursal WHERE Sc_Descripcion LIKE '%{sucursal}%')" if sucursal else ""
+                
+                query_ultimo_dia_mpro = f"""
+SELECT MAX(CONVERT(DATE, VE.Vn_Fecha)) as ultimo_dia_venta
+FROM Venta_Encabezado VE
+WHERE VE.Vn_Fecha >= '{fecha_ini}'
+  AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+  {sucursal_filter_check}
+"""
+                result_ultimo = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_ultimo_dia_mpro
+                )
+                
+                if result_ultimo and result_ultimo[0]['ultimo_dia_venta']:
+                    ultimo_dia_venta = result_ultimo[0]['ultimo_dia_venta']
+                    if isinstance(ultimo_dia_venta, str):
+                        dia_con_datos = int(ultimo_dia_venta.split('-')[2]) if '-' in ultimo_dia_venta else int(ultimo_dia_venta[-2:])
+                    else:
+                        dia_con_datos = ultimo_dia_venta.day
+                    
+                    logging.info(f"MPRO - Último día con ventas: {ultimo_dia_venta} (día {dia_con_datos})")
+                    
+                    fecha_fin = f"{year}-{str(mes_max).zfill(2)}-{str(dia_con_datos).zfill(2)}"
+                    
+                    mes_actual = mes_max
+                    anio_actual = year
+                    if mes_actual == 1:
+                        mes_ant = 12
+                        anio_ant = anio_actual - 1
+                    else:
+                        mes_ant = mes_actual - 1
+                        anio_ant = anio_actual
+                    
+                    if mes_ant == 12:
+                        max_dia_mes_ant = 31
+                    elif mes_ant in [4, 6, 9, 11]:
+                        max_dia_mes_ant = 30
+                    elif mes_ant == 2:
+                        max_dia_mes_ant = 29 if (anio_ant % 4 == 0 and (anio_ant % 100 != 0 or anio_ant % 400 == 0)) else 28
+                    else:
+                        max_dia_mes_ant = 31
+                    
+                    dia_comparar = min(dia_con_datos, max_dia_mes_ant)
+                    fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
+                    fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
+                    
+                    anio_pasado = year - 1
+                    fecha_ini_ano_ant = f"{anio_pasado}-{str(mes_min).zfill(2)}-01"
+                    
+                    if mes_max == 2:
+                        max_dia_ano_ant = 29 if (anio_pasado % 4 == 0 and (anio_pasado % 100 != 0 or anio_pasado % 400 == 0)) else 28
+                    elif mes_max in [4, 6, 9, 11]:
+                        max_dia_ano_ant = 30
+                    else:
+                        max_dia_ano_ant = 31
+                    
+                    dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
+                    fecha_fin_ano_ant = f"{anio_pasado}-{str(mes_max).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+                    
+                    logging.info(f"MPRO Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant} (multiselección: {mes_min}-{mes_max})")
+            
+            sucursal_join = ""
+            sucursal_filter = ""
+            nombre_servidor = server.get('name', '').lower()
+            sucursal_lower = (sucursal or '').lower()
+            skip_sucursal_filter = (
+                not sucursal or 
+                sucursal == 'all' or 
+                sucursal_lower == 'default' or 
+                sucursal_lower == nombre_servidor
+            )
+            
+            if not skip_sucursal_filter:
+                if sucursal.isdigit() or (len(sucursal) == 4 and sucursal[0] == '0'):
+                    sucursal_join = ""
+                    sucursal_filter = f" AND VE.Sc_Cve_Sucursal = '{sucursal}'"
+                else:
+                    sucursal_join = "INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal"
+                    sucursal_filter = f" AND S.Sc_Descripcion LIKE '%{sucursal}%'"
+            
+            query_ultimo_dia_suc = f"""
+SELECT MAX(CONVERT(DATE, VE.Vn_Fecha)) as ultimo_dia_venta
+FROM Venta_Encabezado VE
+{sucursal_join}
+WHERE VE.Vn_Fecha >= '{fecha_ini}'
+  AND VE.Vn_Fecha <= '{fecha_fin} 23:59:59'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+  {sucursal_filter}
+"""
+            try:
+                result_ultimo_suc = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_ultimo_dia_suc
+                )
+                if result_ultimo_suc and result_ultimo_suc[0]['ultimo_dia_venta']:
+                    ultimo_dia_suc = result_ultimo_suc[0]['ultimo_dia_venta']
+                    if isinstance(ultimo_dia_suc, str):
+                        dia_con_datos = int(ultimo_dia_suc.split('-')[2]) if '-' in ultimo_dia_suc else int(ultimo_dia_suc[-2:])
+                    else:
+                        dia_con_datos = ultimo_dia_suc.day
+                    
+                    print(f"*** MPRO Dashboard {sucursal} - Ultimo dia con ventas: dia {dia_con_datos} ***")
+                    
+                    fecha_fin = f"{year}-{str(mes_max).zfill(2)}-{str(dia_con_datos).zfill(2)}"
+                    
+                    mes_actual = mes_max
+                    anio_actual = year
+                    if mes_actual == 1:
+                        mes_ant = 12
+                        anio_ant = anio_actual - 1
+                    else:
+                        mes_ant = mes_actual - 1
+                        anio_ant = anio_actual
+                    
+                    max_dia_mes_ant = calendar.monthrange(anio_ant, mes_ant)[1]
+                    dia_comparar = min(dia_con_datos, max_dia_mes_ant)
+                    fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
+                    fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
+                    
+                    anio_pasado = year - 1
+                    max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_max)[1]
+                    dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
+                    fecha_ini_ano_ant = f"{anio_pasado}-{str(mes_min).zfill(2)}-01"
+                    fecha_fin_ano_ant = f"{anio_pasado}-{str(mes_max).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
+                    
+                    print(f"*** Fechas ajustadas: Actual hasta {fecha_fin}, MesAnt {fecha_ini_ant} a {fecha_fin_ant}, AnoAnt {fecha_ini_ano_ant} a {fecha_fin_ano_ant} ***")
+            except Exception as e:
+                print(f"Error detectando ultimo dia para sucursal {sucursal}: {e}")
+            
+            fi_mpro = fecha_ini.replace('-', '')
+            ff_mpro = fecha_fin.replace('-', '')
+            
+            fia_mpro = fecha_ini_ant.replace('-', '')
+            ffa_mpro = fecha_fin_ant.replace('-', '')
+            fiaa_mpro = fecha_ini_ano_ant.replace('-', '')
+            ffaa_mpro = fecha_fin_ano_ant.replace('-', '')
+            
+            query_kpis = f"""
+SELECT 
+    COUNT(DISTINCT VE.Vn_Folio) as cheques_total,
+    ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas_periodo,
+    ISNULL(SUM(C.Co_Personas), 0) as pax_total
+FROM Venta_Encabezado VE
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+{sucursal_join}
+WHERE VE.Vn_Fecha >= '{fi_mpro}'
+  AND VE.Vn_Fecha <= '{ff_mpro}'
+  {sucursal_filter}
+"""
+            print(f"*** MPRO Query sucursal_filter={sucursal_filter}, fi={fi_mpro}, ff={ff_mpro} ***")
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_kpis
+            )
+            
+            if result:
+                cheques = int(result[0].get('cheques_total') or 0)
+                ventas = float(result[0].get('ventas_periodo') or 0)
+                pax = int(result[0].get('pax_total') or 0)
+                
+                # ============= REGLA J.2.5: Fallback para PAX =============
+                if pax == 0 and cheques > 0:
+                    pax = cheques
+                    logging.info(f"Dashboard Comercial MPRO: PAX estimado = {pax} (igual a cheques) para sucursal '{sucursal}'")
+                
+                # ============= INTEGRACIÓN API LOCAL HOMOLOGADA =============
+                sucursal_para_api = sucursal if sucursal else server.get('name', '')
+                
+                if periodo == "dia":
+                    print(f"*** Dashboard Comercial MPRO HOY: Buscando API local para '{sucursal_para_api}' ***")
+                    ventas_api_local = sumar_ventas_api_local_a_sucursal(
+                        server_host=server['host'],
+                        sucursal_nombre=sucursal_para_api,
+                        fecha_fin=fecha_fin,
+                        mes_solicitado=hoy.month,
+                        anio_solicitado=hoy.year,
+                        solo_ventas_dia=True
+                    )
+                    
+                    if ventas_api_local.get("aplicado", False):
+                        ventas = ventas_api_local["ventas"]
+                        cheques = ventas_api_local["cheques"]
+                        pax = ventas_api_local["pax"]
+                        print(f"*** Dashboard Comercial MPRO HOY: API Local REEMPLAZÓ - ${ventas:,.2f}, {cheques} cheques, {pax} pax ***")
+                    elif ventas_api_local.get("reemplazar", False):
+                        ventas = ventas_api_local["ventas"]
+                        cheques = ventas_api_local["cheques"]
+                        pax = ventas_api_local["pax"]
+                        print(f"*** Dashboard Comercial MPRO HOY: API Local no funcionó - usando ${ventas:.2f} ***")
+                else:
+                    print(f"*** Dashboard Comercial MPRO MES: Buscando API local para '{sucursal_para_api}' ***")
+                    ventas_api_local = sumar_ventas_api_local_a_sucursal(
+                        server_host=server['host'],
+                        sucursal_nombre=sucursal_para_api,
+                        fecha_fin=fecha_fin,
+                        mes_solicitado=hoy.month,
+                        anio_solicitado=hoy.year,
+                        solo_ventas_dia=False
+                    )
+                    
+                    if ventas_api_local.get("aplicado", False):
+                        ventas += ventas_api_local["ventas"]
+                        cheques += ventas_api_local["cheques"]
+                        pax += ventas_api_local["pax"]
+                        print(f"*** Dashboard Comercial MPRO MES: API Local SUMÓ +${ventas_api_local['ventas']:,.2f}, +{ventas_api_local['cheques']} cheques, +{ventas_api_local['pax']} pax ***")
+                # ============= FIN INTEGRACIÓN API LOCAL =============
+                
+                ticket_promedio = ventas / cheques if cheques > 0 else 0
+                consumo_persona = ventas / pax if pax > 0 else 0
+                pax_promedio = pax / cheques if cheques > 0 else 0
+                
+                query_pax_ant_mpro = f"""
+SELECT 
+    ISNULL(SUM(C.Co_Personas), 0) as pax_total,
+    ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas
+FROM Venta_Encabezado VE
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+{sucursal_join}
+WHERE VE.Vn_Fecha >= '{fia_mpro}'
+  AND VE.Vn_Fecha <= '{ffa_mpro} 23:59:59'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+  {sucursal_filter}
+"""
+                result_pax_ant = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_pax_ant_mpro
+                )
+                
+                pax_ant = int(result_pax_ant[0]['pax_total'] or 0) if result_pax_ant else 0
+                ventas_ant = float(result_pax_ant[0]['ventas'] or 0) if result_pax_ant else 0
+                pax_promedio_anterior = ventas_ant / pax_ant if pax_ant > 0 else 0
+                pax_promedio_actual = ventas / pax if pax > 0 else 0
+                vs_pax_mes_anterior = round(((pax_promedio_actual - pax_promedio_anterior) / pax_promedio_anterior * 100), 1) if pax_promedio_anterior > 0 else 0
+                vs_periodo_anterior = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
+                
+                query_ano_ant_mpro = f"""
+SELECT 
+    ISNULL(SUM(C.Co_Personas), 0) as pax_total,
+    ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas,
+    COUNT(DISTINCT VE.Vn_Folio) as cheques_total
+FROM Venta_Encabezado VE
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+{sucursal_join}
+WHERE VE.Vn_Fecha >= '{fiaa_mpro}'
+  AND VE.Vn_Fecha <= '{ffaa_mpro} 23:59:59'
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+  {sucursal_filter}
+"""
+                result_ano_ant = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query_ano_ant_mpro
+                )
+                
+                pax_ano_ant = int(result_ano_ant[0]['pax_total'] or 0) if result_ano_ant else 0
+                ventas_ano_ant = float(result_ano_ant[0]['ventas'] or 0) if result_ano_ant else 0
+                cheques_ano_ant = int(result_ano_ant[0]['cheques_total'] or 0) if result_ano_ant else 0
+                vs_ano_anterior = round(((ventas - ventas_ano_ant) / ventas_ano_ant * 100), 1) if ventas_ano_ant > 0 else 0
+                pax_vs_ano_anterior = round(((pax - pax_ano_ant) / pax_ano_ant * 100), 1) if pax_ano_ant > 0 else 0
+                
+                pax_total_vs_ano = round(((pax - pax_ano_ant) / pax_ano_ant * 100), 1) if pax_ano_ant > 0 else 0
+                cheques_total_vs_ano = round(((cheques - cheques_ano_ant) / cheques_ano_ant * 100), 1) if cheques_ano_ant > 0 else 0
+                ticket_ano_ant = ventas_ano_ant / cheques_ano_ant if cheques_ano_ant > 0 else 0
+                cheque_vs_ano_anterior = round(((ticket_promedio - ticket_ano_ant) / ticket_ano_ant * 100), 1) if ticket_ano_ant > 0 else 0
+                
+                kpis = {
+                    "ventas_periodo": round(ventas, 2),
+                    "ticket_promedio": round(ticket_promedio, 2),
+                    "cheques_total": cheques,
+                    "pax_total": pax,
+                    "pax_promedio": round(pax_promedio, 2),
+                    "consumo_persona": round(consumo_persona, 2),
+                    "rotacion_mesas": 0,
+                    "mesas_atendidas": 0
+                }
+                
+                comparativo = {
+                    "vs_periodo_anterior": vs_periodo_anterior,
+                    "vs_ano_anterior": vs_ano_anterior,
+                    "vs_presupuesto": 0,
+                    "pax_vs_mes_anterior": vs_pax_mes_anterior,
+                    "pax_vs_ano_anterior": pax_vs_ano_anterior,
+                    "pax_total_vs_ano": pax_total_vs_ano,
+                    "cheques_total_vs_ano": cheques_total_vs_ano,
+                    "cheque_vs_ano_anterior": cheque_vs_ano_anterior,
+                    "rotacion_vs_ano": 0,
+                    "tipo_comparacion": tipo_comparacion,
+                    "periodo_anterior": f"{fecha_ini_ant} a {fecha_fin_ant}",
+                    "periodo_ano_ant": f"{fecha_ini_ano_ant} a {fecha_fin_ano_ant}"
+                }
+                
+                return {
+                    "kpis": kpis,
+                    "comparativo": comparativo,
+                    "alertas": []
+                }
+        
+        return {"kpis": None, "comparativo": None, "alertas": []}
+        
+    except Exception as e:
+        logging.error(f"Error en comercial dashboard: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
