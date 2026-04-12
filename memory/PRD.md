@@ -143,10 +143,46 @@ pytest tests/ -m regression # 4 tests en ~6s
 
 ---
 
+### Session: April 10, 2026 (Continuation) - PASO 5: Ampliación Cobertura Tests
+
+#### PASO 5 COMPLETADO: Ampliación Cobertura de Tests con MOCKS
+
+**Objetivo**: Ampliar cobertura de tests para 4 módulos críticos usando EXCLUSIVAMENTE mocks (sin conexiones reales).
+
+**Archivos de tests creados/ampliados**:
+| Archivo | Tests | Cobertura Módulo |
+|---------|-------|------------------|
+| `tests/test_core_db.py` | 27 tests | 46% (de 47% inicial) |
+| `tests/test_core_security.py` | 25 tests | 77% (de 41% inicial) ↑36pts |
+| `tests/test_auth_service.py` | 23 tests (NUEVO) | 80% (de 0% inicial) |
+| `tests/test_comercial_adapters.py` | 23 tests (NUEVO) | 89% (de 0% inicial) |
+
+**Resumen de resultados**:
+- **98 tests nuevos/ampliados** pasando al 100%
+- **166 tests totales** en la suite modular (pasando)
+- **68% cobertura combinada** de core + modules
+- **0 cambios a código productivo** (solo archivos de test)
+- **0 conexiones reales** (100% mockeado)
+
+**Funcionalidades cubiertas**:
+- `core/db.py`: Parseo SQL Server, cooldown servers, execute_sql_query (mock)
+- `core/security.py`: Hashing bcrypt, JWT create/verify, permisos, filtros
+- `modules/auth/service.py`: Register, login, CRUD usuarios, CRUD roles
+- `modules/comercial/adapters.py`: APIs MPRO locales, ventas día, fallbacks
+
+**Huecos pendientes de cobertura** (para futuras sesiones):
+- `core/db.py` líneas 258-294, 334-378 (conexiones reales SQL - requieren integración)
+- `core/pool.py` (58% - requiere tests de integración con BD real)
+- `modules/auth/repository.py` (39% - acceso directo MongoDB)
+- `modules/compras/service.py` (14% - lógica de negocio compleja)
+
+---
+
 ## Prioritized Backlog
 
 ### P0 - Critical
 - ~~Scroll horizontal en Pantalla Completa de Auditoría~~ ✅ DONE
+- ~~PASO 5: Ampliación Cobertura Tests~~ ✅ DONE (Abril 10, 2026)
 
 ### P1 - High Priority
 - [ ] Drill-down Compras para SoftRestaurant (facturas y detalles)

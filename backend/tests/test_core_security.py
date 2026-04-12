@@ -299,7 +299,8 @@ class TestFilterServers:
             {"id": "s3", "name": "Server 3"}
         ]
         
-        filtered = filter_servers_by_permissions(admin, servers)
+        # Nota: La firma es filter_servers_by_permissions(servers, user)
+        filtered = filter_servers_by_permissions(servers, admin)
         
         assert len(filtered) == 3
     
@@ -315,7 +316,8 @@ class TestFilterServers:
             {"id": "s3", "name": "Server 3"}
         ]
         
-        filtered = filter_servers_by_permissions(user, servers)
+        # Nota: La firma es filter_servers_by_permissions(servers, user)
+        filtered = filter_servers_by_permissions(servers, user)
         
         assert len(filtered) == 2
         assert all(s["id"] in ["s1", "s3"] for s in filtered)
@@ -328,7 +330,8 @@ class TestFilterServers:
         user = {"role": "Usuario", "allowed_servers": ["s1"]}
         servers = []
         
-        filtered = filter_servers_by_permissions(user, servers)
+        # Nota: La firma es filter_servers_by_permissions(servers, user)
+        filtered = filter_servers_by_permissions(servers, user)
         
         assert len(filtered) == 0
 
