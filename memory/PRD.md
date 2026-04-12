@@ -49,8 +49,12 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 - **Fase 5 (Módulo Comercial)**: ✅ COMPLETADA - Estructura modular lista, endpoints en server.py (~3300 líneas)
 - **Fase 5B (Migración real Comercial)**: 🔄 EN PROGRESO
   - ✅ Sub-fase 5B-1: Adapters (APIs locales MPRO) migrados a `modules/comercial/adapters.py`
-  - ⏸️ Sub-fase 5B-2: Helpers del tablero (pendiente)
-  - ⏸️ Sub-fase 5B-3: Endpoints de comercial (pendiente)
+  - ✅ Sub-fase 5B-2: Helpers del tablero migrados a `modules/comercial/service.py` (Abril 10, 2026)
+    - `get_kpis_softrestaurant()` (~255 líneas)
+    - `get_kpis_mpro()` (~175 líneas)  
+    - `get_kpis_mpro_por_sucursal()` (~318 líneas)
+    - server.py reducido de ~17,431 a ~16,689 líneas (-742 líneas)
+  - ⏸️ Sub-fase 5B-3: Migración endpoint `/comercial/tablero-ejecutivo` a routes.py (SIGUIENTE)
 - **Fases 6-7**: ⏸️ Pendientes de autorización
 
 ---
