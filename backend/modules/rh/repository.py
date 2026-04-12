@@ -32,7 +32,9 @@ from core.db import execute_sql_query
 # CONSTANTES
 # ============================================================================
 
-EDARSA_HUB_SERVER_ID = "EDARSA-HUB"
+# ID del servidor EDARSA HUB en MongoDB (colección servers)
+# Este ID corresponde al servidor configurado en el menú Servidores con nombre "EDARSA HUB"
+EDARSA_HUB_SERVER_ID = "bea40259-35f1-4693-bda2-d2d10e13e56a"
 
 # Tipos de incidencias por defecto cuando la tabla no existe
 TIPOS_INCIDENCIAS_DEFAULT = [
