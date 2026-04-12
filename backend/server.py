@@ -8297,104 +8297,11 @@ ORDER BY SUM(cd.cantidad * cd.precio) DESC
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.get("/comercial/metas/{server_id}")
-async def comercial_metas(
-    server_id: str, 
-    sucursal: str = Query(default=""),
-    current_user: Dict = Depends(get_current_user)
-):
-    """
-    Metas de ventas por producto y vendedor.
-    Nota: Las metas se configuran externamente, aquí mostramos ventas reales.
-    """
-    server = await db.servers.find_one({"id": server_id, "active": True})
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
-    if not user_has_server_access(current_user, server_id):
-        raise HTTPException(status_code=403, detail="Sin acceso a este servidor")
-    
-    try:
-        from datetime import datetime
-        hoy = datetime.now()
-        fecha_ini = hoy.replace(day=1).strftime('%Y-%m-%d')
-        fecha_fin = hoy.strftime('%Y-%m-%d')
-        
-        if server['system_type'] == 'SoftRestaurant':
-            # Ventas por producto (top 10)
-            query_productos = f"""
-SELECT TOP 10
-    p.descripcion as producto,
-    SUM(cd.cantidad * cd.precio) as real_ventas
-FROM cheqdet cd
-INNER JOIN cheques ON cheques.folio = cd.foliodet
-INNER JOIN productos p ON p.idproducto = cd.idproducto
-INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.apertura >= '{fecha_ini} 00:00:00'
-  AND turnos.apertura <= '{fecha_fin} 23:59:59'
-  AND cheques.cancelado = 0
-GROUP BY p.descripcion
-ORDER BY SUM(cd.cantidad * cd.precio) DESC
-"""
-            result_prod = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_productos
-            )
-            
-            metas_producto = []
-            for r in result_prod:
-                real_ventas = float(r['real_ventas'] or 0)
-                # Estimamos meta como 110% del real (sin tabla de metas real)
-                meta_estimada = real_ventas * 1.1
-                cumplimiento = round((real_ventas / meta_estimada * 100), 0) if meta_estimada > 0 else 0
-                metas_producto.append({
-                    "producto": r['producto'],
-                    "meta": meta_estimada,
-                    "real": real_ventas,
-                    "cumplimiento": cumplimiento
-                })
-            
-            # Ventas por mesero/vendedor
-            query_vendedor = f"""
-SELECT TOP 10
-    ISNULL(m.nombre, 'Sin asignar') as vendedor,
-    SUM(cheques.total) as real_ventas
-FROM cheques
-LEFT JOIN meseros m ON m.idmesero = cheques.idmesero
-INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.apertura >= '{fecha_ini} 00:00:00'
-  AND turnos.apertura <= '{fecha_fin} 23:59:59'
-  AND cheques.cancelado = 0
-GROUP BY m.nombre
-ORDER BY SUM(cheques.total) DESC
-"""
-            result_vend = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_vendedor
-            )
-            
-            metas_vendedor = []
-            for r in result_vend:
-                real_ventas = float(r['real_ventas'] or 0)
-                meta_estimada = real_ventas * 1.1
-                cumplimiento = round((real_ventas / meta_estimada * 100), 0) if meta_estimada > 0 else 0
-                metas_vendedor.append({
-                    "vendedor": r['vendedor'],
-                    "meta": meta_estimada,
-                    "real": real_ventas,
-                    "cumplimiento": cumplimiento
-                })
-            
-            return {
-                "por_producto": metas_producto,
-                "por_vendedor": metas_vendedor
-            }
-        
-        return {"por_producto": [], "por_vendedor": []}
-        
-    except Exception as e:
-        logging.error(f"Error en metas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+# ============================================================================
+# ENDPOINT /comercial/metas - MIGRADO A modules/comercial/routes.py
+# ============================================================================
+# FASE 5B-4A (Abril 2026): Migrado a modules/comercial/routes.py
+# ============================================================================
 
 
 @api_router.get("/comercial/ventas-tiempo/{server_id}")
@@ -9445,60 +9352,11 @@ async def save_kpis_cache(server_id: str, periodo_key: str, kpis: dict):
 # ============================================================================
 
 
-@api_router.get("/comercial/sucursales/{server_id}")
-async def obtener_sucursales(
-    server_id: str,
-    current_user: Dict = Depends(get_current_user)
-):
-    """Obtiene las sucursales/empresas de un servidor"""
-    server = await db.servers.find_one({"id": server_id, "active": True})
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
-    if not user_has_server_access(current_user, server_id):
-        raise HTTPException(status_code=403, detail="Sin acceso a este servidor")
-    
-    try:
-        if server['system_type'] == 'MPRO':
-            # MPRO: Tabla sucursal (relacionada con venta por Sc_Cve_Sucursal)
-            query = """
-            SELECT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre 
-            FROM sucursal 
-            WHERE Es_Cve_Estado = 'AC' 
-            ORDER BY Sc_Descripcion
-            """
-        else:
-            # SoftRestaurant: No tiene múltiples sucursales, devolver el servidor como única opción
-            return {
-                "servidor": server['name'],
-                "sucursales": [{
-                    "id": "all",
-                    "nombre": server['name']
-                }]
-            }
-        
-        result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], query
-        ) or []
-        
-        sucursales = [{"id": r['id'], "nombre": r['nombre']} for r in result]
-        
-        # Agregar opción "Todas" al inicio
-        sucursales.insert(0, {"id": "all", "nombre": "Todas las sucursales"})
-        
-        return {
-            "servidor": server['name'],
-            "system_type": server['system_type'],
-            "sucursales": sucursales
-        }
-    except Exception as e:
-        logging.error(f"Error obteniendo sucursales: {str(e)}")
-        return {
-            "servidor": server['name'],
-            "sucursales": [{"id": "all", "nombre": server['name']}],
-            "error": str(e)
-        }
+# ============================================================================
+# ENDPOINT /comercial/sucursales - MIGRADO A modules/comercial/routes.py
+# ============================================================================
+# FASE 5B-4A (Abril 2026): Migrado a modules/comercial/routes.py
+# ============================================================================
 
 
 

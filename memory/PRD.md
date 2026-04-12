@@ -58,8 +58,12 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
     - Endpoint completo migrado a `modules/comercial/routes.py`
     - Funciones de caché migradas a `modules/comercial/repository.py`
     - server.py reducido de ~16,689 a ~16,404 líneas (-285 líneas adicionales)
-    - Total reducción Fase 5B: -1,027 líneas
-  - ⏸️ Sub-fase 5B-4: Migrar resto de endpoints comerciales (9 pendientes)
+  - ✅ Sub-fase 5B-4A: Endpoints de bajo riesgo migrados (Abril 10, 2026)
+    - `/comercial/sucursales/{server_id}` migrado (~55 líneas)
+    - `/comercial/metas/{server_id}` migrado (~95 líneas)
+    - server.py reducido de ~16,404 a ~16,262 líneas (-142 líneas adicionales)
+    - Total reducción Fase 5B: -1,169 líneas
+  - ⏸️ Sub-fase 5B-4B: Migrar resto de endpoints comerciales (7 pendientes)
 - **Fases 6-7**: ⏸️ Pendientes de autorización
 
 ---
