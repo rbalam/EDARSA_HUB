@@ -9,7 +9,7 @@ import {
   ChevronUp, ChevronDown, AlertCircle, FileText, Copy,
   PieChart, BarChart3, Calendar, Download, Printer,
   CreditCard, Clock, CheckCircle2, XCircle, Eye,
-  FileSpreadsheet, File, ChevronRight
+  FileSpreadsheet, File, ChevronRight, Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -53,6 +53,17 @@ export default function Finanzas() {
   const [cxpSoloDecision, setCxpSoloDecision] = useState(false);
   const [cxpExpandidos, setCxpExpandidos] = useState({});  // Control de proveedores expandidos
   const [savingDecision, setSavingDecision] = useState(null);
+  
+  // Estados para Control de Ingresos
+  const [ingresosSubTab, setIngresosSubTab] = useState('cortes');
+  const [cortesData, setCortesData] = useState(null);
+  const [saldosPendientes, setSaldosPendientes] = useState(null);
+  const [resumenComisiones, setResumenComisiones] = useState(null);
+  const [configComisiones, setConfigComisiones] = useState(null);
+  const [ingresosFiltroSucursal, setIngresosFiltroSucursal] = useState('');
+  const [ingresosFechaInicio, setIngresosFechaInicio] = useState('');
+  const [ingresosFechaFin, setIngresosFechaFin] = useState('');
+  const [ingresosSoloPendientes, setIngresosSoloPendientes] = useState(false);
   
   // Form
   const [formPresupuesto, setFormPresupuesto] = useState({
@@ -235,6 +246,77 @@ export default function Finanzas() {
     toast.success('Archivo CSV exportado');
   };
   
+  // ============= FUNCIONES CONTROL DE INGRESOS =============
+  
+  const loadIngresos = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (ingresosFiltroSucursal) params.append('sucursal_id', ingresosFiltroSucursal);
+      if (ingresosFechaInicio) params.append('fecha_inicio', ingresosFechaInicio);
+      if (ingresosFechaFin) params.append('fecha_fin', ingresosFechaFin);
+      if (ingresosSoloPendientes) params.append('solo_pendientes', 'true');
+      
+      const [dataCortes, dataSaldos, dataComisiones, dataConfig] = await Promise.all([
+        fetchWithAuth(`/api/finanzas/ingresos/cortes-caja?${params}`),
+        fetchWithAuth(`/api/finanzas/ingresos/saldos-por-depositar${ingresosFiltroSucursal ? `?sucursal_id=${ingresosFiltroSucursal}` : ''}`),
+        fetchWithAuth(`/api/finanzas/ingresos/resumen-comisiones?${params}`),
+        fetchWithAuth('/api/finanzas/ingresos/config-comisiones')
+      ]);
+      
+      setCortesData(dataCortes);
+      setSaldosPendientes(dataSaldos);
+      setResumenComisiones(dataComisiones);
+      setConfigComisiones(dataConfig);
+      
+    } catch (error) {
+      console.error('Error ingresos:', error);
+      toast.error('Error al cargar ingresos');
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchWithAuth, ingresosFiltroSucursal, ingresosFechaInicio, ingresosFechaFin, ingresosSoloPendientes]);
+  
+  // Marcar depósito de efectivo
+  const handleDepositoEfectivo = async (corteId, referencia) => {
+    try {
+      const response = await fetch(`${API_URL}/api/finanzas/ingresos/cortes-caja/${corteId}/deposito-efectivo`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          corte_id: corteId,
+          referencia_deposito: referencia,
+          monto_depositado: 0
+        })
+      });
+      
+      if (!response.ok) throw new Error('Error');
+      toast.success('Depósito de efectivo registrado');
+      loadIngresos();
+    } catch (error) {
+      toast.error('Error al registrar depósito');
+    }
+  };
+  
+  // Marcar depósito de tarjetas
+  const handleDepositoTarjetas = async (corteId, referencia) => {
+    try {
+      const response = await fetch(`${API_URL}/api/finanzas/ingresos/cortes-caja/${corteId}/deposito-tarjetas?referencia_netpay=${referencia}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) throw new Error('Error');
+      toast.success('Depósito de tarjetas registrado');
+      loadIngresos();
+    } catch (error) {
+      toast.error('Error al registrar depósito');
+    }
+  };
+  
   // Initial load
   useEffect(() => {
     loadSucursales();
@@ -249,8 +331,10 @@ export default function Finanzas() {
       loadPresupuestos();
     } else if (activeTab === 'cxp') {
       loadCuentasPorPagar();
+    } else if (activeTab === 'ingresos') {
+      loadIngresos();
     }
-  }, [activeTab, loadDashboard, loadPresupuestos, loadCuentasPorPagar]);
+  }, [activeTab, loadDashboard, loadPresupuestos, loadCuentasPorPagar, loadIngresos]);
   
   // CRUD handlers
   const handleNuevoPresupuesto = () => {
@@ -367,8 +451,9 @@ export default function Finanzas() {
   // Tabs
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: PieChart },
-    { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign },
+    { id: 'ingresos', label: 'Control de Ingresos', icon: TrendingUp },
     { id: 'cxp', label: 'Cuentas por Pagar', icon: CreditCard },
+    { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign },
     { id: 'reportes', label: 'Reportes', icon: FileText },
   ];
   
@@ -817,6 +902,374 @@ export default function Finanzas() {
       </Card>
     </div>
   );
+  
+  // Render Control de Ingresos
+  const renderControlIngresos = () => {
+    const resumen = cortesData?.resumen || {};
+    const saldos = saldosPendientes || {};
+    const comisiones = configComisiones?.comisiones || {};
+    
+    return (
+      <div className="space-y-4">
+        {/* Sub-tabs */}
+        <div className="flex gap-2 border-b pb-2">
+          {['cortes', 'pendientes', 'comisiones', 'conciliacion'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setIngresosSubTab(tab)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                ingresosSubTab === tab ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+              }`}
+            >
+              {tab === 'cortes' ? 'Cortes de Caja' :
+               tab === 'pendientes' ? 'Por Depositar' :
+               tab === 'comisiones' ? 'Comisiones' : 'Conciliación'}
+            </button>
+          ))}
+        </div>
+        
+        {/* Filtros generales */}
+        <Card>
+          <CardContent className="p-3">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+              <div>
+                <Label className="text-xs text-zinc-500">Fecha Inicio</Label>
+                <Input type="date" value={ingresosFechaInicio} onChange={(e) => setIngresosFechaInicio(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs text-zinc-500">Fecha Fin</Label>
+                <Input type="date" value={ingresosFechaFin} onChange={(e) => setIngresosFechaFin(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs text-zinc-500">Sucursal</Label>
+                <select value={ingresosFiltroSucursal} onChange={(e) => setIngresosFiltroSucursal(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm mt-1">
+                  <option value="">Todas</option>
+                  {sucursales.map(s => <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={ingresosSoloPendientes} onChange={(e) => setIngresosSoloPendientes(e.target.checked)} className="rounded" />
+                  Solo pendientes
+                </label>
+              </div>
+              <div>
+                <Button onClick={loadIngresos} disabled={loading} className="w-full">
+                  <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Filtrar
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* === TAB: CORTES DE CAJA === */}
+        {ingresosSubTab === 'cortes' && (
+          <div className="space-y-4">
+            {/* Resumen */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <Card className="border-l-4 border-l-green-500">
+                <CardContent className="p-3">
+                  <p className="text-xs text-zinc-500">Total Efectivo</p>
+                  <p className="text-xl font-bold text-green-600">{formatCurrency(resumen.total_efectivo || 0)}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-l-4 border-l-blue-500">
+                <CardContent className="p-3">
+                  <p className="text-xs text-zinc-500">Tarjetas (Bruto)</p>
+                  <p className="text-xl font-bold text-blue-600">{formatCurrency(resumen.total_tarjetas_bruto || 0)}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-l-4 border-l-red-500">
+                <CardContent className="p-3">
+                  <p className="text-xs text-zinc-500">Comisiones</p>
+                  <p className="text-xl font-bold text-red-600">-{formatCurrency(resumen.total_comisiones || 0)}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-l-4 border-l-purple-500">
+                <CardContent className="p-3">
+                  <p className="text-xs text-zinc-500">Neto Tarjetas</p>
+                  <p className="text-xl font-bold text-purple-600">{formatCurrency(resumen.total_neto_tarjetas || 0)}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-l-4 border-l-zinc-800 bg-zinc-800 text-white">
+                <CardContent className="p-3">
+                  <p className="text-xs text-zinc-300">TOTAL VENTAS</p>
+                  <p className="text-xl font-bold">{formatCurrency(resumen.total_ventas || 0)}</p>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Tabla de cortes */}
+            <Card>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto max-h-[500px]">
+                  <table className="w-full text-xs">
+                    <thead className="bg-zinc-800 text-white sticky top-0">
+                      <tr>
+                        <th className="p-2 text-left">Fecha</th>
+                        <th className="p-2 text-left">Sucursal</th>
+                        <th className="p-2 text-right">Efectivo</th>
+                        <th className="p-2 text-right">Débito</th>
+                        <th className="p-2 text-right">Crédito</th>
+                        <th className="p-2 text-right">AMEX</th>
+                        <th className="p-2 text-right">Int'l</th>
+                        <th className="p-2 text-right">Comisiones</th>
+                        <th className="p-2 text-right">Total</th>
+                        <th className="p-2 text-center">Efectivo</th>
+                        <th className="p-2 text-center">Tarjetas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(cortesData?.cortes || []).map(corte => (
+                        <tr key={corte.corte_id} className={`border-b hover:bg-zinc-50 ${corte.conciliado ? 'bg-green-50' : ''}`}>
+                          <td className="p-2">
+                            <div>
+                              <p className="font-medium">{corte.fecha_corte}</p>
+                              <p className="text-zinc-400">{corte.dia_semana}</p>
+                            </div>
+                          </td>
+                          <td className="p-2 font-medium">{corte.sucursal_nombre}</td>
+                          <td className="p-2 text-right font-mono text-green-600">{formatCurrency(corte.efectivo)}</td>
+                          <td className="p-2 text-right font-mono">{formatCurrency(corte.debito)}</td>
+                          <td className="p-2 text-right font-mono">{formatCurrency(corte.credito)}</td>
+                          <td className="p-2 text-right font-mono">{corte.amex > 0 ? formatCurrency(corte.amex) : '-'}</td>
+                          <td className="p-2 text-right font-mono">{corte.internacional > 0 ? formatCurrency(corte.internacional) : '-'}</td>
+                          <td className="p-2 text-right font-mono text-red-500">-{formatCurrency(corte.total_comisiones)}</td>
+                          <td className="p-2 text-right font-mono font-bold">{formatCurrency(corte.total_venta)}</td>
+                          <td className="p-2 text-center">
+                            {corte.efectivo_depositado ? (
+                              <span className="text-green-600 flex items-center justify-center gap-1">
+                                <CheckCircle2 className="h-4 w-4" />
+                                <span className="text-[10px]">{corte.efectivo_referencia_deposito}</span>
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  const ref = prompt('Referencia del depósito:');
+                                  if (ref) handleDepositoEfectivo(corte.corte_id, ref);
+                                }}
+                                className="text-yellow-600 hover:text-yellow-800"
+                                title={`Depositar ${corte.fecha_deposito_efectivo}`}
+                              >
+                                <Clock className="h-4 w-4" />
+                              </button>
+                            )}
+                          </td>
+                          <td className="p-2 text-center">
+                            {corte.tarjetas_depositadas ? (
+                              <span className="text-green-600 flex items-center justify-center gap-1">
+                                <CheckCircle2 className="h-4 w-4" />
+                                <span className="text-[10px]">{corte.tarjetas_referencia_netpay}</span>
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  const ref = prompt('Referencia NetPay:');
+                                  if (ref) handleDepositoTarjetas(corte.corte_id, ref);
+                                }}
+                                className="text-yellow-600 hover:text-yellow-800"
+                                title={`Depositar ${corte.fecha_deposito_debito}`}
+                              >
+                                <Clock className="h-4 w-4" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        
+        {/* === TAB: SALDOS PENDIENTES === */}
+        {ingresosSubTab === 'pendientes' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Efectivo Pendiente */}
+            <Card>
+              <CardHeader className="py-3 bg-green-50 border-b">
+                <CardTitle className="text-base flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-green-600" />
+                    Efectivo por Depositar
+                  </span>
+                  <span className="text-xl font-bold text-green-600">{formatCurrency(saldos.efectivo?.total_pendiente || 0)}</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 max-h-[400px] overflow-y-auto">
+                {(saldos.efectivo?.por_fecha || []).map(grupo => (
+                  <div key={grupo.fecha} className="border-b p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-sm">{grupo.fecha}</span>
+                      <span className="font-bold text-green-600">{formatCurrency(grupo.monto)}</span>
+                    </div>
+                    <div className="space-y-1">
+                      {grupo.cortes.map(c => (
+                        <div key={c.corte_id} className="flex justify-between text-xs text-zinc-500">
+                          <span>{c.sucursal} ({c.fecha_corte})</span>
+                          <span>{formatCurrency(c.monto)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {(saldos.efectivo?.por_fecha || []).length === 0 && (
+                  <div className="p-8 text-center text-zinc-400">
+                    <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-green-300" />
+                    <p>Todo el efectivo está depositado</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Tarjetas Pendiente */}
+            <Card>
+              <CardHeader className="py-3 bg-blue-50 border-b">
+                <CardTitle className="text-base flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-blue-600" />
+                    Tarjetas por Depositar (NetPay)
+                  </span>
+                  <span className="text-xl font-bold text-blue-600">{formatCurrency(saldos.tarjetas?.total_pendiente_neto || 0)}</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 max-h-[400px] overflow-y-auto">
+                {(saldos.tarjetas?.por_fecha || []).map(grupo => (
+                  <div key={grupo.fecha} className="border-b p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-sm">{grupo.fecha}</span>
+                      <div className="text-right">
+                        <p className="font-bold text-blue-600">{formatCurrency(grupo.monto_neto)}</p>
+                        <p className="text-xs text-zinc-400">Bruto: {formatCurrency(grupo.monto_bruto)} | Com: -{formatCurrency(grupo.comisiones)}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      {grupo.cortes.map(c => (
+                        <div key={c.corte_id} className="flex justify-between text-xs text-zinc-500">
+                          <span>{c.sucursal}</span>
+                          <span>D:{formatCurrency(c.debito)} C:{formatCurrency(c.credito)} {c.amex > 0 && `A:${formatCurrency(c.amex)}`}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {(saldos.tarjetas?.por_fecha || []).length === 0 && (
+                  <div className="p-8 text-center text-zinc-400">
+                    <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-blue-300" />
+                    <p>Todas las tarjetas están depositadas</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Total */}
+            <Card className="md:col-span-2 bg-zinc-800 text-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-lg">TOTAL POR DEPOSITAR</span>
+                  <span className="text-3xl font-bold">{formatCurrency(saldos.total_por_depositar || 0)}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        
+        {/* === TAB: COMISIONES === */}
+        {ingresosSubTab === 'comisiones' && (
+          <div className="space-y-4">
+            {/* Configuración de comisiones */}
+            <Card>
+              <CardHeader className="py-3 border-b">
+                <CardTitle className="text-base">Configuración de Comisiones (NetPay)</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {Object.entries(comisiones).map(([tipo, config]) => (
+                    <div key={tipo} className="p-4 border rounded-lg">
+                      <h4 className="font-medium mb-2">{config.nombre}</h4>
+                      <div className="space-y-1 text-sm">
+                        <p>Comisión: <span className="font-bold">{config.comision_porcentaje}%</span></p>
+                        <p>IVA: <span className="font-bold">{config.iva}%</span></p>
+                        <p>Total: <span className="font-bold text-red-600">{config.comision_total_porcentaje}%</span></p>
+                        <p>Depósito: <span className="font-bold">{config.dias_deposito} día(s) hábil(es)</span></p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 p-3 bg-yellow-50 rounded-lg text-sm">
+                  <p className="font-medium text-yellow-800 mb-1">Reglas de Depósito:</p>
+                  <ul className="list-disc list-inside text-yellow-700 space-y-1">
+                    <li>Efectivo: día siguiente (Vie/Sáb/Dom → Lunes)</li>
+                    <li>Débito/Crédito: 24 hrs hábiles</li>
+                    <li>AMEX/Internacional: 48 hrs hábiles</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Resumen de comisiones del período */}
+            {resumenComisiones && (
+              <Card>
+                <CardHeader className="py-3 border-b">
+                  <CardTitle className="text-base">Resumen de Comisiones del Período</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <table className="w-full text-sm">
+                    <thead className="bg-zinc-100">
+                      <tr>
+                        <th className="p-3 text-left">Tipo</th>
+                        <th className="p-3 text-right">Ventas</th>
+                        <th className="p-3 text-right">Tasa</th>
+                        <th className="p-3 text-right">Comisiones</th>
+                        <th className="p-3 text-right">Neto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(resumenComisiones.por_tipo || {}).map(([tipo, data]) => (
+                        <tr key={tipo} className="border-b">
+                          <td className="p-3 font-medium capitalize">{tipo}</td>
+                          <td className="p-3 text-right font-mono">{formatCurrency(data.ventas)}</td>
+                          <td className="p-3 text-right">{data.tasa}</td>
+                          <td className="p-3 text-right font-mono text-red-600">-{formatCurrency(data.comisiones)}</td>
+                          <td className="p-3 text-right font-mono font-bold">{formatCurrency(data.neto)}</td>
+                        </tr>
+                      ))}
+                      <tr className="bg-zinc-800 text-white font-bold">
+                        <td className="p-3">TOTAL</td>
+                        <td className="p-3 text-right font-mono">{formatCurrency(resumenComisiones.totales?.ventas || 0)}</td>
+                        <td className="p-3"></td>
+                        <td className="p-3 text-right font-mono text-red-300">-{formatCurrency(resumenComisiones.totales?.comisiones || 0)}</td>
+                        <td className="p-3 text-right font-mono">{formatCurrency(resumenComisiones.totales?.neto || 0)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+        
+        {/* === TAB: CONCILIACIÓN === */}
+        {ingresosSubTab === 'conciliacion' && (
+          <Card className="border-2 border-dashed">
+            <CardContent className="py-12 text-center">
+              <FileSpreadsheet className="h-16 w-16 text-zinc-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-zinc-600 mb-2">Conciliación Bancaria</h3>
+              <p className="text-zinc-400 text-sm max-w-md mx-auto mb-4">
+                Cargue el estado de cuenta de BBVA u otro banco para conciliar automáticamente los depósitos de efectivo y tarjetas.
+              </p>
+              <Button variant="outline" className="mt-2">
+                <Upload className="h-4 w-4 mr-2" />
+                Cargar Estado de Cuenta
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
   
   // Render Cuentas por Pagar
   const renderCuentasPorPagar = () => {
@@ -1314,8 +1767,9 @@ export default function Finanzas() {
       {!loading && (
         <>
           {activeTab === 'dashboard' && renderDashboard()}
-          {activeTab === 'presupuestos' && renderPresupuestos()}
+          {activeTab === 'ingresos' && renderControlIngresos()}
           {activeTab === 'cxp' && renderCuentasPorPagar()}
+          {activeTab === 'presupuestos' && renderPresupuestos()}
           {activeTab === 'reportes' && renderReportes()}
         </>
       )}

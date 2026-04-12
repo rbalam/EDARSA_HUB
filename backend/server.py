@@ -156,6 +156,7 @@ from modules.rh.routes import router as rh_router
 from modules.rh.importador.routes import router as rh_importador_router
 from modules.rh.solicitudes_catalogo import router as rh_solicitudes_router
 from modules.finanzas.cuentas_por_pagar import router as cxp_router
+from modules.finanzas.ingresos import router as ingresos_router
 
 # Inicializar módulo RH con conexión a MongoDB
 init_rh_module(db)
@@ -171,6 +172,9 @@ api_router.include_router(rh_solicitudes_router)
 
 # FASE FINANZAS: Registrar router de cuentas por pagar
 api_router.include_router(cxp_router)
+
+# FASE FINANZAS: Registrar router de ingresos
+api_router.include_router(ingresos_router)
 
 import requests
 

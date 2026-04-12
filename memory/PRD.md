@@ -26,23 +26,29 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
-### Session: April 2026 (Cuentas por Pagar)
+### Session: April 2026 (Control de Ingresos)
 
 #### Completed Work
-- [x] **Módulo Cuentas por Pagar en Finanzas** (Abril 12, 2026)
-  - Nuevo tab "Cuentas por Pagar" en módulo Finanzas
-  - Backend: /api/finanzas/cuentas-por-pagar
-  - Columnas: Folio entrada, Folio factura, Fechas, Días vencida, Referencia, Importe, Saldo, Decisión pago, Importe a pagar, Documentos (PDF/XML)
-  - Resumen por antigüedad (Corriente, 1-30, 31-60, 61-90, +90 días)
-  - Filtros: Sucursal, Proveedor, Fecha corte, Solo vencidas, Con decisión
-  - Agrupado por proveedor con subtotales
-  - Checkbox interactivo para decisión de pago
-  - Exportar a CSV
+- [x] **Módulo Control de Ingresos en Finanzas** (Abril 12, 2026)
+  - Backend: /api/finanzas/ingresos
+  - Sub-tabs: Cortes de Caja, Por Depositar, Comisiones, Conciliación
+  - Reglas de depósito implementadas:
+    - Efectivo: día siguiente (Vie/Sáb/Dom → Lunes)
+    - Débito/Crédito: 24 hrs hábiles
+    - AMEX/Internacional: 48 hrs hábiles
+  - Comisiones NetPay con IVA:
+    - Débito: 1.2% + IVA = 1.392%
+    - Crédito: 1.5% + IVA = 1.74%
+    - AMEX: 2.4% + IVA = 2.784%
+    - Internacional: 2% + IVA = 2.32%
+  - Control de saldos por depositar (efectivo y tarjetas)
   - NOTA: Datos demo (pendiente conectar a SQL Server)
+
+- [x] **Módulo Cuentas por Pagar en Finanzas** (Abril 12, 2026)
 
 - [x] **Sistema de Solicitud de Alta en Catálogos** (Abril 12, 2026)
 
-- [x] **Tablero de Captura Rediseñado - Estilo Excel** (Abril 12, 2026)
+- [x] **Tablero de Captura Incidencias Estilo Excel** (Abril 12, 2026)
 
 ---
 
