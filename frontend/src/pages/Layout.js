@@ -183,28 +183,44 @@ const Layout = () => {
                   <div key={item.name}>
                     {/* Menu item principal */}
                     {hasSubmenus && filteredSubmenus.length > 0 ? (
-                      <button
-                        onClick={() => toggleSubmenu(item.name)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
-                          isActive || hasActiveSubmenu
-                            ? 'bg-zinc-800 text-white' 
-                            : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                        }`}
-                        data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
-                      >
-                        <Icon className="h-5 w-5" />
-                        <span className="font-medium flex-1 text-left">{item.name}</span>
-                        {item.badge && (
-                          <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded mr-1">
-                            {item.badge}
-                          </span>
-                        )}
-                        {isExpanded ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                      </button>
+                      <div className="flex items-center">
+                        <Link
+                          to={item.href}
+                          onClick={() => {
+                            setSidebarOpen(false);
+                            if (!isExpanded) setExpandedMenus(prev => ({ ...prev, [item.name]: true }));
+                          }}
+                          className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-l-md transition-colors ${
+                            isActive || hasActiveSubmenu
+                              ? 'bg-zinc-800 text-white' 
+                              : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                          }`}
+                          data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span className="font-medium flex-1 text-left">{item.name}</span>
+                          {item.badge && (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
+                              {item.badge}
+                            </span>
+                          )}
+                        </Link>
+                        <button
+                          onClick={() => toggleSubmenu(item.name)}
+                          className={`px-2 py-3 rounded-r-md transition-colors ${
+                            isActive || hasActiveSubmenu
+                              ? 'bg-zinc-800 text-white' 
+                              : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                          }`}
+                          data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}-toggle`}
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     ) : (
                       <Link
                         to={item.href}
