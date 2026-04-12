@@ -212,7 +212,61 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
     - `modules/rh/routes.py` (+120 líneas) - 7 endpoints flujo nómina
   - **server.py**: 7 endpoints comentados (~180 líneas)
   - **127 tests pasando**, 4 skipped (integración)
-- **Fases 6G-6H, 7**: ⏸️ Pendientes de autorización
+- **Fase 6G-B (Auditoría + Dashboard RH)**: ✅ COMPLETADA (Diciembre 2025)
+  - 2 endpoints migrados desde `server.py` a `modules/rh/`:
+    - `GET /rrhh/auditoria-fiscal`
+    - `GET /rrhh/dashboard`
+  - **Queries con IDs validados como enteros** (casting seguro, sin riesgo inyección)
+  - **Tablas SQL Server reutilizadas** (NO duplicadas):
+    - `RH_Auditoria_Fiscal`, `RH_Colaboradores_Expediente`, `RH_Cat_Sucursales`
+    - `RH_Cat_Puestos`, `RH_Incidencias_Nomina`, `RH_Flujo_Nomina_Sucursal`
+  - **Archivos actualizados**:
+    - `modules/rh/schemas.py` (+50 líneas) - AuditoriaFiscalFiltros, AuditoriaFiscalResponse
+    - `modules/rh/repository.py` (+120 líneas) - query_listar_auditoria_fiscal, query_dashboard_rh
+    - `modules/rh/service.py` (+55 líneas) - RHAuditoriaService
+    - `modules/rh/routes.py` (+50 líneas) - Endpoints auditoría+dashboard
+- **Fase 6H-B (Reclutamiento RH)**: ✅ COMPLETADA (Diciembre 2025)
+  - 10 endpoints migrados desde `server.py` a `modules/rh/`:
+    - `GET /rrhh/vacantes`
+    - `POST /rrhh/vacantes`
+    - `PUT /rrhh/vacantes/{vacante_id}`
+    - `DELETE /rrhh/vacantes/{vacante_id}`
+    - `GET /rrhh/candidatos`
+    - `POST /rrhh/candidatos`
+    - `PUT /rrhh/candidatos/{candidato_id}`
+    - `DELETE /rrhh/candidatos/{candidato_id}`
+    - `GET /rrhh/reclutamiento/dashboard`
+    - `GET /rrhh/reclutamiento/script-inicializacion`
+  - **Validación Pydantic** para:
+    - `sucursal_id`, `puesto_id`, `vacante_id`, `candidato_id` (int > 0)
+    - `email` (formato válido)
+    - `estatus` vacantes (Abierta, En Proceso, Cerrada, Cancelada)
+    - `estatus` candidatos (Recibido, En Revisión, Entrevista, Finalista, Contratado, Rechazado)
+    - `tipo_contrato` (Tiempo Completo, Medio Tiempo, Temporal, Por Proyecto, Prácticas)
+    - `puntuacion` (0-100)
+  - **Queries con IDs validados como enteros** (casting seguro)
+  - **Escape SQL** usado para strings de usuario en INSERT/UPDATE:
+    - titulo, descripcion, requisitos, estatus, nombre, email, notas, etc.
+    Razón: SQL Server no soporta parámetros nativos en INSERT/UPDATE con múltiples columnas dinámicas
+  - **Tablas SQL Server reutilizadas** (NO duplicadas):
+    - `RH_Vacantes`, `RH_Candidatos`, `RH_Cat_Sucursales`, `RH_Cat_Puestos`
+  - **Archivos actualizados**:
+    - `modules/rh/schemas.py` (+220 líneas) - VacanteCreate, CandidatoCreate, etc.
+    - `modules/rh/repository.py` (+350 líneas) - CRUD vacantes, candidatos, dashboard
+    - `modules/rh/service.py` (+200 líneas) - RHReclutamientoService
+    - `modules/rh/routes.py` (+190 líneas) - 10 endpoints reclutamiento
+
+### 🎉 MÓDULO RH COMPLETAMENTE MIGRADO (Diciembre 2025)
+**Total endpoints RH migrados**: 38 endpoints
+**Total líneas código modular RH**: ~5,200 líneas
+**Bloques completados**:
+- ✅ 6B: Catálogos RH (10 endpoints)
+- ✅ 6C: Colaboradores RH (5 endpoints)
+- ✅ 6D: Incidencias RH (4 endpoints)
+- ✅ 6E: Asistencia RH (3 endpoints)
+- ✅ 6F: Flujo Nómina RH (7 endpoints)
+- ✅ 6G: Auditoría + Dashboard RH (2 endpoints)
+- ✅ 6H: Reclutamiento RH (10 endpoints - incluye script inicialización)
 
 ---
 

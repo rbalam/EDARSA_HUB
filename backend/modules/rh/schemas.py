@@ -748,3 +748,263 @@ class ValidacionGerenteRequest(BaseModel):
         """Validación post-init para verificar motivo cuando hay rechazo."""
         if not self.aprobado and (not self.motivo_rechazo or not self.motivo_rechazo.strip()):
             raise ValueError("motivo_rechazo es obligatorio cuando aprobado=false")
+
+
+# ============================================================================
+# AUDITORÍA + DASHBOARD RH (FASE 6G-B)
+# ============================================================================
+# TABLAS REUTILIZADAS:
+# - RH_Auditoria_Fiscal
+# - RH_Colaboradores_Expediente
+# - RH_Cat_Sucursales
+# - RH_Cat_Puestos
+# - RH_Incidencias_Nomina
+# - RH_Flujo_Nomina_Sucursal
+#
+# NOTA: Dashboard ejecuta múltiples queries para métricas agregadas.
+# ============================================================================
+
+
+class AuditoriaFiscalFiltros(BaseModel):
+    """Filtros para búsqueda de auditoría fiscal."""
+    colaborador_id: Optional[int] = Field(None, gt=0)
+    semana: Optional[int] = Field(None, gt=0)
+    solo_alertas: bool = Field(False, description="Filtrar solo registros con alerta de fraude")
+
+
+class AuditoriaFiscalResponse(BaseModel):
+    """Modelo de respuesta para un registro de auditoría fiscal."""
+    AuditoriaID: int
+    ColaboradorID: int
+    Nombre_Completo: Optional[str] = None
+    RFC: Optional[str] = None
+    Nombre_Sucursal: Optional[str] = None
+    Semana: int
+    Monto_Dispersado_Banco: Optional[float] = None
+    Monto_Timbrado_XML: Optional[float] = None
+    Monto_IMSS_EBA_EMA: Optional[float] = None
+    Diferencia: Optional[float] = None
+    Alerta_Fraude: Optional[bool] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class AuditoriaListResponse(BaseModel):
+    """Modelo de respuesta para lista de auditoría fiscal."""
+    auditoria: List[AuditoriaFiscalResponse]
+    total: int
+    total_alertas: int
+
+
+class DashboardFiltros(BaseModel):
+    """Filtros para dashboard RH."""
+    sucursal_id: Optional[int] = Field(None, gt=0)
+
+
+# ============================================================================
+# RECLUTAMIENTO RH (FASE 6H-B)
+# ============================================================================
+# TABLAS REUTILIZADAS:
+# - RH_Vacantes
+# - RH_Candidatos
+# - RH_Cat_Sucursales
+# - RH_Cat_Puestos
+#
+# ESTATUS VÁLIDOS:
+# - Vacantes: Abierta, En Proceso, Cerrada, Cancelada
+# - Candidatos: Recibido, En Revisión, Entrevista, Finalista, Contratado, Rechazado
+# ============================================================================
+
+# Estados válidos para vacantes
+ESTATUS_VACANTES = ["Abierta", "En Proceso", "Cerrada", "Cancelada"]
+
+# Estados válidos para candidatos
+ESTATUS_CANDIDATOS = ["Recibido", "En Revisión", "Entrevista", "Finalista", "Contratado", "Rechazado"]
+
+# Tipos de contrato válidos
+TIPOS_CONTRATO = ["Tiempo Completo", "Medio Tiempo", "Temporal", "Por Proyecto", "Prácticas"]
+
+
+class VacanteBase(BaseModel):
+    """Campos base para una vacante."""
+    sucursal_id: int = Field(..., gt=0, description="ID de la sucursal")
+    puesto_id: int = Field(..., gt=0, description="ID del puesto")
+    titulo: str = Field(..., min_length=1, max_length=200, description="Título de la vacante")
+    descripcion: Optional[str] = Field(None, max_length=4000)
+    requisitos: Optional[str] = Field(None, max_length=4000)
+    salario_min: Optional[float] = Field(0, ge=0)
+    salario_max: Optional[float] = Field(0, ge=0)
+    tipo_contrato: str = Field("Tiempo Completo", max_length=50)
+    
+    @field_validator('titulo')
+    @classmethod
+    def titulo_strip(cls, v: str) -> str:
+        return v.strip()
+    
+    @field_validator('tipo_contrato')
+    @classmethod
+    def tipo_contrato_valido(cls, v: str) -> str:
+        if v not in TIPOS_CONTRATO:
+            raise ValueError(f"tipo_contrato debe ser uno de: {', '.join(TIPOS_CONTRATO)}")
+        return v
+
+
+class VacanteCreate(VacanteBase):
+    """Modelo para crear una vacante."""
+    pass
+
+
+class VacanteUpdate(BaseModel):
+    """Modelo para actualizar una vacante."""
+    titulo: Optional[str] = Field(None, min_length=1, max_length=200)
+    descripcion: Optional[str] = Field(None, max_length=4000)
+    requisitos: Optional[str] = Field(None, max_length=4000)
+    salario_min: Optional[float] = Field(None, ge=0)
+    salario_max: Optional[float] = Field(None, ge=0)
+    estatus: Optional[str] = None
+    
+    @field_validator('estatus')
+    @classmethod
+    def estatus_valido(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in ESTATUS_VACANTES:
+            raise ValueError(f"estatus debe ser uno de: {', '.join(ESTATUS_VACANTES)}")
+        return v
+
+
+class VacanteResponse(BaseModel):
+    """Modelo de respuesta para una vacante."""
+    VacanteID: int
+    SucursalID: int
+    Nombre_Sucursal: Optional[str] = None
+    PuestoID: int
+    Nombre_Puesto: Optional[str] = None
+    Departamento: Optional[str] = None
+    Titulo: str
+    Descripcion: Optional[str] = None
+    Requisitos: Optional[str] = None
+    Salario_Min: Optional[float] = None
+    Salario_Max: Optional[float] = None
+    Tipo_Contrato: Optional[str] = None
+    Estatus: str
+    Fecha_Publicacion: Optional[str] = None
+    Fecha_Cierre: Optional[str] = None
+    Creado_Por: Optional[str] = None
+    Total_Candidatos: Optional[int] = 0
+    
+    class Config:
+        from_attributes = True
+
+
+class VacantesListResponse(BaseModel):
+    """Modelo de respuesta para lista de vacantes."""
+    vacantes: List[VacanteResponse]
+    total: int
+
+
+class VacanteFiltros(BaseModel):
+    """Filtros para búsqueda de vacantes."""
+    sucursal_id: Optional[int] = Field(None, gt=0)
+    estatus: Optional[str] = None
+    
+    @field_validator('estatus')
+    @classmethod
+    def estatus_valido(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in ESTATUS_VACANTES:
+            raise ValueError(f"estatus debe ser uno de: {', '.join(ESTATUS_VACANTES)}")
+        return v
+
+
+class CandidatoBase(BaseModel):
+    """Campos base para un candidato."""
+    vacante_id: int = Field(..., gt=0, description="ID de la vacante")
+    nombre: str = Field(..., min_length=1, max_length=200, description="Nombre completo del candidato")
+    email: str = Field(..., min_length=5, max_length=100, description="Email del candidato")
+    telefono: Optional[str] = Field(None, max_length=20)
+    cv_url: Optional[str] = Field(None, max_length=500, description="URL del CV")
+    
+    @field_validator('nombre', 'email')
+    @classmethod
+    def campos_strip(cls, v: str) -> str:
+        return v.strip()
+    
+    @field_validator('email')
+    @classmethod
+    def email_formato(cls, v: str) -> str:
+        import re
+        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', v):
+            raise ValueError('Formato de email inválido')
+        return v
+
+
+class CandidatoCreate(CandidatoBase):
+    """Modelo para crear un candidato."""
+    pass
+
+
+class CandidatoUpdate(BaseModel):
+    """Modelo para actualizar un candidato."""
+    estatus: Optional[str] = None
+    puntuacion: Optional[int] = Field(None, ge=0, le=100)
+    notas: Optional[str] = Field(None, max_length=2000)
+    fecha_entrevista: Optional[str] = None
+    entrevistador: Optional[str] = Field(None, max_length=100)
+    
+    @field_validator('estatus')
+    @classmethod
+    def estatus_valido(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in ESTATUS_CANDIDATOS:
+            raise ValueError(f"estatus debe ser uno de: {', '.join(ESTATUS_CANDIDATOS)}")
+        return v
+    
+    @field_validator('fecha_entrevista')
+    @classmethod
+    def fecha_formato(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v = v.strip()
+        import re
+        # Formato: YYYY-MM-DD o YYYY-MM-DD HH:MM
+        if not re.match(r'^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$', v):
+            raise ValueError('Formato de fecha debe ser YYYY-MM-DD o YYYY-MM-DD HH:MM')
+        return v
+
+
+class CandidatoResponse(BaseModel):
+    """Modelo de respuesta para un candidato."""
+    CandidatoID: int
+    VacanteID: int
+    Vacante_Titulo: Optional[str] = None
+    Nombre_Sucursal: Optional[str] = None
+    Nombre_Completo: str
+    Email: str
+    Telefono: Optional[str] = None
+    CV_URL: Optional[str] = None
+    Estatus: str
+    Puntuacion: Optional[int] = None
+    Notas: Optional[str] = None
+    Fecha_Aplicacion: Optional[str] = None
+    Fecha_Entrevista: Optional[str] = None
+    Entrevistador: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class CandidatosListResponse(BaseModel):
+    """Modelo de respuesta para lista de candidatos."""
+    candidatos: List[CandidatoResponse]
+    total: int
+
+
+class CandidatoFiltros(BaseModel):
+    """Filtros para búsqueda de candidatos."""
+    vacante_id: Optional[int] = Field(None, gt=0)
+    estatus: Optional[str] = None
+    
+    @field_validator('estatus')
+    @classmethod
+    def estatus_valido(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in ESTATUS_CANDIDATOS:
+            raise ValueError(f"estatus debe ser uno de: {', '.join(ESTATUS_CANDIDATOS)}")
+        return v

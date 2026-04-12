@@ -47,6 +47,24 @@ Flujo Nómina migrado desde server.py:
 - PUT    /rrhh/nominas/flujo/{flujo_id}/enviar-tesoreria
 - PUT    /rrhh/nominas/flujo/{flujo_id}/marcar-pagado
 
+FASE 6G-B DEL REFACTOR MODULAR (Diciembre 2025):
+Auditoría + Dashboard RH migrados desde server.py:
+- GET    /rrhh/auditoria-fiscal
+- GET    /rrhh/dashboard
+
+FASE 6H-B DEL REFACTOR MODULAR (Diciembre 2025):
+Reclutamiento migrado desde server.py:
+- GET    /rrhh/vacantes
+- POST   /rrhh/vacantes
+- PUT    /rrhh/vacantes/{vacante_id}
+- DELETE /rrhh/vacantes/{vacante_id}
+- GET    /rrhh/candidatos
+- POST   /rrhh/candidatos
+- PUT    /rrhh/candidatos/{candidato_id}
+- DELETE /rrhh/candidatos/{candidato_id}
+- GET    /rrhh/reclutamiento/dashboard
+- GET    /rrhh/reclutamiento/script-inicializacion
+
 CONTRATOS MANTENIDOS:
 - Prefijo: /rrhh/ (NO /rh/)
 - Formatos de respuesta idénticos a los originales
@@ -57,6 +75,7 @@ SEGURIDAD:
 - Validación de tipos de incidencia contra catálogo RH_Cat_Tipos_Incidencias
 - Validación de tipo_registro de asistencia (Entrada/Salida)
 - Validación de transiciones de estado en flujo de nómina
+- Validación de estatus de vacantes y candidatos
 - Queries parametrizados nativos en repository
 """
 
@@ -730,3 +749,291 @@ async def rrhh_marcar_nomina_pagada(
     Requiere autenticación.
     """
     return await rh_flujo_nomina_service.marcar_pagado(flujo_id)
+
+
+# ============================================================================
+# ENDPOINTS DE AUDITORÍA + DASHBOARD RH (FASE 6G-B)
+# ============================================================================
+# Migrados desde server.py manteniendo el mismo contrato de API.
+#
+# TABLAS REUTILIZADAS:
+# - RH_Auditoria_Fiscal
+# - RH_Colaboradores_Expediente
+# - RH_Cat_Sucursales
+# - RH_Cat_Puestos
+# - RH_Incidencias_Nomina
+# - RH_Flujo_Nomina_Sucursal
+# ============================================================================
+
+from modules.rh.service import rh_auditoria_service
+
+
+@router.get("/auditoria-fiscal")
+async def rrhh_listar_auditoria_fiscal(
+    colaborador_id: Optional[int] = None,
+    semana: Optional[int] = None,
+    solo_alertas: bool = False,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Lista auditoría fiscal de nóminas.
+    
+    Parámetros de filtro:
+    - colaborador_id: Filtrar por colaborador
+    - semana: Filtrar por semana
+    - solo_alertas: Mostrar solo registros con alerta de fraude
+    
+    Retorna:
+    - auditoria: Lista de registros
+    - total: Cantidad total
+    - total_alertas: Cantidad de alertas de fraude
+    
+    Requiere autenticación.
+    """
+    return await rh_auditoria_service.listar_auditoria(
+        colaborador_id=colaborador_id,
+        semana=semana,
+        solo_alertas=solo_alertas
+    )
+
+
+@router.get("/dashboard")
+async def rrhh_dashboard(
+    sucursal_id: Optional[int] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Dashboard con métricas de RRHH.
+    
+    Parámetros:
+    - sucursal_id: Filtrar por sucursal (opcional)
+    
+    Retorna:
+    - resumen: Total colaboradores, activos, vacaciones, incapacidad, bajas
+    - por_departamento: Distribución por departamento
+    - incidencias_mes: Incidencias del mes actual
+    - flujos_pendientes: Flujos de nómina no pagados
+    - alertas_fraude: Cantidad de alertas de fraude
+    
+    Requiere autenticación.
+    """
+    return await rh_auditoria_service.get_dashboard(sucursal_id=sucursal_id)
+
+
+# ============================================================================
+# ENDPOINTS DE RECLUTAMIENTO RH (FASE 6H-B)
+# ============================================================================
+# Migrados desde server.py manteniendo el mismo contrato de API.
+#
+# TABLAS REUTILIZADAS:
+# - RH_Vacantes (CRUD)
+# - RH_Candidatos (CRUD)
+# - RH_Cat_Sucursales
+# - RH_Cat_Puestos
+#
+# ESTATUS VÁLIDOS:
+# - Vacantes: Abierta, En Proceso, Cerrada, Cancelada
+# - Candidatos: Recibido, En Revisión, Entrevista, Finalista, Contratado, Rechazado
+# ============================================================================
+
+from modules.rh.service import rh_reclutamiento_service
+from modules.rh.schemas import (
+    VacanteCreate,
+    VacanteUpdate,
+    CandidatoCreate,
+    CandidatoUpdate,
+    ESTATUS_VACANTES,
+    ESTATUS_CANDIDATOS,
+)
+
+
+# -------------------- VACANTES --------------------
+
+@router.get("/vacantes")
+async def rrhh_listar_vacantes(
+    sucursal_id: Optional[int] = None,
+    estatus: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Lista vacantes disponibles.
+    
+    Parámetros de filtro:
+    - sucursal_id: Filtrar por sucursal
+    - estatus: Filtrar por estatus (Abierta, En Proceso, Cerrada, Cancelada)
+    
+    Requiere autenticación.
+    """
+    return await rh_reclutamiento_service.listar_vacantes(
+        sucursal_id=sucursal_id,
+        estatus=estatus
+    )
+
+
+@router.post("/vacantes")
+async def rrhh_crear_vacante(
+    body: VacanteCreate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Crea una nueva vacante.
+    
+    Campos requeridos:
+    - sucursal_id: ID de la sucursal
+    - puesto_id: ID del puesto
+    - titulo: Título de la vacante
+    
+    Campos opcionales:
+    - descripcion, requisitos, salario_min, salario_max, tipo_contrato
+    
+    La vacante se crea con estatus 'Abierta'.
+    
+    Requiere autenticación.
+    """
+    return await rh_reclutamiento_service.crear_vacante(
+        body,
+        creado_por=current_user.get("email", "")
+    )
+
+
+@router.put("/vacantes/{vacante_id}")
+async def rrhh_actualizar_vacante(
+    vacante_id: int,
+    body: VacanteUpdate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Actualiza una vacante.
+    
+    Campos actualizables:
+    - titulo, descripcion, requisitos, salario_min, salario_max, estatus
+    
+    Si estatus se cambia a 'Cerrada', se establece Fecha_Cierre automáticamente.
+    
+    Requiere autenticación.
+    """
+    return await rh_reclutamiento_service.actualizar_vacante(vacante_id, body)
+
+
+@router.delete("/vacantes/{vacante_id}")
+async def rrhh_eliminar_vacante(
+    vacante_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Elimina una vacante.
+    
+    NOTA: También elimina todos los candidatos asociados a la vacante.
+    
+    Requiere autenticación.
+    """
+    return await rh_reclutamiento_service.eliminar_vacante(vacante_id)
+
+
+# -------------------- CANDIDATOS --------------------
+
+@router.get("/candidatos")
+async def rrhh_listar_candidatos(
+    vacante_id: Optional[int] = None,
+    estatus: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Lista candidatos.
+    
+    Parámetros de filtro:
+    - vacante_id: Filtrar por vacante
+    - estatus: Filtrar por estatus (Recibido, En Revisión, Entrevista, Finalista, Contratado, Rechazado)
+    
+    Requiere autenticación.
+    """
+    return await rh_reclutamiento_service.listar_candidatos(
+        vacante_id=vacante_id,
+        estatus=estatus
+    )
+
+
+@router.post("/candidatos")
+async def rrhh_crear_candidato(
+    body: CandidatoCreate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Registra un nuevo candidato.
+    
+    Campos requeridos:
+    - vacante_id: ID de la vacante
+    - nombre: Nombre completo
+    - email: Email del candidato
+    
+    Campos opcionales:
+    - telefono, cv_url
+    
+    El candidato se crea con estatus 'Recibido'.
+    
+    Requiere autenticación.
+    """
+    return await rh_reclutamiento_service.crear_candidato(body)
+
+
+@router.put("/candidatos/{candidato_id}")
+async def rrhh_actualizar_candidato(
+    candidato_id: int,
+    body: CandidatoUpdate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Actualiza el estatus de un candidato.
+    
+    Campos actualizables:
+    - estatus, puntuacion (0-100), notas, fecha_entrevista, entrevistador
+    
+    Requiere autenticación.
+    """
+    return await rh_reclutamiento_service.actualizar_candidato(candidato_id, body)
+
+
+@router.delete("/candidatos/{candidato_id}")
+async def rrhh_eliminar_candidato(
+    candidato_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Elimina un candidato.
+    
+    Requiere autenticación.
+    """
+    return await rh_reclutamiento_service.eliminar_candidato(candidato_id)
+
+
+# -------------------- DASHBOARD RECLUTAMIENTO --------------------
+
+@router.get("/reclutamiento/dashboard")
+async def rrhh_reclutamiento_dashboard(
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Dashboard de reclutamiento con métricas.
+    
+    Retorna:
+    - vacantes_por_estatus: Cantidad de vacantes por estatus
+    - candidatos_por_estatus: Cantidad de candidatos por estatus
+    - top_vacantes: Top 5 vacantes abiertas con más candidatos
+    
+    Requiere autenticación.
+    """
+    return await rh_reclutamiento_service.get_dashboard()
+
+
+@router.get("/reclutamiento/script-inicializacion")
+async def rrhh_reclutamiento_script(
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Retorna el script SQL para crear las tablas de reclutamiento.
+    
+    Útil para inicializar el módulo de reclutamiento en una base de datos nueva.
+    
+    Requiere autenticación.
+    """
+    return {"script": rh_reclutamiento_service.get_script_inicializacion()}

@@ -1600,3 +1600,666 @@ def query_actualizar_estatus_flujo(
     execute_hub_query(server, query)
     
     return {"success": True}
+
+
+# ============================================================================
+# AUDITORÍA + DASHBOARD RH - QUERIES (FASE 6G-B)
+# ============================================================================
+# TABLAS REUTILIZADAS:
+# - RH_Auditoria_Fiscal (principal)
+# - RH_Colaboradores_Expediente (JOIN)
+# - RH_Cat_Sucursales (JOIN)
+# - RH_Cat_Puestos (JOIN)
+# - RH_Incidencias_Nomina (para dashboard)
+# - RH_Flujo_Nomina_Sucursal (para dashboard)
+#
+# SEGURIDAD:
+# - IDs validados como enteros (casting seguro)
+# - No hay strings de usuario en filtros (solo_alertas es booleano)
+# ============================================================================
+
+
+def query_listar_auditoria_fiscal(
+    server: Dict,
+    colaborador_id: Optional[int] = None,
+    semana: Optional[int] = None,
+    solo_alertas: bool = False
+) -> Dict[str, Any]:
+    """
+    Lista auditoría fiscal de nóminas con filtros.
+    
+    PARÁMETROS NATIVOS: colaborador_id, semana (enteros validados)
+    
+    Tablas: RH_Auditoria_Fiscal, RH_Colaboradores_Expediente, RH_Cat_Sucursales
+    """
+    conditions = ["1=1"]
+    
+    # Filtros con validación de enteros (seguros - casting a int)
+    if colaborador_id is not None:
+        try:
+            conditions.append(f"a.ColaboradorID = {int(colaborador_id)}")
+        except (ValueError, TypeError):
+            pass
+    
+    if semana is not None:
+        try:
+            conditions.append(f"a.Semana = {int(semana)}")
+        except (ValueError, TypeError):
+            pass
+    
+    if solo_alertas:
+        conditions.append("a.Alerta_Fraude = 1")
+    
+    where_clause = " AND ".join(conditions)
+    
+    query = f"""
+        SELECT 
+            a.AuditoriaID,
+            a.ColaboradorID,
+            c.Nombre_Completo,
+            c.RFC,
+            s.Nombre_Sucursal,
+            a.Semana,
+            a.Monto_Dispersado_Banco,
+            a.Monto_Timbrado_XML,
+            a.Monto_IMSS_EBA_EMA,
+            a.Diferencia,
+            a.Alerta_Fraude
+        FROM RH_Auditoria_Fiscal a
+        LEFT JOIN RH_Colaboradores_Expediente c ON a.ColaboradorID = c.ColaboradorID
+        LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
+        WHERE {where_clause}
+        ORDER BY a.Alerta_Fraude DESC, a.Semana DESC
+    """
+    
+    result = execute_hub_query(server, query)
+    alertas = sum(1 for r in result if r.get("Alerta_Fraude") == 1)
+    
+    return {
+        "datos": result,
+        "total": len(result),
+        "total_alertas": alertas
+    }
+
+
+def query_dashboard_rh(server: Dict, sucursal_id: Optional[int] = None) -> Dict[str, Any]:
+    """
+    Obtiene métricas del dashboard RH ejecutando múltiples queries.
+    
+    PARÁMETROS NATIVOS: sucursal_id (entero validado, usado en filtro dinámico)
+    
+    Tablas: RH_Colaboradores_Expediente, RH_Cat_Puestos, RH_Incidencias_Nomina,
+            RH_Flujo_Nomina_Sucursal, RH_Auditoria_Fiscal
+    """
+    # Filtros dinámicos seguros (entero validado)
+    suc_filter = ""
+    suc_filter_c = ""
+    if sucursal_id is not None:
+        try:
+            sid = int(sucursal_id)
+            suc_filter = f"AND SucursalID = {sid}"
+            suc_filter_c = f"AND c.SucursalID = {sid}"
+        except (ValueError, TypeError):
+            pass
+    
+    # Query 1: Total colaboradores
+    query_total = f"""
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN Colaborador_Activo = 1 THEN 1 ELSE 0 END) as activos,
+            SUM(CASE WHEN Estatus_Laboral = 'Vacaciones' THEN 1 ELSE 0 END) as vacaciones,
+            SUM(CASE WHEN Estatus_Laboral = 'Incapacidad' THEN 1 ELSE 0 END) as incapacidad,
+            SUM(CASE WHEN Colaborador_Activo = 0 THEN 1 ELSE 0 END) as bajas
+        FROM RH_Colaboradores_Expediente
+        WHERE 1=1 {suc_filter}
+    """
+    
+    # Query 2: Por departamento
+    query_depto = f"""
+        SELECT 
+            ISNULL(p.Departamento, 'Sin asignar') as Departamento,
+            COUNT(*) as total
+        FROM RH_Colaboradores_Expediente c
+        LEFT JOIN RH_Cat_Puestos p ON c.PuestoID = p.PuestoID
+        WHERE c.Colaborador_Activo = 1 {suc_filter_c}
+        GROUP BY p.Departamento
+        ORDER BY total DESC
+    """
+    
+    # Query 3: Incidencias del mes
+    query_incidencias = f"""
+        SELECT 
+            Tipo_Incidencia,
+            COUNT(*) as cantidad,
+            SUM(ISNULL(Monto, 0)) as monto_total
+        FROM RH_Incidencias_Nomina i
+        LEFT JOIN RH_Colaboradores_Expediente c ON i.ColaboradorID = c.ColaboradorID
+        WHERE MONTH(Fecha_Incidencia) = MONTH(GETDATE()) 
+          AND YEAR(Fecha_Incidencia) = YEAR(GETDATE())
+          {suc_filter_c}
+        GROUP BY Tipo_Incidencia
+    """
+    
+    # Query 4: Flujos pendientes
+    query_flujos = f"""
+        SELECT 
+            Estatus_Flujo,
+            COUNT(*) as cantidad
+        FROM RH_Flujo_Nomina_Sucursal
+        WHERE Estatus_Flujo NOT IN ('Pagado')
+          {suc_filter}
+        GROUP BY Estatus_Flujo
+    """
+    
+    # Query 5: Alertas fraude
+    query_alertas = f"""
+        SELECT COUNT(*) as alertas
+        FROM RH_Auditoria_Fiscal a
+        LEFT JOIN RH_Colaboradores_Expediente c ON a.ColaboradorID = c.ColaboradorID
+        WHERE a.Alerta_Fraude = 1 {suc_filter_c}
+    """
+    
+    result_total = execute_hub_query(server, query_total)
+    result_depto = execute_hub_query(server, query_depto)
+    result_incidencias = execute_hub_query(server, query_incidencias)
+    result_flujos = execute_hub_query(server, query_flujos)
+    result_alertas = execute_hub_query(server, query_alertas)
+    
+    return {
+        "resumen": result_total[0] if result_total else {},
+        "por_departamento": result_depto,
+        "incidencias_mes": result_incidencias,
+        "flujos_pendientes": result_flujos,
+        "alertas_fraude": result_alertas[0].get("alertas", 0) if result_alertas else 0
+    }
+
+
+# ============================================================================
+# RECLUTAMIENTO RH - QUERIES (FASE 6H-B)
+# ============================================================================
+# TABLAS REUTILIZADAS:
+# - RH_Vacantes (CRUD)
+# - RH_Candidatos (CRUD)
+# - RH_Cat_Sucursales (JOIN)
+# - RH_Cat_Puestos (JOIN)
+#
+# SEGURIDAD:
+# - IDs validados como enteros (casting seguro)
+# - Strings de usuario (titulo, descripcion, requisitos, etc.) usan escape_sql_string()
+#   Razón: SQL Server no soporta parámetros nativos en INSERT/UPDATE con múltiples columnas dinámicas
+# ============================================================================
+
+
+def query_listar_vacantes(
+    server: Dict,
+    sucursal_id: Optional[int] = None,
+    estatus: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Lista vacantes con filtros opcionales.
+    
+    PARÁMETROS NATIVOS: sucursal_id (entero validado)
+    ESCAPE NECESARIO: estatus (string de lista controlada, ya validado por Pydantic)
+    
+    Tablas: RH_Vacantes, RH_Cat_Sucursales, RH_Cat_Puestos, RH_Candidatos
+    """
+    conditions = ["1=1"]
+    
+    if sucursal_id is not None:
+        try:
+            conditions.append(f"v.SucursalID = {int(sucursal_id)}")
+        except (ValueError, TypeError):
+            pass
+    
+    if estatus:
+        estatus_safe = escape_sql_string(estatus)
+        conditions.append(f"v.Estatus = N'{estatus_safe}'")
+    
+    where_clause = " AND ".join(conditions)
+    
+    query = f"""
+        SELECT 
+            v.VacanteID,
+            v.SucursalID,
+            s.Nombre_Sucursal,
+            v.PuestoID,
+            p.Nombre_Puesto,
+            p.Departamento,
+            v.Titulo,
+            v.Descripcion,
+            v.Requisitos,
+            v.Salario_Min,
+            v.Salario_Max,
+            v.Tipo_Contrato,
+            v.Estatus,
+            v.Fecha_Publicacion,
+            v.Fecha_Cierre,
+            v.Creado_Por,
+            (SELECT COUNT(*) FROM RH_Candidatos c WHERE c.VacanteID = v.VacanteID) as Total_Candidatos
+        FROM RH_Vacantes v
+        LEFT JOIN RH_Cat_Sucursales s ON v.SucursalID = s.SucursalID
+        LEFT JOIN RH_Cat_Puestos p ON v.PuestoID = p.PuestoID
+        WHERE {where_clause}
+        ORDER BY v.Fecha_Publicacion DESC
+    """
+    
+    result = execute_hub_query(server, query)
+    
+    return {
+        "datos": result,
+        "total": len(result)
+    }
+
+
+def query_crear_vacante(
+    server: Dict,
+    sucursal_id: int,
+    puesto_id: int,
+    titulo: str,
+    descripcion: Optional[str],
+    requisitos: Optional[str],
+    salario_min: float,
+    salario_max: float,
+    tipo_contrato: str,
+    creado_por: str
+) -> Dict[str, Any]:
+    """
+    Crea una nueva vacante.
+    
+    PARÁMETROS NATIVOS: sucursal_id, puesto_id (enteros), salario_min, salario_max (float)
+    ESCAPE NECESARIO: titulo, descripcion, requisitos, tipo_contrato, creado_por
+        Razón: Strings de usuario en INSERT. Ya validados por Pydantic.
+    
+    Tabla: RH_Vacantes
+    """
+    # Escapar strings de usuario
+    titulo_safe = escape_sql_string(titulo)
+    desc_safe = escape_sql_string(descripcion or '')
+    req_safe = escape_sql_string(requisitos or '')
+    tipo_safe = escape_sql_string(tipo_contrato)
+    creador_safe = escape_sql_string(creado_por or '')
+    
+    query = f"""
+        INSERT INTO RH_Vacantes 
+        (SucursalID, PuestoID, Titulo, Descripcion, Requisitos, Salario_Min, Salario_Max, 
+         Tipo_Contrato, Estatus, Fecha_Publicacion, Creado_Por)
+        OUTPUT INSERTED.VacanteID
+        VALUES 
+        ({int(sucursal_id)}, {int(puesto_id)}, N'{titulo_safe}', N'{desc_safe}', N'{req_safe}', 
+         {float(salario_min)}, {float(salario_max)}, N'{tipo_safe}', N'Abierta', GETDATE(), N'{creador_safe}')
+    """
+    
+    result = execute_hub_query(server, query)
+    
+    if result and len(result) > 0:
+        return {"success": True, "vacante_id": result[0].get("VacanteID")}
+    
+    return {"success": True, "vacante_id": None}
+
+
+def query_actualizar_vacante(
+    server: Dict,
+    vacante_id: int,
+    titulo: Optional[str] = None,
+    descripcion: Optional[str] = None,
+    requisitos: Optional[str] = None,
+    salario_min: Optional[float] = None,
+    salario_max: Optional[float] = None,
+    estatus: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Actualiza una vacante existente.
+    
+    PARÁMETROS NATIVOS: vacante_id (entero validado), salario_min, salario_max (float)
+    ESCAPE NECESARIO: titulo, descripcion, requisitos, estatus
+        Razón: Strings de usuario en UPDATE dinámico. Ya validados por Pydantic.
+    
+    Tabla: RH_Vacantes
+    """
+    try:
+        id_safe = int(vacante_id)
+    except (ValueError, TypeError):
+        return {"success": False, "error": "ID de vacante inválido"}
+    
+    updates = []
+    
+    if titulo is not None:
+        updates.append(f"Titulo = N'{escape_sql_string(titulo)}'")
+    if descripcion is not None:
+        updates.append(f"Descripcion = N'{escape_sql_string(descripcion)}'")
+    if requisitos is not None:
+        updates.append(f"Requisitos = N'{escape_sql_string(requisitos)}'")
+    if salario_min is not None:
+        updates.append(f"Salario_Min = {float(salario_min)}")
+    if salario_max is not None:
+        updates.append(f"Salario_Max = {float(salario_max)}")
+    if estatus is not None:
+        updates.append(f"Estatus = N'{escape_sql_string(estatus)}'")
+        if estatus == 'Cerrada':
+            updates.append("Fecha_Cierre = GETDATE()")
+    
+    if not updates:
+        return {"success": False, "error": "No hay campos para actualizar"}
+    
+    query = f"""
+        UPDATE RH_Vacantes
+        SET {', '.join(updates)}
+        WHERE VacanteID = {id_safe}
+    """
+    
+    execute_hub_query(server, query)
+    
+    return {"success": True}
+
+
+def query_eliminar_vacante(server: Dict, vacante_id: int) -> Dict[str, Any]:
+    """
+    Elimina una vacante y sus candidatos asociados.
+    
+    PARÁMETROS NATIVOS: vacante_id (entero validado)
+    
+    Tablas: RH_Candidatos, RH_Vacantes
+    """
+    try:
+        id_safe = int(vacante_id)
+    except (ValueError, TypeError):
+        return {"success": False, "error": "ID de vacante inválido"}
+    
+    # Eliminar candidatos asociados primero
+    execute_hub_query(server, f"DELETE FROM RH_Candidatos WHERE VacanteID = {id_safe}")
+    # Eliminar vacante
+    execute_hub_query(server, f"DELETE FROM RH_Vacantes WHERE VacanteID = {id_safe}")
+    
+    return {"success": True}
+
+
+def query_listar_candidatos(
+    server: Dict,
+    vacante_id: Optional[int] = None,
+    estatus: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Lista candidatos con filtros opcionales.
+    
+    PARÁMETROS NATIVOS: vacante_id (entero validado)
+    ESCAPE NECESARIO: estatus (string de lista controlada, ya validado por Pydantic)
+    
+    Tablas: RH_Candidatos, RH_Vacantes, RH_Cat_Sucursales
+    """
+    conditions = ["1=1"]
+    
+    if vacante_id is not None:
+        try:
+            conditions.append(f"c.VacanteID = {int(vacante_id)}")
+        except (ValueError, TypeError):
+            pass
+    
+    if estatus:
+        estatus_safe = escape_sql_string(estatus)
+        conditions.append(f"c.Estatus = N'{estatus_safe}'")
+    
+    where_clause = " AND ".join(conditions)
+    
+    query = f"""
+        SELECT 
+            c.CandidatoID,
+            c.VacanteID,
+            v.Titulo as Vacante_Titulo,
+            s.Nombre_Sucursal,
+            c.Nombre_Completo,
+            c.Email,
+            c.Telefono,
+            c.CV_URL,
+            c.Estatus,
+            c.Puntuacion,
+            c.Notas,
+            c.Fecha_Aplicacion,
+            c.Fecha_Entrevista,
+            c.Entrevistador
+        FROM RH_Candidatos c
+        LEFT JOIN RH_Vacantes v ON c.VacanteID = v.VacanteID
+        LEFT JOIN RH_Cat_Sucursales s ON v.SucursalID = s.SucursalID
+        WHERE {where_clause}
+        ORDER BY c.Fecha_Aplicacion DESC
+    """
+    
+    result = execute_hub_query(server, query)
+    
+    return {
+        "datos": result,
+        "total": len(result)
+    }
+
+
+def query_crear_candidato(
+    server: Dict,
+    vacante_id: int,
+    nombre: str,
+    email: str,
+    telefono: Optional[str],
+    cv_url: Optional[str]
+) -> Dict[str, Any]:
+    """
+    Registra un nuevo candidato.
+    
+    PARÁMETROS NATIVOS: vacante_id (entero validado)
+    ESCAPE NECESARIO: nombre, email, telefono, cv_url
+        Razón: Strings de usuario en INSERT. Ya validados por Pydantic (email format).
+    
+    Tabla: RH_Candidatos
+    """
+    nombre_safe = escape_sql_string(nombre)
+    email_safe = escape_sql_string(email)
+    tel_safe = escape_sql_string(telefono or '')
+    cv_safe = escape_sql_string(cv_url or '')
+    
+    query = f"""
+        INSERT INTO RH_Candidatos 
+        (VacanteID, Nombre_Completo, Email, Telefono, CV_URL, Estatus, Fecha_Aplicacion)
+        OUTPUT INSERTED.CandidatoID
+        VALUES 
+        ({int(vacante_id)}, N'{nombre_safe}', N'{email_safe}', N'{tel_safe}', N'{cv_safe}', N'Recibido', GETDATE())
+    """
+    
+    result = execute_hub_query(server, query)
+    
+    if result and len(result) > 0:
+        return {"success": True, "candidato_id": result[0].get("CandidatoID")}
+    
+    return {"success": True, "candidato_id": None}
+
+
+def query_actualizar_candidato(
+    server: Dict,
+    candidato_id: int,
+    estatus: Optional[str] = None,
+    puntuacion: Optional[int] = None,
+    notas: Optional[str] = None,
+    fecha_entrevista: Optional[str] = None,
+    entrevistador: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Actualiza un candidato existente.
+    
+    PARÁMETROS NATIVOS: candidato_id, puntuacion (enteros validados)
+    ESCAPE NECESARIO: estatus, notas, fecha_entrevista, entrevistador
+        Razón: Strings de usuario en UPDATE dinámico. Ya validados por Pydantic.
+    
+    Tabla: RH_Candidatos
+    """
+    try:
+        id_safe = int(candidato_id)
+    except (ValueError, TypeError):
+        return {"success": False, "error": "ID de candidato inválido"}
+    
+    updates = []
+    
+    if estatus is not None:
+        updates.append(f"Estatus = N'{escape_sql_string(estatus)}'")
+    if puntuacion is not None:
+        updates.append(f"Puntuacion = {int(puntuacion)}")
+    if notas is not None:
+        updates.append(f"Notas = N'{escape_sql_string(notas)}'")
+    if fecha_entrevista is not None:
+        updates.append(f"Fecha_Entrevista = '{escape_sql_string(fecha_entrevista)}'")
+    if entrevistador is not None:
+        updates.append(f"Entrevistador = N'{escape_sql_string(entrevistador)}'")
+    
+    if not updates:
+        return {"success": False, "error": "No hay campos para actualizar"}
+    
+    query = f"""
+        UPDATE RH_Candidatos
+        SET {', '.join(updates)}
+        WHERE CandidatoID = {id_safe}
+    """
+    
+    execute_hub_query(server, query)
+    
+    return {"success": True}
+
+
+def query_eliminar_candidato(server: Dict, candidato_id: int) -> Dict[str, Any]:
+    """
+    Elimina un candidato.
+    
+    PARÁMETROS NATIVOS: candidato_id (entero validado)
+    
+    Tabla: RH_Candidatos
+    """
+    try:
+        id_safe = int(candidato_id)
+    except (ValueError, TypeError):
+        return {"success": False, "error": "ID de candidato inválido"}
+    
+    execute_hub_query(server, f"DELETE FROM RH_Candidatos WHERE CandidatoID = {id_safe}")
+    
+    return {"success": True}
+
+
+def query_dashboard_reclutamiento(server: Dict) -> Dict[str, Any]:
+    """
+    Obtiene métricas del dashboard de reclutamiento.
+    
+    SIN PARÁMETROS DE USUARIO - Queries estáticos, sin riesgo de inyección.
+    
+    Tablas: RH_Vacantes, RH_Candidatos
+    """
+    # Vacantes por estatus
+    query_vacantes = """
+        SELECT 
+            Estatus,
+            COUNT(*) as cantidad
+        FROM RH_Vacantes
+        GROUP BY Estatus
+    """
+    
+    # Candidatos por estatus
+    query_candidatos = """
+        SELECT 
+            Estatus,
+            COUNT(*) as cantidad
+        FROM RH_Candidatos
+        GROUP BY Estatus
+    """
+    
+    # Top 5 vacantes con más candidatos
+    query_top = """
+        SELECT TOP 5
+            v.Titulo,
+            COUNT(c.CandidatoID) as Total_Candidatos
+        FROM RH_Vacantes v
+        LEFT JOIN RH_Candidatos c ON v.VacanteID = c.VacanteID
+        WHERE v.Estatus = 'Abierta'
+        GROUP BY v.VacanteID, v.Titulo
+        ORDER BY Total_Candidatos DESC
+    """
+    
+    result_vac = execute_hub_query(server, query_vacantes)
+    result_cand = execute_hub_query(server, query_candidatos)
+    result_top = execute_hub_query(server, query_top)
+    
+    return {
+        "vacantes_por_estatus": result_vac,
+        "candidatos_por_estatus": result_cand,
+        "top_vacantes": result_top
+    }
+
+
+def get_script_reclutamiento() -> str:
+    """
+    Retorna el script SQL para crear las tablas de reclutamiento.
+    
+    SIN ACCESO A BD - Solo retorna string estático.
+    """
+    return """
+-- ============================================
+-- SCRIPT DE INICIALIZACIÓN - MÓDULO RECLUTAMIENTO
+-- Ejecutar en la base de datos EDARSA HUB
+-- ============================================
+
+-- Tabla de Vacantes
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='RH_Vacantes' AND xtype='U')
+BEGIN
+    CREATE TABLE RH_Vacantes (
+        VacanteID INT IDENTITY(1,1) PRIMARY KEY,
+        SucursalID INT NOT NULL,
+        PuestoID INT NOT NULL,
+        Titulo NVARCHAR(200) NOT NULL,
+        Descripcion NVARCHAR(MAX),
+        Requisitos NVARCHAR(MAX),
+        Salario_Min DECIMAL(18,2) DEFAULT 0,
+        Salario_Max DECIMAL(18,2) DEFAULT 0,
+        Tipo_Contrato NVARCHAR(50) DEFAULT 'Tiempo Completo',
+        Estatus NVARCHAR(20) DEFAULT 'Abierta' CHECK (Estatus IN ('Abierta', 'En Proceso', 'Cerrada', 'Cancelada')),
+        Fecha_Publicacion DATETIME DEFAULT GETDATE(),
+        Fecha_Cierre DATETIME,
+        Creado_Por NVARCHAR(100),
+        
+        CONSTRAINT FK_Vacante_Sucursal FOREIGN KEY (SucursalID) 
+            REFERENCES RH_Cat_Sucursales(SucursalID),
+        CONSTRAINT FK_Vacante_Puesto FOREIGN KEY (PuestoID) 
+            REFERENCES RH_Cat_Puestos(PuestoID)
+    );
+    
+    CREATE INDEX IX_Vacantes_Estatus ON RH_Vacantes(Estatus);
+    CREATE INDEX IX_Vacantes_Sucursal ON RH_Vacantes(SucursalID);
+    
+    PRINT 'Tabla RH_Vacantes creada exitosamente';
+END
+ELSE
+    PRINT 'Tabla RH_Vacantes ya existe';
+GO
+
+-- Tabla de Candidatos
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='RH_Candidatos' AND xtype='U')
+BEGIN
+    CREATE TABLE RH_Candidatos (
+        CandidatoID INT IDENTITY(1,1) PRIMARY KEY,
+        VacanteID INT NOT NULL,
+        Nombre_Completo NVARCHAR(200) NOT NULL,
+        Email NVARCHAR(100) NOT NULL,
+        Telefono NVARCHAR(20),
+        CV_URL NVARCHAR(500),
+        Estatus NVARCHAR(20) DEFAULT 'Recibido' CHECK (Estatus IN ('Recibido', 'En Revisión', 'Entrevista', 'Finalista', 'Contratado', 'Rechazado')),
+        Puntuacion INT CHECK (Puntuacion BETWEEN 0 AND 100),
+        Notas NVARCHAR(MAX),
+        Fecha_Aplicacion DATETIME DEFAULT GETDATE(),
+        Fecha_Entrevista DATETIME,
+        Entrevistador NVARCHAR(100),
+        
+        CONSTRAINT FK_Candidato_Vacante FOREIGN KEY (VacanteID) 
+            REFERENCES RH_Vacantes(VacanteID)
+    );
+    
+    CREATE INDEX IX_Candidatos_Vacante ON RH_Candidatos(VacanteID);
+    CREATE INDEX IX_Candidatos_Estatus ON RH_Candidatos(Estatus);
+    
+    PRINT 'Tabla RH_Candidatos creada exitosamente';
+END
+ELSE
+    PRINT 'Tabla RH_Candidatos ya existe';
+GO
+
+PRINT '=== Script de reclutamiento ejecutado ===';
+"""

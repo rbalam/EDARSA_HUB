@@ -1219,3 +1219,272 @@ class RHFlujoNominaService:
 
 # Instancia singleton del servicio de flujo nómina
 rh_flujo_nomina_service = RHFlujoNominaService()
+
+
+# ============================================================================
+# SERVICIO DE AUDITORÍA + DASHBOARD RH (FASE 6G-B)
+# ============================================================================
+
+from modules.rh.repository import (
+    query_listar_auditoria_fiscal,
+    query_dashboard_rh,
+)
+
+
+class RHAuditoriaService:
+    """
+    Servicio para gestionar auditoría fiscal y dashboard RH.
+    
+    Proporciona métricas agregadas de:
+    - Auditoría fiscal (alertas de fraude)
+    - Dashboard con resumen de colaboradores, incidencias, flujos
+    """
+    
+    async def _get_server(self) -> Dict:
+        """Obtiene el servidor EDARSA HUB o lanza excepción."""
+        server = await get_edarsa_hub_server()
+        if not server:
+            raise HTTPException(status_code=404, detail="Servidor EDARSA HUB no configurado")
+        return server
+    
+    async def listar_auditoria(
+        self,
+        colaborador_id: Optional[int] = None,
+        semana: Optional[int] = None,
+        solo_alertas: bool = False
+    ) -> Dict[str, Any]:
+        """Lista auditoría fiscal con filtros opcionales."""
+        server = await self._get_server()
+        
+        result = query_listar_auditoria_fiscal(
+            server,
+            colaborador_id=colaborador_id,
+            semana=semana,
+            solo_alertas=solo_alertas
+        )
+        
+        return {
+            "auditoria": result.get("datos", []),
+            "total": result.get("total", 0),
+            "total_alertas": result.get("total_alertas", 0)
+        }
+    
+    async def get_dashboard(self, sucursal_id: Optional[int] = None) -> Dict[str, Any]:
+        """Obtiene métricas del dashboard RH."""
+        server = await self._get_server()
+        
+        return query_dashboard_rh(server, sucursal_id=sucursal_id)
+
+
+# Instancia singleton del servicio de auditoría
+rh_auditoria_service = RHAuditoriaService()
+
+
+# ============================================================================
+# SERVICIO DE RECLUTAMIENTO RH (FASE 6H-B)
+# ============================================================================
+
+from modules.rh.repository import (
+    query_listar_vacantes,
+    query_crear_vacante,
+    query_actualizar_vacante,
+    query_eliminar_vacante,
+    query_listar_candidatos,
+    query_crear_candidato,
+    query_actualizar_candidato,
+    query_eliminar_candidato,
+    query_dashboard_reclutamiento,
+    get_script_reclutamiento,
+)
+from modules.rh.schemas import (
+    VacanteCreate,
+    VacanteUpdate,
+    CandidatoCreate,
+    CandidatoUpdate,
+)
+
+
+class RHReclutamientoService:
+    """
+    Servicio para gestionar el módulo de reclutamiento.
+    
+    Incluye CRUD de:
+    - Vacantes
+    - Candidatos
+    - Dashboard de reclutamiento
+    """
+    
+    async def _get_server(self) -> Dict:
+        """Obtiene el servidor EDARSA HUB o lanza excepción."""
+        server = await get_edarsa_hub_server()
+        if not server:
+            raise HTTPException(status_code=404, detail="Servidor EDARSA HUB no configurado")
+        return server
+    
+    # -------------------- VACANTES --------------------
+    
+    async def listar_vacantes(
+        self,
+        sucursal_id: Optional[int] = None,
+        estatus: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Lista vacantes con filtros opcionales."""
+        try:
+            server = await self._get_server()
+            result = query_listar_vacantes(server, sucursal_id=sucursal_id, estatus=estatus)
+            return {
+                "vacantes": result.get("datos", []),
+                "total": result.get("total", 0)
+            }
+        except HTTPException:
+            raise
+        except Exception:
+            return {"vacantes": [], "total": 0, "nota": "Tablas no disponibles"}
+    
+    async def crear_vacante(self, data: VacanteCreate, creado_por: str) -> Dict[str, Any]:
+        """Crea una nueva vacante."""
+        server = await self._get_server()
+        
+        result = query_crear_vacante(
+            server,
+            sucursal_id=data.sucursal_id,
+            puesto_id=data.puesto_id,
+            titulo=data.titulo,
+            descripcion=data.descripcion,
+            requisitos=data.requisitos,
+            salario_min=data.salario_min or 0,
+            salario_max=data.salario_max or 0,
+            tipo_contrato=data.tipo_contrato,
+            creado_por=creado_por
+        )
+        
+        return {
+            "success": True,
+            "message": "Vacante creada",
+            "vacante_id": result.get("vacante_id")
+        }
+    
+    async def actualizar_vacante(self, vacante_id: int, data: VacanteUpdate) -> Dict[str, Any]:
+        """Actualiza una vacante existente."""
+        server = await self._get_server()
+        
+        result = query_actualizar_vacante(
+            server,
+            vacante_id=vacante_id,
+            titulo=data.titulo,
+            descripcion=data.descripcion,
+            requisitos=data.requisitos,
+            salario_min=data.salario_min,
+            salario_max=data.salario_max,
+            estatus=data.estatus
+        )
+        
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Error al actualizar"))
+        
+        return {"success": True, "message": "Vacante actualizada"}
+    
+    async def eliminar_vacante(self, vacante_id: int) -> Dict[str, Any]:
+        """Elimina una vacante y sus candidatos asociados."""
+        server = await self._get_server()
+        
+        result = query_eliminar_vacante(server, vacante_id)
+        
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Error al eliminar"))
+        
+        return {"success": True, "message": "Vacante eliminada"}
+    
+    # -------------------- CANDIDATOS --------------------
+    
+    async def listar_candidatos(
+        self,
+        vacante_id: Optional[int] = None,
+        estatus: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Lista candidatos con filtros opcionales."""
+        try:
+            server = await self._get_server()
+            result = query_listar_candidatos(server, vacante_id=vacante_id, estatus=estatus)
+            return {
+                "candidatos": result.get("datos", []),
+                "total": result.get("total", 0)
+            }
+        except HTTPException:
+            raise
+        except Exception:
+            return {"candidatos": [], "total": 0, "nota": "Tablas no disponibles"}
+    
+    async def crear_candidato(self, data: CandidatoCreate) -> Dict[str, Any]:
+        """Registra un nuevo candidato."""
+        server = await self._get_server()
+        
+        result = query_crear_candidato(
+            server,
+            vacante_id=data.vacante_id,
+            nombre=data.nombre,
+            email=data.email,
+            telefono=data.telefono,
+            cv_url=data.cv_url
+        )
+        
+        return {
+            "success": True,
+            "message": "Candidato registrado",
+            "candidato_id": result.get("candidato_id")
+        }
+    
+    async def actualizar_candidato(self, candidato_id: int, data: CandidatoUpdate) -> Dict[str, Any]:
+        """Actualiza un candidato existente."""
+        server = await self._get_server()
+        
+        result = query_actualizar_candidato(
+            server,
+            candidato_id=candidato_id,
+            estatus=data.estatus,
+            puntuacion=data.puntuacion,
+            notas=data.notas,
+            fecha_entrevista=data.fecha_entrevista,
+            entrevistador=data.entrevistador
+        )
+        
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Error al actualizar"))
+        
+        return {"success": True, "message": "Candidato actualizado"}
+    
+    async def eliminar_candidato(self, candidato_id: int) -> Dict[str, Any]:
+        """Elimina un candidato."""
+        server = await self._get_server()
+        
+        result = query_eliminar_candidato(server, candidato_id)
+        
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Error al eliminar"))
+        
+        return {"success": True, "message": "Candidato eliminado"}
+    
+    # -------------------- DASHBOARD --------------------
+    
+    async def get_dashboard(self) -> Dict[str, Any]:
+        """Obtiene métricas del dashboard de reclutamiento."""
+        try:
+            server = await self._get_server()
+            return query_dashboard_reclutamiento(server)
+        except HTTPException:
+            raise
+        except Exception:
+            return {
+                "vacantes_por_estatus": [],
+                "candidatos_por_estatus": [],
+                "top_vacantes": [],
+                "nota": "Tablas no disponibles"
+            }
+    
+    def get_script_inicializacion(self) -> str:
+        """Retorna el script SQL para crear las tablas de reclutamiento."""
+        return get_script_reclutamiento()
+
+
+# Instancia singleton del servicio de reclutamiento
+rh_reclutamiento_service = RHReclutamientoService()
