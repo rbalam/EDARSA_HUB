@@ -35,17 +35,17 @@ class TestTableroEjecutivoStructure:
     @pytest.mark.unit
     def test_endpoint_with_mock_user(self, mock_current_user):
         """Test: Tablero ejecutivo responde con usuario mock"""
-        from server import app, get_current_user
+        from server import app
+        from core.security import get_current_user
         
-        # Mock de MongoDB y SQL
+        # Mock de servidores vacíos (retornado por repository)
         mock_servers = []  # Lista vacía de servidores
         
         app.dependency_overrides[get_current_user] = lambda: mock_current_user
         
         try:
-            with patch("server.db") as mock_db:
-                mock_db.servers.find.return_value.to_list = AsyncMock(return_value=mock_servers)
-                
+            # Mock de las funciones del repository usadas por el endpoint migrado
+            with patch("modules.comercial.routes.get_servers_for_tablero", new=AsyncMock(return_value=mock_servers)):
                 with TestClient(app) as client:
                     response = client.get("/api/comercial/tablero-ejecutivo?meses=ventas_dia")
                     # Debe responder aunque sea con datos vacíos

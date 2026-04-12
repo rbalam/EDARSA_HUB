@@ -176,6 +176,90 @@ async def save_metas_sucursal(server_id: str, sucursal: str, mes: int, anio: int
     )
 
 
+# ============================================================================
+# FUNCIONES DE CACHÉ KPIs - MIGRADAS FASE 5B-3 (Abril 2026)
+# ============================================================================
+
+async def get_cached_kpis(server_id: str, periodo_key: str) -> Optional[Dict]:
+    """Obtiene los KPIs cacheados de un servidor."""
+    cache = await get_db().kpis_cache.find_one({
+        "server_id": server_id,
+        "periodo_key": periodo_key
+    })
+    return cache
+
+
+async def save_kpis_cache(server_id: str, periodo_key: str, kpis: dict) -> None:
+    """Guarda los KPIs en caché."""
+    await get_db().kpis_cache.update_one(
+        {"server_id": server_id, "periodo_key": periodo_key},
+        {
+            "$set": {
+                "server_id": server_id,
+                "periodo_key": periodo_key,
+                "kpis": kpis,
+                "updated_at": datetime.now().isoformat(),
+                "status": "online"
+            }
+        },
+        upsert=True
+    )
+
+
+async def get_cached_kpis_by_prefix(server_id: str, periodo_prefix: str) -> List[Dict]:
+    """Obtiene KPIs cacheados por prefijo de período (para MPRO con múltiples sucursales)."""
+    cursor = get_db().kpis_cache.find({
+        "server_id": server_id,
+        "periodo_key": {"$regex": f"^{periodo_prefix}"}
+    })
+    return await cursor.to_list(100)
+
+
+async def save_server_connection_status(server_id: str, is_online: bool, response_time_ms: int = None) -> None:
+    """Guarda el estado de conexión de un servidor."""
+    await get_db().server_status.update_one(
+        {"server_id": server_id},
+        {
+            "$set": {
+                "server_id": server_id,
+                "is_online": is_online,
+                "response_time_ms": response_time_ms,
+                "last_check": datetime.now().isoformat()
+            }
+        },
+        upsert=True
+    )
+
+
+async def get_server_connection_status(server_id: str) -> Optional[Dict]:
+    """Obtiene el estado de conexión de un servidor."""
+    return await get_db().server_status.find_one({"server_id": server_id})
+
+
+async def is_server_recently_offline(server_id: str, minutes_threshold: int = 10) -> bool:
+    """Verifica si un servidor fue marcado como offline recientemente (evita reintentos)."""
+    status = await get_server_connection_status(server_id)
+    if not status:
+        return False  # Sin registro, intentar conectar
+    
+    if status.get('is_online', True):
+        return False  # Estaba online, intentar conectar
+    
+    # Verificar si el último chequeo fue hace menos de X minutos
+    last_check = status.get('last_check')
+    if last_check:
+        try:
+            last_check_dt = datetime.fromisoformat(last_check.replace('Z', '+00:00'))
+            now = datetime.now()
+            diff_minutes = (now - last_check_dt).total_seconds() / 60
+            if diff_minutes < minutes_threshold:
+                return True  # Offline recientemente, no reintentar
+        except:
+            pass
+    
+    return False
+
+
 __all__ = [
     'init_comercial_repository',
     'get_db',
@@ -189,4 +273,11 @@ __all__ = [
     # Metas
     'get_metas_sucursal',
     'save_metas_sucursal',
+    # Caché KPIs (migrados Fase 5B-3)
+    'get_cached_kpis',
+    'save_kpis_cache',
+    'get_cached_kpis_by_prefix',
+    'save_server_connection_status',
+    'get_server_connection_status',
+    'is_server_recently_offline',
 ]

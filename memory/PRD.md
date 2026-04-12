@@ -54,7 +54,12 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
     - `get_kpis_mpro()` (~175 líneas)  
     - `get_kpis_mpro_por_sucursal()` (~318 líneas)
     - server.py reducido de ~17,431 a ~16,689 líneas (-742 líneas)
-  - ⏸️ Sub-fase 5B-3: Migración endpoint `/comercial/tablero-ejecutivo` a routes.py (SIGUIENTE)
+  - ✅ Sub-fase 5B-3: Endpoint `/comercial/tablero-ejecutivo` migrado a `routes.py` (Abril 10, 2026)
+    - Endpoint completo migrado a `modules/comercial/routes.py`
+    - Funciones de caché migradas a `modules/comercial/repository.py`
+    - server.py reducido de ~16,689 a ~16,404 líneas (-285 líneas adicionales)
+    - Total reducción Fase 5B: -1,027 líneas
+  - ⏸️ Sub-fase 5B-4: Migrar resto de endpoints comerciales (9 pendientes)
 - **Fases 6-7**: ⏸️ Pendientes de autorización
 
 ---
