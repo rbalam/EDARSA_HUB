@@ -10,9 +10,11 @@ import {
   X, Save, Upload, Trash2, Eye, Edit, UserPlus, FileSpreadsheet,
   Inbox, Star, Phone, Mail, Copy, ExternalLink, Settings, Lock,
   Tag, DollarSign, Database, Timer, ArrowRight, RotateCcw, Layers,
-  Target, ClipboardList, Send, History, Download
+  Target, ClipboardList, Send, History, Download, Bell
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { GestionSolicitudesCatalogo } from '../components/GestionSolicitudesCatalogo';
+import { BotonSolicitarAlta } from '../components/ModalSolicitudCatalogo';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -2439,7 +2441,7 @@ export default function RecursosHumanos() {
           </div>
         </div>
 
-        {/* Sub-pestañas: Puestos | Incidencias */}
+        {/* Sub-pestañas: Puestos | Incidencias | Solicitudes */}
         <div className="flex gap-2 border-b border-zinc-200">
           <button
             onClick={() => setCatalogoSubTab('puestos')}
@@ -2462,6 +2464,17 @@ export default function RecursosHumanos() {
           >
             <Tag className="h-4 w-4 inline mr-2" />
             Tipos de Incidencias
+          </button>
+          <button
+            onClick={() => setCatalogoSubTab('solicitudes')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-all ${
+              catalogoSubTab === 'solicitudes'
+                ? 'border-zinc-900 text-zinc-900'
+                : 'border-transparent text-zinc-500 hover:text-zinc-700'
+            }`}
+          >
+            <Bell className="h-4 w-4 inline mr-2" />
+            Solicitudes de Alta
           </button>
         </div>
 
@@ -2662,6 +2675,11 @@ export default function RecursosHumanos() {
             <li><strong>Excel:</strong> Los códigos se usan como referencia en las importaciones de nómina.</li>
           </ul>
         </div>
+
+        {/* Vista de Solicitudes de Alta */}
+        {catalogoSubTab === 'solicitudes' && (
+          <GestionSolicitudesCatalogo />
+        )}
       </div>
     );
   };
@@ -2788,6 +2806,7 @@ export default function RecursosHumanos() {
                       <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
                     ))}
                   </select>
+                  <BotonSolicitarAlta tipoCatalogo="sucursales" className="mt-1" />
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Puesto *</Label>
@@ -2801,6 +2820,7 @@ export default function RecursosHumanos() {
                       <option key={p.PuestoID} value={p.PuestoID}>{p.Nombre_Puesto}</option>
                     ))}
                   </select>
+                  <BotonSolicitarAlta tipoCatalogo="puestos" className="mt-1" />
                 </div>
               </div>
               

@@ -26,23 +26,24 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
-### Session: April 2026 (Captura Masiva Incidencias v2)
+### Session: April 2026 (Sistema Solicitud Alta Catálogos)
 
 #### Completed Work
+- [x] **Sistema de Solicitud de Alta en Catálogos** (Abril 12, 2026)
+  - Backend: /api/rrhh/solicitudes-catalogo
+  - Catálogos: Puestos, Departamentos, Sucursales, Tipos de Incidencia
+  - Flujo: Usuario → Supervisor (Crea) → Administrador (Autoriza)
+  - Frontend: Nueva pestaña en Catálogos RH
+  - Botón "Solicitar alta" en selectores de modal colaborador
+  - Integración con "Mis Tareas" para notificaciones
+  - Modal con campos dinámicos por catálogo
+  - NOTA: Almacenamiento en memoria (pendiente migrar a SQL Server)
+
 - [x] **Tablero de Captura Rediseñado - Estilo Excel** (Abril 12, 2026)
-  - 16 símbolos de incidencia con catálogo completo:
-    - 1, 1.5, 2: Turnos trabajados
-    - R, R+, R*: Retardos con diferentes turnos
-    - F: Falta | P: Permiso sin goce | PG: Permiso con goce
-    - IN: Incapacidad | V: Vacaciones | D: Descanso | S: Suspensión
-    - NF: No Firmó | B: Baja | 0: Nuevo ingreso
+  - 16 símbolos de incidencia con catálogo completo
   - Captura día por día (L, M, Mi, J, V, S, D)
-  - Cálculos automáticos:
-    - Proporcional Descanso: 6 días laborados = 1 día descanso
-    - Proporcional Aguinaldo: 365 días = 15 días
-    - Faltas por Retardos: 3 retardos = 1 falta
+  - Cálculos: Proporcional Descanso (6 días = 1), Aguinaldo (365 = 15)
   - Exportar a Excel/CSV
-  - Leyenda visual con colores por tipo
 
 - [x] **Importador RH movido a submenú de Recursos Humanos** (Abril 12, 2026)
 

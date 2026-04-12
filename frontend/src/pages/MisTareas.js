@@ -117,7 +117,35 @@ export default function MisTareas() {
       setMisPermisos(permisosData);
       setCatalogosDisponibles(catalogosData.catalogos || []);
       setMisSolicitudes(misSolicitudesData.solicitudes || []);
-      setPendientesUnificados(unificadosData);  // NUEVO
+      
+      // Cargar solicitudes de catálogos RH pendientes
+      try {
+        const solicitudesCatalogoRH = await fetchWithAuth('/api/rrhh/solicitudes-catalogo/pendientes-notificacion');
+        const catalogosPendientes = solicitudesCatalogoRH.pendientes || [];
+        
+        // Agregar al unificado
+        setPendientesUnificados({
+          ...unificadosData,
+          catalogos: [...(unificadosData.catalogos || []), ...catalogosPendientes.map(s => ({
+            id: `rh-${s.id}`,
+            tipo: 'solicitud_catalogo_rh',
+            titulo: s.nombre_elemento,
+            subtitulo: `Catálogo: ${s.nombre_catalogo}`,
+            estado: s.estado_nombre,
+            fecha: s.fecha_solicitud,
+            prioridad: 'media',
+            data: s
+          }))],
+          contadores: {
+            ...unificadosData.contadores,
+            catalogos: (unificadosData.contadores?.catalogos || 0) + catalogosPendientes.length,
+            total: (unificadosData.contadores?.total || 0) + catalogosPendientes.length
+          }
+        });
+      } catch (e) {
+        console.log('No se pudieron cargar solicitudes RH:', e);
+        setPendientesUnificados(unificadosData);
+      }
       
       // Si puede aprobar, cargar solicitudes pendientes de aprobar
       if (canApprove) {
