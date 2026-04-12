@@ -26,6 +26,17 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
+### Session: April 2026 (Layout Menu Fix)
+
+#### Completed Work
+- [x] **Importador RH movido a submenú de Recursos Humanos** (Abril 12, 2026)
+  - Layout.js actualizado con soporte para submenús expandibles
+  - "Importador RH" ahora anidado bajo "Recursos Humanos"
+  - Chevron visual indica estado expandido/colapsado
+  - Auto-expansión cuando se navega a rutas de submenú
+
+---
+
 ### Session: December 2025 (Refactor Modular)
 
 #### Completed Work

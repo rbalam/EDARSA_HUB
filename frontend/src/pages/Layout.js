@@ -21,7 +21,9 @@ import {
   UserCircle,
   BarChart3,
   ClipboardList,
-  Upload
+  Upload,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -29,10 +31,19 @@ const Layout = () => {
   const location = useLocation();
   const user = getUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState({});
 
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />;
   }
+
+  // Toggle submenu expansion
+  const toggleSubmenu = (menuName) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [menuName]: !prev[menuName]
+    }));
+  };
 
   // ============================================
   // MÓDULOS OPERATIVOS (Estructura ERP)
@@ -88,13 +99,15 @@ const Layout = () => {
       href: '/recursos-humanos', 
       icon: UserCircle, 
       roles: ['Supervisor', 'Administrador'],
-      badge: 'Próx.'
-    },
-    { 
-      name: 'Importador RH', 
-      href: '/importador-rh', 
-      icon: Upload, 
-      roles: ['Administrador']
+      badge: 'Próx.',
+      submenus: [
+        {
+          name: 'Importador RH',
+          href: '/importador-rh',
+          icon: Upload,
+          roles: ['Administrador']
+        }
+      ]
     },
     { 
       name: 'Reportes BI', 
@@ -159,27 +172,87 @@ const Layout = () => {
               {filteredModulos.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.href;
+                const hasSubmenus = item.submenus && item.submenus.length > 0;
+                const filteredSubmenus = hasSubmenus 
+                  ? item.submenus.filter(sub => sub.roles.includes(user?.role))
+                  : [];
+                const isExpanded = expandedMenus[item.name] || filteredSubmenus.some(sub => location.pathname === sub.href);
+                const hasActiveSubmenu = filteredSubmenus.some(sub => location.pathname === sub.href);
                 
                 return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
-                      isActive 
-                        ? 'bg-zinc-800 text-white' 
-                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                    }`}
-                    data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span className="font-medium flex-1">{item.name}</span>
-                    {item.badge && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
-                        {item.badge}
-                      </span>
+                  <div key={item.name}>
+                    {/* Menu item principal */}
+                    {hasSubmenus && filteredSubmenus.length > 0 ? (
+                      <button
+                        onClick={() => toggleSubmenu(item.name)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
+                          isActive || hasActiveSubmenu
+                            ? 'bg-zinc-800 text-white' 
+                            : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                        }`}
+                        data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="font-medium flex-1 text-left">{item.name}</span>
+                        {item.badge && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded mr-1">
+                            {item.badge}
+                          </span>
+                        )}
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </button>
+                    ) : (
+                      <Link
+                        to={item.href}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
+                          isActive 
+                            ? 'bg-zinc-800 text-white' 
+                            : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                        }`}
+                        data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="font-medium flex-1">{item.name}</span>
+                        {item.badge && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
                     )}
-                  </Link>
+                    
+                    {/* Submenus */}
+                    {hasSubmenus && filteredSubmenus.length > 0 && isExpanded && (
+                      <div className="ml-4 mt-1 space-y-1 border-l border-zinc-700 pl-3">
+                        {filteredSubmenus.map((submenu) => {
+                          const SubIcon = submenu.icon;
+                          const isSubActive = location.pathname === submenu.href;
+                          
+                          return (
+                            <Link
+                              key={submenu.name}
+                              to={submenu.href}
+                              onClick={() => setSidebarOpen(false)}
+                              className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm ${
+                                isSubActive 
+                                  ? 'bg-zinc-800 text-white' 
+                                  : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                              }`}
+                              data-testid={`nav-${submenu.name.toLowerCase().replace(/\s+/g, '-')}`}
+                            >
+                              <SubIcon className="h-4 w-4" />
+                              <span className="font-medium">{submenu.name}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
