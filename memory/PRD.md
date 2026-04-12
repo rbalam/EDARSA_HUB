@@ -268,6 +268,27 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 - ✅ 6G: Auditoría + Dashboard RH (2 endpoints)
 - ✅ 6H: Reclutamiento RH (10 endpoints - incluye script inicialización)
 
+### FASE DISEÑO-IMPORTACIÓN: Arquitectura de Importación de Empleados (Diciembre 2025)
+**Documento creado**: `/app/memory/DISENO_IMPORTACION_EMPLEADOS.md`
+**Estado**: PROPUESTA PENDIENTE DE APROBACIÓN
+
+**Fases diseñadas**:
+- ✅ Fase 1: Diagnóstico de tablas EDARSA HUB (44 tablas RH confirmadas)
+- ✅ Fase 2: Mapeo Excel Cienfuegos → RH_Colaboradores_Expediente
+- ⚠️ Fase 3: Mapeo MPro (pendiente exploración de tablas)
+- ✅ Fase 4: Reglas de deduplicación (CURP/RFC como llaves)
+- ✅ Fase 5: Propuesta tablas staging/bitácora
+- ✅ Fase 6: Propuesta técnica ejecutiva con arquitectura ETL
+
+**Decisiones pendientes de aprobación del usuario**:
+1. ¿Crear tablas staging/bitácora? → Recomendado: Sí
+2. ¿Extender esquema con campos demográficos? → Recomendado: Después
+3. ¿Implementar primero Excel o MPro? → Recomendado: Excel primero
+4. ¿UI de importación completa o mínima? → Recomendado: Mínima
+5. ¿Rollback automático? → Recomendado: Sí
+
+---
+
 ### FASE RH-POST-1: Estabilización y Cobertura (Diciembre 2025)
 **Archivo de tests creado**: `tests/test_rh_modular.py`
 **Cobertura**:
