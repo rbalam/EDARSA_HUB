@@ -1,154 +1,105 @@
-# REPORTE FINAL: Carga Controlada a Staging
-## EDARSA HUB - Abril 2026
+# REPORTE FINAL CORREGIDO: Carga Controlada a Staging
+## EDARSA HUB - Abril 2026 (Versión Ajustada)
 
 ---
 
-## RESUMEN EJECUTIVO
+## ⚠️ AJUSTE DE CRITERIO APLICADO
 
-### ✅ MISIÓN CUMPLIDA
+**Fecha**: Abril 2026
+**Cambio**: Se excluyó la fuente **MPro_HR2020** del proceso de importación por criterio oficial.
 
-Se completó exitosamente la **exploración técnica controlada** y **carga a staging** de empleados desde las bases de datos MPro, identificando claramente la **empresa de origen** de cada registro.
-
-| Fuente | Registros | Con CURP | Con RFC | Listos | Incompletos | Duplicados |
-|--------|-----------|----------|---------|--------|-------------|------------|
-| MPro_CENTRAL2020 | 476 | 476 (100%) | 455 (95%) | 466 | 10 | 0 |
-| MPro_HR2020 | 39 | 39 (100%) | 39 (100%) | 9 | 1 | 29 |
-| Excel_Cienfuegos | 56 | 0 (0%) | 0 (0%) | 0 | 56 | 0 |
-| **TOTAL** | **571** | **515 (90%)** | **494 (87%)** | **475** | **67** | **29** |
+| Fuente | Estado | Motivo |
+|--------|--------|--------|
+| MPro_CENTRAL2020 | ✅ VÁLIDA | Fuente principal autorizada |
+| Excel_Cienfuegos | ✅ VÁLIDA | Fuente complementaria de apoyo |
+| MPro_HR2020 | ❌ **EXCLUIDA** | Descartada por criterio oficial |
 
 ---
 
-## A. DIAGNÓSTICO: ¿Por Qué CENTRAL2020 Devolvió 0 Antes?
+## RESUMEN EJECUTIVO OFICIAL
 
-### Causa Identificada
-El intento anterior usó la función `execute_sql_query` con el pool de conexiones. El pool tiene un problema con inserciones masivas que no retornan resultset, lo cual causó que:
-1. Las queries de INSERT se ejecutaran
-2. El driver interpretara la ausencia de resultset como error
-3. Se reportara "0 insertados" a pesar de que la intención estaba correcta
+### Totales Corregidos (Sin MPro_HR2020)
 
-### Solución Aplicada
-Se usó **conexión directa con `pymssql`** y **autocommit=True**, lo cual garantizó que cada INSERT se ejecutara inmediatamente sin depender del pool problemático.
+| Métrica | Cantidad |
+|---------|----------|
+| **Total registros válidos en staging** | **532** |
+| **Candidatos a aprobación** (clasificación 'nuevo') | **466** |
+| **Incompletos** (sin CURP/RFC) | **66** |
+| Duplicados probables | **0** |
+| Registros excluidos (MPro_HR2020) | 39 |
 
----
+### Por Fuente Válida
 
-## B. IDENTIFICACIÓN DE EMPRESA DE ORIGEN
-
-### Criterio Utilizado
-- **Campo origen**: `Sc_Cve_Sucursal` + JOIN con tabla `Sucursal`
-- **Campo destino en staging**: `Sucursal_Nombre` + `Observaciones`
-- **Razón Social**: Extraída de `Sucursal.Sc_Razon_Social` y documentada en observaciones
-
-### Distribución por Empresa (CENTRAL2020)
-
-| Sucursal | Razón Social | Total | Activos Aprox. |
-|----------|--------------|-------|----------------|
-| 130° QUERETARO | QUEYUKA | 208 | ~57 |
-| ORIGEN | SIBARITAS RESTAURANTEROS | 156 | ~41 |
-| 130° TULUM | 130 TULUM | 40 | ~0 |
-| CIEN FUEGOS | DESARROLLOS AMARILLOS DE LA PENINSULA | 28 | ~27 |
-| XCANATUN | CERVEZA PATITO PENINSULAR | 16 | ~5 |
-| MECA | MECA OPERADORA RESTAURANTERA | 14 | ~8 |
-| GARCIA LAVIN | CERVEZA PATITO PENINSULAR | 11 | ~3 |
-| EDARSA | EMPRESA DE AUTOMATIZACION DE RESTAURANTES | 3 | ~2 |
-
-### Distribución por Empresa (HR2020)
-
-| Sucursal | Razón Social | Total | Duplicados |
-|----------|--------------|-------|------------|
-| XCANATUN | CERVEZA PATITO PENINSULAR | 25 | 18 |
-| LA PLANCHA | CERVEZA PATITO PENINSULAR | 13 | 11 |
-| CASA PATITO | CERVEZA PATITO PENINSULAR | 1 | 0 |
-
-### Trazabilidad en Staging
-
-Cada registro en `RH_Importacion_Staging` contiene:
-- `Fuente`: `MPro_CENTRAL2020`, `MPro_HR2020`, o `Excel_Cienfuegos`
-- `Archivo_Origen`: `dbo.Empleado` (tabla consultada)
-- `Sucursal_Nombre`: Nombre de la sucursal
-- `Observaciones`: `Empresa: [Razón Social]. Sucursal: [Nombre]. Estatus: [AC/BA]`
+| Fuente | Total | Con CURP | Con RFC | Candidatos | Incompletos |
+|--------|-------|----------|---------|------------|-------------|
+| MPro_CENTRAL2020 | 476 | 476 (100%) | 455 (96%) | **466** | 10 |
+| Excel_Cienfuegos | 56 | 0 (0%) | 0 (0%) | 0 | 56 |
+| **TOTAL VÁLIDO** | **532** | **476 (90%)** | **455 (86%)** | **466** | **66** |
 
 ---
 
-## C. MAPEO TÉCNICO APLICADO
+## DISTRIBUCIÓN POR EMPRESA (Solo MPro_CENTRAL2020)
 
-### Tabla Origen → Staging
-
-| Campo Origen (MPro) | Campo Staging | Transformación |
-|---------------------|---------------|----------------|
-| `Em_Cve_Empleado` | `Numero_Empleado_Externo` | Directo |
-| `Em_Nombre + Apellidos` | `Nombre_Completo` | RTRIM + Concatenar |
-| `Em_CURP` | `CURP` | RTRIM |
-| `Em_R_F_C` | `RFC` | RTRIM |
-| `Sc_Descripcion` | `Sucursal_Nombre` | Directo |
-| `De_Descripcion` | `Area_Departamento` | Directo |
-| `Pe_Descripcion` | `Puesto_Nombre` | Directo |
-| `Em_Sexo` | `Sexo` | Primer carácter |
-| `Es_Cve_Estado` | (en Observaciones) | 'AC' o 'BA' |
-
-### Reglas de Clasificación
-
-| Condición | Clasificación | Nivel Confianza |
-|-----------|---------------|-----------------|
-| CURP válido (18 chars, no genérico) | `nuevo` | `alta` |
-| Solo RFC válido (12-13 chars) | `nuevo` | `media` |
-| Sin CURP ni RFC válidos | `incompleto` | `muy_baja` |
-| CURP ya existe en staging | `duplicado_probable` | `alta` |
+| Sucursal | Razón Social | Total | Listos para Aprobación |
+|----------|--------------|-------|------------------------|
+| 130° QUERETARO | QUEYUKA | 208 | 206 |
+| ORIGEN | SIBARITAS RESTAURANTEROS | 156 | 150 |
+| 130° TULUM | 130 TULUM | 40 | 39 |
+| CIEN FUEGOS | DESARROLLOS AMARILLOS DE LA PENINSULA | 28 | 28 |
+| XCANATUN | CERVEZA PATITO PENINSULAR | 16 | 15 |
+| MECA | MECA OPERADORA RESTAURANTERA | 14 | 14 |
+| GARCIA LAVIN | CERVEZA PATITO PENINSULAR | 11 | 11 |
+| EDARSA | EMPRESA DE AUTOMATIZACION DE RESTAURANTES | 3 | 3 |
+| **TOTAL CENTRAL2020** | | **476** | **466** |
 
 ---
 
-## D. PROBLEMAS DETECTADOS Y MITIGACIONES
+## IMPACTO DE EXCLUSIÓN DE MPro_HR2020
 
-### 1. Truncamiento de Strings (8 errores en CENTRAL2020, 3 en HR2020)
-- **Causa**: Algunos campos de observaciones excedían el límite de la columna
-- **Mitigación**: Se truncaron las observaciones a 200 caracteres
-- **Impacto**: 11 registros no se insertaron (2% del total)
+### Registros Excluidos
 
-### 2. RFC Genérico
-- **Detección**: ~10 empleados tienen RFC `XAXX010101000` (RFC genérico)
-- **Tratamiento**: Clasificados como `incompleto` con confianza `muy_baja`
+| Métrica | Cantidad |
+|---------|----------|
+| Total registros excluidos | 39 |
+| Eran duplicados de CENTRAL2020 | 29 |
+| Eran únicos de HR2020 | 9 |
+| Incompletos | 1 |
 
-### 3. Duplicados Entre Bases de Datos
-- **Detección**: 29 empleados de HR2020 ya existían en CENTRAL2020 (mismo CURP)
-- **Tratamiento**: Marcados como `duplicado_probable` para revisión manual
+### Tratamiento Aplicado
 
----
+- **Método**: Marcados con `Estado = 'Excluido'`
+- **Trazabilidad**: Conservados en staging para auditoría
+- **Filtrado**: Excluidos automáticamente en consultas con `WHERE Estado != 'Excluido'`
+- **Observaciones**: Actualizadas con motivo de exclusión
 
-## E. RESTRICCIONES CUMPLIDAS
+### Justificación del Tratamiento
 
-| Restricción | Estado | Evidencia |
-|-------------|--------|-----------|
-| No cargar al maestro | ✅ CUMPLIDA | Solo se insertó en `RH_Importacion_Staging` |
-| No asumir tablas sin validar | ✅ CUMPLIDA | Se exploró estructura antes de cargar |
-| No perder identificación de empresa | ✅ CUMPLIDA | Campo `Sucursal_Nombre` + `Observaciones` |
-| Trazabilidad obligatoria | ✅ CUMPLIDA | `Fuente`, `Archivo_Origen`, `Linea_Origen` |
-| Registro en bitácora | ✅ CUMPLIDA | Bitácora actualizada con métricas |
-
----
-
-## F. ARCHIVOS GENERADOS
-
-| Archivo | Descripción |
-|---------|-------------|
-| `/app/memory/DIAGNOSTICO_MPRO_EMPLEADOS.md` | Diagnóstico técnico de fuentes MPro |
-| `/app/memory/RESULTADO_CARGA_CENTRAL2020_v2.json` | Resultado carga CENTRAL2020 |
-| `/app/memory/RESULTADO_CARGA_HR2020.json` | Resultado carga HR2020 |
-| Este reporte | `/app/memory/REPORTE_CARGA_STAGING_FINAL.md` |
+Se eligió marcar como **Excluido** en lugar de eliminar físicamente para:
+1. Mantener trazabilidad histórica completa
+2. Permitir auditoría futura
+3. Documentar que la fuente fue procesada pero descartada por criterio
+4. No perder información en caso de cambio de criterio
 
 ---
 
-## G. SIGUIENTE PASO
+## REGLA OBLIGATORIA ESTABLECIDA
 
-### Pendiente de Autorización:
-1. **Revisión Manual**: Revisar los 29 duplicados y los 67 incompletos
-2. **Aprobación**: Implementar lógica de migración `Staging → Maestro`
-3. **UI**: Interfaz para visualizar, filtrar y aprobar registros en staging
-
-### Estado del Staging:
-- ✅ **475 registros listos para aprobación** (clasificación `nuevo` con confianza `alta`)
-- ⚠️ **67 registros incompletos** (sin CURP/RFC válidos - mayormente del Excel)
-- ⚠️ **29 duplicados probables** (requieren decisión: descartar o actualizar)
+```
+A partir de Abril 2026:
+- MPro_HR2020 NO es fuente válida para el proceso de importación
+- Solo se consideran: MPro_CENTRAL2020 (principal) + Excel (complementaria)
+- Los 39 registros de HR2020 quedan excluidos del flujo de aprobación
+```
 
 ---
 
-*Reporte generado: 2026-04-12*
-*Agente: EDARSA HUB*
+## PRÓXIMOS PASOS AUTORIZADOS
+
+1. **P0**: Revisión de 66 registros incompletos (Excel sin CURP/RFC)
+2. **P1**: Implementar lógica de "Aprobación" para los 466 candidatos de CENTRAL2020
+3. **P1**: UI para visualizar y aprobar registros en staging
+
+---
+
+*Reporte corregido: 2026-04-12*
+*Ajuste: Exclusión de MPro_HR2020 por criterio oficial*

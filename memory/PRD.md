@@ -348,31 +348,41 @@ Todos los registros (100%) permanecen como INCOMPLETOS en staging.
 ### FASE CARGA-STAGING: Carga Controlada MPro → Staging (Abril 2026)
 **Documentos creados**:
 - `/app/memory/DIAGNOSTICO_MPRO_EMPLEADOS.md` - Diagnóstico técnico
-- `/app/memory/REPORTE_CARGA_STAGING_FINAL.md` - Reporte ejecutivo
-**Estado**: ✅ COMPLETADA
+- `/app/memory/REPORTE_CARGA_STAGING_FINAL.md` - Reporte ejecutivo (CORREGIDO)
+**Estado**: ✅ COMPLETADA (con ajuste de criterio)
 
-**Fuentes exploradas y cargadas**:
+**⚠️ AJUSTE DE CRITERIO (Abril 2026)**:
+- MPro_HR2020 **EXCLUIDA** del proceso por criterio oficial
+- 39 registros marcados como `Estado = 'Excluido'`
+- Solo válidas: MPro_CENTRAL2020 (principal) + Excel (complementaria)
+
+**Fuentes VÁLIDAS (Totales Oficiales)**:
 | Fuente | Base de Datos | Registros | Con CURP | Listos |
 |--------|---------------|-----------|----------|--------|
-| MPro_CENTRAL2020 | CENTRAL2020 | 476 | 100% | 466 |
-| MPro_HR2020 | HR2020 | 39 | 100% | 9 (+29 duplicados) |
+| MPro_CENTRAL2020 | CENTRAL2020 | 476 | 100% | **466** |
 | Excel_Cienfuegos | N/A | 56 | 0% | 0 |
-| **TOTAL** | | **571** | **90%** | **475** |
+| **TOTAL VÁLIDO** | | **532** | **90%** | **466** |
+
+**Fuente EXCLUIDA**:
+| Fuente | Registros | Estado | Motivo |
+|--------|-----------|--------|--------|
+| MPro_HR2020 | 39 | Excluido | Criterio oficial |
 
 **Empresas identificadas en CENTRAL2020**:
-- 130° QUERETARO (QUEYUKA): 208 empleados
-- ORIGEN (SIBARITAS RESTAURANTEROS): 156 empleados
-- 130° TULUM: 40 empleados
-- CIEN FUEGOS (DESARROLLOS AMARILLOS): 28 empleados
-- XCANATUN (CERVEZA PATITO): 16 empleados
-- MECA: 14 empleados
-- GARCIA LAVIN: 11 empleados
-- EDARSA: 3 empleados
+- 130° QUERETARO (QUEYUKA): 208 empleados (206 listos)
+- ORIGEN (SIBARITAS RESTAURANTEROS): 156 empleados (150 listos)
+- 130° TULUM: 40 empleados (39 listos)
+- CIEN FUEGOS (DESARROLLOS AMARILLOS): 28 empleados (28 listos)
+- XCANATUN (CERVEZA PATITO): 16 empleados (15 listos)
+- MECA: 14 empleados (14 listos)
+- GARCIA LAVIN: 11 empleados (11 listos)
+- EDARSA: 3 empleados (3 listos)
 
 **Trazabilidad implementada**:
 - Campo `Fuente`: Identifica origen exacto
 - Campo `Sucursal_Nombre`: Identifica empresa/sucursal
-- Campo `Observaciones`: Contiene Razón Social completa
+- Campo `Estado`: 'Excluido' para fuentes no válidas
+- Campo `Observaciones`: Contiene Razón Social + motivo exclusión si aplica
 
 ### FASE IMPLEMENTACIÓN-IMPORTADOR: Backend y API (Diciembre 2025)
 **Archivos creados**:
