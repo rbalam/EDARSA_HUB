@@ -81,7 +81,35 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
     - server.py reducido de ~14,721 a ~13,902 líneas (-820 líneas adicionales)
     - **Total reducción Fase 5B: ~3,530 líneas**
     - **MÓDULO COMERCIAL 100% MIGRADO**
-- **Fases 6-7**: ⏸️ Pendientes de autorización
+- **Fase 6A (Análisis RH)**: ✅ COMPLETADA - Diseño de 8 bloques de migración
+- **Fase 6B (Catálogos RH)**: ✅ COMPLETADA (Diciembre 2025)
+  - 10 endpoints migrados desde `server.py` a `modules/rh/`:
+    - `GET /rrhh/catalogos/puestos`
+    - `POST /rrhh/catalogos/puestos`
+    - `PUT /rrhh/catalogos/puestos/{id}`
+    - `DELETE /rrhh/catalogos/puestos/{id}`
+    - `GET /rrhh/catalogos/sucursales`
+    - `GET /rrhh/catalogos/tipos-incidencias`
+    - `POST /rrhh/catalogos/tipos-incidencias`
+    - `PUT /rrhh/catalogos/tipos-incidencias/{id}`
+    - `DELETE /rrhh/catalogos/tipos-incidencias/{id}`
+    - `GET /rrhh/catalogos/script-inicializacion`
+  - **Seguridad mejorada**: Queries SQL parametrizados (prevención SQL Injection)
+  - **Validación Pydantic** implementada en todos los endpoints
+  - **Tablas SQL Server reutilizadas** (NO duplicadas):
+    - `RH_Cat_Puestos`
+    - `RH_Cat_Sucursales`
+    - `RH_Cat_SucursalesFiscal`
+    - `RH_Cat_Tipos_Incidencias`
+  - **Archivos creados/actualizados**:
+    - `modules/rh/schemas.py` (205 líneas) - Modelos Pydantic
+    - `modules/rh/repository.py` (495 líneas) - Acceso a datos parametrizado
+    - `modules/rh/service.py` (402 líneas) - Lógica de negocio
+    - `modules/rh/routes.py` (197 líneas) - Endpoints FastAPI
+    - `modules/rh/__init__.py` (73 líneas) - Inicialización
+  - **server.py**: Reducido de ~13,902 a ~13,773 líneas (endpoints comentados/marcados como migrados)
+  - **127 tests pasando** (regresión completa)
+- **Fases 6C-6H, 7**: ⏸️ Pendientes de autorización
 
 ---
 
