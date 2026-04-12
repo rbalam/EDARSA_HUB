@@ -271,33 +271,35 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 ### FASE OPERATIVA-IMPORTADOR: Preview Real Excel Cienfuegos (Diciembre 2025)
 **Reporte completo**: `/app/memory/REPORTE_FASE_OPERATIVA_IMPORTADOR.md`
 **Preview JSON**: `/app/memory/PREVIEW_EXCEL_CIENFUEGOS.json`
-**Estado**: ⚠️ BLOQUEADO POR PERMISOS
+**Resultado Staging**: `/app/memory/RESULTADO_CARGA_STAGING.json`
+**Estado**: ✅ COMPLETADO
 
 **Conexión establecida**:
 - Servidor: EDARSA HUB (ID: bea40259-35f1-4693-bda2-d2d10e13e56a)
 - BD: EDARSAHUB
-- Usuario: HRLectura (solo lectura)
-- Ping: ✅ EXITOSO (260.1ms)
+- Usuario: HRLectura (con permisos de escritura confirmados)
+- Ping: ✅ EXITOSO
 
-**Resultado del Preview (Excel Cienfuegos)**:
-- Total registros: 56
-- Nuevos: 0
-- Actualizar: 0
-- Duplicados probables: 0
-- **Incompletos: 56 (100%)** ← Sin CURP ni RFC
+**Tablas creadas en EDARSAHUB**:
+- ✅ `RH_Importacion_Staging` (32 columnas, 4 índices)
+- ✅ `RH_Importacion_Bitacora` (14 columnas)
+
+**Resultado del Preview y Carga a Staging**:
+- Bitácora ID: 1
+- Total registros leídos: 56
+- Cargados a staging: 56 (100%)
+- Duplicados probables: 0 (no hay colaboradores existentes en BD)
+- **Incompletos: 56 (100%)** ← Sin CURP ni RFC en el Excel
 - Rechazados: 0
+- Errores: 0
+- Duración: 3 segundos
 
-**🔴 HALLAZGO CRÍTICO**: El Excel de nómina NO contiene columnas CURP ni RFC.
-Todos los registros (100%) se clasifican como INCOMPLETOS.
+**🔴 HALLAZGO CONFIRMADO**: El Excel de nómina NO contiene columnas CURP ni RFC.
+Todos los registros (100%) permanecen como INCOMPLETOS en staging.
 
-**🔴 BLOQUEO**: Usuario HRLectura no tiene permisos CREATE TABLE.
-Las tablas RH_Importacion_Staging y RH_Importacion_Bitacora NO pudieron crearse.
-
-**Acciones pendientes**:
-1. Obtener usuario con permisos de escritura en EDARSAHUB
-2. Obtener CURP/RFC de fuente alternativa (hoja RFC del Excel o sistema externo)
-3. Crear tablas staging/bitácora
-4. Re-ejecutar preview con datos completos
+**Próximo paso requerido**:
+- Obtener CURP/RFC de fuente alternativa para completar los registros
+- O aprobar carga al maestro sin identificadores únicos (no recomendado)
 
 ---
 
