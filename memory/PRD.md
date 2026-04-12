@@ -73,9 +73,11 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
   - ✅ Sub-fase 5B-4G: Endpoint precios-constantes migrado (Abril 10, 2026)
     - `/comercial/precios-constantes/{server_id}` migrado (~500 líneas)
     - server.py reducido de ~15,551 a ~15,051 líneas (-500 líneas adicionales)
-    - Total reducción Fase 5B: ~2,380 líneas
-  - ⏸️ Sub-fase 5B-4H: Pendiente - `/comercial/reporte-pax/{server_id}`
-  - ⏸️ Sub-fase 5B-5: Pendiente - `/comercial/dashboard/{server_id}` (más complejo)
+  - ✅ Sub-fase 5B-4H: Endpoint reporte-pax migrado (Abril 10, 2026)
+    - `/comercial/reporte-pax/{server_id}` migrado (~330 líneas)
+    - server.py reducido de ~15,051 a ~14,721 líneas (-330 líneas adicionales)
+    - Total reducción Fase 5B: ~2,710 líneas
+  - ⏸️ Sub-fase 5B-5: Pendiente - `/comercial/dashboard/{server_id}` (MÁS COMPLEJO ~825 líneas)
 - **Fases 6-7**: ⏸️ Pendientes de autorización
 
 ---
