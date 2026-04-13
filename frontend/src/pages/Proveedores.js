@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { 
   Users, Search, Check, X, Clock, Eye, Edit, Trash2, 
   Building2, Mail, Phone, CreditCard, RefreshCw, Filter,
-  ChevronDown, ExternalLink, UserPlus, AlertCircle
+  ChevronDown, ExternalLink, UserPlus, AlertCircle, KeyRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,9 @@ export default function Proveedores() {
   const [showModal, setShowModal] = useState(false);
   const [servers, setServers] = useState([]);
   const [selectedSucursales, setSelectedSucursales] = useState([]);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [resetResult, setResetResult] = useState(null);
 
   useEffect(() => {
     loadSuppliers();
@@ -134,6 +137,57 @@ export default function Proveedores() {
     setSelectedSupplier(supplier);
     setSelectedSucursales(supplier.sucursales_asignadas || []);
     setShowModal(true);
+  };
+
+  const openPasswordModal = (supplier) => {
+    setSelectedSupplier(supplier);
+    setNewPassword('');
+    setResetResult(null);
+    setShowPasswordModal(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedSupplier || !newPassword || newPassword.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/portal/admin/reset-password`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          supplier_id: selectedSupplier.id,
+          rfc: selectedSupplier.rfc,
+          new_password: newPassword,
+          reset_by: 'admin'
+        })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setResetResult(data);
+        toast.success(`Contraseña actualizada para ${selectedSupplier.rfc}`);
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || 'Error al resetear contraseña');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error de conexión');
+    }
+  };
+
+  const generateRandomPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let password = '';
+    for (let i = 0; i < 8; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(password);
   };
 
   const formatDate = (dateStr) => {
@@ -319,13 +373,25 @@ export default function Proveedores() {
                         </>
                       )}
                       {supplier.status === 'approved' && (
-                        <Button
-                          onClick={() => openApprovalModal(supplier)}
-                          size="sm"
-                          variant="outline"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <>
+                          <Button
+                            onClick={() => openApprovalModal(supplier)}
+                            size="sm"
+                            variant="outline"
+                            title="Editar"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => openPasswordModal(supplier)}
+                            size="sm"
+                            variant="outline"
+                            className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                            title="Resetear Contraseña"
+                          >
+                            <KeyRound className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
                       <Button
                         onClick={() => {
@@ -480,6 +546,14 @@ export default function Proveedores() {
             {selectedSupplier.status === 'approved' && (
               <div className="sticky bottom-0 bg-zinc-50 border-t px-6 py-4 flex justify-end gap-3">
                 <Button
+                  onClick={() => openPasswordModal(selectedSupplier)}
+                  variant="outline"
+                  className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                >
+                  <KeyRound className="h-4 w-4 mr-2" />
+                  Resetear Contraseña
+                </Button>
+                <Button
                   onClick={() => handleApprove(selectedSupplier)}
                   variant="outline"
                 >
@@ -487,6 +561,112 @@ export default function Proveedores() {
                 </Button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Resetear Contraseña */}
+      {showPasswordModal && selectedSupplier && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="border-b px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <KeyRound className="h-5 w-5 text-amber-600" />
+                Resetear Contraseña
+              </h2>
+              <Button
+                onClick={() => { setShowPasswordModal(false); setResetResult(null); setNewPassword(''); }}
+                variant="ghost"
+                size="sm"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {/* Datos del proveedor */}
+              <div className="bg-zinc-50 rounded-lg p-4">
+                <p className="text-sm text-zinc-500">Proveedor</p>
+                <p className="font-mono font-bold text-lg">{selectedSupplier.rfc}</p>
+                <p className="text-sm text-zinc-600">{selectedSupplier.razon_social}</p>
+                <p className="text-sm text-zinc-500">{selectedSupplier.email}</p>
+              </div>
+
+              {!resetResult ? (
+                <>
+                  {/* Input de nueva contraseña */}
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 block mb-2">
+                      Nueva Contraseña
+                    </label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="text"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        className="font-mono text-lg"
+                      />
+                      <Button
+                        onClick={generateRandomPassword}
+                        variant="outline"
+                        title="Generar contraseña aleatoria"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Botones */}
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button
+                      onClick={() => { setShowPasswordModal(false); setNewPassword(''); }}
+                      variant="outline"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={handleResetPassword}
+                      className="bg-amber-600 hover:bg-amber-700"
+                      disabled={!newPassword || newPassword.length < 6}
+                    >
+                      <KeyRound className="h-4 w-4 mr-2" />
+                      Establecer Contraseña
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                /* Resultado del reset */
+                <div className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                    <Check className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                    <p className="font-medium text-green-800">Contraseña Actualizada</p>
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <p className="text-xs text-amber-600 uppercase font-medium mb-1">Nueva Contraseña</p>
+                    <p className="font-mono text-2xl font-bold text-zinc-800 select-all">
+                      {resetResult.new_password}
+                    </p>
+                    <p className="text-xs text-amber-600 mt-2">
+                      ⚠️ Guarda esta contraseña, no podrás verla de nuevo
+                    </p>
+                  </div>
+
+                  <div className="text-sm text-zinc-500">
+                    <p>Reseteo realizado: {new Date(resetResult.reset_at).toLocaleString('es-MX')}</p>
+                    <p>Por: {resetResult.reset_by}</p>
+                  </div>
+
+                  <Button
+                    onClick={() => { setShowPasswordModal(false); setResetResult(null); setNewPassword(''); }}
+                    className="w-full"
+                  >
+                    Cerrar
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

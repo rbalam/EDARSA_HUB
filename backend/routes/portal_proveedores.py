@@ -765,6 +765,85 @@ async def approve_supplier(data: dict):
     return {"message": f"Proveedor {'aprobado' if action == 'approve' else 'rechazado'} exitosamente"}
 
 
+@portal_router.post("/admin/reset-password")
+async def admin_reset_supplier_password(data: dict):
+    """
+    Resetea/establece la contraseña de un proveedor.
+    Solo para administradores de EDARSA HUB.
+    
+    Body:
+        - supplier_id: ID del proveedor (opcional si se usa rfc)
+        - rfc: RFC del proveedor (opcional si se usa supplier_id)
+        - new_password: Nueva contraseña en texto plano
+        - reset_by: Email/nombre del admin que hace el reset
+    """
+    supplier_id = data.get("supplier_id")
+    rfc = data.get("rfc", "").upper().strip()
+    new_password = data.get("new_password", "").strip()
+    reset_by = data.get("reset_by", "admin")
+    
+    if not new_password or len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+    
+    # Buscar proveedor por ID o RFC
+    query = {}
+    if supplier_id:
+        query["id"] = supplier_id
+    elif rfc:
+        query["rfc"] = rfc
+    else:
+        raise HTTPException(status_code=400, detail="Debe proporcionar supplier_id o rfc")
+    
+    supplier = await db.portal_suppliers.find_one(query)
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+    
+    # Hashear nueva contraseña
+    hashed_password = pwd_context.hash(new_password)
+    
+    # Actualizar contraseña
+    await db.portal_suppliers.update_one(
+        {"id": supplier["id"]},
+        {
+            "$set": {
+                "password": hashed_password,
+                "password_reset_at": datetime.now(timezone.utc),
+                "password_reset_by": reset_by
+            }
+        }
+    )
+    
+    return {
+        "message": "Contraseña actualizada exitosamente",
+        "supplier_rfc": supplier["rfc"],
+        "supplier_razon_social": supplier.get("razon_social", ""),
+        "new_password": new_password,  # Devolver para que el admin la comunique
+        "reset_by": reset_by,
+        "reset_at": datetime.now(timezone.utc).isoformat()
+    }
+
+
+@portal_router.get("/admin/supplier/{identifier}")
+async def admin_get_supplier_details(identifier: str):
+    """
+    Obtiene detalles completos de un proveedor por ID o RFC.
+    Útil para ver información antes de resetear contraseña.
+    """
+    # Buscar por ID primero, luego por RFC
+    supplier = await db.portal_suppliers.find_one({"id": identifier}, {"_id": 0, "password": 0})
+    
+    if not supplier:
+        supplier = await db.portal_suppliers.find_one(
+            {"rfc": identifier.upper()}, 
+            {"_id": 0, "password": 0}
+        )
+    
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+    
+    return supplier
+
+
 @portal_router.get("/admin/invoices")
 async def admin_get_all_invoices(
     status: Optional[str] = None,
