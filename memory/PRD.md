@@ -26,7 +26,7 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
-### Session: April 2026 (Módulo Maestro de Catálogos)
+### Session: April 2026 (Módulo Maestro de Catálogos + Tablas Finanzas SQL)
 
 #### Completed Work
 - [x] **Módulo Maestro de Catálogos del Sistema** (Abril 13, 2026)
@@ -49,18 +49,24 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
     - 50+ catálogos mapeados
     - Sin duplicidad entre módulos
     - CRUD completo con permisos por rol
-  - DDL incluido para crear tablas globales:
-    - Global_Cat_Empresas
-    - Global_Cat_Bancos (con datos de bancos mexicanos)
-    - Global_Cat_UnidadesMedida (con claves SAT)
-    - Global_Cat_CentrosCosto
-    - Global_Cat_FormaPagoSAT (con catálogo SAT completo)
-    - Global_Cat_MetodoPagoSAT (PUE, PPD)
-    - Global_Cat_UsoCFDI (con catálogo SAT completo)
-    - Global_Cat_RegimenFiscal (con catálogo SAT completo)
-    - Finanzas_Cat_CuentasBancarias
-  - Documentación: `/app/memory/DISENO_MODULO_CATALOGOS.md`
-  - Diagnóstico: `/app/memory/DIAGNOSTICO_CATALOGOS_EDARSA_HUB.md`
+
+- [x] **Tablas de Finanzas en SQL Server EDARSA HUB** (Abril 13, 2026)
+  - **CREADAS EN BD SQL SERVER:**
+    - `Finanzas_ConfiguracionTPV_Sucursal` - Comisiones TPV por sucursal (8 regs)
+      - ComisionDebito: 1.2%
+      - ComisionCredito: 1.5%
+      - ComisionAmex: 2.4% (2 días depósito) ✅
+      - ComisionInternacional: 2.0% (2 días depósito) ✅
+      - DiasDepositoEfectivo: 1 día (Fin semana → Lunes)
+    - `Finanzas_CuentasPorPagar` - Facturas pendientes de pago
+    - `Finanzas_Pagos` - Detalle de pagos realizados
+    - `Finanzas_CortesCaja` - Cortes de caja con AMEX e internacional
+    - `Finanzas_Depositos` - Control de depósitos bancarios
+    - `Finanzas_EstatusPago` - (5 regs: Pendiente, Parcial, Pagado, Cancelado, Vencido)
+    - `Finanzas_EstatusCierre` - (3 regs: Abierto, Cerrado, Conciliado)
+    - `Global_Cat_Bancos` - (5 regs: BANAMEX, BBVA, SANTANDER, HSBC, BANORTE)
+    - `Global_Cat_FormaPagoSAT` - (6 regs: Efectivo, Cheque, Transferencia, etc.)
+    - `Finanzas_Cat_CuentasBancarias` - Cuentas bancarias de la empresa
 
 ---
 

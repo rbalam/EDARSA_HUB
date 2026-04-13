@@ -103,11 +103,12 @@ DOMINIOS_CATALOGOS = {
         "descripcion": "Catálogos del módulo de Finanzas",
         "icono": "DollarSign",
         "catalogos": [
-            {"tabla": "Finanzas_Cat_CuentasBancarias", "nombre": "Cuentas Bancarias", "nuevo": True},
-            {"tabla": "Global_Cat_FormaPagoSAT", "nombre": "Formas de Pago SAT", "nuevo": True},
-            {"tabla": "Global_Cat_MetodoPagoSAT", "nombre": "Métodos de Pago SAT", "nuevo": True},
-            {"tabla": "Global_Cat_UsoCFDI", "nombre": "Usos de CFDI", "nuevo": True},
-            {"tabla": "Global_Cat_RegimenFiscal", "nombre": "Regímenes Fiscales", "nuevo": True},
+            {"tabla": "Finanzas_Cat_CuentasBancarias", "nombre": "Cuentas Bancarias", "nuevo": False},
+            {"tabla": "Global_Cat_Bancos", "nombre": "Bancos", "nuevo": False},
+            {"tabla": "Global_Cat_FormaPagoSAT", "nombre": "Formas de Pago SAT", "nuevo": False},
+            {"tabla": "Finanzas_EstatusPago", "nombre": "Estatus de Pago", "nuevo": False},
+            {"tabla": "Finanzas_EstatusCierre", "nombre": "Estatus de Cierre", "nuevo": False},
+            {"tabla": "Finanzas_ConfiguracionTPV_Sucursal", "nombre": "Config. TPV por Sucursal", "nuevo": False},
         ]
     },
     "ventas": {
@@ -461,11 +462,39 @@ ESTRUCTURA_TABLAS = {
         "campo_nombre": "Alias",
         "campo_activo": "Activo",
     },
+    "Global_Cat_Bancos": {
+        "pk": "BancoID",
+        "campos": ["BancoID", "CodigoBanco", "NombreBanco", "NombreCorto", "Activo", "FechaAlta"],
+        "campos_editables": ["CodigoBanco", "NombreBanco", "NombreCorto", "Activo"],
+        "campo_nombre": "NombreBanco",
+        "campo_activo": "Activo",
+    },
     "Global_Cat_FormaPagoSAT": {
         "pk": "FormaPagoID",
         "campos": ["FormaPagoID", "Clave", "Descripcion", "Activo"],
         "campos_editables": ["Clave", "Descripcion", "Activo"],
         "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Finanzas_EstatusPago": {
+        "pk": "EstatusPagoID",
+        "campos": ["EstatusPagoID", "Codigo", "Descripcion", "ColorHex", "Activo"],
+        "campos_editables": ["Codigo", "Descripcion", "ColorHex", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Finanzas_EstatusCierre": {
+        "pk": "EstatusCierreID",
+        "campos": ["EstatusCierreID", "Codigo", "Descripcion", "Activo"],
+        "campos_editables": ["Codigo", "Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Finanzas_ConfiguracionTPV_Sucursal": {
+        "pk": "ConfiguracionTPVID",
+        "campos": ["ConfiguracionTPVID", "SucursalID", "ProveedorTPV", "ComisionDebito", "ComisionCredito", "ComisionAmex", "ComisionInternacional", "AplicaIVAComision", "PorcentajeIVA", "DiasDepositoDebito", "DiasDepositoCredito", "DiasDepositoAmex", "DiasDepositoInternacional", "DiasDepositoEfectivo", "EfectivoFinDeSemanaLunes", "CuentaBancariaID", "NumeroAfiliacion", "TerminalID", "Activo"],
+        "campos_editables": ["SucursalID", "ProveedorTPV", "ComisionDebito", "ComisionCredito", "ComisionAmex", "ComisionInternacional", "AplicaIVAComision", "PorcentajeIVA", "DiasDepositoDebito", "DiasDepositoCredito", "DiasDepositoAmex", "DiasDepositoInternacional", "DiasDepositoEfectivo", "EfectivoFinDeSemanaLunes", "CuentaBancariaID", "NumeroAfiliacion", "TerminalID", "Activo"],
+        "campo_nombre": "ProveedorTPV",
         "campo_activo": "Activo",
     },
     "Global_Cat_MetodoPagoSAT": {
