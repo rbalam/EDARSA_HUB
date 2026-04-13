@@ -189,8 +189,8 @@ async def listar_facturas_pendientes(
                         "factura_id": c.get('CuentaPorPagarID'),
                         "documento_fiscal_id": c.get('DocumentoFiscalID'),
                         "proveedor_id": c.get('ProveedorID'),
-                        "proveedor_nombre": f"Proveedor {c.get('ProveedorID')}",  # Pendiente: JOIN con catálogo
-                        "proveedor_rfc": None,
+                        "proveedor_nombre": c.get('ProveedorNombre') or c.get('ProveedorNombreComercial') or f"Proveedor {c.get('ProveedorID')}",
+                        "proveedor_rfc": c.get('ProveedorRFC'),
                         "sucursal_id": c.get('SucursalID'),
                         "sucursal_nombre": c.get('SucursalNombre', f"Sucursal {c.get('SucursalID')}"),
                         "numero_documento": c.get('NumeroDocumento'),

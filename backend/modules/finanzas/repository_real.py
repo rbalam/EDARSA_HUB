@@ -325,6 +325,7 @@ class FinanzasRepositoryReal:
     ) -> List[Dict]:
         """
         Obtiene cuentas por pagar con filtros.
+        Incluye JOIN con Proveedor_Catalogo para nombre y RFC.
         
         Args:
             sucursal_id: Filtrar por sucursal
@@ -357,6 +358,10 @@ class FinanzasRepositoryReal:
                 c.CuentaPorPagarID,
                 c.DocumentoFiscalID,
                 c.ProveedorID,
+                p.RazonSocial AS ProveedorNombre,
+                p.NombreComercial AS ProveedorNombreComercial,
+                p.RFC AS ProveedorRFC,
+                p.DiasCredito AS ProveedorDiasCredito,
                 c.SucursalID,
                 s.Nombre_Sucursal AS SucursalNombre,
                 c.NumeroDocumento,
@@ -377,6 +382,7 @@ class FinanzasRepositoryReal:
                 c.FechaModificacion
             FROM Finanzas_CuentasPorPagar c
             LEFT JOIN RH_Cat_Sucursales s ON c.SucursalID = s.SucursalID
+            LEFT JOIN Proveedor_Catalogo p ON c.ProveedorID = p.ProveedorID
             LEFT JOIN Finanzas_EstatusPago ep ON c.EstatusPagoID = ep.EstatusPagoID
             WHERE {where}
             ORDER BY c.FechaVencimiento ASC, c.MontoOriginal DESC
