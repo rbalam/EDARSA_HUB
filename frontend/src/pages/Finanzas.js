@@ -46,6 +46,7 @@ export default function Finanzas() {
   const [cxpData, setCxpData] = useState(null);
   const [cxpResumen, setCxpResumen] = useState(null);
   const [cxpProveedores, setCxpProveedores] = useState([]);
+  const [cxpSucursales, setCxpSucursales] = useState([]);  // Sucursales de MPRO para CxP
   const [cxpFiltroSucursal, setCxpFiltroSucursal] = useState('');
   const [cxpFiltroProveedor, setCxpFiltroProveedor] = useState('');
   const [cxpFechaCorte, setCxpFechaCorte] = useState('');
@@ -129,13 +130,23 @@ export default function Finanzas() {
     }
   }, [fetchWithAuth, filtroAnio, filtroMes, filtroSucursal]);
   
-  // Load sucursales
+  // Load sucursales (RH - para dashboard e ingresos)
   const loadSucursales = useCallback(async () => {
     try {
       const data = await fetchWithAuth('/api/rrhh/catalogos/sucursales');
       setSucursales(data.sucursales || []);
     } catch (error) {
       console.error('Error:', error);
+    }
+  }, [fetchWithAuth]);
+  
+  // Load sucursales CxP (MPRO - para cuentas por pagar)
+  const loadCxpSucursales = useCallback(async () => {
+    try {
+      const data = await fetchWithAuth('/api/finanzas/cuentas-por-pagar/sucursales');
+      setCxpSucursales(data.sucursales || []);
+    } catch (error) {
+      console.error('Error loading CxP sucursales:', error);
     }
   }, [fetchWithAuth]);
   
@@ -406,7 +417,8 @@ export default function Finanzas() {
   useEffect(() => {
     loadSucursales();
     loadCategorias();
-  }, [loadSucursales, loadCategorias]);
+    loadCxpSucursales();  // Cargar sucursales de MPRO para CxP
+  }, [loadSucursales, loadCategorias, loadCxpSucursales]);
   
   // Load data on tab change or filter change
   useEffect(() => {
@@ -1384,8 +1396,10 @@ export default function Finanzas() {
                   className="w-full px-3 py-2 border rounded-lg text-sm mt-1"
                 >
                   <option value="">Todas</option>
-                  {sucursales.map(s => (
-                    <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+                  {cxpSucursales.map(s => (
+                    <option key={s.SucursalID} value={s.SucursalID}>
+                      {s.Nombre_Sucursal} ({s.CantidadFacturas || 0} fact.)
+                    </option>
                   ))}
                 </select>
               </div>

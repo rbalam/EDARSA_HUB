@@ -34,19 +34,33 @@ router = APIRouter(prefix="/finanzas/cuentas-por-pagar", tags=["Cuentas por Paga
 # REPOSITORIO REAL
 # ============================================================================
 
-# Variable global para el repositorio (se inicializa con db en server.py)
-_finanzas_repo = None
+# Variables globales para repositorios
+_finanzas_repo = None  # Repositorio EDARSA HUB (legacy)
+_mpro_repo = None      # Repositorio MPRO (datos reales CxP)
 
 def set_finanzas_repository(repo):
-    """Configura el repositorio de finanzas (llamado desde server.py)"""
+    """Configura el repositorio de finanzas EDARSA HUB (llamado desde server.py)"""
     global _finanzas_repo
     _finanzas_repo = repo
 
+def set_mpro_repository(repo):
+    """Configura el repositorio MPRO para CxP reales (llamado desde server.py)"""
+    global _mpro_repo
+    _mpro_repo = repo
+
 async def get_repo():
-    """Obtiene el repositorio de finanzas"""
+    """Obtiene el repositorio de finanzas (prefiere MPRO sobre EDARSA HUB)"""
+    # Primero intenta MPRO que tiene los datos reales de CxP
+    if _mpro_repo:
+        return _mpro_repo
+    # Fallback a EDARSA HUB
     if _finanzas_repo:
         return _finanzas_repo
     return None
+
+async def get_mpro_repo():
+    """Obtiene específicamente el repositorio MPRO"""
+    return _mpro_repo
 
 # ============================================================================
 # DATOS DEMO (Solo se usan si SQL no tiene datos o use_demo=true)
@@ -145,8 +159,8 @@ class ActualizarDecisionPagoMasivo(BaseModel):
 
 @router.get("")
 async def listar_facturas_pendientes(
-    sucursal_id: Optional[int] = None,
-    proveedor_id: Optional[int] = None,
+    sucursal_id: Optional[str] = None,  # String para compatibilidad con MPRO ('0027')
+    proveedor_id: Optional[str] = None,
     fecha_corte: Optional[str] = None,  # YYYY-MM-DD
     solo_vencidas: bool = False,
     solo_decision_pago: bool = False,
@@ -156,18 +170,18 @@ async def listar_facturas_pendientes(
     """
     Listar facturas/cuentas pendientes de pago.
     
-    CONECTADO A SQL SERVER REAL (Finanzas_CuentasPorPagar)
+    CONECTADO A MPRO (Cuenta_X_Pagar en CENTRAL2020)
     Si use_demo=true, usa datos demo para pruebas.
     
     Filtros: sucursal, proveedor, fecha de corte, solo vencidas, solo con decisión de pago.
     Agrupa por proveedor con subtotales.
     """
-    repo = await get_repo()
+    mpro_repo = await get_mpro_repo()
     
-    # Intentar obtener datos reales de SQL Server
-    if repo and not use_demo:
+    # Usar MPRO como fuente principal de CxP
+    if mpro_repo and not use_demo:
         try:
-            cxp_sql = await repo.get_cuentas_por_pagar(
+            cxp_sql = await mpro_repo.get_cuentas_por_pagar(
                 sucursal_id=sucursal_id,
                 proveedor_id=proveedor_id,
                 solo_vencidas=solo_vencidas,
@@ -375,84 +389,46 @@ async def listar_facturas_pendientes(
 
 @router.get("/resumen")
 async def get_resumen_cuentas_por_pagar(
-    sucursal_id: Optional[int] = None,
+    sucursal_id: Optional[str] = None,
     use_demo: bool = Query(False, description="Usar datos demo en lugar de SQL real"),
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Resumen ejecutivo de cuentas por pagar.
     
-    CONECTADO A SQL SERVER REAL - Calcula antigüedad desde datos reales.
+    CONECTADO A MPRO (Cuenta_X_Pagar) - Calcula antigüedad desde datos reales.
     """
-    repo = await get_repo()
+    mpro_repo = await get_mpro_repo()
     
-    # Intentar obtener datos reales de SQL Server
-    if repo and not use_demo:
+    # Usar MPRO que tiene método optimizado para antigüedad
+    if mpro_repo and not use_demo:
         try:
-            cxp_sql = await repo.get_cuentas_por_pagar(
-                sucursal_id=sucursal_id,
-                limit=500  # Obtener más registros para el resumen
-            )
+            antiguedad = await mpro_repo.get_resumen_antiguedad(sucursal_id=sucursal_id)
             
-            if cxp_sql:
-                # Transformar y clasificar por antigüedad
-                facturas = []
-                for c in cxp_sql:
-                    saldo = float(c.get('Saldo', 0) or 0)
-                    if saldo <= 0:
-                        continue
-                    dias_vencido = int(c.get('DiasVencido', 0) or 0)
-                    facturas.append({
-                        "saldo": saldo,
-                        "dias_vencida": max(0, dias_vencido)
-                    })
-                
-                # Clasificar por antigüedad
-                corriente = [f for f in facturas if f["dias_vencida"] <= 0]
-                vencidas_1_30 = [f for f in facturas if 1 <= f["dias_vencida"] <= 30]
-                vencidas_31_60 = [f for f in facturas if 31 <= f["dias_vencida"] <= 60]
-                vencidas_61_90 = [f for f in facturas if 61 <= f["dias_vencida"] <= 90]
-                vencidas_90_plus = [f for f in facturas if f["dias_vencida"] > 90]
-                
+            if antiguedad.get('total_facturas', 0) > 0:
                 return {
-                    "fuente": "SQL_SERVER_REAL",
+                    "fuente": "MPRO_REAL",
                     "resumen": {
-                        "total_facturas": len(facturas),
-                        "total_saldo": round(sum(f["saldo"] for f in facturas), 2),
+                        "total_facturas": antiguedad['total_facturas'],
+                        "total_saldo": round(antiguedad['total_saldo'], 2),
                         "total_decision_pago": 0,
                         "facturas_con_decision": 0
                     },
-                    "antiguedad": {
-                        "corriente": {
-                            "cantidad": len(corriente),
-                            "monto": round(sum(f["saldo"] for f in corriente), 2)
-                        },
-                        "vencidas_1_30": {
-                            "cantidad": len(vencidas_1_30),
-                            "monto": round(sum(f["saldo"] for f in vencidas_1_30), 2)
-                        },
-                        "vencidas_31_60": {
-                            "cantidad": len(vencidas_31_60),
-                            "monto": round(sum(f["saldo"] for f in vencidas_31_60), 2)
-                        },
-                        "vencidas_61_90": {
-                            "cantidad": len(vencidas_61_90),
-                            "monto": round(sum(f["saldo"] for f in vencidas_61_90), 2)
-                        },
-                        "vencidas_90_plus": {
-                            "cantidad": len(vencidas_90_plus),
-                            "monto": round(sum(f["saldo"] for f in vencidas_90_plus), 2)
-                        }
-                    }
+                    "antiguedad": antiguedad
                 }
         except Exception as e:
-            logging.error(f"Error obteniendo resumen CxP de SQL: {e}")
+            logging.error(f"Error obteniendo resumen CxP de MPRO: {e}")
     
     # MODO DEMO - usar datos generados
     facturas = [f for f in _facturas_db if f["saldo"] > 0]
     
     if sucursal_id:
-        facturas = [f for f in facturas if f["sucursal_id"] == sucursal_id]
+        # Convertir a int si viene como string para demo
+        try:
+            suc_id = int(sucursal_id) if sucursal_id else None
+            facturas = [f for f in facturas if f["sucursal_id"] == suc_id]
+        except ValueError:
+            pass  # Si no es int, ignorar filtro
     
     # Clasificar por antigüedad
     corriente = [f for f in facturas if f["dias_vencida"] == 0]
@@ -496,51 +472,44 @@ async def get_resumen_cuentas_por_pagar(
 
 @router.get("/proveedores")
 async def listar_proveedores_con_saldo(
-    sucursal_id: Optional[int] = None,
+    sucursal_id: Optional[str] = None,
     use_demo: bool = Query(False, description="Usar datos demo en lugar de SQL real"),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Lista proveedores que tienen facturas pendientes - CONECTADO A SQL REAL"""
-    repo = await get_repo()
+    """Lista proveedores que tienen facturas pendientes - CONECTADO A MPRO"""
+    mpro_repo = await get_mpro_repo()
     
-    # Intentar obtener datos reales de SQL Server
-    if repo and not use_demo:
+    # Usar MPRO como fuente principal
+    if mpro_repo and not use_demo:
         try:
-            cxp_sql = await repo.get_cuentas_por_pagar(
-                sucursal_id=sucursal_id,
-                limit=500
-            )
+            proveedores = await mpro_repo.get_resumen_por_proveedor(sucursal_id=sucursal_id)
             
-            if cxp_sql:
-                proveedores = {}
-                for c in cxp_sql:
-                    saldo = float(c.get('Saldo', 0) or 0)
-                    if saldo <= 0:
-                        continue
-                    prov_id = c.get('ProveedorID')
-                    if prov_id not in proveedores:
-                        proveedores[prov_id] = {
-                            "proveedor_id": prov_id,
-                            "proveedor_nombre": c.get('ProveedorNombre') or c.get('ProveedorNombreComercial') or f"Proveedor {prov_id}",
-                            "proveedor_rfc": c.get('ProveedorRFC'),
-                            "total_saldo": 0,
-                            "cantidad_facturas": 0
-                        }
-                    proveedores[prov_id]["total_saldo"] += saldo
-                    proveedores[prov_id]["cantidad_facturas"] += 1
-                
+            if proveedores:
                 return {
-                    "fuente": "SQL_SERVER_REAL",
-                    "proveedores": sorted(proveedores.values(), key=lambda x: x["proveedor_nombre"])
+                    "fuente": "MPRO_REAL",
+                    "proveedores": [
+                        {
+                            "proveedor_id": p.get('ProveedorID'),
+                            "proveedor_nombre": p.get('ProveedorNombre') or f"Proveedor {p.get('ProveedorID')}",
+                            "proveedor_rfc": p.get('ProveedorRFC'),
+                            "total_saldo": float(p.get('SaldoTotal', 0) or 0),
+                            "cantidad_facturas": int(p.get('CantidadFacturas', 0) or 0)
+                        }
+                        for p in proveedores
+                    ]
                 }
         except Exception as e:
-            logging.error(f"Error obteniendo proveedores CxP de SQL: {e}")
+            logging.error(f"Error obteniendo proveedores CxP de MPRO: {e}")
     
     # MODO DEMO
     facturas = [f for f in _facturas_db if f["saldo"] > 0]
     
     if sucursal_id:
-        facturas = [f for f in facturas if f["sucursal_id"] == sucursal_id]
+        try:
+            suc_id = int(sucursal_id) if sucursal_id else None
+            facturas = [f for f in facturas if f["sucursal_id"] == suc_id]
+        except ValueError:
+            pass
     
     proveedores = {}
     for f in facturas:
@@ -559,6 +528,41 @@ async def listar_proveedores_con_saldo(
     return {
         "fuente": "DEMO",
         "proveedores": sorted(proveedores.values(), key=lambda x: x["proveedor_nombre"])
+    }
+
+
+@router.get("/sucursales")
+async def listar_sucursales_cxp(
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista sucursales desde MPRO con datos de CxP"""
+    mpro_repo = await get_mpro_repo()
+    
+    if mpro_repo:
+        try:
+            resumen = await mpro_repo.get_resumen_por_sucursal()
+            if resumen:
+                return {
+                    "fuente": "MPRO_REAL",
+                    "sucursales": [
+                        {
+                            "SucursalID": s.get('SucursalID'),
+                            "Nombre_Sucursal": s.get('SucursalNombre') or f"Sucursal {s.get('SucursalID')}",
+                            "CantidadFacturas": int(s.get('CantidadFacturas', 0) or 0),
+                            "SaldoTotal": float(s.get('SaldoTotal', 0) or 0)
+                        }
+                        for s in resumen
+                    ]
+                }
+        except Exception as e:
+            logging.error(f"Error obteniendo sucursales MPRO: {e}")
+    
+    return {
+        "fuente": "DEMO",
+        "sucursales": [
+            {"SucursalID": 1, "Nombre_Sucursal": "DEMO 1"},
+            {"SucursalID": 2, "Nombre_Sucursal": "DEMO 2"}
+        ]
     }
 
 
