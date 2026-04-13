@@ -1716,7 +1716,7 @@ export default function RecursosHumanos() {
                     <select
                       value={capturaFiltroSucursal}
                       onChange={(e) => setCapturaFiltroSucursal(e.target.value)}
-                      className="w-full border rounded-lg px-3 py-2 mt-1 text-sm"
+                      className="w-full border border-zinc-300 rounded-lg px-3 py-2 mt-1 text-sm bg-white text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Seleccionar sucursal...</option>
                       {sucursales.map(s => (
@@ -1729,7 +1729,7 @@ export default function RecursosHumanos() {
                     <select
                       value={capturaFiltroDepartamento}
                       onChange={(e) => setCapturaFiltroDepartamento(e.target.value)}
-                      className="w-full border rounded-lg px-3 py-2 mt-1 text-sm"
+                      className="w-full border border-zinc-300 rounded-lg px-3 py-2 mt-1 text-sm bg-white text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Todos</option>
                       {departamentos.map(d => (
@@ -1986,13 +1986,13 @@ export default function RecursosHumanos() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Día de Corte</Label>
-                    <select value={formConfigNomina.dia_corte} onChange={(e) => setFormConfigNomina({...formConfigNomina, dia_corte: parseInt(e.target.value)})} className="w-full border rounded-lg px-3 py-2 mt-1">
+                    <select value={formConfigNomina.dia_corte} onChange={(e) => setFormConfigNomina({...formConfigNomina, dia_corte: parseInt(e.target.value)})} className="w-full border border-zinc-300 rounded-lg px-3 py-2 mt-1 bg-white text-zinc-900">
                       {diasSemana.map((dia, idx) => <option key={idx} value={idx}>{dia}</option>)}
                     </select>
                   </div>
                   <div>
                     <Label>Día de Pago</Label>
-                    <select value={formConfigNomina.dia_pago} onChange={(e) => setFormConfigNomina({...formConfigNomina, dia_pago: parseInt(e.target.value)})} className="w-full border rounded-lg px-3 py-2 mt-1">
+                    <select value={formConfigNomina.dia_pago} onChange={(e) => setFormConfigNomina({...formConfigNomina, dia_pago: parseInt(e.target.value)})} className="w-full border border-zinc-300 rounded-lg px-3 py-2 mt-1 bg-white text-zinc-900">
                       {diasSemana.map((dia, idx) => <option key={idx} value={idx}>{dia}</option>)}
                     </select>
                   </div>
@@ -3742,7 +3742,7 @@ export default function RecursosHumanos() {
             <div className="p-6 space-y-4">
               <div>
                 <Label>Sucursal *</Label>
-                <select value={formNuevoCiclo.sucursal_id} onChange={(e) => setFormNuevoCiclo({...formNuevoCiclo, sucursal_id: e.target.value})} className="w-full border rounded-lg px-3 py-2 mt-1">
+                <select value={formNuevoCiclo.sucursal_id} onChange={(e) => setFormNuevoCiclo({...formNuevoCiclo, sucursal_id: e.target.value})} className="w-full border border-zinc-300 rounded-lg px-3 py-2 mt-1 bg-white text-zinc-900">
                   <option value="">Seleccione sucursal</option>
                   {sucursales.map(s => <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>)}
                 </select>
@@ -3753,7 +3753,7 @@ export default function RecursosHumanos() {
               </div>
               <div>
                 <Label>Tipo de Nómina</Label>
-                <select value={formNuevoCiclo.tipo_nomina} onChange={(e) => setFormNuevoCiclo({...formNuevoCiclo, tipo_nomina: e.target.value})} className="w-full border rounded-lg px-3 py-2 mt-1">
+                <select value={formNuevoCiclo.tipo_nomina} onChange={(e) => setFormNuevoCiclo({...formNuevoCiclo, tipo_nomina: e.target.value})} className="w-full border border-zinc-300 rounded-lg px-3 py-2 mt-1 bg-white text-zinc-900">
                   <option value="quincenal">Quincenal</option>
                   <option value="semanal">Semanal</option>
                   <option value="mensual">Mensual</option>
@@ -3793,7 +3793,7 @@ export default function RecursosHumanos() {
               </div>
               <div>
                 <Label>Comentario (opcional)</Label>
-                <textarea value={comentarioAprobacion} onChange={(e) => setComentarioAprobacion(e.target.value)} className="w-full border rounded-lg px-3 py-2 mt-1" placeholder="Observaciones..." />
+                <textarea value={comentarioAprobacion} onChange={(e) => setComentarioAprobacion(e.target.value)} className="w-full border border-zinc-300 rounded-lg px-3 py-2 mt-1 bg-white text-zinc-900" placeholder="Observaciones..." />
               </div>
             </div>
             <div className="border-t px-6 py-4 flex justify-end gap-2 bg-zinc-50">
