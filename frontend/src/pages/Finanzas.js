@@ -54,6 +54,7 @@ export default function Finanzas() {
   const [cxpSoloDecision, setCxpSoloDecision] = useState(false);
   const [cxpExpandidos, setCxpExpandidos] = useState({});  // Control de proveedores expandidos
   const [cxpCategoriasExpandidas, setCxpCategoriasExpandidas] = useState({ A: true, B: true, X: true, M: true });  // Control de categorías expandidas
+  const [cxpVistaMode, setCxpVistaMode] = useState('categorias'); // 'categorias' o 'proveedores'
   const [savingDecision, setSavingDecision] = useState(null);
   
   // Función para reagrupar datos: Categoría -> Proveedor -> Facturas
@@ -120,6 +121,45 @@ export default function Finanzas() {
     // Ordenar categorías: A, B, X, M (MPRO)
     const orden = { A: 1, B: 2, X: 3, M: 4 };
     return resultado.sort((a, b) => (orden[a.tipo] || 99) - (orden[b.tipo] || 99));
+  }, []);
+  
+  // Función para reagrupar datos solo por Proveedor (vista plana)
+  const reagruparCxPSoloProveedores = useCallback((proveedoresData) => {
+    if (!proveedoresData || proveedoresData.length === 0) return [];
+    
+    // Agrupar todas las facturas por proveedor (sin importar categoría)
+    const proveedores = {};
+    
+    proveedoresData.forEach(categoria => {
+      (categoria.facturas || []).forEach(factura => {
+        const provNombre = factura.proveedor_nombre || 'Sin Proveedor';
+        const provRFC = factura.proveedor_rfc || '';
+        
+        if (!proveedores[provNombre]) {
+          proveedores[provNombre] = {
+            proveedor_id: factura.proveedor_id || provNombre,
+            proveedor_nombre: provNombre,
+            proveedor_rfc: provRFC,
+            facturas: [],
+            subtotal_saldo: 0,
+            subtotal_importe: 0,
+            subtotal_a_pagar: 0,
+            cantidad_facturas: 0,
+            cantidad_vencidas: 0
+          };
+        }
+        
+        proveedores[provNombre].facturas.push(factura);
+        proveedores[provNombre].subtotal_saldo += factura.saldo || 0;
+        proveedores[provNombre].subtotal_importe += factura.importe_original || factura.importe_total || 0;
+        proveedores[provNombre].subtotal_a_pagar += factura.decision_pago ? (factura.importe_a_pagar || factura.saldo || 0) : 0;
+        proveedores[provNombre].cantidad_facturas += 1;
+        if (factura.dias_vencida > 0) proveedores[provNombre].cantidad_vencidas += 1;
+      });
+    });
+    
+    // Ordenar por saldo descendente
+    return Object.values(proveedores).sort((a, b) => b.subtotal_saldo - a.subtotal_saldo);
   }, []);
   
   // Estados para Control de Ingresos
@@ -1627,31 +1667,60 @@ export default function Finanzas() {
           </Card>
         </div>
         
-        {/* Botones Expandir/Colapsar Todos */}
+        {/* Botones Expandir/Colapsar y Toggle de Vista */}
         {(cxpData?.proveedores || []).length > 0 && (
-          <div className="flex items-center justify-end gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={expandirTodos}
-              className="text-xs"
-            >
-              <ChevronDown className="h-3 w-3 mr-1" />
-              Expandir Todos
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={colapsarTodos}
-              className="text-xs"
-            >
-              <ChevronUp className="h-3 w-3 mr-1" />
-              Colapsar Todos
-            </Button>
+          <div className="flex items-center justify-between">
+            {/* Toggle de Vista */}
+            <div className="flex items-center gap-2 bg-zinc-100 rounded-lg p-1">
+              <button
+                onClick={() => setCxpVistaMode('categorias')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+                  cxpVistaMode === 'categorias' 
+                    ? 'bg-white text-zinc-800 shadow-sm' 
+                    : 'text-zinc-500 hover:text-zinc-700'
+                }`}
+              >
+                <PieChart className="h-3 w-3 inline mr-1" />
+                Por Categoría
+              </button>
+              <button
+                onClick={() => setCxpVistaMode('proveedores')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+                  cxpVistaMode === 'proveedores' 
+                    ? 'bg-white text-zinc-800 shadow-sm' 
+                    : 'text-zinc-500 hover:text-zinc-700'
+                }`}
+              >
+                <Building2 className="h-3 w-3 inline mr-1" />
+                Por Proveedor
+              </button>
+            </div>
+            
+            {/* Botones Expandir/Colapsar */}
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={expandirTodos}
+                className="text-xs"
+              >
+                <ChevronDown className="h-3 w-3 mr-1" />
+                Expandir Todos
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={colapsarTodos}
+                className="text-xs"
+              >
+                <ChevronUp className="h-3 w-3 mr-1" />
+                Colapsar Todos
+              </Button>
+            </div>
           </div>
         )}
         
-        {/* Lista jerárquica: Categoría -> Proveedor -> Facturas */}
+        {/* Vista de datos según modo seleccionado */}
         <div className="space-y-4">
           {(cxpData?.proveedores || []).length === 0 ? (
             <Card className="border-2 border-dashed">
@@ -1660,7 +1729,8 @@ export default function Finanzas() {
                 <p className="text-zinc-500">No hay facturas pendientes con los filtros seleccionados</p>
               </CardContent>
             </Card>
-          ) : (
+          ) : cxpVistaMode === 'categorias' ? (
+            /* VISTA POR CATEGORÍAS (A, B, X, M) -> Proveedor -> Facturas */
             reagruparCxPPorProveedores(cxpData?.proveedores || []).map(categoria => (
               <Card key={categoria.tipo} className="overflow-hidden border-2" data-testid={`categoria-${categoria.tipo}`}>
                 {/* Header de Categoría (A, B, X, M) */}
@@ -1789,6 +1859,127 @@ export default function Finanzas() {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </Card>
+            ))
+          ) : (
+            /* VISTA POR PROVEEDOR (sin categorías) - Como la imagen original */
+            reagruparCxPSoloProveedores(cxpData?.proveedores || []).map(proveedor => (
+              <Card key={proveedor.proveedor_nombre} className="overflow-hidden" data-testid={`proveedor-flat-${proveedor.proveedor_nombre}`}>
+                {/* Header del proveedor */}
+                <div
+                  className="bg-zinc-800 text-white px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-zinc-700 transition"
+                  onClick={() => toggleProveedor(proveedor.proveedor_nombre)}
+                >
+                  <div className="flex items-center gap-3">
+                    <ChevronRight className={`h-5 w-5 transition-transform ${cxpExpandidos[proveedor.proveedor_nombre] ? 'rotate-90' : ''}`} />
+                    <div>
+                      <h3 className="font-medium">{proveedor.proveedor_nombre}</h3>
+                      <p className="text-xs text-zinc-400">RFC: {proveedor.proveedor_rfc || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6 text-sm">
+                    <div className="text-right">
+                      <p className="text-xs text-zinc-400">Facturas</p>
+                      <p className="font-medium">{proveedor.cantidad_facturas}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-zinc-400">Saldo</p>
+                      <p className="font-medium">{formatCurrency(proveedor.subtotal_saldo)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-zinc-400">A Pagar</p>
+                      <p className="font-bold text-green-400">{formatCurrency(proveedor.subtotal_a_pagar)}</p>
+                    </div>
+                    {proveedor.cantidad_vencidas > 0 && (
+                      <span className="px-2 py-1 bg-red-500 rounded text-xs">
+                        {proveedor.cantidad_vencidas} vencidas
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Facturas del proveedor (vista detallada como en la imagen) */}
+                {cxpExpandidos[proveedor.proveedor_nombre] && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-zinc-100">
+                        <tr>
+                          <th className="text-left p-2 font-medium">Folio Entrada</th>
+                          <th className="text-left p-2 font-medium">Folio Factura</th>
+                          <th className="text-center p-2 font-medium">F. Entrada</th>
+                          <th className="text-center p-2 font-medium">F. Vencimiento</th>
+                          <th className="text-center p-2 font-medium">Días Venc.</th>
+                          <th className="text-left p-2 font-medium">Referencia</th>
+                          <th className="text-right p-2 font-medium">Importe</th>
+                          <th className="text-right p-2 font-medium">Saldo</th>
+                          <th className="text-center p-2 font-medium">Pagar</th>
+                          <th className="text-right p-2 font-medium">Importe a Pagar</th>
+                          <th className="text-center p-2 font-medium">Docs</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {proveedor.facturas.map((factura, idx) => (
+                          <tr key={factura.factura_id || idx} className={`border-b hover:bg-zinc-50 ${factura.dias_vencida > 0 ? 'bg-red-50' : ''}`}>
+                            <td className="p-2 font-mono">{factura.folio_entrada || 'N/A'}</td>
+                            <td className="p-2 font-mono">{factura.folio_factura || '-'}</td>
+                            <td className="p-2 text-center">{factura.fecha_entrada?.split('T')[0] || '-'}</td>
+                            <td className="p-2 text-center">{factura.fecha_vencimiento || '-'}</td>
+                            <td className={`p-2 text-center font-bold ${factura.dias_vencida > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              {factura.dias_vencida > 0 ? factura.dias_vencida : '-'}
+                            </td>
+                            <td className="p-2 max-w-[150px] truncate" title={factura.referencia || factura.observaciones}>
+                              {factura.referencia || factura.observaciones || '-'}
+                            </td>
+                            <td className="p-2 text-right font-mono">{formatCurrency(factura.importe_original || factura.importe_total || 0)}</td>
+                            <td className="p-2 text-right font-mono font-bold">{formatCurrency(factura.saldo)}</td>
+                            <td className="p-2 text-center">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDecisionPago(factura.factura_id, !factura.decision_pago); }}
+                                disabled={savingDecision === factura.factura_id}
+                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${
+                                  factura.decision_pago 
+                                    ? 'bg-green-500 border-green-500 text-white' 
+                                    : 'border-zinc-300 hover:border-green-400'
+                                }`}
+                              >
+                                {savingDecision === factura.factura_id ? (
+                                  <RefreshCw className="h-3 w-3 animate-spin" />
+                                ) : factura.decision_pago ? (
+                                  <CheckCircle2 className="h-4 w-4" />
+                                ) : null}
+                              </button>
+                            </td>
+                            <td className="p-2 text-right font-mono text-green-600 font-bold">
+                              {factura.decision_pago ? formatCurrency(factura.importe_a_pagar || factura.saldo) : '-'}
+                            </td>
+                            <td className="p-2">
+                              <div className="flex items-center justify-center gap-1">
+                                <button className="p-1 hover:bg-zinc-200 rounded" title="PDF Factura">
+                                  <FileText className="h-4 w-4 text-red-500" />
+                                </button>
+                                <button className="p-1 hover:bg-zinc-200 rounded" title="XML">
+                                  <File className="h-4 w-4 text-green-600" />
+                                </button>
+                                <button className="p-1 hover:bg-zinc-200 rounded" title="Entrada Sistema">
+                                  <FileSpreadsheet className="h-4 w-4 text-blue-500" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {/* Subtotal del proveedor */}
+                        <tr className="bg-zinc-200 font-bold">
+                          <td colSpan={6} className="p-2 text-right">SUBTOTAL {proveedor.proveedor_nombre}:</td>
+                          <td className="p-2 text-right font-mono">{formatCurrency(proveedor.subtotal_importe)}</td>
+                          <td className="p-2 text-right font-mono">{formatCurrency(proveedor.subtotal_saldo)}</td>
+                          <td className="p-2"></td>
+                          <td className="p-2 text-right font-mono text-green-700">{formatCurrency(proveedor.subtotal_a_pagar)}</td>
+                          <td className="p-2"></td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </Card>
