@@ -5,14 +5,16 @@ Repositorio para acceso a datos REALES de Cuentas por Pagar desde
 servidores SoftRestaurant de cada sucursal.
 
 SUCURSALES CONECTADAS:
-- CIEN FUEGOS: servercienfuegos.ddns.net,6669\\nationalsoft / softrestaurant95pro
-- LA ESTELAR: serverestelar.ddns.net:6669 / softrestaurant12
-- 130° MERIDA: 130mid.ddns.net:1433 / softrestaurant10
+- CIENFUEGOS: servercienfuegos.ddns.net:6669 / softrestaurant95pro (Vista: AC_vwSaldoCxp)
+- LA ESTELAR: serverestelar.ddns.net:6969 / softrestaurant12 (Vista: AC_vwSaldoCxp)
+- 130° MERIDA: 130mid.ddns.net:1433 / softrestaurant10 (Vista: vwSaldoCxp)
 
 AGRUPACIÓN DE PROVEEDORES:
 - A = ALIMENTOS
 - B = BEBIDAS
-- X = OTROS (incluye P=Préstamos, servicios, etc.)
+- X = OTROS (incluye servicios, préstamos, etc.)
+
+Formato nombre proveedor: "[XXXX] TYYYY NOMBRE" donde T es el tipo (A, B, X)
 
 ABRIL 2026: Conexión directa a SoftRestaurant de cada sucursal
 """
@@ -23,25 +25,27 @@ from datetime import datetime, date
 from decimal import Decimal
 import pytds
 
-# Configuración de servidores SoftRestaurant
+# Configuración de servidores SoftRestaurant (desde menú de servidores)
 SOFTRESTAURANT_SERVERS = {
     "CIENFUEGOS": {
         "id": "CF",
         "name": "CIEN FUEGOS",
-        "host": "servercienfuegos.ddns.net,6669\\nationalsoft",
-        "port": 1433,
+        "host": "servercienfuegos.ddns.net",
+        "port": 6669,
         "database": "softrestaurant95pro",
         "username": "CFLectura",
-        "password": "National09$"
+        "password": "National09",
+        "view": "AC_vwSaldoCxp"
     },
     "ESTELAR": {
         "id": "EST",
         "name": "LA ESTELAR",
         "host": "serverestelar.ddns.net",
-        "port": 6669,
+        "port": 6969,
         "database": "softrestaurant12",
-        "username": "sa",
-        "password": "National09$"
+        "username": "SCedarsa",
+        "password": "C0ntr4s3ña#2026",
+        "view": "AC_vwSaldoCxp"
     },
     "130MID": {
         "id": "130M",
@@ -49,8 +53,9 @@ SOFTRESTAURANT_SERVERS = {
         "host": "130mid.ddns.net",
         "port": 1433,
         "database": "softrestaurant10",
-        "username": "LECTURA_EDARSA",
-        "password": "National09$"
+        "username": "SCedarsa",
+        "password": "C0ntr4s3ña#2026",
+        "view": "vwSaldoCxp"
     }
 }
 
@@ -58,22 +63,26 @@ SOFTRESTAURANT_SERVERS = {
 def get_tipo_proveedor(nombre_proveedor: str) -> str:
     """
     Extrae el tipo de proveedor del nombre.
-    Formato típico: "(123) A NOMBRE DEL PROVEEDOR"
+    Formato: "[XXXX] TYYYY NOMBRE" donde T es A, B o X
+    Ejemplos:
+      - "[0357] X0357 MAGER" → X
+      - "[0406] B0406 CONVENIO CERVECERIA" → B
+      - "[0015] A0015 CARNES ROJAS" → A
     
     Returns:
         'A' = Alimentos
         'B' = Bebidas
-        'X' = Otros (incluye P, S, etc.)
+        'X' = Otros
     """
     if not nombre_proveedor:
         return 'X'
     
     nombre = nombre_proveedor.strip()
     
-    # Buscar patrón "(XXX) T NOMBRE" donde T es la letra de tipo
-    if nombre.startswith('('):
-        # Encontrar el cierre del paréntesis
-        idx = nombre.find(') ')
+    # Buscar patrón "[XXXX] TYYYY" donde T es la letra de tipo
+    if nombre.startswith('['):
+        # Encontrar el cierre del corchete
+        idx = nombre.find('] ')
         if idx > 0 and len(nombre) > idx + 2:
             tipo_letra = nombre[idx + 2].upper()
             if tipo_letra == 'A':
@@ -83,12 +92,15 @@ def get_tipo_proveedor(nombre_proveedor: str) -> str:
             else:
                 return 'X'
     
-    # Si no tiene paréntesis, revisar primera letra
-    primera = nombre[0].upper() if nombre else 'X'
-    if primera == 'A':
-        return 'A'
-    elif primera == 'B':
-        return 'B'
+    # Formato alternativo "(XXX) T NOMBRE"
+    if nombre.startswith('('):
+        idx = nombre.find(') ')
+        if idx > 0 and len(nombre) > idx + 2:
+            tipo_letra = nombre[idx + 2].upper()
+            if tipo_letra == 'A':
+                return 'A'
+            elif tipo_letra == 'B':
+                return 'B'
     
     return 'X'
 
@@ -208,6 +220,9 @@ class FinanzasRepositorySoftRestaurant:
             if not srv:
                 continue
             
+            # Usar la vista correcta para cada servidor
+            view_name = srv.get('view', 'vwSaldoCxp')
+            
             query = f"""
                 SELECT TOP {limit}
                     PROVEEDOR,
@@ -221,7 +236,7 @@ class FinanzasRepositorySoftRestaurant:
                     [+151] as VencMas151,
                     [Total CXP] as TotalCXP,
                     fechaaplicacion
-                FROM vwSaldoCxp
+                FROM {view_name}
                 WHERE [Total CXP] > 0
                 ORDER BY [Total CXP] DESC
             """
