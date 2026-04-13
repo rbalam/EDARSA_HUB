@@ -26,6 +26,23 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
+### Session: April 2026 (Validación UI Catálogos - TPV Sucursal)
+
+#### Completed Work
+- [x] **Validación CRUD UI Finanzas_ConfiguracionTPV_Sucursal** (Abril 13, 2026)
+  - Frontend: `/app/frontend/src/pages/Catalogos.js`
+  - Pruebas UI validadas al 100%:
+    - Navegación a /catalogos ✅
+    - Selección dominio Finanzas ✅
+    - Vista de catálogos de Finanzas (6 catálogos) ✅
+    - Selección catálogo "Config. TPV por Sucursal" ✅
+    - Visualización de 8 registros ✅
+    - Edición de ComisionAmex (2.4 → 2.55) ✅
+    - Guardado con toast de éxito ✅
+    - Persistencia real en SQL Server ✅
+    - Restauración de valor original ✅
+  - Test Report: `/app/test_reports/iteration_17.json`
+
 ### Session: April 2026 (Resiliencia SQL Server - P0 COMPLETADO)
 
 #### Completed Work
