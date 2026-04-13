@@ -182,6 +182,14 @@ $ curl /api/finanzas/ingresos/cortes-caja?use_demo=true
 | `ruta_pdf_factura` | No existe | ⚠️ Pendiente implementación |
 | `ruta_xml` | No existe | ⚠️ Pendiente implementación |
 
+### 5.2 Correcciones Aplicadas (Abril 2026)
+
+| Tabla | Campo Original | Campo Real | Corrección |
+|-------|----------------|------------|------------|
+| Finanzas_EstatusPago | Nombre | Codigo/Descripcion | ✅ Cambiado a Descripcion |
+| Finanzas_EstatusCierre | Nombre | Codigo/Descripcion | ✅ Cambiado a Descripcion |
+| RH_Cat_Sucursales | Activo | Activa | ✅ Corregido |
+
 ### 5.2 Dependencias Pendientes
 
 1. **Catálogo de Proveedores**: Se necesita JOIN con tabla de proveedores para obtener nombre y RFC

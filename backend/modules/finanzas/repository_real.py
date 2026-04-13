@@ -156,7 +156,7 @@ class FinanzasRepositoryReal:
                 c.DepositadoAmex,
                 c.DepositadoInternacional,
                 c.EstatusCierreID,
-                ec.Nombre AS EstatusNombre,
+                ec.Descripcion AS EstatusNombre,
                 c.Observaciones,
                 c.FechaAlta
             FROM Finanzas_CortesCaja c
@@ -369,7 +369,7 @@ class FinanzasRepositoryReal:
                 c.MonedaID,
                 c.TipoCambio,
                 c.EstatusPagoID,
-                ep.Nombre AS EstatusNombre,
+                ep.Descripcion AS EstatusNombre,
                 c.DiasCredito,
                 DATEDIFF(DAY, c.FechaVencimiento, GETDATE()) AS DiasVencido,
                 c.Observaciones,
@@ -514,9 +514,9 @@ class FinanzasRepositoryReal:
     async def get_sucursales(self) -> List[Dict]:
         """Obtiene lista de sucursales activas"""
         query = """
-            SELECT SucursalID, Nombre_Sucursal, Activo
+            SELECT SucursalID, Nombre_Sucursal, Activa
             FROM RH_Cat_Sucursales
-            WHERE Activo = 1
+            WHERE Activa = 1
             ORDER BY Nombre_Sucursal
         """
         return await self._execute_query(query)
@@ -528,7 +528,7 @@ class FinanzasRepositoryReal:
     async def get_estatus_pago(self) -> List[Dict]:
         """Obtiene catálogo de estatus de pago"""
         query = """
-            SELECT EstatusPagoID, Nombre, Descripcion
+            SELECT EstatusPagoID, Codigo, Descripcion
             FROM Finanzas_EstatusPago
             WHERE Activo = 1
             ORDER BY EstatusPagoID
@@ -538,7 +538,7 @@ class FinanzasRepositoryReal:
     async def get_estatus_cierre(self) -> List[Dict]:
         """Obtiene catálogo de estatus de cierre"""
         query = """
-            SELECT EstatusCierreID, Nombre, Descripcion
+            SELECT EstatusCierreID, Codigo, Descripcion
             FROM Finanzas_EstatusCierre
             WHERE Activo = 1
             ORDER BY EstatusCierreID
