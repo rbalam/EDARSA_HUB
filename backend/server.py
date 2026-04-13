@@ -11527,6 +11527,152 @@ async def reset_pool_connections(current_user: Dict = Depends(get_current_user))
             "error": str(e)
         }
 
+
+# =============================================================================
+# ENDPOINT SQL HEALTH CHECK (Abril 2026)
+# =============================================================================
+
+EDARSA_HUB_SERVER_ID = "bea40259-35f1-4693-bda2-d2d10e13e56a"
+
+@api_router.get("/sistema/sql-health")
+async def sql_server_health_check(
+    server_id: str = Query(default=None, description="ID del servidor. Si no se especifica, usa EDARSA HUB"),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Realiza un health check de conexión a SQL Server con diagnóstico detallado.
+    
+    INTEGRACIÓN RESILIENTE (Abril 2026):
+    - Prueba conectividad al servidor SQL remoto
+    - Retorna latencia, estado y recomendaciones
+    - Detecta tipo de error: red, auth, timeout, conexión muerta
+    
+    Args:
+        server_id: ID del servidor a probar (default: EDARSA HUB)
+    
+    Returns:
+        Dict con diagnóstico completo incluyendo:
+        - healthy: bool
+        - server: string con host:port
+        - database: nombre de la BD
+        - latency_ms: latencia en milisegundos
+        - error: mensaje de error si falla
+        - error_type: tipo de error (network, auth, timeout, dead_connection, cooldown)
+        - driver_used: pytds o pymssql
+        - config: configuración de timeouts actual
+        - recommendations: lista de recomendaciones
+    """
+    from core.db import sql_health_check, ResilientConfig
+    
+    # Obtener servidor
+    target_server_id = server_id or EDARSA_HUB_SERVER_ID
+    server = await db.servers.find_one({"id": target_server_id, "active": True})
+    
+    if not server:
+        return {
+            "healthy": False,
+            "error": f"Servidor con ID '{target_server_id}' no encontrado o inactivo",
+            "error_type": "configuration",
+            "recommendations": [
+                "Verificar que el ID del servidor es correcto",
+                "Verificar que el servidor está marcado como activo en la configuración"
+            ],
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    
+    # Ejecutar health check
+    result = sql_health_check(
+        host=server['host'],
+        port=server['port'],
+        database=server['database'],
+        username=server['username'],
+        password=server['password']
+    )
+    
+    # Agregar metadata del servidor
+    result["server_id"] = target_server_id
+    result["server_name"] = server.get('name', 'Unknown')
+    result["system_type"] = server.get('system_type', 'Unknown')
+    
+    return result
+
+
+@api_router.post("/sistema/sql-health/test-query")
+async def sql_server_test_query(
+    server_id: str = Query(default=None, description="ID del servidor"),
+    tabla: str = Query(default="sys.tables", description="Tabla para probar"),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Ejecuta una query de prueba sobre SQL Server para validar conectividad real.
+    
+    Usa la lógica resiliente con reintentos automáticos.
+    
+    Args:
+        server_id: ID del servidor (default: EDARSA HUB)
+        tabla: Tabla a consultar (default: sys.tables)
+    
+    Returns:
+        Dict con resultado de la query de prueba
+    """
+    from core.db import execute_sql_query, ResilientConfig
+    
+    target_server_id = server_id or EDARSA_HUB_SERVER_ID
+    server = await db.servers.find_one({"id": target_server_id, "active": True})
+    
+    if not server:
+        return {
+            "success": False,
+            "error": f"Servidor '{target_server_id}' no encontrado",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    
+    # Query de prueba simple - usar * para compatibilidad con todas las tablas
+    query = f"SELECT TOP 5 * FROM {tabla}"
+    
+    import time
+    start = time.time()
+    
+    results = execute_sql_query(
+        host=server['host'],
+        port=server['port'],
+        database=server['database'],
+        username=server['username'],
+        password=server['password'],
+        query=query,
+        timeout_seconds=ResilientConfig.QUERY_TIMEOUT
+    )
+    
+    elapsed = (time.time() - start) * 1000
+    
+    if results:
+        return {
+            "success": True,
+            "tabla": tabla,
+            "registros": len(results),
+            "sample": results[:3] if len(results) > 3 else results,
+            "latency_ms": round(elapsed, 2),
+            "config": {
+                "login_timeout": ResilientConfig.LOGIN_TIMEOUT,
+                "query_timeout": ResilientConfig.QUERY_TIMEOUT,
+                "max_retries": ResilientConfig.MAX_RETRIES
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    else:
+        return {
+            "success": False,
+            "error": "Query no retornó resultados o falló",
+            "latency_ms": round(elapsed, 2),
+            "recommendations": [
+                "Verificar que la tabla existe",
+                "Verificar permisos de lectura",
+                "Revisar logs del backend para más detalles"
+            ],
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+
 @api_router.get("/sistema/catalogos-disponibles")
 async def listar_catalogos_sistema(current_user: Dict = Depends(get_current_user)):
     """Lista todos los catálogos del sistema disponibles para solicitudes"""

@@ -8,6 +8,12 @@ FASE 1 DEL REFACTOR MODULAR (Diciembre 2025):
 - Migrado: Sistema de caché de estado de servidores (cooldown)
 - Migrado: Parseo de cadenas de conexión SQL Server
 
+INTEGRACIÓN RESILIENTE (Abril 2026):
+- Reintentos automáticos con backoff exponencial
+- Timeouts incrementados para servidores remotos (30s login, 90s query)
+- Clasificación de errores: red, autenticación, query, desconocido
+- Health check disponible para diagnóstico
+
 COMPATIBILIDAD:
 - server.py mantiene wrappers que importan desde aquí
 - portal_proveedores.py usa la función vía init_portal_db()
@@ -19,12 +25,123 @@ USO:
 
 import re
 import logging
-from typing import Optional, Dict, Any, List
+import time
+from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime, timezone
+from enum import Enum
 
 # Imports para SQL Server
 import pymssql
 import pytds
+
+
+# ============================================================================
+# CONFIGURACIÓN DE RESILIENCIA (Abril 2026)
+# ============================================================================
+
+class ResilientConfig:
+    """Configuración para conexiones resilientes a SQL Server remoto"""
+    
+    # Timeouts incrementados para servidor remoto
+    LOGIN_TIMEOUT = 30          # Timeout para establecer conexión (antes: 15s)
+    QUERY_TIMEOUT = 90          # Timeout para queries (antes: 45s)
+    CONNECT_TIMEOUT = 30        # Timeout general de conexión
+    
+    # Reintentos
+    MAX_RETRIES = 3             # Número máximo de reintentos
+    RETRY_DELAY_BASE = 2        # Segundos base entre reintentos
+    RETRY_DELAY_MAX = 15        # Máximo delay entre reintentos
+    RETRY_BACKOFF = 2           # Multiplicador de backoff exponencial
+    
+    # Health check
+    HEALTH_CHECK_QUERY = "SELECT 1 AS health"
+    HEALTH_CHECK_TIMEOUT = 15
+    
+    # Errores recuperables (se puede reintentar)
+    RECOVERABLE_ERRORS = [
+        "connection timed out",
+        "dbprocess is dead",
+        "adaptive server connection",
+        "connection reset",
+        "broken pipe",
+        "network error",
+        "temporarily unavailable",
+        "connection refused",
+        "login timeout",
+        "communication link failure"
+    ]
+
+
+class ConnectionErrorType(Enum):
+    """Tipos de errores de conexión SQL Server"""
+    NETWORK = "network"           # Error de red (timeout, conexión rechazada)
+    AUTH = "authentication"       # Error de autenticación
+    QUERY = "query"               # Error en la query SQL
+    TIMEOUT = "timeout"           # Timeout específico
+    DEAD_CONNECTION = "dead_connection"  # Conexión muerta (DBPROCESS dead)
+    UNKNOWN = "unknown"           # Error desconocido
+
+
+def classify_error(error: Exception) -> Tuple[ConnectionErrorType, str]:
+    """
+    Clasifica un error de conexión SQL Server para determinar si es recuperable.
+    
+    Returns:
+        Tuple (tipo de error, descripción)
+    """
+    error_str = str(error).lower()
+    
+    # Errores no críticos (retornar como query success con 0 resultados)
+    non_critical = ["previous statement didn't produce any results", "no results"]
+    for keyword in non_critical:
+        if keyword in error_str:
+            return (ConnectionErrorType.QUERY, "Query sin resultados (no es error)")
+    
+    # Conexión muerta (específico)
+    if "dbprocess is dead" in error_str or "dbprocess dead" in error_str:
+        return (ConnectionErrorType.DEAD_CONNECTION, "Conexión muerta - pool inválido")
+    
+    # Timeouts
+    timeout_keywords = ["timed out", "timeout", "login timeout"]
+    for keyword in timeout_keywords:
+        if keyword in error_str:
+            return (ConnectionErrorType.TIMEOUT, f"Timeout: {keyword}")
+    
+    # Errores de red
+    network_keywords = [
+        "connection reset", "broken pipe", "network", "refused", 
+        "unreachable", "adaptive server", "temporarily unavailable",
+        "communication link"
+    ]
+    for keyword in network_keywords:
+        if keyword in error_str:
+            return (ConnectionErrorType.NETWORK, f"Error de red: {keyword}")
+    
+    # Errores de autenticación
+    auth_keywords = ["login failed", "authentication", "access denied", "permission"]
+    for keyword in auth_keywords:
+        if keyword in error_str:
+            return (ConnectionErrorType.AUTH, f"Error de autenticación: {keyword}")
+    
+    # Errores de query SQL
+    query_keywords = ["syntax error", "invalid column", "invalid object", "conversion"]
+    for keyword in query_keywords:
+        if keyword in error_str:
+            return (ConnectionErrorType.QUERY, f"Error de query: {keyword}")
+    
+    return (ConnectionErrorType.UNKNOWN, str(error)[:150])
+
+
+def is_recoverable_error(error: Exception) -> bool:
+    """Determina si un error es recuperable (se puede reintentar)"""
+    error_str = str(error).lower()
+    return any(keyword in error_str for keyword in ResilientConfig.RECOVERABLE_ERRORS)
+
+
+def get_retry_delay(attempt: int) -> float:
+    """Calcula el delay para un reintento con backoff exponencial"""
+    delay = ResilientConfig.RETRY_DELAY_BASE * (ResilientConfig.RETRY_BACKOFF ** (attempt - 1))
+    return min(delay, ResilientConfig.RETRY_DELAY_MAX)
 
 # ============================================================================
 # VARIABLES GLOBALES - CACHÉ DE ESTADO DE SERVIDORES
@@ -346,19 +463,29 @@ def execute_sql_query(
             if driver == "pymssql":
                 cursor = conn.cursor(as_dict=True)
                 cursor.execute(query)
-                results = list(cursor.fetchall())
+                # pymssql maneja bien UPDATE/INSERT - fetchall retorna vacío
+                try:
+                    results = list(cursor.fetchall())
+                except Exception:
+                    results = []  # UPDATE/INSERT no tienen resultados
             else:
                 # pytds
                 cursor = conn.cursor()
                 cursor.execute(query)
-                columns = [desc[0] for desc in cursor.description] if cursor.description else []
-                rows = cursor.fetchall()
-                results = []
-                for row in rows:
-                    row_dict = {}
-                    for i, col in enumerate(columns):
-                        row_dict[col] = row[i]
-                    results.append(row_dict)
+                # Verificar si hay resultados antes de fetchall
+                # cursor.description es None para UPDATE/INSERT/DELETE
+                if cursor.description:
+                    columns = [desc[0] for desc in cursor.description]
+                    rows = cursor.fetchall()
+                    results = []
+                    for row in rows:
+                        row_dict = {}
+                        for i, col in enumerate(columns):
+                            row_dict[col] = row[i]
+                        results.append(row_dict)
+                else:
+                    # UPDATE/INSERT/DELETE - no hay resultados
+                    results = []
             
             # Convertir datetime a string ISO
             for row in results:
@@ -371,10 +498,27 @@ def execute_sql_query(
             return results
             
     except Exception as pool_error:
-        error_str = str(pool_error)
-        logging.warning(f"Pool falló para {host}: {error_str}")
+        error_str = str(pool_error).lower()
+        logging.warning(f"Pool falló para {host}: {pool_error}")
         
-        # Fallback: conexión directa sin pool (para casos edge)
+        # "Previous statement didn't produce any results" no es error real
+        # Significa que la query fue exitosa pero no retornó filas (ej: SELECT sin resultados)
+        if "previous statement didn't produce" in error_str:
+            logging.info(f"Query sin resultados para {host} (no es error)")
+            mark_server_online(host)
+            return []  # Lista vacía = sin resultados
+        
+        # Detectar errores de conexión muerta y limpiar el pool
+        dead_pool_indicators = ["dbprocess is dead", "connection reset", "broken pipe", "dead connection"]
+        if any(indicator in error_str for indicator in dead_pool_indicators):
+            logging.warning(f"Pool corrupto detectado para {host} - limpiando...")
+            try:
+                from core.pool import get_pool_manager
+                get_pool_manager().close_pool(hostname, parsed_port, database)
+            except Exception as cleanup_error:
+                logging.warning(f"Error limpiando pool: {cleanup_error}")
+        
+        # Fallback: conexión directa con reintentos resilientes
         return _execute_sql_query_direct(
             host, port, database, username, password, query, timeout_seconds
         )
@@ -570,85 +714,155 @@ def _execute_sql_query_direct(
     username: str, 
     password: str, 
     query: str, 
-    timeout_seconds: int = 45
+    timeout_seconds: int = None,
+    max_retries: int = None
 ) -> List[Dict]:
     """
-    Ejecuta query SQL con conexión directa (fallback si el pool falla).
+    Ejecuta query SQL con conexión directa y REINTENTOS RESILIENTES.
     
-    Esta es la implementación original, mantenida como fallback de seguridad.
-    No debe usarse directamente - usar execute_sql_query().
+    INTEGRACIÓN RESILIENTE (Abril 2026):
+    - Reintentos automáticos con backoff exponencial
+    - Timeouts incrementados (30s login, 90s query por defecto)
+    - Clasificación de errores para decidir si reintentar
+    - Logging detallado para diagnóstico
+    
+    Esta función se usa como fallback cuando el pool falla.
+    
+    Args:
+        host: Hostname del servidor SQL
+        port: Puerto
+        database: Base de datos
+        username: Usuario
+        password: Contraseña
+        query: Query SQL
+        timeout_seconds: Timeout personalizado (default: ResilientConfig.QUERY_TIMEOUT)
+        max_retries: Número de reintentos (default: ResilientConfig.MAX_RETRIES)
+    
+    Returns:
+        Lista de diccionarios con resultados. Lista vacía si falla.
     """
+    # Usar configuración resiliente por defecto
+    timeout_seconds = timeout_seconds or ResilientConfig.QUERY_TIMEOUT
+    max_retries = max_retries or ResilientConfig.MAX_RETRIES
+    login_timeout = ResilientConfig.LOGIN_TIMEOUT
+    
     hostname, parsed_port, instance = parse_sql_server_host(host, port)
-    logging.info(f"[FALLBACK] Conexión directa a SQL Server: {hostname}:{parsed_port}")
+    last_error = None
     
-    # Intentar con pytds
-    try:
-        logging.info("[FALLBACK] Ejecutando query con pytds...")
-        conn = pytds.connect(
-            server=hostname,
-            port=parsed_port,
-            database=database,
-            user=username,
-            password=password,
-            timeout=timeout_seconds,
-            login_timeout=15
-        )
-        cursor = conn.cursor()
-        cursor.execute(query)
+    for attempt in range(1, max_retries + 1):
+        logging.info(f"[RESILIENT] Intento {attempt}/{max_retries} - {hostname}:{parsed_port}/{database}")
         
-        columns = [desc[0] for desc in cursor.description] if cursor.description else []
-        rows = cursor.fetchall()
+        # Intentar con pytds primero
+        try:
+            start_time = time.time()
+            conn = pytds.connect(
+                server=hostname,
+                port=parsed_port,
+                database=database,
+                user=username,
+                password=password,
+                timeout=timeout_seconds,
+                login_timeout=login_timeout
+            )
+            cursor = conn.cursor()
+            cursor.execute(query)
+            
+            # Verificar si hay resultados antes de fetchall
+            # cursor.description es None para UPDATE/INSERT/DELETE
+            if cursor.description:
+                columns = [desc[0] for desc in cursor.description]
+                rows = cursor.fetchall()
+                results = []
+                for row in rows:
+                    row_dict = {}
+                    for i, col in enumerate(columns):
+                        value = row[i]
+                        if isinstance(value, datetime):
+                            value = value.isoformat()
+                        row_dict[col] = value
+                    results.append(row_dict)
+            else:
+                # UPDATE/INSERT/DELETE - no hay resultados
+                results = []
+            
+            conn.close()
+            elapsed = (time.time() - start_time) * 1000
+            logging.info(f"[RESILIENT] Query exitosa con pytds: {len(results)} registros en {elapsed:.0f}ms")
+            mark_server_online(host)
+            return results
+            
+        except Exception as pytds_error:
+            error_type, error_desc = classify_error(pytds_error)
+            
+            # "Previous statement didn't produce any results" no es un error real
+            # Es que la query no retornó resultados (ej: UPDATE sin OUTPUT)
+            if "previous statement didn't produce" in str(pytds_error).lower():
+                logging.info("[RESILIENT] Query completada sin resultados (pytds)")
+                mark_server_online(host)
+                return []  # Retornar lista vacía, no es error
+            
+            logging.warning(f"[RESILIENT] pytds falló (intento {attempt}): {error_type.value} - {error_desc}")
+            last_error = pytds_error
+            
+            # Si es error de autenticación o query sintáctica, no reintentar
+            if error_type in [ConnectionErrorType.AUTH]:
+                break  # Error definitivo
+            if error_type == ConnectionErrorType.QUERY and "invalid column" in str(pytds_error).lower():
+                break  # Error de query inválida
         
-        results = []
-        for row in rows:
-            row_dict = {}
-            for i, col in enumerate(columns):
-                value = row[i]
-                if isinstance(value, datetime):
-                    value = value.isoformat()
-                row_dict[col] = value
-            results.append(row_dict)
+        # Fallback a pymssql
+        try:
+            server_string = f"{hostname}\\{instance}" if instance else hostname
+            start_time = time.time()
+            
+            conn = pymssql.connect(
+                server=server_string, 
+                port=parsed_port, 
+                user=username, 
+                password=password, 
+                database=database, 
+                timeout=timeout_seconds, 
+                login_timeout=login_timeout
+            )
+            cursor = conn.cursor(as_dict=True)
+            cursor.execute(query)
+            results = list(cursor.fetchall())
+            conn.close()
+            
+            for row in results:
+                for key, value in row.items():
+                    if isinstance(value, datetime):
+                        row[key] = value.isoformat()
+            
+            elapsed = (time.time() - start_time) * 1000
+            logging.info(f"[RESILIENT] Query exitosa con pymssql: {len(results)} registros en {elapsed:.0f}ms")
+            mark_server_online(host)
+            return results
+            
+        except Exception as pymssql_error:
+            error_type, error_desc = classify_error(pymssql_error)
+            logging.warning(f"[RESILIENT] pymssql falló (intento {attempt}): {error_type.value} - {error_desc}")
+            last_error = pymssql_error
+            
+            # Si es error de autenticación o query, no reintentar
+            if error_type in [ConnectionErrorType.AUTH, ConnectionErrorType.QUERY]:
+                logging.error(f"[RESILIENT] Error no recuperable: {error_type.value}")
+                mark_server_offline(host)
+                return []
         
-        conn.close()
-        logging.info(f"[FALLBACK] Query exitosa con pytds: {len(results)} registros")
-        mark_server_online(host)
-        return results
-        
-    except Exception as pytds_error:
-        logging.warning(f"[FALLBACK] pytds falló: {str(pytds_error)}, intentando pymssql...")
+        # Si es error recuperable y hay más intentos, aplicar backoff
+        if attempt < max_retries and is_recoverable_error(last_error):
+            delay = get_retry_delay(attempt)
+            logging.info(f"[RESILIENT] Esperando {delay:.1f}s antes del siguiente intento (backoff)...")
+            time.sleep(delay)
+        elif attempt >= max_retries:
+            break
     
-    # Fallback a pymssql
-    try:
-        server_string = f"{hostname}\\{instance}" if instance else hostname
-        logging.info(f"[FALLBACK] Ejecutando query con pymssql en {server_string}:{parsed_port}...")
-        conn = pymssql.connect(
-            server=server_string, 
-            port=parsed_port, 
-            user=username, 
-            password=password, 
-            database=database, 
-            timeout=timeout_seconds, 
-            login_timeout=15
-        )
-        cursor = conn.cursor(as_dict=True)
-        cursor.execute(query)
-        results = cursor.fetchall()
-        conn.close()
-        
-        for row in results:
-            for key, value in row.items():
-                if isinstance(value, datetime):
-                    row[key] = value.isoformat()
-        
-        logging.info(f"[FALLBACK] Query exitosa con pymssql: {len(results)} registros")
-        mark_server_online(host)
-        return results
-        
-    except Exception as pymssql_error:
-        error_msg = f"[FALLBACK] Error ejecutando consulta. pytds y pymssql fallaron: {str(pymssql_error)}"
-        logging.error(error_msg)
-        mark_server_offline(host)
-        return []
+    # Todos los intentos fallaron
+    error_msg = f"[RESILIENT] Fallaron {max_retries} intentos. Último error: {str(last_error)[:200]}"
+    logging.error(error_msg)
+    mark_server_offline(host)
+    return []
 
 
 # ============================================================================
@@ -706,15 +920,180 @@ def init_db_connections(mongo_url: str, db_name: str):
 
 
 # ============================================================================
+# FUNCIONES DE HEALTH CHECK SQL SERVER (Abril 2026)
+# ============================================================================
+
+def sql_health_check(
+    host: str,
+    port: int,
+    database: str,
+    username: str,
+    password: str
+) -> Dict[str, Any]:
+    """
+    Ejecuta un health check completo de conexión SQL Server.
+    
+    Retorna un diagnóstico detallado incluyendo:
+    - Estado de conexión
+    - Latencia
+    - Tipo de error si falla
+    - Recomendaciones
+    
+    Args:
+        host: Hostname del servidor
+        port: Puerto
+        database: Base de datos
+        username: Usuario
+        password: Contraseña
+    
+    Returns:
+        Dict con diagnóstico completo
+    """
+    result = {
+        "healthy": False,
+        "server": None,
+        "database": database,
+        "latency_ms": None,
+        "error": None,
+        "error_type": None,
+        "driver_used": None,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "config": {
+            "login_timeout": ResilientConfig.LOGIN_TIMEOUT,
+            "query_timeout": ResilientConfig.QUERY_TIMEOUT,
+            "max_retries": ResilientConfig.MAX_RETRIES
+        },
+        "recommendations": []
+    }
+    
+    hostname, parsed_port, instance = parse_sql_server_host(host, port)
+    result["server"] = f"{hostname}:{parsed_port}"
+    if instance:
+        result["server"] += f"\\{instance}"
+    
+    # Verificar si está en cooldown
+    if is_server_offline_in_memory(host):
+        cooldown = get_server_cooldown_info(host)
+        result["error"] = f"Servidor en cooldown - {cooldown.get('remaining_minutes', 0):.1f} min restantes"
+        result["error_type"] = "cooldown"
+        result["recommendations"].append("Esperar a que termine el cooldown o resetear caché con /api/sistema/pool-reset")
+        return result
+    
+    start_time = time.time()
+    
+    # Intentar con pytds
+    try:
+        conn = pytds.connect(
+            server=hostname,
+            port=parsed_port,
+            database=database,
+            user=username,
+            password=password,
+            timeout=ResilientConfig.HEALTH_CHECK_TIMEOUT,
+            login_timeout=ResilientConfig.HEALTH_CHECK_TIMEOUT
+        )
+        cursor = conn.cursor()
+        cursor.execute(ResilientConfig.HEALTH_CHECK_QUERY)
+        cursor.fetchone()
+        conn.close()
+        
+        latency = (time.time() - start_time) * 1000
+        result["healthy"] = True
+        result["latency_ms"] = round(latency, 2)
+        result["driver_used"] = "pytds"
+        
+        # Recomendaciones según latencia
+        if latency > 3000:
+            result["recommendations"].append(f"Latencia MUY ALTA ({latency:.0f}ms) - conexión inestable")
+        elif latency > 1000:
+            result["recommendations"].append(f"Latencia ALTA ({latency:.0f}ms) - considerar aumentar timeouts")
+        elif latency > 500:
+            result["recommendations"].append(f"Latencia MODERADA ({latency:.0f}ms) - conexión funcional")
+        else:
+            result["recommendations"].append("Conexión saludable - sin problemas detectados")
+        
+        logging.info(f"[HEALTH] SQL Server {hostname} OK - Latencia: {latency:.0f}ms")
+        return result
+        
+    except Exception as pytds_error:
+        logging.warning(f"[HEALTH] pytds falló: {pytds_error}")
+    
+    # Fallback a pymssql
+    try:
+        server_string = f"{hostname}\\{instance}" if instance else hostname
+        conn = pymssql.connect(
+            server=server_string,
+            port=parsed_port,
+            user=username,
+            password=password,
+            database=database,
+            timeout=ResilientConfig.HEALTH_CHECK_TIMEOUT,
+            login_timeout=ResilientConfig.HEALTH_CHECK_TIMEOUT
+        )
+        cursor = conn.cursor()
+        cursor.execute(ResilientConfig.HEALTH_CHECK_QUERY)
+        cursor.fetchone()
+        conn.close()
+        
+        latency = (time.time() - start_time) * 1000
+        result["healthy"] = True
+        result["latency_ms"] = round(latency, 2)
+        result["driver_used"] = "pymssql"
+        
+        if latency > 3000:
+            result["recommendations"].append(f"Latencia MUY ALTA ({latency:.0f}ms) - conexión inestable")
+        elif latency > 1000:
+            result["recommendations"].append(f"Latencia ALTA ({latency:.0f}ms) - considerar aumentar timeouts")
+        else:
+            result["recommendations"].append("Conexión saludable con pymssql")
+        
+        logging.info(f"[HEALTH] SQL Server {hostname} OK (pymssql) - Latencia: {latency:.0f}ms")
+        return result
+        
+    except Exception as pymssql_error:
+        latency = (time.time() - start_time) * 1000
+        error_type, error_desc = classify_error(pymssql_error)
+        
+        result["latency_ms"] = round(latency, 2)
+        result["error"] = str(pymssql_error)[:200]
+        result["error_type"] = error_type.value
+        
+        # Recomendaciones según tipo de error
+        if error_type == ConnectionErrorType.TIMEOUT:
+            result["recommendations"].append("Timeout de conexión - verificar firewall y accesibilidad de red")
+            result["recommendations"].append("El servidor puede estar sobrecargado o inaccesible")
+        elif error_type == ConnectionErrorType.DEAD_CONNECTION:
+            result["recommendations"].append("Pool de conexiones inválido - ejecutar /api/sistema/pool-reset")
+        elif error_type == ConnectionErrorType.AUTH:
+            result["recommendations"].append("Error de autenticación - verificar credenciales")
+        elif error_type == ConnectionErrorType.NETWORK:
+            result["recommendations"].append("Error de red - verificar conectividad con el servidor")
+        else:
+            result["recommendations"].append(f"Error desconocido: {error_desc}")
+        
+        logging.error(f"[HEALTH] SQL Server {hostname} FAILED - {error_type.value}: {error_desc}")
+        return result
+
+
+# ============================================================================
 # EXPORTACIONES PÚBLICAS
 # ============================================================================
 
 __all__ = [
     # SQL Server - Migrado en Fase 1, Pool en Prioridad 1
     'execute_sql_query',
+    'execute_sql_query_params',
     'test_sql_connection',
     'parse_sql_server_host',
-    '_execute_sql_query_direct',  # Fallback interno
+    '_execute_sql_query_direct',  # Fallback interno con reintentos
+    # Health Check (Abril 2026)
+    'sql_health_check',
+    # Configuración resiliente
+    'ResilientConfig',
+    'ConnectionErrorType',
+    'classify_error',
+    'is_recoverable_error',
+    'get_retry_delay',
     # Caché de servidores - Migrado en Fase 1
     'mark_server_offline',
     'mark_server_online',

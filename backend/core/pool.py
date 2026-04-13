@@ -66,16 +66,23 @@ from dbutils.pooled_db import PooledDB
 
 @dataclass
 class PoolConfig:
-    """Configuración para un pool de conexiones"""
+    """
+    Configuración para un pool de conexiones SQL Server.
+    
+    RESILIENTE (Abril 2026):
+    - Timeouts incrementados para servidores remotos con latencia
+    - Compatible con reintentos automáticos en capa superior
+    - Health check habilitado por defecto
+    """
     # Tamaño del pool
     min_connections: int = 1      # Conexiones mínimas mantenidas
     max_connections: int = 10     # Conexiones máximas permitidas
     max_shared: int = 3           # Cuántas veces se puede compartir una conexión
     
-    # Timeouts
-    connection_timeout: int = 15   # Timeout para establecer conexión (segundos)
-    query_timeout: int = 45        # Timeout para queries (segundos)
-    blocking_timeout: int = 30     # Tiempo de espera si pool está lleno (segundos)
+    # Timeouts RESILIENTES (incrementados para servidor remoto)
+    connection_timeout: int = 30   # Timeout para establecer conexión (antes: 15s)
+    query_timeout: int = 90        # Timeout para queries (antes: 45s)
+    blocking_timeout: int = 45     # Tiempo de espera si pool está lleno (antes: 30s)
     
     # Mantenimiento
     max_usage: int = 0            # Máximo de usos por conexión (0 = ilimitado)
@@ -160,7 +167,8 @@ class ConnectionPoolManager:
             database=database,
             timeout=config.query_timeout,
             login_timeout=config.connection_timeout,
-            charset='UTF-8'
+            charset='UTF-8',
+            autocommit=True  # CRÍTICO: UPDATEs se commitean automáticamente
         )
     
     def _create_pytds_pool(
@@ -192,7 +200,8 @@ class ConnectionPoolManager:
             password=password,
             database=database,
             timeout=config.query_timeout,
-            login_timeout=config.connection_timeout
+            login_timeout=config.connection_timeout,
+            autocommit=True  # CRÍTICO: UPDATEs se commitean automáticamente
         )
     
     def get_or_create_pool(

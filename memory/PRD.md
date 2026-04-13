@@ -26,6 +26,28 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
+### Session: April 2026 (Resiliencia SQL Server - P0 COMPLETADO)
+
+#### Completed Work
+- [x] **Integración Resiliencia SQL Server** (Abril 13, 2026)
+  - Backend: Lógica resiliente integrada al sistema base
+    - `/app/backend/core/pool.py`: Timeouts resilientes (30s login, 90s query), autocommit
+    - `/app/backend/core/db.py`: Reintentos con backoff exponencial, clasificación errores
+    - `/app/backend/server.py`: Endpoints de diagnóstico SQL
+  - Endpoints de Monitoreo:
+    - `GET /api/sistema/sql-health`: Health check con diagnóstico detallado
+    - `POST /api/sistema/sql-health/test-query`: Query de prueba configurable
+  - Configuración:
+    - Login timeout: 30s (antes 15s)
+    - Query timeout: 90s (antes 45s)
+    - Max retries: 3 con backoff exponencial (2s, 4s, 8s)
+    - Autocommit: Habilitado para UPDATEs inmediatos
+  - Pruebas Exitosas:
+    - ✅ Health check: 160ms latencia, conexión estable
+    - ✅ Query lectura: sys.tables OK
+    - ✅ CRUD Finanzas_ConfiguracionTPV_Sucursal: Lectura/Edición/Persistencia OK
+  - Documentación: `/app/memory/DIAGNOSTICO_RESILIENCIA_SQL.md`
+
 ### Session: April 2026 (Módulo Maestro de Catálogos + Tablas Finanzas SQL)
 
 #### Completed Work
