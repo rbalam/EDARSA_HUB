@@ -170,6 +170,7 @@ from modules.finanzas.repository_real import FinanzasRepositoryReal
 from modules.finanzas import ingresos as finanzas_ingresos
 from modules.finanzas import cuentas_por_pagar as finanzas_cxp
 from modules.finanzas.repository_mpro import FinanzasRepositoryMPRO
+from modules.finanzas.repository_softrestaurant import FinanzasRepositorySoftRestaurant
 
 # Inicializar módulo RH con conexión a MongoDB
 init_rh_module(db)
@@ -184,9 +185,13 @@ _finanzas_repo = FinanzasRepositoryReal(db)
 finanzas_ingresos.set_finanzas_repository(_finanzas_repo)
 finanzas_cxp.set_finanzas_repository(_finanzas_repo)
 
-# MPRO (para cuentas por pagar reales)
+# MPRO (para cuentas por pagar - fallback)
 _mpro_repo = FinanzasRepositoryMPRO(db)
 finanzas_cxp.set_mpro_repository(_mpro_repo)
+
+# SOFTRESTAURANT (CF, Estelar, 130 Mid - principal para CxP)
+_softrest_repo = FinanzasRepositorySoftRestaurant(db)
+finanzas_cxp.set_softrestaurant_repository(_softrest_repo)
 
 # FASE 6B: Registrar router de RH (catálogos)
 api_router.include_router(rh_router)
