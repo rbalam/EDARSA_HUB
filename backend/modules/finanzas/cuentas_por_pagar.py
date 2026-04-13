@@ -184,45 +184,38 @@ async def listar_facturas_pendientes(
     """
     Listar facturas/cuentas pendientes de pago.
     
-    CONECTADO A SOFTRESTAURANT (CF, Estelar, 130 Mid) y MPRO
+    CONECTADO A SOFTRESTAURANT (CF, Estelar, 130 Mid) + MPRO (CENTRAL2020)
+    Combina datos de ambas fuentes para mostrar CxP de todas las operaciones.
     Si use_demo=true, usa datos demo para pruebas.
     
     Filtros: sucursal, proveedor, tipo (A/B/X), fecha de corte, solo vencidas.
     Agrupa por TIPO DE PROVEEDOR (A=Alimentos, B=Bebidas, X=Otros).
     """
-    softrest_repo = await get_softrest_repo()
-    
-    # Primero intentar SoftRestaurant (CF, Estelar, 130 Mid)
-    if softrest_repo and not use_demo:
-        try:
-            cxp_sql = await softrest_repo.get_cuentas_por_pagar(
-                sucursal_id=sucursal_id,
-                tipo_proveedor=tipo_proveedor
-            )
-            
-            if cxp_sql:
-                # Agrupar por TIPO DE PROVEEDOR (A, B, X)
-                tipos = {}
-                for c in cxp_sql:
+    if use_demo:
+        # Ir directo a modo demo
+        pass
+    else:
+        # Combinar datos de SoftRestaurant + MPRO
+        all_facturas = []
+        fuentes_activas = []
+        
+        softrest_repo = await get_softrest_repo()
+        mpro_repo = await get_mpro_repo()
+        
+        # 1. Obtener datos de SoftRestaurant (CF, Estelar, 130 Mid)
+        if softrest_repo:
+            try:
+                cxp_softrest = await softrest_repo.get_cuentas_por_pagar(
+                    sucursal_id=sucursal_id if sucursal_id in ['CIENFUEGOS', 'ESTELAR', '130MID'] else None,
+                    tipo_proveedor=tipo_proveedor
+                )
+                
+                for c in cxp_softrest:
                     saldo = float(c.get('Saldo', 0) or 0)
                     if saldo <= 0:
                         continue
                     
                     tipo = c.get('TipoProveedor', 'X')
-                    tipo_nombre = c.get('TipoProveedorNombre', 'OTROS')
-                    
-                    if tipo not in tipos:
-                        tipos[tipo] = {
-                            "proveedor_id": tipo,
-                            "proveedor_nombre": f"{tipo} - {tipo_nombre}",
-                            "proveedor_rfc": "",
-                            "cantidad_facturas": 0,
-                            "subtotal_importe": 0.0,
-                            "subtotal_saldo": 0.0,
-                            "cantidad_vencidas": 0,
-                            "facturas": []
-                        }
-                    
                     dias_vencido = int(c.get('DiasVencido', 0) or 0)
                     
                     factura = {
@@ -231,6 +224,7 @@ async def listar_facturas_pendientes(
                         "proveedor_nombre": c.get('ProveedorNombre', 'N/A'),
                         "proveedor_rfc": c.get('ProveedorRFC', ''),
                         "tipo_proveedor": tipo,
+                        "tipo_proveedor_nombre": c.get('TipoProveedorNombre', 'OTROS'),
                         "sucursal_id": c.get('SucursalID'),
                         "sucursal_nombre": c.get('SucursalNombre'),
                         "folio_entrada": c.get('FolioEntrada', 'N/A'),
@@ -246,37 +240,118 @@ async def listar_facturas_pendientes(
                         "venc_61_90": float(c.get('Venc61_90', 0) or 0),
                         "venc_91_plus": float(c.get('Venc91Plus', 0) or 0),
                         "decision_pago": False,
-                        "importe_a_pagar": 0
+                        "importe_a_pagar": 0,
+                        "fuente": "SOFTRESTAURANT"
                     }
+                    all_facturas.append(factura)
+                
+                if cxp_softrest:
+                    fuentes_activas.append("SOFTRESTAURANT")
+                    logging.info(f"[CxP] SoftRestaurant: {len(cxp_softrest)} registros")
+            except Exception as e:
+                logging.error(f"[CxP] Error SoftRestaurant: {e}")
+        
+        # 2. Obtener datos de MPRO (CENTRAL2020)
+        if mpro_repo:
+            try:
+                # Filtrar por sucursal MPRO si corresponde
+                mpro_sucursal = sucursal_id if sucursal_id and sucursal_id not in ['CIENFUEGOS', 'ESTELAR', '130MID'] else None
+                
+                cxp_mpro = await mpro_repo.get_cuentas_por_pagar(
+                    sucursal_id=mpro_sucursal,
+                    proveedor_id=proveedor_id,
+                    solo_vencidas=solo_vencidas,
+                    fecha_corte=fecha_corte
+                )
+                
+                for c in cxp_mpro:
+                    saldo = float(c.get('Saldo', 0) or 0)
+                    if saldo <= 0:
+                        continue
                     
-                    tipos[tipo]["facturas"].append(factura)
-                    tipos[tipo]["cantidad_facturas"] += 1
-                    tipos[tipo]["subtotal_importe"] += factura["importe_original"]
-                    tipos[tipo]["subtotal_saldo"] += saldo
-                    if dias_vencido > 0:
-                        tipos[tipo]["cantidad_vencidas"] += 1
+                    dias_vencido = int(c.get('DiasVencido', 0) or 0)
+                    
+                    # MPRO no tiene clasificación A/B/X, usar X por defecto
+                    factura = {
+                        "factura_id": f"MPRO_{c.get('CuentaPorPagarID')}",
+                        "proveedor_id": c.get('ProveedorID'),
+                        "proveedor_nombre": c.get('ProveedorNombre') or c.get('ProveedorNombreComercial') or f"Proveedor {c.get('ProveedorID')}",
+                        "proveedor_rfc": c.get('ProveedorRFC', ''),
+                        "tipo_proveedor": "M",  # M = MPRO
+                        "tipo_proveedor_nombre": "MPRO",
+                        "sucursal_id": c.get('SucursalID'),
+                        "sucursal_nombre": c.get('SucursalNombre', f"MPRO {c.get('SucursalID')}"),
+                        "folio_entrada": c.get('FolioEntrada', c.get('NumeroDocumento', 'N/A')),
+                        "folio_factura": c.get('FolioFactura', c.get('NumeroDocumento', '')),
+                        "fecha_entrada": str(c.get('FechaEntrada', c.get('FechaDocumento', '')))[:10] if c.get('FechaEntrada') or c.get('FechaDocumento') else None,
+                        "fecha_vencimiento": str(c.get('FechaVencimiento', ''))[:10] if c.get('FechaVencimiento') else None,
+                        "dias_vencida": max(0, dias_vencido),
+                        "importe_original": float(c.get('MontoOriginal', 0) or 0),
+                        "saldo": saldo,
+                        "por_vencer": saldo if dias_vencido <= 0 else 0,
+                        "venc_1_30": saldo if 1 <= dias_vencido <= 30 else 0,
+                        "venc_31_60": saldo if 31 <= dias_vencido <= 60 else 0,
+                        "venc_61_90": saldo if 61 <= dias_vencido <= 90 else 0,
+                        "venc_91_plus": saldo if dias_vencido > 90 else 0,
+                        "decision_pago": False,
+                        "importe_a_pagar": 0,
+                        "fuente": "MPRO"
+                    }
+                    all_facturas.append(factura)
                 
-                # Ordenar tipos: A, B, X
-                proveedores_ordenados = [tipos.get(t) for t in ['A', 'B', 'X'] if t in tipos]
+                if cxp_mpro:
+                    fuentes_activas.append("MPRO")
+                    logging.info(f"[CxP] MPRO: {len(cxp_mpro)} registros")
+            except Exception as e:
+                logging.error(f"[CxP] Error MPRO: {e}")
+        
+        # 3. Si hay datos, agrupar por tipo de proveedor
+        if all_facturas:
+            # Agrupar por TIPO DE PROVEEDOR (A, B, X, M)
+            tipos = {}
+            for factura in all_facturas:
+                tipo = factura.get('tipo_proveedor', 'X')
+                tipo_nombre = factura.get('tipo_proveedor_nombre', 'OTROS')
                 
-                totales = {
-                    "total_saldo": sum(p["subtotal_saldo"] for p in proveedores_ordenados),
-                    "total_importe": sum(p["subtotal_importe"] for p in proveedores_ordenados),
-                    "total_proveedores": len(proveedores_ordenados),
-                    "cantidad_facturas": sum(p["cantidad_facturas"] for p in proveedores_ordenados),
-                    "cantidad_vencidas": sum(p["cantidad_vencidas"] for p in proveedores_ordenados)
-                }
+                if tipo not in tipos:
+                    tipos[tipo] = {
+                        "proveedor_id": tipo,
+                        "proveedor_nombre": f"{tipo} - {tipo_nombre}",
+                        "proveedor_rfc": "",
+                        "cantidad_facturas": 0,
+                        "subtotal_importe": 0.0,
+                        "subtotal_saldo": 0.0,
+                        "cantidad_vencidas": 0,
+                        "facturas": []
+                    }
                 
-                return {
-                    "fuente": "SOFTRESTAURANT_REAL",
-                    "proveedores": proveedores_ordenados,
-                    "total_facturas": totales["cantidad_facturas"],
-                    "totales": totales
-                }
-        except Exception as e:
-            logging.error(f"Error obteniendo CxP de SoftRestaurant: {e}")
+                tipos[tipo]["facturas"].append(factura)
+                tipos[tipo]["cantidad_facturas"] += 1
+                tipos[tipo]["subtotal_importe"] += factura["importe_original"]
+                tipos[tipo]["subtotal_saldo"] += factura["saldo"]
+                if factura["dias_vencida"] > 0:
+                    tipos[tipo]["cantidad_vencidas"] += 1
+            
+            # Ordenar tipos: A, B, X, M (MPRO al final)
+            orden_tipos = ['A', 'B', 'X', 'M']
+            proveedores_ordenados = [tipos.get(t) for t in orden_tipos if t in tipos]
+            
+            totales = {
+                "total_saldo": sum(p["subtotal_saldo"] for p in proveedores_ordenados),
+                "total_importe": sum(p["subtotal_importe"] for p in proveedores_ordenados),
+                "total_proveedores": len(proveedores_ordenados),
+                "cantidad_facturas": sum(p["cantidad_facturas"] for p in proveedores_ordenados),
+                "cantidad_vencidas": sum(p["cantidad_vencidas"] for p in proveedores_ordenados)
+            }
+            
+            return {
+                "fuente": "+".join(fuentes_activas) if fuentes_activas else "NINGUNA",
+                "proveedores": proveedores_ordenados,
+                "total_facturas": totales["cantidad_facturas"],
+                "totales": totales
+            }
     
-    # Fallback a MPRO si no hay SoftRestaurant
+    # Fallback a MPRO solo (si no se ejecutó el bloque combinado)
     mpro_repo = await get_mpro_repo()
     
     # Usar MPRO como fuente principal de CxP

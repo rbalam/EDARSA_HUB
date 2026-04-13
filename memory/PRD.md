@@ -26,6 +26,42 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
+### Session: April 13, 2026 (UI CxP REFACTORIZADA + MPRO COMBINADO)
+
+#### ✅ Completado Hoy
+- [x] **Corrección UI Agrupación Jerárquica CxP** (Abril 13, 2026)
+  - **Problema**: La UI mostraba facturas directamente bajo categorías (A/B/X) sin sub-agrupar por proveedor
+  - **Solución**: Nueva función `reagruparCxPPorProveedores()` en frontend para crear estructura jerárquica
+  - **Resultado**: Categoría → Proveedor → Facturas (3 niveles)
+  - **Archivos modificados**: `/app/frontend/src/pages/Finanzas.js`
+
+- [x] **Botones Expandir/Colapsar Todos** (Abril 13, 2026)
+  - Nuevo estado `cxpCategoriasExpandidas` para controlar categorías
+  - Funciones `expandirTodos()` y `colapsarTodos()`
+  - Colapso/expansión individual de categorías y proveedores
+
+- [x] **Colores de Días Vencidos** (Abril 13, 2026)
+  - Verde (`text-green-600`) para facturas no vencidas (días ≤ 0)
+  - Rojo (`text-red-600`) para facturas vencidas (días > 0)
+
+- [x] **Combinación SoftRestaurant + MPRO** (Abril 13, 2026)
+  - **Antes**: MPRO solo era fallback si SoftRestaurant fallaba
+  - **Ahora**: Ambas fuentes se consultan y combinan en la respuesta
+  - **Nueva categoría**: M - MPRO (color índigo)
+  - **Endpoint modificado**: `/api/finanzas/cuentas-por-pagar`
+  - **Respuesta**: `fuente: "SOFTRESTAURANT+MPRO"`
+
+#### Datos Combinados (Abril 13, 2026)
+| Categoría | Proveedores | Facturas | Saldo |
+|-----------|-------------|----------|-------|
+| A - ALIMENTOS | 81 | 490 | $4,705,142 |
+| B - BEBIDAS | 61 | 277 | $3,882,966 |
+| X - OTROS | 131 | 209 | $11,248,412 |
+| M - MPRO | 97 | 500 | $4,317,099 |
+| **TOTAL** | **370** | **1,476** | **$24,153,619** |
+
+---
+
 ### Session: April 13, 2026 (VALIDACIÓN UI FINANZAS CON DATOS REALES SQL)
 
 #### ✅ Completado Hoy

@@ -53,7 +53,7 @@ export default function Finanzas() {
   const [cxpSoloVencidas, setCxpSoloVencidas] = useState(false);
   const [cxpSoloDecision, setCxpSoloDecision] = useState(false);
   const [cxpExpandidos, setCxpExpandidos] = useState({});  // Control de proveedores expandidos
-  const [cxpCategoriasExpandidas, setCxpCategoriasExpandidas] = useState({ A: true, B: true, X: true });  // Control de categorías expandidas
+  const [cxpCategoriasExpandidas, setCxpCategoriasExpandidas] = useState({ A: true, B: true, X: true, M: true });  // Control de categorías expandidas
   const [savingDecision, setSavingDecision] = useState(null);
   
   // Función para reagrupar datos: Categoría -> Proveedor -> Facturas
@@ -117,8 +117,8 @@ export default function Finanzas() {
       proveedores: Object.values(cat.proveedores).sort((a, b) => b.subtotal_saldo - a.subtotal_saldo)
     }));
     
-    // Ordenar categorías: A, B, X
-    const orden = { A: 1, B: 2, X: 3 };
+    // Ordenar categorías: A, B, X, M (MPRO)
+    const orden = { A: 1, B: 2, X: 3, M: 4 };
     return resultado.sort((a, b) => (orden[a.tipo] || 99) - (orden[b.tipo] || 99));
   }, []);
   
@@ -308,7 +308,7 @@ export default function Finanzas() {
   
   // Expandir todos los grupos y proveedores
   const expandirTodos = () => {
-    setCxpCategoriasExpandidas({ A: true, B: true, X: true });
+    setCxpCategoriasExpandidas({ A: true, B: true, X: true, M: true });
     // Expandir todos los proveedores
     const todosProveedores = {};
     reagruparCxPPorProveedores(cxpData?.proveedores || []).forEach(cat => {
@@ -321,7 +321,7 @@ export default function Finanzas() {
   
   // Colapsar todos los grupos y proveedores
   const colapsarTodos = () => {
-    setCxpCategoriasExpandidas({ A: false, B: false, X: false });
+    setCxpCategoriasExpandidas({ A: false, B: false, X: false, M: false });
     setCxpExpandidos({});
   };
   
@@ -1663,11 +1663,12 @@ export default function Finanzas() {
           ) : (
             reagruparCxPPorProveedores(cxpData?.proveedores || []).map(categoria => (
               <Card key={categoria.tipo} className="overflow-hidden border-2" data-testid={`categoria-${categoria.tipo}`}>
-                {/* Header de Categoría (A, B, X) */}
+                {/* Header de Categoría (A, B, X, M) */}
                 <div
                   className={`px-4 py-3 flex items-center justify-between cursor-pointer transition ${
                     categoria.tipo === 'A' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' :
                     categoria.tipo === 'B' ? 'bg-amber-600 hover:bg-amber-700 text-white' :
+                    categoria.tipo === 'M' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' :
                     'bg-slate-600 hover:bg-slate-700 text-white'
                   }`}
                   onClick={() => toggleCategoria(categoria.tipo)}
