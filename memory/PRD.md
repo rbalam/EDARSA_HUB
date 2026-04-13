@@ -26,6 +26,44 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
+### Session: April 2026 (Módulo Maestro de Catálogos)
+
+#### Completed Work
+- [x] **Módulo Maestro de Catálogos del Sistema** (Abril 13, 2026)
+  - Backend: `/app/backend/modules/catalogos/`
+    - `__init__.py`: Inicialización del módulo
+    - `schemas.py`: Configuración de 10 dominios y 50+ catálogos
+    - `repository.py`: Acceso a datos SQL Server con DDL para 9 tablas nuevas
+    - `service.py`: Lógica de negocio optimizada
+    - `routes.py`: 10 endpoints REST
+  - Frontend: `/app/frontend/src/pages/Catalogos.js`
+    - Panel de dominios con iconos y conteos
+    - Vista de listado con CRUD completo
+    - Modal de administración para crear tablas
+    - Búsqueda, filtros y acciones masivas
+  - Integración:
+    - Menú "Catálogos" agregado al Layout
+    - Ruta `/catalogos` configurada
+  - Arquitectura:
+    - 10 dominios (Generales, RH, Nómina, Compras, etc.)
+    - 50+ catálogos mapeados
+    - Sin duplicidad entre módulos
+    - CRUD completo con permisos por rol
+  - DDL incluido para crear tablas globales:
+    - Global_Cat_Empresas
+    - Global_Cat_Bancos (con datos de bancos mexicanos)
+    - Global_Cat_UnidadesMedida (con claves SAT)
+    - Global_Cat_CentrosCosto
+    - Global_Cat_FormaPagoSAT (con catálogo SAT completo)
+    - Global_Cat_MetodoPagoSAT (PUE, PPD)
+    - Global_Cat_UsoCFDI (con catálogo SAT completo)
+    - Global_Cat_RegimenFiscal (con catálogo SAT completo)
+    - Finanzas_Cat_CuentasBancarias
+  - Documentación: `/app/memory/DISENO_MODULO_CATALOGOS.md`
+  - Diagnóstico: `/app/memory/DIAGNOSTICO_CATALOGOS_EDARSA_HUB.md`
+
+---
+
 ### Session: April 2026 (Control de Ingresos)
 
 #### Completed Work
@@ -751,10 +789,13 @@ pytest tests/ -m regression # 4 tests en ~6s
 ### P0 - Critical
 - ~~Scroll horizontal en Pantalla Completa de Auditoría~~ ✅ DONE
 - ~~PASO 5: Ampliación Cobertura Tests~~ ✅ DONE (Abril 10, 2026)
+- ~~Módulo Maestro de Catálogos del Sistema~~ ✅ DONE (Abril 13, 2026)
 
 ### P1 - High Priority
+- [ ] **Ejecutar DDL** en SQL Server para crear las 9 tablas globales nuevas (desde Administración de Catálogos)
+- [ ] **Conexión Finanzas a SQL Server** (pausado temporalmente por módulo Catálogos)
+- [ ] **Accesos contextuales** desde módulos hacia Catálogos (RH→Catálogos RH, etc.)
 - [ ] Drill-down Compras para SoftRestaurant (facturas y detalles)
-- [ ] Módulo Catálogos RH (Colaboradores, Incidencias, Períodos)
 - [ ] Integración/migración NomiPAQ y Excel hacia EDARSA HUB
 - [ ] Módulo Rentabilidad - Integración OpenTable y conciliación PAX
 - [ ] Módulo de Seguridad y Monitoreo (Log de logins, alertas IPs)
@@ -765,6 +806,7 @@ pytest tests/ -m regression # 4 tests en ~6s
 - [ ] Módulo CRM (Captación Leads, estado cuenta)
 - [ ] Módulo Comisionistas, Bonificaciones
 - [ ] Botones Exportación generales (PDF, WA, Email)
+- [ ] UI para gestión directa de colaboradores en catálogo maestro
 
 ---
 
@@ -775,14 +817,18 @@ pytest tests/ -m regression # 4 tests en ~6s
 - `/app/backend/core/security.py` - Seguridad y JWT migrados
 - `/app/backend/core/cerebro.py` - **CEREBRO CENTRAL: Modelos, Enums, Constantes (FUENTE DE VERDAD)**
 - `/app/backend/modules/auth/` - Módulo de autenticación migrado
+- `/app/backend/modules/catalogos/` - **NUEVO: Módulo maestro de catálogos**
 - `/app/backend/modules/comercial/adapters.py` - APIs locales MPRO migradas
 - `/app/frontend/src/pages/Compras.js` - Módulo compras con cálculos cliente
+- `/app/frontend/src/pages/Catalogos.js` - **NUEVO: UI módulo catálogos**
 - `/app/frontend/src/pages/Servidores.js` - Config SQL y APIs
 - `/app/frontend/src/pages/ExploradorBD.js` - Exploración agrupada tablas
 - `/app/memory/CATALOGO_FILTROS_EDARSAHUB.md` - Reglas UI y filtros
 - `/app/memory/MAPA_MIGRACION.md` - Plan de migración modular
 - `/app/memory/ESPEJO_BASE_DATOS.md` - **ESPEJO COMPLETO: Toda la estructura MongoDB**
 - `/app/memory/DIAGNOSTICO_ARQUITECTURA.md` - Diagnóstico técnico
+- `/app/memory/DISENO_MODULO_CATALOGOS.md` - **NUEVO: Diseño técnico módulo catálogos**
+- `/app/memory/DIAGNOSTICO_CATALOGOS_EDARSA_HUB.md` - **NUEVO: Diagnóstico catálogos SQL**
 
 ## Key API Endpoints
 - `/api/compras/auditoria-inventario` - Auditoría de inventarios

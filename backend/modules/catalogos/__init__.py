@@ -1,0 +1,48 @@
+"""
+EDARSA HUB - Módulo de Catálogos
+================================
+Módulo maestro centralizado para gestión de catálogos del sistema.
+
+ARQUITECTURA:
+- Catálogos NO duplicados por módulo
+- Fuente única de verdad en EDARSA HUB (SQL Server)
+- Acceso central desde menú Catálogos
+- Acceso contextual desde módulos nativos (RH, Compras, etc.)
+
+DOMINIOS:
+- Generales (Empresas, Sucursales, Bancos, etc.)
+- RH (Tipos contrato, Motivos baja, etc.)
+- Nómina (Conceptos, Tipos periodo, etc.)
+- Compras (Estatus órdenes, recepciones, etc.)
+- Inventarios (Tipos movimiento, etc.)
+- Activos (Tipos activo, ubicaciones, etc.)
+- Finanzas (Cuentas bancarias, etc.)
+- Seguridad (Roles, Módulos, etc.)
+- Homologación (Equivalencias, etc.)
+
+Diciembre 2025
+"""
+
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
+# Referencia global a MongoDB (para logging/auditoría)
+_db: AsyncIOMotorDatabase = None
+
+
+def init_catalogos_module(db: AsyncIOMotorDatabase):
+    """Inicializa el módulo de catálogos con la conexión a MongoDB."""
+    global _db
+    _db = db
+
+
+def get_db() -> AsyncIOMotorDatabase:
+    """Obtiene la conexión a MongoDB."""
+    if _db is None:
+        raise RuntimeError("Módulo de catálogos no inicializado. Llama a init_catalogos_module() primero.")
+    return _db
+
+
+# Exportar router para registro en server.py
+from modules.catalogos.routes import router
+
+__all__ = ['router', 'init_catalogos_module', 'get_db']

@@ -19,6 +19,7 @@ import RecursosHumanos from '@/pages/RecursosHumanos';
 import ImportadorRH from '@/pages/ImportadorRH';
 import ReportesBI from '@/pages/ReportesBI';
 import MisTareas from '@/pages/MisTareas';
+import Catalogos from '@/pages/Catalogos';
 import { isAuthenticated } from '@/lib/auth';
 
 // Portal de Proveedores (Subproyecto separado)
@@ -54,6 +55,7 @@ function App() {
             <Route path="importador-rh" element={<ImportadorRH />} />
             <Route path="reportes-bi" element={<ReportesBI />} />
             <Route path="mis-tareas" element={<MisTareas />} />
+            <Route path="catalogos" element={<Catalogos />} />
           </Route>
           
           <Route path="*" element={<Navigate to={isAuthenticated() ? "/reportes" : "/login"} replace />} />

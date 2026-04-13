@@ -23,7 +23,8 @@ import {
   ClipboardList,
   Upload,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  BookOpen
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -115,6 +116,12 @@ const Layout = () => {
       icon: BarChart3, 
       roles: ['Supervisor', 'Administrador'],
       badge: 'Próx.'
+    },
+    { 
+      name: 'Catálogos', 
+      href: '/catalogos', 
+      icon: BookOpen, 
+      roles: ['Supervisor', 'Administrador'],
     },
   ];
 

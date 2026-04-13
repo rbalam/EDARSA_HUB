@@ -158,8 +158,18 @@ from modules.rh.solicitudes_catalogo import router as rh_solicitudes_router
 from modules.finanzas.cuentas_por_pagar import router as cxp_router
 from modules.finanzas.ingresos import router as ingresos_router
 
+# MÓDULO CATÁLOGOS: Módulo maestro centralizado de catálogos
+# - Diciembre 2025: Implementación inicial
+# - Acceso central y contextual desde módulos
+from modules.catalogos import router as catalogos_router, init_catalogos_module
+from modules.catalogos.service import init_catalogos_service
+
 # Inicializar módulo RH con conexión a MongoDB
 init_rh_module(db)
+
+# Inicializar módulo de Catálogos
+init_catalogos_module(db)
+init_catalogos_service(db)
 
 # FASE 6B: Registrar router de RH (catálogos)
 api_router.include_router(rh_router)
@@ -175,6 +185,9 @@ api_router.include_router(cxp_router)
 
 # FASE FINANZAS: Registrar router de ingresos
 api_router.include_router(ingresos_router)
+
+# MÓDULO CATÁLOGOS: Registrar router de catálogos
+api_router.include_router(catalogos_router)
 
 import requests
 
