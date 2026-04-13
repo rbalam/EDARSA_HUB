@@ -9,13 +9,14 @@ import {
   ChevronUp, ChevronDown, AlertCircle, FileText, Copy,
   PieChart, BarChart3, Calendar, Download, Printer,
   CreditCard, Clock, CheckCircle2, XCircle, Eye,
-  FileSpreadsheet, File, ChevronRight, Upload
+  FileSpreadsheet, File, ChevronRight, Upload, Banknote
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart as RechartsPie, Pie, Cell, LineChart, Line
 } from 'recharts';
+import TesoreriaCorteZ from '../components/TesoreriaCorteZ';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -684,6 +685,7 @@ export default function Finanzas() {
     { id: 'dashboard', label: 'Dashboard', icon: PieChart },
     { id: 'ingresos', label: 'Control de Ingresos', icon: TrendingUp },
     { id: 'cxp', label: 'Cuentas por Pagar', icon: CreditCard },
+    { id: 'tesoreria', label: 'Tesorería', icon: Banknote },
     { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign },
     { id: 'reportes', label: 'Reportes', icon: FileText },
   ];
@@ -2222,6 +2224,7 @@ export default function Finanzas() {
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'ingresos' && renderControlIngresos()}
           {activeTab === 'cxp' && renderCuentasPorPagar()}
+          {activeTab === 'tesoreria' && <TesoreriaCorteZ />}
           {activeTab === 'presupuestos' && renderPresupuestos()}
           {activeTab === 'reportes' && renderReportes()}
         </>

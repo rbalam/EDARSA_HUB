@@ -157,6 +157,7 @@ from modules.rh.importador.routes import router as rh_importador_router
 from modules.rh.solicitudes_catalogo import router as rh_solicitudes_router
 from modules.finanzas.cuentas_por_pagar import router as cxp_router
 from modules.finanzas.ingresos import router as ingresos_router
+from modules.finanzas.tesoreria import router as tesoreria_router
 
 # MÓDULO CATÁLOGOS: Módulo maestro centralizado de catálogos
 # - Diciembre 2025: Implementación inicial
@@ -207,6 +208,9 @@ api_router.include_router(cxp_router)
 
 # FASE FINANZAS: Registrar router de ingresos
 api_router.include_router(ingresos_router)
+
+# FASE TESORERÍA: Registrar router de tesorería (Cuadre Cortes Z)
+api_router.include_router(tesoreria_router)
 
 # MÓDULO CATÁLOGOS: Registrar router de catálogos
 api_router.include_router(catalogos_router)

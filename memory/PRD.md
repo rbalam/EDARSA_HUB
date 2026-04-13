@@ -26,7 +26,7 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
-### Session: April 13, 2026 (UI CxP REFACTORIZADA + MPRO COMBINADO)
+### Session: April 13, 2026 (UI CxP REFACTORIZADA + MPRO COMBINADO + TESORERÍA CORTE Z)
 
 #### ✅ Completado Hoy
 - [x] **Corrección UI Agrupación Jerárquica CxP** (Abril 13, 2026)
@@ -40,9 +40,9 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
   - Funciones `expandirTodos()` y `colapsarTodos()`
   - Colapso/expansión individual de categorías y proveedores
 
-- [x] **Colores de Días Vencidos** (Abril 13, 2026)
-  - Verde (`text-green-600`) para facturas no vencidas (días ≤ 0)
-  - Rojo (`text-red-600`) para facturas vencidas (días > 0)
+- [x] **Toggle de Vistas CxP** (Abril 13, 2026)
+  - Botón "Por Categoría" (A/B/X/M → Proveedor → Facturas)
+  - Botón "Por Proveedor" (vista plana con tabla detallada)
 
 - [x] **Combinación SoftRestaurant + MPRO** (Abril 13, 2026)
   - **Antes**: MPRO solo era fallback si SoftRestaurant fallaba
@@ -51,14 +51,35 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
   - **Endpoint modificado**: `/api/finanzas/cuentas-por-pagar`
   - **Respuesta**: `fuente: "SOFTRESTAURANT+MPRO"`
 
-#### Datos Combinados (Abril 13, 2026)
-| Categoría | Proveedores | Facturas | Saldo |
-|-----------|-------------|----------|-------|
-| A - ALIMENTOS | 81 | 490 | $4,705,142 |
-| B - BEBIDAS | 61 | 277 | $3,882,966 |
-| X - OTROS | 131 | 209 | $11,248,412 |
-| M - MPRO | 97 | 500 | $4,317,099 |
-| **TOTAL** | **370** | **1,476** | **$24,153,619** |
+- [x] **MÓDULO TESORERÍA - Cuadre de Cortes Z** (Abril 13, 2026)
+  - **Tab "Tesorería"** agregado al menú de Finanzas
+  - **Dashboard con tarjetas de resumen**: Pendientes, En Proceso, Cuadrados, Descuadre
+  - **Lista de Cortes Z** pendientes de cuadrar (de SoftRestaurant y MPRO)
+  - **Modal de cuadre** con:
+    - Datos del Corte Z (efectivo ventas, propinas, monto a depositar)
+    - Conteo de efectivo (billetes: $1000, $500, $200, $100, $50, $20; monedas: $20, $10, $5, $2, $1, $0.50)
+    - Total contado calculado automáticamente
+    - Ficha de depósito bancario (upload, fecha, banco, referencia, cuenta, importe)
+    - Comparativa: Esperado vs Contado vs Depositado vs Diferencia
+  - **Validación de fechas**: Depósito = día hábil siguiente (Vie/Sáb/Dom → Lunes)
+  - **Estados**: PENDIENTE, EN_PROCESO, CUADRADO, DESCUADRE
+  - **Archivos creados**:
+    - `/app/backend/modules/finanzas/tesoreria.py` (API endpoints)
+    - `/app/backend/modules/finanzas/tesoreria_models.py` (Pydantic models)
+    - `/app/backend/modules/finanzas/repository_cortes_z.py` (Consulta SQL a SoftRest/MPRO)
+    - `/app/backend/modules/finanzas/repository_cuadres_z.py` (MongoDB CRUD)
+    - `/app/frontend/src/components/TesoreriaCorteZ.jsx` (Componente React)
+
+#### Datos Demo Tesorería (Abril 13, 2026)
+| Sucursal | Folio | Efectivo Ventas | Propinas | A Depositar |
+|----------|-------|-----------------|----------|-------------|
+| Cienfuegos | 2889 | $13,656 | $11,725 | $1,930.80 |
+| Cienfuegos | 2890 | $18,450 | $8,920 | $9,530.00 |
+| La Estelar | 1456 | $9,850 | $5,430 | $4,420.00 |
+| 130° Mérida | 789 | $7,250 | $3,150 | $4,100.00 |
+| MPRO Origen | MPRO-001 | $12,300 | $1,850 | $10,450.00 |
+
+**NOTA**: Datos demo activos por defecto. Para usar datos reales de SQL, usar `use_demo=false` en el endpoint.
 
 ---
 
