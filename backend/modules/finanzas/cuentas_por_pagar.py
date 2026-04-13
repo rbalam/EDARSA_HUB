@@ -3,20 +3,21 @@ EDARSA HUB - Cuentas por Pagar (Facturas Pendientes)
 =====================================================
 Módulo para gestionar facturas pendientes de pago agrupadas por proveedor.
 
+ABRIL 2026: Conectado a SQL Server real (Finanzas_CuentasPorPagar)
+- Si hay datos en SQL, usa datos reales
+- Si no hay datos, puede usar modo demo (parámetro use_demo=true)
+
 Datos a mostrar:
-1. Folio de entrada
-1a. Folio de factura
-2. Fecha de entrada
-3. Fecha de vencimiento
-4. Días de vencida
-5. Referencia/comentario
-6. Importe total
-7. Saldo del documento
-8. Decisión de pago (si/no)
-9. Importe a pagar
-10. PDF factura
-11. XML
-12. Entrada al sistema (PDF)
+1. Número de documento / Folio
+2. Proveedor
+3. Sucursal
+4. Fecha de documento
+5. Fecha de vencimiento
+6. Días vencido
+7. Monto original
+8. Monto pagado
+9. Saldo pendiente
+10. Estatus de pago
 """
 
 import logging
@@ -30,7 +31,25 @@ import random
 router = APIRouter(prefix="/finanzas/cuentas-por-pagar", tags=["Cuentas por Pagar"])
 
 # ============================================================================
-# DATOS DEMO (Producción: conectar a SQL Server)
+# REPOSITORIO REAL
+# ============================================================================
+
+# Variable global para el repositorio (se inicializa con db en server.py)
+_finanzas_repo = None
+
+def set_finanzas_repository(repo):
+    """Configura el repositorio de finanzas (llamado desde server.py)"""
+    global _finanzas_repo
+    _finanzas_repo = repo
+
+async def get_repo():
+    """Obtiene el repositorio de finanzas"""
+    if _finanzas_repo:
+        return _finanzas_repo
+    return None
+
+# ============================================================================
+# DATOS DEMO (Solo se usan si SQL no tiene datos o use_demo=true)
 # ============================================================================
 
 def generar_facturas_demo():
@@ -131,13 +150,145 @@ async def listar_facturas_pendientes(
     fecha_corte: Optional[str] = None,  # YYYY-MM-DD
     solo_vencidas: bool = False,
     solo_decision_pago: bool = False,
+    use_demo: bool = Query(False, description="Usar datos demo en lugar de SQL real"),
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    Listar facturas pendientes de pago.
+    Listar facturas/cuentas pendientes de pago.
+    
+    CONECTADO A SQL SERVER REAL (Finanzas_CuentasPorPagar)
+    Si use_demo=true, usa datos demo para pruebas.
+    
     Filtros: sucursal, proveedor, fecha de corte, solo vencidas, solo con decisión de pago.
     Agrupa por proveedor con subtotales.
     """
+    repo = await get_repo()
+    
+    # Intentar obtener datos reales de SQL Server
+    if repo and not use_demo:
+        try:
+            cxp_sql = await repo.get_cuentas_por_pagar(
+                sucursal_id=sucursal_id,
+                proveedor_id=proveedor_id,
+                solo_vencidas=solo_vencidas,
+                fecha_corte=fecha_corte
+            )
+            
+            # Si hay datos reales, usarlos
+            if cxp_sql:
+                # Transformar a formato del frontend
+                facturas = []
+                for c in cxp_sql:
+                    saldo = float(c.get('Saldo', 0) or 0)
+                    if saldo <= 0:
+                        continue  # Solo pendientes
+                    
+                    dias_vencido = int(c.get('DiasVencido', 0) or 0)
+                    
+                    factura = {
+                        "factura_id": c.get('CuentaPorPagarID'),
+                        "documento_fiscal_id": c.get('DocumentoFiscalID'),
+                        "proveedor_id": c.get('ProveedorID'),
+                        "proveedor_nombre": f"Proveedor {c.get('ProveedorID')}",  # Pendiente: JOIN con catálogo
+                        "proveedor_rfc": None,
+                        "sucursal_id": c.get('SucursalID'),
+                        "sucursal_nombre": c.get('SucursalNombre', f"Sucursal {c.get('SucursalID')}"),
+                        "numero_documento": c.get('NumeroDocumento'),
+                        "folio_entrada": c.get('NumeroDocumento'),
+                        "folio_factura": c.get('NumeroDocumento'),
+                        "fecha_documento": str(c.get('FechaDocumento', ''))[:10],
+                        "fecha_entrada": str(c.get('FechaDocumento', ''))[:10],
+                        "fecha_vencimiento": str(c.get('FechaVencimiento', ''))[:10],
+                        "fecha_recepcion": str(c.get('FechaRecepcion', ''))[:10] if c.get('FechaRecepcion') else None,
+                        "dias_credito": c.get('DiasCredito', 0),
+                        "dias_vencida": max(0, dias_vencido),
+                        "importe_total": float(c.get('MontoOriginal', 0) or 0),
+                        "monto_pagado": float(c.get('MontoPagado', 0) or 0),
+                        "saldo": saldo,
+                        "estatus_pago_id": c.get('EstatusPagoID'),
+                        "estatus_nombre": c.get('EstatusNombre', 'Pendiente'),
+                        "moneda_id": c.get('MonedaID', 1),
+                        "tipo_cambio": float(c.get('TipoCambio', 1) or 1),
+                        "observaciones": c.get('Observaciones'),
+                        "decision_pago": False,  # Campo para UI
+                        "importe_a_pagar": 0,     # Campo para UI
+                        "ruta_pdf_factura": None,
+                        "ruta_xml": None,
+                        "ruta_pdf_entrada": None,
+                        "fuente": "SQL_SERVER_REAL"
+                    }
+                    facturas.append(factura)
+                
+                # Agrupar por proveedor
+                proveedores_dict = {}
+                for f in facturas:
+                    prov_id = f["proveedor_id"]
+                    if prov_id not in proveedores_dict:
+                        proveedores_dict[prov_id] = {
+                            "proveedor_id": prov_id,
+                            "proveedor_nombre": f["proveedor_nombre"],
+                            "proveedor_rfc": f["proveedor_rfc"],
+                            "facturas": [],
+                            "subtotal_importe": 0,
+                            "subtotal_saldo": 0,
+                            "subtotal_a_pagar": 0,
+                            "cantidad_facturas": 0,
+                            "cantidad_vencidas": 0
+                        }
+                    
+                    proveedores_dict[prov_id]["facturas"].append(f)
+                    proveedores_dict[prov_id]["subtotal_importe"] += f["importe_total"]
+                    proveedores_dict[prov_id]["subtotal_saldo"] += f["saldo"]
+                    proveedores_dict[prov_id]["cantidad_facturas"] += 1
+                    if f["dias_vencida"] > 0:
+                        proveedores_dict[prov_id]["cantidad_vencidas"] += 1
+                
+                # Ordenar proveedores por saldo descendente
+                proveedores_list = sorted(
+                    proveedores_dict.values(),
+                    key=lambda x: x["subtotal_saldo"],
+                    reverse=True
+                )
+                
+                # Totales generales
+                total_importe = sum(f["importe_total"] for f in facturas)
+                total_saldo = sum(f["saldo"] for f in facturas)
+                total_vencidas = sum(1 for f in facturas if f["dias_vencida"] > 0)
+                
+                return {
+                    "proveedores": proveedores_list,
+                    "total_facturas": len(facturas),
+                    "fuente": "SQL_SERVER_REAL",
+                    "totales": {
+                        "total_importe": round(total_importe, 2),
+                        "total_saldo": round(total_saldo, 2),
+                        "total_a_pagar": 0,
+                        "cantidad_proveedores": len(proveedores_list),
+                        "cantidad_facturas": len(facturas),
+                        "cantidad_vencidas": total_vencidas
+                    }
+                }
+            else:
+                # Sin datos en SQL - retornar vacío
+                return {
+                    "proveedores": [],
+                    "total_facturas": 0,
+                    "fuente": "SQL_SERVER_REAL",
+                    "mensaje": "No hay cuentas por pagar registradas. La tabla Finanzas_CuentasPorPagar está vacía.",
+                    "totales": {
+                        "total_importe": 0,
+                        "total_saldo": 0,
+                        "total_a_pagar": 0,
+                        "cantidad_proveedores": 0,
+                        "cantidad_facturas": 0,
+                        "cantidad_vencidas": 0
+                    }
+                }
+        except Exception as e:
+            logging.error(f"Error obteniendo CxP de SQL: {e}")
+            # Continuar con datos demo si hay error
+    
+    # MODO DEMO - usar datos generados
     facturas = [f for f in _facturas_db if f["saldo"] > 0]  # Solo pendientes
     
     # Aplicar filtros
@@ -155,6 +306,10 @@ async def listar_facturas_pendientes(
     
     if solo_decision_pago:
         facturas = [f for f in facturas if f["decision_pago"]]
+    
+    # Marcar fuente
+    for f in facturas:
+        f["fuente"] = "DEMO"
     
     # Agrupar por proveedor
     proveedores_dict = {}
@@ -197,13 +352,16 @@ async def listar_facturas_pendientes(
     
     return {
         "proveedores": proveedores_list,
+        "total_facturas": total_facturas,
+        "fuente": "DEMO",
+        "mensaje": "Datos de demostración. Para usar datos reales, asegúrese de tener registros en Finanzas_CuentasPorPagar.",
         "totales": {
             "total_importe": round(total_importe, 2),
             "total_saldo": round(total_saldo, 2),
             "total_a_pagar": round(total_a_pagar, 2),
-            "total_facturas": total_facturas,
-            "total_vencidas": total_vencidas,
-            "total_proveedores": len(proveedores_list)
+            "cantidad_facturas": total_facturas,
+            "cantidad_vencidas": total_vencidas,
+            "cantidad_proveedores": len(proveedores_list)
         },
         "filtros_aplicados": {
             "sucursal_id": sucursal_id,

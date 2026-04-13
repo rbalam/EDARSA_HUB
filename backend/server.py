@@ -164,12 +164,23 @@ from modules.finanzas.ingresos import router as ingresos_router
 from modules.catalogos import router as catalogos_router, init_catalogos_module
 from modules.catalogos.service import init_catalogos_service
 
+# MÓDULO FINANZAS: Repositorio real de SQL Server
+# - Abril 2026: Conexión a tablas reales de Finanzas
+from modules.finanzas.repository_real import FinanzasRepositoryReal
+from modules.finanzas import ingresos as finanzas_ingresos
+from modules.finanzas import cuentas_por_pagar as finanzas_cxp
+
 # Inicializar módulo RH con conexión a MongoDB
 init_rh_module(db)
 
 # Inicializar módulo de Catálogos
 init_catalogos_module(db)
 init_catalogos_service(db)
+
+# Inicializar repositorio real de Finanzas y configurar módulos
+_finanzas_repo = FinanzasRepositoryReal(db)
+finanzas_ingresos.set_finanzas_repository(_finanzas_repo)
+finanzas_cxp.set_finanzas_repository(_finanzas_repo)
 
 # FASE 6B: Registrar router de RH (catálogos)
 api_router.include_router(rh_router)

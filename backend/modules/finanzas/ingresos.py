@@ -3,13 +3,17 @@ EDARSA HUB - Control de Ingresos
 =================================
 Módulo para gestionar ingresos desde cortes de caja.
 
+ABRIL 2026: Conectado a SQL Server real (Finanzas_CortesCaja)
+- Si hay datos en SQL, usa datos reales
+- Si no hay datos, puede usar modo demo (parámetro use_demo=true)
+
 Reglas de Depósito:
 1. EFECTIVO: Se deposita al día siguiente. Vie/Sáb/Dom → Lunes
 2. TARJETAS:
-   - Débito: 24hrs hábiles, comisión 1.2% + IVA
-   - Crédito: 24hrs hábiles, comisión 1.5% + IVA  
-   - AMEX: 48hrs hábiles, comisión 2.4% + IVA
-   - Internacional: 48hrs hábiles, comisión 2% + IVA
+   - Débito: 24hrs hábiles, comisión configurable por sucursal
+   - Crédito: 24hrs hábiles, comisión configurable por sucursal
+   - AMEX: 48hrs hábiles, comisión configurable por sucursal
+   - Internacional: 48hrs hábiles, comisión configurable por sucursal
 3. Proveedor de terminales: NetPay
 """
 
@@ -24,7 +28,26 @@ import random
 router = APIRouter(prefix="/finanzas/ingresos", tags=["Control de Ingresos"])
 
 # ============================================================================
-# CONFIGURACIÓN DE COMISIONES Y PLAZOS
+# REPOSITORIO REAL
+# ============================================================================
+
+# Variable global para el repositorio (se inicializa con db en server.py)
+_finanzas_repo = None
+
+def set_finanzas_repository(repo):
+    """Configura el repositorio de finanzas (llamado desde server.py)"""
+    global _finanzas_repo
+    _finanzas_repo = repo
+
+async def get_repo():
+    """Obtiene el repositorio de finanzas"""
+    if _finanzas_repo:
+        return _finanzas_repo
+    # Fallback: crear repositorio ad-hoc (no recomendado en producción)
+    return None
+
+# ============================================================================
+# CONFIGURACIÓN DE COMISIONES Y PLAZOS (valores por defecto)
 # ============================================================================
 
 COMISIONES_TARJETAS = {
@@ -222,11 +245,150 @@ async def listar_cortes_caja(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
     solo_pendientes: bool = False,
+    use_demo: bool = Query(False, description="Usar datos demo en lugar de SQL real"),
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Listar cortes de caja con detalle de ingresos.
+    
+    CONECTADO A SQL SERVER REAL (Finanzas_CortesCaja)
+    Si use_demo=true, usa datos demo para pruebas.
     """
+    repo = await get_repo()
+    
+    # Intentar obtener datos reales de SQL Server
+    if repo and not use_demo:
+        try:
+            cortes_sql = await repo.get_cortes_caja(
+                sucursal_id=sucursal_id,
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin,
+                solo_pendientes_deposito=solo_pendientes
+            )
+            
+            # Si hay datos reales, usarlos
+            if cortes_sql:
+                # Transformar a formato del frontend
+                cortes = []
+                for c in cortes_sql:
+                    # Calcular neto por tipo
+                    debito_neto = float(c.get('TotalTarjetaDebito', 0) or 0) - float(c.get('ComisionDebito', 0) or 0)
+                    credito_neto = float(c.get('TotalTarjetaCredito', 0) or 0) - float(c.get('ComisionCredito', 0) or 0)
+                    amex_neto = float(c.get('TotalAmex', 0) or 0) - float(c.get('ComisionAmex', 0) or 0)
+                    internacional_neto = float(c.get('TotalInternacional', 0) or 0) - float(c.get('ComisionInternacional', 0) or 0)
+                    
+                    total_venta = (
+                        float(c.get('TotalEfectivo', 0) or 0) +
+                        float(c.get('TotalTarjetaDebito', 0) or 0) +
+                        float(c.get('TotalTarjetaCredito', 0) or 0) +
+                        float(c.get('TotalAmex', 0) or 0) +
+                        float(c.get('TotalInternacional', 0) or 0) +
+                        float(c.get('TotalVales', 0) or 0) +
+                        float(c.get('TotalOtros', 0) or 0)
+                    )
+                    
+                    total_comisiones = (
+                        float(c.get('ComisionDebito', 0) or 0) +
+                        float(c.get('ComisionCredito', 0) or 0) +
+                        float(c.get('ComisionAmex', 0) or 0) +
+                        float(c.get('ComisionInternacional', 0) or 0)
+                    )
+                    
+                    corte = {
+                        "corte_id": c.get('CorteCajaID'),
+                        "sucursal_id": c.get('SucursalID'),
+                        "sucursal_nombre": c.get('SucursalNombre', f"Sucursal {c.get('SucursalID')}"),
+                        "fecha_corte": str(c.get('FechaCorte', ''))[:10],
+                        "turno_id": c.get('TurnoID'),
+                        
+                        # Efectivo
+                        "efectivo": float(c.get('TotalEfectivo', 0) or 0),
+                        "fecha_deposito_efectivo": str(c.get('FechaDepositoEfectivo', ''))[:10] if c.get('FechaDepositoEfectivo') else None,
+                        "efectivo_depositado": bool(c.get('DepositadoEfectivo')),
+                        
+                        # Tarjetas
+                        "debito": float(c.get('TotalTarjetaDebito', 0) or 0),
+                        "debito_comision": float(c.get('ComisionDebito', 0) or 0),
+                        "debito_neto": round(debito_neto, 2),
+                        "fecha_deposito_debito": str(c.get('FechaDepositoDebito', ''))[:10] if c.get('FechaDepositoDebito') else None,
+                        
+                        "credito": float(c.get('TotalTarjetaCredito', 0) or 0),
+                        "credito_comision": float(c.get('ComisionCredito', 0) or 0),
+                        "credito_neto": round(credito_neto, 2),
+                        "fecha_deposito_credito": str(c.get('FechaDepositoCredito', ''))[:10] if c.get('FechaDepositoCredito') else None,
+                        
+                        "amex": float(c.get('TotalAmex', 0) or 0),
+                        "amex_comision": float(c.get('ComisionAmex', 0) or 0),
+                        "amex_neto": round(amex_neto, 2),
+                        "fecha_deposito_amex": str(c.get('FechaDepositoAmex', ''))[:10] if c.get('FechaDepositoAmex') else None,
+                        
+                        "internacional": float(c.get('TotalInternacional', 0) or 0),
+                        "internacional_comision": float(c.get('ComisionInternacional', 0) or 0),
+                        "internacional_neto": round(internacional_neto, 2),
+                        "fecha_deposito_internacional": str(c.get('FechaDepositoInternacional', ''))[:10] if c.get('FechaDepositoInternacional') else None,
+                        
+                        # Estado de depósitos de tarjetas
+                        "tarjetas_depositadas": (
+                            bool(c.get('DepositadoDebito')) and 
+                            bool(c.get('DepositadoCredito')) and
+                            bool(c.get('DepositadoAmex')) and
+                            bool(c.get('DepositadoInternacional'))
+                        ),
+                        
+                        # Totales
+                        "total_venta": round(total_venta, 2),
+                        "total_comisiones": round(total_comisiones, 2),
+                        "total_neto_tarjetas": round(debito_neto + credito_neto + amex_neto + internacional_neto, 2),
+                        
+                        # Conciliación
+                        "estatus_cierre_id": c.get('EstatusCierreID'),
+                        "estatus_nombre": c.get('EstatusNombre', 'Pendiente'),
+                        "conciliado": c.get('EstatusCierreID') == 3,  # 3 = Conciliado
+                        "observaciones": c.get('Observaciones'),
+                        
+                        # Metadata
+                        "fuente": "SQL_SERVER_REAL"
+                    }
+                    cortes.append(corte)
+                
+                # Calcular totales
+                total_efectivo = sum(c["efectivo"] for c in cortes)
+                total_tarjetas = sum(c["debito"] + c["credito"] + c["amex"] + c["internacional"] for c in cortes)
+                total_comisiones = sum(c["total_comisiones"] for c in cortes)
+                total_neto = sum(c["total_neto_tarjetas"] for c in cortes)
+                
+                return {
+                    "cortes": cortes[:100],
+                    "total": len(cortes),
+                    "fuente": "SQL_SERVER_REAL",
+                    "resumen": {
+                        "total_efectivo": round(total_efectivo, 2),
+                        "total_tarjetas_bruto": round(total_tarjetas, 2),
+                        "total_comisiones": round(total_comisiones, 2),
+                        "total_neto_tarjetas": round(total_neto, 2),
+                        "total_ventas": round(total_efectivo + total_tarjetas, 2)
+                    }
+                }
+            else:
+                # Sin datos en SQL - retornar vacío con mensaje
+                return {
+                    "cortes": [],
+                    "total": 0,
+                    "fuente": "SQL_SERVER_REAL",
+                    "mensaje": "No hay cortes de caja registrados. La tabla Finanzas_CortesCaja está vacía.",
+                    "resumen": {
+                        "total_efectivo": 0,
+                        "total_tarjetas_bruto": 0,
+                        "total_comisiones": 0,
+                        "total_neto_tarjetas": 0,
+                        "total_ventas": 0
+                    }
+                }
+        except Exception as e:
+            logging.error(f"Error obteniendo cortes de SQL: {e}")
+            # Continuar con datos demo si hay error
+    
+    # MODO DEMO - usar datos generados
     cortes = _cortes_caja_db.copy()
     
     if sucursal_id:
@@ -244,6 +406,10 @@ async def listar_cortes_caja(
     # Ordenar por fecha descendente
     cortes.sort(key=lambda x: x["fecha_corte"], reverse=True)
     
+    # Marcar fuente
+    for c in cortes:
+        c["fuente"] = "DEMO"
+    
     # Calcular totales
     total_efectivo = sum(c["efectivo"] for c in cortes)
     total_tarjetas = sum(c["debito"] + c["credito"] + c["amex"] + c["internacional"] for c in cortes)
@@ -253,6 +419,8 @@ async def listar_cortes_caja(
     return {
         "cortes": cortes[:100],  # Limitar a 100
         "total": len(cortes),
+        "fuente": "DEMO",
+        "mensaje": "Datos de demostración. Para usar datos reales, asegúrese de tener registros en Finanzas_CortesCaja.",
         "resumen": {
             "total_efectivo": round(total_efectivo, 2),
             "total_tarjetas_bruto": round(total_tarjetas, 2),

@@ -26,6 +26,32 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
+### Session: April 2026 (Conexión Módulo Finanzas UI a SQL Real)
+
+#### Completed Work
+- [x] **Conexión Ingresos (Cortes de Caja) a SQL Real** (Abril 13, 2026)
+  - Tabla: `Finanzas_CortesCaja`
+  - Endpoint: `GET /api/finanzas/ingresos/cortes-caja`
+  - Estado: Conectado (0 registros - tabla vacía)
+  - Tiempo de respuesta: ~755ms
+  - Modo demo disponible con `use_demo=true`
+
+- [x] **Conexión Cuentas por Pagar a SQL Real** (Abril 13, 2026)
+  - Tabla: `Finanzas_CuentasPorPagar`
+  - Endpoint: `GET /api/finanzas/cuentas-por-pagar`
+  - Estado: Conectado (0 registros - tabla vacía)
+  - Tiempo de respuesta: ~168ms
+  - Modo demo disponible con `use_demo=true`
+
+- [x] **Repositorio Real de Finanzas** (Abril 13, 2026)
+  - Archivo: `/app/backend/modules/finanzas/repository_real.py`
+  - Funciones: get_cortes_caja, get_cuentas_por_pagar, get_resumen_*
+  - Documentación: `/app/memory/INTEGRACION_FINANZAS_SQL.md`
+
+#### Campos Pendientes de Homologación
+- `proveedor_nombre` y `proveedor_rfc`: Requiere JOIN con catálogo de proveedores
+- Rutas de documentos (PDF/XML): No implementado
+
 ### Session: April 2026 (Validación UI Catálogos - TPV Sucursal)
 
 #### Completed Work
