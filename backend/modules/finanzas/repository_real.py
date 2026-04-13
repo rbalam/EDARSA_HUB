@@ -59,6 +59,11 @@ class FinanzasRepositoryReal:
         """
         server = await self._get_server()
         if not server:
+            # Invalidar cache y reintentar
+            self._server_cache = None
+            server = await self._get_server()
+            
+        if not server:
             logging.error("[FinanzasRepo] Servidor EDARSA HUB no encontrado")
             return []
         

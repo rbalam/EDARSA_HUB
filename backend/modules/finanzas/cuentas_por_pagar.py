@@ -376,11 +376,79 @@ async def listar_facturas_pendientes(
 @router.get("/resumen")
 async def get_resumen_cuentas_por_pagar(
     sucursal_id: Optional[int] = None,
+    use_demo: bool = Query(False, description="Usar datos demo en lugar de SQL real"),
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Resumen ejecutivo de cuentas por pagar.
+    
+    CONECTADO A SQL SERVER REAL - Calcula antigüedad desde datos reales.
     """
+    repo = await get_repo()
+    
+    # Intentar obtener datos reales de SQL Server
+    if repo and not use_demo:
+        try:
+            cxp_sql = await repo.get_cuentas_por_pagar(
+                sucursal_id=sucursal_id,
+                limit=500  # Obtener más registros para el resumen
+            )
+            
+            if cxp_sql:
+                # Transformar y clasificar por antigüedad
+                facturas = []
+                for c in cxp_sql:
+                    saldo = float(c.get('Saldo', 0) or 0)
+                    if saldo <= 0:
+                        continue
+                    dias_vencido = int(c.get('DiasVencido', 0) or 0)
+                    facturas.append({
+                        "saldo": saldo,
+                        "dias_vencida": max(0, dias_vencido)
+                    })
+                
+                # Clasificar por antigüedad
+                corriente = [f for f in facturas if f["dias_vencida"] <= 0]
+                vencidas_1_30 = [f for f in facturas if 1 <= f["dias_vencida"] <= 30]
+                vencidas_31_60 = [f for f in facturas if 31 <= f["dias_vencida"] <= 60]
+                vencidas_61_90 = [f for f in facturas if 61 <= f["dias_vencida"] <= 90]
+                vencidas_90_plus = [f for f in facturas if f["dias_vencida"] > 90]
+                
+                return {
+                    "fuente": "SQL_SERVER_REAL",
+                    "resumen": {
+                        "total_facturas": len(facturas),
+                        "total_saldo": round(sum(f["saldo"] for f in facturas), 2),
+                        "total_decision_pago": 0,
+                        "facturas_con_decision": 0
+                    },
+                    "antiguedad": {
+                        "corriente": {
+                            "cantidad": len(corriente),
+                            "monto": round(sum(f["saldo"] for f in corriente), 2)
+                        },
+                        "vencidas_1_30": {
+                            "cantidad": len(vencidas_1_30),
+                            "monto": round(sum(f["saldo"] for f in vencidas_1_30), 2)
+                        },
+                        "vencidas_31_60": {
+                            "cantidad": len(vencidas_31_60),
+                            "monto": round(sum(f["saldo"] for f in vencidas_31_60), 2)
+                        },
+                        "vencidas_61_90": {
+                            "cantidad": len(vencidas_61_90),
+                            "monto": round(sum(f["saldo"] for f in vencidas_61_90), 2)
+                        },
+                        "vencidas_90_plus": {
+                            "cantidad": len(vencidas_90_plus),
+                            "monto": round(sum(f["saldo"] for f in vencidas_90_plus), 2)
+                        }
+                    }
+                }
+        except Exception as e:
+            logging.error(f"Error obteniendo resumen CxP de SQL: {e}")
+    
+    # MODO DEMO - usar datos generados
     facturas = [f for f in _facturas_db if f["saldo"] > 0]
     
     if sucursal_id:
@@ -394,6 +462,7 @@ async def get_resumen_cuentas_por_pagar(
     vencidas_90_plus = [f for f in facturas if f["dias_vencida"] > 90]
     
     return {
+        "fuente": "DEMO",
         "resumen": {
             "total_facturas": len(facturas),
             "total_saldo": round(sum(f["saldo"] for f in facturas), 2),
@@ -428,9 +497,46 @@ async def get_resumen_cuentas_por_pagar(
 @router.get("/proveedores")
 async def listar_proveedores_con_saldo(
     sucursal_id: Optional[int] = None,
+    use_demo: bool = Query(False, description="Usar datos demo en lugar de SQL real"),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Lista proveedores que tienen facturas pendientes"""
+    """Lista proveedores que tienen facturas pendientes - CONECTADO A SQL REAL"""
+    repo = await get_repo()
+    
+    # Intentar obtener datos reales de SQL Server
+    if repo and not use_demo:
+        try:
+            cxp_sql = await repo.get_cuentas_por_pagar(
+                sucursal_id=sucursal_id,
+                limit=500
+            )
+            
+            if cxp_sql:
+                proveedores = {}
+                for c in cxp_sql:
+                    saldo = float(c.get('Saldo', 0) or 0)
+                    if saldo <= 0:
+                        continue
+                    prov_id = c.get('ProveedorID')
+                    if prov_id not in proveedores:
+                        proveedores[prov_id] = {
+                            "proveedor_id": prov_id,
+                            "proveedor_nombre": c.get('ProveedorNombre') or c.get('ProveedorNombreComercial') or f"Proveedor {prov_id}",
+                            "proveedor_rfc": c.get('ProveedorRFC'),
+                            "total_saldo": 0,
+                            "cantidad_facturas": 0
+                        }
+                    proveedores[prov_id]["total_saldo"] += saldo
+                    proveedores[prov_id]["cantidad_facturas"] += 1
+                
+                return {
+                    "fuente": "SQL_SERVER_REAL",
+                    "proveedores": sorted(proveedores.values(), key=lambda x: x["proveedor_nombre"])
+                }
+        except Exception as e:
+            logging.error(f"Error obteniendo proveedores CxP de SQL: {e}")
+    
+    # MODO DEMO
     facturas = [f for f in _facturas_db if f["saldo"] > 0]
     
     if sucursal_id:
@@ -451,6 +557,7 @@ async def listar_proveedores_con_saldo(
         proveedores[prov_id]["cantidad_facturas"] += 1
     
     return {
+        "fuente": "DEMO",
         "proveedores": sorted(proveedores.values(), key=lambda x: x["proveedor_nombre"])
     }
 
