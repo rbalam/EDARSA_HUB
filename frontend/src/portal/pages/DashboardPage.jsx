@@ -430,12 +430,13 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                 </button>
                 
                 {expandedSucursales[suc.id] && saldosData.facturas_pendientes.filter(f => f.sucursal === suc.name).length > 0 && (
-                  <div className="border-t border-gray-200 bg-gray-50 p-4">
+                  <div className="border-t border-gray-200 p-4" style={{backgroundColor: '#F5F9FF'}}>
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-left text-gray-500 text-xs uppercase">
+                        <tr className="text-left text-gray-500 text-xs">
                           <th className="py-2 font-medium">Folio</th>
-                          <th className="py-2 font-medium">Referencia</th>
+                          <th className="py-2 font-medium">Ref (8)</th>
+                          <th className="py-2 font-medium">Documento</th>
                           <th className="py-2 font-medium">Fecha</th>
                           <th className="py-2 font-medium">Vencimiento</th>
                           <th className="py-2 font-medium">Días</th>
@@ -447,9 +448,10 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                         {saldosData.facturas_pendientes
                           .filter(f => f.sucursal === suc.name)
                           .map((f, i) => (
-                          <tr key={i} className="border-t border-gray-200">
+                          <tr key={i} className="border-t border-gray-100">
                             <td className="py-2.5 text-gray-900 font-medium">{f.folio}</td>
                             <td className="py-2.5 text-gray-600">{f.referencia}</td>
+                            <td className="py-2.5 text-gray-600">{f.documento}</td>
                             <td className="py-2.5 text-gray-600">{f.fecha}</td>
                             <td className="py-2.5 text-gray-600">{f.vencimiento}</td>
                             <td className={`py-2.5 font-medium ${f.dias_vencido > 0 ? 'text-red-500' : 'text-green-600'}`}>
