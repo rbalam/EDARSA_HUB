@@ -26,6 +26,34 @@ ERP modular web para gestionar múltiples sucursales con bases de datos SQL Serv
 
 ## What's Been Implemented
 
+### Session: December 16, 2025 (REDISEÑO LOGIN PORTAL PROVEEDORES)
+
+#### ✅ Completado Hoy
+- [x] **Rediseño Login Portal de Proveedores** (Dic 16, 2025)
+  - **Solicitud**: Usuario proporcionó mockups con diseño específico de dos paneles
+  - **Implementación**:
+    - Panel izquierdo: Fondo azul oscuro con imagen de edificio corporativo
+    - Ícono SVG de edificio/documento estilo profesional
+    - Título "Portal de Proveedores" en blanco
+    - Descripción: "Gestiona tus facturas, consulta el estado de tus pagos..."
+    - Panel derecho: Formulario de login en card blanca con sombra
+    - Título "Iniciar Sesión"
+    - Subtítulo: "Ingresa tu RFC y contraseña para acceder al portal"
+    - Campo RFC con ícono FileText
+    - Campo Contraseña con ícono Lock
+    - Botón "Ingresar" con ícono ArrowRight
+    - Link "¿Primera vez en el portal? Regístrate aquí"
+  - **Responsive**: En móvil solo se muestra el formulario (panel izquierdo oculto)
+  - **Archivos modificados**: `/app/frontend/src/portal/pages/LoginPage.jsx`
+  - **Estado**: COMPLETADO Y VALIDADO VISUALMENTE
+  
+- [x] **Nota Badge "Made with Emergent"** (Dic 16, 2025)
+  - El badge es inyectado por la plataforma Emergent en ambiente preview
+  - NO está en el código fuente de la aplicación
+  - Desaparecerá en deployment personalizado/producción
+
+---
+
 ### Session: April 13, 2026 (UI CxP REFACTORIZADA + MPRO COMBINADO + TESORERÍA CORTE Z)
 
 #### ✅ Completado Hoy
@@ -943,8 +971,14 @@ pytest tests/ -m regression # 4 tests en ~6s
 - ~~Scroll horizontal en Pantalla Completa de Auditoría~~ ✅ DONE
 - ~~PASO 5: Ampliación Cobertura Tests~~ ✅ DONE (Abril 10, 2026)
 - ~~Módulo Maestro de Catálogos del Sistema~~ ✅ DONE (Abril 13, 2026)
+- ~~Rediseño Login Portal de Proveedores~~ ✅ DONE (Dic 16, 2025)
 
 ### P1 - High Priority
+- [ ] **Integración OCR** para extraer datos de fichas de depósito (Tesorería)
+- [ ] **Lógica selección facturas CxP** - checkboxes y cálculo "Total a Pagar" en tiempo real
+- [ ] **Módulo Finanzas - Conciliación bancaria**: Carga estados de cuenta BBVA
+- [ ] **Integración real catálogos SQL** al autorizar "Solicitud de Alta"
+- [ ] **Reportes colaboradores por empresa** con exportación desde maestro
 - [ ] **Ejecutar DDL** en SQL Server para crear las 9 tablas globales nuevas (desde Administración de Catálogos)
 - [ ] **Conexión Finanzas a SQL Server** (pausado temporalmente por módulo Catálogos)
 - [ ] **Accesos contextuales** desde módulos hacia Catálogos (RH→Catálogos RH, etc.)
@@ -954,6 +988,9 @@ pytest tests/ -m regression # 4 tests en ~6s
 - [ ] Módulo de Seguridad y Monitoreo (Log de logins, alertas IPs)
 
 ### P2 - Medium Priority
+- [ ] **Exportación a Excel de CxP** (Botón)
+- [ ] **Dashboard de KPIs financieros**
+- [ ] **Integración con módulo de nómina**
 - [ ] Bug "Rendimiento" códigos duplicados en Insumos
 - [ ] Integración QuickBooks / MarginEdge / Toast (BLOCKED: waiting API Keys)
 - [ ] Módulo CRM (Captación Leads, estado cuenta)
