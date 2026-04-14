@@ -371,27 +371,24 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
 
       {/* Facturas Pendientes de Pago */}
       {sucursalesFiltradas.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <FileText className="h-5 w-5 text-gray-700" />
-              <h2 className="text-lg font-semibold text-gray-900">
-                Facturas Pendientes de Pago ({totalFacturas})
-              </h2>
-            </div>
-            <div className="flex gap-3">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-900">
+              Facturas Pendientes de Pago ({totalFacturas})
+            </h2>
+            <div className="flex gap-2">
               <div className="relative">
-                <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input 
                   type="text" 
                   placeholder="Buscar folio, documento..." 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-gray-200"
+                  className="pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-xs w-52 focus:outline-none focus:ring-2 focus:ring-gray-200"
                 />
               </div>
-              <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-600">
-                <CheckCircle className="h-4 w-4" />
+              <button className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-xs font-medium text-gray-600">
+                <CheckCircle className="h-3.5 w-3.5" />
                 Conciliar
               </button>
             </div>
@@ -402,17 +399,19 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
               <div key={suc.id} className="border border-gray-200 rounded-lg overflow-hidden">
                 <button 
                   onClick={() => toggleSucursal(suc.id)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    {expandedSucursales[suc.id] ? (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    )}
-                    <span className="font-semibold text-gray-900">{suc.name}</span>
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="flex items-center gap-2">
+                      {expandedSucursales[suc.id] ? (
+                        <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="h-3.5 w-3.5 text-gray-400" />
+                      )}
+                      <span className="font-semibold text-xs text-gray-900">{suc.name}</span>
+                    </div>
                     <span 
-                      className="px-2 py-0.5 rounded text-xs font-medium"
+                      className="ml-5 px-1.5 py-0.5 rounded text-[10px] font-medium"
                       style={suc.system_type === 'MPRO' 
                         ? {backgroundColor: '#DBEAFE', color: '#1D4ED8'} 
                         : {backgroundColor: '#EDE9FE', color: '#7C3AED'}
@@ -421,7 +420,7 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                       {suc.system_type === 'MPRO' ? 'MPro' : 'SR'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-8 text-sm">
+                  <div className="flex items-center gap-6 text-xs">
                     <span className="text-gray-500">Facturas: <strong className="text-gray-900">{suc.facturas}</strong></span>
                     <span className="text-gray-500">Importe: <strong className="text-gray-900">{formatCurrency(suc.importe)}</strong></span>
                     <span className="text-gray-500">Saldo: <strong className="text-orange-500">{formatCurrency(suc.saldo)}</strong></span>
@@ -429,18 +428,18 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                 </button>
                 
                 {expandedSucursales[suc.id] && saldosData.facturas_pendientes.filter(f => f.sucursal === suc.name).length > 0 && (
-                  <div className="border-t border-gray-200 p-4" style={{backgroundColor: '#F5F9FF'}}>
-                    <table className="w-full text-sm">
+                  <div className="border-t border-gray-200 p-3" style={{backgroundColor: '#F5F9FF'}}>
+                    <table className="w-full text-xs">
                       <thead>
-                        <tr className="text-left text-gray-500 text-xs">
-                          <th className="py-2 font-medium">Folio</th>
-                          <th className="py-2 font-medium">Ref (8)</th>
-                          <th className="py-2 font-medium">Documento</th>
-                          <th className="py-2 font-medium">Fecha</th>
-                          <th className="py-2 font-medium">Vencimiento</th>
-                          <th className="py-2 font-medium">Días</th>
-                          <th className="py-2 font-medium text-right">Importe</th>
-                          <th className="py-2 font-medium text-right">Saldo</th>
+                        <tr className="text-left text-gray-500 text-[10px]">
+                          <th className="py-1.5 font-medium">Folio</th>
+                          <th className="py-1.5 font-medium">Ref (8)</th>
+                          <th className="py-1.5 font-medium">Documento</th>
+                          <th className="py-1.5 font-medium">Fecha</th>
+                          <th className="py-1.5 font-medium">Vencimiento</th>
+                          <th className="py-1.5 font-medium">Días</th>
+                          <th className="py-1.5 font-medium text-right">Importe</th>
+                          <th className="py-1.5 font-medium text-right">Saldo</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -448,16 +447,16 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                           .filter(f => f.sucursal === suc.name)
                           .map((f, i) => (
                           <tr key={i} className="border-t border-gray-100">
-                            <td className="py-2.5 text-gray-900 font-medium">{f.folio}</td>
-                            <td className="py-2.5 text-gray-600">{f.referencia}</td>
-                            <td className="py-2.5 text-gray-600">{f.documento}</td>
-                            <td className="py-2.5 text-gray-600">{f.fecha}</td>
-                            <td className="py-2.5 text-gray-600">{f.vencimiento}</td>
-                            <td className={`py-2.5 font-medium ${f.dias_vencido > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                            <td className="py-2 text-gray-900 font-medium">{f.folio}</td>
+                            <td className="py-2 text-gray-600">{f.referencia}</td>
+                            <td className="py-2 text-gray-600">{f.documento}</td>
+                            <td className="py-2 text-gray-600">{f.fecha}</td>
+                            <td className="py-2 text-gray-600">{f.vencimiento}</td>
+                            <td className={`py-2 font-medium ${f.dias_vencido > 0 ? 'text-red-500' : 'text-green-600'}`}>
                               {f.dias_vencido > 0 ? `+${f.dias_vencido}` : f.dias_vencido}
                             </td>
-                            <td className="py-2.5 text-right text-gray-900">{formatCurrency(f.importe)}</td>
-                            <td className="py-2.5 text-right font-semibold text-orange-500">{formatCurrency(f.saldo)}</td>
+                            <td className="py-2 text-right text-gray-900">{formatCurrency(f.importe)}</td>
+                            <td className="py-2 text-right font-semibold text-orange-500">{formatCurrency(f.saldo)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -469,9 +468,9 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
           </div>
 
           {/* Total General - Fondo gris claro con borde */}
-          <div className="mt-4 p-4 rounded-lg flex items-center justify-between border border-gray-200" style={{backgroundColor: '#F1F5F9'}}>
-            <span className="font-semibold text-gray-700">TOTAL GENERAL ({totalFacturas} facturas)</span>
-            <div className="flex gap-8 text-sm text-gray-600">
+          <div className="mt-3 p-3 rounded-lg flex items-center justify-between border border-gray-200" style={{backgroundColor: '#F1F5F9'}}>
+            <span className="font-semibold text-xs text-gray-700">TOTAL GENERAL ({totalFacturas} facturas)</span>
+            <div className="flex gap-6 text-xs text-gray-600">
               <span>Importe: <strong className="text-gray-900">{formatCurrency(totalFacturado)}</strong></span>
               <span>Saldo: <strong className="text-orange-500">{formatCurrency(totalSaldo)}</strong></span>
             </div>
