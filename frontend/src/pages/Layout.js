@@ -24,7 +24,8 @@ import {
   Upload,
   ChevronDown,
   ChevronRight,
-  BookOpen
+  BookOpen,
+  Building2
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -121,6 +122,12 @@ const Layout = () => {
       name: 'Catálogos', 
       href: '/catalogos', 
       icon: BookOpen, 
+      roles: ['Supervisor', 'Administrador'],
+    },
+    { 
+      name: 'Portal Proveedores', 
+      href: '/proveedores', 
+      icon: Building2, 
       roles: ['Supervisor', 'Administrador'],
     },
   ];
