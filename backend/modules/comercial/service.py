@@ -811,22 +811,32 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
         if ventas_api_local.get("aplicado", False):
             if ventas_api_local.get("reemplazar", False):
                 # Modo "Ventas del Día": REEMPLAZAR datos de nube con API local
-                # PERO solo si hay ventas reales en la API local
+                # Si hay ventas reales en la API local, usar esas
                 if ventas_api_local["ventas"] > 0 or ventas_api_local["cheques"] > 0:
                     ventas = ventas_api_local["ventas"]
                     cheques = ventas_api_local["cheques"]
                     pax = ventas_api_local["pax"]
                     logging.info(f"API Local REEMPLAZÓ datos de {sucursal_nombre}: ${ventas_api_local['ventas']:,.2f} de {ventas_api_local.get('api', 'N/A')}")
                 else:
-                    # API local retornó $0 - mantener datos de la nube como fallback
-                    logging.info(f"API Local retornó $0 para {sucursal_nombre} - manteniendo datos de nube: ${ventas:,.2f}")
+                    # API local retornó $0 - en modo Ventas del Día, usar $0 (no hay ventas hoy)
+                    ventas = 0
+                    cheques = 0
+                    pax = 0
+                    logging.info(f"API Local retornó $0 para {sucursal_nombre} - Ventas del día = $0")
             else:
                 # Modo normal: SUMAR ventas de API local a las de nube
                 ventas += ventas_api_local["ventas"]
                 cheques += ventas_api_local["cheques"]
                 pax += ventas_api_local["pax"]
                 logging.info(f"API Local sumada a {sucursal_nombre}: +${ventas_api_local['ventas']:,.2f} de {ventas_api_local.get('api', 'N/A')}")
-        # Si la API local no está aplicada, mantener datos de la nube (ya asignados)
+        elif solo_ventas_dia:
+            # Modo "Ventas del Día" pero no hay API local configurada o no aplicó
+            # Las ventas deben ser $0 (no mostrar el acumulado del mes)
+            ventas = 0
+            cheques = 0
+            pax = 0
+            logging.info(f"Modo Ventas del Día pero sin API local para {sucursal_nombre} - Ventas = $0")
+        # Si no es modo ventas del día y no hay API local, mantener datos de la nube (ya asignados)
         # ============= FIN INTEGRACIÓN API LOCAL =============
         
         # Cálculos
