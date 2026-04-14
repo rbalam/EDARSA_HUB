@@ -132,51 +132,51 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-500 mb-2">Total Facturado</p>
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(totalFacturado)}</p>
+              <p className="text-xs text-gray-500 mb-1">Total Facturado</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalFacturado)}</p>
             </div>
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <FileText className="h-6 w-6 text-gray-400" />
+            <div className="p-2 bg-gray-50 rounded-lg">
+              <FileText className="h-5 w-5 text-gray-400" />
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-500 mb-2">Total Pagado</p>
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(totalPagado)}</p>
+              <p className="text-xs text-gray-500 mb-1">Total Pagado</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalPagado)}</p>
             </div>
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <CheckCircle className="h-6 w-6 text-gray-400" />
+            <div className="p-2 bg-gray-50 rounded-lg">
+              <CheckCircle className="h-5 w-5 text-gray-400" />
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-500 mb-2">Saldo Pendiente</p>
-              <p className="text-3xl font-bold text-orange-500">{formatCurrency(totalSaldo)}</p>
+              <p className="text-xs text-gray-500 mb-1">Saldo Pendiente</p>
+              <p className="text-2xl font-bold text-orange-500">{formatCurrency(totalSaldo)}</p>
             </div>
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <Clock className="h-6 w-6 text-gray-400" />
+            <div className="p-2 bg-gray-50 rounded-lg">
+              <Clock className="h-5 w-5 text-gray-400" />
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-500 mb-2">Facturas Pendientes</p>
-              <p className="text-3xl font-bold text-gray-900">{totalFacturas}</p>
+              <p className="text-xs text-gray-500 mb-1">Facturas Pendientes</p>
+              <p className="text-2xl font-bold text-gray-900">{totalFacturas}</p>
             </div>
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <DollarSign className="h-6 w-6 text-gray-400" />
+            <div className="p-2 bg-gray-50 rounded-lg">
+              <DollarSign className="h-5 w-5 text-gray-400" />
             </div>
           </div>
         </div>
@@ -184,32 +184,32 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
 
       {/* Fuente de Datos */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <Building2 className="h-6 w-6 text-gray-700" />
-              <h2 className="text-xl font-bold text-gray-900">Fuente de Datos</h2>
+        <div className="p-5">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-gray-700" />
+              <h2 className="text-base font-semibold text-gray-900">Fuente de Datos</h2>
             </div>
             <button 
               onClick={loadSaldosReales}
               disabled={loadingSaldos}
-              className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
+              className="inline-flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700"
             >
-              <RefreshCw className={`h-4 w-4 ${loadingSaldos ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-3 w-3 ${loadingSaldos ? 'animate-spin' : ''}`} />
               Actualizar
             </button>
           </div>
 
           {/* Por Sistema */}
-          <div className="mb-6">
-            <p className="text-base text-gray-500 mb-4">Por Sistema</p>
-            <div className="flex gap-3 flex-wrap">
+          <div className="mb-4">
+            <p className="text-sm text-gray-500 mb-3">Por Sistema</p>
+            <div className="flex gap-2 flex-wrap">
               <button 
                 onClick={() => { setSelectedSystem('all'); setSelectedUnit('all'); }}
-                className={`px-5 py-2.5 rounded-xl text-base font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   selectedSystem === 'all' 
                     ? 'bg-gray-900 text-white' 
-                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 shadow-sm'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                 }`}
               >
                 Todos los Sistemas
@@ -218,10 +218,10 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                 <button 
                   key={s.id}
                   onClick={() => { setSelectedSystem(s.id); setSelectedUnit('all'); }}
-                  className={`px-5 py-2.5 rounded-xl text-base font-medium transition-all ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                     selectedSystem === s.id 
                       ? 'bg-gray-900 text-white' 
-                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 shadow-sm'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                   }`}
                 >
                   {s.name}
@@ -232,15 +232,15 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
 
           {/* Por Unidad */}
           {sucursalesFiltradas.length > 0 && (
-            <div className="mb-8">
-              <p className="text-base text-gray-500 mb-4">Por Unidad / Empresa</p>
-              <div className="flex gap-3 flex-wrap">
+            <div className="mb-5">
+              <p className="text-sm text-gray-500 mb-3">Por Unidad / Empresa</p>
+              <div className="flex gap-2 flex-wrap">
                 <button 
                   onClick={() => setSelectedUnit('all')}
-                  className={`px-5 py-2.5 rounded-xl text-base font-medium transition-all ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                     selectedUnit === 'all' 
                       ? 'bg-gray-900 text-white' 
-                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 shadow-sm'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                   }`}
                 >
                   Todas las Unidades
@@ -249,10 +249,10 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                   <button 
                     key={s.id}
                     onClick={() => setSelectedUnit(s.id)}
-                    className={`px-5 py-2.5 rounded-xl text-base font-medium transition-all ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       selectedUnit === s.id 
                         ? 'bg-gray-900 text-white' 
-                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 shadow-sm'
+                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                     }`}
                   >
                     {s.name}
@@ -263,9 +263,9 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
           )}
 
           {/* Resumen por Sistema */}
-          <div className="border-t border-gray-100 pt-6">
+          <div className="border-t border-gray-100 pt-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Resumen por Sistema</h3>
+              <h3 className="text-sm font-semibold text-gray-900">Resumen por Sistema</h3>
               <ChevronDown className="h-4 w-4 text-gray-400" />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -275,7 +275,7 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                 return (
                   <div 
                     key={s.id} 
-                    className="rounded-xl p-5"
+                    className="rounded-xl p-4"
                     style={{ 
                       backgroundColor: isMPRO ? '#F5F9FF' : '#FAF8FF',
                       border: isMPRO ? '1px solid #E1EDFB' : '1px solid #EDE9F5'
