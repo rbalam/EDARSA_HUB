@@ -231,6 +231,28 @@ const Servidores = () => {
     }
   }, [servers]);
 
+  // Probar APIs locales automáticamente al cargar
+  useEffect(() => {
+    if (apiConnections.length > 0) {
+      const testApisWithDelay = async () => {
+        for (let i = 0; i < apiConnections.length; i++) {
+          const apiConn = apiConnections[i];
+          if (!apiTestStatus[apiConn.id] && apiConn.activo) {
+            await testApiConnection(apiConn);
+            // Esperar 2 segundos entre cada test
+            if (i < apiConnections.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          }
+        }
+      };
+      
+      // Iniciar después de 3 segundos de cargar las APIs
+      const timeoutId = setTimeout(testApisWithDelay, 3000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [apiConnections]);
+
   const loadServers = async () => {
     try {
       const response = await api.get('/servers');
@@ -952,8 +974,15 @@ const Servidores = () => {
                         <div className="bg-purple-50 p-2 rounded-lg">
                           <Globe className="h-5 w-5 text-purple-600" />
                         </div>
-                        {apiConn.activo ? (
-                          <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white" title="Activo" />
+                        {/* Indicador de estado basado en el test de conexión */}
+                        {apiTestStatus[apiConn.id]?.status === 'error' ? (
+                          <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500 border-2 border-white" title="Sin Conexión" />
+                        ) : apiTestStatus[apiConn.id]?.status === 'warning' ? (
+                          <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-amber-500 border-2 border-white" title="Conexión Parcial" />
+                        ) : apiTestStatus[apiConn.id]?.status === 'success' ? (
+                          <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white" title="Conectado" />
+                        ) : apiConn.activo ? (
+                          <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-blue-500 border-2 border-white" title="Pendiente de verificar" />
                         ) : (
                           <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-zinc-400 border-2 border-white" title="Inactivo" />
                         )}
@@ -963,9 +992,28 @@ const Servidores = () => {
                         <p className="text-xs text-zinc-500 mt-1">API {apiConn.tipo}</p>
                       </div>
                     </div>
-                    <Badge variant="outline" className={apiConn.activo ? "bg-green-50 text-green-700 border-green-200" : "bg-zinc-100 text-zinc-500"}>
-                      {apiConn.activo ? 'Activo' : 'Inactivo'}
-                    </Badge>
+                    {/* Badge de status basado en el resultado del test de conexión */}
+                    {apiTestStatus[apiConn.id]?.status === 'error' ? (
+                      <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                        Sin Conexión
+                      </Badge>
+                    ) : apiTestStatus[apiConn.id]?.status === 'warning' ? (
+                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                        Parcial
+                      </Badge>
+                    ) : apiTestStatus[apiConn.id]?.status === 'success' ? (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        Conectado
+                      </Badge>
+                    ) : apiConn.activo ? (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        Pendiente
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-zinc-100 text-zinc-500">
+                        Inactivo
+                      </Badge>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
