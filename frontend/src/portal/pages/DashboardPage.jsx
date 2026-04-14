@@ -320,24 +320,24 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
 
       {/* Saldo por Sucursal */}
       {sucursalesFiltradas.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <FileText className="h-6 w-6 text-gray-700" />
-            <h2 className="text-xl font-bold text-gray-900">Saldo por Sucursal</h2>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="h-5 w-5 text-gray-700" />
+            <h2 className="text-base font-bold text-gray-900">Saldo por Sucursal</h2>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             {sucursalesFiltradas.map(s => (
               <div 
                 key={s.id} 
-                className="rounded-xl p-6"
+                className="rounded-lg p-4"
                 style={s.system_type === 'MPRO' 
                   ? {backgroundColor: '#F5F9FF', border: '1px solid #E1EDFB'} 
                   : {backgroundColor: '#FAF8FF', border: '1px solid #EDE9F5'}
                 }
               >
-                <h3 className="font-bold text-xl text-gray-900 mb-3">{s.name}</h3>
+                <h3 className="font-bold text-sm text-gray-900 mb-2">{s.name}</h3>
                 <span 
-                  className="inline-block px-3 py-1.5 rounded text-sm font-medium mb-5"
+                  className="inline-block px-2 py-1 rounded text-xs font-medium mb-3"
                   style={s.system_type === 'MPRO' 
                     ? {backgroundColor: '#DBEAFE', color: '#1D4ED8'} 
                     : {backgroundColor: '#EDE9FE', color: '#7C3AED'}
@@ -345,7 +345,7 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                 >
                   {s.system_type === 'MPRO' ? 'Management Pro' : 'Soft Restaurant'}
                 </span>
-                <div className="space-y-4 text-base">
+                <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Facturas:</span>
                     <span className="font-semibold text-gray-900">{s.facturas}</span>
@@ -358,7 +358,7 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                     <span className="text-gray-500">Pagado:</span>
                     <span className="font-semibold text-green-500">{formatCurrency(s.pagado)}</span>
                   </div>
-                  <div className="flex justify-between pt-3">
+                  <div className="flex justify-between pt-2">
                     <span className="text-gray-500">Saldo:</span>
                     <span className="font-bold text-orange-500">{formatCurrency(s.saldo)}</span>
                   </div>
