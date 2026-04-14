@@ -270,16 +270,16 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
               <ChevronDown className="h-4 w-4 text-gray-400" />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              {sistemasFiltrados.map((s, idx) => {
-                // Colores según mockup: azul claro (#E8F4FD) y violeta claro (#F3E8FF)
-                const isBlue = idx % 2 === 0;
+              {sistemasFiltrados.map((s) => {
+                // AZUL para MPRO, VIOLETA para SoftRestaurant
+                const isMPRO = s.system_type === 'MPRO';
                 return (
                   <div 
                     key={s.id} 
                     className="rounded-xl p-5"
                     style={{ 
-                      backgroundColor: isBlue ? '#E8F4FD' : '#F3E8FF',
-                      borderLeft: `4px solid ${isBlue ? '#93C5FD' : '#D8B4FE'}`
+                      backgroundColor: isMPRO ? '#E8F4FD' : '#F3E8FF',
+                      borderLeft: `4px solid ${isMPRO ? '#93C5FD' : '#D8B4FE'}`
                     }}
                   >
                     <h4 className="font-semibold text-gray-900 text-base mb-4">{s.name}</h4>
