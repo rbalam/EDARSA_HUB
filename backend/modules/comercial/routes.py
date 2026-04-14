@@ -68,6 +68,7 @@ from modules.comercial.repository import (
     get_cached_kpis_by_prefix,
     save_server_connection_status,
     is_server_recently_offline,
+    filtrar_unidades_por_visibilidad,
 )
 
 # Router - los endpoints serán migrados incrementalmente
@@ -292,6 +293,11 @@ async def tablero_ejecutivo(
                 unidades_mpro = get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
                                                            fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia)
                 logging.info(f"MPRO {server['name']}: Encontradas {len(unidades_mpro)} unidades")
+                
+                # FILTRAR por configuración de visibilidad de sucursales
+                unidades_mpro = await filtrar_unidades_por_visibilidad(unidades_mpro, server['id'])
+                logging.info(f"MPRO {server['name']}: {len(unidades_mpro)} unidades después de filtro de visibilidad")
+                
                 for unidad in unidades_mpro:
                     unidad["status"] = "online"
                     unidad["updated_at"] = datetime.now(timezone.utc).isoformat()

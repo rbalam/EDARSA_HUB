@@ -57,6 +57,59 @@ async def get_servers_for_tablero() -> List[Dict]:
     return await cursor.to_list(100)
 
 
+async def get_sucursales_visibles_config(server_id: str) -> Dict[str, bool]:
+    """
+    Obtiene la configuración de visibilidad de sucursales para un servidor.
+    
+    Returns:
+        Dict con {sucursal_nombre: visible_en_operaciones}
+        Si no hay configuración, devuelve dict vacío (todas visibles por default)
+    """
+    try:
+        configs = await get_db().server_sucursales_config.find(
+            {"server_id": server_id, "activa": True}
+        ).to_list(500)
+        
+        if not configs:
+            return {}  # Sin configuración = todas visibles (backward compatible)
+        
+        # Crear mapa de nombre -> visible
+        return {
+            c.get("sucursal_nombre", ""): c.get("visible_en_operaciones", True)
+            for c in configs
+        }
+    except Exception as e:
+        logging.warning(f"Error obteniendo config de sucursales para {server_id}: {e}")
+        return {}  # En caso de error, no filtrar nada
+
+
+async def filtrar_unidades_por_visibilidad(unidades: List[Dict], server_id: str) -> List[Dict]:
+    """
+    Filtra una lista de unidades/sucursales según la configuración de visibilidad.
+    
+    REGLA DE COMPATIBILIDAD:
+    - Si NO hay configuración para este servidor -> devuelve TODAS (comportamiento legacy)
+    - Si SÍ hay configuración -> devuelve solo las marcadas como visible_en_operaciones=True
+    """
+    config = await get_sucursales_visibles_config(server_id)
+    
+    if not config:
+        # Sin configuración = todas visibles (backward compatible)
+        return unidades
+    
+    # Filtrar por configuración
+    resultado = []
+    for unidad in unidades:
+        nombre = unidad.get("unidad", "") or unidad.get("sucursal", "")
+        # Si el nombre está en la config, usar ese valor; si no está, asumir visible
+        if config.get(nombre, True):
+            resultado.append(unidad)
+        else:
+            logging.info(f"Sucursal '{nombre}' oculta por configuración")
+    
+    return resultado
+
+
 # ============================================================================
 # QUERIES SQL - VENTAS MPRO
 # ============================================================================
