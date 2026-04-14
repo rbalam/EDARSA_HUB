@@ -265,34 +265,45 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
 
           {/* Resumen por Sistema */}
           <div className="border-t border-gray-100 pt-6">
-            <h3 className="text-base font-semibold text-gray-900 mb-4">Resumen por Sistema</h3>
-            <div className="grid grid-cols-3 gap-4">
-              {sistemasFiltrados.map(s => (
-                <div 
-                  key={s.id} 
-                  className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm"
-                >
-                  <h4 className="font-semibold text-gray-900 text-base mb-4">{s.name}</h4>
-                  {s.status === 'not_found' || s.facturas === 0 ? (
-                    <p className="text-sm text-gray-400">RFC no encontrado en este sistema</p>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">Facturas</span>
-                        <span className="text-lg font-bold text-gray-900">{s.facturas}</span>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-gray-900">Resumen por Sistema</h3>
+              <ChevronDown className="h-4 w-4 text-gray-400" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {sistemasFiltrados.map((s, idx) => {
+                // Colores según mockup: azul claro (#E8F4FD) y violeta claro (#F3E8FF)
+                const isBlue = idx % 2 === 0;
+                return (
+                  <div 
+                    key={s.id} 
+                    className="rounded-xl p-5"
+                    style={{ 
+                      backgroundColor: isBlue ? '#E8F4FD' : '#F3E8FF',
+                      borderLeft: `4px solid ${isBlue ? '#93C5FD' : '#D8B4FE'}`
+                    }}
+                  >
+                    <h4 className="font-semibold text-gray-900 text-base mb-4">{s.name}</h4>
+                    {s.status === 'not_found' || s.facturas === 0 ? (
+                      <p className="text-sm text-gray-400">RFC no encontrado en este sistema</p>
+                    ) : (
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Facturas</p>
+                          <p className="text-xl font-bold text-gray-900">{s.facturas}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Importe</p>
+                          <p className="text-lg font-semibold text-gray-900">{formatCurrency(s.importe)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Saldo</p>
+                          <p className="text-lg font-semibold text-orange-500">{formatCurrency(s.saldo)}</p>
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">Importe</span>
-                        <span className="text-base font-semibold text-gray-900">{formatCurrency(s.importe)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">Saldo</span>
-                        <span className="text-base font-semibold text-orange-500">{formatCurrency(s.saldo)}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                );
+              })}
             </div>
             
             {/* Footer resumen */}

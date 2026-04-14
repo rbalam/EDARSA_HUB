@@ -126,13 +126,13 @@ export default function PortalProveedoresApp() {
     <div className="min-h-screen bg-zinc-50 flex">
       <Toaster position="top-right" richColors />
       
-      {/* Sidebar */}
-      <aside className="w-[180px] bg-zinc-900 text-white flex flex-col fixed h-full">
+      {/* Sidebar - BLANCO con texto oscuro */}
+      <aside className="w-[180px] bg-white border-r border-gray-200 flex flex-col fixed h-full">
         {/* Logo */}
-        <div className="p-4 border-b border-zinc-800">
+        <div className="p-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <FileText className="h-6 w-6" />
-            <span className="font-bold text-lg">SupplierHub</span>
+            <FileText className="h-6 w-6 text-gray-800" />
+            <span className="font-bold text-lg text-gray-900">SupplierHub</span>
           </div>
         </div>
 
@@ -147,8 +147,8 @@ export default function PortalProveedoresApp() {
                 onClick={() => setCurrentPage(item.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
                   isActive 
-                    ? 'bg-zinc-800 text-white' 
-                    : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                    ? 'bg-gray-900 text-white rounded-lg mx-2 w-[calc(100%-16px)]' 
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -159,14 +159,14 @@ export default function PortalProveedoresApp() {
         </nav>
 
         {/* Supplier info at bottom */}
-        <div className="p-4 border-t border-zinc-800">
+        <div className="p-4 border-t border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center text-sm font-bold">
+            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-sm font-bold text-gray-700">
               {supplier?.razon_social?.charAt(0) || 'E'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate">{supplier?.razon_social?.substring(0, 15) || 'Proveedor'}...</p>
-              <p className="text-xs text-zinc-500">{supplier?.rfc}</p>
+              <p className="text-xs font-medium text-gray-900 truncate">{supplier?.razon_social?.substring(0, 15) || 'Proveedor'}...</p>
+              <p className="text-xs text-gray-500">{supplier?.rfc}</p>
             </div>
           </div>
         </div>
