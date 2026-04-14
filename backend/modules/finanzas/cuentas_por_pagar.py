@@ -28,6 +28,9 @@ from pydantic import BaseModel, Field
 from core.security import get_current_user
 import random
 
+# Importar función de filtrado de visibilidad
+from modules.comercial.repository import get_sucursales_visibles_config
+
 router = APIRouter(prefix="/finanzas/cuentas-por-pagar", tags=["Cuentas por Pagar"])
 
 # ============================================================================
@@ -736,12 +739,13 @@ async def listar_proveedores_con_saldo(
 
 @router.get("/sucursales")
 async def listar_sucursales_cxp(
+    include_hidden: bool = Query(default=False, description="Incluir sucursales ocultas"),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Lista sucursales desde SoftRestaurant con datos de CxP"""
+    """Lista sucursales desde MPRO/SoftRestaurant con datos de CxP, filtradas por visibilidad"""
     softrest_repo = await get_softrest_repo()
     
-    # Primero SoftRestaurant
+    # Primero SoftRestaurant (no tiene config de sucursales, devolver todo)
     if softrest_repo:
         try:
             resumen = await softrest_repo.get_resumen_por_sucursal()
@@ -768,17 +772,29 @@ async def listar_sucursales_cxp(
         try:
             resumen = await mpro_repo.get_resumen_por_sucursal()
             if resumen:
+                sucursales = [
+                    {
+                        "SucursalID": s.get('SucursalID'),
+                        "Nombre_Sucursal": s.get('SucursalNombre') or f"Sucursal {s.get('SucursalID')}",
+                        "CantidadFacturas": int(s.get('CantidadFacturas', 0) or 0),
+                        "SaldoTotal": float(s.get('SaldoTotal', 0) or 0)
+                    }
+                    for s in resumen
+                ]
+                
+                # FILTRAR por configuración de visibilidad
+                if not include_hidden:
+                    # Importar el ID del servidor MPRO
+                    from modules.finanzas.repository_mpro import MPRO_SERVER_ID
+                    config = await get_sucursales_visibles_config(MPRO_SERVER_ID)
+                    if config:  # Solo filtrar si hay configuración
+                        sucursales_antes = len(sucursales)
+                        sucursales = [s for s in sucursales if config.get(s['Nombre_Sucursal'], True)]
+                        logging.info(f"CxP Sucursales: filtradas {len(sucursales)} de {sucursales_antes} por visibilidad")
+                
                 return {
                     "fuente": "MPRO_REAL",
-                    "sucursales": [
-                        {
-                            "SucursalID": s.get('SucursalID'),
-                            "Nombre_Sucursal": s.get('SucursalNombre') or f"Sucursal {s.get('SucursalID')}",
-                            "CantidadFacturas": int(s.get('CantidadFacturas', 0) or 0),
-                            "SaldoTotal": float(s.get('SaldoTotal', 0) or 0)
-                        }
-                        for s in resumen
-                    ]
+                    "sucursales": sucursales
                 }
         except Exception as e:
             logging.error(f"Error obteniendo sucursales MPRO: {e}")

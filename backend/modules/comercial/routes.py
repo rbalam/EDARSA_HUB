@@ -69,6 +69,7 @@ from modules.comercial.repository import (
     save_server_connection_status,
     is_server_recently_offline,
     filtrar_unidades_por_visibilidad,
+    get_sucursales_visibles_config,
 )
 
 # Router - los endpoints serán migrados incrementalmente
@@ -377,9 +378,10 @@ async def tablero_ejecutivo(
 @router.get("/comercial/sucursales/{server_id}")
 async def obtener_sucursales(
     server_id: str,
+    include_hidden: bool = Query(default=False, description="Incluir sucursales ocultas (para admin)"),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Obtiene las sucursales/empresas de un servidor"""
+    """Obtiene las sucursales/empresas de un servidor, filtradas por configuración de visibilidad"""
     server = await get_server_by_id(server_id)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
@@ -412,6 +414,13 @@ async def obtener_sucursales(
         ) or []
         
         sucursales = [{"id": r['id'], "nombre": r['nombre']} for r in result]
+        
+        # FILTRAR por configuración de visibilidad (si no es include_hidden)
+        if not include_hidden and server['system_type'] == 'MPRO':
+            config = await get_sucursales_visibles_config(server_id)
+            if config:  # Solo filtrar si hay configuración
+                sucursales = [s for s in sucursales if config.get(s['nombre'], True)]
+                logging.info(f"Sucursales filtradas por visibilidad: {len(sucursales)} de {len(result)}")
         
         # Agregar opción "Todas" al inicio
         sucursales.insert(0, {"id": "all", "nombre": "Todas las sucursales"})
