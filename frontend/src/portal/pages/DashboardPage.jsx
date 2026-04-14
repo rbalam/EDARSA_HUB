@@ -193,9 +193,9 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
             <button 
               onClick={loadSaldosReales}
               disabled={loadingSaldos}
-              className="inline-flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700"
+              className="inline-flex items-center gap-2 text-sm font-medium text-gray-800 hover:text-gray-900"
             >
-              <RefreshCw className={`h-3 w-3 ${loadingSaldos ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${loadingSaldos ? 'animate-spin' : ''}`} />
               Actualizar
             </button>
           </div>
