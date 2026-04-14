@@ -413,10 +413,11 @@ async def get_saldos_proveedor(
             if system_type == 'MPRO':
                 # MPRO: Consultar saldos desde tabla Movimiento
                 # Buscar el código de proveedor por RFC
+                # Columnas correctas: Pv_R_F_C y Pv_Razon_Social
                 query_proveedor = f"""
-                SELECT TOP 1 Pv_Cve_Proveedor as codigo, Pv_RazonSocial as nombre
+                SELECT TOP 1 Pv_Cve_Proveedor as codigo, Pv_Razon_Social as nombre
                 FROM Proveedor 
-                WHERE Pv_RFC = '{rfc_proveedor}'
+                WHERE Pv_R_F_C = '{rfc_proveedor}'
                 """
                 
                 prov_result = execute_sql_fn(
@@ -440,23 +441,23 @@ async def get_saldos_proveedor(
                 
                 codigo_proveedor = prov_result[0]['codigo']
                 
-                # Obtener saldos por sucursal de este servidor
-                # Sucursales en MPRO vienen de la tabla Empresa
+                # Obtener saldos por sucursal usando tabla Cuenta_X_Pagar
+                # Sucursales en MPRO vienen de la tabla Sucursal
                 query_sucursales = f"""
                 SELECT 
-                    E.Em_Cve_Empresa as sucursal_id,
-                    E.Em_RazonSocial as sucursal,
-                    COUNT(DISTINCT M.Mv_Documento) as facturas,
-                    ISNULL(SUM(MD.Md_Importe), 0) as importe,
-                    ISNULL(SUM(CASE WHEN M.Es_Cve_Estado = 'PA' THEN MD.Md_Importe ELSE 0 END), 0) as pagado,
-                    ISNULL(SUM(CASE WHEN M.Es_Cve_Estado <> 'PA' THEN MD.Md_Importe ELSE 0 END), 0) as saldo
-                FROM Movimiento M
-                INNER JOIN Movimiento_Detalle MD ON MD.Mv_Folio = M.Mv_Folio
-                INNER JOIN Empresa E ON E.Em_Cve_Empresa = M.Em_Cve_Empresa
-                WHERE M.Pv_Cve_Proveedor = '{codigo_proveedor}'
-                    AND M.Es_Cve_Estado <> 'CA'
-                GROUP BY E.Em_Cve_Empresa, E.Em_RazonSocial
-                ORDER BY saldo DESC
+                    S.Sc_Cve_Sucursal as sucursal_id,
+                    S.Sc_Descripcion as sucursal,
+                    COUNT(DISTINCT C.Cxp_Documento) as facturas,
+                    ISNULL(SUM(C.Cxp_Precio_Neto_Importe), 0) as importe,
+                    ISNULL(SUM(C.Cxp_Precio_Neto_Pago), 0) as pagado,
+                    ISNULL(SUM(C.Cxp_Precio_Neto_Saldo), 0) as saldo
+                FROM Cuenta_X_Pagar C
+                INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = C.Sc_Cve_Sucursal
+                WHERE C.Pv_Cve_Proveedor = '{codigo_proveedor}'
+                    AND C.Es_Cve_Estado <> 'CA'
+                GROUP BY S.Sc_Cve_Sucursal, S.Sc_Descripcion
+                HAVING SUM(C.Cxp_Precio_Neto_Saldo) > 0 OR SUM(C.Cxp_Precio_Neto_Importe) > 0
+                ORDER BY SUM(C.Cxp_Precio_Neto_Saldo) DESC
                 """
                 
                 suc_result = execute_sql_fn(
@@ -492,26 +493,24 @@ async def get_saldos_proveedor(
                     total_pagado += pagado
                     total_saldo += saldo
                 
-                # Obtener facturas pendientes con detalle
+                # Obtener facturas pendientes con detalle desde Cuenta_X_Pagar
                 query_facturas = f"""
                 SELECT TOP 50
-                    E.Em_RazonSocial as sucursal,
-                    M.Mv_Documento as folio,
-                    LEFT(M.Mv_Referencia, 8) as referencia,
-                    M.Mv_Documento as documento,
-                    M.Mv_Fecha as fecha,
-                    DATEADD(DAY, 30, M.Mv_Fecha) as vencimiento,
-                    DATEDIFF(DAY, DATEADD(DAY, 30, M.Mv_Fecha), GETDATE()) as dias_vencido,
-                    ISNULL(SUM(MD.Md_Importe), 0) as importe,
-                    ISNULL(SUM(MD.Md_Importe), 0) as saldo
-                FROM Movimiento M
-                INNER JOIN Movimiento_Detalle MD ON MD.Mv_Folio = M.Mv_Folio
-                INNER JOIN Empresa E ON E.Em_Cve_Empresa = M.Em_Cve_Empresa
-                WHERE M.Pv_Cve_Proveedor = '{codigo_proveedor}'
-                    AND M.Es_Cve_Estado <> 'PA'
-                    AND M.Es_Cve_Estado <> 'CA'
-                GROUP BY E.Em_RazonSocial, M.Mv_Documento, M.Mv_Referencia, M.Mv_Fecha
-                ORDER BY E.Em_RazonSocial, M.Mv_Fecha
+                    S.Sc_Descripcion as sucursal,
+                    C.Cxp_Documento as folio,
+                    LEFT(C.Cxp_Referencia, 8) as referencia,
+                    C.Cxp_Documento as documento,
+                    C.Cxp_Fecha as fecha,
+                    C.Cxp_Fecha_Vencimiento as vencimiento,
+                    DATEDIFF(DAY, C.Cxp_Fecha_Vencimiento, GETDATE()) as dias_vencido,
+                    C.Cxp_Precio_Neto_Importe as importe,
+                    C.Cxp_Precio_Neto_Saldo as saldo
+                FROM Cuenta_X_Pagar C
+                INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = C.Sc_Cve_Sucursal
+                WHERE C.Pv_Cve_Proveedor = '{codigo_proveedor}'
+                    AND C.Es_Cve_Estado <> 'CA'
+                    AND C.Cxp_Precio_Neto_Saldo > 0
+                ORDER BY S.Sc_Descripcion, C.Cxp_Fecha
                 """
                 
                 fact_result = execute_sql_fn(
@@ -547,6 +546,8 @@ async def get_saldos_proveedor(
                 
             elif system_type == 'SoftRestaurant':
                 # SoftRestaurant: Consultar saldos desde tabla compras
+                # Columnas correctas: cancelado (no cancelada), total (no importetotal)
+                # El status de pago se determina con JOIN a pagosproveedores
                 query_proveedor = f"""
                 SELECT TOP 1 idproveedor as codigo, nombre
                 FROM proveedores 
@@ -575,15 +576,26 @@ async def get_saldos_proveedor(
                 
                 # SoftRestaurant no tiene sucursales típicamente (es monobranch)
                 # pero obtenemos los totales
+                # Columnas: cancelado (puede ser NULL), total; pagos en tabla pagosproveedores (JOIN por idcompra)
                 query_totales = f"""
                 SELECT 
                     COUNT(DISTINCT c.idcompra) as facturas,
-                    ISNULL(SUM(c.importetotal), 0) as importe,
-                    ISNULL(SUM(CASE WHEN c.pagada = 1 THEN c.importetotal ELSE 0 END), 0) as pagado,
-                    ISNULL(SUM(CASE WHEN c.pagada = 0 OR c.pagada IS NULL THEN c.importetotal ELSE 0 END), 0) as saldo
+                    ISNULL(SUM(c.total), 0) as importe,
+                    ISNULL((
+                        SELECT SUM(p.abono) 
+                        FROM pagosproveedores p 
+                        INNER JOIN compras c2 ON p.foliocompra = c2.idcompra
+                        WHERE c2.idproveedor = '{id_proveedor}' AND ISNULL(c2.cancelado, 0) = 0
+                    ), 0) as pagado,
+                    ISNULL(SUM(c.total), 0) - ISNULL((
+                        SELECT SUM(p.abono) 
+                        FROM pagosproveedores p 
+                        INNER JOIN compras c2 ON p.foliocompra = c2.idcompra
+                        WHERE c2.idproveedor = '{id_proveedor}' AND ISNULL(c2.cancelado, 0) = 0
+                    ), 0) as saldo
                 FROM compras c
-                WHERE c.idproveedor = {id_proveedor}
-                    AND c.cancelada = 0
+                WHERE c.idproveedor = '{id_proveedor}'
+                    AND ISNULL(c.cancelado, 0) = 0
                 """
                 
                 tot_result = execute_sql_fn(
@@ -621,22 +633,24 @@ async def get_saldos_proveedor(
                         "status": "connected"
                     })
                     
-                    # Facturas pendientes
+                    # Facturas pendientes - SoftRestaurant
+                    # Columnas: foliofactura, total, cancelado, referencia
+                    # Saldo = total - abonos de pagosproveedores (JOIN por idcompra)
                     query_facturas = f"""
                     SELECT TOP 50
                         '{server_name}' as sucursal,
                         c.foliofactura as folio,
-                        LEFT(c.uuid, 8) as referencia,
+                        LEFT(c.referencia, 8) as referencia,
                         c.foliofactura as documento,
                         c.fechaaplicacion as fecha,
-                        DATEADD(DAY, 30, c.fechaaplicacion) as vencimiento,
-                        DATEDIFF(DAY, DATEADD(DAY, 30, c.fechaaplicacion), GETDATE()) as dias_vencido,
-                        c.importetotal as importe,
-                        c.importetotal as saldo
+                        ISNULL(c.fechavencimiento, DATEADD(DAY, 30, c.fechaaplicacion)) as vencimiento,
+                        DATEDIFF(DAY, ISNULL(c.fechavencimiento, DATEADD(DAY, 30, c.fechaaplicacion)), GETDATE()) as dias_vencido,
+                        c.total as importe,
+                        c.total - ISNULL((SELECT SUM(p.abono) FROM pagosproveedores p WHERE p.foliocompra = c.idcompra), 0) as saldo
                     FROM compras c
-                    WHERE c.idproveedor = {id_proveedor}
-                        AND (c.pagada = 0 OR c.pagada IS NULL)
-                        AND c.cancelada = 0
+                    WHERE c.idproveedor = '{id_proveedor}'
+                        AND ISNULL(c.cancelado, 0) = 0
+                        AND c.total - ISNULL((SELECT SUM(p.abono) FROM pagosproveedores p WHERE p.foliocompra = c.idcompra), 0) > 0
                     ORDER BY c.fechaaplicacion
                     """
                     
