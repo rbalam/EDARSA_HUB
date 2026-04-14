@@ -433,6 +433,43 @@ class EmailReportRequest(BaseModel):
     subject: str
     format_type: str  # "excel" o "pdf"
 
+# ============= MODELOS DE CONFIGURACIÓN DE SUCURSALES =============
+
+class SucursalConfig(BaseModel):
+    """Configuración de visibilidad de una sucursal dentro de un servidor."""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    server_id: str  # FK a servers.id
+    sucursal_origen_id: str  # ID original de SQL Server (Sc_Cve_Sucursal)
+    sucursal_nombre: str  # Nombre original de SQL
+    nombre_visible: Optional[str] = None  # Nombre personalizado para mostrar
+    visible_en_operaciones: bool = True  # BANDERA PRINCIPAL
+    orden: int = 0  # Para ordenar en UI
+    activa: bool = True  # Soft delete
+    fecha_alta: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    usuario_alta: Optional[str] = None
+    fecha_modificacion: Optional[datetime] = None
+    usuario_modificacion: Optional[str] = None
+
+class SucursalConfigCreate(BaseModel):
+    """Request para crear/actualizar configuración de sucursal."""
+    sucursal_origen_id: str
+    sucursal_nombre: str
+    nombre_visible: Optional[str] = None
+    visible_en_operaciones: bool = True
+    orden: int = 0
+
+class SucursalConfigUpdate(BaseModel):
+    """Request para actualizar visibilidad de sucursal."""
+    visible_en_operaciones: Optional[bool] = None
+    nombre_visible: Optional[str] = None
+    orden: Optional[int] = None
+    activa: Optional[bool] = None
+
+class SucursalConfigBulkUpdate(BaseModel):
+    """Request para actualizar múltiples sucursales."""
+    sucursales: List[Dict[str, Any]]  # [{sucursal_origen_id, visible_en_operaciones, orden}]
+
 # ============= MODELOS DE INFORMES DE AUDITORÍA =============
 
 class EvidenciaAuditoria(BaseModel):
@@ -1460,14 +1497,72 @@ async def get_departamentos(server_id: str, current_user: Dict = Depends(get_cur
         logging.error(f"Error obteniendo departamentos: {str(e)}")
         return []
 
+async def filter_sucursales_by_config(sucursales: List[Dict], server_id: str) -> List[Dict]:
+    """
+    Filtra sucursales según la configuración de visibilidad.
+    REGLA DE COMPATIBILIDAD:
+    - Si NO hay configuración para este servidor -> devuelve TODAS (comportamiento legacy)
+    - Si SÍ hay configuración -> devuelve solo las marcadas como visible_en_operaciones=True
+    """
+    # Buscar configuración existente
+    configs = await db.server_sucursales_config.find(
+        {"server_id": server_id, "activa": True}
+    ).to_list(500)
+    
+    # Si no hay configuración, devolver todas (backward compatible)
+    if not configs or len(configs) == 0:
+        return sucursales
+    
+    # Crear set de IDs visibles
+    visibles_ids = {
+        str(c.get("sucursal_origen_id")).strip() 
+        for c in configs 
+        if c.get("visible_en_operaciones", True)
+    }
+    
+    # Si todas están ocultas, devolver todas (safety)
+    if not visibles_ids:
+        logging.warning(f"Todas las sucursales de {server_id} están ocultas, mostrando todas por seguridad")
+        return sucursales
+    
+    # Filtrar y ordenar
+    orden_map = {str(c.get("sucursal_origen_id")).strip(): c.get("orden", 999) for c in configs}
+    nombre_map = {str(c.get("sucursal_origen_id")).strip(): c.get("nombre_visible") for c in configs}
+    
+    resultado = []
+    for suc in sucursales:
+        suc_id = str(suc.get("id", "")).strip()
+        if suc_id in visibles_ids:
+            # Aplicar nombre visible si existe
+            if nombre_map.get(suc_id):
+                suc = {**suc, "nombre_visible": nombre_map[suc_id]}
+            suc["_orden"] = orden_map.get(suc_id, 999)
+            resultado.append(suc)
+    
+    # Ordenar por orden configurado
+    resultado.sort(key=lambda x: x.get("_orden", 999))
+    
+    # Limpiar campo temporal
+    for r in resultado:
+        r.pop("_orden", None)
+    
+    return resultado
+
 @api_router.get("/servers/{server_id}/sucursales")
-async def get_sucursales(server_id: str, current_user: Dict = Depends(get_current_user)):
-    """Obtiene la lista de sucursales desde SQL Server, filtradas por permisos"""
+async def get_sucursales(server_id: str, include_hidden: bool = False, current_user: Dict = Depends(get_current_user)):
+    """
+    Obtiene la lista de sucursales desde SQL Server, filtradas por permisos y configuración.
+    
+    Args:
+        include_hidden: Si True, devuelve todas sin filtrar por configuración (para admin UI)
+    """
     server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     try:
+        sucursales_raw = []
+        
         if server['system_type'] == 'MPRO':
             # Intentar obtener sucursales de MPRO
             query = "SELECT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal WHERE Es_Cve_Estado <> 'BA'"
@@ -1483,33 +1578,34 @@ async def get_sucursales(server_id: str, current_user: Dict = Depends(get_curren
                 )
                 logging.info(f"[MPRO Sucursales] Resultado: {len(results) if results else 0} sucursales")
                 if results and len(results) > 0:
-                    return filter_sucursales_by_permissions(results, current_user, server_id)
+                    sucursales_raw = results
             except Exception as e:
                 logging.warning(f"MPRO Sucursales query failed: {e}")
             
             # Si no hay sucursales en la tabla Sucursal, intentar usar Almacenes
-            try:
-                query_almacen = "SELECT DISTINCT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Es_Cve_Estado <> 'BA'"
-                almacenes = execute_sql_query(
-                    server['host'],
-                    server['port'],
-                    server['database'],
-                    server['username'],
-                    server['password'],
-                    query_almacen
-                )
-                if almacenes and len(almacenes) > 0:
-                    return filter_sucursales_by_permissions(almacenes, current_user, server_id)
-            except Exception as e:
-                logging.warning(f"MPRO Almacenes query failed: {e}")
+            if not sucursales_raw:
+                try:
+                    query_almacen = "SELECT DISTINCT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Es_Cve_Estado <> 'BA'"
+                    almacenes = execute_sql_query(
+                        server['host'],
+                        server['port'],
+                        server['database'],
+                        server['username'],
+                        server['password'],
+                        query_almacen
+                    )
+                    if almacenes and len(almacenes) > 0:
+                        sucursales_raw = almacenes
+                except Exception as e:
+                    logging.warning(f"MPRO Almacenes query failed: {e}")
             
             # Si no hay nada, devolver sucursal virtual "Principal"
-            return [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
+            if not sucursales_raw:
+                sucursales_raw = [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
             
         elif server['system_type'] == 'SoftRestaurant':
             # SoftRestaurant NO tiene tabla Sucursal - devolvemos una sucursal virtual con el nombre del servidor
-            # o podemos devolver los almacenes como "sucursales" virtuales
-            return [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
+            sucursales_raw = [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
         else:
             # Query genérica para otros sistemas - también con fallback
             try:
@@ -1523,11 +1619,21 @@ async def get_sucursales(server_id: str, current_user: Dict = Depends(get_curren
                     query
                 )
                 if results and len(results) > 0:
-                    return filter_sucursales_by_permissions(results, current_user, server_id)
+                    sucursales_raw = results
             except:
                 pass
             # Fallback: sucursal virtual
-            return [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
+            if not sucursales_raw:
+                sucursales_raw = [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
+        
+        # Aplicar filtro de permisos de usuario
+        sucursales_filtradas = filter_sucursales_by_permissions(sucursales_raw, current_user, server_id)
+        
+        # Aplicar filtro de configuración de visibilidad (si no se pide include_hidden)
+        if not include_hidden:
+            sucursales_filtradas = await filter_sucursales_by_config(sucursales_filtradas, server_id)
+        
+        return sucursales_filtradas
         
     except Exception as e:
         logging.error(f"Error obteniendo sucursales: {str(e)}")
@@ -1583,6 +1689,201 @@ ORDER BY nombre
     except Exception as e:
         logging.error(f"Error obteniendo almacenes: {str(e)}")
         return []
+
+# ============= ENDPOINTS DE CONFIGURACIÓN DE SUCURSALES =============
+
+@api_router.get("/servers/{server_id}/sucursales-config")
+async def get_sucursales_config(server_id: str, current_user: Dict = Depends(get_current_user)):
+    """
+    Obtiene la configuración de visibilidad de sucursales para un servidor.
+    Retorna lista vacía si no hay configuración (comportamiento legacy).
+    """
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    # Obtener configuración existente
+    configs = await db.server_sucursales_config.find(
+        {"server_id": server_id, "activa": True},
+        {"_id": 0}
+    ).sort("orden", 1).to_list(500)
+    
+    return {
+        "server_id": server_id,
+        "server_name": server.get("name"),
+        "tiene_configuracion": len(configs) > 0,
+        "sucursales": configs
+    }
+
+@api_router.post("/servers/{server_id}/sucursales-config/sync")
+async def sync_sucursales_config(server_id: str, current_user: Dict = Depends(get_current_user)):
+    """
+    Sincroniza las sucursales desde SQL Server con la configuración local.
+    - Detecta nuevas sucursales y las agrega como visibles por defecto
+    - NO elimina configuraciones existentes (soft delete)
+    - Mantiene configuración de sucursales ya existentes
+    """
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden sincronizar")
+    
+    server = await db.servers.find_one({"id": server_id, "active": True})
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    # Obtener sucursales desde SQL Server
+    try:
+        sucursales_sql = []
+        if server['system_type'] == 'MPRO':
+            query = "SELECT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal WHERE Es_Cve_Estado <> 'BA'"
+            sucursales_sql = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query
+            ) or []
+        elif server['system_type'] == 'SoftRestaurant':
+            # SoftRestaurant no tiene tabla Sucursal, crear virtual
+            sucursales_sql = [{"id": "default", "nombre": server.get('name', 'Principal')}]
+        
+        if not sucursales_sql:
+            sucursales_sql = [{"id": "default", "nombre": server.get('name', 'Principal')}]
+    except Exception as e:
+        logging.error(f"Error consultando sucursales SQL: {e}")
+        sucursales_sql = [{"id": "default", "nombre": server.get('name', 'Principal')}]
+    
+    # Obtener configuración existente
+    existing_configs = await db.server_sucursales_config.find(
+        {"server_id": server_id}
+    ).to_list(500)
+    existing_ids = {c.get("sucursal_origen_id") for c in existing_configs}
+    
+    # Agregar nuevas sucursales
+    nuevas = 0
+    actualizadas = 0
+    now = datetime.now(timezone.utc)
+    user_email = current_user.get("email", "sistema")
+    
+    for idx, suc in enumerate(sucursales_sql):
+        suc_id = str(suc.get("id", "")).strip()
+        suc_nombre = str(suc.get("nombre", "")).strip()
+        
+        if suc_id in existing_ids:
+            # Ya existe - actualizar nombre si cambió (reactivar si estaba inactiva)
+            await db.server_sucursales_config.update_one(
+                {"server_id": server_id, "sucursal_origen_id": suc_id},
+                {"$set": {
+                    "sucursal_nombre": suc_nombre,
+                    "activa": True,
+                    "fecha_modificacion": now,
+                    "usuario_modificacion": user_email
+                }}
+            )
+            actualizadas += 1
+        else:
+            # Nueva sucursal - agregar como visible por defecto
+            new_config = {
+                "id": str(uuid.uuid4()),
+                "server_id": server_id,
+                "sucursal_origen_id": suc_id,
+                "sucursal_nombre": suc_nombre,
+                "nombre_visible": None,
+                "visible_en_operaciones": True,  # VISIBLE POR DEFECTO
+                "orden": idx,
+                "activa": True,
+                "fecha_alta": now,
+                "usuario_alta": user_email,
+                "fecha_modificacion": None,
+                "usuario_modificacion": None
+            }
+            await db.server_sucursales_config.insert_one(new_config)
+            nuevas += 1
+    
+    # Obtener configuración actualizada
+    configs = await db.server_sucursales_config.find(
+        {"server_id": server_id, "activa": True},
+        {"_id": 0}
+    ).sort("orden", 1).to_list(500)
+    
+    return {
+        "message": f"Sincronización completada: {nuevas} nuevas, {actualizadas} actualizadas",
+        "nuevas": nuevas,
+        "actualizadas": actualizadas,
+        "total": len(configs),
+        "sucursales": configs
+    }
+
+@api_router.put("/servers/{server_id}/sucursales-config/{sucursal_origen_id}")
+async def update_sucursal_config(
+    server_id: str, 
+    sucursal_origen_id: str, 
+    update_data: SucursalConfigUpdate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza la configuración de una sucursal específica."""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden modificar")
+    
+    # Verificar que existe
+    existing = await db.server_sucursales_config.find_one({
+        "server_id": server_id,
+        "sucursal_origen_id": sucursal_origen_id
+    })
+    if not existing:
+        raise HTTPException(status_code=404, detail="Configuración de sucursal no encontrada")
+    
+    # Preparar actualización
+    update_fields = {"fecha_modificacion": datetime.now(timezone.utc), "usuario_modificacion": current_user.get("email")}
+    if update_data.visible_en_operaciones is not None:
+        update_fields["visible_en_operaciones"] = update_data.visible_en_operaciones
+    if update_data.nombre_visible is not None:
+        update_fields["nombre_visible"] = update_data.nombre_visible
+    if update_data.orden is not None:
+        update_fields["orden"] = update_data.orden
+    if update_data.activa is not None:
+        update_fields["activa"] = update_data.activa
+    
+    await db.server_sucursales_config.update_one(
+        {"server_id": server_id, "sucursal_origen_id": sucursal_origen_id},
+        {"$set": update_fields}
+    )
+    
+    return {"message": "Configuración actualizada", "sucursal_origen_id": sucursal_origen_id}
+
+@api_router.put("/servers/{server_id}/sucursales-config/bulk")
+async def update_sucursales_config_bulk(
+    server_id: str, 
+    bulk_data: SucursalConfigBulkUpdate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza múltiples sucursales en una sola operación."""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden modificar")
+    
+    now = datetime.now(timezone.utc)
+    user_email = current_user.get("email")
+    updated = 0
+    
+    for suc in bulk_data.sucursales:
+        suc_id = suc.get("sucursal_origen_id")
+        if not suc_id:
+            continue
+        
+        update_fields = {"fecha_modificacion": now, "usuario_modificacion": user_email}
+        if "visible_en_operaciones" in suc:
+            update_fields["visible_en_operaciones"] = suc["visible_en_operaciones"]
+        if "orden" in suc:
+            update_fields["orden"] = suc["orden"]
+        if "nombre_visible" in suc:
+            update_fields["nombre_visible"] = suc["nombre_visible"]
+        
+        result = await db.server_sucursales_config.update_one(
+            {"server_id": server_id, "sucursal_origen_id": suc_id},
+            {"$set": update_fields}
+        )
+        if result.modified_count > 0:
+            updated += 1
+    
+    return {"message": f"{updated} sucursales actualizadas", "updated": updated}
+
+# ============= FIN ENDPOINTS DE CONFIGURACIÓN DE SUCURSALES =============
 
 @api_router.get("/servers/{server_id}/almacenes-softrestaurant")
 async def get_almacenes_softrestaurant(

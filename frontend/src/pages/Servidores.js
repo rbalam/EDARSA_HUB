@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap, Building2, Eye, EyeOff, RefreshCw, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import QueryConfigWizard from '@/components/QueryConfigWizard';
 import { formatNombreSucursal } from '@/lib/formatSucursal';
@@ -23,6 +24,13 @@ const Servidores = () => {
   const [selectedServer, setSelectedServer] = useState(null);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionValid, setConnectionValid] = useState(false);
+  
+  // Estado para configuración de sucursales
+  const [sucursalesConfigOpen, setSucursalesConfigOpen] = useState(false);
+  const [sucursalesConfig, setSucursalesConfig] = useState([]);
+  const [loadingSucursalesConfig, setLoadingSucursalesConfig] = useState(false);
+  const [syncingSucursales, setSyncingSucursales] = useState(false);
+  const [serverForSucursales, setServerForSucursales] = useState(null);
   
   // Estado para el tab activo (SQL Servers o Conexiones API)
   const [activeMainTab, setActiveMainTab] = useState('sql');
@@ -410,6 +418,88 @@ const Servidores = () => {
     }
   };
 
+  // ============ FUNCIONES PARA CONFIGURACIÓN DE SUCURSALES ============
+  
+  const openSucursalesConfig = async (server) => {
+    setServerForSucursales(server);
+    setSucursalesConfigOpen(true);
+    await loadSucursalesConfig(server.id);
+  };
+
+  const loadSucursalesConfig = async (serverId) => {
+    setLoadingSucursalesConfig(true);
+    try {
+      const response = await api.get(`/servers/${serverId}/sucursales-config`);
+      setSucursalesConfig(response.data.sucursales || []);
+    } catch (error) {
+      console.error('Error cargando config de sucursales:', error);
+      toast.error('Error al cargar configuración de sucursales');
+      setSucursalesConfig([]);
+    } finally {
+      setLoadingSucursalesConfig(false);
+    }
+  };
+
+  const syncSucursalesFromSQL = async () => {
+    if (!serverForSucursales) return;
+    
+    setSyncingSucursales(true);
+    try {
+      const response = await api.post(`/servers/${serverForSucursales.id}/sucursales-config/sync`);
+      toast.success(response.data.message || 'Sucursales sincronizadas');
+      setSucursalesConfig(response.data.sucursales || []);
+    } catch (error) {
+      console.error('Error sincronizando sucursales:', error);
+      toast.error('Error al sincronizar sucursales desde SQL Server');
+    } finally {
+      setSyncingSucursales(false);
+    }
+  };
+
+  const toggleSucursalVisibility = async (sucursalOrigenId, currentVisible) => {
+    if (!serverForSucursales) return;
+    
+    try {
+      await api.put(`/servers/${serverForSucursales.id}/sucursales-config/${sucursalOrigenId}`, {
+        visible_en_operaciones: !currentVisible
+      });
+      
+      // Actualizar estado local
+      setSucursalesConfig(prev => prev.map(s => 
+        s.sucursal_origen_id === sucursalOrigenId 
+          ? {...s, visible_en_operaciones: !currentVisible}
+          : s
+      ));
+      
+      toast.success(!currentVisible ? 'Sucursal visible en operaciones' : 'Sucursal oculta en operaciones');
+    } catch (error) {
+      console.error('Error cambiando visibilidad:', error);
+      toast.error('Error al cambiar visibilidad');
+    }
+  };
+
+  const saveSucursalesOrder = async () => {
+    if (!serverForSucursales) return;
+    
+    try {
+      const updates = sucursalesConfig.map((s, idx) => ({
+        sucursal_origen_id: s.sucursal_origen_id,
+        orden: idx
+      }));
+      
+      await api.put(`/servers/${serverForSucursales.id}/sucursales-config/bulk`, {
+        sucursales: updates
+      });
+      
+      toast.success('Orden guardado');
+    } catch (error) {
+      console.error('Error guardando orden:', error);
+      toast.error('Error al guardar orden');
+    }
+  };
+
+  // ============ FIN FUNCIONES PARA CONFIGURACIÓN DE SUCURSALES ============
+
   const openConfigDialog = async (server) => {
     setSelectedServer(server);
     setSelectedFilters({
@@ -781,6 +871,20 @@ const Servidores = () => {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
+                  
+                  {/* Botón para configurar sucursales visibles (solo MPRO) */}
+                  {server.system_type === 'MPRO' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="w-full border-blue-200 text-blue-700 hover:bg-blue-50"
+                      onClick={() => openSucursalesConfig(server)}
+                      data-testid="config-sucursales-button"
+                    >
+                      <Building2 className="h-4 w-4 mr-1" />
+                      Sucursales Visibles
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1532,6 +1636,134 @@ const Servidores = () => {
                   Guardar Configuración
                 </Button>
               </div>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Configuración de Sucursales Visibles */}
+      <Dialog open={sucursalesConfigOpen} onOpenChange={setSucursalesConfigOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Sucursales Visibles - {serverForSucursales?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Configura qué sucursales aparecerán en tableros, filtros y reportes operativos.
+              Las sucursales no marcadas seguirán existiendo pero no aparecerán en operaciones.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-auto">
+            {/* Botón de sincronizar */}
+            <div className="flex items-center justify-between mb-4 pb-4 border-b">
+              <div className="text-sm text-zinc-500">
+                {sucursalesConfig.length > 0 
+                  ? `${sucursalesConfig.filter(s => s.visible_en_operaciones).length} de ${sucursalesConfig.length} sucursales visibles`
+                  : 'Sin configuración - Todas las sucursales están visibles'
+                }
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={syncSucursalesFromSQL}
+                disabled={syncingSucursales}
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+              >
+                {syncingSucursales ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Sincronizar desde SQL
+              </Button>
+            </div>
+            
+            {/* Loading */}
+            {loadingSucursalesConfig && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+              </div>
+            )}
+            
+            {/* Sin configuración */}
+            {!loadingSucursalesConfig && sucursalesConfig.length === 0 && (
+              <div className="text-center py-12">
+                <Building2 className="h-12 w-12 mx-auto text-zinc-300 mb-4" />
+                <h3 className="font-medium text-zinc-900 mb-2">Sin configuración de sucursales</h3>
+                <p className="text-sm text-zinc-500 mb-4">
+                  Actualmente todas las sucursales de este servidor son visibles en operaciones.
+                  <br />
+                  Haz clic en "Sincronizar desde SQL" para cargar las sucursales y configurar su visibilidad.
+                </p>
+              </div>
+            )}
+            
+            {/* Lista de sucursales */}
+            {!loadingSucursalesConfig && sucursalesConfig.length > 0 && (
+              <div className="space-y-2">
+                {sucursalesConfig.map((sucursal, index) => (
+                  <div 
+                    key={sucursal.sucursal_origen_id}
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                      sucursal.visible_en_operaciones 
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-zinc-50 border-zinc-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="text-zinc-400 cursor-move">
+                        <GripVertical className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">
+                          {sucursal.nombre_visible || sucursal.sucursal_nombre}
+                        </div>
+                        <div className="text-xs text-zinc-500">
+                          ID: {sucursal.sucursal_origen_id}
+                          {sucursal.nombre_visible && (
+                            <span className="ml-2 text-zinc-400">
+                              (Original: {sucursal.sucursal_nombre})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs font-medium ${
+                        sucursal.visible_en_operaciones ? 'text-green-700' : 'text-zinc-500'
+                      }`}>
+                        {sucursal.visible_en_operaciones ? 'Visible' : 'Oculta'}
+                      </span>
+                      <button
+                        onClick={() => toggleSucursalVisibility(sucursal.sucursal_origen_id, sucursal.visible_en_operaciones)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          sucursal.visible_en_operaciones ? 'bg-green-500' : 'bg-zinc-300'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                            sucursal.visible_en_operaciones ? 'translate-x-5' : 'translate-x-0.5'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="border-t pt-4">
+            <div className="flex items-center justify-between w-full">
+              <div className="text-xs text-zinc-500">
+                Los cambios se aplican inmediatamente
+              </div>
+              <Button variant="outline" onClick={() => setSucursalesConfigOpen(false)}>
+                Cerrar
+              </Button>
             </div>
           </DialogFooter>
         </DialogContent>

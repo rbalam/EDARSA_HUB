@@ -7,7 +7,7 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 - **Frontend**: React + Tailwind CSS + Shadcn/UI
 - **Backend**: FastAPI + Python
 - **Bases de Datos**: 
-  - MongoDB (datos de aplicación)
+  - MongoDB (datos de aplicación, configuraciones)
   - SQL Server (múltiples instancias: MPRO y SoftRestaurant on-premise)
 
 ## Módulos Implementados
@@ -15,37 +15,72 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 ### 1. Portal de Proveedores ✅
 - **Login**: Maquetado pixel-perfect según mockup
 - **Dashboard**: UI completada con filtros por Sistema/Unidad
-- **Backend**: Consultas SQL adaptativas para MPRO (`Cuenta_X_Pagar`) y SoftRestaurant (`compras` + `pagosproveedores` via `idcompra`)
+- **Backend**: Consultas SQL adaptativas para MPRO y SoftRestaurant
 - **Filtros**: Servidores con `visible_en_operaciones=True` únicamente
 
-### 2. Cuentas por Pagar (CxP)
+### 2. Cuentas por Pagar (CxP) ✅
 - Visualización de facturas pendientes desde múltiples BD
 - Integración con MPRO y SoftRestaurant
 
-### 3. Tesorería
+### 3. Tesorería ✅
 - Gestión de fichas de depósito
 - Carga de archivos
+
+### 4. Configuración de Visibilidad de Sucursales ✅ (NUEVO)
+- **Colección MongoDB**: `server_sucursales_config`
+- **Funcionalidad**: Parametrizar qué sucursales de un servidor aparecen en operaciones
+- **UI**: Dialog en Servidores para administrar visibilidad
+- **Backward Compatible**: Sin configuración = todas visibles (comportamiento legacy)
 
 ---
 
 ## Changelog
 
-### 2025-12-XX
-- Reducción de tamaño de botones de filtro en Dashboard Portal Proveedores
-- CSS: `text-xs`, `px-3 py-1.5`, `rounded-md`, `gap-1.5`
+### 2026-04-14 - Configuración de Sucursales Visibles
+**Nueva funcionalidad de parametrización de visibilidad por sucursal**
+
+**Archivos modificados:**
+- `/app/backend/server.py` - Nuevos modelos y endpoints
+- `/app/frontend/src/pages/Servidores.js` - UI para administrar sucursales
+
+**Nuevos endpoints:**
+- `GET /api/servers/{id}/sucursales-config` - Lista configuración
+- `POST /api/servers/{id}/sucursales-config/sync` - Sincroniza desde SQL
+- `PUT /api/servers/{id}/sucursales-config/{sucursal_id}` - Actualiza visibilidad
+- `PUT /api/servers/{id}/sucursales-config/bulk` - Actualiza múltiples
+
+**Modelo de datos:**
+```json
+{
+  "server_id": "uuid",
+  "sucursal_origen_id": "0021",
+  "sucursal_nombre": "ORIGEN",
+  "nombre_visible": "Origen Querétaro",
+  "visible_en_operaciones": true,
+  "orden": 0,
+  "activa": true,
+  "fecha_alta": "datetime",
+  "usuario_alta": "email"
+}
+```
+
+**Reglas de compatibilidad:**
+1. Sin configuración → todas las sucursales visibles (legacy)
+2. Con configuración → solo visibles las marcadas
+3. `include_hidden=true` → devuelve todas (para UI admin)
 
 ### Sesiones Anteriores
 - Maquetación pixel-perfect de LoginPage.jsx para Portal de Proveedores
 - Corrección de consultas SQL en portal_proveedores.py
 - Filtrado de servidores SQL por `visible_en_operaciones`
-- Colores dinámicos: Azul (#F5F9FF) para MPRO, Violeta (#FAF8FF) para SoftRestaurant
+- Compactación de fuentes en Dashboard del Portal
 
 ---
 
 ## Backlog Priorizado
 
 ### P0 (Urgente)
-- ~~Ajuste de tamaño de fuentes en Dashboard Portal~~ ✅
+- ~~Configuración de visibilidad de sucursales por servidor~~ ✅
 
 ### P1 (Alta Prioridad)
 - Integración de OCR para fichas de depósito en Tesorería
@@ -67,9 +102,11 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 ---
 
 ## Credenciales de Prueba
-- **Portal Proveedores**: RFC `EAR201118NG2` / Contraseña `Proveedor123!`
+- **Sistema Principal**: `admin@inventario.com` / `admin123`
+- **Portal Proveedores**: RFC `EAR201118NG2` / `Proveedor123!`
 
-## Notas Críticas
+## Notas Técnicas Importantes
 - El cliente evalúa basándose estrictamente en capturas de pantalla (pixel-perfect)
 - Timeouts de SQL Server esperados en ambiente Preview
 - No modificar lógica de otras páginas sin solicitud explícita
+- Nueva colección `server_sucursales_config` para configuración de sucursales
