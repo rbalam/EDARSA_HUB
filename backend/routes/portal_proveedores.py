@@ -390,8 +390,19 @@ async def get_saldos_proveedor(
     
     rfc_proveedor = current_supplier["rfc"]
     
-    # Obtener todos los servidores activos
-    servers = await db.servers.find({"active": True}, {"_id": 0}).to_list(50)
+    # Obtener solo servidores activos Y visibles en operaciones
+    # Si visible_en_operaciones no está definido, asumimos True (visible por defecto)
+    # Si está definido como False, no se muestra
+    servers = await db.servers.find({
+        "active": True,
+        "$or": [
+            {"visible_en_operaciones": True},
+            {"visible_en_operaciones": {"$exists": False}}
+        ]
+    }, {"_id": 0}).to_list(50)
+    
+    # Filtrar también por system_type válidos (MPRO o SoftRestaurant)
+    servers = [s for s in servers if s.get("system_type") in ["MPRO", "SoftRestaurant"]]
     
     if not servers:
         return {
