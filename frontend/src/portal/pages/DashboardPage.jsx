@@ -202,11 +202,11 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
 
           {/* Por Sistema */}
           <div className="mb-4">
-            <p className="text-sm text-gray-500 mb-3">Por Sistema</p>
-            <div className="flex gap-2 flex-wrap">
+            <p className="text-xs text-gray-400 mb-2">Por Sistema</p>
+            <div className="flex gap-1.5 flex-wrap">
               <button 
                 onClick={() => { setSelectedSystem('all'); setSelectedUnit('all'); }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                   selectedSystem === 'all' 
                     ? 'bg-gray-900 text-white' 
                     : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
@@ -218,7 +218,7 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                 <button 
                   key={s.id}
                   onClick={() => { setSelectedSystem(s.id); setSelectedUnit('all'); }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                     selectedSystem === s.id 
                       ? 'bg-gray-900 text-white' 
                       : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
@@ -232,12 +232,12 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
 
           {/* Por Unidad */}
           {sucursalesFiltradas.length > 0 && (
-            <div className="mb-5">
-              <p className="text-sm text-gray-500 mb-3">Por Unidad / Empresa</p>
-              <div className="flex gap-2 flex-wrap">
+            <div className="mb-4">
+              <p className="text-xs text-gray-400 mb-2">Por Unidad / Empresa</p>
+              <div className="flex gap-1.5 flex-wrap">
                 <button 
                   onClick={() => setSelectedUnit('all')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                     selectedUnit === 'all' 
                       ? 'bg-gray-900 text-white' 
                       : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
@@ -249,7 +249,7 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                   <button 
                     key={s.id}
                     onClick={() => setSelectedUnit(s.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                       selectedUnit === s.id 
                         ? 'bg-gray-900 text-white' 
                         : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
