@@ -124,12 +124,6 @@ const Layout = () => {
       icon: BookOpen, 
       roles: ['Supervisor', 'Administrador'],
     },
-    { 
-      name: 'Portal Proveedores', 
-      href: '/proveedores', 
-      icon: Building2, 
-      roles: ['Supervisor', 'Administrador'],
-    },
   ];
 
   // ============================================

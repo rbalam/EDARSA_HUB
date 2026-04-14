@@ -14,8 +14,9 @@ import {
   Loader2, ShoppingCart, Package, TrendingUp, AlertTriangle, Download, 
   AlertCircle, Calendar, Edit3, RefreshCw, Search, BarChart3, FileText,
   ChevronRight, ChevronDown, ExternalLink, FileWarning, CheckCircle2, XCircle, X,
-  Calculator, Check, Plus, Trash2, Maximize2, Minimize2
+  Calculator, Check, Plus, Trash2, Maximize2, Minimize2, Building2
 } from 'lucide-react';
+import PortalProveedoresTab from '../components/PortalProveedoresTab';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 const STORAGE_KEY = 'compras_params';
@@ -3259,7 +3260,7 @@ export default function Compras() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-4">
+        <TabsList className="grid w-full grid-cols-5 mb-4">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Dashboard
@@ -3275,6 +3276,10 @@ export default function Compras() {
           <TabsTrigger value="auditoria" className="flex items-center gap-2">
             <FileWarning className="h-4 w-4" />
             Auditoría
+          </TabsTrigger>
+          <TabsTrigger value="proveedores" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Portal Proveedores
           </TabsTrigger>
         </TabsList>
 
@@ -3320,6 +3325,10 @@ export default function Compras() {
             setSelectedSucursal={setSelectedSucursal}
             sucursales={sucursales}
           />
+        </TabsContent>
+
+        <TabsContent value="proveedores">
+          <PortalProveedoresTab />
         </TabsContent>
       </Tabs>
     </div>
