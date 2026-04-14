@@ -271,15 +271,17 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {sistemasFiltrados.map((s) => {
-                // AZUL para MPRO, VIOLETA para SoftRestaurant
+                // AZUL sutil para MPRO, VIOLETA sutil para SoftRestaurant
                 const isMPRO = s.system_type === 'MPRO';
                 return (
                   <div 
                     key={s.id} 
                     className="rounded-xl p-5"
                     style={{ 
-                      backgroundColor: isMPRO ? '#E8F4FD' : '#F3E8FF',
-                      borderLeft: `4px solid ${isMPRO ? '#93C5FD' : '#D8B4FE'}`
+                      backgroundColor: isMPRO ? '#F5F9FF' : '#FAF8FF',
+                      border: isMPRO ? '1px solid #D4E4F7' : '1px solid #E9E5F5',
+                      borderLeftWidth: '4px',
+                      borderLeftColor: isMPRO ? '#93C5FD' : '#A78BFA'
                     }}
                   >
                     <h4 className="font-semibold text-gray-900 text-base mb-4">{s.name}</h4>
@@ -330,10 +332,10 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
             {sucursalesFiltradas.map(s => (
               <div 
                 key={s.id} 
-                className="rounded-xl p-5 border"
+                className="rounded-xl p-5"
                 style={s.system_type === 'MPRO' 
-                  ? {backgroundColor: '#EFF6FF', borderColor: '#BFDBFE', borderLeftWidth: '4px', borderLeftColor: '#3B82F6'} 
-                  : {backgroundColor: '#F5F3FF', borderColor: '#DDD6FE', borderLeftWidth: '4px', borderLeftColor: '#8B5CF6'}
+                  ? {backgroundColor: '#F5F9FF', border: '1px solid #D4E4F7', borderLeftWidth: '4px', borderLeftColor: '#93C5FD'} 
+                  : {backgroundColor: '#FAF8FF', border: '1px solid #E9E5F5', borderLeftWidth: '4px', borderLeftColor: '#A78BFA'}
                 }
               >
                 <h3 className="font-bold text-lg text-gray-900 mb-2">{s.name}</h3>
@@ -359,7 +361,7 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                     <span className="text-gray-500">Pagado:</span>
                     <span className="font-semibold text-green-600">{formatCurrency(s.pagado)}</span>
                   </div>
-                  <div className="flex justify-between pt-2 border-t border-gray-200">
+                  <div className="flex justify-between pt-2">
                     <span className="text-gray-500">Saldo:</span>
                     <span className="font-bold text-orange-500">{formatCurrency(s.saldo)}</span>
                   </div>
