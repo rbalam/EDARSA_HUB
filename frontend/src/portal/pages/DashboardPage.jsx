@@ -420,10 +420,10 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                       {suc.system_type === 'MPRO' ? 'MPro' : 'SR'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-6 text-xs">
-                    <span className="text-gray-500">Facturas: <strong className="text-gray-900">{suc.facturas}</strong></span>
-                    <span className="text-gray-500">Importe: <strong className="text-gray-900">{formatCurrency(suc.importe)}</strong></span>
-                    <span className="text-gray-500">Saldo: <strong className="text-orange-500">{formatCurrency(suc.saldo)}</strong></span>
+                  <div className="flex items-center text-xs">
+                    <span className="text-gray-500 w-24 text-right">Facturas: <strong className="text-gray-900 inline-block w-8 text-right">{suc.facturas}</strong></span>
+                    <span className="text-gray-500 w-40 text-right">Importe: <strong className="text-gray-900">{formatCurrency(suc.importe)}</strong></span>
+                    <span className="text-gray-500 w-36 text-right">Saldo: <strong className="text-orange-500">{formatCurrency(suc.saldo)}</strong></span>
                   </div>
                 </button>
                 
