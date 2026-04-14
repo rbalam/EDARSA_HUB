@@ -878,3 +878,32 @@ async def get_available_servers():
     ).to_list(50)
     
     return servers
+
+
+@portal_router.delete("/admin/supplier/{supplier_id}")
+async def delete_supplier(supplier_id: str):
+    """
+    Elimina un proveedor del portal.
+    Solo para administradores de EDARSA HUB.
+    """
+    # Buscar proveedor
+    supplier = await db.portal_suppliers.find_one({"id": supplier_id})
+    
+    if not supplier:
+        # Intentar buscar por RFC
+        supplier = await db.portal_suppliers.find_one({"rfc": supplier_id.upper()})
+    
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+    
+    # Eliminar el proveedor
+    result = await db.portal_suppliers.delete_one({"id": supplier["id"]})
+    
+    if result.deleted_count > 0:
+        return {
+            "message": "Proveedor eliminado exitosamente",
+            "rfc": supplier.get("rfc"),
+            "razon_social": supplier.get("razon_social")
+        }
+    else:
+        raise HTTPException(status_code=500, detail="Error al eliminar proveedor")
