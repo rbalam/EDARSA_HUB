@@ -321,9 +321,9 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                 <h3 className="font-bold text-lg text-gray-900 mb-2">{s.name}</h3>
                 <span className={`inline-block px-2.5 py-1 rounded text-xs font-medium mb-4 ${
                   s.system_type === 'MPRO' 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : 'bg-orange-100 text-orange-600'
-                }`}>
+                    ? 'bg-blue-200 text-white' 
+                    : 'bg-purple-200 text-white'
+                }`} style={s.system_type === 'MPRO' ? {backgroundColor: '#B8D4FE'} : {backgroundColor: '#E2CEFF'}}>
                   {s.system_type === 'MPRO' ? 'Management Pro' : 'Soft Restaurant'}
                 </span>
                 <div className="space-y-2.5 text-sm">
@@ -394,9 +394,9 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                     <span className="font-semibold text-gray-900">{suc.name}</span>
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                       suc.system_type === 'MPRO' 
-                        ? 'bg-purple-100 text-purple-700' 
-                        : 'bg-orange-100 text-orange-600'
-                    }`}>
+                        ? 'text-white' 
+                        : 'text-white'
+                    }`} style={suc.system_type === 'MPRO' ? {backgroundColor: '#B8D4FE'} : {backgroundColor: '#E2CEFF'}}>
                       {suc.system_type === 'MPRO' ? 'MPro' : 'SR'}
                     </span>
                   </div>
