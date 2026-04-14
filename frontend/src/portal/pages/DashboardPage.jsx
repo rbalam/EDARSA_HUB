@@ -279,9 +279,7 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                     className="rounded-xl p-5"
                     style={{ 
                       backgroundColor: isMPRO ? '#F5F9FF' : '#FAF8FF',
-                      border: isMPRO ? '1px solid #D4E4F7' : '1px solid #E9E5F5',
-                      borderLeftWidth: '4px',
-                      borderLeftColor: isMPRO ? '#93C5FD' : '#A78BFA'
+                      border: isMPRO ? '1px solid #E1EDFB' : '1px solid #EDE9F5'
                     }}
                   >
                     <h4 className="font-semibold text-gray-900 text-base mb-4">{s.name}</h4>
@@ -334,8 +332,8 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                 key={s.id} 
                 className="rounded-xl p-5"
                 style={s.system_type === 'MPRO' 
-                  ? {backgroundColor: '#F5F9FF', border: '1px solid #D4E4F7', borderLeftWidth: '4px', borderLeftColor: '#93C5FD'} 
-                  : {backgroundColor: '#FAF8FF', border: '1px solid #E9E5F5', borderLeftWidth: '4px', borderLeftColor: '#A78BFA'}
+                  ? {backgroundColor: '#F5F9FF', border: '1px solid #E1EDFB'} 
+                  : {backgroundColor: '#FAF8FF', border: '1px solid #EDE9F5'}
                 }
               >
                 <h3 className="font-bold text-lg text-gray-900 mb-2">{s.name}</h3>
