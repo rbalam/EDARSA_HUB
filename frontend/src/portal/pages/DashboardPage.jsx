@@ -328,7 +328,14 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
           </div>
           <div className="grid grid-cols-3 gap-4">
             {sucursalesFiltradas.map(s => (
-              <div key={s.id} className="bg-white rounded-xl p-5 border border-gray-200">
+              <div 
+                key={s.id} 
+                className="rounded-xl p-5 border"
+                style={s.system_type === 'MPRO' 
+                  ? {backgroundColor: '#EFF6FF', borderColor: '#BFDBFE', borderLeftWidth: '4px', borderLeftColor: '#3B82F6'} 
+                  : {backgroundColor: '#F5F3FF', borderColor: '#DDD6FE', borderLeftWidth: '4px', borderLeftColor: '#8B5CF6'}
+                }
+              >
                 <h3 className="font-bold text-lg text-gray-900 mb-2">{s.name}</h3>
                 <span 
                   className="inline-block px-2.5 py-1 rounded text-xs font-medium mb-4"
@@ -352,7 +359,7 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                     <span className="text-gray-500">Pagado:</span>
                     <span className="font-semibold text-green-600">{formatCurrency(s.pagado)}</span>
                   </div>
-                  <div className="flex justify-between pt-2 border-t border-gray-100">
+                  <div className="flex justify-between pt-2 border-t border-gray-200">
                     <span className="text-gray-500">Saldo:</span>
                     <span className="font-bold text-orange-500">{formatCurrency(s.saldo)}</span>
                   </div>
@@ -460,12 +467,12 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
             ))}
           </div>
 
-          {/* Total General */}
-          <div className="mt-4 p-4 bg-gray-900 text-white rounded-lg flex items-center justify-between">
-            <span className="font-semibold">TOTAL GENERAL ({totalFacturas} facturas)</span>
-            <div className="flex gap-8 text-sm">
-              <span>Importe: <strong>{formatCurrency(totalFacturado)}</strong></span>
-              <span>Saldo: <strong className="text-orange-400">{formatCurrency(totalSaldo)}</strong></span>
+          {/* Total General - Fondo gris claro con borde */}
+          <div className="mt-4 p-4 rounded-lg flex items-center justify-between border border-gray-200" style={{backgroundColor: '#F1F5F9'}}>
+            <span className="font-semibold text-gray-700">TOTAL GENERAL ({totalFacturas} facturas)</span>
+            <div className="flex gap-8 text-sm text-gray-600">
+              <span>Importe: <strong className="text-gray-900">{formatCurrency(totalFacturado)}</strong></span>
+              <span>Saldo: <strong className="text-orange-500">{formatCurrency(totalSaldo)}</strong></span>
             </div>
           </div>
         </div>
