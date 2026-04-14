@@ -263,40 +263,40 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
           )}
 
           {/* Resumen por Sistema */}
-          <div className="border-t border-gray-100 pt-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-900">Resumen por Sistema</h3>
-              <ChevronDown className="h-4 w-4 text-gray-400" />
+          <div className="border-t border-gray-100 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-semibold text-gray-900">Resumen por Sistema</h3>
+              <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               {sistemasFiltrados.map((s) => {
                 // AZUL sutil para MPRO, VIOLETA sutil para SoftRestaurant
                 const isMPRO = s.system_type === 'MPRO';
                 return (
                   <div 
                     key={s.id} 
-                    className="rounded-xl p-4"
+                    className="rounded-lg p-3"
                     style={{ 
                       backgroundColor: isMPRO ? '#F5F9FF' : '#FAF8FF',
                       border: isMPRO ? '1px solid #E1EDFB' : '1px solid #EDE9F5'
                     }}
                   >
-                    <h4 className="font-semibold text-gray-900 text-base mb-4">{s.name}</h4>
+                    <h4 className="font-semibold text-gray-900 text-sm mb-2">{s.name}</h4>
                     {s.status === 'not_found' || s.facturas === 0 ? (
-                      <p className="text-sm text-gray-400">RFC no encontrado en este sistema</p>
+                      <p className="text-xs text-gray-400">RFC no encontrado en este sistema</p>
                     ) : (
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-3 gap-3">
                         <div>
-                          <p className="text-sm text-gray-500 mb-1">Facturas</p>
-                          <p className="text-xl font-bold text-gray-900">{s.facturas}</p>
+                          <p className="text-xs text-gray-500 mb-0.5">Facturas</p>
+                          <p className="text-base font-bold text-gray-900">{s.facturas}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500 mb-1">Importe</p>
-                          <p className="text-lg font-semibold text-gray-900">{formatCurrency(s.importe)}</p>
+                          <p className="text-xs text-gray-500 mb-0.5">Importe</p>
+                          <p className="text-sm font-semibold text-gray-900">{formatCurrency(s.importe)}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500 mb-1">Saldo</p>
-                          <p className="text-lg font-semibold text-orange-500">{formatCurrency(s.saldo)}</p>
+                          <p className="text-xs text-gray-500 mb-0.5">Saldo</p>
+                          <p className="text-sm font-semibold text-orange-500">{formatCurrency(s.saldo)}</p>
                         </div>
                       </div>
                     )}
