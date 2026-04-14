@@ -185,10 +185,10 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
       {/* Fuente de Datos */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <Building2 className="h-5 w-5 text-gray-700" />
-              <h2 className="text-lg font-semibold text-gray-900">Fuente de Datos</h2>
+              <Building2 className="h-6 w-6 text-gray-700" />
+              <h2 className="text-xl font-bold text-gray-900">Fuente de Datos</h2>
             </div>
             <button 
               onClick={loadSaldosReales}
@@ -201,15 +201,15 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
           </div>
 
           {/* Por Sistema */}
-          <div className="mb-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">Por Sistema</p>
-            <div className="flex gap-2 flex-wrap">
+          <div className="mb-6">
+            <p className="text-base text-gray-500 mb-4">Por Sistema</p>
+            <div className="flex gap-3 flex-wrap">
               <button 
                 onClick={() => { setSelectedSystem('all'); setSelectedUnit('all'); }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-5 py-2.5 rounded-xl text-base font-medium transition-all ${
                   selectedSystem === 'all' 
                     ? 'bg-gray-900 text-white' 
-                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 shadow-sm'
                 }`}
               >
                 Todos los Sistemas
@@ -218,13 +218,12 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                 <button 
                   key={s.id}
                   onClick={() => { setSelectedSystem(s.id); setSelectedUnit('all'); }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-5 py-2.5 rounded-xl text-base font-medium transition-all ${
                     selectedSystem === s.id 
                       ? 'bg-gray-900 text-white' 
-                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 shadow-sm'
                   }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${s.status === 'connected' ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
                   {s.name}
                 </button>
               ))}
@@ -233,15 +232,15 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
 
           {/* Por Unidad */}
           {sucursalesFiltradas.length > 0 && (
-            <div className="mb-6">
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">Por Unidad / Empresa</p>
-              <div className="flex gap-2 flex-wrap">
+            <div className="mb-8">
+              <p className="text-base text-gray-500 mb-4">Por Unidad / Empresa</p>
+              <div className="flex gap-3 flex-wrap">
                 <button 
                   onClick={() => setSelectedUnit('all')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-5 py-2.5 rounded-xl text-base font-medium transition-all ${
                     selectedUnit === 'all' 
                       ? 'bg-gray-900 text-white' 
-                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 shadow-sm'
                   }`}
                 >
                   Todas las Unidades
@@ -250,10 +249,10 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                   <button 
                     key={s.id}
                     onClick={() => setSelectedUnit(s.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-5 py-2.5 rounded-xl text-base font-medium transition-all ${
                       selectedUnit === s.id 
                         ? 'bg-gray-900 text-white' 
-                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 shadow-sm'
                     }`}
                   >
                     {s.name}
@@ -266,7 +265,7 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
           {/* Resumen por Sistema */}
           <div className="border-t border-gray-100 pt-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-gray-900">Resumen por Sistema</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Resumen por Sistema</h3>
               <ChevronDown className="h-4 w-4 text-gray-400" />
             </div>
             <div className="grid grid-cols-2 gap-4">
