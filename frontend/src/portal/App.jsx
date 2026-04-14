@@ -123,7 +123,7 @@ export default function PortalProveedoresApp() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex">
+    <div className="min-h-screen flex" style={{backgroundColor: '#EFF6FF'}}>
       <Toaster position="top-right" richColors />
       
       {/* Sidebar - BLANCO con texto oscuro */}
