@@ -330,11 +330,13 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
             {sucursalesFiltradas.map(s => (
               <div key={s.id} className="bg-white rounded-xl p-5 border border-gray-200">
                 <h3 className="font-bold text-lg text-gray-900 mb-2">{s.name}</h3>
-                <span className={`inline-block px-2.5 py-1 rounded text-xs font-medium mb-4 ${
-                  s.system_type === 'MPRO' 
-                    ? 'bg-blue-200 text-white' 
-                    : 'bg-purple-200 text-white'
-                }`} style={s.system_type === 'MPRO' ? {backgroundColor: '#B8D4FE'} : {backgroundColor: '#E2CEFF'}}>
+                <span 
+                  className="inline-block px-2.5 py-1 rounded text-xs font-medium mb-4"
+                  style={s.system_type === 'MPRO' 
+                    ? {backgroundColor: '#DBEAFE', color: '#1D4ED8'} 
+                    : {backgroundColor: '#EDE9FE', color: '#7C3AED'}
+                  }
+                >
                   {s.system_type === 'MPRO' ? 'Management Pro' : 'Soft Restaurant'}
                 </span>
                 <div className="space-y-2.5 text-sm">
@@ -403,11 +405,13 @@ export default function DashboardPage({ supplier, token, onNavigate }) {
                       <ChevronRight className="h-4 w-4 text-gray-400" />
                     )}
                     <span className="font-semibold text-gray-900">{suc.name}</span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      suc.system_type === 'MPRO' 
-                        ? 'text-white' 
-                        : 'text-white'
-                    }`} style={suc.system_type === 'MPRO' ? {backgroundColor: '#B8D4FE'} : {backgroundColor: '#E2CEFF'}}>
+                    <span 
+                      className="px-2 py-0.5 rounded text-xs font-medium"
+                      style={suc.system_type === 'MPRO' 
+                        ? {backgroundColor: '#DBEAFE', color: '#1D4ED8'} 
+                        : {backgroundColor: '#EDE9FE', color: '#7C3AED'}
+                      }
+                    >
                       {suc.system_type === 'MPRO' ? 'MPro' : 'SR'}
                     </span>
                   </div>
