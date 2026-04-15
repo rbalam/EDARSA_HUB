@@ -1,12 +1,15 @@
 """
 Repository para el módulo de Control de Propinas TPV
 FASE 1 MVP - Solo SoftRestaurant
+FASE 1B - Query defensiva con detección de esquema
 
 Responsabilidades:
 - Consultas SQL a SoftRestaurant (SOLO LECTURA)
 - Operaciones CRUD en MongoDB (colecciones nuevas)
+- Detección automática de esquema por servidor
 
 CAB Aprobado: 2026-04-14
+Estabilización: 2026-04-15
 """
 
 import logging
@@ -15,6 +18,7 @@ from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from core.db import execute_sql_query
+from .schema_detector import SoftRestaurantSchemaDetector, get_schema_summary
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +142,99 @@ class PropinasTPVRepository:
         except Exception as e:
             logger.error(f"Error consultando propinas de {server['name']}: {e}")
             raise
+    
+    async def get_propinas_cortes_defensivo(
+        self,
+        server: Dict[str, Any],
+        fecha_inicio: str,
+        fecha_fin: str
+    ) -> Dict[str, Any]:
+        """
+        FASE 1B: Query defensiva que detecta el esquema antes de consultar.
+        
+        Esta versión:
+        1. Detecta automáticamente las columnas disponibles
+        2. Construye la query adaptada al esquema
+        3. Retorna tanto los datos como info del esquema
+        
+        Args:
+            server: Diccionario con datos de conexión del servidor
+            fecha_inicio: Fecha inicio formato YYYY-MM-DD
+            fecha_fin: Fecha fin formato YYYY-MM-DD
+            
+        Returns:
+            Dict con: cortes, schema, compatible, errores
+        """
+        result = {
+            'cortes': [],
+            'schema': None,
+            'compatible': False,
+            'error': None,
+            'server_name': server.get('name', 'Desconocido'),
+            'query_usada': None
+        }
+        
+        try:
+            # Paso 1: Detectar esquema
+            logger.info(f"Detectando esquema para {server['name']}...")
+            schema = SoftRestaurantSchemaDetector.detect_schema(server)
+            result['schema'] = get_schema_summary(schema)
+            result['compatible'] = schema.get('compatible', False)
+            
+            if not schema.get('compatible'):
+                result['error'] = f"Esquema no compatible: {schema.get('compatibility_issues', [])}"
+                logger.warning(f"{server['name']}: {result['error']}")
+                return result
+            
+            # Paso 2: Construir query adaptada
+            query = SoftRestaurantSchemaDetector.build_propinas_query(
+                schema, fecha_inicio, fecha_fin
+            )
+            result['query_usada'] = query[:500] + '...' if len(query) > 500 else query
+            
+            # Paso 3: Ejecutar query
+            logger.info(f"Ejecutando query defensiva para {server['name']}...")
+            rows = execute_sql_query(
+                server['host'],
+                server['port'],
+                server['database'],
+                server['username'],
+                server['password'],
+                query
+            )
+            
+            # Paso 4: Procesar resultados
+            cortes = []
+            for row in rows or []:
+                fecha_val = row.get('fecha_corte')
+                fecha_iso = fecha_val.isoformat() if hasattr(fecha_val, 'isoformat') else str(fecha_val)
+                
+                cortes.append({
+                    'folio_corte': str(row.get('folio_corte', '')),
+                    'fecha_corte': fecha_iso,
+                    'estacion_id': str(row.get('estacion_id', 'N/A')),
+                    'propinas_totales': float(row.get('propinas_totales', 0) or 0),
+                    'ventas_tarjeta': float(row.get('ventas_tarjeta', 0) or 0),
+                    'ventas_efectivo': float(row.get('ventas_efectivo', 0) or 0),
+                    'ventas_totales': float(row.get('ventas_totales', 0) or 0),
+                })
+            
+            result['cortes'] = cortes
+            logger.info(f"{server['name']}: {len(cortes)} cortes encontrados (query defensiva)")
+            
+        except Exception as e:
+            result['error'] = str(e)
+            logger.error(f"Error en query defensiva para {server['name']}: {e}")
+        
+        return result
+    
+    async def detectar_esquema_servidor(self, server: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Solo detecta y retorna el esquema de un servidor, sin consultar datos.
+        Útil para diagnóstico y validación.
+        """
+        schema = SoftRestaurantSchemaDetector.detect_schema(server)
+        return get_schema_summary(schema)
     
     # ========================================================================
     # OPERACIONES MONGODB - COLECCIÓN propinas_control

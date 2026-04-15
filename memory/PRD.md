@@ -52,14 +52,19 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 - **Validación Técnica**: `/app/docs/CAB_PROPINAS_TPV_VALIDACION_TECNICA.md`
 - **Adenda Final**: `/app/docs/CAB_PROPINAS_TPV_ADENDA_FINAL.md`
 - **Entrega FASE 1A**: `/app/docs/ENTREGA_FASE1A_PROPINAS_TPV.md`
+- **FASE 1B Estabilización**: `/app/docs/FASE1B_VALIDACION_ESTABILIZACION.md`
 - **Fecha**: 2026-04-15
-- **Estado**: ✅ FASE 1A IMPLEMENTADA - PENDIENTE PRUEBAS CON DATOS REALES
-- **Descripción**: Control y cuadre de comisión del 2% sobre propinas TPV
+- **Estado**: 
+  - ✅ FASE 1A IMPLEMENTADA (endpoints + colecciones)
+  - ✅ FASE 1B CAPA DEFENSIVA IMPLEMENTADA (schema_detector + query adaptable)
+  - ⛔ VALIDACIÓN BLOQUEADA (requiere acceso VPN a servidores on-premise)
 - **Sistemas Implementados**: SoftRestaurant (La Estelar, Cienfuegos, 130 Mérida)
-- **Sistemas Pendientes**: MPRO (requiere investigación de tabla exacta)
-- **Endpoints**: 11 endpoints bajo /api/finanzas/propinas/*
+- **Sistemas Pendientes**: MPRO (fase posterior)
+- **Endpoints**: 14 endpoints bajo /api/finanzas/propinas/*
+- **Endpoints Diagnóstico**: detectar-esquema, detectar-esquema-todos, preview
 - **Colecciones**: propinas_control, propinas_config
-- **Requiere**: Pruebas con datos reales antes de producción
+- **Hallazgo Crítico**: Columna `idconcepto` no encontrada en algunos servidores
+- **Requiere**: Validación desde ambiente con acceso VPN
 
 ---
 

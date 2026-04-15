@@ -105,13 +105,31 @@ class PropinasTPVService:
             try:
                 logger.info(f"Procesando servidor: {server_name}")
                 
-                # Consultar cortes con propinas
-                cortes = await self.repository.get_propinas_cortes_softrestaurant(
+                # FASE 1B: Usar query defensiva con detección de esquema
+                resultado = await self.repository.get_propinas_cortes_defensivo(
                     server,
                     fecha_inicio,
                     fecha_fin
                 )
                 
+                # Verificar compatibilidad
+                if not resultado['compatible']:
+                    error_msg = resultado.get('error', 'Esquema no compatible')
+                    errores.append({
+                        'servidor': server_name,
+                        'error': error_msg,
+                        'schema': resultado.get('schema')
+                    })
+                    detalle.append({
+                        'servidor': server_name,
+                        'system_type': 'SoftRestaurant',
+                        'status': 'NO_COMPATIBLE',
+                        'error': error_msg,
+                        'schema': resultado.get('schema')
+                    })
+                    continue
+                
+                cortes = resultado['cortes']
                 creados_server = 0
                 actualizados_server = 0
                 

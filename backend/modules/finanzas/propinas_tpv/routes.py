@@ -168,6 +168,213 @@ async def inicializar_modulo(
 
 
 # ============================================================================
+# ENDPOINTS DE DIAGNÓSTICO (FASE 1B)
+# ============================================================================
+
+@router.get(
+    "/detectar-esquema/{server_id}",
+    summary="Detectar esquema de un servidor",
+    description="""
+    FASE 1B: Detecta el esquema de tablas de un servidor SoftRestaurant.
+    
+    Útil para:
+    - Diagnosticar problemas de compatibilidad
+    - Validar estructura antes de sincronizar
+    - Documentar diferencias entre servidores
+    """
+)
+async def detectar_esquema(
+    server_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        # Buscar servidor
+        server = await db.servers.find_one({'id': server_id}, {'_id': 0})
+        if not server:
+            raise HTTPException(status_code=404, detail="Servidor no encontrado")
+        
+        if server.get('system_type') != 'SoftRestaurant':
+            raise HTTPException(status_code=400, detail="Solo servidores SoftRestaurant soportados en FASE 1")
+        
+        service = PropinasTPVService(db)
+        schema = await service.repository.detectar_esquema_servidor(server)
+        
+        return {
+            "success": True,
+            "server_name": server.get('name'),
+            "schema": schema
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error detectando esquema: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/detectar-esquema-todos",
+    summary="Detectar esquema de todos los servidores SoftRestaurant",
+    description="""
+    FASE 1B: Ejecuta detección de esquema en todos los servidores SoftRestaurant.
+    
+    Retorna:
+    - Matriz de compatibilidad
+    - Diferencias de esquema entre servidores
+    - Recomendación GO/NO GO por servidor
+    """
+)
+async def detectar_esquema_todos(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        # Obtener todos los servidores SoftRestaurant
+        servers = await db.servers.find(
+            {'system_type': 'SoftRestaurant'},
+            {'_id': 0}
+        ).to_list(length=100)
+        
+        if not servers:
+            return {
+                "success": True,
+                "message": "No hay servidores SoftRestaurant configurados",
+                "servidores": []
+            }
+        
+        service = PropinasTPVService(db)
+        resultados = []
+        
+        for server in servers:
+            try:
+                schema = await service.repository.detectar_esquema_servidor(server)
+                
+                # Determinar dictamen
+                if schema.get('compatible'):
+                    if not schema.get('problemas'):
+                        dictamen = "GO"
+                    else:
+                        dictamen = "GO_CON_RESTRICCIONES"
+                else:
+                    dictamen = "NO_GO"
+                
+                resultados.append({
+                    'servidor': server.get('name'),
+                    'server_id': server.get('id'),
+                    'host': f"{server.get('host')}:{server.get('port')}",
+                    'database': server.get('database'),
+                    'compatible': schema.get('compatible', False),
+                    'dictamen': dictamen,
+                    'problemas': schema.get('problemas', []),
+                    'tablas_detectadas': schema.get('tablas_detectadas', []),
+                    'schema_detalle': schema
+                })
+            except Exception as e:
+                resultados.append({
+                    'servidor': server.get('name'),
+                    'server_id': server.get('id'),
+                    'compatible': False,
+                    'dictamen': "NO_GO",
+                    'error': str(e)
+                })
+        
+        # Resumen
+        total = len(resultados)
+        compatibles = sum(1 for r in resultados if r.get('compatible'))
+        go = sum(1 for r in resultados if r.get('dictamen') == 'GO')
+        go_restricciones = sum(1 for r in resultados if r.get('dictamen') == 'GO_CON_RESTRICCIONES')
+        no_go = sum(1 for r in resultados if r.get('dictamen') == 'NO_GO')
+        
+        return {
+            "success": True,
+            "resumen": {
+                "total_servidores": total,
+                "compatibles": compatibles,
+                "go": go,
+                "go_con_restricciones": go_restricciones,
+                "no_go": no_go
+            },
+            "servidores": resultados
+        }
+    except Exception as e:
+        logger.error(f"Error detectando esquemas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/preview",
+    summary="Preview de propinas sin sincronizar",
+    description="""
+    FASE 1B: Consulta propinas de un período SIN guardar en MongoDB.
+    
+    Útil para:
+    - Validar que la lectura funciona correctamente
+    - Ver datos antes de sincronizar
+    - Probar la query defensiva
+    """
+)
+async def preview_propinas(
+    fecha_inicio: str = Query(..., description="Fecha inicio YYYY-MM-DD"),
+    fecha_fin: str = Query(..., description="Fecha fin YYYY-MM-DD"),
+    server_id: Optional[str] = Query(None, description="Filtrar por servidor"),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        # Obtener servidores
+        filtro = {'system_type': 'SoftRestaurant'}
+        if server_id:
+            filtro['id'] = server_id
+        
+        servers = await db.servers.find(filtro, {'_id': 0}).to_list(length=100)
+        
+        if not servers:
+            return {
+                "success": True,
+                "message": "No hay servidores SoftRestaurant" + (f" con id {server_id}" if server_id else ""),
+                "resultados": []
+            }
+        
+        service = PropinasTPVService(db)
+        resultados = []
+        
+        for server in servers:
+            resultado = await service.repository.get_propinas_cortes_defensivo(
+                server, fecha_inicio, fecha_fin
+            )
+            
+            # Calcular totales
+            cortes = resultado.get('cortes', [])
+            total_propinas = sum(c['propinas_totales'] for c in cortes)
+            cortes_con_propinas = len([c for c in cortes if c['propinas_totales'] > 0])
+            
+            resultados.append({
+                'servidor': server.get('name'),
+                'server_id': server.get('id'),
+                'compatible': resultado.get('compatible'),
+                'cortes_encontrados': len(cortes),
+                'cortes_con_propinas': cortes_con_propinas,
+                'total_propinas': total_propinas,
+                'comision_2pct': round(total_propinas * 0.02, 2),
+                'error': resultado.get('error'),
+                'schema': resultado.get('schema'),
+                'muestra_cortes': cortes[:5] if cortes else []  # Solo 5 de muestra
+            })
+        
+        return {
+            "success": True,
+            "periodo": {
+                "inicio": fecha_inicio,
+                "fin": fecha_fin
+            },
+            "resultados": resultados
+        }
+    except Exception as e:
+        logger.error(f"Error en preview: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
 # ENDPOINTS DE CONSULTA (paths específicos primero)
 # ============================================================================
 
