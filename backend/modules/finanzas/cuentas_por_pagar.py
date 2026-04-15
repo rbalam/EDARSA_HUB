@@ -824,19 +824,25 @@ async def actualizar_decision_pago(
     Actualizar la decisión de pago de una factura.
     Soporta IDs numéricos (legacy), MPRO_xxx, y SUCURSAL_xxx (SoftRestaurant).
     """
+    from urllib.parse import unquote
+    
+    # Decodificar URL encoding si existe
+    factura_id_decoded = unquote(factura_id)
+    logging.info(f"[CxP] Decision-pago recibido: {factura_id_decoded} (original: {factura_id})")
+    
     # Importar helper de auditoría
     from core.auditoria_helpers import registrar_auditoria_cxp
     
     # Detectar tipo de ID y procesar
-    if factura_id.startswith("MPRO_"):
+    if factura_id_decoded.startswith("MPRO_"):
         # ID compuesto de MPRO
-        logging.info(f"[CxP] Factura MPRO {factura_id} - Decisión: {data.decision_pago}")
+        logging.info(f"[CxP] Factura MPRO {factura_id_decoded} - Decisión: {data.decision_pago}")
         
         # Registrar auditoría
         await registrar_auditoria_cxp(
             current_user=current_user,
             accion='EDIT',
-            factura_id=factura_id,
+            factura_id=factura_id_decoded,
             valor_anterior={'decision_pago': not data.decision_pago},
             valor_nuevo={'decision_pago': data.decision_pago, 'importe_a_pagar': data.importe_a_pagar},
             motivo='Marcar/desmarcar factura para pago'
@@ -844,7 +850,7 @@ async def actualizar_decision_pago(
         
         return {
             "success": True,
-            "factura_id": factura_id,
+            "factura_id": factura_id_decoded,
             "decision_pago": data.decision_pago,
             "fuente": "MPRO",
             "mensaje": "Decisión registrada (persistencia MPRO pendiente)"
@@ -852,16 +858,16 @@ async def actualizar_decision_pago(
     
     # ID compuesto de SoftRestaurant (CIENFUEGOS_xxx, ESTELAR_xxx, 130MID_xxx)
     softrest_prefixes = ['CIENFUEGOS_', 'ESTELAR_', '130MID_']
-    is_softrest = any(factura_id.startswith(p) for p in softrest_prefixes)
+    is_softrest = any(factura_id_decoded.startswith(p) for p in softrest_prefixes)
     
     if is_softrest:
-        logging.info(f"[CxP] Factura SoftRestaurant {factura_id} - Decisión: {data.decision_pago}")
+        logging.info(f"[CxP] Factura SoftRestaurant {factura_id_decoded} - Decisión: {data.decision_pago}")
         
         # Registrar auditoría
         await registrar_auditoria_cxp(
             current_user=current_user,
             accion='EDIT',
-            factura_id=factura_id,
+            factura_id=factura_id_decoded,
             valor_anterior={'decision_pago': not data.decision_pago},
             valor_nuevo={'decision_pago': data.decision_pago, 'importe_a_pagar': data.importe_a_pagar},
             motivo='Marcar/desmarcar factura SoftRestaurant para pago'
@@ -869,7 +875,7 @@ async def actualizar_decision_pago(
         
         return {
             "success": True,
-            "factura_id": factura_id,
+            "factura_id": factura_id_decoded,
             "decision_pago": data.decision_pago,
             "fuente": "SOFTRESTAURANT",
             "mensaje": "Decisión registrada (persistencia SoftRestaurant pendiente)"
@@ -877,9 +883,10 @@ async def actualizar_decision_pago(
     
     # ID numérico - buscar en datos demo/cache
     try:
-        numeric_id = int(factura_id)
+        numeric_id = int(factura_id_decoded)
     except ValueError:
-        raise HTTPException(status_code=400, detail=f"ID de factura inválido: {factura_id}")
+        logging.warning(f"[CxP] ID de factura no reconocido: {factura_id_decoded}")
+        raise HTTPException(status_code=400, detail=f"ID de factura inválido: {factura_id_decoded}")
     
     factura = next((f for f in _facturas_db if f["factura_id"] == numeric_id), None)
     if not factura:
@@ -893,13 +900,13 @@ async def actualizar_decision_pago(
     else:
         factura["importe_a_pagar"] = 0
     
-    logging.info(f"[CxP] Factura {factura_id} - Decisión: {data.decision_pago}, Importe: {factura['importe_a_pagar']}")
+    logging.info(f"[CxP] Factura {factura_id_decoded} - Decisión: {data.decision_pago}, Importe: {factura['importe_a_pagar']}")
     
     # Registrar auditoría
     await registrar_auditoria_cxp(
         current_user=current_user,
         accion='EDIT',
-        factura_id=factura_id,
+        factura_id=factura_id_decoded,
         valor_nuevo={'decision_pago': data.decision_pago, 'importe_a_pagar': factura['importe_a_pagar']},
         motivo='Marcar/desmarcar factura para pago'
     )

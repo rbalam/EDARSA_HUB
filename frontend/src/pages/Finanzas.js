@@ -338,12 +338,17 @@ export default function Finanzas() {
         })
       });
       
-      if (!response.ok) throw new Error('Error');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('[CxP] Error response:', errorData);
+        throw new Error(errorData.detail || errorData.message || 'Error del servidor');
+      }
       
       toast.success(decision ? 'Marcada para pago' : 'Desmarcada');
       loadCuentasPorPagar();
     } catch (error) {
-      toast.error('Error al actualizar');
+      console.error('[CxP] Error al actualizar:', error);
+      toast.error(`Error: ${error.message || 'Error al actualizar'}`);
     } finally {
       setSavingDecision(null);
     }

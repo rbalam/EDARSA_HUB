@@ -103,9 +103,11 @@ class ServicioAuditoria:
                 from motor.motor_asyncio import AsyncIOMotorClient
                 mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
                 client = AsyncIOMotorClient(mongo_url)
-                self._mongo_db = client['edarsa_hub']
+                db_name = os.environ.get('DB_NAME', 'edarsa_hub')
+                self._mongo_db = client[db_name]
             except Exception as e:
                 logger.error(f"Error conectando a MongoDB: {e}")
+                return None
         return self._mongo_db
     
     def _get_sql_connection(self):
@@ -319,10 +321,14 @@ class ServicioAuditoria:
             # Fallback a MongoDB
             db = await self._get_mongo_db()
             if db is not None:
-                audit_doc['_sync_pending'] = True  # Marcar para sincronización futura
-                await db.auditoria_financiera.insert_one(audit_doc)
-                logger.debug(f"[AUDIT-MONGO] {audit_doc['modulo']}/{audit_doc['entidad']}/{audit_doc['accion']}")
-                return True
+                try:
+                    audit_doc['_sync_pending'] = True  # Marcar para sincronización futura
+                    await db.auditoria_financiera.insert_one(audit_doc)
+                    logger.debug(f"[AUDIT-MONGO] {audit_doc['modulo']}/{audit_doc['entidad']}/{audit_doc['accion']}")
+                    return True
+                except Exception as mongo_e:
+                    logger.error(f"Error escribiendo auditoría a MongoDB: {mongo_e}")
+                    return False
             
             logger.warning("No hay backend de auditoría disponible")
             return False
