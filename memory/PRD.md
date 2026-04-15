@@ -7,8 +7,59 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 - **Frontend**: React + Tailwind CSS + Shadcn/UI
 - **Backend**: FastAPI + Python
 - **Bases de Datos**: 
-  - MongoDB (datos de aplicación, configuraciones)
-  - SQL Server (múltiples instancias: MPRO y SoftRestaurant on-premise)
+  - SQL Server EDARSA HUB (cerebro central - persistencia oficial)
+  - MongoDB (cache temporal únicamente)
+  - SQL Server SoftRestaurant/MPRO (sistemas origen - SOLO LECTURA)
+
+---
+
+## REGLA CRÍTICA – PERSISTENCIA DE DATOS
+
+### Principio Fundamental
+EDARSA HUB es el "cerebro" del sistema. Todas las decisiones, controles y consolidaciones deben vivir en su base de datos central.
+
+### Regla Obligatoria
+**Toda tabla nueva que se cree debe estar en la base de datos de EDARSA HUB.**
+
+### PROHIBIDO
+- ❌ Crear tablas nuevas en bases de datos de SoftRestaurant
+- ❌ Crear tablas nuevas en bases de datos de MPRO
+- ❌ Crear estructuras persistentes en sistemas origen
+- ❌ Duplicar estructuras ya existentes fuera de EDARSA HUB
+- ❌ INSERT, UPDATE, DELETE en sistemas origen
+
+### Sistemas Origen (SoftRestaurant / MPRO)
+| Aspecto | Regla |
+|---------|-------|
+| Rol | Fuentes de datos operativos |
+| Acceso | SOLO SELECT (lectura) |
+| Modificación | PROHIBIDA |
+
+### EDARSA HUB (Cerebro)
+| Aspecto | Contenido |
+|---------|-----------|
+| Tablas nuevas | ✅ Obligatorio aquí |
+| Lógica de negocio consolidada | ✅ |
+| Históricos | ✅ |
+| Configuraciones | ✅ |
+| Auditoría | ✅ |
+| Resultados calculados | ✅ |
+
+### Excepción Controlada: MongoDB
+| Uso Permitido | Uso Prohibido |
+|---------------|---------------|
+| Cache temporal | Fuente oficial |
+| Optimización de lectura | Reemplazo de SQL Server |
+| TTL corto | Lógica crítica permanente |
+
+### Criterio Final
+```
+Datos operativos origen     → SoftRestaurant / MPRO (LECTURA)
+Datos control y auditoría   → EDARSA HUB SQL Server (PERSISTENCIA)
+Optimización de lectura     → MongoDB (CACHE)
+```
+
+---
 
 ## Módulos Implementados
 
