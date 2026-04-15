@@ -53,30 +53,44 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 - **Adenda Final**: `/app/docs/CAB_PROPINAS_TPV_ADENDA_FINAL.md`
 - **Entrega FASE 1A**: `/app/docs/ENTREGA_FASE1A_PROPINAS_TPV.md`
 - **FASE 1B Estabilización**: `/app/docs/FASE1B_VALIDACION_ESTABILIZACION.md`
+- **Migración SQL**: `/app/docs/MIGRACION_TECNICA_PROPINAS_SQL.md`
 - **Fecha**: 2026-04-15
 - **Estado**: 
-  - ✅ FASE 1A IMPLEMENTADA (endpoints + colecciones)
+  - ✅ FASE 1A IMPLEMENTADA (endpoints + colecciones originales MongoDB)
   - ✅ FASE 1B CAPA DEFENSIVA IMPLEMENTADA (schema_detector + query adaptable)
-  - ⛔ VALIDACIÓN BLOQUEADA (requiere acceso VPN a servidores on-premise)
+  - ✅ REFACTORIZACIÓN SQL IMPLEMENTADA (SQL Server como persistencia oficial)
+  - ⛔ VALIDACIÓN VPN BLOQUEADA (requiere acceso VPN a servidores on-premise)
+  - ⏸️ NO LIBERAR A PRODUCCIÓN TODAVÍA
+- **Arquitectura Actual**: SQL Server EDARSA HUB (persistencia) + MongoDB (cache)
 - **Sistemas Implementados**: SoftRestaurant (La Estelar, Cienfuegos, 130 Mérida)
-- **Sistemas Pendientes**: MPRO (fase posterior)
+- **Sistemas Pendientes**: MPRO (excluido del MVP actual)
+- **Tablas SQL Nuevas**: 
+  - `propinas_tpv_control` (registro oficial)
+  - `propinas_tpv_config` (configuración jerárquica)
+  - `propinas_tpv_historial` (auditoría)
+- **Colecciones Cache**: `propinas_cache_listado`, `propinas_cache_resumen`, `propinas_cache_config`, `propinas_cache_detalle`
 - **Endpoints**: 14 endpoints bajo /api/finanzas/propinas/*
-- **Endpoints Diagnóstico**: detectar-esquema, detectar-esquema-todos, preview
-- **Colecciones**: propinas_control, propinas_config
+- **Nuevos Endpoints**: `/inicializar-sql`, `/cache/stats`, `/cache/invalidar`
+- **Archivos Nuevos**:
+  - `sql_scripts.py` (~250 líneas)
+  - `sql_repository.py` (~550 líneas)
+  - `cache_manager.py` (~350 líneas)
+  - `service_sql.py` (~350 líneas)
+  - `routes_sql.py` (~400 líneas)
 - **Hallazgo Crítico**: Columna `idconcepto` no encontrada en algunos servidores
-- **Requiere**: Validación desde ambiente con acceso VPN
+- **Requiere**: Validación desde ambiente con acceso VPN antes de producción
 
 ### CAB-002: Rediseño Arquitectónico SQL Server (Propinas + Cortes Z)
 - **Documento Arquitectura Propinas**: `/app/docs/ARQUITECTURA_PROPINAS_TPV_v3.md`
 - **Adenda Cortes Z**: `/app/docs/ARQUITECTURA_PROPINAS_TPV_v3_ADENDA_CORTES_Z.md`
 - **Documento de Protección**: `/app/docs/PROTECCION_TAB_CUADRE_CORTE_Z.md`
 - **Fecha**: 2026-04-15
-- **Estado**: ⏳ PROPUESTA EN REVISIÓN (pendiente aprobación de Adenda)
+- **Estado Propinas**: ✅ IMPLEMENTADO (backend refactorizado a SQL + Cache)
+- **Estado Cortes Z**: ⏸️ DOCUMENTADO, NO IMPLEMENTAR (Tab protegido)
 - **Principio**: SQL Server = Fuente oficial, MongoDB = Solo cache
-- **Tablas Propinas**: propinas_tpv_control, propinas_tpv_config, propinas_tpv_historial
-- **Tablas Cortes Z**: cortes_z_control, cortes_z_conteo_efectivo, cortes_z_ficha_deposito, cortes_z_incidencias, cortes_z_historial
-- **Implementación**: Unificada en 4 fases (U1-U4), estimado 5-8 días
-- **Requiere**: Aprobación del usuario para iniciar implementación
+- **Tablas Propinas**: propinas_tpv_control, propinas_tpv_config, propinas_tpv_historial (CREADAS)
+- **Tablas Cortes Z**: cortes_z_control, cortes_z_conteo_efectivo, cortes_z_ficha_deposito, cortes_z_incidencias, cortes_z_historial (DOCUMENTADAS, NO CREAR AÚN)
+- **Decisión**: Tab actual de Cuadre Z NO SE TOCA en esta fase
 
 ### PROTECCIÓN: Tab Cuadre de Corte Z ✅ APROBADO
 - **Documento**: `/app/docs/PROTECCION_TAB_CUADRE_CORTE_Z.md`

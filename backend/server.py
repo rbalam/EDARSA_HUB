@@ -161,10 +161,13 @@ from modules.finanzas.tesoreria import router as tesoreria_router
 
 # MÓDULO PROPINAS TPV: Control y cuadre de comisión sobre propinas TPV (2%)
 # - CAB Aprobado: 2026-04-14
+# - Arquitectura SQL: 2026-04-15 (ARQUITECTURA_PROPINAS_TPV_v3.md)
 # - FASE 1 MVP: Solo SoftRestaurant (La Estelar, Cienfuegos, 130 Mérida)
 # - FUERA DE ALCANCE: MPRO (pendiente para fase posterior)
 # - Documentos: /app/docs/CAB_MODULO_PROPINAS_TPV.md
-from modules.finanzas.propinas_tpv.routes import router as propinas_tpv_router
+# - ARQUITECTURA: SQL Server (persistencia) + MongoDB (cache)
+# - IMPORTANTE: NO interfiere con /api/finanzas/tesoreria/* (tab Cuadre Z protegido)
+from modules.finanzas.propinas_tpv.routes_sql import router_sql as propinas_tpv_router
 
 # MÓDULO CATÁLOGOS: Módulo maestro centralizado de catálogos
 # - Diciembre 2025: Implementación inicial
@@ -224,6 +227,8 @@ api_router.include_router(catalogos_router)
 
 # MÓDULO PROPINAS TPV: Registrar router de propinas TPV (FASE 1 MVP - Solo SoftRestaurant)
 # Endpoints bajo /api/finanzas/propinas/*
+# ARQUITECTURA: SQL Server EDARSA HUB (persistencia) + MongoDB (cache)
+# AISLAMIENTO: NO interfiere con /api/finanzas/tesoreria/* (Tab Cuadre Z PROTEGIDO)
 api_router.include_router(propinas_tpv_router)
 
 import requests
