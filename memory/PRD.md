@@ -78,17 +78,23 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 - **Implementación**: Unificada en 4 fases (U1-U4), estimado 5-8 días
 - **Requiere**: Aprobación del usuario para iniciar implementación
 
-### PROTECCIÓN: Tab Cuadre de Corte Z
+### PROTECCIÓN: Tab Cuadre de Corte Z ✅ APROBADO
 - **Documento**: `/app/docs/PROTECCION_TAB_CUADRE_CORTE_Z.md`
-- **Fecha**: 2026-04-15
-- **Estado**: COMPONENTE PROTEGIDO DE PRODUCCIÓN
+- **Fecha Aprobación**: 2026-04-15
+- **Estado**: COMPONENTE PROTEGIDO DE PRODUCCIÓN - REGLA OFICIAL
 - **Archivos Intocables**:
   - `TesoreriaCorteZ.jsx` (771 líneas)
   - `tesoreria.py`
   - `repository_cuadres_z.py`
   - `tesoreria_models.py`
   - Colección `tesoreria_cuadres_z`
-- **Decisión**: NO TOCAR - Todo lo nuevo se construye ALREDEDOR, no SOBRE
+  - Endpoints `/api/finanzas/tesoreria/*`
+- **Decisión Oficial**: NO TOCAR en esta fase
+- **Alcance NO Aprobado**:
+  - ❌ No migrar Cuadre Z a SQL todavía
+  - ❌ No unificar Corte Z + Propinas operativamente
+  - ❌ No alterar lógica, fórmulas, filtros ni tolerancias
+- **Criterio**: Lo nuevo se construye ALREDEDOR de lo que funciona
 
 ---
 
