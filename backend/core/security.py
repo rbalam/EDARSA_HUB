@@ -31,9 +31,15 @@ import jwt
 # CONFIGURACIÓN JWT
 # ============================================================================
 
-JWT_SECRET: str = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
+# JWT_SECRET: OBLIGATORIO en .env - Sin fallback inseguro para producción
+JWT_SECRET: str = os.environ.get('JWT_SECRET', '')
+if not JWT_SECRET:
+    raise ValueError("JWT_SECRET no configurado en .env - Requerido para operación")
+
 JWT_ALGORITHM: str = 'HS256'
-JWT_EXPIRATION_HOURS: int = 24
+
+# JWT_EXPIRATION_HOURS: Configurable vía .env, default 72 horas (3 días)
+JWT_EXPIRATION_HOURS: int = int(os.environ.get('JWT_EXPIRATION_HOURS', '72'))
 
 # HTTPBearer para extraer token de Authorization header
 security = HTTPBearer()

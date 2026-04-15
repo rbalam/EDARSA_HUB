@@ -25,20 +25,20 @@ async def listar_cortes_z(
     fecha_inicio: Optional[str] = Query(None, description="Fecha inicio YYYY-MM-DD"),
     fecha_fin: Optional[str] = Query(None, description="Fecha fin YYYY-MM-DD"),
     sucursal: Optional[str] = Query(None, description="Filtrar por sucursal"),
-    use_demo: bool = Query(True, description="Usar datos demo"),
+    use_demo: bool = Query(False, description="Usar datos demo (solo desarrollo)"),
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Lista los Cortes Z disponibles de todas las fuentes (SoftRestaurant + MPRO).
     Incluye indicador si ya tiene cuadre registrado.
-    Por defecto usa datos DEMO. Poner use_demo=false para intentar SQL real.
+    Por defecto usa datos REALES. Poner use_demo=true solo para desarrollo.
     """
     try:
         repo_cuadres = await get_cuadres_repository()
         cortes = []
-        fuente = "DEMO"
+        fuente = "SQL_REAL"
         
-        # Solo intentar SQL real si use_demo=false
+        # Intentar SQL real primero (comportamiento por defecto en producción)
         if not use_demo:
             try:
                 repo_cortes = await get_cortes_z_repository()
@@ -46,9 +46,9 @@ async def listar_cortes_z(
                 if cortes:
                     fuente = "SQL_REAL"
             except Exception as e:
-                logger.warning(f"Error conectando a SQL, usando datos demo: {e}")
+                logger.warning(f"Error conectando a SQL, usando fallback demo: {e}")
         
-        # Si no hay cortes de SQL o use_demo=true, usar datos demo
+        # Fallback a datos demo solo si SQL falla o use_demo=true
         if not cortes:
             cortes = [
                 {

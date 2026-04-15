@@ -1,5 +1,15 @@
 # EDARSA HUB - Product Requirements Document
 
+## Estado del Sistema: OPERACIÓN REAL
+**Fecha de transición:** 15 de Abril de 2026  
+**Fase anterior:** Piloto Controlado  
+**Fase actual:** Operación Real Controlada
+
+> ⚠️ **IMPORTANTE:** El sistema está operando con datos reales de producción.
+> - No se aceptan más validaciones con datos simulados
+> - Los cambios deben ser quirúrgicos y probados
+> - Cualquier incidencia se documenta en `/app/docs/INCIDENCIAS_OPERACION.md`
+
 ## Descripción General
 Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cuentas por Pagar (CxP), Tesorería, Portal de Proveedores, y administración de catálogos conectados a bases de datos SQL Server externas (MPRO y SoftRestaurant).
 
@@ -229,11 +239,30 @@ Optimización de lectura     → MongoDB (CACHE)
 ### Deuda Técnica
 - 125 tests legacy con errores (BLOQUEADO por usuario)
 - Variables de estado huérfanas en Usuarios.js
-- Expiración rápida de tokens JWT (P2)
+- ~~Expiración rápida de tokens JWT~~ ✅ RESUELTO (72h)
 
 ---
 
 ## Changelog Reciente
+
+### 2026-04-15 - TRANSICIÓN A OPERACIÓN REAL
+**El sistema ya no está en piloto - Opera con datos reales**
+
+**Cambios de estabilización:**
+- ✅ JWT: Expiración aumentada a 72 horas (configurable vía `JWT_EXPIRATION_HOURS`)
+- ✅ JWT: Secret fijo en `.env` sin fallback inseguro
+- ✅ Demo: Todos los módulos ahora usan datos reales por defecto (`use_demo=False`)
+- ✅ Documentación: PRD actualizado a estado OPERACIÓN REAL
+
+**Archivos modificados:**
+- `/app/backend/core/security.py` - JWT configurable
+- `/app/backend/.env` - Variables JWT_SECRET y JWT_EXPIRATION_HOURS
+- `/app/backend/modules/finanzas/tesoreria.py` - use_demo=False por defecto
+
+**Decisiones arquitectónicas vigentes:**
+- Tesorería valida declaración de cajera, no recaptura
+- Propinas TPV: El 2% está contenido dentro del efectivo del Corte Z
+- EDARSA HUB es fuente de verdad, SoftRestaurant/MPRO son solo lectura
 
 ### 2026-04-15 - Dictamen Final Propinas TPV (Datos Simulados)
 **Emisión de dictamen técnico condicionado**
