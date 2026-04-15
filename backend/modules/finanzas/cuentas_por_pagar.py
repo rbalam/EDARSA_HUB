@@ -260,11 +260,14 @@ async def listar_facturas_pendientes(
             except Exception as e:
                 logging.error(f"[CxP] Error SoftRestaurant: {e}")
         
-        # 2. Obtener datos de MPRO (CENTRAL2020)
-        if mpro_repo:
+        # 2. Obtener datos de MPRO (CENTRAL2020) - SOLO si no se está filtrando por sucursal SoftRestaurant
+        softrest_sucursales = ['CIENFUEGOS', 'ESTELAR', '130MID']
+        es_filtro_softrest = sucursal_id and sucursal_id in softrest_sucursales
+        
+        if mpro_repo and not es_filtro_softrest:
             try:
-                # Filtrar por sucursal MPRO si corresponde
-                mpro_sucursal = sucursal_id if sucursal_id and sucursal_id not in ['CIENFUEGOS', 'ESTELAR', '130MID'] else None
+                # Si se filtra por sucursal MPRO específica, usar ese filtro
+                mpro_sucursal = sucursal_id if sucursal_id and sucursal_id not in softrest_sucursales else None
                 
                 cxp_mpro = await mpro_repo.get_cuentas_por_pagar(
                     sucursal_id=mpro_sucursal,

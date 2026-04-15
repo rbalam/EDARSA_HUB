@@ -63,11 +63,11 @@ SOFTRESTAURANT_SERVERS = {
 def get_tipo_proveedor(nombre_proveedor: str) -> str:
     """
     Extrae el tipo de proveedor del nombre.
-    Formato: "[XXXX] TYYYY NOMBRE" donde T es A, B o X
-    Ejemplos:
-      - "[0357] X0357 MAGER" → X
-      - "[0406] B0406 CONVENIO CERVECERIA" → B
-      - "[0015] A0015 CARNES ROJAS" → A
+    
+    Formatos soportados:
+      1. "[XXXX] TYYYY NOMBRE" donde T es A, B o X → "[0406] B0406 CONVENIO CERVECERIA"
+      2. "TXXX NOMBRE" donde T es A, B o X → "A1269 COMERCIALIZADORA CHOBI"
+      3. "(XXX) T NOMBRE" 
     
     Returns:
         'A' = Alimentos
@@ -79,9 +79,8 @@ def get_tipo_proveedor(nombre_proveedor: str) -> str:
     
     nombre = nombre_proveedor.strip()
     
-    # Buscar patrón "[XXXX] TYYYY" donde T es la letra de tipo
+    # Formato 1: "[XXXX] TYYYY" donde T es la letra de tipo
     if nombre.startswith('['):
-        # Encontrar el cierre del corchete
         idx = nombre.find('] ')
         if idx > 0 and len(nombre) > idx + 2:
             tipo_letra = nombre[idx + 2].upper()
@@ -92,7 +91,20 @@ def get_tipo_proveedor(nombre_proveedor: str) -> str:
             else:
                 return 'X'
     
-    # Formato alternativo "(XXX) T NOMBRE"
+    # Formato 2: "TXXX NOMBRE" donde T es A, B o X (ej: "A1269 COMERCIALIZADORA")
+    if len(nombre) >= 2:
+        primera_letra = nombre[0].upper()
+        segunda_char = nombre[1] if len(nombre) > 1 else ''
+        # Verificar que empieza con A, B o X seguido de un número
+        if primera_letra in ('A', 'B', 'X') and segunda_char.isdigit():
+            if primera_letra == 'A':
+                return 'A'
+            elif primera_letra == 'B':
+                return 'B'
+            else:
+                return 'X'
+    
+    # Formato 3: "(XXX) T NOMBRE"
     if nombre.startswith('('):
         idx = nombre.find(') ')
         if idx > 0 and len(nombre) > idx + 2:
