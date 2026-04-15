@@ -57,6 +57,7 @@ export default function Finanzas() {
   const [cxpCategoriasExpandidas, setCxpCategoriasExpandidas] = useState({ A: true, B: true, X: true, M: true });  // Control de categorías expandidas
   const [cxpVistaMode, setCxpVistaMode] = useState('categorias'); // 'categorias' o 'proveedores'
   const [savingDecision, setSavingDecision] = useState(null);
+  const [cxpBusquedaProveedor, setCxpBusquedaProveedor] = useState(''); // Búsqueda de proveedor por nombre/RFC/clave
   
   // Función para reagrupar datos: Categoría -> Proveedor -> Facturas
   const reagruparCxPPorProveedores = useCallback((proveedoresData) => {
@@ -1539,18 +1540,68 @@ export default function Finanzas() {
                   ))}
                 </select>
               </div>
-              <div>
+              <div className="relative">
                 <Label className="text-xs text-zinc-500">Proveedor</Label>
-                <select
-                  value={cxpFiltroProveedor}
-                  onChange={(e) => setCxpFiltroProveedor(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg text-sm mt-1"
-                >
-                  <option value="">Todos</option>
-                  {cxpProveedores.map(p => (
-                    <option key={p.proveedor_id} value={p.proveedor_id}>{p.proveedor_nombre}</option>
-                  ))}
-                </select>
+                <Input
+                  type="text"
+                  placeholder="Buscar nombre, RFC, clave..."
+                  value={cxpBusquedaProveedor}
+                  onChange={(e) => setCxpBusquedaProveedor(e.target.value)}
+                  className="mt-1"
+                  data-testid="cxp-busqueda-proveedor"
+                />
+                {cxpBusquedaProveedor && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {cxpProveedores
+                      .filter(p => {
+                        const busqueda = cxpBusquedaProveedor.toLowerCase();
+                        return (
+                          (p.proveedor_nombre || '').toLowerCase().includes(busqueda) ||
+                          (p.proveedor_rfc || '').toLowerCase().includes(busqueda) ||
+                          String(p.proveedor_id || '').toLowerCase().includes(busqueda)
+                        );
+                      })
+                      .map(p => (
+                        <div
+                          key={p.proveedor_id}
+                          className="px-3 py-2 hover:bg-zinc-100 cursor-pointer text-sm border-b last:border-b-0"
+                          onClick={() => {
+                            setCxpFiltroProveedor(p.proveedor_id);
+                            setCxpBusquedaProveedor(p.proveedor_nombre);
+                          }}
+                          data-testid={`cxp-proveedor-option-${p.proveedor_id}`}
+                        >
+                          <div className="font-medium">{p.proveedor_nombre}</div>
+                          <div className="text-xs text-zinc-500 flex justify-between">
+                            <span>RFC: {p.proveedor_rfc || 'N/A'}</span>
+                            <span className="text-green-600">{p.cantidad_facturas} fact.</span>
+                          </div>
+                        </div>
+                      ))
+                    }
+                    {cxpProveedores.filter(p => {
+                      const busqueda = cxpBusquedaProveedor.toLowerCase();
+                      return (
+                        (p.proveedor_nombre || '').toLowerCase().includes(busqueda) ||
+                        (p.proveedor_rfc || '').toLowerCase().includes(busqueda) ||
+                        String(p.proveedor_id || '').toLowerCase().includes(busqueda)
+                      );
+                    }).length === 0 && (
+                      <div className="px-3 py-2 text-sm text-zinc-500 text-center">
+                        Sin resultados
+                      </div>
+                    )}
+                  </div>
+                )}
+                {cxpFiltroProveedor && (
+                  <button
+                    onClick={() => { setCxpFiltroProveedor(''); setCxpBusquedaProveedor(''); }}
+                    className="absolute right-2 top-8 text-zinc-400 hover:text-zinc-600"
+                    title="Limpiar filtro"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 text-sm">
@@ -1814,45 +1865,79 @@ export default function Finanzas() {
                               <table className="w-full text-xs">
                                 <thead className="bg-zinc-50">
                                   <tr>
-                                    <th className="text-left p-2 font-medium text-zinc-600">Sucursal</th>
+                                    <th className="text-left p-2 font-medium text-zinc-600">Folio Entrada</th>
+                                    <th className="text-left p-2 font-medium text-zinc-600">Folio Factura</th>
                                     <th className="text-center p-2 font-medium text-zinc-600">F. Entrada</th>
+                                    <th className="text-center p-2 font-medium text-zinc-600">F. Vencimiento</th>
                                     <th className="text-center p-2 font-medium text-zinc-600">Días Venc.</th>
-                                    <th className="text-right p-2 font-medium text-zinc-600">Por Vencer</th>
-                                    <th className="text-right p-2 font-medium text-zinc-600">1-30</th>
-                                    <th className="text-right p-2 font-medium text-zinc-600">31-60</th>
-                                    <th className="text-right p-2 font-medium text-zinc-600">61-90</th>
-                                    <th className="text-right p-2 font-medium text-zinc-600">+91</th>
-                                    <th className="text-right p-2 font-medium text-zinc-600">Total</th>
+                                    <th className="text-left p-2 font-medium text-zinc-600">Referencia</th>
+                                    <th className="text-right p-2 font-medium text-zinc-600">Importe</th>
+                                    <th className="text-right p-2 font-medium text-zinc-600">Saldo</th>
+                                    <th className="text-center p-2 font-medium text-zinc-600">Pagar</th>
+                                    <th className="text-right p-2 font-medium text-zinc-600">Importe a Pagar</th>
+                                    <th className="text-center p-2 font-medium text-zinc-600">Docs</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {proveedor.facturas.map((factura, idx) => (
                                     <tr key={factura.factura_id || idx} className={`border-b hover:bg-zinc-50 ${factura.dias_vencida > 0 ? 'bg-red-50' : ''}`}>
-                                      <td className="p-2 text-zinc-700">{factura.sucursal_nombre}</td>
+                                      <td className="p-2 font-mono text-zinc-700">{factura.folio_entrada || 'N/A'}</td>
+                                      <td className="p-2 font-mono text-zinc-700">{factura.folio_factura || '-'}</td>
                                       <td className="p-2 text-center text-zinc-600">{factura.fecha_entrada?.split('T')[0] || '-'}</td>
+                                      <td className="p-2 text-center text-zinc-600">{factura.fecha_vencimiento || '-'}</td>
                                       <td className="p-2 text-center">
                                         <span className={`font-bold ${factura.dias_vencida > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                          {factura.dias_vencida > 0 ? factura.dias_vencida : (factura.dias_vencida === 0 ? '0' : '-')}
+                                          {factura.dias_vencida > 0 ? factura.dias_vencida : '-'}
                                         </span>
                                       </td>
-                                      <td className="p-2 text-right font-mono text-green-600">{factura.por_vencer > 0 ? formatCurrency(factura.por_vencer) : '-'}</td>
-                                      <td className="p-2 text-right font-mono text-yellow-600">{factura.venc_1_30 > 0 ? formatCurrency(factura.venc_1_30) : '-'}</td>
-                                      <td className="p-2 text-right font-mono text-orange-600">{factura.venc_31_60 > 0 ? formatCurrency(factura.venc_31_60) : '-'}</td>
-                                      <td className="p-2 text-right font-mono text-red-600">{factura.venc_61_90 > 0 ? formatCurrency(factura.venc_61_90) : '-'}</td>
-                                      <td className="p-2 text-right font-mono text-red-700 font-bold">{factura.venc_91_plus > 0 ? formatCurrency(factura.venc_91_plus) : '-'}</td>
-                                      <td className="p-2 text-right font-mono font-bold text-zinc-800">{formatCurrency(factura.saldo)}</td>
+                                      <td className="p-2 max-w-[150px] truncate text-zinc-600" title={factura.referencia || factura.observaciones}>
+                                        {factura.referencia || factura.observaciones || '-'}
+                                      </td>
+                                      <td className="p-2 text-right font-mono">{formatCurrency(factura.importe_original || factura.importe_total || 0)}</td>
+                                      <td className="p-2 text-right font-mono font-bold">{formatCurrency(factura.saldo)}</td>
+                                      <td className="p-2 text-center">
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); handleDecisionPago(factura.factura_id, !factura.decision_pago); }}
+                                          disabled={savingDecision === factura.factura_id}
+                                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${
+                                            factura.decision_pago 
+                                              ? 'bg-green-500 border-green-500 text-white' 
+                                              : 'border-zinc-300 hover:border-green-400'
+                                          }`}
+                                        >
+                                          {savingDecision === factura.factura_id ? (
+                                            <RefreshCw className="h-3 w-3 animate-spin" />
+                                          ) : factura.decision_pago ? (
+                                            <CheckCircle2 className="h-4 w-4" />
+                                          ) : null}
+                                        </button>
+                                      </td>
+                                      <td className="p-2 text-right font-mono text-green-600 font-bold">
+                                        {factura.decision_pago ? formatCurrency(factura.importe_a_pagar || factura.saldo) : '-'}
+                                      </td>
+                                      <td className="p-2">
+                                        <div className="flex items-center justify-center gap-1">
+                                          <button className="p-1 hover:bg-zinc-200 rounded" title="PDF Factura">
+                                            <FileText className="h-4 w-4 text-red-500" />
+                                          </button>
+                                          <button className="p-1 hover:bg-zinc-200 rounded" title="XML">
+                                            <File className="h-4 w-4 text-green-600" />
+                                          </button>
+                                          <button className="p-1 hover:bg-zinc-200 rounded" title="Entrada Sistema">
+                                            <FileSpreadsheet className="h-4 w-4 text-blue-500" />
+                                          </button>
+                                        </div>
+                                      </td>
                                     </tr>
                                   ))}
                                   {/* Subtotal del proveedor */}
                                   <tr className="bg-zinc-200 font-bold">
-                                    <td colSpan={2} className="p-2 text-right text-xs">SUBTOTAL:</td>
+                                    <td colSpan={6} className="p-2 text-right text-xs">SUBTOTAL {proveedor.proveedor_nombre}:</td>
+                                    <td className="p-2 text-right font-mono">{formatCurrency(proveedor.subtotal_importe)}</td>
+                                    <td className="p-2 text-right font-mono">{formatCurrency(proveedor.subtotal_saldo)}</td>
                                     <td className="p-2"></td>
-                                    <td className="p-2 text-right font-mono text-green-700">{formatCurrency(proveedor.facturas.reduce((sum, f) => sum + (f.por_vencer || 0), 0))}</td>
-                                    <td className="p-2 text-right font-mono text-yellow-700">{formatCurrency(proveedor.facturas.reduce((sum, f) => sum + (f.venc_1_30 || 0), 0))}</td>
-                                    <td className="p-2 text-right font-mono text-orange-700">{formatCurrency(proveedor.facturas.reduce((sum, f) => sum + (f.venc_31_60 || 0), 0))}</td>
-                                    <td className="p-2 text-right font-mono text-red-700">{formatCurrency(proveedor.facturas.reduce((sum, f) => sum + (f.venc_61_90 || 0), 0))}</td>
-                                    <td className="p-2 text-right font-mono text-red-800">{formatCurrency(proveedor.facturas.reduce((sum, f) => sum + (f.venc_91_plus || 0), 0))}</td>
-                                    <td className="p-2 text-right font-mono text-zinc-900">{formatCurrency(proveedor.subtotal_saldo)}</td>
+                                    <td className="p-2 text-right font-mono text-green-700">{formatCurrency(proveedor.facturas.reduce((sum, f) => sum + (f.decision_pago ? (f.importe_a_pagar || f.saldo || 0) : 0), 0))}</td>
+                                    <td className="p-2"></td>
                                   </tr>
                                 </tbody>
                               </table>
@@ -1866,126 +1951,173 @@ export default function Finanzas() {
               </Card>
             ))
           ) : (
-            /* VISTA POR PROVEEDOR (sin categorías) - Como la imagen original */
-            reagruparCxPSoloProveedores(cxpData?.proveedores || []).map(proveedor => (
-              <Card key={proveedor.proveedor_nombre} className="overflow-hidden" data-testid={`proveedor-flat-${proveedor.proveedor_nombre}`}>
-                {/* Header del proveedor */}
-                <div
-                  className="bg-zinc-800 text-white px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-zinc-700 transition"
-                  onClick={() => toggleProveedor(proveedor.proveedor_nombre)}
-                >
-                  <div className="flex items-center gap-3">
-                    <ChevronRight className={`h-5 w-5 transition-transform ${cxpExpandidos[proveedor.proveedor_nombre] ? 'rotate-90' : ''}`} />
-                    <div>
-                      <h3 className="font-medium">{proveedor.proveedor_nombre}</h3>
-                      <p className="text-xs text-zinc-400">RFC: {proveedor.proveedor_rfc || 'N/A'}</p>
+            /* VISTA POR PROVEEDOR CON AGRUPACIÓN A/B/C - Mismo estilo que Por Categoría */
+            reagruparCxPPorProveedores(cxpData?.proveedores || []).map(categoria => {
+              const colorCategoria = {
+                A: { bg: 'bg-blue-600', border: 'border-l-blue-500', text: 'ALIMENTOS' },
+                B: { bg: 'bg-amber-600', border: 'border-l-amber-500', text: 'BEBIDAS' },
+                X: { bg: 'bg-zinc-600', border: 'border-l-zinc-500', text: 'OTROS' },
+                M: { bg: 'bg-purple-600', border: 'border-l-purple-500', text: 'MPRO' }
+              }[categoria.tipo] || { bg: 'bg-zinc-600', border: 'border-l-zinc-500', text: 'OTROS' };
+              
+              return (
+                <Card key={categoria.tipo} className={`overflow-hidden ${colorCategoria.border} border-l-4`} data-testid={`categoria-prov-${categoria.tipo}`}>
+                  {/* Header de Categoría */}
+                  <div
+                    className={`${colorCategoria.bg} text-white px-4 py-3 flex items-center justify-between cursor-pointer hover:opacity-90 transition`}
+                    onClick={() => toggleCategoria(categoria.tipo)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <ChevronRight className={`h-5 w-5 transition-transform ${cxpCategoriasExpandidas[categoria.tipo] ? 'rotate-90' : ''}`} />
+                      <div>
+                        <h2 className="font-bold text-lg">{categoria.tipo} - {colorCategoria.text}</h2>
+                        <p className="text-xs opacity-80">{categoria.proveedores.length} proveedores | {categoria.cantidad_facturas} facturas</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6 text-sm">
+                      <div className="text-right">
+                        <p className="text-xs opacity-80">Saldo Total</p>
+                        <p className="font-bold text-lg">{formatCurrency(categoria.subtotal_saldo)}</p>
+                      </div>
+                      {categoria.cantidad_vencidas > 0 && (
+                        <span className="px-3 py-1 bg-red-500 rounded-full text-xs font-bold">
+                          {categoria.cantidad_vencidas} vencidas
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-6 text-sm">
-                    <div className="text-right">
-                      <p className="text-xs text-zinc-400">Facturas</p>
-                      <p className="font-medium">{proveedor.cantidad_facturas}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-zinc-400">Saldo</p>
-                      <p className="font-medium">{formatCurrency(proveedor.subtotal_saldo)}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-zinc-400">A Pagar</p>
-                      <p className="font-bold text-green-400">{formatCurrency(proveedor.subtotal_a_pagar)}</p>
-                    </div>
-                    {proveedor.cantidad_vencidas > 0 && (
-                      <span className="px-2 py-1 bg-red-500 rounded text-xs">
-                        {proveedor.cantidad_vencidas} vencidas
-                      </span>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Facturas del proveedor (vista detallada como en la imagen) */}
-                {cxpExpandidos[proveedor.proveedor_nombre] && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead className="bg-zinc-100">
-                        <tr>
-                          <th className="text-left p-2 font-medium">Folio Entrada</th>
-                          <th className="text-left p-2 font-medium">Folio Factura</th>
-                          <th className="text-center p-2 font-medium">F. Entrada</th>
-                          <th className="text-center p-2 font-medium">F. Vencimiento</th>
-                          <th className="text-center p-2 font-medium">Días Venc.</th>
-                          <th className="text-left p-2 font-medium">Referencia</th>
-                          <th className="text-right p-2 font-medium">Importe</th>
-                          <th className="text-right p-2 font-medium">Saldo</th>
-                          <th className="text-center p-2 font-medium">Pagar</th>
-                          <th className="text-right p-2 font-medium">Importe a Pagar</th>
-                          <th className="text-center p-2 font-medium">Docs</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {proveedor.facturas.map((factura, idx) => (
-                          <tr key={factura.factura_id || idx} className={`border-b hover:bg-zinc-50 ${factura.dias_vencida > 0 ? 'bg-red-50' : ''}`}>
-                            <td className="p-2 font-mono">{factura.folio_entrada || 'N/A'}</td>
-                            <td className="p-2 font-mono">{factura.folio_factura || '-'}</td>
-                            <td className="p-2 text-center">{factura.fecha_entrada?.split('T')[0] || '-'}</td>
-                            <td className="p-2 text-center">{factura.fecha_vencimiento || '-'}</td>
-                            <td className={`p-2 text-center font-bold ${factura.dias_vencida > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                              {factura.dias_vencida > 0 ? factura.dias_vencida : '-'}
-                            </td>
-                            <td className="p-2 max-w-[150px] truncate" title={factura.referencia || factura.observaciones}>
-                              {factura.referencia || factura.observaciones || '-'}
-                            </td>
-                            <td className="p-2 text-right font-mono">{formatCurrency(factura.importe_original || factura.importe_total || 0)}</td>
-                            <td className="p-2 text-right font-mono font-bold">{formatCurrency(factura.saldo)}</td>
-                            <td className="p-2 text-center">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleDecisionPago(factura.factura_id, !factura.decision_pago); }}
-                                disabled={savingDecision === factura.factura_id}
-                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${
-                                  factura.decision_pago 
-                                    ? 'bg-green-500 border-green-500 text-white' 
-                                    : 'border-zinc-300 hover:border-green-400'
-                                }`}
-                              >
-                                {savingDecision === factura.factura_id ? (
-                                  <RefreshCw className="h-3 w-3 animate-spin" />
-                                ) : factura.decision_pago ? (
-                                  <CheckCircle2 className="h-4 w-4" />
-                                ) : null}
-                              </button>
-                            </td>
-                            <td className="p-2 text-right font-mono text-green-600 font-bold">
-                              {factura.decision_pago ? formatCurrency(factura.importe_a_pagar || factura.saldo) : '-'}
-                            </td>
-                            <td className="p-2">
-                              <div className="flex items-center justify-center gap-1">
-                                <button className="p-1 hover:bg-zinc-200 rounded" title="PDF Factura">
-                                  <FileText className="h-4 w-4 text-red-500" />
-                                </button>
-                                <button className="p-1 hover:bg-zinc-200 rounded" title="XML">
-                                  <File className="h-4 w-4 text-green-600" />
-                                </button>
-                                <button className="p-1 hover:bg-zinc-200 rounded" title="Entrada Sistema">
-                                  <FileSpreadsheet className="h-4 w-4 text-blue-500" />
-                                </button>
+                  
+                  {/* Proveedores dentro de la categoría */}
+                  {cxpCategoriasExpandidas[categoria.tipo] && (
+                    <div className="divide-y divide-zinc-200">
+                      {categoria.proveedores.map(proveedor => {
+                        const provKey = `prov_${categoria.tipo}_${proveedor.proveedor_nombre}`;
+                        return (
+                          <div key={provKey} className="bg-white">
+                            {/* Header del Proveedor */}
+                            <div
+                              className="bg-zinc-100 px-4 py-2 flex items-center justify-between cursor-pointer hover:bg-zinc-200 transition border-l-4 border-l-zinc-400"
+                              onClick={() => toggleProveedor(provKey)}
+                              data-testid={`proveedor-prov-${provKey}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <ChevronRight className={`h-4 w-4 transition-transform ${cxpExpandidos[provKey] ? 'rotate-90' : ''}`} />
+                                <div>
+                                  <h3 className="font-medium text-sm text-zinc-800">{proveedor.proveedor_nombre}</h3>
+                                  {proveedor.sucursal && (
+                                    <p className="text-xs text-zinc-500">{proveedor.sucursal}</p>
+                                  )}
+                                </div>
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {/* Subtotal del proveedor */}
-                        <tr className="bg-zinc-200 font-bold">
-                          <td colSpan={6} className="p-2 text-right">SUBTOTAL {proveedor.proveedor_nombre}:</td>
-                          <td className="p-2 text-right font-mono">{formatCurrency(proveedor.subtotal_importe)}</td>
-                          <td className="p-2 text-right font-mono">{formatCurrency(proveedor.subtotal_saldo)}</td>
-                          <td className="p-2"></td>
-                          <td className="p-2 text-right font-mono text-green-700">{formatCurrency(proveedor.subtotal_a_pagar)}</td>
-                          <td className="p-2"></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </Card>
-            ))
+                              <div className="flex items-center gap-4 text-xs">
+                                <div className="text-right">
+                                  <p className="text-zinc-500">Facturas</p>
+                                  <p className="font-medium">{proveedor.cantidad_facturas}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-zinc-500">Saldo</p>
+                                  <p className="font-bold text-zinc-800">{formatCurrency(proveedor.subtotal_saldo)}</p>
+                                </div>
+                                {proveedor.cantidad_vencidas > 0 && (
+                                  <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">
+                                    {proveedor.cantidad_vencidas} venc.
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Facturas del proveedor */}
+                            {cxpExpandidos[provKey] && (
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-xs">
+                                  <thead className="bg-zinc-50">
+                                    <tr>
+                                      <th className="text-left p-2 font-medium text-zinc-600">Folio Entrada</th>
+                                      <th className="text-left p-2 font-medium text-zinc-600">Folio Factura</th>
+                                      <th className="text-center p-2 font-medium text-zinc-600">F. Entrada</th>
+                                      <th className="text-center p-2 font-medium text-zinc-600">F. Vencimiento</th>
+                                      <th className="text-center p-2 font-medium text-zinc-600">Días Venc.</th>
+                                      <th className="text-left p-2 font-medium text-zinc-600">Referencia</th>
+                                      <th className="text-right p-2 font-medium text-zinc-600">Importe</th>
+                                      <th className="text-right p-2 font-medium text-zinc-600">Saldo</th>
+                                      <th className="text-center p-2 font-medium text-zinc-600">Pagar</th>
+                                      <th className="text-right p-2 font-medium text-zinc-600">Importe a Pagar</th>
+                                      <th className="text-center p-2 font-medium text-zinc-600">Docs</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {proveedor.facturas.map((factura, idx) => (
+                                      <tr key={factura.factura_id || idx} className={`border-b hover:bg-zinc-50 ${factura.dias_vencida > 0 ? 'bg-red-50' : ''}`}>
+                                        <td className="p-2 font-mono text-zinc-700">{factura.folio_entrada || 'N/A'}</td>
+                                        <td className="p-2 font-mono text-zinc-700">{factura.folio_factura || '-'}</td>
+                                        <td className="p-2 text-center text-zinc-600">{factura.fecha_entrada?.split('T')[0] || '-'}</td>
+                                        <td className="p-2 text-center text-zinc-600">{factura.fecha_vencimiento || '-'}</td>
+                                        <td className="p-2 text-center">
+                                          <span className={`font-bold ${factura.dias_vencida > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                            {factura.dias_vencida > 0 ? factura.dias_vencida : '-'}
+                                          </span>
+                                        </td>
+                                        <td className="p-2 max-w-[150px] truncate text-zinc-600" title={factura.referencia || factura.observaciones}>
+                                          {factura.referencia || factura.observaciones || '-'}
+                                        </td>
+                                        <td className="p-2 text-right font-mono">{formatCurrency(factura.importe_original || factura.importe_total || 0)}</td>
+                                        <td className="p-2 text-right font-mono font-bold">{formatCurrency(factura.saldo)}</td>
+                                        <td className="p-2 text-center">
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); handleDecisionPago(factura.factura_id, !factura.decision_pago); }}
+                                            disabled={savingDecision === factura.factura_id}
+                                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${
+                                              factura.decision_pago 
+                                                ? 'bg-green-500 border-green-500 text-white' 
+                                                : 'border-zinc-300 hover:border-green-400'
+                                            }`}
+                                          >
+                                            {savingDecision === factura.factura_id ? (
+                                              <RefreshCw className="h-3 w-3 animate-spin" />
+                                            ) : factura.decision_pago ? (
+                                              <CheckCircle2 className="h-4 w-4" />
+                                            ) : null}
+                                          </button>
+                                        </td>
+                                        <td className="p-2 text-right font-mono text-green-600 font-bold">
+                                          {factura.decision_pago ? formatCurrency(factura.importe_a_pagar || factura.saldo) : '-'}
+                                        </td>
+                                        <td className="p-2">
+                                          <div className="flex items-center justify-center gap-1">
+                                            <button className="p-1 hover:bg-zinc-200 rounded" title="PDF Factura">
+                                              <FileText className="h-4 w-4 text-red-500" />
+                                            </button>
+                                            <button className="p-1 hover:bg-zinc-200 rounded" title="XML">
+                                              <File className="h-4 w-4 text-green-600" />
+                                            </button>
+                                            <button className="p-1 hover:bg-zinc-200 rounded" title="Entrada Sistema">
+                                              <FileSpreadsheet className="h-4 w-4 text-blue-500" />
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                    {/* Subtotal del proveedor */}
+                                    <tr className="bg-zinc-200 font-bold">
+                                      <td colSpan={6} className="p-2 text-right text-xs">SUBTOTAL {proveedor.proveedor_nombre}:</td>
+                                      <td className="p-2 text-right font-mono">{formatCurrency(proveedor.subtotal_importe)}</td>
+                                      <td className="p-2 text-right font-mono">{formatCurrency(proveedor.subtotal_saldo)}</td>
+                                      <td className="p-2"></td>
+                                      <td className="p-2 text-right font-mono text-green-700">{formatCurrency(proveedor.facturas.reduce((sum, f) => sum + (f.decision_pago ? (f.importe_a_pagar || f.saldo || 0) : 0), 0))}</td>
+                                      <td className="p-2"></td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Card>
+              );
+            })
           )}
         </div>
         

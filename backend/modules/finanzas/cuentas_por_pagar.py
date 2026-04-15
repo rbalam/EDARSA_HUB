@@ -810,14 +810,34 @@ async def listar_sucursales_cxp(
 
 @router.put("/{factura_id}/decision-pago")
 async def actualizar_decision_pago(
-    factura_id: int,
+    factura_id: str,  # Cambiado a str para soportar IDs compuestos (ej: "MPRO_12345")
     data: ActualizarDecisionPago,
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Actualizar la decisión de pago de una factura.
+    Soporta IDs numéricos (legacy) e IDs compuestos (MPRO_xxx).
     """
-    factura = next((f for f in _facturas_db if f["factura_id"] == factura_id), None)
+    # Detectar tipo de ID y procesar
+    if factura_id.startswith("MPRO_"):
+        # ID compuesto de MPRO - por ahora solo registrar la intención
+        # TODO: Implementar persistencia en MPRO cuando esté disponible
+        logging.info(f"[CxP] Factura MPRO {factura_id} - Decisión: {data.decision_pago}")
+        return {
+            "success": True,
+            "factura_id": factura_id,
+            "decision_pago": data.decision_pago,
+            "fuente": "MPRO",
+            "mensaje": "Decisión registrada (persistencia MPRO pendiente)"
+        }
+    
+    # ID numérico - buscar en datos demo/cache
+    try:
+        numeric_id = int(factura_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"ID de factura inválido: {factura_id}")
+    
+    factura = next((f for f in _facturas_db if f["factura_id"] == numeric_id), None)
     if not factura:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     
