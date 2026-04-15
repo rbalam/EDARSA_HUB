@@ -308,26 +308,34 @@ export default function Finanzas() {
       ]);
       
       // PRE-SELECCIONAR facturas vencidas automáticamente
+      let contadorVencidasPreseleccionadas = 0;
+      let contadorTotal = 0;
+      
       const dataConPreseleccion = {
         ...dataFacturas,
         proveedores: (dataFacturas.proveedores || []).map(proveedor => ({
           ...proveedor,
           facturas: (proveedor.facturas || []).map(factura => {
-            // Si está vencida (dias_vencida > 0) y no tiene decisión previa, marcarla para pago
+            contadorTotal++;
+            // Si está vencida (dias_vencida > 0), marcarla para pago
             const diasVencida = parseInt(factura.dias_vencida) || 0;
             const estaVencida = diasVencida > 0;
-            const yaDecidida = factura.decision_pago === true;
             const saldo = parseFloat(factura.saldo) || 0;
-            const importeExistente = parseFloat(factura.importe_a_pagar) || 0;
+            
+            if (estaVencida) {
+              contadorVencidasPreseleccionadas++;
+            }
             
             return {
               ...factura,
-              decision_pago: yaDecidida || estaVencida,
-              importe_a_pagar: (yaDecidida || estaVencida) ? (importeExistente > 0 ? importeExistente : saldo) : 0
+              decision_pago: estaVencida,
+              importe_a_pagar: estaVencida ? saldo : 0
             };
           })
         }))
       };
+      
+      console.log(`[CxP] Pre-selección: ${contadorVencidasPreseleccionadas} vencidas de ${contadorTotal} total`);
       
       setCxpData(dataConPreseleccion);
       setCxpResumen(dataResumen);
@@ -1750,15 +1758,15 @@ export default function Finanzas() {
           <div className="flex items-center justify-between bg-zinc-100 rounded-lg p-3">
             <div className="flex items-center gap-4 text-sm">
               <span className="text-zinc-600">
-                <strong className="text-red-600">{cxpData?.totales?.total_vencidas || 0}</strong> facturas vencidas
+                <strong className="text-red-600">{totales.total_vencidas || 0}</strong> facturas vencidas
               </span>
               <span className="text-zinc-400">|</span>
               <span className="text-zinc-600">
-                <strong className="text-green-600">{cxpResumen?.resumen?.facturas_con_decision || 0}</strong> marcadas para pago
+                <strong className="text-green-600">{totales.facturas_marcadas || 0}</strong> marcadas para pago
               </span>
               <span className="text-zinc-400">|</span>
               <span className="font-bold text-blue-600">
-                Total a pagar: {formatCurrency(cxpData?.totales?.total_a_pagar || 0)}
+                Total a pagar: {formatCurrency(totales.total_a_pagar || 0)}
               </span>
             </div>
             <div className="flex gap-2">
@@ -1822,9 +1830,9 @@ export default function Finanzas() {
           </Card>
           <Card className="border-l-4 border-l-blue-600 bg-blue-50">
             <CardContent className="p-3">
-              <p className="text-xs text-blue-600 font-medium">TOTAL A PAGAR</p>
-              <p className="text-lg font-bold text-blue-700">{formatCurrency(totales.total_a_pagar || 0)}</p>
-              <p className="text-xs text-blue-500">{totales.facturas_marcadas || 0} facturas</p>
+              <p className="text-xs text-blue-600 font-medium">SALDO TOTAL CxP</p>
+              <p className="text-lg font-bold text-blue-700">{formatCurrency(totales.total_saldo || 0)}</p>
+              <p className="text-xs text-blue-500">{cxpData?.proveedores?.reduce((acc, p) => acc + (p.facturas?.length || 0), 0) || 0} facturas</p>
             </CardContent>
           </Card>
         </div>
