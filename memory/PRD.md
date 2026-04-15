@@ -26,11 +26,33 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 - Gestión de fichas de depósito
 - Carga de archivos
 
-### 4. Configuración de Visibilidad de Sucursales ✅ (NUEVO)
+### 4. Configuración de Visibilidad de Sucursales ✅
 - **Colección MongoDB**: `server_sucursales_config`
 - **Funcionalidad**: Parametrizar qué sucursales de un servidor aparecen en operaciones
 - **UI**: Dialog en Servidores para administrar visibilidad
 - **Backward Compatible**: Sin configuración = todas visibles (comportamiento legacy)
+
+### 5. Tesorería - Cuadre de Cortes Z ✅
+- Lectura de Cortes Z desde SoftRestaurant y MPRO
+- Estados de cuadre: PENDIENTE, EN_PROCESO, CUADRADO, DESCUADRE
+- Validación de fichas de depósito
+- Propinas pagadas incluidas en datos del corte
+
+### 6. Estados de Conexión de Servidores ✅
+- Ping en tiempo real a servidores SQL
+- Badges de estado: Conectado (verde), Pendiente (amarillo), Parcial (naranja), Sin Conexión (rojo)
+- Fallback de "Ventas del Día" a $0.00 cuando hay timeout
+
+---
+
+## Documentos CAB (Change Advisory Board)
+
+### CAB-001: Módulo Control de Propinas TPV
+- **Documento**: `/app/docs/CAB_MODULO_PROPINAS_TPV.md`
+- **Fecha**: 2026-04-14
+- **Estado**: PROPUESTA EN REVISIÓN
+- **Descripción**: Control y cuadre de comisión del 2% sobre propinas pagadas con tarjeta (TPV)
+- **Requiere**: Aprobación del usuario antes de implementar
 
 ---
 
@@ -81,11 +103,16 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 
 ### P0 (Urgente)
 - ~~Configuración de visibilidad de sucursales por servidor~~ ✅
+- **Módulo Control de Propinas TPV (2%)** - Documento CAB entregado, pendiente aprobación
+  - Documento: `/app/docs/CAB_MODULO_PROPINAS_TPV.md`
+  - Estado: PROPUESTA EN REVISIÓN
 
-### P1 (Alta Prioridad)
+### P1 (Alta Prioridad) - PENDIENTES DE AUTORIZACIÓN
+- **KPI de Proyección "Ventas del Día"** - Diagnóstico entregado, esperando GO para implementar
+- **Calendario de Eventos Especiales** - Propuesta de colección `eventos_especiales`, esperando GO
 - Integración de OCR para fichas de depósito en Tesorería
 - Lógica de selección de facturas en CxP + cálculo "Total a Pagar"
-- Módulo Finanzas - Conciliación bancaria
+- Módulo Finanzas - Conciliación bancaria (BBVA)
 - Integración real con catálogos SQL al autorizar "Solicitud de Alta"
 - Reportes de colaboradores por empresa
 
