@@ -48,10 +48,13 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 ## Documentos CAB (Change Advisory Board)
 
 ### CAB-001: Módulo Control de Propinas TPV
-- **Documento**: `/app/docs/CAB_MODULO_PROPINAS_TPV.md`
+- **Documento Principal**: `/app/docs/CAB_MODULO_PROPINAS_TPV.md`
+- **Validación Técnica**: `/app/docs/CAB_PROPINAS_TPV_VALIDACION_TECNICA.md`
 - **Fecha**: 2026-04-14
-- **Estado**: PROPUESTA EN REVISIÓN
+- **Estado**: VALIDACIÓN TÉCNICA ENTREGADA - PENDIENTE APROBACIÓN FINAL
 - **Descripción**: Control y cuadre de comisión del 2% sobre propinas pagadas con tarjeta (TPV)
+- **Sistemas**: SoftRestaurant (La Estelar, Cienfuegos, 130° Mérida) + MPRO (Querétaro, Origen)
+- **Modelo Simplificado**: 2 colecciones (`propinas_control`, `propinas_config`)
 - **Requiere**: Aprobación del usuario antes de implementar
 
 ---
