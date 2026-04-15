@@ -365,6 +365,19 @@ Optimización de lectura     → MongoDB (CACHE)
 
 **Estado:** ANÁLISIS COMPLETO - PENDIENTE APROBACIÓN PARA IMPLEMENTAR
 
+### 2026-04-15 - Ordenamiento de Facturas CxP por Folio
+**Mejora de UX: Facturas ordenadas de más antigua a más reciente**
+
+- ✅ Modificación en `reagruparCxPPorProveedores()` - Vista por Categoría
+- ✅ Modificación en `reagruparCxPSoloProveedores()` - Vista por Proveedor
+- ✅ Ordenamiento por campo `folio_entrada` ascendente (número más bajo = más antiguo)
+- ✅ Mantiene ordenamiento de proveedores por saldo descendente
+
+**Archivos modificados:**
+- `/app/frontend/src/pages/Finanzas.js` (líneas 118-130 y 172-181)
+
+**Estado:** IMPLEMENTADO
+
 ---
 
 ## Credenciales de Prueba

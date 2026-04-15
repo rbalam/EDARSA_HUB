@@ -116,9 +116,17 @@ export default function Finanzas() {
     });
     
     // Convertir a array y ordenar proveedores por saldo desc
+    // Ordenar facturas dentro de cada proveedor por folio_entrada (ascendente: más antigua primero)
     const resultado = Object.values(categorias).map(cat => ({
       ...cat,
-      proveedores: Object.values(cat.proveedores).sort((a, b) => b.subtotal_saldo - a.subtotal_saldo)
+      proveedores: Object.values(cat.proveedores).map(prov => ({
+        ...prov,
+        facturas: prov.facturas.sort((a, b) => {
+          const folioA = parseInt(a.folio_entrada) || 0;
+          const folioB = parseInt(b.folio_entrada) || 0;
+          return folioA - folioB; // Ascendente: más antiguo primero
+        })
+      })).sort((a, b) => b.subtotal_saldo - a.subtotal_saldo)
     }));
     
     // Ordenar categorías: A, B, X, M (MPRO)
@@ -161,8 +169,16 @@ export default function Finanzas() {
       });
     });
     
-    // Ordenar por saldo descendente
-    return Object.values(proveedores).sort((a, b) => b.subtotal_saldo - a.subtotal_saldo);
+    // Ordenar facturas dentro de cada proveedor por folio_entrada (ascendente: más antigua primero)
+    // Ordenar proveedores por saldo descendente
+    return Object.values(proveedores).map(prov => ({
+      ...prov,
+      facturas: prov.facturas.sort((a, b) => {
+        const folioA = parseInt(a.folio_entrada) || 0;
+        const folioB = parseInt(b.folio_entrada) || 0;
+        return folioA - folioB; // Ascendente: más antiguo primero
+      })
+    })).sort((a, b) => b.subtotal_saldo - a.subtotal_saldo);
   }, []);
   
   // Estados para Control de Ingresos
