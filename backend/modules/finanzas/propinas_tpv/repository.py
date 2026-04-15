@@ -205,9 +205,14 @@ class PropinasTPVRepository:
             
             # Paso 4: Procesar resultados
             cortes = []
+            estrategia_detectada = None
             for row in rows or []:
                 fecha_val = row.get('fecha_corte')
                 fecha_iso = fecha_val.isoformat() if hasattr(fecha_val, 'isoformat') else str(fecha_val)
+                
+                # Capturar estrategia usada
+                if not estrategia_detectada:
+                    estrategia_detectada = row.get('estrategia_usada', 'DESCONOCIDA')
                 
                 cortes.append({
                     'folio_corte': str(row.get('folio_corte', '')),
@@ -220,7 +225,8 @@ class PropinasTPVRepository:
                 })
             
             result['cortes'] = cortes
-            logger.info(f"{server['name']}: {len(cortes)} cortes encontrados (query defensiva)")
+            result['estrategia_usada'] = estrategia_detectada
+            logger.info(f"{server['name']}: {len(cortes)} cortes encontrados (estrategia: {estrategia_detectada})")
             
         except Exception as e:
             result['error'] = str(e)
