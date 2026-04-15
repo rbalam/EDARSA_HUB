@@ -218,10 +218,16 @@ class PropinasTPVRepository:
                     'folio_corte': str(row.get('folio_corte', '')),
                     'fecha_corte': fecha_iso,
                     'estacion_id': str(row.get('estacion_id', 'N/A')),
+                    'turno_id': str(row.get('turno_id', 'N/A')),
+                    'corte_id': str(row.get('corte_id', '')),
+                    # Propinas TPV es el valor principal (de cheques.propinatarjeta)
+                    'propinas_tpv': float(row.get('propinas_tpv', 0) or 0),
                     'propinas_totales': float(row.get('propinas_totales', 0) or 0),
                     'ventas_tarjeta': float(row.get('ventas_tarjeta', 0) or 0),
                     'ventas_efectivo': float(row.get('ventas_efectivo', 0) or 0),
                     'ventas_totales': float(row.get('ventas_totales', 0) or 0),
+                    'total_cheques': int(row.get('total_cheques', 0) or 0),
+                    'saldo_corte': float(row.get('saldo_corte', 0) or 0),
                 })
             
             result['cortes'] = cortes

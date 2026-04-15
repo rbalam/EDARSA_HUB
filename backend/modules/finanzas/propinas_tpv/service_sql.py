@@ -211,14 +211,14 @@ class PropinasTPVSQLService:
                 actualizados_server = 0
                 
                 for corte in cortes:
-                    # Solo procesar si hay propinas
-                    propinas_totales = corte['propinas_totales']
-                    if propinas_totales <= 0:
+                    # Usar propinas_tpv (de cheques.propinatarjeta) - DATO EXACTO
+                    propinas_tpv = corte.get('propinas_tpv', 0)
+                    
+                    # Solo procesar si hay propinas TPV
+                    if propinas_tpv <= 0:
                         continue
                     
-                    propinas_tpv = propinas_totales
-                    
-                    # Calcular comisión
+                    # Calcular comisión 2%
                     comision = round(propinas_tpv * porcentaje_comision, 2)
                     monto_a_pagar = round(propinas_tpv - comision, 2)
                     
@@ -233,6 +233,8 @@ class PropinasTPVSQLService:
                         'sucursal_id': server_name,
                         'folio_corte': corte['folio_corte'],
                         'fecha_corte': fecha_corte_dt,
+                        'estacion_id': corte.get('estacion_id'),
+                        'turno_id': corte.get('turno_id'),
                         'server_name': server_name,
                         'system_type': 'SoftRestaurant',
                         'sucursal_nombre': server_name,
@@ -240,14 +242,16 @@ class PropinasTPVSQLService:
                         'sincronizado_por': usuario,
                         'origen': {
                             'tipo_dato': TipoDatoOrigen.EXACTO.value,
-                            'metodo_calculo': 'CONCEPTO_9_CORTE_DEFENSIVO',
+                            'metodo_calculo': 'CHEQUES_PROPINATARJETA',
                             'confianza': 1.0,
-                            'propinas_totales_corte': propinas_totales,
+                            'propinas_totales_corte': corte.get('propinas_totales', 0),
                             'ventas_tarjeta': corte.get('ventas_tarjeta', 0),
                             'ventas_totales': corte.get('ventas_totales', 0),
                             'ventas_efectivo': corte.get('ventas_efectivo', 0),
                             'propinas_tpv': propinas_tpv,
-                            'formula_aplicada': resultado.get('query_usada', 'Query defensiva'),
+                            'total_cheques': corte.get('total_cheques', 0),
+                            'saldo_corte': corte.get('saldo_corte', 0),
+                            'formula_aplicada': 'SUM(cheques.propinatarjeta) por turno/corte',
                             'fecha_sincronizacion': datetime.now(timezone.utc),
                             'advertencia': None
                         },

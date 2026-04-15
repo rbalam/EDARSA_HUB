@@ -51,34 +51,28 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 - **Documento Principal**: `/app/docs/CAB_MODULO_PROPINAS_TPV.md`
 - **Validación Técnica**: `/app/docs/CAB_PROPINAS_TPV_VALIDACION_TECNICA.md`
 - **Adenda Final**: `/app/docs/CAB_PROPINAS_TPV_ADENDA_FINAL.md`
-- **Entrega FASE 1A**: `/app/docs/ENTREGA_FASE1A_PROPINAS_TPV.md`
-- **FASE 1B Estabilización**: `/app/docs/FASE1B_VALIDACION_ESTABILIZACION.md`
+- **Definición Técnica Final**: `/app/docs/DEFINICION_TECNICA_FINAL_SOFTRESTAURANT.md`
 - **Migración SQL**: `/app/docs/MIGRACION_TECNICA_PROPINAS_SQL.md`
-- **Fecha**: 2026-04-15
+- **Fecha Cierre Técnico**: 2026-04-15
 - **Estado**: 
-  - ✅ FASE 1A IMPLEMENTADA (endpoints + colecciones originales MongoDB)
-  - ✅ FASE 1B CAPA DEFENSIVA IMPLEMENTADA (schema_detector + query adaptable)
-  - ✅ REFACTORIZACIÓN SQL IMPLEMENTADA (SQL Server como persistencia oficial)
-  - ⛔ VALIDACIÓN VPN BLOQUEADA (requiere acceso VPN a servidores on-premise)
-  - ⏸️ NO LIBERAR A PRODUCCIÓN TODAVÍA
-- **Arquitectura Actual**: SQL Server EDARSA HUB (persistencia) + MongoDB (cache)
-- **Sistemas Implementados**: SoftRestaurant (La Estelar, Cienfuegos, 130 Mérida)
-- **Sistemas Pendientes**: MPRO (excluido del MVP actual)
-- **Tablas SQL Nuevas**: 
-  - `propinas_tpv_control` (registro oficial)
-  - `propinas_tpv_config` (configuración jerárquica)
-  - `propinas_tpv_historial` (auditoría)
-- **Colecciones Cache**: `propinas_cache_listado`, `propinas_cache_resumen`, `propinas_cache_config`, `propinas_cache_detalle`
-- **Endpoints**: 14 endpoints bajo /api/finanzas/propinas/*
-- **Nuevos Endpoints**: `/inicializar-sql`, `/cache/stats`, `/cache/invalidar`
-- **Archivos Nuevos**:
-  - `sql_scripts.py` (~250 líneas)
-  - `sql_repository.py` (~550 líneas)
-  - `cache_manager.py` (~350 líneas)
-  - `service_sql.py` (~350 líneas)
-  - `routes_sql.py` (~400 líneas)
-- **Hallazgo Crítico**: Columna `idconcepto` no encontrada en algunos servidores
-- **Requiere**: Validación desde ambiente con acceso VPN antes de producción
+  - ✅ FASE 1A IMPLEMENTADA
+  - ✅ FASE 1B CAPA DEFENSIVA IMPLEMENTADA
+  - ✅ REFACTORIZACIÓN SQL IMPLEMENTADA
+  - ✅ DEFINICIÓN TÉCNICA CERRADA
+  - ✅ QUERY FINAL VALIDADA: `cheques.propinatarjeta`
+  - 🟢 **LISTO PARA PILOTO CONTROLADO**
+- **Arquitectura**: SQL Server EDARSA HUB (persistencia) + MongoDB (cache)
+- **Fuente Oficial de Propinas TPV**: `cheques.propinatarjeta` (DATO EXACTO)
+- **Relación**: cheques.idturno → turnos.idturno → movtoscaja (Corte Z)
+- **Llave de Integración**: (server_id, estacion_id, folio_corte, fecha_corte)
+- **Sucursales Aprobadas**:
+  - ✅ La Estelar → GO
+  - ✅ Cienfuegos → GO
+  - ✅ 130° Mérida → GO
+- **Tablas SQL**: propinas_tpv_control, propinas_tpv_config, propinas_tpv_historial
+- **Colecciones Cache**: propinas_cache_*
+- **Endpoints**: `/api/finanzas/propinas/*`
+- **Pendiente**: Ejecutar piloto controlado en producción
 
 ### CAB-002: Rediseño Arquitectónico SQL Server (Propinas + Cortes Z)
 - **Documento Arquitectura Propinas**: `/app/docs/ARQUITECTURA_PROPINAS_TPV_v3.md`
