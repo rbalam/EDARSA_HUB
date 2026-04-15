@@ -2071,11 +2071,11 @@ export default function Finanzas() {
             /* VISTA POR PROVEEDOR CON AGRUPACIÓN A/B/C - Mismo estilo que Por Categoría */
             reagruparCxPPorProveedores(cxpData?.proveedores || []).map(categoria => {
               const colorCategoria = {
-                A: { bg: 'bg-blue-600', border: 'border-l-blue-500', text: 'ALIMENTOS' },
+                A: { bg: 'bg-emerald-600', border: 'border-l-emerald-500', text: 'ALIMENTOS' },
                 B: { bg: 'bg-amber-600', border: 'border-l-amber-500', text: 'BEBIDAS' },
-                X: { bg: 'bg-zinc-600', border: 'border-l-zinc-500', text: 'OTROS' },
-                M: { bg: 'bg-purple-600', border: 'border-l-purple-500', text: 'MPRO' }
-              }[categoria.tipo] || { bg: 'bg-zinc-600', border: 'border-l-zinc-500', text: 'OTROS' };
+                X: { bg: 'bg-slate-600', border: 'border-l-slate-500', text: 'OTROS' },
+                M: { bg: 'bg-indigo-600', border: 'border-l-indigo-500', text: 'MPRO' }
+              }[categoria.tipo] || { bg: 'bg-slate-600', border: 'border-l-slate-500', text: 'OTROS' };
               
               return (
                 <Card key={categoria.tipo} className={`overflow-hidden ${colorCategoria.border} border-l-4`} data-testid={`categoria-prov-${categoria.tipo}`}>
