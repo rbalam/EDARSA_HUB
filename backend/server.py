@@ -159,6 +159,13 @@ from modules.finanzas.cuentas_por_pagar import router as cxp_router
 from modules.finanzas.ingresos import router as ingresos_router
 from modules.finanzas.tesoreria import router as tesoreria_router
 
+# MÓDULO PROPINAS TPV: Control y cuadre de comisión sobre propinas TPV (2%)
+# - CAB Aprobado: 2026-04-14
+# - FASE 1 MVP: Solo SoftRestaurant (La Estelar, Cienfuegos, 130 Mérida)
+# - FUERA DE ALCANCE: MPRO (pendiente para fase posterior)
+# - Documentos: /app/docs/CAB_MODULO_PROPINAS_TPV.md
+from modules.finanzas.propinas_tpv.routes import router as propinas_tpv_router
+
 # MÓDULO CATÁLOGOS: Módulo maestro centralizado de catálogos
 # - Diciembre 2025: Implementación inicial
 # - Acceso central y contextual desde módulos
@@ -214,6 +221,10 @@ api_router.include_router(tesoreria_router)
 
 # MÓDULO CATÁLOGOS: Registrar router de catálogos
 api_router.include_router(catalogos_router)
+
+# MÓDULO PROPINAS TPV: Registrar router de propinas TPV (FASE 1 MVP - Solo SoftRestaurant)
+# Endpoints bajo /api/finanzas/propinas/*
+api_router.include_router(propinas_tpv_router)
 
 import requests
 
