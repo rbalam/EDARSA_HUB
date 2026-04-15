@@ -292,15 +292,18 @@ async def crear_cuadre(
     Crea un nuevo cuadre para un Corte Z.
     El corte_z debe incluir los datos del corte a cuadrar.
     """
+    from core.auditoria_helpers import registrar_auditoria_tesoreria
+    
     try:
         repo = await get_cuadres_repository()
         
         # Verificar que no exista ya un cuadre para este corte
-        if 'corte_z' in data:
-            existente = await repo.obtener_cuadre_por_folio(
-                data['corte_z'].get('folio_corte'),
-                data['corte_z'].get('sucursal_id')
-            )
+        corte_z = data.get('corte_z', {})
+        folio_corte = corte_z.get('folio_corte')
+        sucursal_id = corte_z.get('sucursal_id')
+        
+        if corte_z:
+            existente = await repo.obtener_cuadre_por_folio(folio_corte, sucursal_id)
             if existente:
                 raise HTTPException(
                     status_code=400,
@@ -309,6 +312,26 @@ async def crear_cuadre(
         
         user_id = current_user.get('sub') or current_user.get('email')
         cuadre = await repo.crear_cuadre(data, user_id)
+        
+        # Calcular si hay descuadre
+        diferencia = data.get('conteo_efectivo', {}).get('diferencia', 0) or 0
+        tiene_descuadre = abs(diferencia) > 0
+        
+        # Registrar auditoría
+        await registrar_auditoria_tesoreria(
+            current_user=current_user,
+            accion='CONFIRM',
+            corte_id=cuadre.get('id'),
+            folio_corte=folio_corte,
+            sucursal_id=sucursal_id,
+            valor_nuevo={
+                'efectivo_contado': data.get('conteo_efectivo', {}).get('total_contado'),
+                'diferencia': diferencia,
+                'estado': cuadre.get('estado')
+            },
+            tiene_descuadre=tiene_descuadre,
+            motivo='Crear cuadre de Corte Z'
+        )
         
         return {
             "message": "Cuadre creado exitosamente",
@@ -328,12 +351,36 @@ async def actualizar_cuadre(
     current_user: Dict = Depends(get_current_user)
 ):
     """Actualiza un cuadre existente (conteo, ficha de depósito, observaciones)"""
+    from core.auditoria_helpers import registrar_auditoria_tesoreria
+    
     try:
         repo = await get_cuadres_repository()
+        
+        # Obtener cuadre anterior para auditoría
+        cuadre_anterior = await repo.obtener_cuadre(cuadre_id)
+        
         cuadre = await repo.actualizar_cuadre(cuadre_id, data)
         
         if not cuadre:
             raise HTTPException(status_code=404, detail="Cuadre no encontrado")
+        
+        # Registrar auditoría de ajuste
+        await registrar_auditoria_tesoreria(
+            current_user=current_user,
+            accion='EDIT',
+            corte_id=cuadre_id,
+            folio_corte=cuadre.get('corte_z', {}).get('folio_corte'),
+            sucursal_id=cuadre.get('corte_z', {}).get('sucursal_id'),
+            valor_anterior={
+                'estado': cuadre_anterior.get('estado') if cuadre_anterior else None,
+                'diferencia': cuadre_anterior.get('conteo_efectivo', {}).get('diferencia') if cuadre_anterior else None
+            } if cuadre_anterior else None,
+            valor_nuevo={
+                'estado': cuadre.get('estado'),
+                'diferencia': data.get('conteo_efectivo', {}).get('diferencia')
+            },
+            motivo='Ajustar cuadre existente'
+        )
         
         return {
             "message": "Cuadre actualizado exitosamente",

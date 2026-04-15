@@ -308,6 +308,52 @@ Optimización de lectura     → MongoDB (CACHE)
 - ✅ Botón "Pagar" compatible con IDs compuestos (MPRO_xxx)
 - ✅ Estilos visuales unificados
 
+
+### 2026-04-15 - Implementación de Auditoría Financiera
+**Sistema de auditoría funcional para operaciones financieras sensibles**
+
+- ✅ Tabla `auditoria_financiera` diseñada (script SQL en `/app/backend/sql/`)
+- ✅ Servicio de auditoría con fallback MongoDB → SQL Server
+- ✅ Helpers de auditoría para módulos (CxP, Tesorería, Propinas)
+- ✅ Integración en endpoints de CxP (marcar pago, pago masivo)
+- ✅ Integración en endpoints de Tesorería (crear/actualizar cuadre)
+- ✅ Clasificación de acciones: VIEW, EDIT, CONFIRM, AUTHORIZE
+- ✅ Niveles de riesgo: BAJO, MEDIO, ALTO, CRÍTICO
+- ✅ Campos: usuario, fecha, módulo, entidad, registro, valor_anterior/nuevo, resultado
+
+**Archivos creados:**
+- `/app/backend/core/auditoria.py` (Servicio principal)
+- `/app/backend/core/auditoria_helpers.py` (Helpers por módulo)
+- `/app/backend/sql/auditoria_financiera.sql` (Script DDL)
+- `/app/docs/ENTREGABLES_AUDITORIA_RBAC.md` (Documentación)
+
+**Archivos modificados:**
+- `/app/backend/modules/finanzas/cuentas_por_pagar.py` (Auditoría en CxP)
+- `/app/backend/modules/finanzas/tesoreria.py` (Auditoría en Tesorería)
+
+**Pendiente:**
+- Configurar conexión a SQL Server EDARSA HUB
+- Sincronizar registros MongoDB → SQL Server
+- Integrar auditoría en Propinas TPV
+
+### 2026-04-15 - Análisis Sistema RBAC (Roles y Permisos)
+**Propuesta completa de sistema de control de acceso multi-nivel**
+
+- ✅ Matriz de permisos por módulo/acción/rol
+- ✅ Modelo de datos propuesto (7 tablas SQL)
+- ✅ 4 niveles de alcance: GLOBAL, GRUPO, EMPRESA, SUCURSAL
+- ✅ 6 perfiles base: SuperAdmin, Admin Finanzas, Tesorero, CxP, Auditor, Operador
+- ✅ 4 tipos de permiso: VIEW, EDIT, CONFIRM, AUTHORIZE
+- ✅ Reglas de evaluación de permisos
+- ✅ Ejemplos prácticos de configuración
+
+**Documentos generados:**
+- `/app/docs/MATRIZ_ROLES_PERMISOS_v2.md`
+- `/app/docs/SISTEMA_RBAC_PROPUESTA.md`
+- `/app/docs/AUDITORIA_FINANCIERA_PROPUESTA.md`
+
+**Estado:** ANÁLISIS COMPLETO - PENDIENTE APROBACIÓN PARA IMPLEMENTAR
+
 ---
 
 ## Credenciales de Prueba

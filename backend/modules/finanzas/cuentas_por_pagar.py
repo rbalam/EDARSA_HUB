@@ -818,11 +818,25 @@ async def actualizar_decision_pago(
     Actualizar la decisión de pago de una factura.
     Soporta IDs numéricos (legacy) e IDs compuestos (MPRO_xxx).
     """
+    # Importar helper de auditoría
+    from core.auditoria_helpers import registrar_auditoria_cxp
+    
     # Detectar tipo de ID y procesar
     if factura_id.startswith("MPRO_"):
         # ID compuesto de MPRO - por ahora solo registrar la intención
         # TODO: Implementar persistencia en MPRO cuando esté disponible
         logging.info(f"[CxP] Factura MPRO {factura_id} - Decisión: {data.decision_pago}")
+        
+        # Registrar auditoría
+        await registrar_auditoria_cxp(
+            current_user=current_user,
+            accion='EDIT',
+            factura_id=factura_id,
+            valor_anterior={'decision_pago': not data.decision_pago},
+            valor_nuevo={'decision_pago': data.decision_pago, 'importe_a_pagar': data.importe_a_pagar},
+            motivo='Marcar/desmarcar factura para pago'
+        )
+        
         return {
             "success": True,
             "factura_id": factura_id,
@@ -851,6 +865,15 @@ async def actualizar_decision_pago(
     
     logging.info(f"[CxP] Factura {factura_id} - Decisión: {data.decision_pago}, Importe: {factura['importe_a_pagar']}")
     
+    # Registrar auditoría
+    await registrar_auditoria_cxp(
+        current_user=current_user,
+        accion='EDIT',
+        factura_id=factura_id,
+        valor_nuevo={'decision_pago': data.decision_pago, 'importe_a_pagar': factura['importe_a_pagar']},
+        motivo='Marcar/desmarcar factura para pago'
+    )
+    
     return {
         "success": True,
         "factura": factura
@@ -865,13 +888,31 @@ async def actualizar_decision_pago_masivo(
     """
     Actualizar decisión de pago de múltiples facturas.
     """
+    from core.auditoria_helpers import registrar_auditoria_cxp
+    
     actualizadas = 0
+    monto_total = 0.0
+    
     for factura_id in data.facturas_ids:
         factura = next((f for f in _facturas_db if f["factura_id"] == factura_id), None)
         if factura:
             factura["decision_pago"] = data.decision_pago
             factura["importe_a_pagar"] = factura["saldo"] if data.decision_pago else 0
+            monto_total += factura["importe_a_pagar"]
             actualizadas += 1
+    
+    # Registrar auditoría para pago masivo (ALTO riesgo)
+    await registrar_auditoria_cxp(
+        current_user=current_user,
+        accion='EDIT',
+        factura_id=f'MASIVO_{len(data.facturas_ids)}',
+        valor_nuevo={
+            'decision_pago': data.decision_pago, 
+            'cantidad_facturas': actualizadas,
+            'monto_total': round(monto_total, 2)
+        },
+        motivo=f'Pago masivo: {actualizadas} facturas'
+    )
     
     return {
         "success": True,
