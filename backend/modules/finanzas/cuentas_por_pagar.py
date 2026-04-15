@@ -317,8 +317,15 @@ async def listar_facturas_pendientes(
             except Exception as e:
                 logging.error(f"[CxP] Error MPRO: {e}")
         
-        # 3. Si hay datos, agrupar por tipo de proveedor
+        # 3. Si hay datos, APLICAR FILTROS y agrupar por tipo de proveedor
         if all_facturas:
+            # APLICAR FILTROS antes de agrupar
+            if solo_vencidas:
+                all_facturas = [f for f in all_facturas if f.get('dias_vencida', 0) > 0]
+            
+            if solo_decision_pago:
+                all_facturas = [f for f in all_facturas if f.get('decision_pago', False)]
+            
             # Agrupar por TIPO DE PROVEEDOR (A, B, X, M)
             tipos = {}
             for factura in all_facturas:

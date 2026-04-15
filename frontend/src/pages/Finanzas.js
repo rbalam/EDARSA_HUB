@@ -341,12 +341,29 @@ export default function Finanzas() {
       setCxpResumen(dataResumen);
       setCxpProveedores(dataProveedores.proveedores || []);
       
-      // Expandir todos los proveedores por defecto
-      const expandidos = {};
-      (dataConPreseleccion.proveedores || []).forEach(p => {
-        expandidos[p.proveedor_id] = true;
+      // PRESERVAR estado de expansión existente, solo agregar nuevos si no existen
+      setCxpExpandidos(prevExpandidos => {
+        const nuevosExpandidos = { ...prevExpandidos };
+        (dataConPreseleccion.proveedores || []).forEach(p => {
+          // Solo expandir si no existe estado previo (primera carga)
+          if (nuevosExpandidos[p.proveedor_id] === undefined) {
+            nuevosExpandidos[p.proveedor_id] = true;
+          }
+        });
+        return nuevosExpandidos;
       });
-      setCxpExpandidos(expandidos);
+      
+      // También preservar categorías expandidas
+      setCxpCategoriasExpandidas(prevCategorias => {
+        const nuevasCategorias = { ...prevCategorias };
+        (dataConPreseleccion.proveedores || []).forEach(p => {
+          const tipo = p.proveedor_id; // A, B, X, M
+          if (nuevasCategorias[tipo] === undefined) {
+            nuevasCategorias[tipo] = true;
+          }
+        });
+        return nuevasCategorias;
+      });
       
     } catch (error) {
       console.error('Error CxP:', error);
