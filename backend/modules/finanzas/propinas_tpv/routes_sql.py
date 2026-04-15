@@ -259,6 +259,96 @@ async def obtener_config_sql(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router_sql.get(
+    "/config/all",
+    summary="Listar todas las configuraciones"
+)
+async def listar_configs_sql(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Lista todas las configuraciones (activas e inactivas)."""
+    try:
+        service = PropinasTPVSQLService(db)
+        configs = await service.listar_configs()
+        return {"success": True, "configs": configs}
+    except Exception as e:
+        logger.error(f"Error listando configs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router_sql.post(
+    "/config",
+    summary="Crear configuración de propinas"
+)
+async def crear_config_sql(
+    request: PropinasConfigCreate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Crea una nueva configuración de % de descuento para propinas.
+    
+    Jerarquía de aplicación:
+    1. SUCURSAL (más específica)
+    2. EMPRESA
+    3. GLOBAL (default 2%)
+    
+    Solo administradores pueden crear configuraciones.
+    """
+    try:
+        if current_user.get('role') not in ['admin', 'superadmin', 'Admin', 'Administrador']:
+            raise HTTPException(status_code=403, detail="Solo administradores pueden crear configuraciones")
+        
+        service = PropinasTPVSQLService(db)
+        result = await service.crear_config(
+            config_data=request.dict(),
+            usuario_id=current_user.get('id', 'unknown'),
+            usuario_email=current_user.get('email', 'sistema')
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creando config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router_sql.put(
+    "/config/{config_id}",
+    summary="Actualizar configuración de propinas"
+)
+async def actualizar_config_sql(
+    config_id: str,
+    request: PropinasConfigCreate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Actualiza una configuración existente.
+    Solo administradores pueden modificar configuraciones.
+    """
+    try:
+        if current_user.get('role') not in ['admin', 'superadmin', 'Admin', 'Administrador']:
+            raise HTTPException(status_code=403, detail="Solo administradores pueden modificar configuraciones")
+        
+        service = PropinasTPVSQLService(db)
+        result = await service.actualizar_config(
+            config_id=config_id,
+            config_data=request.dict(),
+            usuario_id=current_user.get('id', 'unknown'),
+            usuario_email=current_user.get('email', 'sistema')
+        )
+        if not result.get('success'):
+            raise HTTPException(status_code=404, detail=result.get('error', 'Config no encontrada'))
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error actualizando config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============================================================================
 # CACHE (Nuevos endpoints para administración)
 # ============================================================================

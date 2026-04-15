@@ -543,6 +543,107 @@ class PropinasTPVSQLService:
         
         return config
     
+    async def listar_configs(self) -> List[Dict[str, Any]]:
+        """Lista todas las configuraciones."""
+        return await self.sql_repo.listar_configs()
+    
+    async def crear_config(
+        self,
+        config_data: Dict[str, Any],
+        usuario_id: str,
+        usuario_email: str
+    ) -> Dict[str, Any]:
+        """
+        Crea una nueva configuración de propinas.
+        
+        Jerarquía:
+        1. Si tiene sucursal_id → aplica a esa sucursal
+        2. Si tiene empresa_id pero no sucursal_id → aplica a toda la empresa
+        3. Si no tiene ninguno → es GLOBAL
+        """
+        logger.info(f"Creando config de propinas por {usuario_email}")
+        
+        # Extraer datos del request
+        alcance = config_data.get('alcance', {})
+        vigencia = config_data.get('vigencia', {})
+        parametros = config_data.get('parametros', {})
+        
+        # Determinar tipo de alcance
+        if alcance.get('sucursal_id'):
+            tipo_alcance = 'SUCURSAL'
+        elif alcance.get('empresa_id'):
+            tipo_alcance = 'EMPRESA'
+        else:
+            tipo_alcance = 'GLOBAL'
+        
+        # Preparar datos para SQL
+        config_sql = {
+            'alcance_tipo': tipo_alcance,
+            'alcance_server_id': alcance.get('server_id'),
+            'alcance_empresa_id': alcance.get('empresa_id'),
+            'alcance_sucursal_id': alcance.get('sucursal_id'),
+            'vigencia_inicio': vigencia.get('fecha_inicio'),
+            'vigencia_fin': vigencia.get('fecha_fin'),
+            'activa': vigencia.get('activa', True),
+            'porcentaje_comision': parametros.get('porcentaje_comision', 0.02),
+            'tolerancia_descuadre': parametros.get('tolerancia_descuadre', 5.0),
+            'dias_para_cuadrar': parametros.get('dias_para_cuadrar', 1),
+            'created_by': usuario_email,
+            'motivo_cambio': config_data.get('motivo_cambio')
+        }
+        
+        result = await self.sql_repo.crear_config(config_sql)
+        
+        # Invalidar cache de configuraciones
+        await self.cache.invalidar_configs()
+        
+        return result
+    
+    async def actualizar_config(
+        self,
+        config_id: str,
+        config_data: Dict[str, Any],
+        usuario_id: str,
+        usuario_email: str
+    ) -> Dict[str, Any]:
+        """Actualiza una configuración existente."""
+        logger.info(f"Actualizando config {config_id} por {usuario_email}")
+        
+        # Extraer datos
+        alcance = config_data.get('alcance', {})
+        vigencia = config_data.get('vigencia', {})
+        parametros = config_data.get('parametros', {})
+        
+        # Determinar tipo de alcance
+        if alcance.get('sucursal_id'):
+            tipo_alcance = 'SUCURSAL'
+        elif alcance.get('empresa_id'):
+            tipo_alcance = 'EMPRESA'
+        else:
+            tipo_alcance = 'GLOBAL'
+        
+        config_sql = {
+            'alcance_tipo': tipo_alcance,
+            'alcance_server_id': alcance.get('server_id'),
+            'alcance_empresa_id': alcance.get('empresa_id'),
+            'alcance_sucursal_id': alcance.get('sucursal_id'),
+            'vigencia_inicio': vigencia.get('fecha_inicio'),
+            'vigencia_fin': vigencia.get('fecha_fin'),
+            'activa': vigencia.get('activa', True),
+            'porcentaje_comision': parametros.get('porcentaje_comision', 0.02),
+            'tolerancia_descuadre': parametros.get('tolerancia_descuadre', 5.0),
+            'dias_para_cuadrar': parametros.get('dias_para_cuadrar', 1),
+            'updated_by': usuario_email,
+            'motivo_cambio': config_data.get('motivo_cambio')
+        }
+        
+        result = await self.sql_repo.actualizar_config(config_id, config_sql)
+        
+        # Invalidar cache
+        await self.cache.invalidar_configs()
+        
+        return result
+    
     # =========================================================================
     # ESTADÍSTICAS DE CACHE
     # =========================================================================

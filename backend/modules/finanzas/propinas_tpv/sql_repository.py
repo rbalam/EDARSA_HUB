@@ -753,3 +753,199 @@ class PropinasTPVSQLRepository:
             propinas.append(propina)
         
         return propinas
+    
+    # =========================================================================
+    # CRUD - propinas_tpv_config
+    # =========================================================================
+    
+    async def listar_configs(self) -> List[Dict[str, Any]]:
+        """Lista todas las configuraciones (activas e inactivas)."""
+        server = await self.get_edarsa_hub_server()
+        if not server:
+            # Retornar config default si no hay servidor
+            return [self._get_default_config()]
+        
+        try:
+            query = """
+            SELECT 
+                CAST(id AS VARCHAR(36)) as id,
+                alcance_tipo,
+                alcance_server_id,
+                alcance_empresa_id,
+                alcance_sucursal_id,
+                vigencia_inicio,
+                vigencia_fin,
+                activa,
+                porcentaje_comision,
+                tolerancia_descuadre,
+                dias_para_cuadrar,
+                created_at,
+                created_by,
+                updated_at,
+                updated_by,
+                motivo_cambio
+            FROM propinas_tpv_config
+            ORDER BY 
+                CASE alcance_tipo 
+                    WHEN 'GLOBAL' THEN 3
+                    WHEN 'EMPRESA' THEN 2
+                    WHEN 'SUCURSAL' THEN 1
+                END,
+                created_at DESC
+            """
+            
+            results = self._execute_hub_query(server, query)
+            
+            if not results:
+                return [self._get_default_config()]
+            
+            return [self._format_config(row) for row in results]
+            
+        except Exception as e:
+            logger.error(f"Error listando configs: {e}")
+            return [self._get_default_config()]
+    
+    async def crear_config(self, config_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Crea una nueva configuración."""
+        server = await self.get_edarsa_hub_server()
+        if not server:
+            raise Exception("Servidor EDARSA HUB no encontrado")
+        
+        config_id = str(uuid.uuid4())
+        
+        query = f"""
+        INSERT INTO propinas_tpv_config (
+            id,
+            alcance_tipo,
+            alcance_server_id,
+            alcance_empresa_id,
+            alcance_sucursal_id,
+            vigencia_inicio,
+            vigencia_fin,
+            activa,
+            porcentaje_comision,
+            tolerancia_descuadre,
+            dias_para_cuadrar,
+            created_by,
+            motivo_cambio
+        ) VALUES (
+            {self._escape_sql(config_id)},
+            {self._escape_sql(config_data.get('alcance_tipo', 'GLOBAL'))},
+            {self._escape_sql(config_data.get('alcance_server_id'))},
+            {self._escape_sql(config_data.get('alcance_empresa_id'))},
+            {self._escape_sql(config_data.get('alcance_sucursal_id'))},
+            {self._escape_sql(config_data.get('vigencia_inicio') or datetime.now(timezone.utc))},
+            {self._escape_sql(config_data.get('vigencia_fin'))},
+            {1 if config_data.get('activa', True) else 0},
+            {config_data.get('porcentaje_comision', 0.02)},
+            {config_data.get('tolerancia_descuadre', 5.0)},
+            {config_data.get('dias_para_cuadrar', 1)},
+            {self._escape_sql(config_data.get('created_by', 'sistema'))},
+            {self._escape_sql(config_data.get('motivo_cambio'))}
+        )
+        """
+        
+        try:
+            self._execute_hub_query(server, query)
+            logger.info(f"Config {config_id} creada exitosamente")
+            
+            return {
+                'success': True,
+                'config_id': config_id,
+                'message': 'Configuración creada exitosamente'
+            }
+        except Exception as e:
+            logger.error(f"Error creando config: {e}")
+            raise
+    
+    async def actualizar_config(self, config_id: str, config_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Actualiza una configuración existente."""
+        server = await self.get_edarsa_hub_server()
+        if not server:
+            raise Exception("Servidor EDARSA HUB no encontrado")
+        
+        query = f"""
+        UPDATE propinas_tpv_config
+        SET
+            alcance_tipo = {self._escape_sql(config_data.get('alcance_tipo'))},
+            alcance_server_id = {self._escape_sql(config_data.get('alcance_server_id'))},
+            alcance_empresa_id = {self._escape_sql(config_data.get('alcance_empresa_id'))},
+            alcance_sucursal_id = {self._escape_sql(config_data.get('alcance_sucursal_id'))},
+            vigencia_inicio = {self._escape_sql(config_data.get('vigencia_inicio'))},
+            vigencia_fin = {self._escape_sql(config_data.get('vigencia_fin'))},
+            activa = {1 if config_data.get('activa', True) else 0},
+            porcentaje_comision = {config_data.get('porcentaje_comision', 0.02)},
+            tolerancia_descuadre = {config_data.get('tolerancia_descuadre', 5.0)},
+            dias_para_cuadrar = {config_data.get('dias_para_cuadrar', 1)},
+            updated_at = GETDATE(),
+            updated_by = {self._escape_sql(config_data.get('updated_by', 'sistema'))},
+            motivo_cambio = {self._escape_sql(config_data.get('motivo_cambio'))}
+        WHERE id = {self._escape_sql(config_id)}
+        """
+        
+        try:
+            self._execute_hub_query(server, query)
+            logger.info(f"Config {config_id} actualizada")
+            
+            return {
+                'success': True,
+                'config_id': config_id,
+                'message': 'Configuración actualizada exitosamente'
+            }
+        except Exception as e:
+            logger.error(f"Error actualizando config: {e}")
+            raise
+    
+    def _format_config(self, row: Dict) -> Dict[str, Any]:
+        """Formatea una fila de config al formato esperado."""
+        return {
+            'id': row.get('id'),
+            'alcance': {
+                'tipo': row.get('alcance_tipo', 'GLOBAL'),
+                'server_id': row.get('alcance_server_id'),
+                'empresa_id': row.get('alcance_empresa_id'),
+                'sucursal_id': row.get('alcance_sucursal_id')
+            },
+            'vigencia': {
+                'fecha_inicio': row.get('vigencia_inicio'),
+                'fecha_fin': row.get('vigencia_fin'),
+                'activa': bool(row.get('activa', True))
+            },
+            'parametros': {
+                'porcentaje_comision': float(row.get('porcentaje_comision', 0.02) or 0.02),
+                'tolerancia_descuadre': float(row.get('tolerancia_descuadre', 5.0) or 5.0),
+                'dias_para_cuadrar': int(row.get('dias_para_cuadrar', 1) or 1)
+            },
+            'created_at': row.get('created_at'),
+            'created_by': row.get('created_by'),
+            'updated_at': row.get('updated_at'),
+            'updated_by': row.get('updated_by'),
+            'motivo_cambio': row.get('motivo_cambio')
+        }
+    
+    def _get_default_config(self) -> Dict[str, Any]:
+        """Retorna configuración por defecto."""
+        return {
+            'id': 'default',
+            'alcance': {
+                'tipo': 'GLOBAL',
+                'server_id': None,
+                'empresa_id': None,
+                'sucursal_id': None
+            },
+            'vigencia': {
+                'fecha_inicio': datetime.now(timezone.utc).isoformat(),
+                'fecha_fin': None,
+                'activa': True
+            },
+            'parametros': {
+                'porcentaje_comision': 0.02,
+                'tolerancia_descuadre': 5.0,
+                'dias_para_cuadrar': 1
+            },
+            'created_at': None,
+            'created_by': 'sistema',
+            'updated_at': None,
+            'updated_by': None,
+            'motivo_cambio': 'Configuración por defecto'
+        }

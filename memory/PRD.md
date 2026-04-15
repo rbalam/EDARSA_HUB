@@ -252,6 +252,33 @@ Optimización de lectura     → MongoDB (CACHE)
 - No modificar Tab Cuadre Z
 - No incluir MPRO en esta fase
 
+### 2026-04-15 - Configuración % Descuento Propinas TPV
+**Frontend y Backend implementados**
+
+- ✅ Nuevo tab "Propinas TPV" en Finanzas
+- ✅ Subtab "Cuadre": Listado y cuadre de propinas por corte
+- ✅ Subtab "Configuración": CRUD de % descuento
+- ✅ Endpoints: GET/POST/PUT /api/finanzas/propinas/config
+- ✅ Jerarquía: SUCURSAL > EMPRESA > GLOBAL (default 2%)
+- ✅ Solo administradores pueden editar configuraciones
+- ✅ UI con formulario de edición y listado de configs
+
+**Archivos creados/modificados:**
+- `/app/frontend/src/components/PropinasTPV.jsx` (NUEVO)
+- `/app/frontend/src/pages/Finanzas.js` (Tab agregado)
+- `/app/backend/modules/finanzas/propinas_tpv/routes_sql.py` (Endpoints)
+- `/app/backend/modules/finanzas/propinas_tpv/service_sql.py` (Lógica)
+- `/app/backend/modules/finanzas/propinas_tpv/sql_repository.py` (CRUD)
+
+### 2026-04-15 - Correcciones CxP
+**Módulo de Cuentas por Pagar mejorado**
+
+- ✅ Columnas restauradas en vista "Por Categoría"
+- ✅ Agrupación A/B/C en vista "Por Proveedor"
+- ✅ Filtro de proveedor con búsqueda (nombre, RFC, clave)
+- ✅ Botón "Pagar" compatible con IDs compuestos (MPRO_xxx)
+- ✅ Estilos visuales unificados
+
 ---
 
 ## Credenciales de Prueba

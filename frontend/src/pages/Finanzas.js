@@ -17,6 +17,7 @@ import {
   PieChart as RechartsPie, Pie, Cell, LineChart, Line
 } from 'recharts';
 import TesoreriaCorteZ from '../components/TesoreriaCorteZ';
+import PropinasTPV from '../components/PropinasTPV';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -686,6 +687,7 @@ export default function Finanzas() {
     { id: 'dashboard', label: 'Dashboard', icon: PieChart },
     { id: 'ingresos', label: 'Control de Ingresos', icon: TrendingUp },
     { id: 'cxp', label: 'Cuentas por Pagar', icon: CreditCard },
+    { id: 'propinas', label: 'Propinas TPV', icon: DollarSign },
     { id: 'tesoreria', label: 'Tesorería', icon: Banknote },
     { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign },
     { id: 'reportes', label: 'Reportes', icon: FileText },
@@ -2356,6 +2358,7 @@ export default function Finanzas() {
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'ingresos' && renderControlIngresos()}
           {activeTab === 'cxp' && renderCuentasPorPagar()}
+          {activeTab === 'propinas' && <PropinasTPV />}
           {activeTab === 'tesoreria' && <TesoreriaCorteZ />}
           {activeTab === 'presupuestos' && renderPresupuestos()}
           {activeTab === 'reportes' && renderReportes()}
