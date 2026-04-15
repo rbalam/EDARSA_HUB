@@ -60,7 +60,10 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
   - ✅ REFACTORIZACIÓN SQL IMPLEMENTADA
   - ✅ DEFINICIÓN TÉCNICA CERRADA
   - ✅ QUERY FINAL VALIDADA: `cheques.propinatarjeta`
-  - 🟢 **LISTO PARA PILOTO CONTROLADO**
+  - ✅ DICTAMEN FINAL EMITIDO (DATOS SIMULADOS)
+  - 🟡 **LISTO PARA PILOTO CONTROLADO (CONDICIONADO)**
+- **Dictamen Final**: `/app/docs/DICTAMEN_FINAL_PROPINAS_TPV_SIMULADO.md`
+- **Condición Obligatoria**: Validación con datos reales vía VPN antes de producción
 - **Arquitectura**: SQL Server EDARSA HUB (persistencia) + MongoDB (cache)
 - **Fuente Oficial de Propinas TPV**: `cheques.propinatarjeta` (DATO EXACTO)
 - **Relación**: cheques.idturno → turnos.idturno → movtoscaja (Corte Z)
@@ -151,11 +154,12 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 
 ## Backlog Priorizado
 
-### P0 (Urgente)
+### P0 (Urgente) - COMPLETADO
 - ~~Configuración de visibilidad de sucursales por servidor~~ ✅
-- **Módulo Control de Propinas TPV (2%)** - Documento CAB entregado, pendiente aprobación
-  - Documento: `/app/docs/CAB_MODULO_PROPINAS_TPV.md`
-  - Estado: PROPUESTA EN REVISIÓN
+- ~~Módulo Control de Propinas TPV (2%)~~ ✅ DICTAMEN EMITIDO (CONDICIONADO)
+  - Dictamen Final: `/app/docs/DICTAMEN_FINAL_PROPINAS_TPV_SIMULADO.md`
+  - Estado: LISTO PARA PILOTO CONTROLADO (CONDICIONADO A VALIDACIÓN VPN)
+  - Pendiente: Ejecutar validación con datos reales desde servidores on-premise
 
 ### P1 (Alta Prioridad) - PENDIENTES DE AUTORIZACIÓN
 - **KPI de Proyección "Ventas del Día"** - Diagnóstico entregado, esperando GO para implementar
@@ -174,7 +178,28 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 ### Deuda Técnica
 - 125 tests legacy con errores (BLOQUEADO por usuario)
 - Variables de estado huérfanas en Usuarios.js
-- Expiración rápida de tokens JWT
+- Expiración rápida de tokens JWT (P2)
+
+---
+
+## Changelog Reciente
+
+### 2026-04-15 - Dictamen Final Propinas TPV (Datos Simulados)
+**Emisión de dictamen técnico condicionado**
+
+- ✅ Dictamen emitido: `LISTO PARA PILOTO CONTROLADO (CONDICIONADO)`
+- ✅ 3 sucursales evaluadas: La Estelar, Cienfuegos, 130° Mérida
+- ⚠️ Validación ejecutada con datos simulados (sin acceso VPN)
+- ⚠️ OBLIGATORIO: Validación real antes de producción
+
+**Documento generado:**
+- `/app/docs/DICTAMEN_FINAL_PROPINAS_TPV_SIMULADO.md`
+
+**Condiciones del dictamen:**
+- No avanzar a producción sin validación real
+- No habilitar piloto real aún
+- No modificar Tab Cuadre Z
+- No incluir MPRO en esta fase
 
 ---
 
