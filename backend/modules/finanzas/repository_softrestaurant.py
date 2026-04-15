@@ -202,13 +202,16 @@ class FinanzasRepositorySoftRestaurant:
         """
         Obtiene cuentas por pagar desde SoftRestaurant.
         
+        ABRIL 2026: Modificado para usar tabla 'compras' directamente
+        y obtener campos detallados (folio, factura, vencimiento, referencia).
+        
         Args:
             sucursal_id: Clave de sucursal (CIENFUEGOS, ESTELAR, 130MID)
             tipo_proveedor: A=Alimentos, B=Bebidas, X=Otros
             limit: Máximo de registros
         
         Returns:
-            Lista de CxP con tipo de proveedor y antigüedad
+            Lista de CxP con tipo de proveedor, antigüedad y detalle de documentos
         """
         all_results = []
         
@@ -220,86 +223,83 @@ class FinanzasRepositorySoftRestaurant:
             if not srv:
                 continue
             
-            # Usar la vista correcta para cada servidor
-            view_name = srv.get('view', 'vwSaldoCxp')
-            
+            # Query detallada desde tabla compras con campos completos
             query = f"""
                 SELECT TOP {limit}
-                    PROVEEDOR,
-                    [POR VENCER] as PorVencer,
-                    [01-15] as Venc1_15,
-                    [16-30] as Venc16_30,
-                    [31-60] as Venc31_60,
-                    [61-90] as Venc61_90,
-                    [91-120] as Venc91_120,
-                    [121-150] as Venc121_150,
-                    [+151] as VencMas151,
-                    [Total CXP] as TotalCXP,
-                    fechaaplicacion
-                FROM {view_name}
-                WHERE [Total CXP] > 0
-                ORDER BY [Total CXP] DESC
+                    c.idcompra,
+                    c.folio AS folio_entrada,
+                    c.foliofactura AS folio_factura,
+                    c.fechaaplicacion AS fecha_entrada,
+                    c.fechavencimiento AS fecha_vencimiento,
+                    c.referencia,
+                    c.total AS importe_original,
+                    p.idproveedor,
+                    p.nombre AS proveedor_nombre,
+                    p.rfc AS proveedor_rfc,
+                    ISNULL((SELECT SUM(pp.abono) FROM pagosproveedores pp WHERE pp.foliocompra = c.idcompra), 0) AS pagos,
+                    c.total - ISNULL((SELECT SUM(pp.abono) FROM pagosproveedores pp WHERE pp.foliocompra = c.idcompra), 0) AS saldo,
+                    DATEDIFF(day, c.fechavencimiento, GETDATE()) AS dias_vencido
+                FROM compras c
+                INNER JOIN proveedores p ON c.idproveedor = p.idproveedor
+                WHERE (c.cancelado IS NULL OR c.cancelado = 0)
+                  AND (c.total - ISNULL((SELECT SUM(pp.abono) FROM pagosproveedores pp WHERE pp.foliocompra = c.idcompra), 0)) > 1
+                ORDER BY c.fechaaplicacion DESC
             """
             
             results = self._execute_query(server_key, query)
             
             for r in results:
-                proveedor = r.get('PROVEEDOR', '')
-                tipo = get_tipo_proveedor(proveedor)
+                proveedor_nombre = r.get('proveedor_nombre', '')
+                tipo = get_tipo_proveedor(proveedor_nombre)
                 
                 # Filtrar por tipo si se especificó
                 if tipo_proveedor and tipo != tipo_proveedor:
                     continue
                 
-                saldo_total = float(r.get('TotalCXP', 0) or 0)
-                if saldo_total <= 0:
+                saldo = float(r.get('saldo', 0) or 0)
+                if saldo <= 0:
                     continue
                 
-                # Calcular días vencido (aproximado basado en rangos)
-                por_vencer = float(r.get('PorVencer', 0) or 0)
-                venc_1_15 = float(r.get('Venc1_15', 0) or 0)
-                venc_16_30 = float(r.get('Venc16_30', 0) or 0)
-                venc_31_60 = float(r.get('Venc31_60', 0) or 0)
-                venc_61_90 = float(r.get('Venc61_90', 0) or 0)
-                venc_91_120 = float(r.get('Venc91_120', 0) or 0)
-                venc_121_150 = float(r.get('Venc121_150', 0) or 0)
-                venc_mas_151 = float(r.get('VencMas151', 0) or 0)
+                dias_vencido = int(r.get('dias_vencido', 0) or 0)
+                if dias_vencido < 0:
+                    dias_vencido = 0  # No vencido aún
                 
-                # Determinar antigüedad predominante
-                if venc_mas_151 > 0:
-                    dias_vencido = 180
-                elif venc_121_150 > 0:
-                    dias_vencido = 135
-                elif venc_91_120 > 0:
-                    dias_vencido = 105
-                elif venc_61_90 > 0:
-                    dias_vencido = 75
-                elif venc_31_60 > 0:
-                    dias_vencido = 45
-                elif venc_16_30 > 0:
-                    dias_vencido = 23
-                elif venc_1_15 > 0:
-                    dias_vencido = 8
-                else:
-                    dias_vencido = 0
+                importe_original = float(r.get('importe_original', 0) or 0)
+                
+                # Calcular rangos de antigüedad
+                por_vencer = saldo if dias_vencido <= 0 else 0
+                venc_1_30 = saldo if 1 <= dias_vencido <= 30 else 0
+                venc_31_60 = saldo if 31 <= dias_vencido <= 60 else 0
+                venc_61_90 = saldo if 61 <= dias_vencido <= 90 else 0
+                venc_91_plus = saldo if dias_vencido > 90 else 0
+                
+                # Formatear fecha de vencimiento
+                fecha_venc = r.get('fecha_vencimiento')
+                fecha_venc_str = fecha_venc.strftime('%Y-%m-%d') if fecha_venc else None
+                
+                fecha_entrada = r.get('fecha_entrada')
                 
                 all_results.append({
-                    "CuentaPorPagarID": f"{server_key}_{proveedor[:20]}",
+                    "CuentaPorPagarID": f"{server_key}_{r.get('idcompra')}",
                     "SucursalID": server_key,
                     "SucursalNombre": srv['name'],
-                    "ProveedorID": proveedor[:10] if proveedor else "N/A",
-                    "ProveedorNombre": proveedor,
-                    "ProveedorRFC": "",
+                    "ProveedorID": r.get('idproveedor', 'N/A'),
+                    "ProveedorNombre": proveedor_nombre,
+                    "ProveedorRFC": r.get('proveedor_rfc', ''),
                     "TipoProveedor": tipo,
                     "TipoProveedorNombre": get_nombre_tipo(tipo),
-                    "FechaEntrada": r.get('fechaaplicacion'),
-                    "MontoOriginal": saldo_total,
-                    "Saldo": saldo_total,
+                    "FolioEntrada": r.get('folio_entrada') or None,
+                    "FolioFactura": r.get('folio_factura') or None,
+                    "FechaEntrada": fecha_entrada,
+                    "FechaVencimiento": fecha_venc_str,
+                    "Referencia": r.get('referencia') or None,
+                    "MontoOriginal": importe_original,
+                    "Saldo": saldo,
                     "PorVencer": por_vencer,
-                    "Venc1_30": venc_1_15 + venc_16_30,
+                    "Venc1_30": venc_1_30,
                     "Venc31_60": venc_31_60,
                     "Venc61_90": venc_61_90,
-                    "Venc91Plus": venc_91_120 + venc_121_150 + venc_mas_151,
+                    "Venc91Plus": venc_91_plus,
                     "DiasVencido": dias_vencido
                 })
         

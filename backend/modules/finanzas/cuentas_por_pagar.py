@@ -221,9 +221,8 @@ async def listar_facturas_pendientes(
                     tipo = c.get('TipoProveedor', 'X')
                     dias_vencido = int(c.get('DiasVencido', 0) or 0)
                     
-                    # Nota: SoftRestaurant usa vista resumida (vwSaldoCxp) que NO tiene:
-                    # - FolioEntrada, FolioFactura, Referencia, FechaVencimiento
-                    # Estos campos se marcan como N/A para indicar que no están disponibles
+                    # ABRIL 2026: Ahora la query de SoftRestaurant incluye campos detallados:
+                    # FolioEntrada, FolioFactura, FechaVencimiento, Referencia
                     
                     factura = {
                         "factura_id": c.get('CuentaPorPagarID'),
@@ -234,12 +233,12 @@ async def listar_facturas_pendientes(
                         "tipo_proveedor_nombre": c.get('TipoProveedorNombre', 'OTROS'),
                         "sucursal_id": c.get('SucursalID'),
                         "sucursal_nombre": c.get('SucursalNombre'),
-                        # Campos no disponibles en vista resumida de SoftRestaurant
-                        "folio_entrada": c.get('FolioEntrada') or 'N/D',  # No disponible
-                        "folio_factura": c.get('FolioFactura') or 'N/D',  # No disponible
+                        # Campos detallados desde tabla compras
+                        "folio_entrada": c.get('FolioEntrada') or '-',
+                        "folio_factura": c.get('FolioFactura') or '-',
                         "fecha_entrada": c.get('FechaEntrada').isoformat() if c.get('FechaEntrada') else None,
-                        "fecha_vencimiento": c.get('FechaVencimiento') or 'N/D',  # No disponible
-                        "referencia": c.get('Referencia') or 'N/D',  # No disponible
+                        "fecha_vencimiento": c.get('FechaVencimiento') or '-',
+                        "referencia": c.get('Referencia') or '-',
                         "observaciones": c.get('Observaciones', ''),
                         "dias_vencida": dias_vencido,
                         "importe_original": float(c.get('MontoOriginal', 0) or 0),
