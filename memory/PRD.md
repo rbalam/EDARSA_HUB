@@ -69,6 +69,7 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 ### CAB-002: Rediseño Arquitectónico SQL Server (Propinas + Cortes Z)
 - **Documento Arquitectura Propinas**: `/app/docs/ARQUITECTURA_PROPINAS_TPV_v3.md`
 - **Adenda Cortes Z**: `/app/docs/ARQUITECTURA_PROPINAS_TPV_v3_ADENDA_CORTES_Z.md`
+- **Documento de Protección**: `/app/docs/PROTECCION_TAB_CUADRE_CORTE_Z.md`
 - **Fecha**: 2026-04-15
 - **Estado**: ⏳ PROPUESTA EN REVISIÓN (pendiente aprobación de Adenda)
 - **Principio**: SQL Server = Fuente oficial, MongoDB = Solo cache
@@ -76,6 +77,18 @@ Sistema de gestión empresarial para EDARSA que integra múltiples módulos: Cue
 - **Tablas Cortes Z**: cortes_z_control, cortes_z_conteo_efectivo, cortes_z_ficha_deposito, cortes_z_incidencias, cortes_z_historial
 - **Implementación**: Unificada en 4 fases (U1-U4), estimado 5-8 días
 - **Requiere**: Aprobación del usuario para iniciar implementación
+
+### PROTECCIÓN: Tab Cuadre de Corte Z
+- **Documento**: `/app/docs/PROTECCION_TAB_CUADRE_CORTE_Z.md`
+- **Fecha**: 2026-04-15
+- **Estado**: COMPONENTE PROTEGIDO DE PRODUCCIÓN
+- **Archivos Intocables**:
+  - `TesoreriaCorteZ.jsx` (771 líneas)
+  - `tesoreria.py`
+  - `repository_cuadres_z.py`
+  - `tesoreria_models.py`
+  - Colección `tesoreria_cuadres_z`
+- **Decisión**: NO TOCAR - Todo lo nuevo se construye ALREDEDOR, no SOBRE
 
 ---
 
