@@ -57,6 +57,14 @@ BEGIN
         ventas_tarjeta          DECIMAL(18,2)       NOT NULL DEFAULT 0,
         ventas_totales          DECIMAL(18,2)       NOT NULL DEFAULT 0,
         ventas_efectivo         DECIMAL(18,2)       NOT NULL DEFAULT 0,
+        total_cheques           INT                 NOT NULL DEFAULT 0,
+        saldo_corte             DECIMAL(18,2)       NOT NULL DEFAULT 0,
+        
+        -- ============================================
+        -- TRAZABILIDAD AL ORIGEN (SoftRestaurant)
+        -- ============================================
+        corte_id_origen         VARCHAR(50)         NULL,  -- idmovtocaja de SoftRestaurant
+        turno_id_origen         VARCHAR(50)         NULL,  -- idturno de SoftRestaurant
         
         -- ============================================
         -- ORIGEN DEL DATO

@@ -235,6 +235,9 @@ class PropinasTPVSQLService:
                         'fecha_corte': fecha_corte_dt,
                         'estacion_id': corte.get('estacion_id'),
                         'turno_id': corte.get('turno_id'),
+                        # Trazabilidad al origen SoftRestaurant
+                        'corte_id_origen': corte.get('corte_id'),  # idmovtocaja
+                        'turno_id_origen': corte.get('turno_id'),  # idturno
                         'server_name': server_name,
                         'system_type': 'SoftRestaurant',
                         'sucursal_nombre': server_name,
