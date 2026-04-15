@@ -314,12 +314,16 @@ export default function Finanzas() {
           ...proveedor,
           facturas: (proveedor.facturas || []).map(factura => {
             // Si está vencida (dias_vencida > 0) y no tiene decisión previa, marcarla para pago
-            const estaVencida = (factura.dias_vencida || 0) > 0;
+            const diasVencida = parseInt(factura.dias_vencida) || 0;
+            const estaVencida = diasVencida > 0;
             const yaDecidida = factura.decision_pago === true;
+            const saldo = parseFloat(factura.saldo) || 0;
+            const importeExistente = parseFloat(factura.importe_a_pagar) || 0;
+            
             return {
               ...factura,
               decision_pago: yaDecidida || estaVencida,
-              importe_a_pagar: (yaDecidida || estaVencida) ? (factura.importe_a_pagar || factura.saldo || 0) : 0
+              importe_a_pagar: (yaDecidida || estaVencida) ? (importeExistente > 0 ? importeExistente : saldo) : 0
             };
           })
         }))
@@ -374,7 +378,8 @@ export default function Finanzas() {
           ...proveedor,
           facturas: proveedor.facturas.map(factura => {
             if (factura.factura_id === facturaId) {
-              const nuevoImporte = decision ? (importeAPagar || factura.saldo) : 0;
+              const saldo = parseFloat(factura.saldo) || 0;
+              const nuevoImporte = decision ? (parseFloat(importeAPagar) || saldo) : 0;
               return {
                 ...factura,
                 decision_pago: decision,
@@ -1587,15 +1592,22 @@ export default function Finanzas() {
       let facturas_marcadas = 0;
       let total_vencidas = 0;
       
-      cxpData.proveedores.forEach(proveedor => {
-        (proveedor.facturas || []).forEach(factura => {
-          total_saldo += factura.saldo || 0;
-          total_importe += factura.importe_original || factura.importe_total || 0;
-          if (factura.decision_pago) {
-            total_a_pagar += factura.importe_a_pagar || factura.saldo || 0;
+      // Iterar sobre TODAS las facturas en proveedores/categorías
+      cxpData.proveedores.forEach(proveedorOCategoria => {
+        (proveedorOCategoria.facturas || []).forEach(factura => {
+          const saldo = parseFloat(factura.saldo) || 0;
+          const importe = parseFloat(factura.importe_original || factura.importe_total) || 0;
+          
+          total_saldo += saldo;
+          total_importe += importe;
+          
+          if (factura.decision_pago === true) {
+            const importeAPagar = parseFloat(factura.importe_a_pagar) || saldo;
+            total_a_pagar += importeAPagar;
             facturas_marcadas += 1;
           }
-          if ((factura.dias_vencida || 0) > 0) {
+          
+          if (parseInt(factura.dias_vencida) > 0) {
             total_vencidas += 1;
           }
         });
