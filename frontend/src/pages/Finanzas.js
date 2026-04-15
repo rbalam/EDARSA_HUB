@@ -77,6 +77,7 @@ export default function Finanzas() {
           nombre: nombreCategoria,
           subtotal_saldo: 0,
           subtotal_importe: 0,
+          subtotal_a_pagar: 0,
           cantidad_facturas: 0,
           cantidad_vencidas: 0,
           proveedores: {}
@@ -95,6 +96,7 @@ export default function Finanzas() {
             facturas: [],
             subtotal_saldo: 0,
             subtotal_importe: 0,
+            subtotal_a_pagar: 0,
             cantidad_facturas: 0,
             cantidad_vencidas: 0
           };
@@ -104,12 +106,14 @@ export default function Finanzas() {
         prov.facturas.push(factura);
         prov.subtotal_saldo += factura.saldo || 0;
         prov.subtotal_importe += factura.importe_original || factura.importe_total || 0;
+        prov.subtotal_a_pagar += factura.decision_pago ? (factura.importe_a_pagar || factura.saldo || 0) : 0;
         prov.cantidad_facturas += 1;
         if (factura.dias_vencida > 0) prov.cantidad_vencidas += 1;
         
         // Acumular en categoría
         categorias[tipoCategoria].subtotal_saldo += factura.saldo || 0;
         categorias[tipoCategoria].subtotal_importe += factura.importe_original || factura.importe_total || 0;
+        categorias[tipoCategoria].subtotal_a_pagar += factura.decision_pago ? (factura.importe_a_pagar || factura.saldo || 0) : 0;
         categorias[tipoCategoria].cantidad_facturas += 1;
         if (factura.dias_vencida > 0) categorias[tipoCategoria].cantidad_vencidas += 1;
       });
@@ -303,13 +307,31 @@ export default function Finanzas() {
         fetchWithAuth(`/api/finanzas/cuentas-por-pagar/proveedores${cxpFiltroSucursal ? `?sucursal_id=${cxpFiltroSucursal}` : ''}`)
       ]);
       
-      setCxpData(dataFacturas);
+      // PRE-SELECCIONAR facturas vencidas automáticamente
+      const dataConPreseleccion = {
+        ...dataFacturas,
+        proveedores: (dataFacturas.proveedores || []).map(proveedor => ({
+          ...proveedor,
+          facturas: (proveedor.facturas || []).map(factura => {
+            // Si está vencida (dias_vencida > 0) y no tiene decisión previa, marcarla para pago
+            const estaVencida = (factura.dias_vencida || 0) > 0;
+            const yaDecidida = factura.decision_pago === true;
+            return {
+              ...factura,
+              decision_pago: yaDecidida || estaVencida,
+              importe_a_pagar: (yaDecidida || estaVencida) ? (factura.importe_a_pagar || factura.saldo || 0) : 0
+            };
+          })
+        }))
+      };
+      
+      setCxpData(dataConPreseleccion);
       setCxpResumen(dataResumen);
       setCxpProveedores(dataProveedores.proveedores || []);
       
       // Expandir todos los proveedores por defecto
       const expandidos = {};
-      (dataFacturas.proveedores || []).forEach(p => {
+      (dataConPreseleccion.proveedores || []).forEach(p => {
         expandidos[p.proveedor_id] = true;
       });
       setCxpExpandidos(expandidos);
@@ -344,8 +366,33 @@ export default function Finanzas() {
         throw new Error(errorData.detail || errorData.message || 'Error del servidor');
       }
       
+      // Actualizar estado LOCAL sin recargar todo el tablero
+      setCxpData(prevData => {
+        if (!prevData?.proveedores) return prevData;
+        
+        const nuevosProveedores = prevData.proveedores.map(proveedor => ({
+          ...proveedor,
+          facturas: proveedor.facturas.map(factura => {
+            if (factura.factura_id === facturaId) {
+              const nuevoImporte = decision ? (importeAPagar || factura.saldo) : 0;
+              return {
+                ...factura,
+                decision_pago: decision,
+                importe_a_pagar: nuevoImporte
+              };
+            }
+            return factura;
+          })
+        }));
+        
+        return {
+          ...prevData,
+          proveedores: nuevosProveedores
+        };
+      });
+      
       toast.success(decision ? 'Marcada para pago' : 'Desmarcada');
-      loadCuentasPorPagar();
+      // NO recargar - el estado local ya está actualizado
     } catch (error) {
       console.error('[CxP] Error al actualizar:', error);
       toast.error(`Error: ${error.message || 'Error al actualizar'}`);
@@ -1530,7 +1577,34 @@ export default function Finanzas() {
   
   // Render Cuentas por Pagar
   const renderCuentasPorPagar = () => {
-    const totales = cxpData?.totales || {};
+    // Calcular totales DINÁMICAMENTE desde los datos actuales
+    const calcularTotales = () => {
+      if (!cxpData?.proveedores) return { total_saldo: 0, total_importe: 0, total_a_pagar: 0, facturas_marcadas: 0, total_vencidas: 0 };
+      
+      let total_saldo = 0;
+      let total_importe = 0;
+      let total_a_pagar = 0;
+      let facturas_marcadas = 0;
+      let total_vencidas = 0;
+      
+      cxpData.proveedores.forEach(proveedor => {
+        (proveedor.facturas || []).forEach(factura => {
+          total_saldo += factura.saldo || 0;
+          total_importe += factura.importe_original || factura.importe_total || 0;
+          if (factura.decision_pago) {
+            total_a_pagar += factura.importe_a_pagar || factura.saldo || 0;
+            facturas_marcadas += 1;
+          }
+          if ((factura.dias_vencida || 0) > 0) {
+            total_vencidas += 1;
+          }
+        });
+      });
+      
+      return { total_saldo, total_importe, total_a_pagar, facturas_marcadas, total_vencidas };
+    };
+    
+    const totales = calcularTotales();
     const antiguedad = cxpResumen?.antiguedad || {};
     
     return (
@@ -1738,7 +1812,7 @@ export default function Finanzas() {
             <CardContent className="p-3">
               <p className="text-xs text-blue-600 font-medium">TOTAL A PAGAR</p>
               <p className="text-lg font-bold text-blue-700">{formatCurrency(totales.total_a_pagar || 0)}</p>
-              <p className="text-xs text-blue-500">{cxpResumen?.resumen?.facturas_con_decision || 0} facturas</p>
+              <p className="text-xs text-blue-500">{totales.facturas_marcadas || 0} facturas</p>
             </CardContent>
           </Card>
         </div>
