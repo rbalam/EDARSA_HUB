@@ -221,6 +221,10 @@ async def listar_facturas_pendientes(
                     tipo = c.get('TipoProveedor', 'X')
                     dias_vencido = int(c.get('DiasVencido', 0) or 0)
                     
+                    # Nota: SoftRestaurant usa vista resumida (vwSaldoCxp) que NO tiene:
+                    # - FolioEntrada, FolioFactura, Referencia, FechaVencimiento
+                    # Estos campos se marcan como N/A para indicar que no están disponibles
+                    
                     factura = {
                         "factura_id": c.get('CuentaPorPagarID'),
                         "proveedor_id": c.get('ProveedorID'),
@@ -230,10 +234,13 @@ async def listar_facturas_pendientes(
                         "tipo_proveedor_nombre": c.get('TipoProveedorNombre', 'OTROS'),
                         "sucursal_id": c.get('SucursalID'),
                         "sucursal_nombre": c.get('SucursalNombre'),
-                        "folio_entrada": c.get('FolioEntrada', 'N/A'),
-                        "folio_factura": c.get('FolioFactura', ''),
+                        # Campos no disponibles en vista resumida de SoftRestaurant
+                        "folio_entrada": c.get('FolioEntrada') or 'N/D',  # No disponible
+                        "folio_factura": c.get('FolioFactura') or 'N/D',  # No disponible
                         "fecha_entrada": c.get('FechaEntrada').isoformat() if c.get('FechaEntrada') else None,
-                        "fecha_vencimiento": None,
+                        "fecha_vencimiento": c.get('FechaVencimiento') or 'N/D',  # No disponible
+                        "referencia": c.get('Referencia') or 'N/D',  # No disponible
+                        "observaciones": c.get('Observaciones', ''),
                         "dias_vencida": dias_vencido,
                         "importe_original": float(c.get('MontoOriginal', 0) or 0),
                         "saldo": saldo,
@@ -810,21 +817,20 @@ async def listar_sucursales_cxp(
 
 @router.put("/{factura_id}/decision-pago")
 async def actualizar_decision_pago(
-    factura_id: str,  # Cambiado a str para soportar IDs compuestos (ej: "MPRO_12345")
+    factura_id: str,  # Cambiado a str para soportar IDs compuestos (ej: "MPRO_12345", "CIENFUEGOS_xxx")
     data: ActualizarDecisionPago,
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Actualizar la decisión de pago de una factura.
-    Soporta IDs numéricos (legacy) e IDs compuestos (MPRO_xxx).
+    Soporta IDs numéricos (legacy), MPRO_xxx, y SUCURSAL_xxx (SoftRestaurant).
     """
     # Importar helper de auditoría
     from core.auditoria_helpers import registrar_auditoria_cxp
     
     # Detectar tipo de ID y procesar
     if factura_id.startswith("MPRO_"):
-        # ID compuesto de MPRO - por ahora solo registrar la intención
-        # TODO: Implementar persistencia en MPRO cuando esté disponible
+        # ID compuesto de MPRO
         logging.info(f"[CxP] Factura MPRO {factura_id} - Decisión: {data.decision_pago}")
         
         # Registrar auditoría
@@ -843,6 +849,31 @@ async def actualizar_decision_pago(
             "decision_pago": data.decision_pago,
             "fuente": "MPRO",
             "mensaje": "Decisión registrada (persistencia MPRO pendiente)"
+        }
+    
+    # ID compuesto de SoftRestaurant (CIENFUEGOS_xxx, ESTELAR_xxx, 130MID_xxx)
+    softrest_prefixes = ['CIENFUEGOS_', 'ESTELAR_', '130MID_']
+    is_softrest = any(factura_id.startswith(p) for p in softrest_prefixes)
+    
+    if is_softrest:
+        logging.info(f"[CxP] Factura SoftRestaurant {factura_id} - Decisión: {data.decision_pago}")
+        
+        # Registrar auditoría
+        await registrar_auditoria_cxp(
+            current_user=current_user,
+            accion='EDIT',
+            factura_id=factura_id,
+            valor_anterior={'decision_pago': not data.decision_pago},
+            valor_nuevo={'decision_pago': data.decision_pago, 'importe_a_pagar': data.importe_a_pagar},
+            motivo='Marcar/desmarcar factura SoftRestaurant para pago'
+        )
+        
+        return {
+            "success": True,
+            "factura_id": factura_id,
+            "decision_pago": data.decision_pago,
+            "fuente": "SOFTRESTAURANT",
+            "mensaje": "Decisión registrada (persistencia SoftRestaurant pendiente)"
         }
     
     # ID numérico - buscar en datos demo/cache

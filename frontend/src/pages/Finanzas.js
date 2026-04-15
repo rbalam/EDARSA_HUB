@@ -1883,17 +1883,17 @@ export default function Finanzas() {
                                 <tbody>
                                   {proveedor.facturas.map((factura, idx) => (
                                     <tr key={factura.factura_id || idx} className={`border-b hover:bg-zinc-50 ${factura.dias_vencida > 0 ? 'bg-red-50' : ''}`}>
-                                      <td className="p-2 font-mono text-zinc-700">{factura.folio_entrada || 'N/A'}</td>
-                                      <td className="p-2 font-mono text-zinc-700">{factura.folio_factura || '-'}</td>
+                                      <td className="p-2 font-mono text-zinc-700">{factura.folio_entrada === 'N/D' ? <span className="text-zinc-400 text-xs">N/D</span> : (factura.folio_entrada || '-')}</td>
+                                      <td className="p-2 font-mono text-zinc-700">{factura.folio_factura === 'N/D' ? <span className="text-zinc-400 text-xs">N/D</span> : (factura.folio_factura || '-')}</td>
                                       <td className="p-2 text-center text-zinc-600">{factura.fecha_entrada?.split('T')[0] || '-'}</td>
-                                      <td className="p-2 text-center text-zinc-600">{factura.fecha_vencimiento || '-'}</td>
+                                      <td className="p-2 text-center text-zinc-600">{factura.fecha_vencimiento === 'N/D' ? <span className="text-zinc-400 text-xs">N/D</span> : (factura.fecha_vencimiento || '-')}</td>
                                       <td className="p-2 text-center">
                                         <span className={`font-bold ${factura.dias_vencida > 0 ? 'text-red-600' : 'text-green-600'}`}>
                                           {factura.dias_vencida > 0 ? factura.dias_vencida : '-'}
                                         </span>
                                       </td>
                                       <td className="p-2 max-w-[150px] truncate text-zinc-600" title={factura.referencia || factura.observaciones}>
-                                        {factura.referencia || factura.observaciones || '-'}
+                                        {(factura.referencia === 'N/D') ? <span className="text-zinc-400 text-xs">N/D</span> : (factura.referencia || factura.observaciones || '-')}
                                       </td>
                                       <td className="p-2 text-right font-mono">{formatCurrency(factura.importe_original || factura.importe_total || 0)}</td>
                                       <td className="p-2 text-right font-mono font-bold">{formatCurrency(factura.saldo)}</td>
@@ -2050,17 +2050,17 @@ export default function Finanzas() {
                                   <tbody>
                                     {proveedor.facturas.map((factura, idx) => (
                                       <tr key={factura.factura_id || idx} className={`border-b hover:bg-zinc-50 ${factura.dias_vencida > 0 ? 'bg-red-50' : ''}`}>
-                                        <td className="p-2 font-mono text-zinc-700">{factura.folio_entrada || 'N/A'}</td>
-                                        <td className="p-2 font-mono text-zinc-700">{factura.folio_factura || '-'}</td>
+                                        <td className="p-2 font-mono text-zinc-700">{factura.folio_entrada === 'N/D' ? <span className="text-zinc-400 text-xs">N/D</span> : (factura.folio_entrada || '-')}</td>
+                                        <td className="p-2 font-mono text-zinc-700">{factura.folio_factura === 'N/D' ? <span className="text-zinc-400 text-xs">N/D</span> : (factura.folio_factura || '-')}</td>
                                         <td className="p-2 text-center text-zinc-600">{factura.fecha_entrada?.split('T')[0] || '-'}</td>
-                                        <td className="p-2 text-center text-zinc-600">{factura.fecha_vencimiento || '-'}</td>
+                                        <td className="p-2 text-center text-zinc-600">{factura.fecha_vencimiento === 'N/D' ? <span className="text-zinc-400 text-xs">N/D</span> : (factura.fecha_vencimiento || '-')}</td>
                                         <td className="p-2 text-center">
                                           <span className={`font-bold ${factura.dias_vencida > 0 ? 'text-red-600' : 'text-green-600'}`}>
                                             {factura.dias_vencida > 0 ? factura.dias_vencida : '-'}
                                           </span>
                                         </td>
                                         <td className="p-2 max-w-[150px] truncate text-zinc-600" title={factura.referencia || factura.observaciones}>
-                                          {factura.referencia || factura.observaciones || '-'}
+                                          {(factura.referencia === 'N/D') ? <span className="text-zinc-400 text-xs">N/D</span> : (factura.referencia || factura.observaciones || '-')}
                                         </td>
                                         <td className="p-2 text-right font-mono">{formatCurrency(factura.importe_original || factura.importe_total || 0)}</td>
                                         <td className="p-2 text-right font-mono font-bold">{formatCurrency(factura.saldo)}</td>

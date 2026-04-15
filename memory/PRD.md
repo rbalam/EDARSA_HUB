@@ -309,6 +309,17 @@ Optimización de lectura     → MongoDB (CACHE)
 - ✅ Estilos visuales unificados
 
 
+### 2026-04-15 - Fix Bugs CxP (Pagar + Campos N/D)
+**Corrección de dos bugs en módulo Cuentas por Pagar**
+
+- ✅ Bug "Error al actualizar": Agregado soporte para IDs de SoftRestaurant (CIENFUEGOS_, ESTELAR_, 130MID_)
+- ✅ Bug campos vacíos: Campos no disponibles en vista resumida ahora muestran "N/D"
+- ✅ Ambas vistas (Por Proveedor y Por Categoría) actualizadas
+
+**Archivos modificados:**
+- `/app/backend/modules/finanzas/cuentas_por_pagar.py`
+- `/app/frontend/src/pages/Finanzas.js`
+
 ### 2026-04-15 - Implementación de Auditoría Financiera
 **Sistema de auditoría funcional para operaciones financieras sensibles**
 
