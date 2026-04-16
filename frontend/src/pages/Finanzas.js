@@ -51,6 +51,13 @@ export default function Finanzas() {
   const [cxpSucursales, setCxpSucursales] = useState([]);  // Sucursales de MPRO para CxP
   const [cxpFiltroSucursal, setCxpFiltroSucursal] = useState('');
   const [cxpFiltroProveedor, setCxpFiltroProveedor] = useState('');
+  
+  // === PERMISOS DE USUARIO PARA SUCURSALES ===
+  const [userPermissions, setUserPermissions] = useState({
+    allowedSucursales: [],    // Lista de sucursales permitidas
+    canSeeAll: false,         // Puede ver "Todas"
+    role: ''
+  });
   const [cxpFechaCorte, setCxpFechaCorte] = useState('');
   const [cxpSoloVencidas, setCxpSoloVencidas] = useState(false);
   const [cxpSoloDecision, setCxpSoloDecision] = useState(false);
@@ -210,6 +217,66 @@ export default function Finanzas() {
   
   const token = localStorage.getItem('token');
   
+  // === CARGAR PERMISOS DEL USUARIO ===
+  useEffect(() => {
+    const loadUserPermissions = async () => {
+      try {
+        // Obtener usuario del localStorage
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        
+        if (user) {
+          // Obtener datos completos del usuario desde el backend (incluye allowed_sucursales)
+          const response = await fetch(`${API_URL}/api/users`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (response.ok) {
+            const users = await response.json();
+            const currentUser = users.find(u => u.id === user.id || u.email === user.email);
+            
+            if (currentUser) {
+              // Extraer sucursales permitidas de todos los servidores
+              const allowedSucursales = [];
+              if (currentUser.allowed_sucursales) {
+                Object.values(currentUser.allowed_sucursales).forEach(sucursales => {
+                  if (Array.isArray(sucursales)) {
+                    allowedSucursales.push(...sucursales.filter(s => s !== 'default'));
+                  }
+                });
+              }
+              
+              // Determinar si puede ver "Todas":
+              // - Administrador siempre puede
+              // - Usuario con múltiples sucursales de diferentes servidores puede
+              // - Usuario con allowed_sucursales vacío (sin restricción) puede
+              const isAdmin = currentUser.role === 'Administrador';
+              const hasNoRestriction = !currentUser.allowed_sucursales || Object.keys(currentUser.allowed_sucursales).length === 0;
+              const hasMultipleSucursales = allowedSucursales.length > 1;
+              
+              setUserPermissions({
+                allowedSucursales: allowedSucursales,
+                canSeeAll: isAdmin || hasNoRestriction,
+                role: currentUser.role || ''
+              });
+              
+              // Si solo tiene 1 sucursal, auto-seleccionarla
+              if (allowedSucursales.length === 1 && !isAdmin && !hasNoRestriction) {
+                setCxpFiltroSucursal(allowedSucursales[0]);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user permissions:', error);
+      }
+    };
+    
+    if (token) {
+      loadUserPermissions();
+    }
+  }, [token]);
+  
   const meses = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
@@ -295,7 +362,24 @@ export default function Finanzas() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (cxpFiltroSucursal) params.append('sucursal_id', cxpFiltroSucursal);
+      
+      // === SEGURIDAD: Validar que el usuario tenga permiso para la sucursal solicitada ===
+      let sucursalAEnviar = cxpFiltroSucursal;
+      
+      // Si el usuario NO puede ver "Todas" y no seleccionó sucursal, forzar su sucursal permitida
+      if (!userPermissions.canSeeAll && !sucursalAEnviar && userPermissions.allowedSucursales.length > 0) {
+        sucursalAEnviar = userPermissions.allowedSucursales[0];
+      }
+      
+      // Si el usuario NO puede ver "Todas" pero seleccionó una sucursal no permitida, forzar la primera permitida
+      if (!userPermissions.canSeeAll && sucursalAEnviar && 
+          userPermissions.allowedSucursales.length > 0 && 
+          !userPermissions.allowedSucursales.includes(sucursalAEnviar)) {
+        sucursalAEnviar = userPermissions.allowedSucursales[0];
+        setCxpFiltroSucursal(sucursalAEnviar); // Corregir el estado también
+      }
+      
+      if (sucursalAEnviar) params.append('sucursal_id', sucursalAEnviar);
       if (cxpFiltroProveedor) params.append('proveedor_id', cxpFiltroProveedor);
       if (cxpFechaCorte) params.append('fecha_corte', cxpFechaCorte);
       if (cxpSoloVencidas) params.append('solo_vencidas', 'true');
@@ -303,8 +387,8 @@ export default function Finanzas() {
       
       const [dataFacturas, dataResumen, dataProveedores] = await Promise.all([
         fetchWithAuth(`/api/finanzas/cuentas-por-pagar?${params}`),
-        fetchWithAuth(`/api/finanzas/cuentas-por-pagar/resumen${cxpFiltroSucursal ? `?sucursal_id=${cxpFiltroSucursal}` : ''}`),
-        fetchWithAuth(`/api/finanzas/cuentas-por-pagar/proveedores${cxpFiltroSucursal ? `?sucursal_id=${cxpFiltroSucursal}` : ''}`)
+        fetchWithAuth(`/api/finanzas/cuentas-por-pagar/resumen${sucursalAEnviar ? `?sucursal_id=${sucursalAEnviar}` : ''}`),
+        fetchWithAuth(`/api/finanzas/cuentas-por-pagar/proveedores${sucursalAEnviar ? `?sucursal_id=${sucursalAEnviar}` : ''}`)
       ]);
       
       // PRE-SELECCIONAR facturas vencidas automáticamente
@@ -371,7 +455,7 @@ export default function Finanzas() {
     } finally {
       setLoading(false);
     }
-  }, [fetchWithAuth, cxpFiltroSucursal, cxpFiltroProveedor, cxpFechaCorte, cxpSoloVencidas, cxpSoloDecision]);
+  }, [fetchWithAuth, cxpFiltroSucursal, cxpFiltroProveedor, cxpFechaCorte, cxpSoloVencidas, cxpSoloDecision, userPermissions]);
   
   // Actualizar decisión de pago
   const handleDecisionPago = async (facturaId, decision, importeAPagar = null) => {
@@ -1665,13 +1749,28 @@ export default function Finanzas() {
                   value={cxpFiltroSucursal}
                   onChange={(e) => setCxpFiltroSucursal(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg text-sm mt-1"
+                  disabled={userPermissions.allowedSucursales.length === 1 && !userPermissions.canSeeAll}
                 >
-                  <option value="">Todas</option>
-                  {cxpSucursales.map(s => (
-                    <option key={s.SucursalID} value={s.SucursalID}>
-                      {s.Nombre_Sucursal} ({s.CantidadFacturas || 0} fact.)
-                    </option>
-                  ))}
+                  {/* Opción "Todas" solo si el usuario tiene permiso */}
+                  {userPermissions.canSeeAll && (
+                    <option value="">Todas</option>
+                  )}
+                  {/* Filtrar sucursales según permisos */}
+                  {cxpSucursales
+                    .filter(s => {
+                      // Si puede ver todas, mostrar todas las sucursales
+                      if (userPermissions.canSeeAll) return true;
+                      // Si no tiene restricciones configuradas, mostrar todas
+                      if (userPermissions.allowedSucursales.length === 0) return true;
+                      // Solo mostrar las sucursales permitidas
+                      return userPermissions.allowedSucursales.includes(s.SucursalID);
+                    })
+                    .map(s => (
+                      <option key={s.SucursalID} value={s.SucursalID}>
+                        {s.Nombre_Sucursal} ({s.CantidadFacturas || 0} fact.)
+                      </option>
+                    ))
+                  }
                 </select>
               </div>
               <div className="relative">
