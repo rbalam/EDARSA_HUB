@@ -3567,19 +3567,28 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
                             })
                     
                     if productos_cache:
-                        # Obtener info del almacén
+                        # Obtener info del almacén - manejar tanto strings como diccionarios
                         almacen_id_sr = ""
                         for alm in almacenes:
-                            if alm.get('nombre') == almacen or alm.get('id'):
-                                almacen_id_sr = alm.get('id', '')
-                                break
+                            if isinstance(alm, dict):
+                                if alm.get('nombre') == almacen or alm.get('id'):
+                                    almacen_id_sr = alm.get('id', '')
+                                    break
+                            elif isinstance(alm, str):
+                                # Si es string, usar directamente
+                                if alm == almacen:
+                                    almacen_id_sr = alm
+                                    break
+                        
+                        # Convertir folio a string (puede venir como Decimal de SQL Server)
+                        folio_str = str(int(folio_fin)) if isinstance(folio_fin, (int, float)) else str(folio_fin)
                         
                         cache_key = {
                             "server_id": server_id,
                             "almacen_id": almacen_id_sr or almacen,
                             "sucursal_id": "",
                             "comentario": "",  # SR no usa comentarios
-                            "folio": str(folio_fin)
+                            "folio": folio_str
                         }
                         
                         cache_doc = {
@@ -4133,7 +4142,9 @@ async def get_diferencias_from_cache(
         cortes_sin_cache = []
         
         for idx, corte in enumerate(cortes_result):
-            folio = corte['folio']
+            folio_raw = corte['folio']
+            # Convertir folio a string (puede venir como Decimal de SQL Server)
+            folio = str(int(folio_raw)) if isinstance(folio_raw, (int, float)) or (hasattr(folio_raw, '__float__')) else str(folio_raw)
             
             # Buscar en cache
             cache_key = {
@@ -4196,11 +4207,15 @@ async def get_diferencias_from_cache(
         
         # Siempre retornar el resultado, incluso si productos está vacío
         # El endpoint debe manejar el caso de cortes_sin_cache
+        # Convertir folios a string para evitar problemas con Decimal
+        def folio_to_str(f):
+            return str(int(f)) if isinstance(f, (int, float)) or hasattr(f, '__float__') else str(f)
+        
         return {
             'almacen_nombre': almacen_nombre,
-            'cortes': [{'folio': c['folio'], 'fecha': c['fecha'], 'comentario': c.get('comentario', '')} for c in cortes_result],
+            'cortes': [{'folio': folio_to_str(c['folio']), 'fecha': c['fecha'], 'comentario': c.get('comentario', '')} for c in cortes_result],
             'productos': productos_list,
-            'cortes_sin_cache': cortes_sin_cache
+            'cortes_sin_cache': [folio_to_str(f) for f in cortes_sin_cache]
         }
         
     except Exception as e:
