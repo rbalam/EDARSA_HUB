@@ -2360,6 +2360,18 @@ async def get_report_filters(server_id: str, current_user: Dict = Depends(get_cu
         logging.error(f"Error obteniendo filtros: {str(e)}")
         return {"categorias": [], "familias": [], "subfamilias": []}
 
+
+# =============================================================================
+# FUNCIÓN REUTILIZABLE - Análisis de Inventarios
+# CAB-003 Fase 1A: Permite reutilización desde Core Service sin modificar endpoint
+# =============================================================================
+
+# Referencia a la función del endpoint para uso externo
+# Esta variable se asigna después de definir el endpoint
+_inventory_analysis_endpoint_ref = None
+
+
+
 @api_router.post("/reports/inventory-analysis")
 async def generate_inventory_analysis(report_params: Dict, current_user: Dict = Depends(get_current_user)):
     """
@@ -3595,6 +3607,11 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
     except Exception as e:
         logging.error(f"Error en análisis de inventario: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error generando análisis: {str(e)}")
+
+
+# CAB-003 Fase 1A: Asignar referencia para uso desde Core Service
+_inventory_analysis_endpoint_ref = generate_inventory_analysis
+
 
 @api_router.post("/reports/movement-details")
 async def get_movement_details(params: Dict, current_user: Dict = Depends(get_current_user)):
