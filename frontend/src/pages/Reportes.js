@@ -1043,9 +1043,35 @@ const Reportes = () => {
       const selectedServer = servers.find(s => s.id === filters.server_id);
       const serverName = selectedServer ? selectedServer.name : 'N/A';
       
+      // === FILTRADO DE COLUMNAS DE COSTO SEGÚN CHECKBOX ===
+      // Lista explícita de columnas de costo GENERALES a excluir cuando mostrarCostos = false
+      // NOTA: Diferencia_Costo se CONSERVA siempre (es el costo de la diferencia QTY)
+      const COLUMNAS_COSTO_EXCLUIR = [
+        'Costo_Unitario',
+        'Inv_Inicial_Costo',
+        'Movimientos_Costo',
+        'Ventas_Costo',
+        'Inv_Teorico_Costo',
+        'Inv_Final_Costo'
+      ];
+      
+      // Crear copia filtrada para exportación (no modifica reportData original)
+      const dataParaExportar = mostrarCostos 
+        ? reportData 
+        : reportData.map(row => {
+            const rowFiltrada = {};
+            Object.entries(row).forEach(([key, value]) => {
+              // Solo excluir las columnas de la lista explícita
+              if (!COLUMNAS_COSTO_EXCLUIR.includes(key)) {
+                rowFiltrada[key] = value;
+              }
+            });
+            return rowFiltrada;
+          });
+      
       // Llamar al backend para generar el Excel con formato profesional
       const response = await api.post('/reports/export/excel', {
-        data: reportData,
+        data: dataParaExportar,
         filename: `reporte_inventario_${new Date().toISOString().split('T')[0]}.xlsx`,
         servidor_nombre: serverName,
         sucursal: filters.sucursal || 'N/A',
