@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import api from '@/lib/api';
 import { fetchServersOperativos } from '@/services/serversService';
 import { Button } from '@/components/ui/button';
@@ -452,8 +452,22 @@ const Reportes = () => {
     loadServers();
   }, []);
 
+  // Track previous server to detect changes
+  const prevServerIdRef = useRef(filters.server_id);
+  
   useEffect(() => {
     if (filters.server_id) {
+      // Si cambió el servidor, limpiar estados dependientes
+      if (prevServerIdRef.current && prevServerIdRef.current !== filters.server_id) {
+        setSelectedAlmacenes([]);
+        setSelectedInventariosIni([]);
+        setSelectedInventariosFin([]);
+        setInventarios([]);
+        setAlmacenes([]);
+        setSucursales([]);
+      }
+      prevServerIdRef.current = filters.server_id;
+      
       loadSucursales();
       loadReportFilters();
       // Guardar el servidor seleccionado
