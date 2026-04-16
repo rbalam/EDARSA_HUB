@@ -593,17 +593,24 @@ async def get_resumen_cuentas_por_pagar(
     
     CONECTADO A SOFTRESTAURANT (CF, Estelar, 130 Mid)
     Calcula antigüedad desde datos reales.
+    
+    OPTIMIZACIÓN ABRIL 2026: Una sola llamada a get_cuentas_por_pagar,
+    luego calcular antigüedad y por_tipo en memoria.
     """
     softrest_repo = await get_softrest_repo()
     
     # Primero intentar SoftRestaurant
     if softrest_repo and not use_demo:
         try:
-            antiguedad = await softrest_repo.get_resumen_antiguedad(sucursal_id=sucursal_id)
+            # OPTIMIZACIÓN: Una sola llamada a la query pesada
+            cxp_data = await softrest_repo.get_cuentas_por_pagar(sucursal_id=sucursal_id, limit=2000)
             
-            if antiguedad.get('total_facturas', 0) > 0:
-                # Obtener también resumen por tipo
-                por_tipo = await softrest_repo.get_resumen_por_tipo(sucursal_id=sucursal_id)
+            if cxp_data and len(cxp_data) > 0:
+                # Calcular antigüedad EN MEMORIA (sin segunda query)
+                antiguedad = _calcular_antiguedad_en_memoria(cxp_data)
+                
+                # Calcular por tipo EN MEMORIA (sin tercera query)
+                por_tipo = _calcular_por_tipo_en_memoria(cxp_data)
                 
                 return {
                     "fuente": "SOFTRESTAURANT_REAL",
