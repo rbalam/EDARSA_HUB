@@ -140,21 +140,33 @@ Optimización de lectura     → MongoDB (CACHE)
 
 ### CAB-003: Automatización de Análisis de Inventarios
 - **Documento Principal**: `/app/docs/ARQUITECTURA_AUTOMATIZACION_INVENTARIOS_v1.md`
-- **Resumen Ejecutivo**: `/app/docs/RESUMEN_EJECUTIVO_AUTOMATIZACION_INVENTARIOS.md`
-- **Fecha**: Diciembre 2025
-- **Estado**: DISEÑO COMPLETO - PENDIENTE APROBACIÓN
+- **Consolidación Final**: `/app/docs/ARQUITECTURA_AUTOMATIZACION_INVENTARIOS_CONSOLIDACION_FINAL.md`
+- **Hito de Control Fase 0**: `/app/docs/HITO_CONTROL_CAB003_FASE0.md`
+- **Fecha Diseño**: Diciembre 2025
+- **Fecha Cierre Fase 0**: 2026-04-15 23:14:32 UTC
+- **Estado**: 
+  - ✅ **FASE 0 CERRADA** (Infraestructura Base)
+  - ⏳ FASE 1 NO AUTORIZADA
 - **Objetivo**: Detectar nuevos inventarios capturados y enviar análisis automáticamente
-- **Componentes nuevos**:
-  - 6 tablas en EDARSA HUB SQL Server
-  - Módulo backend `/modules/automatizacion/`
-  - Integración con RBAC existente
+- **Componentes implementados (Fase 0)**:
+  - ✅ 6 tablas creadas en EDARSAHUB SQL Server
+  - ✅ Módulo backend `/modules/automatizacion/` (estructura base)
+  - ✅ Feature flags (todos apagados)
+  - ✅ DDL fuente maestra `/backend/sql/automatizacion_inventarios_ddl.sql`
+- **Tablas creadas**:
+  - `automatizacion_inventarios_config`
+  - `automatizacion_inventarios_destinatarios`
+  - `automatizacion_inventarios_ejecuciones`
+  - `automatizacion_inventarios_envios`
+  - `automatizacion_inventarios_folios_procesados` (con UQ_folios_clave_unica de 6 campos)
+  - `automatizacion_inventarios_ultimo_folio_conocido`
 - **Restricciones respetadas**:
   - ✅ Solo SELECT a sistemas origen
   - ✅ Tablas nuevas solo en EDARSA HUB
   - ✅ Módulo 100% desacoplado
-  - ✅ Análisis idéntico al manual
-- **Plan**: 6 fases, 4-6 semanas estimadas
-- **Pendiente**: Aprobación para iniciar implementación
+  - ✅ server.py NO modificado
+  - ✅ Frontend NO modificado
+- **Próxima fase**: Fase 1A (Core Service) - Pendiente autorización
 
 ### CAB-002: Rediseño Arquitectónico SQL Server (Propinas + Cortes Z)
 - **Documento Arquitectura Propinas**: `/app/docs/ARQUITECTURA_PROPINAS_TPV_v3.md`
