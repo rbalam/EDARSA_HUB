@@ -138,6 +138,24 @@ Optimización de lectura     → MongoDB (CACHE)
 - **Endpoints**: `/api/finanzas/propinas/*`
 - **Pendiente**: Ejecutar piloto controlado en producción
 
+### CAB-003: Automatización de Análisis de Inventarios
+- **Documento Principal**: `/app/docs/ARQUITECTURA_AUTOMATIZACION_INVENTARIOS_v1.md`
+- **Resumen Ejecutivo**: `/app/docs/RESUMEN_EJECUTIVO_AUTOMATIZACION_INVENTARIOS.md`
+- **Fecha**: Diciembre 2025
+- **Estado**: DISEÑO COMPLETO - PENDIENTE APROBACIÓN
+- **Objetivo**: Detectar nuevos inventarios capturados y enviar análisis automáticamente
+- **Componentes nuevos**:
+  - 6 tablas en EDARSA HUB SQL Server
+  - Módulo backend `/modules/automatizacion/`
+  - Integración con RBAC existente
+- **Restricciones respetadas**:
+  - ✅ Solo SELECT a sistemas origen
+  - ✅ Tablas nuevas solo en EDARSA HUB
+  - ✅ Módulo 100% desacoplado
+  - ✅ Análisis idéntico al manual
+- **Plan**: 6 fases, 4-6 semanas estimadas
+- **Pendiente**: Aprobación para iniciar implementación
+
 ### CAB-002: Rediseño Arquitectónico SQL Server (Propinas + Cortes Z)
 - **Documento Arquitectura Propinas**: `/app/docs/ARQUITECTURA_PROPINAS_TPV_v3.md`
 - **Adenda Cortes Z**: `/app/docs/ARQUITECTURA_PROPINAS_TPV_v3_ADENDA_CORTES_Z.md`
