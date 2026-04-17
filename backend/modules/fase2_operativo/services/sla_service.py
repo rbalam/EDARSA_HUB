@@ -1,8 +1,9 @@
 """
 Servicio de SLA - Monitoreo de Tiempos y Cumplimiento
-CAB-003 | EDARSA HUB - Fase 2B.4
+CAB-003 | EDARSA HUB - Fase 2B.4 + Subfase 2B.5 Notificaciones WhatsApp
 
 Gestiona el cálculo de métricas SLA para tareas operativas.
+Integrado con sistema de notificaciones para alertas automáticas.
 """
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone, timedelta
@@ -15,21 +16,24 @@ logger = logging.getLogger(__name__)
 class EstadoSLA(str, Enum):
     """Estados de SLA para tareas."""
     EN_TIEMPO = "EN_TIEMPO"
-    ADVERTENCIA = "ADVERTENCIA"
-    URGENTE = "URGENTE"
-    VENCIDA = "VENCIDA"
+    ADVERTENCIA = "ADVERTENCIA"  # 50-74% consumido (Warning)
+    URGENTE = "URGENTE"  # 75-99% consumido (Por vencer - 80%)
+    VENCIDA = "VENCIDA"  # 100%+ consumido
+    ESCALADA = "ESCALADA"  # 150%+ consumido - Subfase 2B.5
     CUMPLIDA_EN_TIEMPO = "CUMPLIDA_EN_TIEMPO"
     CUMPLIDA_FUERA_DE_TIEMPO = "CUMPLIDA_FUERA_DE_TIEMPO"
 
 
-# Umbrales por defecto (en horas)
+# Umbrales SLA por defecto (en horas y porcentajes)
 UMBRALES_SLA_DEFAULT = {
     "SLA_JUSTIFICACION_SIMPLE_HORAS": 24,
     "SLA_JUSTIFICACION_COMPLETA_HORAS": 48,
     "SLA_REVISION_OPERATIVO_HORAS": 24,
     "SLA_AUDITORIA_HORAS": 72,
-    "SLA_UMBRAL_ADVERTENCIA_PORCENTAJE": 50,
-    "SLA_UMBRAL_URGENTE_PORCENTAJE": 75,
+    "SLA_UMBRAL_ADVERTENCIA_PORCENTAJE": 50,  # Warning inicial
+    "SLA_UMBRAL_URGENTE_PORCENTAJE": 80,  # Por vencer - disparar notificación
+    "SLA_UMBRAL_VENCIDO_PORCENTAJE": 100,  # Vencido
+    "SLA_UMBRAL_ESCALAMIENTO_PORCENTAJE": 150,  # Escalar a supervisor/gerente
 }
 
 # Estados que indican primera acción
@@ -47,6 +51,7 @@ class SLAService:
     Servicio para gestión de SLA de tareas operativas.
     
     Calcula métricas de tiempo de respuesta, resolución y cumplimiento.
+    Integrado con sistema de notificaciones WhatsApp (Subfase 2B.5).
     """
     
     def __init__(self, db):
@@ -58,6 +63,21 @@ class SLAService:
         """
         self.db = db
         self._cache_config = None
+        self._notification_service = None
+    
+    def _get_notification_service(self):
+        """
+        Obtiene el servicio de notificaciones de forma lazy.
+        Evita imports circulares y permite operación sin notificaciones.
+        """
+        if self._notification_service is None:
+            try:
+                from core.communications.notifications.service import get_notification_orchestrator
+                self._notification_service = get_notification_orchestrator(self.db)
+            except ImportError:
+                logger.warning("Sistema de notificaciones no disponible")
+                self._notification_service = None
+        return self._notification_service
     
     def _get_configuracion(self) -> Dict[str, Any]:
         """
@@ -266,7 +286,12 @@ class SLAService:
     async def actualizar_estados_sla(self) -> Dict[str, Any]:
         """
         Actualiza los estados SLA de todas las tareas activas.
-        Debe ejecutarse periódicamente (cron externo).
+        Debe ejecutarse periódicamente (cron externo o scheduler).
+        
+        SUBFASE 2B.5: Ahora también dispara notificaciones automáticas:
+        - 80%: notify_sla_warning
+        - 100%: notify_sla_expired
+        - 150%: notify_sla_escalated
         
         Returns:
             Resumen de actualizaciones
@@ -279,6 +304,11 @@ class SLAService:
             {"_id": 0}
         ))
         
+        config = self._get_configuracion()
+        umbral_warning = config.get("SLA_UMBRAL_URGENTE_PORCENTAJE", 80)
+        umbral_vencido = config.get("SLA_UMBRAL_VENCIDO_PORCENTAJE", 100)
+        umbral_escalado = config.get("SLA_UMBRAL_ESCALAMIENTO_PORCENTAJE", 150)
+        
         resultados = {
             "total_procesadas": len(tareas),
             "actualizadas": 0,
@@ -286,7 +316,13 @@ class SLAService:
                 "EN_TIEMPO": 0,
                 "ADVERTENCIA": 0,
                 "URGENTE": 0,
-                "VENCIDA": 0
+                "VENCIDA": 0,
+                "ESCALADA": 0
+            },
+            "notificaciones": {
+                "warning_enviadas": 0,
+                "vencido_enviadas": 0,
+                "escalado_enviadas": 0
             },
             "errores": 0
         }
@@ -295,6 +331,7 @@ class SLAService:
             try:
                 calculo = self.calcular_estado_sla(tarea)
                 nuevo_estado = calculo["estado_sla"]
+                porcentaje = calculo.get("porcentaje_tiempo_consumido", 0)
                 
                 # Actualizar solo si cambió o no existe
                 estado_actual = tarea.get("estado_sla")
@@ -308,12 +345,37 @@ class SLAService:
                     )
                     resultados["actualizadas"] += 1
                 
-                # También actualizar flag vencida si corresponde
-                if nuevo_estado == EstadoSLA.VENCIDA.value and not tarea.get("vencida"):
-                    self.db.tareas_inventario.update_one(
-                        {"id": tarea.get("id")},
-                        {"$set": {"vencida": True}}
-                    )
+                # ====== SUBFASE 2B.5: NOTIFICACIONES AUTOMÁTICAS ======
+                
+                # Notificación WARNING (80%) - solo si no se ha enviado antes
+                if porcentaje >= umbral_warning and porcentaje < umbral_vencido:
+                    if not tarea.get("notificacion_warning_enviada"):
+                        sent = await self.notify_sla_warning(tarea)
+                        if sent:
+                            resultados["notificaciones"]["warning_enviadas"] += 1
+                
+                # Notificación VENCIDO (100%) - solo si no se ha enviado antes
+                elif porcentaje >= umbral_vencido and porcentaje < umbral_escalado:
+                    if not tarea.get("notificacion_vencido_enviada"):
+                        sent = await self.notify_sla_expired(tarea)
+                        if sent:
+                            resultados["notificaciones"]["vencido_enviadas"] += 1
+                    
+                    # También actualizar flag vencida
+                    if not tarea.get("vencida"):
+                        self.db.tareas_inventario.update_one(
+                            {"id": tarea.get("id")},
+                            {"$set": {"vencida": True}}
+                        )
+                
+                # Notificación ESCALADO (150%) - solo si no se ha enviado antes
+                elif porcentaje >= umbral_escalado:
+                    if not tarea.get("notificacion_escalado_enviada"):
+                        sent = await self.notify_sla_escalated(tarea)
+                        if sent:
+                            resultados["notificaciones"]["escalado_enviadas"] += 1
+                    
+                    nuevo_estado = EstadoSLA.ESCALADA.value
                 
                 resultados["por_estado"][nuevo_estado] = resultados["por_estado"].get(nuevo_estado, 0) + 1
                 
@@ -487,6 +549,183 @@ class SLAService:
                 resultado.append(tarea)
         
         return resultado
+    
+    # =========================================================================
+    # SUBFASE 2B.5: INTEGRACIÓN CON NOTIFICACIONES WHATSAPP
+    # =========================================================================
+    
+    async def notify_sla_warning(
+        self,
+        tarea: Dict,
+        workflow: Optional[Dict] = None
+    ) -> bool:
+        """
+        Notifica que un SLA está por vencer (80% consumido).
+        
+        Args:
+            tarea: Datos de la tarea
+            workflow: Datos del workflow (opcional)
+            
+        Returns:
+            True si se envió notificación
+        """
+        notifier = self._get_notification_service()
+        if not notifier:
+            logger.warning("Notificación SLA_POR_VENCER omitida: servicio no disponible")
+            return False
+        
+        try:
+            # Obtener datos del workflow si no se proporcionan
+            if not workflow:
+                workflow = self.db.workflows_inventario.find_one(
+                    {"id": tarea.get("workflow_id")},
+                    {"_id": 0}
+                )
+            
+            folio = workflow.get("folio", "N/A") if workflow else tarea.get("folio", "N/A")
+            sucursal = workflow.get("sucursal_nombre", "N/A") if workflow else tarea.get("sucursal_nombre", "N/A")
+            
+            # Calcular SLA para obtener horas restantes
+            sla_calc = self.calcular_estado_sla(tarea)
+            
+            result = await notifier.notify_sla_warning(
+                tarea_id=tarea.get("id"),
+                workflow_id=tarea.get("workflow_id"),
+                responsable_id=tarea.get("responsable_id"),
+                folio=folio,
+                sucursal=sucursal,
+                evento=tarea.get("tipo_tarea", "Justificación"),
+                fecha_limite=tarea.get("fecha_limite", "No especificada"),
+                horas_restantes=sla_calc.get("horas_restantes", 0)
+            )
+            
+            if result.success:
+                # Marcar que se envió notificación de warning
+                self.db.tareas_inventario.update_one(
+                    {"id": tarea.get("id")},
+                    {"$set": {"notificacion_warning_enviada": datetime.now(timezone.utc).isoformat()}}
+                )
+                logger.info(f"Notificación SLA_POR_VENCER enviada para tarea {tarea.get('id')}")
+            
+            return result.success
+            
+        except Exception as e:
+            logger.error(f"Error enviando notificación SLA_POR_VENCER: {e}")
+            return False
+    
+    async def notify_sla_expired(
+        self,
+        tarea: Dict,
+        workflow: Optional[Dict] = None
+    ) -> bool:
+        """
+        Notifica que un SLA venció (100% consumido).
+        
+        Args:
+            tarea: Datos de la tarea
+            workflow: Datos del workflow (opcional)
+            
+        Returns:
+            True si se envió notificación
+        """
+        notifier = self._get_notification_service()
+        if not notifier:
+            logger.warning("Notificación SLA_VENCIDO omitida: servicio no disponible")
+            return False
+        
+        try:
+            if not workflow:
+                workflow = self.db.workflows_inventario.find_one(
+                    {"id": tarea.get("workflow_id")},
+                    {"_id": 0}
+                )
+            
+            folio = workflow.get("folio", "N/A") if workflow else tarea.get("folio", "N/A")
+            sucursal = workflow.get("sucursal_nombre", "N/A") if workflow else tarea.get("sucursal_nombre", "N/A")
+            
+            result = await notifier.notify_sla_expired(
+                tarea_id=tarea.get("id"),
+                workflow_id=tarea.get("workflow_id"),
+                responsable_id=tarea.get("responsable_id"),
+                supervisor_id=tarea.get("supervisor_id"),
+                folio=folio,
+                sucursal=sucursal,
+                evento=tarea.get("tipo_tarea", "Justificación")
+            )
+            
+            if result.success:
+                self.db.tareas_inventario.update_one(
+                    {"id": tarea.get("id")},
+                    {"$set": {"notificacion_vencido_enviada": datetime.now(timezone.utc).isoformat()}}
+                )
+                logger.info(f"Notificación SLA_VENCIDO enviada para tarea {tarea.get('id')}")
+            
+            return result.success
+            
+        except Exception as e:
+            logger.error(f"Error enviando notificación SLA_VENCIDO: {e}")
+            return False
+    
+    async def notify_sla_escalated(
+        self,
+        tarea: Dict,
+        workflow: Optional[Dict] = None
+    ) -> bool:
+        """
+        Notifica escalamiento de SLA (150% consumido).
+        
+        Args:
+            tarea: Datos de la tarea
+            workflow: Datos del workflow (opcional)
+            
+        Returns:
+            True si se envió notificación
+        """
+        notifier = self._get_notification_service()
+        if not notifier:
+            logger.warning("Notificación SLA_ESCALADO omitida: servicio no disponible")
+            return False
+        
+        try:
+            if not workflow:
+                workflow = self.db.workflows_inventario.find_one(
+                    {"id": tarea.get("workflow_id")},
+                    {"_id": 0}
+                )
+            
+            folio = workflow.get("folio", "N/A") if workflow else tarea.get("folio", "N/A")
+            sucursal = workflow.get("sucursal_nombre", "N/A") if workflow else tarea.get("sucursal_nombre", "N/A")
+            
+            # Calcular porcentaje excedido
+            sla_calc = self.calcular_estado_sla(tarea)
+            porcentaje = sla_calc.get("porcentaje_tiempo_consumido", 150)
+            
+            result = await notifier.notify_sla_escalated(
+                tarea_id=tarea.get("id"),
+                workflow_id=tarea.get("workflow_id"),
+                supervisor_id=tarea.get("supervisor_id"),
+                gerente_id=tarea.get("gerente_id"),
+                folio=folio,
+                sucursal=sucursal,
+                evento=tarea.get("tipo_tarea", "Justificación"),
+                porcentaje_excedido=porcentaje
+            )
+            
+            if result.success:
+                self.db.tareas_inventario.update_one(
+                    {"id": tarea.get("id")},
+                    {"$set": {
+                        "notificacion_escalado_enviada": datetime.now(timezone.utc).isoformat(),
+                        "estado_sla": EstadoSLA.ESCALADA.value
+                    }}
+                )
+                logger.info(f"Notificación SLA_ESCALADO enviada para tarea {tarea.get('id')}")
+            
+            return result.success
+            
+        except Exception as e:
+            logger.error(f"Error enviando notificación SLA_ESCALADO: {e}")
+            return False
 
 
 # Singleton del servicio

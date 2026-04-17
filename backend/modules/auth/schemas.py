@@ -28,6 +28,7 @@ class User(BaseModel):
     email: EmailStr
     name: str
     role: str
+    telefono: Optional[str] = None  # Subfase 2B.5 - Teléfono para WhatsApp (formato E.164)
     sucursales: List[str] = []  # IDs de sucursales asignadas (legacy)
     allowed_servers: List[str] = []  # IDs de servidores permitidos
     allowed_sucursales: Dict[str, List[str]] = {}  # server_id -> [sucursal_ids]
@@ -42,6 +43,7 @@ class UserCreate(BaseModel):
     name: str
     password: str
     role: str
+    telefono: Optional[str] = None  # Subfase 2B.5 - Teléfono para WhatsApp
     sucursales: List[str] = []
     allowed_servers: List[str] = []
     allowed_sucursales: Dict[str, List[str]] = {}
@@ -59,6 +61,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     role: Optional[str] = None
+    telefono: Optional[str] = None  # Subfase 2B.5 - Teléfono para WhatsApp
     sucursales: Optional[List[str]] = None
     password: Optional[str] = None
 

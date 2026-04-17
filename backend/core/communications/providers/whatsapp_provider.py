@@ -1,0 +1,371 @@
+"""
+EDARSA HUB - WhatsApp Provider
+==============================
+Subfase 2B.5 - Proveedor para WhatsApp Business API.
+
+Diseñado para ser compatible con:
+- Twilio WhatsApp API
+- Meta Cloud API (WhatsApp Business)
+
+La configuración determina qué adaptador usar internamente.
+Los secretos se leen de variables de entorno, NO del código.
+"""
+
+from typing import Optional, Dict, Any
+import logging
+import os
+import re
+import httpx
+
+from .base import BaseProvider, ProviderResponse, ProviderFactory
+
+logger = logging.getLogger(__name__)
+
+
+class WhatsAppProvider(BaseProvider):
+    """
+    Proveedor de WhatsApp Business.
+    
+    Soporta:
+    - Twilio WhatsApp (default)
+    - Meta Cloud API
+    
+    Configuración requerida:
+    - provider_type: "twilio" o "meta"
+    - token_ref: Nombre de variable de entorno con el token
+    - account_id: Account SID (Twilio) o Phone Number ID (Meta)
+    - remitente: Número WhatsApp remitente
+    """
+    
+    def __init__(self, config: Dict[str, Any]):
+        super().__init__(config)
+        self.provider_type = config.get("provider_type", "twilio")
+        self.token_ref = config.get("token_ref", "WHATSAPP_API_TOKEN")
+        self.account_id = config.get("account_id")
+        self.remitente = config.get("remitente")
+        self.base_url = config.get("base_url")
+        
+        # Cliente HTTP
+        self._client: Optional[httpx.AsyncClient] = None
+        self._token: Optional[str] = None
+    
+    def _get_provider_name(self) -> str:
+        return f"whatsapp_{self.provider_type}"
+    
+    async def initialize(self) -> bool:
+        """
+        Inicializa conexión con el provider.
+        
+        Lee credenciales de variables de entorno.
+        """
+        # Obtener token de variable de entorno
+        self._token = os.environ.get(self.token_ref)
+        
+        if not self._token:
+            logger.warning(
+                f"WhatsAppProvider: Token no encontrado en {self.token_ref}. "
+                "El provider operará en modo degradado (fallback a mock)."
+            )
+            # No fallar - permitir operación en modo degradado
+            self._initialized = True
+            return True
+        
+        # Configurar base URL según provider
+        if not self.base_url:
+            if self.provider_type == "twilio":
+                self.base_url = "https://api.twilio.com/2010-04-01"
+            elif self.provider_type == "meta":
+                self.base_url = "https://graph.facebook.com/v17.0"
+        
+        # Crear cliente HTTP
+        self._client = httpx.AsyncClient(timeout=30.0)
+        self._initialized = True
+        
+        logger.info(f"WhatsAppProvider ({self.provider_type}) inicializado")
+        return True
+    
+    def validate_recipient(self, recipient: str) -> Dict[str, Any]:
+        """
+        Valida y normaliza número de teléfono a formato E.164.
+        
+        WhatsApp requiere formato: +[código país][número]
+        Ejemplo: +521234567890
+        """
+        if not recipient:
+            return {
+                "valid": False,
+                "normalized": None,
+                "error": "Teléfono vacío"
+            }
+        
+        # Limpiar caracteres no numéricos excepto +
+        cleaned = re.sub(r'[^\d+]', '', recipient)
+        
+        # Normalizar a formato E.164
+        if cleaned.startswith('+'):
+            normalized = cleaned
+        elif cleaned.startswith('52') and len(cleaned) >= 12:
+            # México con código de país
+            normalized = '+' + cleaned
+        elif len(cleaned) == 10:
+            # Número MX sin código de país
+            normalized = '+52' + cleaned
+        elif cleaned.startswith('1') and len(cleaned) == 11:
+            # USA/Canada
+            normalized = '+' + cleaned
+        else:
+            return {
+                "valid": False,
+                "normalized": None,
+                "error": f"Formato de teléfono no reconocido: {recipient}"
+            }
+        
+        # Validar longitud E.164 (7-15 dígitos después del +)
+        digits_only = normalized[1:]  # Sin el +
+        if len(digits_only) < 7 or len(digits_only) > 15:
+            return {
+                "valid": False,
+                "normalized": None,
+                "error": f"Longitud de teléfono inválida: {len(digits_only)} dígitos"
+            }
+        
+        return {
+            "valid": True,
+            "normalized": normalized,
+            "error": None
+        }
+    
+    async def send_message(
+        self,
+        recipient: str,
+        message: str,
+        metadata: Optional[Dict] = None
+    ) -> ProviderResponse:
+        """
+        Envía mensaje por WhatsApp.
+        
+        Si no hay token configurado, opera en modo degradado (log only).
+        """
+        # Validar destinatario
+        validation = self.validate_recipient(recipient)
+        if not validation["valid"]:
+            return ProviderResponse(
+                success=False,
+                status="failed",
+                error_code="INVALID_RECIPIENT",
+                error_message=validation["error"]
+            )
+        
+        normalized_recipient = validation["normalized"]
+        
+        # Modo degradado si no hay token
+        if not self._token:
+            logger.warning(
+                f"[WHATSAPP-DEGRADED] Sin token. Mensaje NO enviado a {normalized_recipient[-4:]}****"
+            )
+            return ProviderResponse(
+                success=False,
+                status="failed",
+                error_code="NO_TOKEN",
+                error_message="Token de WhatsApp no configurado"
+            )
+        
+        try:
+            if self.provider_type == "twilio":
+                return await self._send_via_twilio(normalized_recipient, message, metadata)
+            elif self.provider_type == "meta":
+                return await self._send_via_meta(normalized_recipient, message, metadata)
+            else:
+                return ProviderResponse(
+                    success=False,
+                    status="failed",
+                    error_code="INVALID_PROVIDER",
+                    error_message=f"Tipo de provider no soportado: {self.provider_type}"
+                )
+        except Exception as e:
+            logger.error(f"Error enviando WhatsApp: {e}")
+            return ProviderResponse(
+                success=False,
+                status="failed",
+                error_code="SEND_ERROR",
+                error_message=str(e)
+            )
+    
+    async def _send_via_twilio(
+        self,
+        recipient: str,
+        message: str,
+        metadata: Optional[Dict] = None
+    ) -> ProviderResponse:
+        """
+        Envía mensaje usando Twilio WhatsApp API.
+        
+        Endpoint: POST /Accounts/{AccountSid}/Messages.json
+        """
+        if not self.account_id:
+            return ProviderResponse(
+                success=False,
+                status="failed",
+                error_code="NO_ACCOUNT_ID",
+                error_message="Twilio Account SID no configurado"
+            )
+        
+        # Twilio requiere el prefijo "whatsapp:" en los números
+        twilio_from = f"whatsapp:{self.remitente}"
+        twilio_to = f"whatsapp:{recipient}"
+        
+        url = f"{self.base_url}/Accounts/{self.account_id}/Messages.json"
+        
+        # Twilio usa autenticación Basic con AccountSID:AuthToken
+        # El token_ref debe contener el Auth Token
+        auth = httpx.BasicAuth(self.account_id, self._token)
+        
+        data = {
+            "From": twilio_from,
+            "To": twilio_to,
+            "Body": message
+        }
+        
+        try:
+            response = await self._client.post(url, data=data, auth=auth)
+            response_data = response.json()
+            
+            if response.status_code in [200, 201]:
+                return ProviderResponse(
+                    success=True,
+                    message_id=response_data.get("sid"),
+                    status="sent",
+                    raw_response=response_data
+                )
+            else:
+                return ProviderResponse(
+                    success=False,
+                    status="failed",
+                    error_code=str(response_data.get("code", response.status_code)),
+                    error_message=response_data.get("message", "Error desconocido"),
+                    raw_response=response_data
+                )
+        except httpx.HTTPError as e:
+            return ProviderResponse(
+                success=False,
+                status="failed",
+                error_code="HTTP_ERROR",
+                error_message=str(e)
+            )
+    
+    async def _send_via_meta(
+        self,
+        recipient: str,
+        message: str,
+        metadata: Optional[Dict] = None
+    ) -> ProviderResponse:
+        """
+        Envía mensaje usando Meta Cloud API.
+        
+        Endpoint: POST /{phone_number_id}/messages
+        """
+        if not self.account_id:
+            return ProviderResponse(
+                success=False,
+                status="failed",
+                error_code="NO_PHONE_NUMBER_ID",
+                error_message="Meta Phone Number ID no configurado"
+            )
+        
+        url = f"{self.base_url}/{self.account_id}/messages"
+        
+        headers = {
+            "Authorization": f"Bearer {self._token}",
+            "Content-Type": "application/json"
+        }
+        
+        # Meta requiere el número sin el +
+        to_number = recipient.lstrip('+')
+        
+        payload = {
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": to_number,
+            "type": "text",
+            "text": {
+                "preview_url": False,
+                "body": message
+            }
+        }
+        
+        try:
+            response = await self._client.post(url, json=payload, headers=headers)
+            response_data = response.json()
+            
+            if response.status_code == 200:
+                messages = response_data.get("messages", [])
+                message_id = messages[0].get("id") if messages else None
+                return ProviderResponse(
+                    success=True,
+                    message_id=message_id,
+                    status="sent",
+                    raw_response=response_data
+                )
+            else:
+                error = response_data.get("error", {})
+                return ProviderResponse(
+                    success=False,
+                    status="failed",
+                    error_code=str(error.get("code", response.status_code)),
+                    error_message=error.get("message", "Error desconocido"),
+                    raw_response=response_data
+                )
+        except httpx.HTTPError as e:
+            return ProviderResponse(
+                success=False,
+                status="failed",
+                error_code="HTTP_ERROR",
+                error_message=str(e)
+            )
+    
+    async def get_message_status(self, message_id: str) -> Optional[ProviderResponse]:
+        """
+        Consulta estado de mensaje.
+        
+        Nota: Twilio y Meta usan webhooks para actualizaciones de estado.
+        Este método hace polling directo (menos eficiente).
+        """
+        if self.provider_type == "twilio":
+            return await self._get_twilio_status(message_id)
+        # Meta no soporta polling de estado - solo webhooks
+        return None
+    
+    async def _get_twilio_status(self, message_id: str) -> Optional[ProviderResponse]:
+        """Consulta estado en Twilio."""
+        if not self._client or not self.account_id or not self._token:
+            return None
+        
+        url = f"{self.base_url}/Accounts/{self.account_id}/Messages/{message_id}.json"
+        auth = httpx.BasicAuth(self.account_id, self._token)
+        
+        try:
+            response = await self._client.get(url, auth=auth)
+            if response.status_code == 200:
+                data = response.json()
+                return ProviderResponse(
+                    success=True,
+                    message_id=message_id,
+                    status=data.get("status", "unknown"),
+                    raw_response=data
+                )
+        except Exception as e:
+            logger.error(f"Error consultando estado Twilio: {e}")
+        
+        return None
+    
+    async def close(self):
+        """Cierra el cliente HTTP."""
+        if self._client:
+            await self._client.aclose()
+            self._client = None
+
+
+# Registrar en factory
+ProviderFactory.register("whatsapp", WhatsAppProvider)
+ProviderFactory.register("twilio", WhatsAppProvider)
+ProviderFactory.register("meta", WhatsAppProvider)

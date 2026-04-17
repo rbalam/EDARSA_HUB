@@ -310,6 +310,7 @@ class User(BaseModel):
     email: EmailStr
     name: str
     role: str
+    telefono: Optional[str] = None  # Subfase 2B.5 - Teléfono para WhatsApp (formato E.164)
     sucursales: List[str] = []  # IDs de sucursales asignadas (legacy)
     allowed_servers: List[str] = []  # IDs de servidores permitidos
     allowed_sucursales: Dict[str, List[str]] = {}  # server_id -> [sucursal_ids]
@@ -13435,4 +13436,10 @@ async def shutdown_db_client():
 # === FASE 2 - MÓDULO OPERATIVO (CAB-003) ===
 from modules.fase2_operativo.router import router_fase2_operativo
 app.include_router(router_fase2_operativo, prefix="/api/v2", tags=["Fase2-Operativo"])
+
+# ============= SUBFASE 2B.5: SISTEMA DE NOTIFICACIONES WHATSAPP =============
+# Importar y registrar rutas de notificaciones (core transversal)
+from core.communications.routes import router as communications_router, init_notifications_routes
+init_notifications_routes(db)  # Inicializar con conexión MongoDB
+app.include_router(communications_router, tags=["Notificaciones"])
 
