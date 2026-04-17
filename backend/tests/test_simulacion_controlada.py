@@ -626,18 +626,30 @@ async def ejecutar_test_secuencia_controlada():
     
     resultado_dry = await ejecutar_dry_run()
     
-    # Filtrar candidatos SOFT a procesar
-    candidatos_soft = [
+    # Determinar sistema a usar (SOFT por defecto, o MPRO si se especifica)
+    if args.sistema == 'MPRO':
+        sistema_filtro = 'MPRO'
+        sistema_nombre = 'MPRO'
+    else:
+        sistema_filtro = 'SOFTRESTAURANT'
+        sistema_nombre = 'SOFT'
+    
+    print(f"\n🔍 Filtrando candidatos para sistema: {sistema_nombre}")
+    
+    # Filtrar candidatos del sistema seleccionado
+    candidatos = [
         i for i in resultado_dry['inventarios'] 
-        if i['accion_sugerida'] == 'PROCESAR' and i['sistema_origen'] == 'SOFTRESTAURANT'
+        if i['accion_sugerida'] == 'PROCESAR' and i['sistema_origen'] == sistema_filtro
     ]
     
-    if not candidatos_soft:
-        print("\n⚠️  No hay candidatos SOFT disponibles para la prueba")
+    if not candidatos:
+        print(f"\n⚠️  No hay candidatos {sistema_nombre} disponibles para la prueba")
         return
     
+    print(f"✓ Candidatos {sistema_nombre} encontrados: {len(candidatos)}")
+    
     # Seleccionar primer candidato
-    inv = candidatos_soft[0]
+    inv = candidatos[0]
     
     print("\n" + "=" * 80)
     print("CANDIDATO SELECCIONADO PARA PRUEBA")
