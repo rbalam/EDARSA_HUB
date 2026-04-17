@@ -3016,6 +3016,39 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                 logging.error(traceback.format_exc())
             # ===== FIN CACHE =====
             
+            # ===== ORQUESTACIÓN FASE 2A: Crear workflow automático si hay diferencias =====
+            try:
+                from modules.fase2_operativo.services.orquestador_service import get_orquestador_service
+                
+                orquestador = get_orquestador_service(db)
+                orq_resultado = await orquestador.procesar_analisis(
+                    server_id=server_id,
+                    server_name=server.get('name', ''),
+                    sucursal_id=sucursal or "",
+                    sucursal_nombre=sucursal or "",
+                    almacen_id=almacen or "",
+                    almacen_nombre=almacen or "",
+                    resultados_analisis=results,
+                    folios_iniciales=lista_folios_ini,
+                    folios_finales=lista_folios_fin,
+                    fecha_ini=fecha_ini or "",
+                    fecha_fin=fecha_fin or "",
+                    usuario_ejecutor_id=current_user.get('id', ''),
+                    usuario_ejecutor_nombre=current_user.get('name', '')
+                )
+                
+                if orq_resultado.get('workflow_creado'):
+                    logging.info(f"ORQUESTADOR: ✅ Workflow {orq_resultado.get('workflow_id')} creado automáticamente")
+                else:
+                    logging.info(f"ORQUESTADOR: {orq_resultado.get('mensaje', 'Sin acción')}")
+                    
+            except Exception as orq_error:
+                # NO romper el flujo principal si falla la orquestación
+                logging.error(f"ORQUESTADOR ERROR (no crítico): {str(orq_error)}")
+                import traceback
+                logging.error(traceback.format_exc())
+            # ===== FIN ORQUESTACIÓN =====
+            
             return {"data": results, "count": len(results), "errores_captura": errores_list}
             
         elif server['system_type'] == 'SoftRestaurant':
@@ -3607,6 +3640,39 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
             except Exception as cache_error:
                 logging.warning(f"Error guardando cache SR: {str(cache_error)}")
             # ===== FIN CACHE SR =====
+            
+            # ===== ORQUESTACIÓN FASE 2A: Crear workflow automático si hay diferencias (SR) =====
+            try:
+                from modules.fase2_operativo.services.orquestador_service import get_orquestador_service
+                
+                orquestador = get_orquestador_service(db)
+                orq_resultado = await orquestador.procesar_analisis(
+                    server_id=server_id,
+                    server_name=server.get('name', ''),
+                    sucursal_id=sucursal or "",
+                    sucursal_nombre=sucursal or "",
+                    almacen_id=almacen or "",
+                    almacen_nombre=almacen or "",
+                    resultados_analisis=results,
+                    folios_iniciales=lista_folios_ini,
+                    folios_finales=lista_folios_fin,
+                    fecha_ini=fecha_ini or "",
+                    fecha_fin=fecha_fin or "",
+                    usuario_ejecutor_id=current_user.get('id', ''),
+                    usuario_ejecutor_nombre=current_user.get('name', '')
+                )
+                
+                if orq_resultado.get('workflow_creado'):
+                    logging.info(f"ORQUESTADOR SR: ✅ Workflow {orq_resultado.get('workflow_id')} creado automáticamente")
+                else:
+                    logging.info(f"ORQUESTADOR SR: {orq_resultado.get('mensaje', 'Sin acción')}")
+                    
+            except Exception as orq_error:
+                # NO romper el flujo principal si falla la orquestación
+                logging.error(f"ORQUESTADOR SR ERROR (no crítico): {str(orq_error)}")
+                import traceback
+                logging.error(traceback.format_exc())
+            # ===== FIN ORQUESTACIÓN SR =====
             
             return {"data": results, "count": len(results)}
         

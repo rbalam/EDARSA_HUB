@@ -455,6 +455,47 @@ Optimización de lectura     → MongoDB (CACHE)
 
 **Fecha de cierre:** 17 de Abril de 2026
 
+### 2026-04-17 - INTEGRACIÓN FLUJO REAL (Post Fase 2A - Subfase 2A.9)
+**Conexión del análisis de inventarios con el módulo operativo**
+
+#### Implementación ✅
+- ✅ `orquestador_service.py` creado - orquesta creación de workflows desde análisis
+- ✅ `asignacion_repository.py` creado - gestiona matriz sucursal+almacén → usuario
+- ✅ Integración en `server.py` - llamada al orquestador en MPRO y SoftRestaurant
+- ✅ Validación defensiva de duplicidad por `folio_final_key`
+- ✅ Asignación automática al usuario ejecutor (fallback si no hay matriz)
+
+#### Flujo Implementado ✅
+1. Usuario ejecuta análisis de inventario
+2. Si hay diferencias != 0:
+   - Crea workflow automáticamente
+   - Crea detalle_diferencias por producto
+   - Crea tarea de justificación asignada
+3. Dashboard Operativo muestra datos reales
+4. Flujo principal NO se rompe si falla orquestación (try/catch)
+
+#### Compatibilidad de Schemas ✅
+- KPICards adaptado para parsear respuesta real del endpoint
+- WorkflowList y TareaList adaptados para `data.items`
+
+#### Verificaciones ✅
+- ✅ Dashboard muestra KPIs reales (1 workflow, 1 pendiente, 1 tarea)
+- ✅ Lista de workflows con datos reales
+- ✅ Lista de tareas con asignación correcta
+- ✅ Tablero Ejecutivo NO afectado
+- ✅ Autenticación intacta
+
+**Archivos creados:**
+- `/app/backend/modules/fase2_operativo/services/orquestador_service.py`
+- `/app/backend/modules/fase2_operativo/repositories/asignacion_repository.py`
+
+**Archivos modificados:**
+- `/app/backend/server.py` (2 puntos de integración: MPRO y SR)
+- `/app/frontend/src/components/fase2_operativo/KPICards.jsx`
+- `/app/frontend/src/components/fase2_operativo/OperativoDashboard.jsx`
+
+**Estado:** INTEGRACIÓN COMPLETADA
+
 ---
 
 ## Próximas Fases (Backlog)

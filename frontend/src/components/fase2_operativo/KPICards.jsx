@@ -84,40 +84,48 @@ const KPICards = ({ data, loading, error }) => {
     );
   }
 
+  // Extraer valores de la estructura real del endpoint
+  const totalWorkflows = data.workflows?.total ?? data.total_workflows ?? 0;
+  const workflowsPendientes = data.workflows?.por_estado?.PENDIENTE_ASIGNACION ?? data.workflows?.por_estado?.pendiente ?? data.workflows_pendientes ?? 0;
+  const workflowsEnAuditoria = data.workflows?.por_estado?.EN_AUDITORIA ?? data.workflows?.por_estado?.en_auditoria ?? data.workflows_en_auditoria ?? 0;
+  const workflowsCompletados = data.workflows?.por_estado?.COMPLETADO ?? data.workflows?.por_estado?.completado ?? data.workflows_completados ?? 0;
+  const tareasVencidas = data.tareas?.vencidas ?? data.alertas?.tareas_vencidas ?? data.tareas_vencidas ?? 0;
+  const alertasActivas = (data.alertas?.tareas_vencidas ?? 0) + (data.alertas?.workflows_escalados ?? 0);
+
   const kpis = [
     {
       title: 'Workflows Totales',
-      value: data.total_workflows ?? 0,
+      value: totalWorkflows,
       icon: Activity,
       color: 'blue',
     },
     {
       title: 'Pendientes',
-      value: data.workflows_pendientes ?? 0,
+      value: workflowsPendientes,
       icon: Clock,
       color: 'amber',
     },
     {
       title: 'En Auditoría',
-      value: data.workflows_en_auditoria ?? 0,
+      value: workflowsEnAuditoria,
       icon: FileSearch,
       color: 'purple',
     },
     {
       title: 'Tareas Vencidas',
-      value: data.tareas_vencidas ?? 0,
+      value: tareasVencidas,
       icon: AlertTriangle,
-      color: data.tareas_vencidas > 0 ? 'red' : 'green',
+      color: tareasVencidas > 0 ? 'red' : 'green',
     },
     {
       title: 'Alertas Activas',
-      value: data.alertas_activas ?? 0,
+      value: alertasActivas,
       icon: AlertTriangle,
-      color: data.alertas_activas > 0 ? 'red' : 'green',
+      color: alertasActivas > 0 ? 'red' : 'green',
     },
     {
       title: 'Completados',
-      value: data.workflows_completados ?? 0,
+      value: workflowsCompletados,
       icon: CheckCircle2,
       color: 'green',
     },

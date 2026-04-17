@@ -48,6 +48,11 @@ from .operativo_service import (
     FlujoInvalidoError,
 )
 
+from .orquestador_service import (
+    OrquestadorService,
+    get_orquestador_service,
+)
+
 
 __all__ = [
     # Workflow Service
@@ -81,4 +86,7 @@ __all__ = [
     "OperativoService",
     "OperativoServiceError",
     "FlujoInvalidoError",
+    # Orquestador Service
+    "OrquestadorService",
+    "get_orquestador_service",
 ]

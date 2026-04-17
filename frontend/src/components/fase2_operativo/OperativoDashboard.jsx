@@ -102,7 +102,7 @@ const OperativoDashboard = () => {
       params.limit = 50;
       
       const data = await getWorkflows(params);
-      setWorkflows(Array.isArray(data) ? data : data.workflows || []);
+      setWorkflows(Array.isArray(data) ? data : data.items || data.workflows || []);
     } catch (err) {
       setErrorWorkflows(err.message || 'Error desconocido');
     } finally {
@@ -120,7 +120,7 @@ const OperativoDashboard = () => {
       params.limit = 50;
       
       const data = await getTareas(params);
-      setTareas(Array.isArray(data) ? data : data.tareas || []);
+      setTareas(Array.isArray(data) ? data : data.items || data.tareas || []);
     } catch (err) {
       setErrorTareas(err.message || 'Error desconocido');
     } finally {
