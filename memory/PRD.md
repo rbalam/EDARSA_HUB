@@ -496,6 +496,53 @@ Optimización de lectura     → MongoDB (CACHE)
 
 **Estado:** INTEGRACIÓN COMPLETADA
 
+### 2026-04-17 - FASE 2B.1: Eventos + Notificaciones Email
+**Sistema de notificaciones automáticas por email**
+
+#### Implementación ✅
+- ✅ `email_service.py` - Servicio encapsulado de envío de emails con SendGrid
+- ✅ `notification_service.py` - Orquestación de notificaciones por eventos
+- ✅ Plantillas HTML inline para emails (workflow_creado, tarea_asignada, tarea_vencida)
+- ✅ Colección `notificaciones_log` para registro de intentos
+- ✅ Integración en orquestador_service.py (try/catch, no rompe flujo)
+- ✅ Endpoint `/api/v2/notificaciones/status` - Estado del servicio
+- ✅ Endpoint `/api/v2/notificaciones/log` - Log de notificaciones
+- ✅ Endpoint `/api/v2/notificaciones/verificar-vencidas` - Verificación de tareas vencidas
+- ✅ Endpoint `/api/v2/notificaciones/test-email` - Prueba de configuración
+
+#### Eventos implementados ✅
+- `WORKFLOW_CREADO` - Al crear workflow desde análisis
+- `TAREA_ASIGNADA` - Al crear tarea de justificación
+- `TAREA_VENCIDA` - Al verificar tareas vencidas (endpoint manual o cron)
+
+#### Variables de entorno requeridas
+```
+SENDGRID_API_KEY=SG.xxxxxx
+EMAIL_FROM=noreply@edarsa.com
+EMAIL_FROM_NAME=EDARSA HUB
+EMAIL_ENABLED=true|false
+```
+
+#### Verificaciones ✅
+- ✅ Workflow se crea aunque falle email (flujo principal no se rompe)
+- ✅ Errores de email registrados en notificaciones_log
+- ✅ No regresión en Dashboard Operativo
+- ✅ No regresión en autenticación
+
+**Archivos creados:**
+- `/app/backend/modules/fase2_operativo/services/email_service.py`
+- `/app/backend/modules/fase2_operativo/services/notification_service.py`
+- `/app/backend/modules/fase2_operativo/routes/notificaciones_routes.py`
+- `/app/backend/modules/fase2_operativo/scripts/init_notificaciones.py`
+
+**Archivos modificados:**
+- `/app/backend/modules/fase2_operativo/services/orquestador_service.py` (integración)
+- `/app/backend/modules/fase2_operativo/services/__init__.py` (exports)
+- `/app/backend/modules/fase2_operativo/router.py` (rutas)
+- `/app/backend/.env` (variables SendGrid)
+
+**Estado:** FASE 2B.1 COMPLETADA
+
 ---
 
 ## Próximas Fases (Backlog)

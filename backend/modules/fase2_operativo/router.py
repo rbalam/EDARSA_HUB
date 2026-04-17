@@ -12,6 +12,7 @@ from .routes.justificacion_routes import router as justificacion_router
 from .routes.auditoria_routes import router as auditoria_router
 from .routes.configuracion_routes import router as configuracion_router
 from .routes.dashboard_routes import router as dashboard_router
+from .routes.notificaciones_routes import router as notificaciones_router
 
 router_fase2_operativo = APIRouter()
 
@@ -66,4 +67,9 @@ router_fase2_operativo.include_router(
     dashboard_router,
     prefix="/dashboard",
     tags=["Fase2-Dashboard"]
+)
+
+router_fase2_operativo.include_router(
+    notificaciones_router,
+    tags=["Fase2-Notificaciones"]
 )

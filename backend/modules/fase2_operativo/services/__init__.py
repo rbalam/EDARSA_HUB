@@ -53,6 +53,20 @@ from .orquestador_service import (
     get_orquestador_service,
 )
 
+from .email_service import (
+    EmailService,
+    EmailServiceError,
+    get_email_service,
+)
+
+from .notification_service import (
+    NotificationService,
+    get_notification_service,
+    EVENTO_WORKFLOW_CREADO,
+    EVENTO_TAREA_ASIGNADA,
+    EVENTO_TAREA_VENCIDA,
+)
+
 
 __all__ = [
     # Workflow Service
@@ -89,4 +103,14 @@ __all__ = [
     # Orquestador Service
     "OrquestadorService",
     "get_orquestador_service",
+    # Email Service
+    "EmailService",
+    "EmailServiceError",
+    "get_email_service",
+    # Notification Service
+    "NotificationService",
+    "get_notification_service",
+    "EVENTO_WORKFLOW_CREADO",
+    "EVENTO_TAREA_ASIGNADA",
+    "EVENTO_TAREA_VENCIDA",
 ]

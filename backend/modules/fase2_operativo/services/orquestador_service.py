@@ -149,7 +149,7 @@ class OrquestadorService:
             resumen["detalles_creados"] = detalles_creados
             
             # 8. Crear Tareas iniciales
-            tareas_creadas = await self._crear_tareas_iniciales(
+            tarea_id = await self._crear_tareas_iniciales(
                 workflow_id=workflow_id,
                 sucursal_nombre=sucursal_nombre,
                 almacen_nombre=almacen_nombre,
@@ -157,10 +157,55 @@ class OrquestadorService:
                 total_productos=len(productos_con_diferencia),
                 valor_total=valor_total
             )
-            resumen["tareas_creadas"] = tareas_creadas
+            resumen["tareas_creadas"] = 1 if tarea_id else 0
+            
+            # 9. FASE 2B.1: Enviar notificaciones (NO debe romper el flujo)
+            try:
+                from .notification_service import get_notification_service
+                notification_service = get_notification_service(self.db)
+                
+                # Obtener email del usuario responsable
+                usuario_data = await self.db.users.find_one(
+                    {"id": usuario_responsable["id"]},
+                    {"_id": 0, "email": 1}
+                )
+                destinatario_email = usuario_data.get("email") if usuario_data else None
+                
+                if destinatario_email:
+                    # Notificar workflow creado
+                    await notification_service.notificar_workflow_creado(
+                        workflow_id=workflow_id,
+                        sucursal_nombre=sucursal_nombre,
+                        almacen_nombre=almacen_nombre,
+                        total_productos=len(productos_con_diferencia),
+                        valor_total=valor_total,
+                        destinatario_email=destinatario_email,
+                        destinatario_nombre=usuario_responsable["nombre"]
+                    )
+                    
+                    # Notificar tarea asignada
+                    if tarea_id:
+                        await notification_service.notificar_tarea_asignada(
+                            tarea_id=tarea_id,
+                            workflow_id=workflow_id,
+                            tipo_tarea="JUSTIFICAR",
+                            titulo=f"Justificar diferencias - {sucursal_nombre}/{almacen_nombre}",
+                            descripcion=f"Se detectaron {len(productos_con_diferencia)} productos con diferencias.",
+                            fecha_limite=(datetime.now(timezone.utc) + timedelta(days=3)).isoformat(),
+                            destinatario_email=destinatario_email,
+                            destinatario_nombre=usuario_responsable["nombre"]
+                        )
+                    
+                    logger.info(f"Orquestador: Notificaciones enviadas para workflow {workflow_id}")
+                else:
+                    logger.warning(f"Orquestador: No se encontró email para usuario {usuario_responsable['id']}")
+                    
+            except Exception as notif_error:
+                # NO romper el flujo principal si falla la notificación
+                logger.error(f"Orquestador: Error en notificaciones (no crítico): {notif_error}")
             
             resumen["procesado"] = True
-            resumen["mensaje"] = f"Workflow creado exitosamente con {detalles_creados} diferencias y {tareas_creadas} tareas"
+            resumen["mensaje"] = f"Workflow creado exitosamente con {detalles_creados} diferencias y {resumen['tareas_creadas']} tareas"
             
             logger.info(f"Orquestador: ✅ Workflow {workflow_id} creado para {sucursal_nombre}/{almacen_nombre}")
             logger.info(f"  - Productos con diferencia: {len(productos_con_diferencia)}")
@@ -387,7 +432,7 @@ class OrquestadorService:
         await self.db.tareas_inventario.insert_one(tarea_doc)
         logger.info(f"Tarea creada: {tarea_id} asignada a {usuario_responsable['nombre']}")
         
-        return 1
+        return tarea_id  # Retornar el ID de la tarea para notificaciones
 
 
 # Función helper para instanciar el servicio
