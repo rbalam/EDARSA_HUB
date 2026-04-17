@@ -1,0 +1,2 @@
+# Schemas Pydantic para Fase 2A - Módulo Operativo
+# Se implementarán en Subfase 2A.2
