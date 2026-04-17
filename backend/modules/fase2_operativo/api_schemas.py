@@ -1,0 +1,129 @@
+"""
+Schemas de Request/Response para Endpoints Fase 2A
+CAB-003 | EDARSA HUB
+
+Define los modelos Pydantic para validación de entradas y salidas HTTP.
+"""
+from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any
+from datetime import datetime
+from .schemas.enums import EstadoWorkflow, TipoTarea, EstadoTarea, TipoJustificacion, DecisionAuditoria
+
+
+# === WORKFLOW SCHEMAS ===
+
+class WorkflowCreateRequest(BaseModel):
+    """Request para crear un workflow."""
+    procesado_id: str = Field(..., description="ID del folio procesado (de Fase 1)")
+    diferencias: Optional[List[Dict[str, Any]]] = Field(
+        None, 
+        description="Lista de diferencias a asociar"
+    )
+    usuario_revisor_id: Optional[str] = Field(
+        None, 
+        description="Usuario a asignar para revisión inicial"
+    )
+
+
+class WorkflowEstadoRequest(BaseModel):
+    """Request para cambiar estado de workflow."""
+    nuevo_estado: EstadoWorkflow = Field(..., description="Nuevo estado del workflow")
+
+
+class WorkflowEscalarRequest(BaseModel):
+    """Request para escalar un workflow."""
+    motivo: str = Field(..., min_length=10, description="Motivo del escalamiento")
+    usuario_id: str = Field(..., description="Usuario que escala")
+
+
+# === TAREA SCHEMAS ===
+
+class TareaCreateRequest(BaseModel):
+    """Request para crear una tarea."""
+    workflow_id: str = Field(..., description="ID del workflow asociado")
+    tipo_tarea: TipoTarea = Field(..., description="Tipo de tarea")
+    usuario_asignado_id: Optional[str] = Field(None, description="Usuario a asignar")
+
+
+class TareaAsignarRequest(BaseModel):
+    """Request para asignar una tarea."""
+    usuario_asignado_id: str = Field(..., description="Usuario a asignar")
+    asignado_por_id: str = Field(..., description="Usuario que realiza la asignación")
+    fecha_limite: Optional[datetime] = Field(None, description="Fecha límite opcional")
+
+
+class TareaReasignarRequest(BaseModel):
+    """Request para reasignar una tarea."""
+    usuario_nuevo_id: str = Field(..., description="Nuevo usuario")
+    motivo: str = Field(..., min_length=10, description="Motivo de reasignación")
+    cambiado_por_id: str = Field(..., description="Usuario que realiza el cambio")
+
+
+# === JUSTIFICACION SCHEMAS ===
+
+class JustificacionCreateRequest(BaseModel):
+    """Request para crear una justificación."""
+    workflow_id: str = Field(..., description="ID del workflow")
+    diferencia_id: str = Field(..., description="ID de la diferencia")
+    texto_justificacion: str = Field(..., min_length=20, description="Texto de justificación")
+    usuario_justificador_id: str = Field(..., description="Usuario que justifica")
+    evidencia_documental: Optional[Dict[str, Any]] = Field(
+        None, 
+        description="Evidencia documental (requerida para COMPLETA)"
+    )
+    forzar_tipo: Optional[TipoJustificacion] = Field(
+        None,
+        description="Forzar tipo de justificación"
+    )
+
+
+# === AUDITORIA SCHEMAS ===
+
+class DecisionAuditoriaRequest(BaseModel):
+    """Request para registrar decisión de auditoría."""
+    workflow_id: str = Field(..., description="ID del workflow")
+    decision: DecisionAuditoria = Field(..., description="Decisión del auditor")
+    comentarios_auditor: str = Field(..., min_length=10, description="Comentarios")
+    usuario_auditor_id: str = Field(..., description="ID del auditor")
+    requiere_accion_adicional: bool = Field(False, description="Si requiere seguimiento")
+
+
+# === CONFIGURACION SCHEMAS ===
+
+class ConfiguracionUpdateRequest(BaseModel):
+    """Request para actualizar configuración."""
+    valor: str = Field(..., description="Nuevo valor")
+    descripcion: Optional[str] = Field(None, description="Descripción opcional")
+
+
+# === RESPONSE SCHEMAS ===
+
+class OperacionResponse(BaseModel):
+    """Response genérica para operaciones."""
+    success: bool = True
+    message: str = ""
+    data: Optional[Dict[str, Any]] = None
+
+
+class ErrorResponse(BaseModel):
+    """Response de error."""
+    success: bool = False
+    error: str
+    detail: Optional[str] = None
+
+
+class DashboardResumenResponse(BaseModel):
+    """Response del resumen de dashboard."""
+    workflows: Dict[str, Any]
+    tareas: Dict[str, Any]
+    alertas: Dict[str, Any]
+    parametros: Dict[str, Any]
+
+
+class AlertaResponse(BaseModel):
+    """Response de una alerta."""
+    tipo: str
+    severidad: str
+    mensaje: str
+    workflow_id: Optional[str] = None
+    tarea_id: Optional[str] = None
