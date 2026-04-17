@@ -543,15 +543,59 @@ EMAIL_ENABLED=true|false
 
 **Estado:** FASE 2B.1 COMPLETADA
 
+### 2026-04-17 - FASE 2B.2: Generación de Excel
+**Sistema de generación de documentos Excel para workflows**
+
+#### Implementación ✅
+- ✅ `document_data_service.py` - Fuente ÚNICA de datos para documentos (Excel y futuro PDF)
+- ✅ `excel_service.py` - Servicio de generación de Excel con openpyxl
+- ✅ `documentos_routes.py` - Endpoints de documentos
+- ✅ Colección `documentos_generados` para registro de descargas
+- ✅ Integración en router.py
+
+#### Hojas del Excel ✅
+1. **Resumen** - Información ejecutiva del workflow (estado, métricas, auditoría)
+2. **Diferencias** - Detalle de diferencias de inventario con justificaciones
+3. **Justificaciones** - Registro completo de justificaciones
+4. **Auditoría** - Historial de decisiones de auditoría
+
+#### Endpoints creados ✅
+- `GET /api/v2/documentos/workflow/{id}/excel` - Descarga Excel
+- `GET /api/v2/documentos/workflow/{id}/datos` - Preview de datos
+- `GET /api/v2/documentos/workflow/{id}/resumen` - Resumen rápido
+- `GET /api/v2/documentos/historial` - Historial de documentos generados
+
+#### Arquitectura ✅
+- DocumentDataService es la ÚNICA fuente de datos (evita duplicación con futuro PDF)
+- Búsqueda por campo `id` (UUID) en lugar de `_id` (ObjectId)
+- Mapeo automático de campos DB → columnas Excel
+- Estilos profesionales con headers azul, filas alternadas, formato moneda
+
+**Archivos creados:**
+- `/app/backend/modules/fase2_operativo/services/document_data_service.py`
+- `/app/backend/modules/fase2_operativo/services/excel_service.py`
+- `/app/backend/modules/fase2_operativo/routes/documentos_routes.py`
+
+**Archivos modificados:**
+- `/app/backend/modules/fase2_operativo/router.py` (rutas de documentos)
+
+**Estado:** FASE 2B.2 COMPLETADA
+
 ---
 
 ## Próximas Fases (Backlog)
 
-### Fase 2B - Notificaciones y Comunicaciones
-- Notificaciones Email/WhatsApp
-- Generación de PDFs
-- Solicitudes de Cobro
-- Monitoreo de SLA
+### Fase 2B.3 - Generación de PDF (P1)
+- Resumen ejecutivo reutilizando `document_data_service.py`
+- Formato A4, branding EDARSA
+- Endpoint `/api/v2/documentos/workflow/{id}/pdf`
+
+### Fase 2B.4 - SLA y Alertas (P2)
+- Monitoreo de tiempos de respuesta
+- Alertas automáticas por vencimientos
+
+### Fase 2B.5 - WhatsApp via Twilio (P3 - Opcional)
+- Notificaciones críticas por WhatsApp
 
 ### Fase 2C - RBAC Avanzado
 - Matriz de Roles y Permisos (4 niveles)
