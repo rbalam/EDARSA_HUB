@@ -71,6 +71,22 @@ from .configuracion_schemas import (
     ConfiguracionListResponse,
 )
 
+# Schemas de Responsabilidad Económica (Fase 2C.1)
+from .responsabilidad_schemas import (
+    EstadoResponsabilidad,
+    ToleranciaAplicada,
+    ResumenFaltantes,
+    ResumenSobrantes,
+    ResponsabilidadBase,
+    ResponsabilidadCreate,
+    ResponsabilidadInDB,
+    ResponsabilidadResponse,
+    ResponsabilidadListResponse,
+    ResponsabilidadResumenCalculo,
+    ConfiguracionResponsabilidadResponse,
+    ConfiguracionResponsabilidadUpdate,
+)
+
 
 __all__ = [
     # Enums
@@ -121,4 +137,17 @@ __all__ = [
     "ConfiguracionInDB",
     "ConfiguracionResponse",
     "ConfiguracionListResponse",
+    # Responsabilidad Económica (Fase 2C.1)
+    "EstadoResponsabilidad",
+    "ToleranciaAplicada",
+    "ResumenFaltantes",
+    "ResumenSobrantes",
+    "ResponsabilidadBase",
+    "ResponsabilidadCreate",
+    "ResponsabilidadInDB",
+    "ResponsabilidadResponse",
+    "ResponsabilidadListResponse",
+    "ResponsabilidadResumenCalculo",
+    "ConfiguracionResponsabilidadResponse",
+    "ConfiguracionResponsabilidadUpdate",
 ]

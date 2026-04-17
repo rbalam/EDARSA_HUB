@@ -67,6 +67,15 @@ from .notification_service import (
     EVENTO_TAREA_VENCIDA,
 )
 
+from .responsabilidad_service import (
+    ResponsabilidadService,
+    ResponsabilidadServiceError,
+    WorkflowNoEncontradoError as ResponsabilidadWorkflowNoEncontradoError,
+    CalculoYaExisteError,
+    ModuloDesactivadoError,
+    SinDiferenciasError,
+)
+
 
 __all__ = [
     # Workflow Service
@@ -113,4 +122,11 @@ __all__ = [
     "EVENTO_WORKFLOW_CREADO",
     "EVENTO_TAREA_ASIGNADA",
     "EVENTO_TAREA_VENCIDA",
+    # Responsabilidad Service (Fase 2C.1)
+    "ResponsabilidadService",
+    "ResponsabilidadServiceError",
+    "ResponsabilidadWorkflowNoEncontradoError",
+    "CalculoYaExisteError",
+    "ModuloDesactivadoError",
+    "SinDiferenciasError",
 ]

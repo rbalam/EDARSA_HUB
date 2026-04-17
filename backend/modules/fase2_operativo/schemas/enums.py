@@ -17,6 +17,8 @@ class EstadoWorkflow(str, Enum):
     EN_AUDITORIA = "EN_AUDITORIA"
     CERRADO = "CERRADO"
     ESCALADO = "ESCALADO"
+    # Fase 2C.1 - Responsabilidad Económica
+    EN_REVISION_FINANCIERA = "EN_REVISION_FINANCIERA"
 
 
 class TipoTarea(str, Enum):

@@ -15,6 +15,7 @@ from .routes.dashboard_routes import router as dashboard_router
 from .routes.notificaciones_routes import router as notificaciones_router
 from .routes.documentos_routes import router as documentos_router
 from .routes.sla_routes import router as sla_router
+from .routes.responsabilidad_routes import router as responsabilidad_router
 
 router_fase2_operativo = APIRouter()
 
@@ -84,4 +85,10 @@ router_fase2_operativo.include_router(
 router_fase2_operativo.include_router(
     sla_router,
     tags=["Fase2-SLA"]
+)
+
+router_fase2_operativo.include_router(
+    responsabilidad_router,
+    prefix="/responsabilidad",
+    tags=["Fase2-Responsabilidad"]
 )
