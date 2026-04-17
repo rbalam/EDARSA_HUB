@@ -4,6 +4,7 @@
  * EDARSA HUB
  */
 
+import { useState } from 'react';
 import { 
   Activity, 
   Clock, 
@@ -11,8 +12,12 @@ import {
   XCircle, 
   FileSearch,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  Download,
+  Loader2
 } from 'lucide-react';
+
+const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
 const estadoConfig = {
   pendiente: {
@@ -73,7 +78,7 @@ const EstadoBadge = ({ estado }) => {
   );
 };
 
-const WorkflowRow = ({ workflow, onClick }) => {
+const WorkflowRow = ({ workflow, onClick, onDownloadExcel, isDownloading }) => {
   const fechaFormateada = workflow.fecha_creacion 
     ? new Date(workflow.fecha_creacion).toLocaleDateString('es-MX', {
         day: '2-digit',
@@ -82,14 +87,21 @@ const WorkflowRow = ({ workflow, onClick }) => {
       })
     : '-';
 
+  const workflowId = workflow.id || workflow._id;
+
+  const handleDownload = (e) => {
+    e.stopPropagation();
+    onDownloadExcel?.(workflowId);
+  };
+
   return (
     <tr 
       className="hover:bg-zinc-50 cursor-pointer transition-colors"
       onClick={() => onClick?.(workflow)}
-      data-testid={`workflow-row-${workflow.id || workflow._id}`}
+      data-testid={`workflow-row-${workflowId}`}
     >
       <td className="px-4 py-3 text-sm font-mono text-zinc-600">
-        {(workflow.id || workflow._id || '').substring(0, 8)}...
+        {(workflowId || '').substring(0, 8)}...
       </td>
       <td className="px-4 py-3 text-sm">
         {workflow.procesado_id ? (
@@ -110,7 +122,22 @@ const WorkflowRow = ({ workflow, onClick }) => {
         {fechaFormateada}
       </td>
       <td className="px-4 py-3 text-right">
-        <ChevronRight className="h-4 w-4 text-zinc-400 inline-block" />
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={handleDownload}
+            disabled={isDownloading === workflowId}
+            className="p-1.5 text-zinc-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+            title="Descargar Excel"
+            data-testid={`download-excel-${workflowId}`}
+          >
+            {isDownloading === workflowId ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+          </button>
+          <ChevronRight className="h-4 w-4 text-zinc-400" />
+        </div>
       </td>
     </tr>
   );
@@ -124,6 +151,51 @@ const WorkflowList = ({
   onWorkflowClick,
   emptyMessage = 'No hay workflows disponibles'
 }) => {
+  const [downloadingId, setDownloadingId] = useState(null);
+
+  // Handler para descargar Excel
+  const handleDownloadExcel = async (workflowId) => {
+    try {
+      setDownloadingId(workflowId);
+      
+      const response = await fetch(
+        `${API_BASE}/api/v2/documentos/workflow/${workflowId}/excel`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Error al descargar el archivo');
+      }
+      
+      // Obtener el blob del archivo
+      const blob = await response.blob();
+      
+      // Crear URL temporal y descargar
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Obtener nombre del archivo del header o usar default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `workflow_${workflowId}.xlsx`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename=(.+)/);
+        if (match) filename = match[1];
+      }
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+    } catch (err) {
+      console.error('Error descargando Excel:', err);
+      alert('Error al descargar el archivo Excel');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   // Estado de carga
   if (loading) {
     return (
@@ -219,7 +291,9 @@ const WorkflowList = ({
               <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-600 uppercase tracking-wider">
                 Fecha
               </th>
-              <th className="px-4 py-3 w-10"></th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-zinc-600 uppercase tracking-wider">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
@@ -228,6 +302,8 @@ const WorkflowList = ({
                 key={workflow.id || workflow._id || idx} 
                 workflow={workflow}
                 onClick={onWorkflowClick}
+                onDownloadExcel={handleDownloadExcel}
+                isDownloading={downloadingId}
               />
             ))}
           </tbody>
