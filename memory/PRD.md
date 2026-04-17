@@ -1168,10 +1168,11 @@ curl -X PUT /api/v2/notificaciones-whatsapp/config/cfg_sla_vencido/set-provider?
 - Alternativa a Twilio si es necesario
 - Misma interfaz, diferente adaptador
 
-### Fase 2C.3 - Aplicación de Cargos (P2)
-- Estado: APLICADO
-- Registro interno de cargo aplicado
-- Integración futura con Nómina/ERP
+### Fase 2C.3 - Aplicación de Cargos ✅ COMPLETADA
+- ✅ Estados: PENDIENTE, AUTORIZADO, APLICADO, RECHAZADO, REVERTIDO, CANCELADO
+- ✅ Registro formal de cargos con auditoría completa
+- ✅ Integración con flujo de responsabilidad económica
+- ⏳ Pendiente: Integración futura con Nómina/ERP
 
 ### Fase 2D - RBAC Avanzado (P3)
 - Matriz de Roles y Permisos (4 niveles)
@@ -1193,3 +1194,108 @@ curl -X PUT /api/v2/notificaciones-whatsapp/config/cfg_sla_vencido/set-provider?
 - No modificar lógica de otras páginas sin solicitud explícita
 - Nueva colección `server_sucursales_config` para configuración de sucursales
 - Fase 2C.1: Colección `responsabilidad_economica` para cálculos de impacto económico
+- Fase 2C.3: Colecciones `cargos_economicos` y `cargos_economicos_log` para aplicación formal de cargos
+
+---
+
+### 2026-04-17 - FASE 2C.3: Aplicación de Cargos Económicos
+**Sistema de gestión formal de cargos económicos derivados de responsabilidades de inventario**
+
+#### Arquitectura Implementada ✅
+```
+/app/backend/modules/fase2_operativo/
+├── schemas/cargos_schemas.py      # Modelos Pydantic (EstatusCargo, AccionCargo, etc.)
+├── repositories/cargos_repository.py  # CRUD cargos_economicos y cargos_economicos_log
+├── services/cargos_service.py     # Lógica de negocio completa
+└── routes/cargos_routes.py        # 12 endpoints REST
+```
+
+#### Estados de Cargo ✅
+| Estado | Descripción |
+|--------|-------------|
+| `PENDIENTE` | Propuesta creada, pendiente autorización |
+| `AUTORIZADO` | Autorizado, pendiente aplicación |
+| `APLICADO` | Cargo aplicado formalmente |
+| `RECHAZADO` | Cargo rechazado (no procedía) |
+| `REVERTIDO` | Cargo revertido post-aplicación |
+| `CANCELADO` | Cargo cancelado antes de aplicar |
+
+#### Transiciones Válidas ✅
+- PENDIENTE → AUTORIZADO | RECHAZADO | CANCELADO
+- AUTORIZADO → APLICADO | CANCELADO
+- APLICADO → REVERTIDO (requiere GERENTE_OPS+)
+
+#### Colecciones MongoDB ✅
+| Colección | Descripción |
+|-----------|-------------|
+| `cargos_economicos` | Registro formal de cargos |
+| `cargos_economicos_log` | Auditoría de todas las transiciones |
+
+#### Endpoints API ✅
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/api/v2/cargos` | POST | Crear propuesta de cargo |
+| `/api/v2/cargos` | GET | Listar con filtros |
+| `/api/v2/cargos/pendientes` | GET | Pendientes de autorización |
+| `/api/v2/cargos/aplicados` | GET | Cargos aplicados |
+| `/api/v2/cargos/metricas` | GET | Métricas agregadas |
+| `/api/v2/cargos/elegibilidad/{id}` | GET | Evaluar elegibilidad |
+| `/api/v2/cargos/{id}` | GET | Detalle de cargo |
+| `/api/v2/cargos/{id}/log` | GET | Historial de auditoría |
+| `/api/v2/cargos/{id}/autorizar` | POST | PENDIENTE → AUTORIZADO |
+| `/api/v2/cargos/{id}/aplicar` | POST | AUTORIZADO → APLICADO |
+| `/api/v2/cargos/{id}/rechazar` | POST | PENDIENTE → RECHAZADO |
+| `/api/v2/cargos/{id}/revertir` | POST | APLICADO → REVERTIDO |
+| `/api/v2/cargos/{id}/cancelar` | POST | PENDIENTE/AUTORIZADO → CANCELADO |
+
+#### Reglas de Negocio Implementadas ✅
+1. **Elegibilidad**: Solo responsabilidades en estado APROBADO pueden generar cargo
+2. **Bloqueos**: No se permite cargo si existe controversia activa o exoneración
+3. **Permisos por monto**:
+   - ≤$500 MXN: SUPERVISOR
+   - ≤$2,000 MXN: GERENTE_OPS
+   - >$2,000 MXN: DIRECCION
+4. **Reversa**: Requiere rol GERENTE_OPS+ y motivo detallado (mín. 20 caracteres)
+5. **Auditoría**: Toda acción genera registro en cargos_economicos_log
+6. **Índice único**: Solo un cargo activo por responsabilidad
+
+#### Verificaciones ✅
+- ✅ 21/21 pruebas backend pasaron (100%)
+- ✅ Ciclo completo PENDIENTE→AUTORIZADO→APLICADO→REVERTIDO verificado
+- ✅ Validaciones de transiciones funcionando
+- ✅ Permisos por monto/rol funcionando
+- ✅ Auditoría completa en cada acción
+- ✅ No regresión en módulos existentes
+
+#### Archivos Creados
+- `/app/backend/modules/fase2_operativo/schemas/cargos_schemas.py`
+- `/app/backend/modules/fase2_operativo/repositories/cargos_repository.py`
+- `/app/backend/modules/fase2_operativo/services/cargos_service.py`
+- `/app/backend/modules/fase2_operativo/routes/cargos_routes.py`
+
+#### Archivos Modificados
+- `/app/backend/modules/fase2_operativo/router.py` (agregar cargos_router)
+- `/app/backend/modules/fase2_operativo/repositories/__init__.py`
+- `/app/backend/modules/fase2_operativo/services/__init__.py`
+- `/app/backend/modules/fase2_operativo/schemas/__init__.py`
+
+#### Rollback
+```bash
+# Eliminar archivos nuevos
+rm /app/backend/modules/fase2_operativo/schemas/cargos_schemas.py
+rm /app/backend/modules/fase2_operativo/repositories/cargos_repository.py
+rm /app/backend/modules/fase2_operativo/services/cargos_service.py
+rm /app/backend/modules/fase2_operativo/routes/cargos_routes.py
+
+# Revertir modificaciones
+git checkout -- /app/backend/modules/fase2_operativo/router.py
+git checkout -- /app/backend/modules/fase2_operativo/repositories/__init__.py
+git checkout -- /app/backend/modules/fase2_operativo/services/__init__.py
+git checkout -- /app/backend/modules/fase2_operativo/schemas/__init__.py
+
+# MongoDB: Eliminar colecciones
+db.cargos_economicos.drop()
+db.cargos_economicos_log.drop()
+```
+
+**Estado:** FASE 2C.3 COMPLETADA

@@ -40,6 +40,16 @@ class CargosEconomicosRepository(BaseRepository):
                 [("responsabilidad_id", 1), ("estatus_cargo", 1)],
                 name="idx_responsabilidad_estatus"
             )
+            # Índice único parcial: solo un cargo activo por responsabilidad
+            # Estados activos = PENDIENTE, AUTORIZADO, APLICADO
+            self.collection.create_index(
+                [("responsabilidad_id", 1)],
+                unique=True,
+                partialFilterExpression={
+                    "estatus_cargo": {"$in": ["PENDIENTE", "AUTORIZADO", "APLICADO"]}
+                },
+                name="idx_unique_cargo_activo_por_responsabilidad"
+            )
             # Índice para ordenamiento temporal
             self.collection.create_index([("fecha_propuesta", -1)])
             logger.info("Índices de cargos_economicos verificados/creados")
