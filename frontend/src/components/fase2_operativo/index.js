@@ -8,3 +8,5 @@ export { default as KPICards } from './KPICards';
 export { default as AlertasBanner } from './AlertasBanner';
 export { default as WorkflowList } from './WorkflowList';
 export { default as TareaList } from './TareaList';
+export { default as SLACard } from './SLACard';
+export { default as ResponsabilidadCard } from './ResponsabilidadCard';

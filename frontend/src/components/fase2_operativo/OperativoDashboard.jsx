@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import KPICards from './KPICards';
 import SLACard from './SLACard';
+import ResponsabilidadCard from './ResponsabilidadCard';
 import AlertasBanner from './AlertasBanner';
 import WorkflowList from './WorkflowList';
 import TareaList from './TareaList';
@@ -337,13 +338,21 @@ const OperativoDashboard = () => {
         </div>
       </div>
 
-      {/* Alertas */}
-      <AlertasBanner 
-        alertas={alertas}
-        loading={loadingAlertas}
-        error={errorAlertas}
-        onRefresh={cargarAlertas}
-      />
+      {/* Responsabilidad Económica - Fase 2C.1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-1">
+          <ResponsabilidadCard />
+        </div>
+        <div className="lg:col-span-2">
+          {/* Alertas */}
+          <AlertasBanner 
+            alertas={alertas}
+            loading={loadingAlertas}
+            error={errorAlertas}
+            onRefresh={cargarAlertas}
+          />
+        </div>
+      </div>
 
       {/* Grid de Workflows y Tareas */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

@@ -226,3 +226,32 @@ async def inicializar_configuracion():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+
+# ==================== MÉTRICAS DASHBOARD ====================
+
+@router.get(
+    "/metricas",
+    summary="Métricas de responsabilidad económica",
+    description="""
+    Obtiene métricas agregadas para el dashboard de responsabilidad económica.
+    
+    Incluye:
+    - Total de cálculos
+    - Monto total propuesto
+    - Cálculos que exceden mínimo
+    - Workflows en revisión financiera
+    - Top sucursales por monto
+    """
+)
+async def obtener_metricas():
+    """Obtiene métricas agregadas de responsabilidad."""
+    try:
+        db = get_db()
+        service = ResponsabilidadService(db)
+        
+        metricas = await service.obtener_metricas_dashboard()
+        return metricas
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")

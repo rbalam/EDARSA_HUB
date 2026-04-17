@@ -516,3 +516,79 @@ class ResponsabilidadService:
             fecha_creacion=registro.get("fecha_creacion", datetime.now(timezone.utc)),
             fecha_actualizacion=registro.get("fecha_actualizacion", datetime.now(timezone.utc))
         )
+    
+    # ==================== MÉTRICAS DASHBOARD ====================
+    
+    async def obtener_metricas_dashboard(self) -> Dict:
+        """
+        Obtiene métricas agregadas para el dashboard de responsabilidad.
+        
+        Returns:
+            Dict con métricas globales, por sucursal y workflows recientes
+        """
+        # Métricas globales
+        metricas_globales = await self.responsabilidad_repo.obtener_metricas_globales()
+        
+        # Contar workflows en EN_REVISION_FINANCIERA
+        workflows_revision = self.workflow_repo.collection.count_documents({
+            "estado_workflow": EstadoWorkflow.EN_REVISION_FINANCIERA.value
+        })
+        
+        # Top sucursales por monto propuesto
+        top_sucursales = await self._obtener_top_sucursales(limit=5)
+        
+        # Últimos cálculos
+        resultado_lista = await self.responsabilidad_repo.listar_con_filtros(limit=10)
+        ultimos_calculos = [
+            {
+                "workflow_id": r.get("workflow_id", ""),
+                "sucursal_id": r.get("sucursal_id", ""),
+                "monto_propuesto_mxn": r.get("monto_propuesto_mxn", 0),
+                "excede_minimo": r.get("excede_minimo", False),
+                "estado": r.get("estado", "CALCULADO"),
+                "fecha_calculo": r.get("fecha_calculo").isoformat() if r.get("fecha_calculo") else None
+            }
+            for r in resultado_lista.get("items", [])
+        ]
+        
+        return {
+            "resumen": {
+                "total_calculos": metricas_globales.get("total_calculos", 0),
+                "monto_total_propuesto_mxn": round(metricas_globales.get("total_monto_propuesto", 0), 2),
+                "total_faltantes_mxn": round(metricas_globales.get("total_faltantes_valor", 0), 2),
+                "total_sobrantes_mxn": round(metricas_globales.get("total_sobrantes_valor", 0), 2),
+                "calculos_exceden_minimo": metricas_globales.get("calculos_exceden_minimo", 0),
+                "workflows_en_revision_financiera": workflows_revision,
+            },
+            "top_sucursales": top_sucursales,
+            "ultimos_calculos": ultimos_calculos
+        }
+    
+    async def _obtener_top_sucursales(self, limit: int = 5) -> list:
+        """Obtiene las sucursales con mayor monto propuesto."""
+        pipeline = [
+            {
+                "$group": {
+                    "_id": "$sucursal_id",
+                    "monto_total": {"$sum": "$monto_propuesto_mxn"},
+                    "cantidad_calculos": {"$sum": 1},
+                    "calculos_exceden": {
+                        "$sum": {"$cond": ["$excede_minimo", 1, 0]}
+                    }
+                }
+            },
+            {"$sort": {"monto_total": -1}},
+            {"$limit": limit}
+        ]
+        
+        result = list(self.responsabilidad_repo.collection.aggregate(pipeline))
+        
+        return [
+            {
+                "sucursal_id": r["_id"],
+                "monto_total_mxn": round(r["monto_total"], 2),
+                "cantidad_calculos": r["cantidad_calculos"],
+                "calculos_exceden_minimo": r["calculos_exceden"]
+            }
+            for r in result
+        ]

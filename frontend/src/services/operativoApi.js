@@ -213,6 +213,49 @@ export async function actualizarConfiguracion(clave, valor, descripcion = null) 
   });
 }
 
+// ============================================
+// RESPONSABILIDAD ECONÓMICA (Fase 2C.1)
+// ============================================
+
+export async function getResponsabilidadMetricas() {
+  return apiRequest(`${API_V2}/responsabilidad/metricas`);
+}
+
+export async function getResponsabilidadLista(params = {}) {
+  const queryParams = new URLSearchParams();
+  if (params.sucursal_id) queryParams.append('sucursal_id', params.sucursal_id);
+  if (params.estado) queryParams.append('estado', params.estado);
+  if (params.excede_minimo !== undefined) queryParams.append('excede_minimo', params.excede_minimo);
+  if (params.skip) queryParams.append('skip', params.skip);
+  if (params.limit) queryParams.append('limit', params.limit);
+  
+  const query = queryParams.toString();
+  return apiRequest(`${API_V2}/responsabilidad${query ? `?${query}` : ''}`);
+}
+
+export async function getResponsabilidadWorkflow(workflowId) {
+  return apiRequest(`${API_V2}/responsabilidad/workflow/${workflowId}`);
+}
+
+export async function getResponsabilidadConfiguracion() {
+  return apiRequest(`${API_V2}/responsabilidad/configuracion`);
+}
+
+export async function actualizarResponsabilidadConfiguracion(config) {
+  return apiRequest(`${API_V2}/responsabilidad/configuracion`, {
+    method: 'PUT',
+    body: JSON.stringify(config),
+  });
+}
+
+export async function calcularResponsabilidad(workflowId, usuarioId, forzar = false) {
+  const params = new URLSearchParams({ usuario_id: usuarioId });
+  if (forzar) params.append('forzar_recalculo', 'true');
+  return apiRequest(`${API_V2}/responsabilidad/calcular/${workflowId}?${params.toString()}`, {
+    method: 'POST',
+  });
+}
+
 // Export default para conveniencia
 export default {
   checkHealth,
@@ -224,4 +267,11 @@ export default {
   getTareas,
   getTarea,
   getConfiguracion,
+  // Responsabilidad Económica
+  getResponsabilidadMetricas,
+  getResponsabilidadLista,
+  getResponsabilidadWorkflow,
+  getResponsabilidadConfiguracion,
+  actualizarResponsabilidadConfiguracion,
+  calcularResponsabilidad,
 };

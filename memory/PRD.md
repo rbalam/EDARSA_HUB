@@ -781,6 +781,35 @@ git checkout -- /app/backend/modules/fase2_operativo/schemas/__init__.py
 
 **Estado:** FASE 2C.1 COMPLETADA
 
+### 2026-04-17 - MEJORA UI: Tarjeta de Responsabilidad Económica
+**Visibilidad ejecutiva del impacto económico calculado**
+
+#### Implementación ✅
+- ✅ `ResponsabilidadCard.jsx` - Componente visual de métricas
+- ✅ Endpoint `GET /api/v2/responsabilidad/metricas` - Métricas agregadas
+- ✅ Integración en `OperativoDashboard.jsx`
+- ✅ Funciones API en `operativoApi.js`
+
+#### Métricas mostradas ✅
+1. **Monto Total Propuesto** (destacado)
+2. **Workflows en revisión financiera**
+3. **Cálculos que exceden mínimo**
+4. **Total Faltantes / Sobrantes**
+5. **Top sucursales por monto**
+6. **Lista expandible de últimos cálculos**
+
+#### Archivos creados
+- `/app/frontend/src/components/fase2_operativo/ResponsabilidadCard.jsx`
+
+#### Archivos modificados
+- `/app/backend/modules/fase2_operativo/routes/responsabilidad_routes.py` (endpoint metricas)
+- `/app/backend/modules/fase2_operativo/services/responsabilidad_service.py` (obtener_metricas_dashboard)
+- `/app/frontend/src/components/fase2_operativo/OperativoDashboard.jsx`
+- `/app/frontend/src/components/fase2_operativo/index.js`
+- `/app/frontend/src/services/operativoApi.js`
+
+**Estado:** MEJORA UI COMPLETADA
+
 ---
 
 ## Próximas Fases (Backlog)
