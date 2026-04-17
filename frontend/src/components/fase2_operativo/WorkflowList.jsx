@@ -13,7 +13,8 @@ import {
   FileSearch,
   ChevronRight,
   RefreshCw,
-  Download,
+  FileSpreadsheet,
+  FileText,
   Loader2
 } from 'lucide-react';
 
@@ -78,7 +79,7 @@ const EstadoBadge = ({ estado }) => {
   );
 };
 
-const WorkflowRow = ({ workflow, onClick, onDownloadExcel, isDownloading }) => {
+const WorkflowRow = ({ workflow, onClick, onDownloadExcel, onDownloadPdf, downloadingId }) => {
   const fechaFormateada = workflow.fecha_creacion 
     ? new Date(workflow.fecha_creacion).toLocaleDateString('es-MX', {
         day: '2-digit',
@@ -89,10 +90,18 @@ const WorkflowRow = ({ workflow, onClick, onDownloadExcel, isDownloading }) => {
 
   const workflowId = workflow.id || workflow._id;
 
-  const handleDownload = (e) => {
+  const handleDownloadExcel = (e) => {
     e.stopPropagation();
     onDownloadExcel?.(workflowId);
   };
+
+  const handleDownloadPdf = (e) => {
+    e.stopPropagation();
+    onDownloadPdf?.(workflowId);
+  };
+
+  const isDownloadingExcel = downloadingId === `excel-${workflowId}`;
+  const isDownloadingPdf = downloadingId === `pdf-${workflowId}`;
 
   return (
     <tr 
@@ -122,21 +131,36 @@ const WorkflowRow = ({ workflow, onClick, onDownloadExcel, isDownloading }) => {
         {fechaFormateada}
       </td>
       <td className="px-4 py-3 text-right">
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-1">
+          {/* Botón Excel */}
           <button
-            onClick={handleDownload}
-            disabled={isDownloading === workflowId}
+            onClick={handleDownloadExcel}
+            disabled={isDownloadingExcel}
             className="p-1.5 text-zinc-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
-            title="Descargar Excel"
+            title="Descargar Excel (detalle completo)"
             data-testid={`download-excel-${workflowId}`}
           >
-            {isDownloading === workflowId ? (
+            {isDownloadingExcel ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Download className="h-4 w-4" />
+              <FileSpreadsheet className="h-4 w-4" />
             )}
           </button>
-          <ChevronRight className="h-4 w-4 text-zinc-400" />
+          {/* Botón PDF */}
+          <button
+            onClick={handleDownloadPdf}
+            disabled={isDownloadingPdf}
+            className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+            title="Descargar PDF (resumen ejecutivo)"
+            data-testid={`download-pdf-${workflowId}`}
+          >
+            {isDownloadingPdf ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+          </button>
+          <ChevronRight className="h-4 w-4 text-zinc-400 ml-1" />
         </div>
       </td>
     </tr>
@@ -153,30 +177,26 @@ const WorkflowList = ({
 }) => {
   const [downloadingId, setDownloadingId] = useState(null);
 
-  // Handler para descargar Excel
-  const handleDownloadExcel = async (workflowId) => {
+  // Helper para descargar archivos
+  const downloadFile = async (workflowId, tipo, extension) => {
     try {
-      setDownloadingId(workflowId);
+      setDownloadingId(`${tipo}-${workflowId}`);
       
       const response = await fetch(
-        `${API_BASE}/api/v2/documentos/workflow/${workflowId}/excel`
+        `${API_BASE}/api/v2/documentos/workflow/${workflowId}/${tipo}`
       );
       
       if (!response.ok) {
-        throw new Error('Error al descargar el archivo');
+        throw new Error(`Error al descargar el archivo ${tipo.toUpperCase()}`);
       }
       
-      // Obtener el blob del archivo
       const blob = await response.blob();
-      
-      // Crear URL temporal y descargar
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       
-      // Obtener nombre del archivo del header o usar default
       const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = `workflow_${workflowId}.xlsx`;
+      let filename = `workflow_${workflowId}.${extension}`;
       if (contentDisposition) {
         const match = contentDisposition.match(/filename=(.+)/);
         if (match) filename = match[1];
@@ -189,12 +209,16 @@ const WorkflowList = ({
       window.URL.revokeObjectURL(url);
       
     } catch (err) {
-      console.error('Error descargando Excel:', err);
-      alert('Error al descargar el archivo Excel');
+      console.error(`Error descargando ${tipo}:`, err);
+      alert(`Error al descargar el archivo ${tipo.toUpperCase()}`);
     } finally {
       setDownloadingId(null);
     }
   };
+
+  // Handlers específicos
+  const handleDownloadExcel = (workflowId) => downloadFile(workflowId, 'excel', 'xlsx');
+  const handleDownloadPdf = (workflowId) => downloadFile(workflowId, 'pdf', 'pdf');
 
   // Estado de carga
   if (loading) {
@@ -303,7 +327,8 @@ const WorkflowList = ({
                 workflow={workflow}
                 onClick={onWorkflowClick}
                 onDownloadExcel={handleDownloadExcel}
-                isDownloading={downloadingId}
+                onDownloadPdf={handleDownloadPdf}
+                downloadingId={downloadingId}
               />
             ))}
           </tbody>
