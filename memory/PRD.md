@@ -696,16 +696,113 @@ git checkout -- /app/backend/modules/fase2_operativo/routes/dashboard_routes.py
 
 ---
 
+### 2026-04-17 - FASE 2C.1: Cálculo Base de Responsabilidad Económica
+**Sistema de cálculo de impacto económico para diferencias de inventario**
+
+#### Implementación ✅
+- ✅ `responsabilidad_service.py` - Lógica de cálculo de impacto económico
+- ✅ `responsabilidad_repository.py` - Repository CRUD para responsabilidad_economica
+- ✅ `responsabilidad_routes.py` - Endpoints de responsabilidad
+- ✅ `responsabilidad_schemas.py` - Modelos Pydantic
+- ✅ `init_responsabilidad.py` - Script de inicialización de configuración
+- ✅ Nuevo estado `EN_REVISION_FINANCIERA` en EstadoWorkflow
+
+#### Colección creada ✅
+- `responsabilidad_economica` - Registros de cálculo de impacto
+
+#### Claves en `configuracion_operativa` (existente) ✅
+| Clave | Valor Default | Descripción |
+|-------|---------------|-------------|
+| `CARGO_MINIMO_MXN` | 50.0 | Monto mínimo para generar cargo |
+| `TOLERANCIA_UNIDADES` | 2 | Tolerancia absoluta en unidades |
+| `TOLERANCIA_PORCENTAJE_DIFERENCIA` | 1.5 | Tolerancia relativa (%) |
+| `PRECIO_FALTANTE_DEFAULT` | 0.0 | Precio unitario default |
+| `MODULO_RESPONSABILIDAD_ACTIVO` | true | Feature flag |
+| `PERMITIR_COMPENSACION_FALTANTES_SOBRANTES` | false | Compensación deshabilitada |
+
+#### Endpoints creados ✅
+- `POST /api/v2/responsabilidad/calcular/{workflow_id}` - Ejecuta cálculo
+- `GET /api/v2/responsabilidad/workflow/{workflow_id}` - Obtiene cálculo de workflow
+- `GET /api/v2/responsabilidad` - Lista todos los cálculos
+- `GET /api/v2/responsabilidad/configuracion` - Obtiene configuración
+- `PUT /api/v2/responsabilidad/configuracion` - Actualiza configuración
+- `POST /api/v2/responsabilidad/inicializar-configuracion` - Inicializa claves
+
+#### Reglas de negocio implementadas ✅
+1. **Faltantes** = diferencia < 0 → acumulan valor para cargo
+2. **Sobrantes** = diferencia > 0 → se registran pero NO compensan faltantes
+3. **Tolerancia** excluye diferencias pequeñas del monto propuesto
+4. **monto_propuesto** = faltantes_valor - valor_excluido_por_tolerancia
+5. **excede_minimo** = true si monto_propuesto >= CARGO_MINIMO_MXN
+6. **Workflow** pasa a `EN_REVISION_FINANCIERA` tras el cálculo
+
+#### Verificaciones ✅
+- ✅ 23/23 pruebas backend pasaron (100%)
+- ✅ No regresión en Dashboard, Workflows, Auth
+- ✅ Configuración usa colección existente (no crea nueva)
+
+**Archivos creados:**
+- `/app/backend/modules/fase2_operativo/schemas/responsabilidad_schemas.py`
+- `/app/backend/modules/fase2_operativo/repositories/responsabilidad_repository.py`
+- `/app/backend/modules/fase2_operativo/services/responsabilidad_service.py`
+- `/app/backend/modules/fase2_operativo/routes/responsabilidad_routes.py`
+- `/app/backend/modules/fase2_operativo/scripts/init_responsabilidad.py`
+
+**Archivos modificados:**
+- `/app/backend/modules/fase2_operativo/schemas/enums.py` (EN_REVISION_FINANCIERA)
+- `/app/backend/modules/fase2_operativo/router.py` (rutas)
+- `/app/backend/modules/fase2_operativo/repositories/__init__.py`
+- `/app/backend/modules/fase2_operativo/services/__init__.py`
+- `/app/backend/modules/fase2_operativo/schemas/__init__.py`
+
+**Rollback:**
+```bash
+# Eliminar archivos nuevos
+rm /app/backend/modules/fase2_operativo/schemas/responsabilidad_schemas.py
+rm /app/backend/modules/fase2_operativo/repositories/responsabilidad_repository.py
+rm /app/backend/modules/fase2_operativo/services/responsabilidad_service.py
+rm /app/backend/modules/fase2_operativo/routes/responsabilidad_routes.py
+rm /app/backend/modules/fase2_operativo/scripts/init_responsabilidad.py
+
+# Revertir modificaciones
+git checkout -- /app/backend/modules/fase2_operativo/schemas/enums.py
+git checkout -- /app/backend/modules/fase2_operativo/router.py
+git checkout -- /app/backend/modules/fase2_operativo/repositories/__init__.py
+git checkout -- /app/backend/modules/fase2_operativo/services/__init__.py
+git checkout -- /app/backend/modules/fase2_operativo/schemas/__init__.py
+
+# Limpiar colección y config (MongoDB)
+# db.responsabilidad_economica.drop()
+# db.configuracion_operativa.deleteMany({clave: {$regex: /^(CARGO_MINIMO|TOLERANCIA|PRECIO_FALTANTE|MODULO_RESPONSABILIDAD|PERMITIR_COMPENSACION)/}})
+
+# Revertir workflows a estado anterior si es necesario
+# db.workflow_inventarios.updateMany({estado_workflow: "EN_REVISION_FINANCIERA"}, {$set: {estado_workflow: "JUSTIFICADO"}})
+```
+
+**Estado:** FASE 2C.1 COMPLETADA
+
+---
+
 ## Próximas Fases (Backlog)
 
-### Fase 2B.5 - WhatsApp via Twilio (P1 - Opcional)
+### Fase 2C.2 - Aprobaciones y Exoneración (P1)
+- Estados: EN_REVISION, APROBADO, EXONERADO
+- Flujo de aprobación por auditor/supervisor
+- Registro de decisiones y motivos
+
+### Fase 2C.3 - Aplicación de Cargos (P2)
+- Estado: APLICADO
+- Registro interno de cargo aplicado
+- Integración futura con Nómina/ERP
+
+### Fase 2B.5 - WhatsApp via Twilio (P2 - Opcional)
 - Notificaciones críticas por WhatsApp
 
-### Fase 2C - RBAC Avanzado
+### Fase 2D - RBAC Avanzado (P3)
 - Matriz de Roles y Permisos (4 niveles)
 - Integración con módulo operativo
 
-### Módulo de Finanzas
+### Módulo de Finanzas (P3)
 - Conciliación bancaria
 - Reportes financieros
 
@@ -720,3 +817,4 @@ git checkout -- /app/backend/modules/fase2_operativo/routes/dashboard_routes.py
 - Timeouts de SQL Server esperados en ambiente Preview
 - No modificar lógica de otras páginas sin solicitud explícita
 - Nueva colección `server_sucursales_config` para configuración de sucursales
+- Fase 2C.1: Colección `responsabilidad_economica` para cálculos de impacto económico
