@@ -21,9 +21,10 @@
 #     5. NO forma parte de la suite de tests automáticos (pytest)
 #    
 #     MODOS DE EJECUCIÓN:
-#     $ python tests/test_simulacion_controlada.py              # Dry-run
-#     $ python tests/test_simulacion_controlada.py --persistir-uno   # Persistir 1
-#     $ python tests/test_simulacion_controlada.py --rollback ID     # Rollback
+#     $ python tests/test_simulacion_controlada.py                          # Dry-run
+#     $ python tests/test_simulacion_controlada.py --persistir-uno          # Persistir 1
+#     $ python tests/test_simulacion_controlada.py --rollback ID            # Rollback
+#     $ python tests/test_simulacion_controlada.py --test-secuencia-controlada  # Prueba completa
 #    
 #     Requiere supervisión humana antes, durante y después.
 #
@@ -75,9 +76,10 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog="""
 Ejemplos:
-  python tests/test_simulacion_controlada.py                    # Dry-run
-  python tests/test_simulacion_controlada.py --persistir-uno    # Persistir 1 registro
-  python tests/test_simulacion_controlada.py --rollback ID      # Rollback por ID
+  python tests/test_simulacion_controlada.py                              # Dry-run
+  python tests/test_simulacion_controlada.py --persistir-uno              # Persistir 1 registro
+  python tests/test_simulacion_controlada.py --rollback ID                # Rollback por ID
+  python tests/test_simulacion_controlada.py --test-secuencia-controlada  # Prueba INSERT→DUP→ROLLBACK
     """
 )
 parser.add_argument('--persistir-uno', action='store_true', 
@@ -86,6 +88,8 @@ parser.add_argument('--rollback', type=str, metavar='ID',
                     help='Rollback por identificador de ejecución')
 parser.add_argument('--sistema', type=str, choices=['SOFT', 'MPRO'],
                     help='Filtrar por sistema (solo para --persistir-uno)')
+parser.add_argument('--test-secuencia-controlada', action='store_true',
+                    help='Prueba controlada: INSERT → DUPLICADO → ROLLBACK con confirmación en cada paso')
 
 args = parser.parse_args()
 
@@ -94,6 +98,8 @@ if args.rollback:
     MODO = 'ROLLBACK'
 elif args.persistir_uno:
     MODO = 'PERSISTIR_UNO'
+elif args.test_secuencia_controlada:
+    MODO = 'TEST_SECUENCIA_CONTROLADA'
 else:
     MODO = 'DRY_RUN'
 
@@ -473,7 +479,7 @@ async def ejecutar_persistir_uno():
         print("=" * 80)
         print(f"  procesado_id: {procesado_id}")
         print(f"  created_by: {identificador}")
-        print(f"\n  Para rollback usar:")
+        print("\n  Para rollback usar:")
         print(f"  $ python tests/test_simulacion_controlada.py --rollback {identificador}")
     else:
         print("\n" + "=" * 80)
@@ -551,6 +557,343 @@ async def ejecutar_rollback(identificador: str):
 
 
 # =============================================================================
+# MODO TEST SECUENCIA CONTROLADA
+# =============================================================================
+
+def solicitar_confirmacion(mensaje_accion: str) -> str:
+    """
+    Solicita confirmación al usuario antes de cada acción.
+    
+    Returns:
+        's' = continuar, 'n' = cancelar este paso, 'salir' = abortar todo
+    """
+    print("\n" + "─" * 80)
+    print(f"🔒 PRÓXIMA ACCIÓN: {mensaje_accion}")
+    print("─" * 80)
+    print("\n  [s] Continuar con esta acción")
+    print("  [n] Cancelar este paso (continuar con siguiente)")
+    print("  [salir] Abortar toda la secuencia")
+    print()
+    
+    try:
+        respuesta = input("Seleccione opción: ").strip().lower()
+        if respuesta in ['s', 'n', 'salir']:
+            return respuesta
+        print("⚠️  Opción no válida. Asumiendo 'n' (cancelar paso)")
+        return 'n'
+    except (EOFError, KeyboardInterrupt):
+        return 'salir'
+
+
+async def ejecutar_test_secuencia_controlada():
+    """
+    Ejecuta secuencia de pruebas controlada:
+    1. INSERT de 1 registro SOFT
+    2. Intento de duplicado (debe fallar)
+    3. ROLLBACK del registro insertado
+    
+    Cada paso requiere confirmación humana.
+    """
+    print("\n" + "=" * 80)
+    print("🔒 TEST SECUENCIA CONTROLADA - CAB-003 FASE 1B.2A")
+    print("=" * 80)
+    print("""
+    Esta secuencia ejecutará 3 pasos con confirmación en cada uno:
+    
+    PASO 1: Insertar 1 registro SOFT en EDARSAHUB
+    PASO 2: Intentar insertar el MISMO registro (debe rechazar por duplicado)
+    PASO 3: Ejecutar ROLLBACK para eliminar el registro insertado
+    
+    ⚠️  Puede cancelar en cualquier momento escribiendo 'salir'
+    """)
+    print("=" * 80)
+    
+    # Confirmar inicio
+    inicio = solicitar_confirmacion("INICIAR secuencia de pruebas controlada")
+    if inicio == 'salir':
+        print("\n🛑 Secuencia abortada por usuario")
+        return
+    if inicio == 'n':
+        print("\n⚠️  Inicio cancelado")
+        return
+    
+    # =========================================================================
+    # FASE PRELIMINAR: Obtener candidatos
+    # =========================================================================
+    print("\n" + "=" * 80)
+    print("FASE PRELIMINAR: Obteniendo candidatos mediante DRY-RUN...")
+    print("=" * 80)
+    
+    resultado_dry = await ejecutar_dry_run()
+    
+    # Filtrar candidatos SOFT a procesar
+    candidatos_soft = [
+        i for i in resultado_dry['inventarios'] 
+        if i['accion_sugerida'] == 'PROCESAR' and i['sistema_origen'] == 'SOFTRESTAURANT'
+    ]
+    
+    if not candidatos_soft:
+        print("\n⚠️  No hay candidatos SOFT disponibles para la prueba")
+        return
+    
+    # Seleccionar primer candidato
+    inv = candidatos_soft[0]
+    
+    print("\n" + "=" * 80)
+    print("CANDIDATO SELECCIONADO PARA PRUEBA")
+    print("=" * 80)
+    print(f"""
+    Sistema:        {inv['sistema_origen']}
+    Server ID:      {inv['server_id']}
+    Almacén:        {inv['almacen_id']} ({inv.get('almacen_nombre', 'N/A')})
+    Folio:          {inv['folio_inventario']}
+    Fecha:          {inv['fecha_inventario']}
+    """)
+    
+    # Generar identificador único para esta ejecución
+    identificador = repository.generar_identificador_ejecucion()
+    hash_verif = repository.generar_hash_verificacion(
+        inv['sistema_origen'],
+        inv['server_id'],
+        inv['sucursal_id'],
+        inv['almacen_id'],
+        inv['comentario'],
+        inv['folio_inventario'],
+        inv['fecha_inventario'],
+        inv['estado_inventario_origen']
+    )
+    
+    # =========================================================================
+    # PASO 1: INSERT DE 1 REGISTRO
+    # =========================================================================
+    print("\n" + "=" * 80)
+    print("PASO 1 DE 3: INSERTAR REGISTRO")
+    print("=" * 80)
+    
+    print("\n📋 PAYLOAD COMPLETO A INSERTAR:")
+    print("─" * 60)
+    print(f"  {'Campo':<30} │ Valor")
+    print(f"  {'─' * 30}┼{'─' * 45}")
+    print(f"  {'sistema_origen':<30} │ {inv['sistema_origen']}")
+    print(f"  {'server_id':<30} │ {inv['server_id']}")
+    print(f"  {'sucursal_id':<30} │ {inv['sucursal_id'] or '(vacío)'}")
+    print(f"  {'almacen_id':<30} │ {inv['almacen_id']}")
+    print(f"  {'comentario':<30} │ {inv['comentario'] or 'NULL'}")
+    print(f"  {'folio_inventario':<30} │ {inv['folio_inventario']}")
+    print(f"  {'fecha_inventario':<30} │ {inv['fecha_inventario']}")
+    print(f"  {'estado_inventario_origen':<30} │ {inv['estado_inventario_origen'] or 'NULL'}")
+    print(f"  {'hash_verificacion':<30} │ {hash_verif[:32]}...")
+    print(f"  {'estado':<30} │ EN_PROCESO")
+    print(f"  {'created_by':<30} │ {identificador}")
+    print("─" * 60)
+    
+    print(f"\n🔑 IDENTIFICADOR DE EJECUCIÓN: {identificador}")
+    print("   (Se usará para ROLLBACK en Paso 3)")
+    
+    print("\n📝 EXPLICACIÓN:")
+    print("   Se insertará 1 registro en la tabla:")
+    print("   automatizacion_inventarios_folios_procesados")
+    print("   con estado EN_PROCESO y el identificador único mostrado.")
+    
+    paso1 = solicitar_confirmacion("EJECUTAR INSERT en EDARSAHUB")
+    
+    registro_insertado = False
+    procesado_id = None
+    
+    if paso1 == 'salir':
+        print("\n🛑 Secuencia abortada por usuario")
+        return
+    elif paso1 == 'n':
+        print("\n⚠️  PASO 1 cancelado - no se insertó nada")
+    else:
+        # Ejecutar INSERT
+        print("\n⏳ Ejecutando INSERT...")
+        
+        exito, mensaje, procesado_id = repository.insertar_folio_procesado(
+            execute_sql_query,
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            inv['sistema_origen'],
+            inv['server_id'],
+            inv['sucursal_id'],
+            inv['almacen_id'],
+            inv['comentario'],
+            inv['folio_inventario'],
+            inv['fecha_inventario'],
+            inv['estado_inventario_origen'],
+            identificador
+        )
+        
+        if exito:
+            registro_insertado = True
+            print("\n" + "═" * 60)
+            print("✅ PASO 1 EXITOSO: REGISTRO INSERTADO")
+            print("═" * 60)
+            print(f"   procesado_id: {procesado_id}")
+            print(f"   created_by:   {identificador}")
+        else:
+            print("\n" + "═" * 60)
+            print("❌ PASO 1 FALLIDO: ERROR AL INSERTAR")
+            print("═" * 60)
+            print(f"   Error: {mensaje}")
+    
+    # =========================================================================
+    # PASO 2: INTENTO DE DUPLICADO
+    # =========================================================================
+    print("\n" + "=" * 80)
+    print("PASO 2 DE 3: INTENTAR DUPLICADO")
+    print("=" * 80)
+    
+    print("\n📋 Se intentará insertar el MISMO registro:")
+    print(f"   Folio: {inv['folio_inventario']}")
+    print(f"   Fecha: {inv['fecha_inventario']}")
+    print(f"   Almacén: {inv['almacen_id']}")
+    
+    print("\n📝 EXPLICACIÓN:")
+    print("   La constraint UNIQUE de 8 campos debe RECHAZAR este insert.")
+    print("   Esto valida que la BD protege contra duplicados.")
+    print("   RESULTADO ESPERADO: Error de duplicado")
+    
+    paso2 = solicitar_confirmacion("INTENTAR INSERT DUPLICADO (debe fallar)")
+    
+    if paso2 == 'salir':
+        print("\n🛑 Secuencia abortada por usuario")
+        if registro_insertado:
+            print(f"\n⚠️  ATENCIÓN: Quedó 1 registro insertado con ID: {identificador}")
+            print("   Para eliminarlo ejecutar:")
+            print(f"   $ python tests/test_simulacion_controlada.py --rollback {identificador}")
+        return
+    elif paso2 == 'n':
+        print("\n⚠️  PASO 2 omitido")
+    else:
+        # Intentar duplicado
+        print("\n⏳ Intentando INSERT duplicado...")
+        
+        # Generar nuevo identificador (diferente) para el intento
+        identificador_dup = repository.generar_identificador_ejecucion()
+        
+        exito_dup, mensaje_dup, _ = repository.insertar_folio_procesado(
+            execute_sql_query,
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            inv['sistema_origen'],
+            inv['server_id'],
+            inv['sucursal_id'],
+            inv['almacen_id'],
+            inv['comentario'],
+            inv['folio_inventario'],
+            inv['fecha_inventario'],
+            inv['estado_inventario_origen'],
+            identificador_dup
+        )
+        
+        if not exito_dup:
+            print("\n" + "═" * 60)
+            print("✅ PASO 2 EXITOSO: DUPLICADO RECHAZADO (comportamiento correcto)")
+            print("═" * 60)
+            print(f"   Mensaje: {mensaje_dup}")
+        else:
+            print("\n" + "═" * 60)
+            print("❌ PASO 2 FALLIDO: DUPLICADO FUE ACEPTADO (ERROR CRÍTICO)")
+            print("═" * 60)
+            print("   La constraint UNIQUE no funcionó correctamente")
+    
+    # =========================================================================
+    # PASO 3: ROLLBACK
+    # =========================================================================
+    print("\n" + "=" * 80)
+    print("PASO 3 DE 3: EJECUTAR ROLLBACK")
+    print("=" * 80)
+    
+    if not registro_insertado:
+        print("\n⚠️  No hay registro para eliminar (Paso 1 fue cancelado o falló)")
+        print("   Saltando Paso 3...")
+    else:
+        # Contar registros antes
+        total_antes = repository.contar_registros_por_identificador(
+            execute_sql_query,
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            identificador
+        )
+        
+        print("\n📋 ROLLBACK A EJECUTAR:")
+        print(f"   Identificador: {identificador}")
+        print(f"   Registros a eliminar: {total_antes}")
+        
+        print("\n📝 EXPLICACIÓN:")
+        print(f"   Se ejecutará DELETE WHERE created_by = '{identificador}'")
+        print("   Esto eliminará únicamente los registros insertados en esta sesión.")
+        
+        paso3 = solicitar_confirmacion("EJECUTAR ROLLBACK (eliminar registro)")
+        
+        if paso3 == 'salir':
+            print("\n🛑 Secuencia abortada por usuario")
+            print(f"\n⚠️  ATENCIÓN: Quedó 1 registro insertado con ID: {identificador}")
+            print("   Para eliminarlo ejecutar:")
+            print(f"   $ python tests/test_simulacion_controlada.py --rollback {identificador}")
+            return
+        elif paso3 == 'n':
+            print("\n⚠️  PASO 3 omitido")
+            print(f"\n⚠️  ATENCIÓN: Quedó 1 registro insertado con ID: {identificador}")
+            print("   Para eliminarlo ejecutar:")
+            print(f"   $ python tests/test_simulacion_controlada.py --rollback {identificador}")
+        else:
+            # Ejecutar rollback
+            print("\n⏳ Ejecutando ROLLBACK...")
+            
+            exito_rb, eliminados, mensaje_rb = repository.rollback_por_identificador(
+                execute_sql_query,
+                EDARSAHUB_CONFIG['host'],
+                EDARSAHUB_CONFIG['port'],
+                EDARSAHUB_CONFIG['database'],
+                EDARSAHUB_CONFIG['username'],
+                EDARSAHUB_CONFIG['password'],
+                identificador
+            )
+            
+            if exito_rb and eliminados > 0:
+                print("\n" + "═" * 60)
+                print("✅ PASO 3 EXITOSO: ROLLBACK COMPLETADO")
+                print("═" * 60)
+                print(f"   Registros eliminados: {eliminados}")
+                print(f"   Identificador: {identificador}")
+            elif exito_rb and eliminados == 0:
+                print("\n" + "═" * 60)
+                print("⚠️  PASO 3: NO SE ENCONTRARON REGISTROS")
+                print("═" * 60)
+            else:
+                print("\n" + "═" * 60)
+                print("❌ PASO 3 FALLIDO: ERROR EN ROLLBACK")
+                print("═" * 60)
+                print(f"   Error: {mensaje_rb}")
+    
+    # =========================================================================
+    # RESUMEN FINAL
+    # =========================================================================
+    print("\n" + "=" * 80)
+    print("RESUMEN DE SECUENCIA CONTROLADA")
+    print("=" * 80)
+    print(f"""
+    Identificador de ejecución: {identificador}
+    
+    PASO 1 (INSERT):     {'✅ Exitoso' if registro_insertado else '⏭️  Omitido/Fallido'}
+    PASO 2 (DUPLICADO):  {'✅ Rechazado correctamente' if paso2 == 's' else '⏭️  Omitido'}
+    PASO 3 (ROLLBACK):   {'✅ Ejecutado' if (registro_insertado and paso3 == 's') else '⏭️  Omitido'}
+    """)
+    print("=" * 80)
+
+
+# =============================================================================
 # PUNTO DE ENTRADA
 # =============================================================================
 
@@ -559,8 +902,10 @@ async def main():
         await ejecutar_rollback(args.rollback)
     elif MODO == 'PERSISTIR_UNO':
         await ejecutar_persistir_uno()
+    elif MODO == 'TEST_SECUENCIA_CONTROLADA':
+        await ejecutar_test_secuencia_controlada()
     else:
-        resultado = await ejecutar_dry_run()
+        await ejecutar_dry_run()
         print("\n⚠️  RECORDATORIO: Este fue un DRY-RUN")
         print("   - NO se insertó nada en EDARSAHUB")
         print("   - NO se modificó ningún sistema origen")
