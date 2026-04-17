@@ -98,6 +98,26 @@ from .responsabilidad_schemas import (
     TRANSICIONES_VALIDAS,
 )
 
+# Schemas de Cargos Económicos (Fase 2C.3)
+from .cargos_schemas import (
+    EstatusCargo,
+    AccionCargo,
+    OrigenCargo,
+    TRANSICIONES_CARGO_VALIDAS,
+    CargoEconomicoCreate,
+    CargoAccionRequest,
+    CargoReversaRequest,
+    CargoEconomicoResponse,
+    CargoEconomicoListResponse,
+    CargoAccionResponse,
+    CargoLogResponse,
+    CargoLogListResponse,
+    CargosPendientesResponse,
+    CargosAplicadosResponse,
+    CargosMetricasResponse,
+    ElegibilidadCargoResponse,
+)
+
 
 __all__ = [
     # Enums
@@ -172,4 +192,21 @@ __all__ = [
     "PendientesAprobacionResponse",
     "EnDisputaResponse",
     "TRANSICIONES_VALIDAS",
+    # Cargos Económicos (Fase 2C.3)
+    "EstatusCargo",
+    "AccionCargo",
+    "OrigenCargo",
+    "TRANSICIONES_CARGO_VALIDAS",
+    "CargoEconomicoCreate",
+    "CargoAccionRequest",
+    "CargoReversaRequest",
+    "CargoEconomicoResponse",
+    "CargoEconomicoListResponse",
+    "CargoAccionResponse",
+    "CargoLogResponse",
+    "CargoLogListResponse",
+    "CargosPendientesResponse",
+    "CargosAplicadosResponse",
+    "CargosMetricasResponse",
+    "ElegibilidadCargoResponse",
 ]

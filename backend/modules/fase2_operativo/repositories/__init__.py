@@ -15,6 +15,7 @@ from .auditoria_repository import AuditoriaRepository
 from .configuracion_repository import ConfiguracionRepository
 from .responsabilidad_repository import ResponsabilidadRepository
 from .historial_responsabilidad_repository import HistorialResponsabilidadRepository
+from .cargos_repository import CargosEconomicosRepository, CargosLogRepository
 
 
 __all__ = [
@@ -28,4 +29,7 @@ __all__ = [
     "ConfiguracionRepository",
     "ResponsabilidadRepository",
     "HistorialResponsabilidadRepository",
+    # Cargos Económicos (Fase 2C.3)
+    "CargosEconomicosRepository",
+    "CargosLogRepository",
 ]

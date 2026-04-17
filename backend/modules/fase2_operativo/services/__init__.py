@@ -76,6 +76,17 @@ from .responsabilidad_service import (
     SinDiferenciasError,
 )
 
+from .cargos_service import (
+    CargosService,
+    CargosServiceError,
+    ResponsabilidadNoEncontradaError as CargosResponsabilidadNoEncontradaError,
+    CargoNoEncontradoError,
+    CargoYaExisteError,
+    NoElegibleParaCargoError,
+    TransicionInvalidaError as CargosTransicionInvalidaError,
+    PermisoInsuficienteError as CargosPermisoInsuficienteError,
+)
+
 
 __all__ = [
     # Workflow Service
@@ -129,4 +140,13 @@ __all__ = [
     "CalculoYaExisteError",
     "ModuloDesactivadoError",
     "SinDiferenciasError",
+    # Cargos Económicos Service (Fase 2C.3)
+    "CargosService",
+    "CargosServiceError",
+    "CargosResponsabilidadNoEncontradaError",
+    "CargoNoEncontradoError",
+    "CargoYaExisteError",
+    "NoElegibleParaCargoError",
+    "CargosTransicionInvalidaError",
+    "CargosPermisoInsuficienteError",
 ]
