@@ -13443,3 +13443,32 @@ from core.communications.routes import router as communications_router, init_not
 init_notifications_routes(db)  # Inicializar con conexión MongoDB
 app.include_router(communications_router, tags=["Notificaciones"])
 
+# ============= SUBFASE 2B.5.2: SCHEDULER AUTOMÁTICO =============
+# Sistema de jobs periódicos para SLA y notificaciones
+from core.scheduler.routes import router as scheduler_router, init_scheduler_routes
+init_scheduler_routes(db)  # Inicializar con conexión MongoDB
+app.include_router(scheduler_router, tags=["Scheduler"])
+
+# Startup: Iniciar scheduler
+@app.on_event("startup")
+async def startup_scheduler():
+    """Inicia el scheduler de jobs automáticos."""
+    try:
+        from core.scheduler import start_scheduler
+        await start_scheduler(db)
+        logger.info("Scheduler iniciado correctamente")
+    except Exception as e:
+        logger.error(f"Error iniciando scheduler: {e}")
+        # No fallar el startup por el scheduler
+
+# Shutdown: Detener scheduler
+@app.on_event("shutdown")
+async def shutdown_scheduler():
+    """Detiene el scheduler limpiamente."""
+    try:
+        from core.scheduler import stop_scheduler
+        await stop_scheduler()
+        logger.info("Scheduler detenido correctamente")
+    except Exception as e:
+        logger.error(f"Error deteniendo scheduler: {e}")
+

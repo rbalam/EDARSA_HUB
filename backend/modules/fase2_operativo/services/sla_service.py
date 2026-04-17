@@ -81,16 +81,28 @@ class SLAService:
     
     def _get_configuracion(self) -> Dict[str, Any]:
         """
-        Obtiene la configuración SLA desde la BD.
-        Usa cache para evitar consultas repetidas.
+        Obtiene la configuración SLA.
+        Usa cache preexistente o valores por defecto.
+        
+        NOTA: Para evitar problemas async/sync, este método usa solo cache o defaults.
+        La carga desde BD se hace en _cargar_configuracion_async().
         """
         if self._cache_config is not None:
             return self._cache_config
         
+        # Usar defaults - la carga async se hace en actualizar_estados_sla
+        self._cache_config = UMBRALES_SLA_DEFAULT.copy()
+        return self._cache_config
+    
+    async def _cargar_configuracion_async(self) -> Dict[str, Any]:
+        """
+        Carga la configuración SLA desde la BD de forma async.
+        """
         config = {}
         
         # Cargar desde configuracion_operativo
-        for item in self.db.configuracion_operativo.find({"clave": {"$regex": "^SLA_"}}):
+        cursor = self.db.configuracion_operativo.find({"clave": {"$regex": "^SLA_"}})
+        async for item in cursor:
             clave = item.get("clave")
             valor = item.get("valor")
             try:
@@ -298,13 +310,16 @@ class SLAService:
         """
         logger.info("Iniciando actualización de estados SLA")
         
-        # Buscar tareas activas
-        tareas = list(self.db.tareas_inventario.find(
+        # Cargar configuración de forma async
+        config = await self._cargar_configuracion_async()
+        
+        # Buscar tareas activas (async)
+        cursor = self.db.tareas_inventario.find(
             {"estado_tarea": {"$in": ESTADOS_ACTIVOS}},
             {"_id": 0}
-        ))
+        )
+        tareas = await cursor.to_list(length=1000)
         
-        config = self._get_configuracion()
         umbral_warning = config.get("SLA_UMBRAL_URGENTE_PORCENTAJE", 80)
         umbral_vencido = config.get("SLA_UMBRAL_VENCIDO_PORCENTAJE", 100)
         umbral_escalado = config.get("SLA_UMBRAL_ESCALAMIENTO_PORCENTAJE", 150)
@@ -336,7 +351,7 @@ class SLAService:
                 # Actualizar solo si cambió o no existe
                 estado_actual = tarea.get("estado_sla")
                 if estado_actual != nuevo_estado:
-                    self.db.tareas_inventario.update_one(
+                    await self.db.tareas_inventario.update_one(
                         {"id": tarea.get("id")},
                         {"$set": {
                             "estado_sla": nuevo_estado,
@@ -363,7 +378,7 @@ class SLAService:
                     
                     # También actualizar flag vencida
                     if not tarea.get("vencida"):
-                        self.db.tareas_inventario.update_one(
+                        await self.db.tareas_inventario.update_one(
                             {"id": tarea.get("id")},
                             {"$set": {"vencida": True}}
                         )
@@ -577,7 +592,7 @@ class SLAService:
         try:
             # Obtener datos del workflow si no se proporcionan
             if not workflow:
-                workflow = self.db.workflows_inventario.find_one(
+                workflow = await self.db.workflows_inventario.find_one(
                     {"id": tarea.get("workflow_id")},
                     {"_id": 0}
                 )
@@ -601,7 +616,7 @@ class SLAService:
             
             if result.success:
                 # Marcar que se envió notificación de warning
-                self.db.tareas_inventario.update_one(
+                await self.db.tareas_inventario.update_one(
                     {"id": tarea.get("id")},
                     {"$set": {"notificacion_warning_enviada": datetime.now(timezone.utc).isoformat()}}
                 )
@@ -635,7 +650,7 @@ class SLAService:
         
         try:
             if not workflow:
-                workflow = self.db.workflows_inventario.find_one(
+                workflow = await self.db.workflows_inventario.find_one(
                     {"id": tarea.get("workflow_id")},
                     {"_id": 0}
                 )
@@ -654,7 +669,7 @@ class SLAService:
             )
             
             if result.success:
-                self.db.tareas_inventario.update_one(
+                await self.db.tareas_inventario.update_one(
                     {"id": tarea.get("id")},
                     {"$set": {"notificacion_vencido_enviada": datetime.now(timezone.utc).isoformat()}}
                 )
@@ -688,7 +703,7 @@ class SLAService:
         
         try:
             if not workflow:
-                workflow = self.db.workflows_inventario.find_one(
+                workflow = await self.db.workflows_inventario.find_one(
                     {"id": tarea.get("workflow_id")},
                     {"_id": 0}
                 )
@@ -712,7 +727,7 @@ class SLAService:
             )
             
             if result.success:
-                self.db.tareas_inventario.update_one(
+                await self.db.tareas_inventario.update_one(
                     {"id": tarea.get("id")},
                     {"$set": {
                         "notificacion_escalado_enviada": datetime.now(timezone.utc).isoformat(),

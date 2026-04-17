@@ -1016,6 +1016,81 @@ db.notification_log.drop()
 
 ---
 
+### 2026-04-17 - FASE 2B.5.2: Scheduler Automático Empresarial
+**Sistema de jobs periódicos para SLA y notificaciones**
+
+#### Arquitectura Implementada ✅
+```
+/app/backend/core/scheduler/
+├── __init__.py
+├── config.py              # Configuración central
+├── scheduler_manager.py   # Manager con APScheduler
+├── job_logger.py          # Logging de ejecuciones
+├── routes.py              # API de administración
+├── jobs/
+│   ├── base_job.py        # Clase base abstracta
+│   ├── sla_job.py         # Procesador SLA
+│   └── notifications_job.py # Despacho notificaciones
+└── locks/
+    └── distributed_lock.py # Locks MongoDB
+```
+
+#### Jobs Configurados ✅
+| Job | Intervalo | Descripción |
+|-----|-----------|-------------|
+| `sla_processor` | 5 min | Procesa estados SLA, alertas 80%/100%/150% |
+| `notifications_dispatcher` | 2 min | Despacha cola de notificaciones |
+
+#### Colecciones MongoDB ✅
+| Colección | Descripción |
+|-----------|-------------|
+| `scheduler_job_log` | Historial de ejecuciones |
+| `scheduler_locks` | Locks distribuidos |
+
+#### Endpoints API ✅
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/api/v2/scheduler/status` | GET | Estado del scheduler |
+| `/api/v2/scheduler/jobs/{id}` | GET | Info de job específico |
+| `/api/v2/scheduler/jobs/{id}/run` | POST | Ejecutar manualmente |
+| `/api/v2/scheduler/jobs/{id}/pause` | POST | Pausar job |
+| `/api/v2/scheduler/jobs/{id}/resume` | POST | Reanudar job |
+| `/api/v2/scheduler/logs` | GET | Historial ejecuciones |
+| `/api/v2/scheduler/logs/stats` | GET | Estadísticas |
+| `/api/v2/scheduler/locks` | GET | Locks activos |
+| `/api/v2/scheduler/locks/{name}` | DELETE | Forzar liberación |
+| `/api/v2/scheduler/config` | GET | Configuración |
+
+#### Características Clave ✅
+- **APScheduler AsyncIOScheduler**: Compatible con FastAPI async
+- **Locks distribuidos**: Evita ejecución duplicada en multi-worker
+- **Heartbeat**: Extensión automática de locks en jobs largos
+- **Logging completo**: Duración, métricas, errores por ejecución
+- **Integración lifecycle**: startup/shutdown de FastAPI
+- **Horarios permitidos**: Notificaciones solo 08:00-20:00 hora México
+- **Variables de entorno**: Configuración sin hardcodear
+
+#### Variables de Entorno
+```bash
+SCHEDULER_ENABLED=true
+SCHEDULER_TIMEZONE=America/Mexico_City
+SCHEDULER_SLA_INTERVAL_SECONDS=300
+SCHEDULER_SLA_ENABLED=true
+SCHEDULER_NOTIFICATIONS_INTERVAL_SECONDS=120
+SCHEDULER_NOTIFICATIONS_ENABLED=true
+```
+
+#### Verificaciones ✅
+- ✅ Scheduler inicia con la app (una sola vez)
+- ✅ Jobs se ejecutan en intervalos correctos
+- ✅ Locks previenen ejecuciones duplicadas
+- ✅ Errores se registran sin tumbar el job
+- ✅ Shutdown limpia correctamente
+
+**Estado:** FASE 2B.5.2 COMPLETADA
+
+---
+
 ## Próximas Fases (Backlog)
 
 ### Fase 2B.5.1 - Conexión WhatsApp Real (P1)
