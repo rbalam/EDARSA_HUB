@@ -908,20 +908,125 @@ db.workflow_inventarios.updateMany(
 
 ---
 
+### 2026-04-17 - FASE 2B.5: Sistema de Notificaciones WhatsApp
+**Sistema empresarial de notificaciones multicanal integrado con motor SLA**
+
+#### Arquitectura Implementada ✅
+```
+/app/backend/core/communications/
+├── notifications/
+│   ├── schemas.py       # Modelos Pydantic
+│   ├── repository.py    # Acceso a datos MongoDB
+│   ├── service.py       # Orquestador principal
+│   └── dedup.py         # Control de duplicidad
+├── providers/
+│   ├── base.py          # Interfaz abstracta
+│   ├── mock_provider.py # Provider de pruebas
+│   └── whatsapp_provider.py # Adaptador Twilio/Meta
+├── templates/
+│   └── template_service.py # Interpolación de templates
+├── dispatcher/
+│   └── dispatcher.py    # Cola y despacho
+├── audit/
+│   └── audit_service.py # Auditoría
+├── scripts/
+│   └── __init__.py      # Inicialización DB
+└── routes.py            # API endpoints
+```
+
+#### Colecciones MongoDB ✅
+| Colección | Descripción |
+|-----------|-------------|
+| `notification_config` | Config por evento/módulo |
+| `notification_provider_config` | Config de providers |
+| `notification_templates` | Templates de mensajes |
+| `notification_queue` | Cola de envío |
+| `notification_log` | Log de auditoría |
+
+#### Eventos Soportados ✅
+| Evento | Template |
+|--------|----------|
+| `ASIGNACION_TAREA` | inventarios_asignacion_tarea |
+| `SLA_POR_VENCER` (80%) | inventarios_sla_por_vencer |
+| `SLA_VENCIDO` (100%) | inventarios_sla_vencido |
+| `SLA_ESCALADO` (150%) | inventarios_sla_escalado |
+| `JUSTIFICACION_RECHAZADA` | inventarios_justificacion_rechazada |
+| `DECISION_AUDITORIA` | inventarios_decision_auditoria |
+| `CIERRE_WORKFLOW` | inventarios_cierre_workflow |
+
+#### Endpoints API ✅
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/api/v2/notificaciones-whatsapp/config` | GET/POST | CRUD configs |
+| `/api/v2/notificaciones-whatsapp/config/{id}` | GET/PUT | Config individual |
+| `/api/v2/notificaciones-whatsapp/templates` | GET/POST | CRUD templates |
+| `/api/v2/notificaciones-whatsapp/templates/{id}` | GET/PUT | Template individual |
+| `/api/v2/notificaciones-whatsapp/log` | GET | Logs de envío |
+| `/api/v2/notificaciones-whatsapp/stats` | GET | Estadísticas |
+| `/api/v2/notificaciones-whatsapp/queue-status` | GET | Estado cola |
+| `/api/v2/notificaciones-whatsapp/test` | POST | Prueba de envío |
+| `/api/v2/notificaciones-whatsapp/reprocesar` | POST | Reprocesar cola |
+| `/api/v2/notificaciones-whatsapp/inicializar` | POST | Setup inicial |
+| `/api/v2/notificaciones-whatsapp/providers` | GET | Lista providers |
+
+#### Integración con SLA ✅
+- `notify_sla_warning()` - Disparada automáticamente al 80% de SLA
+- `notify_sla_expired()` - Disparada automáticamente al 100% de SLA
+- `notify_sla_escalated()` - Disparada automáticamente al 150% de SLA
+- Método `actualizar_estados_sla()` ahora incluye notificaciones
+
+#### Características Clave ✅
+- **Deduplicación**: Control de duplicidad por ventana de tiempo (default 60 min)
+- **Templates**: Interpolación segura con sintaxis `{{variable}}`
+- **Validación**: Teléfono E.164 (+52XXXXXXXXXX)
+- **Providers**: Mock (pruebas), Twilio/Meta (preparado)
+- **Modos**: `real`, `mock`, `dry_run`
+- **Reintentos**: Backoff exponencial configurable
+- **Auditoría**: Log completo por mensaje
+
+#### Campo telefono en User ✅
+- Agregado `telefono: Optional[str]` a modelos User
+- Formato E.164 internacional
+- Permite null (controlar antes de notificar)
+
+#### Verificaciones ✅
+- ✅ 48/48 pruebas backend pasaron (100%)
+- ✅ Templates interpolan correctamente
+- ✅ Mock provider funciona en pruebas
+- ✅ Rutas separadas de sistema email antiguo
+
+#### Rollback
+```bash
+# Eliminar módulo core/communications
+rm -rf /app/backend/core/communications
+
+# Revertir server.py (quitar import y registro de rutas)
+# Revertir auth/schemas.py (quitar campo telefono)
+# Revertir sla_service.py (quitar métodos de notificación)
+
+# MongoDB: Eliminar colecciones
+db.notification_config.drop()
+db.notification_provider_config.drop()
+db.notification_templates.drop()
+db.notification_queue.drop()
+db.notification_log.drop()
+```
+
+**Estado:** FASE 2B.5 COMPLETADA (WhatsApp MOCK - Provider real pendiente credenciales Twilio/Meta)
+
+---
+
 ## Próximas Fases (Backlog)
 
-### Fase 2C.2 - Aprobaciones y Exoneración (P1)
-- Estados: EN_REVISION, APROBADO, EXONERADO
-- Flujo de aprobación por auditor/supervisor
-- Registro de decisiones y motivos
+### Fase 2B.5.1 - Conexión WhatsApp Real (P1)
+- Configurar credenciales Twilio o Meta Cloud API
+- Activar provider real en lugar de mock
+- Pruebas con envío real de mensajes
 
 ### Fase 2C.3 - Aplicación de Cargos (P2)
 - Estado: APLICADO
 - Registro interno de cargo aplicado
 - Integración futura con Nómina/ERP
-
-### Fase 2B.5 - WhatsApp via Twilio (P2 - Opcional)
-- Notificaciones críticas por WhatsApp
 
 ### Fase 2D - RBAC Avanzado (P3)
 - Matriz de Roles y Permisos (4 niveles)

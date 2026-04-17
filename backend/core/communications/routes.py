@@ -19,7 +19,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v2/notificaciones", tags=["Notificaciones"])
+router = APIRouter(prefix="/api/v2/notificaciones-whatsapp", tags=["Notificaciones WhatsApp"])
 
 # =============================================================================
 # INYECCIÓN DE DEPENDENCIA: MongoDB
