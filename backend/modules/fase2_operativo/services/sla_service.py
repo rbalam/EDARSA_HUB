@@ -198,14 +198,20 @@ class SLAService:
         return config.get(clave, 24)
     
     def _parsear_fecha(self, fecha: Any) -> Optional[datetime]:
-        """Parsea una fecha de varios formatos a datetime."""
+        """Parsea una fecha de varios formatos a datetime con timezone UTC."""
         if fecha is None:
             return None
         if isinstance(fecha, datetime):
+            # Si la fecha no tiene timezone, asumimos UTC
+            if fecha.tzinfo is None:
+                return fecha.replace(tzinfo=timezone.utc)
             return fecha
         if isinstance(fecha, str):
             try:
-                return datetime.fromisoformat(fecha.replace("Z", "+00:00"))
+                parsed = datetime.fromisoformat(fecha.replace("Z", "+00:00"))
+                if parsed.tzinfo is None:
+                    return parsed.replace(tzinfo=timezone.utc)
+                return parsed
             except ValueError:
                 return None
         return None
@@ -436,17 +442,19 @@ class SLAService:
         Returns:
             Dict con métricas de cumplimiento
         """
-        # Tareas completadas
-        completadas = list(self.db.tareas_inventario.find(
+        # Tareas completadas - usar cursor sync de PyMongo
+        completadas_cursor = self.db.tareas_inventario.find(
             {"estado_tarea": {"$in": ESTADOS_COMPLETADA}},
             {"_id": 0}
-        ))
+        )
+        completadas = list(completadas_cursor)
         
-        # Tareas activas
-        activas = list(self.db.tareas_inventario.find(
+        # Tareas activas - usar cursor sync de PyMongo
+        activas_cursor = self.db.tareas_inventario.find(
             {"estado_tarea": {"$in": ESTADOS_ACTIVOS}},
             {"_id": 0}
-        ))
+        )
+        activas = list(activas_cursor)
         
         # Calcular métricas de completadas
         total_completadas = len(completadas)
@@ -518,10 +526,11 @@ class SLAService:
         Returns:
             Lista de tareas con sus cálculos SLA
         """
-        tareas = list(self.db.tareas_inventario.find(
+        tareas_cursor = self.db.tareas_inventario.find(
             {"estado_tarea": {"$in": ESTADOS_ACTIVOS}},
             {"_id": 0}
-        ).limit(limite * 2))  # Traer más para filtrar
+        ).limit(limite * 2)  # Traer más para filtrar
+        tareas = list(tareas_cursor)
         
         resultado = []
         for tarea in tareas:
@@ -545,7 +554,7 @@ class SLAService:
         Returns:
             Lista de tareas vencidas con sus cálculos SLA
         """
-        tareas = list(self.db.tareas_inventario.find(
+        tareas_cursor = self.db.tareas_inventario.find(
             {
                 "estado_tarea": {"$in": ESTADOS_ACTIVOS},
                 "$or": [
@@ -554,7 +563,8 @@ class SLAService:
                 ]
             },
             {"_id": 0}
-        ).limit(limite))
+        ).limit(limite)
+        tareas = list(tareas_cursor)
         
         resultado = []
         for tarea in tareas:
