@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-04-17T02:49:35.425648Z",
+  "timestamp": "2026-04-17T03:07:10.306481Z",
   "modo": "DRY_RUN",
   "resumen": {
     "total_detectados": 179,
-    "a_procesar": 172,
-    "a_omitir": 7,
-    "ya_procesados": 0
+    "a_procesar": 171,
+    "a_omitir": 8,
+    "ya_procesados": 1
   },
   "inventarios": [
     {
@@ -2482,9 +2482,9 @@
       "folio_inventario": "QR-0000952",
       "fecha_inventario": "2026-04-12",
       "estado_inventario_origen": "AP",
-      "ya_procesado": false,
-      "accion_sugerida": "PROCESAR",
-      "razon_omision": null,
+      "ya_procesado": true,
+      "accion_sugerida": "OMITIR",
+      "razon_omision": "Ya procesado en estado AP",
       "folio_inicial_calculado": "QR-0000946",
       "fecha_inicial_calculada": "2026-03-31",
       "almacen_nombre": "ALMACEN GENERAL",

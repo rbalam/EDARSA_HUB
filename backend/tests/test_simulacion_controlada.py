@@ -92,6 +92,8 @@ parser.add_argument('--test-secuencia-controlada', action='store_true',
                     help='Prueba controlada: INSERT → DUPLICADO → ROLLBACK con confirmación en cada paso')
 parser.add_argument('--persistir-lote-soft', action='store_true',
                     help='Fase 1B.3A: Persistir lote de máximo 2 registros SOFT con confirmación por registro')
+parser.add_argument('--persistir-lote-mpro', action='store_true',
+                    help='Fase 1B.3B: Persistir lote de 1 registro MPRO con confirmación obligatoria')
 
 args = parser.parse_args()
 
@@ -104,6 +106,8 @@ elif args.test_secuencia_controlada:
     MODO = 'TEST_SECUENCIA_CONTROLADA'
 elif args.persistir_lote_soft:
     MODO = 'PERSISTIR_LOTE_SOFT'
+elif args.persistir_lote_mpro:
+    MODO = 'PERSISTIR_LOTE_MPRO'
 else:
     MODO = 'DRY_RUN'
 
@@ -1267,6 +1271,290 @@ async def ejecutar_persistir_lote_soft():
 
 
 # =============================================================================
+# MODO PERSISTIR LOTE MPRO (FASE 1B.3B)
+# =============================================================================
+# Límites estrictos HARDCODEADOS:
+#   - SOLO sistema MPRO (SOFT no habilitado)
+#   - MÁXIMO 1 registro (lote mínimo)
+#   - Confirmación obligatoria
+#   - Detenerse inmediatamente ante cualquier error
+#   - Rollback por identificador único de lote
+# =============================================================================
+
+LIMITE_LOTE_FASE_1B3B = 1  # Máximo 1 registro MPRO - NO MODIFICAR
+
+
+def generar_identificador_lote_mpro() -> str:
+    """
+    Genera identificador único para lote MPRO Fase 1B.3B.
+    Formato: CAB003_FASE1B3B_LOTE_YYYYMMDD_HHMMSS
+    """
+    return f"CAB003_FASE1B3B_LOTE_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+
+def mostrar_payload_registro_mpro(inv: dict, identificador: str, hash_verif: str, es_duplicado: bool):
+    """Muestra el payload completo de un registro MPRO."""
+    print("\n" + "┌" + "─" * 78 + "┐")
+    print("│ REGISTRO 1 de 1 (MPRO)".ljust(79) + "│")
+    print("├" + "─" * 78 + "┤")
+    print(f"│  {'Campo':<28} │ {'Valor':<45} │")
+    print("├" + "─" * 30 + "┼" + "─" * 47 + "┤")
+    print(f"│  {'sistema_origen':<28} │ {inv['sistema_origen']:<45} │")
+    print(f"│  {'server_id':<28} │ {inv['server_id']:<45} │")
+    print(f"│  {'sucursal_id':<28} │ {(inv['sucursal_id'] or '(vacío)'):<45} │")
+    print(f"│  {'almacen_id':<28} │ {inv['almacen_id']:<45} │")
+    print(f"│  {'comentario':<28} │ {(inv['comentario'] or 'NULL'):<45} │")
+    print(f"│  {'folio_inventario':<28} │ {inv['folio_inventario']:<45} │")
+    print(f"│  {'fecha_inventario':<28} │ {str(inv['fecha_inventario']):<45} │")
+    print(f"│  {'estado_inventario_origen':<28} │ {(inv['estado_inventario_origen'] or 'NULL'):<45} │")
+    print(f"│  {'hash_verificacion':<28} │ {hash_verif[:40]+'...':<45} │")
+    print(f"│  {'estado':<28} │ {'EN_PROCESO':<45} │")
+    print(f"│  {'created_by':<28} │ {identificador:<45} │")
+    print("├" + "─" * 30 + "┼" + "─" * 47 + "┤")
+    
+    if es_duplicado:
+        print(f"│  {'VALIDACIÓN DUPLICADO':<28} │ {'❌ YA EXISTE - ABORTANDO':<45} │")
+    else:
+        print(f"│  {'VALIDACIÓN DUPLICADO':<28} │ {'✅ NO EXISTE - PUEDE INSERTARSE':<45} │")
+    
+    print("└" + "─" * 30 + "┴" + "─" * 47 + "┘")
+
+
+async def ejecutar_persistir_lote_mpro():
+    """
+    Fase 1B.3B: Persistir lote de 1 registro MPRO.
+    
+    Características HARDCODEADAS:
+    - SOLO MPRO (SOFT no habilitado)
+    - Máximo 1 registro (lote mínimo)
+    - Confirmación obligatoria
+    - Detenerse inmediatamente ante error
+    - Rollback por identificador único
+    """
+    print("\n" + "=" * 80)
+    print("🔒 FASE 1B.3B - PERSISTIR LOTE MPRO (1 REGISTRO)")
+    print("=" * 80)
+    print("""
+    Este proceso insertará 1 registro MPRO con:
+    
+    • Verificación previa de candidatos elegibles
+    • Validación de duplicado
+    • Confirmación OBLIGATORIA antes de inserción
+    • Detención INMEDIATA ante cualquier error
+    • Identificador único de lote para rollback
+    
+    ⚠️  Sistema: SOLO MPRO (SOFT no habilitado)
+    ⚠️  Máximo: 1 registro (lote mínimo)
+    ⚠️  Puede cancelar en cualquier momento con 'salir'
+    """)
+    print("=" * 80)
+    
+    # =========================================================================
+    # PASO 0: CONFIRMACIÓN DE INICIO
+    # =========================================================================
+    inicio = solicitar_confirmacion("INICIAR proceso lote MPRO (1 registro)")
+    if inicio == 'salir':
+        print("\n🛑 Proceso abortado por usuario")
+        return
+    if inicio == 'n':
+        print("\n⚠️  Inicio cancelado")
+        return
+    
+    # =========================================================================
+    # PASO 1: VERIFICACIÓN PREVIA DE CANDIDATOS MPRO
+    # =========================================================================
+    print("\n" + "=" * 80)
+    print("PASO 1: VERIFICACIÓN PREVIA DE CANDIDATOS MPRO")
+    print("=" * 80)
+    print("\n⏳ Ejecutando dry-run para identificar candidatos elegibles...")
+    
+    resultado_dry = await ejecutar_dry_run()
+    
+    # Filtrar SOLO MPRO con accion_sugerida='PROCESAR'
+    candidatos_mpro = [
+        i for i in resultado_dry['inventarios'] 
+        if i['accion_sugerida'] == 'PROCESAR' and i['sistema_origen'] == 'MPRO'
+    ]
+    
+    print("\n" + "─" * 80)
+    print(f"CANDIDATOS MPRO ELEGIBLES (accion_sugerida = 'PROCESAR'): {len(candidatos_mpro)}")
+    print(f"REGISTRO A PROCESAR EN ESTE LOTE: {min(len(candidatos_mpro), LIMITE_LOTE_FASE_1B3B)} (máximo {LIMITE_LOTE_FASE_1B3B})")
+    print("─" * 80)
+    
+    if len(candidatos_mpro) == 0:
+        print("\n⚠️  No hay candidatos MPRO elegibles para procesar")
+        print("   Proceso abortado")
+        return
+    
+    # Tomar SOLO 1 registro (HARDCODEADO)
+    inv = candidatos_mpro[0]
+    
+    continuar = solicitar_confirmacion("CONTINUAR con selección de 1 registro MPRO")
+    if continuar == 'salir':
+        print("\n🛑 Proceso abortado por usuario")
+        return
+    if continuar == 'n':
+        print("\n⚠️  Proceso cancelado")
+        return
+    
+    # =========================================================================
+    # PASO 2: VALIDACIÓN DE DUPLICADO
+    # =========================================================================
+    print("\n" + "=" * 80)
+    print("PASO 2: VALIDACIÓN DE DUPLICADO")
+    print("=" * 80)
+    
+    print("\n⏳ Verificando registro 1/1...")
+    
+    existe, registro = repository.verificar_duplicado_en_bd(
+        execute_sql_query,
+        EDARSAHUB_CONFIG['host'],
+        EDARSAHUB_CONFIG['port'],
+        EDARSAHUB_CONFIG['database'],
+        EDARSAHUB_CONFIG['username'],
+        EDARSAHUB_CONFIG['password'],
+        inv['sistema_origen'],
+        inv['server_id'],
+        inv['sucursal_id'],
+        inv['almacen_id'],
+        inv['comentario'],
+        inv['folio_inventario'],
+        inv['fecha_inventario'],
+        inv['estado_inventario_origen']
+    )
+    
+    if existe:
+        print("   ❌ Registro 1/1: YA EXISTE en EDARSAHUB")
+        print("\n⚠️  El único candidato ya está procesado")
+        print("   Proceso abortado - no hay registros nuevos para insertar")
+        return
+    
+    print("   ✅ Registro 1/1: No existe - puede insertarse")
+    
+    # =========================================================================
+    # PASO 3: GENERAR IDENTIFICADOR ÚNICO DE LOTE
+    # =========================================================================
+    identificador_lote = generar_identificador_lote_mpro()
+    
+    print("\n" + "=" * 80)
+    print("PASO 3: IDENTIFICADOR DE LOTE GENERADO")
+    print("=" * 80)
+    print(f"\n🔑 IDENTIFICADOR: {identificador_lote}")
+    print("   (Se usará para ROLLBACK si es necesario)")
+    
+    # =========================================================================
+    # PASO 4: MOSTRAR PAYLOAD Y CONFIRMAR REGISTRO
+    # =========================================================================
+    print("\n" + "=" * 80)
+    print("PASO 4: CONFIRMACIÓN DE INSERCIÓN")
+    print("=" * 80)
+    
+    # Generar hash para mostrar
+    hash_verif = repository.generar_hash_verificacion(
+        inv['sistema_origen'],
+        inv['server_id'],
+        inv['sucursal_id'],
+        inv['almacen_id'],
+        inv['comentario'],
+        inv['folio_inventario'],
+        inv['fecha_inventario'],
+        inv['estado_inventario_origen']
+    )
+    
+    # Mostrar payload completo
+    mostrar_payload_registro_mpro(inv, identificador_lote, hash_verif, False)
+    
+    # Solicitar confirmación obligatoria
+    confirmacion = solicitar_confirmacion("Registro 1/1 → ¿Insertar este registro MPRO?")
+    
+    if confirmacion == 'salir':
+        print("\n🛑 Proceso abortado por usuario")
+        return
+    
+    if confirmacion == 'n':
+        print("\n⚠️  Inserción cancelada por usuario")
+        print("   No se insertó ningún registro")
+        return
+    
+    # =========================================================================
+    # PASO 5: INSERTAR REGISTRO
+    # =========================================================================
+    print("\n⏳ Insertando registro 1/1...")
+    
+    try:
+        exito, mensaje, procesado_id = repository.insertar_folio_procesado(
+            execute_sql_query,
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            inv['sistema_origen'],
+            inv['server_id'],
+            inv['sucursal_id'],
+            inv['almacen_id'],
+            inv['comentario'],
+            inv['folio_inventario'],
+            inv['fecha_inventario'],
+            inv['estado_inventario_origen'],
+            identificador_lote
+        )
+        
+        if not exito:
+            # DETENERSE INMEDIATAMENTE
+            print("\n" + "=" * 80)
+            print("🛑 ERROR - INSERCIÓN FALLIDA")
+            print("=" * 80)
+            print(f"\n   Error: {mensaje}")
+            print(f"\n   Identificador de lote: {identificador_lote}")
+            print("\n   ⚠️  DETENCIÓN INMEDIATA - No se insertó ningún registro")
+            print("\n   Si hubo algún registro parcial (improbable), usar rollback:")
+            print(f"   $ python tests/test_simulacion_controlada.py --rollback {identificador_lote}")
+            print("\n" + "=" * 80)
+            return
+        
+        # =====================================================================
+        # PASO 6: RESUMEN EXITOSO
+        # =====================================================================
+        print("\n" + "=" * 80)
+        print("✅ LOTE COMPLETADO - RESUMEN FINAL")
+        print("=" * 80)
+        
+        print(f"""
+    Identificador de lote: {identificador_lote}
+    Sistema: MPRO
+    
+    INSERTADO EXITOSAMENTE: 1
+      • Registro 1/1: {inv['folio_inventario']} → procesado_id: {procesado_id}
+
+    Detalles del registro:
+      • Sucursal: {inv['sucursal_id']}
+      • Almacén: {inv['almacen_id']}
+      • Comentario: {inv['comentario']}
+      • Estado origen: {inv['estado_inventario_origen']}
+
+    ─────────────────────────────────────────────────────────────────────────────
+    Para ROLLBACK de este registro ejecutar:
+    $ python tests/test_simulacion_controlada.py --rollback {identificador_lote}
+    ─────────────────────────────────────────────────────────────────────────────
+    """)
+        print("=" * 80)
+        
+    except Exception as e:
+        # DETENERSE INMEDIATAMENTE
+        print("\n" + "=" * 80)
+        print("🛑 EXCEPCIÓN - INSERCIÓN FALLIDA")
+        print("=" * 80)
+        print(f"\n   Excepción: {e}")
+        print(f"\n   Identificador de lote: {identificador_lote}")
+        print("\n   ⚠️  DETENCIÓN INMEDIATA")
+        print("\n   Si hubo algún registro parcial, usar rollback:")
+        print(f"   $ python tests/test_simulacion_controlada.py --rollback {identificador_lote}")
+        print("\n" + "=" * 80)
+        return
+
+
+# =============================================================================
 # PUNTO DE ENTRADA
 # =============================================================================
 
@@ -1279,6 +1567,8 @@ async def main():
         await ejecutar_test_secuencia_controlada()
     elif MODO == 'PERSISTIR_LOTE_SOFT':
         await ejecutar_persistir_lote_soft()
+    elif MODO == 'PERSISTIR_LOTE_MPRO':
+        await ejecutar_persistir_lote_mpro()
     else:
         await ejecutar_dry_run()
         print("\n⚠️  RECORDATORIO: Este fue un DRY-RUN")
