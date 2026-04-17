@@ -256,6 +256,61 @@ export async function calcularResponsabilidad(workflowId, usuarioId, forzar = fa
   });
 }
 
+// Fase 2C.2 - Acciones de aprobación
+export async function proponerResponsabilidad(responsabilidadId, usuarioId, usuarioRol, comentario) {
+  return apiRequest(`${API_V2}/responsabilidad/${responsabilidadId}/proponer`, {
+    method: 'POST',
+    body: JSON.stringify({ usuario_id: usuarioId, usuario_rol: usuarioRol, comentario }),
+  });
+}
+
+export async function aprobarResponsabilidad(responsabilidadId, usuarioId, usuarioRol, comentario) {
+  return apiRequest(`${API_V2}/responsabilidad/${responsabilidadId}/aprobar`, {
+    method: 'POST',
+    body: JSON.stringify({ usuario_id: usuarioId, usuario_rol: usuarioRol, comentario }),
+  });
+}
+
+export async function rechazarResponsabilidad(responsabilidadId, usuarioId, usuarioRol, comentario) {
+  return apiRequest(`${API_V2}/responsabilidad/${responsabilidadId}/rechazar`, {
+    method: 'POST',
+    body: JSON.stringify({ usuario_id: usuarioId, usuario_rol: usuarioRol, comentario }),
+  });
+}
+
+export async function exonerarResponsabilidad(responsabilidadId, usuarioId, usuarioRol, comentario) {
+  return apiRequest(`${API_V2}/responsabilidad/${responsabilidadId}/exonerar`, {
+    method: 'POST',
+    body: JSON.stringify({ usuario_id: usuarioId, usuario_rol: usuarioRol, comentario }),
+  });
+}
+
+export async function disputarResponsabilidad(responsabilidadId, usuarioId, usuarioRol, comentario) {
+  return apiRequest(`${API_V2}/responsabilidad/${responsabilidadId}/disputar`, {
+    method: 'POST',
+    body: JSON.stringify({ usuario_id: usuarioId, usuario_rol: usuarioRol, comentario }),
+  });
+}
+
+export async function resolverDisputaResponsabilidad(responsabilidadId, usuarioId, usuarioRol, comentario) {
+  return apiRequest(`${API_V2}/responsabilidad/${responsabilidadId}/resolver-disputa`, {
+    method: 'POST',
+    body: JSON.stringify({ usuario_id: usuarioId, usuario_rol: usuarioRol, comentario }),
+  });
+}
+
+export async function getPendientesAprobacion() {
+  return apiRequest(`${API_V2}/responsabilidad/pendientes-aprobacion`);
+}
+
+export async function getEnDisputa() {
+  return apiRequest(`${API_V2}/responsabilidad/en-disputa`);
+}
+
+export async function getResponsabilidadHistorial(responsabilidadId) {
+  return apiRequest(`${API_V2}/responsabilidad/${responsabilidadId}/historial`);
+}
+
 // Export default para conveniencia
 export default {
   checkHealth,

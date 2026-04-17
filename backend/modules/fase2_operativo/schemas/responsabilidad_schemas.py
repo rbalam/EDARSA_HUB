@@ -1,24 +1,47 @@
 """
 Schemas Pydantic para Responsabilidad Económica
-CAB-003 | EDARSA HUB - Fase 2C.1
+CAB-003 | EDARSA HUB - Fase 2C.1 y 2C.2
 
 Define los modelos de datos para el cálculo de impacto económico
-de diferencias de inventario.
+de diferencias de inventario y flujo de aprobaciones.
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
 
 
 class EstadoResponsabilidad(str, Enum):
-    """Estados del registro de responsabilidad económica (2C.1 solo CALCULADO)."""
+    """Estados del registro de responsabilidad económica."""
+    # Fase 2C.1
     CALCULADO = "CALCULADO"
-    # Futuros estados (NO implementar en 2C.1):
-    # EN_REVISION = "EN_REVISION"
-    # APROBADO = "APROBADO"
-    # EXONERADO = "EXONERADO"
+    # Fase 2C.2
+    PROPUESTO = "PROPUESTO"
+    EN_DISPUTA = "EN_DISPUTA"
+    APROBADO = "APROBADO"
+    RECHAZADO = "RECHAZADO"
+    EXONERADO = "EXONERADO"
+    # Fase 2C.3 (NO implementar todavía)
     # APLICADO = "APLICADO"
+
+
+class AccionResponsabilidad(str, Enum):
+    """Acciones posibles sobre un registro de responsabilidad."""
+    CALCULAR = "CALCULAR"
+    PROPONER = "PROPONER"
+    APROBAR = "APROBAR"
+    RECHAZAR = "RECHAZAR"
+    EXONERAR = "EXONERAR"
+    DISPUTAR = "DISPUTAR"
+    RESOLVER_DISPUTA = "RESOLVER_DISPUTA"
+
+
+class RolAutorizacion(str, Enum):
+    """Roles funcionales para autorización (sin RBAC completo)."""
+    AFECTADO = "AFECTADO"
+    SUPERVISOR = "SUPERVISOR"
+    GERENTE_OPS = "GERENTE_OPS"
+    DIRECCION = "DIRECCION"
 
 
 class ToleranciaAplicada(BaseModel):
@@ -185,3 +208,104 @@ class ConfiguracionResponsabilidadUpdate(BaseModel):
     precio_faltante_default: Optional[float] = Field(None, ge=0)
     modulo_responsabilidad_activo: Optional[bool] = None
     permitir_compensacion_faltantes_sobrantes: Optional[bool] = None
+
+
+# ==================== FASE 2C.2: APROBACIONES ====================
+
+class AccionResponsabilidadRequest(BaseModel):
+    """Request para ejecutar una acción sobre responsabilidad."""
+    usuario_id: str = Field(..., description="ID del usuario que ejecuta la acción")
+    usuario_rol: str = Field(..., description="Rol del usuario (AFECTADO, SUPERVISOR, GERENTE_OPS, DIRECCION)")
+    comentario: str = Field(..., min_length=10, max_length=1000, description="Comentario obligatorio (mínimo 10 caracteres)")
+    motivo_codigo: Optional[str] = Field(None, description="Código de motivo predefinido (opcional)")
+    
+    @field_validator('comentario')
+    @classmethod
+    def validar_comentario(cls, v):
+        if not v or len(v.strip()) < 10:
+            raise ValueError('El comentario debe tener al menos 10 caracteres significativos')
+        # Rechazar comentarios triviales
+        triviales = ['ok', 'aprobado', 'rechazado', 'exonerado', 'sí', 'no', 'test', 'prueba']
+        if v.strip().lower() in triviales:
+            raise ValueError('El comentario debe ser descriptivo, no trivial')
+        return v.strip()
+
+
+class AccionResponsabilidadResponse(BaseModel):
+    """Response después de ejecutar una acción."""
+    success: bool
+    responsabilidad_id: str
+    accion: AccionResponsabilidad
+    estado_anterior: EstadoResponsabilidad
+    estado_nuevo: EstadoResponsabilidad
+    mensaje: str
+    transicion_id: str = Field(..., description="ID del registro de historial")
+    workflow_estado: str = Field(..., description="Estado actual del workflow")
+
+
+class HistorialTransicionResponse(BaseModel):
+    """Registro de historial de una transición."""
+    id: str
+    responsabilidad_id: str
+    accion: str
+    estado_anterior: str
+    estado_nuevo: str
+    usuario_id: str
+    usuario_rol: Optional[str] = None
+    comentario: str
+    motivo_codigo: Optional[str] = None
+    monto_al_momento: float
+    fecha: datetime
+
+
+class HistorialListResponse(BaseModel):
+    """Lista de historial de transiciones."""
+    responsabilidad_id: str
+    total: int
+    items: List[HistorialTransicionResponse]
+
+
+class ResponsabilidadPendienteResponse(BaseModel):
+    """Responsabilidad pendiente de aprobación."""
+    id: str
+    workflow_id: str
+    sucursal_id: str
+    monto_propuesto_mxn: float
+    excede_minimo: bool
+    estado: EstadoResponsabilidad
+    fecha_calculo: datetime
+    dias_pendiente: int = Field(default=0, description="Días desde el cálculo")
+
+
+class PendientesAprobacionResponse(BaseModel):
+    """Lista de responsabilidades pendientes de aprobación."""
+    total: int
+    monto_total_pendiente: float
+    items: List[ResponsabilidadPendienteResponse]
+
+
+class EnDisputaResponse(BaseModel):
+    """Lista de responsabilidades en disputa."""
+    total: int
+    monto_total_en_disputa: float
+    items: List[ResponsabilidadPendienteResponse]
+
+
+# Transiciones válidas entre estados
+TRANSICIONES_VALIDAS = {
+    EstadoResponsabilidad.CALCULADO: [EstadoResponsabilidad.PROPUESTO],
+    EstadoResponsabilidad.PROPUESTO: [
+        EstadoResponsabilidad.APROBADO,
+        EstadoResponsabilidad.RECHAZADO,
+        EstadoResponsabilidad.EXONERADO,
+        EstadoResponsabilidad.EN_DISPUTA
+    ],
+    EstadoResponsabilidad.EN_DISPUTA: [
+        EstadoResponsabilidad.PROPUESTO,  # Resolver disputa
+        EstadoResponsabilidad.EXONERADO,
+        EstadoResponsabilidad.RECHAZADO
+    ],
+    EstadoResponsabilidad.APROBADO: [],  # Estado final en 2C.2 (APLICADO será en 2C.3)
+    EstadoResponsabilidad.RECHAZADO: [],  # Estado final
+    EstadoResponsabilidad.EXONERADO: [],  # Estado final
+}

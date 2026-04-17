@@ -10,3 +10,5 @@ export { default as WorkflowList } from './WorkflowList';
 export { default as TareaList } from './TareaList';
 export { default as SLACard } from './SLACard';
 export { default as ResponsabilidadCard } from './ResponsabilidadCard';
+export { default as ResponsabilidadAccionesModal } from './ResponsabilidadAccionesModal';
+export { default as ResponsabilidadPendientesPanel } from './ResponsabilidadPendientesPanel';

@@ -74,6 +74,8 @@ from .configuracion_schemas import (
 # Schemas de Responsabilidad Económica (Fase 2C.1)
 from .responsabilidad_schemas import (
     EstadoResponsabilidad,
+    AccionResponsabilidad,
+    RolAutorizacion,
     ToleranciaAplicada,
     ResumenFaltantes,
     ResumenSobrantes,
@@ -85,6 +87,15 @@ from .responsabilidad_schemas import (
     ResponsabilidadResumenCalculo,
     ConfiguracionResponsabilidadResponse,
     ConfiguracionResponsabilidadUpdate,
+    # Fase 2C.2
+    AccionResponsabilidadRequest,
+    AccionResponsabilidadResponse,
+    HistorialTransicionResponse,
+    HistorialListResponse,
+    ResponsabilidadPendienteResponse,
+    PendientesAprobacionResponse,
+    EnDisputaResponse,
+    TRANSICIONES_VALIDAS,
 )
 
 
@@ -137,8 +148,10 @@ __all__ = [
     "ConfiguracionInDB",
     "ConfiguracionResponse",
     "ConfiguracionListResponse",
-    # Responsabilidad Económica (Fase 2C.1)
+    # Responsabilidad Económica (Fase 2C.1 y 2C.2)
     "EstadoResponsabilidad",
+    "AccionResponsabilidad",
+    "RolAutorizacion",
     "ToleranciaAplicada",
     "ResumenFaltantes",
     "ResumenSobrantes",
@@ -150,4 +163,13 @@ __all__ = [
     "ResponsabilidadResumenCalculo",
     "ConfiguracionResponsabilidadResponse",
     "ConfiguracionResponsabilidadUpdate",
+    # Fase 2C.2
+    "AccionResponsabilidadRequest",
+    "AccionResponsabilidadResponse",
+    "HistorialTransicionResponse",
+    "HistorialListResponse",
+    "ResponsabilidadPendienteResponse",
+    "PendientesAprobacionResponse",
+    "EnDisputaResponse",
+    "TRANSICIONES_VALIDAS",
 ]

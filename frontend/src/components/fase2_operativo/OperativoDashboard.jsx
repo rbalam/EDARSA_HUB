@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import KPICards from './KPICards';
 import SLACard from './SLACard';
 import ResponsabilidadCard from './ResponsabilidadCard';
+import ResponsabilidadPendientesPanel from './ResponsabilidadPendientesPanel';
 import AlertasBanner from './AlertasBanner';
 import WorkflowList from './WorkflowList';
 import TareaList from './TareaList';
@@ -338,12 +339,15 @@ const OperativoDashboard = () => {
         </div>
       </div>
 
-      {/* Responsabilidad Económica - Fase 2C.1 */}
+      {/* Responsabilidad Económica - Fase 2C.1 y 2C.2 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-1">
           <ResponsabilidadCard />
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1">
+          <ResponsabilidadPendientesPanel />
+        </div>
+        <div className="lg:col-span-1">
           {/* Alertas */}
           <AlertasBanner 
             alertas={alertas}

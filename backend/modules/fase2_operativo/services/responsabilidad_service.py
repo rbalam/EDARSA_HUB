@@ -1,9 +1,9 @@
 """
 Servicio de Responsabilidad Económica
-CAB-003 | EDARSA HUB - Fase 2C.1
+CAB-003 | EDARSA HUB - Fase 2C.1 y 2C.2
 
 Lógica de negocio para el cálculo de impacto económico
-de diferencias de inventario.
+de diferencias de inventario y flujo de aprobaciones.
 """
 from typing import Optional, Dict, List
 from datetime import datetime, timezone
@@ -14,14 +14,24 @@ from ..repositories.responsabilidad_repository import ResponsabilidadRepository
 from ..repositories.workflow_repository import WorkflowRepository
 from ..repositories.detalle_diferencias_repository import DetalleDiferenciasRepository
 from ..repositories.configuracion_repository import ConfiguracionRepository
+from ..repositories.historial_responsabilidad_repository import HistorialResponsabilidadRepository
 from ..schemas.responsabilidad_schemas import (
     EstadoResponsabilidad,
+    AccionResponsabilidad,
+    RolAutorizacion,
     ResponsabilidadResponse,
     ResponsabilidadResumenCalculo,
     ResumenFaltantes,
     ResumenSobrantes,
     ToleranciaAplicada,
     ConfiguracionResponsabilidadResponse,
+    AccionResponsabilidadResponse,
+    HistorialTransicionResponse,
+    HistorialListResponse,
+    ResponsabilidadPendienteResponse,
+    PendientesAprobacionResponse,
+    EnDisputaResponse,
+    TRANSICIONES_VALIDAS,
 )
 from ..schemas.enums import EstadoWorkflow
 
@@ -53,6 +63,26 @@ class SinDiferenciasError(ResponsabilidadServiceError):
     pass
 
 
+class AprobacionesDesactivadasError(ResponsabilidadServiceError):
+    """Las aprobaciones están desactivadas."""
+    pass
+
+
+class ResponsabilidadNoEncontradaError(ResponsabilidadServiceError):
+    """Registro de responsabilidad no encontrado."""
+    pass
+
+
+class TransicionInvalidaError(ResponsabilidadServiceError):
+    """Transición de estado no válida."""
+    pass
+
+
+class PermisoInsuficienteError(ResponsabilidadServiceError):
+    """Usuario no tiene permisos suficientes para esta acción."""
+    pass
+
+
 # Claves de configuración para responsabilidad
 CONFIG_KEYS = {
     "CARGO_MINIMO_MXN": ("50.0", "Monto mínimo en MXN para generar cargo"),
@@ -61,11 +91,16 @@ CONFIG_KEYS = {
     "PRECIO_FALTANTE_DEFAULT": ("0.0", "Precio unitario por defecto si no viene del análisis"),
     "MODULO_RESPONSABILIDAD_ACTIVO": ("true", "Módulo de responsabilidad habilitado"),
     "PERMITIR_COMPENSACION_FALTANTES_SOBRANTES": ("false", "Permitir compensación de faltantes con sobrantes"),
+    # Fase 2C.2 - Aprobaciones
+    "RESPONSABILIDAD_APROBACIONES_HABILITADAS": ("true", "Flujo de aprobaciones habilitado"),
+    "RESPONSABILIDAD_UMBRAL_SUPERVISOR": ("500", "Monto máximo para aprobación de supervisor"),
+    "RESPONSABILIDAD_UMBRAL_GERENTE": ("2000", "Monto máximo para aprobación de gerente"),
+    "RESPONSABILIDAD_UMBRAL_DIRECCION": ("10000", "Monto máximo para aprobación de dirección"),
 }
 
 
 class ResponsabilidadService:
-    """Servicio para cálculo de responsabilidad económica."""
+    """Servicio para cálculo de responsabilidad económica y aprobaciones."""
     
     def __init__(self, db):
         self.db = db
@@ -73,6 +108,7 @@ class ResponsabilidadService:
         self.workflow_repo = WorkflowRepository(db)
         self.diferencias_repo = DetalleDiferenciasRepository(db)
         self.config_repo = ConfiguracionRepository(db)
+        self.historial_repo = HistorialResponsabilidadRepository(db)
     
     # ==================== CONFIGURACIÓN ====================
     
@@ -592,3 +628,590 @@ class ResponsabilidadService:
             }
             for r in result
         ]
+    
+    # ==================== FASE 2C.2: APROBACIONES ====================
+    
+    async def _verificar_aprobaciones_habilitadas(self):
+        """Verifica si las aprobaciones están habilitadas."""
+        habilitadas_str = await self.config_repo.get_valor("RESPONSABILIDAD_APROBACIONES_HABILITADAS", "true")
+        if habilitadas_str.lower() != "true":
+            raise AprobacionesDesactivadasError("El flujo de aprobaciones está desactivado")
+    
+    async def _obtener_responsabilidad(self, responsabilidad_id: str) -> Dict:
+        """Obtiene un registro de responsabilidad por ID."""
+        registro = await self.responsabilidad_repo.get_by_id(responsabilidad_id)
+        if not registro:
+            # Intentar buscar por campo 'id'
+            registro = self.responsabilidad_repo.collection.find_one({"id": responsabilidad_id})
+            if registro:
+                registro = self.responsabilidad_repo._serialize_id(registro)
+        if not registro:
+            raise ResponsabilidadNoEncontradaError(f"Responsabilidad no encontrada: {responsabilidad_id}")
+        return registro
+    
+    async def _validar_transicion(self, estado_actual: str, estado_nuevo: str):
+        """Valida que la transición de estado sea válida."""
+        estado_actual_enum = EstadoResponsabilidad(estado_actual)
+        estado_nuevo_enum = EstadoResponsabilidad(estado_nuevo)
+        
+        transiciones_permitidas = TRANSICIONES_VALIDAS.get(estado_actual_enum, [])
+        if estado_nuevo_enum not in transiciones_permitidas:
+            raise TransicionInvalidaError(
+                f"Transición no válida: {estado_actual} → {estado_nuevo}. "
+                f"Transiciones permitidas: {[t.value for t in transiciones_permitidas]}"
+            )
+    
+    async def _validar_permiso_por_monto(self, monto: float, usuario_rol: str, accion: str):
+        """Valida que el usuario tenga permiso según el monto y su rol."""
+        umbral_supervisor = await self.config_repo.get_valor_float("RESPONSABILIDAD_UMBRAL_SUPERVISOR", 500)
+        umbral_gerente = await self.config_repo.get_valor_float("RESPONSABILIDAD_UMBRAL_GERENTE", 2000)
+        
+        # Determinar nivel requerido según monto
+        if monto <= umbral_supervisor:
+            nivel_requerido = RolAutorizacion.SUPERVISOR
+        elif monto <= umbral_gerente:
+            nivel_requerido = RolAutorizacion.GERENTE_OPS
+        else:
+            nivel_requerido = RolAutorizacion.DIRECCION
+        
+        # Jerarquía de roles
+        jerarquia = {
+            RolAutorizacion.AFECTADO.value: 0,
+            RolAutorizacion.SUPERVISOR.value: 1,
+            RolAutorizacion.GERENTE_OPS.value: 2,
+            RolAutorizacion.DIRECCION.value: 3,
+        }
+        
+        nivel_usuario = jerarquia.get(usuario_rol, 0)
+        nivel_necesario = jerarquia.get(nivel_requerido.value, 3)
+        
+        # Exonerar siempre requiere nivel superior
+        if accion == AccionResponsabilidad.EXONERAR.value:
+            nivel_necesario = max(nivel_necesario, jerarquia[RolAutorizacion.GERENTE_OPS.value])
+        
+        if nivel_usuario < nivel_necesario:
+            raise PermisoInsuficienteError(
+                f"Permiso insuficiente. Monto ${monto:,.2f} requiere rol {nivel_requerido.value} o superior. "
+                f"Tu rol: {usuario_rol}"
+            )
+    
+    async def _registrar_transicion(
+        self,
+        responsabilidad_id: str,
+        accion: AccionResponsabilidad,
+        estado_anterior: str,
+        estado_nuevo: str,
+        usuario_id: str,
+        usuario_rol: Optional[str],
+        comentario: str,
+        monto: float,
+        motivo_codigo: Optional[str] = None
+    ) -> str:
+        """Registra una transición en el historial."""
+        transicion_id = str(uuid.uuid4())
+        await self.historial_repo.registrar_transicion(
+            transicion_id=transicion_id,
+            responsabilidad_id=responsabilidad_id,
+            accion=accion.value,
+            estado_anterior=estado_anterior,
+            estado_nuevo=estado_nuevo,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
+            comentario=comentario,
+            monto_al_momento=monto,
+            motivo_codigo=motivo_codigo
+        )
+        return transicion_id
+    
+    async def _actualizar_estado_responsabilidad(
+        self,
+        responsabilidad_id: str,
+        nuevo_estado: EstadoResponsabilidad
+    ):
+        """Actualiza el estado de un registro de responsabilidad."""
+        now = datetime.now(timezone.utc)
+        self.responsabilidad_repo.collection.update_one(
+            {"id": responsabilidad_id},
+            {"$set": {
+                "estado": nuevo_estado.value,
+                "fecha_actualizacion": now
+            }}
+        )
+    
+    async def _actualizar_estado_workflow_si_corresponde(
+        self,
+        workflow_id: str,
+        estado_responsabilidad: EstadoResponsabilidad
+    ) -> str:
+        """
+        Actualiza el estado del workflow según el estado de responsabilidad.
+        
+        Reglas:
+        - APROBADO: Workflow permanece en EN_REVISION_FINANCIERA
+        - RECHAZADO/EXONERADO: Cierra workflow solo si no hay más pendientes
+        """
+        workflow = await self._buscar_workflow_por_uuid(workflow_id)
+        if not workflow:
+            return "DESCONOCIDO"
+        
+        estado_workflow_actual = workflow.get("estado_workflow", "")
+        nuevo_estado_workflow = estado_workflow_actual
+        
+        # RECHAZADO o EXONERADO pueden cerrar el workflow
+        if estado_responsabilidad in [EstadoResponsabilidad.RECHAZADO, EstadoResponsabilidad.EXONERADO]:
+            # Verificar si hay otros cálculos activos para este workflow
+            calculos_activos = self.responsabilidad_repo.collection.count_documents({
+                "workflow_id": workflow_id,
+                "estado": {"$in": [
+                    EstadoResponsabilidad.CALCULADO.value,
+                    EstadoResponsabilidad.PROPUESTO.value,
+                    EstadoResponsabilidad.EN_DISPUTA.value,
+                    EstadoResponsabilidad.APROBADO.value  # Aprobado pero no aplicado
+                ]}
+            })
+            
+            if calculos_activos == 0:
+                nuevo_estado_workflow = EstadoWorkflow.CERRADO.value
+                await self._actualizar_workflow_por_uuid(workflow_id, {
+                    "estado_workflow": nuevo_estado_workflow,
+                    "cerrado_por_responsabilidad": True
+                })
+                logger.info(f"Workflow {workflow_id} cerrado tras {estado_responsabilidad.value}")
+        
+        return nuevo_estado_workflow
+    
+    async def proponer(
+        self,
+        responsabilidad_id: str,
+        usuario_id: str,
+        usuario_rol: str,
+        comentario: str,
+        motivo_codigo: Optional[str] = None
+    ) -> AccionResponsabilidadResponse:
+        """
+        Propone formalmente un monto para revisión.
+        Transición: CALCULADO → PROPUESTO
+        """
+        await self._verificar_aprobaciones_habilitadas()
+        
+        registro = await self._obtener_responsabilidad(responsabilidad_id)
+        estado_actual = registro.get("estado", "CALCULADO")
+        
+        await self._validar_transicion(estado_actual, EstadoResponsabilidad.PROPUESTO.value)
+        
+        monto = registro.get("monto_propuesto_mxn", 0)
+        await self._validar_permiso_por_monto(monto, usuario_rol, AccionResponsabilidad.PROPONER.value)
+        
+        # Registrar transición
+        transicion_id = await self._registrar_transicion(
+            responsabilidad_id=responsabilidad_id,
+            accion=AccionResponsabilidad.PROPONER,
+            estado_anterior=estado_actual,
+            estado_nuevo=EstadoResponsabilidad.PROPUESTO.value,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
+            comentario=comentario,
+            monto=monto,
+            motivo_codigo=motivo_codigo
+        )
+        
+        # Actualizar estado
+        await self._actualizar_estado_responsabilidad(responsabilidad_id, EstadoResponsabilidad.PROPUESTO)
+        
+        workflow_id = registro.get("workflow_id", "")
+        workflow_estado = await self._actualizar_estado_workflow_si_corresponde(
+            workflow_id, EstadoResponsabilidad.PROPUESTO
+        )
+        
+        return AccionResponsabilidadResponse(
+            success=True,
+            responsabilidad_id=responsabilidad_id,
+            accion=AccionResponsabilidad.PROPONER,
+            estado_anterior=EstadoResponsabilidad(estado_actual),
+            estado_nuevo=EstadoResponsabilidad.PROPUESTO,
+            mensaje=f"Monto ${monto:,.2f} propuesto exitosamente para revisión",
+            transicion_id=transicion_id,
+            workflow_estado=workflow_estado or EstadoWorkflow.EN_REVISION_FINANCIERA.value
+        )
+    
+    async def aprobar(
+        self,
+        responsabilidad_id: str,
+        usuario_id: str,
+        usuario_rol: str,
+        comentario: str,
+        motivo_codigo: Optional[str] = None
+    ) -> AccionResponsabilidadResponse:
+        """
+        Aprueba un monto propuesto.
+        Transición: PROPUESTO → APROBADO
+        """
+        await self._verificar_aprobaciones_habilitadas()
+        
+        registro = await self._obtener_responsabilidad(responsabilidad_id)
+        estado_actual = registro.get("estado", "CALCULADO")
+        
+        await self._validar_transicion(estado_actual, EstadoResponsabilidad.APROBADO.value)
+        
+        monto = registro.get("monto_propuesto_mxn", 0)
+        await self._validar_permiso_por_monto(monto, usuario_rol, AccionResponsabilidad.APROBAR.value)
+        
+        transicion_id = await self._registrar_transicion(
+            responsabilidad_id=responsabilidad_id,
+            accion=AccionResponsabilidad.APROBAR,
+            estado_anterior=estado_actual,
+            estado_nuevo=EstadoResponsabilidad.APROBADO.value,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
+            comentario=comentario,
+            monto=monto,
+            motivo_codigo=motivo_codigo
+        )
+        
+        await self._actualizar_estado_responsabilidad(responsabilidad_id, EstadoResponsabilidad.APROBADO)
+        
+        # APROBADO NO cierra el workflow
+        workflow_id = registro.get("workflow_id", "")
+        
+        return AccionResponsabilidadResponse(
+            success=True,
+            responsabilidad_id=responsabilidad_id,
+            accion=AccionResponsabilidad.APROBAR,
+            estado_anterior=EstadoResponsabilidad(estado_actual),
+            estado_nuevo=EstadoResponsabilidad.APROBADO,
+            mensaje=f"Monto ${monto:,.2f} aprobado. Pendiente de aplicación (Fase 2C.3)",
+            transicion_id=transicion_id,
+            workflow_estado=EstadoWorkflow.EN_REVISION_FINANCIERA.value
+        )
+    
+    async def rechazar(
+        self,
+        responsabilidad_id: str,
+        usuario_id: str,
+        usuario_rol: str,
+        comentario: str,
+        motivo_codigo: Optional[str] = None
+    ) -> AccionResponsabilidadResponse:
+        """
+        Rechaza un cargo propuesto (el monto NO procedía).
+        Transición: PROPUESTO/EN_DISPUTA → RECHAZADO
+        """
+        await self._verificar_aprobaciones_habilitadas()
+        
+        registro = await self._obtener_responsabilidad(responsabilidad_id)
+        estado_actual = registro.get("estado", "CALCULADO")
+        
+        await self._validar_transicion(estado_actual, EstadoResponsabilidad.RECHAZADO.value)
+        
+        monto = registro.get("monto_propuesto_mxn", 0)
+        await self._validar_permiso_por_monto(monto, usuario_rol, AccionResponsabilidad.RECHAZAR.value)
+        
+        transicion_id = await self._registrar_transicion(
+            responsabilidad_id=responsabilidad_id,
+            accion=AccionResponsabilidad.RECHAZAR,
+            estado_anterior=estado_actual,
+            estado_nuevo=EstadoResponsabilidad.RECHAZADO.value,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
+            comentario=comentario,
+            monto=monto,
+            motivo_codigo=motivo_codigo
+        )
+        
+        await self._actualizar_estado_responsabilidad(responsabilidad_id, EstadoResponsabilidad.RECHAZADO)
+        
+        workflow_id = registro.get("workflow_id", "")
+        workflow_estado = await self._actualizar_estado_workflow_si_corresponde(
+            workflow_id, EstadoResponsabilidad.RECHAZADO
+        )
+        
+        return AccionResponsabilidadResponse(
+            success=True,
+            responsabilidad_id=responsabilidad_id,
+            accion=AccionResponsabilidad.RECHAZAR,
+            estado_anterior=EstadoResponsabilidad(estado_actual),
+            estado_nuevo=EstadoResponsabilidad.RECHAZADO,
+            mensaje=f"Cargo de ${monto:,.2f} RECHAZADO. El monto no procedía como fue planteado.",
+            transicion_id=transicion_id,
+            workflow_estado=workflow_estado
+        )
+    
+    async def exonerar(
+        self,
+        responsabilidad_id: str,
+        usuario_id: str,
+        usuario_rol: str,
+        comentario: str,
+        motivo_codigo: Optional[str] = None
+    ) -> AccionResponsabilidadResponse:
+        """
+        Exonera al responsable del cargo (había base pero se libera).
+        Transición: PROPUESTO/EN_DISPUTA → EXONERADO
+        """
+        await self._verificar_aprobaciones_habilitadas()
+        
+        registro = await self._obtener_responsabilidad(responsabilidad_id)
+        estado_actual = registro.get("estado", "CALCULADO")
+        
+        await self._validar_transicion(estado_actual, EstadoResponsabilidad.EXONERADO.value)
+        
+        monto = registro.get("monto_propuesto_mxn", 0)
+        # Exonerar siempre requiere nivel superior
+        await self._validar_permiso_por_monto(monto, usuario_rol, AccionResponsabilidad.EXONERAR.value)
+        
+        transicion_id = await self._registrar_transicion(
+            responsabilidad_id=responsabilidad_id,
+            accion=AccionResponsabilidad.EXONERAR,
+            estado_anterior=estado_actual,
+            estado_nuevo=EstadoResponsabilidad.EXONERADO.value,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
+            comentario=comentario,
+            monto=monto,
+            motivo_codigo=motivo_codigo
+        )
+        
+        await self._actualizar_estado_responsabilidad(responsabilidad_id, EstadoResponsabilidad.EXONERADO)
+        
+        workflow_id = registro.get("workflow_id", "")
+        workflow_estado = await self._actualizar_estado_workflow_si_corresponde(
+            workflow_id, EstadoResponsabilidad.EXONERADO
+        )
+        
+        return AccionResponsabilidadResponse(
+            success=True,
+            responsabilidad_id=responsabilidad_id,
+            accion=AccionResponsabilidad.EXONERAR,
+            estado_anterior=EstadoResponsabilidad(estado_actual),
+            estado_nuevo=EstadoResponsabilidad.EXONERADO,
+            mensaje=f"Cargo de ${monto:,.2f} EXONERADO. El responsable ha sido liberado.",
+            transicion_id=transicion_id,
+            workflow_estado=workflow_estado
+        )
+    
+    async def disputar(
+        self,
+        responsabilidad_id: str,
+        usuario_id: str,
+        usuario_rol: str,
+        comentario: str,
+        motivo_codigo: Optional[str] = None
+    ) -> AccionResponsabilidadResponse:
+        """
+        Inicia una disputa sobre el monto propuesto.
+        Transición: PROPUESTO → EN_DISPUTA
+        Solo puede ser iniciada por el afectado o nivel superior.
+        """
+        await self._verificar_aprobaciones_habilitadas()
+        
+        registro = await self._obtener_responsabilidad(responsabilidad_id)
+        estado_actual = registro.get("estado", "CALCULADO")
+        
+        await self._validar_transicion(estado_actual, EstadoResponsabilidad.EN_DISPUTA.value)
+        
+        # Disputa puede ser iniciada por afectado o supervisor+
+        roles_permitidos = [
+            RolAutorizacion.AFECTADO.value,
+            RolAutorizacion.SUPERVISOR.value,
+            RolAutorizacion.GERENTE_OPS.value,
+            RolAutorizacion.DIRECCION.value
+        ]
+        if usuario_rol not in roles_permitidos:
+            raise PermisoInsuficienteError(
+                f"Solo el afectado o un supervisor puede iniciar una disputa. Tu rol: {usuario_rol}"
+            )
+        
+        monto = registro.get("monto_propuesto_mxn", 0)
+        
+        transicion_id = await self._registrar_transicion(
+            responsabilidad_id=responsabilidad_id,
+            accion=AccionResponsabilidad.DISPUTAR,
+            estado_anterior=estado_actual,
+            estado_nuevo=EstadoResponsabilidad.EN_DISPUTA.value,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
+            comentario=comentario,
+            monto=monto,
+            motivo_codigo=motivo_codigo
+        )
+        
+        await self._actualizar_estado_responsabilidad(responsabilidad_id, EstadoResponsabilidad.EN_DISPUTA)
+        
+        return AccionResponsabilidadResponse(
+            success=True,
+            responsabilidad_id=responsabilidad_id,
+            accion=AccionResponsabilidad.DISPUTAR,
+            estado_anterior=EstadoResponsabilidad(estado_actual),
+            estado_nuevo=EstadoResponsabilidad.EN_DISPUTA,
+            mensaje=f"Disputa iniciada sobre monto ${monto:,.2f}",
+            transicion_id=transicion_id,
+            workflow_estado=EstadoWorkflow.EN_REVISION_FINANCIERA.value
+        )
+    
+    async def resolver_disputa(
+        self,
+        responsabilidad_id: str,
+        usuario_id: str,
+        usuario_rol: str,
+        comentario: str,
+        motivo_codigo: Optional[str] = None
+    ) -> AccionResponsabilidadResponse:
+        """
+        Resuelve una disputa, volviendo a estado PROPUESTO.
+        Transición: EN_DISPUTA → PROPUESTO
+        """
+        await self._verificar_aprobaciones_habilitadas()
+        
+        registro = await self._obtener_responsabilidad(responsabilidad_id)
+        estado_actual = registro.get("estado", "CALCULADO")
+        
+        await self._validar_transicion(estado_actual, EstadoResponsabilidad.PROPUESTO.value)
+        
+        monto = registro.get("monto_propuesto_mxn", 0)
+        await self._validar_permiso_por_monto(monto, usuario_rol, AccionResponsabilidad.RESOLVER_DISPUTA.value)
+        
+        transicion_id = await self._registrar_transicion(
+            responsabilidad_id=responsabilidad_id,
+            accion=AccionResponsabilidad.RESOLVER_DISPUTA,
+            estado_anterior=estado_actual,
+            estado_nuevo=EstadoResponsabilidad.PROPUESTO.value,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
+            comentario=comentario,
+            monto=monto,
+            motivo_codigo=motivo_codigo
+        )
+        
+        await self._actualizar_estado_responsabilidad(responsabilidad_id, EstadoResponsabilidad.PROPUESTO)
+        
+        return AccionResponsabilidadResponse(
+            success=True,
+            responsabilidad_id=responsabilidad_id,
+            accion=AccionResponsabilidad.RESOLVER_DISPUTA,
+            estado_anterior=EstadoResponsabilidad(estado_actual),
+            estado_nuevo=EstadoResponsabilidad.PROPUESTO,
+            mensaje=f"Disputa resuelta. Monto ${monto:,.2f} vuelve a estado PROPUESTO para revisión.",
+            transicion_id=transicion_id,
+            workflow_estado=EstadoWorkflow.EN_REVISION_FINANCIERA.value
+        )
+    
+    # ==================== CONSULTAS 2C.2 ====================
+    
+    async def obtener_pendientes_aprobacion(self) -> PendientesAprobacionResponse:
+        """Obtiene responsabilidades pendientes de aprobación (CALCULADO o PROPUESTO)."""
+        estados_pendientes = [
+            EstadoResponsabilidad.CALCULADO.value,
+            EstadoResponsabilidad.PROPUESTO.value
+        ]
+        
+        registros = list(self.responsabilidad_repo.collection.find({
+            "estado": {"$in": estados_pendientes}
+        }).sort("fecha_calculo", -1))
+        
+        now = datetime.now(timezone.utc)
+        items = []
+        monto_total = 0.0
+        
+        for r in registros:
+            r = self.responsabilidad_repo._serialize_id(r)
+            fecha_calculo = r.get("fecha_calculo")
+            dias_pendiente = 0
+            if fecha_calculo:
+                if isinstance(fecha_calculo, str):
+                    fecha_calculo = datetime.fromisoformat(fecha_calculo.replace("Z", "+00:00"))
+                # Asegurar que ambas fechas tengan timezone
+                if fecha_calculo.tzinfo is None:
+                    fecha_calculo = fecha_calculo.replace(tzinfo=timezone.utc)
+                dias_pendiente = (now - fecha_calculo).days
+            
+            monto = r.get("monto_propuesto_mxn", 0)
+            monto_total += monto
+            
+            items.append(ResponsabilidadPendienteResponse(
+                id=r.get("id", ""),
+                workflow_id=r.get("workflow_id", ""),
+                sucursal_id=r.get("sucursal_id", ""),
+                monto_propuesto_mxn=monto,
+                excede_minimo=r.get("excede_minimo", False),
+                estado=EstadoResponsabilidad(r.get("estado", "CALCULADO")),
+                fecha_calculo=fecha_calculo or now,
+                dias_pendiente=dias_pendiente
+            ))
+        
+        return PendientesAprobacionResponse(
+            total=len(items),
+            monto_total_pendiente=round(monto_total, 2),
+            items=items
+        )
+    
+    async def obtener_en_disputa(self) -> EnDisputaResponse:
+        """Obtiene responsabilidades en disputa."""
+        registros = list(self.responsabilidad_repo.collection.find({
+            "estado": EstadoResponsabilidad.EN_DISPUTA.value
+        }).sort("fecha_calculo", -1))
+        
+        now = datetime.now(timezone.utc)
+        items = []
+        monto_total = 0.0
+        
+        for r in registros:
+            r = self.responsabilidad_repo._serialize_id(r)
+            fecha_calculo = r.get("fecha_calculo")
+            dias_pendiente = 0
+            if fecha_calculo:
+                if isinstance(fecha_calculo, str):
+                    fecha_calculo = datetime.fromisoformat(fecha_calculo.replace("Z", "+00:00"))
+                # Asegurar que ambas fechas tengan timezone
+                if fecha_calculo.tzinfo is None:
+                    fecha_calculo = fecha_calculo.replace(tzinfo=timezone.utc)
+                dias_pendiente = (now - fecha_calculo).days
+            
+            monto = r.get("monto_propuesto_mxn", 0)
+            monto_total += monto
+            
+            items.append(ResponsabilidadPendienteResponse(
+                id=r.get("id", ""),
+                workflow_id=r.get("workflow_id", ""),
+                sucursal_id=r.get("sucursal_id", ""),
+                monto_propuesto_mxn=monto,
+                excede_minimo=r.get("excede_minimo", False),
+                estado=EstadoResponsabilidad.EN_DISPUTA,
+                fecha_calculo=fecha_calculo or now,
+                dias_pendiente=dias_pendiente
+            ))
+        
+        return EnDisputaResponse(
+            total=len(items),
+            monto_total_en_disputa=round(monto_total, 2),
+            items=items
+        )
+    
+    async def obtener_historial(self, responsabilidad_id: str) -> HistorialListResponse:
+        """Obtiene el historial de transiciones de una responsabilidad."""
+        # Verificar que existe
+        await self._obtener_responsabilidad(responsabilidad_id)
+        
+        transiciones = await self.historial_repo.get_by_responsabilidad(responsabilidad_id)
+        
+        items = [
+            HistorialTransicionResponse(
+                id=t.get("id", ""),
+                responsabilidad_id=t.get("responsabilidad_id", ""),
+                accion=t.get("accion", ""),
+                estado_anterior=t.get("estado_anterior", ""),
+                estado_nuevo=t.get("estado_nuevo", ""),
+                usuario_id=t.get("usuario_id", ""),
+                usuario_rol=t.get("usuario_rol"),
+                comentario=t.get("comentario", ""),
+                motivo_codigo=t.get("motivo_codigo"),
+                monto_al_momento=t.get("monto_al_momento", 0),
+                fecha=t.get("fecha", datetime.now(timezone.utc))
+            )
+            for t in transiciones
+        ]
+        
+        return HistorialListResponse(
+            responsabilidad_id=responsabilidad_id,
+            total=len(items),
+            items=items
+        )

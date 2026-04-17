@@ -72,7 +72,13 @@ class ResponsabilidadRepository(BaseRepository):
             return None
         
         data["fecha_actualizacion"] = datetime.now(timezone.utc)
-        return await self.update(existente["id"], data)
+        # Use _id (MongoDB ObjectId) for update, not id (UUID)
+        result = self.collection.find_one_and_update(
+            {"workflow_id": workflow_id},
+            {"$set": data},
+            return_document=True
+        )
+        return self._serialize_id(result)
     
     async def listar_por_sucursal(self, sucursal_id: str, skip: int = 0, limit: int = 50) -> List[Dict]:
         """
