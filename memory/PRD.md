@@ -622,15 +622,83 @@ git checkout -- /app/backend/modules/fase2_operativo/routes/documentos_routes.py
 
 **Estado:** FASE 2B.3 COMPLETADA
 
+### 2026-04-17 - FASE 2B.4: SLA y Alertas
+**Sistema de monitoreo de tiempos y cumplimiento SLA**
+
+#### Implementación ✅
+- ✅ `sla_service.py` - Servicio de cálculo de métricas SLA
+- ✅ `sla_routes.py` - Endpoints de SLA
+- ✅ Integración con dashboard (KPIs con SLA)
+- ✅ Actualización de estados SLA vía endpoint (para cron externo)
+
+#### Estados SLA Definidos ✅
+| Estado | Descripción |
+|--------|-------------|
+| `EN_TIEMPO` | Tarea activa, < 50% tiempo consumido |
+| `ADVERTENCIA` | Tarea activa, 50-75% tiempo consumido |
+| `URGENTE` | Tarea activa, 75-100% tiempo consumido |
+| `VENCIDA` | Tarea activa, tiempo excedido |
+| `CUMPLIDA_EN_TIEMPO` | Tarea completada dentro del SLA |
+| `CUMPLIDA_FUERA_DE_TIEMPO` | Tarea completada fuera del SLA |
+
+#### Umbrales Configurables ✅
+- Justificación Simple: 24h
+- Justificación Completa: 48h
+- Revisión Operativo: 24h
+- Auditoría: 72h
+- Advertencia: 50%
+- Urgente: 75%
+
+#### Campos Persistidos ✅
+- `fecha_primera_accion` - Al pasar de PENDIENTE a EN_PROGRESO/COMPLETADA
+- `estado_sla` - Calculado y persistido en actualización
+
+#### Campos Dinámicos (calculados en sla_service) ✅
+- `tiempo_respuesta_horas`
+- `tiempo_resolucion_horas`
+- `porcentaje_tiempo_consumido`
+- `horas_restantes`
+- `cumple_sla`
+
+#### Endpoints creados ✅
+- `GET /api/v2/sla/configuracion`
+- `PUT /api/v2/sla/configuracion`
+- `GET /api/v2/sla/metricas`
+- `GET /api/v2/sla/tareas/proximas-vencer`
+- `GET /api/v2/sla/tareas/vencidas`
+- `POST /api/v2/sla/actualizar-estados`
+- `GET /api/v2/sla/tarea/{id}`
+- `GET /api/v2/sla/estados`
+
+#### Dashboard modificado ✅
+- KPI `/api/v2/dashboard/kpis` ahora incluye métricas SLA:
+  - cumplimiento_porcentaje
+  - tareas_en_tiempo, advertencia, urgentes, vencidas_sla
+  - promedio_respuesta_horas, promedio_resolucion_horas
+
+**Archivos creados:**
+- `/app/backend/modules/fase2_operativo/services/sla_service.py`
+- `/app/backend/modules/fase2_operativo/routes/sla_routes.py`
+
+**Archivos modificados:**
+- `/app/backend/modules/fase2_operativo/router.py`
+- `/app/backend/modules/fase2_operativo/routes/dashboard_routes.py`
+
+**Rollback:**
+```bash
+rm /app/backend/modules/fase2_operativo/services/sla_service.py
+rm /app/backend/modules/fase2_operativo/routes/sla_routes.py
+git checkout -- /app/backend/modules/fase2_operativo/router.py
+git checkout -- /app/backend/modules/fase2_operativo/routes/dashboard_routes.py
+```
+
+**Estado:** FASE 2B.4 COMPLETADA
+
 ---
 
 ## Próximas Fases (Backlog)
 
-### Fase 2B.4 - SLA y Alertas (P1)
-- Monitoreo de tiempos de respuesta
-- Alertas automáticas por vencimientos
-
-### Fase 2B.5 - WhatsApp via Twilio (P2 - Opcional)
+### Fase 2B.5 - WhatsApp via Twilio (P1 - Opcional)
 - Notificaciones críticas por WhatsApp
 
 ### Fase 2C - RBAC Avanzado

@@ -1,13 +1,15 @@
 """
 Endpoints de Dashboard
-CAB-003 | EDARSA HUB - Fase 2A
+CAB-003 | EDARSA HUB - Fase 2A / 2B.4
 
 Expone KPIs, resúmenes y alertas vía HTTP.
+Incluye métricas de SLA.
 """
 from fastapi import APIRouter, HTTPException
 from ..services.operativo_service import OperativoService
 from ..services.workflow_service import WorkflowService
 from ..services.tarea_service import TareaService
+from ..services.sla_service import get_sla_service
 from ..db_utils import get_database
 
 router = APIRouter()
@@ -125,15 +127,20 @@ async def obtener_conteo_tareas_vencidas():
 async def obtener_kpis():
     """
     Obtiene KPIs principales del módulo operativo.
+    Incluye métricas de cumplimiento SLA.
     """
     try:
         db = get_db()
         workflow_svc = WorkflowService(db)
         tarea_svc = TareaService(db)
+        sla_svc = get_sla_service(db)
         
         workflows_por_estado = await workflow_svc.resumen_por_estado()
         tareas_por_estado = await tarea_svc.resumen_por_estado()
         tareas_vencidas = await tarea_svc.obtener_tareas_vencidas()
+        
+        # Métricas SLA
+        metricas_sla = await sla_svc.obtener_metricas_globales()
         
         total_workflows = sum(workflows_por_estado.values()) if workflows_por_estado else 0
         cerrados = workflows_por_estado.get("CERRADO", 0)
@@ -147,7 +154,17 @@ async def obtener_kpis():
             "workflows_escalados": workflows_por_estado.get("ESCALADO", 0),
             "tareas_pendientes": tareas_por_estado.get("PENDIENTE", 0) + tareas_por_estado.get("EN_PROGRESO", 0),
             "tareas_vencidas": len(tareas_vencidas),
-            "tasa_cierre": round(cerrados / total_workflows * 100, 2) if total_workflows > 0 else 0
+            "tasa_cierre": round(cerrados / total_workflows * 100, 2) if total_workflows > 0 else 0,
+            # Métricas SLA
+            "sla": {
+                "cumplimiento_porcentaje": metricas_sla["cumplimiento"]["porcentaje"],
+                "tareas_en_tiempo": metricas_sla["activas"]["por_estado"].get("EN_TIEMPO", 0),
+                "tareas_advertencia": metricas_sla["activas"]["por_estado"].get("ADVERTENCIA", 0),
+                "tareas_urgentes": metricas_sla["activas"]["por_estado"].get("URGENTE", 0),
+                "tareas_vencidas_sla": metricas_sla["activas"]["por_estado"].get("VENCIDA", 0),
+                "promedio_respuesta_horas": metricas_sla["tiempos_promedio"]["respuesta_horas"],
+                "promedio_resolucion_horas": metricas_sla["tiempos_promedio"]["resolucion_horas"]
+            }
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
