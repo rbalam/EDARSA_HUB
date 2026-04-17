@@ -411,13 +411,15 @@ Optimización de lectura     → MongoDB (CACHE)
 ### 2026-04-17 - FASE 2A COMPLETADA: Automatización de Análisis de Inventarios (CAB-003)
 **Implementación completa del módulo operativo de gestión de inventarios**
 
+**ESTADO: CERRADA FORMALMENTE**
+
 #### Backend (Subfases 2A.1 - 2A.7) ✅
 - ✅ Infraestructura Base (`/app/backend/modules/fase2_operativo/`)
 - ✅ Modelos y Schemas Pydantic (7 entidades)
 - ✅ Colecciones MongoDB (7 colecciones nuevas)
 - ✅ Capa de Repositories (CRUD completo)
 - ✅ Capa de Services (orquestación de negocio)
-- ✅ 38 Endpoints bajo `/api/v2/` (health, dashboard, workflows, tareas, justificaciones, decisiones, auditoría, diferencias, historial, configuración)
+- ✅ **38 Endpoints** bajo `/api/v2/` (health, dashboard, workflows, tareas, justificaciones, decisiones, auditoría, diferencias, historial, configuración)
 - ✅ Integración aditiva en `server.py` (4 líneas al final)
 
 #### Frontend (Subfase 2A.8) ✅
@@ -427,11 +429,16 @@ Optimización de lectura     → MongoDB (CACHE)
 - ✅ TareaList.jsx (203 líneas) - tabla de tareas
 - ✅ OperativoDashboard.jsx (286 líneas) - contenedor + filtros
 - ✅ OperativoDashboardPage.jsx (14 líneas) - página wrapper
-- ✅ Ruta `/operativo` registrada en App.js
-- ✅ Menú "Operativo" con badge "Fase2" en Layout.js
 
-#### Verificaciones ✅
-- ✅ No regresión en rutas existentes
+#### Ajuste de Navegación (Post 2A.8) ✅
+- ✅ Dashboard Operativo integrado como TAB en "Operaciones"
+- ✅ Menú lateral "Operativo" eliminado
+- ✅ "Inventarios" renombrado a "Operaciones"
+- ✅ Redirect `/operativo` → `/reportes?tab=operativo` funcionando
+- ✅ Tabs existentes (Métricas, Análisis, Informes) intactos
+
+#### Verificaciones Finales ✅
+- ✅ No regresión en Tablero Ejecutivo
 - ✅ Autenticación intacta
 - ✅ Estados loading/empty/error implementados
 - ✅ Panel de filtros funcional
@@ -441,10 +448,12 @@ Optimización de lectura     → MongoDB (CACHE)
 
 **Archivos Frontend:**
 - `/app/frontend/src/components/fase2_operativo/` (6 componentes)
-- `/app/frontend/src/pages/OperativoDashboardPage.jsx`
 - `/app/frontend/src/services/operativoApi.js`
+- `/app/frontend/src/pages/Reportes.js` (integración de tab)
+- `/app/frontend/src/pages/Layout.js` (menú actualizado)
+- `/app/frontend/src/App.js` (redirect)
 
-**Estado:** FASE 2A COMPLETADA
+**Fecha de cierre:** 17 de Abril de 2026
 
 ---
 
