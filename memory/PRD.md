@@ -810,6 +810,102 @@ git checkout -- /app/backend/modules/fase2_operativo/schemas/__init__.py
 
 **Estado:** MEJORA UI COMPLETADA
 
+### 2026-04-17 - FASE 2C.2: Aprobaciones y Exoneración
+**Sistema de flujo de aprobaciones para responsabilidad económica**
+
+#### Estados Implementados ✅
+| Estado | Descripción |
+|--------|-------------|
+| `CALCULADO` | Cálculo inicial (desde 2C.1) |
+| `PROPUESTO` | Monto propuesto formalmente |
+| `EN_DISPUTA` | Disputa iniciada |
+| `APROBADO` | Cargo aprobado (pendiente aplicación) |
+| `RECHAZADO` | Cargo rechazado (no procedía) |
+| `EXONERADO` | Cargo exonerado (se libera al responsable) |
+
+#### Transiciones Válidas ✅
+- CALCULADO → PROPUESTO
+- PROPUESTO → APROBADO | RECHAZADO | EXONERADO | EN_DISPUTA
+- EN_DISPUTA → PROPUESTO | EXONERADO | RECHAZADO
+
+#### Endpoints Implementados ✅
+| Endpoint | Acción |
+|----------|--------|
+| `POST /{id}/proponer` | CALCULADO → PROPUESTO |
+| `POST /{id}/aprobar` | PROPUESTO → APROBADO |
+| `POST /{id}/rechazar` | PROPUESTO/DISPUTA → RECHAZADO |
+| `POST /{id}/exonerar` | PROPUESTO/DISPUTA → EXONERADO |
+| `POST /{id}/disputar` | PROPUESTO → EN_DISPUTA |
+| `POST /{id}/resolver-disputa` | EN_DISPUTA → PROPUESTO |
+| `GET /pendientes-aprobacion` | Lista pendientes |
+| `GET /en-disputa` | Lista en disputa |
+| `GET /{id}/historial` | Historial de transiciones |
+
+#### Validación de Permisos ✅
+| Monto | Nivel Mínimo |
+|-------|--------------|
+| ≤$500 | SUPERVISOR |
+| ≤$2,000 | GERENTE_OPS |
+| >$2,000 | DIRECCION |
+| EXONERAR | GERENTE_OPS+ siempre |
+
+#### Reglas de Negocio ✅
+- Comentario obligatorio (mín. 10 caracteres, no triviales)
+- APROBADO NO cierra workflow (permanece EN_REVISION_FINANCIERA)
+- RECHAZADO/EXONERADO cierran workflow solo si no hay más cálculos activos
+- Historial completo de transiciones (quién, cuándo, qué, comentario)
+
+#### Archivos Creados
+- `/app/backend/modules/fase2_operativo/repositories/historial_responsabilidad_repository.py`
+- `/app/frontend/src/components/fase2_operativo/ResponsabilidadAccionesModal.jsx`
+- `/app/frontend/src/components/fase2_operativo/ResponsabilidadPendientesPanel.jsx`
+
+#### Archivos Modificados
+- `/app/backend/modules/fase2_operativo/schemas/responsabilidad_schemas.py`
+- `/app/backend/modules/fase2_operativo/services/responsabilidad_service.py`
+- `/app/backend/modules/fase2_operativo/routes/responsabilidad_routes.py`
+- `/app/backend/modules/fase2_operativo/repositories/responsabilidad_repository.py`
+- `/app/frontend/src/components/fase2_operativo/OperativoDashboard.jsx`
+- `/app/frontend/src/components/fase2_operativo/index.js`
+- `/app/frontend/src/services/operativoApi.js`
+
+#### Colección Nueva
+- `responsabilidad_historial` - Historial de transiciones
+
+#### Verificaciones ✅
+- ✅ 20/20 pruebas backend pasaron (100%)
+- ✅ Frontend verificado funcionando
+- ✅ No regresión en Dashboard, Auth
+
+#### Rollback
+```bash
+# Eliminar archivos nuevos
+rm /app/backend/modules/fase2_operativo/repositories/historial_responsabilidad_repository.py
+rm /app/frontend/src/components/fase2_operativo/ResponsabilidadAccionesModal.jsx
+rm /app/frontend/src/components/fase2_operativo/ResponsabilidadPendientesPanel.jsx
+
+# Revertir modificaciones
+git checkout -- /app/backend/modules/fase2_operativo/schemas/responsabilidad_schemas.py
+git checkout -- /app/backend/modules/fase2_operativo/services/responsabilidad_service.py
+git checkout -- /app/backend/modules/fase2_operativo/routes/responsabilidad_routes.py
+git checkout -- /app/backend/modules/fase2_operativo/repositories/responsabilidad_repository.py
+git checkout -- /app/frontend/src/components/fase2_operativo/OperativoDashboard.jsx
+git checkout -- /app/frontend/src/services/operativoApi.js
+
+# MongoDB: Revertir estados
+db.responsabilidad_economica.updateMany(
+  { estado: { $in: ["PROPUESTO", "APROBADO", "RECHAZADO", "EXONERADO", "EN_DISPUTA"] } },
+  { $set: { estado: "CALCULADO" } }
+);
+db.responsabilidad_historial.drop();
+db.workflow_inventarios.updateMany(
+  { cerrado_por_responsabilidad: true },
+  { $set: { estado_workflow: "EN_REVISION_FINANCIERA" }, $unset: { cerrado_por_responsabilidad: 1 } }
+);
+```
+
+**Estado:** FASE 2C.2 COMPLETADA
+
 ---
 
 ## Próximas Fases (Backlog)
