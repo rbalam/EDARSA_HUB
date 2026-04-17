@@ -87,9 +87,11 @@ parser.add_argument('--persistir-uno', action='store_true',
 parser.add_argument('--rollback', type=str, metavar='ID',
                     help='Rollback por identificador de ejecución')
 parser.add_argument('--sistema', type=str, choices=['SOFT', 'MPRO'],
-                    help='Filtrar por sistema (solo para --persistir-uno)')
+                    help='Filtrar por sistema (solo para --persistir-uno y --test-secuencia-controlada)')
 parser.add_argument('--test-secuencia-controlada', action='store_true',
                     help='Prueba controlada: INSERT → DUPLICADO → ROLLBACK con confirmación en cada paso')
+parser.add_argument('--persistir-lote-soft', action='store_true',
+                    help='Fase 1B.3A: Persistir lote de máximo 2 registros SOFT con confirmación por registro')
 
 args = parser.parse_args()
 
@@ -100,6 +102,8 @@ elif args.persistir_uno:
     MODO = 'PERSISTIR_UNO'
 elif args.test_secuencia_controlada:
     MODO = 'TEST_SECUENCIA_CONTROLADA'
+elif args.persistir_lote_soft:
+    MODO = 'PERSISTIR_LOTE_SOFT'
 else:
     MODO = 'DRY_RUN'
 
@@ -906,6 +910,363 @@ async def ejecutar_test_secuencia_controlada():
 
 
 # =============================================================================
+# MODO PERSISTIR LOTE SOFT (FASE 1B.3A)
+# =============================================================================
+# Límites estrictos:
+#   - SOLO sistema SOFT (MPRO no habilitado)
+#   - MÁXIMO 2 registros por lote
+#   - Confirmación individual por cada registro
+#   - Detenerse inmediatamente ante cualquier error
+#   - Rollback por identificador único de lote
+# =============================================================================
+
+LIMITE_LOTE_FASE_1B3A = 2  # Máximo 2 registros - NO MODIFICAR
+
+
+def generar_identificador_lote() -> str:
+    """
+    Genera identificador único para lote Fase 1B.3A.
+    Formato: CAB003_FASE1B3A_LOTE_YYYYMMDD_HHMMSS
+    """
+    return f"CAB003_FASE1B3A_LOTE_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+
+def mostrar_payload_registro_lote(inv: dict, numero: int, total: int, identificador: str, hash_verif: str, es_duplicado: bool):
+    """Muestra el payload completo de un registro del lote."""
+    print("\n" + "┌" + "─" * 78 + "┐")
+    print(f"│ REGISTRO {numero} de {total}".ljust(79) + "│")
+    print("├" + "─" * 78 + "┤")
+    print(f"│  {'Campo':<28} │ {'Valor':<45} │")
+    print("├" + "─" * 30 + "┼" + "─" * 47 + "┤")
+    print(f"│  {'sistema_origen':<28} │ {inv['sistema_origen']:<45} │")
+    print(f"│  {'server_id':<28} │ {inv['server_id']:<45} │")
+    print(f"│  {'sucursal_id':<28} │ {(inv['sucursal_id'] or '(vacío)'):<45} │")
+    print(f"│  {'almacen_id':<28} │ {inv['almacen_id']:<45} │")
+    print(f"│  {'comentario':<28} │ {(inv['comentario'] or 'NULL'):<45} │")
+    print(f"│  {'folio_inventario':<28} │ {inv['folio_inventario']:<45} │")
+    print(f"│  {'fecha_inventario':<28} │ {str(inv['fecha_inventario']):<45} │")
+    print(f"│  {'estado_inventario_origen':<28} │ {(inv['estado_inventario_origen'] or 'NULL'):<45} │")
+    print(f"│  {'hash_verificacion':<28} │ {hash_verif[:40]+'...':<45} │")
+    print(f"│  {'estado':<28} │ {'EN_PROCESO':<45} │")
+    print(f"│  {'created_by':<28} │ {identificador:<45} │")
+    print("├" + "─" * 30 + "┼" + "─" * 47 + "┤")
+    
+    if es_duplicado:
+        print(f"│  {'VALIDACIÓN DUPLICADO':<28} │ {'❌ YA EXISTE - SE OMITIRÁ':<45} │")
+    else:
+        print(f"│  {'VALIDACIÓN DUPLICADO':<28} │ {'✅ NO EXISTE - PUEDE INSERTARSE':<45} │")
+    
+    print("└" + "─" * 30 + "┴" + "─" * 47 + "┘")
+
+
+async def ejecutar_persistir_lote_soft():
+    """
+    Fase 1B.3A: Persistir lote de máximo 2 registros SOFT.
+    
+    Características:
+    - SOLO SOFT (MPRO no habilitado)
+    - Máximo 2 registros
+    - Confirmación individual por cada registro
+    - Detenerse inmediatamente ante error
+    - Rollback por identificador único
+    """
+    print("\n" + "=" * 80)
+    print("🔒 FASE 1B.3A - PERSISTIR LOTE SOFT (MÁXIMO 2 REGISTROS)")
+    print("=" * 80)
+    print("""
+    Este proceso insertará hasta 2 registros SOFT con:
+    
+    • Verificación previa de candidatos elegibles
+    • Validación de duplicados por cada registro
+    • Confirmación INDIVIDUAL antes de cada inserción
+    • Detención INMEDIATA ante cualquier error
+    • Identificador único de lote para rollback
+    
+    ⚠️  Sistema: SOLO SOFTRESTAURANT (MPRO no habilitado)
+    ⚠️  Puede cancelar en cualquier momento con 'salir'
+    """)
+    print("=" * 80)
+    
+    # =========================================================================
+    # PASO 0: CONFIRMACIÓN DE INICIO
+    # =========================================================================
+    inicio = solicitar_confirmacion("INICIAR proceso de lote SOFT (máximo 2 registros)")
+    if inicio == 'salir':
+        print("\n🛑 Proceso abortado por usuario")
+        return
+    if inicio == 'n':
+        print("\n⚠️  Inicio cancelado")
+        return
+    
+    # =========================================================================
+    # PASO 1: VERIFICACIÓN PREVIA DE CANDIDATOS
+    # =========================================================================
+    print("\n" + "=" * 80)
+    print("PASO 1: VERIFICACIÓN PREVIA DE CANDIDATOS SOFT")
+    print("=" * 80)
+    print("\n⏳ Ejecutando dry-run para identificar candidatos elegibles...")
+    
+    resultado_dry = await ejecutar_dry_run()
+    
+    # Filtrar SOLO SOFT con accion_sugerida='PROCESAR'
+    candidatos_soft = [
+        i for i in resultado_dry['inventarios'] 
+        if i['accion_sugerida'] == 'PROCESAR' and i['sistema_origen'] == 'SOFTRESTAURANT'
+    ]
+    
+    print("\n" + "─" * 80)
+    print(f"CANDIDATOS SOFT ELEGIBLES (accion_sugerida = 'PROCESAR'): {len(candidatos_soft)}")
+    print(f"REGISTROS A PROCESAR EN ESTE LOTE: {min(len(candidatos_soft), LIMITE_LOTE_FASE_1B3A)} (máximo {LIMITE_LOTE_FASE_1B3A})")
+    print("─" * 80)
+    
+    if len(candidatos_soft) == 0:
+        print("\n⚠️  No hay candidatos SOFT elegibles para procesar")
+        return
+    
+    # Limitar a máximo 2
+    candidatos_lote = candidatos_soft[:LIMITE_LOTE_FASE_1B3A]
+    
+    continuar = solicitar_confirmacion(f"CONTINUAR con selección de {len(candidatos_lote)} registro(s)")
+    if continuar == 'salir':
+        print("\n🛑 Proceso abortado por usuario")
+        return
+    if continuar == 'n':
+        print("\n⚠️  Proceso cancelado")
+        return
+    
+    # =========================================================================
+    # PASO 2: VALIDACIÓN DE DUPLICADOS
+    # =========================================================================
+    print("\n" + "=" * 80)
+    print("PASO 2: VALIDACIÓN PREVIA DE DUPLICADOS")
+    print("=" * 80)
+    
+    candidatos_validados = []
+    
+    for i, inv in enumerate(candidatos_lote, 1):
+        print(f"\n⏳ Verificando registro {i}/{len(candidatos_lote)}...")
+        
+        existe, registro = repository.verificar_duplicado_en_bd(
+            execute_sql_query,
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            inv['sistema_origen'],
+            inv['server_id'],
+            inv['sucursal_id'],
+            inv['almacen_id'],
+            inv['comentario'],
+            inv['folio_inventario'],
+            inv['fecha_inventario'],
+            inv['estado_inventario_origen']
+        )
+        
+        candidatos_validados.append({
+            'inventario': inv,
+            'es_duplicado': existe,
+            'registro_existente': registro
+        })
+        
+        if existe:
+            print(f"   ❌ Registro {i}: YA EXISTE en EDARSAHUB - se omitirá")
+        else:
+            print(f"   ✅ Registro {i}: No existe - puede insertarse")
+    
+    # Filtrar solo los no duplicados
+    candidatos_insertables = [c for c in candidatos_validados if not c['es_duplicado']]
+    
+    if len(candidatos_insertables) == 0:
+        print("\n⚠️  Todos los candidatos ya existen en EDARSAHUB")
+        print("   No hay registros nuevos para insertar")
+        return
+    
+    print(f"\n✓ Registros válidos para insertar: {len(candidatos_insertables)}")
+    
+    # =========================================================================
+    # PASO 3: GENERAR IDENTIFICADOR ÚNICO DE LOTE
+    # =========================================================================
+    identificador_lote = generar_identificador_lote()
+    
+    print("\n" + "=" * 80)
+    print("PASO 3: IDENTIFICADOR DE LOTE GENERADO")
+    print("=" * 80)
+    print(f"\n🔑 IDENTIFICADOR: {identificador_lote}")
+    print("   (Se usará para ROLLBACK si es necesario)")
+    
+    # =========================================================================
+    # PASO 4: MOSTRAR PAYLOADS Y CONFIRMAR CADA REGISTRO
+    # =========================================================================
+    print("\n" + "=" * 80)
+    print("PASO 4: INSERCIÓN CON CONFIRMACIÓN POR REGISTRO")
+    print("=" * 80)
+    
+    registros_insertados = []
+    registros_omitidos = []
+    registros_fallidos = []
+    error_ocurrido = False
+    
+    for i, candidato in enumerate(candidatos_validados, 1):
+        inv = candidato['inventario']
+        es_duplicado = candidato['es_duplicado']
+        
+        # Generar hash para mostrar
+        hash_verif = repository.generar_hash_verificacion(
+            inv['sistema_origen'],
+            inv['server_id'],
+            inv['sucursal_id'],
+            inv['almacen_id'],
+            inv['comentario'],
+            inv['folio_inventario'],
+            inv['fecha_inventario'],
+            inv['estado_inventario_origen']
+        )
+        
+        # Mostrar payload completo
+        mostrar_payload_registro_lote(inv, i, len(candidatos_validados), identificador_lote, hash_verif, es_duplicado)
+        
+        if es_duplicado:
+            print(f"\n⏭️  Registro {i}/{len(candidatos_validados)}: OMITIDO (ya existe)")
+            registros_omitidos.append({
+                'numero': i,
+                'folio': inv['folio_inventario'],
+                'razon': 'Duplicado'
+            })
+            continue
+        
+        # Solicitar confirmación para este registro específico
+        confirmacion = solicitar_confirmacion(f"Registro {i}/{len(candidatos_validados)} → ¿Insertar este registro?")
+        
+        if confirmacion == 'salir':
+            print("\n🛑 LOTE DETENIDO POR USUARIO")
+            error_ocurrido = True
+            # Marcar restantes como no insertados
+            for j in range(i, len(candidatos_validados) + 1):
+                if j > i or (j == i and not candidatos_validados[j-1]['es_duplicado']):
+                    registros_fallidos.append({
+                        'numero': j,
+                        'folio': candidatos_validados[j-1]['inventario']['folio_inventario'],
+                        'error': 'Abortado por usuario'
+                    })
+            break
+        
+        if confirmacion == 'n':
+            print(f"\n⏭️  Registro {i}/{len(candidatos_validados)}: OMITIDO por usuario")
+            registros_omitidos.append({
+                'numero': i,
+                'folio': inv['folio_inventario'],
+                'razon': 'Omitido por usuario'
+            })
+            continue
+        
+        # Ejecutar INSERT
+        print(f"\n⏳ Insertando registro {i}/{len(candidatos_validados)}...")
+        
+        try:
+            exito, mensaje, procesado_id = repository.insertar_folio_procesado(
+                execute_sql_query,
+                EDARSAHUB_CONFIG['host'],
+                EDARSAHUB_CONFIG['port'],
+                EDARSAHUB_CONFIG['database'],
+                EDARSAHUB_CONFIG['username'],
+                EDARSAHUB_CONFIG['password'],
+                inv['sistema_origen'],
+                inv['server_id'],
+                inv['sucursal_id'],
+                inv['almacen_id'],
+                inv['comentario'],
+                inv['folio_inventario'],
+                inv['fecha_inventario'],
+                inv['estado_inventario_origen'],
+                identificador_lote
+            )
+            
+            if exito:
+                print(f"   ✅ INSERTADO: procesado_id = {procesado_id}")
+                registros_insertados.append({
+                    'numero': i,
+                    'folio': inv['folio_inventario'],
+                    'procesado_id': procesado_id
+                })
+            else:
+                print(f"   ❌ ERROR: {mensaje}")
+                registros_fallidos.append({
+                    'numero': i,
+                    'folio': inv['folio_inventario'],
+                    'error': mensaje
+                })
+                error_ocurrido = True
+                # Marcar restantes como no insertados
+                for j in range(i + 1, len(candidatos_validados) + 1):
+                    registros_fallidos.append({
+                        'numero': j,
+                        'folio': candidatos_validados[j-1]['inventario']['folio_inventario'],
+                        'error': 'No procesado (lote detenido por error anterior)'
+                    })
+                break  # DETENERSE INMEDIATAMENTE
+                
+        except Exception as e:
+            print(f"   ❌ EXCEPCIÓN: {e}")
+            registros_fallidos.append({
+                'numero': i,
+                'folio': inv['folio_inventario'],
+                'error': str(e)
+            })
+            error_ocurrido = True
+            # Marcar restantes como no insertados
+            for j in range(i + 1, len(candidatos_validados) + 1):
+                registros_fallidos.append({
+                    'numero': j,
+                    'folio': candidatos_validados[j-1]['inventario']['folio_inventario'],
+                    'error': 'No procesado (lote detenido por error anterior)'
+                })
+            break  # DETENERSE INMEDIATAMENTE
+    
+    # =========================================================================
+    # PASO 5: RESUMEN FINAL
+    # =========================================================================
+    print("\n" + "=" * 80)
+    if error_ocurrido:
+        print("🛑 LOTE DETENIDO - RESUMEN PARCIAL")
+    else:
+        print("✅ LOTE COMPLETADO - RESUMEN FINAL")
+    print("=" * 80)
+    
+    print(f"""
+    Identificador de lote: {identificador_lote}
+    Sistema: SOFTRESTAURANT
+    
+    INSERTADOS EXITOSAMENTE: {len(registros_insertados)}""")
+    
+    for r in registros_insertados:
+        print(f"      • Registro {r['numero']}: {r['folio']} → procesado_id: {r['procesado_id']}")
+    
+    print(f"""
+    OMITIDOS: {len(registros_omitidos)}""")
+    
+    for r in registros_omitidos:
+        print(f"      • Registro {r['numero']}: {r['folio']} → {r['razon']}")
+    
+    print(f"""
+    NO INSERTADOS (error/abortado): {len(registros_fallidos)}""")
+    
+    for r in registros_fallidos:
+        print(f"      • Registro {r['numero']}: {r['folio']} → {r['error']}")
+    
+    # Mostrar comando de rollback si hubo inserciones
+    if len(registros_insertados) > 0:
+        print(f"""
+    ─────────────────────────────────────────────────────────────────────────────
+    Para ROLLBACK de este lote ejecutar:
+    $ python tests/test_simulacion_controlada.py --rollback {identificador_lote}
+    ─────────────────────────────────────────────────────────────────────────────
+    """)
+    
+    print("=" * 80)
+
+
+# =============================================================================
 # PUNTO DE ENTRADA
 # =============================================================================
 
@@ -916,6 +1277,8 @@ async def main():
         await ejecutar_persistir_uno()
     elif MODO == 'TEST_SECUENCIA_CONTROLADA':
         await ejecutar_test_secuencia_controlada()
+    elif MODO == 'PERSISTIR_LOTE_SOFT':
+        await ejecutar_persistir_lote_soft()
     else:
         await ejecutar_dry_run()
         print("\n⚠️  RECORDATORIO: Este fue un DRY-RUN")
