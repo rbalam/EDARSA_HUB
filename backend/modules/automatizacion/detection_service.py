@@ -224,8 +224,8 @@ def _calcular_inicial_soft(
                 FROM invfisico i
                 WHERE i.idalmacen1 = '{almacen_id}'
                   AND i.cancelado = 0
-                  AND i.fecha >= '{inicio_mes.strftime('%Y-%m-%d')}'
-                  AND i.fecha < '{inicio_mes_sig.strftime('%Y-%m-%d')}'
+                  AND CONVERT(date, i.fecha) >= CONVERT(date, '{inicio_mes.strftime('%Y-%m-%d')}')
+                  AND CONVERT(date, i.fecha) < CONVERT(date, '{inicio_mes_sig.strftime('%Y-%m-%d')}')
             )
             SELECT TOP 1 folio, fecha
             FROM inventarios_validos
@@ -431,8 +431,8 @@ def _calcular_inicial_mpro(
                   AND ISNULL(F.Fi_Comentario, '') = '{comentario_sql}'
                   AND F.Es_Cve_Estado IN ('AC', 'AP')
                   AND F.Fecha_Baja IS NULL
-                  AND F.Fi_Fecha >= '{inicio_mes_anterior.strftime('%Y-%m-%d')}'
-                  AND F.Fi_Fecha < '{inicio_mes_actual.strftime('%Y-%m-%d')}'
+                  AND CONVERT(date, F.Fi_Fecha) >= CONVERT(date, '{inicio_mes_anterior.strftime('%Y-%m-%d')}')
+                  AND CONVERT(date, F.Fi_Fecha) < CONVERT(date, '{inicio_mes_actual.strftime('%Y-%m-%d')}')
             )
             SELECT TOP 1 folio, fecha
             FROM inventarios_validos
