@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import KPICards from './KPICards';
+import SLACard from './SLACard';
 import AlertasBanner from './AlertasBanner';
 import WorkflowList from './WorkflowList';
 import TareaList from './TareaList';
@@ -322,12 +323,19 @@ const OperativoDashboard = () => {
         </div>
       )}
 
-      {/* KPIs */}
-      <KPICards 
-        data={resumen} 
-        loading={loadingResumen} 
-        error={errorResumen} 
-      />
+      {/* KPIs y SLA */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="lg:col-span-3">
+          <KPICards 
+            data={resumen} 
+            loading={loadingResumen} 
+            error={errorResumen} 
+          />
+        </div>
+        <div className="lg:col-span-1">
+          <SLACard />
+        </div>
+      </div>
 
       {/* Alertas */}
       <AlertasBanner 
