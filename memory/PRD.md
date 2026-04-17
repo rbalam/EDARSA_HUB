@@ -581,20 +581,56 @@ EMAIL_ENABLED=true|false
 
 **Estado:** FASE 2B.2 COMPLETADA
 
+### 2026-04-17 - FASE 2B.3: Generación de PDF (Resumen Ejecutivo)
+**Sistema de generación de documentos PDF para workflows**
+
+#### Implementación ✅
+- ✅ `pdf_service.py` - Servicio de generación de PDF con reportlab
+- ✅ Reutiliza `document_data_service` como fuente única de datos (sin duplicación)
+- ✅ Endpoint de descarga de PDF
+- ✅ Registro en colección `documentos_generados`
+
+#### Estructura del PDF ✅
+1. **Encabezado** - Título, fecha de generación
+2. **Información General** - Workflow ID, procesado ID, sucursal, estado, ciclo, fecha
+3. **Métricas Clave** - Diferencias, justificadas, pendientes, valor total
+4. **Diferencias Relevantes** - Tabla con top 10 diferencias por valor absoluto
+5. **Estado de Auditoría** - Decisión, auditor, fecha, comentarios
+6. **Pie de Página** - Sistema, paginación
+
+#### Características ✅
+- Estilos corporativos (colores EDARSA)
+- Límite de 10 diferencias máximo (resumen ejecutivo, no copia del Excel)
+- Nota indicando que el detalle completo está en Excel
+- Maneja workflows sin auditoría correctamente
+- Streaming response binario limpio
+
+#### Endpoint creado ✅
+- `GET /api/v2/documentos/workflow/{id}/pdf` - Descarga PDF resumen ejecutivo
+
+**Archivos creados:**
+- `/app/backend/modules/fase2_operativo/services/pdf_service.py`
+
+**Archivos modificados:**
+- `/app/backend/modules/fase2_operativo/routes/documentos_routes.py`
+
+**Rollback:**
+```bash
+rm /app/backend/modules/fase2_operativo/services/pdf_service.py
+git checkout -- /app/backend/modules/fase2_operativo/routes/documentos_routes.py
+```
+
+**Estado:** FASE 2B.3 COMPLETADA
+
 ---
 
 ## Próximas Fases (Backlog)
 
-### Fase 2B.3 - Generación de PDF (P1)
-- Resumen ejecutivo reutilizando `document_data_service.py`
-- Formato A4, branding EDARSA
-- Endpoint `/api/v2/documentos/workflow/{id}/pdf`
-
-### Fase 2B.4 - SLA y Alertas (P2)
+### Fase 2B.4 - SLA y Alertas (P1)
 - Monitoreo de tiempos de respuesta
 - Alertas automáticas por vencimientos
 
-### Fase 2B.5 - WhatsApp via Twilio (P3 - Opcional)
+### Fase 2B.5 - WhatsApp via Twilio (P2 - Opcional)
 - Notificaciones críticas por WhatsApp
 
 ### Fase 2C - RBAC Avanzado

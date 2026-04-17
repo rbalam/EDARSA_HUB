@@ -1,8 +1,8 @@
 """
 Rutas de Documentos - API para generación de documentos.
-CAB-003 | EDARSA HUB - Fase 2B.2
+CAB-003 | EDARSA HUB - Fase 2B.2 / 2B.3
 
-Endpoints para generar y descargar documentos (Excel, PDF futuro).
+Endpoints para generar y descargar documentos (Excel, PDF).
 """
 
 from fastapi import APIRouter, HTTPException
@@ -12,6 +12,7 @@ import logging
 
 from ..db_utils import get_database
 from ..services.excel_service import get_excel_service
+from ..services.pdf_service import get_pdf_service
 from ..services.document_data_service import (
     get_document_data_service,
     WorkflowNoEncontradoError
@@ -88,6 +89,77 @@ async def descargar_excel_workflow(workflow_id: str):
         raise HTTPException(
             status_code=500, 
             detail=f"Error al generar documento: {str(e)}"
+        )
+
+
+@router.get("/workflow/{workflow_id}/pdf")
+async def descargar_pdf_workflow(workflow_id: str):
+    """
+    Genera y descarga el resumen ejecutivo en PDF de un workflow.
+    
+    El PDF incluye:
+    - Información general del workflow
+    - Métricas clave
+    - Diferencias relevantes (top 10)
+    - Estado de auditoría
+    
+    Para el detalle completo, use el endpoint de Excel.
+    
+    Args:
+        workflow_id: ID del workflow
+        
+    Returns:
+        StreamingResponse con el archivo PDF
+        
+    Raises:
+        404: Workflow no encontrado
+        500: Error al generar el documento
+    """
+    try:
+        db = get_database()
+        pdf_service = get_pdf_service(db)
+        
+        # Generar PDF
+        pdf_buffer = await pdf_service.generar_pdf_workflow(workflow_id)
+        
+        # Crear nombre de archivo
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        filename = f"resumen_workflow_{workflow_id}_{timestamp}.pdf"
+        
+        logger.info(f"PDF generado: {filename}")
+        
+        # Registrar en colección documentos_generados
+        try:
+            db.documentos_generados.insert_one({
+                "workflow_id": workflow_id,
+                "tipo_documento": "PDF",
+                "nombre_archivo": filename,
+                "fecha_generacion": datetime.now(timezone.utc).isoformat(),
+                "generado_por": "sistema"
+            })
+        except Exception as e:
+            # No bloquear si falla el log
+            logger.warning(f"Error al registrar documento PDF: {e}")
+        
+        # Devolver como descarga
+        return StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+        )
+        
+    except WorkflowNoEncontradoError as e:
+        logger.warning(f"Workflow no encontrado para PDF: {workflow_id}")
+        raise HTTPException(status_code=404, detail=str(e))
+    
+    except Exception as e:
+        logger.error(f"Error al generar PDF: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error al generar documento PDF: {str(e)}"
         )
 
 
