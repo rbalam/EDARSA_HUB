@@ -1,0 +1,346 @@
+"""
+EDARSA HUB - Twilio WhatsApp Provider (SDK Oficial)
+===================================================
+Subfase 2B.5.1 - Provider real para envío de WhatsApp via Twilio.
+
+Usa el SDK oficial de Twilio para mayor robustez y compatibilidad.
+Las credenciales se leen de variables de entorno, NUNCA del código.
+
+Variables de entorno requeridas:
+- TWILIO_ACCOUNT_SID: Account SID de Twilio
+- TWILIO_AUTH_TOKEN: Auth Token de Twilio
+- TWILIO_WHATSAPP_FROM: Número WhatsApp remitente (ej: +14155238886)
+
+Formatos de número:
+- Twilio requiere prefijo "whatsapp:" en From y To
+- Ejemplo: whatsapp:+14155238886 -> whatsapp:+521234567890
+"""
+
+from typing import Optional, Dict, Any
+import logging
+import os
+import re
+
+from .base import BaseProvider, ProviderResponse, ProviderFactory
+
+logger = logging.getLogger(__name__)
+
+
+class TwilioWhatsAppProvider(BaseProvider):
+    """
+    Provider de WhatsApp usando SDK oficial de Twilio.
+    
+    Más robusto que implementación HTTP directa:
+    - Manejo automático de errores y reintentos
+    - Validación de parámetros
+    - Soporte completo de la API
+    """
+    
+    def __init__(self, config: Dict[str, Any]):
+        super().__init__(config)
+        
+        # Credenciales desde config o variables de entorno
+        self.account_sid = config.get("account_id") or os.environ.get("TWILIO_ACCOUNT_SID")
+        self.auth_token = os.environ.get(config.get("token_ref", "TWILIO_AUTH_TOKEN"))
+        
+        # Número remitente
+        whatsapp_from = config.get("remitente") or os.environ.get("TWILIO_WHATSAPP_FROM")
+        self.whatsapp_from = self._format_whatsapp_number(whatsapp_from) if whatsapp_from else None
+        
+        # Cliente Twilio (lazy init)
+        self._client = None
+        self._available = False
+    
+    def _get_provider_name(self) -> str:
+        return "twilio_whatsapp"
+    
+    def _format_whatsapp_number(self, number: str) -> str:
+        """
+        Formatea número para WhatsApp Twilio.
+        
+        Twilio requiere formato: whatsapp:+XXXXXXXXXXX
+        """
+        if not number:
+            return None
+        
+        # Limpiar y normalizar
+        cleaned = re.sub(r'[^\d+]', '', number.replace('whatsapp:', ''))
+        
+        # Asegurar formato E.164
+        if not cleaned.startswith('+'):
+            if cleaned.startswith('52') and len(cleaned) >= 12:
+                cleaned = '+' + cleaned
+            elif len(cleaned) == 10:
+                cleaned = '+52' + cleaned  # Asumir México
+            elif cleaned.startswith('1') and len(cleaned) == 11:
+                cleaned = '+' + cleaned  # USA/Canada
+            else:
+                cleaned = '+' + cleaned
+        
+        return f"whatsapp:{cleaned}"
+    
+    async def initialize(self) -> bool:
+        """
+        Inicializa el cliente Twilio.
+        
+        Verifica que las credenciales estén disponibles.
+        """
+        # Verificar credenciales
+        if not self.account_sid:
+            logger.warning("TwilioWhatsAppProvider: TWILIO_ACCOUNT_SID no configurado")
+            self._initialized = True
+            self._available = False
+            return True  # No fallar, pero marcar como no disponible
+        
+        if not self.auth_token:
+            logger.warning("TwilioWhatsAppProvider: TWILIO_AUTH_TOKEN no configurado")
+            self._initialized = True
+            self._available = False
+            return True
+        
+        if not self.whatsapp_from:
+            logger.warning("TwilioWhatsAppProvider: TWILIO_WHATSAPP_FROM no configurado")
+            self._initialized = True
+            self._available = False
+            return True
+        
+        try:
+            # Importar Twilio SDK
+            from twilio.rest import Client
+            
+            # Crear cliente
+            self._client = Client(self.account_sid, self.auth_token)
+            
+            # Verificar conectividad básica (opcional, puede comentarse en producción)
+            # account = self._client.api.accounts(self.account_sid).fetch()
+            
+            self._initialized = True
+            self._available = True
+            
+            # Log seguro (sin exponer credenciales)
+            masked_sid = f"{self.account_sid[:4]}...{self.account_sid[-4:]}" if self.account_sid else "N/A"
+            logger.info(f"TwilioWhatsAppProvider inicializado: SID={masked_sid}, From={self.whatsapp_from}")
+            
+            return True
+            
+        except ImportError:
+            logger.error("TwilioWhatsAppProvider: SDK de Twilio no instalado (pip install twilio)")
+            self._initialized = True
+            self._available = False
+            return True
+        except Exception as e:
+            logger.error(f"TwilioWhatsAppProvider: Error inicializando cliente: {e}")
+            self._initialized = True
+            self._available = False
+            return True
+    
+    def validate_recipient(self, recipient: str) -> Dict[str, Any]:
+        """
+        Valida y normaliza número de teléfono para WhatsApp Twilio.
+        
+        Args:
+            recipient: Número en cualquier formato
+            
+        Returns:
+            Dict con valid, normalized (formato whatsapp:+XXX), error
+        """
+        if not recipient:
+            return {
+                "valid": False,
+                "normalized": None,
+                "twilio_format": None,
+                "error": "Número de teléfono vacío"
+            }
+        
+        # Limpiar caracteres no numéricos excepto +
+        cleaned = re.sub(r'[^\d+]', '', recipient.replace('whatsapp:', ''))
+        
+        # Normalizar a E.164
+        if cleaned.startswith('+'):
+            normalized = cleaned
+        elif cleaned.startswith('52') and len(cleaned) >= 12:
+            normalized = '+' + cleaned
+        elif len(cleaned) == 10:
+            normalized = '+52' + cleaned  # Default México
+        elif cleaned.startswith('1') and len(cleaned) == 11:
+            normalized = '+' + cleaned
+        else:
+            return {
+                "valid": False,
+                "normalized": None,
+                "twilio_format": None,
+                "error": f"Formato de teléfono no reconocido: {recipient}"
+            }
+        
+        # Validar longitud E.164
+        digits = normalized[1:]
+        if len(digits) < 10 or len(digits) > 15:
+            return {
+                "valid": False,
+                "normalized": None,
+                "twilio_format": None,
+                "error": f"Longitud de teléfono inválida: {len(digits)} dígitos"
+            }
+        
+        # Formato para Twilio WhatsApp
+        twilio_format = f"whatsapp:{normalized}"
+        
+        return {
+            "valid": True,
+            "normalized": normalized,
+            "twilio_format": twilio_format,
+            "error": None
+        }
+    
+    async def send_message(
+        self,
+        recipient: str,
+        message: str,
+        metadata: Optional[Dict] = None
+    ) -> ProviderResponse:
+        """
+        Envía mensaje WhatsApp via Twilio.
+        
+        Args:
+            recipient: Número de teléfono del destinatario
+            message: Contenido del mensaje
+            metadata: Datos adicionales (opcional)
+            
+        Returns:
+            ProviderResponse con resultado
+        """
+        # Verificar disponibilidad
+        if not self._available or not self._client:
+            return ProviderResponse(
+                success=False,
+                status="failed",
+                error_code="PROVIDER_NOT_AVAILABLE",
+                error_message="Twilio provider no está disponible (credenciales faltantes)"
+            )
+        
+        # Validar destinatario
+        validation = self.validate_recipient(recipient)
+        if not validation["valid"]:
+            return ProviderResponse(
+                success=False,
+                status="failed",
+                error_code="INVALID_RECIPIENT",
+                error_message=validation["error"]
+            )
+        
+        twilio_to = validation["twilio_format"]
+        
+        try:
+            # Enviar mensaje usando SDK de Twilio
+            twilio_message = self._client.messages.create(
+                from_=self.whatsapp_from,
+                to=twilio_to,
+                body=message
+            )
+            
+            # Log seguro (sin exponer números completos)
+            masked_to = f"***{validation['normalized'][-4:]}"
+            logger.info(
+                f"[TWILIO] Mensaje enviado: SID={twilio_message.sid}, "
+                f"To={masked_to}, Status={twilio_message.status}"
+            )
+            
+            return ProviderResponse(
+                success=True,
+                message_id=twilio_message.sid,
+                status=twilio_message.status or "sent",
+                raw_response={
+                    "sid": twilio_message.sid,
+                    "status": twilio_message.status,
+                    "date_created": str(twilio_message.date_created) if twilio_message.date_created else None,
+                    "direction": twilio_message.direction,
+                    "error_code": twilio_message.error_code,
+                    "error_message": twilio_message.error_message
+                }
+            )
+            
+        except Exception as e:
+            # Manejar errores de Twilio
+            error_code = "TWILIO_ERROR"
+            error_message = str(e)
+            
+            # Clasificar errores comunes de Twilio
+            error_str = str(e).lower()
+            if "authenticate" in error_str or "credentials" in error_str:
+                error_code = "AUTH_ERROR"
+                error_message = "Error de autenticación con Twilio"
+            elif "invalid" in error_str and "number" in error_str:
+                error_code = "INVALID_NUMBER"
+            elif "rate limit" in error_str or "too many" in error_str:
+                error_code = "RATE_LIMIT"
+            elif "not whatsapp" in error_str or "not a valid whatsapp" in error_str:
+                error_code = "NOT_WHATSAPP_NUMBER"
+                error_message = "El número destino no tiene WhatsApp activo"
+            
+            # Log sin exponer datos sensibles
+            logger.error(f"[TWILIO] Error enviando mensaje: {error_code} - {error_message}")
+            
+            return ProviderResponse(
+                success=False,
+                status="failed",
+                error_code=error_code,
+                error_message=error_message
+            )
+    
+    async def get_message_status(self, message_id: str) -> Optional[ProviderResponse]:
+        """
+        Consulta el estado de un mensaje enviado.
+        
+        Args:
+            message_id: SID del mensaje de Twilio
+            
+        Returns:
+            ProviderResponse con estado actual
+        """
+        if not self._available or not self._client:
+            return None
+        
+        try:
+            message = self._client.messages(message_id).fetch()
+            
+            return ProviderResponse(
+                success=True,
+                message_id=message.sid,
+                status=message.status,
+                raw_response={
+                    "sid": message.sid,
+                    "status": message.status,
+                    "date_sent": str(message.date_sent) if message.date_sent else None,
+                    "date_updated": str(message.date_updated) if message.date_updated else None,
+                    "error_code": message.error_code,
+                    "error_message": message.error_message
+                }
+            )
+            
+        except Exception as e:
+            logger.error(f"[TWILIO] Error consultando estado: {e}")
+            return None
+    
+    def is_available(self) -> bool:
+        """Verifica si el provider está disponible para enviar."""
+        return self._available and self._client is not None
+    
+    def get_status(self) -> Dict[str, Any]:
+        """Obtiene información de estado del provider."""
+        masked_sid = None
+        if self.account_sid:
+            masked_sid = f"{self.account_sid[:4]}...{self.account_sid[-4:]}"
+        
+        return {
+            "provider": "twilio_whatsapp",
+            "initialized": self._initialized,
+            "available": self._available,
+            "account_sid_masked": masked_sid,
+            "whatsapp_from": self.whatsapp_from,
+            "has_credentials": bool(self.account_sid and self.auth_token)
+        }
+
+
+# Registrar en factory
+ProviderFactory.register("twilio_whatsapp", TwilioWhatsAppProvider)
+ProviderFactory.register("twilio_sdk", TwilioWhatsAppProvider)

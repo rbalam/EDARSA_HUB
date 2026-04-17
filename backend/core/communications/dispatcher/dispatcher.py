@@ -27,6 +27,7 @@ from ..notifications.dedup import DeduplicationService
 from ..templates.template_service import TemplateService
 from ..providers.base import BaseProvider, ProviderFactory
 from ..providers.mock_provider import MockProvider
+from ..providers.twilio_provider import TwilioWhatsAppProvider
 
 logger = logging.getLogger(__name__)
 
@@ -53,33 +54,96 @@ class NotificationDispatcher:
     async def initialize_providers(self):
         """
         Inicializa los providers configurados en BD.
+        
+        Orden de carga:
+        1. Mock provider (siempre disponible)
+        2. Twilio provider (si credenciales disponibles)
+        3. Otros providers de BD
         """
-        # Siempre tener mock disponible
+        # 1. Siempre tener mock disponible
         mock_provider = MockProvider({})
         await mock_provider.initialize()
         self._providers["mock"] = mock_provider
+        logger.info("Provider inicializado: mock")
         
-        # Cargar providers de BD
-        providers = await self.db.notification_provider_config.find(
-            {"activo": True},
-            {"_id": 0}
-        ).to_list(20)
+        # 2. Intentar inicializar Twilio (credenciales desde env vars)
+        try:
+            twilio_config = {
+                "provider_type": "twilio",
+                "token_ref": "TWILIO_AUTH_TOKEN"
+            }
+            twilio_provider = TwilioWhatsAppProvider(twilio_config)
+            await twilio_provider.initialize()
+            
+            if twilio_provider.is_available():
+                self._providers["twilio"] = twilio_provider
+                self._providers["twilio_whatsapp"] = twilio_provider
+                self._providers["twilio_sdk"] = twilio_provider
+                logger.info("Provider inicializado: twilio_whatsapp (SDK)")
+            else:
+                logger.info("Provider Twilio no disponible (credenciales no configuradas)")
+        except Exception as e:
+            logger.warning(f"No se pudo inicializar Twilio provider: {e}")
         
-        for config in providers:
-            provider_name = config.get("provider")
-            if provider_name and provider_name != "mock":
-                try:
-                    provider = ProviderFactory.create(provider_name, config)
-                    if provider:
-                        await provider.initialize()
-                        self._providers[provider_name] = provider
-                        logger.info(f"Provider inicializado: {provider_name}")
-                except Exception as e:
-                    logger.error(f"Error inicializando provider {provider_name}: {e}")
+        # 3. Cargar providers adicionales de BD
+        try:
+            providers = await self.db.notification_provider_config.find(
+                {"activo": True},
+                {"_id": 0}
+            ).to_list(20)
+            
+            for config in providers:
+                provider_name = config.get("provider")
+                # Saltar mock y twilio (ya inicializados)
+                if provider_name and provider_name not in ["mock", "twilio", "twilio_whatsapp", "twilio_sdk"]:
+                    try:
+                        provider = ProviderFactory.create(provider_name, config)
+                        if provider:
+                            await provider.initialize()
+                            self._providers[provider_name] = provider
+                            logger.info(f"Provider inicializado desde BD: {provider_name}")
+                    except Exception as e:
+                        logger.error(f"Error inicializando provider {provider_name}: {e}")
+        except Exception as e:
+            logger.warning(f"Error cargando providers de BD: {e}")
     
     def get_provider(self, name: str) -> Optional[BaseProvider]:
         """Obtiene un provider por nombre."""
         return self._providers.get(name)
+    
+    def get_providers_status(self) -> Dict[str, Any]:
+        """
+        Obtiene el estado de todos los providers.
+        
+        Returns:
+            Dict con estado de cada provider
+        """
+        status = {
+            "providers": {},
+            "count": len(self._providers),
+            "available_for_real_send": []
+        }
+        
+        for name, provider in self._providers.items():
+            provider_status = {
+                "name": name,
+                "initialized": provider.is_initialized(),
+                "type": provider.__class__.__name__
+            }
+            
+            # Para Twilio, incluir disponibilidad
+            if hasattr(provider, 'is_available'):
+                provider_status["available"] = provider.is_available()
+                if provider.is_available():
+                    status["available_for_real_send"].append(name)
+            
+            # Para Twilio, incluir info adicional
+            if hasattr(provider, 'get_status'):
+                provider_status["details"] = provider.get_status()
+            
+            status["providers"][name] = provider_status
+        
+        return status
     
     async def enqueue(
         self,

@@ -1,17 +1,19 @@
 """
 EDARSA HUB - Notification API Routes
 ====================================
-Subfase 2B.5 - Endpoints REST para sistema de notificaciones.
+Subfase 2B.5 + 2B.5.1 - Endpoints REST para sistema de notificaciones.
 
 Endpoints:
-- /api/v2/notificaciones/config - Configuraciones
-- /api/v2/notificaciones/templates - Templates
-- /api/v2/notificaciones/log - Logs de auditoría
-- /api/v2/notificaciones/test - Prueba de envío
-- /api/v2/notificaciones/reprocesar - Reprocesar cola
+- /api/v2/notificaciones-whatsapp/config - Configuraciones
+- /api/v2/notificaciones-whatsapp/templates - Templates
+- /api/v2/notificaciones-whatsapp/log - Logs de auditoría
+- /api/v2/notificaciones-whatsapp/test - Prueba de envío (mock)
+- /api/v2/notificaciones-whatsapp/test-real - Prueba de envío (Twilio real)
+- /api/v2/notificaciones-whatsapp/provider-status - Estado de providers
 """
 
 from typing import Optional, List
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
@@ -441,3 +443,207 @@ async def get_provider(provider_id: str):
         raise HTTPException(status_code=404, detail="Provider no encontrado")
     
     return provider
+
+
+# =============================================================================
+# SUBFASE 2B.5.1 - TWILIO WHATSAPP REAL
+# =============================================================================
+
+@router.get("/provider-status")
+async def get_provider_runtime_status():
+    """
+    Obtiene estado en tiempo real de los providers disponibles.
+    
+    Muestra:
+    - Providers cargados
+    - Disponibilidad (credenciales configuradas)
+    - Providers aptos para envío real
+    """
+    db = get_db()
+    from core.communications.dispatcher.dispatcher import NotificationDispatcher
+    
+    dispatcher = NotificationDispatcher(db)
+    await dispatcher.initialize_providers()
+    
+    return dispatcher.get_providers_status()
+
+
+class TestRealNotificationRequest(BaseModel):
+    """Schema para prueba de notificación real."""
+    template_codigo: str
+    destinatario_telefono: str
+    payload: dict = {}
+    provider: str = "twilio"  # twilio o mock
+
+
+@router.post("/test-real")
+async def test_real_notification(request: TestRealNotificationRequest):
+    """
+    Envía una notificación de prueba usando provider REAL (Twilio).
+    
+    ADVERTENCIA: Este endpoint envía mensajes REALES si Twilio está configurado.
+    Usar solo para pruebas controladas.
+    
+    Requiere variables de entorno:
+    - TWILIO_ACCOUNT_SID
+    - TWILIO_AUTH_TOKEN
+    - TWILIO_WHATSAPP_FROM
+    """
+    db = get_db()
+    from core.communications.dispatcher.dispatcher import NotificationDispatcher
+    from core.communications.templates.template_service import TemplateService
+    
+    # Inicializar dispatcher y providers
+    dispatcher = NotificationDispatcher(db)
+    await dispatcher.initialize_providers()
+    
+    # Verificar que el provider solicitado esté disponible
+    provider = dispatcher.get_provider(request.provider)
+    if not provider:
+        available_providers = list(dispatcher._providers.keys())
+        raise HTTPException(
+            status_code=400,
+            detail=f"Provider '{request.provider}' no disponible. Disponibles: {available_providers}"
+        )
+    
+    # Verificar disponibilidad de Twilio
+    if request.provider in ["twilio", "twilio_whatsapp", "twilio_sdk"]:
+        if hasattr(provider, 'is_available') and not provider.is_available():
+            raise HTTPException(
+                status_code=400,
+                detail="Twilio provider no está disponible. Verifica TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM"
+            )
+    
+    # Renderizar template
+    template_service = TemplateService(db)
+    mensaje = await template_service.render_template(
+        codigo=request.template_codigo,
+        variables=request.payload,
+        canal="whatsapp"
+    )
+    
+    if not mensaje:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Template no encontrado: {request.template_codigo}"
+        )
+    
+    # Validar destinatario
+    validation = provider.validate_recipient(request.destinatario_telefono)
+    if not validation.get("valid"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Teléfono inválido: {validation.get('error')}"
+        )
+    
+    # Enviar mensaje
+    response = await provider.send_message(
+        recipient=request.destinatario_telefono,
+        message=mensaje,
+        metadata={
+            "test": True,
+            "template": request.template_codigo,
+            "payload": request.payload
+        }
+    )
+    
+    return {
+        "success": response.success,
+        "provider": request.provider,
+        "provider_type": provider.__class__.__name__,
+        "mensaje_renderizado": mensaje,
+        "destinatario": validation.get("normalized") or request.destinatario_telefono,
+        "twilio_format": validation.get("twilio_format"),
+        "provider_response": response.to_dict(),
+        "message_id": response.message_id
+    }
+
+
+@router.post("/config/set-twilio")
+async def configure_twilio_provider():
+    """
+    Crea o actualiza la configuración del provider Twilio en la BD.
+    
+    Esto permite cambiar eventos para usar Twilio en lugar de Mock.
+    Las credenciales siguen viniendo de variables de entorno.
+    """
+    db = get_db()
+    
+    # Crear/actualizar config de provider Twilio
+    twilio_config = {
+        "id": "provider_twilio",
+        "canal": "whatsapp",
+        "provider": "twilio",
+        "activo": True,
+        "base_url": "https://api.twilio.com",
+        "account_id": None,  # Se lee de env TWILIO_ACCOUNT_SID
+        "token_ref": "TWILIO_AUTH_TOKEN",
+        "remitente": None,  # Se lee de env TWILIO_WHATSAPP_FROM
+        "metadata": {
+            "description": "Twilio WhatsApp Business API (SDK oficial)",
+            "tipo": "sdk",
+            "documentacion": "https://www.twilio.com/docs/whatsapp"
+        }
+    }
+    
+    # Upsert
+    result = await db.notification_provider_config.update_one(
+        {"id": "provider_twilio"},
+        {
+            "$set": twilio_config,
+            "$setOnInsert": {"created_at": datetime.now(timezone.utc).isoformat()}
+        },
+        upsert=True
+    )
+    
+    return {
+        "success": True,
+        "message": "Configuración de Twilio creada/actualizada",
+        "config": twilio_config,
+        "upserted": result.upserted_id is not None
+    }
+
+
+@router.put("/config/{config_id}/set-provider")
+async def update_event_provider(config_id: str, provider: str = "twilio", modo: str = "real"):
+    """
+    Cambia el provider de un evento de notificación.
+    
+    Args:
+        config_id: ID de la configuración del evento
+        provider: "mock" o "twilio"
+        modo: "mock" o "real"
+    
+    Ejemplo: Cambiar SLA_VENCIDO para usar Twilio real
+    """
+    db = get_db()
+    
+    if provider not in ["mock", "twilio"]:
+        raise HTTPException(status_code=400, detail="Provider debe ser 'mock' o 'twilio'")
+    
+    if modo not in ["mock", "real"]:
+        raise HTTPException(status_code=400, detail="Modo debe ser 'mock' o 'real'")
+    
+    result = await db.notification_config.update_one(
+        {"id": config_id},
+        {
+            "$set": {
+                "provider": provider,
+                "modo_envio": modo,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail=f"Configuración no encontrada: {config_id}")
+    
+    # Obtener config actualizada
+    config = await db.notification_config.find_one({"id": config_id}, {"_id": 0})
+    
+    return {
+        "success": True,
+        "message": f"Evento actualizado para usar {provider} en modo {modo}",
+        "config": config
+    }
+

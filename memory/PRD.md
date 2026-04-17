@@ -1091,12 +1091,82 @@ SCHEDULER_NOTIFICATIONS_ENABLED=true
 
 ---
 
+### 2026-04-17 - FASE 2B.5.1: Integración Twilio WhatsApp Real
+**Provider real para envío de mensajes WhatsApp via Twilio SDK**
+
+#### Implementación ✅
+```
+/app/backend/core/communications/providers/
+├── base.py              # Interfaz abstracta
+├── mock_provider.py     # Provider de pruebas
+├── whatsapp_provider.py # Provider HTTP genérico
+└── twilio_provider.py   # ← NUEVO: SDK oficial Twilio
+```
+
+#### Características del Provider Twilio ✅
+- **SDK oficial**: `twilio==9.10.5` (más robusto que HTTP directo)
+- **Validación E.164**: Normalización automática de teléfonos
+- **Formato WhatsApp**: Conversión a `whatsapp:+XXXXXXXXXXXX`
+- **Sin hardcodeo**: Credenciales via variables de entorno
+- **Fallback seguro**: Si no hay credenciales, no falla
+- **Logging seguro**: No expone credenciales en logs
+
+#### Variables de Entorno Requeridas
+```bash
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_WHATSAPP_FROM=+14155238886
+```
+
+#### Endpoints API Nuevos ✅
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/api/v2/notificaciones-whatsapp/provider-status` | GET | Estado de providers |
+| `/api/v2/notificaciones-whatsapp/test-real` | POST | Prueba con Twilio real |
+| `/api/v2/notificaciones-whatsapp/config/set-twilio` | POST | Configurar provider Twilio |
+| `/api/v2/notificaciones-whatsapp/config/{id}/set-provider` | PUT | Cambiar provider de evento |
+
+#### Verificaciones ✅
+- ✅ Mock provider sigue funcionando (no regresión)
+- ✅ Scheduler sigue corriendo normalmente
+- ✅ Selección de provider por configuración
+- ✅ Validación de teléfonos E.164
+- ✅ Manejo de errores sin exponer credenciales
+- ✅ Preparado para Meta Cloud API (misma interfaz)
+
+#### Cómo Activar Envío Real
+```bash
+# 1. Configurar variables de entorno en el servidor
+export TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+export TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+export TWILIO_WHATSAPP_FROM=+14155238886
+
+# 2. Reiniciar backend
+sudo supervisorctl restart backend
+
+# 3. Verificar disponibilidad
+curl /api/v2/notificaciones-whatsapp/provider-status
+
+# 4. Cambiar eventos para usar Twilio
+curl -X PUT /api/v2/notificaciones-whatsapp/config/cfg_sla_vencido/set-provider?provider=twilio&modo=real
+```
+
+**Estado:** FASE 2B.5.1 COMPLETADA (Pendiente: Credenciales Twilio de producción)
+
+---
+
 ## Próximas Fases (Backlog)
 
-### Fase 2B.5.1 - Conexión WhatsApp Real (P1)
-- Configurar credenciales Twilio o Meta Cloud API
-- Activar provider real en lugar de mock
-- Pruebas con envío real de mensajes
+### Fase 2B.5.1.1 - Activación Twilio Producción (P0)
+- Obtener credenciales Twilio de producción
+- Configurar variables de entorno en servidor
+- Cambiar eventos críticos a provider Twilio
+- Validar envío real con usuarios piloto
+
+### Fase 2B.5.3 - Meta Cloud API (P2)
+- Implementar provider para Meta WhatsApp Business API
+- Alternativa a Twilio si es necesario
+- Misma interfaz, diferente adaptador
 
 ### Fase 2C.3 - Aplicación de Cargos (P2)
 - Estado: APLICADO
