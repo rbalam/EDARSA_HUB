@@ -25,7 +25,8 @@ import {
   ChevronDown,
   ChevronRight,
   BookOpen,
-  Building2
+  Building2,
+  Activity
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -123,6 +124,13 @@ const Layout = () => {
       href: '/catalogos', 
       icon: BookOpen, 
       roles: ['Supervisor', 'Administrador'],
+    },
+    { 
+      name: 'Operativo', 
+      href: '/operativo', 
+      icon: Activity, 
+      roles: ['Usuario', 'Supervisor', 'Administrador'],
+      badge: 'Fase2'
     },
   ];
 
