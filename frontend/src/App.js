@@ -20,7 +20,6 @@ import ImportadorRH from '@/pages/ImportadorRH';
 import ReportesBI from '@/pages/ReportesBI';
 import MisTareas from '@/pages/MisTareas';
 import Catalogos from '@/pages/Catalogos';
-import OperativoDashboardPage from '@/pages/OperativoDashboardPage';
 import { isAuthenticated } from '@/lib/auth';
 
 // Portal de Proveedores (Subproyecto separado)
@@ -57,8 +56,8 @@ function App() {
             <Route path="reportes-bi" element={<ReportesBI />} />
             <Route path="mis-tareas" element={<MisTareas />} />
             <Route path="catalogos" element={<Catalogos />} />
-            {/* Fase 2A - CAB-003 Dashboard Operativo */}
-            <Route path="operativo" element={<OperativoDashboardPage />} />
+            {/* Redirect /operativo → /reportes (Dashboard Operativo ahora es tab dentro de Operaciones) */}
+            <Route path="operativo" element={<Navigate to="/reportes?tab=operativo" replace />} />
           </Route>
           
           <Route path="*" element={<Navigate to={isAuthenticated() ? "/reportes" : "/login"} replace />} />

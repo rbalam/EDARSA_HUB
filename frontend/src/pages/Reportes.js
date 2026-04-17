@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '@/lib/api';
 import { fetchServersOperativos } from '@/services/serversService';
 import { Button } from '@/components/ui/button';
@@ -15,12 +16,16 @@ import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import DashboardInventarios from './Dashboard'; // Importar el Dashboard de Inventarios
+import { OperativoDashboard } from '@/components/fase2_operativo'; // Dashboard Operativo Fase 2A
+import { Activity } from 'lucide-react';
 
 // Estilos para los selectores nativos
 const selectStyle = "w-full h-10 px-3 py-2 text-sm border border-zinc-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-zinc-100 disabled:cursor-not-allowed";
 
 const Reportes = () => {
-  const [activeTab, setActiveTab] = useState('analisis');
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'analisis';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [servers, setServers] = useState([]);
   const [sucursales, setSucursales] = useState([]);
   const [almacenes, setAlmacenes] = useState([]);
@@ -1384,29 +1389,38 @@ const Reportes = () => {
     <div className="space-y-6" data-testid="reportes-page">
       <div className="text-center">
         <h1 className="text-2xl font-bold text-zinc-800">
-          Inventarios
+          Operaciones
         </h1>
-        <p className="text-sm text-zinc-500">Gestión y análisis de inventarios</p>
+        <p className="text-sm text-zinc-500">Gestión operativa y análisis de inventarios</p>
       </div>
 
-      {/* Tabs de Inventarios */}
+      {/* Tabs de Operaciones */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsTrigger value="operativo" className="flex items-center gap-2" data-testid="tab-operativo">
+            <Activity className="h-4 w-4" />
+            Dashboard Operativo
+          </TabsTrigger>
+          <TabsTrigger value="dashboard" className="flex items-center gap-2" data-testid="tab-dashboard">
             <LayoutDashboard className="h-4 w-4" />
-            Dashboard
+            Métricas
           </TabsTrigger>
-          <TabsTrigger value="analisis" className="flex items-center gap-2">
+          <TabsTrigger value="analisis" className="flex items-center gap-2" data-testid="tab-analisis">
             <ClipboardList className="h-4 w-4" />
-            Análisis de Inventarios
+            Análisis
           </TabsTrigger>
-          <TabsTrigger value="informes" className="flex items-center gap-2">
+          <TabsTrigger value="informes" className="flex items-center gap-2" data-testid="tab-informes">
             <FolderOpen className="h-4 w-4" />
-            Informes de Auditoría
+            Informes
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab: Dashboard de Inventarios */}
+        {/* Tab: Dashboard Operativo (Fase 2A) */}
+        <TabsContent value="operativo">
+          <OperativoDashboard />
+        </TabsContent>
+
+        {/* Tab: Métricas de Inventarios */}
         <TabsContent value="dashboard">
           <DashboardInventarios />
         </TabsContent>
