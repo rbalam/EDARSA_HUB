@@ -325,6 +325,7 @@ ROLES_SISTEMA = [
             "WORKFLOW_VER", "WORKFLOW_CREAR",
             "TAREAS_VER", "TAREAS_CREAR", "TAREAS_ASIGNAR", "TAREAS_COMPLETAR",
             "NOTIFICACIONES_VER",
+            "SCHEDULER_VER",
             "REPORTES_VER",
         ],
     },

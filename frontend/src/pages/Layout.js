@@ -25,7 +25,8 @@ import {
   ChevronDown,
   ChevronRight,
   BookOpen,
-  Building2
+  Building2,
+  Clock
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -132,6 +133,7 @@ const Layout = () => {
   
   const sistema = [
     { name: 'Servidores', href: '/servidores', icon: Server, roles: ['Administrador'] },
+    { name: 'Programación', href: '/scheduler', icon: Clock, roles: ['Administrador', 'Supervisor'] },
     { name: 'Catálogo SQL', href: '/catalogo-consultas', icon: Database, roles: ['Supervisor', 'Administrador'] },
     { name: 'Explorador BD', href: '/explorador-bd', icon: TableProperties, roles: ['Administrador'] },
     { name: 'Alertas', href: '/alertas', icon: Bell, roles: ['Supervisor', 'Administrador'] },

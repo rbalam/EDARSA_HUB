@@ -20,6 +20,7 @@ import ImportadorRH from '@/pages/ImportadorRH';
 import ReportesBI from '@/pages/ReportesBI';
 import MisTareas from '@/pages/MisTareas';
 import Catalogos from '@/pages/Catalogos';
+import Scheduler from '@/pages/Scheduler';
 import { isAuthenticated } from '@/lib/auth';
 
 // Portal de Proveedores (Subproyecto separado)
@@ -56,6 +57,7 @@ function App() {
             <Route path="reportes-bi" element={<ReportesBI />} />
             <Route path="mis-tareas" element={<MisTareas />} />
             <Route path="catalogos" element={<Catalogos />} />
+            <Route path="scheduler" element={<Scheduler />} />
             {/* Redirect /operativo → /reportes (Dashboard Operativo ahora es tab dentro de Operaciones) */}
             <Route path="operativo" element={<Navigate to="/reportes?tab=operativo" replace />} />
           </Route>

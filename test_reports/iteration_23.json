@@ -1,0 +1,125 @@
+{
+  "summary": "Completed comprehensive testing of Scheduler UI (Shuttle de Programación). All 22 backend tests passed. Frontend UI loads correctly with KPIs, job list, execution history, filters, and action buttons. RBAC protection working correctly - Operador gets 403 for all scheduler endpoints.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "JobStatusBadge",
+        "issue": "Job status badge shows 'Activo' even when job is paused via API. The isPaused check uses config.enabled which doesn't reflect runtime pause state. Should check if job.next_run is null.",
+        "selector": "[data-testid='job-card-sla_processor']",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Scheduler page",
+        "issues": [
+          "Console warning: 'In HTML, <span> cannot be a child of <option>' - This is from Reportes page, not Scheduler, but appears during navigation"
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_scheduler_ui.py",
+    "/app/test_reports/pytest/pytest_scheduler_ui.xml"
+  ],
+  "action_items": [
+    "LOW: Fix JobStatusBadge to check job.next_run === null for paused state instead of config.enabled"
+  ],
+  "critical_code_review_comments": [
+    "RBAC protection correctly implemented on all scheduler endpoints",
+    "All data-testid attributes present for testing",
+    "Auto-refresh toggle works correctly",
+    "Filters (job, status, hours, search) all functional",
+    "Confirmation dialogs appear before destructive actions",
+    "KPIs update correctly after actions"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_scheduler_ui.py"
+  ],
+  "success_rate": {
+    "backend": "100% (22/22 tests passed)",
+    "frontend": "95% (all features work, minor badge display issue)"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "admin.rbac.test@edarsa.com",
+      "password": "AdminRBAC2024!",
+      "role": "Administrador",
+      "rbac_role": "ADMIN",
+      "scheduler_permissions": ["SCHEDULER_VER", "SCHEDULER_GESTIONAR", "SCHEDULER_ADMIN"]
+    },
+    "operador": {
+      "email": "operador.test@edarsa.com",
+      "password": "OperadorTest2024!",
+      "role": "Usuario",
+      "rbac_role": "OPERADOR",
+      "scheduler_permissions": []
+    }
+  },
+  "seed_data_creation": "No new seed data created. Used existing test users from previous RBAC testing.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Scheduler UI fully tested. Key findings: 1) All scheduler endpoints protected with RBAC. 2) Admin can view status/config/logs/stats, pause/resume jobs, and run jobs manually. 3) Operador gets 403 for ALL scheduler endpoints (no SCHEDULER_* permissions). 4) Frontend UI shows KPIs, job list with status badges, execution history with filters, auto-refresh toggle. 5) Minor issue: Job status badge doesn't reflect runtime pause state (uses config.enabled instead of checking next_run).",
+  "features_tested": {
+    "GET_scheduler_status": {
+      "status": "PASS",
+      "details": "Returns running jobs with next_run times. Admin can access, Operador gets 403."
+    },
+    "GET_scheduler_config": {
+      "status": "PASS",
+      "details": "Returns job configurations with intervals. Admin can access, Operador gets 403."
+    },
+    "GET_scheduler_logs": {
+      "status": "PASS",
+      "details": "Returns execution history with filters (job_name, status, hours). Admin can access, Operador gets 403."
+    },
+    "GET_scheduler_logs_stats": {
+      "status": "PASS",
+      "details": "Returns aggregated statistics. Admin can access, Operador gets 403."
+    },
+    "POST_jobs_pause": {
+      "status": "PASS",
+      "details": "Requires SCHEDULER_GESTIONAR. Admin can pause, Operador gets 403."
+    },
+    "POST_jobs_resume": {
+      "status": "PASS",
+      "details": "Requires SCHEDULER_GESTIONAR. Admin can resume, Operador gets 403."
+    },
+    "POST_jobs_run": {
+      "status": "PASS",
+      "details": "Requires SCHEDULER_ADMIN. Admin can run manually, Operador gets 403."
+    },
+    "Frontend_scheduler_page_loads": {
+      "status": "PASS",
+      "details": "Page loads correctly with all sections visible."
+    },
+    "Frontend_KPIs_display": {
+      "status": "PASS",
+      "details": "Shows Scheduler status, Jobs Activos, Jobs Pausados, Ejecuciones 24h, Fallos 24h."
+    },
+    "Frontend_job_list_with_badges": {
+      "status": "PASS",
+      "details": "Shows job cards with status badges, intervals, next run times."
+    },
+    "Frontend_filters_work": {
+      "status": "PASS",
+      "details": "Job filter, status filter, hours filter, and search all functional."
+    },
+    "Frontend_auto_refresh_toggle": {
+      "status": "PASS",
+      "details": "Toggle works, shows interval (30s)."
+    },
+    "Frontend_confirmation_dialogs": {
+      "status": "PASS",
+      "details": "Pause, Resume, and Run actions show confirmation dialogs before executing."
+    }
+  },
+  "mocked_integrations": {
+    "note": "No mocked integrations - all real services (MongoDB, APScheduler)"
+  }
+}
