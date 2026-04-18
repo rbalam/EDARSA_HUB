@@ -251,6 +251,11 @@ PERMISOS_SISTEMA = [
     {"codigo": "SCHEDULER_GESTIONAR", "modulo": "scheduler", "accion": "gestionar", "descripcion": "Pausar/reanudar jobs"},
     {"codigo": "SCHEDULER_ADMIN", "modulo": "scheduler", "accion": "admin", "descripcion": "Administración completa del scheduler"},
     
+    # === AUDITORÍAS PROGRAMADAS ===
+    {"codigo": "AUDITORIA_VER", "modulo": "auditorias", "accion": "ver", "descripcion": "Ver auditorías programadas, historial, KPIs"},
+    {"codigo": "AUDITORIA_PROGRAMAR", "modulo": "auditorias", "accion": "programar", "descripcion": "Crear, editar, activar/desactivar auditorías"},
+    {"codigo": "AUDITORIA_GESTIONAR", "modulo": "auditorias", "accion": "gestionar", "descripcion": "Ejecutar manualmente, eliminar auditorías"},
+    
     # === REPORTES ===
     {"codigo": "REPORTES_VER", "modulo": "reportes", "accion": "ver", "descripcion": "Ver reportes"},
     {"codigo": "REPORTES_EXPORTAR", "modulo": "reportes", "accion": "crear", "descripcion": "Exportar reportes"},
@@ -293,6 +298,7 @@ ROLES_SISTEMA = [
             "TAREAS_VER", "TAREAS_ASIGNAR",
             "NOTIFICACIONES_VER", "NOTIFICACIONES_CONFIGURAR",
             "SCHEDULER_VER", "SCHEDULER_ADMIN",
+            "AUDITORIA_VER", "AUDITORIA_PROGRAMAR", "AUDITORIA_GESTIONAR",
             "REPORTES_VER", "REPORTES_EXPORTAR",
             "USUARIOS_VER", "ROLES_VER",
         ],
@@ -310,6 +316,7 @@ ROLES_SISTEMA = [
             "TAREAS_VER", "TAREAS_CREAR", "TAREAS_ASIGNAR", "TAREAS_COMPLETAR",
             "NOTIFICACIONES_VER",
             "SCHEDULER_VER", "SCHEDULER_GESTIONAR",
+            "AUDITORIA_VER", "AUDITORIA_PROGRAMAR",
             "REPORTES_VER", "REPORTES_EXPORTAR",
         ],
     },
@@ -326,6 +333,7 @@ ROLES_SISTEMA = [
             "TAREAS_VER", "TAREAS_CREAR", "TAREAS_ASIGNAR", "TAREAS_COMPLETAR",
             "NOTIFICACIONES_VER",
             "SCHEDULER_VER",
+            "AUDITORIA_VER",
             "REPORTES_VER",
         ],
     },
@@ -356,6 +364,7 @@ ROLES_SISTEMA = [
             "TAREAS_VER",
             "NOTIFICACIONES_VER",
             "SCHEDULER_VER",
+            "AUDITORIA_VER",
             "REPORTES_VER", "REPORTES_EXPORTAR",
             "USUARIOS_VER", "ROLES_VER",
         ],

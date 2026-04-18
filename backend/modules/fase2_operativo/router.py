@@ -17,6 +17,7 @@ from .routes.documentos_routes import router as documentos_router
 from .routes.sla_routes import router as sla_router
 from .routes.responsabilidad_routes import router as responsabilidad_router
 from .routes.cargos_routes import router as cargos_router
+from .routes.auditoria_programada_routes import router as auditoria_programada_router
 
 router_fase2_operativo = APIRouter()
 
@@ -97,4 +98,10 @@ router_fase2_operativo.include_router(
 router_fase2_operativo.include_router(
     cargos_router,
     tags=["Fase2-Cargos"]
+)
+
+router_fase2_operativo.include_router(
+    auditoria_programada_router,
+    prefix="/auditorias-programadas",
+    tags=["Fase2-Auditorias-Programadas"]
 )

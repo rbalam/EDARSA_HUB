@@ -1502,6 +1502,64 @@ db.cargos_economicos_log.drop()
 | Auto-refresh | Toggle con intervalo configurable (30s) y botón manual |
 | RBAC | Acciones habilitadas/deshabilitadas según permisos del usuario |
 
+
+---
+
+### 2026-04-18 - Módulo Auditorías Programadas - COMPLETADO ✅
+
+**Módulo completo para gestión de auditorías de inventario automatizadas**
+
+#### Backend ✅
+| Componente | Archivo |
+|------------|---------|
+| Schemas | `auditoria_programada_schemas.py` |
+| Repository | `auditoria_programada_repository.py` |
+| Service | `auditoria_programada_service.py` |
+| Routes | `auditoria_programada_routes.py` |
+| Job Scheduler | `core/scheduler/jobs/auditorias_job.py` |
+
+#### Colecciones MongoDB ✅
+- `auditorias_programadas` - Configuración de programaciones
+- `auditorias_programadas_log` - Bitácora de ejecuciones
+
+#### Endpoints API ✅
+| Endpoint | Método | Permiso |
+|----------|--------|---------|
+| `/api/v2/auditorias-programadas` | GET | AUDITORIA_VER |
+| `/api/v2/auditorias-programadas` | POST | AUDITORIA_PROGRAMAR |
+| `/api/v2/auditorias-programadas/{id}` | GET/PUT/DELETE | AUDITORIA_* |
+| `/api/v2/auditorias-programadas/{id}/ejecutar` | POST | AUDITORIA_GESTIONAR |
+| `/api/v2/auditorias-programadas/{id}/activar` | POST | AUDITORIA_PROGRAMAR |
+| `/api/v2/auditorias-programadas/{id}/desactivar` | POST | AUDITORIA_PROGRAMAR |
+| `/api/v2/auditorias-programadas/kpis` | GET | AUDITORIA_VER |
+| `/api/v2/auditorias-programadas/calendario` | GET | AUDITORIA_VER |
+| `/api/v2/auditorias-programadas/historial` | GET | AUDITORIA_VER |
+
+#### Frontend ✅
+- Página `/auditorias-programadas` con:
+  - KPIs: Total, Activas, Inactivas, Hoy, En Curso, Mes, Fallidas, Cumplimiento
+  - Lista de programaciones con estado visual
+  - Calendario mensual
+  - Historial de ejecuciones
+  - Formulario crear/editar
+  - Acciones con confirmación: Ejecutar, Activar, Desactivar
+  - Auto-refresh
+
+#### Job Scheduler ✅
+- `auditorias_scheduler` - Ejecuta cada hora
+- Idempotente (no duplica ejecuciones)
+- Crea workflows de inventario automáticamente
+- Registra cada ejecución en log
+
+#### Permisos RBAC ✅
+| Permiso | Roles |
+|---------|-------|
+| AUDITORIA_VER | ADMIN, DIRECCION, GERENTE_OPS, SUPERVISOR, AUDITOR |
+| AUDITORIA_PROGRAMAR | ADMIN, DIRECCION, GERENTE_OPS |
+| AUDITORIA_GESTIONAR | ADMIN, DIRECCION |
+
+**Estado:** MÓDULO AUDITORÍAS PROGRAMADAS COMPLETADO ✅
+
 #### Permisos RBAC Scheduler ✅
 | Permiso | Acción | Roles |
 |---------|--------|-------|
@@ -1547,12 +1605,13 @@ db.cargos_economicos_log.drop()
 - ✅ FASE 2B.5: Notificaciones WhatsApp (Twilio SDK)
 - ✅ FASE 2D: RBAC Avanzado
 - ✅ UI Scheduler (Shuttle de Programación)
+- ✅ Módulo Auditorías Programadas
 
 ### P1 (Alta Prioridad) - PENDIENTES
-- Dashboard de auditorías programadas
+- Integración real con nómina/ERP
 
 ### P2 (Media Prioridad)
-- Integración real con nómina/ERP
 - Reportes financieros avanzados
 - Meta Cloud API para WhatsApp
 - Panel de administración RBAC en frontend
+- Alertas en tiempo real por fallo de job

@@ -56,6 +56,10 @@ class SchedulerConfig(BaseModel):
         notif_interval = int(os.environ.get("SCHEDULER_NOTIFICATIONS_INTERVAL_SECONDS", "120"))
         notif_enabled = os.environ.get("SCHEDULER_NOTIFICATIONS_ENABLED", "true").lower() == "true"
         
+        # Auditorías Programadas Job config
+        audit_interval = int(os.environ.get("SCHEDULER_AUDITORIAS_INTERVAL_SECONDS", "3600"))  # 1 hora
+        audit_enabled = os.environ.get("SCHEDULER_AUDITORIAS_ENABLED", "true").lower() == "true"
+        
         jobs = {
             "sla_processor": JobConfig(
                 job_id="sla_processor",
@@ -74,6 +78,15 @@ class SchedulerConfig(BaseModel):
                 interval_seconds=notif_interval,
                 batch_size=50,
                 timeout_seconds=180
+            ),
+            "auditorias_scheduler": JobConfig(
+                job_id="auditorias_scheduler",
+                job_name="Auditorias Scheduler",
+                description="Ejecuta auditorías programadas cuya fecha de ejecución ha llegado",
+                enabled=audit_enabled,
+                interval_seconds=audit_interval,
+                batch_size=20,
+                timeout_seconds=600
             )
         }
         

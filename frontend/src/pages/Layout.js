@@ -26,7 +26,8 @@ import {
   ChevronRight,
   BookOpen,
   Building2,
-  Clock
+  Clock,
+  CalendarCheck
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -134,6 +135,7 @@ const Layout = () => {
   const sistema = [
     { name: 'Servidores', href: '/servidores', icon: Server, roles: ['Administrador'] },
     { name: 'Programación', href: '/scheduler', icon: Clock, roles: ['Administrador', 'Supervisor'] },
+    { name: 'Auditorías', href: '/auditorias-programadas', icon: CalendarCheck, roles: ['Administrador', 'Supervisor', 'Gerente', 'Director', 'Auditor'] },
     { name: 'Catálogo SQL', href: '/catalogo-consultas', icon: Database, roles: ['Supervisor', 'Administrador'] },
     { name: 'Explorador BD', href: '/explorador-bd', icon: TableProperties, roles: ['Administrador'] },
     { name: 'Alertas', href: '/alertas', icon: Bell, roles: ['Supervisor', 'Administrador'] },
