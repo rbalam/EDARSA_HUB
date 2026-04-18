@@ -1643,6 +1643,7 @@ db.cargos_economicos_log.drop()
 - ✅ UI Scheduler (Shuttle de Programación)
 - ✅ Módulo Auditorías Programadas
 - ✅ Validación E2E Flujo Completo (Auditoría → Cargo → Notificación)
+- ✅ Migración Email: SendGrid → SMTP Neubox
 
 ### P1 (Alta Prioridad) - PENDIENTES
 - 🔴 Integración real con nómina/ERP (PRERREQUISITO E2E VALIDADO ✅)

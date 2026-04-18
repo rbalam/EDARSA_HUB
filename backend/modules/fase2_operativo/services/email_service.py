@@ -2,8 +2,8 @@
 Email Service - Servicio de envío de emails.
 CAB-003 | Fase 2B.1
 
-Encapsula la integración con SendGrid.
-Preparado para cambiar de proveedor en el futuro.
+Encapsula la integración con SMTP (Neubox).
+Mantiene compatibilidad con la interfaz anterior (SendGrid).
 """
 
 import os
@@ -23,31 +23,68 @@ class EmailService:
     """
     Servicio encapsulado de envío de emails.
     
-    Actualmente usa SendGrid, pero está diseñado para
-    poder cambiar de proveedor sin afectar el resto del sistema.
+    Usa SMTP (Neubox) para envío de emails.
+    Mantiene la misma interfaz que la versión anterior (SendGrid).
     """
     
     def __init__(self):
-        self.api_key = os.environ.get('SENDGRID_API_KEY', '')
-        self.from_email = os.environ.get('EMAIL_FROM', 'noreply@edarsa.com')
-        self.from_name = os.environ.get('EMAIL_FROM_NAME', 'EDARSA HUB')
         self.enabled = os.environ.get('EMAIL_ENABLED', 'true').lower() == 'true'
-        self._client = None
+        
+        # Configuración SMTP
+        self.smtp_host = os.environ.get('EMAIL_HOST', '')
+        self.smtp_port = int(os.environ.get('EMAIL_PORT', '587'))
+        self.smtp_user = os.environ.get('EMAIL_USER', '')
+        self.smtp_password = os.environ.get('EMAIL_PASSWORD', '')
+        self.smtp_use_tls = os.environ.get('EMAIL_USE_TLS', 'true').lower() == 'true'
+        
+        # Remitente
+        self.from_email = os.environ.get('EMAIL_FROM') or self.smtp_user
+        self.from_name = os.environ.get('EMAIL_FROM_NAME', 'EDARSA HUB')
+        
+        # Provider (lazy init)
+        self._provider = None
     
-    def _get_client(self):
-        """Obtiene el cliente de SendGrid (lazy initialization)."""
-        if self._client is None and self.api_key:
+    def _get_provider(self):
+        """Obtiene el provider SMTP (lazy initialization)."""
+        if self._provider is None:
             try:
-                from sendgrid import SendGridAPIClient
-                self._client = SendGridAPIClient(api_key=self.api_key)
+                from core.communications.providers.email_smtp_provider import EmailSMTPProvider
+                
+                config = {
+                    "host": self.smtp_host,
+                    "port": self.smtp_port,
+                    "user": self.smtp_user,
+                    "password": self.smtp_password,
+                    "use_tls": self.smtp_use_tls,
+                    "from_email": self.from_email,
+                    "from_name": self.from_name,
+                }
+                
+                self._provider = EmailSMTPProvider(config)
+                
+                # Inicializar sincrónicamente (verificar config)
+                import asyncio
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        # Ya hay un loop corriendo, crear tarea
+                        asyncio.create_task(self._provider.initialize())
+                    else:
+                        loop.run_until_complete(self._provider.initialize())
+                except RuntimeError:
+                    # No hay loop, crear uno
+                    asyncio.run(self._provider.initialize())
+                    
             except Exception as e:
-                logger.error(f"Error inicializando SendGrid client: {e}")
-                self._client = None
-        return self._client
+                logger.error(f"Error inicializando EmailSMTPProvider: {e}")
+                self._provider = None
+        
+        return self._provider
     
     def is_configured(self) -> bool:
         """Verifica si el servicio está configurado correctamente."""
-        return bool(self.api_key) and self.enabled
+        has_smtp = bool(self.smtp_host and self.smtp_user and self.smtp_password)
+        return has_smtp and self.enabled
     
     async def enviar_email(
         self,
@@ -86,11 +123,11 @@ class EmailService:
             logger.info(f"Email NO enviado (deshabilitado): {asunto} -> {destinatario}")
             return resultado
         
-        # Verificar configuración
-        if not self.api_key:
-            resultado["error"] = "SENDGRID_API_KEY no configurada"
-            resultado["message"] = "Email no enviado: API key no configurada"
-            logger.warning(f"Email NO enviado (sin API key): {asunto} -> {destinatario}")
+        # Verificar configuración SMTP
+        if not self.is_configured():
+            resultado["error"] = "Configuración SMTP incompleta (EMAIL_HOST, EMAIL_USER, EMAIL_PASSWORD)"
+            resultado["message"] = "Email no enviado: configuración incompleta"
+            logger.warning(f"Email NO enviado (sin config SMTP): {asunto} -> {destinatario}")
             return resultado
         
         # Validar destinatario
@@ -101,41 +138,34 @@ class EmailService:
             return resultado
         
         try:
-            from sendgrid.helpers.mail import Mail, Email, To, Content
+            provider = self._get_provider()
             
-            # Construir mensaje
-            message = Mail(
-                from_email=Email(self.from_email, self.from_name),
-                to_emails=To(destinatario),
-                subject=asunto,
-                html_content=Content("text/html", contenido_html)
-            )
-            
-            # Agregar CC si hay
-            if destinatarios_cc:
-                for cc in destinatarios_cc:
-                    if cc and '@' in cc:
-                        message.add_cc(Email(cc))
-            
-            # Enviar
-            client = self._get_client()
-            if not client:
-                resultado["error"] = "No se pudo inicializar el cliente de SendGrid"
-                resultado["message"] = "Email no enviado: error de cliente"
+            if not provider or not provider.is_available():
+                resultado["error"] = "Provider SMTP no disponible"
+                resultado["message"] = "Email no enviado: provider no disponible"
+                logger.warning(f"Email NO enviado (provider no disponible): {asunto} -> {destinatario}")
                 return resultado
             
-            response = client.send(message)
+            # Enviar usando el provider
+            response = await provider.send_email(
+                to=destinatario,
+                subject=asunto,
+                body=contenido_html,
+                is_html=True,
+                cc=destinatarios_cc
+            )
             
-            resultado["status_code"] = response.status_code
+            resultado["status_code"] = 200 if response.success else 500
             
-            if response.status_code in [200, 201, 202]:
+            if response.success:
                 resultado["success"] = True
-                resultado["message"] = f"Email enviado correctamente (status: {response.status_code})"
-                logger.info(f"✅ Email enviado: {asunto} -> {destinatario}")
+                resultado["message"] = f"Email enviado correctamente via SMTP"
+                resultado["message_id"] = response.message_id
+                logger.info(f"✅ Email enviado (SMTP): {asunto} -> {destinatario}")
             else:
-                resultado["error"] = f"SendGrid respondió con status {response.status_code}"
-                resultado["message"] = f"Email posiblemente no enviado (status: {response.status_code})"
-                logger.warning(f"⚠️ Email status inesperado: {asunto} -> {destinatario} (status: {response.status_code})")
+                resultado["error"] = response.error_message
+                resultado["message"] = f"Email no enviado: {response.error_message}"
+                logger.warning(f"⚠️ Email falló (SMTP): {asunto} -> {destinatario}: {response.error_code}")
             
             return resultado
             
