@@ -1229,6 +1229,54 @@ TWILIO_WHATSAPP_FROM=+14155238886  # Sandbox o número aprobado
 | `+5219991234567` | `whatsapp:+5219991234567` |
 
 **Estado:** FASE 2B.5.1 COMPLETADA Y VALIDADA
+
+---
+
+### 2026-04-18 - FASE 2B.5 CERRADA: Sistema de Notificaciones Completo ✅
+
+**Eventos DECISION_AUDITORIA y CIERRE_WORKFLOW validados con envío real**
+
+#### Pruebas Exitosas
+| Evento | Message SID | Status |
+|--------|-------------|--------|
+| DECISION_AUDITORIA | `SM0aeeb1ef479432b6825e3411403d43fc` | delivered ✅ |
+| CIERRE_WORKFLOW | `SMc1dfc8b3f7da79723bb46fadeb57065a` | delivered ✅ |
+
+#### Configuración Sembrada (11 eventos)
+| Evento | Provider | Modo |
+|--------|----------|------|
+| ASIGNACION_TAREA | twilio_whatsapp | real |
+| DIFERENCIA_DETECTADA | twilio_whatsapp | real |
+| SLA_POR_VENCER | twilio_whatsapp | real |
+| SLA_VENCIDO | twilio_whatsapp | real |
+| SLA_ESCALADO | twilio_whatsapp | real |
+| JUSTIFICACION_RECHAZADA | twilio_whatsapp | real |
+| DECISION_AUDITORIA | twilio_whatsapp | real |
+| CIERRE_WORKFLOW | twilio_whatsapp | real |
+| RESPONSABILIDAD_PROPUESTA | twilio_whatsapp | real |
+| RESPONSABILIDAD_APROBADA | twilio_whatsapp | real |
+| RESPONSABILIDAD_EN_DISPUTA | twilio_whatsapp | real |
+
+#### Templates Sembrados (11 templates)
+- inventarios_asignacion_tarea
+- inventarios_diferencia_detectada
+- inventarios_sla_por_vencer
+- inventarios_sla_vencido
+- inventarios_sla_escalado
+- inventarios_justificacion_rechazada
+- inventarios_decision_auditoria
+- inventarios_cierre_workflow
+- inventarios_responsabilidad_propuesta
+- inventarios_responsabilidad_aprobada
+- inventarios_responsabilidad_en_disputa
+
+#### Colecciones MongoDB
+- `notification_config` - 11 eventos configurados
+- `notification_templates` - 11 templates
+- `notification_queue` - Cola de mensajes
+- `notification_log` - Auditoría de envíos
+
+**Estado: FASE 2B.5 COMPLETAMENTE CERRADA** ✅
 **Sistema de gestión formal de cargos económicos derivados de responsabilidades de inventario**
 
 #### Arquitectura Implementada ✅
