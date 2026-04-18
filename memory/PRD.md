@@ -1487,18 +1487,72 @@ db.cargos_economicos_log.drop()
 
 ---
 
+### 2026-04-18 - UI Scheduler (Shuttle de Programación) - COMPLETADA ✅
+
+**Interfaz completa para gestión de jobs automatizados del sistema**
+
+#### Funcionalidades Implementadas ✅
+| Feature | Descripción |
+|---------|-------------|
+| KPIs | Scheduler activo/inactivo, jobs activos, jobs pausados, ejecuciones 24h, fallos 24h |
+| Lista de Jobs | Estado visual (activo/pausado/error), intervalo, próxima y última ejecución |
+| Acciones | Ejecutar manualmente, pausar, reanudar con confirmación |
+| Historial | Tabla con job, estado, duración, procesados, éxito/fallo, fecha, mensaje |
+| Filtros | Por job, estado, período (1h-168h), búsqueda por texto/error |
+| Auto-refresh | Toggle con intervalo configurable (30s) y botón manual |
+| RBAC | Acciones habilitadas/deshabilitadas según permisos del usuario |
+
+#### Permisos RBAC Scheduler ✅
+| Permiso | Acción | Roles |
+|---------|--------|-------|
+| SCHEDULER_VER | Ver status, config, logs, stats | ADMIN, DIRECCION, GERENTE_OPS, SUPERVISOR, AUDITOR |
+| SCHEDULER_GESTIONAR | Pausar/Reanudar jobs | ADMIN, DIRECCION, GERENTE_OPS |
+| SCHEDULER_ADMIN | Ejecutar manualmente, forzar locks | ADMIN, DIRECCION |
+
+#### Endpoints Protegidos ✅
+| Endpoint | Método | Permiso |
+|----------|--------|---------|
+| `/api/v2/scheduler/status` | GET | SCHEDULER_VER |
+| `/api/v2/scheduler/config` | GET | SCHEDULER_VER |
+| `/api/v2/scheduler/logs` | GET | SCHEDULER_VER |
+| `/api/v2/scheduler/logs/stats` | GET | SCHEDULER_VER |
+| `/api/v2/scheduler/jobs/{id}/run` | POST | SCHEDULER_ADMIN |
+| `/api/v2/scheduler/jobs/{id}/pause` | POST | SCHEDULER_GESTIONAR |
+| `/api/v2/scheduler/jobs/{id}/resume` | POST | SCHEDULER_GESTIONAR |
+| `/api/v2/scheduler/locks` | GET | SCHEDULER_VER |
+| `/api/v2/scheduler/locks/{name}` | DELETE | SCHEDULER_ADMIN |
+
+#### Archivos Creados ✅
+- `/app/frontend/src/pages/Scheduler.jsx` - UI completa (~815 líneas)
+
+#### Archivos Modificados ✅
+- `/app/frontend/src/App.js` - Ruta `/scheduler`
+- `/app/frontend/src/pages/Layout.js` - Menú "Programación" en sección Sistema
+- `/app/backend/core/scheduler/routes.py` - Decoradores RBAC en todos los endpoints
+- `/app/backend/core/rbac/schemas.py` - SCHEDULER_VER agregado a SUPERVISOR
+
+#### Testing ✅
+- Backend: 22/22 tests pasaron (100%)
+- Frontend: 95% funcional (issue menor corregido)
+- RBAC: Operador recibe 403 en todos los endpoints
+
+**Estado:** UI SCHEDULER COMPLETADA ✅
+
+---
+
 ## Backlog Actualizado
 
 ### P0 (Urgente) - COMPLETADO
 - ✅ FASE 2C.3: Cargos Económicos
 - ✅ FASE 2B.5: Notificaciones WhatsApp (Twilio SDK)
 - ✅ FASE 2D: RBAC Avanzado
+- ✅ UI Scheduler (Shuttle de Programación)
 
 ### P1 (Alta Prioridad) - PENDIENTES
-- UI "Shuttle de Programación de Análisis de Inventarios" (scheduler frontend)
 - Dashboard de auditorías programadas
 
 ### P2 (Media Prioridad)
 - Integración real con nómina/ERP
 - Reportes financieros avanzados
 - Meta Cloud API para WhatsApp
+- Panel de administración RBAC en frontend

@@ -511,7 +511,8 @@ export default function Scheduler() {
             {schedulerStatus?.jobs?.map((job) => {
               const config = schedulerConfig?.jobs?.[job.id];
               const lastExec = getLastExecution(job.id);
-              const isPaused = config && !config.enabled;
+              // Check if paused: either config.enabled is false OR job.next_run is null
+              const isPaused = (config && !config.enabled) || !job.next_run;
               
               return (
                 <div
