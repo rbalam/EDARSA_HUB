@@ -59,6 +59,7 @@ class TwilioWhatsAppProvider(BaseProvider):
         Formatea número para WhatsApp Twilio.
         
         Twilio requiere formato: whatsapp:+XXXXXXXXXXX
+        México móvil requiere: whatsapp:+521XXXXXXXXXX (con el 1)
         """
         if not number:
             return None
@@ -66,12 +67,15 @@ class TwilioWhatsAppProvider(BaseProvider):
         # Limpiar y normalizar
         cleaned = re.sub(r'[^\d+]', '', number.replace('whatsapp:', ''))
         
-        # Asegurar formato E.164
+        # Asegurar formato E.164 con soporte México móvil
         if not cleaned.startswith('+'):
-            if cleaned.startswith('52') and len(cleaned) >= 12:
+            if cleaned.startswith('521') and len(cleaned) >= 13:
                 cleaned = '+' + cleaned
+            elif cleaned.startswith('52') and len(cleaned) == 12:
+                # Agregar 1 para móvil mexicano
+                cleaned = '+521' + cleaned[2:]
             elif len(cleaned) == 10:
-                cleaned = '+52' + cleaned  # Asumir México
+                cleaned = '+521' + cleaned  # México móvil
             elif cleaned.startswith('1') and len(cleaned) == 11:
                 cleaned = '+' + cleaned  # USA/Canada
             else:
@@ -156,14 +160,25 @@ class TwilioWhatsAppProvider(BaseProvider):
         # Limpiar caracteres no numéricos excepto +
         cleaned = re.sub(r'[^\d+]', '', recipient.replace('whatsapp:', ''))
         
-        # Normalizar a E.164
+        # Normalizar a E.164 con soporte especial para México móvil
         if cleaned.startswith('+'):
-            normalized = cleaned
-        elif cleaned.startswith('52') and len(cleaned) >= 12:
+            # Ya tiene +, verificar si es México sin el 1
+            if cleaned.startswith('+52') and not cleaned.startswith('+521') and len(cleaned) == 13:
+                # +529991234567 -> +5219991234567 (agregar 1)
+                normalized = '+521' + cleaned[3:]
+            else:
+                normalized = cleaned
+        elif cleaned.startswith('521') and len(cleaned) >= 13:
+            # México móvil con 1: 5219991234567 -> +5219991234567
             normalized = '+' + cleaned
+        elif cleaned.startswith('52') and len(cleaned) == 12:
+            # México sin 1: 529991234567 -> +5219991234567 (agregar 1 para móvil)
+            normalized = '+521' + cleaned[2:]
         elif len(cleaned) == 10:
-            normalized = '+52' + cleaned  # Default México
+            # Solo 10 dígitos: 9991234567 -> +5219991234567 (México móvil)
+            normalized = '+521' + cleaned
         elif cleaned.startswith('1') and len(cleaned) == 11:
+            # USA/Canada: 11234567890 -> +11234567890
             normalized = '+' + cleaned
         else:
             return {

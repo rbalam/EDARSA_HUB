@@ -1198,7 +1198,37 @@ curl -X PUT /api/v2/notificaciones-whatsapp/config/cfg_sla_vencido/set-provider?
 
 ---
 
-### 2026-04-17 - FASE 2C.3: Aplicación de Cargos Económicos
+### 2026-04-18 - FASE 2B.5.1: Twilio WhatsApp Real - VALIDADA ✅
+
+**Envío real de WhatsApp via Twilio SDK validado en producción**
+
+#### Prueba Exitosa
+- **Message SID**: `SM1ff583486b9c44fa2328f13d559ddd6c`
+- **Status**: `delivered` ✅
+- **Destino**: +5219992692369 (México)
+- **Provider**: Twilio Sandbox
+
+#### Correcciones Aplicadas
+1. **Manejo de excepciones Twilio**: Clasificación por código de error (63007, 63015, 20003, etc.)
+2. **Sanitización de mensajes de error**: No exponer información sensible
+3. **Normalización de números México**: Agregar `1` después de `52` para móviles (+521XXXXXXXXXX)
+
+#### Configuración Requerida
+```bash
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxx
+TWILIO_WHATSAPP_FROM=+14155238886  # Sandbox o número aprobado
+```
+
+#### Formatos de Número Soportados (México)
+| Input | Output |
+|-------|--------|
+| `9991234567` | `whatsapp:+5219991234567` |
+| `529991234567` | `whatsapp:+5219991234567` |
+| `+529991234567` | `whatsapp:+5219991234567` |
+| `+5219991234567` | `whatsapp:+5219991234567` |
+
+**Estado:** FASE 2B.5.1 COMPLETADA Y VALIDADA
 **Sistema de gestión formal de cargos económicos derivados de responsabilidades de inventario**
 
 #### Arquitectura Implementada ✅
