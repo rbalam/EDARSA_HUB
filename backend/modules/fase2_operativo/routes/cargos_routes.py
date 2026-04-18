@@ -3,21 +3,22 @@ Rutas API para Cargos Económicos
 CAB-003 | EDARSA HUB - Fase 2C.3
 
 Endpoints REST para gestión del ciclo de vida de cargos económicos.
+PROTEGIDOS CON RBAC (Fase 2D)
 
 Endpoints:
-- POST /api/v2/cargos                     - Crear propuesta
-- GET /api/v2/cargos                      - Listar con filtros
-- GET /api/v2/cargos/pendientes           - Pendientes de autorización
-- GET /api/v2/cargos/aplicados            - Cargos aplicados
-- GET /api/v2/cargos/metricas             - Métricas agregadas
-- GET /api/v2/cargos/elegibilidad/{responsabilidad_id} - Evaluar elegibilidad
-- GET /api/v2/cargos/{id}                 - Obtener cargo
-- GET /api/v2/cargos/{id}/log             - Historial de log
-- POST /api/v2/cargos/{id}/autorizar      - Autorizar cargo
-- POST /api/v2/cargos/{id}/aplicar        - Aplicar cargo
-- POST /api/v2/cargos/{id}/rechazar       - Rechazar cargo
-- POST /api/v2/cargos/{id}/revertir       - Revertir cargo
-- POST /api/v2/cargos/{id}/cancelar       - Cancelar cargo
+- POST /api/v2/cargos                     - Crear propuesta (CARGOS_CREAR)
+- GET /api/v2/cargos                      - Listar con filtros (CARGOS_VER)
+- GET /api/v2/cargos/pendientes           - Pendientes de autorización (CARGOS_VER)
+- GET /api/v2/cargos/aplicados            - Cargos aplicados (CARGOS_VER)
+- GET /api/v2/cargos/metricas             - Métricas agregadas (CARGOS_VER)
+- GET /api/v2/cargos/elegibilidad/{id}    - Evaluar elegibilidad (CARGOS_VER)
+- GET /api/v2/cargos/{id}                 - Obtener cargo (CARGOS_VER)
+- GET /api/v2/cargos/{id}/log             - Historial de log (CARGOS_VER)
+- POST /api/v2/cargos/{id}/autorizar      - Autorizar cargo (CARGOS_AUTORIZAR)
+- POST /api/v2/cargos/{id}/aplicar        - Aplicar cargo (CARGOS_APLICAR)
+- POST /api/v2/cargos/{id}/rechazar       - Rechazar cargo (CARGOS_RECHAZAR)
+- POST /api/v2/cargos/{id}/revertir       - Revertir cargo (CARGOS_REVERTIR)
+- POST /api/v2/cargos/{id}/cancelar       - Cancelar cargo (CARGOS_CANCELAR)
 """
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional
@@ -48,6 +49,9 @@ from ..schemas.cargos_schemas import (
 )
 from ..db_utils import get_database
 
+# RBAC - Fase 2D
+from core.rbac.middleware import require_permission
+
 router = APIRouter(prefix="/cargos", tags=["Cargos Económicos"])
 logger = logging.getLogger(__name__)
 
@@ -64,10 +68,11 @@ def get_cargos_service():
     "",
     response_model=CargoAccionResponse,
     summary="Crear propuesta de cargo",
-    description="Crea una propuesta de cargo económico desde una responsabilidad aprobada"
+    description="Crea una propuesta de cargo económico desde una responsabilidad aprobada. Requiere permiso CARGOS_CREAR."
 )
 async def crear_propuesta_cargo(
     request: CargoEconomicoCreate,
+    current_user: dict = Depends(require_permission("CARGOS_CREAR")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """
@@ -98,7 +103,7 @@ async def crear_propuesta_cargo(
     "",
     response_model=CargoEconomicoListResponse,
     summary="Listar cargos",
-    description="Lista cargos económicos con filtros opcionales"
+    description="Lista cargos económicos con filtros opcionales. Requiere permiso CARGOS_VER."
 )
 async def listar_cargos(
     estatus: Optional[str] = Query(None, description="Filtrar por estatus"),
@@ -107,6 +112,7 @@ async def listar_cargos(
     workflow_id: Optional[str] = Query(None, description="Filtrar por workflow"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
+    current_user: dict = Depends(require_permission("CARGOS_VER")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """Lista cargos económicos con filtros opcionales."""
@@ -225,11 +231,12 @@ async def obtener_log_cargo(
     "/{cargo_id}/autorizar",
     response_model=CargoAccionResponse,
     summary="Autorizar cargo",
-    description="Autoriza un cargo pendiente (PENDIENTE → AUTORIZADO)"
+    description="Autoriza un cargo pendiente (PENDIENTE → AUTORIZADO). Requiere permiso CARGOS_AUTORIZAR."
 )
 async def autorizar_cargo(
     cargo_id: str,
     request: CargoAccionRequest,
+    current_user: dict = Depends(require_permission("CARGOS_AUTORIZAR")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """
@@ -238,6 +245,7 @@ async def autorizar_cargo(
     Validaciones:
     - Cargo debe estar en estado PENDIENTE
     - Usuario debe tener rol suficiente según monto
+    - Requiere permiso CARGOS_AUTORIZAR
     """
     try:
         return await service.autorizar_cargo(
@@ -259,11 +267,12 @@ async def autorizar_cargo(
     "/{cargo_id}/aplicar",
     response_model=CargoAccionResponse,
     summary="Aplicar cargo",
-    description="Aplica formalmente un cargo autorizado (AUTORIZADO → APLICADO)"
+    description="Aplica formalmente un cargo autorizado (AUTORIZADO → APLICADO). Requiere permiso CARGOS_APLICAR."
 )
 async def aplicar_cargo(
     cargo_id: str,
     request: CargoAccionRequest,
+    current_user: dict = Depends(require_permission("CARGOS_APLICAR")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """
@@ -271,6 +280,7 @@ async def aplicar_cargo(
     
     Este es el punto de no retorno. El cargo queda registrado
     para integración con nómina/ERP.
+    Requiere permiso CARGOS_APLICAR.
     """
     try:
         return await service.aplicar_cargo(
@@ -292,17 +302,19 @@ async def aplicar_cargo(
     "/{cargo_id}/rechazar",
     response_model=CargoAccionResponse,
     summary="Rechazar cargo",
-    description="Rechaza un cargo pendiente (PENDIENTE → RECHAZADO)"
+    description="Rechaza un cargo pendiente (PENDIENTE → RECHAZADO). Requiere permiso CARGOS_RECHAZAR."
 )
 async def rechazar_cargo(
     cargo_id: str,
     request: CargoAccionRequest,
+    current_user: dict = Depends(require_permission("CARGOS_RECHAZAR")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """
     Rechaza un cargo pendiente.
     
     El cargo no procedía según la evaluación.
+    Requiere permiso CARGOS_RECHAZAR.
     """
     try:
         return await service.rechazar_cargo(
@@ -324,11 +336,12 @@ async def rechazar_cargo(
     "/{cargo_id}/revertir",
     response_model=CargoAccionResponse,
     summary="Revertir cargo",
-    description="Revierte un cargo ya aplicado (APLICADO → REVERTIDO)"
+    description="Revierte un cargo ya aplicado (APLICADO → REVERTIDO). Requiere permiso CARGOS_REVERTIR."
 )
 async def revertir_cargo(
     cargo_id: str,
     request: CargoReversaRequest,
+    current_user: dict = Depends(require_permission("CARGOS_REVERTIR")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """
@@ -337,6 +350,7 @@ async def revertir_cargo(
     Operación crítica que requiere:
     - Motivo detallado (mínimo 20 caracteres)
     - Rol GERENTE_OPS o superior
+    - Permiso CARGOS_REVERTIR
     """
     try:
         return await service.revertir_cargo(
@@ -358,17 +372,19 @@ async def revertir_cargo(
     "/{cargo_id}/cancelar",
     response_model=CargoAccionResponse,
     summary="Cancelar cargo",
-    description="Cancela un cargo antes de ser aplicado (PENDIENTE/AUTORIZADO → CANCELADO)"
+    description="Cancela un cargo antes de ser aplicado (PENDIENTE/AUTORIZADO → CANCELADO). Requiere permiso CARGOS_CANCELAR."
 )
 async def cancelar_cargo(
     cargo_id: str,
     request: CargoAccionRequest,
+    current_user: dict = Depends(require_permission("CARGOS_CANCELAR")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """
     Cancela un cargo antes de ser aplicado.
     
     Solo válido para cargos en estado PENDIENTE o AUTORIZADO.
+    Requiere permiso CARGOS_CANCELAR.
     """
     try:
         return await service.cancelar_cargo(

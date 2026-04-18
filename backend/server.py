@@ -13449,6 +13449,19 @@ from core.scheduler.routes import router as scheduler_router, init_scheduler_rou
 init_scheduler_routes(db)  # Inicializar con conexión MongoDB
 app.include_router(scheduler_router, tags=["Scheduler"])
 
+# ============= FASE 2D: RBAC AVANZADO =============
+# Sistema de control de acceso basado en roles
+from core.rbac.routes import router as rbac_router
+from core.rbac.service import RBACService
+# Inicializar RBAC (sembrar permisos y roles si no existen)
+try:
+    rbac_service = RBACService(db)
+    rbac_service.ensure_initialized()
+    logger.info("RBAC Service inicializado")
+except Exception as e:
+    logger.warning(f"Error inicializando RBAC: {e}")
+app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
+
 # Startup: Iniciar scheduler
 @app.on_event("startup")
 async def startup_scheduler():
