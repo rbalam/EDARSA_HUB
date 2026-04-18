@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 EVENTO_WORKFLOW_CREADO = "WORKFLOW_CREADO"
 EVENTO_TAREA_ASIGNADA = "TAREA_ASIGNADA"
 EVENTO_TAREA_VENCIDA = "TAREA_VENCIDA"
+EVENTO_CARGO_APLICADO = "CARGO_APLICADO"
 
 
 class NotificationService:
@@ -292,6 +293,98 @@ class NotificationService:
                 pass
         
         return resultado
+
+    async def notificar_cargo_aplicado(
+        self,
+        cargo_id: str,
+        workflow_id: str,
+        responsable_nombre: str,
+        monto_aplicado: float,
+        sucursal_nombre: str,
+        destinatario_email: str,
+        destinatario_nombre: str,
+        supervisor_email: Optional[str] = None
+    ) -> Dict:
+        """
+        Envía notificación de cargo económico aplicado.
+        
+        IMPORTANTE: Esta función NO debe lanzar excepciones.
+        El cargo se aplicó exitosamente, la notificación es complementaria.
+        """
+        resultado = {
+            "tipo_evento": EVENTO_CARGO_APLICADO,
+            "cargo_id": cargo_id,
+            "notificado": False,
+            "error": None
+        }
+        
+        try:
+            asunto = f"⚠️ Cargo Económico Aplicado - ${monto_aplicado:,.2f} MXN"
+            
+            contenido_html = self._generar_html_cargo_aplicado(
+                cargo_id=cargo_id,
+                workflow_id=workflow_id,
+                responsable_nombre=responsable_nombre,
+                monto_aplicado=monto_aplicado,
+                sucursal_nombre=sucursal_nombre,
+                destinatario_nombre=destinatario_nombre
+            )
+            
+            # Enviar al responsable
+            email_resultado = await self.email_service.enviar_email(
+                destinatario=destinatario_email,
+                asunto=asunto,
+                contenido_html=contenido_html,
+                destinatarios_cc=[supervisor_email] if supervisor_email else None,
+                metadata={"cargo_id": cargo_id, "workflow_id": workflow_id}
+            )
+            
+            resultado["notificado"] = email_resultado.get("success", False)
+            resultado["email_resultado"] = email_resultado
+            
+            await self._registrar_notificacion(
+                tipo_evento=EVENTO_CARGO_APLICADO,
+                workflow_id=workflow_id,
+                tarea_id=None,
+                destinatario=destinatario_email,
+                canal="email",
+                asunto=asunto,
+                estado="enviado" if resultado["notificado"] else "fallido",
+                error=email_resultado.get("error"),
+                metadata={
+                    "cargo_id": cargo_id,
+                    "monto_aplicado": monto_aplicado,
+                    "responsable": responsable_nombre,
+                    "sucursal": sucursal_nombre
+                }
+            )
+            
+            if resultado["notificado"]:
+                logger.info(f"✅ Notificación CARGO_APLICADO enviada: {cargo_id}")
+            else:
+                logger.warning(f"⚠️ Notificación CARGO_APLICADO no enviada: {cargo_id}")
+            
+        except Exception as e:
+            resultado["error"] = str(e)
+            logger.error(f"❌ Error en notificación CARGO_APLICADO: {e}")
+            
+            try:
+                await self._registrar_notificacion(
+                    tipo_evento=EVENTO_CARGO_APLICADO,
+                    workflow_id=workflow_id,
+                    tarea_id=None,
+                    destinatario=destinatario_email,
+                    canal="email",
+                    asunto=f"Cargo Económico Aplicado - ${monto_aplicado:,.2f}",
+                    estado="error",
+                    error=str(e),
+                    metadata={"cargo_id": cargo_id}
+                )
+            except Exception:
+                pass
+        
+        return resultado
+
     
     async def _registrar_notificacion(
         self,
@@ -305,7 +398,7 @@ class NotificationService:
         error: Optional[str],
         metadata: Dict
     ):
-        """Registra una notificación en el log."""
+        """Registra una notificación en el log (sync - PyMongo)."""
         try:
             doc = {
                 "id": str(uuid.uuid4()),
@@ -320,7 +413,8 @@ class NotificationService:
                 "metadata": metadata,
                 "fecha_envio": datetime.now(timezone.utc).isoformat()
             }
-            await self.collection.insert_one(doc)
+            # Operación síncrona con PyMongo
+            self.collection.insert_one(doc)
         except Exception as e:
             logger.error(f"Error registrando notificación en log: {e}")
     
@@ -520,6 +614,71 @@ class NotificationService:
 </body>
 </html>
 """
+
+    def _generar_html_cargo_aplicado(
+        self,
+        cargo_id: str,
+        workflow_id: str,
+        responsable_nombre: str,
+        monto_aplicado: float,
+        sucursal_nombre: str,
+        destinatario_nombre: str
+    ) -> str:
+        """Genera HTML para email de cargo económico aplicado."""
+        fecha_aplicacion = datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M')
+        
+        return f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: #ea580c; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0; }}
+        .alert-box {{ background: #fff7ed; border: 1px solid #fed7aa; padding: 20px; border-radius: 8px; margin: 15px 0; }}
+        .cargo-box {{ background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #ea580c; margin: 15px 0; }}
+        .monto {{ font-size: 28px; font-weight: bold; color: #ea580c; }}
+        .footer {{ text-align: center; padding: 15px; font-size: 12px; color: #64748b; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Cargo Económico Aplicado</h1>
+    </div>
+    <div class="content">
+        <p>Hola <strong>{destinatario_nombre}</strong>,</p>
+        
+        <div class="alert-box">
+            <p style="margin: 0; color: #c2410c; font-weight: bold;">
+                Se ha aplicado un cargo económico a tu cuenta derivado de diferencias de inventario.
+            </p>
+        </div>
+        
+        <div class="cargo-box">
+            <p style="margin: 0 0 15px 0; text-align: center;">
+                <span class="monto">${monto_aplicado:,.2f} MXN</span>
+            </p>
+            <p style="margin: 0 0 10px 0;"><strong>Responsable:</strong> {responsable_nombre}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Sucursal:</strong> {sucursal_nombre}</p>
+            <p style="margin: 0;"><strong>Fecha de aplicación:</strong> {fecha_aplicacion}</p>
+        </div>
+        
+        <p>Este cargo será procesado en el siguiente ciclo de nómina. Si tienes dudas o deseas más información, contacta a tu supervisor o al departamento de Recursos Humanos.</p>
+        
+        <p style="font-size: 12px; color: #64748b;">
+            <strong>ID de cargo:</strong> {cargo_id[:12]}...<br>
+            <strong>Workflow:</strong> {workflow_id[:12]}...
+        </p>
+    </div>
+    <div class="footer">
+        EDARSA HUB - Sistema de Gestión Operativa<br>
+        Este es un mensaje automático, no responder a este correo.
+    </div>
+</body>
+</html>
+"""
+
 
 
 def get_notification_service(db) -> NotificationService:

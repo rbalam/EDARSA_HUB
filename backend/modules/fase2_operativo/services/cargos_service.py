@@ -393,6 +393,9 @@ class CargosService:
         if workflow_id:
             await self._cerrar_workflow_si_corresponde(workflow_id, cargo_id)
         
+        # NOTIFICACIÓN: Alertar al responsable del cargo aplicado (NO debe romper el flujo)
+        await self._notificar_cargo_aplicado(cargo, monto)
+        
         logger.info(f"Cargo {cargo_id} APLICADO por {usuario_id}. Monto: ${monto:,.2f}")
         
         return CargoAccionResponse(
@@ -754,6 +757,61 @@ class CargosService:
                 logger.info(f"Workflow {workflow_id} cerrado tras aplicación de cargo {cargo_id}")
         except Exception as e:
             logger.warning(f"No se pudo cerrar workflow {workflow_id}: {e}")
+
+    async def _notificar_cargo_aplicado(self, cargo: Dict, monto: float):
+        """
+        Envía notificación de cargo aplicado al responsable.
+        
+        IMPORTANTE: Esta función NO debe lanzar excepciones.
+        El cargo ya fue aplicado, la notificación es complementaria.
+        """
+        try:
+            from .notification_service import get_notification_service
+            
+            notification_service = get_notification_service(self.db)
+            
+            # Obtener datos del responsable
+            responsable_id = cargo.get("responsable_id")
+            if not responsable_id:
+                logger.debug("Cargo sin responsable_id, notificación omitida")
+                return
+            
+            usuario = self.db.users.find_one(
+                {"id": responsable_id},
+                {"_id": 0, "email": 1, "name": 1}
+            )
+            
+            if not usuario or not usuario.get("email"):
+                logger.debug(f"No se encontró email para responsable {responsable_id}")
+                return
+            
+            # Obtener nombre de sucursal
+            sucursal_nombre = "Sucursal"
+            workflow_id = cargo.get("workflow_id")
+            if workflow_id:
+                workflow = self.db.workflow_inventarios.find_one(
+                    {"id": workflow_id},
+                    {"_id": 0, "sucursal_nombre": 1}
+                )
+                if workflow:
+                    sucursal_nombre = workflow.get("sucursal_nombre", "Sucursal")
+            
+            await notification_service.notificar_cargo_aplicado(
+                cargo_id=cargo.get("id", ""),
+                workflow_id=workflow_id or "",
+                responsable_nombre=usuario.get("name", "Usuario"),
+                monto_aplicado=monto,
+                sucursal_nombre=sucursal_nombre,
+                destinatario_email=usuario.get("email"),
+                destinatario_nombre=usuario.get("name", "Usuario")
+            )
+            
+            logger.info(f"Notificación de cargo aplicado enviada a {usuario.get('email')}")
+            
+        except Exception as e:
+            # NO romper el flujo si falla la notificación
+            logger.error(f"Error enviando notificación de cargo (no crítico): {e}")
+
     
     def _mapear_a_response(self, cargo: Dict) -> CargoEconomicoResponse:
         """Mapea un documento de BD a CargoEconomicoResponse."""

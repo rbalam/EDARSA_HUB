@@ -216,12 +216,11 @@ class AuditoriaProgramadaService:
         return log_data
     
     def _crear_workflow_inventario(self, auditoria: Dict) -> str:
-        """Crea workflow de inventario."""
-        from ..repositories.workflow_repository import WorkflowRepository
+        """Crea workflow de inventario (sync - usa PyMongo directamente)."""
         from ..schemas.enums import EstadoWorkflow
         import uuid
         
-        workflow_repo = WorkflowRepository(self.db)
+        now = datetime.now(timezone.utc)
         
         workflow_data = {
             "id": str(uuid.uuid4()),
@@ -231,12 +230,16 @@ class AuditoriaProgramadaService:
             "tipo_origen": f"AUDITORIA_PROGRAMADA:{auditoria['tipo_auditoria']}",
             "auditoria_programada_id": auditoria["id"],
             "almacenes": auditoria.get("almacenes", []),
-            "fecha_creacion": datetime.now(timezone.utc).isoformat(),
+            "fecha_creacion": now.isoformat(),
+            "fecha_ultima_actualizacion": now.isoformat(),
             "created_by": auditoria.get("created_by", "SCHEDULER"),
             "observaciones": f"Generado automáticamente - {auditoria['nombre']}"
         }
         
-        workflow_repo.create(workflow_data)
+        # Inserción directa con PyMongo (sync) para evitar conflicto async/sync
+        self.db.workflow_inventarios.insert_one(workflow_data)
+        logger.info(f"Workflow creado desde auditoría programada: {workflow_data['id']}")
+        
         return workflow_data["id"]
     
     def obtener_kpis(self) -> Dict:
