@@ -119,7 +119,8 @@ class TwilioWhatsAppProvider(BaseProvider):
             
             # Log seguro (sin exponer credenciales)
             masked_sid = f"{self.account_sid[:4]}...{self.account_sid[-4:]}" if self.account_sid else "N/A"
-            logger.info(f"TwilioWhatsAppProvider inicializado: SID={masked_sid}, From={self.whatsapp_from}")
+            masked_from = f"whatsapp:***{self.whatsapp_from[-4:]}" if self.whatsapp_from else "N/A"
+            logger.info(f"TwilioWhatsAppProvider inicializado: SID={masked_sid}, From={masked_from}")
             
             return True
             
@@ -262,20 +263,41 @@ class TwilioWhatsAppProvider(BaseProvider):
         except Exception as e:
             # Manejar errores de Twilio
             error_code = "TWILIO_ERROR"
-            error_message = str(e)
+            error_message = "Error al enviar mensaje"
             
-            # Clasificar errores comunes de Twilio
-            error_str = str(e).lower()
-            if "authenticate" in error_str or "credentials" in error_str:
-                error_code = "AUTH_ERROR"
-                error_message = "Error de autenticación con Twilio"
-            elif "invalid" in error_str and "number" in error_str:
-                error_code = "INVALID_NUMBER"
-            elif "rate limit" in error_str or "too many" in error_str:
-                error_code = "RATE_LIMIT"
-            elif "not whatsapp" in error_str or "not a valid whatsapp" in error_str:
-                error_code = "NOT_WHATSAPP_NUMBER"
-                error_message = "El número destino no tiene WhatsApp activo"
+            # Intentar extraer código de error Twilio
+            twilio_code = getattr(e, 'code', None)
+            
+            if twilio_code:
+                error_code = f"TWILIO_{twilio_code}"
+                # Clasificar por código Twilio
+                if twilio_code == 20003:
+                    error_code = "AUTH_ERROR"
+                    error_message = "Error de autenticación con Twilio"
+                elif twilio_code in [21211, 21214, 21217]:
+                    error_code = "INVALID_NUMBER"
+                    error_message = "Número de teléfono inválido"
+                elif twilio_code == 20429:
+                    error_code = "RATE_LIMIT"
+                    error_message = "Límite de envíos excedido"
+                elif twilio_code == 63016:
+                    error_code = "NOT_WHATSAPP_NUMBER"
+                    error_message = "El número destino no tiene WhatsApp activo"
+            else:
+                # Fallback: clasificar por texto del error
+                error_str = str(e).lower()
+                if "authenticate" in error_str or "credentials" in error_str:
+                    error_code = "AUTH_ERROR"
+                    error_message = "Error de autenticación con Twilio"
+                elif "invalid" in error_str and "number" in error_str:
+                    error_code = "INVALID_NUMBER"
+                    error_message = "Número de teléfono inválido"
+                elif "rate limit" in error_str or "too many" in error_str:
+                    error_code = "RATE_LIMIT"
+                    error_message = "Límite de envíos excedido"
+                elif "not whatsapp" in error_str or "not a valid whatsapp" in error_str:
+                    error_code = "NOT_WHATSAPP_NUMBER"
+                    error_message = "El número destino no tiene WhatsApp activo"
             
             # Log sin exponer datos sensibles
             logger.error(f"[TWILIO] Error enviando mensaje: {error_code} - {error_message}")
