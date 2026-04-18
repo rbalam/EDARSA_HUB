@@ -1,10 +1,23 @@
 """
 Endpoints de Responsabilidad Económica
 CAB-003 | EDARSA HUB - Fase 2C.1 y 2C.2
+PROTEGIDOS CON RBAC (Fase 2D)
 
 Expone la funcionalidad de cálculo de impacto económico y aprobaciones vía HTTP.
+
+Permisos requeridos por endpoint:
+- POST /calcular - RESPONSABILIDAD_CALCULAR
+- GET / - RESPONSABILIDAD_VER
+- GET /workflow/{id} - RESPONSABILIDAD_VER
+- GET /configuracion - RESPONSABILIDAD_VER
+- PUT /configuracion - RESPONSABILIDAD_GESTIONAR
+- POST /{id}/proponer - RESPONSABILIDAD_PROPONER
+- POST /{id}/aprobar - RESPONSABILIDAD_APROBAR
+- POST /{id}/rechazar - RESPONSABILIDAD_RECHAZAR
+- POST /{id}/exonerar - RESPONSABILIDAD_EXONERAR
+- POST /{id}/disputar - RESPONSABILIDAD_DISPUTAR
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional
 
 from ..services.responsabilidad_service import (
@@ -33,6 +46,9 @@ from ..schemas.responsabilidad_schemas import (
 from ..api_schemas import OperacionResponse
 from ..db_utils import get_database
 
+# RBAC - Fase 2D
+from core.rbac.middleware import require_permission
+
 router = APIRouter()
 
 
@@ -49,6 +65,7 @@ def get_db():
     summary="Calcular impacto económico",
     description="""
     Ejecuta el cálculo de responsabilidad económica para un workflow.
+    Requiere permiso RESPONSABILIDAD_CALCULAR.
     
     Flujo:
     1. Lee las diferencias del workflow
@@ -64,7 +81,8 @@ def get_db():
 async def calcular_responsabilidad(
     workflow_id: str,
     usuario_id: str = Query(..., description="ID del usuario que ejecuta el cálculo"),
-    forzar_recalculo: bool = Query(False, description="Forzar recálculo si ya existe")
+    forzar_recalculo: bool = Query(False, description="Forzar recálculo si ya existe"),
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_CALCULAR"))
 ):
     """Calcula el impacto económico de un workflow."""
     try:
@@ -97,9 +115,12 @@ async def calcular_responsabilidad(
     "/workflow/{workflow_id}",
     response_model=ResponsabilidadResponse,
     summary="Obtener cálculo por workflow",
-    description="Obtiene el cálculo de responsabilidad económica de un workflow específico."
+    description="Obtiene el cálculo de responsabilidad económica de un workflow específico. Requiere RESPONSABILIDAD_VER."
 )
-async def obtener_por_workflow(workflow_id: str):
+async def obtener_por_workflow(
+    workflow_id: str,
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_VER"))
+):
     """Obtiene el cálculo de responsabilidad de un workflow."""
     try:
         db = get_db()
@@ -125,14 +146,15 @@ async def obtener_por_workflow(workflow_id: str):
     "",
     response_model=ResponsabilidadListResponse,
     summary="Listar cálculos de responsabilidad",
-    description="Lista todos los cálculos de responsabilidad económica con filtros opcionales."
+    description="Lista todos los cálculos de responsabilidad económica con filtros opcionales. Requiere RESPONSABILIDAD_VER."
 )
 async def listar_responsabilidades(
     sucursal_id: Optional[str] = Query(None, description="Filtrar por sucursal"),
     estado: Optional[str] = Query(None, description="Filtrar por estado (CALCULADO)"),
     excede_minimo: Optional[bool] = Query(None, description="Filtrar por si excede mínimo"),
     skip: int = Query(0, ge=0, description="Registros a saltar"),
-    limit: int = Query(50, ge=1, le=200, description="Límite de registros")
+    limit: int = Query(50, ge=1, le=200, description="Límite de registros"),
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_VER"))
 ):
     """Lista cálculos de responsabilidad con filtros."""
     try:
@@ -164,6 +186,7 @@ async def listar_responsabilidades(
     summary="Obtener configuración de responsabilidad",
     description="""
     Obtiene la configuración actual del módulo de responsabilidad económica.
+    Requiere permiso RESPONSABILIDAD_VER.
     
     Incluye:
     - cargo_minimo_mxn: Monto mínimo para generar cargo
@@ -174,7 +197,9 @@ async def listar_responsabilidades(
     - permitir_compensacion_faltantes_sobrantes: Si se permite compensación (default: false)
     """
 )
-async def obtener_configuracion():
+async def obtener_configuracion(
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_VER"))
+):
     """Obtiene la configuración de responsabilidad."""
     try:
         db = get_db()
@@ -190,9 +215,12 @@ async def obtener_configuracion():
     "/configuracion",
     response_model=ConfiguracionResponsabilidadResponse,
     summary="Actualizar configuración de responsabilidad",
-    description="Actualiza los parámetros de configuración del módulo de responsabilidad económica."
+    description="Actualiza los parámetros de configuración del módulo de responsabilidad económica. Requiere RESPONSABILIDAD_GESTIONAR."
 )
-async def actualizar_configuracion(request: ConfiguracionResponsabilidadUpdate):
+async def actualizar_configuracion(
+    request: ConfiguracionResponsabilidadUpdate,
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_GESTIONAR"))
+):
     """Actualiza la configuración de responsabilidad."""
     try:
         db = get_db()
@@ -244,6 +272,7 @@ async def inicializar_configuracion():
     summary="Métricas de responsabilidad económica",
     description="""
     Obtiene métricas agregadas para el dashboard de responsabilidad económica.
+    Requiere permiso RESPONSABILIDAD_VER.
     
     Incluye:
     - Total de cálculos
@@ -253,7 +282,9 @@ async def inicializar_configuracion():
     - Top sucursales por monto
     """
 )
-async def obtener_metricas():
+async def obtener_metricas(
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_VER"))
+):
     """Obtiene métricas agregadas de responsabilidad."""
     try:
         db = get_db()
@@ -290,13 +321,18 @@ def _handle_aprobacion_error(e: Exception):
     summary="Proponer monto para revisión",
     description="""
     Propone formalmente un monto calculado para revisión y aprobación.
+    Requiere permiso RESPONSABILIDAD_PROPONER.
     
     **Transición:** CALCULADO → PROPUESTO
     
     **Requiere:** Comentario obligatorio (mínimo 10 caracteres)
     """
 )
-async def proponer(responsabilidad_id: str, request: AccionResponsabilidadRequest):
+async def proponer(
+    responsabilidad_id: str,
+    request: AccionResponsabilidadRequest,
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_PROPONER"))
+):
     """Propone un monto para revisión."""
     try:
         db = get_db()
@@ -319,6 +355,7 @@ async def proponer(responsabilidad_id: str, request: AccionResponsabilidadReques
     summary="Aprobar monto propuesto",
     description="""
     Aprueba un monto propuesto. El cargo queda pendiente de aplicación (Fase 2C.3).
+    Requiere permiso RESPONSABILIDAD_APROBAR.
     
     **Transición:** PROPUESTO → APROBADO
     
@@ -329,7 +366,11 @@ async def proponer(responsabilidad_id: str, request: AccionResponsabilidadReques
     **Nota:** El workflow permanece en EN_REVISION_FINANCIERA
     """
 )
-async def aprobar(responsabilidad_id: str, request: AccionResponsabilidadRequest):
+async def aprobar(
+    responsabilidad_id: str,
+    request: AccionResponsabilidadRequest,
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_APROBAR"))
+):
     """Aprueba un monto propuesto."""
     try:
         db = get_db()
@@ -352,6 +393,7 @@ async def aprobar(responsabilidad_id: str, request: AccionResponsabilidadRequest
     summary="Rechazar cargo",
     description="""
     Rechaza un cargo propuesto. El monto NO procedía como fue planteado.
+    Requiere permiso RESPONSABILIDAD_RECHAZAR.
     
     **Transición:** PROPUESTO/EN_DISPUTA → RECHAZADO
     
@@ -360,7 +402,11 @@ async def aprobar(responsabilidad_id: str, request: AccionResponsabilidadRequest
     **Diferencia con Exonerar:** Rechazado significa que el cargo no tenía base válida.
     """
 )
-async def rechazar(responsabilidad_id: str, request: AccionResponsabilidadRequest):
+async def rechazar(
+    responsabilidad_id: str,
+    request: AccionResponsabilidadRequest,
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_RECHAZAR"))
+):
     """Rechaza un cargo propuesto."""
     try:
         db = get_db()
@@ -383,6 +429,7 @@ async def rechazar(responsabilidad_id: str, request: AccionResponsabilidadReques
     summary="Exonerar cargo",
     description="""
     Exonera al responsable del cargo. El cargo TENÍA base válida, pero se libera al responsable.
+    Requiere permiso RESPONSABILIDAD_EXONERAR.
     
     **Transición:** PROPUESTO/EN_DISPUTA → EXONERADO
     
@@ -393,7 +440,11 @@ async def rechazar(responsabilidad_id: str, request: AccionResponsabilidadReques
     **Diferencia con Rechazar:** Exonerado significa que el cargo era válido pero se perdona.
     """
 )
-async def exonerar(responsabilidad_id: str, request: AccionResponsabilidadRequest):
+async def exonerar(
+    responsabilidad_id: str,
+    request: AccionResponsabilidadRequest,
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_EXONERAR"))
+):
     """Exonera un cargo."""
     try:
         db = get_db()
@@ -416,6 +467,7 @@ async def exonerar(responsabilidad_id: str, request: AccionResponsabilidadReques
     summary="Iniciar disputa",
     description="""
     Inicia una disputa sobre el monto propuesto.
+    Requiere permiso RESPONSABILIDAD_DISPUTAR.
     
     **Transición:** PROPUESTO → EN_DISPUTA
     
@@ -426,7 +478,11 @@ async def exonerar(responsabilidad_id: str, request: AccionResponsabilidadReques
     **Requiere:** Comentario obligatorio explicando el motivo de la disputa
     """
 )
-async def disputar(responsabilidad_id: str, request: AccionResponsabilidadRequest):
+async def disputar(
+    responsabilidad_id: str,
+    request: AccionResponsabilidadRequest,
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_DISPUTAR"))
+):
     """Inicia una disputa."""
     try:
         db = get_db()
@@ -449,13 +505,18 @@ async def disputar(responsabilidad_id: str, request: AccionResponsabilidadReques
     summary="Resolver disputa",
     description="""
     Resuelve una disputa, devolviendo el registro a estado PROPUESTO para revisión.
+    Requiere permiso RESPONSABILIDAD_GESTIONAR.
     
     **Transición:** EN_DISPUTA → PROPUESTO
     
     **Requiere:** Comentario obligatorio con la resolución de la disputa
     """
 )
-async def resolver_disputa(responsabilidad_id: str, request: AccionResponsabilidadRequest):
+async def resolver_disputa(
+    responsabilidad_id: str,
+    request: AccionResponsabilidadRequest,
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_GESTIONAR"))
+):
     """Resuelve una disputa."""
     try:
         db = get_db()
@@ -478,9 +539,11 @@ async def resolver_disputa(responsabilidad_id: str, request: AccionResponsabilid
     "/pendientes-aprobacion",
     response_model=PendientesAprobacionResponse,
     summary="Listar pendientes de aprobación",
-    description="Obtiene la lista de responsabilidades pendientes de aprobación (CALCULADO o PROPUESTO)."
+    description="Obtiene la lista de responsabilidades pendientes de aprobación (CALCULADO o PROPUESTO). Requiere RESPONSABILIDAD_VER."
 )
-async def listar_pendientes_aprobacion():
+async def listar_pendientes_aprobacion(
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_VER"))
+):
     """Lista responsabilidades pendientes de aprobación."""
     try:
         db = get_db()
@@ -496,9 +559,11 @@ async def listar_pendientes_aprobacion():
     "/en-disputa",
     response_model=EnDisputaResponse,
     summary="Listar en disputa",
-    description="Obtiene la lista de responsabilidades actualmente en disputa."
+    description="Obtiene la lista de responsabilidades actualmente en disputa. Requiere RESPONSABILIDAD_VER."
 )
-async def listar_en_disputa():
+async def listar_en_disputa(
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_VER"))
+):
     """Lista responsabilidades en disputa."""
     try:
         db = get_db()
@@ -514,9 +579,12 @@ async def listar_en_disputa():
     "/{responsabilidad_id}/historial",
     response_model=HistorialListResponse,
     summary="Obtener historial de transiciones",
-    description="Obtiene el historial completo de transiciones de una responsabilidad."
+    description="Obtiene el historial completo de transiciones de una responsabilidad. Requiere RESPONSABILIDAD_VER."
 )
-async def obtener_historial(responsabilidad_id: str):
+async def obtener_historial(
+    responsabilidad_id: str,
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_VER"))
+):
     """Obtiene el historial de una responsabilidad."""
     try:
         db = get_db()

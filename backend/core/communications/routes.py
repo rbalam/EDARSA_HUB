@@ -2,6 +2,14 @@
 EDARSA HUB - Notification API Routes
 ====================================
 Subfase 2B.5 + 2B.5.1 - Endpoints REST para sistema de notificaciones.
+PROTEGIDO CON RBAC (Fase 2D)
+
+Permisos requeridos:
+- GET /config, /templates, /log, /stats - NOTIFICACIONES_VER
+- POST /config, /templates - NOTIFICACIONES_CONFIGURAR
+- PUT /config/*, /templates/* - NOTIFICACIONES_CONFIGURAR
+- POST /test, /test-real - NOTIFICACIONES_ENVIAR
+- POST /reprocesar, /inicializar - NOTIFICACIONES_CONFIGURAR
 
 Endpoints:
 - /api/v2/notificaciones-whatsapp/config - Configuraciones
@@ -14,10 +22,13 @@ Endpoints:
 
 from typing import Optional, List
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 
 import logging
+
+# RBAC - Fase 2D
+from core.rbac.middleware import require_permission
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +118,8 @@ class TestNotificationRequest(BaseModel):
 async def list_configs(
     modulo: Optional[str] = None,
     canal: Optional[str] = None,
-    activo: Optional[bool] = None
+    activo: Optional[bool] = None,
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_VER"))
 ):
     """Lista configuraciones de notificación."""
     db = get_db()
@@ -119,7 +131,10 @@ async def list_configs(
 
 
 @router.get("/config/{config_id}")
-async def get_config(config_id: str):
+async def get_config(
+    config_id: str,
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_VER"))
+):
     """Obtiene una configuración por ID."""
     db = get_db()
     config = await db.notification_config.find_one({"id": config_id}, {"_id": 0})
@@ -129,7 +144,10 @@ async def get_config(config_id: str):
 
 
 @router.post("/config")
-async def create_config(request: ConfigCreateRequest):
+async def create_config(
+    request: ConfigCreateRequest,
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+):
     """Crea una nueva configuración."""
     db = get_db()
     from core.communications.notifications.schemas import NotificationConfig
@@ -163,7 +181,11 @@ async def create_config(request: ConfigCreateRequest):
 
 
 @router.put("/config/{config_id}")
-async def update_config(config_id: str, request: ConfigUpdateRequest):
+async def update_config(
+    config_id: str,
+    request: ConfigUpdateRequest,
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+):
     """Actualiza una configuración."""
     db = get_db()
     from core.communications.notifications.repository import NotificationRepository
@@ -187,7 +209,8 @@ async def update_config(config_id: str, request: ConfigUpdateRequest):
 @router.get("/templates")
 async def list_templates(
     canal: Optional[str] = None,
-    activo: Optional[bool] = None
+    activo: Optional[bool] = None,
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_VER"))
 ):
     """Lista templates de notificación."""
     db = get_db()
@@ -199,7 +222,10 @@ async def list_templates(
 
 
 @router.get("/templates/{template_id}")
-async def get_template(template_id: str):
+async def get_template(
+    template_id: str,
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_VER"))
+):
     """Obtiene un template por ID."""
     db = get_db()
     from core.communications.notifications.repository import NotificationRepository
@@ -212,7 +238,10 @@ async def get_template(template_id: str):
 
 
 @router.post("/templates")
-async def create_template(request: TemplateCreateRequest):
+async def create_template(
+    request: TemplateCreateRequest,
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+):
     """Crea un nuevo template."""
     db = get_db()
     from core.communications.notifications.schemas import NotificationTemplate
@@ -242,7 +271,11 @@ async def create_template(request: TemplateCreateRequest):
 
 
 @router.put("/templates/{template_id}")
-async def update_template(template_id: str, request: TemplateUpdateRequest):
+async def update_template(
+    template_id: str,
+    request: TemplateUpdateRequest,
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+):
     """Actualiza un template."""
     db = get_db()
     from core.communications.notifications.repository import NotificationRepository
@@ -273,7 +306,8 @@ async def get_notification_logs(
     fecha_desde: Optional[str] = None,
     fecha_hasta: Optional[str] = None,
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500)
+    limit: int = Query(100, ge=1, le=500),
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_VER"))
 ):
     """Consulta logs de notificaciones."""
     db = get_db()
@@ -299,7 +333,8 @@ async def get_notification_logs(
 async def get_notification_stats(
     modulo: Optional[str] = None,
     fecha_desde: Optional[str] = None,
-    fecha_hasta: Optional[str] = None
+    fecha_hasta: Optional[str] = None,
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_VER"))
 ):
     """Obtiene estadísticas de notificaciones."""
     db = get_db()
@@ -314,7 +349,9 @@ async def get_notification_stats(
 
 
 @router.get("/queue-status")
-async def get_queue_status():
+async def get_queue_status(
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_VER"))
+):
     """Obtiene estado actual de la cola."""
     db = get_db()
     from core.communications.audit.audit_service import NotificationAuditService
@@ -328,7 +365,10 @@ async def get_queue_status():
 # =============================================================================
 
 @router.post("/test")
-async def test_notification(request: TestNotificationRequest):
+async def test_notification(
+    request: TestNotificationRequest,
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_ENVIAR"))
+):
     """
     Envía una notificación de prueba.
     
@@ -376,7 +416,10 @@ async def test_notification(request: TestNotificationRequest):
 
 
 @router.post("/reprocesar")
-async def reprocess_queue(limit: int = Query(50, ge=1, le=200)):
+async def reprocess_queue(
+    limit: int = Query(50, ge=1, le=200),
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+):
     """
     Reprocesa items pendientes de la cola.
     
@@ -397,7 +440,9 @@ async def reprocess_queue(limit: int = Query(50, ge=1, le=200)):
 
 
 @router.post("/inicializar")
-async def initialize_notification_system():
+async def initialize_notification_system(
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+):
     """
     Inicializa/reinicializa el sistema de notificaciones.
     
@@ -419,7 +464,9 @@ async def initialize_notification_system():
 # =============================================================================
 
 @router.get("/providers")
-async def list_providers():
+async def list_providers(
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_VER"))
+):
     """Lista providers configurados."""
     db = get_db()
     
@@ -431,7 +478,10 @@ async def list_providers():
 
 
 @router.get("/providers/{provider_id}")
-async def get_provider(provider_id: str):
+async def get_provider(
+    provider_id: str,
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_VER"))
+):
     """Obtiene un provider por ID."""
     db = get_db()
     
@@ -450,7 +500,9 @@ async def get_provider(provider_id: str):
 # =============================================================================
 
 @router.get("/provider-status")
-async def get_provider_runtime_status():
+async def get_provider_runtime_status(
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_VER"))
+):
     """
     Obtiene estado en tiempo real de los providers disponibles.
     
@@ -477,7 +529,10 @@ class TestRealNotificationRequest(BaseModel):
 
 
 @router.post("/test-real")
-async def test_real_notification(request: TestRealNotificationRequest):
+async def test_real_notification(
+    request: TestRealNotificationRequest,
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_ENVIAR"))
+):
     """
     Envía una notificación de prueba usando provider REAL (Twilio).
     
@@ -560,7 +615,9 @@ async def test_real_notification(request: TestRealNotificationRequest):
 
 
 @router.post("/config/set-twilio")
-async def configure_twilio_provider():
+async def configure_twilio_provider(
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+):
     """
     Crea o actualiza la configuración del provider Twilio en la BD.
     
@@ -605,7 +662,12 @@ async def configure_twilio_provider():
 
 
 @router.put("/config/{config_id}/set-provider")
-async def update_event_provider(config_id: str, provider: str = "twilio", modo: str = "real"):
+async def update_event_provider(
+    config_id: str,
+    provider: str = "twilio",
+    modo: str = "real",
+    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+):
     """
     Cambia el provider de un evento de notificación.
     

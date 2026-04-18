@@ -1,16 +1,27 @@
 """
 Rutas de SLA - API para monitoreo de tiempos y cumplimiento.
 CAB-003 | EDARSA HUB - Fase 2B.4
+PROTEGIDO CON RBAC (Fase 2D)
 
 Endpoints para gestión de SLA de tareas operativas.
+
+Permisos requeridos:
+- GET /configuracion - SLA_VER
+- PUT /configuracion - SLA_CONFIGURAR
+- GET /metricas - SLA_VER
+- GET /tareas/* - SLA_VER
+- POST /actualizar-estados - SLA_VER (invocado por scheduler)
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Dict, Any
 import logging
 
 from ..db_utils import get_database
 from ..services.sla_service import get_sla_service, EstadoSLA
+
+# RBAC - Fase 2D
+from core.rbac.middleware import require_permission
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +29,9 @@ router = APIRouter(prefix="/sla", tags=["SLA"])
 
 
 @router.get("/configuracion")
-async def obtener_configuracion_sla():
+async def obtener_configuracion_sla(
+    current_user: dict = Depends(require_permission("SLA_VER"))
+):
     """
     Obtiene la configuración actual de umbrales SLA.
     
@@ -45,7 +58,10 @@ async def obtener_configuracion_sla():
 
 
 @router.put("/configuracion")
-async def actualizar_configuracion_sla(valores: Dict[str, int]):
+async def actualizar_configuracion_sla(
+    valores: Dict[str, int],
+    current_user: dict = Depends(require_permission("SLA_CONFIGURAR"))
+):
     """
     Actualiza la configuración de umbrales SLA.
     
@@ -77,7 +93,9 @@ async def actualizar_configuracion_sla(valores: Dict[str, int]):
 
 
 @router.get("/metricas")
-async def obtener_metricas_sla():
+async def obtener_metricas_sla(
+    current_user: dict = Depends(require_permission("SLA_VER"))
+):
     """
     Obtiene métricas globales de cumplimiento SLA.
     
@@ -105,7 +123,8 @@ async def obtener_metricas_sla():
 
 @router.get("/tareas/proximas-vencer")
 async def obtener_tareas_proximas_vencer(
-    limite: int = Query(default=20, le=100)
+    limite: int = Query(default=20, le=100),
+    current_user: dict = Depends(require_permission("SLA_VER"))
 ):
     """
     Obtiene tareas próximas a vencer (ADVERTENCIA o URGENTE).
@@ -138,7 +157,8 @@ async def obtener_tareas_proximas_vencer(
 
 @router.get("/tareas/vencidas")
 async def obtener_tareas_vencidas(
-    limite: int = Query(default=50, le=200)
+    limite: int = Query(default=50, le=200),
+    current_user: dict = Depends(require_permission("SLA_VER"))
 ):
     """
     Obtiene tareas vencidas.
@@ -170,7 +190,9 @@ async def obtener_tareas_vencidas(
 
 
 @router.post("/actualizar-estados")
-async def actualizar_estados_sla():
+async def actualizar_estados_sla(
+    current_user: dict = Depends(require_permission("SLA_VER"))
+):
     """
     Actualiza los estados SLA de todas las tareas activas.
     
@@ -203,7 +225,10 @@ async def actualizar_estados_sla():
 
 
 @router.get("/tarea/{tarea_id}")
-async def obtener_sla_tarea(tarea_id: str):
+async def obtener_sla_tarea(
+    tarea_id: str,
+    current_user: dict = Depends(require_permission("SLA_VER"))
+):
     """
     Obtiene el cálculo SLA de una tarea específica.
     
