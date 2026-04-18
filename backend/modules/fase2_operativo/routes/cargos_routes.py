@@ -134,9 +134,10 @@ async def listar_cargos(
     "/pendientes",
     response_model=CargosPendientesResponse,
     summary="Cargos pendientes",
-    description="Lista cargos pendientes de autorización"
+    description="Lista cargos pendientes de autorización. Requiere permiso CARGOS_VER."
 )
 async def obtener_pendientes(
+    current_user: dict = Depends(require_permission("CARGOS_VER")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """Obtiene cargos pendientes de autorización."""
@@ -147,9 +148,10 @@ async def obtener_pendientes(
     "/aplicados",
     response_model=CargosAplicadosResponse,
     summary="Cargos aplicados",
-    description="Lista cargos que han sido aplicados"
+    description="Lista cargos que han sido aplicados. Requiere permiso CARGOS_VER."
 )
 async def obtener_aplicados(
+    current_user: dict = Depends(require_permission("CARGOS_VER")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """Obtiene cargos aplicados."""
@@ -160,9 +162,10 @@ async def obtener_aplicados(
     "/metricas",
     response_model=CargosMetricasResponse,
     summary="Métricas de cargos",
-    description="Obtiene métricas agregadas de cargos económicos"
+    description="Obtiene métricas agregadas de cargos económicos. Requiere permiso CARGOS_VER."
 )
 async def obtener_metricas(
+    current_user: dict = Depends(require_permission("CARGOS_VER")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """Obtiene métricas agregadas de cargos."""
@@ -173,10 +176,11 @@ async def obtener_metricas(
     "/elegibilidad/{responsabilidad_id}",
     response_model=ElegibilidadCargoResponse,
     summary="Evaluar elegibilidad",
-    description="Evalúa si una responsabilidad es elegible para generar cargo"
+    description="Evalúa si una responsabilidad es elegible para generar cargo. Requiere permiso CARGOS_VER."
 )
 async def evaluar_elegibilidad(
     responsabilidad_id: str,
+    current_user: dict = Depends(require_permission("CARGOS_VER")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """
@@ -195,10 +199,11 @@ async def evaluar_elegibilidad(
     "/{cargo_id}",
     response_model=CargoEconomicoResponse,
     summary="Obtener cargo",
-    description="Obtiene un cargo económico por su ID"
+    description="Obtiene un cargo económico por su ID. Requiere permiso CARGOS_VER."
 )
 async def obtener_cargo(
     cargo_id: str,
+    current_user: dict = Depends(require_permission("CARGOS_VER")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """Obtiene un cargo por su ID."""
@@ -212,10 +217,11 @@ async def obtener_cargo(
     "/{cargo_id}/log",
     response_model=CargoLogListResponse,
     summary="Historial de cargo",
-    description="Obtiene el historial completo de un cargo"
+    description="Obtiene el historial completo de un cargo. Requiere permiso CARGOS_VER."
 )
 async def obtener_log_cargo(
     cargo_id: str,
+    current_user: dict = Depends(require_permission("CARGOS_VER")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """Obtiene el historial de log de un cargo."""

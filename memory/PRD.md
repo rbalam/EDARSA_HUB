@@ -1377,3 +1377,128 @@ db.cargos_economicos_log.drop()
 ```
 
 **Estado:** FASE 2C.3 COMPLETADA
+
+
+---
+
+### 2026-04-19 - FASE 2D: RBAC Avanzado - COMPLETADA ✅
+
+**Sistema de Control de Acceso Basado en Roles implementado en todos los módulos críticos**
+
+#### Arquitectura RBAC ✅
+```
+/app/backend/core/rbac/
+├── schemas.py      # PERMISOS_SISTEMA (40+), ROLES_SISTEMA (6)
+├── repository.py   # CRUD MongoDB (rbac_permisos, rbac_roles, etc.)
+├── service.py      # RBACService - Motor de autorización
+├── middleware.py   # require_permission() dependency
+└── routes.py       # Endpoints de administración RBAC
+```
+
+#### Roles del Sistema ✅
+| Rol | Nivel | Descripción |
+|-----|-------|-------------|
+| ADMIN | 100 | Administrador total |
+| DIRECCION | 80 | Autoriza montos altos y reversas |
+| GERENTE_OPS | 60 | Autoriza y aplica cargos |
+| SUPERVISOR | 40 | Crea propuestas y gestiona tareas |
+| AUDITOR | 30 | Solo lectura para fiscalización |
+| OPERADOR | 20 | Ejecuta tareas, registra información |
+
+#### Permisos por Módulo ✅
+| Módulo | Permisos |
+|--------|----------|
+| Cargos | CARGOS_VER, CARGOS_CREAR, CARGOS_AUTORIZAR, CARGOS_APLICAR, CARGOS_RECHAZAR, CARGOS_REVERTIR, CARGOS_CANCELAR |
+| Responsabilidad | RESPONSABILIDAD_VER, RESPONSABILIDAD_CALCULAR, RESPONSABILIDAD_PROPONER, RESPONSABILIDAD_APROBAR, RESPONSABILIDAD_RECHAZAR, RESPONSABILIDAD_EXONERAR, RESPONSABILIDAD_DISPUTAR, RESPONSABILIDAD_GESTIONAR |
+| SLA | SLA_VER, SLA_CONFIGURAR |
+| Notificaciones | NOTIFICACIONES_VER, NOTIFICACIONES_ENVIAR, NOTIFICACIONES_CONFIGURAR |
+| RBAC | ROLES_VER, ROLES_GESTIONAR, USUARIOS_VER, USUARIOS_GESTIONAR, RBAC_ADMIN |
+
+#### Módulos Protegidos ✅
+| Módulo | Archivo | Estado |
+|--------|---------|--------|
+| Cargos Económicos | `cargos_routes.py` | ✅ 13 endpoints protegidos |
+| Responsabilidad Económica | `responsabilidad_routes.py` | ✅ 14 endpoints protegidos |
+| SLA | `sla_routes.py` | ✅ 7 endpoints protegidos |
+| Notificaciones | `communications/routes.py` | ✅ 16 endpoints protegidos |
+
+#### Colecciones MongoDB ✅
+| Colección | Descripción |
+|-----------|-------------|
+| `rbac_permisos` | Catálogo de permisos del sistema |
+| `rbac_roles` | Roles con permisos asignados |
+| `rbac_usuarios_roles` | Asignación de roles a usuarios |
+| `rbac_audit_log` | Auditoría de verificaciones |
+
+#### Endpoints API RBAC ✅
+| Endpoint | Método | Permiso Requerido |
+|----------|--------|-------------------|
+| `/api/v2/rbac/roles` | GET | ROLES_VER |
+| `/api/v2/rbac/roles` | POST | ROLES_GESTIONAR |
+| `/api/v2/rbac/permisos` | GET | ROLES_VER |
+| `/api/v2/rbac/asignar` | POST | ROLES_GESTIONAR |
+| `/api/v2/rbac/revocar` | POST | ROLES_GESTIONAR |
+| `/api/v2/rbac/usuario/{id}/permisos` | GET | USUARIOS_VER |
+| `/api/v2/rbac/mis-permisos` | GET | (autenticado) |
+| `/api/v2/rbac/audit` | GET | RBAC_ADMIN |
+
+#### Mapeo Legacy a RBAC ✅
+| Rol Legacy | Rol RBAC |
+|------------|----------|
+| Administrador | ADMIN |
+| Supervisor | SUPERVISOR |
+| Usuario | OPERADOR |
+| Gerente | GERENTE_OPS |
+| Director | DIRECCION |
+| Auditor | AUDITOR |
+
+#### Verificaciones ✅
+- ✅ 27/27 pruebas backend pasaron (100%)
+- ✅ Admin (Administrador) accede a todos los endpoints
+- ✅ Operador (Usuario) puede VER pero no CREAR/APLICAR/AUTORIZAR/CONFIGURAR
+- ✅ Respuestas 403 Forbidden con detalle del permiso requerido
+- ✅ Respuestas 401 Unauthorized sin token
+- ✅ Auditoría de todas las verificaciones de permisos
+- ✅ No regresión en módulos existentes
+
+#### Usuarios de Prueba
+| Usuario | Password | Rol Legacy | Rol RBAC |
+|---------|----------|------------|----------|
+| admin.rbac.test@edarsa.com | AdminRBAC2024! | Administrador | ADMIN |
+| operador.test@edarsa.com | OperadorTest2024! | Usuario | OPERADOR |
+
+#### Archivos Creados
+- `/app/backend/core/rbac/schemas.py`
+- `/app/backend/core/rbac/repository.py`
+- `/app/backend/core/rbac/service.py`
+- `/app/backend/core/rbac/middleware.py`
+- `/app/backend/core/rbac/routes.py`
+- `/app/backend/core/rbac/__init__.py`
+- `/app/backend/tests/test_rbac_fase2d.py`
+
+#### Archivos Modificados
+- `/app/backend/modules/fase2_operativo/routes/cargos_routes.py` (decoradores RBAC)
+- `/app/backend/modules/fase2_operativo/routes/responsabilidad_routes.py` (decoradores RBAC)
+- `/app/backend/modules/fase2_operativo/routes/sla_routes.py` (decoradores RBAC)
+- `/app/backend/core/communications/routes.py` (decoradores RBAC)
+- `/app/backend/server.py` (incluir rbac_router)
+
+**Estado:** FASE 2D COMPLETADA ✅
+
+---
+
+## Backlog Actualizado
+
+### P0 (Urgente) - COMPLETADO
+- ✅ FASE 2C.3: Cargos Económicos
+- ✅ FASE 2B.5: Notificaciones WhatsApp (Twilio SDK)
+- ✅ FASE 2D: RBAC Avanzado
+
+### P1 (Alta Prioridad) - PENDIENTES
+- UI "Shuttle de Programación de Análisis de Inventarios" (scheduler frontend)
+- Dashboard de auditorías programadas
+
+### P2 (Media Prioridad)
+- Integración real con nómina/ERP
+- Reportes financieros avanzados
+- Meta Cloud API para WhatsApp

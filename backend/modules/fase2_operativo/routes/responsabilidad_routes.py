@@ -245,9 +245,11 @@ async def actualizar_configuracion(
     "/inicializar-configuracion",
     response_model=OperacionResponse,
     summary="Inicializar configuración",
-    description="Inicializa las claves de configuración del módulo si no existen. Seguro de ejecutar múltiples veces."
+    description="Inicializa las claves de configuración del módulo si no existen. Requiere permiso RESPONSABILIDAD_GESTIONAR."
 )
-async def inicializar_configuracion():
+async def inicializar_configuracion(
+    current_user: dict = Depends(require_permission("RESPONSABILIDAD_GESTIONAR"))
+):
     """Inicializa la configuración del módulo."""
     try:
         db = get_db()
