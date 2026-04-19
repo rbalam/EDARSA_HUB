@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '@/lib/api';
-import { fetchServersOperativos } from '@/services/serversService';
+import { fetchUnidadesNegocio, getServerIdFromUnidad } from '@/services/unidadesNegocioService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter, FileSpreadsheet, LayoutDashboard, ClipboardList, FileText, FolderOpen, Upload, Trash2, Eye, Download, CheckCircle, FileImage, File, Maximize2, Minimize2 } from 'lucide-react';
+import { FileDown, Mail, Search, AlertCircle, TrendingUp, TrendingDown, X, Loader2, ChevronDown, Filter, FileSpreadsheet, LayoutDashboard, ClipboardList, FileText, FolderOpen, Upload, Trash2, Eye, Download, CheckCircle, FileImage, File, Maximize2, Minimize2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -26,7 +26,24 @@ const Reportes = () => {
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'analisis';
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [servers, setServers] = useState([]);
+  
+  // FASE 3.2: Unidades de Negocio reemplazan servidores como filtro visible
+  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+  const [selectedUnidad, setSelectedUnidad] = useState('');
+  const [loadingUnidades, setLoadingUnidades] = useState(true);
+  
+  // servers se deriva de unidadesNegocio para compatibilidad interna
+  const servers = useMemo(() => {
+    return unidadesNegocio.map(u => ({
+      id: u.server_id,
+      name: u.nombre,
+      system_type: u.system_type,
+      unidad_id: u.id,
+      sucursal_origen_id: u.sucursal_origen_id,
+      active: true
+    }));
+  }, [unidadesNegocio]);
+  
   const [sucursales, setSucursales] = useState([]);
   const [almacenes, setAlmacenes] = useState([]);
   const [inventarios, setInventarios] = useState([]);
@@ -72,6 +89,7 @@ const Reportes = () => {
     }
     return {
       server_id: '',
+      unidad_id: '', // FASE 3.2: Agregar unidad_id
       query_type: 'analisis',
       sucursal_id: '',
       sucursal: '',
@@ -454,7 +472,7 @@ const Reportes = () => {
   }, []);
 
   useEffect(() => {
-    loadServers();
+    loadUnidadesNegocio();
   }, []);
 
   // Track previous server to detect changes
@@ -666,19 +684,59 @@ const Reportes = () => {
     }
   }, [selectedInventariosIni, selectedInventariosFin, selectedServer]);
 
-  const loadServers = async () => {
+  // FASE 3.2: Cargar unidades de negocio según RBAC
+  const loadUnidadesNegocio = async () => {
+    setLoadingUnidades(true);
     try {
-      console.log('Cargando servidores operativos via serversService...');
-      const serversOperativos = await fetchServersOperativos();
-      console.log('Servidores cargados (operativos):', serversOperativos.length);
-      setServers(serversOperativos);
-      if (serversOperativos.length === 0) {
-        console.warn('No se recibieron servidores operativos');
+      console.log('[Reportes] Cargando unidades de negocio via unidadesNegocioService...');
+      const unidades = await fetchUnidadesNegocio();
+      console.log('[Reportes] Unidades cargadas:', unidades.length);
+      setUnidadesNegocio(unidades);
+      
+      // Auto-seleccionar si el usuario tiene solo una unidad
+      if (unidades.length === 1) {
+        const unidad = unidades[0];
+        setSelectedUnidad(unidad.id);
+        setFilters(prev => ({
+          ...prev,
+          unidad_id: unidad.id,
+          server_id: unidad.server_id
+        }));
+        // Establecer el servidor seleccionado para compatibilidad
+        setSelectedServer({
+          id: unidad.server_id,
+          name: unidad.nombre,
+          system_type: unidad.system_type,
+          sucursal_origen_id: unidad.sucursal_origen_id
+        });
+        console.log(`[Reportes] Auto-seleccionada unidad única: ${unidad.nombre}`);
+      } else {
+        // Restaurar unidad guardada si existe
+        const saved = sessionStorage.getItem('reportFilters');
+        if (saved) {
+          try {
+            const params = JSON.parse(saved);
+            if (params.unidad_id && unidades.find(u => u.id === params.unidad_id)) {
+              setSelectedUnidad(params.unidad_id);
+              const unidad = unidades.find(u => u.id === params.unidad_id);
+              if (unidad) {
+                setSelectedServer({
+                  id: unidad.server_id,
+                  name: unidad.nombre,
+                  system_type: unidad.system_type,
+                  sucursal_origen_id: unidad.sucursal_origen_id
+                });
+              }
+            }
+          } catch (e) {}
+        }
       }
     } catch (error) {
-      console.error('Error al cargar servidores:', error);
-      toast.error('Error al cargar servidores: ' + (error.message || 'Error desconocido'));
-      setServers([]);
+      console.error('[Reportes] Error al cargar unidades de negocio:', error);
+      toast.error('Error al cargar unidades de negocio: ' + (error.message || 'Error desconocido'));
+      setUnidadesNegocio([]);
+    } finally {
+      setLoadingUnidades(false);
     }
   };
 
@@ -756,7 +814,7 @@ const Reportes = () => {
 
   const handleGenerateReport = async () => {
     if (!filters.server_id) {
-      toast.error('Selecciona un servidor');
+      toast.error('Selecciona una unidad de negocio');
       return;
     }
 
@@ -1184,7 +1242,7 @@ const Reportes = () => {
   const handleExportComparativo4Cortes = async () => {
     // Validar que tengamos los filtros necesarios
     if (!filters.server_id) {
-      toast.error('Selecciona un servidor primero');
+      toast.error('Selecciona una unidad de negocio primero');
       return;
     }
     
@@ -1434,21 +1492,54 @@ const Reportes = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* FASE 3.2: Selector de Unidad de Negocio */}
                 <div className="space-y-2">
-                  <Label>Servidor {servers.length === 0 && <span className="text-red-500 text-xs">(Cargando...)</span>}</Label>
-                  <select 
-                    className={selectStyle}
-                    data-testid="server-select"
-                    value={filters.server_id}
-                    onChange={(e) => setFilters({...filters, server_id: e.target.value, sucursal_id: '', almacen_id: '', sucursal: '', almacen: ''})}
-                  >
-                    <option value="">{servers.length === 0 ? "Cargando servidores..." : "Selecciona un servidor"}</option>
-                    {servers.map((server) => (
-                      <option key={server.id} value={server.id}>
-                        {server.name} ({server.system_type})
-                      </option>
-                    ))}
-                  </select>
+                  <Label>Unidad de Negocio {loadingUnidades && <span className="text-zinc-500 text-xs">(Cargando...)</span>}</Label>
+                  {unidadesNegocio.length === 1 ? (
+                    <div className="flex h-10 w-full items-center rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm">
+                      <Building2 className="h-4 w-4 mr-2 text-zinc-500" />
+                      {unidadesNegocio[0].nombre}
+                    </div>
+                  ) : (
+                    <select 
+                      className={selectStyle}
+                      data-testid="unidad-negocio-select"
+                      value={selectedUnidad}
+                      onChange={(e) => {
+                        const unidadId = e.target.value;
+                        setSelectedUnidad(unidadId);
+                        const unidad = unidadesNegocio.find(u => u.id === unidadId);
+                        if (unidad) {
+                          setFilters({
+                            ...filters, 
+                            unidad_id: unidadId,
+                            server_id: unidad.server_id, 
+                            sucursal_id: '', 
+                            almacen_id: '', 
+                            sucursal: '', 
+                            almacen: ''
+                          });
+                          setSelectedServer({
+                            id: unidad.server_id,
+                            name: unidad.nombre,
+                            system_type: unidad.system_type,
+                            sucursal_origen_id: unidad.sucursal_origen_id
+                          });
+                        } else {
+                          setFilters({...filters, unidad_id: '', server_id: '', sucursal_id: '', almacen_id: '', sucursal: '', almacen: ''});
+                          setSelectedServer(null);
+                        }
+                      }}
+                      disabled={loadingUnidades}
+                    >
+                      <option value="">{loadingUnidades ? "Cargando..." : "Selecciona una unidad"}</option>
+                      {unidadesNegocio.map((unidad) => (
+                        <option key={unidad.id} value={unidad.id}>
+                          {unidad.nombre} ({unidad.system_type})
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
             <div className="space-y-2">
@@ -1479,9 +1570,9 @@ const Reportes = () => {
                   data-testid="sucursal-select"
                   value={filters.sucursal_id}
                   onChange={(e) => handleSucursalChange(e.target.value)}
-                  disabled={!filters.server_id || sucursales.length === 0}
+                  disabled={!selectedUnidad || sucursales.length === 0}
                 >
-                  <option value="">{!filters.server_id ? "Selecciona servidor primero" : "Selecciona una sucursal"}</option>
+                  <option value="">{!selectedUnidad ? "Selecciona unidad primero" : "Selecciona una sucursal"}</option>
                   {sucursales.map((sucursal) => (
                     <option key={sucursal.id} value={sucursal.id}>
                       {sucursal.nombre}
@@ -1501,7 +1592,7 @@ const Reportes = () => {
                   <span className="truncate">
                     {selectedAlmacenes.length === 0 
                       ? (selectedServer?.system_type === 'SoftRestaurant'
-                          ? (!filters.server_id ? "Selecciona servidor primero" : (almacenes.length === 0 ? "Cargando..." : "Selecciona almacén(es)"))
+                          ? (!selectedUnidad ? "Selecciona unidad primero" : (almacenes.length === 0 ? "Cargando..." : "Selecciona almacén(es)"))
                           : (!filters.sucursal_id ? "Selecciona sucursal primero" : "Selecciona almacén(es)"))
                       : `${selectedAlmacenes.length} seleccionado(s)`}
                   </span>
@@ -2788,7 +2879,7 @@ const Reportes = () => {
                 </h4>
                 <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
                   <li>Ve a la pestaña "Análisis de Inventarios"</li>
-                  <li>Selecciona el servidor, sucursal, almacén e inventario</li>
+                  <li>Selecciona la unidad de negocio, sucursal, almacén e inventario</li>
                   <li>Genera el reporte de análisis</li>
                   <li>Haz clic en el botón "Generar Informe"</li>
                   <li>Agrega comentarios, conclusiones y recomendaciones</li>

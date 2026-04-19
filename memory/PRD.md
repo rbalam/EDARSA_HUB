@@ -118,12 +118,18 @@ El tablero ejecutivo devolvía **$0.00** para unidades MPRO aunque existían dat
   - Todos los tabs migrados (Dashboard, Precios Const., PAX, Ticket Perfecto, Metas, Por Hora/Día, Mesas)
   - Labels, placeholders y mensajes de error actualizados
   - Auto-selección funcional para usuarios restringidos
+- [x] **FASE 3.2: Migración "Servidor" → "Unidad de Negocio" en Operaciones** (2026-04-19)
+  - Archivo: `/app/frontend/src/pages/Reportes.js`
+  - Import actualizado: `fetchUnidadesNegocio` reemplaza `fetchServersOperativos`
+  - Estados: `unidadesNegocio`, `selectedUnidad`, `loadingUnidades`
+  - Selector UI migrado con auto-selección
+  - Placeholders y mensajes actualizados
+  - Instrucciones de ayuda actualizadas
 
 ### P0 - PENDIENTE
 - [ ] RH mapeo empresa→sucursal_id SQL (agregar `rh_sql_sucursal_id` a `sucursales_catalogo`)
 
 ### P1 - PENDIENTE
-- [ ] **Migrar módulo Operaciones a "Unidad de Negocio"**
 - [ ] **Migrar módulo Finanzas a "Unidad de Negocio"**
 - [ ] **Migrar módulo Reportes/ExploradorBD a "Unidad de Negocio"**
 - [ ] Migrar credenciales legacy de `repository_cortes_z.py` a MongoDB
