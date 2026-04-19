@@ -3,7 +3,32 @@
 ## Visión General
 Sistema ERP operativo centralizado para EDARSA, actuando como "el cerebro" de operaciones de compras, inventarios, auditorías y flujos de aprobación.
 
-## Estado Actual: FASE 3.1 - Migración RBAC por Módulo (COMPLETADA)
+## Estado Actual: FASE 3.2 - Migración "Unidad de Negocio" (EN PROGRESO)
+
+---
+
+## FASE 3.2: Migración "Servidor" → "Unidad de Negocio" - COMERCIAL
+**Fecha**: 2026-04-19
+
+### Trabajo Completado
+- [x] **Módulo Compras**: Completado anteriormente
+- [x] **Módulo Comercial**: Completado hoy (2026-04-19)
+  - Todos los tabs migrados: Dashboard, Precios Const., Reporte PAX, Ticket Perfecto, Metas, Por Hora/Día, Mesas
+  - Labels cambiados de "Servidor" a "Unidad de Negocio"
+  - Selectores actualizados a `unidadesNegocio.map()` con auto-selección
+  - Placeholders/mensajes de error actualizados
+  - Props correctamente propagadas a subcomponentes
+
+### Evidencia Visual Verificada
+1. Usuario admin ve dropdown "Seleccionar unidad" con todas las unidades RBAC
+2. Usuario restringido (CIENFUEGOS) ve campo fijo con su única unidad pre-seleccionada
+3. Sucursal se auto-selecciona correctamente basada en `sucursal_origen_id`
+4. Todos los tabs funcionan correctamente con el nuevo modelo
+
+### Próximos Módulos (P1)
+- [ ] Operaciones
+- [ ] Finanzas
+- [ ] Reportes/ExploradorBD
 
 ---
 
@@ -89,20 +114,27 @@ El tablero ejecutivo devolvía **$0.00** para unidades MPRO aunque existían dat
   - Endpoints: listar, obtener, exportar texto, generar bajo demanda
   - Trigger integrado en servicio de automatización compras
   - Documentado en `/app/docs/MANUALES_OPERATIVOS_CIENFUEGOS.md`
+- [x] **FASE 3.2: Migración "Servidor" → "Unidad de Negocio" en Comercial** (2026-04-19)
+  - Todos los tabs migrados (Dashboard, Precios Const., PAX, Ticket Perfecto, Metas, Por Hora/Día, Mesas)
+  - Labels, placeholders y mensajes de error actualizados
+  - Auto-selección funcional para usuarios restringidos
 
 ### P0 - PENDIENTE
 - [ ] RH mapeo empresa→sucursal_id SQL (agregar `rh_sql_sucursal_id` a `sucursales_catalogo`)
 
 ### P1 - PENDIENTE
+- [ ] **Migrar módulo Operaciones a "Unidad de Negocio"**
+- [ ] **Migrar módulo Finanzas a "Unidad de Negocio"**
+- [ ] **Migrar módulo Reportes/ExploradorBD a "Unidad de Negocio"**
 - [ ] Migrar credenciales legacy de `repository_cortes_z.py` a MongoDB
 - [ ] Migrar credenciales legacy de `validacion_propinas_tpv.py` a MongoDB
 - [ ] Conectar SQL Server real en Finanzas (actualmente usa fallback demo)
-- [ ] Documentar inspección de servidores locales
 
 ### P2 - FUTURO
 - [ ] Cifrado de passwords en reposo (MongoDB)
 - [ ] Deprecación de campos legacy (`role`, `allowed_servers`)
-- [ ] Migración Frontend al selector de contextos RBAC
+- [ ] Refactor global para eliminar `fetchServersOperativos` (después de migrar todos los módulos)
+- [ ] Documentar inspección de servidores locales
 
 ---
 

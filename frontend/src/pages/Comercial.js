@@ -242,7 +242,7 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
 
   const cargarDashboard = async () => {
     if (!selectedServer || !selectedSucursal) {
-      toast.error('Selecciona servidor y sucursal');
+      toast.error('Selecciona unidad de negocio y sucursal');
       return;
     }
     setLoading(true);
@@ -317,7 +317,7 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
 
   const handleDoubleClick = (tipoKpi) => {
     if (!selectedServer || !selectedSucursal) {
-      toast.error('Selecciona servidor y sucursal primero');
+      toast.error('Selecciona unidad de negocio y sucursal primero');
       return;
     }
     setDetalleModal({ open: true, tipo: tipoKpi });
@@ -1080,21 +1080,27 @@ function VentasPorTiempo({ servers, unidadesNegocio, selectedUnidad, setSelected
 
   return (
     <div className="space-y-4">
-      {/* Filtros */}
+      {/* Filtros - FASE 3.2: Unidad de Negocio */}
       <Card className="border">
         <CardContent className="py-4">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex-1 min-w-[180px] max-w-xs">
-              <Label className="text-xs mb-1 block">Servidor</Label>
-              <Select value={selectedServer} onValueChange={setSelectedServer}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                <SelectContent>{servers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-              </Select>
+              <Label className="text-xs mb-1 block">Unidad de Negocio</Label>
+              {unidadesNegocio?.length === 1 ? (
+                <div className="flex h-10 w-full items-center rounded-md border border-input bg-zinc-50 px-3 py-2 text-sm">
+                  <Building2 className="h-4 w-4 mr-2 text-zinc-500" />{unidadesNegocio[0].nombre}
+                </div>
+              ) : (
+                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+                  <SelectTrigger><SelectValue placeholder={loadingUnidades ? "Cargando..." : "Seleccionar unidad"} /></SelectTrigger>
+                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+                </Select>
+              )}
             </div>
             <div className="flex-1 min-w-[180px] max-w-xs">
               <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
-                <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
+              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
+                <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
                 <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
               </Select>
             </div>
@@ -1193,21 +1199,27 @@ function MesasComensales({ servers, unidadesNegocio, selectedUnidad, setSelected
 
   return (
     <div className="space-y-4">
-      {/* Filtros */}
+      {/* Filtros - FASE 3.2: Unidad de Negocio */}
       <Card className="border">
         <CardContent className="py-4">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex-1 min-w-[180px] max-w-xs">
-              <Label className="text-xs mb-1 block">Servidor</Label>
-              <Select value={selectedServer} onValueChange={setSelectedServer}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                <SelectContent>{servers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-              </Select>
+              <Label className="text-xs mb-1 block">Unidad de Negocio</Label>
+              {unidadesNegocio?.length === 1 ? (
+                <div className="flex h-10 w-full items-center rounded-md border border-input bg-zinc-50 px-3 py-2 text-sm">
+                  <Building2 className="h-4 w-4 mr-2 text-zinc-500" />{unidadesNegocio[0].nombre}
+                </div>
+              ) : (
+                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+                  <SelectTrigger><SelectValue placeholder={loadingUnidades ? "Cargando..." : "Seleccionar unidad"} /></SelectTrigger>
+                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+                </Select>
+              )}
             </div>
             <div className="flex-1 min-w-[180px] max-w-xs">
               <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
-                <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
+              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
+                <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
                 <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
               </Select>
             </div>
@@ -1330,7 +1342,7 @@ function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnida
 
   const cargarDatos = async () => {
     if (!selectedServer || !selectedSucursal) {
-      toast.error('Selecciona servidor y sucursal');
+      toast.error('Selecciona unidad de negocio y sucursal');
       return;
     }
     setLoading(true);
@@ -1413,26 +1425,28 @@ function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnida
 
   return (
     <div className="space-y-4">
-      {/* Filtros */}
+      {/* Filtros - FASE 3.2: Unidad de Negocio */}
       <Card className="border">
         <CardContent className="py-4">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex-1 min-w-[180px] max-w-xs">
-              <Label className="text-xs mb-1 block">Servidor</Label>
-              <Select value={selectedServer} onValueChange={setSelectedServer}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                <SelectContent>
-                  {servers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs mb-1 block">Unidad de Negocio</Label>
+              {unidadesNegocio?.length === 1 ? (
+                <div className="flex h-10 w-full items-center rounded-md border border-input bg-zinc-50 px-3 py-2 text-sm">
+                  <Building2 className="h-4 w-4 mr-2 text-zinc-500" />{unidadesNegocio[0].nombre}
+                </div>
+              ) : (
+                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+                  <SelectTrigger><SelectValue placeholder={loadingUnidades ? "Cargando..." : "Seleccionar unidad"} /></SelectTrigger>
+                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+                </Select>
+              )}
             </div>
             <div className="flex-1 min-w-[180px] max-w-xs">
               <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
-                <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
-                <SelectContent>
-                  {sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}
-                </SelectContent>
+              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
+                <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
+                <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="min-w-[150px]">
@@ -1464,7 +1478,7 @@ function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnida
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={cargarDatos} disabled={loading || !selectedServer || !selectedSucursal} className="mt-5">
+            <Button onClick={cargarDatos} disabled={loading || !selectedUnidad || !selectedSucursal} className="mt-5">
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
               Actualizar
             </Button>
@@ -1894,22 +1908,30 @@ function VentasPreciosConstantes({ servers, unidadesNegocio, selectedUnidad, set
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Selectores de servidor y sucursal */}
+          {/* Selectores de Unidad de Negocio y sucursal - FASE 3.2 */}
           <div className="flex gap-4 items-end flex-wrap">
             <div className="w-56">
-              <Label className="text-xs">Servidor</Label>
-              <Select value={selectedServer} onValueChange={setSelectedServer}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar servidor" /></SelectTrigger>
-                <SelectContent>
-                  {servers.filter(s => s.active).map(s => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs">Unidad de Negocio</Label>
+              {unidadesNegocio?.length === 1 ? (
+                <div className="flex h-10 w-full items-center rounded-md border border-input bg-zinc-50 px-3 py-2 text-sm">
+                  <Building2 className="h-4 w-4 mr-2 text-zinc-500" />{unidadesNegocio[0].nombre}
+                </div>
+              ) : (
+                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+                  <SelectTrigger><SelectValue placeholder={loadingUnidades ? "Cargando..." : "Seleccionar unidad"} /></SelectTrigger>
+                  <SelectContent>
+                    {unidadesNegocio?.map(u => (
+                      <SelectItem key={u.id} value={u.id}>
+                        <span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             
-            {/* Selector de sucursal (solo visible si hay servidor seleccionado y es MPRO) */}
-            {selectedServer && localSucursales.length > 1 && (
+            {/* Selector de sucursal (solo visible si hay unidad seleccionada y es MPRO) */}
+            {selectedUnidad && localSucursales.length > 1 && (
               <div className="w-56">
                 <Label className="text-xs">Sucursal</Label>
                 <Select 
@@ -2015,7 +2037,7 @@ function VentasPreciosConstantes({ servers, unidadesNegocio, selectedUnidad, set
           )}
 
           <div className="flex justify-end">
-            <Button onClick={cargarAnalisis} disabled={loading || !selectedServer}>
+            <Button onClick={cargarAnalisis} disabled={loading || !selectedUnidad}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
               Analizar
             </Button>
@@ -2367,7 +2389,7 @@ function VentasPreciosConstantes({ servers, unidadesNegocio, selectedUnidad, set
             <Scale className="h-16 w-16 mx-auto mb-4 opacity-30" />
             <h3 className="text-lg font-medium text-zinc-700 mb-2">Análisis de Precios Constantes</h3>
             <p className="text-sm max-w-md mx-auto">
-              Selecciona un servidor, configura los períodos a comparar y haz clic en "Analizar" 
+              Selecciona una Unidad de Negocio, configura los períodos a comparar y haz clic en "Analizar" 
               para ver las ventas valuadas sin efecto inflacionario.
             </p>
           </CardContent>
