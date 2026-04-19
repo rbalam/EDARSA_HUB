@@ -9,13 +9,17 @@ const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 const API_V2 = `${API_BASE}/api/v2`;
 
 /**
- * Helper para hacer requests con manejo de errores
+ * Helper para hacer requests con manejo de errores y autenticación
  */
 async function apiRequest(url, options = {}) {
   try {
+    // Obtener token de autenticación
+    const token = localStorage.getItem('token');
+    
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...options.headers,
       },
       ...options,

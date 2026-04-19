@@ -442,14 +442,14 @@ class SLAService:
         Returns:
             Dict con métricas de cumplimiento
         """
-        # Tareas completadas - usar cursor sync de PyMongo
+        # Tareas completadas - PyMongo sync cursor
         completadas_cursor = self.db.tareas_inventario.find(
             {"estado_tarea": {"$in": ESTADOS_COMPLETADA}},
             {"_id": 0}
         )
         completadas = list(completadas_cursor)
         
-        # Tareas activas - usar cursor sync de PyMongo
+        # Tareas activas - PyMongo sync cursor
         activas_cursor = self.db.tareas_inventario.find(
             {"estado_tarea": {"$in": ESTADOS_ACTIVOS}},
             {"_id": 0}

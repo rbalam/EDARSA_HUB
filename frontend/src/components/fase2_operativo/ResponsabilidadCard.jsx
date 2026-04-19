@@ -133,7 +133,10 @@ const ResponsabilidadCard = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/api/v2/responsabilidad/metricas`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/api/v2/responsabilidad/metricas`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       if (!response.ok) throw new Error('Error al cargar métricas de responsabilidad');
       const data = await response.json();
       setMetricas(data);

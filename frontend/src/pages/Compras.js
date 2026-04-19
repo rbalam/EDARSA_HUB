@@ -170,19 +170,22 @@ function DashboardCompras({ servers, unidadesNegocio, selectedUnidad, setSelecte
                 </Select>
               )}
             </div>
-            <div className="flex-1 min-w-[180px] max-w-xs">
-              <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad || sucursales.length === 0}>
-                <SelectTrigger>
-                  <SelectValue placeholder={selectedUnidad ? (sucursales.length === 0 ? "Sin sucursales" : "Seleccionar sucursal") : "Selecciona unidad primero"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {sucursales.map(s => (
-                    <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Selector de Sucursal - Solo mostrar si hay múltiples sucursales y la unidad no tiene sucursal_origen_id */}
+            {sucursales.length > 1 && !unidadesNegocio.find(u => u.id === selectedUnidad)?.sucursal_origen_id && (
+              <div className="flex-1 min-w-[180px] max-w-xs">
+                <Label className="text-xs mb-1 block">Sucursal</Label>
+                <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad || sucursales.length === 0}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={selectedUnidad ? (sucursales.length === 0 ? "Sin sucursales" : "Seleccionar sucursal") : "Selecciona unidad primero"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sucursales.map(s => (
+                      <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {/* Selector de Meses (multiselección) */}
             <div className="flex-1 min-w-[150px] max-w-[200px] relative">
               <Label className="text-xs mb-1 block">Mes(es)</Label>
@@ -948,19 +951,22 @@ function AnalisisCompras({ servers, unidadesNegocio, selectedUnidad, setSelected
                 </Select>
               )}
             </div>
-            <div className="flex-1 min-w-[160px] max-w-[200px] space-y-1">
-              <Label className="text-xs">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {sucursales.map(s => (
-                    <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Sucursal - Solo mostrar si hay múltiples y no tiene sucursal_origen_id */}
+            {sucursales.length > 1 && !unidadesNegocio.find(u => u.id === selectedUnidad)?.sucursal_origen_id && (
+              <div className="flex-1 min-w-[160px] max-w-[200px] space-y-1">
+                <Label className="text-xs">Sucursal</Label>
+                <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sucursales.map(s => (
+                      <SelectItem key={s.codigo || s.nombre} value={s.nombre}>{s.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             
             {/* Años inline */}
             <div className="space-y-1">

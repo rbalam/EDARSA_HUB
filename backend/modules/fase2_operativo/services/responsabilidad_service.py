@@ -565,7 +565,7 @@ class ResponsabilidadService:
         # Métricas globales
         metricas_globales = await self.responsabilidad_repo.obtener_metricas_globales()
         
-        # Contar workflows en EN_REVISION_FINANCIERA
+        # Contar workflows en EN_REVISION_FINANCIERA (PyMongo sync)
         workflows_revision = self.workflow_repo.collection.count_documents({
             "estado_workflow": EstadoWorkflow.EN_REVISION_FINANCIERA.value
         })

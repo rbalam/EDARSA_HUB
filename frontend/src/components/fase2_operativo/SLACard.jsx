@@ -79,7 +79,10 @@ const SLACard = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/api/v2/sla/metricas`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/api/v2/sla/metricas`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       if (!response.ok) throw new Error('Error al cargar métricas SLA');
       const data = await response.json();
       setMetricas(data.data);
