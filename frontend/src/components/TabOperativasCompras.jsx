@@ -41,8 +41,13 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  Settings2,
+  Save,
+  History,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -109,6 +114,10 @@ export default function TabOperativasCompras() {
   const [automatizaciones, setAutomatizaciones] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
+  const [editingDias, setEditingDias] = useState(false);
+  const [nuevoDiasObjetivo, setNuevoDiasObjetivo] = useState(10);
+  const [bitacora, setBitacora] = useState([]);
+  const [userRole, setUserRole] = useState('');
   
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
@@ -117,6 +126,12 @@ export default function TabOperativasCompras() {
       'Authorization': `Bearer ${token}`
     };
   };
+  
+  // Obtener rol del usuario
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setUserRole(user.role || '');
+  }, []);
   
   const fetchData = useCallback(async (showLoader = true) => {
     if (showLoader) setLoading(true);
@@ -158,12 +173,59 @@ export default function TabOperativasCompras() {
       if (res.ok) {
         const data = await res.json();
         setSelectedItem(data);
+        setNuevoDiasObjetivo(data.dias_objetivo || 10);
+        setEditingDias(false);
         setShowDetail(true);
+        
+        // Cargar bitácora
+        const bitRes = await fetch(
+          `${API_URL}/api/v2/automatizaciones/operativas/compras/${item.id}/bitacora`,
+          { headers: getAuthHeaders() }
+        );
+        if (bitRes.ok) {
+          const bitData = await bitRes.json();
+          setBitacora(bitData);
+        }
       }
     } catch (error) {
       toast.error('Error al cargar detalle');
     }
   };
+  
+  const handleModificarDiasObjetivo = async () => {
+    if (!selectedItem) return;
+    
+    try {
+      const res = await fetch(
+        `${API_URL}/api/v2/automatizaciones/operativas/compras/${selectedItem.id}/dias-objetivo`,
+        {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            dias_objetivo: parseInt(nuevoDiasObjetivo),
+            motivo: 'Ajuste por Gerencia'
+          })
+        }
+      );
+      
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`Días objetivo actualizado a ${data.dias_objetivo_nuevo}. Recalculado.`);
+        
+        // Recargar detalle
+        handleVerDetalle(selectedItem);
+        fetchData(false);
+        setEditingDias(false);
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || 'Error al modificar');
+      }
+    } catch (error) {
+      toast.error('Error al modificar días objetivo');
+    }
+  };
+  
+  const canEditDiasObjetivo = ['Gerente', 'Director', 'Administrador'].includes(userRole);
   
   const handleAccion = async (accion, id) => {
     try {
@@ -364,7 +426,39 @@ export default function TabOperativasCompras() {
               {selectedItem.resultado && (
                 <Card className="bg-zinc-50">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Resumen de Auditoría</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm">Resumen de Auditoría</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-zinc-500">Días Objetivo:</span>
+                        {editingDias && canEditDiasObjetivo ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min="1"
+                              max="90"
+                              value={nuevoDiasObjetivo}
+                              onChange={(e) => setNuevoDiasObjetivo(e.target.value)}
+                              className="w-16 h-7 text-sm"
+                            />
+                            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={handleModificarDiasObjetivo}>
+                              <Save className="w-3 h-3" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditingDias(false)}>
+                              <XCircle className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">{selectedItem.dias_objetivo || 10}</span>
+                            {canEditDiasObjetivo && (
+                              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditingDias(true)}>
+                                <Settings2 className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-4 gap-4 text-center">
@@ -436,6 +530,32 @@ export default function TabOperativasCompras() {
                     <CheckCircle2 className="w-4 h-4 mr-1" />
                     Aprobar
                   </Button>
+                </div>
+              )}
+              
+              {/* Bitácora */}
+              {bitacora.length > 0 && (
+                <div className="pt-4 border-t">
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <History className="w-4 h-4" />
+                    Historial de Cambios
+                  </h4>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {bitacora.map((entry, idx) => (
+                      <div key={idx} className="text-xs bg-zinc-50 p-2 rounded flex justify-between items-center">
+                        <div>
+                          <span className="text-zinc-500">{formatDate(entry.fecha)}</span>
+                          <span className="mx-2">|</span>
+                          <span>Días: {entry.dias_anterior} → {entry.dias_nuevo}</span>
+                          <span className="mx-2">|</span>
+                          <span className="text-zinc-500">{entry.usuario_rol}</span>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {entry.recomendacion_anterior} → {entry.recomendacion_nueva}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

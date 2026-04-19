@@ -42,6 +42,12 @@ class AccionRevisionRequest(BaseModel):
     motivo: Optional[str] = ""
 
 
+class ModificarDiasObjetivoRequest(BaseModel):
+    """Request para modificar días objetivo."""
+    dias_objetivo: int
+    motivo: Optional[str] = ""
+
+
 # ============================================================================
 # ENDPOINTS
 # ============================================================================
@@ -192,3 +198,48 @@ async def rechazar_automatizacion(
         raise HTTPException(status_code=404, detail=resultado.get("error"))
     
     return resultado
+
+
+@router.post("/compras/{automatizacion_id}/dias-objetivo")
+async def modificar_dias_objetivo(
+    automatizacion_id: str,
+    request: ModificarDiasObjetivoRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Modifica días objetivo y recalcula automáticamente.
+    Solo Gerencia/Director/Administrador.
+    """
+    payload = verify_token(credentials.credentials)
+    db = get_database()
+    service = get_automatizacion_compras_service(db)
+    
+    # Obtener rol del usuario
+    user = db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "role": 1})
+    usuario_rol = user.get("role", "") if user else ""
+    
+    resultado = await service.modificar_dias_objetivo(
+        automatizacion_id=automatizacion_id,
+        nuevo_dias_objetivo=request.dias_objetivo,
+        usuario_id=payload.get("user_id", ""),
+        usuario_rol=usuario_rol,
+        motivo=request.motivo or ""
+    )
+    
+    if not resultado.get("success"):
+        raise HTTPException(status_code=400, detail=resultado.get("error"))
+    
+    return resultado
+
+
+@router.get("/compras/{automatizacion_id}/bitacora")
+async def obtener_bitacora(
+    automatizacion_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Obtiene bitácora de cambios de una automatización."""
+    verify_token(credentials.credentials)
+    db = get_database()
+    service = get_automatizacion_compras_service(db)
+    return service.obtener_bitacora(automatizacion_id)
+

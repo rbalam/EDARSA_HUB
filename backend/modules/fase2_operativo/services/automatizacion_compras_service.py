@@ -526,6 +526,175 @@ class AutomatizacionComprasService:
             return {"success": False, "error": "No encontrado"}
         
         return {"success": True, "estado": EstadoAutomatizacion.RECHAZADO.value}
+    
+    # =========================================================================
+    # MODIFICACIÓN DE DÍAS OBJETIVO (GERENCIA)
+    # =========================================================================
+    
+    async def modificar_dias_objetivo(
+        self,
+        automatizacion_id: str,
+        nuevo_dias_objetivo: int,
+        usuario_id: str,
+        usuario_rol: str,
+        motivo: str = ""
+    ) -> Dict:
+        """
+        Modifica días objetivo y recalcula todo el detalle.
+        Solo disponible para Gerencia/Director/Administrador.
+        Registra bitácora del cambio.
+        """
+        # Validar rol
+        roles_permitidos = ["Gerente", "Director", "Administrador"]
+        if usuario_rol not in roles_permitidos:
+            return {"success": False, "error": f"Solo {', '.join(roles_permitidos)} pueden modificar días objetivo"}
+        
+        # Validar valor
+        if nuevo_dias_objetivo < 1 or nuevo_dias_objetivo > 90:
+            return {"success": False, "error": "Días objetivo debe estar entre 1 y 90"}
+        
+        # Obtener registro actual
+        registro = self.obtener_automatizacion(automatizacion_id)
+        if not registro:
+            return {"success": False, "error": "Automatización no encontrada"}
+        
+        dias_anterior = registro.get("dias_objetivo", self.DIAS_OBJETIVO_DEFAULT)
+        
+        if dias_anterior == nuevo_dias_objetivo:
+            return {"success": True, "mensaje": "Sin cambios", "dias_objetivo": nuevo_dias_objetivo}
+        
+        # Recalcular detalle de productos
+        detalle_anterior = registro.get("detalle_productos", [])
+        detalle_nuevo = []
+        resumen = {
+            "criticos": 0,
+            "faltantes": 0,
+            "optimos": 0,
+            "sobrantes": 0,
+            "total_pedido_optimo": 0
+        }
+        
+        for prod in detalle_anterior:
+            # Recalcular con nuevo días objetivo
+            resultado_prod = self._recalcular_producto(prod, nuevo_dias_objetivo)
+            detalle_nuevo.append(resultado_prod)
+            
+            # Actualizar resumen
+            estado = resultado_prod["estado"]
+            if estado == EstadoProducto.CRITICO.value:
+                resumen["criticos"] += 1
+            elif estado == EstadoProducto.FALTANTE.value:
+                resumen["faltantes"] += 1
+            elif estado == EstadoProducto.OPTIMO.value:
+                resumen["optimos"] += 1
+            else:
+                resumen["sobrantes"] += 1
+            
+            resumen["total_pedido_optimo"] += resultado_prod.get("pedido_optimo", 0)
+        
+        # Nueva recomendación general
+        if resumen["criticos"] > 0:
+            recomendacion_general = Recomendacion.URGENTE.value
+        elif resumen["faltantes"] > 0:
+            recomendacion_general = Recomendacion.COMPRAR.value
+        elif resumen["sobrantes"] > len(detalle_nuevo) * 0.5:
+            recomendacion_general = Recomendacion.REVISAR.value
+        else:
+            recomendacion_general = Recomendacion.NO_COMPRAR.value
+        
+        now = datetime.now(timezone.utc)
+        
+        # Registrar en bitácora
+        bitacora_entry = {
+            "id": str(uuid.uuid4()),
+            "automatizacion_id": automatizacion_id,
+            "tipo": "CAMBIO_DIAS_OBJETIVO",
+            "dias_anterior": dias_anterior,
+            "dias_nuevo": nuevo_dias_objetivo,
+            "usuario_id": usuario_id,
+            "usuario_rol": usuario_rol,
+            "motivo": motivo,
+            "fecha": now.isoformat(),
+            "resultado_anterior": registro.get("resultado"),
+            "resultado_nuevo": resumen,
+            "recomendacion_anterior": registro.get("recomendacion_general"),
+            "recomendacion_nueva": recomendacion_general,
+        }
+        
+        self.db.automatizaciones_bitacora.insert_one(bitacora_entry)
+        
+        # Actualizar registro principal
+        self.collection.update_one(
+            {"id": automatizacion_id},
+            {
+                "$set": {
+                    "dias_objetivo": nuevo_dias_objetivo,
+                    "detalle_productos": detalle_nuevo,
+                    "resultado": resumen,
+                    "recomendacion_general": recomendacion_general,
+                    "fecha_actualizacion": now.isoformat(),
+                    "ultima_modificacion_por": usuario_id,
+                    "ultima_modificacion_fecha": now.isoformat(),
+                }
+            }
+        )
+        
+        logger.info(f"Días objetivo modificado: {automatizacion_id} de {dias_anterior} a {nuevo_dias_objetivo} por {usuario_id}")
+        
+        return {
+            "success": True,
+            "dias_objetivo_anterior": dias_anterior,
+            "dias_objetivo_nuevo": nuevo_dias_objetivo,
+            "resultado": resumen,
+            "recomendacion_general": recomendacion_general,
+            "recalculado": True
+        }
+    
+    def _recalcular_producto(self, prod: Dict, dias_objetivo: int) -> Dict:
+        """Recalcula estado y recomendación de un producto con nuevo días objetivo."""
+        existencia = float(prod.get("existencia_fisica", 0) or 0)
+        consumo = float(prod.get("consumo_promedio", 0) or 0)
+        cantidad_pedida = float(prod.get("cantidad_pedida", 0) or 0)
+        dias_inventario = float(prod.get("dias_inventario", 0) or 0)
+        
+        # Determinar estado con nuevo días objetivo
+        if dias_inventario <= 0:
+            estado = EstadoProducto.CRITICO.value
+            recomendacion = Recomendacion.URGENTE.value
+        elif dias_inventario < dias_objetivo * (1 - self.TOLERANCIA_OPTIMO):
+            estado = EstadoProducto.FALTANTE.value
+            recomendacion = Recomendacion.COMPRAR.value
+        elif dias_inventario <= dias_objetivo * (1 + self.TOLERANCIA_OPTIMO):
+            estado = EstadoProducto.OPTIMO.value
+            recomendacion = Recomendacion.NO_COMPRAR.value
+        else:
+            estado = EstadoProducto.SOBRANTE.value
+            recomendacion = Recomendacion.REVISAR.value
+        
+        # Recalcular pedido óptimo
+        pedido_optimo = (dias_objetivo * consumo) - existencia
+        if pedido_optimo < 0:
+            pedido_optimo = 0
+        
+        diferencia = cantidad_pedida - pedido_optimo
+        
+        return {
+            **prod,
+            "dias_objetivo": dias_objetivo,
+            "estado": estado,
+            "recomendacion": recomendacion,
+            "pedido_optimo": round(pedido_optimo, 2),
+            "diferencia": round(diferencia, 2),
+        }
+    
+    def obtener_bitacora(self, automatizacion_id: str) -> List[Dict]:
+        """Obtiene bitácora de cambios de una automatización."""
+        cursor = self.db.automatizaciones_bitacora.find(
+            {"automatizacion_id": automatizacion_id},
+            {"_id": 0}
+        ).sort("fecha", -1)
+        
+        return list(cursor)
 
 
 def get_automatizacion_compras_service(db) -> AutomatizacionComprasService:
