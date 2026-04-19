@@ -516,7 +516,7 @@ export default function AuditoriasProgramadas() {
           <Card>
             <CardHeader className="pb-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <CardTitle className="text-lg">Auditorías Programadas</CardTitle>
+                <CardTitle className="text-lg">Automatizaciones Programadas</CardTitle>
                 <div className="flex items-center gap-2">
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
                     <SelectTrigger className="w-[140px]">
