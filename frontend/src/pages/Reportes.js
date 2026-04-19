@@ -501,8 +501,12 @@ const Reportes = () => {
       if (server?.system_type === 'SoftRestaurant') {
         loadAlmacenesSoftRestaurant();
       }
+      // Si es MPRO con sucursal_origen_id ya establecida, cargar almacenes
+      else if (server?.system_type === 'MPRO' && filters.sucursal_id) {
+        loadAlmacenes();
+      }
     }
-  }, [filters.server_id, servers]);
+  }, [filters.server_id, servers, filters.sucursal_id]);
 
   // Cargar almacenes para SoftRestaurant (no requiere sucursal)
   const loadAlmacenesSoftRestaurant = async (soloConsumo = false) => {
@@ -697,11 +701,25 @@ const Reportes = () => {
       if (unidades.length === 1) {
         const unidad = unidades[0];
         setSelectedUnidad(unidad.id);
-        setFilters(prev => ({
-          ...prev,
-          unidad_id: unidad.id,
-          server_id: unidad.server_id
-        }));
+        
+        // Si tiene sucursal_origen_id (MPRO con sucursal auto-definida), también auto-seleccionar sucursal
+        if (unidad.sucursal_origen_id && unidad.system_type === 'MPRO') {
+          const nombreSucursal = unidad.sucursales?.[0]?.nombre || unidad.nombre;
+          setFilters(prev => ({
+            ...prev,
+            unidad_id: unidad.id,
+            server_id: unidad.server_id,
+            sucursal_id: unidad.sucursal_origen_id,
+            sucursal: nombreSucursal
+          }));
+        } else {
+          setFilters(prev => ({
+            ...prev,
+            unidad_id: unidad.id,
+            server_id: unidad.server_id
+          }));
+        }
+        
         // Establecer el servidor seleccionado para compatibilidad
         setSelectedServer({
           id: unidad.server_id,
@@ -1510,21 +1528,39 @@ const Reportes = () => {
                         setSelectedUnidad(unidadId);
                         const unidad = unidadesNegocio.find(u => u.id === unidadId);
                         if (unidad) {
-                          setFilters({
-                            ...filters, 
-                            unidad_id: unidadId,
-                            server_id: unidad.server_id, 
-                            sucursal_id: '', 
-                            almacen_id: '', 
-                            sucursal: '', 
-                            almacen: ''
-                          });
-                          setSelectedServer({
+                          // Establecer el servidor seleccionado
+                          const newServer = {
                             id: unidad.server_id,
                             name: unidad.nombre,
                             system_type: unidad.system_type,
                             sucursal_origen_id: unidad.sucursal_origen_id
-                          });
+                          };
+                          setSelectedServer(newServer);
+                          
+                          // Si tiene sucursal_origen_id (MPRO con sucursal auto-definida), auto-seleccionar
+                          if (unidad.sucursal_origen_id && unidad.system_type === 'MPRO') {
+                            // Obtener el nombre de la sucursal desde el array de sucursales
+                            const nombreSucursal = unidad.sucursales?.[0]?.nombre || unidad.nombre;
+                            setFilters({
+                              ...filters, 
+                              unidad_id: unidadId,
+                              server_id: unidad.server_id, 
+                              sucursal_id: unidad.sucursal_origen_id, 
+                              sucursal: nombreSucursal, // Nombre real de sucursal para queries SQL LIKE
+                              almacen_id: '', 
+                              almacen: ''
+                            });
+                          } else {
+                            setFilters({
+                              ...filters, 
+                              unidad_id: unidadId,
+                              server_id: unidad.server_id, 
+                              sucursal_id: '', 
+                              almacen_id: '', 
+                              sucursal: '', 
+                              almacen: ''
+                            });
+                          }
                         } else {
                           setFilters({...filters, unidad_id: '', server_id: '', sucursal_id: '', almacen_id: '', sucursal: '', almacen: ''});
                           setSelectedServer(null);
@@ -1595,7 +1631,9 @@ const Reportes = () => {
                     {selectedAlmacenes.length === 0 
                       ? (selectedServer?.system_type === 'SoftRestaurant'
                           ? (!selectedUnidad ? "Selecciona unidad primero" : (almacenes.length === 0 ? "Cargando..." : "Selecciona almacén(es)"))
-                          : (!filters.sucursal_id ? "Selecciona sucursal primero" : "Selecciona almacén(es)"))
+                          : (!selectedUnidad ? "Selecciona unidad primero" 
+                             : (almacenes.length === 0 && !filters.sucursal_id ? "Cargando almacenes..." 
+                                : (almacenes.length === 0 ? "No hay almacenes disponibles" : "Selecciona almacén(es)"))))
                       : `${selectedAlmacenes.length} seleccionado(s)`}
                   </span>
                   <ChevronDown className="h-4 w-4 opacity-50" />
