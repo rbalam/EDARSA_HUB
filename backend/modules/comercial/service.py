@@ -129,55 +129,29 @@ async def guardar_metas(server_id: str, sucursal: str, mes: int, anio: int, meta
 # Mantienen la misma firma, mismos nombres de campos, misma estructura JSON.
 
 def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia=False):
-    """Query reutilizable para SoftRestaurant - misma lógica análisis inventarios"""
+    """Query reutilizable para SoftRestaurant - misma lógica análisis inventarios
     
-    # Si solo_ventas_dia es True, consultar SOLO tempcheques (ventas sin corte)
+    FASE 3.1 - CAMBIO QUIRÚRGICO:
+    - solo_ventas_dia=True → Requiere API local (SoftRestaurant NO tiene API local configurada)
+    - solo_ventas_dia=False → Usa SQL nube del menú Servidores
+    """
+    
+    # ============================================================================
+    # VENTAS DEL DÍA: SoftRestaurant no tiene API local configurada
+    # ============================================================================
+    # PENDIENTE: Inspección local en servidores para revisar por qué no levanta 
+    # SQL local o por qué no responde la API local.
+    # 
+    # Por ahora, ventas del día de SoftRestaurant retorna None.
+    # Las ventas históricas sí funcionan vía SQL nube.
+    # ============================================================================
     if solo_ventas_dia:
-        query_temp = """
-SELECT 
-    COUNT(DISTINCT folio) as cheques,
-    ISNULL(SUM(total), 0) as ventas,
-    ISNULL(SUM(nopersonas), 0) as pax
-FROM tempcheques
-WHERE cancelado = 0
-"""
-        try:
-            result_temp = execute_sql_query(server['host'], server['port'], server['database'], 
-                                            server['username'], server['password'], query_temp)
-            if result_temp and len(result_temp) > 0:
-                ventas = float(result_temp[0]['ventas'] or 0)
-                pax = int(result_temp[0]['pax'] or 0)
-                cheques = int(result_temp[0]['cheques'] or 0)
-            else:
-                ventas, pax, cheques = 0, 0, 0
-            
-            ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
-            cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
-            
-            return {
-                "ventas": ventas,
-                "ventas_ant": 0,
-                "ventas_año": 0,
-                "var_vs_mes_ant": 0,
-                "var_vs_año_ant": 0,
-                "proyeccion": 0,
-                "pax": pax,
-                "pax_ant": 0,
-                "pax_año": 0,
-                "var_pax_mes": 0,
-                "var_pax_año": 0,
-                "cheques": cheques,
-                "cheques_ant": 0,
-                "cheques_año": 0,
-                "var_cheques_mes": 0,
-                "var_cheques_año": 0,
-                "ticket_prom": ticket_prom,
-                "cheque_prom": cheque_prom,
-                "es_ventas_dia": True  # Flag para identificar datos de ventas del día
-            }
-        except Exception as e:
-            logging.warning(f"Error consultando tempcheques {server['name']}: {e}")
-            return None
+        logging.info(f"SoftRestaurant {server['name']}: Ventas del Día - API local NO disponible (solo MPRO tiene API local)")
+        return None  # No hay API local para SoftRestaurant
+    
+    # ============================================================================
+    # VENTAS HISTÓRICAS: Usar SQL nube del menú Servidores
+    # ============================================================================
     
     # Usar formato YYYYMMDD sin guiones para evitar problemas de conversión de fecha
     fi = fecha_ini.replace('-', '')
@@ -562,7 +536,83 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
     """
     Query para MPRO que devuelve KPIs DIVIDIDOS POR SUCURSAL (como en Inventarios).
     Retorna una lista de unidades, no un solo bloque.
+    
+    FASE 3.1 - CAMBIO QUIRÚRGICO:
+    - solo_ventas_dia=True → Usa API local (no SQL directo)
+    - solo_ventas_dia=False → Usa SQL nube del menú Servidores
     """
+    
+    # ============================================================================
+    # VENTAS DEL DÍA: Usar API local en lugar de SQL
+    # ============================================================================
+    if solo_ventas_dia:
+        logging.info(f"MPRO {server['name']}: Modo Ventas del Día - usando API local")
+        
+        # Obtener ventas del día de APIs locales MPRO
+        from modules.comercial.adapters import sumar_ventas_api_local_a_sucursal
+        from datetime import datetime
+        
+        hoy = datetime.now()
+        
+        # Mapeo de sucursales MPRO conocidas para buscar en APIs locales
+        sucursales_mpro = [
+            {"nombre": "ORIGEN", "sucursal_id": "ORIGEN"},
+            {"nombre": "QUERETARO", "sucursal_id": "130_QRO"},
+        ]
+        
+        unidades = []
+        for suc in sucursales_mpro:
+            ventas_api = sumar_ventas_api_local_a_sucursal(
+                server_host=server['host'],
+                sucursal_nombre=suc['nombre'],
+                fecha_fin=fecha_fin,
+                mes_solicitado=hoy.month,
+                anio_solicitado=hoy.year,
+                solo_ventas_dia=True
+            )
+            
+            if ventas_api.get("aplicado", False) or ventas_api.get("ventas", 0) > 0:
+                ventas = ventas_api.get("ventas", 0)
+                cheques = ventas_api.get("cheques", 0)
+                pax = ventas_api.get("pax", 0) or cheques
+                
+                ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
+                cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
+                
+                unidades.append({
+                    "unidad": suc['nombre'],
+                    "server_id": server['id'],
+                    "system_type": "MPRO",
+                    "ventas": ventas,
+                    "ventas_ant": 0,
+                    "ventas_año": 0,
+                    "var_vs_mes_ant": 0,
+                    "var_vs_año_ant": 0,
+                    "proyeccion": 0,
+                    "pax": pax,
+                    "pax_ant": 0,
+                    "pax_año": 0,
+                    "var_pax_mes": 0,
+                    "var_pax_año": 0,
+                    "cheques": cheques,
+                    "cheques_ant": 0,
+                    "cheques_año": 0,
+                    "var_cheques_mes": 0,
+                    "var_cheques_año": 0,
+                    "ticket_prom": ticket_prom,
+                    "cheque_prom": cheque_prom,
+                    "es_ventas_dia": True,
+                    "origen": "api_local"
+                })
+                logging.info(f"MPRO {server['name']} - {suc['nombre']}: API local OK - ${ventas:,.2f}")
+            else:
+                logging.warning(f"MPRO {server['name']} - {suc['nombre']}: API local sin datos")
+        
+        return unidades
+    
+    # ============================================================================
+    # VENTAS HISTÓRICAS: Usar SQL nube del menú Servidores (comportamiento original)
+    # ============================================================================
     
     # Formato YYYYMMDD para MPRO (SQL Server con configuración regional español)
     fi = fecha_ini.replace('-', '')
