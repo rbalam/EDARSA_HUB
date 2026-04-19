@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { fetchServersOperativos } from '../services/serversService';
+import { fetchUnidadesNegocio, getServerIdFromUnidad } from '../services/unidadesNegocioService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -16,7 +16,8 @@ import {
   AlertTriangle, BarChart3, PieChart, ShoppingBag, Utensils, Coffee,
   Wine, Award, RefreshCw, Calendar, ArrowUpRight, ArrowDownRight,
   Receipt, ChevronLeft, ChevronRight, X, Search, ChevronDown, ChevronUp,
-  UserCheck, Download, FileSpreadsheet, FileText, Share2, Mail, Scale
+  UserCheck, Download, FileSpreadsheet, FileText, Share2, Mail, Scale,
+  Building2
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
@@ -221,7 +222,7 @@ const getAniosDisponibles = () => {
   return years;
 };
 
-function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector }) {
+function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [kpis, setKpis] = useState(null);
   const [comparativo, setComparativo] = useState(null);
@@ -324,23 +325,39 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
 
   return (
     <div className="space-y-4">
-      {/* Filtros */}
+      {/* Filtros - FASE 3.2: Unidad de Negocio */}
       <Card className="border">
         <CardContent className="py-4">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex-1 min-w-[180px] max-w-xs">
-              <Label className="text-xs mb-1 block">Servidor</Label>
-              <Select value={selectedServer} onValueChange={setSelectedServer}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                <SelectContent>
-                  {servers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs mb-1 block">Unidad de Negocio</Label>
+              {unidadesNegocio?.length === 1 ? (
+                <div className="flex h-10 w-full items-center rounded-md border border-input bg-zinc-50 px-3 py-2 text-sm">
+                  <Building2 className="h-4 w-4 mr-2 text-zinc-500" />
+                  {unidadesNegocio[0].nombre}
+                </div>
+              ) : (
+                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+                  <SelectTrigger data-testid="comercial-unidad-selector">
+                    <SelectValue placeholder={loadingUnidades ? "Cargando..." : "Seleccionar unidad"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unidadesNegocio?.map(u => (
+                      <SelectItem key={u.id} value={u.id}>
+                        <span className="flex items-center gap-2">
+                          <Building2 className="h-3 w-3" />
+                          {u.nombre}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="flex-1 min-w-[180px] max-w-xs">
               <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
-                <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
+              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
+                <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
                 <SelectContent>
                   {sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}
                 </SelectContent>
@@ -746,7 +763,7 @@ function DashboardVentas({ servers, selectedServer, setSelectedServer, selectedS
 }
 
 // ============ TAB 2: TICKET PERFECTO Y RENTABILIDAD ============
-function TicketPerfecto({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
+function TicketPerfecto({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [ticketData, setTicketData] = useState(null);
   const [rentabilidad, setRentabilidad] = useState([]);
@@ -778,21 +795,27 @@ function TicketPerfecto({ servers, selectedServer, setSelectedServer, selectedSu
 
   return (
     <div className="space-y-4">
-      {/* Filtros */}
+      {/* Filtros - FASE 3.2: Unidad de Negocio */}
       <Card className="border">
         <CardContent className="py-4">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex-1 min-w-[180px] max-w-xs">
-              <Label className="text-xs mb-1 block">Servidor</Label>
-              <Select value={selectedServer} onValueChange={setSelectedServer}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                <SelectContent>{servers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-              </Select>
+              <Label className="text-xs mb-1 block">Unidad de Negocio</Label>
+              {unidadesNegocio?.length === 1 ? (
+                <div className="flex h-10 w-full items-center rounded-md border border-input bg-zinc-50 px-3 py-2 text-sm">
+                  <Building2 className="h-4 w-4 mr-2 text-zinc-500" />{unidadesNegocio[0].nombre}
+                </div>
+              ) : (
+                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+                  <SelectTrigger><SelectValue placeholder={loadingUnidades ? "Cargando..." : "Seleccionar unidad"} /></SelectTrigger>
+                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+                </Select>
+              )}
             </div>
             <div className="flex-1 min-w-[180px] max-w-xs">
               <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
-                <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
+              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
+                <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
                 <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
               </Select>
             </div>
@@ -904,7 +927,7 @@ function TicketPerfecto({ servers, selectedServer, setSelectedServer, selectedSu
 }
 
 // ============ TAB 3: METAS DE VENTAS ============
-function MetasVentas({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
+function MetasVentas({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [metasProducto, setMetasProducto] = useState([]);
   const [metasVendedor, setMetasVendedor] = useState([]);
@@ -941,16 +964,22 @@ function MetasVentas({ servers, selectedServer, setSelectedServer, selectedSucur
         <CardContent className="py-4">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex-1 min-w-[180px] max-w-xs">
-              <Label className="text-xs mb-1 block">Servidor</Label>
-              <Select value={selectedServer} onValueChange={setSelectedServer}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                <SelectContent>{servers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-              </Select>
+              <Label className="text-xs mb-1 block">Unidad de Negocio</Label>
+              {unidadesNegocio?.length === 1 ? (
+                <div className="flex h-10 w-full items-center rounded-md border border-input bg-zinc-50 px-3 py-2 text-sm">
+                  <Building2 className="h-4 w-4 mr-2 text-zinc-500" />{unidadesNegocio[0].nombre}
+                </div>
+              ) : (
+                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+                  <SelectTrigger><SelectValue placeholder={loadingUnidades ? "Cargando..." : "Seleccionar unidad"} /></SelectTrigger>
+                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+                </Select>
+              )}
             </div>
             <div className="flex-1 min-w-[180px] max-w-xs">
               <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedServer}>
-                <SelectTrigger><SelectValue placeholder={selectedServer ? "Seleccionar" : "Selecciona servidor"} /></SelectTrigger>
+              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
+                <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
                 <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
               </Select>
             </div>
@@ -1016,7 +1045,7 @@ function MetasVentas({ servers, selectedServer, setSelectedServer, selectedSucur
 }
 
 // ============ TAB 4: VENTAS POR HORA/DÍA ============
-function VentasPorTiempo({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
+function VentasPorTiempo({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [ventasPorHora, setVentasPorHora] = useState([]);
   const [ventasPorDia, setVentasPorDia] = useState([]);
@@ -1132,7 +1161,7 @@ function VentasPorTiempo({ servers, selectedServer, setSelectedServer, selectedS
 }
 
 // ============ TAB 5: MESAS Y COMENSALES ============
-function MesasComensales({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
+function MesasComensales({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [datosUnidad, setDatosUnidad] = useState(null);
   const [rotacionPorMesa, setRotacionPorMesa] = useState([]);
@@ -1290,7 +1319,7 @@ function MesasComensales({ servers, selectedServer, setSelectedServer, selectedS
 }
 
 // ============ TAB 6: REPORTE DE PAX (Nuevo) ============
-function ReportePax({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
+function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [viewMode, setViewMode] = useState('vendedor'); // 'vendedor' o 'ticket'
@@ -1639,7 +1668,7 @@ function ReportePax({ servers, selectedServer, setSelectedServer, selectedSucurs
 }
 
 // ============ VENTAS A PRECIOS CONSTANTES ============
-function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
+function VentasPreciosConstantes({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -2352,12 +2381,30 @@ function VentasPreciosConstantes({ servers, selectedServer, setSelectedServer, s
 
 // ============ COMPONENTE PRINCIPAL ============
 export default function Comercial() {
-  const [servers, setServers] = useState([]);
-  const [selectedServer, setSelectedServer] = useState('');
+  // FASE 3.2: Unidades de negocio reemplazan servidores como filtro visible
+  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+  const [selectedUnidad, setSelectedUnidad] = useState('');
   const [selectedSucursal, setSelectedSucursal] = useState('');
   const [sucursales, setSucursales] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showSucursalSelector, setShowSucursalSelector] = useState(true);
+  const [loadingUnidades, setLoadingUnidades] = useState(true);
+  
+  // Derivar server_id desde la unidad seleccionada (dato interno, no visible)
+  const selectedServer = useMemo(() => {
+    return getServerIdFromUnidad(unidadesNegocio, selectedUnidad);
+  }, [unidadesNegocio, selectedUnidad]);
+  
+  // Para compatibilidad con componentes hijos que esperan "servers"
+  const servers = useMemo(() => {
+    return unidadesNegocio.map(u => ({
+      id: u.server_id,
+      name: u.nombre,
+      system_type: u.system_type,
+      unidad_id: u.id,
+      sucursal_origen_id: u.sucursal_origen_id
+    }));
+  }, [unidadesNegocio]);
 
   // Cargar filtros guardados al inicio
   useEffect(() => {
@@ -2365,7 +2412,10 @@ export default function Comercial() {
     if (savedFilters) {
       try {
         const filters = JSON.parse(savedFilters);
-        if (filters.server) setSelectedServer(filters.server);
+        if (filters.unidad) setSelectedUnidad(filters.unidad);
+        else if (filters.server) {
+          // Compatibilidad: si había server guardado, se restaurará cuando carguen las unidades
+        }
         if (filters.tab) setActiveTab(filters.tab);
       } catch (e) {}
     }
@@ -2373,31 +2423,57 @@ export default function Comercial() {
 
   // Guardar filtros cuando cambien
   useEffect(() => {
-    if (selectedServer) {
+    if (selectedUnidad) {
       localStorage.setItem('comercial_filters', JSON.stringify({
+        unidad: selectedUnidad,
         server: selectedServer,
         sucursal: selectedSucursal,
         tab: activeTab
       }));
     }
-  }, [selectedServer, selectedSucursal, activeTab]);
+  }, [selectedUnidad, selectedServer, selectedSucursal, activeTab]);
 
   useEffect(() => {
-    // Usar servicio centralizado para obtener servidores operativos
-    const loadServers = async () => {
+    // FASE 3.2: Cargar unidades de negocio según RBAC
+    const loadUnidades = async () => {
+      setLoadingUnidades(true);
       try {
-        const serversOperativos = await fetchServersOperativos();
-        setServers(serversOperativos);
+        const unidades = await fetchUnidadesNegocio();
+        setUnidadesNegocio(unidades);
+        
+        // Auto-seleccionar si el usuario tiene solo una unidad
+        if (unidades.length === 1) {
+          setSelectedUnidad(unidades[0].id);
+          console.log(`[Comercial] Auto-seleccionada unidad única: ${unidades[0].nombre}`);
+        } else {
+          // Restaurar unidad guardada
+          const saved = localStorage.getItem('comercial_filters');
+          if (saved) {
+            const params = JSON.parse(saved);
+            if (params.unidad && unidades.find(u => u.id === params.unidad)) {
+              setSelectedUnidad(params.unidad);
+            } else if (params.server) {
+              // Compatibilidad: si había server guardado, buscar unidad correspondiente
+              const unidadPorServer = unidades.find(u => u.server_id === params.server);
+              if (unidadPorServer) {
+                setSelectedUnidad(unidadPorServer.id);
+              }
+            }
+          }
+        }
       } catch (error) {
-        console.error('Error cargando servidores:', error);
+        console.error('Error cargando unidades de negocio:', error);
+      } finally {
+        setLoadingUnidades(false);
       }
     };
-    loadServers();
+    loadUnidades();
   }, []);
 
+  // Cargar sucursales cuando cambia la unidad seleccionada
   useEffect(() => {
-    if (selectedServer) {
-      // Limpiar sucursal al cambiar de servidor para forzar re-carga
+    if (selectedUnidad && selectedServer) {
+      // Limpiar sucursal al cambiar de unidad para forzar re-carga
       setSelectedSucursal('');
       
       const fetchSucursales = async () => {
@@ -2409,11 +2485,21 @@ export default function Comercial() {
           const sucursalesData = response.data || [];
           setSucursales(sucursalesData);
           
-          // Auto-seleccionar si solo hay una sucursal (CIENFUEGOS, LA ESTELAR, MPRO con default)
-          if (sucursalesData.length === 1) {
-            // Usar el mismo formato que el SelectItem: id || codigo || nombre
+          // Para unidades con sucursal_origen_id definida (MPRO), preseleccionar
+          const unidad = unidadesNegocio.find(u => u.id === selectedUnidad);
+          if (unidad?.sucursal_origen_id) {
+            const sucursalMatch = sucursalesData.find(s => 
+              s.id === unidad.sucursal_origen_id || 
+              s.codigo === unidad.sucursal_origen_id
+            );
+            if (sucursalMatch) {
+              setTimeout(() => {
+                setSelectedSucursal(sucursalMatch.nombre || sucursalMatch.codigo || sucursalMatch.id);
+              }, 100);
+            }
+            setShowSucursalSelector(sucursalesData.length > 1);
+          } else if (sucursalesData.length === 1) {
             const valorSucursal = sucursalesData[0].id || sucursalesData[0].codigo || sucursalesData[0].nombre;
-            // Usar setTimeout para asegurar que el estado se actualice después del clear
             setTimeout(() => {
               setSelectedSucursal(valorSucursal);
             }, 100);
@@ -2425,7 +2511,6 @@ export default function Comercial() {
             if (savedFilters) {
               try {
                 const filters = JSON.parse(savedFilters);
-                // Buscar por id, codigo o nombre
                 const sucursalGuardada = sucursalesData.find(s => 
                   (s.id || s.codigo || s.nombre) === filters.sucursal
                 );
@@ -2434,9 +2519,7 @@ export default function Comercial() {
                     setSelectedSucursal(sucursalGuardada.id || sucursalGuardada.codigo || sucursalGuardada.nombre);
                   }, 100);
                 }
-              } catch (e) {
-                // mantener vacío
-              }
+              } catch (e) {}
             }
           } else {
             setShowSucursalSelector(false);
@@ -2453,9 +2536,34 @@ export default function Comercial() {
       setShowSucursalSelector(false);
       setSelectedSucursal('');
     }
-  }, [selectedServer]);
+  }, [selectedUnidad, selectedServer, unidadesNegocio]);
+  
+  // Handler para cambio de unidad
+  const handleUnidadChange = (unidadId) => {
+    setSelectedUnidad(unidadId);
+  };
+  
+  // Handler para cambio de server (compatibilidad con componentes hijos)
+  const handleServerChange = (serverId) => {
+    const unidad = unidadesNegocio.find(u => u.server_id === serverId);
+    if (unidad) {
+      setSelectedUnidad(unidad.id);
+    }
+  };
 
-  const commonProps = { servers, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector };
+  const commonProps = { 
+    servers, 
+    unidadesNegocio,
+    selectedUnidad,
+    setSelectedUnidad: handleUnidadChange,
+    selectedServer, 
+    setSelectedServer: handleServerChange, 
+    selectedSucursal, 
+    setSelectedSucursal, 
+    sucursales, 
+    showSucursalSelector,
+    loadingUnidades
+  };
 
   return (
     <div className="space-y-4" data-testid="comercial-module">
