@@ -1941,6 +1941,116 @@ async def get_all_sucursales(
     return sucursales
 # ============= FIN ENDPOINT GLOBAL DE SUCURSALES =============
 
+# ============= ENDPOINT UNIDADES DE NEGOCIO (FASE 3.2) =============
+# Reemplaza el selector "Servidor" por "Unidad de Negocio" en módulos de negocio
+# El backend traduce unidad → server_id internamente
+# ==================================================================
+
+@api_router.get("/unidades-negocio")
+async def get_unidades_negocio(
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Obtiene las unidades de negocio disponibles para el usuario según RBAC.
+    
+    FASE 3.2: Este endpoint reemplaza el uso directo de /servers en módulos de negocio.
+    
+    Returns:
+        Lista de unidades con:
+        - id: ID de la empresa (para frontend)
+        - codigo: Código corto
+        - nombre: Nombre visible ("ORIGEN", "130 QRO", etc.)
+        - server_id: ID técnico del servidor (para llamadas internas)
+        - system_type: Tipo de sistema origen (MPRO, SoftRestaurant)
+        - sucursales: Lista de sucursales asociadas
+    """
+    # 1. Obtener empresas permitidas según RBAC
+    empresas_permitidas = await get_user_empresas_permitidas(current_user)
+    
+    if not empresas_permitidas:
+        return []
+    
+    # 2. Obtener empresas del catálogo
+    empresas_cursor = db.empresas.find(
+        {"id": {"$in": empresas_permitidas}, "activa": True},
+        {"_id": 0}
+    )
+    empresas = await empresas_cursor.to_list(100)
+    
+    # 3. Obtener sucursales asociadas a cada empresa
+    sucursales_cursor = db.sucursales_catalogo.find(
+        {"empresa_id": {"$in": empresas_permitidas}, "activa": True},
+        {"_id": 0}
+    )
+    sucursales = await sucursales_cursor.to_list(100)
+    
+    # 4. Obtener mapeos sucursal → servidor
+    sucursal_ids = [s["id"] for s in sucursales]
+    mapeos_cursor = db.sucursal_servidor_map.find(
+        {"sucursal_id": {"$in": sucursal_ids}, "activo": True},
+        {"_id": 0}
+    )
+    mapeos = await mapeos_cursor.to_list(100)
+    
+    # Crear diccionario sucursal_id → server_id
+    sucursal_to_server = {m["sucursal_id"]: m["server_id"] for m in mapeos}
+    
+    # 5. Obtener info de servidores para system_type
+    server_ids = list(set(sucursal_to_server.values()))
+    servers_cursor = db.servers.find(
+        {"id": {"$in": server_ids}},
+        {"_id": 0, "id": 1, "name": 1, "system_type": 1}
+    )
+    servers_dict = {s["id"]: s async for s in servers_cursor}
+    
+    # 6. Obtener mapeos con sucursal_origen_id para MPRO
+    mapeos_dict = {m["sucursal_id"]: m for m in mapeos}
+    
+    # 7. Construir respuesta enriquecida
+    resultado = []
+    for empresa in empresas:
+        empresa_id = empresa["id"]
+        
+        # Buscar sucursal principal de esta empresa
+        sucursal_empresa = next((s for s in sucursales if s["empresa_id"] == empresa_id), None)
+        
+        if sucursal_empresa:
+            mapeo = mapeos_dict.get(sucursal_empresa["id"], {})
+            server_id = mapeo.get("server_id")
+            server_info = servers_dict.get(server_id, {})
+            
+            # Para cada unidad de negocio, solo mostrar SU sucursal (no todas las del servidor)
+            # El sucursal_origen_id en el mapeo indica qué sucursal del sistema externo corresponde
+            sucursal_origen_id = mapeo.get("sucursal_origen_id")
+            
+            # Si es MPRO, la sucursal_origen_id puede usarse para filtrar
+            # Si es SoftRestaurant, usamos el nombre de la sucursal del catálogo
+            sucursales_unidad = [{
+                "id": sucursal_origen_id or sucursal_empresa.get("codigo"),
+                "nombre": sucursal_empresa.get("nombre")
+            }]
+            
+            resultado.append({
+                "id": empresa_id,
+                "codigo": empresa.get("codigo", ""),
+                "nombre": empresa.get("nombre", ""),
+                "server_id": server_id,  # Dato interno para traducción
+                "server_nombre": server_info.get("name", ""),
+                "system_type": server_info.get("system_type", ""),
+                "sucursal_origen_id": sucursal_origen_id,  # Para MPRO - ID de sucursal en sistema externo
+                "sucursales": sucursales_unidad if sucursales_unidad else [{
+                    "id": sucursal_empresa.get("codigo"),
+                    "nombre": sucursal_empresa.get("nombre")
+                }]
+            })
+    
+    # Ordenar por nombre
+    resultado.sort(key=lambda x: x["nombre"])
+    
+    return resultado
+
+# ============= FIN ENDPOINT UNIDADES DE NEGOCIO =============
+
 @api_router.get("/servers/{server_id}/almacenes-softrestaurant")
 async def get_almacenes_softrestaurant(
     server_id: str, 
