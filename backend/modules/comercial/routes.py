@@ -143,6 +143,16 @@ async def tablero_ejecutivo(
             anio = hoy.year  # Para ventas del día, usar año actual
     
     # Fechas del período actual - CORREGIDO para multiselección de meses
+    # VALIDACIÓN: Si el mes solicitado es FUTURO respecto al actual, ajustar al mes actual
+    if anio == hoy.year and mes_min > hoy.month:
+        # El mes solicitado aún no ha llegado - ajustar al mes actual
+        logging.info(f"Tablero: Mes solicitado {mes_min} es futuro (actual: {hoy.month}), ajustando a mes actual")
+        mes_min = hoy.month
+        mes_max = hoy.month
+    elif anio == hoy.year and mes_max > hoy.month:
+        # El rango incluye meses futuros - limitar al mes actual
+        mes_max = hoy.month
+    
     # fecha_ini: primer día del PRIMER mes seleccionado
     fecha_ini = f"{anio}-{mes_min:02d}-01"
     
@@ -154,11 +164,6 @@ async def tablero_ejecutivo(
         # Calcular días transcurridos desde inicio del rango hasta ayer
         fecha_inicio_dt = datetime(anio, mes_min, 1)
         dias_transcurridos = (ayer - fecha_inicio_dt).days + 1
-    elif anio == hoy.year and mes_max > hoy.month:
-        # Meses futuros seleccionados - usar hasta el día actual
-        fecha_fin = hoy.strftime('%Y-%m-%d')
-        fecha_inicio_dt = datetime(anio, mes_min, 1)
-        dias_transcurridos = (hoy - fecha_inicio_dt).days + 1
     else:
         # Todos los meses seleccionados ya pasaron - usar meses completos
         ultimo_dia = calendar.monthrange(anio, mes_max)[1]

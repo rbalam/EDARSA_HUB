@@ -550,7 +550,7 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
     if solo_ventas_dia:
         logging.info(f"MPRO {server['name']}: Modo Ventas del Día - intentando API local")
         
-        from modules.comercial.adapters import sumar_ventas_api_local_a_sucursal
+        # NOTA: sumar_ventas_api_local_a_sucursal se importa globalmente en la línea 29
         from datetime import datetime as dt_local
         
         hoy = dt_local.now()
@@ -625,20 +625,23 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
         # IMPORTANTE: Para el fallback, NO usar fechas del día, usar fechas del mes completo
         # Esto se logra simplemente continuando con la lógica normal de SQL nube
         # que ya tiene las fechas correctas del mes (fecha_ini y fecha_fin del mes solicitado)
-        print(f"*** MPRO FALLBACK: Continuando con SQL nube ***")
+        logging.debug(f"MPRO FALLBACK: Continuando con SQL nube")
+        
+        # FALLBACK activo: desactivar modo ventas del día para mostrar acumulados
+        solo_ventas_dia = False  # Permitir que SQL nube muestre datos acumulados
     
     # ============================================================================
     # VENTAS HISTÓRICAS / ACUMULADAS: Usar SQL nube del menú Servidores
     # ============================================================================
     
-    print(f"*** MPRO SQL NUBE: {server['host']}:{server['port']}/{server['database']} ***")
-    print(f"*** MPRO SQL NUBE: Fechas {fecha_ini} a {fecha_fin} ***")
+    logging.debug(f"MPRO SQL NUBE: {server['host']}:{server['port']}/{server['database']}")
+    logging.debug(f"MPRO SQL NUBE: Fechas {fecha_ini} a {fecha_fin}")
     
     # Formato YYYYMMDD para MPRO (SQL Server con configuración regional español)
     fi = fecha_ini.replace('-', '')
     ff = fecha_fin.replace('-', '')
     
-    print(f"*** MPRO SQL: fi={fi}, ff={ff} ***")
+    logging.debug(f"MPRO SQL: fi={fi}, ff={ff}")
     
     # Extraer mes y año de fecha_fin para usarlos en recálculos (importante para multiselección de meses)
     mes_final = int(fecha_fin[5:7])  # Mes de fecha_fin (ej: 04 para abril)
@@ -672,7 +675,7 @@ WHERE VE.Vn_Fecha >= '{fi}' AND VE.Vn_Fecha <= '{ff}'
                 mes_ultimo = ultimo_dia_venta.month
                 anio_ultimo = ultimo_dia_venta.year
             
-            print(f"*** MPRO por sucursal {server['name']} - Ultimo dia con ventas: {anio_ultimo}-{mes_ultimo:02d}-{dia_con_datos:02d} ***")
+            logging.debug(f"MPRO por sucursal {server['name']} - Ultimo dia con ventas: {anio_ultimo}-{mes_ultimo:02d}-{dia_con_datos:02d}")
             
             # CORRECCIÓN: Usar el mes y año del último día con ventas, no del mes inicial
             ff = f"{anio_ultimo}{str(mes_ultimo).zfill(2)}{str(dia_con_datos).zfill(2)}"
@@ -682,7 +685,7 @@ WHERE VE.Vn_Fecha >= '{fi}' AND VE.Vn_Fecha <= '{ff}'
             fecha_ultimo_dt = datetime(anio_ultimo, mes_ultimo, dia_con_datos)
             dias_transcurridos = (fecha_ultimo_dt - fecha_ini_dt).days + 1
             
-            print(f"*** MPRO por sucursal {server['name']} - Período ajustado: {fi} a {ff}, días: {dias_transcurridos} ***")
+            logging.debug(f"MPRO por sucursal {server['name']} - Período ajustado: {fi} a {ff}, días: {dias_transcurridos}")
             
             # Recalcular fechas de comparación basadas en días reales
             mes_actual = mes_ultimo  # Usar el mes del último día con ventas
@@ -740,13 +743,13 @@ ORDER BY SUM(VE.Vn_Precio_Neto_Importe) DESC
 """
     
     try:
-        print(f"*** MPRO: Ejecutando query principal con fechas {fi} a {ff} ***")
+        logging.debug(f"MPRO: Ejecutando query principal con fechas {fi} a {ff}")
         result = execute_sql_query(server['host'], server['port'], server['database'], 
                                    server['username'], server['password'], query)
-        print(f"*** MPRO: Query principal retornó {len(result) if result else 0} filas ***")
+        logging.debug(f"MPRO: Query principal retornó {len(result) if result else 0} filas")
         if result:
             for r in result[:3]:
-                print(f"***   Fila: sucursal={r.get('sucursal_id')}, ventas={r.get('ventas')}, cheques={r.get('cheques')} ***")
+                logging.debug(f"  Fila: sucursal={r.get('sucursal_id')}, ventas={r.get('ventas')}, cheques={r.get('cheques')}")
         if not result:
             logging.warning(f"MPRO {server['name']}: No se encontraron sucursales con ventas")
             return []
@@ -785,7 +788,7 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
                 else:
                     dia_suc = ultimo_dia_suc.day
                 
-                print(f"*** MPRO {sucursal_nombre} - Ultimo dia con ventas: dia {dia_suc} ***")
+                logging.debug(f"MPRO {sucursal_nombre} - Ultimo dia con ventas: dia {dia_suc}")
                 
                 # Recalcular fechas de comparación para esta sucursal
                 mes_actual = int(fi[4:6])
@@ -821,7 +824,7 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
                 fiaa_suc, ffaa_suc = fiaa, ffaa
                 dia_suc = dias_transcurridos
         except Exception as e:
-            print(f"Error detectando ultimo dia para {sucursal_nombre}: {e}")
+            logging.warning(f"Error detectando ultimo dia para {sucursal_nombre}: {e}")
             fia_suc, ffa_suc = fia, ffa
             fiaa_suc, ffaa_suc = fiaa, ffaa
             dia_suc = dias_transcurridos
@@ -925,7 +928,7 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
         var_vs_mes_ant = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
         var_vs_año_ant = round(((ventas - ventas_año) / ventas_año * 100), 1) if ventas_año > 0 else 0
         
-        print(f"MPRO {sucursal_nombre}: Dia={dia_suc}, Actual={ventas:.2f}, MesAnt({fia_suc}-{ffa_suc})={ventas_ant:.2f} -> {var_vs_mes_ant}%, AnoAnt({fiaa_suc}-{ffaa_suc})={ventas_año:.2f} -> {var_vs_año_ant}%")
+        logging.debug(f"MPRO {sucursal_nombre}: Dia={dia_suc}, Actual={ventas:.2f}, MesAnt({fia_suc}-{ffa_suc})={ventas_ant:.2f} -> {var_vs_mes_ant}%, AnoAnt({fiaa_suc}-{ffaa_suc})={ventas_año:.2f} -> {var_vs_año_ant}%")
         var_pax_mes = round(((pax - pax_ant) / pax_ant * 100), 1) if pax_ant > 0 else 0
         var_pax_año = round(((pax - pax_año) / pax_año * 100), 1) if pax_año > 0 else 0
         var_cheques_mes = round(((cheques - cheques_ant) / cheques_ant * 100), 1) if cheques_ant > 0 else 0
