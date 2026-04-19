@@ -22,12 +22,17 @@ logger = logging.getLogger(__name__)
 
 class EstadoAutomatizacion(str, Enum):
     """Estados del flujo de automatización operativa."""
+    PEDIDO_DETECTADO = "PEDIDO_DETECTADO"
+    BUSCANDO_INVENTARIOS = "BUSCANDO_INVENTARIOS"
     PENDIENTE_INVENTARIO_FISICO = "PENDIENTE_INVENTARIO_FISICO"
+    INVENTARIO_CAPTURADO = "INVENTARIO_CAPTURADO"
     AUDITORIA_EN_PROCESO = "AUDITORIA_EN_PROCESO"
-    AUDITADO_PENDIENTE_REVISION = "AUDITADO_PENDIENTE_REVISION"
+    REPORTE_GENERADO = "REPORTE_GENERADO"
     EN_REVISION_GERENCIA = "EN_REVISION_GERENCIA"
+    AJUSTE_SOLICITADO = "AJUSTE_SOLICITADO"
+    AUTORIZADO_GERENCIA = "AUTORIZADO_GERENCIA"
     EN_REVISION_TESORERIA = "EN_REVISION_TESORERIA"
-    APROBADO = "APROBADO"
+    AUTORIZADO_FINAL = "AUTORIZADO_FINAL"
     RECHAZADO = "RECHAZADO"
     ERROR = "ERROR"
 
@@ -52,13 +57,131 @@ class AutomatizacionComprasService:
     """Servicio de automatización operativa de compras."""
     
     COLLECTION = "automatizaciones_operativas_compras"
-    DIAS_INVENTARIO_FISICO_VALIDO = 7  # Inventario físico válido si tiene menos de 7 días
+    COLLECTION_PEDIDOS_PROCESADOS = "pedidos_procesados_automatizacion"
+    DIAS_PERIODO_ANALISIS = 15  # Ventana de análisis automática
     DIAS_OBJETIVO_DEFAULT = 10
     TOLERANCIA_OPTIMO = 0.20  # ±20% del objetivo se considera óptimo
     
     def __init__(self, db):
         self.db = db
         self.collection = db[self.COLLECTION]
+        self.pedidos_procesados = db[self.COLLECTION_PEDIDOS_PROCESADOS]
+    
+    # =========================================================================
+    # DETECCIÓN AUTOMÁTICA DE PEDIDOS
+    # =========================================================================
+    
+    async def detectar_pedidos_nuevos(self, server_id: str) -> List[Dict]:
+        """
+        Detecta pedidos activos nuevos que no han sido procesados.
+        Evita reprocesar el mismo pedido múltiples veces.
+        """
+        from modules.compras.service import obtener_pedidos_vigentes
+        
+        try:
+            # Obtener pedidos vigentes del sistema
+            pedidos = await obtener_pedidos_vigentes(server_id)
+            
+            if not pedidos:
+                return []
+            
+            # Filtrar solo los que no han sido procesados
+            pedidos_nuevos = []
+            for pedido in pedidos:
+                folio = pedido.get("folio")
+                origen = pedido.get("origen", "MPRO")
+                
+                # Verificar si ya fue procesado
+                existe = self.pedidos_procesados.find_one({
+                    "server_id": server_id,
+                    "pedido_folio": folio,
+                    "origen": origen
+                })
+                
+                if not existe:
+                    pedidos_nuevos.append(pedido)
+            
+            return pedidos_nuevos
+            
+        except Exception as e:
+            logger.error(f"Error detectando pedidos nuevos: {e}")
+            return []
+    
+    def marcar_pedido_procesado(self, server_id: str, folio: str, origen: str, automatizacion_id: str):
+        """Marca un pedido como procesado para evitar reprocesar."""
+        self.pedidos_procesados.update_one(
+            {"server_id": server_id, "pedido_folio": folio, "origen": origen},
+            {
+                "$set": {
+                    "automatizacion_id": automatizacion_id,
+                    "fecha_procesado": datetime.now(timezone.utc).isoformat()
+                }
+            },
+            upsert=True
+        )
+    
+    # =========================================================================
+    # BÚSQUEDA DE INVENTARIOS
+    # =========================================================================
+    
+    def _buscar_inventario_inicial_mas_cercano(
+        self,
+        server_id: str,
+        almacen_id: str,
+        fecha_inicio_periodo: datetime
+    ) -> Optional[Dict]:
+        """
+        Busca el inventario inicial más cercano y válido al inicio del periodo.
+        Busca hacia atrás desde la fecha de inicio.
+        """
+        # Buscar inventarios hasta 30 días antes del inicio del periodo
+        fecha_limite = fecha_inicio_periodo - timedelta(days=30)
+        
+        inventario = self.db.inventarios_fisicos_procesados.find_one(
+            {
+                "server_id": server_id,
+                "almacen_id": almacen_id,
+                "fecha": {
+                    "$gte": fecha_limite.isoformat(),
+                    "$lte": fecha_inicio_periodo.isoformat()
+                }
+            },
+            {"_id": 0},
+            sort=[("fecha", -1)]  # El más reciente dentro del rango
+        )
+        
+        return inventario
+    
+    def _buscar_inventario_final_dia_pedido(
+        self,
+        server_id: str,
+        almacen_id: str,
+        fecha_pedido: datetime
+    ) -> Optional[Dict]:
+        """
+        Busca el inventario final del día del pedido.
+        """
+        fecha_inicio_dia = fecha_pedido.replace(hour=0, minute=0, second=0, microsecond=0)
+        fecha_fin_dia = fecha_pedido.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        inventario = self.db.inventarios_fisicos_procesados.find_one(
+            {
+                "server_id": server_id,
+                "almacen_id": almacen_id,
+                "fecha": {
+                    "$gte": fecha_inicio_dia.isoformat(),
+                    "$lte": fecha_fin_dia.isoformat()
+                }
+            },
+            {"_id": 0},
+            sort=[("fecha", -1)]
+        )
+        
+        return inventario
+    
+    # =========================================================================
+    # PROCESAMIENTO PRINCIPAL
+    # =========================================================================
     
     async def procesar_pedido_operativo(
         self,
@@ -71,18 +194,28 @@ class AutomatizacionComprasService:
         usuario_id: str,
         usuario_nombre: str,
         productos: List[Dict],
-        dias_objetivo: int = None
+        dias_objetivo: int = None,
+        fecha_pedido: datetime = None,
+        origen_sistema: str = "MPRO"
     ) -> Dict:
         """
         Procesa un pedido/requisición capturado.
         
-        Flujo:
-        1. Validar inventario físico reciente
-        2. Si no hay → marcar pendiente y notificar
-        3. Si hay → ejecutar auditoría y clasificar
+        Flujo completo:
+        1. Determinar ventana de análisis (últimos 15 días)
+        2. Buscar inventario inicial más cercano válido
+        3. Buscar inventario final del día del pedido
+        4. Si no hay inventario final → marcar pendiente y notificar
+        5. Si hay → ejecutar auditoría, generar reporte
+        6. Enviar a Gerencia para revisión
         """
         now = datetime.now(timezone.utc)
         dias_objetivo = dias_objetivo or self.DIAS_OBJETIVO_DEFAULT
+        fecha_pedido = fecha_pedido or now
+        
+        # Determinar ventana de análisis automática (15 días)
+        fecha_fin_periodo = fecha_pedido
+        fecha_inicio_periodo = fecha_pedido - timedelta(days=self.DIAS_PERIODO_ANALISIS)
         
         # Crear registro base
         automatizacion_id = str(uuid.uuid4())
@@ -96,33 +229,85 @@ class AutomatizacionComprasService:
             "almacen_nombre": almacen_nombre,
             "usuario_id": usuario_id,
             "usuario_nombre": usuario_nombre,
-            "estado": None,
-            "inventario_fisico_id": None,
-            "inventario_fisico_fecha": None,
+            "origen_sistema": origen_sistema,
+            "estado": EstadoAutomatizacion.PEDIDO_DETECTADO.value,
+            # Periodo de análisis
+            "fecha_pedido": fecha_pedido.isoformat(),
+            "fecha_inicio_periodo": fecha_inicio_periodo.isoformat(),
+            "fecha_fin_periodo": fecha_fin_periodo.isoformat(),
+            "dias_periodo_analisis": self.DIAS_PERIODO_ANALISIS,
+            # Inventarios
+            "inventario_inicial_id": None,
+            "inventario_inicial_fecha": None,
+            "inventario_final_id": None,
+            "inventario_final_fecha": None,
+            # Timestamps
             "fecha_creacion": now.isoformat(),
             "fecha_actualizacion": now.isoformat(),
+            # Resultado
             "resultado": None,
             "detalle_productos": [],
             "recomendacion_general": None,
             "total_productos": len(productos),
             "dias_objetivo": dias_objetivo,
+            # Reporte
+            "reporte_generado": False,
+            "fecha_reporte": None,
+            # Flujo autorización
+            "fecha_envio_gerencia": None,
+            "autorizado_gerencia": False,
+            "fecha_autorizacion_gerencia": None,
+            "autorizado_por_gerencia": None,
+            "fecha_envio_tesoreria": None,
+            "autorizado_final": False,
+            "fecha_autorizacion_final": None,
+            "autorizado_por_tesoreria": None,
         }
         
-        # 1. Validar inventario físico reciente
-        inventario = await self._buscar_inventario_fisico_reciente(
-            server_id, sucursal_id, almacen_id
+        # Actualizar estado a buscando inventarios
+        registro["estado"] = EstadoAutomatizacion.BUSCANDO_INVENTARIOS.value
+        
+        # 1. Buscar inventario inicial más cercano válido
+        inv_inicial = self._buscar_inventario_inicial_mas_cercano(
+            server_id, almacen_id, fecha_inicio_periodo
         )
         
-        if not inventario:
-            # Sin inventario físico válido
+        if inv_inicial:
+            registro["inventario_inicial_id"] = inv_inicial.get("folio")
+            registro["inventario_inicial_fecha"] = inv_inicial.get("fecha")
+        else:
+            logger.warning(f"No se encontró inventario inicial válido para almacén {almacen_id}")
+        
+        # 2. Buscar inventario final del día del pedido
+        inv_final = self._buscar_inventario_final_dia_pedido(
+            server_id, almacen_id, fecha_pedido
+        )
+        
+        if not inv_final:
+            # Sin inventario final - detener flujo
             registro["estado"] = EstadoAutomatizacion.PENDIENTE_INVENTARIO_FISICO.value
             registro["resultado"] = {
-                "mensaje": "No existe inventario físico reciente",
-                "dias_requeridos": self.DIAS_INVENTARIO_FISICO_VALIDO,
-                "accion_requerida": "Realizar conteo físico de inventario"
+                "mensaje": "No existe inventario físico del día del pedido",
+                "fecha_requerida": fecha_pedido.strftime("%Y-%m-%d"),
+                "almacen": almacen_nombre,
+                "accion_requerida": "Capturar inventario físico del día para continuar"
             }
             
-            # Guardar y notificar
+            # Guardar
+            self.collection.insert_one(registro)
+            self.marcar_pedido_procesado(server_id, pedido_id, origen_sistema, automatizacion_id)
+            
+            # Notificar y crear tarea
+            await self._notificar_falta_inventario(registro)
+            await self._crear_tarea_inventario(registro)
+            
+            logger.info(f"Automatización {automatizacion_id}: PENDIENTE_INVENTARIO_FISICO")
+            return self._limpiar_respuesta(registro)
+        
+        # 3. Hay inventario final - continuar con auditoría
+        registro["inventario_final_id"] = inv_final.get("folio")
+        registro["inventario_final_fecha"] = inv_final.get("fecha")
+        registro["estado"] = EstadoAutomatizacion.AUDITORIA_EN_PROCESO.value
             self.collection.insert_one(registro)
             await self._notificar_falta_inventario(registro)
             
