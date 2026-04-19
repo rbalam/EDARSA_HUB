@@ -83,6 +83,12 @@ El tablero ejecutivo devolvía **$0.00** para unidades MPRO aunque existían dat
   - Auto-selección para usuarios con 1 unidad
   - server_id relegado a dato interno
   - Documentado en `/app/docs/MIGRACION_UNIDAD_NEGOCIO_COMPRAS.md`
+- [x] **Manuales Operativos Modelo Cienfuegos** (2026-04-19)
+  - Generación automática al cerrar procesos (APROBADO/RECHAZADO/COMPLETADA)
+  - Formato Cienfuegos: objetivo, alcance, responsables, procedimiento, políticas, evidencias
+  - Endpoints: listar, obtener, exportar texto, generar bajo demanda
+  - Trigger integrado en servicio de automatización compras
+  - Documentado en `/app/docs/MANUALES_OPERATIVOS_CIENFUEGOS.md`
 
 ### P0 - PENDIENTE
 - [ ] RH mapeo empresa→sucursal_id SQL (agregar `rh_sql_sucursal_id` a `sucursales_catalogo`)
@@ -109,6 +115,7 @@ El tablero ejecutivo devolvía **$0.00** para unidades MPRO aunque existían dat
 | Worklog del Fix | `/app/memory/WORKLOG_FIX_MPRO_CREDENCIALES_FECHAS.md` |
 | Fix Servidores Duplicados | `/app/docs/FIX_SERVIDORES_DUPLICADOS_20260419.md` |
 | Migración Unidad de Negocio | `/app/docs/MIGRACION_UNIDAD_NEGOCIO_COMPRAS.md` |
+| Manuales Operativos Cienfuegos | `/app/docs/MANUALES_OPERATIVOS_CIENFUEGOS.md` |
 
 ---
 

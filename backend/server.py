@@ -188,6 +188,13 @@ from modules.finanzas import cuentas_por_pagar as finanzas_cxp
 from modules.finanzas.repository_mpro import FinanzasRepositoryMPRO
 from modules.finanzas.repository_softrestaurant import FinanzasRepositorySoftRestaurant
 
+# Módulo de Manuales Operativos (Modelo Cienfuegos)
+from modules.manuales_operativos.routes import router as manuales_router, init_manuales_module
+from modules.manuales_operativos.triggers import trigger_generar_manual, ESTADOS_TRIGGER
+
+# Inicializar módulo de Manuales Operativos
+init_manuales_module(db)
+
 # Inicializar módulo RH con conexión a MongoDB
 init_rh_module(db)
 
@@ -235,6 +242,9 @@ api_router.include_router(catalogos_router)
 # ARQUITECTURA: SQL Server EDARSA HUB (persistencia) + MongoDB (cache)
 # AISLAMIENTO: NO interfiere con /api/finanzas/tesoreria/* (Tab Cuadre Z PROTEGIDO)
 api_router.include_router(propinas_tpv_router)
+
+# Manuales Operativos (Modelo Cienfuegos) - Generación automática de documentación
+api_router.include_router(manuales_router)
 
 import requests
 

@@ -10,6 +10,9 @@ Flujo Estados (EXACTO):
 4. EN_REVISION_GERENCIA
 5. PENDIENTE_TESORERIA
 6. APROBADO / RECHAZADO
+
+FASE 2: Al llegar a APROBADO/RECHAZADO se genera automáticamente
+un Manual Operativo en formato Cienfuegos.
 """
 
 import logging
@@ -17,6 +20,14 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional
 from enum import Enum
 import uuid
+
+# Import del trigger de manuales operativos
+try:
+    from modules.manuales_operativos.triggers import trigger_generar_manual_sync
+    MANUALES_DISPONIBLE = True
+except ImportError:
+    MANUALES_DISPONIBLE = False
+    trigger_generar_manual_sync = None
 
 logger = logging.getLogger(__name__)
 
@@ -339,6 +350,9 @@ class AutomatizacionComprasService:
             self.collection.update_one({"id": automatizacion_id}, {"$set": update_data})
             self._registrar_bitacora(automatizacion_id, "APROBADO_FINAL", usuario_id, {"comentario": comentario})
             
+            # TRIGGER: Generar manual operativo al aprobar
+            self._generar_manual_operativo(automatizacion_id)
+            
             return {"success": True, "estado": EstadoAutomatizacion.APROBADO.value}
         
         elif accion == "rechazar":
@@ -349,6 +363,9 @@ class AutomatizacionComprasService:
             
             self.collection.update_one({"id": automatizacion_id}, {"$set": update_data})
             self._registrar_bitacora(automatizacion_id, "RECHAZADO_TESORERIA", usuario_id, {"motivo": comentario})
+            
+            # TRIGGER: Generar manual operativo al rechazar
+            self._generar_manual_operativo(automatizacion_id)
             
             return {"success": True, "estado": EstadoAutomatizacion.RECHAZADO.value}
         
@@ -727,7 +744,7 @@ class AutomatizacionComprasService:
             if email:
                 service.enviar_email_sync(
                     destinatario=email,
-                    asunto=f"⚠️ Automatización Compras - Inventario Requerido",
+                    asunto="⚠️ Automatización Compras - Inventario Requerido",
                     contenido_html=f"""
                     <h2>Acción Requerida: Inventario Físico</h2>
                     <p>Pedido: <strong>{registro['pedido_id']}</strong></p>
@@ -815,6 +832,34 @@ class AutomatizacionComprasService:
         """Obtiene email del usuario."""
         user = self.db.users.find_one({"id": usuario_id}, {"_id": 0, "email": 1})
         return user.get("email", "") if user else ""
+    
+    def _generar_manual_operativo(self, automatizacion_id: str) -> Optional[str]:
+        """
+        Genera automáticamente un Manual Operativo (Modelo Cienfuegos)
+        cuando el proceso llega a estado final (APROBADO/RECHAZADO).
+        
+        Returns:
+            ID del manual generado o None si error
+        """
+        if not MANUALES_DISPONIBLE or trigger_generar_manual_sync is None:
+            logger.warning("Módulo de manuales operativos no disponible")
+            return None
+        
+        try:
+            manual_id = trigger_generar_manual_sync(self.db, automatizacion_id, modulo="compras")
+            if manual_id:
+                logger.info(f"Manual operativo generado: {manual_id} para automatización {automatizacion_id}")
+                # Registrar en bitácora
+                self._registrar_bitacora(
+                    automatizacion_id, 
+                    "MANUAL_GENERADO", 
+                    "sistema", 
+                    {"manual_id": manual_id, "formato": "cienfuegos"}
+                )
+            return manual_id
+        except Exception as e:
+            logger.error(f"Error generando manual operativo: {e}")
+            return None
 
 
 def get_automatizacion_compras_service(db) -> AutomatizacionComprasService:
