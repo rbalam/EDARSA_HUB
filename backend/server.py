@@ -76,10 +76,15 @@ from core.security import (
     verify_token,
     # Dependency
     get_current_user,
-    # Permisos
+    # Permisos - Legacy
     user_has_server_access,
     filter_servers_by_permissions,
     filter_sucursales_by_permissions,
+    # Permisos - FASE 3 (nuevo modelo)
+    get_user_empresas_permitidas,
+    get_servers_for_empresas,
+    user_has_empresa_access,
+    filter_by_user_context,
     # Inicialización
     init_security,
 )
@@ -5468,14 +5473,62 @@ class CalculoPedidoRequest(BaseModel):
 # La migración debe hacerse con cuidado para no romper funcionalidad.
 # =============================================================================
 
-@api_router.get("/compras/inventarios-fisicos/{server_id}")
-async def obtener_inventarios_fisicos(server_id: str, sucursal: str = None, sucursal_id: str = None, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtiene la lista de inventarios físicos disponibles para seleccionar, filtrado por almacén y sucursal"""
-    verify_token(credentials.credentials)
+# =============================================================================
+# FASE 3.1: VALIDACIÓN DE ACCESO POR EMPRESA (Compras)
+# =============================================================================
+
+async def validate_server_access_by_empresa(server_id: str, credentials: HTTPAuthorizationCredentials) -> dict:
+    """
+    Valida que el usuario tenga acceso al servidor según sus empresas permitidas.
+    FASE 3.1: Autorización basada en empresas para módulo Compras.
     
+    Returns:
+        dict con usuario y servidor si tiene acceso
+    
+    Raises:
+        HTTPException 403 si no tiene acceso
+        HTTPException 404 si servidor no existe
+    """
+    # Decodificar token y obtener usuario
+    payload = verify_token(credentials.credentials)
+    user = await db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "password": 0})
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Usuario no encontrado")
+    
+    # Obtener servidor
     server = await db.servers.find_one({"id": server_id, "active": True})
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    # FASE 3.1: Validar acceso por empresas permitidas
+    empresas_permitidas = user.get('empresas_permitidas', [])
+    
+    if empresas_permitidas:
+        # Obtener servidores permitidos desde empresas
+        servers_permitidos = await get_servers_for_empresas(empresas_permitidas)
+        
+        if server_id not in servers_permitidos:
+            logging.warning(f"FASE 3.1: Usuario {user.get('email')} intentó acceder a servidor {server_id} sin permiso")
+            raise HTTPException(
+                status_code=403, 
+                detail="No tiene acceso a este servidor. Contacte al administrador."
+            )
+    else:
+        # Fallback legacy: usar allowed_servers
+        if user.get('role') not in ['Administrador', 'admin', 'Admin']:
+            allowed = user.get('allowed_servers', [])
+            if allowed and server_id not in allowed:
+                raise HTTPException(status_code=403, detail="No tiene acceso a este servidor")
+    
+    return {"user": user, "server": server}
+
+@api_router.get("/compras/inventarios-fisicos/{server_id}")
+async def obtener_inventarios_fisicos(server_id: str, sucursal: str = None, sucursal_id: str = None, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Obtiene la lista de inventarios físicos disponibles para seleccionar, filtrado por almacén y sucursal"""
+    # FASE 3.1: Validar acceso por empresa
+    access = await validate_server_access_by_empresa(server_id, credentials)
+    server = access["server"]
     
     if server['system_type'] == 'MPRO':
         # Para MPRO, los almacenes tienen el mismo ID en diferentes sucursales
@@ -5556,11 +5609,9 @@ ORDER BY INV.folio DESC, INV.fecha DESC
 @api_router.get("/compras/pedidos-vigentes/{server_id}")
 async def obtener_pedidos_vigentes(server_id: str, sucursal: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Obtiene la lista de REQUISICIONES de compra SIN AUTORIZAR (estado PXA) para comparar"""
-    verify_token(credentials.credentials)
-    
-    server = await db.servers.find_one({"id": server_id, "active": True})
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    # FASE 3.1: Validar acceso por empresa
+    access = await validate_server_access_by_empresa(server_id, credentials)
+    server = access["server"]
     
     if server['system_type'] == 'MPRO':
         # REQUISICION_COMPRA es la tabla correcta con estado PXA = Por Autorizar
@@ -5627,11 +5678,9 @@ ORDER BY OC.fechacaptura DESC
 @api_router.get("/compras/detalle-pedido-manual/{server_id}")
 async def obtener_detalle_pedido_manual(server_id: str, folio: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Obtiene el detalle de una requisición por folio manual"""
-    verify_token(credentials.credentials)
-    
-    server = await db.servers.find_one({"id": server_id, "active": True})
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    # FASE 3.1: Validar acceso por empresa
+    access = await validate_server_access_by_empresa(server_id, credentials)
+    server = access["server"]
     
     if server['system_type'] == 'MPRO':
         # Buscar primero en REQUISICION_COMPRA_DETALLE (tabla principal)
@@ -5684,11 +5733,9 @@ WHERE OCD.Oc_Folio = '{folio}'
 @api_router.get("/compras/detalle-movimientos/{server_id}")
 async def obtener_detalle_movimientos(server_id: str, codigo_producto: str, almacenes: str, fecha_ini: str, fecha_fin: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Obtiene el detalle de movimientos de un producto para mostrar en popup"""
-    verify_token(credentials.credentials)
-    
-    server = await db.servers.find_one({"id": server_id, "active": True})
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    # FASE 3.1: Validar acceso por empresa
+    access = await validate_server_access_by_empresa(server_id, credentials)
+    server = access["server"]
     
     almacen_list = almacenes.split(',')
     almacen_codigos_str = ",".join([f"'{a}'" for a in almacen_list])
@@ -5723,11 +5770,9 @@ ORDER BY E.Mv_Fecha
 @api_router.get("/compras/detalle-consumos/{server_id}")
 async def obtener_detalle_consumos(server_id: str, codigo_producto: str, sucursal_codigo: str, fecha_ini: str, fecha_fin: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Obtiene el detalle de consumos/ventas de un producto para mostrar en popup"""
-    verify_token(credentials.credentials)
-    
-    server = await db.servers.find_one({"id": server_id, "active": True})
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    # FASE 3.1: Validar acceso por empresa
+    access = await validate_server_access_by_empresa(server_id, credentials)
+    server = access["server"]
     
     if server['system_type'] == 'MPRO':
         query = f"""
@@ -7402,11 +7447,9 @@ async def obtener_dashboard_compras(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """Obtiene KPIs y alertas para el dashboard de compras. Soporta multiselección de meses y años."""
-    verify_token(credentials.credentials)
-    
-    server = await db.servers.find_one({"id": server_id, "active": True})
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    # FASE 3.1: Validar acceso por empresa
+    access = await validate_server_access_by_empresa(server_id, credentials)
+    server = access["server"]
     
     if not sucursal:
         return {"kpis": {"total_compras_mes": 0, "requisiciones_pendientes": 0, "proveedores_activos": 0, "alertas_activas": 0}, "alertas": [], "top_proveedores": []}

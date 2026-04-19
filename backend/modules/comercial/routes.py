@@ -402,7 +402,14 @@ async def obtener_sucursales(
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
-    if not user_has_server_access(current_user, server_id):
+    # FASE 3.1: Validar acceso por empresa primero
+    empresas_permitidas = await get_user_empresas_permitidas(current_user)
+    if empresas_permitidas:
+        servers_permitidos = await get_servers_for_empresas(empresas_permitidas)
+        if server_id not in servers_permitidos:
+            raise HTTPException(status_code=403, detail="No tiene acceso a este servidor")
+    elif not user_has_server_access(current_user, server_id):
+        # Fallback legacy
         raise HTTPException(status_code=403, detail="Sin acceso a este servidor")
     
     try:
@@ -469,7 +476,13 @@ async def comercial_metas(
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
-    if not user_has_server_access(current_user, server_id):
+    # FASE 3.1: Validar acceso por empresa
+    empresas_permitidas = await get_user_empresas_permitidas(current_user)
+    if empresas_permitidas:
+        servers_permitidos = await get_servers_for_empresas(empresas_permitidas)
+        if server_id not in servers_permitidos:
+            raise HTTPException(status_code=403, detail="No tiene acceso a este servidor")
+    elif not user_has_server_access(current_user, server_id):
         raise HTTPException(status_code=403, detail="Sin acceso a este servidor")
     
     try:
