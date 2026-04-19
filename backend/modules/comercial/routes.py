@@ -262,15 +262,18 @@ async def tablero_ejecutivo(
         if server['system_type'] == 'SoftRestaurant':
             kpis = None
             
-            # Solo intentar conexión si el servidor NO está marcado como offline recientemente
-            if not server_offline:
+            # Para ventas del día: SIEMPRE intentar consultar tempcheques, ignorar estado offline
+            # Para modo normal: respetar estado offline y usar caché
+            should_try_connection = solo_ventas_dia or not server_offline
+            
+            if should_try_connection:
                 kpis = get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
                                                fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia)
                 if kpis:
                     # Conexión exitosa - marcar como online
                     await save_server_connection_status(server['id'], True)
-                else:
-                    # Conexión fallida - marcar como offline
+                elif not solo_ventas_dia:
+                    # Solo marcar offline si NO es ventas del día (tempcheques puede fallar sin afectar el estado)
                     await save_server_connection_status(server['id'], False)
             else:
                 logging.info(f"Servidor {server['name']} marcado como offline - usando caché")
@@ -283,14 +286,16 @@ async def tablero_ejecutivo(
                 kpis["status"] = "online"
                 kpis["updated_at"] = datetime.now(timezone.utc).isoformat()
                 resultados.append(kpis)
-                # Guardar en caché
-                await save_kpis_cache(server['id'], periodo_key, kpis)
+                # Guardar en caché (solo si NO es ventas del día)
+                if not solo_ventas_dia:
+                    await save_kpis_cache(server['id'], periodo_key, kpis)
                 # Acumular totales
                 for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
                           "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
                     totales[k] += kpis.get(k, 0)
-            else:
-                # Conexión fallida - buscar en caché
+            elif not solo_ventas_dia:
+                # Conexión fallida y NO es ventas del día - buscar en caché
+                # REGLA: En ventas del día, NO usar caché (contamina con datos antiguos)
                 cached = await get_cached_kpis(server['id'], periodo_key)
                 if cached and cached.get('kpis'):
                     kpis = cached['kpis']
@@ -307,6 +312,7 @@ async def tablero_ejecutivo(
                         totales[k] += kpis.get(k, 0)
                 else:
                     logging.warning(f"Sin caché disponible para {server['name']}")
+            # Si es ventas del día y no hay datos, simplemente no agregar nada
         
         elif server['system_type'] == 'MPRO':
             # MPRO: Dividir por sucursal (igual que en Inventarios)

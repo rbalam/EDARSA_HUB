@@ -146,15 +146,66 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
     """
     
     # ============================================================================
-    # VENTAS DEL DÍA: SoftRestaurant no tiene API local
-    # FALLBACK: Mostrar ventas acumuladas desde SQL nube
+    # VENTAS DEL DÍA: Usar SOLO tempcheques (cheques sin cerrar)
     # ============================================================================
     if solo_ventas_dia:
-        logging.info(f"SoftRestaurant {server['name']}: Ventas del Día - API local NO disponible, usando SQL nube (ventas acumuladas)")
-        # No retornamos None, continuamos con SQL nube para mostrar acumulados
+        logging.info(f"SoftRestaurant {server['name']}: Modo Ventas del Día - consultando SOLO tempcheques")
+        try:
+            query_temp = """
+SELECT 
+    COUNT(DISTINCT folio) as cheques,
+    ISNULL(SUM(total), 0) as ventas,
+    ISNULL(SUM(nopersonas), 0) as pax
+FROM tempcheques
+WHERE cancelado = 0
+"""
+            result_temp = execute_sql_query(server['host'], server['port'], server['database'], 
+                                            server['username'], server['password'], query_temp)
+            if result_temp and len(result_temp) > 0:
+                ventas = float(result_temp[0]['ventas'] or 0)
+                pax = int(result_temp[0]['pax'] or 0)
+                cheques = int(result_temp[0]['cheques'] or 0)
+                
+                if cheques == 0 and pax == 0:
+                    pax = cheques
+                
+                ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
+                cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
+                
+                logging.info(f"SoftRestaurant {server['name']} - Tempcheques: ventas=${ventas:,.2f}, cheques={cheques}")
+                
+                return {
+                    "ventas": ventas,
+                    "ventas_ant": 0,
+                    "ventas_año": 0,
+                    "var_vs_mes_ant": 0,
+                    "var_vs_año_ant": 0,
+                    "proyeccion": 0,
+                    "pax": pax,
+                    "pax_ant": 0,
+                    "pax_año": 0,
+                    "var_pax_mes": 0,
+                    "var_pax_año": 0,
+                    "cheques": cheques,
+                    "cheques_ant": 0,
+                    "cheques_año": 0,
+                    "var_cheques_mes": 0,
+                    "var_cheques_año": 0,
+                    "ticket_prom": ticket_prom,
+                    "cheque_prom": cheque_prom,
+                    "es_ventas_dia": True,
+                    "origen": "tempcheques"
+                }
+            else:
+                logging.warning(f"SoftRestaurant {server['name']}: Sin datos en tempcheques")
+                return None
+        except Exception as e:
+            logging.warning(f"SoftRestaurant {server['name']}: Error consultando tempcheques: {e}")
+            return None
     
     # ============================================================================
     # VENTAS HISTÓRICAS / ACUMULADAS: Usar SQL nube del menú Servidores
+    # (Solo se ejecuta si solo_ventas_dia=False)
     # ============================================================================
     
     # VALIDACIÓN DE RANGO DE FECHAS (FIX ESTRUCTURAL)
@@ -633,20 +684,17 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
             return unidades
         
         # ============================================================================
-        # FALLBACK: API local no funcionó → Usar SQL nube con ventas ACUMULADAS del mes
+        # API LOCAL FALLÓ EN MODO VENTAS DEL DÍA
         # ============================================================================
-        logging.warning(f"MPRO {server['name']}: API local no disponible - mostrando ventas acumuladas desde SQL nube")
-        
-        # IMPORTANTE: Para el fallback, NO usar fechas del día, usar fechas del mes completo
-        # Esto se logra simplemente continuando con la lógica normal de SQL nube
-        # que ya tiene las fechas correctas del mes (fecha_ini y fecha_fin del mes solicitado)
-        logging.debug(f"MPRO FALLBACK: Continuando con SQL nube")
-        
-        # FALLBACK activo: desactivar modo ventas del día para mostrar acumulados
-        solo_ventas_dia = False  # Permitir que SQL nube muestre datos acumulados
+        # REGLA CRÍTICA: Si es "ventas del día" y la API local no funciona,
+        # NO contaminar con datos acumulados del mes. Retornar lista vacía.
+        # El usuario pidió explícitamente ver SOLO las ventas del día.
+        logging.warning(f"MPRO {server['name']}: API local no disponible - SIN DATOS para ventas del día")
+        return []
     
     # ============================================================================
     # VENTAS HISTÓRICAS / ACUMULADAS: Usar SQL nube del menú Servidores
+    # (Solo se ejecuta si solo_ventas_dia=False)
     # ============================================================================
     
     logging.debug(f"MPRO SQL NUBE: {server['host']}:{server['port']}/{server['database']}")
