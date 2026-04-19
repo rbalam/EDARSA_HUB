@@ -45,13 +45,18 @@ ENDPOINTS PENDIENTES (0 en server.py):
 """
 
 from fastapi import APIRouter, Query, Depends, HTTPException
-from typing import Dict
+from typing import Dict, List
 import logging
 import calendar
 from datetime import datetime, timedelta, timezone
 
 from core.db import execute_sql_query
-from core.security import get_current_user, user_has_server_access
+from core.security import (
+    get_current_user, 
+    user_has_server_access,
+    get_user_empresas_permitidas,
+    get_servers_for_empresas,
+)
 from modules.comercial.service import (
     get_kpis_softrestaurant,
     get_kpis_mpro,
@@ -221,10 +226,21 @@ async def tablero_ejecutivo(
     servers = await get_servers_for_tablero()
     logging.info(f"Servidores encontrados: {len(servers)} - Tipos: {[s['system_type'] for s in servers]}")
     
-    # Filtrar por permisos del usuario
-    if current_user.get('role') != 'Administrador':
+    # FASE 3: Filtrar por empresas permitidas del usuario (nuevo modelo)
+    empresas_permitidas = await get_user_empresas_permitidas(current_user)
+    if empresas_permitidas:
+        # Traducir empresas a servidores permitidos
+        servers_permitidos = await get_servers_for_empresas(empresas_permitidas)
+        if servers_permitidos:
+            servers = [s for s in servers if s['id'] in servers_permitidos]
+            logging.info(f"FASE 3: Filtrado por empresas - {len(servers)} servidores permitidos")
+    
+    # Fallback legacy: Si no tiene empresas asignadas, usar modelo viejo
+    elif current_user.get('role') != 'Administrador':
         allowed = current_user.get('allowed_servers', [])
-        servers = [s for s in servers if s['id'] in allowed]
+        if allowed:
+            servers = [s for s in servers if s['id'] in allowed]
+            logging.info(f"Legacy: Filtrado por allowed_servers - {len(servers)} servidores")
     
     resultados = []
     totales = {"ventas": 0, "ventas_ant": 0, "ventas_año": 0, "ventas_año_completo": 0, "pax": 0, "pax_ant": 0, "pax_año": 0, 

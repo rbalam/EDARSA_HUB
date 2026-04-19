@@ -187,7 +187,110 @@ async def get_current_user(
 
 
 # ============================================================================
-# FUNCIONES DE PERMISOS
+# FUNCIONES DE PERMISOS - MODELO NUEVO (FASE 3)
+# ============================================================================
+
+async def get_user_empresas_permitidas(user: Dict[str, Any]) -> List[str]:
+    """
+    Obtiene las empresas permitidas para un usuario.
+    FASE 3: Usa el nuevo modelo de contexto.
+    
+    Returns:
+        Lista de empresa_ids permitidos
+    """
+    # Nuevo modelo: empresas_permitidas
+    if user.get('empresas_permitidas'):
+        return user['empresas_permitidas']
+    
+    # Fallback legacy: Si es Administrador, todas las empresas
+    if user.get('role') in ['Administrador', 'admin', 'Admin']:
+        db = get_db()
+        empresas = await db.empresas.find({'activa': True}, {'id': 1}).to_list(100)
+        return [e['id'] for e in empresas]
+    
+    # Sin acceso
+    return []
+
+
+async def get_servers_for_empresas(empresa_ids: List[str]) -> List[str]:
+    """
+    Obtiene los server_ids asociados a una lista de empresas.
+    FASE 3: Traduce empresas → servidores para compatibilidad.
+    
+    Returns:
+        Lista de server_ids
+    """
+    if not empresa_ids:
+        return []
+    
+    db = get_db()
+    # Obtener sucursales de las empresas
+    sucursales = await db.sucursales_catalogo.find(
+        {'empresa_id': {'$in': empresa_ids}},
+        {'id': 1}
+    ).to_list(100)
+    
+    sucursal_ids = [s['id'] for s in sucursales]
+    
+    # Obtener mapeos a servidores
+    mapeos = await db.sucursal_servidor_map.find(
+        {'sucursal_id': {'$in': sucursal_ids}},
+        {'server_id': 1}
+    ).to_list(100)
+    
+    return list(set(m['server_id'] for m in mapeos))
+
+
+async def user_has_empresa_access(user: Dict[str, Any], empresa_id: str) -> bool:
+    """
+    Verifica si un usuario tiene acceso a una empresa específica.
+    FASE 3: Autorización basada en empresas.
+    
+    Returns:
+        True si tiene acceso, False si no
+    """
+    empresas_permitidas = await get_user_empresas_permitidas(user)
+    return empresa_id in empresas_permitidas
+
+
+async def filter_by_user_context(
+    user: Dict[str, Any],
+    items: List[Dict],
+    entity_type: str = 'empresa'
+) -> List[Dict]:
+    """
+    Filtra items según el contexto del usuario.
+    FASE 3: Filtrado basado en empresas/sucursales.
+    
+    Args:
+        user: Diccionario del usuario
+        items: Lista de items a filtrar
+        entity_type: 'empresa', 'sucursal' o 'server'
+    
+    Returns:
+        Lista filtrada
+    """
+    empresas_permitidas = await get_user_empresas_permitidas(user)
+    
+    if not empresas_permitidas:
+        return []
+    
+    if entity_type == 'empresa':
+        return [i for i in items if i.get('id') in empresas_permitidas or i.get('empresa_id') in empresas_permitidas]
+    
+    elif entity_type == 'sucursal':
+        return [i for i in items if i.get('empresa_id') in empresas_permitidas]
+    
+    elif entity_type == 'server':
+        # Traducir empresas a servidores permitidos
+        servers_permitidos = await get_servers_for_empresas(empresas_permitidas)
+        return [i for i in items if i.get('id') in servers_permitidos or i.get('server_id') in servers_permitidos]
+    
+    return items
+
+
+# ============================================================================
+# FUNCIONES DE PERMISOS - MODELO LEGACY (compatibilidad)
 # ============================================================================
 
 def user_has_server_access(user: Dict[str, Any], server_id: str) -> bool:
@@ -282,7 +385,12 @@ __all__ = [
     'verify_token',
     # Dependency
     'get_current_user',
-    # Permisos
+    # Permisos - Nuevo modelo FASE 3
+    'get_user_empresas_permitidas',
+    'get_servers_for_empresas',
+    'user_has_empresa_access',
+    'filter_by_user_context',
+    # Permisos - Legacy (compatibilidad)
     'user_has_server_access',
     'filter_servers_by_permissions',
     'filter_sucursales_by_permissions',
