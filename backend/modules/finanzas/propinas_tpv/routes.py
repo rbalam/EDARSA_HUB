@@ -1,6 +1,7 @@
 """
 API Routes para el módulo de Control de Propinas TPV
 FASE 1 MVP - Solo SoftRestaurant
+PROTEGIDO CON RBAC (Fase 3.1)
 
 Endpoints:
 - POST /api/finanzas/propinas/sincronizar
@@ -27,11 +28,11 @@ conflictos con paths específicos como /config, /health, etc.
 """
 
 import logging
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from core.security import get_current_user
+from core.security import get_current_user, get_user_empresas_permitidas, get_servers_for_empresas
 from .service import PropinasTPVService
 from .models import (
     SincronizarRequest,
@@ -59,6 +60,34 @@ async def get_db():
     """
     from server import db
     return db
+
+
+async def get_user_server_ids_permitidos(current_user: Dict[str, Any]) -> List[str]:
+    """
+    RBAC Fase 3.1: Obtiene los CÓDIGOS de sucursales permitidas para el usuario.
+    Retorna lista vacía si el usuario tiene acceso total (admin).
+    """
+    from server import db
+    
+    empresas_permitidas = await get_user_empresas_permitidas(current_user)
+    if not empresas_permitidas:
+        return []  # Sin restricción (admin)
+    
+    # Obtener códigos de las empresas permitidas
+    empresas = await db.empresas.find(
+        {'id': {'$in': empresas_permitidas}},
+        {'_id': 0, 'codigo': 1, 'nombre': 1}
+    ).to_list(100)
+    
+    # Retornar códigos y nombres para matching flexible
+    codigos = []
+    for e in empresas:
+        if e.get('codigo'):
+            codigos.append(e['codigo'].upper())
+        if e.get('nombre'):
+            codigos.append(e['nombre'].upper())
+    
+    return codigos
 
 
 # ============================================================================

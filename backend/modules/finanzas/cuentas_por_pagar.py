@@ -2,6 +2,7 @@
 EDARSA HUB - Cuentas por Pagar (Facturas Pendientes)
 =====================================================
 Módulo para gestionar facturas pendientes de pago agrupadas por proveedor.
+PROTEGIDO CON RBAC (Fase 3.1)
 
 ABRIL 2026: Conectado a SQL Server real (Finanzas_CuentasPorPagar)
 - Si hay datos en SQL, usa datos reales
@@ -25,13 +26,41 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from core.security import get_current_user
+from core.security import get_current_user, get_user_empresas_permitidas, get_servers_for_empresas
 import random
 
 # Importar función de filtrado de visibilidad
 from modules.comercial.repository import get_sucursales_visibles_config
 
 router = APIRouter(prefix="/finanzas/cuentas-por-pagar", tags=["Cuentas por Pagar"])
+
+
+async def get_user_sucursales_permitidas(current_user: Dict[str, Any]) -> List[str]:
+    """
+    RBAC Fase 3.1: Obtiene los CÓDIGOS de sucursales permitidas para el usuario.
+    Retorna lista vacía si el usuario tiene acceso total (admin).
+    """
+    from server import db
+    
+    empresas_permitidas = await get_user_empresas_permitidas(current_user)
+    if not empresas_permitidas:
+        return []  # Sin restricción (admin)
+    
+    # Obtener códigos de las empresas permitidas
+    empresas = await db.empresas.find(
+        {'id': {'$in': empresas_permitidas}},
+        {'_id': 0, 'codigo': 1, 'nombre': 1}
+    ).to_list(100)
+    
+    # Retornar códigos y nombres para matching flexible
+    codigos = []
+    for e in empresas:
+        if e.get('codigo'):
+            codigos.append(e['codigo'].upper())
+        if e.get('nombre'):
+            codigos.append(e['nombre'].upper())
+    
+    return codigos
 
 # ============================================================================
 # REPOSITORIO REAL

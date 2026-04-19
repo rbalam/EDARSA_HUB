@@ -1,14 +1,15 @@
 """
 API Router para Tesorería - Cuadre de Cortes Z
+PROTEGIDO CON RBAC (Fase 3.1)
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 import logging
 import base64
 import os
 
-from core.security import get_current_user
+from core.security import get_current_user, get_user_empresas_permitidas, get_servers_for_empresas
 from .tesoreria_models import (
     CuadreCorteZCreate, CuadreCorteZUpdate, CuadreCorteZResponse,
     EstadoCuadre, ConteoEfectivo, FichaDeposito
@@ -18,6 +19,56 @@ from .repository_cuadres_z import get_cuadres_repository, calcular_fecha_deposit
 
 router = APIRouter(prefix="/finanzas/tesoreria", tags=["Tesorería"])
 logger = logging.getLogger(__name__)
+
+
+async def get_user_sucursales_permitidas(current_user: Dict[str, Any]) -> List[str]:
+    """
+    RBAC Fase 3.1: Obtiene los CÓDIGOS de sucursales permitidas para el usuario.
+    Retorna lista vacía si el usuario tiene acceso total (admin).
+    
+    Para Finanzas, usamos códigos de empresa ya que los datos demo usan códigos
+    como 'CIENFUEGOS', 'LA_ESTELAR', etc.
+    """
+    from server import db
+    
+    empresas_permitidas = await get_user_empresas_permitidas(current_user)
+    if not empresas_permitidas:
+        return []  # Sin restricción (admin)
+    
+    # Obtener códigos de las empresas permitidas
+    empresas = await db.empresas.find(
+        {'id': {'$in': empresas_permitidas}},
+        {'_id': 0, 'codigo': 1, 'nombre': 1}
+    ).to_list(100)
+    
+    # Retornar códigos y nombres para matching flexible
+    codigos = []
+    for e in empresas:
+        if e.get('codigo'):
+            codigos.append(e['codigo'].upper())
+        if e.get('nombre'):
+            codigos.append(e['nombre'].upper())
+    
+    return codigos
+
+
+def filtrar_cortes_por_permisos(cortes: List[Dict], codigos_permitidos: List[str]) -> List[Dict]:
+    """Filtra cortes por códigos de sucursal permitidos. Si vacío, devuelve todo."""
+    if not codigos_permitidos:
+        return cortes
+    
+    resultado = []
+    for c in cortes:
+        suc_id = str(c.get('sucursal_id', '')).upper()
+        suc_nombre = str(c.get('sucursal_nombre', '')).upper()
+        
+        # Verificar si algún código permitido coincide
+        for codigo in codigos_permitidos:
+            if codigo in suc_id or codigo in suc_nombre or suc_id in codigo:
+                resultado.append(c)
+                break
+    
+    return resultado
 
 
 @router.get("/cortes-z")
@@ -30,10 +81,14 @@ async def listar_cortes_z(
 ):
     """
     Lista los Cortes Z disponibles de todas las fuentes (SoftRestaurant + MPRO).
+    PROTEGIDO: Filtra por empresas_permitidas del usuario.
     Incluye indicador si ya tiene cuadre registrado.
     Por defecto usa datos REALES. Poner use_demo=true solo para desarrollo.
     """
     try:
+        # RBAC Fase 3.1: Obtener sucursales permitidas
+        sucursales_permitidas = await get_user_sucursales_permitidas(current_user)
+        
         repo_cuadres = await get_cuadres_repository()
         cortes = []
         fuente = "SQL_REAL"
@@ -147,8 +202,13 @@ async def listar_cortes_z(
                     'monto_a_depositar': 10450.00
                 }
             ]
+            fuente = "DEMO"
         
-        # Filtrar por sucursal si se especifica
+        # RBAC Fase 3.1: Filtrar por sucursales permitidas
+        if sucursales_permitidas:
+            cortes = filtrar_cortes_por_permisos(cortes, sucursales_permitidas)
+        
+        # Filtrar por sucursal si se especifica (filtro manual del usuario)
         if sucursal:
             cortes = [c for c in cortes if sucursal.lower() in c.get('sucursal_id', '').lower()]
         
