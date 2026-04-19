@@ -5,43 +5,58 @@ Sistema ERP operativo centralizado para EDARSA, actuando como "el cerebro" de op
 
 ## Estado Actual: FASE 3.1 - Migración RBAC por Módulo (COMPLETADA)
 
-### FIX CRÍTICO: MPRO SQL Nube devuelve $0.00 - RESUELTO
+---
+
+## FIX ESTRUCTURAL: MPRO SQL Nube y Política de Fechas
 **Fecha**: 2026-04-19
 
-**Problema identificado:**
-1. Error `cannot access local variable 'sumar_ventas_api_local_a_sucursal'` - import local redundante causaba conflicto con import global
-2. Cuando se seleccionaba un mes futuro (ej: diciembre estando en abril), el rango de fechas era inválido (2026-12-01 a 2026-04-19)
-3. El fallback a SQL nube en modo "Ventas del Día" ponía los datos en $0 en lugar de mostrar acumulados
+### Problema Original
+El tablero ejecutivo devolvía **$0.00** para unidades MPRO aunque existían datos reales en SQL Server CENTRAL2020.
 
-**Solución aplicada:**
-- Eliminado import local redundante de `sumar_ventas_api_local_a_sucursal` (ya existe import global línea 29)
-- Añadida validación para meses futuros: Si el mes solicitado > mes actual, se ajusta automáticamente al mes actual
-- En el fallback SQL nube, se deshabilita `solo_ventas_dia` para permitir mostrar datos acumulados
+### Causas Raíz Identificadas
+1. **Import local conflictivo** - Variable no accesible fuera del bloque `if`
+2. **Rango de fechas inválido** - Mes futuro generaba `fecha_ini > fecha_fin`
+3. **Fallback incorrecto** - No deshabilitaba modo ventas del día
 
-**Archivos modificados:**
-- `/app/backend/modules/comercial/routes.py` (validación de meses futuros)
-- `/app/backend/modules/comercial/service.py` (fix import y fallback)
+### Solución Implementada
+1. **Helper centralizado de fechas**: `/app/backend/core/utils/date_filters.py`
+   - `DateFilterPolicy.to_yyyymmdd_range()` - Conversión segura
+   - `DateFilterPolicy.is_valid_range()` - Validación de rangos
+   - `DateFilterPolicy.adjust_future_month()` - Ajuste de meses futuros
 
-**Resultado:**
-- MPRO 130° QUERETARO: $1,602,503.00 ✅
-- MPRO ORIGEN: $913,840.71 ✅
-- Total tablero: $9,133,083.71 ✅
+2. **Gestor de conexiones**: `/app/backend/core/server_connection_manager.py`
+   - Fuente única de credenciales desde MongoDB
+   - `get_server_config()` - Config completa (backend)
+   - `get_safe_server_info()` - Info sin password (frontend/logs)
+
+3. **Fix en service.py**
+   - Validación de rango antes de ejecutar queries
+   - Fallback correcto deshabilitando `solo_ventas_dia`
+
+### Resultado Verificado
+| Unidad | Antes | Después |
+|--------|-------|---------|
+| 130° QUERETARO | $0.00 | $1,602,503.00 |
+| ORIGEN | $0.00 | $913,840.71 |
 
 ---
 
-### CAMBIO QUIRÚRGICO: Ventas Históricas vs Ventas del Día
-**Fecha**: 2026-04-19
+## Arquitectura de Fechas y Conexiones
 
-**Comportamiento actual:**
-| Tipo de Consulta | Fuente de Datos | Estado |
-|------------------|-----------------|--------|
-| Ventas históricas / acumulados / KPIs | SQL nube (menú Servidores) | ✅ Funcionando |
-| Ventas del día MPRO | API local. Si falla → fallback SQL nube | ✅ Funcionando |
-| Ventas del día SoftRestaurant | SQL Server remoto | ✅ Funcionando |
+### Política de Fechas
+- **PROHIBIDO**: Construir filtros de fecha manualmente
+- **OBLIGATORIO**: Usar `DateFilterPolicy` de `core/utils/date_filters`
+- **Validación**: Siempre verificar `is_valid_range()` antes de queries
+
+### Política de Credenciales
+- **Fuente única**: MongoDB (colección `servers`)
+- **PROHIBIDO**: Hardcodear credenciales en código
+- **PROHIBIDO**: Exponer passwords al frontend
+- Ver `/app/docs/POLITICA_TRANSVERSAL_FECHAS_Y_CONEXIONES.md`
 
 ---
 
-### Módulos YA Migrados a RBAC (Fase 3/3.1):
+## Módulos Migrados a RBAC (Fase 3/3.1)
 - [x] Tablero Ejecutivo
 - [x] Compras
 - [x] Comercial
@@ -49,30 +64,54 @@ Sistema ERP operativo centralizado para EDARSA, actuando como "el cerebro" de op
 - [x] Finanzas
 - [x] Recursos Humanos
 
-### Backlog P0 - PENDIENTES ESTRUCTURALES:
-1. **RH mapeo empresa→sucursal_id SQL**: Agregar campo `rh_sql_sucursal_id` a `sucursales_catalogo` para filtrado granular en HR2020
+---
 
-### Backlog P1:
-- Documentar: Inspección local en servidores para revisar por qué no levanta SQL local / API local
-- Conectar SQL Server real en Finanzas (actualmente usa fallback demo)
+## Backlog
 
-### Backlog P2:
-- Deprecación de campos legacy (`role`, `allowed_servers`, `allowed_sucursales`)
-- Migración completa del Frontend al selector de contextos RBAC
+### P0 - COMPLETADO
+- [x] Fix MPRO fallback $0.00
+- [x] Helper centralizado de fechas
+- [x] Documentación de políticas
 
-### Issue Conocido (No Blocker):
-- DuplicateKeyError en `rbac_usuarios_roles` al iniciar servidor (no afecta funcionalidad, solo genera logs de warning)
+### P0 - PENDIENTE
+- [ ] RH mapeo empresa→sucursal_id SQL (agregar `rh_sql_sucursal_id` a `sucursales_catalogo`)
+
+### P1 - PENDIENTE
+- [ ] Migrar credenciales legacy de `repository_cortes_z.py` a MongoDB
+- [ ] Migrar credenciales legacy de `validacion_propinas_tpv.py` a MongoDB
+- [ ] Conectar SQL Server real en Finanzas (actualmente usa fallback demo)
+- [ ] Documentar inspección de servidores locales
+
+### P2 - FUTURO
+- [ ] Cifrado de passwords en reposo (MongoDB)
+- [ ] Deprecación de campos legacy (`role`, `allowed_servers`)
+- [ ] Migración Frontend al selector de contextos RBAC
+
+---
+
+## Documentación Técnica
+
+| Documento | Ruta |
+|-----------|------|
+| Diagnóstico MPRO | `/app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md` |
+| Política de Fechas | `/app/docs/POLITICA_TRANSVERSAL_FECHAS_Y_CONEXIONES.md` |
+| Worklog del Fix | `/app/memory/WORKLOG_FIX_MPRO_CREDENCIALES_FECHAS.md` |
+
+---
+
+## Issue Conocido (No Blocker)
+- DuplicateKeyError en `rbac_usuarios_roles` al iniciar servidor (no afecta funcionalidad)
 
 ---
 
 ## Arquitectura de Datos
 
-### Colecciones MongoDB:
+### Colecciones MongoDB
 - `users`: Usuarios con `empresa_default_id`, `empresas_permitidas`
-- `servers`: Servidores SQL con credenciales
+- `servers`: Servidores SQL con credenciales (FUENTE ÚNICA)
 - `sucursales_catalogo`: Mapeo de sucursales por empresa
 
-### Servidores SQL Externos:
+### Servidores SQL Externos
 - SoftRestaurant (CIENFUEGOS, LA ESTELAR, 130° MERIDA)
 - ManagmentPro/MPRO (CENTRAL2020 - ORIGEN, QUERETARO)
 - HR2020 (Recursos Humanos)

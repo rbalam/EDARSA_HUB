@@ -17,6 +17,10 @@ FUNCIONES MIGRADAS PREVIAMENTE (FASE 5B-1):
 - query_api_mpro_local() -> modules/comercial/adapters.py
 - obtener_ventas_dia_api_local() -> modules/comercial/adapters.py
 - sumar_ventas_api_local_a_sucursal() -> modules/comercial/adapters.py
+
+FIX ESTRUCTURAL (Abril 2026):
+- Integración con DateFilterPolicy para validación de rangos de fecha
+- Eliminación de bugs por fechas inválidas
 """
 
 from typing import Dict, List, Any, Optional
@@ -26,6 +30,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException
 
 from core.db import execute_sql_query
+from core.utils.date_filters import DateFilterPolicy, to_yyyymmdd_range, is_valid_range
 from modules.comercial.adapters import sumar_ventas_api_local_a_sucursal
 from modules.comercial import repository as repo
 
@@ -152,9 +157,17 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
     # VENTAS HISTÓRICAS / ACUMULADAS: Usar SQL nube del menú Servidores
     # ============================================================================
     
+    # VALIDACIÓN DE RANGO DE FECHAS (FIX ESTRUCTURAL)
+    if not is_valid_range(fecha_ini, fecha_fin):
+        logging.error(f"SoftRestaurant {server['name']}: Rango de fechas inválido ({fecha_ini} > {fecha_fin})")
+        return None
+    
     # Usar formato YYYYMMDD sin guiones para evitar problemas de conversión de fecha
-    fi = fecha_ini.replace('-', '')
-    ff = fecha_fin.replace('-', '')
+    try:
+        fi, ff = to_yyyymmdd_range(fecha_ini, fecha_fin)
+    except ValueError as e:
+        logging.error(f"SoftRestaurant {server['name']}: Error convirtiendo fechas: {e}")
+        return None
     
     # DEBUG: Log para verificar fechas recibidas
     logging.info(f"SoftRestaurant {server['name']} - Fechas recibidas: fecha_ini={fecha_ini}, fecha_fin={fecha_fin}, fecha_ini_año_ant={fecha_ini_año_ant}, fecha_fin_año_ant={fecha_fin_año_ant}")
@@ -637,9 +650,18 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
     logging.debug(f"MPRO SQL NUBE: {server['host']}:{server['port']}/{server['database']}")
     logging.debug(f"MPRO SQL NUBE: Fechas {fecha_ini} a {fecha_fin}")
     
+    # VALIDACIÓN DE RANGO DE FECHAS (FIX ESTRUCTURAL)
+    # Usar helper centralizado para evitar rangos inválidos
+    if not is_valid_range(fecha_ini, fecha_fin):
+        logging.error(f"MPRO {server['name']}: Rango de fechas inválido ({fecha_ini} > {fecha_fin})")
+        return []
+    
     # Formato YYYYMMDD para MPRO (SQL Server con configuración regional español)
-    fi = fecha_ini.replace('-', '')
-    ff = fecha_fin.replace('-', '')
+    try:
+        fi, ff = to_yyyymmdd_range(fecha_ini, fecha_fin)
+    except ValueError as e:
+        logging.error(f"MPRO {server['name']}: Error convirtiendo fechas: {e}")
+        return []
     
     logging.debug(f"MPRO SQL: fi={fi}, ff={ff}")
     
