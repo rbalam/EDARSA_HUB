@@ -557,6 +557,8 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
     PENDIENTE: Inspección local en servidores para revisar por qué no levanta SQL local o API local.
     """
     
+    logging.debug(f"MPRO {server['name']}: solo_ventas_dia={solo_ventas_dia}, fecha_ini={fecha_ini}, fecha_fin={fecha_fin}")
+    
     # ============================================================================
     # VENTAS DEL DÍA: Intentar API local primero
     # ============================================================================
