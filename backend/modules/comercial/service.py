@@ -146,40 +146,19 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
     """
     
     # ============================================================================
-    # VENTAS DEL DÍA: Consultar tempcheques + cheques cerrados de hoy
-    # Lógica: Si tempcheques está vacío/casi vacío, usar cheques cerrados del día
+    # VENTAS DEL DÍA: Priorizar cheques cerrados, fallback a tempcheques
+    # - Si hay cheques cerrados de HOY → ya hicieron corte → mostrar cerrados
+    # - Si NO hay cheques cerrados de HOY → aún no hacen corte → mostrar tempcheques
     # ============================================================================
     if solo_ventas_dia:
         logging.info(f"SoftRestaurant {server['name']}: Modo Ventas del Día")
         
-        ventas_temp = 0
-        cheques_temp = 0
-        pax_temp = 0
-        ventas_cerradas = 0
-        cheques_cerrados = 0
-        pax_cerrados = 0
+        ventas = 0
+        cheques = 0
+        pax = 0
+        origen = None
         
-        # 1. Consultar tempcheques (tickets abiertos)
-        try:
-            query_temp = """
-SELECT 
-    COUNT(DISTINCT folio) as cheques,
-    ISNULL(SUM(total), 0) as ventas,
-    ISNULL(SUM(nopersonas), 0) as pax
-FROM tempcheques
-WHERE cancelado = 0
-"""
-            result_temp = execute_sql_query(server['host'], server['port'], server['database'], 
-                                            server['username'], server['password'], query_temp)
-            if result_temp and len(result_temp) > 0:
-                ventas_temp = float(result_temp[0]['ventas'] or 0)
-                cheques_temp = int(result_temp[0]['cheques'] or 0)
-                pax_temp = int(result_temp[0]['pax'] or 0)
-                logging.info(f"SoftRestaurant {server['name']} - Tempcheques: ${ventas_temp:,.2f}, {cheques_temp} cheques")
-        except Exception as e:
-            logging.warning(f"SoftRestaurant {server['name']}: Error tempcheques: {e}")
-        
-        # 2. Consultar cheques cerrados de HOY
+        # 1. Consultar cheques cerrados de HOY (prioridad)
         try:
             query_cerrados = """
 SELECT 
@@ -193,34 +172,40 @@ WHERE CONVERT(DATE, fecha) = CONVERT(DATE, GETDATE())
             result_cerrados = execute_sql_query(server['host'], server['port'], server['database'], 
                                                 server['username'], server['password'], query_cerrados)
             if result_cerrados and len(result_cerrados) > 0:
-                ventas_cerradas = float(result_cerrados[0]['ventas'] or 0)
-                cheques_cerrados = int(result_cerrados[0]['cheques'] or 0)
-                pax_cerrados = int(result_cerrados[0]['pax'] or 0)
-                logging.info(f"SoftRestaurant {server['name']} - Cerrados hoy: ${ventas_cerradas:,.2f}, {cheques_cerrados} cheques")
+                ventas = float(result_cerrados[0]['ventas'] or 0)
+                cheques = int(result_cerrados[0]['cheques'] or 0)
+                pax = int(result_cerrados[0]['pax'] or 0)
+                if cheques > 0:
+                    origen = "cheques_cerrados"
+                    logging.info(f"SoftRestaurant {server['name']} - Cerrados hoy: ${ventas:,.2f}, {cheques} cheques")
         except Exception as e:
             logging.warning(f"SoftRestaurant {server['name']}: Error cheques cerrados: {e}")
         
-        # 3. Decidir cuál usar:
-        # - Si tempcheques tiene datos significativos → usar tempcheques (operación en curso)
-        # - Si tempcheques está vacío/casi vacío pero hay cerrados → usar cerrados (ya hicieron corte)
-        # - Umbral: menos de 5 cheques abiertos se considera "casi vacío"
+        # 2. Si NO hay cerrados, usar tempcheques
+        if origen is None:
+            try:
+                query_temp = """
+SELECT 
+    COUNT(DISTINCT folio) as cheques,
+    ISNULL(SUM(total), 0) as ventas,
+    ISNULL(SUM(nopersonas), 0) as pax
+FROM tempcheques
+WHERE cancelado = 0
+"""
+                result_temp = execute_sql_query(server['host'], server['port'], server['database'], 
+                                                server['username'], server['password'], query_temp)
+                if result_temp and len(result_temp) > 0:
+                    ventas = float(result_temp[0]['ventas'] or 0)
+                    cheques = int(result_temp[0]['cheques'] or 0)
+                    pax = int(result_temp[0]['pax'] or 0)
+                    if cheques > 0 or ventas > 0:
+                        origen = "tempcheques"
+                        logging.info(f"SoftRestaurant {server['name']} - Tempcheques: ${ventas:,.2f}, {cheques} cheques")
+            except Exception as e:
+                logging.warning(f"SoftRestaurant {server['name']}: Error tempcheques: {e}")
         
-        UMBRAL_CHEQUES_ABIERTOS = 5
-        
-        if cheques_temp >= UMBRAL_CHEQUES_ABIERTOS or (cheques_temp > 0 and ventas_cerradas == 0):
-            # Usar tempcheques (operación en curso o no hay cerrados)
-            ventas = ventas_temp
-            cheques = cheques_temp
-            pax = pax_temp
-            origen = "tempcheques"
-        elif ventas_cerradas > 0:
-            # Usar cerrados (ya hicieron corte del día)
-            ventas = ventas_cerradas
-            cheques = cheques_cerrados
-            pax = pax_cerrados
-            origen = "cheques_cerrados"
-        else:
-            # No hay datos en ninguna tabla
+        # 3. Si no hay datos en ninguna tabla
+        if origen is None:
             logging.warning(f"SoftRestaurant {server['name']}: Sin datos del día")
             return None
         
@@ -229,8 +214,6 @@ WHERE CONVERT(DATE, fecha) = CONVERT(DATE, GETDATE())
         
         ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
         cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
-        
-        logging.info(f"SoftRestaurant {server['name']} - USANDO: {origen} → ${ventas:,.2f}")
         
         return {
             "ventas": ventas,
