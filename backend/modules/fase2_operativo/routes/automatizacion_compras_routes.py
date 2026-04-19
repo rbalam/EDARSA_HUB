@@ -1,7 +1,7 @@
 """
 EDARSA HUB - Routes de Automatización Operativa de Compras
 ==========================================================
-Endpoints para el módulo de automatizaciones operativas.
+Endpoints para el flujo: Pedido → Gerencia → Tesorería → Aprobado
 """
 
 from typing import Optional, List, Dict
@@ -24,7 +24,6 @@ router = APIRouter(prefix="/automatizaciones/operativas", tags=["automatizacione
 # ============================================================================
 
 class ProcesarPedidoRequest(BaseModel):
-    """Request para procesar pedido operativo."""
     pedido_id: str
     server_id: str
     sucursal_id: str
@@ -33,17 +32,23 @@ class ProcesarPedidoRequest(BaseModel):
     almacen_nombre: str
     productos: List[Dict]
     dias_objetivo: Optional[int] = 10
+    origen_sistema: Optional[str] = "MPRO"
 
 
-class AccionRevisionRequest(BaseModel):
-    """Request para acciones de revisión."""
-    tipo_revision: Optional[str] = None  # "gerencia" o "tesoreria"
+class AccionGerenciaRequest(BaseModel):
+    """Acciones: aprobar, rechazar, ajuste"""
+    accion: str  # "aprobar", "rechazar", "ajuste"
     comentario: Optional[str] = ""
-    motivo: Optional[str] = ""
+    dias_objetivo: Optional[int] = None  # Solo para ajuste
+
+
+class AccionTesoreriaRequest(BaseModel):
+    """Acciones: aprobar, rechazar"""
+    accion: str  # "aprobar", "rechazar"
+    comentario: Optional[str] = ""
 
 
 class ModificarDiasObjetivoRequest(BaseModel):
-    """Request para modificar días objetivo."""
     dias_objetivo: int
     motivo: Optional[str] = ""
 
@@ -57,7 +62,7 @@ async def obtener_kpis(
     server_id: Optional[str] = Query(None),
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
-    """Obtiene KPIs de automatizaciones operativas de compras."""
+    """KPIs de automatizaciones operativas."""
     verify_token(credentials.credentials)
     db = get_database()
     service = get_automatizacion_compras_service(db)
@@ -72,7 +77,7 @@ async def listar_automatizaciones(
     limite: int = Query(50, le=200),
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
-    """Lista automatizaciones operativas de compras."""
+    """Lista automatizaciones."""
     verify_token(credentials.credentials)
     db = get_database()
     service = get_automatizacion_compras_service(db)
@@ -91,7 +96,7 @@ async def obtener_automatizacion(
     
     registro = service.obtener_automatizacion(automatizacion_id)
     if not registro:
-        raise HTTPException(status_code=404, detail="Automatización no encontrada")
+        raise HTTPException(status_code=404, detail="No encontrada")
     
     return registro
 
@@ -102,14 +107,14 @@ async def procesar_pedido(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
-    Procesa un pedido/requisición capturado.
-    Inicia el flujo de automatización operativa.
+    Procesa pedido capturado.
+    Inicia flujo: Detección → Auditoría → EN_REVISION_GERENCIA
     """
     payload = verify_token(credentials.credentials)
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
-    resultado = await service.procesar_pedido_operativo(
+    resultado = service.procesar_pedido_operativo(
         pedido_id=request.pedido_id,
         server_id=request.server_id,
         sucursal_id=request.sucursal_id,
@@ -119,86 +124,92 @@ async def procesar_pedido(
         usuario_id=payload.get("user_id", ""),
         usuario_nombre=payload.get("email", ""),
         productos=request.productos,
-        dias_objetivo=request.dias_objetivo
+        dias_objetivo=request.dias_objetivo,
+        origen_sistema=request.origen_sistema or "MPRO"
     )
     
     return resultado
 
 
-@router.post("/compras/{automatizacion_id}/enviar-revision")
-async def enviar_a_revision(
+# ============================================================================
+# FLUJO AUTORIZACIÓN GERENCIA
+# ============================================================================
+
+@router.post("/compras/{automatizacion_id}/gerencia")
+async def autorizar_gerencia(
     automatizacion_id: str,
-    request: AccionRevisionRequest,
+    request: AccionGerenciaRequest,
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
-    """Envía automatización a revisión (gerencia o tesorería)."""
+    """
+    Autorización de Gerencia.
+    - aprobar → PENDIENTE_TESORERIA
+    - rechazar → RECHAZADO
+    - ajuste → recalcula y mantiene EN_REVISION_GERENCIA
+    """
     payload = verify_token(credentials.credentials)
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
-    if not request.tipo_revision:
-        raise HTTPException(status_code=400, detail="tipo_revision requerido")
+    # Obtener rol
+    user = db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "role": 1})
+    usuario_rol = user.get("role", "") if user else ""
     
-    resultado = await service.enviar_a_revision(
+    resultado = service.autorizar_gerencia(
         automatizacion_id=automatizacion_id,
-        tipo_revision=request.tipo_revision,
-        usuario_id=payload.get("user_id", "")
+        usuario_id=payload.get("user_id", ""),
+        usuario_rol=usuario_rol,
+        accion=request.accion,
+        comentario=request.comentario or "",
+        nuevo_dias_objetivo=request.dias_objetivo
     )
     
     if not resultado.get("success"):
-        raise HTTPException(status_code=404, detail=resultado.get("error"))
+        raise HTTPException(status_code=400, detail=resultado.get("error"))
     
     return resultado
 
 
-@router.post("/compras/{automatizacion_id}/aprobar")
-async def aprobar_automatizacion(
+# ============================================================================
+# FLUJO AUTORIZACIÓN TESORERÍA
+# ============================================================================
+
+@router.post("/compras/{automatizacion_id}/tesoreria")
+async def autorizar_tesoreria(
     automatizacion_id: str,
-    request: AccionRevisionRequest,
+    request: AccionTesoreriaRequest,
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
-    """Aprueba una automatización."""
+    """
+    Autorización Final de Tesorería.
+    - aprobar → APROBADO
+    - rechazar → RECHAZADO
+    """
     payload = verify_token(credentials.credentials)
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
-    resultado = await service.aprobar(
+    # Obtener rol
+    user = db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "role": 1})
+    usuario_rol = user.get("role", "") if user else ""
+    
+    resultado = service.autorizar_tesoreria(
         automatizacion_id=automatizacion_id,
         usuario_id=payload.get("user_id", ""),
+        usuario_rol=usuario_rol,
+        accion=request.accion,
         comentario=request.comentario or ""
     )
     
     if not resultado.get("success"):
-        raise HTTPException(status_code=404, detail=resultado.get("error"))
+        raise HTTPException(status_code=400, detail=resultado.get("error"))
     
     return resultado
 
 
-@router.post("/compras/{automatizacion_id}/rechazar")
-async def rechazar_automatizacion(
-    automatizacion_id: str,
-    request: AccionRevisionRequest,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-):
-    """Rechaza una automatización."""
-    payload = verify_token(credentials.credentials)
-    db = get_database()
-    service = get_automatizacion_compras_service(db)
-    
-    if not request.motivo:
-        raise HTTPException(status_code=400, detail="motivo requerido")
-    
-    resultado = await service.rechazar(
-        automatizacion_id=automatizacion_id,
-        usuario_id=payload.get("user_id", ""),
-        motivo=request.motivo
-    )
-    
-    if not resultado.get("success"):
-        raise HTTPException(status_code=404, detail=resultado.get("error"))
-    
-    return resultado
-
+# ============================================================================
+# MODIFICAR DÍAS OBJETIVO
+# ============================================================================
 
 @router.post("/compras/{automatizacion_id}/dias-objetivo")
 async def modificar_dias_objetivo(
@@ -207,18 +218,17 @@ async def modificar_dias_objetivo(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
-    Modifica días objetivo y recalcula automáticamente.
+    Modifica días objetivo y recalcula.
     Solo Gerencia/Director/Administrador.
     """
     payload = verify_token(credentials.credentials)
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
-    # Obtener rol del usuario
     user = db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "role": 1})
     usuario_rol = user.get("role", "") if user else ""
     
-    resultado = await service.modificar_dias_objetivo(
+    resultado = service.modificar_dias_objetivo(
         automatizacion_id=automatizacion_id,
         nuevo_dias_objetivo=request.dias_objetivo,
         usuario_id=payload.get("user_id", ""),
@@ -232,14 +242,17 @@ async def modificar_dias_objetivo(
     return resultado
 
 
+# ============================================================================
+# BITÁCORA
+# ============================================================================
+
 @router.get("/compras/{automatizacion_id}/bitacora")
 async def obtener_bitacora(
     automatizacion_id: str,
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
-    """Obtiene bitácora de cambios de una automatización."""
+    """Obtiene bitácora de cambios."""
     verify_token(credentials.credentials)
     db = get_database()
     service = get_automatizacion_compras_service(db)
     return service.obtener_bitacora(automatizacion_id)
-
