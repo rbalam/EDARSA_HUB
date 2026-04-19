@@ -2709,7 +2709,8 @@ WHERE ({almacenes_like_conditions})
                 server['username'], server['password'], almacen_query
             )
             if not almacen_result:
-                raise HTTPException(status_code=404, detail="Almacén no encontrado")
+                logging.error(f"Almacén(es) no encontrado(s) en MPRO - Sucursal: '{sucursal}', Almacenes: {lista_almacenes}, Servidor: {server.get('name', server_id)}")
+                raise HTTPException(status_code=404, detail=f"Almacén no encontrado en sucursal '{sucursal}'. Verifique la conexión al servidor SQL o que el almacén exista.")
             
             # Lista de códigos de almacén
             almacenes_codigos = [r['codigo'] for r in almacen_result]
@@ -3299,7 +3300,8 @@ WHERE nombre LIKE '%{almacen}%'
                 server['username'], server['password'], almacen_query
             )
             if not almacen_result:
-                raise HTTPException(status_code=404, detail="Almacén no encontrado")
+                logging.error(f"Almacén '{almacen}' no encontrado en servidor {server.get('name', server_id)} ({server['host']})")
+                raise HTTPException(status_code=404, detail=f"Almacén '{almacen}' no encontrado. Verifique la conexión al servidor SQL o que el almacén exista en la base de datos.")
             
             almacen_id = almacen_result[0]['codigo']
             almacen_nombre = almacen_result[0]['nombre']
