@@ -1,15 +1,19 @@
 """
 Rutas de Notificaciones - API para gestión de notificaciones.
 CAB-003 | Fase 2B.1
+PROTEGIDO CON RBAC (Fase 3.1)
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, timedelta
 import logging
 
 from ..services.notification_service import get_notification_service
 from ..services.email_service import get_email_service
+
+# RBAC - Fase 3.1
+from core.security import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +21,9 @@ router = APIRouter(prefix="/notificaciones", tags=["Notificaciones"])
 
 
 @router.get("/status")
-async def get_notification_status():
+async def get_notification_status(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene el estado del servicio de notificaciones.
     """
@@ -38,7 +44,8 @@ async def get_notification_log(
     tipo_evento: Optional[str] = None,
     workflow_id: Optional[str] = None,
     estado: Optional[str] = None,
-    limit: int = Query(default=50, le=200)
+    limit: int = Query(default=50, le=200),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
     Obtiene el log de notificaciones enviadas.
@@ -69,7 +76,9 @@ async def get_notification_log(
 
 
 @router.post("/verificar-vencidas")
-async def verificar_tareas_vencidas():
+async def verificar_tareas_vencidas(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Verifica tareas vencidas y envía notificaciones.
     
@@ -175,7 +184,7 @@ async def verificar_tareas_vencidas():
 @router.post("/test-email")
 async def test_email(
     destinatario: str = Query(..., description="Email de destino para prueba"),
-    db=Depends(lambda: None)
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
     Envía un email de prueba para verificar la configuración.

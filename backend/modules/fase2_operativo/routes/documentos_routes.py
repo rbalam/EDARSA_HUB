@@ -1,13 +1,15 @@
 """
 Rutas de Documentos - API para generación de documentos.
 CAB-003 | EDARSA HUB - Fase 2B.2 / 2B.3
+PROTEGIDO CON RBAC (Fase 3.1)
 
 Endpoints para generar y descargar documentos (Excel, PDF).
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from datetime import datetime, timezone
+from typing import Dict, Any
 import logging
 
 from ..db_utils import get_database
@@ -18,13 +20,19 @@ from ..services.document_data_service import (
     WorkflowNoEncontradoError
 )
 
+# RBAC - Fase 3.1
+from core.security import get_current_user
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/documentos", tags=["Documentos"])
 
 
 @router.get("/workflow/{workflow_id}/excel")
-async def descargar_excel_workflow(workflow_id: str):
+async def descargar_excel_workflow(
+    workflow_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Genera y descarga el reporte Excel de un workflow.
     
@@ -93,7 +101,10 @@ async def descargar_excel_workflow(workflow_id: str):
 
 
 @router.get("/workflow/{workflow_id}/pdf")
-async def descargar_pdf_workflow(workflow_id: str):
+async def descargar_pdf_workflow(
+    workflow_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Genera y descarga el resumen ejecutivo en PDF de un workflow.
     
@@ -164,7 +175,10 @@ async def descargar_pdf_workflow(workflow_id: str):
 
 
 @router.get("/workflow/{workflow_id}/datos")
-async def obtener_datos_workflow(workflow_id: str):
+async def obtener_datos_workflow(
+    workflow_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene los datos completos de un workflow para documentos.
     
@@ -202,7 +216,10 @@ async def obtener_datos_workflow(workflow_id: str):
 
 
 @router.get("/workflow/{workflow_id}/resumen")
-async def obtener_resumen_workflow(workflow_id: str):
+async def obtener_resumen_workflow(
+    workflow_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene un resumen rápido del workflow.
     
@@ -238,7 +255,8 @@ async def obtener_resumen_workflow(workflow_id: str):
 async def obtener_historial_documentos(
     workflow_id: str = None,
     tipo: str = None,
-    limit: int = 50
+    limit: int = 50,
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
     Obtiene el historial de documentos generados.

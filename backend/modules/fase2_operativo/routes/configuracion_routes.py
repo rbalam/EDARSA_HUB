@@ -1,10 +1,12 @@
 """
 Endpoints de Configuración
 CAB-003 | EDARSA HUB - Fase 2A
+PROTEGIDO CON RBAC (Fase 3.1)
 
 Expone la funcionalidad de configuración vía HTTP.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from typing import Dict, Any
 from ..services.configuracion_service import (
     ConfiguracionService,
     ConfiguracionNoEncontradaError,
@@ -12,6 +14,9 @@ from ..services.configuracion_service import (
 )
 from ..api_schemas import ConfiguracionUpdateRequest, OperacionResponse
 from ..db_utils import get_database
+
+# RBAC - Fase 3.1
+from core.security import get_current_user
 
 router = APIRouter()
 
@@ -22,7 +27,9 @@ def get_db():
 
 
 @router.get("")
-async def obtener_parametros_operativos():
+async def obtener_parametros_operativos(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene todos los parámetros operativos del módulo.
     
@@ -42,7 +49,9 @@ async def obtener_parametros_operativos():
 
 
 @router.get("/todas")
-async def listar_todas_configuraciones():
+async def listar_todas_configuraciones(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Lista todas las configuraciones del módulo operativo.
     """
@@ -57,7 +66,10 @@ async def listar_todas_configuraciones():
 
 
 @router.get("/{clave}")
-async def obtener_configuracion(clave: str):
+async def obtener_configuracion(
+    clave: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene una configuración específica por su clave.
     """
@@ -77,7 +89,11 @@ async def obtener_configuracion(clave: str):
 
 
 @router.patch("/{clave}", response_model=OperacionResponse)
-async def actualizar_configuracion(clave: str, request: ConfiguracionUpdateRequest):
+async def actualizar_configuracion(
+    clave: str,
+    request: ConfiguracionUpdateRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Actualiza el valor de una configuración.
     
@@ -107,7 +123,9 @@ async def actualizar_configuracion(clave: str, request: ConfiguracionUpdateReque
 # Endpoints específicos para configuraciones conocidas
 
 @router.get("/umbral-justificacion/valor")
-async def obtener_umbral_justificacion():
+async def obtener_umbral_justificacion(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene el umbral actual para justificación simple.
     """
@@ -122,7 +140,10 @@ async def obtener_umbral_justificacion():
 
 
 @router.patch("/umbral-justificacion/valor", response_model=OperacionResponse)
-async def actualizar_umbral_justificacion(nuevo_umbral: float):
+async def actualizar_umbral_justificacion(
+    nuevo_umbral: float,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Actualiza el umbral de justificación.
     """
@@ -144,7 +165,9 @@ async def actualizar_umbral_justificacion(nuevo_umbral: float):
 
 
 @router.get("/dias-limite-tarea/valor")
-async def obtener_dias_limite_tarea():
+async def obtener_dias_limite_tarea(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene los días límite por defecto para tareas.
     """
@@ -159,7 +182,10 @@ async def obtener_dias_limite_tarea():
 
 
 @router.patch("/dias-limite-tarea/valor", response_model=OperacionResponse)
-async def actualizar_dias_limite_tarea(dias: int):
+async def actualizar_dias_limite_tarea(
+    dias: int,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Actualiza los días límite para tareas.
     """
@@ -181,7 +207,9 @@ async def actualizar_dias_limite_tarea(dias: int):
 
 
 @router.get("/max-ciclos-reasignacion/valor")
-async def obtener_max_ciclos_reasignacion():
+async def obtener_max_ciclos_reasignacion(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene el máximo de ciclos de reasignación.
     """
@@ -196,7 +224,10 @@ async def obtener_max_ciclos_reasignacion():
 
 
 @router.patch("/max-ciclos-reasignacion/valor", response_model=OperacionResponse)
-async def actualizar_max_ciclos_reasignacion(max_ciclos: int):
+async def actualizar_max_ciclos_reasignacion(
+    max_ciclos: int,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Actualiza el máximo de ciclos de reasignación.
     """

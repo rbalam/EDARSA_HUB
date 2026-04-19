@@ -67,9 +67,14 @@ class WorkflowRepository(BaseRepository):
         """Obtiene workflows en auditoría."""
         return await self.get_by_estado("EN_AUDITORIA", limit=limit)
     
-    async def get_escalados(self, limit: int = 100) -> List[Dict]:
-        """Obtiene workflows escalados."""
-        return await self.get_by_estado("ESCALADO", limit=limit)
+    async def get_escalados(self, limit: int = 100, server_ids: Optional[List[str]] = None) -> List[Dict]:
+        """Obtiene workflows escalados. Soporta filtrado por server_ids para RBAC."""
+        filters = {"estado_workflow": "ESCALADO"}
+        if server_ids:
+            filters["server_id"] = {"$in": server_ids}
+        
+        cursor = self.collection.find(filters).limit(limit).sort("fecha_creacion", DESCENDING)
+        return self._serialize_list(list(cursor))
     
     async def actualizar_estado(self, id: str, nuevo_estado: str) -> Optional[Dict]:
         """
@@ -109,16 +114,25 @@ class WorkflowRepository(BaseRepository):
         
         return self._serialize_id(result)
     
-    async def contar_por_estado(self) -> Dict[str, int]:
+    async def contar_por_estado(self, server_ids: Optional[List[str]] = None) -> Dict[str, int]:
         """
         Cuenta workflows agrupados por estado.
+        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        
+        Args:
+            server_ids: Lista opcional de server_ids permitidos para filtrar
         
         Returns:
             Diccionario con conteos por estado
         """
-        pipeline = [
-            {"$group": {"_id": "$estado_workflow", "count": {"$sum": 1}}}
-        ]
+        match_stage = {}
+        if server_ids:
+            match_stage = {"$match": {"server_id": {"$in": server_ids}}}
+        
+        pipeline = []
+        if match_stage:
+            pipeline.append(match_stage)
+        pipeline.append({"$group": {"_id": "$estado_workflow", "count": {"$sum": 1}}})
         
         result = list(self.collection.aggregate(pipeline))
         return {item["_id"]: item["count"] for item in result}

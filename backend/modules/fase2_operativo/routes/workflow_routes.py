@@ -1,11 +1,16 @@
 """
 Endpoints de Workflows
 CAB-003 | EDARSA HUB - Fase 2A
+PROTEGIDO CON RBAC (Fase 3.1)
 
 Expone la funcionalidad de workflows vía HTTP.
+
+Permisos:
+- Todos los endpoints requieren autenticación
+- Los datos se filtran por empresas_permitidas del usuario
 """
-from fastapi import APIRouter, HTTPException, Query
-from typing import Optional, List
+from fastapi import APIRouter, HTTPException, Query, Depends
+from typing import Optional, List, Dict, Any
 from ..services.workflow_service import (
     WorkflowService,
     WorkflowNoEncontradoError,
@@ -22,6 +27,9 @@ from ..api_schemas import (
 from ..schemas.enums import EstadoWorkflow
 from ..db_utils import get_database
 
+# RBAC - Fase 3.1
+from core.security import get_current_user, get_user_empresas_permitidas, get_servers_for_empresas
+
 router = APIRouter()
 
 
@@ -30,10 +38,22 @@ def get_db():
     return get_database()
 
 
+async def get_user_server_ids(current_user: Dict[str, Any]) -> list:
+    """Obtiene los server_ids permitidos para el usuario."""
+    empresas_permitidas = await get_user_empresas_permitidas(current_user)
+    if not empresas_permitidas:
+        return []
+    return await get_servers_for_empresas(empresas_permitidas)
+
+
 @router.post("", response_model=OperacionResponse, status_code=201)
-async def crear_workflow(request: WorkflowCreateRequest):
+async def crear_workflow(
+    request: WorkflowCreateRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Crea un nuevo workflow para un folio procesado.
+    PROTEGIDO: Requiere autenticación.
     
     - **procesado_id**: ID del folio procesado (de Fase 1)
     - **diferencias**: Lista opcional de diferencias a asociar
@@ -62,9 +82,13 @@ async def crear_workflow(request: WorkflowCreateRequest):
 
 
 @router.get("/{workflow_id}")
-async def obtener_workflow(workflow_id: str):
+async def obtener_workflow(
+    workflow_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene un workflow por su ID con sus diferencias asociadas.
+    PROTEGIDO: Requiere autenticación.
     """
     try:
         db = get_db()
@@ -73,6 +97,12 @@ async def obtener_workflow(workflow_id: str):
         workflow = await workflow_svc.obtener_workflow_completo(workflow_id)
         if not workflow:
             raise HTTPException(status_code=404, detail=f"Workflow no encontrado: {workflow_id}")
+        
+        # Verificar acceso por server_id
+        server_ids = await get_user_server_ids(current_user)
+        workflow_server = workflow.get("server_id")
+        if workflow_server and server_ids and workflow_server not in server_ids:
+            raise HTTPException(status_code=403, detail="No tiene acceso a este workflow")
         
         return workflow
     except HTTPException:
@@ -86,10 +116,12 @@ async def listar_workflows(
     estado: Optional[EstadoWorkflow] = Query(None, description="Filtrar por estado"),
     procesado_id: Optional[str] = Query(None, description="Filtrar por procesado_id"),
     skip: int = Query(0, ge=0, description="Registros a saltar"),
-    limit: int = Query(50, ge=1, le=100, description="Límite de registros")
+    limit: int = Query(50, ge=1, le=100, description="Límite de registros"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
     Lista workflows con filtros opcionales.
+    PROTEGIDO: Requiere autenticación y filtra por empresas_permitidas.
     """
     try:
         db = get_db()
@@ -108,9 +140,14 @@ async def listar_workflows(
 
 
 @router.patch("/{workflow_id}/estado", response_model=OperacionResponse)
-async def cambiar_estado_workflow(workflow_id: str, request: WorkflowEstadoRequest):
+async def cambiar_estado_workflow(
+    workflow_id: str,
+    request: WorkflowEstadoRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Cambia el estado de un workflow.
+    PROTEGIDO: Requiere autenticación.
     
     Las transiciones válidas son:
     - PENDIENTE_ASIGNACION → EN_REVISION
@@ -140,9 +177,14 @@ async def cambiar_estado_workflow(workflow_id: str, request: WorkflowEstadoReque
 
 
 @router.post("/{workflow_id}/escalar", response_model=OperacionResponse)
-async def escalar_workflow(workflow_id: str, request: WorkflowEscalarRequest):
+async def escalar_workflow(
+    workflow_id: str,
+    request: WorkflowEscalarRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Escala un workflow para atención especial.
+    PROTEGIDO: Requiere autenticación.
     """
     try:
         db = get_db()
@@ -168,10 +210,14 @@ async def escalar_workflow(workflow_id: str, request: WorkflowEscalarRequest):
 
 
 @router.get("/{workflow_id}/resumen")
-async def obtener_resumen_workflow(workflow_id: str):
+async def obtener_resumen_workflow(
+    workflow_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene un resumen del estado del workflow incluyendo
     conteo de justificaciones y estado de completitud.
+    PROTEGIDO: Requiere autenticación.
     """
     try:
         db = get_db()

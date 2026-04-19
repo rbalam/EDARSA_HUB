@@ -1,16 +1,24 @@
 """
 Endpoints de Dashboard
 CAB-003 | EDARSA HUB - Fase 2A / 2B.4
+PROTEGIDO CON RBAC (Fase 3.1)
 
 Expone KPIs, resúmenes y alertas vía HTTP.
 Incluye métricas de SLA.
+
+Permisos requeridos:
+- Todos los endpoints requieren autenticación y filtran por empresas_permitidas del usuario
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from typing import Dict, Any
 from ..services.operativo_service import OperativoService
 from ..services.workflow_service import WorkflowService
 from ..services.tarea_service import TareaService
 from ..services.sla_service import get_sla_service
 from ..db_utils import get_database
+
+# RBAC - Fase 3.1
+from core.security import get_current_user, get_user_empresas_permitidas, get_servers_for_empresas
 
 router = APIRouter()
 
@@ -20,10 +28,25 @@ def get_db():
     return get_database()
 
 
+async def get_user_server_ids(current_user: Dict[str, Any]) -> list:
+    """
+    Obtiene los server_ids permitidos para el usuario basándose en sus empresas_permitidas.
+    Retorna lista vacía si el usuario no tiene permisos.
+    """
+    empresas_permitidas = await get_user_empresas_permitidas(current_user)
+    if not empresas_permitidas:
+        return []
+    server_ids = await get_servers_for_empresas(empresas_permitidas)
+    return server_ids
+
+
 @router.get("/resumen")
-async def obtener_resumen_dashboard():
+async def obtener_resumen_dashboard(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene un resumen completo para el dashboard.
+    PROTEGIDO: Filtra por empresas_permitidas del usuario.
     
     Incluye:
     - **workflows**: Conteos por estado y total
@@ -33,18 +56,24 @@ async def obtener_resumen_dashboard():
     """
     try:
         db = get_db()
-        operativo_svc = OperativoService(db)
         
-        resumen = await operativo_svc.obtener_resumen_dashboard()
+        # Obtener server_ids permitidos para el usuario
+        server_ids = await get_user_server_ids(current_user)
+        
+        operativo_svc = OperativoService(db)
+        resumen = await operativo_svc.obtener_resumen_dashboard(server_ids=server_ids)
         return resumen
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/alertas")
-async def obtener_alertas():
+async def obtener_alertas(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene las alertas activas del sistema.
+    PROTEGIDO: Filtra por empresas_permitidas del usuario.
     
     Tipos de alertas:
     - **TAREA_VENCIDA**: Tareas que excedieron su fecha límite
@@ -52,9 +81,12 @@ async def obtener_alertas():
     """
     try:
         db = get_db()
-        operativo_svc = OperativoService(db)
         
-        alertas = await operativo_svc.obtener_alertas_activas()
+        # Obtener server_ids permitidos para el usuario
+        server_ids = await get_user_server_ids(current_user)
+        
+        operativo_svc = OperativoService(db)
+        alertas = await operativo_svc.obtener_alertas_activas(server_ids=server_ids)
         return {
             "alertas": alertas,
             "total": len(alertas),
@@ -65,15 +97,21 @@ async def obtener_alertas():
 
 
 @router.get("/workflows/por-estado")
-async def obtener_workflows_por_estado():
+async def obtener_workflows_por_estado(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene conteo de workflows agrupados por estado.
+    PROTEGIDO: Filtra por empresas_permitidas del usuario.
     """
     try:
         db = get_db()
-        workflow_svc = WorkflowService(db)
         
-        resumen = await workflow_svc.resumen_por_estado()
+        # Obtener server_ids permitidos para el usuario
+        server_ids = await get_user_server_ids(current_user)
+        
+        workflow_svc = WorkflowService(db)
+        resumen = await workflow_svc.resumen_por_estado(server_ids=server_ids)
         total = sum(resumen.values()) if resumen else 0
         
         return {
@@ -85,15 +123,21 @@ async def obtener_workflows_por_estado():
 
 
 @router.get("/tareas/por-estado")
-async def obtener_tareas_por_estado():
+async def obtener_tareas_por_estado(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene conteo de tareas agrupadas por estado.
+    PROTEGIDO: Filtra por empresas_permitidas del usuario.
     """
     try:
         db = get_db()
-        tarea_svc = TareaService(db)
         
-        resumen = await tarea_svc.resumen_por_estado()
+        # Obtener server_ids permitidos para el usuario
+        server_ids = await get_user_server_ids(current_user)
+        
+        tarea_svc = TareaService(db)
+        resumen = await tarea_svc.resumen_por_estado(server_ids=server_ids)
         total = sum(resumen.values()) if resumen else 0
         
         return {
@@ -105,15 +149,21 @@ async def obtener_tareas_por_estado():
 
 
 @router.get("/tareas/vencidas/conteo")
-async def obtener_conteo_tareas_vencidas():
+async def obtener_conteo_tareas_vencidas(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene el conteo de tareas vencidas.
+    PROTEGIDO: Filtra por empresas_permitidas del usuario.
     """
     try:
         db = get_db()
-        tarea_svc = TareaService(db)
         
-        vencidas = await tarea_svc.obtener_tareas_vencidas()
+        # Obtener server_ids permitidos para el usuario
+        server_ids = await get_user_server_ids(current_user)
+        
+        tarea_svc = TareaService(db)
+        vencidas = await tarea_svc.obtener_tareas_vencidas(server_ids=server_ids)
         
         return {
             "tareas_vencidas": len(vencidas),
@@ -124,22 +174,29 @@ async def obtener_conteo_tareas_vencidas():
 
 
 @router.get("/kpis")
-async def obtener_kpis():
+async def obtener_kpis(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene KPIs principales del módulo operativo.
+    PROTEGIDO: Filtra por empresas_permitidas del usuario.
     Incluye métricas de cumplimiento SLA.
     """
     try:
         db = get_db()
+        
+        # Obtener server_ids permitidos para el usuario
+        server_ids = await get_user_server_ids(current_user)
+        
         workflow_svc = WorkflowService(db)
         tarea_svc = TareaService(db)
         sla_svc = get_sla_service(db)
         
-        workflows_por_estado = await workflow_svc.resumen_por_estado()
-        tareas_por_estado = await tarea_svc.resumen_por_estado()
-        tareas_vencidas = await tarea_svc.obtener_tareas_vencidas()
+        workflows_por_estado = await workflow_svc.resumen_por_estado(server_ids=server_ids)
+        tareas_por_estado = await tarea_svc.resumen_por_estado(server_ids=server_ids)
+        tareas_vencidas = await tarea_svc.obtener_tareas_vencidas(server_ids=server_ids)
         
-        # Métricas SLA
+        # Métricas SLA (por ahora sin filtro de server_ids en SLA service)
         metricas_sla = await sla_svc.obtener_metricas_globales()
         
         total_workflows = sum(workflows_por_estado.values()) if workflows_por_estado else 0

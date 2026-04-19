@@ -1,11 +1,12 @@
 """
 Endpoints de Justificaciones
 CAB-003 | EDARSA HUB - Fase 2A
+PROTEGIDO CON RBAC (Fase 3.1)
 
 Expone la funcionalidad de justificaciones vía HTTP.
 """
-from fastapi import APIRouter, HTTPException, Query
-from typing import Optional
+from fastapi import APIRouter, HTTPException, Query, Depends
+from typing import Optional, Dict, Any
 from ..services.justificacion_service import (
     JustificacionService,
     JustificacionInvalidaError,
@@ -17,6 +18,9 @@ from ..api_schemas import JustificacionCreateRequest, OperacionResponse
 from ..schemas.enums import TipoJustificacion
 from ..db_utils import get_database
 
+# RBAC - Fase 3.1
+from core.security import get_current_user
+
 router = APIRouter()
 
 
@@ -26,7 +30,10 @@ def get_db():
 
 
 @router.post("", response_model=OperacionResponse, status_code=201)
-async def registrar_justificacion(request: JustificacionCreateRequest):
+async def registrar_justificacion(
+    request: JustificacionCreateRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Registra una justificación para una diferencia.
     
@@ -64,7 +71,10 @@ async def registrar_justificacion(request: JustificacionCreateRequest):
 
 
 @router.get("/{justificacion_id}")
-async def obtener_justificacion(justificacion_id: str):
+async def obtener_justificacion(
+    justificacion_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene una justificación por su ID.
     """
@@ -89,7 +99,8 @@ async def listar_justificaciones(
     diferencia_id: Optional[str] = Query(None, description="Filtrar por diferencia"),
     usuario_id: Optional[str] = Query(None, description="Filtrar por usuario"),
     tipo: Optional[TipoJustificacion] = Query(None, description="Filtrar por tipo"),
-    limit: int = Query(50, ge=1, le=100)
+    limit: int = Query(50, ge=1, le=100),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
     Lista justificaciones con filtros opcionales.
@@ -122,7 +133,10 @@ async def listar_justificaciones(
 
 
 @router.get("/workflow/{workflow_id}")
-async def obtener_justificaciones_workflow(workflow_id: str):
+async def obtener_justificaciones_workflow(
+    workflow_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene todas las justificaciones de un workflow.
     """
@@ -137,7 +151,10 @@ async def obtener_justificaciones_workflow(workflow_id: str):
 
 
 @router.post("/workflow/{workflow_id}/verificar")
-async def verificar_justificaciones_workflow(workflow_id: str):
+async def verificar_justificaciones_workflow(
+    workflow_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Verifica si todas las diferencias de un workflow tienen justificación.
     
@@ -158,7 +175,9 @@ async def verificar_justificaciones_workflow(workflow_id: str):
 
 
 @router.get("/umbral")
-async def obtener_umbral_justificacion():
+async def obtener_umbral_justificacion(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene el umbral actual para determinar tipo de justificación.
     
@@ -176,7 +195,10 @@ async def obtener_umbral_justificacion():
 
 
 @router.post("/determinar-tipo")
-async def determinar_tipo_justificacion(diferencia_valor: float):
+async def determinar_tipo_justificacion(
+    diferencia_valor: float,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Determina qué tipo de justificación se requiere para un monto dado.
     """

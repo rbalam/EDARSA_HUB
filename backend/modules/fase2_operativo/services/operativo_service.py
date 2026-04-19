@@ -357,24 +357,28 @@ class OperativoService:
     
     # === OPERACIONES DE DASHBOARD ===
     
-    async def obtener_resumen_dashboard(self) -> Dict[str, Any]:
+    async def obtener_resumen_dashboard(self, server_ids: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         Obtiene un resumen completo para el dashboard.
+        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        
+        Args:
+            server_ids: Lista opcional de server_ids permitidos para filtrar
         
         Returns:
             Dict con resúmenes de workflows, tareas y alertas
         """
         # Resumen de workflows
-        workflows_por_estado = await self.workflow_service.resumen_por_estado()
+        workflows_por_estado = await self.workflow_service.resumen_por_estado(server_ids=server_ids)
         
         # Resumen de tareas
-        tareas_por_estado = await self.tarea_service.resumen_por_estado()
+        tareas_por_estado = await self.tarea_service.resumen_por_estado(server_ids=server_ids)
         
         # Tareas vencidas
-        tareas_vencidas = await self.tarea_service.obtener_tareas_vencidas()
+        tareas_vencidas = await self.tarea_service.obtener_tareas_vencidas(server_ids=server_ids)
         
         # Workflows escalados
-        workflows_escalados = await self.workflow_service.listar_escalados()
+        workflows_escalados = await self.workflow_service.listar_escalados(server_ids=server_ids)
         
         # Parámetros operativos
         parametros = await self.config_service.obtener_parametros_operativos()
@@ -395,9 +399,13 @@ class OperativoService:
             "parametros": parametros
         }
     
-    async def obtener_alertas_activas(self) -> List[Dict]:
+    async def obtener_alertas_activas(self, server_ids: Optional[List[str]] = None) -> List[Dict]:
         """
         Obtiene las alertas activas del sistema.
+        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        
+        Args:
+            server_ids: Lista opcional de server_ids permitidos para filtrar
         
         Returns:
             Lista de alertas
@@ -405,7 +413,7 @@ class OperativoService:
         alertas = []
         
         # Tareas vencidas
-        tareas_vencidas = await self.tarea_service.obtener_tareas_vencidas()
+        tareas_vencidas = await self.tarea_service.obtener_tareas_vencidas(server_ids=server_ids)
         for tarea in tareas_vencidas:
             alertas.append({
                 "tipo": "TAREA_VENCIDA",
@@ -416,7 +424,7 @@ class OperativoService:
             })
         
         # Workflows escalados
-        workflows_escalados = await self.workflow_service.listar_escalados()
+        workflows_escalados = await self.workflow_service.listar_escalados(server_ids=server_ids)
         for wf in workflows_escalados:
             alertas.append({
                 "tipo": "WORKFLOW_ESCALADO",

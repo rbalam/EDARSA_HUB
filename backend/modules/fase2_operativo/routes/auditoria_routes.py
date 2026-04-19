@@ -1,11 +1,12 @@
 """
 Endpoints de Auditoría
 CAB-003 | EDARSA HUB - Fase 2A
+PROTEGIDO CON RBAC (Fase 3.1)
 
 Expone la funcionalidad de auditoría vía HTTP.
 """
-from fastapi import APIRouter, HTTPException, Query
-from typing import Optional
+from fastapi import APIRouter, HTTPException, Query, Depends
+from typing import Optional, Dict, Any
 from ..services.auditoria_service import (
     AuditoriaService,
     WorkflowNoEnAuditoriaError,
@@ -16,6 +17,9 @@ from ..api_schemas import DecisionAuditoriaRequest, OperacionResponse
 from ..schemas.enums import DecisionAuditoria
 from ..db_utils import get_database
 
+# RBAC - Fase 3.1
+from core.security import get_current_user
+
 router = APIRouter()
 
 
@@ -25,7 +29,10 @@ def get_db():
 
 
 @router.post("/decisiones", response_model=OperacionResponse, status_code=201)
-async def registrar_decision(request: DecisionAuditoriaRequest):
+async def registrar_decision(
+    request: DecisionAuditoriaRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Registra una decisión de auditoría.
     
@@ -62,7 +69,8 @@ async def registrar_decision(request: DecisionAuditoriaRequest):
 @router.post("/decisiones/procesar", response_model=OperacionResponse)
 async def procesar_decision_completa(
     request: DecisionAuditoriaRequest,
-    tarea_id: str = Query(..., description="ID de la tarea de auditoría a completar")
+    tarea_id: str = Query(..., description="ID de la tarea de auditoría a completar"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
     Procesa una decisión de auditoría y actualiza el workflow completo.
@@ -100,7 +108,10 @@ async def procesar_decision_completa(
 
 
 @router.get("/decisiones/{decision_id}")
-async def obtener_decision(decision_id: str):
+async def obtener_decision(
+    decision_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene una decisión de auditoría por su ID.
     """
@@ -120,7 +131,10 @@ async def obtener_decision(decision_id: str):
 
 
 @router.get("/workflow/{workflow_id}/decisiones")
-async def obtener_decisiones_workflow(workflow_id: str):
+async def obtener_decisiones_workflow(
+    workflow_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene todas las decisiones de auditoría de un workflow.
     """
@@ -135,7 +149,10 @@ async def obtener_decisiones_workflow(workflow_id: str):
 
 
 @router.get("/workflow/{workflow_id}/ultima-decision")
-async def obtener_ultima_decision(workflow_id: str):
+async def obtener_ultima_decision(
+    workflow_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene la última decisión de auditoría de un workflow.
     """
@@ -153,7 +170,10 @@ async def obtener_ultima_decision(workflow_id: str):
 
 
 @router.get("/pendientes")
-async def obtener_pendientes_auditoria(limit: int = Query(50, ge=1, le=100)):
+async def obtener_pendientes_auditoria(
+    limit: int = Query(50, ge=1, le=100),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene workflows que están pendientes de auditoría.
     """
@@ -168,7 +188,9 @@ async def obtener_pendientes_auditoria(limit: int = Query(50, ge=1, le=100)):
 
 
 @router.get("/resumen")
-async def obtener_resumen_auditoria():
+async def obtener_resumen_auditoria(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
     Obtiene resumen de decisiones de auditoría por tipo.
     """
@@ -192,7 +214,8 @@ async def listar_decisiones(
     workflow_id: Optional[str] = Query(None, description="Filtrar por workflow"),
     auditor_id: Optional[str] = Query(None, description="Filtrar por auditor"),
     decision: Optional[DecisionAuditoria] = Query(None, description="Filtrar por tipo de decisión"),
-    limit: int = Query(50, ge=1, le=100)
+    limit: int = Query(50, ge=1, le=100),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
     Lista decisiones de auditoría con filtros opcionales.

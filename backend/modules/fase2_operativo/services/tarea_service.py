@@ -301,14 +301,18 @@ class TareaService:
         """
         return await self.tarea_repo.get_sin_asignar(limit)
     
-    async def obtener_tareas_vencidas(self) -> List[Dict]:
+    async def obtener_tareas_vencidas(self, server_ids: Optional[List[str]] = None) -> List[Dict]:
         """
         Obtiene tareas que han excedido su fecha límite.
+        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        
+        Args:
+            server_ids: Lista opcional de server_ids permitidos para filtrar
         
         Returns:
             Lista de tareas vencidas
         """
-        return await self.tarea_repo.get_vencidas()
+        return await self.tarea_repo.get_vencidas(server_ids=server_ids)
     
     async def obtener_historial_tarea(self, tarea_id: str) -> List[Dict]:
         """
@@ -322,14 +326,18 @@ class TareaService:
         """
         return await self.historial_repo.get_by_tarea(tarea_id)
     
-    async def resumen_por_estado(self) -> Dict[str, int]:
+    async def resumen_por_estado(self, server_ids: Optional[List[str]] = None) -> Dict[str, int]:
         """
         Obtiene resumen de tareas por estado.
+        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        
+        Args:
+            server_ids: Lista opcional de server_ids permitidos para filtrar
         
         Returns:
             Diccionario con conteos por estado
         """
-        return await self.tarea_repo.contar_por_estado()
+        return await self.tarea_repo.contar_por_estado(server_ids=server_ids)
     
     async def resumen_por_usuario(self, usuario_id: str) -> Dict[str, int]:
         """

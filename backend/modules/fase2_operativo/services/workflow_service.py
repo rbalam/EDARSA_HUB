@@ -275,18 +275,22 @@ class WorkflowService:
         """Lista workflows en auditoría."""
         return await self.workflow_repo.get_en_auditoria(limit)
     
-    async def listar_escalados(self, limit: int = 100) -> List[Dict]:
-        """Lista workflows escalados."""
-        return await self.workflow_repo.get_escalados(limit)
+    async def listar_escalados(self, limit: int = 100, server_ids: Optional[List[str]] = None) -> List[Dict]:
+        """Lista workflows escalados. Soporta filtrado por server_ids para RBAC."""
+        return await self.workflow_repo.get_escalados(limit, server_ids=server_ids)
     
-    async def resumen_por_estado(self) -> Dict[str, int]:
+    async def resumen_por_estado(self, server_ids: Optional[List[str]] = None) -> Dict[str, int]:
         """
         Obtiene resumen de conteos por estado.
+        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        
+        Args:
+            server_ids: Lista opcional de server_ids permitidos para filtrar
         
         Returns:
             Diccionario con conteos por estado
         """
-        return await self.workflow_repo.contar_por_estado()
+        return await self.workflow_repo.contar_por_estado(server_ids=server_ids)
     
     async def listar_workflows(
         self,

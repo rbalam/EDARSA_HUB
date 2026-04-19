@@ -85,20 +85,27 @@ class TareaRepository(BaseRepository):
         
         return self._serialize_list(list(cursor))
     
-    async def get_vencidas(self) -> List[Dict]:
+    async def get_vencidas(self, server_ids: Optional[List[str]] = None) -> List[Dict]:
         """
         Obtiene tareas que han excedido su fecha límite.
+        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        
+        Args:
+            server_ids: Lista opcional de server_ids permitidos para filtrar
         
         Returns:
             Lista de tareas vencidas
         """
         ahora = datetime.now(timezone.utc)
         
-        cursor = self.collection.find({
+        filters = {
             "estado_tarea": {"$nin": ["COMPLETADA", "VENCIDA"]},
             "fecha_limite": {"$lt": ahora}
-        })
+        }
+        if server_ids:
+            filters["server_id"] = {"$in": server_ids}
         
+        cursor = self.collection.find(filters)
         return self._serialize_list(list(cursor))
     
     async def asignar(
@@ -154,16 +161,25 @@ class TareaRepository(BaseRepository):
         """Marca una tarea como vencida."""
         return await self.actualizar_estado(id, "VENCIDA")
     
-    async def contar_por_estado(self) -> Dict[str, int]:
+    async def contar_por_estado(self, server_ids: Optional[List[str]] = None) -> Dict[str, int]:
         """
         Cuenta tareas agrupadas por estado.
+        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        
+        Args:
+            server_ids: Lista opcional de server_ids permitidos para filtrar
         
         Returns:
             Diccionario con conteos por estado
         """
-        pipeline = [
-            {"$group": {"_id": "$estado_tarea", "count": {"$sum": 1}}}
-        ]
+        match_stage = {}
+        if server_ids:
+            match_stage = {"$match": {"server_id": {"$in": server_ids}}}
+        
+        pipeline = []
+        if match_stage:
+            pipeline.append(match_stage)
+        pipeline.append({"$group": {"_id": "$estado_tarea", "count": {"$sum": 1}}})
         
         result = list(self.collection.aggregate(pipeline))
         return {item["_id"]: item["count"] for item in result}
