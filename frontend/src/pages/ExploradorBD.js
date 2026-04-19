@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { fetchServersOperativos } from '@/services/serversService';
+import { fetchUnidadesNegocio } from '@/services/unidadesNegocioService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -14,7 +14,7 @@ import {
   Loader2, Database, Table, Columns, Link2, Eye, Play, 
   ChevronRight, Search, Download, Server, X, FileText,
   Plus, Upload, Terminal, CheckCircle2, XCircle, AlertTriangle, Pencil,
-  Maximize2, Minimize2
+  Maximize2, Minimize2, Building2
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -800,7 +800,24 @@ function BuscadorGlobal({ serverSeleccionado, onSelectTabla }) {
 
 export default function ExploradorBD() {
   const navigate = useNavigate();
-  const [servers, setServers] = useState([]);
+  
+  // === FASE 3.2: UNIDADES DE NEGOCIO ===
+  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+  const [selectedUnidad, setSelectedUnidad] = useState('');
+  const [loadingUnidades, setLoadingUnidades] = useState(true);
+  
+  // servers derivado de unidadesNegocio para compatibilidad interna
+  const servers = useMemo(() => {
+    return unidadesNegocio.map(u => ({
+      id: u.server_id,
+      name: u.nombre,
+      system_type: u.system_type,
+      unidad_id: u.id,
+      sucursal_origen_id: u.sucursal_origen_id,
+      active: true
+    }));
+  }, [unidadesNegocio]);
+  
   const [serverSeleccionado, setServerSeleccionado] = useState('');
   const [serverInfo, setServerInfo] = useState(null);
   const [tablas, setTablas] = useState([]);
@@ -818,57 +835,53 @@ export default function ExploradorBD() {
   // Modal Agregar Tablas
   const [showAgregarTablas, setShowAgregarTablas] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  
-  // Modal Agregar Servidor
-  const [showAgregarServidor, setShowAgregarServidor] = useState(false);
-  const [todosLosServidores, setTodosLosServidores] = useState([]);
-  const [loadingServidores, setLoadingServidores] = useState(false);
 
-  // Cargar todos los servidores para el modal
-  const cargarTodosLosServidores = async () => {
-    setLoadingServidores(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/servers`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // Filtrar los que NO están ya en el explorador
-      const servidoresDisponibles = response.data.filter(
-        s => !servers.some(existing => existing.id === s.id)
-      );
-      setTodosLosServidores(servidoresDisponibles);
-    } catch (error) {
-      toast.error('Error cargando servidores');
-    } finally {
-      setLoadingServidores(false);
-    }
-  };
-
-  // Agregar servidor al explorador
-  const agregarServidorAlExplorador = (servidor) => {
-    // Agregar a la lista local de servidores del explorador
-    setServers(prev => [...prev, servidor]);
-    toast.success(`${servidor.name} agregado al explorador`);
-    setShowAgregarServidor(false);
-  };
-
+  // === FASE 3.2: Cargar Unidades de Negocio (RBAC) ===
   useEffect(() => {
-    cargarServers();
+    const loadUnidadesNegocio = async () => {
+      setLoadingUnidades(true);
+      try {
+        console.log('[ExploradorBD] Cargando unidades de negocio...');
+        const unidades = await fetchUnidadesNegocio();
+        console.log('[ExploradorBD] Unidades cargadas:', unidades.length);
+        setUnidadesNegocio(unidades);
+        
+        // Auto-seleccionar si el usuario tiene solo una unidad
+        if (unidades.length === 1) {
+          const unidad = unidades[0];
+          setSelectedUnidad(unidad.id);
+          setServerSeleccionado(unidad.server_id);
+          console.log(`[ExploradorBD] Auto-seleccionada unidad única: ${unidad.nombre}`);
+          // Cargar tablas automáticamente
+          cargarTablas(unidad.server_id);
+        }
+      } catch (error) {
+        console.error('[ExploradorBD] Error al cargar unidades de negocio:', error);
+        toast.error('Error al cargar unidades de negocio');
+        setUnidadesNegocio([]);
+      } finally {
+        setLoadingUnidades(false);
+      }
+    };
+    
+    loadUnidadesNegocio();
+    
     // Verificar si el usuario es admin
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    setIsAdmin(user.rol === 'Administrador' || user.email === 'admin@inventario.com');
+    setIsAdmin(user.rol === 'Administrador' || user.email === 'admin@inventario.com' || user.role === 'Administrador');
   }, []);
-
-  const cargarServers = async () => {
-    try {
-      // Cargar TODOS los servidores (no solo los operativos) para el Explorador de BD
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/servers`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setServers(response.data || []);
-    } catch (error) {
-      toast.error('Error cargando servidores');
+  
+  // Handler para cambio de unidad de negocio
+  const handleUnidadChange = (unidadId) => {
+    setSelectedUnidad(unidadId);
+    const unidad = unidadesNegocio.find(u => u.id === unidadId);
+    if (unidad) {
+      setServerSeleccionado(unidad.server_id);
+      cargarTablas(unidad.server_id);
+    } else {
+      setServerSeleccionado('');
+      setTablas([]);
+      setServerInfo(null);
     }
   };
 
@@ -1101,37 +1114,37 @@ export default function ExploradorBD() {
       </div>
 
       <div className={fullscreenMode ? "space-y-4 mt-4" : "space-y-4"}>
-      {/* Selector de servidor */}
+      {/* Selector de Unidad de Negocio - FASE 3.2 */}
       <Card className="border">
         <CardContent className="py-4">
           <div className="flex items-center gap-4 flex-wrap">
-            <Server className="h-5 w-5 text-zinc-400" />
-            <Select value={serverSeleccionado} onValueChange={(v) => { setServerSeleccionado(v); cargarTablas(v); }}>
-              <SelectTrigger className="w-64">
-                <SelectValue placeholder="Seleccionar servidor..." />
-              </SelectTrigger>
-              <SelectContent>
-                {servers.map(s => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name} ({s.system_type})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            {/* Botón Agregar BD */}
-            <Button 
-              variant="outline"
-              onClick={() => {
-                cargarTodosLosServidores();
-                setShowAgregarServidor(true);
-              }}
-              className="border-blue-200 text-blue-700 hover:bg-blue-50"
-              data-testid="btn-agregar-bd"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Agregar BD
-            </Button>
+            <Building2 className="h-5 w-5 text-zinc-400" />
+            {unidadesNegocio.length === 1 ? (
+              <div className="flex h-10 items-center rounded-md border border-zinc-300 bg-zinc-50 px-4 py-2 text-sm w-64">
+                <Building2 className="h-4 w-4 mr-2 text-zinc-500" />
+                {unidadesNegocio[0].nombre}
+              </div>
+            ) : (
+              <Select 
+                value={selectedUnidad} 
+                onValueChange={handleUnidadChange}
+                disabled={loadingUnidades}
+              >
+                <SelectTrigger className="w-64" data-testid="explorador-unidad-select">
+                  <SelectValue placeholder={loadingUnidades ? "Cargando..." : "Seleccionar unidad..."} />
+                </SelectTrigger>
+                <SelectContent>
+                  {unidadesNegocio.map(u => (
+                    <SelectItem key={u.id} value={u.id}>
+                      <span className="flex items-center gap-2">
+                        <Building2 className="h-3 w-3" />
+                        {u.nombre} ({u.system_type})
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             
             {serverInfo && (
               <div className="text-sm text-zinc-500">
@@ -1442,72 +1455,6 @@ export default function ExploradorBD() {
         </div>
         </>
       )}
-      
-      {/* Modal Agregar Servidor al Explorador */}
-      <Dialog open={showAgregarServidor} onOpenChange={setShowAgregarServidor}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              Agregar BD al Explorador
-            </DialogTitle>
-            <DialogDescription>
-              Selecciona un servidor para agregarlo al explorador
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {loadingServidores ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
-              </div>
-            ) : todosLosServidores.length === 0 ? (
-              <div className="text-center py-8 text-zinc-500">
-                <Database className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                <p>No hay servidores adicionales disponibles</p>
-                <p className="text-sm mt-1">Todos los servidores ya están en el explorador</p>
-                <Button 
-                  variant="link" 
-                  className="mt-2"
-                  onClick={() => {
-                    setShowAgregarServidor(false);
-                    navigate('/servidores');
-                  }}
-                >
-                  Ir a configurar servidores →
-                </Button>
-              </div>
-            ) : (
-              todosLosServidores.map(servidor => (
-                <div 
-                  key={servidor.id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-zinc-50 cursor-pointer transition-colors"
-                  onClick={() => agregarServidorAlExplorador(servidor)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="bg-blue-50 p-2 rounded-lg">
-                      <Server className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-zinc-900">{servidor.name}</p>
-                      <p className="text-xs text-zinc-500">{servidor.system_type} • {servidor.host}</p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAgregarServidor(false)}>
-              Cerrar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       </div>
     </div>
   );

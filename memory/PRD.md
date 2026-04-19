@@ -131,15 +131,22 @@ El tablero ejecutivo devolvía **$0.00** para unidades MPRO aunque existían dat
   - Estados: `unidadesNegocio`, `selectedUnidad`, `loadingUnidades`, `unidadSeleccionada`
   - Selector UI agregado en Dashboard y Cuentas por Pagar
   - Auto-selección implementada para usuarios con 1 unidad
+- [x] **FASE 3.2: Migración "Servidor" → "Unidad de Negocio" en ExploradorBD** (2026-04-19)
+  - Archivo: `/app/frontend/src/pages/ExploradorBD.js`
+  - Import cambiado: `fetchUnidadesNegocio` reemplaza `fetchServersOperativos`
+  - Selector migrado de "Servidor" a "Unidad de Negocio"
+  - Modal "Agregar BD" **ELIMINADO** (era vulnerabilidad de seguridad)
+  - Auto-selección implementada con carga automática de tablas
+  - Queries SQL respetan contexto RBAC
 
 ### P0 - PENDIENTE
 - [ ] RH mapeo empresa→sucursal_id SQL (agregar `rh_sql_sucursal_id` a `sucursales_catalogo`)
 
 ### P1 - PENDIENTE
-- [ ] **Migrar módulo Reportes/ExploradorBD a "Unidad de Negocio"**
 - [ ] Migrar credenciales legacy de `repository_cortes_z.py` a MongoDB
 - [ ] Migrar credenciales legacy de `validacion_propinas_tpv.py` a MongoDB
 - [ ] Conectar SQL Server real en Finanzas (actualmente usa fallback demo)
+- [ ] **Refactor global**: Eliminar `fetchServersOperativos` de serversService (ya no usado por módulos principales)
 
 ### P2 - FUTURO
 - [ ] Cifrado de passwords en reposo (MongoDB)
