@@ -59,7 +59,8 @@ function App() {
             <Route path="mis-tareas" element={<MisTareas />} />
             <Route path="catalogos" element={<Catalogos />} />
             <Route path="scheduler" element={<Scheduler />} />
-            <Route path="auditorias-programadas" element={<AuditoriasProgramadas />} />
+            <Route path="automatizaciones" element={<AuditoriasProgramadas />} />
+            <Route path="auditorias-programadas" element={<Navigate to="/automatizaciones" replace />} />
             {/* Redirect /operativo → /reportes (Dashboard Operativo ahora es tab dentro de Operaciones) */}
             <Route path="operativo" element={<Navigate to="/reportes?tab=operativo" replace />} />
           </Route>

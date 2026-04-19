@@ -64,6 +64,8 @@ import {
   Settings,
   Power,
   PowerOff,
+  Zap,
+  ListChecks,
 } from 'lucide-react';
 import { getUser, getToken } from '@/lib/auth';
 
@@ -364,12 +366,12 @@ export default function AuditoriasProgramadas() {
   }
 
   return (
-    <div className="space-y-6" data-testid="auditorias-page">
+    <div className="space-y-6" data-testid="automatizaciones-page">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Auditorías Programadas</h1>
-          <p className="text-zinc-500 text-sm mt-1">Gestión de auditorías de inventario automatizadas</p>
+          <h1 className="text-2xl font-bold text-zinc-900">Automatizaciones</h1>
+          <p className="text-zinc-500 text-sm mt-1">Gestión de procesos automáticos del sistema</p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -382,15 +384,37 @@ export default function AuditoriasProgramadas() {
             <RefreshCw className={`w-4 h-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
-          
-          {permisos.programar && (
-            <Button size="sm" onClick={() => { setEditingId(null); setShowForm(true); }} data-testid="new-auditoria-btn">
-              <Plus className="w-4 h-4 mr-1" />
-              Nueva Programación
-            </Button>
-          )}
         </div>
       </div>
+
+      {/* Tabs Nivel Superior */}
+      <Tabs defaultValue="programadas" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
+          <TabsTrigger value="programadas" className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Programadas
+          </TabsTrigger>
+          <TabsTrigger value="operativas" className="flex items-center gap-2">
+            <Zap className="w-4 h-4" />
+            Operativas
+          </TabsTrigger>
+          <TabsTrigger value="historial-global" className="flex items-center gap-2">
+            <ListChecks className="w-4 h-4" />
+            Historial
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ========== TAB: PROGRAMADAS ========== */}
+        <TabsContent value="programadas" className="space-y-4">
+          {/* Botón Nueva Programación */}
+          <div className="flex justify-end">
+            {permisos.programar && (
+              <Button size="sm" onClick={() => { setEditingId(null); setShowForm(true); }} data-testid="new-auditoria-btn">
+                <Plus className="w-4 h-4 mr-1" />
+                Nueva Programación
+              </Button>
+            )}
+          </div>
 
       {/* KPIs */}
       {kpis && (
@@ -710,6 +734,91 @@ export default function AuditoriasProgramadas() {
                       <TableCell className="font-mono text-xs">{log.workflow_id?.substring(0, 8) || '-'}</TableCell>
                       <TableCell className="text-sm">{formatDateTime(log.fecha_ejecucion)}</TableCell>
                       <TableCell className="max-w-xs truncate text-sm text-zinc-500">{log.mensaje || log.error_detalle || '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                  {historial.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-zinc-500">
+                        No hay registros de ejecución
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+        </TabsContent>
+
+        {/* ========== TAB: OPERATIVAS ========== */}
+        <TabsContent value="operativas" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-500" />
+                Automatizaciones Operativas
+              </CardTitle>
+              <CardDescription>
+                Procesos automáticos en tiempo real disparados por eventos del sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border border-dashed border-zinc-300 rounded-lg p-8 text-center">
+                <Zap className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-zinc-700 mb-2">Módulo en Construcción</h3>
+                <p className="text-zinc-500 text-sm max-w-md mx-auto">
+                  Las automatizaciones operativas permiten ejecutar procesos automáticamente 
+                  cuando ocurren eventos específicos, como recepción de mercancía o cierre de corte.
+                </p>
+                <div className="mt-6 flex flex-wrap justify-center gap-2">
+                  <Badge variant="outline" className="text-xs">Auditoría de Compras</Badge>
+                  <Badge variant="outline" className="text-xs">Validación de Inventario</Badge>
+                  <Badge variant="outline" className="text-xs">Alertas SLA</Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ========== TAB: HISTORIAL GLOBAL ========== */}
+        <TabsContent value="historial-global" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ListChecks className="w-5 h-5 text-blue-500" />
+                Historial de Automatizaciones
+              </CardTitle>
+              <CardDescription>
+                Registro unificado de todas las ejecuciones automáticas del sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Origen</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Resultado</TableHead>
+                    <TableHead>Usuario</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {historial.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-sm">{formatDateTime(log.fecha_ejecucion)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          <Clock className="w-3 h-3 mr-1" />
+                          Programada
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{log.auditoria_programada_id?.substring(0, 8)}...</TableCell>
+                      <TableCell><ExecutionBadge estado={log.estado} /></TableCell>
+                      <TableCell className="max-w-xs truncate text-sm text-zinc-500">{log.mensaje || '-'}</TableCell>
+                      <TableCell className="text-sm">{log.disparado_por === 'SCHEDULER' ? 'Sistema' : log.disparado_por}</TableCell>
                     </TableRow>
                   ))}
                   {historial.length === 0 && (
