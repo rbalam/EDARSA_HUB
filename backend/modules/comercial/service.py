@@ -146,9 +146,9 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
     """
     
     # ============================================================================
-    # VENTAS DEL DÍA: Priorizar cheques cerrados, fallback a tempcheques
-    # - Si hay cheques cerrados de HOY → ya hicieron corte → mostrar cerrados
-    # - Si NO hay cheques cerrados de HOY → aún no hacen corte → mostrar tempcheques
+    # VENTAS DEL DÍA: Priorizar cheques cerrados del último turno, fallback a tempcheques
+    # - Si hay turno cerrado en las últimas 24h → mostrar cheques de ese turno
+    # - Si NO hay turno cerrado reciente → mostrar tempcheques (operación en curso)
     # ============================================================================
     if solo_ventas_dia:
         logging.info(f"SoftRestaurant {server['name']}: Modo Ventas del Día")
@@ -158,16 +158,18 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
         pax = 0
         origen = None
         
-        # 1. Consultar cheques cerrados de HOY (prioridad)
+        # 1. Consultar cheques del último turno cerrado (últimas 24h)
         try:
             query_cerrados = """
 SELECT 
-    COUNT(DISTINCT folio) as cheques,
-    ISNULL(SUM(total), 0) as ventas,
-    ISNULL(SUM(nopersonas), 0) as pax
-FROM cheques
-WHERE CONVERT(DATE, fecha) = CONVERT(DATE, GETDATE())
-  AND cancelado = 0
+    COUNT(DISTINCT c.folio) as cheques,
+    ISNULL(SUM(c.total), 0) as ventas,
+    ISNULL(SUM(c.nopersonas), 0) as pax
+FROM cheques c
+INNER JOIN turnos t ON t.idturno = c.idturno
+WHERE t.cierre IS NOT NULL
+  AND t.apertura >= DATEADD(HOUR, -24, GETDATE())
+  AND c.cancelado = 0
 """
             result_cerrados = execute_sql_query(server['host'], server['port'], server['database'], 
                                                 server['username'], server['password'], query_cerrados)
@@ -177,11 +179,11 @@ WHERE CONVERT(DATE, fecha) = CONVERT(DATE, GETDATE())
                 pax = int(result_cerrados[0]['pax'] or 0)
                 if cheques > 0:
                     origen = "cheques_cerrados"
-                    logging.info(f"SoftRestaurant {server['name']} - Cerrados hoy: ${ventas:,.2f}, {cheques} cheques")
+                    logging.info(f"SoftRestaurant {server['name']} - Cerrados (último turno): ${ventas:,.2f}, {cheques} cheques")
         except Exception as e:
             logging.warning(f"SoftRestaurant {server['name']}: Error cheques cerrados: {e}")
         
-        # 2. Si NO hay cerrados, usar tempcheques
+        # 2. Si NO hay cerrados recientes, usar tempcheques
         if origen is None:
             try:
                 query_temp = """
