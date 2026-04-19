@@ -72,6 +72,11 @@ El tablero ejecutivo devolvía **$0.00** para unidades MPRO aunque existían dat
 - [x] Fix MPRO fallback $0.00
 - [x] Helper centralizado de fechas
 - [x] Documentación de políticas
+- [x] **Corrección servidores duplicados en MongoDB** (2026-04-19)
+  - Servidores huérfanos marcados como `deprecated: true`
+  - Canónicos: `a5ff...` (LA ESTELAR), `a5547...` (130° MERIDA)
+  - Query SQL corregida en `/api/compras/pedidos-vigentes` (MPRO)
+  - Documentado en `/app/docs/FIX_SERVIDORES_DUPLICADOS_20260419.md`
 
 ### P0 - PENDIENTE
 - [ ] RH mapeo empresa→sucursal_id SQL (agregar `rh_sql_sucursal_id` a `sucursales_catalogo`)
@@ -96,6 +101,7 @@ El tablero ejecutivo devolvía **$0.00** para unidades MPRO aunque existían dat
 | Diagnóstico MPRO | `/app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md` |
 | Política de Fechas | `/app/docs/POLITICA_TRANSVERSAL_FECHAS_Y_CONEXIONES.md` |
 | Worklog del Fix | `/app/memory/WORKLOG_FIX_MPRO_CREDENCIALES_FECHAS.md` |
+| Fix Servidores Duplicados | `/app/docs/FIX_SERVIDORES_DUPLICADOS_20260419.md` |
 
 ---
 

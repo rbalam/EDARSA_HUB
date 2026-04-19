@@ -5614,19 +5614,19 @@ async def obtener_pedidos_vigentes(server_id: str, sucursal: str, credentials: H
     server = access["server"]
     
     if server['system_type'] == 'MPRO':
-        # REQUISICION_COMPRA es la tabla correcta con estado PXA = Por Autorizar
+        # REQUISICION_COMPRA tiene productos directamente (Pr_Cve_Producto en la misma tabla)
         # REGLA CATÁLOGO: Sucursal debe buscarse por código O descripción
         # Soporta: código ("0021"), nombre completo ("130° QUERETARO"), parcial ("QRO", "Origen")
+        # NOTA: No existe Requisicion_Compra_Detalle, los productos están en Requisicion_Compra
         query = f"""
 SELECT 'REQUI' as tipo, RC.Rc_Folio as folio, RC.Rc_Fecha as fecha, 
        RC.Rc_Comentario as comentario, RC.Es_Cve_Estado as estado,
        CM.Cm_Descripcion as comprador,
-       COUNT(RCD.Pr_Cve_Producto) as total_productos,
-       SUM(ISNULL(RCD.Rc_Importe, 0)) as importe_total
+       COUNT(RC.Pr_Cve_Producto) as total_productos,
+       0 as importe_total
 FROM Requisicion_Compra RC
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = RC.Sc_Cve_Sucursal
 LEFT JOIN Comprador CM ON CM.Cm_Cve_Comprador = RC.Cm_Cve_Comprador
-LEFT JOIN Requisicion_Compra_Detalle RCD ON RCD.Rc_Folio = RC.Rc_Folio
 WHERE (S.Sc_Cve_Sucursal = '{sucursal}' OR S.Sc_Descripcion LIKE '%{sucursal}%')
     AND RC.Es_Cve_Estado = 'PXA'
     AND RC.Rc_Fecha >= DATEADD(day, -30, GETDATE())
