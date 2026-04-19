@@ -507,7 +507,7 @@ function AutorizacionComprasTab({ servers, unidadesNegocio, selectedUnidad, setS
 
   const calcularPedido = async () => {
     if (!selectedServer || !parentSucursal || (selectedAlmacenes.length === 0 && !todosAlmacenes)) {
-      toast.error('Selecciona servidor, sucursal y al menos un almacén');
+      toast.error('Selecciona unidad de negocio, sucursal y al menos un almacén');
       return;
     }
     if (!fechaInvFisico || !fechaFinPeriodo) {
@@ -1935,7 +1935,7 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
 
   const realizarAuditoria = async () => {
     if (!selectedServer || !parentSucursal) {
-      toast.error('Selecciona servidor y sucursal');
+      toast.error('Selecciona unidad de negocio y sucursal');
       return;
     }
     

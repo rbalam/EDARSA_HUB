@@ -1561,8 +1561,10 @@ const Reportes = () => {
               </select>
             </div>
 
-            {/* Sucursal - Solo mostrar si NO es SoftRestaurant */}
-            {selectedServer?.system_type !== 'SoftRestaurant' && (
+            {/* Sucursal - Solo mostrar si NO es SoftRestaurant y NO tiene sucursal_origen_id (auto-resolución) y hay múltiples */}
+            {selectedServer?.system_type !== 'SoftRestaurant' && 
+             !selectedServer?.sucursal_origen_id && 
+             sucursales.length > 1 && (
               <div className="space-y-2">
                 <Label>Sucursal</Label>
                 <select 

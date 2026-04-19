@@ -3,7 +3,46 @@
 ## Visión General
 Sistema ERP operativo centralizado para EDARSA, actuando como "el cerebro" de operaciones de compras, inventarios, auditorías y flujos de aprobación.
 
-## Estado Actual: FASE 3.2 COMPLETADA + ESTABILIZACIÓN TABLERO
+## Estado Actual: FASE 3.3 COMPLETADA - CORRECCIÓN TRANSVERSAL UX
+
+---
+
+## FASE 3.3: Corrección Transversal UX - Filtro Único "Unidad de Negocio"
+**Fecha**: 2026-04-19
+
+### Objetivo Cumplido
+Aplicada corrección transversal en módulos de negocio para que el único filtro visible principal sea **"Unidad de Negocio"**, eliminando selectores de "Servidor" y "Sucursal" cuando no aportan valor operativo.
+
+### Módulos Corregidos
+- [x] **Comercial.js**: 6 tabs corregidos (Dashboard, Precios Const., Reporte PAX, Ticket Perfecto, Metas, Por Hora/Día, Mesas)
+  - Agregada prop `showSucursalSelector` a todas las funciones de tab
+  - Selector de Sucursal ahora condicionado a `showSucursalSelector && sucursales.length > 0`
+- [x] **Reportes.js (Operaciones)**: Condición reforzada para ocultar Sucursal si hay `sucursal_origen_id`
+- [x] **Compras.js**: Mensajes de toast actualizados (servidor → unidad de negocio)
+- [x] **ExploradorBD.js**: Texto "Servidor" → "Base de datos" en modal técnico
+
+### Reglas de Visibilidad Implementadas
+1. **Selector de Sucursal** se oculta si:
+   - La unidad tiene `sucursal_origen_id` definida (auto-resolución)
+   - Solo hay 1 sucursal (auto-selección silenciosa)
+   - `showSucursalSelector` es false (calculado en useEffect)
+2. **Selector de "Servidor"** eliminado completamente de la UI visible
+3. **Auto-selección** de unidad cuando usuario tiene solo 1 permitida
+
+### Evidencia Visual Verificada
+| Módulo | Admin Test | Usuario Restringido |
+|--------|------------|---------------------|
+| Comercial | ✅ Solo "Unidad de Negocio" visible, Sucursal oculta con ORIGEN | ✅ CIENFUEGOS auto-seleccionado, sin selector |
+| Compras | ✅ Sin Sucursal visible con ORIGEN | N/A |
+| Operaciones | ✅ Sin Sucursal visible con ORIGEN | N/A |
+
+### Archivos Modificados
+- `/app/frontend/src/pages/Comercial.js`
+- `/app/frontend/src/pages/Reportes.js`
+- `/app/frontend/src/pages/Compras.js`
+- `/app/frontend/src/pages/ExploradorBD.js`
+
+---
 
 ---
 
@@ -165,6 +204,12 @@ El tablero ejecutivo devolvía **$0.00** para unidades MPRO aunque existían dat
   - Modal "Agregar BD" **ELIMINADO** (era vulnerabilidad de seguridad)
   - Auto-selección implementada con carga automática de tablas
   - Queries SQL respetan contexto RBAC
+- [x] **FASE 3.3: Corrección Transversal UX** (2026-04-19)
+  - Selector "Sucursal" oculto cuando unidad tiene `sucursal_origen_id` (auto-resolución)
+  - Comercial.js: 6 tabs corregidos con prop `showSucursalSelector`
+  - Reportes.js: Condición reforzada para MPRO con sucursal_origen_id
+  - Compras.js: Mensajes toast actualizados (servidor → unidad de negocio)
+  - ExploradorBD.js: Texto "Servidor" → "Base de datos" en modal técnico
 
 ### P0 - PENDIENTE
 - [ ] RH mapeo empresa→sucursal_id SQL (agregar `rh_sql_sucursal_id` a `sucursales_catalogo`)

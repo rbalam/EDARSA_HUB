@@ -582,7 +582,7 @@ CREATE TABLE MiTabla (
             </div>
 
             <div className="text-xs text-zinc-500">
-              Servidor: <strong>{serverName}</strong>
+              Base de datos: <strong>{serverName}</strong>
               {scriptSeleccionado && (
                 <>
                   <br />

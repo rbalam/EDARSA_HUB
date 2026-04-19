@@ -354,15 +354,18 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
                 </Select>
               )}
             </div>
-            <div className="flex-1 min-w-[180px] max-w-xs">
-              <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
-                <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
-                <SelectContent>
-                  {sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Selector de Sucursal - Solo si showSucursalSelector y hay múltiples sucursales */}
+            {showSucursalSelector && sucursales.length > 0 && (
+              <div className="flex-1 min-w-[180px] max-w-xs">
+                <Label className="text-xs mb-1 block">Sucursal</Label>
+                <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
+                  <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
+                  <SelectContent>
+                    {sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex-1 min-w-[120px] max-w-[150px]">
               <Label className="text-xs mb-1 block">Período</Label>
               <Select value={periodo} onValueChange={setPeriodo}>
@@ -763,7 +766,7 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
 }
 
 // ============ TAB 2: TICKET PERFECTO Y RENTABILIDAD ============
-function TicketPerfecto({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
+function TicketPerfecto({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [ticketData, setTicketData] = useState(null);
   const [rentabilidad, setRentabilidad] = useState([]);
@@ -812,13 +815,16 @@ function TicketPerfecto({ servers, unidadesNegocio, selectedUnidad, setSelectedU
                 </Select>
               )}
             </div>
-            <div className="flex-1 min-w-[180px] max-w-xs">
-              <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
-                <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
-                <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+            {/* Selector de Sucursal - Solo si showSucursalSelector y hay múltiples sucursales */}
+            {showSucursalSelector && sucursales.length > 0 && (
+              <div className="flex-1 min-w-[180px] max-w-xs">
+                <Label className="text-xs mb-1 block">Sucursal</Label>
+                <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
+                  <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
+                  <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            )}
             <Button onClick={cargarDatos} disabled={loading} className="mt-5">
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
               Actualizar
@@ -927,7 +933,7 @@ function TicketPerfecto({ servers, unidadesNegocio, selectedUnidad, setSelectedU
 }
 
 // ============ TAB 3: METAS DE VENTAS ============
-function MetasVentas({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
+function MetasVentas({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [metasProducto, setMetasProducto] = useState([]);
   const [metasVendedor, setMetasVendedor] = useState([]);
@@ -976,13 +982,16 @@ function MetasVentas({ servers, unidadesNegocio, selectedUnidad, setSelectedUnid
                 </Select>
               )}
             </div>
-            <div className="flex-1 min-w-[180px] max-w-xs">
-              <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
-                <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
-                <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+            {/* Selector de Sucursal - Solo si showSucursalSelector y hay múltiples sucursales */}
+            {showSucursalSelector && sucursales.length > 0 && (
+              <div className="flex-1 min-w-[180px] max-w-xs">
+                <Label className="text-xs mb-1 block">Sucursal</Label>
+                <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
+                  <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
+                  <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            )}
             <Button onClick={cargarMetas} disabled={loading} className="mt-5">
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Target className="h-4 w-4 mr-2" />}
               Cargar Metas
@@ -1045,7 +1054,7 @@ function MetasVentas({ servers, unidadesNegocio, selectedUnidad, setSelectedUnid
 }
 
 // ============ TAB 4: VENTAS POR HORA/DÍA ============
-function VentasPorTiempo({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
+function VentasPorTiempo({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [ventasPorHora, setVentasPorHora] = useState([]);
   const [ventasPorDia, setVentasPorDia] = useState([]);
@@ -1097,13 +1106,16 @@ function VentasPorTiempo({ servers, unidadesNegocio, selectedUnidad, setSelected
                 </Select>
               )}
             </div>
-            <div className="flex-1 min-w-[180px] max-w-xs">
-              <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
-                <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
-                <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+            {/* Selector de Sucursal - Solo si showSucursalSelector y hay múltiples sucursales */}
+            {showSucursalSelector && sucursales.length > 0 && (
+              <div className="flex-1 min-w-[180px] max-w-xs">
+                <Label className="text-xs mb-1 block">Sucursal</Label>
+                <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
+                  <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
+                  <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            )}
             <Button onClick={cargarDatos} disabled={loading} className="mt-5">
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Clock className="h-4 w-4 mr-2" />}
               Actualizar
@@ -1167,7 +1179,7 @@ function VentasPorTiempo({ servers, unidadesNegocio, selectedUnidad, setSelected
 }
 
 // ============ TAB 5: MESAS Y COMENSALES ============
-function MesasComensales({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
+function MesasComensales({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [datosUnidad, setDatosUnidad] = useState(null);
   const [rotacionPorMesa, setRotacionPorMesa] = useState([]);
@@ -1216,13 +1228,16 @@ function MesasComensales({ servers, unidadesNegocio, selectedUnidad, setSelected
                 </Select>
               )}
             </div>
-            <div className="flex-1 min-w-[180px] max-w-xs">
-              <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
-                <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
-                <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+            {/* Selector de Sucursal - Solo si showSucursalSelector y hay múltiples sucursales */}
+            {showSucursalSelector && sucursales.length > 0 && (
+              <div className="flex-1 min-w-[180px] max-w-xs">
+                <Label className="text-xs mb-1 block">Sucursal</Label>
+                <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
+                  <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
+                  <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            )}
             <Button onClick={cargarDatos} disabled={loading} className="mt-5">
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Utensils className="h-4 w-4 mr-2" />}
               Actualizar
@@ -1331,7 +1346,7 @@ function MesasComensales({ servers, unidadesNegocio, selectedUnidad, setSelected
 }
 
 // ============ TAB 6: REPORTE DE PAX (Nuevo) ============
-function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
+function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [viewMode, setViewMode] = useState('vendedor'); // 'vendedor' o 'ticket'
@@ -1442,13 +1457,16 @@ function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnida
                 </Select>
               )}
             </div>
-            <div className="flex-1 min-w-[180px] max-w-xs">
-              <Label className="text-xs mb-1 block">Sucursal</Label>
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
-                <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
-                <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+            {/* Selector de Sucursal - Solo si showSucursalSelector y hay múltiples sucursales */}
+            {showSucursalSelector && sucursales.length > 0 && (
+              <div className="flex-1 min-w-[180px] max-w-xs">
+                <Label className="text-xs mb-1 block">Sucursal</Label>
+                <Select value={selectedSucursal} onValueChange={setSelectedSucursal} disabled={!selectedUnidad}>
+                  <SelectTrigger><SelectValue placeholder={selectedUnidad ? "Seleccionar" : "Selecciona unidad"} /></SelectTrigger>
+                  <SelectContent>{sucursales.map(s => <SelectItem key={s.id || s.codigo || s.nombre} value={s.id || s.codigo || s.nombre}>{s.nombre}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="min-w-[150px]">
               <Label className="text-xs mb-1 block">Fecha</Label>
               <Input
