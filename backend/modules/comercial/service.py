@@ -146,10 +146,20 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
     """
     
     # ============================================================================
-    # VENTAS DEL DÍA: Consultar tempcheques (tickets abiertos sin cerrar)
+    # VENTAS DEL DÍA: Consultar tempcheques + cheques cerrados de hoy
+    # Lógica: Si tempcheques está vacío/casi vacío, usar cheques cerrados del día
     # ============================================================================
     if solo_ventas_dia:
-        logging.info(f"SoftRestaurant {server['name']}: Modo Ventas del Día - consultando tempcheques")
+        logging.info(f"SoftRestaurant {server['name']}: Modo Ventas del Día")
+        
+        ventas_temp = 0
+        cheques_temp = 0
+        pax_temp = 0
+        ventas_cerradas = 0
+        cheques_cerrados = 0
+        pax_cerrados = 0
+        
+        # 1. Consultar tempcheques (tickets abiertos)
         try:
             query_temp = """
 SELECT 
@@ -162,46 +172,88 @@ WHERE cancelado = 0
             result_temp = execute_sql_query(server['host'], server['port'], server['database'], 
                                             server['username'], server['password'], query_temp)
             if result_temp and len(result_temp) > 0:
-                ventas = float(result_temp[0]['ventas'] or 0)
-                pax = int(result_temp[0]['pax'] or 0)
-                cheques = int(result_temp[0]['cheques'] or 0)
-                
-                if pax == 0 and cheques > 0:
-                    pax = cheques
-                
-                ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
-                cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
-                
-                logging.info(f"SoftRestaurant {server['name']} - Tempcheques: ventas=${ventas:,.2f}, cheques={cheques}")
-                
-                return {
-                    "ventas": ventas,
-                    "ventas_ant": 0,
-                    "ventas_año": 0,
-                    "var_vs_mes_ant": 0,
-                    "var_vs_año_ant": 0,
-                    "proyeccion": 0,
-                    "pax": pax,
-                    "pax_ant": 0,
-                    "pax_año": 0,
-                    "var_pax_mes": 0,
-                    "var_pax_año": 0,
-                    "cheques": cheques,
-                    "cheques_ant": 0,
-                    "cheques_año": 0,
-                    "var_cheques_mes": 0,
-                    "var_cheques_año": 0,
-                    "ticket_prom": ticket_prom,
-                    "cheque_prom": cheque_prom,
-                    "es_ventas_dia": True,
-                    "origen": "tempcheques"
-                }
-            else:
-                logging.warning(f"SoftRestaurant {server['name']}: Sin datos en tempcheques")
-                return None
+                ventas_temp = float(result_temp[0]['ventas'] or 0)
+                cheques_temp = int(result_temp[0]['cheques'] or 0)
+                pax_temp = int(result_temp[0]['pax'] or 0)
+                logging.info(f"SoftRestaurant {server['name']} - Tempcheques: ${ventas_temp:,.2f}, {cheques_temp} cheques")
         except Exception as e:
-            logging.warning(f"SoftRestaurant {server['name']}: Error consultando tempcheques: {e}")
+            logging.warning(f"SoftRestaurant {server['name']}: Error tempcheques: {e}")
+        
+        # 2. Consultar cheques cerrados de HOY
+        try:
+            query_cerrados = """
+SELECT 
+    COUNT(DISTINCT folio) as cheques,
+    ISNULL(SUM(total), 0) as ventas,
+    ISNULL(SUM(nopersonas), 0) as pax
+FROM cheques
+WHERE CONVERT(DATE, fecha) = CONVERT(DATE, GETDATE())
+  AND cancelado = 0
+"""
+            result_cerrados = execute_sql_query(server['host'], server['port'], server['database'], 
+                                                server['username'], server['password'], query_cerrados)
+            if result_cerrados and len(result_cerrados) > 0:
+                ventas_cerradas = float(result_cerrados[0]['ventas'] or 0)
+                cheques_cerrados = int(result_cerrados[0]['cheques'] or 0)
+                pax_cerrados = int(result_cerrados[0]['pax'] or 0)
+                logging.info(f"SoftRestaurant {server['name']} - Cerrados hoy: ${ventas_cerradas:,.2f}, {cheques_cerrados} cheques")
+        except Exception as e:
+            logging.warning(f"SoftRestaurant {server['name']}: Error cheques cerrados: {e}")
+        
+        # 3. Decidir cuál usar:
+        # - Si tempcheques tiene datos significativos → usar tempcheques (operación en curso)
+        # - Si tempcheques está vacío/casi vacío pero hay cerrados → usar cerrados (ya hicieron corte)
+        # - Umbral: menos de 5 cheques abiertos se considera "casi vacío"
+        
+        UMBRAL_CHEQUES_ABIERTOS = 5
+        
+        if cheques_temp >= UMBRAL_CHEQUES_ABIERTOS or (cheques_temp > 0 and ventas_cerradas == 0):
+            # Usar tempcheques (operación en curso o no hay cerrados)
+            ventas = ventas_temp
+            cheques = cheques_temp
+            pax = pax_temp
+            origen = "tempcheques"
+        elif ventas_cerradas > 0:
+            # Usar cerrados (ya hicieron corte del día)
+            ventas = ventas_cerradas
+            cheques = cheques_cerrados
+            pax = pax_cerrados
+            origen = "cheques_cerrados"
+        else:
+            # No hay datos en ninguna tabla
+            logging.warning(f"SoftRestaurant {server['name']}: Sin datos del día")
             return None
+        
+        if pax == 0 and cheques > 0:
+            pax = cheques
+        
+        ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
+        cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
+        
+        logging.info(f"SoftRestaurant {server['name']} - USANDO: {origen} → ${ventas:,.2f}")
+        
+        return {
+            "ventas": ventas,
+            "ventas_ant": 0,
+            "ventas_año": 0,
+            "var_vs_mes_ant": 0,
+            "var_vs_año_ant": 0,
+            "proyeccion": 0,
+            "pax": pax,
+            "pax_ant": 0,
+            "pax_año": 0,
+            "var_pax_mes": 0,
+            "var_pax_año": 0,
+            "cheques": cheques,
+            "cheques_ant": 0,
+            "cheques_año": 0,
+            "var_cheques_mes": 0,
+            "var_cheques_año": 0,
+            "ticket_prom": ticket_prom,
+            "cheque_prom": cheque_prom,
+            "es_ventas_dia": True,
+            "origen": origen
+        }
     
     # ============================================================================
     # VENTAS HISTÓRICAS / ACUMULADAS: Usar SQL nube del menú Servidores
