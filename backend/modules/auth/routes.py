@@ -23,11 +23,12 @@ ENDPOINTS:
 - DELETE /roles/{role_id} - Eliminar rol
 """
 
-from typing import Dict, List
-from fastapi import APIRouter, Depends
+from typing import Dict, List, Optional
+from fastapi import APIRouter, Depends, HTTPException
 
 from core.security import get_current_user
 from modules.auth import service
+from modules.auth import context_service
 from modules.auth.schemas import User, UserCreate, UserLogin, MODULOS_DISPONIBLES
 
 # Router sin prefix - se agregará en server.py como /api
@@ -54,6 +55,67 @@ async def login(credentials: UserLogin):
 async def get_me(current_user: Dict = Depends(get_current_user)):
     """Retorna los datos del usuario autenticado."""
     return current_user
+
+
+# ============================================================================
+# CONTEXTO DE USUARIO (FASE 2)
+# ============================================================================
+
+@router.get("/auth/me/context")
+async def get_my_context(current_user: Dict = Depends(get_current_user)):
+    """
+    Obtiene el contexto completo del usuario actual.
+    Incluye empresas permitidas, rol RBAC, permisos y sucursales.
+    
+    FASE 2: Endpoint nuevo, no reemplaza /auth/me
+    """
+    context = await context_service.get_user_context(current_user['id'])
+    if not context:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return context
+
+
+@router.post("/auth/context")
+async def change_context(
+    data: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Cambia el contexto activo del usuario (empresa/sucursal).
+    
+    Body:
+        empresa_id: UUID de la empresa a activar
+        sucursal_id: UUID de la sucursal (opcional)
+    
+    FASE 2: Endpoint nuevo para cambio de contexto sin re-login
+    """
+    empresa_id = data.get('empresa_id')
+    if not empresa_id:
+        raise HTTPException(status_code=400, detail="empresa_id requerido")
+    
+    context = await context_service.get_user_context_for_empresa(
+        current_user['id'],
+        empresa_id
+    )
+    
+    if not context:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    if 'error' in context:
+        raise HTTPException(status_code=403, detail=context['error'])
+    
+    return context
+
+
+@router.get("/auth/empresas")
+async def get_my_empresas(current_user: Dict = Depends(get_current_user)):
+    """
+    Obtiene las empresas disponibles para el usuario actual.
+    
+    FASE 2: Endpoint nuevo para selector de empresa en frontend
+    """
+    empresas = await context_service.get_empresas_disponibles(current_user['id'])
+    return empresas
 
 
 # ============================================================================
