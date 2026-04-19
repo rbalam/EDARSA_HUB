@@ -125,12 +125,17 @@ El tablero ejecutivo devolvía **$0.00** para unidades MPRO aunque existían dat
   - Selector UI migrado con auto-selección
   - Placeholders y mensajes actualizados
   - Instrucciones de ayuda actualizadas
+- [x] **FASE 3.2: Migración "Servidor" → "Unidad de Negocio" en Finanzas** (2026-04-19)
+  - Archivo: `/app/frontend/src/pages/Finanzas.js`
+  - Import agregado: `fetchUnidadesNegocio`
+  - Estados: `unidadesNegocio`, `selectedUnidad`, `loadingUnidades`, `unidadSeleccionada`
+  - Selector UI agregado en Dashboard y Cuentas por Pagar
+  - Auto-selección implementada para usuarios con 1 unidad
 
 ### P0 - PENDIENTE
 - [ ] RH mapeo empresa→sucursal_id SQL (agregar `rh_sql_sucursal_id` a `sucursales_catalogo`)
 
 ### P1 - PENDIENTE
-- [ ] **Migrar módulo Finanzas a "Unidad de Negocio"**
 - [ ] **Migrar módulo Reportes/ExploradorBD a "Unidad de Negocio"**
 - [ ] Migrar credenciales legacy de `repository_cortes_z.py` a MongoDB
 - [ ] Migrar credenciales legacy de `validacion_propinas_tpv.py` a MongoDB

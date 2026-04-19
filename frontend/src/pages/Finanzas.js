@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -18,6 +18,7 @@ import {
 } from 'recharts';
 import TesoreriaCorteZ from '../components/TesoreriaCorteZ';
 import PropinasTPV from '../components/PropinasTPV';
+import { fetchUnidadesNegocio } from '../services/unidadesNegocioService';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -31,6 +32,11 @@ export default function Finanzas() {
   const [presupuestos, setPresupuestos] = useState([]);
   const [sucursales, setSucursales] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  
+  // === FASE 3.2: UNIDADES DE NEGOCIO ===
+  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+  const [selectedUnidad, setSelectedUnidad] = useState('');
+  const [loadingUnidades, setLoadingUnidades] = useState(true);
   
   // Filtros
   const [filtroAnio, setFiltroAnio] = useState(new Date().getFullYear());
@@ -216,6 +222,41 @@ export default function Finanzas() {
   });
   
   const token = localStorage.getItem('token');
+  
+  // === FASE 3.2: CARGAR UNIDADES DE NEGOCIO ===
+  useEffect(() => {
+    const loadUnidadesNegocio = async () => {
+      setLoadingUnidades(true);
+      try {
+        console.log('[Finanzas] Cargando unidades de negocio...');
+        const unidades = await fetchUnidadesNegocio();
+        console.log('[Finanzas] Unidades cargadas:', unidades.length);
+        setUnidadesNegocio(unidades);
+        
+        // Auto-seleccionar si el usuario tiene solo una unidad
+        if (unidades.length === 1) {
+          const unidad = unidades[0];
+          setSelectedUnidad(unidad.id);
+          console.log(`[Finanzas] Auto-seleccionada unidad única: ${unidad.nombre}`);
+        }
+      } catch (error) {
+        console.error('[Finanzas] Error al cargar unidades de negocio:', error);
+        toast.error('Error al cargar unidades de negocio');
+        setUnidadesNegocio([]);
+      } finally {
+        setLoadingUnidades(false);
+      }
+    };
+    
+    if (token) {
+      loadUnidadesNegocio();
+    }
+  }, [token]);
+  
+  // Unidad seleccionada (objeto completo)
+  const unidadSeleccionada = useMemo(() => {
+    return unidadesNegocio.find(u => u.id === selectedUnidad) || null;
+  }, [unidadesNegocio, selectedUnidad]);
   
   // === CARGAR PERMISOS DEL USUARIO ===
   useEffect(() => {
@@ -913,8 +954,30 @@ export default function Finanzas() {
     
     return (
       <div className="space-y-6">
-        {/* Filtros */}
+        {/* Filtros - FASE 3.2: Unidad de Negocio */}
         <div className="flex flex-wrap gap-3 items-center">
+          {/* Selector de Unidad de Negocio */}
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-zinc-400" />
+            {unidadesNegocio.length === 1 ? (
+              <div className="px-3 py-2 border rounded-lg text-sm bg-zinc-50 flex items-center gap-2">
+                <span>{unidadesNegocio[0].nombre}</span>
+              </div>
+            ) : (
+              <select
+                value={selectedUnidad}
+                onChange={(e) => setSelectedUnidad(e.target.value)}
+                className="px-3 py-2 border rounded-lg text-sm"
+                disabled={loadingUnidades}
+                data-testid="finanzas-unidad-select"
+              >
+                <option value="">{loadingUnidades ? "Cargando..." : "Todas las unidades"}</option>
+                {unidadesNegocio.map(u => (
+                  <option key={u.id} value={u.id}>{u.nombre}</option>
+                ))}
+              </select>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-zinc-400" />
             <select
@@ -1730,10 +1793,33 @@ export default function Finanzas() {
     
     return (
       <div className="space-y-4">
-        {/* Filtros */}
+        {/* Filtros - FASE 3.2: Unidad de Negocio */}
         <Card>
           <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-7 gap-3 items-end">
+              {/* Selector de Unidad de Negocio */}
+              <div>
+                <Label className="text-xs text-zinc-500">Unidad de Negocio</Label>
+                {unidadesNegocio.length === 1 ? (
+                  <div className="w-full px-3 py-2 border rounded-lg text-sm mt-1 bg-zinc-50 flex items-center gap-2">
+                    <Building2 className="h-3 w-3 text-zinc-400" />
+                    <span className="truncate">{unidadesNegocio[0].nombre}</span>
+                  </div>
+                ) : (
+                  <select
+                    value={selectedUnidad}
+                    onChange={(e) => setSelectedUnidad(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg text-sm mt-1"
+                    disabled={loadingUnidades}
+                    data-testid="cxp-unidad-select"
+                  >
+                    <option value="">{loadingUnidades ? "Cargando..." : "Todas"}</option>
+                    {unidadesNegocio.map(u => (
+                      <option key={u.id} value={u.id}>{u.nombre}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
               <div>
                 <Label className="text-xs text-zinc-500">Fecha de Corte</Label>
                 <Input
