@@ -1902,6 +1902,40 @@ async def update_sucursales_config_bulk(
 
 # ============= FIN ENDPOINTS DE CONFIGURACIÓN DE SUCURSALES =============
 
+# ============= ENDPOINT GLOBAL DE SUCURSALES (para componentes que no tienen server_id) =============
+@api_router.get("/sucursales")
+async def get_all_sucursales(
+    server_id: Optional[str] = Query(None),
+    activas: bool = Query(True),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Obtiene todas las sucursales configuradas.
+    Endpoint global para componentes que necesitan listar sucursales sin conocer el server_id.
+    """
+    filtro = {}
+    if server_id:
+        filtro["server_id"] = server_id
+    if activas:
+        filtro["activa"] = True
+    
+    cursor = db.server_sucursales_config.find(filtro, {"_id": 0})
+    sucursales = await cursor.to_list(500)
+    
+    # Enriquecer con nombre de servidor
+    server_ids = list(set(s.get("server_id") for s in sucursales if s.get("server_id")))
+    servers = {}
+    if server_ids:
+        server_cursor = db.servers.find({"id": {"$in": server_ids}}, {"_id": 0, "id": 1, "name": 1})
+        async for srv in server_cursor:
+            servers[srv["id"]] = srv.get("name", srv["id"])
+    
+    for suc in sucursales:
+        suc["server_nombre"] = servers.get(suc.get("server_id"), "")
+    
+    return sucursales
+# ============= FIN ENDPOINT GLOBAL DE SUCURSALES =============
+
 @api_router.get("/servers/{server_id}/almacenes-softrestaurant")
 async def get_almacenes_softrestaurant(
     server_id: str, 
