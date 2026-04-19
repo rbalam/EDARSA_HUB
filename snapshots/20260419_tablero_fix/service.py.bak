@@ -852,9 +852,13 @@ ORDER BY SUM(VE.Vn_Precio_Neto_Importe) DESC
 """
     
     try:
+        logging.debug(f"MPRO: Ejecutando query principal con fechas {fi} a {ff}")
         result = execute_sql_query(server['host'], server['port'], server['database'], 
                                    server['username'], server['password'], query)
-        logging.info(f"MPRO {server['name']}: Query retornó {len(result) if result else 0} sucursales")
+        logging.debug(f"MPRO: Query principal retornó {len(result) if result else 0} filas")
+        if result:
+            for r in result[:3]:
+                logging.debug(f"  Fila: sucursal={r.get('sucursal_id')}, ventas={r.get('ventas')}, cheques={r.get('cheques')}")
         if not result:
             logging.warning(f"MPRO {server['name']}: No se encontraron sucursales con ventas")
             return []

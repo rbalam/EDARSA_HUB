@@ -3,11 +3,38 @@
 ## Visión General
 Sistema ERP operativo centralizado para EDARSA, actuando como "el cerebro" de operaciones de compras, inventarios, auditorías y flujos de aprobación.
 
-## Estado Actual: FASE 3.2 - Migración "Unidad de Negocio" (EN PROGRESO)
+## Estado Actual: FASE 3.2 COMPLETADA + ESTABILIZACIÓN TABLERO
 
 ---
 
-## FASE 3.2: Migración "Servidor" → "Unidad de Negocio" - COMERCIAL
+## ESTABILIZACIÓN TABLERO EJECUTIVO - 2026-04-19
+
+### Diagnóstico Realizado
+Se investigó el problema recurrente de "Ventas Acumuladas $0" en el Tablero Ejecutivo.
+
+### Hallazgos
+1. **Arquitectura correcta**: Las métricas están correctamente separadas
+2. **Datos disponibles**: MPRO nube retorna datos correctamente ($1.6M QRO + $913K ORIGEN)
+3. **Problema de infraestructura**: Servidores SoftRestaurant locales no accesibles desde el pod
+
+### Estado Actual - FUNCIONANDO
+| Unidad | Ventas Abril 2026 | Status |
+|--------|-------------------|--------|
+| CIENFUEGOS | $2,251,395.00 | online |
+| 130° QUERETARO | $1,602,503.00 | online |
+| ORIGEN | $913,840.71 | online |
+| LA ESTELAR | $0.00 | no accesible* |
+| 130° MERIDA | $0.00 | no accesible* |
+| **TOTAL** | **$4,767,738.71** | |
+
+*Servidores SQL locales no accesibles desde el pod de Kubernetes (requiere VPN/túnel)
+
+### Documentación
+Ver `/app/docs/ESTABILIZACION_TABLERO_EJECUTIVO_20260419.md`
+
+---
+
+## FASE 3.2: Migración "Servidor" → "Unidad de Negocio" - COMPLETADA
 **Fecha**: 2026-04-19
 
 ### Trabajo Completado
