@@ -87,12 +87,29 @@ class AutomatizacionComprasService:
         """
         Procesa pedido capturado - FLUJO COMPLETO.
         
-        1. Determinar ventana 15 días
-        2. Buscar inventario inicial más cercano válido
-        3. Buscar inventario final del día del pedido
-        4. Sin inv. final → PENDIENTE_INVENTARIO_FISICO + notificar + detener
-        5. Con inv. final → auditoría + EN_REVISION_GERENCIA
+        1. Validar que no esté ya procesado (anti-duplicado)
+        2. Determinar ventana 15 días
+        3. Buscar inventario inicial más cercano válido
+        4. Buscar inventario final del día del pedido
+        5. Sin inv. final → PENDIENTE_INVENTARIO_FISICO + notificar + detener
+        6. Con inv. final → auditoría + EN_REVISION_GERENCIA
         """
+        # CONTROL ANTI-DUPLICADO: Verificar si ya fue procesado
+        ya_procesado = self.pedidos_procesados.find_one({
+            "server_id": server_id,
+            "pedido_folio": pedido_id,
+            "origen": origen_sistema
+        })
+        if ya_procesado:
+            # Retornar la automatización existente
+            auto_existente = self.collection.find_one(
+                {"id": ya_procesado.get("automatizacion_id")},
+                {"_id": 0}
+            )
+            if auto_existente:
+                logger.info(f"[{pedido_id}] Ya procesado - retornando existente")
+                return auto_existente
+        
         now = datetime.now(timezone.utc)
         dias_objetivo = dias_objetivo or self.DIAS_OBJETIVO_DEFAULT
         fecha_pedido = fecha_pedido or now
@@ -669,7 +686,7 @@ class AutomatizacionComprasService:
     def _marcar_pedido_procesado(self, server_id: str, pedido_id: str, origen: str, automatizacion_id: str):
         """Marca pedido como procesado."""
         self.pedidos_procesados.update_one(
-            {"server_id": server_id, "pedido_id": pedido_id, "origen": origen},
+            {"server_id": server_id, "pedido_folio": pedido_id, "origen": origen},
             {"$set": {
                 "automatizacion_id": automatizacion_id,
                 "fecha_procesado": datetime.now(timezone.utc).isoformat()

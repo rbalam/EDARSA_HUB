@@ -10,7 +10,7 @@ Sistema ERP operativo centralizado para EDARSA, actuando como "el cerebro" de op
 - [x] Auditorías Programadas (Scheduler completo)
 - [x] UI reorganizada: "Automatizaciones" con Tabs (Programadas, Operativas, Historial)
 - [x] Notificaciones: Twilio WhatsApp + Neubox SMTP Email
-- [x] **Automatización Operativa de Compras - FASE 1**:
+- [x] **Automatización Operativa de Compras - FASE 1 COMPLETA**:
   - Detección automática de pedidos
   - Cálculo ventana 15 días
   - Búsqueda inventario inicial más cercano
@@ -20,6 +20,11 @@ Sistema ERP operativo centralizado para EDARSA, actuando como "el cerebro" de op
   - Endpoints Gerencia/Tesorería con acciones por rol
   - UI completa con acciones diferenciadas por rol
   - Bitácora de cambios
+- [x] **Trigger Automático Implementado**:
+  - Job `pedidos_detector` en scheduler (cada 5 min)
+  - Control anti-duplicado con índice único
+  - Endpoint manual `/compras/procesar` para disparar desde UI
+  - Query `query_detalle_pedido_mpro()` en repository
 
 ### Estados del Flujo (EXACTOS)
 1. PEDIDO_DETECTADO
@@ -29,27 +34,32 @@ Sistema ERP operativo centralizado para EDARSA, actuando como "el cerebro" de op
 5. PENDIENTE_TESORERIA
 6. APROBADO / RECHAZADO
 
-### Lógica de Cálculo
-- `dias_inventario = existencia_fisica / consumo_promedio`
-- Estados: CRITICO (≤0), FALTANTE (<objetivo), OPTIMO (±20%), SOBRANTE (>objetivo)
-- Recomendaciones: URGENTE, COMPRAR, NO_COMPRAR, REVISAR
-- `pedido_optimo = (dias_objetivo * consumo) - existencia_fisica`
+### Control Anti-Duplicado
+- Tabla: `pedidos_procesados_automatizacion`
+- Índice único: `(server_id, pedido_folio, origen)`
+- Validación en `procesar_pedido_operativo()` antes de crear nueva automatización
 
 ### Endpoints Implementados
 - `POST /api/v2/automatizaciones/operativas/compras/procesar`
 - `GET /api/v2/automatizaciones/operativas/compras`
 - `GET /api/v2/automatizaciones/operativas/compras/{id}`
 - `GET /api/v2/automatizaciones/operativas/compras/kpis`
-- `POST /api/v2/automatizaciones/operativas/compras/{id}/gerencia` (aprobar/rechazar/ajuste)
-- `POST /api/v2/automatizaciones/operativas/compras/{id}/tesoreria` (aprobar/rechazar)
+- `POST /api/v2/automatizaciones/operativas/compras/{id}/gerencia`
+- `POST /api/v2/automatizaciones/operativas/compras/{id}/tesoreria`
 - `POST /api/v2/automatizaciones/operativas/compras/{id}/dias-objetivo`
 - `GET /api/v2/automatizaciones/operativas/compras/{id}/bitacora`
+- `POST /api/v2/scheduler/jobs/pedidos_detector/run` (ejecutar detector manual)
+
+### Jobs del Scheduler
+1. `sla_processor` - Cada 5 min
+2. `notifications_dispatcher` - Cada 2 min
+3. `auditorias_scheduler` - Cada 1 hora
+4. **`pedidos_detector` - Cada 5 min** (NUEVO)
 
 ## Bloqueado
-- **SQL Server Local (ORIGEN/130QRO)**: Timeout en conexiones locales. Documento diagnóstico creado: `DIAGNOSTICO_SQL_SUCURSALES.docx`. Requiere resolución por equipo de infraestructura local.
+- **SQL Server Local (ORIGEN/130QRO)**: Timeout en conexiones. El job `pedidos_detector` ejecuta pero no encuentra pedidos porque no hay servidores SQL accesibles. Requiere resolución por equipo de infraestructura local.
 
 ## Backlog P0 (Próximo)
-- Trigger automático desde módulo Compras al capturar pedido en MPro
 - Integración real con nómina/ERP (bloqueado por SQL Server local)
 
 ## Backlog P1
@@ -69,12 +79,19 @@ Sistema ERP operativo centralizado para EDARSA, actuando como "el cerebro" de op
 ```
 /app/backend/
 ├── modules/
-│   └── fase2_operativo/
-│       ├── services/
-│       │   └── automatizacion_compras_service.py  # Lógica principal
-│       └── routes/
-│           └── automatizacion_compras_routes.py   # Endpoints API
+│   ├── fase2_operativo/
+│   │   ├── services/
+│   │   │   └── automatizacion_compras_service.py  # Lógica principal
+│   │   └── routes/
+│   │       └── automatizacion_compras_routes.py   # Endpoints API
+│   └── compras/
+│       └── repository.py  # query_detalle_pedido_mpro()
 ├── core/
+│   ├── scheduler/
+│   │   ├── jobs/
+│   │   │   └── pedidos_detector_job.py  # Job detector (NUEVO)
+│   │   ├── config.py  # Configuración jobs
+│   │   └── scheduler_manager.py  # Registro jobs
 │   └── communications/
 │       └── providers/
 │           ├── email_smtp_provider.py   # Neubox SMTP
@@ -88,8 +105,9 @@ Sistema ERP operativo centralizado para EDARSA, actuando como "el cerebro" de op
 ## Colecciones MongoDB
 - `automatizaciones_operativas_compras`: Registro principal de automatizaciones
 - `automatizaciones_bitacora`: Log de eventos y cambios
-- `pedidos_procesados_automatizacion`: Control de pedidos ya procesados
+- `pedidos_procesados_automatizacion`: Control de pedidos ya procesados (índice único)
 - `inventarios_fisicos_procesados`: Cache de inventarios físicos
+- `scheduler_job_log`: Logs de ejecución de jobs
 
 ---
-*Última actualización: 19/04/2026*
+*Última actualización: 19/04/2026 - Trigger automático implementado*

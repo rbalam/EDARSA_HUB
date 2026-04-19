@@ -60,6 +60,10 @@ class SchedulerConfig(BaseModel):
         audit_interval = int(os.environ.get("SCHEDULER_AUDITORIAS_INTERVAL_SECONDS", "3600"))  # 1 hora
         audit_enabled = os.environ.get("SCHEDULER_AUDITORIAS_ENABLED", "true").lower() == "true"
         
+        # Pedidos Detector Job config (Automatización Operativa)
+        pedidos_interval = int(os.environ.get("SCHEDULER_PEDIDOS_INTERVAL_SECONDS", "300"))  # 5 minutos
+        pedidos_enabled = os.environ.get("SCHEDULER_PEDIDOS_ENABLED", "true").lower() == "true"
+        
         jobs = {
             "sla_processor": JobConfig(
                 job_id="sla_processor",
@@ -87,6 +91,15 @@ class SchedulerConfig(BaseModel):
                 interval_seconds=audit_interval,
                 batch_size=20,
                 timeout_seconds=600
+            ),
+            "pedidos_detector": JobConfig(
+                job_id="pedidos_detector",
+                job_name="Pedidos Detector",
+                description="Detecta pedidos nuevos en MPro/Soft y dispara automatización operativa de compras",
+                enabled=pedidos_enabled,
+                interval_seconds=pedidos_interval,
+                batch_size=50,
+                timeout_seconds=300
             )
         }
         

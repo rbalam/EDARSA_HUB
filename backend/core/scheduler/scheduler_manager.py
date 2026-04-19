@@ -24,6 +24,7 @@ from .job_logger import get_job_logger
 from .jobs.sla_job import create_sla_job
 from .jobs.notifications_job import create_notifications_job
 from .jobs.auditorias_job import create_auditorias_job
+from .jobs.pedidos_detector_job import create_pedidos_detector_job
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +136,15 @@ class SchedulerManager:
         job = create_auditorias_job(self.db, job_config)
         await job.run()
     
+    async def _run_pedidos_detector_job(self):
+        """Wrapper async para ejecutar job de detección de pedidos."""
+        job_config = self.config.jobs.get("pedidos_detector")
+        if not job_config or not job_config.enabled:
+            return
+        
+        job = create_pedidos_detector_job(self.db, job_config)
+        await job.run()
+    
     def register_jobs(self):
         """Registra todos los jobs configurados."""
         if self._scheduler is None:
@@ -199,6 +209,26 @@ class SchedulerManager:
             )
             self._jobs["auditorias_scheduler"] = audit_config
             logger.info(f"Job Auditorías registrado: intervalo={audit_config.interval_seconds}s")
+        
+        # Job Detector de Pedidos (Automatización Operativa)
+        pedidos_config = self.config.jobs.get("pedidos_detector")
+        if pedidos_config and pedidos_config.enabled:
+            if pedidos_config.cron_expression:
+                trigger = CronTrigger.from_crontab(pedidos_config.cron_expression)
+            else:
+                trigger = IntervalTrigger(seconds=pedidos_config.interval_seconds)
+            
+            self._scheduler.add_job(
+                self._run_pedidos_detector_job,
+                trigger=trigger,
+                id="pedidos_detector",
+                name="Pedidos Detector",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True
+            )
+            self._jobs["pedidos_detector"] = pedidos_config
+            logger.info(f"Job Pedidos Detector registrado: intervalo={pedidos_config.interval_seconds}s")
     
     async def start(self):
         """Inicia el scheduler."""
@@ -298,6 +328,12 @@ class SchedulerManager:
             return {"status": "executed", "job_id": job_id}
         elif job_id == "notifications_dispatcher":
             await self._run_notifications_job()
+            return {"status": "executed", "job_id": job_id}
+        elif job_id == "auditorias_scheduler":
+            await self._run_auditorias_job()
+            return {"status": "executed", "job_id": job_id}
+        elif job_id == "pedidos_detector":
+            await self._run_pedidos_detector_job()
             return {"status": "executed", "job_id": job_id}
         else:
             return {"status": "error", "message": f"Job desconocido: {job_id}"}

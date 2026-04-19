@@ -191,6 +191,51 @@ def query_pedidos_vigentes_sr(server: Dict) -> List[Dict]:
 
 
 # ============================================================================
+# QUERIES SQL - DETALLE DE PEDIDO/REQUISICIÓN
+# ============================================================================
+
+def query_detalle_pedido_mpro(server: Dict, folio: str) -> List[Dict]:
+    """
+    Obtiene el detalle de productos de un pedido/requisición en MPRO.
+    Incluye existencia y consumo para cálculo de automatización.
+    """
+    query = f"""
+    SELECT 
+        RD.Pr_Cve_Producto as codigo,
+        P.Pr_Descripcion as nombre,
+        RD.Rd_Cantidad as cantidad,
+        RD.Rd_Costo as costo,
+        ISNULL((
+            SELECT TOP 1 ID.Id_Existencia 
+            FROM Inventario_Fisico_Detalle ID
+            INNER JOIN Inventario_Fisico I ON I.If_Folio = ID.If_Folio
+            WHERE ID.Pr_Cve_Producto = RD.Pr_Cve_Producto 
+            AND I.Al_Cve_Almacen = R.Al_Cve_Almacen
+            ORDER BY I.If_Fecha DESC
+        ), 0) as existencia,
+        ISNULL((
+            SELECT AVG(CAST(MD.Md_Cantidad as FLOAT))
+            FROM Movimiento_Detalle MD
+            INNER JOIN Movimiento M ON M.Mv_Folio = MD.Mv_Folio
+            WHERE MD.Pr_Cve_Producto = RD.Pr_Cve_Producto
+            AND M.Al_Cve_Almacen = R.Al_Cve_Almacen
+            AND M.Tm_Cve_TipoMov IN (SELECT Tm_Cve_TipoMov FROM Tipo_Movimiento WHERE Tm_Tipo = 'S')
+            AND M.Mv_Fecha >= DATEADD(DAY, -15, GETDATE())
+        ), 0) as consumo_promedio
+    FROM Requisicion_Detalle RD
+    INNER JOIN Requisicion R ON R.Rq_Folio = RD.Rq_Folio
+    INNER JOIN Producto P ON P.Pr_Cve_Producto = RD.Pr_Cve_Producto
+    WHERE RD.Rq_Folio = '{folio}'
+    ORDER BY P.Pr_Descripcion
+    """
+    
+    return execute_sql_query(
+        server['host'], server['port'], server['database'],
+        server['username'], server['password'], query
+    )
+
+
+# ============================================================================
 # QUERIES SQL - DETALLE DE FACTURA
 # ============================================================================
 
@@ -269,6 +314,7 @@ __all__ = [
     # Pedidos
     'query_pedidos_vigentes_mpro',
     'query_pedidos_vigentes_sr',
+    'query_detalle_pedido_mpro',
     # Facturas
     'query_detalle_factura_mpro',
     'query_facturas_proveedor_mpro',
