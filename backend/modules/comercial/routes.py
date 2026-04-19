@@ -249,7 +249,8 @@ async def tablero_ejecutivo(
     
     resultados = []
     totales = {"ventas": 0, "ventas_ant": 0, "ventas_año": 0, "ventas_año_completo": 0, "pax": 0, "pax_ant": 0, "pax_año": 0, 
-               "cheques": 0, "cheques_ant": 0, "cheques_año": 0, "proyeccion": 0}
+               "cheques": 0, "cheques_ant": 0, "cheques_año": 0, "proyeccion": 0,
+               "pendiente_cerrar": 0, "tickets_abiertos": 0}  # Agregado para ventas del día
     
     periodo_key = f"{anio}-{mes:02d}"
     
@@ -293,6 +294,10 @@ async def tablero_ejecutivo(
                 for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
                           "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
                     totales[k] += kpis.get(k, 0)
+                # Acumular pendiente por cerrar (solo ventas del día)
+                if solo_ventas_dia:
+                    totales["pendiente_cerrar"] += kpis.get("pendiente_cerrar", 0)
+                    totales["tickets_abiertos"] += kpis.get("tickets_abiertos", 0)
             elif not solo_ventas_dia:
                 # Conexión fallida y NO es ventas del día - buscar en caché
                 # REGLA: En ventas del día, NO usar caché (contamina con datos antiguos)

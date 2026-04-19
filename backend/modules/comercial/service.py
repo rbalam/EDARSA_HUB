@@ -146,62 +146,100 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
     """
     
     # ============================================================================
-    # VENTAS DEL DÍA: Usar SOLO tempcheques (cheques sin cerrar)
+    # VENTAS DEL DÍA: Consultar ventas CERRADAS de hoy + Pendiente por cerrar
     # ============================================================================
     if solo_ventas_dia:
-        logging.info(f"SoftRestaurant {server['name']}: Modo Ventas del Día - consultando SOLO tempcheques")
+        logging.info(f"SoftRestaurant {server['name']}: Modo Ventas del Día")
+        
+        # Obtener fecha de HOY en formato para SQL
+        from datetime import datetime as dt_local
+        hoy = dt_local.now()
+        fecha_hoy = hoy.strftime('%Y%m%d')
+        
+        ventas_cerradas = 0
+        cheques_cerrados = 0
+        pax_cerrados = 0
+        pendiente_cerrar = 0
+        tickets_abiertos = 0
+        
+        # 1. VENTAS CERRADAS DE HOY (cheques con corte del día actual)
+        try:
+            query_cerradas = f"""
+SELECT 
+    COUNT(DISTINCT cheques.folio) as cheques,
+    ISNULL(SUM(cheques.total), 0) as ventas,
+    ISNULL(SUM(cheques.nopersonas), 0) as pax
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE CONVERT(DATE, turnos.apertura) = CONVERT(DATE, GETDATE())
+  AND cheques.cancelado = 0
+"""
+            result_cerradas = execute_sql_query(server['host'], server['port'], server['database'], 
+                                                server['username'], server['password'], query_cerradas)
+            if result_cerradas and len(result_cerradas) > 0:
+                ventas_cerradas = float(result_cerradas[0]['ventas'] or 0)
+                cheques_cerrados = int(result_cerradas[0]['cheques'] or 0)
+                pax_cerrados = int(result_cerradas[0]['pax'] or 0)
+                logging.info(f"SoftRestaurant {server['name']} - Cerradas hoy: ${ventas_cerradas:,.2f}, cheques={cheques_cerrados}")
+        except Exception as e:
+            logging.warning(f"SoftRestaurant {server['name']}: Error consultando cheques cerrados: {e}")
+        
+        # 2. PENDIENTE POR CERRAR (tempcheques)
         try:
             query_temp = """
 SELECT 
     COUNT(DISTINCT folio) as cheques,
-    ISNULL(SUM(total), 0) as ventas,
-    ISNULL(SUM(nopersonas), 0) as pax
+    ISNULL(SUM(total), 0) as ventas
 FROM tempcheques
 WHERE cancelado = 0
 """
             result_temp = execute_sql_query(server['host'], server['port'], server['database'], 
                                             server['username'], server['password'], query_temp)
             if result_temp and len(result_temp) > 0:
-                ventas = float(result_temp[0]['ventas'] or 0)
-                pax = int(result_temp[0]['pax'] or 0)
-                cheques = int(result_temp[0]['cheques'] or 0)
-                
-                if cheques == 0 and pax == 0:
-                    pax = cheques
-                
-                ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
-                cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
-                
-                logging.info(f"SoftRestaurant {server['name']} - Tempcheques: ventas=${ventas:,.2f}, cheques={cheques}")
-                
-                return {
-                    "ventas": ventas,
-                    "ventas_ant": 0,
-                    "ventas_año": 0,
-                    "var_vs_mes_ant": 0,
-                    "var_vs_año_ant": 0,
-                    "proyeccion": 0,
-                    "pax": pax,
-                    "pax_ant": 0,
-                    "pax_año": 0,
-                    "var_pax_mes": 0,
-                    "var_pax_año": 0,
-                    "cheques": cheques,
-                    "cheques_ant": 0,
-                    "cheques_año": 0,
-                    "var_cheques_mes": 0,
-                    "var_cheques_año": 0,
-                    "ticket_prom": ticket_prom,
-                    "cheque_prom": cheque_prom,
-                    "es_ventas_dia": True,
-                    "origen": "tempcheques"
-                }
-            else:
-                logging.warning(f"SoftRestaurant {server['name']}: Sin datos en tempcheques")
-                return None
+                pendiente_cerrar = float(result_temp[0]['ventas'] or 0)
+                tickets_abiertos = int(result_temp[0]['cheques'] or 0)
+                logging.info(f"SoftRestaurant {server['name']} - Pendiente cerrar: ${pendiente_cerrar:,.2f}, tickets={tickets_abiertos}")
         except Exception as e:
             logging.warning(f"SoftRestaurant {server['name']}: Error consultando tempcheques: {e}")
+        
+        # Si no hay nada (ni cerradas ni pendientes), retornar None
+        if ventas_cerradas == 0 and pendiente_cerrar == 0 and cheques_cerrados == 0 and tickets_abiertos == 0:
+            logging.warning(f"SoftRestaurant {server['name']}: Sin ventas del día ni pendientes")
             return None
+        
+        # Calcular promedios sobre ventas cerradas (el KPI real)
+        if pax_cerrados == 0 and cheques_cerrados > 0:
+            pax_cerrados = cheques_cerrados
+        
+        ticket_prom = round(ventas_cerradas / pax_cerrados, 2) if pax_cerrados > 0 else 0
+        cheque_prom = round(ventas_cerradas / cheques_cerrados, 2) if cheques_cerrados > 0 else 0
+        
+        return {
+            # KPI PRINCIPAL: Ventas cerradas
+            "ventas": ventas_cerradas,
+            "ventas_ant": 0,
+            "ventas_año": 0,
+            "var_vs_mes_ant": 0,
+            "var_vs_año_ant": 0,
+            "proyeccion": 0,
+            "pax": pax_cerrados,
+            "pax_ant": 0,
+            "pax_año": 0,
+            "var_pax_mes": 0,
+            "var_pax_año": 0,
+            "cheques": cheques_cerrados,
+            "cheques_ant": 0,
+            "cheques_año": 0,
+            "var_cheques_mes": 0,
+            "var_cheques_año": 0,
+            "ticket_prom": ticket_prom,
+            "cheque_prom": cheque_prom,
+            "es_ventas_dia": True,
+            "origen": "ventas_cerradas",
+            # INDICADOR SEPARADO: Pendiente por cerrar
+            "pendiente_cerrar": pendiente_cerrar,
+            "tickets_abiertos": tickets_abiertos
+        }
     
     # ============================================================================
     # VENTAS HISTÓRICAS / ACUMULADAS: Usar SQL nube del menú Servidores
