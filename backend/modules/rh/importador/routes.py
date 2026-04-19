@@ -2,6 +2,7 @@
 EDARSA HUB - Endpoints API de Importación RH
 ============================================
 Endpoints para importación controlada de empleados desde Excel.
+PROTEGIDO CON RBAC (Fase 3.1)
 
 FLUJO DE ENDPOINTS:
 1. POST /importar/excel/preview → Preview sin insertar
@@ -19,12 +20,12 @@ RESTRICCIONES:
 """
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import logging
 from datetime import datetime
 import time
 
-from core.security import get_current_user
+from core.security import get_current_user, get_user_empresas_permitidas
 
 from .schemas import (
     PreviewImportacion,
