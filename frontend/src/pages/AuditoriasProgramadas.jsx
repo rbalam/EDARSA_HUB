@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import TabOperativasCompras from '@/components/TabOperativasCompras';
 import {
   Calendar,
   ClipboardList,
@@ -753,32 +754,7 @@ export default function AuditoriasProgramadas() {
 
         {/* ========== TAB: OPERATIVAS ========== */}
         <TabsContent value="operativas" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Zap className="w-5 h-5 text-amber-500" />
-                Automatizaciones Operativas
-              </CardTitle>
-              <CardDescription>
-                Procesos automáticos en tiempo real disparados por eventos del sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="border border-dashed border-zinc-300 rounded-lg p-8 text-center">
-                <Zap className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-zinc-700 mb-2">Módulo en Construcción</h3>
-                <p className="text-zinc-500 text-sm max-w-md mx-auto">
-                  Las automatizaciones operativas permiten ejecutar procesos automáticamente 
-                  cuando ocurren eventos específicos, como recepción de mercancía o cierre de corte.
-                </p>
-                <div className="mt-6 flex flex-wrap justify-center gap-2">
-                  <Badge variant="outline" className="text-xs">Auditoría de Compras</Badge>
-                  <Badge variant="outline" className="text-xs">Validación de Inventario</Badge>
-                  <Badge variant="outline" className="text-xs">Alertas SLA</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <TabOperativasCompras />
         </TabsContent>
 
         {/* ========== TAB: HISTORIAL GLOBAL ========== */}
