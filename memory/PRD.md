@@ -250,3 +250,34 @@ proyeccion = (venta_acumulada / dias_transcurridos) × dias_proyectables
 ---
 
 *Fin del PRD*
+
+---
+
+## FASE 0 COMPLETADA — AUDITORÍA DE FUENTES DE DATOS (08-Mayo-2026)
+
+### Documentos Generados
+
+1. `/app/docs/AUDITORIA_FUENTES_DATOS_EDARSAHUB.md` — Inventario completo de 203 tablas EDARSAHUB y 72 colecciones MongoDB
+2. `/app/docs/PROPUESTA_MIGRACION_AUTH_RBAC_SERVIDORES_EDARSAHUB.md` — Propuesta de migración sin implementación
+
+### Hallazgos Principales
+
+| Módulo | Estado Actual | Dictamen |
+|--------|---------------|----------|
+| Auth/RBAC | MongoDB (15 users, 6 roles, 43 permisos) | MONGO_LEGACY_DEUDA_TÉCNICA |
+| Servidores | EDARSAHUB primario (17) + MongoDB fallback (13) | EDARSAHUB_EXISTE_PERO_CÓDIGO_USA_MONGO |
+| Finanzas | EDARSAHUB 100% | EDARSAHUB_PRIMARIO_CONFIRMADO |
+| RH/Nóminas | EDARSAHUB 100% | EDARSAHUB_PRIMARIO_CONFIRMADO |
+| Comercial | Híbrido correcto | HÍBRIDO_CORRECTO_CON_REGLAS |
+
+### Próximas Autorizaciones Pendientes
+
+- [ ] FASE A0: Backup MongoDB auth
+- [ ] DDL: Agregar campos faltantes a Usuario_Catalogo
+- [ ] FASE A2: Poblar EDARSAHUB en modo espejo
+- [ ] FASE A4: Piloto SuperAdministrador
+
+### Regla Vigente
+
+**AUTORIZACIÓN CONTROLADA**: No se implementan cambios sin dictamen expreso del usuario.
+
