@@ -1,0 +1,86 @@
+/**
+ * Tabla de Automatizaciones Operativas de Compras
+ */
+
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Eye } from 'lucide-react';
+import { EstadoBadge, RecomendacionBadge } from '@/components/compras/ComprasBadges';
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-';
+  return new Date(dateStr).toLocaleString('es-MX', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+};
+
+export default function AutomatizacionesTable({ automatizaciones = [], onVerDetalle }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Fecha</TableHead>
+          <TableHead>Folio</TableHead>
+          <TableHead>Origen</TableHead>
+          <TableHead>Sucursal</TableHead>
+          <TableHead>Usuario</TableHead>
+          <TableHead>Inv. Final</TableHead>
+          <TableHead>Estado</TableHead>
+          <TableHead>Resultado</TableHead>
+          <TableHead>Recomendación</TableHead>
+          <TableHead className="text-right">Acción</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {automatizaciones.map((item) => (
+          <TableRow key={item.id} data-testid={`row-${item.id}`}>
+            <TableCell className="text-sm">{formatDate(item.fecha_creacion)}</TableCell>
+            <TableCell className="font-mono text-xs">{item.pedido_id?.substring(0, 10)}...</TableCell>
+            <TableCell>
+              <Badge variant="outline" className="text-xs">{item.origen_sistema || 'MPRO'}</Badge>
+            </TableCell>
+            <TableCell className="text-sm">{item.sucursal_nombre}</TableCell>
+            <TableCell className="text-sm">{item.usuario_nombre}</TableCell>
+            <TableCell>
+              {item.tiene_inventario_final ? (
+                <Badge variant="outline" className="text-green-600 border-green-300 text-xs">Sí</Badge>
+              ) : (
+                <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">No</Badge>
+              )}
+            </TableCell>
+            <TableCell><EstadoBadge estado={item.estado} /></TableCell>
+            <TableCell className="text-xs">
+              {item.resultado ? (
+                <span className="flex items-center gap-1">
+                  <span className="text-red-600">{item.resultado.criticos}C</span>/
+                  <span className="text-amber-600">{item.resultado.faltantes}F</span>/
+                  <span className="text-green-600">{item.resultado.optimos}O</span>/
+                  <span className="text-blue-600">{item.resultado.sobrantes}S</span>
+                </span>
+              ) : '-'}
+            </TableCell>
+            <TableCell>
+              {item.recomendacion_general ? (
+                <RecomendacionBadge recomendacion={item.recomendacion_general} />
+              ) : '-'}
+            </TableCell>
+            <TableCell className="text-right">
+              <Button variant="ghost" size="sm" onClick={() => onVerDetalle(item)} data-testid={`btn-ver-${item.id}`}>
+                <Eye className="w-4 h-4" />
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}

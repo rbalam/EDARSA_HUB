@@ -1,0 +1,128 @@
+{
+  "identity": "E1: The Anti-AI Designer",
+  "mission": "Create a high-performance, Swiss-style inventory dashboard that prioritizes data density, clarity, and precision over decoration.",
+  "theme": {
+    "name": "Performance Pro / Swiss High-Contrast",
+    "mode": "light",
+    "description": "A utilitarian, high-contrast interface designed for rapid data scanning and decision making. Minimalist but dense.",
+    "emotional_tone": "Authoritative, Precise, Trusted, Efficient"
+  },
+  "typography": {
+    "headings": {
+      "family": "Manrope, sans-serif",
+      "weights": ["600", "800"],
+      "usage": "Use for all page titles, card headers, and major section dividers. Tracking tight."
+    },
+    "body": {
+      "family": "IBM Plex Sans, sans-serif",
+      "weights": ["400", "500"],
+      "usage": "Use for general text, labels, and descriptions. Excellent readability at small sizes."
+    },
+    "data": {
+      "family": "JetBrains Mono, monospace",
+      "weights": ["400", "500"],
+      "usage": "MANDATORY for all numerical data, tabular values, and inventory codes. Ensures vertical alignment."
+    }
+  },
+  "colors": {
+    "background": {
+      "default": "#f9fafb",
+      "paper": "#ffffff",
+      "sidebar": "#18181b"
+    },
+    "text": {
+      "primary": "#09090b",
+      "secondary": "#52525b",
+      "muted": "#a1a1aa",
+      "on_sidebar": "#e4e4e7"
+    },
+    "primary": {
+      "main": "#18181b",
+      "foreground": "#fafafa",
+      "hover": "#27272a"
+    },
+    "accents": {
+      "positive": "#10b981",
+      "negative": "#ef4444",
+      "warning": "#f59e0b",
+      "info": "#3b82f6",
+      "action": "#4f46e5"
+    },
+    "borders": {
+      "default": "#e4e4e7",
+      "subtle": "#f4f4f5",
+      "active": "#a1a1aa"
+    }
+  },
+  "layout_strategies": {
+    "dashboard_grid": {
+      "name": "Bento Grid Mode B (High Density)",
+      "classes": "grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-4",
+      "rules": "Maximize screen real estate. Use col-span-X to define widget importance. No jagged bottoms."
+    },
+    "containers": {
+      "padding": "p-4 md:p-6 lg:p-8",
+      "spacing": "space-y-6",
+      "card_padding": "p-5"
+    }
+  },
+  "component_styles": {
+    "cards": {
+      "style": "Grid Borders",
+      "classes": "bg-white border border-zinc-200 rounded-lg shadow-sm hover:border-zinc-300 transition-colors",
+      "header_classes": "border-b border-zinc-100 p-4 font-semibold text-zinc-900",
+      "content_classes": "p-4"
+    },
+    "buttons": {
+      "primary": "bg-zinc-900 text-zinc-50 hover:bg-zinc-800 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+      "secondary": "bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+      "destructive": "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 rounded-md px-4 py-2 text-sm font-medium transition-colors"
+    },
+    "inputs": {
+      "base": "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+    },
+    "tables": {
+      "container": "rounded-md border border-zinc-200 overflow-hidden",
+      "header": "bg-zinc-50 border-b border-zinc-200 text-zinc-500 font-medium text-xs uppercase tracking-wider",
+      "row": "border-b border-zinc-100 hover:bg-zinc-50/50 transition-colors",
+      "cell": "p-3 text-sm text-zinc-700 font-mono"
+    }
+  },
+  "visual_enhancers": {
+    "shadows": "shadow-sm",
+    "borders": "1px solid #e4e4e7",
+    "radius": "rounded-lg"
+  },
+  "images": {
+    "login_background": {
+      "url": "https://images.unsplash.com/photo-1771530789155-b1f03fbf82b5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDV8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjB3YXJlaG91c2UlMjBsb2dpc3RpY3MlMjBhcmNoaXRlY3R1cmUlMjBtaW5pbWFsaXN0fGVufDB8fHx8MTc3MzA5MDYzMXww&ixlib=rb-4.1.0&q=85",
+      "description": "Modern minimalist warehouse interior",
+      "usage": "Use as a full-screen background for the login page with a dark overlay (bg-black/40) to ensure text readability."
+    }
+  },
+  "icons": {
+    "library": "lucide-react",
+    "style": "Stroke width 1.5px or 2px depending on size. Keep consistent.",
+    "usage": "Use specific icons for actions (e.g., 'Plus' for add, 'Trash2' for delete, 'BarChart3' for analytics)."
+  },
+  "charts": {
+    "library": "recharts",
+    "palette": ["#18181b", "#52525b", "#a1a1aa", "#d4d4d8", "#e4e4e7"],
+    "style": "Minimalist. Remove grid lines if possible, or make them very subtle. Use tooltips for data details."
+  },
+  "accessibility": {
+    "contrast": "Ensure text contrast ratio is at least 4.5:1 against background.",
+    "focus_states": "Visible focus rings on all interactive elements.",
+    "aria_labels": "Required for all icon-only buttons."
+  },
+  "universal_guidelines": [
+    "Do NOT use gradients for backgrounds, stick to solid colors or subtle patterns.",
+    "Use 'Sonner' for all toast notifications.",
+    "Every interactive element must have a 'data-testid' attribute.",
+    "Use 'date-fns' for date formatting.",
+    "All forms must use 'react-hook-form' with 'zod' validation.",
+    "Prioritize data density in tables - avoid excessive padding that wastes space.",
+    "Dashboards should be composed of 'Widgets' (Cards) that fit into the grid.",
+    "Inventory calculations (Initial + Moves - Sales = Theoretical) must be accurate and highlighted."
+  ]
+}

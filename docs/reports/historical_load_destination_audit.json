@@ -1,0 +1,85 @@
+{
+  "audit_date": "2026-04-26T00:40:00Z",
+  "audit_type": "DESTINATION_VALIDATION",
+  "run_id": "HL_20260426_003155",
+  "module": "comercial",
+  "server": "ManagmentPro",
+  "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+  "batch": "2024-05-06_to_2024-05-12",
+  
+  "current_state": {
+    "mongo_inserted": 14,
+    "mongo_collection": "kpis_comercial",
+    "mongo_database": "edarsa_hub",
+    "sql_inserted": 0,
+    "sql_table": "NO_EXISTE",
+    "sql_database": "EDARSAHUB"
+  },
+  
+  "destination_status": "WRONG_FINAL_DESTINATION",
+  "action_required": true,
+  
+  "findings": {
+    "kpis_comercial_mongo": {
+      "type": "DESTINATION_ACTUAL",
+      "total_documents": 63,
+      "batch_documents": 14,
+      "has_unique_index": true,
+      "index_name": "idx_unique_kpi_diario",
+      "index_keys": ["server_id", "empresa_id", "sucursal_id", "fecha"],
+      "problem": "MongoDB NO debe ser destino final de históricos"
+    },
+    "edarsahub_sql": {
+      "type": "DESTINATION_CORRECTO",
+      "total_tables": 183,
+      "kpi_tables_found": 0,
+      "comercial_historico_table": "NO_EXISTE",
+      "problem": "No existe tabla para KPIs comerciales históricos"
+    }
+  },
+  
+  "classification": {
+    "14_records_inserted": "STAGING_TEMPORAL_DE_PRUEBA",
+    "kpis_comercial_collection": "CACHE_LEGACY_NO_FINAL",
+    "checkpoints": "MONGODB_PERMITIDO",
+    "logs": "MONGODB_PERMITIDO"
+  },
+  
+  "required_corrections": [
+    {
+      "priority": "P0",
+      "action": "CREAR_TABLA_SQL",
+      "description": "Crear tabla Comercial_KPIs_Historico en EDARSAHUB",
+      "status": "PENDIENTE"
+    },
+    {
+      "priority": "P0",
+      "action": "MODIFICAR_SCRIPT",
+      "description": "Modificar run_historical_load_24_months.py para UPSERT en SQL",
+      "status": "PENDIENTE"
+    },
+    {
+      "priority": "P1",
+      "action": "CLASIFICAR_14_REGISTROS",
+      "description": "Marcar 14 registros MongoDB como staging de prueba",
+      "status": "DOCUMENTADO"
+    },
+    {
+      "priority": "P2",
+      "action": "MIGRAR_EXISTENTES",
+      "description": "Evaluar migración de kpis_comercial MongoDB a SQL",
+      "status": "PENDIENTE"
+    }
+  ],
+  
+  "recommendation": "DETENER carga histórica hasta que destino final sea EDARSAHUB SQL",
+  
+  "next_steps": [
+    "1. Diseñar tabla Comercial_KPIs_Historico con índice único",
+    "2. Crear tabla en EDARSAHUB con script controlado",
+    "3. Modificar kpis_repository.py para dual-write o SQL-first",
+    "4. Modificar script batch para UPSERT en SQL",
+    "5. Clasificar kpis_comercial MongoDB como cache/staging",
+    "6. Ejecutar prueba safe-mode con nuevo destino SQL"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "run_id": "8b78e6f6-99b2-47b5-81b2-dd602c41bb14",
+  "phase": "FINANZAS_HISTORICAL_LOAD",
+  "timestamp": "2026-04-26T06:41:29.854342+00:00",
+  "mode": "DRY_RUN",
+  "results": {
+    "servers_processed": 6,
+    "total_inserted": 1133,
+    "total_updated": 0,
+    "total_errors": 0
+  }
+}

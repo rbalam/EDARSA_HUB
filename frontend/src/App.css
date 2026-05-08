@@ -1,0 +1,13 @@
+.App {
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Remove default margins */
+body, html {
+  margin: 0;
+  padding: 0;
+}

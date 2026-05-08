@@ -1,0 +1,12 @@
+{
+  "run_id": "a46962cf-b0d4-40f0-a488-d6dd78a02928",
+  "phase": "COMPRAS_HISTORICAL_LOAD",
+  "timestamp": "2026-04-26T08:44:14.843657+00:00",
+  "mode": "EXECUTION",
+  "results": {
+    "servers_processed": 4,
+    "total_inserted": 959,
+    "total_updated": 560,
+    "total_errors": 1
+  }
+}

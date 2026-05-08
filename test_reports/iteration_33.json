@@ -1,0 +1,114 @@
+{
+  "summary": "FASE P1-FETCH-MIGRATION Testing: Login/Logout work correctly. Authentication tokens are being sent properly (no Bearer null/undefined). However, CRITICAL BUG found: 4 files have double /api/ prefix causing 404 errors. Files using fetchWithAuth('/api/...') with api.js (which already has /api baseURL) result in /api/api/... URLs.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "API calls in migrated files",
+        "issue": "Double /api/ prefix in URLs causing 404 errors",
+        "affected_selectors": [],
+        "priority": "CRITICAL",
+        "details": "Files using fetchWithAuth('/api/...') with api.js client result in /api/api/... URLs. Example: fetchWithAuth('/api/finanzas/dashboard') becomes https://...com/api/api/finanzas/dashboard (404)",
+        "affected_files": [
+          "/app/frontend/src/pages/Finanzas.js - 5 occurrences",
+          "/app/frontend/src/pages/RecursosHumanos.js - 11 occurrences",
+          "/app/frontend/src/pages/MisTareas.js - 8 occurrences",
+          "/app/frontend/src/pages/Nominas.js - 3 occurrences"
+        ],
+        "fix_required": "Remove '/api' prefix from all fetchWithAuth calls. Change fetchWithAuth('/api/finanzas/...') to fetchWithAuth('/finanzas/...')"
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Reportes.js",
+        "issues": ["HTML nesting warning: <span> cannot be child of <option> - hydration error in select options"]
+      }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "CRITICAL: Fix double /api/ prefix in 4 files (Finanzas.js, RecursosHumanos.js, MisTareas.js, Nominas.js)",
+    "Remove '/api' prefix from all fetchWithAuth() calls - paths should be '/finanzas/...' not '/api/finanzas/...'",
+    "Correctly migrated files (Proveedores.js, ImportadorRH.js) use paths like '/portal/admin/...' and '/rrhh/importar/...' without /api prefix"
+  ],
+  "critical_code_review_comments": [
+    "api.js baseURL is already '${BACKEND_URL}/api', so endpoint paths should NOT include /api prefix",
+    "Proveedores.js and ImportadorRH.js are correctly migrated (no /api prefix in paths)",
+    "Finanzas.js, RecursosHumanos.js, MisTareas.js, Nominas.js have incorrect /api prefix in fetchWithAuth calls",
+    "Authentication is working correctly - Bearer tokens are valid JWT tokens",
+    "No Bearer null/undefined issues detected",
+    "Login redirects to /reportes correctly",
+    "Logout redirects to /login correctly"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (frontend only testing)",
+    "frontend": "60% - Login/Logout work, but API calls have double /api/ bug"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "admin@inventario.com",
+      "password": "admin123"
+    }
+  },
+  "seed_data_creation": "",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "FASE P1-FETCH-MIGRATION has a critical bug: 4 files (Finanzas.js, RecursosHumanos.js, MisTareas.js, Nominas.js) use fetchWithAuth('/api/...') which results in double /api/api/ URLs because api.js already has /api in baseURL. Fix: remove /api prefix from all fetchWithAuth calls. Correctly migrated files (Proveedores.js, ImportadorRH.js) use paths without /api prefix.",
+  "features_tested": {
+    "login": {
+      "status": "PASS",
+      "details": "admin@inventario.com / admin123 - redirects to /reportes"
+    },
+    "logout": {
+      "status": "PASS",
+      "details": "Cerrar Sesión button works - redirects to /login"
+    },
+    "bearer_token": {
+      "status": "PASS",
+      "details": "No Bearer null/undefined issues - valid JWT tokens in all requests"
+    },
+    "finanzas_module": {
+      "status": "PARTIAL",
+      "details": "Page loads but API calls fail with 404 due to double /api/ prefix"
+    },
+    "recursos_humanos_module": {
+      "status": "PARTIAL",
+      "details": "Page loads but API calls fail with 404 due to double /api/ prefix"
+    },
+    "mis_tareas_module": {
+      "status": "PARTIAL",
+      "details": "Page loads but shows 'Error cargando datos' due to 404 errors"
+    },
+    "nominas_module": {
+      "status": "PARTIAL",
+      "details": "Page loads but API calls fail with 404 due to double /api/ prefix"
+    },
+    "proveedores_module": {
+      "status": "PASS",
+      "details": "Correctly migrated - uses paths without /api prefix"
+    },
+    "importador_rh_module": {
+      "status": "PASS",
+      "details": "Correctly migrated - uses paths without /api prefix"
+    },
+    "centro_control_module": {
+      "status": "PARTIAL",
+      "details": "Page loads but shows 403 errors (permission-related, not auth)"
+    }
+  },
+  "rca_of_the_issue": {
+    "root_cause": "Inconsistent migration pattern - some files kept /api prefix in fetchWithAuth calls while api.js baseURL already includes /api",
+    "reproduction_steps": [
+      "1. Login with admin@inventario.com / admin123",
+      "2. Navigate to Finanzas module",
+      "3. Open browser DevTools Network tab",
+      "4. Observe requests to /api/api/finanzas/... returning 404"
+    ],
+    "mitigation": "Remove /api prefix from all fetchWithAuth calls in Finanzas.js, RecursosHumanos.js, MisTareas.js, Nominas.js"
+  }
+}

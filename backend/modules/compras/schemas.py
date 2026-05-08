@@ -1,0 +1,104 @@
+"""
+EDARSA HUB - Compras Module Schemas
+===================================
+Modelos Pydantic para el módulo de compras.
+
+FASE 4 DEL REFACTOR MODULAR (Diciembre 2025):
+- Migrado desde server.py
+- Schemas de pedidos, auditoría operativa, análisis de compras
+"""
+
+from typing import List, Dict, Optional
+from pydantic import BaseModel
+
+
+class ParametrosCompra(BaseModel):
+    """Parámetros de configuración para cálculo de pedidos."""
+    dias_inventario: int = 10  # Días de inventario a comprar
+    excluir_domingos: bool = True
+    dias_inhabiles: List[str] = []  # Lista de fechas YYYY-MM-DD
+    dias_transito_proveedor: int = 2  # Días que tarda en llegar el producto
+
+
+class CalculoPedidoRequest(BaseModel):
+    """Request para cálculo de pedido sugerido."""
+    server_id: str
+    sucursal: str
+    almacenes: List[str]  # Puede ser uno, varios, o "TODOS"
+    fecha_inventario_fisico: str  # Fecha del inventario físico inicial
+    fecha_fin_periodo: str  # Fecha fin del período de análisis
+    dias_inventario: int = 10  # Días de inventario a comprar
+    metodo_calculo: str = "consumo"  # "consumo" (promedio) o "stock" (min/max)
+    folio_inventario_fisico: Optional[str] = None
+    categorias: Optional[List[str]] = None
+    familias: Optional[List[str]] = None
+    folio_pedido_comparar: Optional[str] = None  # Para comparar con pedido existente
+
+
+class AuditoriaOperativaRequest(BaseModel):
+    """Request para auditoría operativa de compras."""
+    server_id: str
+    sucursal: str
+    almacenes: List[str]
+    folio_inv_inicial: Optional[str] = None  # Legacy: un solo folio
+    folios_inv_inicial: Optional[List[str]] = None  # Nuevo: múltiples folios
+    fecha_inv_inicial: str
+    fecha_auditoria: str  # Fecha del inventario final o actual
+    folio_inv_final: Optional[str] = None  # Legacy: un solo folio
+    folios_inv_final: Optional[List[str]] = None  # Nuevo: múltiples folios
+    folio_requisicion: Optional[str] = None  # Requisición a comparar (una sola)
+    folios_requisiciones: Optional[List[str]] = None  # Múltiples requisiciones
+    inventario_manual: Optional[List[Dict]] = None  # Para captura manual si no hay folio
+    inventario_fisico_actual: Optional[List[Dict]] = None  # Captura manual del inv físico del día del pedido
+    solo_skus_requisicion: bool = True  # Por defecto solo muestra SKUs de las requisiciones
+    dias_objetivo_default: int = 10  # Días de inventario objetivo por defecto
+    dias_objetivo_por_sku: Optional[Dict[str, int]] = None  # Días personalizados por SKU {codigo: dias}
+
+
+class ProductosParaCapturaRequest(BaseModel):
+    """Request para obtener productos para captura manual."""
+    server_id: str
+    folios_inv_inicial: Optional[List[str]] = None
+    folios_requisiciones: Optional[List[str]] = None
+
+
+class DetalleMovimientosRequest(BaseModel):
+    """Request para detalle de movimientos."""
+    server_id: str
+    sucursal: str
+    almacenes: List[str]
+    fecha_inicio: str
+    fecha_fin: str
+    tipo_movimiento: Optional[str] = None  # "entradas", "salidas", "todos"
+    codigo_producto: Optional[str] = None
+    folio_documento: Optional[str] = None
+
+
+class DetalleConsumosRequest(BaseModel):
+    """Request para detalle de consumos."""
+    server_id: str
+    sucursal: str
+    almacenes: List[str]
+    fecha_inicio: str
+    fecha_fin: str
+    codigo_producto: Optional[str] = None
+
+
+class AnalisisComprasRequest(BaseModel):
+    """Request para análisis de compras."""
+    server_id: str
+    sucursal: str
+    anio: Optional[int] = None  # Mantener para compatibilidad
+    anios: Optional[List[str]] = None  # Nuevo: múltiples años
+    meses: List[str]
+
+
+__all__ = [
+    'ParametrosCompra',
+    'CalculoPedidoRequest',
+    'AuditoriaOperativaRequest',
+    'ProductosParaCapturaRequest',
+    'DetalleMovimientosRequest',
+    'DetalleConsumosRequest',
+    'AnalisisComprasRequest',
+]

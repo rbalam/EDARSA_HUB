@@ -1,0 +1,610 @@
+"""
+Servicio de Orquestación para Fase 2A Operativo.
+CAB-003 | Fase 2A - Subfase 2A.9
+
+Este servicio conecta el análisis de diferencias de inventario con el módulo operativo:
+- Detecta si hay diferencias
+- Crea workflow automáticamente
+- Crea detalle_diferencias por producto
+- Crea tareas iniciales
+- Asigna automáticamente por sucursal + almacén
+"""
+
+from typing import Dict, List, Optional, Any
+from datetime import datetime, timezone, timedelta
+import logging
+import uuid
+
+logger = logging.getLogger(__name__)
+
+
+class OrquestadorService:
+    """Servicio que orquesta la creación de workflows desde análisis de inventarios."""
+    
+    def __init__(self, db):
+        self.db = db
+    
+    async def procesar_analisis(
+        self,
+        server_id: str,
+        server_name: str,
+        sucursal_id: str,
+        sucursal_nombre: str,
+        almacen_id: str,
+        almacen_nombre: str,
+        resultados_analisis: List[Dict],
+        folios_iniciales: List[str],
+        folios_finales: List[str],
+        fecha_ini: str,
+        fecha_fin: str,
+        usuario_ejecutor_id: str,
+        usuario_ejecutor_nombre: str,
+        folio_inventario: str = None  # NUEVO: Folio explícito del inventario
+    ) -> Dict:
+        """
+        Procesa los resultados del análisis de inventario y crea workflow si hay diferencias.
+        
+        Args:
+            server_id: ID del servidor
+            server_name: Nombre del servidor
+            sucursal_id: ID de la sucursal
+            sucursal_nombre: Nombre de la sucursal
+            almacen_id: ID del almacén
+            almacen_nombre: Nombre del almacén
+            resultados_analisis: Lista de productos con diferencias calculadas
+            folios_iniciales: Lista de folios iniciales
+            folios_finales: Lista de folios finales
+            fecha_ini: Fecha de inicio del análisis
+            fecha_fin: Fecha fin del análisis
+            usuario_ejecutor_id: ID del usuario que ejecutó el análisis
+            usuario_ejecutor_nombre: Nombre del usuario ejecutor
+        
+        Returns:
+            Resumen de la orquestación con workflow_id, tareas_creadas, etc.
+        """
+        resumen = {
+            "procesado": False,
+            "workflow_creado": False,
+            "workflow_id": None,
+            "detalles_creados": 0,
+            "tareas_creadas": 0,
+            "productos_con_diferencia": 0,
+            "valor_total_diferencias": 0.0,
+            "usuario_asignado_id": None,
+            "usuario_asignado_nombre": None,
+            "mensaje": "",
+            "error": None
+        }
+        
+        try:
+            # 1. Filtrar productos con diferencia != 0
+            productos_con_diferencia = [
+                p for p in resultados_analisis 
+                if p.get('Diferencia_Cantidad', 0) != 0
+            ]
+            
+            resumen["productos_con_diferencia"] = len(productos_con_diferencia)
+            
+            # Si no hay diferencias, no crear workflow
+            if not productos_con_diferencia:
+                resumen["procesado"] = True
+                resumen["mensaje"] = "Sin diferencias detectadas, no se crea workflow"
+                logger.info(f"Orquestador: Sin diferencias para {sucursal_nombre}/{almacen_nombre}")
+                return resumen
+            
+            # 2. Calcular valor total de diferencias
+            valor_total = sum(
+                abs(float(p.get('Diferencia_Costo', 0) or 0))
+                for p in productos_con_diferencia
+            )
+            resumen["valor_total_diferencias"] = round(valor_total, 2)
+            
+            # 3. Generar clave única para validación defensiva de duplicidad
+            folio_final_key = ",".join(sorted([str(f) for f in folios_finales]))
+            
+            # 4. Verificar si ya existe workflow para esta combinación
+            workflow_existente = await self._verificar_workflow_existente(
+                server_id, sucursal_id, almacen_id, folio_final_key
+            )
+            
+            if workflow_existente:
+                resumen["procesado"] = True
+                resumen["mensaje"] = f"Ya existe workflow activo: {workflow_existente}"
+                resumen["workflow_id"] = workflow_existente
+                logger.info(f"Orquestador: Workflow existente {workflow_existente}, omitiendo creación")
+                return resumen
+            
+            # 5. Obtener usuario responsable por sucursal+almacén
+            usuario_responsable = await self._obtener_usuario_responsable(
+                server_id, sucursal_id, almacen_id, usuario_ejecutor_id
+            )
+            
+            # FASE ASIGNACIONES: Si no hay responsable configurado, NO crear workflow
+            if usuario_responsable is None:
+                resumen["procesado"] = True
+                resumen["workflow_creado"] = False
+                resumen["mensaje"] = "SIN_RESPONSABLE_CONFIGURADO"
+                resumen["error"] = (
+                    f"No existe configuración de asignación para server={server_id}, almacen={almacen_id}. "
+                    f"Configure un responsable en Configuración → Asignaciones de Inventarios."
+                )
+                
+                # Registrar en inventarios_sin_asignar para tracking
+                await self._registrar_inventario_sin_asignar(
+                    server_id=server_id,
+                    server_name=server_name,
+                    sucursal_id=sucursal_id,
+                    sucursal_nombre=sucursal_nombre,
+                    almacen_id=almacen_id,
+                    almacen_nombre=almacen_nombre,
+                    folio_inventario=folio_inventario,
+                    total_diferencias=len(productos_con_diferencia),
+                    valor_diferencias=valor_total
+                )
+                
+                # Crear alerta en Centro de Control
+                await self._crear_alerta_sin_responsable(
+                    server_name=server_name,
+                    sucursal_nombre=sucursal_nombre,
+                    almacen_nombre=almacen_nombre,
+                    folio_inventario=folio_inventario,
+                    valor_diferencias=valor_total
+                )
+                
+                logger.warning(
+                    f"Orquestador: No se creó workflow - sin responsable configurado "
+                    f"para {server_name}/{sucursal_nombre}/{almacen_nombre}"
+                )
+                return resumen
+            
+            resumen["usuario_asignado_id"] = usuario_responsable["id"]
+            resumen["usuario_asignado_nombre"] = usuario_responsable["nombre"]
+            
+            # 6. Crear Workflow
+            workflow_id = await self._crear_workflow(
+                server_id=server_id,
+                server_name=server_name,
+                sucursal_id=sucursal_id,
+                sucursal_nombre=sucursal_nombre,
+                almacen_id=almacen_id,
+                almacen_nombre=almacen_nombre,
+                folios_iniciales=folios_iniciales,
+                folios_finales=folios_finales,
+                folio_final_key=folio_final_key,
+                fecha_ini=fecha_ini,
+                fecha_fin=fecha_fin,
+                total_productos=len(productos_con_diferencia),
+                valor_total_diferencias=valor_total,
+                usuario_creador_id=usuario_ejecutor_id,
+                folio_inventario=folio_inventario  # NUEVO
+            )
+            
+            resumen["workflow_id"] = workflow_id
+            resumen["workflow_creado"] = True
+            
+            # 7. Crear Detalle de Diferencias
+            detalles_creados = await self._crear_detalles_diferencias(
+                workflow_id, productos_con_diferencia
+            )
+            resumen["detalles_creados"] = detalles_creados
+            
+            # 8. Crear Tareas iniciales
+            tarea_id = await self._crear_tareas_iniciales(
+                workflow_id=workflow_id,
+                sucursal_nombre=sucursal_nombre,
+                almacen_nombre=almacen_nombre,
+                usuario_responsable=usuario_responsable,
+                total_productos=len(productos_con_diferencia),
+                valor_total=valor_total
+            )
+            resumen["tareas_creadas"] = 1 if tarea_id else 0
+            
+            # 9. FASE 2B.1: Enviar notificaciones (NO debe romper el flujo)
+            try:
+                from .notification_service import get_notification_service
+                notification_service = get_notification_service(self.db)
+                
+                # Obtener email del usuario responsable
+                usuario_data = await self.db.users.find_one(
+                    {"id": usuario_responsable["id"]},
+                    {"_id": 0, "email": 1}
+                )
+                destinatario_email = usuario_data.get("email") if usuario_data else None
+                
+                if destinatario_email:
+                    # Notificar workflow creado
+                    await notification_service.notificar_workflow_creado(
+                        workflow_id=workflow_id,
+                        sucursal_nombre=sucursal_nombre,
+                        almacen_nombre=almacen_nombre,
+                        total_productos=len(productos_con_diferencia),
+                        valor_total=valor_total,
+                        destinatario_email=destinatario_email,
+                        destinatario_nombre=usuario_responsable["nombre"]
+                    )
+                    
+                    # Notificar tarea asignada
+                    if tarea_id:
+                        await notification_service.notificar_tarea_asignada(
+                            tarea_id=tarea_id,
+                            workflow_id=workflow_id,
+                            tipo_tarea="JUSTIFICAR",
+                            titulo=f"Justificar diferencias - {sucursal_nombre}/{almacen_nombre}",
+                            descripcion=f"Se detectaron {len(productos_con_diferencia)} productos con diferencias.",
+                            fecha_limite=(datetime.now(timezone.utc) + timedelta(days=3)).isoformat(),
+                            destinatario_email=destinatario_email,
+                            destinatario_nombre=usuario_responsable["nombre"]
+                        )
+                    
+                    logger.info(f"Orquestador: Notificaciones enviadas para workflow {workflow_id}")
+                else:
+                    logger.warning(f"Orquestador: No se encontró email para usuario {usuario_responsable['id']}")
+                    
+            except Exception as notif_error:
+                # NO romper el flujo principal si falla la notificación
+                logger.error(f"Orquestador: Error en notificaciones (no crítico): {notif_error}")
+            
+            resumen["procesado"] = True
+            resumen["mensaje"] = f"Workflow creado exitosamente con {detalles_creados} diferencias y {resumen['tareas_creadas']} tareas"
+            
+            logger.info(f"Orquestador: ✅ Workflow {workflow_id} creado para {sucursal_nombre}/{almacen_nombre}")
+            logger.info(f"  - Productos con diferencia: {len(productos_con_diferencia)}")
+            logger.info(f"  - Valor total: ${valor_total:,.2f}")
+            logger.info(f"  - Asignado a: {usuario_responsable['nombre']}")
+            
+            return resumen
+            
+        except Exception as e:
+            resumen["error"] = str(e)
+            resumen["mensaje"] = f"Error en orquestación: {str(e)}"
+            logger.error(f"Orquestador ERROR: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return resumen
+    
+    async def _verificar_workflow_existente(
+        self,
+        server_id: str,
+        sucursal_id: str,
+        almacen_id: str,
+        folio_final_key: str
+    ) -> Optional[str]:
+        """Verifica si ya existe un workflow activo para esta combinación."""
+        try:
+            workflow = await self.db.workflow_inventarios.find_one({
+                "server_id": server_id,
+                "sucursal_id": sucursal_id,
+                "almacen_id": almacen_id,
+                "folio_final_key": folio_final_key,
+                "estado": {"$nin": ["completado", "cancelado"]}
+            }, {"_id": 0, "id": 1})
+            
+            return workflow["id"] if workflow else None
+            
+        except Exception as e:
+            logger.warning(f"Error verificando workflow existente: {e}")
+            return None
+    
+    async def _obtener_usuario_responsable(
+        self,
+        server_id: str,
+        sucursal_id: str,
+        almacen_id: str,
+        usuario_fallback_id: str
+    ) -> Optional[Dict]:
+        """
+        Obtiene el usuario responsable desde config_asignaciones.
+        
+        NUEVA LÓGICA (FASE ASIGNACIONES):
+        1. Buscar config específica (server + almacen)
+        2. Buscar config general (server + "" para todos los almacenes)
+        3. Si no hay config → RETORNAR None (NO crear workflow)
+        
+        Args:
+            server_id: ID del servidor (campo técnico interno)
+            sucursal_id: ID de la sucursal (ya no se usa, pero se mantiene por compatibilidad)
+            almacen_id: ID del almacén
+            usuario_fallback_id: ID del usuario ejecutor (ya NO se usa como fallback)
+            
+        Returns:
+            Dict con {id, nombre} del responsable, o None si no hay configuración
+        """
+        try:
+            # NUEVA LÓGICA: Buscar en config_asignaciones por server_id + almacen_id
+            # Ordenado por prioridad descendente (específico primero)
+            configs = await self.db.config_asignaciones.find({
+                "server_id": server_id,
+                "$or": [
+                    {"almacen_id": almacen_id},  # Específico
+                    {"almacen_id": ""}           # General (todos los almacenes)
+                ],
+                "activa": True
+            }).sort("prioridad", -1).to_list(1)
+            
+            if not configs:
+                # SIN FALLBACK - si no hay configuración, retornar None
+                logger.warning(
+                    f"Orquestador: Sin configuración de asignación para "
+                    f"server={server_id}, almacen={almacen_id}"
+                )
+                return None
+            
+            config = configs[0]
+            usuario_id = config["usuario_responsable_id"]
+            
+            # Obtener datos completos del usuario
+            usuario = await self.db.users.find_one(
+                {"id": usuario_id, "activo": {"$ne": False}},
+                {"_id": 0, "id": 1, "name": 1, "email": 1}
+            )
+            
+            if not usuario:
+                logger.warning(
+                    f"Orquestador: Usuario responsable {usuario_id} no encontrado o inactivo"
+                )
+                return None
+            
+            logger.info(
+                f"Orquestador: Responsable resuelto desde config_asignaciones: "
+                f"{usuario.get('name', usuario.get('email'))} para server={server_id}, almacen={almacen_id}"
+            )
+            
+            return {
+                "id": usuario["id"],
+                "nombre": usuario.get("name", usuario.get("email", "Usuario")),
+                "email": usuario.get("email", ""),
+                "config_id": config["id"]
+            }
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo usuario responsable: {e}")
+            return None
+            
+        except Exception as e:
+            logger.warning(f"Error obteniendo usuario responsable: {e}")
+            return {
+                "id": usuario_fallback_id,
+                "nombre": "Usuario Asignado"
+            }
+    
+    async def _crear_workflow(
+        self,
+        server_id: str,
+        server_name: str,
+        sucursal_id: str,
+        sucursal_nombre: str,
+        almacen_id: str,
+        almacen_nombre: str,
+        folios_iniciales: List[str],
+        folios_finales: List[str],
+        folio_final_key: str,
+        fecha_ini: str,
+        fecha_fin: str,
+        total_productos: int,
+        valor_total_diferencias: float,
+        usuario_creador_id: str,
+        folio_inventario: str = None  # NUEVO
+    ) -> str:
+        """Crea un nuevo workflow de inventario."""
+        workflow_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        
+        # Determinar folio_inventario: usar explícito o derivar de folios_finales
+        folio_inv = folio_inventario
+        if not folio_inv and folios_finales:
+            folio_inv = folios_finales[0] if len(folios_finales) == 1 else ",".join(folios_finales)
+        
+        workflow_doc = {
+            "id": workflow_id,
+            "procesado_id": folio_final_key,  # Compatibilidad con schema original
+            "folio_inventario": folio_inv,  # NUEVO: Campo explícito del folio
+            "servidor_id": server_id,  # CORREGIDO: Usar servidor_id consistente
+            "server_id": server_id,  # Mantener ambos por compatibilidad
+            "server_name": server_name,
+            "sucursal_id": sucursal_id,
+            "sucursal_nombre": sucursal_nombre,
+            "almacen_id": almacen_id,
+            "almacen_nombre": almacen_nombre,
+            "folios_iniciales": folios_iniciales,
+            "folios_finales": folios_finales,
+            "folio_final_key": folio_final_key,
+            "fecha_analisis_ini": fecha_ini,
+            "fecha_analisis_fin": fecha_fin,
+            "estado_workflow": "PENDIENTE_ASIGNACION",  # Compatibilidad con schema
+            "estado": "pendiente",  # Para dashboard
+            "ciclo_actual": 1,
+            "total_productos_diferencia": total_productos,
+            "valor_total_diferencias": round(valor_total_diferencias, 2),
+            "fecha_creacion": now,
+            "fecha_ultima_actualizacion": now,
+            "usuario_creador_id": usuario_creador_id,
+            "notas": []
+        }
+        
+        await self.db.workflow_inventarios.insert_one(workflow_doc)
+        logger.info(f"Workflow creado: {workflow_id} (folio={folio_inv}, servidor={server_id})")
+        
+        return workflow_id
+    
+    async def _crear_detalles_diferencias(
+        self,
+        workflow_id: str,
+        productos: List[Dict]
+    ) -> int:
+        """Crea los detalles de diferencias para cada producto."""
+        now = datetime.now(timezone.utc).isoformat()
+        detalles = []
+        
+        for prod in productos:
+            detalle_id = str(uuid.uuid4())
+            
+            detalles.append({
+                "id": detalle_id,
+                "workflow_id": workflow_id,
+                "codigo_producto": prod.get("Codigo", ""),
+                "nombre_producto": prod.get("Producto", ""),
+                "categoria": prod.get("Categoria", ""),
+                "familia": prod.get("Familia", ""),
+                "subfamilia": prod.get("SubFamilia", ""),
+                "unidad": prod.get("Unidad", ""),
+                "costo_unitario": float(prod.get("Costo_Unitario", 0) or 0),
+                "inv_inicial_cantidad": float(prod.get("Inv_Inicial_Cantidad", 0) or 0),
+                "inv_final_cantidad": float(prod.get("Inv_Final_Cantidad", 0) or 0),
+                "inv_teorico_cantidad": float(prod.get("Inv_Teorico_Cantidad", 0) or 0),
+                "diferencia_cantidad": float(prod.get("Diferencia_Cantidad", 0) or 0),
+                "diferencia_costo": float(prod.get("Diferencia_Costo", 0) or 0),
+                "diferencia_porcentaje": float(prod.get("Diferencia_Porcentaje", 0) or 0),
+                "movimientos": float(prod.get("Movimientos", 0) or 0),
+                "ventas": float(prod.get("Ventas", 0) or 0),
+                "estado_justificacion": "pendiente",
+                "requiere_justificacion_completa": abs(float(prod.get("Diferencia_Costo", 0) or 0)) > 500,
+                "fecha_creacion": now
+            })
+        
+        if detalles:
+            await self.db.detalle_diferencias.insert_many(detalles)
+        
+        logger.info(f"Detalles creados: {len(detalles)} para workflow {workflow_id}")
+        return len(detalles)
+    
+    async def _crear_tareas_iniciales(
+        self,
+        workflow_id: str,
+        sucursal_nombre: str,
+        almacen_nombre: str,
+        usuario_responsable: Dict,
+        total_productos: int,
+        valor_total: float
+    ) -> int:
+        """Crea las tareas iniciales de justificación."""
+        now = datetime.now(timezone.utc)
+        now_iso = now.isoformat()
+        
+        # Obtener días límite de configuración (default 3)
+        config = await self.db.configuracion_operativa.find_one(
+            {"clave": "DIAS_LIMITE_TAREA_DEFAULT"},
+            {"_id": 0, "valor": 1}
+        )
+        dias_limite = int(config.get("valor", 3)) if config else 3
+        fecha_limite = (now + timedelta(days=dias_limite)).isoformat()
+        
+        # Crear tarea principal de justificación
+        tarea_id = str(uuid.uuid4())
+        
+        tarea_doc = {
+            "id": tarea_id,
+            "workflow_id": workflow_id,
+            "tipo_tarea": "JUSTIFICAR",
+            "titulo": f"Justificar diferencias - {sucursal_nombre}/{almacen_nombre}",
+            "descripcion": f"Se detectaron {total_productos} productos con diferencias por un valor total de ${valor_total:,.2f}. Favor de revisar y justificar cada diferencia.",
+            "estado_tarea": "PENDIENTE",
+            "prioridad": "ALTA" if valor_total > 5000 else "MEDIA",
+            "usuario_asignado_id": usuario_responsable["id"],
+            "usuario_asignado_nombre": usuario_responsable["nombre"],
+            "fecha_creacion": now_iso,
+            "fecha_asignacion": now_iso,
+            "fecha_limite": fecha_limite,
+            "fecha_actualizacion": now_iso,
+            "ciclo": 1,
+            "es_reasignacion": False,
+            "vencida": False,
+            "notas": []
+        }
+        
+        await self.db.tareas_inventario.insert_one(tarea_doc)
+        logger.info(f"Tarea creada: {tarea_id} asignada a {usuario_responsable['nombre']}")
+        
+        return tarea_id  # Retornar el ID de la tarea para notificaciones
+    
+    async def _registrar_inventario_sin_asignar(
+        self,
+        server_id: str,
+        server_name: str,
+        sucursal_id: str,
+        sucursal_nombre: str,
+        almacen_id: str,
+        almacen_nombre: str,
+        folio_inventario: str,
+        total_diferencias: int,
+        valor_diferencias: float
+    ):
+        """
+        Registra un inventario que no pudo ser procesado por falta de configuración.
+        FASE ASIGNACIONES: Tracking de inventarios sin responsable.
+        """
+        try:
+            now_iso = datetime.now(timezone.utc).isoformat()
+            
+            doc = {
+                "id": str(uuid.uuid4()),
+                "server_id": server_id,
+                "server_name": server_name,
+                "sucursal_id": sucursal_id,
+                "sucursal_nombre": sucursal_nombre,
+                "almacen_id": almacen_id,
+                "almacen_nombre": almacen_nombre,
+                "folio_inventario": folio_inventario,
+                "total_diferencias": total_diferencias,
+                "valor_diferencias": valor_diferencias,
+                "fecha_deteccion": now_iso,
+                "estado": "PENDIENTE_CONFIGURACION",
+                "notificado": False
+            }
+            
+            await self.db.inventarios_sin_asignar.insert_one(doc)
+            logger.info(f"Inventario sin asignar registrado: {server_name}/{almacen_nombre} folio={folio_inventario}")
+            
+        except Exception as e:
+            logger.error(f"Error registrando inventario sin asignar: {e}")
+    
+    async def _crear_alerta_sin_responsable(
+        self,
+        server_name: str,
+        sucursal_nombre: str,
+        almacen_nombre: str,
+        folio_inventario: str,
+        valor_diferencias: float
+    ):
+        """
+        Crea una alerta en Centro de Control cuando falta configuración de responsable.
+        FASE ASIGNACIONES: Alertar sobre inventarios sin procesar.
+        """
+        try:
+            now_iso = datetime.now(timezone.utc).isoformat()
+            
+            alerta = {
+                "id": str(uuid.uuid4()),
+                "tipo": "INVENTARIO_SIN_RESPONSABLE",
+                "severidad": "warning",
+                "titulo": "Inventario sin responsable configurado",
+                "mensaje": (
+                    f"Se detectó inventario en {server_name} / {sucursal_nombre} / {almacen_nombre} "
+                    f"(Folio: {folio_inventario}) con diferencias por ${valor_diferencias:,.2f}, "
+                    f"pero no hay responsable configurado. El workflow NO se creó."
+                ),
+                "modulo": "inventarios",
+                "fecha_creacion": now_iso,
+                "datos": {
+                    "server_name": server_name,
+                    "sucursal_nombre": sucursal_nombre,
+                    "almacen_nombre": almacen_nombre,
+                    "folio_inventario": folio_inventario,
+                    "valor_diferencias": valor_diferencias
+                },
+                "accion_sugerida": "Configurar responsable en Configuración → Asignaciones de Inventarios",
+                "acknowledged": False,
+                "acknowledged_by": None,
+                "acknowledged_at": None
+            }
+            
+            await self.db.alertas_sistema.insert_one(alerta)
+            logger.info(f"Alerta creada: Inventario sin responsable para {server_name}/{almacen_nombre}")
+            
+        except Exception as e:
+            logger.error(f"Error creando alerta de inventario sin responsable: {e}")
+
+
+# Función helper para instanciar el servicio
+def get_orquestador_service(db):
+    """Factory function para obtener instancia del orquestador."""
+    return OrquestadorService(db)

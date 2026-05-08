@@ -1,0 +1,104 @@
+{
+  "summary": "Completed comprehensive frontend testing of EDARSA HUB - Módulo de Catálogos. All test cases for Finanzas_ConfiguracionTPV_Sucursal CRUD passed successfully. Verified navigation, domain selection, catalog viewing, record editing, persistence to SQL Server, and value restoration.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Reportes page",
+        "issues": ["Console warning: 'In HTML, <span> cannot be a child of <option>' - minor hydration issue in server select dropdown (pre-existing from previous iterations)"]
+      },
+      {
+        "screen": "Edit Modal",
+        "issues": ["Console warning: 'Missing Description or aria-describedby for DialogContent' - accessibility improvement needed"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_17.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Catálogos module correctly implements domain-based organization with 10 domains (Generales, RH, Nómina, Compras, Inventarios, Activos Fijos, Finanzas, Ventas, Seguridad, Homologación)",
+    "data-testid attributes properly implemented: dominio-{id} for domains, catalogo-{tabla} for catalog buttons",
+    "Edit modal dynamically renders form fields based on ESTRUCTURA_TABLAS schema",
+    "SQL Server persistence working correctly via /api/catalogos/tabla/{tabla}/{id} PUT endpoint",
+    "Toast notifications (sonner) properly showing success/error messages",
+    "Table displays first 6 columns with edit/deactivate action buttons"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (frontend-only testing)",
+    "frontend": "100% (all 10 test cases passed)"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "admin@inventario.com",
+      "password": "admin123",
+      "role": "Administrador"
+    }
+  },
+  "seed_data_creation": "No seed data created - used existing Finanzas_ConfiguracionTPV_Sucursal records",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Catálogos module fully tested. Key findings: 1) Navigation to /catalogos works correctly. 2) Domain selection via data-testid='dominio-{id}' requires mouse.click() at element center for proper React state update. 3) Catalog selection via data-testid='catalogo-{tabla}' works correctly. 4) Edit modal opens with all editable fields from ESTRUCTURA_TABLAS. 5) PUT /api/catalogos/tabla/{tabla}/{id} correctly updates SQL Server records. 6) Finanzas_ConfiguracionTPV_Sucursal has 8 records with fields: ConfiguracionTPVID, SucursalID, ProveedorTPV, ComisionDebito, ComisionCredito, ComisionAmex, ComisionInternacional, etc.",
+  "features_tested": {
+    "navigate_to_catalogos": {
+      "status": "PASS",
+      "details": "Successfully navigated to /catalogos as admin user"
+    },
+    "click_finanzas_domain": {
+      "status": "PASS",
+      "details": "Clicked on Finanzas domain using data-testid='dominio-finanzas', central panel updated to show Finanzas catalogs"
+    },
+    "view_finanzas_catalogs": {
+      "status": "PASS",
+      "details": "Central panel shows 6 Finanzas catalogs: Cuentas Bancarias, Bancos (5), Formas de Pago SAT (6), Estatus de Pago (5), Estatus de Cierre (3), Config. TPV por Sucursal (8)"
+    },
+    "click_config_tpv_catalog": {
+      "status": "PASS",
+      "details": "Clicked on 'Config. TPV por Sucursal' using data-testid='catalogo-Finanzas_ConfiguracionTPV_Sucursal', table with 8 records displayed"
+    },
+    "verify_8_records": {
+      "status": "PASS",
+      "details": "Table shows 8 records with ConfiguracionTPVID 1-8, all with ProveedorTPV='NetPay'"
+    },
+    "verify_commission_fields": {
+      "status": "PASS",
+      "details": "Table displays ComisionDebito (1.2), ComisionCredito (1.5), ComisionAmex (2.4) columns correctly"
+    },
+    "edit_record_id_1": {
+      "status": "PASS",
+      "details": "Clicked edit button on first row, modal opened with all editable fields including ComisionAmex"
+    },
+    "change_comision_amex": {
+      "status": "PASS",
+      "details": "Changed ComisionAmex from 2.4 to 2.55 in edit modal"
+    },
+    "save_changes": {
+      "status": "PASS",
+      "details": "Clicked 'Guardar Cambios', received 'Registro actualizado' success toast"
+    },
+    "verify_persistence": {
+      "status": "PASS",
+      "details": "After page reload, ComisionAmex value persisted as 2.55 in SQL Server"
+    },
+    "restore_original_value": {
+      "status": "PASS",
+      "details": "Restored ComisionAmex to original value 2.4, verified persistence"
+    }
+  },
+  "ui_verification": {
+    "catalogos_page": "PASS - Page loads with Dominios panel (left) and Catalogs panel (right)",
+    "domain_selection": "PASS - Clicking domain updates central panel with domain's catalogs",
+    "catalog_buttons": "PASS - Catalog buttons show name and record count badge",
+    "records_table": "PASS - Table shows first 6 columns with edit/deactivate action buttons",
+    "edit_modal": "PASS - Modal shows all editable fields with current values",
+    "save_functionality": "PASS - PUT request to /api/catalogos/tabla/{tabla}/{id} updates SQL Server",
+    "success_toast": "PASS - Sonner toast shows 'Registro actualizado' on successful save"
+  }
+}

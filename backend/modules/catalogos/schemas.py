@@ -1,0 +1,613 @@
+"""
+EDARSA HUB - Catálogos Schemas
+==============================
+Modelos Pydantic para validación de datos del módulo de catálogos.
+"""
+
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List, Dict, Any
+from datetime import datetime
+
+
+# ============================================================================
+# DOMINIOS DE CATÁLOGOS
+# ============================================================================
+
+DOMINIOS_CATALOGOS = {
+    "generales": {
+        "nombre": "Generales",
+        "descripcion": "Catálogos globales compartidos por todos los módulos",
+        "icono": "Globe",
+        "catalogos": [
+            {"tabla": "Global_Cat_Empresas", "nombre": "Empresas", "nuevo": True},
+            {"tabla": "RH_Cat_Sucursales", "nombre": "Sucursales", "nuevo": False},
+            {"tabla": "RH_Cat_Departamentos", "nombre": "Departamentos", "nuevo": False},
+            {"tabla": "RH_Cat_Puestos", "nombre": "Puestos", "nuevo": False},
+            {"tabla": "Global_Cat_Bancos", "nombre": "Bancos", "nuevo": True},
+            {"tabla": "Proveedor_Monedas", "nombre": "Monedas", "nuevo": False},
+            {"tabla": "Global_Cat_UnidadesMedida", "nombre": "Unidades de Medida", "nuevo": True},
+            {"tabla": "Global_Cat_CentrosCosto", "nombre": "Centros de Costo", "nuevo": True},
+        ]
+    },
+    "rh": {
+        "nombre": "Recursos Humanos",
+        "descripcion": "Catálogos del módulo de RH",
+        "icono": "Users",
+        "catalogos": [
+            {"tabla": "RH_Cat_TiposContrato", "nombre": "Tipos de Contrato", "nuevo": False},
+            {"tabla": "RH_Cat_TiposAusencia", "nombre": "Tipos de Ausencia", "nuevo": False},
+            {"tabla": "RH_Cat_MotivosBaja", "nombre": "Motivos de Baja", "nuevo": False},
+            {"tabla": "RH_Cat_Jornadas", "nombre": "Jornadas", "nuevo": False},
+            {"tabla": "RH_Cat_Turnos", "nombre": "Turnos", "nuevo": False},
+            {"tabla": "RH_Cat_Areas", "nombre": "Áreas", "nuevo": False},
+            {"tabla": "RH_Cat_Beneficios", "nombre": "Beneficios", "nuevo": False},
+            {"tabla": "RH_Cat_RegimenContratacion", "nombre": "Régimen de Contratación", "nuevo": False},
+        ]
+    },
+    "nomina": {
+        "nombre": "Nómina",
+        "descripcion": "Catálogos del módulo de Nómina",
+        "icono": "Calculator",
+        "catalogos": [
+            {"tabla": "RH_Cat_ConceptosNomina", "nombre": "Conceptos de Nómina", "nuevo": False},
+            {"tabla": "RH_Cat_TiposConceptoNomina", "nombre": "Tipos de Concepto", "nuevo": False},
+            {"tabla": "RH_Cat_TiposPeriodoNomina", "nombre": "Tipos de Período", "nuevo": False},
+            {"tabla": "RH_Cat_EstatusPeriodoNomina", "nombre": "Estatus de Período", "nuevo": False},
+        ]
+    },
+    "compras": {
+        "nombre": "Compras",
+        "descripcion": "Catálogos del módulo de Compras",
+        "icono": "ShoppingCart",
+        "catalogos": [
+            {"tabla": "Compras_Estatus", "nombre": "Estatus de Compras", "nuevo": False},
+            {"tabla": "Compras_OrdenesEstatus", "nombre": "Estatus de Órdenes", "nuevo": False},
+            {"tabla": "Compras_PedidosEstatus", "nombre": "Estatus de Pedidos", "nuevo": False},
+            {"tabla": "Compras_RecepcionesEstatus", "nombre": "Estatus de Recepciones", "nuevo": False},
+            {"tabla": "Compras_DocumentosFiscalesEstatus", "nombre": "Estatus Docs. Fiscales", "nuevo": False},
+            {"tabla": "Compras_ConciliacionSATEstatus", "nombre": "Estatus Conciliación SAT", "nuevo": False},
+            {"tabla": "Proveedor_TipoProveedor", "nombre": "Tipos de Proveedor", "nuevo": False},
+            {"tabla": "Proveedor_TipoContacto", "nombre": "Tipos de Contacto", "nuevo": False},
+            {"tabla": "Proveedor_TipoDocumento", "nombre": "Tipos de Documento", "nuevo": False},
+            {"tabla": "Proveedor_EstatusProveedor", "nombre": "Estatus de Proveedor", "nuevo": False},
+        ]
+    },
+    "inventarios": {
+        "nombre": "Inventarios",
+        "descripcion": "Catálogos del módulo de Inventarios",
+        "icono": "Package",
+        "catalogos": [
+            {"tabla": "Inventario_TipoMovimiento", "nombre": "Tipos de Movimiento", "nuevo": False},
+            {"tabla": "Producto_Familias", "nombre": "Familias", "nuevo": False},
+            {"tabla": "Producto_SubFamilias", "nombre": "Subfamilias", "nuevo": False},
+            {"tabla": "Producto_Lineas", "nombre": "Líneas", "nuevo": False},
+            {"tabla": "Producto_Marcas", "nombre": "Marcas", "nuevo": False},
+        ]
+    },
+    "activos": {
+        "nombre": "Activos Fijos",
+        "descripcion": "Catálogos del módulo de Activos Fijos",
+        "icono": "Building",
+        "catalogos": [
+            {"tabla": "ActivoFijo_TipoActivo", "nombre": "Tipos de Activo", "nuevo": False},
+            {"tabla": "ActivoFijo_TipoBaja", "nombre": "Tipos de Baja", "nuevo": False},
+            {"tabla": "ActivoFijo_TipoUbicacion", "nombre": "Tipos de Ubicación", "nuevo": False},
+            {"tabla": "ActivoFijo_TipoMedidor", "nombre": "Tipos de Medidor", "nuevo": False},
+            {"tabla": "ActivoFijo_TipoOT", "nombre": "Tipos de OT", "nuevo": False},
+            {"tabla": "ActivoFijo_EstatusActivo", "nombre": "Estatus de Activo", "nuevo": False},
+            {"tabla": "ActivoFijo_EstatusOT", "nombre": "Estatus de OT", "nuevo": False},
+        ]
+    },
+    "finanzas": {
+        "nombre": "Finanzas",
+        "descripcion": "Catálogos del módulo de Finanzas",
+        "icono": "DollarSign",
+        "catalogos": [
+            {"tabla": "Finanzas_Cat_CuentasBancarias", "nombre": "Cuentas Bancarias", "nuevo": False},
+            {"tabla": "Global_Cat_Bancos", "nombre": "Bancos", "nuevo": False},
+            {"tabla": "Global_Cat_FormaPagoSAT", "nombre": "Formas de Pago SAT", "nuevo": False},
+            {"tabla": "Finanzas_EstatusPago", "nombre": "Estatus de Pago", "nuevo": False},
+            {"tabla": "Finanzas_EstatusCierre", "nombre": "Estatus de Cierre", "nuevo": False},
+            {"tabla": "Finanzas_ConfiguracionTPV_Sucursal", "nombre": "Config. TPV por Sucursal", "nuevo": False},
+        ]
+    },
+    "ventas": {
+        "nombre": "Ventas",
+        "descripcion": "Catálogos del módulo de Ventas",
+        "icono": "TrendingUp",
+        "catalogos": [
+            {"tabla": "Venta_Estatus", "nombre": "Estatus de Venta", "nuevo": False},
+            {"tabla": "Venta_PedidosEstatus", "nombre": "Estatus de Pedidos", "nuevo": False},
+            {"tabla": "Venta_CotizacionesEstatus", "nombre": "Estatus de Cotizaciones", "nuevo": False},
+        ]
+    },
+    "seguridad": {
+        "nombre": "Seguridad",
+        "descripcion": "Catálogos de usuarios, roles y permisos",
+        "icono": "Shield",
+        "catalogos": [
+            {"tabla": "Usuario_Roles", "nombre": "Roles", "nuevo": False},
+            {"tabla": "Usuario_Modulos", "nombre": "Módulos", "nuevo": False},
+            {"tabla": "Usuario_TiposAutorizacion", "nombre": "Tipos de Autorización", "nuevo": False},
+        ]
+    },
+    "homologacion": {
+        "nombre": "Homologación",
+        "descripcion": "Tablas de equivalencias y mapeo entre sistemas",
+        "icono": "GitMerge",
+        "catalogos": [
+            {"tabla": "RH_Homologacion_Equivalencias", "nombre": "Equivalencias", "nuevo": False},
+        ]
+    },
+}
+
+
+# ============================================================================
+# MAPEO DE ESTRUCTURA DE TABLAS
+# ============================================================================
+
+# Estructura de cada tabla para generar endpoints dinámicos
+ESTRUCTURA_TABLAS = {
+    # === GENERALES ===
+    "Global_Cat_Empresas": {
+        "pk": "EmpresaID",
+        "campos": ["EmpresaID", "CodigoEmpresa", "RazonSocial", "NombreComercial", "RFC", "RegimenFiscalID", "Activo", "FechaAlta", "FechaModificacion"],
+        "campos_editables": ["CodigoEmpresa", "RazonSocial", "NombreComercial", "RFC", "RegimenFiscalID", "Activo"],
+        "campo_nombre": "RazonSocial",
+        "campo_activo": "Activo",
+    },
+    "RH_Cat_Sucursales": {
+        "pk": "SucursalID",
+        "campos": ["SucursalID", "Nombre_Sucursal", "Ciudad", "Activa"],
+        "campos_editables": ["Nombre_Sucursal", "Ciudad", "Activa"],
+        "campo_nombre": "Nombre_Sucursal",
+        "campo_activo": "Activa",
+    },
+    "RH_Cat_Departamentos": {
+        "pk": "DepartamentoID",
+        "campos": ["DepartamentoID", "CodigoDepartamento", "NombreDepartamento", "Descripcion", "Activo", "FechaAlta", "FechaModificacion"],
+        "campos_editables": ["CodigoDepartamento", "NombreDepartamento", "Descripcion", "Activo"],
+        "campo_nombre": "NombreDepartamento",
+        "campo_activo": "Activo",
+    },
+    "RH_Cat_Puestos": {
+        "pk": "PuestoID",
+        "campos": ["PuestoID", "CodigoPuesto", "Descripcion", "Departamento", "DepartamentoID", "Sueldo_Base_Seman_SBC", "NivelOrganizacional", "EsConfianza", "Activo", "FechaAlta", "FechaModificacion"],
+        "campos_editables": ["CodigoPuesto", "Descripcion", "Departamento", "DepartamentoID", "Sueldo_Base_Seman_SBC", "NivelOrganizacional", "EsConfianza", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Global_Cat_Bancos": {
+        "pk": "BancoID",
+        "campos": ["BancoID", "CodigoBanco", "NombreBanco", "NombreCorto", "Activo", "FechaAlta"],
+        "campos_editables": ["CodigoBanco", "NombreBanco", "NombreCorto", "Activo"],
+        "campo_nombre": "NombreBanco",
+        "campo_activo": "Activo",
+    },
+    "Proveedor_Monedas": {
+        "pk": "MonedaID",
+        "campos": ["MonedaID", "Codigo", "Descripcion", "Activo"],
+        "campos_editables": ["Codigo", "Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Global_Cat_UnidadesMedida": {
+        "pk": "UnidadMedidaID",
+        "campos": ["UnidadMedidaID", "ClaveSAT", "Nombre", "Descripcion", "Activo"],
+        "campos_editables": ["ClaveSAT", "Nombre", "Descripcion", "Activo"],
+        "campo_nombre": "Nombre",
+        "campo_activo": "Activo",
+    },
+    "Global_Cat_CentrosCosto": {
+        "pk": "CentroCostoID",
+        "campos": ["CentroCostoID", "Codigo", "Nombre", "Descripcion", "EmpresaID", "Activo", "FechaAlta"],
+        "campos_editables": ["Codigo", "Nombre", "Descripcion", "EmpresaID", "Activo"],
+        "campo_nombre": "Nombre",
+        "campo_activo": "Activo",
+    },
+    
+    # === RH ===
+    "RH_Cat_TiposContrato": {
+        "pk": "TipoContratoID",
+        "campos": ["TipoContratoID", "CodigoTipoContrato", "Descripcion", "EsIndeterminado", "Activo"],
+        "campos_editables": ["CodigoTipoContrato", "Descripcion", "EsIndeterminado", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "RH_Cat_TiposAusencia": {
+        "pk": "TipoAusenciaID",
+        "campos": ["TipoAusenciaID", "CodigoTipoAusencia", "Descripcion", "GoceSueldo", "AfectaNomina", "AfectaAsistencia", "ClaveSAT", "Activo"],
+        "campos_editables": ["CodigoTipoAusencia", "Descripcion", "GoceSueldo", "AfectaNomina", "AfectaAsistencia", "ClaveSAT", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "RH_Cat_MotivosBaja": {
+        "pk": "MotivoBajaID",
+        "campos": ["MotivoBajaID", "CodigoMotivoBaja", "Descripcion", "RequiereFiniquito", "Activo"],
+        "campos_editables": ["CodigoMotivoBaja", "Descripcion", "RequiereFiniquito", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "RH_Cat_Jornadas": {
+        "pk": "JornadaID",
+        "campos": ["JornadaID", "CodigoJornada", "Descripcion", "HorasDia", "DiasDescanso", "Activo"],
+        "campos_editables": ["CodigoJornada", "Descripcion", "HorasDia", "DiasDescanso", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "RH_Cat_Turnos": {
+        "pk": "TurnoID",
+        "campos": ["TurnoID", "CodigoTurno", "Descripcion", "HoraEntrada", "HoraSalida", "ToleranciaMinutos", "Activo"],
+        "campos_editables": ["CodigoTurno", "Descripcion", "HoraEntrada", "HoraSalida", "ToleranciaMinutos", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "RH_Cat_Areas": {
+        "pk": "AreaID",
+        "campos": ["AreaID", "CodigoArea", "NombreArea", "Descripcion", "DepartamentoID", "Activo", "FechaAlta", "FechaModificacion"],
+        "campos_editables": ["CodigoArea", "NombreArea", "Descripcion", "DepartamentoID", "Activo"],
+        "campo_nombre": "NombreArea",
+        "campo_activo": "Activo",
+    },
+    "RH_Cat_Beneficios": {
+        "pk": "BeneficioID",
+        "campos": ["BeneficioID", "CodigoBeneficio", "NombreBeneficio", "Descripcion", "Monto", "EsPorcentaje", "Activo", "FechaAlta", "FechaModificacion"],
+        "campos_editables": ["CodigoBeneficio", "NombreBeneficio", "Descripcion", "Monto", "EsPorcentaje", "Activo"],
+        "campo_nombre": "NombreBeneficio",
+        "campo_activo": "Activo",
+    },
+    "RH_Cat_RegimenContratacion": {
+        "pk": "RegimenContratacionID",
+        "campos": ["RegimenContratacionID", "Codigo", "Descripcion", "Activo"],
+        "campos_editables": ["Codigo", "Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    
+    # === NÓMINA ===
+    "RH_Cat_ConceptosNomina": {
+        "pk": "ConceptoNominaID",
+        "campos": ["ConceptoNominaID", "CodigoConcepto", "NombreConcepto", "TipoConceptoNominaID", "ClaveSAT", "EsGravado", "EsExento", "IntegraSBC", "AfectaISR", "Activo"],
+        "campos_editables": ["CodigoConcepto", "NombreConcepto", "TipoConceptoNominaID", "ClaveSAT", "EsGravado", "EsExento", "IntegraSBC", "AfectaISR", "Activo"],
+        "campo_nombre": "NombreConcepto",
+        "campo_activo": "Activo",
+    },
+    "RH_Cat_TiposConceptoNomina": {
+        "pk": "TipoConceptoNominaID",
+        "campos": ["TipoConceptoNominaID", "Codigo", "Descripcion", "Activo"],
+        "campos_editables": ["Codigo", "Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "RH_Cat_TiposPeriodoNomina": {
+        "pk": "TipoPeriodoNominaID",
+        "campos": ["TipoPeriodoNominaID", "Codigo", "Descripcion", "DiasPeriodo", "Activo"],
+        "campos_editables": ["Codigo", "Descripcion", "DiasPeriodo", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "RH_Cat_EstatusPeriodoNomina": {
+        "pk": "EstatusPeriodoNominaID",
+        "campos": ["EstatusPeriodoNominaID", "Codigo", "Descripcion", "EsFinal", "Activo"],
+        "campos_editables": ["Codigo", "Descripcion", "EsFinal", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    
+    # === COMPRAS / PROVEEDOR ===
+    "Compras_Estatus": {
+        "pk": "EstatusID",
+        "campos": ["EstatusID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Compras_OrdenesEstatus": {
+        "pk": "EstatusID",
+        "campos": ["EstatusID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Compras_PedidosEstatus": {
+        "pk": "EstatusID",
+        "campos": ["EstatusID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Compras_RecepcionesEstatus": {
+        "pk": "EstatusID",
+        "campos": ["EstatusID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Compras_DocumentosFiscalesEstatus": {
+        "pk": "EstatusID",
+        "campos": ["EstatusID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Compras_ConciliacionSATEstatus": {
+        "pk": "EstatusID",
+        "campos": ["EstatusID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Proveedor_TipoProveedor": {
+        "pk": "TipoProveedorID",
+        "campos": ["TipoProveedorID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Proveedor_TipoContacto": {
+        "pk": "TipoContactoID",
+        "campos": ["TipoContactoID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Proveedor_TipoDocumento": {
+        "pk": "TipoDocumentoID",
+        "campos": ["TipoDocumentoID", "Descripcion", "Extension", "EsObligatorio", "Activo"],
+        "campos_editables": ["Descripcion", "Extension", "EsObligatorio", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Proveedor_EstatusProveedor": {
+        "pk": "EstatusProveedorID",
+        "campos": ["EstatusProveedorID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    
+    # === INVENTARIOS ===
+    "Inventario_TipoMovimiento": {
+        "pk": "TipoMovimientoID",
+        "campos": ["TipoMovimientoID", "Codigo", "Descripcion", "Naturaleza", "AfectaCostoPromedio", "Activo"],
+        "campos_editables": ["Codigo", "Descripcion", "Naturaleza", "AfectaCostoPromedio", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Producto_Familias": {
+        "pk": "FamiliaID",
+        "campos": ["FamiliaID", "Codigo", "Nombre", "Activo"],
+        "campos_editables": ["Codigo", "Nombre", "Activo"],
+        "campo_nombre": "Nombre",
+        "campo_activo": "Activo",
+    },
+    "Producto_SubFamilias": {
+        "pk": "SubFamiliaID",
+        "campos": ["SubFamiliaID", "FamiliaID", "Codigo", "Nombre", "Activo"],
+        "campos_editables": ["FamiliaID", "Codigo", "Nombre", "Activo"],
+        "campo_nombre": "Nombre",
+        "campo_activo": "Activo",
+    },
+    "Producto_Lineas": {
+        "pk": "LineaID",
+        "campos": ["LineaID", "Codigo", "Nombre", "Activo"],
+        "campos_editables": ["Codigo", "Nombre", "Activo"],
+        "campo_nombre": "Nombre",
+        "campo_activo": "Activo",
+    },
+    "Producto_Marcas": {
+        "pk": "MarcaID",
+        "campos": ["MarcaID", "Codigo", "Nombre", "Activo"],
+        "campos_editables": ["Codigo", "Nombre", "Activo"],
+        "campo_nombre": "Nombre",
+        "campo_activo": "Activo",
+    },
+    
+    # === ACTIVOS FIJOS ===
+    "ActivoFijo_TipoActivo": {
+        "pk": "TipoActivoID",
+        "campos": ["TipoActivoID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "ActivoFijo_TipoBaja": {
+        "pk": "TipoBajaID",
+        "campos": ["TipoBajaID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "ActivoFijo_TipoUbicacion": {
+        "pk": "TipoUbicacionID",
+        "campos": ["TipoUbicacionID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "ActivoFijo_TipoMedidor": {
+        "pk": "TipoMedidorID",
+        "campos": ["TipoMedidorID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "ActivoFijo_TipoOT": {
+        "pk": "TipoOTID",
+        "campos": ["TipoOTID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "ActivoFijo_EstatusActivo": {
+        "pk": "EstatusActivoID",
+        "campos": ["EstatusActivoID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "ActivoFijo_EstatusOT": {
+        "pk": "EstatusOTID",
+        "campos": ["EstatusOTID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    
+    # === FINANZAS ===
+    "Finanzas_Cat_CuentasBancarias": {
+        "pk": "CuentaBancariaID",
+        "campos": ["CuentaBancariaID", "EmpresaID", "BancoID", "NumeroCuenta", "CLABE", "Alias", "Moneda", "EsCuentaPrincipal", "Activo", "FechaAlta"],
+        "campos_editables": ["EmpresaID", "BancoID", "NumeroCuenta", "CLABE", "Alias", "Moneda", "EsCuentaPrincipal", "Activo"],
+        "campo_nombre": "Alias",
+        "campo_activo": "Activo",
+    },
+    # Global_Cat_Bancos ya definido arriba en la sección GLOBAL
+    "Global_Cat_FormaPagoSAT": {
+        "pk": "FormaPagoID",
+        "campos": ["FormaPagoID", "Clave", "Descripcion", "Activo"],
+        "campos_editables": ["Clave", "Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Finanzas_EstatusPago": {
+        "pk": "EstatusPagoID",
+        "campos": ["EstatusPagoID", "Codigo", "Descripcion", "ColorHex", "Activo"],
+        "campos_editables": ["Codigo", "Descripcion", "ColorHex", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Finanzas_EstatusCierre": {
+        "pk": "EstatusCierreID",
+        "campos": ["EstatusCierreID", "Codigo", "Descripcion", "Activo"],
+        "campos_editables": ["Codigo", "Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Finanzas_ConfiguracionTPV_Sucursal": {
+        "pk": "ConfiguracionTPVID",
+        "campos": ["ConfiguracionTPVID", "SucursalID", "ProveedorTPV", "ComisionDebito", "ComisionCredito", "ComisionAmex", "ComisionInternacional", "AplicaIVAComision", "PorcentajeIVA", "DiasDepositoDebito", "DiasDepositoCredito", "DiasDepositoAmex", "DiasDepositoInternacional", "DiasDepositoEfectivo", "EfectivoFinDeSemanaLunes", "CuentaBancariaID", "NumeroAfiliacion", "TerminalID", "Activo"],
+        "campos_editables": ["SucursalID", "ProveedorTPV", "ComisionDebito", "ComisionCredito", "ComisionAmex", "ComisionInternacional", "AplicaIVAComision", "PorcentajeIVA", "DiasDepositoDebito", "DiasDepositoCredito", "DiasDepositoAmex", "DiasDepositoInternacional", "DiasDepositoEfectivo", "EfectivoFinDeSemanaLunes", "CuentaBancariaID", "NumeroAfiliacion", "TerminalID", "Activo"],
+        "campo_nombre": "ProveedorTPV",
+        "campo_activo": "Activo",
+    },
+    "Global_Cat_MetodoPagoSAT": {
+        "pk": "MetodoPagoID",
+        "campos": ["MetodoPagoID", "Clave", "Descripcion", "Activo"],
+        "campos_editables": ["Clave", "Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Global_Cat_UsoCFDI": {
+        "pk": "UsoCFDIID",
+        "campos": ["UsoCFDIID", "Clave", "Descripcion", "AplicaFisica", "AplicaMoral", "Activo"],
+        "campos_editables": ["Clave", "Descripcion", "AplicaFisica", "AplicaMoral", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Global_Cat_RegimenFiscal": {
+        "pk": "RegimenFiscalID",
+        "campos": ["RegimenFiscalID", "Clave", "Descripcion", "AplicaFisica", "AplicaMoral", "Activo"],
+        "campos_editables": ["Clave", "Descripcion", "AplicaFisica", "AplicaMoral", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    
+    # === VENTAS ===
+    "Venta_Estatus": {
+        "pk": "EstatusID",
+        "campos": ["EstatusID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Venta_PedidosEstatus": {
+        "pk": "EstatusID",
+        "campos": ["EstatusID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    "Venta_CotizacionesEstatus": {
+        "pk": "EstatusID",
+        "campos": ["EstatusID", "Descripcion", "Activo"],
+        "campos_editables": ["Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    
+    # === SEGURIDAD ===
+    "Usuario_Roles": {
+        "pk": "RolID",
+        "campos": ["RolID", "CodigoRol", "NombreRol", "Descripcion", "EsRolSistema", "Activo", "FechaAlta", "FechaModificacion"],
+        "campos_editables": ["CodigoRol", "NombreRol", "Descripcion", "EsRolSistema", "Activo"],
+        "campo_nombre": "NombreRol",
+        "campo_activo": "Activo",
+    },
+    "Usuario_Modulos": {
+        "pk": "ModuloID",
+        "campos": ["ModuloID", "ModuloPadreID", "CodigoModulo", "NombreModulo", "Descripcion", "TipoModulo", "Ruta", "Icono", "OrdenMenu", "EsVisibleMenu", "RequiereAutorizacion", "Activo"],
+        "campos_editables": ["ModuloPadreID", "CodigoModulo", "NombreModulo", "Descripcion", "TipoModulo", "Ruta", "Icono", "OrdenMenu", "EsVisibleMenu", "RequiereAutorizacion", "Activo"],
+        "campo_nombre": "NombreModulo",
+        "campo_activo": "Activo",
+    },
+    "Usuario_TiposAutorizacion": {
+        "pk": "TipoAutorizacionID",
+        "campos": ["TipoAutorizacionID", "Codigo", "Descripcion", "ModuloID", "NivelesRequeridos", "Activo", "FechaAlta"],
+        "campos_editables": ["Codigo", "Descripcion", "ModuloID", "NivelesRequeridos", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
+    },
+    
+    # === HOMOLOGACIÓN ===
+    "RH_Homologacion_Equivalencias": {
+        "pk": "EquivalenciaID",
+        "campos": ["EquivalenciaID", "TipoCatalogo", "ValorOrigen", "ValorNormalizado", "CatalogoID", "Estado", "FechaCreacion"],
+        "campos_editables": ["TipoCatalogo", "ValorOrigen", "ValorNormalizado", "CatalogoID", "Estado"],
+        "campo_nombre": "ValorNormalizado",
+        "campo_activo": None,  # No tiene campo activo
+    },
+}
+
+
+# ============================================================================
+# SCHEMAS DE REQUEST/RESPONSE
+# ============================================================================
+
+class CatalogoRegistroCreate(BaseModel):
+    """Schema genérico para crear un registro en cualquier catálogo."""
+    datos: Dict[str, Any] = Field(..., description="Campos del registro a crear")
+
+
+class CatalogoRegistroUpdate(BaseModel):
+    """Schema genérico para actualizar un registro en cualquier catálogo."""
+    datos: Dict[str, Any] = Field(..., description="Campos a actualizar")
+
+
+class CatalogoRegistroResponse(BaseModel):
+    """Respuesta de un registro de catálogo."""
+    success: bool
+    message: str
+    data: Optional[Dict[str, Any]] = None
+    id: Optional[int] = None
+
+
+class CatalogoListResponse(BaseModel):
+    """Respuesta de listado de registros."""
+    success: bool
+    tabla: str
+    registros: List[Dict[str, Any]]
+    total: int
+    estructura: Optional[Dict[str, Any]] = None
+
+
+class DominiosResponse(BaseModel):
+    """Respuesta con todos los dominios y sus catálogos."""
+    dominios: Dict[str, Any]
+
+
+class EstructuraTablaResponse(BaseModel):
+    """Respuesta con la estructura de una tabla."""
+    tabla: str
+    estructura: Dict[str, Any]
+    columnas_bd: List[Dict[str, Any]]

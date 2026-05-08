@@ -1,0 +1,84 @@
+{
+  "validation_date": "2026-04-26T00:45:00Z",
+  "phase": "MACROFASE_2_3A",
+  "status": "SUCCESS",
+  
+  "table_created": true,
+  "table_name": "Comercial_KPIs_Historico",
+  "table_database": "EDARSAHUB",
+  
+  "script_updated": true,
+  "script_path": "/app/backend/scripts/run_historical_load_24_months.py",
+  
+  "final_destination": "EDARSAHUB_SQL",
+  "mongo_role": "checkpoint_log_staging_only",
+  
+  "safe_mode_execution": {
+    "run_id": "HL_20260426_004303",
+    "server": "ManagmentPro",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "batch": "2024-05-06 to 2024-05-12",
+    "sql_inserted": 14,
+    "sql_updated": 0,
+    "sql_skipped": 0,
+    "sql_errors": 0,
+    "mongo_final_inserted": 0
+  },
+  
+  "duplicates_check": {
+    "query_executed": true,
+    "duplicates_found": 0,
+    "status": "PASSED"
+  },
+  
+  "indexes_verified": {
+    "PK_Comercial_KPIs_Historico": {"exists": true, "unique": true},
+    "UX_Comercial_KPIs_Historico": {"exists": true, "unique": true, "columns": ["server_id", "sucursal_id", "system_type_normalized", "fecha", "kpi_tipo"]},
+    "IX_Comercial_KPIs_Historico_Fecha": {"exists": true, "unique": false},
+    "IX_Comercial_KPIs_Historico_Server_Fecha": {"exists": true, "unique": false},
+    "IX_Comercial_KPIs_Historico_RunId": {"exists": true, "unique": false}
+  },
+  
+  "backend_status": {
+    "running": true,
+    "uptime": "0:47:52"
+  },
+  
+  "mongodb_staging_records": {
+    "run_id": "HL_20260426_003155",
+    "collection": "kpis_comercial",
+    "count": 14,
+    "classification": "STAGING_TEMPORAL_DE_PRUEBA",
+    "action": "DOCUMENTED_NOT_DELETED"
+  },
+  
+  "files_created": [
+    "/app/backend/db/migrations/create_comercial_kpis_historico.sql",
+    "/app/backend/modules/comercial/historical_kpis_repository.py"
+  ],
+  
+  "files_modified": [
+    "/app/backend/scripts/run_historical_load_24_months.py"
+  ],
+  
+  "acceptance_criteria": {
+    "table_sql_exists": true,
+    "unique_index_exists": true,
+    "script_writes_to_sql": true,
+    "mongo_not_final_destination": true,
+    "safe_mode_sql_inserted_gt_0": true,
+    "no_duplicates_sql": true,
+    "staging_mongo_documented": true,
+    "backend_compiles_runs": true,
+    "comercial_still_working": "PENDING_USER_VERIFICATION"
+  },
+  
+  "warnings": [],
+  "errors": [],
+  
+  "next_steps": [
+    "Usuario puede escalar carga histórica con más batches",
+    "Evaluar migración de 14 registros MongoDB staging a SQL",
+    "Probar servidores SoftRestaurant"
+  ]
+}

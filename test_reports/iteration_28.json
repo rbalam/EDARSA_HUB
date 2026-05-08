@@ -1,0 +1,98 @@
+{
+  "summary": "Completed backend testing of Fase 4.3 - Separación de periodo operativo vs estadístico y ajuste porcentual de consumo. All 14 tests passed (100%). The new endpoint POST /parametros-consumo works correctly for modifying statistical period and percentage adjustment.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_automatizacion_compras_fase43.py",
+    "/app/test_reports/pytest/pytest_automatizacion_compras_fase43.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "GET /compras/{id} correctly returns fecha_consumo_inicio, fecha_consumo_fin, porcentaje_ajuste_consumo fields",
+    "POST /parametros-consumo correctly modifies statistical period and percentage adjustment",
+    "Formula consumo_promedio_ajustado = consumo_base * (1 + ajuste/100) verified working",
+    "Positive adjustment (+15%) correctly increases consumo_promedio_ajustado (5.0 → 5.75)",
+    "Negative adjustment (-10%) correctly decreases consumo_promedio_ajustado (5.0 → 4.5)",
+    "detalle_productos includes consumo_promedio_base, consumo_promedio_ajustado, and porcentaje_ajuste_aplicado",
+    "Bitácora correctly registers CAMBIO_PARAMETROS_CONSUMO events with full change details",
+    "Validation correctly rejects porcentaje_ajuste outside range (-100 to +500)",
+    "Boundary values -100% and +500% are accepted",
+    "Operational period (fecha_inicio_periodo, fecha_fin_periodo, fecha_pedido) remains unchanged when modifying statistical period",
+    "Authentication required for all endpoints"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_automatizacion_compras_fase43.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 tests passed)",
+    "frontend": "N/A (backend only testing requested)"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "admin@edarsa.com",
+      "password": "admin123"
+    }
+  },
+  "seed_data_creation": "No new seed data created. Used existing automatizacion c4295c76-6508-4c74-bcf1-11ccd75f4bb6 with -10% adjustment",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Fase 4.3 backend fully tested. Key findings: 1) GET /compras/{id} returns new fields: fecha_consumo_inicio, fecha_consumo_fin, porcentaje_ajuste_consumo, dias_periodo_consumo. 2) POST /parametros-consumo accepts fecha_consumo_inicio, fecha_consumo_fin, porcentaje_ajuste, motivo. 3) detalle_productos now includes consumo_promedio_base (original), consumo_promedio_ajustado (with adjustment), porcentaje_ajuste_aplicado. 4) Bitácora logs CAMBIO_PARAMETROS_CONSUMO with cambios.ajuste and cambios.periodo_estadistico. 5) Validation: porcentaje must be -100 to +500. 6) Operational period (fecha_inicio_periodo, fecha_fin_periodo) is read-only and never modified.",
+  "features_tested": {
+    "GET_compras_id_consumo_fields": {
+      "status": "PASS",
+      "details": "Returns fecha_consumo_inicio, fecha_consumo_fin, porcentaje_ajuste_consumo, dias_periodo_consumo"
+    },
+    "POST_parametros_consumo": {
+      "status": "PASS",
+      "details": "Modifies statistical period and percentage adjustment. Returns success=true, recalculado=true, cambios object"
+    },
+    "positive_adjustment_calculation": {
+      "status": "PASS",
+      "details": "+15% adjustment correctly calculates consumo_ajustado = base * 1.15"
+    },
+    "negative_adjustment_calculation": {
+      "status": "PASS",
+      "details": "-10% adjustment correctly calculates consumo_ajustado = base * 0.90"
+    },
+    "detalle_productos_consumo_fields": {
+      "status": "PASS",
+      "details": "Each product has consumo_promedio_base, consumo_promedio_ajustado, porcentaje_ajuste_aplicado"
+    },
+    "bitacora_CAMBIO_PARAMETROS_CONSUMO": {
+      "status": "PASS",
+      "details": "Events logged with cambios.ajuste, cambios.periodo_estadistico, motivo, recomendacion changes"
+    },
+    "validation_out_of_range": {
+      "status": "PASS",
+      "details": "Returns 400 for porcentaje > 500 or < -100"
+    },
+    "validation_boundary_values": {
+      "status": "PASS",
+      "details": "Accepts -100% and +500% as valid boundary values"
+    },
+    "operational_period_readonly": {
+      "status": "PASS",
+      "details": "fecha_inicio_periodo, fecha_fin_periodo, fecha_pedido remain unchanged"
+    },
+    "authentication_required": {
+      "status": "PASS",
+      "details": "Returns 401/403 without Bearer token"
+    }
+  },
+  "verified_data_example": {
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "porcentaje_ajuste_consumo": -10,
+    "product_example": {
+      "consumo_promedio_base": 5,
+      "consumo_promedio_ajustado": 4.5,
+      "calculation": "5 * (1 + (-10)/100) = 5 * 0.90 = 4.5"
+    }
+  }
+}

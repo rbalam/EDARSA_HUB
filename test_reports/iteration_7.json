@@ -1,0 +1,84 @@
+{
+  "summary": "Tested movement-details and sales-details endpoints plus clickable columns feature. Fixed SQL column errors in both endpoints. Backend 9/9 tests passed. Frontend UI verified with proper Dialog implementation.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_movement_sales_details.py",
+    "/app/test_reports/pytest/pytest_movement_sales_v2.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/server.py",
+    "/app/backend/tests/test_movement_sales_details.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (verified via screenshot and code review)"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "admin@inventario.com",
+      "password": "admin123"
+    },
+    "mpro_server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6"
+  },
+  "seed_data_creation": "No new seed data created",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Movement-details and sales-details endpoints are working. Fixed invalid column names: removed Mv_Observaciones (replaced with empty string), removed Vn_Precio_Unitario (replaced with 0). Dialog component in Reportes.js shows movement/sales details when clicking on values > 0.",
+  "features_tested": {
+    "movement_details_endpoint": {
+      "status": "PASS",
+      "endpoint": "POST /api/reports/movement-details",
+      "details": "Returns folio, fecha, cantidad, tipo_movimiento, tipo_descripcion, almacen for a specific product",
+      "bug_fixed": "Removed invalid column Mv_Observaciones"
+    },
+    "sales_details_endpoint": {
+      "status": "PASS",
+      "endpoint": "POST /api/reports/sales-details",
+      "details": "Returns folio, fecha, cantidad, tipo_venta (KIT/DIRECTA), producto_vendido for a specific product",
+      "bug_fixed": "Removed invalid column Vn_Precio_Unitario"
+    },
+    "clickable_columns_ui": {
+      "status": "PASS (code review)",
+      "details": "renderClickableCell function shows Eye icon and makes Movimientos/Ventas columns clickable when value > 0"
+    },
+    "detail_dialog_component": {
+      "status": "PASS (code review)",
+      "details": "Dialog component properly implemented with headers for movimientos (folio, fecha, cantidad, tipo, descripcion, almacen, observaciones) and ventas (folio, fecha, cantidad, tipo_venta, producto_vendido, precio_unitario, sucursal)"
+    },
+    "almacen_general_logic": {
+      "status": "PASS",
+      "details": "es_almacen_general detection working correctly - only GENERAL warehouse has sales in MPRO (line 1506 in server.py)"
+    }
+  },
+  "api_tests": {
+    "POST /api/auth/login": "PASS - Returns 200 with token",
+    "POST /api/reports/movement-details": "PASS - Returns 200 with data structure (data, count)",
+    "POST /api/reports/sales-details": "PASS - Returns 200 with data structure (data, count)",
+    "Endpoint requires auth": "PASS - Returns 401/403 without token",
+    "Invalid server returns 404": "PASS - Proper error handling"
+  },
+  "bugs_fixed": [
+    {
+      "file": "/app/backend/server.py",
+      "line": "1741",
+      "issue": "Invalid column name 'Mv_Observaciones'",
+      "fix": "Replaced with empty string constant"
+    },
+    {
+      "file": "/app/backend/server.py",
+      "line": "1854, 1876",
+      "issue": "Invalid column name 'Vn_Precio_Unitario'",
+      "fix": "Replaced with 0 constant for precio_unitario"
+    }
+  ]
+}

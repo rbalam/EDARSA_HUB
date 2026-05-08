@@ -1,0 +1,69 @@
+{
+  "summary": "RBAC Migration Testing: Migración de 'Servidor + Sucursal' a 'Unidad de Negocio' - 4/4 páginas verificadas correctamente. AutorizacionCompras.js, Dashboard.js, Finanzas.js y Comercial.js ahora muestran 'Unidad de Negocio' en lugar de 'Servidor'.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Reportes.js",
+        "issues": ["Console warning: 'In HTML, <span> cannot be a child of <option>' - hydration error in select options"]
+      }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AutorizacionCompras.js: Correctly shows 'Unidad de Negocio' label, NO 'Servidor' visible",
+    "Dashboard.js (Operaciones): Shows 'Selecciona una Unidad de Negocio' with data-testid='unidad-select'",
+    "Finanzas.js: userPermissions correctly derived from unidadesNegocio (lines 63-90), NO call to /api/users for allowed_sucursales",
+    "Comercial.js: Already blindado RBAC - shows 'Unidad de Negocio' label",
+    "Compras.js: Sucursal selector only shown when sucursales.length > 1 AND unidad doesn't have sucursal_origen_id (correct behavior)",
+    "All pages use fetchUnidadesNegocio from unidadesNegocioService.js",
+    "Server ID is derived internally via getServerIdFromUnidad() - not visible to user"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (frontend only testing)",
+    "frontend": "100% (4/4 pages passed)"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "admin@edarsa.com",
+      "password": "admin123"
+    }
+  },
+  "seed_data_creation": "No new seed data created",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "RBAC Migration from 'Servidor + Sucursal' to 'Unidad de Negocio' model verified. Key findings: 1) All 4 pages (AutorizacionCompras, Dashboard, Finanzas, Comercial) show 'Unidad de Negocio' instead of 'Servidor'. 2) Sucursal selector is conditionally shown only when needed (multiple sucursales AND no sucursal_origen_id). 3) Business names (ORIGEN, 130 QRO, CIENFUEGOS, etc.) are used in selectors. 4) SQL servers may be offline (VPN), but UI migration is complete. 5) Console shows hydration warning in Reportes.js for <span> inside <option> - minor issue.",
+  "features_tested": {
+    "autorizacion_compras_unidad_negocio": {
+      "status": "PASS",
+      "details": "Shows 'Unidad de Negocio' label, NO 'Servidor' visible"
+    },
+    "dashboard_operaciones_unidad_negocio": {
+      "status": "PASS",
+      "details": "Shows 'Selecciona una Unidad de Negocio', NO 'Selecciona un Servidor'"
+    },
+    "finanzas_unidades_negocio_permissions": {
+      "status": "PASS",
+      "details": "userPermissions derived from unidadesNegocio, NO /api/users call for allowed_sucursales"
+    },
+    "comercial_rbac_blindaje": {
+      "status": "PASS",
+      "details": "Shows 'Unidad de Negocio' label, already blindado RBAC"
+    },
+    "business_names_in_selectors": {
+      "status": "PASS",
+      "details": "Selectors show business names (ORIGEN, 130 QRO, etc.) not technical names (ManagmentPro, SoftRestaurant)"
+    },
+    "sucursal_selector_conditional": {
+      "status": "PASS",
+      "details": "Sucursal selector only shown when sucursales.length > 1 AND unidad doesn't have sucursal_origen_id"
+    }
+  }
+}
