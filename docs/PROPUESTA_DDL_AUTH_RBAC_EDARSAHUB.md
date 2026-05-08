@@ -1,126 +1,232 @@
-# PROPUESTA DDL AUTH/RBAC EDARSAHUB — NOMENCLATURA CORREGIDA
+# PROPUESTA DDL AUTH/RBAC EDARSAHUB — VALIDACIÓN FINAL PRE-DDL
 
-**Documento:** Propuesta de Modelo de Datos con Nomenclatura Validada  
+**Documento:** Propuesta de Modelo de Datos con Validación Funcional  
 **Fecha:** 8 de Mayo 2026  
 **Estado:** PROPUESTA DOCUMENTAL — NO EJECUTAR  
-**Versión:** 2.0 (Nomenclatura corregida)
+**Versión:** 3.0 (Validación Final Pre-DDL)
 
 ---
 
-## 1. RESUMEN
+## VALIDACIÓN FINAL PRE-DDL (FASE A1.5)
 
-Este documento corrige la propuesta DDL anterior, aplicando el **patrón de nomenclatura real** detectado en EDARSAHUB para el módulo Usuario/Auth.
+### A. JERARQUÍA EMPRESA / UNIDAD DE NEGOCIO / SUCURSAL
 
-### Cambios respecto a v1.0
+#### A.1 Hallazgo Principal
 
-| Propuesta v1.0 (INCORRECTA) | Propuesta v2.0 (CORREGIDA) |
-|-----------------------------|-----------------------------|
-| `Usuario_UnidadesPermitidas` | `Usuario_UnidadesAsignacion` |
-| `Usuario_SucursalesPermitidas` | `Usuario_SucursalesAsignacion` |
-| `Usuario_PermisosDirectos` | `Usuario_PermisosUsuario` |
+**⚠️ EMPRESA ≠ UNIDAD DE NEGOCIO ≠ SUCURSAL**
 
----
+Son **TRES ENTIDADES DISTINTAS** con **IDs DIFERENTES** en MongoDB:
 
-## 2. PATRÓN DE NOMENCLATURA DETECTADO EN EDARSAHUB
+| Entidad | Colección MongoDB | Registros | IDs Usados |
+|---------|-------------------|-----------|------------|
+| **Empresa** | `empresas` | 5 | `31784356-...`, `1118f83c-...`, etc. |
+| **Unidad de Negocio** | `sec_unidades_negocio` | 7 | `c9d9696e-...`, `78db8a9e-...`, etc. |
+| **Sucursal** | `sec_sucursales` | 7 | `1d28fa3a-...`, `a1e84e5a-...`, etc. |
 
-### 2.1 Tablas Existentes del Módulo Usuario_* (14 tablas)
-
+**Relación jerárquica en MongoDB:**
 ```
-Usuario_Acciones              (Catálogo de acciones)
-Usuario_Autorizaciones        (Proceso de autorización)
-Usuario_AutorizacionesDetalle (Detalle de autorización)
-Usuario_Catalogo              (Tabla maestra de usuarios)
-Usuario_LogAccesos            (Bitácora de accesos)
-Usuario_LogActividades        (Bitácora de actividades)
-Usuario_MatrizAutorizacion    (Matriz de autorización)
-Usuario_Modulos               (Catálogo de módulos)
-Usuario_PermisosRolModulo     (Relación Rol-Módulo-Acción)
-Usuario_PortalConfiguracion   (Configuración de portal)
-Usuario_Roles                 (Catálogo de roles)
-Usuario_RolesAsignacion       (Relación N:M Usuario-Rol)
-Usuario_Sesiones              (Registro de sesiones)
-Usuario_TiposAutorizacion     (Catálogo de tipos)
+Empresa
+  └── Unidad de Negocio (empresa_id → Empresa.id)
+        └── Sucursal (unidad_negocio_id → Unidad.id)
+              └── Servidor (vía sucursal_servidor_map)
 ```
 
-### 2.2 Reglas de Nomenclatura Identificadas
+#### A.2 IDs que usa el Sistema ACTUALMENTE
 
-| Tipo | Patrón | Ejemplo Real |
-|------|--------|--------------|
-| **Prefijo de módulo** | `Usuario_` | `Usuario_Catalogo` |
-| **Tabla maestra** | `Usuario_[Entidad]` | `Usuario_Roles` |
-| **Relación N:M** | `Usuario_[Entidad]Asignacion` | `Usuario_RolesAsignacion` |
-| **Permisos** | `Usuario_Permisos[Entidad][Contexto]` | `Usuario_PermisosRolModulo` |
-| **Bitácora** | `Usuario_Log[Entidad]` | `Usuario_LogAccesos` |
-| **Detalle** | `Usuario_[Entidad]Detalle` | `Usuario_AutorizacionesDetalle` |
-| **Configuración** | `Usuario_[Entidad]Configuracion` | `Usuario_PortalConfiguracion` |
+| Campo | IDs que contiene | Tabla/Colección origen |
+|-------|------------------|------------------------|
+| `users.empresas_permitidas` | IDs de **Empresa** | `empresas` (MongoDB) |
+| `Comercial_Ventas_Dia_Abiertas_v2.unidad_negocio_id` | Códigos cortos | NO son UUIDs |
+| `Unidades_Negocio.id` (EDARSAHUB) | UUIDs de Unidad | Diferente a MongoDB |
 
-### 2.3 Reglas de Columnas
+**Problema detectado:**
+- `users.empresas_permitidas` usa IDs de la colección `empresas` (MongoDB)
+- EDARSAHUB tiene `Unidades_Negocio` pero **NO tiene tabla de Empresas**
+- Los IDs de `empresas` MongoDB **NO coinciden** con `Unidades_Negocio` EDARSAHUB
 
-| Tipo | Patrón | Ejemplo Real |
-|------|--------|--------------|
-| **PK** | `[NombreSinPrefijo]ID` | `UsuarioRolAsignacionID` |
-| **FK a Usuario** | `UsuarioID` | `UsuarioID INT NOT NULL` |
-| **FK a Rol** | `RolID` | `RolID INT NOT NULL` |
-| **FK a Unidad** | `UnidadNegocioID` | `UnidadNegocioID UNIQUEIDENTIFIER` |
-| **Fecha inicio** | `FechaInicio` | `FechaInicio DATETIME2 NOT NULL` |
-| **Fecha fin** | `FechaFin` | `FechaFin DATETIME2 NULL` |
-| **Fecha alta** | `FechaAlta` | `FechaAlta DATETIME2 NOT NULL` |
-| **Activo** | `Activo` | `Activo BIT NOT NULL` |
-| **Auditoría creación** | `CreatedAt`, `CreatedBy` | `CreatedAt DATETIME2`, `CreatedBy VARCHAR(100)` |
-| **Auditoría modificación** | `FechaModificacion`, `ModifiedBy` | `FechaModificacion DATETIME2`, `ModifiedBy VARCHAR(100)` |
+#### A.3 Comparación de Datos
+
+**MongoDB `empresas` (5 registros):**
+| ID | Nombre |
+|----|--------|
+| `31784356-6d0b-47ce-8fe8-c8a442e45a07` | ORIGEN |
+| `1118f83c-fd45-4681-8006-5e92dd6d01c1` | 130 QRO |
+| `1d91f076-a28e-49a5-b445-84aa767737b6` | CIENFUEGOS |
+| `e302e16f-2d97-4119-9ad9-bb5b00b71367` | LA ESTELAR |
+| `a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff` | 130 MID |
+
+**EDARSAHUB `Unidades_Negocio` (5 registros):**
+| ID | Nombre |
+|----|--------|
+| `19e076fb-c6de-4ea5-84ab-1caa9e86082c` | 130° MERIDA |
+| `23ca0b76-6580-4874-ba9b-672b122ca197` | ORIGEN |
+| `dfb86008-1b81-472a-9e50-8a0821dec4b2` | LA ESTELAR |
+| `9bc05ced-6b2b-4a0a-aa90-ce649b78e12c` | 130° QUERETARO |
+| `b06ee652-0370-4267-b0a8-da6fc39b590a` | CIENFUEGOS |
+
+**⚠️ CONCLUSIÓN:** Los IDs son COMPLETAMENTE DIFERENTES entre MongoDB y EDARSAHUB. Migración directa NO es posible.
+
+#### A.4 Diagrama de Jerarquía Real
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           MONGODB (ACTUAL)                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────┐                                                            │
+│  │  empresas   │  ← users.empresas_permitidas apunta aquí                   │
+│  │  (5 docs)   │                                                            │
+│  │  ID: UUID   │                                                            │
+│  └──────┬──────┘                                                            │
+│         │ empresa_id                                                        │
+│         ▼                                                                   │
+│  ┌──────────────────────┐                                                   │
+│  │ sec_unidades_negocio │  ← IDs diferentes a empresas                      │
+│  │      (7 docs)        │                                                   │
+│  │      ID: UUID        │                                                   │
+│  └──────────┬───────────┘                                                   │
+│             │ unidad_negocio_id                                             │
+│             ▼                                                               │
+│  ┌─────────────────┐                                                        │
+│  │  sec_sucursales │  ← IDs diferentes a unidades                           │
+│  │    (7 docs)     │                                                        │
+│  │    ID: UUID     │                                                        │
+│  └────────┬────────┘                                                        │
+│           │ vía sucursal_servidor_map                                       │
+│           ▼                                                                 │
+│  ┌─────────────────┐                                                        │
+│  │    servers      │                                                        │
+│  │   (13 docs)     │                                                        │
+│  └─────────────────┘                                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           EDARSAHUB (OBJETIVO)                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────────┐                                                    │
+│  │   (NO EXISTE)       │  ← NO hay tabla de Empresas                        │
+│  │   Sistema_Empresas? │                                                    │
+│  └─────────────────────┘                                                    │
+│                                                                              │
+│  ┌─────────────────────┐                                                    │
+│  │  Unidades_Negocio   │  ← Existe, 5 registros, IDs diferentes a MongoDB   │
+│  │      (5 regs)       │                                                    │
+│  │  ID: UNIQUEIDENTIFIER│                                                   │
+│  └──────────┬──────────┘                                                    │
+│             │                                                               │
+│             ▼                                                               │
+│  ┌─────────────────────┐                                                    │
+│  │  RH_Cat_Sucursales  │  ← Existe, 8 registros, IDs tipo INT               │
+│  │      (8 regs)       │                                                    │
+│  │  ID: INT            │                                                    │
+│  └──────────┬──────────┘                                                    │
+│             │                                                               │
+│             ▼                                                               │
+│  ┌──────────────────────┐                                                   │
+│  │ Servidores_Conexiones│  ← Existe, 17 registros, IDs coinciden con MongoDB│
+│  │     (17 regs)        │                                                   │
+│  └──────────────────────┘                                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### A.5 IDs Usados por Módulo
+
+| Módulo | Campo de Filtro | Tipo de ID | Fuente |
+|--------|-----------------|------------|--------|
+| **user_access_context** | `empresas_ids` | UUID de `empresas` MongoDB | MongoDB |
+| **Comercial** | `unidad_negocio_id` | Código corto (130-QRO, etc.) | Derivado |
+| **Finanzas** | `UnidadNegocioID` | UUID | EDARSAHUB |
+| **Tablero Ejecutivo** | `unidad_negocio_id` | Código corto | EDARSAHUB |
+| **Servidores** | `server_id` | UUID | EDARSAHUB/MongoDB |
 
 ---
 
-## 3. VALIDACIÓN DE CAMPOS FALTANTES
+### B. ANÁLISIS DE PERMISOS DIRECTOS POR USUARIO
 
-### 3.1 `empresas_permitidas` → Mapea a Unidades de Negocio
+#### B.1 Hallazgo
 
-| Aspecto | Análisis |
-|---------|----------|
-| **Origen MongoDB** | `users.empresas_permitidas` (array de UUIDs) |
-| **Uso** | Filtro RBAC para limitar acceso por empresa/unidad |
-| **Tabla EDARSAHUB relacionada** | `Unidades_Negocio` (existe, 5 registros) |
-| **Tabla de relación existente** | NO EXISTE |
-| **Nombre propuesto** | `Usuario_UnidadesAsignacion` |
-| **Justificación** | Sigue patrón de `Usuario_RolesAsignacion` |
+| Aspecto | Resultado |
+|---------|-----------|
+| Usuarios con `sec_permisos` | **2 de 15** |
+| Permisos únicos asignados directamente | **2** (`SISTEMA_ESTRUCTURA_VER`, `SCHEDULER_VER`) |
+| ¿Hay permisos fuera del rol? | **SÍ, pero son casos especiales/legacy** |
 
-### 3.2 `sucursales` → Sucursales por usuario
+**Usuarios con permisos directos:**
+1. `admin@edarsa.com`: Tiene `SISTEMA_ESTRUCTURA_VER` pero su rol (`VISOR_ESTRUCTURA`) no existe
+2. `ricardo@edarsa.com.mx`: Tiene `SCHEDULER_VER` pero NO tiene `sec_rol` asignado
 
-| Aspecto | Análisis |
-|---------|----------|
-| **Origen MongoDB** | `users.sucursales` (array de strings) |
-| **Uso** | Filtro RBAC para limitar acceso por sucursal |
-| **Tabla EDARSAHUB relacionada** | `RH_Cat_Sucursales` (existe, 0 registros) |
-| **Tabla de relación existente** | NO EXISTE |
-| **Nombre propuesto** | `Usuario_SucursalesAsignacion` |
-| **Justificación** | Sigue patrón de `Usuario_RolesAsignacion` |
+#### B.2 Conclusión sobre Usuario_PermisosUsuario
 
-### 3.3 `sec_permisos` → Permisos directos por usuario
+**NO ES NECESARIA EN ESTA FASE.**
 
-| Aspecto | Análisis |
-|---------|----------|
-| **Origen MongoDB** | `users.sec_permisos` (array de códigos) |
-| **Uso** | Permisos específicos asignados al usuario (bypass rol) |
-| **Tabla EDARSAHUB relacionada** | `Usuario_PermisosRolModulo` (permisos por rol, no usuario) |
-| **Tabla de relación existente** | NO EXISTE para permisos directos |
-| **Nombre propuesto** | `Usuario_PermisosUsuario` |
-| **Justificación** | Análogo a `Usuario_PermisosRolModulo` pero a nivel usuario |
+Razones:
+1. Solo 2 usuarios de 15 tienen `sec_permisos` directos
+2. Ambos casos son legacy/inconsistencias, no diseño intencional
+3. El modelo `Usuario → Rol → Permisos` cubre el 87% de usuarios
+4. Los casos especiales pueden resolverse asignando el rol correcto
 
-### 3.4 `nivel_jerarquia` → Atributo de Usuario_Roles
-
-| Aspecto | Análisis |
-|---------|----------|
-| **Origen MongoDB** | `rbac_roles.nivel_jerarquia` (INT 20-100) |
-| **Uso** | Comparación jerárquica entre roles |
-| **Tabla EDARSAHUB** | `Usuario_Roles` (existe, 5 registros, SIN nivel) |
-| **Propuesta** | Agregar columna `NivelJerarquia INT` a `Usuario_Roles` |
-| **Justificación** | Es atributo directo del rol, no relación |
+**Recomendación:** Corregir los 2 usuarios anómalos asignándoles rol correcto, en lugar de crear tabla para excepciones.
 
 ---
 
-## 4. DDL PROPUESTO CON NOMENCLATURA CORREGIDA (SIN EJECUTAR)
+### C. TABLAS REQUERIDAS VS DESCARTADAS
 
-### 4.1 Tabla: `Usuario_UnidadesAsignacion`
+#### C.1 Tabla REQUERIDA: `Usuario_UnidadesAsignacion`
+
+| Aspecto | Decisión |
+|---------|----------|
+| **Nombre** | `Usuario_UnidadesAsignacion` ✅ |
+| **Propósito** | Relacionar usuario con unidades de negocio permitidas |
+| **FK** | `UsuarioID → Usuario_Catalogo`, `UnidadNegocioID → Unidades_Negocio` |
+| **Estado** | **REQUERIDA** - Sin esto no hay filtro RBAC |
+
+**⚠️ PROBLEMA:** Los IDs de `empresas` MongoDB no coinciden con `Unidades_Negocio` EDARSAHUB. Se requiere mapeo previo.
+
+#### C.2 Tabla POSIBLEMENTE REQUERIDA: `Sistema_Empresas`
+
+| Aspecto | Decisión |
+|---------|----------|
+| **Nombre propuesto** | `Sistema_Empresas` |
+| **Propósito** | Catálogo de empresas (entidad legal/corporativa) |
+| **Estado** | **PENDIENTE DE DECISIÓN** |
+
+**Pregunta para el usuario:** ¿"Empresas" en el contexto de EDARSA son:
+- a) Equivalentes a "Unidades de Negocio" (solo diferente nombre)
+- b) Un nivel superior (holding/corporativo) que agrupa unidades
+- c) Otra cosa
+
+Si (a): Usar `Unidades_Negocio` existente
+Si (b): Crear `Sistema_Empresas`
+
+#### C.3 Tabla DESCARTADA: `Usuario_SucursalesAsignacion`
+
+| Aspecto | Decisión |
+|---------|----------|
+| **Nombre** | `Usuario_SucursalesAsignacion` |
+| **Estado** | **DESCARTADA POR AHORA** |
+| **Razón** | El filtro actual es por Empresa/Unidad, no por Sucursal directamente |
+
+El código actual (`user_access_context.py`) resuelve sucursales a partir de empresas:
+```python
+await _resolver_servers_desde_empresas(context, empresas_rbac)
+```
+
+#### C.4 Tabla DESCARTADA: `Usuario_PermisosUsuario`
+
+| Aspecto | Decisión |
+|---------|----------|
+| **Nombre** | `Usuario_PermisosUsuario` |
+| **Estado** | **DESCARTADA POR AHORA** |
+| **Razón** | Solo 2 usuarios tienen permisos directos, ambos son legacy |
+
+El modelo `Usuario → Rol → Permisos` (vía `Usuario_RolesAsignacion` + `Usuario_PermisosRolModulo`) es suficiente.
+
+---
+
+### D. DDL FINAL RECOMENDADO
+
+#### D.1 DDL APROBADO PARA REVISIÓN (1 tabla + 1 columna)
 
 ```sql
 -- ⚠️ NO EJECUTAR - SOLO PROPUESTA PARA REVISIÓN
@@ -128,27 +234,18 @@ Usuario_TiposAutorizacion     (Catálogo de tipos)
 -- ============================================================
 -- TABLA: Usuario_UnidadesAsignacion
 -- Relación N:M entre usuarios y unidades de negocio
--- Sigue el patrón de Usuario_RolesAsignacion
 -- ============================================================
 CREATE TABLE Usuario_UnidadesAsignacion (
-    -- PK siguiendo patrón [NombreSinPrefijo]ID
     UsuarioUnidadAsignacionID   BIGINT IDENTITY(1,1) NOT NULL,
-    
-    -- FKs
     UsuarioID                   INT NOT NULL,
     UnidadNegocioID             UNIQUEIDENTIFIER NOT NULL,
-    
-    -- Atributos de la relación (igual que Usuario_RolesAsignacion)
     EsPrincipal                 BIT NOT NULL DEFAULT 0,
     FechaInicio                 DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     FechaFin                    DATETIME2 NULL,
     Activo                      BIT NOT NULL DEFAULT 1,
-    
-    -- Auditoría (patrón EDARSAHUB)
     CreatedAt                   DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy                   VARCHAR(100) NULL,
     
-    -- Constraints
     CONSTRAINT PK_Usuario_UnidadesAsignacion 
         PRIMARY KEY (UsuarioUnidadAsignacionID),
     CONSTRAINT FK_UsuarioUnidades_Usuario 
@@ -159,99 +256,10 @@ CREATE TABLE Usuario_UnidadesAsignacion (
         UNIQUE (UsuarioID, UnidadNegocioID)
 );
 
--- Índices
 CREATE INDEX IX_UsuarioUnidadesAsignacion_Usuario 
     ON Usuario_UnidadesAsignacion(UsuarioID);
 CREATE INDEX IX_UsuarioUnidadesAsignacion_Unidad 
     ON Usuario_UnidadesAsignacion(UnidadNegocioID);
-CREATE INDEX IX_UsuarioUnidadesAsignacion_Activo 
-    ON Usuario_UnidadesAsignacion(Activo) WHERE Activo = 1;
-```
-
-### 4.2 Tabla: `Usuario_SucursalesAsignacion`
-
-```sql
--- ⚠️ NO EJECUTAR - SOLO PROPUESTA PARA REVISIÓN
-
--- ============================================================
--- TABLA: Usuario_SucursalesAsignacion
--- Relación N:M entre usuarios y sucursales
--- ============================================================
-CREATE TABLE Usuario_SucursalesAsignacion (
-    UsuarioSucursalAsignacionID BIGINT IDENTITY(1,1) NOT NULL,
-    UsuarioID                   INT NOT NULL,
-    SucursalID                  VARCHAR(50) NOT NULL,
-    ServerID                    UNIQUEIDENTIFIER NULL,
-    EsPrincipal                 BIT NOT NULL DEFAULT 0,
-    FechaInicio                 DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-    FechaFin                    DATETIME2 NULL,
-    Activo                      BIT NOT NULL DEFAULT 1,
-    CreatedAt                   DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                   VARCHAR(100) NULL,
-    
-    CONSTRAINT PK_Usuario_SucursalesAsignacion 
-        PRIMARY KEY (UsuarioSucursalAsignacionID),
-    CONSTRAINT FK_UsuarioSucursales_Usuario 
-        FOREIGN KEY (UsuarioID) REFERENCES Usuario_Catalogo(UsuarioID),
-    CONSTRAINT UQ_UsuarioSucursales_Unico 
-        UNIQUE (UsuarioID, SucursalID, ServerID)
-);
-
-CREATE INDEX IX_UsuarioSucursalesAsignacion_Usuario 
-    ON Usuario_SucursalesAsignacion(UsuarioID);
-```
-
-### 4.3 Tabla: `Usuario_PermisosUsuario`
-
-```sql
--- ⚠️ NO EJECUTAR - SOLO PROPUESTA PARA REVISIÓN
-
--- ============================================================
--- TABLA: Usuario_PermisosUsuario
--- Permisos específicos asignados directamente al usuario
--- Análogo a Usuario_PermisosRolModulo pero a nivel usuario
--- ============================================================
-CREATE TABLE Usuario_PermisosUsuario (
-    PermisoUsuarioID            BIGINT IDENTITY(1,1) NOT NULL,
-    UsuarioID                   INT NOT NULL,
-    ModuloID                    INT NULL,
-    AccionID                    SMALLINT NULL,
-    CodigoPermiso               VARCHAR(50) NOT NULL,
-    Permitido                   BIT NOT NULL DEFAULT 1,
-    RestriccionPropietario      BIT NOT NULL DEFAULT 0,
-    RestriccionSucursal         BIT NOT NULL DEFAULT 0,
-    RequiereAutorizacion        BIT NOT NULL DEFAULT 0,
-    NivelAutorizacionRequerido  SMALLINT NULL,
-    Activo                      BIT NOT NULL DEFAULT 1,
-    FechaAlta                   DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-    FechaModificacion           DATETIME2 NULL,
-    FechaExpiracion             DATETIME2 NULL,
-    CreatedBy                   VARCHAR(100) NULL,
-    ModifiedBy                  VARCHAR(100) NULL,
-    Motivo                      VARCHAR(500) NULL,
-    
-    CONSTRAINT PK_Usuario_PermisosUsuario 
-        PRIMARY KEY (PermisoUsuarioID),
-    CONSTRAINT FK_PermisosUsuario_Usuario 
-        FOREIGN KEY (UsuarioID) REFERENCES Usuario_Catalogo(UsuarioID),
-    CONSTRAINT FK_PermisosUsuario_Modulo 
-        FOREIGN KEY (ModuloID) REFERENCES Usuario_Modulos(ModuloID),
-    CONSTRAINT FK_PermisosUsuario_Accion 
-        FOREIGN KEY (AccionID) REFERENCES Usuario_Acciones(AccionID),
-    CONSTRAINT UQ_PermisosUsuario_Unico 
-        UNIQUE (UsuarioID, CodigoPermiso)
-);
-
-CREATE INDEX IX_PermisosUsuario_Usuario 
-    ON Usuario_PermisosUsuario(UsuarioID);
-CREATE INDEX IX_PermisosUsuario_Codigo 
-    ON Usuario_PermisosUsuario(CodigoPermiso);
-```
-
-### 4.4 Modificación: Agregar `NivelJerarquia` a `Usuario_Roles`
-
-```sql
--- ⚠️ NO EJECUTAR - SOLO PROPUESTA PARA REVISIÓN
 
 -- ============================================================
 -- MODIFICACIÓN: Usuario_Roles - Agregar NivelJerarquia
@@ -259,126 +267,104 @@ CREATE INDEX IX_PermisosUsuario_Codigo
 ALTER TABLE Usuario_Roles ADD
     NivelJerarquia INT NOT NULL 
         CONSTRAINT DF_Usuario_Roles_NivelJerarquia DEFAULT 0;
-
--- Comentario: Actualizar valores según MongoDB actual:
--- UPDATE Usuario_Roles SET NivelJerarquia = 100 WHERE CodigoRol = 'ADMIN';
--- UPDATE Usuario_Roles SET NivelJerarquia = 80 WHERE CodigoRol = 'GERENCIA';
--- etc.
 ```
 
-### 4.5 Modificación: Agregar `UnidadNegocioDefaultID` a `Usuario_Catalogo`
+#### D.2 DDL DESCARTADO
 
 ```sql
--- ⚠️ NO EJECUTAR - SOLO PROPUESTA PARA REVISIÓN
+-- ❌ NO CREAR - Usuario_SucursalesAsignacion
+-- Razón: El filtro actual es por Unidad, no por Sucursal directamente
 
--- ============================================================
--- MODIFICACIÓN: Usuario_Catalogo - Agregar UnidadNegocioDefaultID
--- ============================================================
-ALTER TABLE Usuario_Catalogo ADD
-    UnidadNegocioDefaultID UNIQUEIDENTIFIER NULL;
-
--- FK opcional:
--- ALTER TABLE Usuario_Catalogo ADD
---     CONSTRAINT FK_Usuario_UnidadDefault 
---         FOREIGN KEY (UnidadNegocioDefaultID) REFERENCES Unidades_Negocio(id);
+-- ❌ NO CREAR - Usuario_PermisosUsuario  
+-- Razón: Solo 2 usuarios tienen permisos directos, ambos son legacy
 ```
 
 ---
 
-## 5. COMPARACIÓN DE ESTRUCTURA: MODELO EXISTENTE vs PROPUESTA
+### E. RIESGOS IDENTIFICADOS
 
-### 5.1 Usuario_RolesAsignacion (EXISTENTE - Modelo a seguir)
+| Riesgo | Severidad | Mitigación |
+|--------|-----------|------------|
+| IDs de `empresas` MongoDB ≠ `Unidades_Negocio` EDARSAHUB | **P0_CRÍTICO** | Crear tabla de mapeo o normalizar IDs antes de migrar |
+| No existe tabla `Sistema_Empresas` en EDARSAHUB | **P1_ALTO** | Decidir si crear o usar `Unidades_Negocio` como equivalente |
+| `RH_Cat_Sucursales` usa INT, MongoDB usa UUID | **P2_MEDIO** | Usar mapeo por nombre o crear columna UUID |
+
+---
+
+### F. ESTRATEGIA DE ROLLBACK
 
 ```sql
-UsuarioRolAsignacionID  BIGINT IDENTITY    -- PK
-UsuarioID               INT NOT NULL       -- FK Usuario
-RolID                   INT NOT NULL       -- FK Rol
-EsPrincipal             BIT NOT NULL       -- Es rol principal
-FechaInicio             DATETIME2 NOT NULL -- Inicio vigencia
-FechaFin                DATETIME2 NULL     -- Fin vigencia
-Activo                  BIT NOT NULL       -- Estado
-CreatedAt               DATETIME2 NOT NULL -- Auditoría
-CreatedBy               VARCHAR(100) NULL  -- Auditoría
+-- En caso de problemas post-implementación:
+DROP TABLE IF EXISTS Usuario_UnidadesAsignacion;
+ALTER TABLE Usuario_Roles DROP CONSTRAINT IF EXISTS DF_Usuario_Roles_NivelJerarquia;
+ALTER TABLE Usuario_Roles DROP COLUMN IF EXISTS NivelJerarquia;
 ```
 
-### 5.2 Usuario_UnidadesAsignacion (PROPUESTA)
+---
 
-```sql
-UsuarioUnidadAsignacionID  BIGINT IDENTITY    -- PK (mismo patrón)
-UsuarioID                  INT NOT NULL       -- FK Usuario
-UnidadNegocioID            UNIQUEIDENTIFIER   -- FK Unidad (tipo correcto)
-EsPrincipal                BIT NOT NULL       -- Es unidad principal
-FechaInicio                DATETIME2 NOT NULL -- Inicio vigencia
-FechaFin                   DATETIME2 NULL     -- Fin vigencia
-Activo                     BIT NOT NULL       -- Estado
-CreatedAt                  DATETIME2 NOT NULL -- Auditoría
-CreatedBy                  VARCHAR(100) NULL  -- Auditoría
-```
+### G. PRUEBAS REQUERIDAS ANTES DE DDL
 
-**Conclusión:** La propuesta sigue exactamente el patrón de Usuario_RolesAsignacion.
+| # | Prueba | Criterio |
+|---|--------|----------|
+| 1 | Mapear IDs `empresas` MongoDB → `Unidades_Negocio` EDARSAHUB | 5/5 mapeados por nombre |
+| 2 | Verificar FK a Usuario_Catalogo funciona | UsuarioID existe |
+| 3 | Verificar FK a Unidades_Negocio funciona | UnidadNegocioID existe |
+| 4 | Probar INSERT de asignación | Sin errores |
+| 5 | Probar query de permisos con JOIN | Datos correctos |
 
 ---
 
-## 6. RESUMEN DE NOMENCLATURA VALIDADA
+### H. AUTORIZACIONES REQUERIDAS
 
-| Campo MongoDB | Tabla EDARSAHUB Propuesta | Estado |
-|---------------|---------------------------|--------|
-| `empresas_permitidas` | `Usuario_UnidadesAsignacion` | ✅ Sigue patrón |
-| `sucursales` | `Usuario_SucursalesAsignacion` | ✅ Sigue patrón |
-| `sec_permisos` | `Usuario_PermisosUsuario` | ✅ Sigue patrón |
-| `nivel_jerarquia` | Columna en `Usuario_Roles` | ✅ Atributo directo |
-| `empresa_default_id` | Columna en `Usuario_Catalogo` | ✅ Atributo directo |
-
----
-
-## 7. RIESGOS Y MITIGACIÓN
-
-| Riesgo | Mitigación |
-|--------|------------|
-| Tipo de ID diferente (UsuarioID es INT, UnidadNegocioID es UNIQUEIDENTIFIER) | Usar tipo correcto en cada FK |
-| Unicidad de relación | Constraint UNIQUE en combinación de FKs |
-| Histórico de asignaciones | FechaInicio/FechaFin permiten tracking |
-| Rollback | Scripts DROP TABLE preparados |
+| Paso | Autorización |
+|------|--------------|
+| 1. Crear `Usuario_UnidadesAsignacion` | ⬜ PENDIENTE |
+| 2. Agregar columna `NivelJerarquia` a `Usuario_Roles` | ⬜ PENDIENTE |
+| 3. Poblar tablas con datos mapeados | ⬜ PENDIENTE |
+| 4. Modificar código para leer EDARSAHUB | ⬜ PENDIENTE |
 
 ---
 
-## 8. AUTORIZACIÓN REQUERIDA
+### I. PREGUNTAS PENDIENTES PARA EL USUARIO
 
-### Checklist de Autorización
+1. **¿"Empresas" = "Unidades de Negocio" en el contexto de EDARSA?**
+   - Si SÍ: Usar `Unidades_Negocio` existente y mapear IDs por nombre
+   - Si NO: Crear tabla `Sistema_Empresas`
 
-| Paso | Estado |
-|------|--------|
-| ✅ Backup MongoDB completado | LISTO |
-| ✅ Análisis de nomenclatura EDARSAHUB | LISTO |
-| ✅ Propuesta DDL v2.0 con nombres corregidos | LISTO |
-| ⬜ Revisión y aprobación de nomenclatura por usuario | PENDIENTE |
-| ⬜ Autorización para ejecutar DDL | NO AUTORIZADO |
-| ⬜ Crear tablas en EDARSAHUB | NO AUTORIZADO |
-| ⬜ Poblar tablas con datos | NO AUTORIZADO |
-| ⬜ Modificar código backend | NO AUTORIZADO |
+2. **¿Cómo mapear IDs de `empresas` MongoDB a `Unidades_Negocio` EDARSAHUB?**
+   - Opción A: Por coincidencia de nombre (ORIGEN↔ORIGEN, etc.)
+   - Opción B: Crear tabla de equivalencias
+   - Opción C: Actualizar MongoDB para usar IDs de EDARSAHUB
 
----
-
-## 9. PREGUNTAS PENDIENTES PARA EL USUARIO
-
-Antes de autorizar el DDL, se requiere decisión sobre:
-
-1. **¿`Usuario_UnidadesAsignacion` o `Usuario_EmpresasAsignacion`?**
-   - El sistema actual usa "empresas_permitidas" en MongoDB
-   - EDARSAHUB tiene "Unidades_Negocio" (no "Empresas")
-   - ¿Son sinónimos en el contexto del negocio?
-
-2. **¿Se debe crear tabla `Sistema_Empresas` o usar `Unidades_Negocio` como equivalente?**
-   - MongoDB tiene colección `empresas` (5 documentos)
-   - ¿Son las "empresas" equivalentes a "unidades de negocio"?
-
-3. **¿`Usuario_PermisosUsuario` o mantener solo `Usuario_PermisosRolModulo`?**
-   - La tabla de permisos por rol ya existe
-   - ¿Realmente hay permisos directos al usuario que no pasan por rol?
+3. **¿Los 2 usuarios con permisos directos deben corregirse asignándoles rol?**
+   - Si SÍ: Corregir antes de migración
+   - Si NO: Explicar caso de uso para diseñar solución
 
 ---
 
-**FIN DEL DOCUMENTO DE PROPUESTA DDL v2.0**
+## RESUMEN EJECUTIVO
 
-*Este documento es de solo lectura. Ningún DDL ha sido ejecutado.*
-*Toda implementación requiere autorización expresa del usuario.*
+### Lo que se confirmó:
+
+1. ✅ **Empresa ≠ Unidad de Negocio ≠ Sucursal** (entidades distintas)
+2. ✅ **IDs de MongoDB ≠ IDs de EDARSAHUB** (requiere mapeo)
+3. ✅ **Usuario_PermisosUsuario NO es necesaria** (permisos por rol son suficientes)
+4. ✅ **Nomenclatura `Usuario_UnidadesAsignacion` es correcta**
+
+### Lo que falta decidir:
+
+1. ⬜ ¿Crear `Sistema_Empresas` o usar `Unidades_Negocio` como equivalente?
+2. ⬜ ¿Cómo mapear IDs entre sistemas?
+3. ⬜ ¿Autorizar DDL?
+
+### DDL Final Propuesto:
+
+- **CREAR:** `Usuario_UnidadesAsignacion` (1 tabla)
+- **MODIFICAR:** `Usuario_Roles` (agregar columna `NivelJerarquia`)
+- **DESCARTAR:** `Usuario_SucursalesAsignacion`, `Usuario_PermisosUsuario`
+
+---
+
+**FIN DEL DOCUMENTO DE VALIDACIÓN FINAL PRE-DDL**
+
+*Ningún DDL ha sido ejecutado. Toda implementación requiere autorización expresa.*
