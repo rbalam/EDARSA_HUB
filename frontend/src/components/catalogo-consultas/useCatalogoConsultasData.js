@@ -1,15 +1,17 @@
 /**
  * useCatalogoConsultasData - Hook para datos de Catálogo de Consultas
  * Extrae toda la lógica de estado y fetching del componente principal.
+ * 
+ * CORRECCIÓN P0 - 2026-05-08:
+ * Migrado de axios directo a cliente API centralizado para garantizar
+ * envío de Authorization header cuando cookie httpOnly falla por CORS/proxy.
  */
 import { useState, useEffect, useCallback } from 'react';
-// FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly
-import axios from 'axios';
+// FASE AUTH-SECURITY-01 / FASE 4.1: Usa cliente API centralizado con interceptor de token
+import api from '../../lib/api';
 import { fetchServersOperativos } from '../../services/serversService';
 import logger from '../../services/logger';
 import { toast } from 'sonner';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 export function useCatalogoConsultasData() {
   // Estados principales
@@ -63,10 +65,8 @@ export function useCatalogoConsultasData() {
       if (filtroCategoria) params.categoria = filtroCategoria;
       if (filtroSistema) params.sistema = filtroSistema;
       
-      const response = await axios.get(`${API_URL}/api/catalogo/consultas-rich`, {
-        params,
-        withCredentials: true
-      });
+      // CORRECCIÓN P0: Usa cliente API centralizado con interceptor de token
+      const response = await api.get('/catalogo/consultas-rich', { params });
       setConsultas(response.data.consultas);
       setCategorias(response.data.categorias);
     } catch (error) {
@@ -130,11 +130,11 @@ export function useCatalogoConsultasData() {
     setResultados(null);
     
     try {
-      // Auth viaja en cookie httpOnly
-      const response = await axios.post(
-        `${API_URL}/api/catalogo/ejecutar-rich/${consultaSeleccionada.id}?server_id=${serverSeleccionado}`,
+      // CORRECCIÓN P0: Usa cliente API centralizado con interceptor de token
+      const response = await api.post(
+        `/catalogo/ejecutar-rich/${consultaSeleccionada.id}?server_id=${serverSeleccionado}`,
         { parametros },
-        { withCredentials: true, timeout: 60000 }
+        { timeout: 60000 }
       );
       setResultados(response.data);
       toast.success(`${response.data.registros} registros encontrados`);
@@ -158,11 +158,11 @@ export function useCatalogoConsultasData() {
     setModoTest(true);
     
     try {
-      // Auth viaja en cookie httpOnly
-      const response = await axios.post(
-        `${API_URL}/api/catalogo/ejecutar-rich/${consultaSeleccionada.id}?server_id=${serverSeleccionado}&limit=10`,
+      // CORRECCIÓN P0: Usa cliente API centralizado con interceptor de token
+      const response = await api.post(
+        `/catalogo/ejecutar-rich/${consultaSeleccionada.id}?server_id=${serverSeleccionado}&limit=10`,
         { parametros },
-        { withCredentials: true, timeout: 30000 }
+        { timeout: 30000 }
       );
       setResultadosTest(response.data);
       toast.success(`Test completado: ${response.data.registros} registros (limitado a 10)`);
@@ -189,11 +189,10 @@ export function useCatalogoConsultasData() {
     if (!consultaSeleccionada) return;
     
     try {
-      // Auth viaja en cookie httpOnly
-      await axios.put(
-        `${API_URL}/api/catalogo/consultas/${consultaSeleccionada.id}`,
-        { sql: sqlEditado },
-        { withCredentials: true }
+      // CORRECCIÓN P0: Usa cliente API centralizado con interceptor de token
+      await api.put(
+        `/catalogo/consultas/${consultaSeleccionada.id}`,
+        { sql: sqlEditado }
       );
       setConsultaSeleccionada({ ...consultaSeleccionada, sql: sqlEditado });
       setConsultas(prev => prev.map(c => 
@@ -240,15 +239,13 @@ export function useCatalogoConsultasData() {
     
     setGuardando(true);
     try {
-      // Auth viaja en cookie httpOnly
+      // CORRECCIÓN P0: Usa cliente API centralizado con interceptor de token
       const payload = {
         ...nuevaConsulta,
         parametros: nuevaConsulta.parametros.split(',').map(p => p.trim()).filter(p => p)
       };
       
-      await axios.post(`${API_URL}/api/catalogo/consultas-custom`, payload, {
-        withCredentials: true
-      });
+      await api.post('/catalogo/consultas-custom', payload);
       
       toast.success('Consulta creada exitosamente');
       setShowNuevaConsulta(false);
