@@ -191,8 +191,10 @@ export default function CatalogoConsultas() {
                         <SelectValue placeholder="Seleccionar..." />
                       </SelectTrigger>
                       <SelectContent>
+                        {/* CORRECCIÓN P0 SELECT: Item oculto para valor inicial */}
+                        <SelectItem value="__NONE__" className="hidden">Seleccionar...</SelectItem>
                         {serversDisponibles.length === 0 ? (
-                          <SelectItem value="none" disabled>No hay servidores {consultaSeleccionada.sistema}</SelectItem>
+                          <SelectItem value="__NO_SERVERS__" disabled>No hay servidores {consultaSeleccionada.sistema}</SelectItem>
                         ) : (
                           serversDisponibles.map(s => (
                             <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
@@ -263,7 +265,7 @@ export default function CatalogoConsultas() {
                     variant={modoTest ? "default" : "outline"}
                     onClick={() => { setModoTest(!modoTest); setMostrarSQL(false); setModoEdicion(false); }}
                     size="sm"
-                    disabled={!serverSeleccionado}
+                    disabled={!serverSeleccionado || serverSeleccionado === '__NONE__'}
                     className="flex flex-col items-center py-3 h-auto"
                   >
                     <TestTube className="h-4 w-4 mb-1" />
@@ -274,7 +276,7 @@ export default function CatalogoConsultas() {
                   <Button 
                     variant="default"
                     onClick={ejecutarConsulta}
-                    disabled={ejecutando || !serverSeleccionado}
+                    disabled={ejecutando || !serverSeleccionado || serverSeleccionado === '__NONE__'}
                     size="sm"
                     className="flex flex-col items-center py-3 h-auto bg-green-600 hover:bg-green-700"
                   >

@@ -26,8 +26,9 @@ export function useCatalogoConsultasData() {
   const [filtroSistema, setFiltroSistema] = useState('');
   
   // Consulta seleccionada
+  // CORRECCIÓN P0 SELECT: Usar "__NONE__" en lugar de "" para evitar error Radix Select
   const [consultaSeleccionada, setConsultaSeleccionada] = useState(null);
-  const [serverSeleccionado, setServerSeleccionado] = useState('');
+  const [serverSeleccionado, setServerSeleccionado] = useState('__NONE__');
   const [parametros, setParametros] = useState({});
   
   // Resultados
@@ -121,7 +122,8 @@ export function useCatalogoConsultasData() {
 
   // Ejecutar consulta
   const ejecutarConsulta = useCallback(async () => {
-    if (!consultaSeleccionada || !serverSeleccionado) {
+    // CORRECCIÓN P0 SELECT: "__NONE__" significa sin selección
+    if (!consultaSeleccionada || !serverSeleccionado || serverSeleccionado === '__NONE__') {
       toast.error('Selecciona una consulta y un servidor');
       return;
     }
@@ -148,7 +150,8 @@ export function useCatalogoConsultasData() {
 
   // Ejecutar test
   const ejecutarTest = useCallback(async () => {
-    if (!consultaSeleccionada || !serverSeleccionado) {
+    // CORRECCIÓN P0 SELECT: "__NONE__" significa sin selección
+    if (!consultaSeleccionada || !serverSeleccionado || serverSeleccionado === '__NONE__') {
       toast.error('Selecciona una consulta y un servidor');
       return;
     }
