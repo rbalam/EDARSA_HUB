@@ -462,14 +462,25 @@ class TestApiRequest(BaseModel):
 @api_router.post("/test-api-connection")
 async def test_api_connection(request: TestApiRequest):
     """
-    Prueba la conexión a una API MPRO local.
-    Retorna el estado de la API y del SQL Server local.
+    Prueba la conexión a una API local (SoftRestaurant o MPRO).
+    
+    CORRECCIÓN P0 - 2026-05-08:
+    Usa query universal "SELECT 1 AS test" para validar conectividad SQL
+    sin depender de tablas específicas de ningún sistema.
+    
+    Valida:
+    1. Que la API local responde
+    2. Que la API key es válida
+    3. Que la API puede ejecutar SQL contra SQL Server
+    
+    NO intenta calcular ventas del día.
     """
     import requests
     
     try:
-        # Query simple para probar conexión
-        test_query = "SELECT ISNULL(SUM(cd_importe), 0) as ventas FROM Comanda INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio WHERE CONVERT(date, co_fecha, 101) = CONVERT(date, GETDATE(), 101)"
+        # CORRECCIÓN P0: Query universal de conectividad SQL
+        # NO usa tablas específicas de MPRO (Comanda) ni SoftRestaurant (cheques)
+        test_query = "SELECT 1 AS test"
         
         headers = {"x-api-key": request.api_key}
         params = {"sql": test_query}
@@ -489,22 +500,13 @@ async def test_api_connection(request: TestApiRequest):
                     "ventas_hoy": 0
                 }
             
-            # Extraer ventas - manejar formato {"total_registros":1,"data":[{"ventas":1590.0}]}
-            ventas = 0
-            if isinstance(data, dict) and "data" in data:
-                inner_data = data.get("data", [])
-                if isinstance(inner_data, list) and len(inner_data) > 0:
-                    ventas = float(inner_data[0].get("ventas", 0) or 0)
-            elif isinstance(data, list) and len(data) > 0:
-                ventas = float(data[0].get("ventas", 0) or 0)
-            elif isinstance(data, dict):
-                ventas = float(data.get("ventas", 0) or 0)
-            
+            # CORRECCIÓN P0: Query universal exitosa = SQL conectado
+            # Devolvemos ventas_hoy: 0 para mantener compatibilidad con frontend
             return {
                 "success": True,
                 "sql_connected": True,
-                "ventas_hoy": ventas,
-                "message": f"Conexión exitosa. Ventas hoy: ${ventas:,.2f}"
+                "ventas_hoy": 0,
+                "message": "Conexión exitosa. API y SQL Server operativos."
             }
         else:
             return {
