@@ -1,425 +1,384 @@
-# PROPUESTA DDL AUTH/RBAC EDARSAHUB
+# PROPUESTA DDL AUTH/RBAC EDARSAHUB — NOMENCLATURA CORREGIDA
 
-**Documento:** Propuesta de Modelo de Datos para Migración Auth/RBAC  
+**Documento:** Propuesta de Modelo de Datos con Nomenclatura Validada  
 **Fecha:** 8 de Mayo 2026  
 **Estado:** PROPUESTA DOCUMENTAL — NO EJECUTAR  
-**Versión:** 1.0
+**Versión:** 2.0 (Nomenclatura corregida)
 
 ---
 
 ## 1. RESUMEN
 
-Este documento presenta el análisis técnico para determinar si los campos faltantes en EDARSAHUB deben implementarse como:
-- **OPCIÓN A:** Columnas directas en `Usuario_Catalogo`
-- **OPCIÓN B:** Tablas relacionales normalizadas
-- **OPCIÓN C:** Reutilización de tablas existentes
-- **OPCIÓN D:** Mantener temporalmente en MongoDB
+Este documento corrige la propuesta DDL anterior, aplicando el **patrón de nomenclatura real** detectado en EDARSAHUB para el módulo Usuario/Auth.
 
-La recomendación final favorece **OPCIÓN B/C (Tablas Relacionales)** para `empresas_permitidas` y `sec_permisos`, y **OPCIÓN A (Columna)** para `nivel_jerarquia` en `Usuario_Roles`.
+### Cambios respecto a v1.0
 
----
-
-## 2. CAMPOS FALTANTES DETECTADOS
-
-| Campo MongoDB | Colección | Tipo Actual | Uso |
-|---------------|-----------|-------------|-----|
-| `empresas_permitidas` | users | Array de UUIDs | Filtro RBAC por empresa/unidad |
-| `sucursales` | users | Array de strings | Filtro RBAC por sucursal |
-| `sec_permisos` | users | Array de strings | Códigos de permisos directos |
-| `sec_rol` | users | String | ID del rol RBAC asignado |
-| `nivel_jerarquia` | rbac_roles | Integer (20-100) | Nivel de acceso del rol |
-| `permisos_catalogos` | users | Array | Catálogos SQL permitidos |
-| `puede_autorizar` | users | Boolean | Flag de workflow |
-| `puede_liberar` | users | Boolean | Flag de workflow |
-| `puede_solicitar` | users | Boolean | Flag de workflow |
-| `empresa_default_id` | users | UUID string | Empresa por defecto |
+| Propuesta v1.0 (INCORRECTA) | Propuesta v2.0 (CORREGIDA) |
+|-----------------------------|-----------------------------|
+| `Usuario_UnidadesPermitidas` | `Usuario_UnidadesAsignacion` |
+| `Usuario_SucursalesPermitidas` | `Usuario_SucursalesAsignacion` |
+| `Usuario_PermisosDirectos` | `Usuario_PermisosUsuario` |
 
 ---
 
-## 3. VALIDACIÓN CONTRA TABLAS EXISTENTES EDARSAHUB
+## 2. PATRÓN DE NOMENCLATURA DETECTADO EN EDARSAHUB
 
-### 3.1 Para `empresas_permitidas` / `sucursales`
+### 2.1 Tablas Existentes del Módulo Usuario_* (14 tablas)
 
-**Tablas encontradas:**
-| Tabla | Descripción | Registros | ¿Útil? |
-|-------|-------------|-----------|--------|
-| `Unidades_Negocio` | Catálogo de unidades de negocio | 5 | ✅ SÍ |
-| `RH_Cat_Sucursales` | Catálogo de sucursales fiscales | 0 | ⚠️ Vacía |
-| `Usuario_RolesAsignacion` | Asignación usuario-rol | 0 | ✅ Modelo existe |
-
-**Conclusión:** NO existe tabla `Usuario_UnidadesPermitidas`. Se debe CREAR como relación N:M.
-
-### 3.2 Para `sec_permisos`
-
-**Tablas encontradas:**
-| Tabla | Descripción | Registros | ¿Útil? |
-|-------|-------------|-----------|--------|
-| `Usuario_PermisosRolModulo` | Permisos por rol-módulo-acción | 0 | ✅ MODELO EXISTE |
-| `Usuario_Modulos` | Catálogo de módulos | 8 | ✅ CON DATOS |
-| `Usuario_Acciones` | Catálogo de acciones | 10 | ✅ CON DATOS |
-
-**Conclusión:** El modelo normalizado YA ESTÁ DISEÑADO. Solo falta:
-1. Poblar `Usuario_PermisosRolModulo` con los permisos
-2. Crear tabla `Usuario_PermisosEspeciales` para permisos directos a usuario (bypass rol)
-
-### 3.3 Para `nivel_jerarquia`
-
-**Tablas encontradas:**
-| Tabla | Descripción | ¿Tiene nivel? |
-|-------|-------------|---------------|
-| `Usuario_Roles` | Catálogo de roles | ❌ NO |
-| `RH_Cat_Puestos` | Catálogo de puestos | ✅ `NivelOrganizacional` (varchar) |
-
-**Conclusión:** 
-- `RH_Cat_Puestos.NivelOrganizacional` es de RH, no de seguridad
-- Se recomienda agregar columna `NivelJerarquia INT` a `Usuario_Roles`
-
----
-
-## 4. DECISIÓN DE MODELADO RECOMENDADA
-
-### 4.1 `empresas_permitidas` → CREAR TABLA RELACIONAL
-
-| Atributo | Análisis |
-|----------|----------|
-| **Campo requerido** | `empresas_permitidas` (array de UUIDs) |
-| **Origen MongoDB** | `users.empresas_permitidas` |
-| **Uso actual en código** | Filtro RBAC en `user_access_context.py`, `resolve_user_access_context()` |
-| **Endpoint/función** | Todos los endpoints protegidos, Dashboard, Comercial, Finanzas |
-| **Riesgo si falta** | **P0_CRÍTICO** - Usuarios no pueden filtrar por unidad de negocio |
-| **Tabla EDARSAHUB candidata** | `Unidades_Negocio` (existe) |
-| **Recomendación** | ✅ **CREAR TABLA RELACIONAL** `Usuario_UnidadesPermitidas` |
-
-**Justificación:**
-- Una relación N:M usuario-unidad es el modelo correcto
-- Evita JSON/arrays en columnas
-- Permite queries eficientes con JOIN
-- Permite auditoría y fechas de asignación
-
-### 4.2 `sec_permisos` → USAR TABLA EXISTENTE + NUEVA
-
-| Atributo | Análisis |
-|----------|----------|
-| **Campo requerido** | `sec_permisos` (array de códigos como "CARGOS_VER") |
-| **Origen MongoDB** | `users.sec_permisos` |
-| **Uso actual en código** | Validación de permisos en endpoints, `@require_permission()` |
-| **Endpoint/función** | Múltiples: `/cargos`, `/catalogos`, `/usuarios`, etc. |
-| **Riesgo si falta** | **P0_CRÍTICO** - Autorización falla |
-| **Tabla EDARSAHUB candidata** | `Usuario_PermisosRolModulo` (existe, vacía) |
-| **Recomendación** | ✅ **USAR EXISTENTE** + CREAR `Usuario_PermisosDirectos` |
-
-**Justificación:**
-- `Usuario_PermisosRolModulo` cubre permisos heredados del rol
-- Se necesita tabla adicional para permisos específicos de usuario (override)
-- El modelo actual de MongoDB mezcla ambos conceptos
-
-### 4.3 `nivel_jerarquia` → AGREGAR COLUMNA A TABLA EXISTENTE
-
-| Atributo | Análisis |
-|----------|----------|
-| **Campo requerido** | `nivel_jerarquia` (entero 20-100) |
-| **Origen MongoDB** | `rbac_roles.nivel_jerarquia` |
-| **Uso actual en código** | Comparación de niveles para autorización jerárquica |
-| **Endpoint/función** | `/rbac/roles`, comparación en autorizaciones |
-| **Riesgo si falta** | **P1_ALTO** - Jerarquía de autorización indefinida |
-| **Tabla EDARSAHUB candidata** | `Usuario_Roles` (existe) |
-| **Recomendación** | ✅ **AGREGAR COLUMNA** `NivelJerarquia INT` a `Usuario_Roles` |
-
-**Justificación:**
-- Es un atributo directo del rol, no una relación
-- Una columna INT es más eficiente que una tabla
-- `RH_Cat_Puestos.NivelOrganizacional` es de RH, no seguridad
-
-### 4.4 Otros campos
-
-| Campo | Recomendación | Justificación |
-|-------|---------------|---------------|
-| `sec_rol` | USAR `Usuario_RolesAsignacion` | Tabla ya existe |
-| `permisos_catalogos` | CREAR columna JSON temporal | Específico del sistema |
-| `puede_autorizar/liberar/solicitar` | DERIVAR de permisos | No columnas separadas |
-| `empresa_default_id` | AGREGAR columna a `Usuario_Catalogo` | Es atributo directo |
-
----
-
-## 5. DDL PROPUESTO (SIN EJECUTAR)
-
-### OPCIÓN A: Agregar columnas directas (NO RECOMENDADO para relaciones N:M)
-
-```sql
--- ⚠️ NO EJECUTAR - SOLO REFERENCIA
--- NO RECOMENDADO: Usar JSON para relaciones N:M es anti-patrón
-
-ALTER TABLE Usuario_Catalogo ADD 
-    EmpresasPermitidasJSON NVARCHAR(MAX) NULL,  -- NO RECOMENDADO
-    SucursalesJSON NVARCHAR(MAX) NULL,          -- NO RECOMENDADO
-    PermisosDirectosJSON NVARCHAR(MAX) NULL,    -- NO RECOMENDADO
-    EmpresaDefaultID NVARCHAR(100) NULL;        -- ✅ Este sí es atributo directo
-
-ALTER TABLE Usuario_Roles ADD
-    NivelJerarquia INT NOT NULL DEFAULT 0;      -- ✅ RECOMENDADO
+```
+Usuario_Acciones              (Catálogo de acciones)
+Usuario_Autorizaciones        (Proceso de autorización)
+Usuario_AutorizacionesDetalle (Detalle de autorización)
+Usuario_Catalogo              (Tabla maestra de usuarios)
+Usuario_LogAccesos            (Bitácora de accesos)
+Usuario_LogActividades        (Bitácora de actividades)
+Usuario_MatrizAutorizacion    (Matriz de autorización)
+Usuario_Modulos               (Catálogo de módulos)
+Usuario_PermisosRolModulo     (Relación Rol-Módulo-Acción)
+Usuario_PortalConfiguracion   (Configuración de portal)
+Usuario_Roles                 (Catálogo de roles)
+Usuario_RolesAsignacion       (Relación N:M Usuario-Rol)
+Usuario_Sesiones              (Registro de sesiones)
+Usuario_TiposAutorizacion     (Catálogo de tipos)
 ```
 
-### OPCIÓN B: Crear tablas relacionales (RECOMENDADO)
+### 2.2 Reglas de Nomenclatura Identificadas
+
+| Tipo | Patrón | Ejemplo Real |
+|------|--------|--------------|
+| **Prefijo de módulo** | `Usuario_` | `Usuario_Catalogo` |
+| **Tabla maestra** | `Usuario_[Entidad]` | `Usuario_Roles` |
+| **Relación N:M** | `Usuario_[Entidad]Asignacion` | `Usuario_RolesAsignacion` |
+| **Permisos** | `Usuario_Permisos[Entidad][Contexto]` | `Usuario_PermisosRolModulo` |
+| **Bitácora** | `Usuario_Log[Entidad]` | `Usuario_LogAccesos` |
+| **Detalle** | `Usuario_[Entidad]Detalle` | `Usuario_AutorizacionesDetalle` |
+| **Configuración** | `Usuario_[Entidad]Configuracion` | `Usuario_PortalConfiguracion` |
+
+### 2.3 Reglas de Columnas
+
+| Tipo | Patrón | Ejemplo Real |
+|------|--------|--------------|
+| **PK** | `[NombreSinPrefijo]ID` | `UsuarioRolAsignacionID` |
+| **FK a Usuario** | `UsuarioID` | `UsuarioID INT NOT NULL` |
+| **FK a Rol** | `RolID` | `RolID INT NOT NULL` |
+| **FK a Unidad** | `UnidadNegocioID` | `UnidadNegocioID UNIQUEIDENTIFIER` |
+| **Fecha inicio** | `FechaInicio` | `FechaInicio DATETIME2 NOT NULL` |
+| **Fecha fin** | `FechaFin` | `FechaFin DATETIME2 NULL` |
+| **Fecha alta** | `FechaAlta` | `FechaAlta DATETIME2 NOT NULL` |
+| **Activo** | `Activo` | `Activo BIT NOT NULL` |
+| **Auditoría creación** | `CreatedAt`, `CreatedBy` | `CreatedAt DATETIME2`, `CreatedBy VARCHAR(100)` |
+| **Auditoría modificación** | `FechaModificacion`, `ModifiedBy` | `FechaModificacion DATETIME2`, `ModifiedBy VARCHAR(100)` |
+
+---
+
+## 3. VALIDACIÓN DE CAMPOS FALTANTES
+
+### 3.1 `empresas_permitidas` → Mapea a Unidades de Negocio
+
+| Aspecto | Análisis |
+|---------|----------|
+| **Origen MongoDB** | `users.empresas_permitidas` (array de UUIDs) |
+| **Uso** | Filtro RBAC para limitar acceso por empresa/unidad |
+| **Tabla EDARSAHUB relacionada** | `Unidades_Negocio` (existe, 5 registros) |
+| **Tabla de relación existente** | NO EXISTE |
+| **Nombre propuesto** | `Usuario_UnidadesAsignacion` |
+| **Justificación** | Sigue patrón de `Usuario_RolesAsignacion` |
+
+### 3.2 `sucursales` → Sucursales por usuario
+
+| Aspecto | Análisis |
+|---------|----------|
+| **Origen MongoDB** | `users.sucursales` (array de strings) |
+| **Uso** | Filtro RBAC para limitar acceso por sucursal |
+| **Tabla EDARSAHUB relacionada** | `RH_Cat_Sucursales` (existe, 0 registros) |
+| **Tabla de relación existente** | NO EXISTE |
+| **Nombre propuesto** | `Usuario_SucursalesAsignacion` |
+| **Justificación** | Sigue patrón de `Usuario_RolesAsignacion` |
+
+### 3.3 `sec_permisos` → Permisos directos por usuario
+
+| Aspecto | Análisis |
+|---------|----------|
+| **Origen MongoDB** | `users.sec_permisos` (array de códigos) |
+| **Uso** | Permisos específicos asignados al usuario (bypass rol) |
+| **Tabla EDARSAHUB relacionada** | `Usuario_PermisosRolModulo` (permisos por rol, no usuario) |
+| **Tabla de relación existente** | NO EXISTE para permisos directos |
+| **Nombre propuesto** | `Usuario_PermisosUsuario` |
+| **Justificación** | Análogo a `Usuario_PermisosRolModulo` pero a nivel usuario |
+
+### 3.4 `nivel_jerarquia` → Atributo de Usuario_Roles
+
+| Aspecto | Análisis |
+|---------|----------|
+| **Origen MongoDB** | `rbac_roles.nivel_jerarquia` (INT 20-100) |
+| **Uso** | Comparación jerárquica entre roles |
+| **Tabla EDARSAHUB** | `Usuario_Roles` (existe, 5 registros, SIN nivel) |
+| **Propuesta** | Agregar columna `NivelJerarquia INT` a `Usuario_Roles` |
+| **Justificación** | Es atributo directo del rol, no relación |
+
+---
+
+## 4. DDL PROPUESTO CON NOMENCLATURA CORREGIDA (SIN EJECUTAR)
+
+### 4.1 Tabla: `Usuario_UnidadesAsignacion`
 
 ```sql
 -- ⚠️ NO EJECUTAR - SOLO PROPUESTA PARA REVISIÓN
 
 -- ============================================================
--- TABLA: Usuario_UnidadesPermitidas
--- Relación N:M entre usuarios y unidades de negocio permitidas
+-- TABLA: Usuario_UnidadesAsignacion
+-- Relación N:M entre usuarios y unidades de negocio
+-- Sigue el patrón de Usuario_RolesAsignacion
 -- ============================================================
-CREATE TABLE Usuario_UnidadesPermitidas (
-    UsuarioUnidadID         BIGINT IDENTITY(1,1) NOT NULL,
-    UsuarioID               INT NOT NULL,
-    UnidadNegocioID         UNIQUEIDENTIFIER NOT NULL,
-    EsDefault               BIT NOT NULL DEFAULT 0,
-    Activo                  BIT NOT NULL DEFAULT 1,
-    FechaAsignacion         DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-    FechaRevocacion         DATETIME2 NULL,
-    AsignadoPor             VARCHAR(100) NULL,
+CREATE TABLE Usuario_UnidadesAsignacion (
+    -- PK siguiendo patrón [NombreSinPrefijo]ID
+    UsuarioUnidadAsignacionID   BIGINT IDENTITY(1,1) NOT NULL,
     
-    CONSTRAINT PK_Usuario_UnidadesPermitidas PRIMARY KEY (UsuarioUnidadID),
-    CONSTRAINT FK_UsuarioUnidades_Usuario FOREIGN KEY (UsuarioID) 
-        REFERENCES Usuario_Catalogo(UsuarioID),
-    CONSTRAINT FK_UsuarioUnidades_Unidad FOREIGN KEY (UnidadNegocioID) 
-        REFERENCES Unidades_Negocio(id),
-    CONSTRAINT UQ_UsuarioUnidades UNIQUE (UsuarioID, UnidadNegocioID)
+    -- FKs
+    UsuarioID                   INT NOT NULL,
+    UnidadNegocioID             UNIQUEIDENTIFIER NOT NULL,
+    
+    -- Atributos de la relación (igual que Usuario_RolesAsignacion)
+    EsPrincipal                 BIT NOT NULL DEFAULT 0,
+    FechaInicio                 DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    FechaFin                    DATETIME2 NULL,
+    Activo                      BIT NOT NULL DEFAULT 1,
+    
+    -- Auditoría (patrón EDARSAHUB)
+    CreatedAt                   DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                   VARCHAR(100) NULL,
+    
+    -- Constraints
+    CONSTRAINT PK_Usuario_UnidadesAsignacion 
+        PRIMARY KEY (UsuarioUnidadAsignacionID),
+    CONSTRAINT FK_UsuarioUnidades_Usuario 
+        FOREIGN KEY (UsuarioID) REFERENCES Usuario_Catalogo(UsuarioID),
+    CONSTRAINT FK_UsuarioUnidades_Unidad 
+        FOREIGN KEY (UnidadNegocioID) REFERENCES Unidades_Negocio(id),
+    CONSTRAINT UQ_UsuarioUnidades_Unico 
+        UNIQUE (UsuarioID, UnidadNegocioID)
 );
 
-CREATE INDEX IX_UsuarioUnidades_Usuario ON Usuario_UnidadesPermitidas(UsuarioID);
-CREATE INDEX IX_UsuarioUnidades_Unidad ON Usuario_UnidadesPermitidas(UnidadNegocioID);
+-- Índices
+CREATE INDEX IX_UsuarioUnidadesAsignacion_Usuario 
+    ON Usuario_UnidadesAsignacion(UsuarioID);
+CREATE INDEX IX_UsuarioUnidadesAsignacion_Unidad 
+    ON Usuario_UnidadesAsignacion(UnidadNegocioID);
+CREATE INDEX IX_UsuarioUnidadesAsignacion_Activo 
+    ON Usuario_UnidadesAsignacion(Activo) WHERE Activo = 1;
+```
+
+### 4.2 Tabla: `Usuario_SucursalesAsignacion`
+
+```sql
+-- ⚠️ NO EJECUTAR - SOLO PROPUESTA PARA REVISIÓN
 
 -- ============================================================
--- TABLA: Usuario_SucursalesPermitidas
--- Relación N:M entre usuarios y sucursales permitidas
+-- TABLA: Usuario_SucursalesAsignacion
+-- Relación N:M entre usuarios y sucursales
 -- ============================================================
-CREATE TABLE Usuario_SucursalesPermitidas (
-    UsuarioSucursalID       BIGINT IDENTITY(1,1) NOT NULL,
-    UsuarioID               INT NOT NULL,
-    SucursalID              VARCHAR(50) NOT NULL,  -- ID de sucursal del sistema origen
-    ServerID                UNIQUEIDENTIFIER NULL, -- Referencia al servidor
-    Activo                  BIT NOT NULL DEFAULT 1,
-    FechaAsignacion         DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+CREATE TABLE Usuario_SucursalesAsignacion (
+    UsuarioSucursalAsignacionID BIGINT IDENTITY(1,1) NOT NULL,
+    UsuarioID                   INT NOT NULL,
+    SucursalID                  VARCHAR(50) NOT NULL,
+    ServerID                    UNIQUEIDENTIFIER NULL,
+    EsPrincipal                 BIT NOT NULL DEFAULT 0,
+    FechaInicio                 DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    FechaFin                    DATETIME2 NULL,
+    Activo                      BIT NOT NULL DEFAULT 1,
+    CreatedAt                   DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                   VARCHAR(100) NULL,
     
-    CONSTRAINT PK_Usuario_SucursalesPermitidas PRIMARY KEY (UsuarioSucursalID),
-    CONSTRAINT FK_UsuarioSucursales_Usuario FOREIGN KEY (UsuarioID) 
-        REFERENCES Usuario_Catalogo(UsuarioID),
-    CONSTRAINT UQ_UsuarioSucursales UNIQUE (UsuarioID, SucursalID, ServerID)
+    CONSTRAINT PK_Usuario_SucursalesAsignacion 
+        PRIMARY KEY (UsuarioSucursalAsignacionID),
+    CONSTRAINT FK_UsuarioSucursales_Usuario 
+        FOREIGN KEY (UsuarioID) REFERENCES Usuario_Catalogo(UsuarioID),
+    CONSTRAINT UQ_UsuarioSucursales_Unico 
+        UNIQUE (UsuarioID, SucursalID, ServerID)
 );
 
+CREATE INDEX IX_UsuarioSucursalesAsignacion_Usuario 
+    ON Usuario_SucursalesAsignacion(UsuarioID);
+```
+
+### 4.3 Tabla: `Usuario_PermisosUsuario`
+
+```sql
+-- ⚠️ NO EJECUTAR - SOLO PROPUESTA PARA REVISIÓN
+
 -- ============================================================
--- TABLA: Usuario_PermisosDirectos
--- Permisos específicos asignados directamente al usuario (bypass rol)
+-- TABLA: Usuario_PermisosUsuario
+-- Permisos específicos asignados directamente al usuario
+-- Análogo a Usuario_PermisosRolModulo pero a nivel usuario
 -- ============================================================
-CREATE TABLE Usuario_PermisosDirectos (
-    PermisoDirectoID        BIGINT IDENTITY(1,1) NOT NULL,
-    UsuarioID               INT NOT NULL,
-    CodigoPermiso           VARCHAR(50) NOT NULL,  -- Ej: "CARGOS_VER", "CATALOGOS_SQL_EDITAR"
-    ModuloID                INT NULL,              -- FK opcional a Usuario_Modulos
-    AccionID                SMALLINT NULL,         -- FK opcional a Usuario_Acciones
-    Otorgado                BIT NOT NULL DEFAULT 1, -- TRUE=permite, FALSE=deniega
-    Activo                  BIT NOT NULL DEFAULT 1,
-    FechaOtorgamiento       DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-    FechaExpiracion         DATETIME2 NULL,
-    OtorgadoPor             VARCHAR(100) NULL,
-    Motivo                  VARCHAR(500) NULL,
+CREATE TABLE Usuario_PermisosUsuario (
+    PermisoUsuarioID            BIGINT IDENTITY(1,1) NOT NULL,
+    UsuarioID                   INT NOT NULL,
+    ModuloID                    INT NULL,
+    AccionID                    SMALLINT NULL,
+    CodigoPermiso               VARCHAR(50) NOT NULL,
+    Permitido                   BIT NOT NULL DEFAULT 1,
+    RestriccionPropietario      BIT NOT NULL DEFAULT 0,
+    RestriccionSucursal         BIT NOT NULL DEFAULT 0,
+    RequiereAutorizacion        BIT NOT NULL DEFAULT 0,
+    NivelAutorizacionRequerido  SMALLINT NULL,
+    Activo                      BIT NOT NULL DEFAULT 1,
+    FechaAlta                   DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    FechaModificacion           DATETIME2 NULL,
+    FechaExpiracion             DATETIME2 NULL,
+    CreatedBy                   VARCHAR(100) NULL,
+    ModifiedBy                  VARCHAR(100) NULL,
+    Motivo                      VARCHAR(500) NULL,
     
-    CONSTRAINT PK_Usuario_PermisosDirectos PRIMARY KEY (PermisoDirectoID),
-    CONSTRAINT FK_PermisosDirectos_Usuario FOREIGN KEY (UsuarioID) 
-        REFERENCES Usuario_Catalogo(UsuarioID),
-    CONSTRAINT UQ_PermisosDirectos UNIQUE (UsuarioID, CodigoPermiso)
+    CONSTRAINT PK_Usuario_PermisosUsuario 
+        PRIMARY KEY (PermisoUsuarioID),
+    CONSTRAINT FK_PermisosUsuario_Usuario 
+        FOREIGN KEY (UsuarioID) REFERENCES Usuario_Catalogo(UsuarioID),
+    CONSTRAINT FK_PermisosUsuario_Modulo 
+        FOREIGN KEY (ModuloID) REFERENCES Usuario_Modulos(ModuloID),
+    CONSTRAINT FK_PermisosUsuario_Accion 
+        FOREIGN KEY (AccionID) REFERENCES Usuario_Acciones(AccionID),
+    CONSTRAINT UQ_PermisosUsuario_Unico 
+        UNIQUE (UsuarioID, CodigoPermiso)
 );
 
-CREATE INDEX IX_PermisosDirectos_Usuario ON Usuario_PermisosDirectos(UsuarioID);
-CREATE INDEX IX_PermisosDirectos_Codigo ON Usuario_PermisosDirectos(CodigoPermiso);
+CREATE INDEX IX_PermisosUsuario_Usuario 
+    ON Usuario_PermisosUsuario(UsuarioID);
+CREATE INDEX IX_PermisosUsuario_Codigo 
+    ON Usuario_PermisosUsuario(CodigoPermiso);
+```
+
+### 4.4 Modificación: Agregar `NivelJerarquia` a `Usuario_Roles`
+
+```sql
+-- ⚠️ NO EJECUTAR - SOLO PROPUESTA PARA REVISIÓN
 
 -- ============================================================
 -- MODIFICACIÓN: Usuario_Roles - Agregar NivelJerarquia
 -- ============================================================
 ALTER TABLE Usuario_Roles ADD
-    NivelJerarquia INT NOT NULL DEFAULT 0 
-        CONSTRAINT DF_Roles_NivelJerarquia DEFAULT 0;
+    NivelJerarquia INT NOT NULL 
+        CONSTRAINT DF_Usuario_Roles_NivelJerarquia DEFAULT 0;
 
--- Comentario: Niveles sugeridos según MongoDB actual:
--- ADMIN = 100, DIRECCION = 80, GERENTE_OPS = 60, 
--- SUPERVISOR = 40, AUDITOR = 30, OPERADOR = 20
+-- Comentario: Actualizar valores según MongoDB actual:
+-- UPDATE Usuario_Roles SET NivelJerarquia = 100 WHERE CodigoRol = 'ADMIN';
+-- UPDATE Usuario_Roles SET NivelJerarquia = 80 WHERE CodigoRol = 'GERENCIA';
+-- etc.
+```
+
+### 4.5 Modificación: Agregar `UnidadNegocioDefaultID` a `Usuario_Catalogo`
+
+```sql
+-- ⚠️ NO EJECUTAR - SOLO PROPUESTA PARA REVISIÓN
 
 -- ============================================================
--- MODIFICACIÓN: Usuario_Catalogo - Agregar EmpresaDefaultID
+-- MODIFICACIÓN: Usuario_Catalogo - Agregar UnidadNegocioDefaultID
 -- ============================================================
 ALTER TABLE Usuario_Catalogo ADD
-    EmpresaDefaultID UNIQUEIDENTIFIER NULL;
+    UnidadNegocioDefaultID UNIQUEIDENTIFIER NULL;
 
--- FK opcional (si Unidades_Negocio se usa como "empresas")
+-- FK opcional:
 -- ALTER TABLE Usuario_Catalogo ADD
---     CONSTRAINT FK_Usuario_EmpresaDefault FOREIGN KEY (EmpresaDefaultID) 
---         REFERENCES Unidades_Negocio(id);
+--     CONSTRAINT FK_Usuario_UnidadDefault 
+--         FOREIGN KEY (UnidadNegocioDefaultID) REFERENCES Unidades_Negocio(id);
 ```
 
-### OPCIÓN C: Reutilizar tablas existentes (PARCIALMENTE APLICABLE)
+---
+
+## 5. COMPARACIÓN DE ESTRUCTURA: MODELO EXISTENTE vs PROPUESTA
+
+### 5.1 Usuario_RolesAsignacion (EXISTENTE - Modelo a seguir)
 
 ```sql
--- ⚠️ NO EJECUTAR - SOLO REFERENCIA
-
--- Usuario_PermisosRolModulo YA EXISTE y es el modelo correcto
--- Solo necesita ser poblada con datos
-
--- Ejemplo de INSERT (NO EJECUTAR):
--- INSERT INTO Usuario_PermisosRolModulo (RolID, ModuloID, AccionID, Permitido, Activo)
--- VALUES (1, 1, 1, 1, 1);  -- Rol ADMIN puede VER módulo SEGURIDAD
-
--- Usuario_RolesAsignacion YA EXISTE
--- Solo necesita ser poblada cuando se migre sec_rol
-
--- Ejemplo de INSERT (NO EJECUTAR):
--- INSERT INTO Usuario_RolesAsignacion (UsuarioID, RolID, EsPrincipal, FechaInicio, Activo)
--- VALUES (1, 1, 1, GETUTCDATE(), 1);  -- Usuario 1 tiene rol ADMIN
+UsuarioRolAsignacionID  BIGINT IDENTITY    -- PK
+UsuarioID               INT NOT NULL       -- FK Usuario
+RolID                   INT NOT NULL       -- FK Rol
+EsPrincipal             BIT NOT NULL       -- Es rol principal
+FechaInicio             DATETIME2 NOT NULL -- Inicio vigencia
+FechaFin                DATETIME2 NULL     -- Fin vigencia
+Activo                  BIT NOT NULL       -- Estado
+CreatedAt               DATETIME2 NOT NULL -- Auditoría
+CreatedBy               VARCHAR(100) NULL  -- Auditoría
 ```
 
-### OPCIÓN D: Mantener fallback temporal en MongoDB
-
-```python
-# En código Python, mantener lectura dual:
-
-async def get_user_permissions(user_id: int) -> List[str]:
-    # Intentar EDARSAHUB primero
-    try:
-        permisos_sql = await get_permisos_from_edarsahub(user_id)
-        if permisos_sql:
-            return permisos_sql
-    except Exception as e:
-        logger.warning(f"EDARSAHUB permisos failed: {e}")
-    
-    # Fallback a MongoDB
-    user = await db.users.find_one({"id": user_id_str})
-    return user.get("sec_permisos", [])
-```
-
----
-
-## 6. IMPACTO
-
-### 6.1 Archivos que requieren modificación (cuando se autorice)
-
-| Archivo | Cambio Requerido |
-|---------|------------------|
-| `core/security.py` | Leer usuario de EDARSAHUB |
-| `core/user_access_context.py` | Resolver permisos desde SQL |
-| `modules/auth/repository.py` | Queries a nuevas tablas |
-| `modules/auth/service.py` | Lógica de permisos |
-| `server.py` (endpoints usuarios) | Adaptación CRUD |
-
-### 6.2 Endpoints afectados
-
-| Endpoint | Impacto |
-|----------|---------|
-| `POST /auth/login` | Leer de Usuario_Catalogo |
-| `GET /auth/me` | JOIN con UnidadesPermitidas |
-| `GET /auth/me/menu-permissions` | JOIN con PermisosRolModulo |
-| `PUT /users/{id}/permissions` | INSERT/UPDATE nuevas tablas |
-| Todos los protegidos | Validación de permisos |
-
-### 6.3 Módulos blindados (NO TOCAR)
-
-| Módulo | Razón |
-|--------|-------|
-| Tablero Ejecutivo | Alta visibilidad, ya funciona |
-| Comercial | KPIs en producción |
-| Compras | Operación diaria |
-| Finanzas | Ya migrado a EDARSAHUB |
-
----
-
-## 7. ROLLBACK
-
-### 7.1 DDL Rollback (si se ejecutara y fallara)
+### 5.2 Usuario_UnidadesAsignacion (PROPUESTA)
 
 ```sql
--- ⚠️ SOLO EN CASO DE EMERGENCIA POST-IMPLEMENTACIÓN
-
--- Eliminar tablas nuevas
-DROP TABLE IF EXISTS Usuario_PermisosDirectos;
-DROP TABLE IF EXISTS Usuario_SucursalesPermitidas;
-DROP TABLE IF EXISTS Usuario_UnidadesPermitidas;
-
--- Revertir columnas
-ALTER TABLE Usuario_Roles DROP COLUMN IF EXISTS NivelJerarquia;
-ALTER TABLE Usuario_Catalogo DROP COLUMN IF EXISTS EmpresaDefaultID;
+UsuarioUnidadAsignacionID  BIGINT IDENTITY    -- PK (mismo patrón)
+UsuarioID                  INT NOT NULL       -- FK Usuario
+UnidadNegocioID            UNIQUEIDENTIFIER   -- FK Unidad (tipo correcto)
+EsPrincipal                BIT NOT NULL       -- Es unidad principal
+FechaInicio                DATETIME2 NOT NULL -- Inicio vigencia
+FechaFin                   DATETIME2 NULL     -- Fin vigencia
+Activo                     BIT NOT NULL       -- Estado
+CreatedAt                  DATETIME2 NOT NULL -- Auditoría
+CreatedBy                  VARCHAR(100) NULL  -- Auditoría
 ```
 
-### 7.2 Rollback de código
-
-```python
-# Variable de entorno para rollback instantáneo
-USE_EDARSAHUB_AUTH = os.environ.get('USE_EDARSAHUB_AUTH', 'false').lower() == 'true'
-
-# Cambiar a 'false' restaura lectura MongoDB
-```
+**Conclusión:** La propuesta sigue exactamente el patrón de Usuario_RolesAsignacion.
 
 ---
 
-## 8. PRUEBAS REQUERIDAS ANTES DE EJECUTAR DDL
+## 6. RESUMEN DE NOMENCLATURA VALIDADA
 
-| # | Prueba | Criterio |
-|---|--------|----------|
-| 1 | Crear tablas en ambiente de desarrollo | DDL sin errores |
-| 2 | Insertar datos de prueba | INSERTs exitosos |
-| 3 | Ejecutar queries de lectura | JOINs funcionan |
-| 4 | Validar FK constraints | No violan integridad |
-| 5 | Probar rollback DDL | DROP exitoso |
-| 6 | Medir performance queries | < 100ms |
+| Campo MongoDB | Tabla EDARSAHUB Propuesta | Estado |
+|---------------|---------------------------|--------|
+| `empresas_permitidas` | `Usuario_UnidadesAsignacion` | ✅ Sigue patrón |
+| `sucursales` | `Usuario_SucursalesAsignacion` | ✅ Sigue patrón |
+| `sec_permisos` | `Usuario_PermisosUsuario` | ✅ Sigue patrón |
+| `nivel_jerarquia` | Columna en `Usuario_Roles` | ✅ Atributo directo |
+| `empresa_default_id` | Columna en `Usuario_Catalogo` | ✅ Atributo directo |
 
 ---
 
-## 9. AUTORIZACIÓN REQUERIDA PARA EJECUTAR
+## 7. RIESGOS Y MITIGACIÓN
+
+| Riesgo | Mitigación |
+|--------|------------|
+| Tipo de ID diferente (UsuarioID es INT, UnidadNegocioID es UNIQUEIDENTIFIER) | Usar tipo correcto en cada FK |
+| Unicidad de relación | Constraint UNIQUE en combinación de FKs |
+| Histórico de asignaciones | FechaInicio/FechaFin permiten tracking |
+| Rollback | Scripts DROP TABLE preparados |
+
+---
+
+## 8. AUTORIZACIÓN REQUERIDA
 
 ### Checklist de Autorización
 
-| Paso | Acción | Estado |
-|------|--------|--------|
-| 1 | ✅ Backup MongoDB completado | LISTO |
-| 2 | ✅ Propuesta DDL documentada | LISTO |
-| 3 | ⬜ Revisión de propuesta por usuario | PENDIENTE |
-| 4 | ⬜ Autorización para ejecutar DDL | NO AUTORIZADO |
-| 5 | ⬜ Crear tablas en EDARSAHUB | NO AUTORIZADO |
-| 6 | ⬜ Poblar tablas con datos | NO AUTORIZADO |
-| 7 | ⬜ Modificar código backend | NO AUTORIZADO |
-| 8 | ⬜ Activar piloto SuperAdministrador | NO AUTORIZADO |
-
-### Firmas Requeridas
-
-| Rol | Firma | Fecha |
-|-----|-------|-------|
-| Usuario/Propietario | _________________ | __________ |
-| Arquitectura | Propuesta entregada | 2026-05-08 |
+| Paso | Estado |
+|------|--------|
+| ✅ Backup MongoDB completado | LISTO |
+| ✅ Análisis de nomenclatura EDARSAHUB | LISTO |
+| ✅ Propuesta DDL v2.0 con nombres corregidos | LISTO |
+| ⬜ Revisión y aprobación de nomenclatura por usuario | PENDIENTE |
+| ⬜ Autorización para ejecutar DDL | NO AUTORIZADO |
+| ⬜ Crear tablas en EDARSAHUB | NO AUTORIZADO |
+| ⬜ Poblar tablas con datos | NO AUTORIZADO |
+| ⬜ Modificar código backend | NO AUTORIZADO |
 
 ---
 
-## 10. RESUMEN DE RECOMENDACIONES
+## 9. PREGUNTAS PENDIENTES PARA EL USUARIO
 
-| Campo | Recomendación | Razón |
-|-------|---------------|-------|
-| `empresas_permitidas` | **CREAR TABLA** `Usuario_UnidadesPermitidas` | Relación N:M normalizada |
-| `sucursales` | **CREAR TABLA** `Usuario_SucursalesPermitidas` | Relación N:M normalizada |
-| `sec_permisos` | **USAR EXISTENTE** `Usuario_PermisosRolModulo` + **CREAR** `Usuario_PermisosDirectos` | Modelo ya diseñado + bypass |
-| `sec_rol` | **USAR EXISTENTE** `Usuario_RolesAsignacion` | Tabla ya existe |
-| `nivel_jerarquia` | **AGREGAR COLUMNA** a `Usuario_Roles` | Atributo directo del rol |
-| `empresa_default_id` | **AGREGAR COLUMNA** a `Usuario_Catalogo` | Atributo directo del usuario |
+Antes de autorizar el DDL, se requiere decisión sobre:
 
-### Conclusión Final
+1. **¿`Usuario_UnidadesAsignacion` o `Usuario_EmpresasAsignacion`?**
+   - El sistema actual usa "empresas_permitidas" en MongoDB
+   - EDARSAHUB tiene "Unidades_Negocio" (no "Empresas")
+   - ¿Son sinónimos en el contexto del negocio?
 
-**NO SE RECOMIENDA** agregar `empresas_permitidas` ni `sec_permisos` como columnas JSON a `Usuario_Catalogo` porque:
+2. **¿Se debe crear tabla `Sistema_Empresas` o usar `Unidades_Negocio` como equivalente?**
+   - MongoDB tiene colección `empresas` (5 documentos)
+   - ¿Son las "empresas" equivalentes a "unidades de negocio"?
 
-1. Violaría normalización de base de datos
-2. Haría queries ineficientes
-3. Dificultaría auditoría
-4. El modelo relacional ya está parcialmente diseñado en EDARSAHUB
-
-**SE RECOMIENDA** crear las 3 tablas relacionales propuestas y agregar 2 columnas simples a tablas existentes.
+3. **¿`Usuario_PermisosUsuario` o mantener solo `Usuario_PermisosRolModulo`?**
+   - La tabla de permisos por rol ya existe
+   - ¿Realmente hay permisos directos al usuario que no pasan por rol?
 
 ---
 
-**FIN DEL DOCUMENTO DE PROPUESTA DDL**
+**FIN DEL DOCUMENTO DE PROPUESTA DDL v2.0**
 
 *Este documento es de solo lectura. Ningún DDL ha sido ejecutado.*
 *Toda implementación requiere autorización expresa del usuario.*
