@@ -239,16 +239,24 @@ const Servidores = () => {
         }
       }
     } catch (error) {
-      const errorMsg = error.response?.data?.detail || error.message || 'Error de conexión';
+      // CORRECCIÓN P0: Manejo robusto de error para evitar "[object Object]"
+      let errorMsg = 'Error de conexión';
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        // Si detail es objeto, convertirlo a string legible
+        errorMsg = typeof detail === 'string' ? detail : JSON.stringify(detail);
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
       setApiTestStatus(prev => ({
         ...prev,
         [apiConn.id]: { 
           loading: false, 
           status: 'error', 
-          message: `❌ ${errorMsg}` 
+          message: `❌ ${errorMsg.substring(0, 150)}` 
         }
       }));
-      toast.error(`${apiConn.name}: ${errorMsg}`);
+      toast.error(`${apiConn.name}: ${errorMsg.substring(0, 100)}`);
     }
   };
   

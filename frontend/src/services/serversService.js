@@ -4,9 +4,9 @@
  * Servicio centralizado para el consumo de /api/servers
  * PROPÓSITO: Eliminar duplicación de código sin modificar endpoints existentes
  * 
- * FASE AUTH-SECURITY-01 / FASE 4:
- * - Migrado a cookie httpOnly (withCredentials)
- * - getAccessToken ya no se usa
+ * CORRECCIÓN P0 - 2026-05-08:
+ * Migrado de axios directo a cliente API centralizado para garantizar
+ * envío de Authorization header cuando cookie httpOnly falla por CORS/proxy.
  * 
  * IMPORTANTE:
  * - NO modifica el endpoint /api/servers
@@ -23,10 +23,9 @@
  * - AutorizacionCompras (pendiente)
  */
 
-import axios from 'axios';
+// CORRECCIÓN P0: Usa cliente API centralizado con interceptor de token
+import api from '../lib/api';
 import logger from './logger';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 /**
  * Filtra servidores que son visibles en operaciones
@@ -43,29 +42,27 @@ export const filterServersOperativos = (servers) => {
 /**
  * Obtiene servidores operativos desde /api/servers
  * Aplica automáticamente el filtro visible_en_operaciones
- * FASE AUTH-SECURITY-01: Auth viaja en cookie httpOnly
+ * CORRECCIÓN P0: Usa cliente API centralizado con interceptor de token
  * 
  * @returns {Promise<Array>} - Array de servidores operativos
  * @throws {Error} - Si falla la petición
  */
 export const fetchServersOperativos = async () => {
-  const response = await axios.get(`${API_URL}/api/servers`, {
-    withCredentials: true
-  });
+  // CORRECCIÓN P0: Migrado de axios directo a api centralizado
+  const response = await api.get('/servers');
   
   return filterServersOperativos(response.data);
 };
 
 /**
  * Obtiene TODOS los servidores sin filtrar (para módulo Servidores/Admin)
- * FASE AUTH-SECURITY-01: Auth viaja en cookie httpOnly
+ * CORRECCIÓN P0: Usa cliente API centralizado con interceptor de token
  * 
  * @returns {Promise<Array>} - Array de todos los servidores
  */
 export const fetchAllServers = async () => {
-  const response = await axios.get(`${API_URL}/api/servers`, {
-    withCredentials: true
-  });
+  // CORRECCIÓN P0: Migrado de axios directo a api centralizado
+  const response = await api.get('/servers');
   
   return response.data || [];
 };
