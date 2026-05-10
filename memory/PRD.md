@@ -281,3 +281,75 @@ proyeccion = (venta_acumulada / dias_transcurridos) × dias_proyectables
 
 **AUTORIZACIÓN CONTROLADA**: No se implementan cambios sin dictamen expreso del usuario.
 
+---
+
+## FASE A4.1 COMPLETADA — MIGRACIÓN USUARIOS MongoDB → EDARSAHUB (10-Mayo-2026)
+
+### Resumen Ejecutivo
+
+| Métrica | Valor |
+|---------|-------|
+| Usuarios migrados | 10 |
+| Usuarios productivos (Activo=1) | 9 |
+| Usuarios deshabilitados (Activo=0) | 1 |
+| Usuarios @test.com excluidos | 5 |
+| Tabla de trazabilidad creada | `Usuario_MigracionMongoTrace` |
+
+### Tablas Afectadas en EDARSAHUB
+
+| Tabla | Acción | Registros |
+|-------|--------|-----------|
+| `Usuario_Catalogo` | INSERT | 10 |
+| `Usuario_MigracionMongoTrace` | CREATE + INSERT | 10 |
+| `Usuario_RolesAsignacion` | Sin cambios | 0 |
+| `Usuario_EmpresasAsignacion` | Sin cambios | 0 |
+
+### Usuarios Migrados
+
+| UsuarioID | Email | Rol MongoDB | Clasificación | Activo |
+|-----------|-------|-------------|---------------|--------|
+| 1 | admin@edarsa.com | Administrador | PRODUCTIVO | ✅ |
+| 2 | admin@inventario.com | SuperAdministrador | PRODUCTIVO | ✅ |
+| 3 | carlosruz@edarsa.com.mx | Administrador | PRODUCTIVO | ✅ |
+| 4 | noxte@alpyc.com | Supervisor | PRODUCTIVO | ✅ |
+| 5 | auditoria@edarsa.com.mx | Usuario | PRODUCTIVO | ✅ |
+| 6 | almacen@cienfuegos.mx | Usuario | PRODUCTIVO | ✅ |
+| 7 | administracion@cienfuegos.mx | Supervisor | PRODUCTIVO | ✅ |
+| 8 | ricardo@edarsa.com.mx | SuperAdministrador | PRODUCTIVO | ✅ |
+| 9 | david.ricardez@cienfuegos.mx | Usuario | PRODUCTIVO | ✅ |
+| 10 | test_propinas@edarsa.com | DESHABILITADO | DESHABILITADO | ❌ |
+
+### Usuarios NO Migrados (Excluidos por decisión)
+
+| Email | Motivo |
+|-------|--------|
+| test_validacion@test.com | Cuenta de prueba @test.com |
+| test_rbac_val@test.com | Cuenta de prueba @test.com |
+| superadmin@test.com | Cuenta de prueba @test.com |
+| superadmin2@test.com | Cuenta de prueba @test.com |
+| usuario_test_portal@test.com | Cuenta de prueba @test.com |
+
+### Restricciones Documentadas Post-A4.1
+
+- ⚠️ Los usuarios migrados **NO tienen rol asignado** en EDARSAHUB
+- ⚠️ Los usuarios migrados **NO tienen empresa asignada** en EDARSAHUB
+- ⚠️ **MongoDB sigue siendo fuente activa de login**
+- ⚠️ `PasswordHashTexto` contiene hash bcrypt pero **no se usa para autenticación todavía**
+
+### Fases Pendientes de Autorización
+
+| Fase | Descripción | Dependencia |
+|------|-------------|-------------|
+| A4.2 | Asignar roles en `Usuario_RolesAsignacion` | Requiere mapeo Rol MongoDB → RolID SQL |
+| A5 | Asignar empresas en `Usuario_EmpresasAsignacion` | Requiere matriz usuario-empresa |
+| A6 | Implementar Dual-Read en login | Backend |
+| A7 | Switch definitivo a EDARSAHUB | Pruebas completas |
+
+### Confirmaciones de Cero Impacto
+
+- ✅ Login NO fue modificado
+- ✅ JWT NO fue modificado
+- ✅ Frontend NO fue modificado
+- ✅ Módulos protegidos NO fueron tocados
+- ✅ MongoDB sigue siendo fuente activa de autenticación
+
