@@ -887,3 +887,145 @@ async def test_api_connection_secure(
             "preview": None,
             "message": "Error de ejecución"
         }
+
+
+# ============================================================================
+# API-SEC1 FIX: ENDPOINT SIMPLE DE TEST DE CONECTIVIDAD
+# ============================================================================
+
+@router.post("/api-connections/{connection_id}/test-connectivity")
+async def test_api_connectivity_simple(
+    connection_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Test SIMPLE de conectividad para Conexiones API.
+    
+    DIFERENCIA con /test-connection:
+    - NO requiere validación de permisos por EmpresaID
+    - Solo requiere autenticación JWT válida
+    - Útil para administradores probando conexiones sin restricciones
+    
+    Query fija: SELECT 1 AS test
+    
+    SEGURIDAD:
+    - Autenticación obligatoria
+    - SQL hardcodeado en backend
+    - API key obtenida internamente
+    - Response NO expone secretos
+    """
+    start_time = time.time()
+    
+    # 1. AUTENTICACIÓN OBLIGATORIA (pero sin validación de permisos estricta)
+    current_user = get_current_user(credentials)
+    user_email = current_user.get('email', 'unknown')
+    
+    logger.info(f"[API-SEC1-SIMPLE] Usuario {user_email} solicita test-connectivity para {connection_id}")
+    
+    # 2. Obtener conexión con secreto
+    connection = get_api_connection_with_secret(connection_id)
+    if not connection:
+        raise HTTPException(status_code=404, detail="Conexión API no encontrada")
+    
+    # 3. Validar que esté activa
+    if not connection.get('activo'):
+        raise HTTPException(status_code=400, detail="Conexión API inactiva")
+    
+    # 4. Obtener URL y API key
+    base_url = connection.get('url', '')
+    api_key = connection.get('api_key', '')
+    
+    if not base_url:
+        raise HTTPException(status_code=400, detail="URL de la conexión no configurada")
+    
+    # 5. Preparar request con query SIMPLE
+    headers = {'Content-Type': 'application/json'}
+    if api_key:
+        headers['x-api-key'] = api_key
+    
+    # Query simple de conectividad
+    query_params = {'sql': 'SELECT 1 AS test'}
+    
+    # 6. Response base
+    response_base = {
+        "connection": {
+            "id": connection_id,
+            "name": connection.get('name', 'Unknown')
+        }
+    }
+    
+    # 7. Ejecutar test
+    timeout = 30
+    
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(
+                base_url,
+                headers=headers,
+                params=query_params
+            )
+            
+            response_time_ms = int((time.time() - start_time) * 1000)
+            
+            if response.status_code == 200:
+                logger.info(f"[API-SEC1-SIMPLE] Conectividad OK para {connection_id}")
+                return {
+                    **response_base,
+                    "success": True,
+                    "sql_connected": True,
+                    "execution": {
+                        "status": "success",
+                        "http_status": 200,
+                        "response_time_ms": response_time_ms
+                    },
+                    "message": "Conexión exitosa. API y SQL Server operativos."
+                }
+            else:
+                error_text = response.text[:200] if response.text else "Sin detalles"
+                logger.warning(f"[API-SEC1-SIMPLE] Error HTTP {response.status_code} para {connection_id}")
+                return {
+                    **response_base,
+                    "success": True,
+                    "sql_connected": False,
+                    "sql_error": f"HTTP {response.status_code}: {error_text}",
+                    "execution": {
+                        "status": "error",
+                        "http_status": response.status_code,
+                        "response_time_ms": response_time_ms
+                    },
+                    "message": f"API responde pero con error HTTP {response.status_code}"
+                }
+    
+    except httpx.TimeoutException:
+        response_time_ms = int((time.time() - start_time) * 1000)
+        return {
+            **response_base,
+            "success": False,
+            "sql_connected": False,
+            "sql_error": f"Timeout después de {timeout} segundos",
+            "execution": {"status": "error", "response_time_ms": response_time_ms, "error_code": "TIMEOUT"},
+            "message": "Timeout de conexión"
+        }
+    
+    except httpx.ConnectError:
+        response_time_ms = int((time.time() - start_time) * 1000)
+        return {
+            **response_base,
+            "success": False,
+            "sql_connected": False,
+            "sql_error": "No se pudo conectar al servidor",
+            "execution": {"status": "error", "response_time_ms": response_time_ms, "error_code": "CONNECTION_ERROR"},
+            "message": "Error de conexión"
+        }
+    
+    except Exception as e:
+        response_time_ms = int((time.time() - start_time) * 1000)
+        logger.error(f"[API-SEC1-SIMPLE] Error inesperado para {connection_id}: {e}")
+        return {
+            **response_base,
+            "success": False,
+            "sql_connected": False,
+            "sql_error": str(e)[:200],
+            "execution": {"status": "error", "response_time_ms": response_time_ms, "error_code": "EXECUTION_ERROR"},
+            "message": "Error de ejecución"
+        }
