@@ -353,3 +353,59 @@ proyeccion = (venta_acumulada / dias_transcurridos) × dias_proyectables
 - ✅ Módulos protegidos NO fueron tocados
 - ✅ MongoDB sigue siendo fuente activa de autenticación
 
+---
+
+## FASE A4.1-R COMPLETADA — REVERSA PARCIAL CONTROLADA (11-Mayo-2026)
+
+### Resumen Ejecutivo
+
+| Métrica | Antes | Después |
+|---------|-------|---------|
+| Usuarios en Usuario_Catalogo | 10 | **9** |
+| Registros en Usuario_MigracionMongoTrace | 10 | **9** |
+| Usuario test_propinas@edarsa.com | Existía | **ELIMINADO** |
+
+### Usuario Eliminado
+
+| Campo | Valor |
+|-------|-------|
+| UsuarioID | 10 |
+| Email | test_propinas@edarsa.com |
+| Nombre | Test Propinas |
+| RolMongoDB | DESHABILITADO |
+| Clasificacion | DESHABILITADO |
+| Motivo | Usuario no productivo, cuenta deshabilitada en MongoDB |
+
+### Justificación Arquitectónica
+
+- ❌ **DESHABILITADO no es un rol RBAC** — Es un estado de cuenta
+- ✅ El estado activo/inactivo se modela en `Usuario_Catalogo.Activo`
+- ✅ EDARSAHUB debe contener solo usuarios productivos activos antes de asignar roles
+- ✅ Usuario eliminado de EDARSAHUB pero **preservado en MongoDB** como histórico
+
+### Aclaración Importante
+
+El usuario `test_propinas@edarsa.com`:
+- **NO fue eliminado de MongoDB** — Sigue existiendo como registro histórico
+- **Fue eliminado de EDARSAHUB** — No participa en la migración de roles
+- **No se creará rol DESHABILITADO** — Deshabilitado es estado, no rol
+
+### Impacto en FASE A4.2
+
+| Aspecto | Antes A4.1-R | Después A4.1-R |
+|---------|--------------|----------------|
+| Usuarios a asignar rol | 10 | **9** |
+| Roles nuevos requeridos | SUPERADMIN, USUARIO, DESHABILITADO | **SUPERADMIN, USUARIO** |
+| Usuarios DESHABILITADOS en EDARSAHUB | 1 | **0** |
+
+### Confirmaciones de Cero Impacto A4.1-R
+
+- ✅ Solo se eliminó test_propinas@edarsa.com (UsuarioID=10)
+- ✅ NO se eliminaron usuarios productivos
+- ✅ NO se tocó MongoDB
+- ✅ Login NO modificado
+- ✅ JWT NO modificado
+- ✅ Frontend NO modificado
+- ✅ Módulos protegidos intactos
+- ✅ MongoDB sigue siendo fuente activa de login
+
