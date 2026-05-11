@@ -11,9 +11,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap, Building2, Eye, EyeOff, RefreshCw, GripVertical } from 'lucide-react';
+import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap, Building2, Eye, EyeOff, RefreshCw, GripVertical, TestTube2 } from 'lucide-react';
 import { toast } from 'sonner';
 import QueryConfigWizard from '@/components/QueryConfigWizard';
+import UniversalQueryTester from '@/components/UniversalQueryTester';
 import { formatNombreSucursal } from '@/lib/formatSucursal';
 
 // Helper: Renderiza indicador de estado del servidor
@@ -89,6 +90,10 @@ const Servidores = () => {
   const [selectedServer, setSelectedServer] = useState(null);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionValid, setConnectionValid] = useState(false);
+  
+  // Estado para UniversalQueryTester
+  const [universalTestOpen, setUniversalTestOpen] = useState(false);
+  const [serverForUniversalTest, setServerForUniversalTest] = useState(null);
   
   // Estado para configuración de sucursales
   const [sucursalesConfigOpen, setSucursalesConfigOpen] = useState(false);
@@ -922,6 +927,20 @@ const Servidores = () => {
                   >
                     <Code className="h-4 w-4 mr-1" />
                     {server.queries_configured ? 'Editar Consultas SQL' : 'Configurar Consultas SQL'}
+                  </Button>
+                  
+                  {/* Botón Test Universal SQL/API */}
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setServerForUniversalTest(server);
+                      setUniversalTestOpen(true);
+                    }}
+                    data-testid="universal-test-button"
+                  >
+                    <TestTube2 className="h-4 w-4 mr-1" />
+                    Test Universal
                   </Button>
                   
                   <div className="flex gap-2">
@@ -1920,6 +1939,13 @@ const Servidores = () => {
         onClose={() => setQueryWizardOpen(false)}
         server={selectedServer}
         onComplete={() => loadServers()}
+      />
+
+      {/* Universal Query Tester - Herramienta agnóstica */}
+      <UniversalQueryTester
+        open={universalTestOpen}
+        onClose={() => setUniversalTestOpen(false)}
+        server={serverForUniversalTest}
       />
     </div>
   );

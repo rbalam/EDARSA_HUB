@@ -416,6 +416,14 @@ set_verify_token(verify_token)
 api_router.include_router(api_connections_router)
 
 # ============================================================================
+# MÓDULO UNIVERSAL QUERY TESTER: Herramienta agnóstica de diagnóstico
+# Permite probar consultas SQL/API contra cualquier origen de datos
+# NO asume dominio, NO persiste resultados, Solo lectura (SELECT/GET)
+# ============================================================================
+from modules.universal_query import router as universal_query_router
+api_router.include_router(universal_query_router)
+
+# ============================================================================
 # FASE 4E: Cache Management Endpoints (Admin Only)
 # ============================================================================
 from modules.comercial.cache_service import cleanup_expired_cache, get_cache_stats, init_cache_service
