@@ -9,6 +9,11 @@
  * - NO valida estructura de columnas específica
  * - Preview dinámico de cualquier resultado
  * - Compatible con cualquier sistema: SQL Server, Nóminas, RH, etc.
+ * 
+ * FASE API-UQT1:
+ * - Soporta connectionType = 'sql' (default) para servidores SQL
+ * - Soporta connectionType = 'api' para conexiones API (EDARSAHUB)
+ * - Endpoints separados según tipo de conexión
  */
 
 import { useState, useEffect } from 'react';
@@ -29,11 +34,17 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const TEST_TYPES = [
+// Tipos de test para SQL Servers
+const SQL_TEST_TYPES = [
   { key: 'sql_libre', label: 'SQL libre', icon: Database, description: 'Ejecutar consulta SELECT' },
   { key: 'api_rest', label: 'API REST', icon: Globe, description: 'Probar endpoint HTTP' },
   { key: 'conexion', label: 'Validar conexión', icon: Wifi, description: 'Verificar conectividad' },
   { key: 'diagnostico', label: 'Diagnóstico', icon: Wrench, description: 'Info técnica del servidor' }
+];
+
+// Tipos de test para Conexiones API (solo api_rest por ahora)
+const API_TEST_TYPES = [
+  { key: 'api_rest', label: 'API REST (GET)', icon: Globe, description: 'Probar endpoint HTTP GET' }
 ];
 
 const DEFAULT_SQL = 'SELECT TOP 10 * FROM INFORMATION_SCHEMA.TABLES';
@@ -41,14 +52,25 @@ const DEFAULT_SQL = 'SELECT TOP 10 * FROM INFORMATION_SCHEMA.TABLES';
 const MAX_ROWS_OPTIONS = [10, 25, 50, 100, 250, 500];
 const TIMEOUT_OPTIONS = [10, 30, 60, 120];
 
-const UniversalQueryTester = ({ open, onClose, server }) => {
+/**
+ * @param {Object} props
+ * @param {boolean} props.open - Si el modal está abierto
+ * @param {Function} props.onClose - Callback al cerrar
+ * @param {Object} props.server - Servidor o conexión { id, name, system_type }
+ * @param {string} props.connectionType - 'sql' (default) | 'api'
+ */
+const UniversalQueryTester = ({ open, onClose, server, connectionType = 'sql' }) => {
+  // Determinar tipos de test según connectionType
+  const TEST_TYPES = connectionType === 'api' ? API_TEST_TYPES : SQL_TEST_TYPES;
+  const defaultTestType = connectionType === 'api' ? 'api_rest' : 'sql_libre';
+  
   // Estado del formulario
   const [testName, setTestName] = useState('');
-  const [testType, setTestType] = useState('sql_libre');
+  const [testType, setTestType] = useState(defaultTestType);
   const [moduleRelated, setModuleRelated] = useState('');
   const [parameters, setParameters] = useState([]);
   
-  // SQL Config
+  // SQL Config (solo para connectionType = 'sql')
   const [sqlQuery, setSqlQuery] = useState(DEFAULT_SQL);
   const [maxRows, setMaxRows] = useState(100);
   const [sqlTimeout, setSqlTimeout] = useState(30);
@@ -56,6 +78,7 @@ const UniversalQueryTester = ({ open, onClose, server }) => {
   // API Config
   const [apiMethod, setApiMethod] = useState('GET');
   const [apiUrl, setApiUrl] = useState('');
+  const [apiEndpointPath, setApiEndpointPath] = useState('');  // FASE API-UQT1
   const [apiHeaders, setApiHeaders] = useState([]);
   const [apiParams, setApiParams] = useState([]);
   const [apiTimeout, setApiTimeout] = useState(30);
@@ -68,18 +91,19 @@ const UniversalQueryTester = ({ open, onClose, server }) => {
   useEffect(() => {
     if (open) {
       setTestName('');
-      setTestType('sql_libre');
+      setTestType(defaultTestType);
       setModuleRelated('');
       setParameters([]);
       setSqlQuery(DEFAULT_SQL);
       setMaxRows(100);
       setSqlTimeout(30);
       setApiUrl('');
+      setApiEndpointPath('');
       setApiHeaders([]);
       setApiParams([]);
       setResult(null);
     }
-  }, [open]);
+  }, [open, defaultTestType]);
 
   // Agregar parámetro
   const addParameter = () => {
@@ -137,36 +161,65 @@ const UniversalQueryTester = ({ open, onClose, server }) => {
     setResult(null);
 
     try {
-      // Construir request
-      const requestBody = {
-        test_name: testName || `Prueba ${testType}`,
-        test_type: testType,
-        module: moduleRelated || null,
-        parameters: parameters.reduce((acc, p) => {
-          if (p.key) acc[p.key] = p.value;
-          return acc;
-        }, {}),
-        sql_config: testType === 'sql_libre' ? {
-          query: sqlQuery,
-          max_rows: maxRows,
-          timeout_seconds: sqlTimeout
-        } : null,
-        api_config: testType === 'api_rest' ? {
-          method: apiMethod,
-          url: apiUrl,
-          headers: apiHeaders.reduce((acc, h) => {
-            if (h.key) acc[h.key] = h.value;
-            return acc;
-          }, {}),
+      // Determinar endpoint según connectionType
+      const endpoint = connectionType === 'api'
+        ? `/api-connections/${server.id}/universal-query-test`
+        : `/servers/${server.id}/universal-query-test`;
+      
+      // Construir request según connectionType
+      let requestBody;
+      
+      if (connectionType === 'api') {
+        // Request para Conexiones API (FASE API-UQT1)
+        // NO enviar sql_config, solo api_rest GET
+        requestBody = {
+          test_name: testName || 'Prueba API REST',
+          test_type: 'api_rest',
+          method: 'GET',  // Solo GET permitido en esta fase
+          endpoint_path: apiEndpointPath || '',
           query_params: apiParams.reduce((acc, p) => {
             if (p.key) acc[p.key] = p.value;
             return acc;
           }, {}),
-          timeout_seconds: apiTimeout
-        } : null
-      };
+          headers: apiHeaders.reduce((acc, h) => {
+            if (h.key) acc[h.key] = h.value;
+            return acc;
+          }, {}),
+          timeout_seconds: apiTimeout,
+          module: moduleRelated || null
+        };
+      } else {
+        // Request para SQL Servers (endpoint original)
+        requestBody = {
+          test_name: testName || `Prueba ${testType}`,
+          test_type: testType,
+          module: moduleRelated || null,
+          parameters: parameters.reduce((acc, p) => {
+            if (p.key) acc[p.key] = p.value;
+            return acc;
+          }, {}),
+          sql_config: testType === 'sql_libre' ? {
+            query: sqlQuery,
+            max_rows: maxRows,
+            timeout_seconds: sqlTimeout
+          } : null,
+          api_config: testType === 'api_rest' ? {
+            method: apiMethod,
+            url: apiUrl,
+            headers: apiHeaders.reduce((acc, h) => {
+              if (h.key) acc[h.key] = h.value;
+              return acc;
+            }, {}),
+            query_params: apiParams.reduce((acc, p) => {
+              if (p.key) acc[p.key] = p.value;
+              return acc;
+            }, {}),
+            timeout_seconds: apiTimeout
+          } : null
+        };
+      }
 
-      const response = await api.post(`/servers/${server.id}/universal-query-test`, requestBody);
+      const response = await api.post(endpoint, requestBody);
       setResult(response.data);
 
       if (response.data.success) {
@@ -246,11 +299,18 @@ const UniversalQueryTester = ({ open, onClose, server }) => {
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="universal-query-tester-modal">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            Test Universal SQL/API - {server?.name || 'Servidor'}
+            {connectionType === 'api' ? (
+              <Globe className="h-5 w-5 text-purple-600" />
+            ) : (
+              <Database className="h-5 w-5" />
+            )}
+            Test Universal {connectionType === 'api' ? 'API' : 'SQL/API'} - {server?.name || 'Servidor'}
           </DialogTitle>
           <DialogDescription>
-            Herramienta agnóstica de diagnóstico técnico
+            {connectionType === 'api' 
+              ? 'Prueba conexiones API REST (solo GET). La URL base se obtiene de la configuración.'
+              : 'Herramienta agnóstica de diagnóstico técnico'
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -410,26 +470,49 @@ const UniversalQueryTester = ({ open, onClose, server }) => {
           {testType === 'api_rest' && (
             <Card>
               <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">Configuración API REST</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  {connectionType === 'api' ? 'Configuración API REST (Solo GET)' : 'Configuración API REST'}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex gap-2">
-                  <Select value={apiMethod} onValueChange={setApiMethod}>
-                    <SelectTrigger className="w-24">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="GET">GET</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    placeholder="https://api.ejemplo.com/endpoint"
-                    value={apiUrl}
-                    onChange={(e) => setApiUrl(e.target.value)}
-                    className="flex-1"
-                    data-testid="api-url-input"
-                  />
-                </div>
+                {/* Para Conexiones API: solo endpoint_path (URL base viene de la conexión) */}
+                {connectionType === 'api' ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
+                      <Info className="h-3 w-3" />
+                      <span>La URL base se obtiene automáticamente de la configuración de la conexión</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Badge variant="outline" className="text-xs px-2 py-1">GET</Badge>
+                      <Input
+                        placeholder="Path adicional: /endpoint o /ventas?fecha=hoy"
+                        value={apiEndpointPath}
+                        onChange={(e) => setApiEndpointPath(e.target.value)}
+                        className="flex-1"
+                        data-testid="api-endpoint-path-input"
+                      />
+                    </div>
+                    <p className="text-xs text-zinc-500">Ejemplo: /ventas, /inventario?sucursal=0021</p>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Select value={apiMethod} onValueChange={setApiMethod}>
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="GET">GET</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      placeholder="https://api.ejemplo.com/endpoint"
+                      value={apiUrl}
+                      onChange={(e) => setApiUrl(e.target.value)}
+                      className="flex-1"
+                      data-testid="api-url-input"
+                    />
+                  </div>
+                )}
                 
                 {/* Headers */}
                 <div className="space-y-2">

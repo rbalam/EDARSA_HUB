@@ -416,6 +416,16 @@ set_verify_token(verify_token)
 api_router.include_router(api_connections_router)
 
 # ============================================================================
+# FASE API-UQT1: Universal Query Tester para Conexiones API
+# Endpoint AISLADO: /api/api-connections/{connection_id}/universal-query-test
+# FUENTE: EDARSAHUB.Servidores_Conexiones (tipo_conexion = 'API_LOCAL')
+# NO modifica endpoint SQL existente
+# ============================================================================
+from modules.api_connections import api_universal_test_router, set_api_uqt_verify_token
+set_api_uqt_verify_token(verify_token)
+api_router.include_router(api_universal_test_router)
+
+# ============================================================================
 # MÓDULO UNIVERSAL QUERY TESTER: Herramienta agnóstica de diagnóstico
 # Permite probar consultas SQL/API contra cualquier origen de datos
 # NO asume dominio, NO persiste resultados, Solo lectura (SELECT/GET)

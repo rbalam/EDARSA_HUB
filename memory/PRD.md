@@ -409,3 +409,115 @@ El usuario `test_propinas@edarsa.com`:
 - ✅ Módulos protegidos intactos
 - ✅ MongoDB sigue siendo fuente activa de login
 
+---
+
+## FASE 1 COMPLETADA — UniversalQueryTester para SQL Servers (11-Mayo-2026)
+
+### Resumen Ejecutivo
+
+| Métrica | Valor |
+|---------|-------|
+| Endpoint creado | `POST /api/servers/{server_id}/universal-query-test` |
+| Archivos nuevos | 2 (routes.py, __init__.py) |
+| Archivos modificados | 2 (Servidores.js, server.py) |
+| Test Types soportados | sql_libre, api_rest, conexion, diagnostico |
+| Seguridad | Solo SELECT (lectura), BLOCKED_SQL_KEYWORDS |
+
+### Archivos Creados
+
+| Archivo | Propósito |
+|---------|-----------|
+| `/app/frontend/src/components/UniversalQueryTester.jsx` | Componente React modal agnóstico |
+| `/app/backend/modules/universal_query/__init__.py` | Inicializador del módulo |
+| `/app/backend/modules/universal_query/routes.py` | Router FastAPI con endpoint universal |
+
+### Confirmaciones
+
+- ✅ QueryConfigWizard.js quedó intacto
+- ✅ Endpoints legacy /servers/{id}/queries/* intactos
+- ✅ MongoDB no modificado
+- ✅ No se creó persistencia
+- ✅ No se crearon tablas SQL
+
+---
+
+## FASE API-UQT1 COMPLETADA — UniversalQueryTester para Conexiones API (11-Mayo-2026)
+
+### Resumen Ejecutivo
+
+| Métrica | Valor |
+|---------|-------|
+| Endpoint creado | `POST /api/api-connections/{connection_id}/universal-query-test` |
+| Archivos nuevos | 1 (universal_test_routes.py) |
+| Archivos modificados | 4 (__init__.py, repository no modificado, server.py, UniversalQueryTester.jsx, Servidores.js) |
+| Fuente de datos | EDARSAHUB.Servidores_Conexiones (tipo_conexion = 'API_LOCAL') |
+| Seguridad | Solo GET, headers enmascarados, timeout obligatorio, autorización por EmpresaID |
+
+### Archivos Creados
+
+| Archivo | Propósito |
+|---------|-----------|
+| `/app/backend/modules/api_connections/universal_test_routes.py` | Endpoint aislado para conexiones API |
+
+### Archivos Modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `/app/backend/modules/api_connections/__init__.py` | Import del nuevo router |
+| `/app/backend/server.py` | Registro del router API-UQT |
+| `/app/frontend/src/components/UniversalQueryTester.jsx` | Prop connectionType ('sql' \| 'api') |
+| `/app/frontend/src/pages/Servidores.js` | Botón "Test Universal" en tab Conexiones API |
+
+### Funcionalidades Implementadas
+
+| Funcionalidad | Estado |
+|---------------|--------|
+| Autenticación obligatoria (current_user) | ✅ |
+| Autorización por EmpresaID | ✅ |
+| Solo método GET permitido | ✅ |
+| Bloqueo POST/PUT/PATCH/DELETE | ✅ |
+| Headers sensibles enmascarados | ✅ |
+| Params sensibles enmascarados | ✅ |
+| URL ejecutada enmascarada | ✅ |
+| endpoint_path como URL absoluta bloqueado | ✅ |
+| Timeout configurable (1-60s) | ✅ |
+| Consultas SQL parametrizadas | ✅ |
+
+### Pruebas Verificadas
+
+| Prueba | Resultado |
+|--------|-----------|
+| Conexión API válida con usuario autorizado | ✅ 200 |
+| Conexión inexistente | ✅ 404 |
+| POST bloqueado | ✅ 400 |
+| DELETE bloqueado | ✅ 400 |
+| URL externa en endpoint_path | ✅ 400 |
+| Sin autenticación | ✅ 403 |
+| SQL UniversalQueryTester sigue funcionando | ✅ |
+| QueryConfigWizard intacto | ✅ |
+| MongoDB no modificado | ✅ |
+| EDARSAHUB no modificado | ✅ |
+
+### Confirmaciones de No Regresión
+
+- ✅ Endpoint SQL original `/api/servers/{id}/universal-query-test` intacto
+- ✅ QueryConfigWizard.js sin modificaciones
+- ✅ Endpoints legacy `/servers/{id}/queries/*` intactos
+- ✅ MongoDB sin nuevas colecciones
+- ✅ EDARSAHUB sin nuevas tablas
+- ✅ No se creó persistencia de pruebas
+- ✅ Módulos protegidos (Comercial, Tablero, KPIs, Inventarios, Compras, Finanzas, Operaciones) intactos
+- ✅ Login/JWT/RBAC sin modificaciones
+
+---
+
+## Próximas Fases Pendientes de Autorización
+
+| Fase | Descripción | Estado |
+|------|-------------|--------|
+| FASE A4.2 (Pasiva) | Diagnóstico para asignación de roles a 9 usuarios | ⏸️ PENDIENTE |
+| FASE Q1 (Pasiva) | Diseño de persistencia SQL para consultas configurables | ⏸️ PENDIENTE |
+| Auth Token Bug | Persistencia de token en frontend Finanzas | ⏸️ PENDIENTE |
+| FASE A5 | Poblar Usuario_EmpresasAsignacion | ⏸️ BACKLOG |
+| FASE A6 | Dual-read en login | ⏸️ BACKLOG |
+

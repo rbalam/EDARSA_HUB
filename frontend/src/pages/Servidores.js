@@ -94,6 +94,7 @@ const Servidores = () => {
   // Estado para UniversalQueryTester
   const [universalTestOpen, setUniversalTestOpen] = useState(false);
   const [serverForUniversalTest, setServerForUniversalTest] = useState(null);
+  const [universalTestConnectionType, setUniversalTestConnectionType] = useState('sql');  // 'sql' | 'api'
   
   // Estado para configuración de sucursales
   const [sucursalesConfigOpen, setSucursalesConfigOpen] = useState(false);
@@ -935,6 +936,7 @@ const Servidores = () => {
                     size="sm"
                     onClick={() => {
                       setServerForUniversalTest(server);
+                      setUniversalTestConnectionType('sql');
                       setUniversalTestOpen(true);
                     }}
                     data-testid="universal-test-button"
@@ -1226,6 +1228,26 @@ const Servidores = () => {
                     >
                       <Code className="h-4 w-4 mr-1" />
                       Editar Consultas SQL
+                    </Button>
+                    
+                    {/* FASE API-UQT1: Botón Test Universal para Conexiones API */}
+                    <Button 
+                      variant="outline"
+                      size="sm" 
+                      className="w-full border-purple-200 text-purple-700 hover:bg-purple-50"
+                      onClick={() => {
+                        setServerForUniversalTest({
+                          id: apiConn.id,
+                          name: apiConn.name,
+                          system_type: apiConn.tipo
+                        });
+                        setUniversalTestConnectionType('api');
+                        setUniversalTestOpen(true);
+                      }}
+                      data-testid="api-universal-test-button"
+                    >
+                      <TestTube2 className="h-4 w-4 mr-1" />
+                      Test Universal
                     </Button>
                     
                     <div className="flex gap-2">
@@ -1942,10 +1964,12 @@ const Servidores = () => {
       />
 
       {/* Universal Query Tester - Herramienta agnóstica */}
+      {/* FASE API-UQT1: Soporta connectionType 'sql' (servidores SQL) y 'api' (conexiones API) */}
       <UniversalQueryTester
         open={universalTestOpen}
         onClose={() => setUniversalTestOpen(false)}
         server={serverForUniversalTest}
+        connectionType={universalTestConnectionType}
       />
     </div>
   );

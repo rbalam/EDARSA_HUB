@@ -27,6 +27,8 @@ from .repository import (
 )
 
 from .routes import router as api_connections_router
+from .universal_test_routes import router as api_universal_test_router
+from .universal_test_routes import set_verify_token as set_api_uqt_verify_token
 
 __all__ = [
     'list_api_connections',
@@ -37,5 +39,7 @@ __all__ = [
     'sync_all_to_mongo_cache',
     'test_api_connection_health',
     'get_api_connections_for_adapters',
-    'api_connections_router'
+    'api_connections_router',
+    'api_universal_test_router',
+    'set_api_uqt_verify_token'
 ]
