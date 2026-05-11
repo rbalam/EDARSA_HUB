@@ -117,11 +117,15 @@ def _sql_row_to_api_dict(row: Dict) -> Dict:
         except:
             return None
     
+    # API-SEC1: NO exponer api_key descifrada en el listado
+    # Solo indicar si existe o no
+    api_key_masked = '***CONFIGURED***' if api_key_decrypted else ''
+    
     return {
         'id': str(row.get('id', '')),
         'name': row.get('nombre', ''),
         'url': row.get('api_url', ''),
-        'api_key': api_key_decrypted,
+        'api_key': api_key_masked,  # API-SEC1: Enmascarado por seguridad
         'tipo': row.get('system_type', 'MPRO'),
         'tipo_conexion': row.get('tipo_conexion', 'API_LOCAL'),
         'servidor_padre': row.get('host', ''),

@@ -181,6 +181,7 @@ const Servidores = () => {
   const [apiTestStatus, setApiTestStatus] = useState({}); // { api_id: { status: 'success'|'warning'|'error', message, loading } }
   
   // Función para probar conexión de API local
+  // API-SEC1: Usa endpoint seguro /test-connection con query SQL fija en backend
   const testApiConnection = async (apiConn) => {
     setApiTestStatus(prev => ({
       ...prev,
@@ -188,78 +189,89 @@ const Servidores = () => {
     }));
     
     try {
-      // Llamar al endpoint de prueba en el backend
-      const response = await api.post('/test-api-connection', {
-        url: apiConn.url,
-        api_key: process.env.REACT_APP_API_KEY || apiConn.api_key
-      });
+      // API-SEC1: Usar nuevo endpoint seguro que ejecuta query fija en backend
+      // NO envía SQL, api_key, ni parámetros sensibles desde frontend
+      const response = await api.post(`/api-connections/${apiConn.id}/test-connection`);
       
       if (response.data.success) {
-        if (response.data.sql_connected) {
-          setApiTestStatus(prev => ({
-            ...prev,
-            [apiConn.id]: { 
-              loading: false, 
-              status: 'success', 
-              message: `✅ API y SQL Server conectados. Ventas hoy: $${response.data.ventas_hoy?.toLocaleString() || 0}` 
-            }
-          }));
-          toast.success(`${apiConn.name}: Conexión exitosa`);
-        } else {
-          setApiTestStatus(prev => ({
-            ...prev,
-            [apiConn.id]: { 
-              loading: false, 
-              status: 'warning', 
-              message: `⚠️ API responde pero SQL Server no disponible: ${response.data.sql_error || 'Error desconocido'}` 
-            }
-          }));
-          toast.warning(`${apiConn.name}: API OK pero SQL Server no disponible`);
-        }
-      } else {
-        // La API respondió pero con success: false
-        // Verificar si es un error de SQL Server (HTTP 500 en la respuesta)
-        const errorText = response.data.error || 'Sin respuesta';
-        const isSqlError = errorText.includes('HTTP 500') || errorText.includes('SQL Server') || errorText.includes('ODBC');
+        // Conexión exitosa
+        const tableSample = response.data.preview?.table_sample;
+        const responseTime = response.data.execution?.response_time_ms;
         
-        if (isSqlError) {
-          setApiTestStatus(prev => ({
-            ...prev,
-            [apiConn.id]: { 
-              loading: false, 
-              status: 'warning', 
-              message: `⚠️ API responde pero SQL Server local no disponible (timeout o apagado)` 
-            }
-          }));
-          toast.warning(`${apiConn.name}: API OK pero SQL Server local no disponible`);
+        setApiTestStatus(prev => ({
+          ...prev,
+          [apiConn.id]: { 
+            loading: false, 
+            status: 'success', 
+            message: `✅ Conexión validada${tableSample ? ` (tabla: ${tableSample})` : ''}${responseTime ? ` - ${responseTime}ms` : ''}` 
+          }
+        }));
+        toast.success(`${apiConn.name}: ${response.data.message || 'Conexión exitosa'}`);
+      } else {
+        // Error controlado
+        const errorCode = response.data.execution?.error_code;
+        const errorMsg = response.data.execution?.error_message || response.data.message || 'Error de conexión';
+        const httpStatus = response.data.execution?.http_status;
+        
+        // Determinar tipo de error
+        let status = 'error';
+        let messagePrefix = '❌';
+        
+        if (errorCode === 'TIMEOUT') {
+          status = 'warning';
+          messagePrefix = '⏱️';
+        } else if (httpStatus === 403) {
+          messagePrefix = '🔒';
+        } else if (errorCode === 'CONNECTION_ERROR') {
+          status = 'warning';
+          messagePrefix = '⚠️';
+        }
+        
+        setApiTestStatus(prev => ({
+          ...prev,
+          [apiConn.id]: { 
+            loading: false, 
+            status: status, 
+            message: `${messagePrefix} ${errorMsg.substring(0, 150)}` 
+          }
+        }));
+        
+        if (errorCode === 'TIMEOUT') {
+          toast.warning(`${apiConn.name}: Timeout de conexión`);
         } else {
-          setApiTestStatus(prev => ({
-            ...prev,
-            [apiConn.id]: { 
-              loading: false, 
-              status: 'error', 
-              message: `❌ Error: ${errorText.substring(0, 100)}` 
-            }
-          }));
-          toast.error(`${apiConn.name}: Error de conexión`);
+          toast.error(`${apiConn.name}: ${errorMsg.substring(0, 100)}`);
         }
       }
     } catch (error) {
-      // CORRECCIÓN P0: Manejo robusto de error para evitar "[object Object]"
+      // Manejo de errores HTTP
       let errorMsg = 'Error de conexión';
-      if (error.response?.data?.detail) {
+      let status = 'error';
+      
+      if (error.response?.status === 404) {
+        errorMsg = 'Conexión no encontrada';
+      } else if (error.response?.status === 403) {
+        errorMsg = 'Sin permiso para acceder a esta conexión';
+      } else if (error.response?.status === 400) {
+        const detail = error.response?.data?.detail;
+        if (detail?.includes('inactiva')) {
+          errorMsg = 'Conexión inactiva';
+          status = 'warning';
+        } else {
+          errorMsg = typeof detail === 'string' ? detail : 'Conexión inválida';
+        }
+      } else if (error.response?.data?.detail) {
         const detail = error.response.data.detail;
-        // Si detail es objeto, convertirlo a string legible
         errorMsg = typeof detail === 'string' ? detail : JSON.stringify(detail);
       } else if (error.message) {
         errorMsg = error.message;
       }
+      
       setApiTestStatus(prev => ({
         ...prev,
         [apiConn.id]: { 
           loading: false, 
-          status: 'error', 
-          message: `❌ ${errorMsg.substring(0, 150)}` 
+          status: status, 
+          message: `${status === 'warning' ? '⚠️' : '❌'} ${errorMsg.substring(0, 150)}` 
         }
       }));
       toast.error(`${apiConn.name}: ${errorMsg.substring(0, 100)}`);
@@ -1376,9 +1388,12 @@ const Servidores = () => {
                 type="password"
                 value={apiFormData.api_key}
                 onChange={(e) => setApiFormData({...apiFormData, api_key: e.target.value})}
-                placeholder={editingApi ? '••••••••' : 'EDARSA_2026_SECURE_KEY'}
+                placeholder={editingApi ? '(sin cambios)' : 'Ingrese API Key'}
+                autoComplete="new-password"
               />
-              <p className="text-xs text-zinc-500">Se almacena de forma segura en variables de entorno</p>
+              <p className="text-xs text-zinc-500">
+                Se almacena cifrada. No se muestra el valor actual por seguridad.
+              </p>
             </div>
             
             <div className="grid grid-cols-2 gap-4">

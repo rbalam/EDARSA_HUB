@@ -47,6 +47,70 @@ const API_TEST_TYPES = [
   { key: 'api_rest', label: 'API REST (GET)', icon: Globe, description: 'Probar endpoint HTTP GET' }
 ];
 
+// ============================================================================
+// API-SEC1: CONSTANTES DE SEGURIDAD PARA CONEXIONES API
+// ============================================================================
+
+// Nombres de parámetros BLOQUEADOS para conexiones API
+const BLOCKED_API_PARAM_NAMES = [
+  'sql', 'query', 'consulta', 'statement', 'command', 
+  'script', 'exec', 'execute'
+];
+
+// Patrones SQL BLOQUEADOS en valores de parámetros API
+const SQL_PATTERN_KEYWORDS = [
+  'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER',
+  'TRUNCATE', 'EXEC', 'MERGE', 'CREATE', 'UNION', 'FROM',
+  'WHERE', 'INFORMATION_SCHEMA', 'sys.tables'
+];
+
+// Mensaje de bloqueo para UI
+const SQL_BLOCK_MESSAGE = 
+  'No se permite enviar SQL o comandos dinámicos mediante parámetros API en esta fase. ' +
+  'Use el botón "Probar conexión" para validación técnica controlada.';
+
+/**
+ * API-SEC1: Valida que un nombre de parámetro no esté bloqueado
+ * @param {string} paramName - Nombre del parámetro
+ * @returns {{valid: boolean, message: string|null}}
+ */
+const validateApiParamName = (paramName) => {
+  if (!paramName) return { valid: true, message: null };
+  const nameLower = paramName.toLowerCase().trim();
+  if (BLOCKED_API_PARAM_NAMES.includes(nameLower)) {
+    return { 
+      valid: false, 
+      message: `El parámetro "${paramName}" no está permitido. ${SQL_BLOCK_MESSAGE}`
+    };
+  }
+  return { valid: true, message: null };
+};
+
+/**
+ * API-SEC1: Valida que un valor no contenga patrones SQL
+ * @param {string} value - Valor del parámetro
+ * @returns {{valid: boolean, message: string|null}}
+ */
+const validateApiParamValue = (value) => {
+  if (!value) return { valid: true, message: null };
+  const valueUpper = value.toUpperCase();
+  for (const keyword of SQL_PATTERN_KEYWORDS) {
+    // Usar regex para detectar palabras completas
+    const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+    if (regex.test(valueUpper)) {
+      return { 
+        valid: false, 
+        message: `El valor contiene el patrón SQL "${keyword}". ${SQL_BLOCK_MESSAGE}`
+      };
+    }
+  }
+  return { valid: true, message: null };
+};
+
+// ============================================================================
+// FIN API-SEC1
+// ============================================================================
+
 const DEFAULT_SQL = 'SELECT TOP 10 * FROM INFORMATION_SCHEMA.TABLES';
 
 const MAX_ROWS_OPTIONS = [10, 25, 50, 100, 250, 500];
@@ -137,17 +201,50 @@ const UniversalQueryTester = ({ open, onClose, server, connectionType = 'sql' })
 
   // Agregar param API
   const addApiParam = () => {
-    setApiParams([...apiParams, { key: '', value: '' }]);
+    setApiParams([...apiParams, { key: '', value: '', error: null }]);
   };
 
   const removeApiParam = (index) => {
     setApiParams(apiParams.filter((_, i) => i !== index));
   };
 
+  // API-SEC1: Actualizar param API con validación de seguridad
   const updateApiParam = (index, field, value) => {
     const updated = [...apiParams];
     updated[index][field] = value;
+    
+    // Solo validar si es conexión API
+    if (connectionType === 'api') {
+      let error = null;
+      
+      // Validar nombre de parámetro
+      if (field === 'key') {
+        const nameValidation = validateApiParamName(value);
+        if (!nameValidation.valid) {
+          error = nameValidation.message;
+          toast.error(nameValidation.message, { duration: 5000 });
+        }
+      }
+      
+      // Validar valor del parámetro
+      if (field === 'value') {
+        const valueValidation = validateApiParamValue(value);
+        if (!valueValidation.valid) {
+          error = valueValidation.message;
+          toast.error(valueValidation.message, { duration: 5000 });
+        }
+      }
+      
+      updated[index].error = error;
+    }
+    
     setApiParams(updated);
+  };
+
+  // API-SEC1: Verificar si hay errores de validación en parámetros API
+  const hasApiParamErrors = () => {
+    if (connectionType !== 'api') return false;
+    return apiParams.some(p => p.error);
   };
 
   // Ejecutar prueba
@@ -155,6 +252,32 @@ const UniversalQueryTester = ({ open, onClose, server, connectionType = 'sql' })
     if (!server?.id) {
       toast.error('Servidor no seleccionado');
       return;
+    }
+
+    // API-SEC1: Validar que no hay errores de seguridad antes de ejecutar
+    if (connectionType === 'api' && hasApiParamErrors()) {
+      toast.error(SQL_BLOCK_MESSAGE, { duration: 5000 });
+      return;
+    }
+
+    // API-SEC1: Validación final de parámetros para conexiones API
+    if (connectionType === 'api') {
+      for (const param of apiParams) {
+        if (param.key) {
+          const nameValidation = validateApiParamName(param.key);
+          if (!nameValidation.valid) {
+            toast.error(nameValidation.message, { duration: 5000 });
+            return;
+          }
+        }
+        if (param.value) {
+          const valueValidation = validateApiParamValue(param.value);
+          if (!valueValidation.valid) {
+            toast.error(valueValidation.message, { duration: 5000 });
+            return;
+          }
+        }
+      }
     }
 
     setExecuting(true);

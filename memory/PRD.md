@@ -532,13 +532,87 @@ La prueba contra `130° QRO LOCAL` devolvió HTTP 422 desde la API destino porqu
 
 ---
 
+## FASE API-SEC1 — CORRECCIÓN DE SEGURIDAD CONEXIONES API (11-Mayo-2026)
+
+### Estado: ✅ IMPLEMENTADA Y VALIDADA
+
+### Problema Resuelto
+
+Se detectó que la documentación Swagger/API permitía ejecutar manualmente SQL libre mediante:
+- Parámetro `sql` en query string
+- Header `x-api-key` visible en formularios
+- Acceso a comandos SQL arbitrarios vía parámetros API
+
+### Cambios Implementados
+
+| Componente | Cambio |
+|------------|--------|
+| Backend `universal_test_routes.py` | Nuevo endpoint `POST /api-connections/{id}/test-connection` con query SQL fija |
+| Backend `universal_test_routes.py` | Bloqueo de parámetros peligrosos (sql, query, exec, etc.) |
+| Backend `universal_test_routes.py` | Detección de patrones SQL en valores |
+| Backend `repository.py` | API key enmascarada como `***CONFIGURED***` en listados |
+| Frontend `UniversalQueryTester.jsx` | Validación de parámetros bloqueados en UI |
+| Frontend `Servidores.js` | Botón "Probar Conexión" usa endpoint seguro |
+| Frontend `Servidores.js` | Campo API key con `type="password"` y placeholder seguro |
+
+### Endpoints Resultantes
+
+| Endpoint | Propósito | SQL desde usuario |
+|----------|-----------|-------------------|
+| `POST /api-connections/{id}/test-connection` | Validación técnica con query fija | ❌ NO |
+| `POST /api-connections/{id}/universal-query-test` | Test API REST (con bloqueos) | ❌ BLOQUEADO |
+| `POST /servers/{id}/universal-query-test` | Test SQL Server (intacto) | ✅ Permitido |
+
+### Query Fija Hardcodeada
+
+```sql
+SELECT TOP 1 name FROM sys.tables ORDER BY name
+```
+
+### Parámetros Bloqueados
+
+- `sql`, `query`, `consulta`, `statement`, `command`, `script`, `exec`, `execute`
+
+### Patrones SQL Bloqueados en Valores
+
+- `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE`, `EXEC`, `MERGE`, `CREATE`, `UNION`, `FROM`, `WHERE`, `INFORMATION_SCHEMA`, `sys.tables`
+
+### Validaciones Aprobadas
+
+| # | Validación | Resultado |
+|---|------------|-----------|
+| 1 | Endpoint /test-connection disponible (404 para ID inexistente) | ✅ |
+| 2 | Bloqueo de parámetro 'sql' | ✅ |
+| 3 | Bloqueo de patrón SQL en valores | ✅ |
+| 4 | Autenticación obligatoria (401/403 sin auth) | ✅ |
+| 5 | Query fija ejecutada internamente | ✅ |
+| 6 | API key enmascarada en listado | ✅ |
+| 7 | UniversalQueryTester SQL intacto | ✅ |
+
+### Confirmaciones de No Regresión
+
+- ✅ QueryConfigWizard sin modificaciones
+- ✅ Endpoints legacy SQL intactos
+- ✅ MongoDB sin modificaciones
+- ✅ EDARSAHUB sin modificaciones DDL/DML
+- ✅ Módulos protegidos (Comercial, Tablero, KPIs, etc.) intactos
+- ✅ Login/JWT/RBAC sin modificaciones
+
+---
+
 ## Próximas Fases Pendientes de Autorización
 
 | Fase | Descripción | Estado |
 |------|-------------|--------|
+| FASE Q1.3 (Pasiva) | Dry-run: Generar INSERTs de migración SIN ejecutar | ⏸️ PENDIENTE |
+| FASE Q1.4 | Ejecutar DDL en EDARSAHUB | ⏸️ PENDIENTE |
 | FASE A4.2 (Pasiva) | Diagnóstico para asignación de roles a 9 usuarios | ⏸️ PENDIENTE |
-| FASE Q1 (Pasiva) | Diseño de persistencia SQL para consultas configurables | ⏸️ PENDIENTE |
 | Auth Token Bug | Persistencia de token en frontend Finanzas | ⏸️ PENDIENTE |
 | FASE A5 | Poblar Usuario_EmpresasAsignacion | ⏸️ BACKLOG |
 | FASE A6 | Dual-read en login | ⏸️ BACKLOG |
+| FASES SYNC-C0+ | Sincronización incremental de Compras | ⏸️ BACKLOG |
+
+---
+
+**Última actualización:** 11-Mayo-2026
 
