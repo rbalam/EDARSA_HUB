@@ -509,6 +509,27 @@ El usuario `test_propinas@edarsa.com`:
 - ✅ Módulos protegidos (Comercial, Tablero, KPIs, Inventarios, Compras, Finanzas, Operaciones) intactos
 - ✅ Login/JWT/RBAC sin modificaciones
 
+### Observación de Cierre (11-Mayo-2026)
+
+La prueba contra `130° QRO LOCAL` devolvió HTTP 422 desde la API destino porque requiere parámetro `sql`. Esto se acepta como evidencia de:
+- ✅ Conectividad API validada
+- ✅ Endpoint alcanzó API destino
+- ✅ Manejo de error 422 controlado
+- ⚠️ Prueba funcional con payload válido de negocio: PENDIENTE
+
+**Nota:** Antes de uso operativo con APIs tipo `/query`, probar con parámetro requerido por la API destino.
+
+---
+
+## FASE API-UQT1 — CIERRE FORMAL ACEPTADO (11-Mayo-2026)
+
+| Aspecto | Estado |
+|---------|--------|
+| Implementación | ✅ COMPLETADA |
+| Pruebas backend | ✅ APROBADAS |
+| No regresión | ✅ VERIFICADA |
+| Cierre documental | ✅ **ACEPTADO** |
+
 ---
 
 ## Próximas Fases Pendientes de Autorización
