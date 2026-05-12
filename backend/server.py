@@ -4192,17 +4192,29 @@ ORDER BY FMOV.folio, CODIGO
             
             # Obtener tipos de movimiento configurados en el servidor
             tipos_movimiento = server.get('tipos_movimiento', [])
+            
+            # CORRECCIÓN: Excluir tipos de VENTA de la columna MOVIMIENTOS
+            # Las ventas (SPV, SCP, SCS) se muestran en la columna VENTAS por separado
+            tipos_venta = ['SPV', 'SCP', 'SCS']
+            
             if tipos_movimiento:
-                # Filtrar solo por los conceptos configurados
-                conceptos_filter = ", ".join([f"'{t}'" for t in tipos_movimiento])
-                filtro_conceptos_insumos = f"AND movsinv.idconcepto IN ({conceptos_filter})"
-                filtro_conceptos_presentaciones = f"AND movtosalmacen.idconcepto IN ({conceptos_filter})"
-                logging.info(f"Usando tipos de movimiento configurados: {tipos_movimiento}")
+                # Filtrar tipos de movimiento EXCLUYENDO los de venta
+                tipos_mov_sin_ventas = [t for t in tipos_movimiento if t not in tipos_venta]
+                if tipos_mov_sin_ventas:
+                    conceptos_filter = ", ".join([f"'{t}'" for t in tipos_mov_sin_ventas])
+                    filtro_conceptos_insumos = f"AND movsinv.idconcepto IN ({conceptos_filter})"
+                    filtro_conceptos_presentaciones = f"AND movtosalmacen.idconcepto IN ({conceptos_filter})"
+                else:
+                    # Si solo hay tipos de venta, no hay movimientos (evitar query vacía)
+                    filtro_conceptos_insumos = "AND 1=0"  # No devuelve nada
+                    filtro_conceptos_presentaciones = "AND 1=0"
+                logging.info(f"Tipos de movimiento configurados: {tipos_movimiento}")
+                logging.info(f"Tipos de movimiento para columna MOVIMIENTOS (sin ventas): {tipos_mov_sin_ventas}")
             else:
-                # Si no hay configuración, excluir solo los vacíos
-                filtro_conceptos_insumos = "AND movsinv.idconcepto NOT IN ('')"
-                filtro_conceptos_presentaciones = "AND movtosalmacen.idconcepto NOT IN ('')"
-                logging.info("No hay tipos de movimiento configurados, usando todos excepto vacíos")
+                # Si no hay configuración, excluir vacíos Y tipos de venta
+                filtro_conceptos_insumos = f"AND movsinv.idconcepto NOT IN ('', 'SPV', 'SCP', 'SCS')"
+                filtro_conceptos_presentaciones = f"AND movtosalmacen.idconcepto NOT IN ('', 'SPV', 'SCP', 'SCS')"
+                logging.info("No hay tipos de movimiento configurados, usando todos excepto vacíos y ventas")
             
             movimientos_query = f"""
 -- MOVIMIENTOS DE INSUMOS (movsinv) - usar código natural (ya incluye prefijo)
@@ -4691,8 +4703,15 @@ ORDER BY Fecha DESC
             # INSUMOS: el código se genera como prefijo + idinsumo (ej: B + 12345 = B12345)
             
             # Formatear fechas para SQL Server: YYYYMMDD HH:MM:SS
+            # Si solo viene fecha (YYYY-MM-DD), agregar hora inicio/fin
             fecha_ini_fmt = fecha_ini.replace('-', '').replace('T', ' ') if fecha_ini else ''
             fecha_fin_fmt = fecha_fin.replace('-', '').replace('T', ' ') if fecha_fin else ''
+            
+            # Asegurar que tengan hora
+            if fecha_ini_fmt and ' ' not in fecha_ini_fmt:
+                fecha_ini_fmt = f"{fecha_ini_fmt} 00:00:00"
+            if fecha_fin_fmt and ' ' not in fecha_fin_fmt:
+                fecha_fin_fmt = f"{fecha_fin_fmt} 23:59:59"
             
             logging.info(f"Detalle movimientos SoftRestaurant - Código: {producto_codigo}, Almacén: {almacen}, Fechas: {fecha_ini_fmt} a {fecha_fin_fmt}")
             
@@ -4878,6 +4897,12 @@ ORDER BY Fecha DESC
             # Formatear fechas para SQL Server: YYYYMMDD HH:MM:SS
             fecha_ini_fmt = fecha_ini.replace('-', '').replace('T', ' ') if fecha_ini else ''
             fecha_fin_fmt = fecha_fin.replace('-', '').replace('T', ' ') if fecha_fin else ''
+            
+            # Asegurar que tengan hora
+            if fecha_ini_fmt and ' ' not in fecha_ini_fmt:
+                fecha_ini_fmt = f"{fecha_ini_fmt} 00:00:00"
+            if fecha_fin_fmt and ' ' not in fecha_fin_fmt:
+                fecha_fin_fmt = f"{fecha_fin_fmt} 23:59:59"
             
             logging.info(f"Detalle ventas SoftRestaurant - Código: {producto_codigo}, Almacén: {almacen}, Fechas: {fecha_ini_fmt} a {fecha_fin_fmt}")
             

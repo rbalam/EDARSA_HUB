@@ -1413,6 +1413,16 @@ const Reportes = () => {
 
   // Función para cargar el detalle de movimientos
   const loadMovementDetails = async (producto) => {
+    // DEBUG: Log de los parámetros que se enviarán
+    console.log('[DEBUG] loadMovementDetails - Parámetros:', {
+      server_id: filters.server_id,
+      producto_codigo: producto.Codigo,
+      sucursal: filters.sucursal,
+      almacen: filters.almacen,
+      fecha_ini: filters.fecha_ini,
+      fecha_fin: filters.fecha_fin
+    });
+    
     setDetailModal({
       open: true,
       type: 'movimientos',
@@ -1430,6 +1440,8 @@ const Reportes = () => {
         fecha_ini: filters.fecha_ini,
         fecha_fin: filters.fecha_fin
       });
+      
+      console.log('[DEBUG] loadMovementDetails - Respuesta:', response.data);
       
       setDetailModal(prev => ({
         ...prev,
