@@ -188,6 +188,8 @@ def parse_sql_server_host(host: str, default_port: int = 1433) -> tuple:
         hostname = match.group(1)
         port = int(match.group(2))
         instance = match.group(3)
+        # Resolver hostname a IP si es necesario
+        hostname = _resolve_hostname_to_ip(hostname)
         logging.info(f"Parsed DDNS format: hostname={hostname}, port={port}, instance={instance}")
         return (hostname, port, instance)
     
@@ -197,6 +199,7 @@ def parse_sql_server_host(host: str, default_port: int = 1433) -> tuple:
         hostname = match.group(1)
         instance = match.group(2)
         port = int(match.group(3))
+        hostname = _resolve_hostname_to_ip(hostname)
         logging.info(f"Parsed instance,port format: hostname={hostname}, instance={instance}, port={port}")
         return (hostname, port, instance)
     
@@ -205,6 +208,7 @@ def parse_sql_server_host(host: str, default_port: int = 1433) -> tuple:
     if match:
         hostname = match.group(1)
         instance = match.group(2)
+        hostname = _resolve_hostname_to_ip(hostname)
         logging.info(f"Parsed instance format: hostname={hostname}, instance={instance}")
         return (hostname, port, instance)
     
@@ -213,12 +217,54 @@ def parse_sql_server_host(host: str, default_port: int = 1433) -> tuple:
     if match:
         hostname = match.group(1)
         port = int(match.group(2))
+        hostname = _resolve_hostname_to_ip(hostname)
         logging.info(f"Parsed host,port format: hostname={hostname}, port={port}")
         return (hostname, port, None)
     
     # Caso 5: Solo hostname
-    logging.info(f"Using simple hostname: {host}")
-    return (host, port, None)
+    hostname = _resolve_hostname_to_ip(host)
+    logging.info(f"Using simple hostname: {hostname}")
+    return (hostname, port, None)
+
+
+# ============================================================================
+# MAPEO DE HOSTNAMES DDNS A IPs DIRECTAS
+# ============================================================================
+# Algunos servidores DDNS no son accesibles desde ciertos entornos.
+# Este mapeo permite usar la IP directa cuando el DNS falla.
+
+_HOSTNAME_TO_IP_MAP = {
+    'servercienfuegos.ddns.net': '189.172.160.234',
+    # Agregar más mapeos según sea necesario
+}
+
+def _resolve_hostname_to_ip(hostname: str) -> str:
+    """
+    Resuelve un hostname a IP usando el mapeo predefinido.
+    Si el hostname no está en el mapeo, intenta resolver via DNS.
+    Si todo falla, devuelve el hostname original.
+    """
+    hostname_lower = hostname.lower().strip()
+    
+    # Primero verificar en el mapeo predefinido
+    if hostname_lower in _HOSTNAME_TO_IP_MAP:
+        ip = _HOSTNAME_TO_IP_MAP[hostname_lower]
+        logging.info(f"[DNS] Usando IP mapeada para {hostname}: {ip}")
+        return ip
+    
+    # Si ya es una IP, devolverla directamente
+    if re.match(r'^\d+\.\d+\.\d+\.\d+$', hostname):
+        return hostname
+    
+    # Intentar resolver via DNS
+    try:
+        import socket
+        ip = socket.gethostbyname(hostname)
+        logging.info(f"[DNS] Resuelto {hostname} -> {ip}")
+        return ip
+    except Exception as e:
+        logging.warning(f"[DNS] No se pudo resolver {hostname}: {e}")
+        return hostname
 
 
 # ============================================================================
