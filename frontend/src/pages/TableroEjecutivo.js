@@ -208,14 +208,29 @@ const formatCurrency = (num) => {
 };
 
 const formatPercent = (num) => {
-  if (num === null || num === undefined) return '0%';
+  // FASE 3 FIX: Distinguir correctamente 0.0 real de null/undefined
+  // - null/undefined = sin base comparativa = mostrar "-"
+  // - 0 o 0.0 = variación real cero = mostrar "0%" o "0.0%"
+  if (num === null || num === undefined) return '-';
   if (num === 0) return '0%';
   const prefix = num > 0 ? '+' : '';
   return `${prefix}${num.toFixed(1)}%`;
 };
 
 const VariacionBadge = ({ valor, size = 'sm' }) => {
-  if (valor === 0 || valor === null || valor === undefined) return <span className="text-zinc-400">-</span>;
+  // FASE 3 FIX: Distinguir correctamente 0.0 real de null/undefined
+  // - null/undefined = sin base comparativa = mostrar "-"
+  // - 0 o 0.0 = variación real cero = mostrar "0%" con estilo neutro
+  if (valor === null || valor === undefined) {
+    return <span className="text-zinc-400">-</span>;
+  }
+  
+  // Valor 0 real: mostrar "0%" con estilo neutro (ni verde ni rojo)
+  if (valor === 0) {
+    const sizeClass = size === 'lg' ? 'text-lg font-bold' : 'text-sm font-semibold';
+    return <span className={`${sizeClass} text-zinc-500`}>0%</span>;
+  }
+  
   const isPositive = valor > 0;
   const sizeClass = size === 'lg' ? 'text-lg font-bold' : 'text-sm font-semibold';
   return (
