@@ -77,6 +77,15 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
     // Transformar unidades al formato v1
     // CORRECCIÓN MAYO 2026: Preservar variaciones si V2 las devuelve, si no usar null (no 0 falso)
     // Las variaciones vienen de EDARSAHUB cuando el backend V2 las calcula
+    // CAMBIO D JUNIO 2026: Mapear unidad_negocio_id de V2 a código canónico para cruce con V1
+    const mapV2IdToCodigoCanonigo = {
+      '130-MER': '130MID',
+      '130-QRO': '130QRO',
+      'CIENFUEGOS': 'CIENFUEGOS',
+      'LA-ESTELAR': 'ESTELAR',
+      'ORIGEN': 'ORIGEN'
+    };
+    
     const unidadesTransformadas = unidades.map(u => ({
       id: u.unidad_negocio_id,
       unidad: u.unidad_negocio_nombre,
@@ -97,6 +106,9 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       pax_año: u.pax_año !== undefined ? u.pax_año : null,
       cheques_ant: u.cheques_ant !== undefined ? u.cheques_ant : null,
       cheques_año: u.cheques_año !== undefined ? u.cheques_año : null,
+      // CAMBIO D: Agregar código canónico para cruce con V1
+      unidad_negocio_codigo: mapV2IdToCodigoCanonigo[u.unidad_negocio_id] || u.unidad_negocio_id,
+      unidad_negocio_nombre: u.unidad_negocio_nombre,
       status: 'online',
       data_status: 'DATA_OK',
       live_status: 'LIVE_UNKNOWN',
@@ -778,16 +790,40 @@ export default function TableroEjecutivo() {
                   responseData.totales.ventas_año = v1Totales.ventas_año;
                 }
                 
-                // Enriquecer unidades con variaciones de V1 (mapeo por nombre)
+                // =========================================================================
+                // CAMBIO D: Cruce V1/V2 por unidad_negocio_codigo (llave canónica)
+                // FUENTE MAESTRA: Unidades_Negocio.codigo (EDARSAHUB)
+                // NO usar nombre visible como llave principal
+                // Fallback defensivo: nombre normalizado solo si no existe código
+                // =========================================================================
                 const v1UnidadesMap = {};
+                const v1UnidadesMapByName = {};  // Fallback defensivo
+                
                 v1Unidades.forEach(u => {
-                  const key = (u.unidad || u.nombre || '').toLowerCase().trim();
-                  v1UnidadesMap[key] = u;
+                  // Llave primaria: unidad_negocio_codigo (canónico de EDARSAHUB)
+                  const codigo = u.unidad_negocio_codigo || '';
+                  if (codigo) {
+                    v1UnidadesMap[codigo.toUpperCase()] = u;
+                  }
+                  
+                  // Llave secundaria (fallback): nombre normalizado
+                  const keyName = (u.unidad || u.nombre || '').toLowerCase().trim();
+                  v1UnidadesMapByName[keyName] = u;
                 });
                 
                 responseData.unidades = responseData.unidades.map(u2 => {
-                  const key = (u2.unidad || u2.nombre || '').toLowerCase().trim();
-                  const v1Match = v1UnidadesMap[key];
+                  // Intentar cruce por código canónico primero
+                  const codigo2 = (u2.unidad_negocio_codigo || '').toUpperCase();
+                  let v1Match = codigo2 ? v1UnidadesMap[codigo2] : null;
+                  
+                  // Fallback defensivo: cruce por nombre normalizado
+                  if (!v1Match) {
+                    const keyName = (u2.unidad || u2.nombre || '').toLowerCase().trim();
+                    v1Match = v1UnidadesMapByName[keyName];
+                    if (v1Match) {
+                      logger.log(`[CAMBIO_D] Cruce por fallback (nombre) para: ${u2.unidad}`);
+                    }
+                  }
                   
                   if (v1Match) {
                     return {
@@ -800,6 +836,8 @@ export default function TableroEjecutivo() {
                       pax_año: v1Match.pax_año !== undefined ? v1Match.pax_año : u2.pax_año,
                       cheques_ant: v1Match.cheques_ant !== undefined ? v1Match.cheques_ant : u2.cheques_ant,
                       cheques_año: v1Match.cheques_año !== undefined ? v1Match.cheques_año : u2.cheques_año,
+                      // Preservar código canónico de V1 si existe
+                      unidad_negocio_codigo: v1Match.unidad_negocio_codigo || u2.unidad_negocio_codigo,
                       _variaciones_source: 'V1_EDARSAHUB'
                     };
                   }

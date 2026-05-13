@@ -187,6 +187,44 @@ def obtener_unidad_negocio_edarsahub(server_id: str, sucursal: str = None) -> Di
     }
 
 
+def _obtener_codigo_canonico_mpro(server_id: str, sucursal_id: str, sucursal_nombre: str) -> tuple:
+    """
+    CAMBIO B HELPER: Obtiene código y nombre canónico para una sucursal MPRO.
+    
+    FUENTE MAESTRA: Unidades_Negocio (EDARSAHUB)
+    NO usar MongoDB como fuente funcional.
+    
+    Args:
+        server_id: ID del servidor MPRO
+        sucursal_id: ID de la sucursal (ej: "0021", "0023")
+        sucursal_nombre: Nombre visible de la sucursal (para fallback)
+    
+    Returns:
+        Tuple (unidad_negocio_codigo, unidad_negocio_nombre)
+    """
+    unidad_edarsahub = obtener_unidad_negocio_edarsahub(server_id, sucursal=sucursal_id)
+    
+    codigo = unidad_edarsahub.get('codigo', '')
+    nombre = unidad_edarsahub.get('nombre', '')
+    
+    if codigo and nombre:
+        return codigo, nombre
+    
+    # Fallback: Mapeo hardcodeado solo si EDARSAHUB no responde
+    fallback_map = {
+        '0021': ('130QRO', '130° QUERETARO'),
+        '0023': ('ORIGEN', 'ORIGEN'),
+        'ORIGEN': ('ORIGEN', 'ORIGEN'),
+        '130_QRO': ('130QRO', '130° QUERETARO'),
+    }
+    
+    if sucursal_id in fallback_map:
+        return fallback_map[sucursal_id]
+    
+    # Fallback final: usar nombre visible
+    return (sucursal_id, sucursal_nombre)
+
+
 def _query_edarsahub_tablero(query: str) -> List[Dict]:
     """
     Ejecuta query de SOLO LECTURA en EDARSAHUB para Tablero Ejecutivo.
@@ -527,23 +565,28 @@ def _obtener_kpis_tablero_desde_edarsahub(
     
     logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Ventas=${ventas:,.0f}, vs Mes Ant={var_vs_mes_ant}%, vs Año Ant={var_vs_año_ant}%")
     
+    # =========================================================================
+    # REGLA: Si NO existe base comparativa válida, devolver null (no 0 falso)
+    # Frontend debe mostrar "-" cuando recibe null
+    # Si existe base y la variación es 0.0%, devolver 0.0 (cero real)
+    # =========================================================================
     return {
         "ventas": ventas,
-        "ventas_ant": ventas_ant if ventas_ant is not None else 0,
-        "ventas_año": ventas_año if ventas_año is not None else 0,
-        "var_vs_mes_ant": var_vs_mes_ant if var_vs_mes_ant is not None else 0,
-        "var_vs_año_ant": var_vs_año_ant if var_vs_año_ant is not None else 0,
+        "ventas_ant": ventas_ant,  # null si no existe
+        "ventas_año": ventas_año,  # null si no existe
+        "var_vs_mes_ant": var_vs_mes_ant,  # null si no existe base
+        "var_vs_año_ant": var_vs_año_ant,  # null si no existe base
         "proyeccion": proyeccion,
         "pax": pax,
-        "pax_ant": pax_ant if pax_ant is not None else 0,
-        "pax_año": pax_año if pax_año is not None else 0,
-        "var_pax_mes": var_pax_mes if var_pax_mes is not None else 0,
-        "var_pax_año": var_pax_año if var_pax_año is not None else 0,
+        "pax_ant": pax_ant,  # null si no existe
+        "pax_año": pax_año,  # null si no existe
+        "var_pax_mes": var_pax_mes,  # null si no existe base
+        "var_pax_año": var_pax_año,  # null si no existe base
         "cheques": cheques,
-        "cheques_ant": cheques_ant if cheques_ant is not None else 0,
-        "cheques_año": cheques_año if cheques_año is not None else 0,
-        "var_cheques_mes": var_cheques_mes if var_cheques_mes is not None else 0,
-        "var_cheques_año": var_cheques_año if var_cheques_año is not None else 0,
+        "cheques_ant": cheques_ant,  # null si no existe
+        "cheques_año": cheques_año,  # null si no existe
+        "var_cheques_mes": var_cheques_mes,  # null si no existe base
+        "var_cheques_año": var_cheques_año,  # null si no existe base
         "ticket_prom": ticket_prom,
         "cheque_prom": cheque_prom,
         "fuente": "EDARSAHUB",
@@ -703,13 +746,32 @@ def build_unit_response(
     """
     Construye la respuesta estándar de una unidad para el Tablero Ejecutivo.
     Implementa TAREA 5 del requerimiento P0.
+    
+    CAMBIO C (Junio 2026):
+    - Extrae unidad_negocio_codigo y unidad_negocio_nombre de kpis
+    - FUENTE MAESTRA: Unidades_Negocio (EDARSAHUB)
+    - NO usa MongoDB servers.name como nombre oficial
+    - Retorna unidad_negocio_codigo para que el frontend cruce por código canónico
     """
     now = datetime.now(timezone.utc).isoformat()
     
     # Generar unidad_key canónica
     server_id = server.get('id', '')
     server_name = server.get('name', '')
-    unidad_key = f"{server_id}:{sucursal or 'default'}"
+    
+    # =========================================================================
+    # CAMBIO C: Extraer código y nombre canónico desde kpis (que viene de EDARSAHUB)
+    # FUENTE MAESTRA: Unidades_Negocio.codigo y Unidades_Negocio.nombre
+    # NO usar MongoDB servers.name como nombre funcional/oficial
+    # =========================================================================
+    unidad_negocio_codigo = kpis.get('unidad_negocio_codigo', '') if kpis else ''
+    unidad_negocio_nombre = kpis.get('unidad_negocio_nombre', '') if kpis else ''
+    
+    # Usar nombre canónico de EDARSAHUB para los campos unidad/nombre
+    # Prioridad: 1) nombre canónico EDARSAHUB, 2) sucursal param, 3) server.name (legacy)
+    nombre_oficial = unidad_negocio_nombre or sucursal or server_name
+    
+    unidad_key = f"{server_id}:{unidad_negocio_codigo or sucursal or 'default'}"
     
     # Determinar connection_type basado en system_type
     system_type = server.get('system_type', 'UNKNOWN')
@@ -732,12 +794,14 @@ def build_unit_response(
         legacy_status = "no_data"
     
     response = {
-        # Identificadores
+        # Identificadores - CAMBIO C: Usar código canónico de EDARSAHUB
         "unidad_key": unidad_key,
-        "unidad_negocio_id": server.get('unidad_negocio_id', server_id),
-        "server_id": server_id,
-        "unidad": sucursal or server_name,
-        "nombre": sucursal or server_name,
+        "unidad_negocio_id": unidad_negocio_codigo or server_id,  # Código canónico, no server_id
+        "unidad_negocio_codigo": unidad_negocio_codigo,  # NUEVO: Código canónico oficial
+        "unidad_negocio_nombre": unidad_negocio_nombre,  # NUEVO: Nombre oficial EDARSAHUB
+        "server_id": server_id,  # Mantener server_id solo como identificador técnico
+        "unidad": nombre_oficial,  # Usar nombre canónico de EDARSAHUB
+        "nombre": nombre_oficial,  # Usar nombre canónico de EDARSAHUB
         
         # Tipo de sistema
         "system_type": system_type,
@@ -879,22 +943,45 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
     - NO consulta servidores SQL locales para históricos
     - NO consulta MongoDB
     
+    ACTUALIZACIÓN JUNIO 2026:
+    - Obtiene nombre y código canónico desde Unidades_Negocio (EDARSAHUB)
+    - NO usa MongoDB servers.name como nombre oficial
+    - Retorna unidad_negocio_codigo y unidad_negocio_nombre en el payload
+    
     Para solo_ventas_dia=True:
     - Lee de Comercial_Ventas_Dia_Abiertas_v2 en EDARSAHUB
     
     Mantiene la misma firma y estructura de respuesta para compatibilidad.
     """
     server_id = server.get('id', '')
-    nombre = server.get('name', 'SoftRestaurant')
     
-    # Obtener mapeo de unidad EDARSAHUB
-    unidad_config = UNIDADES_EDARSAHUB_MAP.get(server_id, {})
-    if not unidad_config:
-        logging.warning(f"[TABLERO-EDARSAHUB] {nombre}: server_id {server_id} no tiene mapeo de unidad")
+    # =========================================================================
+    # CAMBIO A: Obtener datos canónicos desde Unidades_Negocio (EDARSAHUB)
+    # FUENTE MAESTRA: Unidades_Negocio.codigo y Unidades_Negocio.nombre
+    # NO usar MongoDB servers.name como nombre oficial
+    # =========================================================================
+    unidad_edarsahub = obtener_unidad_negocio_edarsahub(server_id, sucursal=None)
+    unidad_negocio_codigo = unidad_edarsahub.get('codigo', '')
+    unidad_negocio_nombre = unidad_edarsahub.get('nombre', '')
+    sucursal_id = unidad_edarsahub.get('sucursal_origen_id', '') or 'DEFAULT'
+    
+    # Usar nombre canónico de EDARSAHUB, fallback a server.name solo si no existe
+    nombre = unidad_negocio_nombre or server.get('name', 'SoftRestaurant')
+    
+    if not unidad_negocio_codigo:
+        logging.warning(f"[TABLERO-EDARSAHUB] server_id {server_id} no encontrado en Unidades_Negocio EDARSAHUB")
         return None
     
-    unidad_negocio_id = unidad_config.get('unidad_negocio_id', '')
-    sucursal_id = unidad_config.get('sucursal_id', 'DEFAULT')
+    # Mapear código canónico a unidad_negocio_id usado en Comercial_KPIs_Diarios_v2
+    # NOTA: La tabla usa formatos como "130-MER", "CIENFUEGOS", etc.
+    unidad_negocio_id_map = {
+        '130MID': '130-MER',
+        'CIENFUEGOS': 'CIENFUEGOS',
+        'ESTELAR': 'LA-ESTELAR',
+        '130QRO': '130-QRO',
+        'ORIGEN': 'ORIGEN'
+    }
+    unidad_negocio_id = unidad_negocio_id_map.get(unidad_negocio_codigo, unidad_negocio_codigo)
     
     logging.info(f"[TABLERO-EDARSAHUB] {nombre}: Iniciando consulta - unidad={unidad_negocio_id}, sucursal={sucursal_id}")
     
@@ -938,7 +1025,10 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
                 "cheque_prom": cheque_prom,
                 "es_ventas_dia": True,
                 "origen": "EDARSAHUB_snapshot",
-                "fuente": "EDARSAHUB"
+                "fuente": "EDARSAHUB",
+                # CAMBIO A: Campos canónicos desde Unidades_Negocio EDARSAHUB
+                "unidad_negocio_codigo": unidad_negocio_codigo,
+                "unidad_negocio_nombre": unidad_negocio_nombre,
             }
         else:
             logging.warning(f"[TABLERO-EDARSAHUB] {nombre}: Sin snapshot de ventas abiertas disponible")
@@ -967,6 +1057,10 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
     if kpis is None:
         logging.warning(f"[TABLERO-EDARSAHUB] {nombre}: Sin datos disponibles en EDARSAHUB")
         return None
+    
+    # CAMBIO A: Agregar campos canónicos desde Unidades_Negocio EDARSAHUB
+    kpis['unidad_negocio_codigo'] = unidad_negocio_codigo
+    kpis['unidad_negocio_nombre'] = unidad_negocio_nombre
     
     return kpis
 
@@ -1163,8 +1257,13 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
                     ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
                     cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
                     
+                    # CAMBIO B: Obtener código canónico desde EDARSAHUB
+                    codigo_canonico, nombre_canonico = _obtener_codigo_canonico_mpro(
+                        server['id'], suc['sucursal_id'], suc['nombre']
+                    )
+                    
                     unidades.append({
-                        "unidad": suc['nombre'],
+                        "unidad": nombre_canonico,  # Usar nombre canónico de EDARSAHUB
                         "server_id": server['id'],
                         "system_type": "MPRO",
                         "ventas": ventas,
@@ -1186,7 +1285,10 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
                         "ticket_prom": ticket_prom,
                         "cheque_prom": cheque_prom,
                         "es_ventas_dia": True,
-                        "origen": "api_local"
+                        "origen": "api_local",
+                        # CAMBIO B: Campos canónicos desde Unidades_Negocio EDARSAHUB
+                        "unidad_negocio_codigo": codigo_canonico,
+                        "unidad_negocio_nombre": nombre_canonico,
                     })
                     logging.info(f"MPRO {server['name']} - {suc['nombre']}: API local OK - ${ventas:,.2f}")
             except Exception as e:
@@ -1205,8 +1307,13 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
         
         unidades_offline = []
         for suc in sucursales_mpro:
+            # CAMBIO B: Obtener código canónico desde EDARSAHUB
+            codigo_canonico, nombre_canonico = _obtener_codigo_canonico_mpro(
+                server['id'], suc['sucursal_id'], suc['nombre']
+            )
+            
             unidades_offline.append({
-                "unidad": suc['nombre'],
+                "unidad": nombre_canonico,  # Usar nombre canónico de EDARSAHUB
                 "server_id": server['id'],
                 "system_type": "MPRO",
                 "ventas": 0,
@@ -1231,7 +1338,10 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
                 "origen": "api_local",
                 "status": "offline",
                 "source_status": "NO_DATA",
-                "message": "API local no disponible - Sin datos de ventas del día"
+                "message": "API local no disponible - Sin datos de ventas del día",
+                # CAMBIO B: Campos canónicos desde Unidades_Negocio EDARSAHUB
+                "unidad_negocio_codigo": codigo_canonico,
+                "unidad_negocio_nombre": nombre_canonico,
             })
         return unidades_offline
     
@@ -1536,9 +1646,14 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
         var_cheques_mes = round(((cheques - cheques_ant) / cheques_ant * 100), 1) if cheques_ant > 0 else 0
         var_cheques_año = round(((cheques - cheques_año) / cheques_año * 100), 1) if cheques_año > 0 else 0
         
+        # CAMBIO B: Obtener código canónico desde EDARSAHUB
+        codigo_canonico, nombre_canonico = _obtener_codigo_canonico_mpro(
+            server['id'], sucursal_id, sucursal_nombre
+        )
+        
         unidades.append({
-            "unidad": sucursal_nombre,
-            "sucursal": sucursal_nombre,  # Para filtrar en endpoints de detalle
+            "unidad": nombre_canonico,  # Usar nombre canónico de EDARSAHUB
+            "sucursal": nombre_canonico,  # Para filtrar en endpoints de detalle
             "server_id": server['id'],
             "sucursal_id": sucursal_id,
             "system_type": "MPRO",
@@ -1560,7 +1675,10 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
             "var_cheques_mes": var_cheques_mes,
             "var_cheques_año": var_cheques_año,
             "ticket_prom": ticket_prom,
-            "cheque_prom": cheque_prom
+            "cheque_prom": cheque_prom,
+            # CAMBIO B: Campos canónicos desde Unidades_Negocio EDARSAHUB
+            "unidad_negocio_codigo": codigo_canonico,
+            "unidad_negocio_nombre": nombre_canonico,
         })
         
         logging.info(f"MPRO {server['name']} - Sucursal '{sucursal_nombre}': Ventas={ventas}, Cheques={cheques}")
