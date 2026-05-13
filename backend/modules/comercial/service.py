@@ -64,6 +64,129 @@ EDARSAHUB_TABLERO_CONFIG = {
 }
 
 
+# ============================================================================
+# CATÁLOGO MAESTRO DE UNIDADES DE NEGOCIO (EDARSAHUB)
+# ============================================================================
+# FUENTE MAESTRA: Unidades_Negocio.codigo
+# CÓDIGOS OFICIALES: 130MID, 130QRO, CIENFUEGOS, ESTELAR, ORIGEN
+# NO usar MongoDB como fuente funcional para unidades.
+
+_CACHE_UNIDADES_NEGOCIO = None
+
+def _cargar_catalogo_unidades_negocio() -> Dict:
+    """
+    Carga el catálogo maestro de Unidades de Negocio desde EDARSAHUB.
+    
+    FUENTE MAESTRA: Unidades_Negocio
+    NO usa MongoDB.
+    
+    Retorna diccionario con dos mapeos:
+    - por_server_id: {server_id: {codigo, nombre, sucursal_origen_id}}
+    - por_server_sucursal: {server_id:sucursal: {codigo, nombre}}
+    """
+    global _CACHE_UNIDADES_NEGOCIO
+    
+    if _CACHE_UNIDADES_NEGOCIO is not None:
+        return _CACHE_UNIDADES_NEGOCIO
+    
+    query = """
+    SELECT 
+        id,
+        codigo,
+        nombre,
+        server_id,
+        sucursal_origen_id,
+        system_type,
+        activo
+    FROM Unidades_Negocio
+    WHERE activo = 1
+    ORDER BY orden
+    """
+    
+    try:
+        result = execute_sql_query(
+            EDARSAHUB_TABLERO_CONFIG['host'],
+            EDARSAHUB_TABLERO_CONFIG['port'],
+            EDARSAHUB_TABLERO_CONFIG['database'],
+            EDARSAHUB_TABLERO_CONFIG['username'],
+            EDARSAHUB_TABLERO_CONFIG['password'],
+            query
+        )
+        
+        por_server_id = {}
+        por_server_sucursal = {}
+        
+        for row in result or []:
+            server_id = row.get('server_id', '')
+            sucursal = row.get('sucursal_origen_id', '') or ''
+            codigo = row.get('codigo', '')
+            nombre = row.get('nombre', '')
+            
+            unidad_data = {
+                'codigo': codigo,
+                'nombre': nombre,
+                'sucursal_origen_id': sucursal,
+                'system_type': row.get('system_type', '')
+            }
+            
+            # Mapeo por server_id (para SoftRestaurant sin sucursal)
+            if not sucursal:
+                por_server_id[server_id] = unidad_data
+            
+            # Mapeo por server_id:sucursal (para MPRO con sucursal)
+            key = f"{server_id}:{sucursal}" if sucursal else server_id
+            por_server_sucursal[key] = unidad_data
+        
+        _CACHE_UNIDADES_NEGOCIO = {
+            'por_server_id': por_server_id,
+            'por_server_sucursal': por_server_sucursal,
+            'lista': result or []
+        }
+        
+        logging.info(f"[UNIDADES_NEGOCIO] Catálogo cargado desde EDARSAHUB: {len(result or [])} unidades activas")
+        return _CACHE_UNIDADES_NEGOCIO
+        
+    except Exception as e:
+        logging.error(f"[UNIDADES_NEGOCIO] Error cargando catálogo desde EDARSAHUB: {e}")
+        return {'por_server_id': {}, 'por_server_sucursal': {}, 'lista': []}
+
+
+def obtener_unidad_negocio_edarsahub(server_id: str, sucursal: str = None) -> Dict:
+    """
+    Obtiene datos de una unidad de negocio desde el catálogo EDARSAHUB.
+    
+    FUENTE MAESTRA: Unidades_Negocio (EDARSAHUB SQL Server)
+    NO usa MongoDB.
+    
+    Args:
+        server_id: UUID del servidor
+        sucursal: ID de sucursal (para MPRO)
+    
+    Returns:
+        Dict con codigo, nombre, sucursal_origen_id o valores por defecto
+    """
+    catalogo = _cargar_catalogo_unidades_negocio()
+    
+    # Priorizar búsqueda por server_id:sucursal
+    if sucursal:
+        key = f"{server_id}:{sucursal}"
+        if key in catalogo['por_server_sucursal']:
+            return catalogo['por_server_sucursal'][key]
+    
+    # Fallback: búsqueda solo por server_id
+    if server_id in catalogo['por_server_id']:
+        return catalogo['por_server_id'][server_id]
+    
+    # Si no se encuentra, retornar estructura vacía (no usar MongoDB)
+    logging.warning(f"[UNIDADES_NEGOCIO] No se encontró unidad para server_id={server_id}, sucursal={sucursal}")
+    return {
+        'codigo': server_id,  # Fallback al server_id
+        'nombre': 'Unidad Desconocida',
+        'sucursal_origen_id': sucursal,
+        'system_type': ''
+    }
+
+
 def _query_edarsahub_tablero(query: str) -> List[Dict]:
     """
     Ejecuta query de SOLO LECTURA en EDARSAHUB para Tablero Ejecutivo.
