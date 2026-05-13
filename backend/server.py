@@ -5857,6 +5857,67 @@ async def debug_test_connection(params: Dict, current_user: Dict = Depends(get_c
             "data": []
         }
 
+# ============= ENDPOINT TEMPORAL: Diagnóstico tipos_movimiento =============
+# FASE T3.4-B4 DIAGNÓSTICO - Este endpoint es TEMPORAL y debe eliminarse después
+@api_router.get("/debug/tipos-movimiento-live/{server_id}")
+async def debug_tipos_movimiento_live(server_id: str, current_user: Dict = Depends(get_current_user)):
+    """
+    TEMPORAL: Obtiene tipos de movimiento con descripción desde BD viva.
+    Para diagnóstico de enriquecimiento de datos en EDARSAHUB.
+    """
+    from core.server_registry import get_server_connection_info
+    
+    server = await get_server_connection_info(server_id, db=db)
+    
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    try:
+        if is_mpro_system(server.get('system_type')):
+            query = """
+                SELECT 
+                    Tm_Cve_Tipo_Movimiento as codigo,
+                    Tm_Descripcion as descripcion,
+                    Tm_Tipo as tipo
+                FROM Tipo_Movimiento
+                WHERE Es_Cve_Estado <> 'BA'
+                ORDER BY Tm_Cve_Tipo_Movimiento
+            """
+        elif is_softrestaurant_system(server.get('system_type')):
+            query = """
+                SELECT 
+                    idconcepto as codigo,
+                    descripcion,
+                    CASE WHEN tipo = 1 THEN 'EN' ELSE 'SA' END as tipo
+                FROM conceptos
+                ORDER BY idconcepto
+            """
+        else:
+            return {"error": "Sistema no soportado", "system_type": server.get('system_type')}
+        
+        results = execute_sql_query(
+            server['host'],
+            server['port'],
+            server['database'],
+            server['username'],
+            server['password'],
+            query
+        )
+        
+        return {
+            "server_name": server.get('name'),
+            "system_type": server.get('system_type'),
+            "source": "BD_VIVA",
+            "total": len(results),
+            "tipos": results
+        }
+    except Exception as e:
+        return {
+            "server_name": server.get('name'),
+            "error": str(e)[:500],
+            "source": "BD_VIVA_ERROR"
+        }
+
 @api_router.post("/debug/test-queries")
 async def debug_test_queries(params: Dict, current_user: Dict = Depends(get_current_user)):
     """
@@ -16210,3 +16271,4 @@ async def shutdown_scheduler():
         logger.info("Scheduler detenido correctamente")
     except Exception as e:
         logger.error(f"Error deteniendo scheduler: {e}")
+
