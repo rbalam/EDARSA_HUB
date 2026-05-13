@@ -10,6 +10,7 @@ TABLAS CONECTADAS:
 - RH_Cat_Sucursales: Catálogo de sucursales
 
 ABRIL 2026: Conexión resiliente a SQL Server EDARSA HUB
+MAYO 2026 - FASE T2.1: Migrado a EDARSAHUB_CONFIG (server_registry.py)
 """
 
 import logging
@@ -17,7 +18,10 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, date
 from core.db import execute_sql_query, sql_health_check, ResilientConfig
 
-# ID del servidor EDARSA HUB en MongoDB
+# FASE T2.1: Usar EDARSAHUB_CONFIG desde server_registry en lugar de MongoDB
+from core.server_registry import EDARSAHUB_CONFIG
+
+# ID del servidor EDARSA HUB (conservado para referencia, ya no usado para lookup)
 EDARSA_HUB_SERVER_ID = "bea40259-35f1-4693-bda2-d2d10e13e56a"
 
 
@@ -25,12 +29,14 @@ class FinanzasRepositoryReal:
     """
     Repositorio para acceso a datos REALES de Finanzas.
     Usa las tablas ya existentes en SQL Server EDARSA HUB.
+    
+    FASE T2.1: Conexión vía EDARSAHUB_CONFIG (server_registry.py)
     """
     
     def __init__(self, db):
         """
         Args:
-            db: Instancia de MongoDB para obtener configuración del servidor
+            db: Instancia de MongoDB (conservada por compatibilidad, no usada para conexión EDARSAHUB)
         """
         self.db = db
         self._server_cache = None
@@ -39,28 +45,26 @@ class FinanzasRepositoryReal:
         """
         Obtiene la configuración del servidor EDARSA HUB.
         
-        FASE 3C.1: Descifra automáticamente el password si está cifrado.
+        FASE T2.1: Usa EDARSAHUB_CONFIG desde server_registry.py
+        Ya no consulta MongoDB db.servers.
         """
         if self._server_cache:
             return self._server_cache
         
-        server = await self.db.servers.find_one({
-            "id": EDARSA_HUB_SERVER_ID,
-            "active": True
-        })
+        # FASE T2.1: Usar configuración centralizada de server_registry
+        self._server_cache = {
+            'host': EDARSAHUB_CONFIG['host'],
+            'port': EDARSAHUB_CONFIG['port'],
+            'database': EDARSAHUB_CONFIG['database'],
+            'username': EDARSAHUB_CONFIG['username'],
+            'password': EDARSAHUB_CONFIG['password'],
+            'id': EDARSA_HUB_SERVER_ID,
+            'name': 'EDARSA HUB',
+            'active': True,
+            'config_origin': 'EDARSAHUB_CONFIG'
+        }
         
-        # FASE 3C.1: Descifrar password si está cifrado
-        if server:
-            password = server.get('password', '')
-            if password:
-                try:
-                    from core.secret_manager import decrypt_secret, is_encrypted_secret
-                    if is_encrypted_secret(password):
-                        server['password'] = decrypt_secret(password)
-                except Exception as e:
-                    logging.error(f"[DECRYPT_ERROR] Error descifrando password EDARSA HUB: {type(e).__name__}")
-        
-        self._server_cache = server
+        logging.info("[FinanzasRepo][T2.1] Conexión EDARSAHUB desde server_registry.py")
         return self._server_cache
     
     async def _execute_query(self, query: str, timeout: int = None) -> List[Dict]:

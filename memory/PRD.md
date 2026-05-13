@@ -94,7 +94,7 @@ REACT_APP_COMERCIAL_V2_ENABLED=true
 | ✅ **FASE T1: Migración Códigos Legacy a Canónicos** | ✅ COMPLETADO (13-Mayo-2026) |
 | ✅ **FASE T1-A: Diagnóstico Colisiones** | ✅ COMPLETADO (13-Mayo-2026) |
 | ✅ **Backend V2: Códigos Canónicos** | ✅ COMPLETADO (13-Mayo-2026) |
-| ✅ **FASE M1: Server Registry Central** | ✅ COMPLETADO (13-Mayo-2026) |
+| ✅ **FASE T2.1: Migrar Conexión EDARSAHUB Finanzas** | ✅ COMPLETADO (13-Mayo-2026) |
 | P1-FASE5A.2 Captura manual de saldos | ⏸️ BACKLOG |
 | P1-FASE5A.3 Widget posición efectivo | ⏸️ BACKLOG |
 | P1-FASE5A.4 Integración efectivo pendiente | ⏸️ BACKLOG |

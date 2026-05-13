@@ -6,6 +6,8 @@ en EDARSAHUB SQL Server.
 
 Fecha: 2026-04-26
 Tabla destino: Finanzas_KPIs_Historico
+
+MAYO 2026 - FASE T2.1: Migrado a EDARSAHUB_CONFIG (server_registry.py)
 """
 
 import logging
@@ -20,30 +22,23 @@ logger = logging.getLogger(__name__)
 
 
 def get_edarsahub_server():
-    """Obtiene configuración del servidor EDARSAHUB desde MongoDB."""
-    from dotenv import load_dotenv
-    load_dotenv('/app/backend/.env')
-    from pymongo import MongoClient
+    """
+    Obtiene configuración del servidor EDARSAHUB.
     
-    client = MongoClient(os.environ['MONGO_URL'])
-    db = client[os.environ['DB_NAME']]
+    FASE T2.1: Usa EDARSAHUB_CONFIG desde server_registry.py
+    Ya no consulta MongoDB db.servers.
+    """
+    from core.server_registry import EDARSAHUB_CONFIG
     
-    srv = db.servers.find_one({'name': 'EDARSA HUB', 'active': True})
-    if not srv:
-        raise ValueError("Servidor EDARSA HUB no encontrado en MongoDB")
-    
-    # Descifrar password si está cifrado
-    password = srv.get('password', '')
-    if password.startswith('enc:'):
-        from core.secret_manager import decrypt_secret
-        password = decrypt_secret(password)
+    logger.info("[HistoricalKPIs][T2.1] Conexión EDARSAHUB desde server_registry.py")
     
     return {
-        "host": srv.get("host"),
-        "port": srv.get("port", 1433),
-        "database": srv.get("database"),
-        "username": srv.get("username"),
-        "password": password,
+        "host": EDARSAHUB_CONFIG['host'],
+        "port": EDARSAHUB_CONFIG['port'],
+        "database": EDARSAHUB_CONFIG['database'],
+        "username": EDARSAHUB_CONFIG['username'],
+        "password": EDARSAHUB_CONFIG['password'],
+        "config_origin": "EDARSAHUB_CONFIG"
     }
 
 

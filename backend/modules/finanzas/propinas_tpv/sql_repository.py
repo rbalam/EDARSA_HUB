@@ -17,6 +17,8 @@ PRINCIPIO ARQUITECTÓNICO:
 IMPORTANTE:
 - Este repositorio NO toca colecciones MongoDB existentes
 - NO interfiere con tesoreria.py ni repository_cuadres_z.py
+
+MAYO 2026 - FASE T2.1: Conexión EDARSAHUB migrada a server_registry.py
 """
 
 import logging
@@ -26,9 +28,12 @@ from datetime import datetime, date, timezone
 
 from core.db import execute_sql_query
 
+# FASE T2.1: Usar EDARSAHUB_CONFIG desde server_registry
+from core.server_registry import EDARSAHUB_CONFIG
+
 logger = logging.getLogger(__name__)
 
-# ID del servidor EDARSA HUB (debe coincidir con el configurado)
+# ID del servidor EDARSA HUB (conservado para referencia, ya no usado para lookup)
 EDARSA_HUB_SERVER_ID = "bea40259-35f1-4693-bda2-d2d10e13e56a"
 
 # Cache de servidor
@@ -42,6 +47,8 @@ class PropinasTPVSQLRepository:
     IMPORTANTE:
     - Todas las operaciones de escritura van a SQL Server
     - Las lecturas pueden venir de SQL o de cache (manejado por service)
+    
+    FASE T2.1: Conexión EDARSAHUB vía server_registry.py
     """
     
     def __init__(self, mongo_db):
@@ -49,7 +56,7 @@ class PropinasTPVSQLRepository:
         Inicializa el repositorio.
         
         Args:
-            mongo_db: Conexión a MongoDB (solo para leer config de servidor)
+            mongo_db: Conexión a MongoDB (conservada por compatibilidad, no usada para conexión EDARSAHUB)
         """
         self.mongo_db = mongo_db
     
@@ -61,30 +68,28 @@ class PropinasTPVSQLRepository:
         """
         Obtiene la configuración del servidor EDARSA HUB.
         
-        FASE 3C.1: Descifra automáticamente el password si está cifrado.
+        FASE T2.1: Usa EDARSAHUB_CONFIG desde server_registry.py
+        Ya no consulta MongoDB db.servers.
         """
         global _server_cache
         if _server_cache is not None:
             return _server_cache
         
-        server = await self.mongo_db.servers.find_one(
-            {"id": EDARSA_HUB_SERVER_ID, "active": True},
-            {"_id": 0}
-        )
+        # FASE T2.1: Usar configuración centralizada de server_registry
+        _server_cache = {
+            'host': EDARSAHUB_CONFIG['host'],
+            'port': EDARSAHUB_CONFIG['port'],
+            'database': EDARSAHUB_CONFIG['database'],
+            'username': EDARSAHUB_CONFIG['username'],
+            'password': EDARSAHUB_CONFIG['password'],
+            'id': EDARSA_HUB_SERVER_ID,
+            'name': 'EDARSA HUB',
+            'active': True,
+            'config_origin': 'EDARSAHUB_CONFIG'
+        }
         
-        # FASE 3C.1: Descifrar password si está cifrado
-        if server:
-            password = server.get('password', '')
-            if password:
-                try:
-                    from core.secret_manager import decrypt_secret, is_encrypted_secret
-                    if is_encrypted_secret(password):
-                        server['password'] = decrypt_secret(password)
-                except Exception as e:
-                    logging.error(f"[DECRYPT_ERROR] Error descifrando password EDARSA HUB propinas: {type(e).__name__}")
-            _server_cache = server
-        
-        return server
+        logger.info("[PropinasTPV][T2.1] Conexión EDARSAHUB desde server_registry.py")
+        return _server_cache
     
     def _execute_hub_query(self, server: Dict, query: str) -> List[Dict]:
         """Ejecuta una query en EDARSA HUB."""
