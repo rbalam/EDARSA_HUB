@@ -831,3 +831,16 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 **Última actualización:** 14-Dic-2025
 
+---
+
+## AUDITORÍA MONGODB → EDARSAHUB SQL (14-Dic-2025)
+
+Se completó diagnóstico exhaustivo de dependencias MongoDB.  
+Documento completo: `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
+
+### Hallazgos Clave:
+- MongoDB sigue siendo fuente primaria para auth/RBAC/empresas/sucursales (P0)
+- EDARSAHUB SQL ya es fuente primaria para conexiones de servidores
+- Se requieren 6 fases para eliminar MongoDB completamente
+- `db.servers` tiene solo 2 referencias activas restantes (Explorador/Catálogo)
+
