@@ -6288,15 +6288,32 @@ async def get_dashboard_inventory_summary(
     Obtiene resumen de inventarios para el dashboard.
     Incluye datos para gráficos de diferencias, top faltantes, etc.
     Aplica los filtros configurados en el servidor (departamentos, categorías).
+    
+    FASE P1.4-E2 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
+    NO FUENTE: MongoDB db.servers
     """
+    from core.server_registry import get_server_connection_info_with_secrets, list_servers as registry_list_servers
+    
     try:
-        # Si no se especifica servidor, obtener el primero configurado del usuario
-        query = {"active": True, "queries_configured": True}
+        # FASE P1.4-E2: Obtener servidor desde EDARSAHUB SQL via server_registry
+        # ANTES: query = {"active": True, "queries_configured": True}
+        # ANTES: if server_id: query["id"] = server_id
+        # ANTES: server = decrypt_server_secrets(await db.servers.find_one(query))
         
+        server = None
         if server_id:
-            query["id"] = server_id
-        
-        server = decrypt_server_secrets(await db.servers.find_one(query))
+            # Servidor específico
+            server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
+            if server and (not server.get('active', True) or not server.get('queries_configured', False)):
+                server = None
+        else:
+            # Buscar primer servidor configurado con queries
+            all_servers = await registry_list_servers(db=db, filter_active=True, mask_secrets=False)
+            for s in all_servers:
+                if s.get('active', True) and s.get('queries_configured', False):
+                    server = decrypt_server_secrets(s)
+                    break
         
         if not server:
             return {

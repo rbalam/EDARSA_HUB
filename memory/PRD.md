@@ -670,7 +670,6 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 | Fase | Descripción | Estado |
 |------|-------------|--------|
-| **P1.4-E2: Dashboard Inventory** | Migrar GET /dashboard/inventory-summary | ⏸️ PENDIENTE |
 | **P1.4-E3: Comparativo Inventarios** | Migrar POST /reports/export/comparativo-inventarios | ⏸️ PENDIENTE |
 | **P1.4-E4: Explorador/Catálogo** | Diagnóstico y migración de ejecutar-con-credenciales, ejecutar-rich | ⏸️ PENDIENTE |
 | **P1.4-D2: server_sucursales_config** | Diagnóstico y diseño de migración a EDARSAHUB SQL | ⏸️ NUEVA DEUDA |
@@ -678,15 +677,30 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 | **P1-C: Sincronización Catálogos** | **Scheduler de catálogos tipos_movimiento, categorias, departamentos** | ⏸️ RETOMAR |
 | **FASE T3** | **Migrar módulo de Compras de MongoDB a EDARSAHUB** | ⏸️ PRÓXIMA (P1) |
 | FASE Q1.3 (Pasiva) | Dry-run: Generar INSERTs de migración SIN ejecutar | ⏸️ PENDIENTE |
-| FASE Q1.4 | Ejecutar DDL en EDARSAHUB | ⏸️ PENDIENTE |
-| FASE A4.2 (Pasiva) | Diagnóstico para asignación de roles a 9 usuarios | ⏸️ PENDIENTE |
 | Auth Token Bug | Persistencia de token en frontend Finanzas | ⏸️ PENDIENTE |
 | P2: Migrar Comercial V1 tabs | mesas, detalle, precios → EDARSAHUB | ⏸️ BACKLOG |
-| P2: Migrar Configuración/Catálogos | Abandonar MongoDB | ⏸️ BACKLOG |
 | P3: FASE M3/M4 | Desactivar fallback MongoDB, deprecar `servers` | ⏸️ BACKLOG |
-| FASE A5 | Poblar Usuario_EmpresasAsignacion | ⏸️ BACKLOG |
-| FASE A6 | Dual-read en login | ⏸️ BACKLOG |
-| FASES SYNC-C0+ | Sincronización incremental de Compras | ⏸️ BACKLOG |
+
+---
+
+## Registro P1.4-E2 — DASHBOARD INVENTORY-SUMMARY MIGRADO (14-Dic-2025)
+
+**Estado:** ✅ CERRADO
+
+**Endpoint migrado:** `GET /dashboard/inventory-summary`
+
+**Cambio:** Reemplazado `db.servers.find_one()` (MongoDB) por `server_registry.get_server_connection_info_with_secrets()` + `list_servers()` (EDARSAHUB SQL).
+
+**Campos usados desde EDARSAHUB:**
+- host, port, database, username, password (conexión SQL)
+- system_type (elegir query)
+- departamentos, categorias (filtros JSON)
+- queries_configured (filtrar servidores)
+- name (nombre visible)
+
+**Referencias restantes a `db.servers`:** 3 (para fases E3, E4)
+
+**Documentación:** `/app/memory/P1_4E2_DASHBOARD_INVENTORY_MIGRADO_EDARSAHUB.md`
 
 ---
 
