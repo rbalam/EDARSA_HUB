@@ -3,6 +3,7 @@ API Routes SQL para el módulo de Control de Propinas TPV
 ========================================================
 Fecha: 15 de Abril de 2026
 CAB: ARQUITECTURA_PROPINAS_TPV_v3.md
+FASE T2.3 (Mayo 2026): Migrado a server_registry.py (elimina MongoDB db.servers)
 
 ARQUITECTURA:
 - SQL Server EDARSA HUB = Persistencia oficial
@@ -26,7 +27,7 @@ IMPORTANTE - AISLAMIENTO:
 """
 
 import logging
-from typing import Optional
+from typing import Optional, Dict, List
 from fastapi import APIRouter, HTTPException, Depends, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -40,7 +41,68 @@ from .models import (
     PropinasConfigCreate
 )
 
+# FASE T2.3: Importar server_registry para resolver servidores desde EDARSAHUB
+from core.server_registry import get_server_by_id, list_operational_servers
+
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# FASE T2.3: Helpers para resolver servidores desde EDARSAHUB
+# ============================================================================
+
+def _get_server_from_registry(server_id: str) -> Optional[Dict]:
+    """
+    Obtiene un servidor por ID desde server_registry (EDARSAHUB).
+    
+    FASE T2.3: Reemplaza db.servers.find_one()
+    """
+    server = get_server_by_id(server_id)
+    if not server:
+        return None
+    
+    return {
+        'id': server.get('id'),
+        'name': server.get('name'),
+        'host': server.get('host'),
+        'port': server.get('port', 1433),
+        'database': server.get('database'),
+        'username': server.get('username'),
+        'password': server.get('password'),
+        'system_type': server.get('system_type'),
+        'active': server.get('active', True),
+        '_source': 'EDARSAHUB'
+    }
+
+
+def _list_softrestaurant_servers() -> List[Dict]:
+    """
+    Lista servidores SoftRestaurant desde server_registry (EDARSAHUB).
+    
+    FASE T2.3: Reemplaza db.servers.find({system_type: 'SoftRestaurant'})
+    """
+    all_servers = list_operational_servers()
+    sr_servers = []
+    
+    for s in all_servers:
+        system_type = (s.get('system_type') or s.get('system_type_normalized') or '').upper()
+        if system_type in ['SOFTRESTAURANT', 'SR']:
+            sr_servers.append({
+                'id': s.get('id'),
+                'name': s.get('name'),
+                'host': s.get('host'),
+                'port': s.get('port', 1433),
+                'database': s.get('database'),
+                'username': s.get('username'),
+                'password': s.get('password'),
+                'system_type': 'SoftRestaurant',
+                'active': s.get('active', True),
+                '_source': 'EDARSAHUB'
+            })
+    
+    logger.info(f"[PROPINAS_SQL][T2.3] Obtenidos {len(sr_servers)} servidores SoftRestaurant desde EDARSAHUB")
+    return sr_servers
+
 
 # Router con prefijo específico para aislamiento
 router_sql = APIRouter(
@@ -405,7 +467,8 @@ async def detectar_esquema(
 ):
     """Detecta el esquema de tablas de un servidor SoftRestaurant."""
     try:
-        server = await db.servers.find_one({'id': server_id}, {'_id': 0})
+        # FASE T2.3: Usar server_registry en lugar de db.servers
+        server = _get_server_from_registry(server_id)
         if not server:
             raise HTTPException(status_code=404, detail="Servidor no encontrado")
         
@@ -437,10 +500,8 @@ async def detectar_esquema_todos(
 ):
     """Detecta esquema en todos los servidores SoftRestaurant."""
     try:
-        servers = await db.servers.find(
-            {'system_type': 'SoftRestaurant'},
-            {'_id': 0}
-        ).to_list(length=100)
+        # FASE T2.3: Usar server_registry en lugar de db.servers
+        servers = _list_softrestaurant_servers()
         
         if not servers:
             return {
@@ -509,11 +570,12 @@ async def preview_propinas(
 ):
     """Consulta propinas de SoftRestaurant sin guardar."""
     try:
-        filtro = {'system_type': 'SoftRestaurant'}
+        # FASE T2.3: Usar server_registry en lugar de db.servers
         if server_id:
-            filtro['id'] = server_id
-        
-        servers = await db.servers.find(filtro, {'_id': 0}).to_list(length=100)
+            server = _get_server_from_registry(server_id)
+            servers = [server] if server and server.get('system_type') == 'SoftRestaurant' else []
+        else:
+            servers = _list_softrestaurant_servers()
         
         if not servers:
             return {
