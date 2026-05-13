@@ -1489,6 +1489,21 @@ WHERE VE.Vn_Fecha >= '{fi}' AND VE.Vn_Fecha <= '{ff}'
     for row in result_principal.sucursales:
         sucursal_id = row.get('sucursal_id', '')
         sucursal_nombre = row.get('sucursal_nombre', 'Sin nombre')
+        
+        # =========================================================================
+        # FIX P0 (Dic 2025): Filtrar por Unidades_Negocio activas en EDARSAHUB
+        # REGLA: Solo mostrar sucursales registradas como unidades activas
+        # Si no existe en EDARSAHUB.Unidades_Negocio → OMITIR (no mostrar como "Unidad Desconocida")
+        # =========================================================================
+        unidad_edarsahub = resolve_unidad_by_server_sucursal(server['id'], sucursal_id)
+        if not unidad_edarsahub:
+            logging.info(f"[MPRO] Sucursal no visible omitida: sucursal_origen_id={sucursal_id}, nombre={sucursal_nombre}")
+            continue  # Omitir sucursal no registrada en Unidades_Negocio
+        
+        # Obtener código y nombre canónico desde EDARSAHUB
+        codigo_canonico = unidad_edarsahub.get('codigo', sucursal_id)
+        nombre_canonico = unidad_edarsahub.get('nombre', sucursal_nombre)
+        
         ventas = float(row.get('ventas') or 0)
         cheques = int(row.get('cheques') or 0)
         pax = int(row.get('pax') or 0)  # PAX real desde Comanda.Co_Personas
@@ -1661,16 +1676,15 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
         var_cheques_mes = round(((cheques - cheques_ant) / cheques_ant * 100), 1) if cheques_ant > 0 else 0
         var_cheques_año = round(((cheques - cheques_año) / cheques_año * 100), 1) if cheques_año > 0 else 0
         
-        # CAMBIO B: Obtener código canónico desde EDARSAHUB
-        codigo_canonico, nombre_canonico = _obtener_codigo_canonico_mpro(
-            server['id'], sucursal_id, sucursal_nombre
-        )
+        # FIX P0: codigo_canonico y nombre_canonico ya resueltos al inicio del bucle
+        # via resolve_unidad_by_server_sucursal() - NO usar _obtener_codigo_canonico_mpro()
         
         unidades.append({
-            "unidad": nombre_canonico,  # Usar nombre canónico de EDARSAHUB
+            "unidad": nombre_canonico,  # Nombre canónico de EDARSAHUB
             "sucursal": nombre_canonico,  # Para filtrar en endpoints de detalle
             "server_id": server['id'],
             "sucursal_id": sucursal_id,
+            "sucursal_origen_id": sucursal_id,  # Trazabilidad
             "system_type": "MPRO",
             "parent_server": server['name'],
             "ventas": ventas,
@@ -1691,12 +1705,12 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
             "var_cheques_año": var_cheques_año,
             "ticket_prom": ticket_prom,
             "cheque_prom": cheque_prom,
-            # CAMBIO B: Campos canónicos desde Unidades_Negocio EDARSAHUB
+            # FIX P0: Campos canónicos desde Unidades_Negocio EDARSAHUB
             "unidad_negocio_codigo": codigo_canonico,
             "unidad_negocio_nombre": nombre_canonico,
         })
         
-        logging.info(f"MPRO {server['name']} - Sucursal '{sucursal_nombre}': Ventas={ventas}, Cheques={cheques}")
+        logging.info(f"MPRO {server['name']} - Sucursal '{nombre_canonico}' (origen_id={sucursal_id}): Ventas={ventas}, Cheques={cheques}")
     
     return unidades
 
