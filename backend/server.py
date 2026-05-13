@@ -7612,13 +7612,21 @@ async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, crede
     3. Calcula diferencias (favor +, en contra -)
     4. Genera acta de auditoría si hay diferencias en contra
     5. Calcula días de consumo y compara vs requisición
+    
+    FASE P1.4-E1 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones (incluye tipos_movimiento)
+    NO FUENTE: MongoDB db.servers
     """
+    from core.server_registry import get_server_connection_info_with_secrets
+    
     verify_token(credentials.credentials)
     
     logging.info(f"[AUDITORIA] Iniciando auditoría - server: {request.server_id}, sucursal: {request.sucursal}")
     
-    server = decrypt_server_secrets(await db.servers.find_one({"id": request.server_id, "active": True}))
-    if not server:
+    # FASE P1.4-E1: Obtener servidor desde EDARSAHUB SQL via server_registry
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": request.server_id, "active": True}))
+    server = decrypt_server_secrets(get_server_connection_info_with_secrets(request.server_id))
+    if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     # Probar conexión primero
