@@ -1670,6 +1670,550 @@ async def reconcile_sql_mongo_servers(db=None, dry_run: bool = True) -> Dict:
 
 
 # ============================================================================
+# FASE M1: FUNCIONES DE UNIDADES DE NEGOCIO (EDARSAHUB-ONLY)
+# Agregadas: 13-Mayo-2026
+# MÁXIMA: EDARSAHUB es el cerebro del sistema. No usar MongoDB.
+# ============================================================================
+
+# Mapeo de compatibilidad defensiva para códigos legacy
+_LEGACY_TO_CANONICAL = {
+    '130-MER': '130MID',
+    '130-QRO': '130QRO',
+    'LA-ESTELAR': 'ESTELAR',
+    # Códigos oficiales (identidad)
+    '130MID': '130MID',
+    '130QRO': '130QRO',
+    'CIENFUEGOS': 'CIENFUEGOS',
+    'ESTELAR': 'ESTELAR',
+    'ORIGEN': 'ORIGEN',
+}
+
+# Códigos canónicos oficiales
+CODIGOS_CANONICOS_OFICIALES = ['130MID', '130QRO', 'CIENFUEGOS', 'ESTELAR', 'ORIGEN']
+
+
+def normalize_unidad_codigo(codigo: str) -> str:
+    """
+    Normaliza un código de unidad de negocio a su forma canónica.
+    
+    FASE M1: Compatibilidad defensiva para traducir códigos legacy.
+    NO debe reinsertar ni promover códigos legacy.
+    
+    Args:
+        codigo: Código de unidad (puede ser legacy o canónico)
+    
+    Returns:
+        Código canónico oficial
+    
+    Examples:
+        normalize_unidad_codigo('130-MER') -> '130MID'
+        normalize_unidad_codigo('LA-ESTELAR') -> 'ESTELAR'
+        normalize_unidad_codigo('130MID') -> '130MID'
+    """
+    if not codigo:
+        return codigo
+    
+    codigo_upper = codigo.upper().strip()
+    return _LEGACY_TO_CANONICAL.get(codigo_upper, codigo_upper)
+
+
+def _get_unidades_from_sql(active_only: bool = True) -> List[Dict]:
+    """
+    Obtiene unidades de negocio desde EDARSAHUB SQL.
+    
+    FASE M1: Fuente única EDARSAHUB, sin MongoDB.
+    
+    Args:
+        active_only: Solo unidades activas
+    
+    Returns:
+        Lista de unidades de negocio
+    """
+    try:
+        from core.db import execute_sql_query
+        
+        where_clause = "WHERE activo = 1" if active_only else ""
+        
+        query = f"""
+        SELECT 
+            CAST(id AS VARCHAR(50)) as id,
+            codigo,
+            nombre,
+            CAST(server_id AS VARCHAR(50)) as server_id,
+            sucursal_origen_id,
+            system_type,
+            activo,
+            orden,
+            created_at,
+            updated_at
+        FROM Unidades_Negocio
+        {where_clause}
+        ORDER BY orden, codigo
+        """
+        
+        results = execute_sql_query(
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            query
+        )
+        
+        unidades = []
+        for row in results:
+            unidades.append({
+                'id': str(row.get('id', '')),
+                'codigo': row.get('codigo', ''),
+                'nombre': row.get('nombre', ''),
+                'server_id': str(row.get('server_id', '')),
+                'sucursal_origen_id': row.get('sucursal_origen_id'),
+                'system_type': row.get('system_type', ''),
+                'activo': bool(row.get('activo', False)),
+                'orden': row.get('orden', 0),
+                'created_at': row.get('created_at'),
+                'updated_at': row.get('updated_at'),
+                'fuente': 'EDARSAHUB'
+            })
+        
+        logger.info(f"[SERVER_REGISTRY][UNIDADES][SQL_HIT] Obtenidas {len(unidades)} unidades desde EDARSAHUB")
+        return unidades
+        
+    except Exception as e:
+        logger.error(f"[SERVER_REGISTRY][UNIDADES][SQL_ERROR] Error obteniendo unidades: {e}")
+        return []
+
+
+def list_unidades_negocio(active_only: bool = True) -> List[Dict]:
+    """
+    Lista todas las unidades de negocio desde EDARSAHUB.
+    
+    FASE M1: EDARSAHUB es el cerebro del sistema. No usa MongoDB.
+    
+    Args:
+        active_only: Solo unidades activas (default True)
+    
+    Returns:
+        Lista de unidades de negocio con campos:
+        - codigo: Código canónico oficial
+        - nombre: Nombre de la unidad
+        - server_id: ID del servidor asociado
+        - sucursal_origen_id: Sucursal para MPRO (0021, 0023)
+        - system_type: SoftRestaurant o MPRO
+        - activo: Estado activo
+        - orden: Orden de visualización
+        - fuente: "EDARSAHUB"
+    
+    Example:
+        >>> unidades = list_unidades_negocio()
+        >>> len(unidades)
+        5
+        >>> unidades[0]['codigo']
+        '130MID'
+    """
+    return _get_unidades_from_sql(active_only=active_only)
+
+
+def get_server_by_unidad_codigo(codigo: str) -> Optional[Dict]:
+    """
+    Obtiene la configuración completa de servidor por código de unidad.
+    
+    FASE M1: Resuelve servidor usando Unidades_Negocio.codigo como llave.
+    
+    Args:
+        codigo: Código de unidad (se normaliza automáticamente)
+    
+    Returns:
+        Dict con configuración de servidor y unidad, o None si no existe
+    
+    Example:
+        >>> server = get_server_by_unidad_codigo('130MID')
+        >>> server['unidad_negocio_codigo']
+        '130MID'
+        >>> server['host']
+        '130mid.ddns.net'
+    """
+    if not codigo:
+        return None
+    
+    # Normalizar código defensivamente
+    codigo_normalizado = normalize_unidad_codigo(codigo)
+    
+    try:
+        from core.db import execute_sql_query
+        
+        # Escapar para SQL
+        safe_codigo = codigo_normalizado.replace("'", "''")
+        
+        query = f"""
+        SELECT 
+            u.codigo as unidad_negocio_codigo,
+            u.nombre as unidad_negocio_nombre,
+            CAST(u.id AS VARCHAR(50)) as unidad_negocio_id,
+            CAST(u.server_id AS VARCHAR(50)) as server_id,
+            u.sucursal_origen_id,
+            u.system_type as unidad_system_type,
+            u.activo as unidad_activo,
+            u.orden,
+            s.nombre as servidor_nombre,
+            s.host,
+            s.port,
+            s.database_name,
+            s.username,
+            s.system_type as servidor_system_type,
+            s.activo as servidor_activo,
+            s.visible_en_operaciones,
+            s.empresa_id
+        FROM Unidades_Negocio u
+        LEFT JOIN Servidores_Conexiones s ON CAST(u.server_id AS uniqueidentifier) = s.id
+        WHERE u.codigo = '{safe_codigo}'
+          AND u.activo = 1
+        """
+        
+        results = execute_sql_query(
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            query
+        )
+        
+        if not results:
+            logger.warning(f"[SERVER_REGISTRY][UNIDADES] Código {codigo_normalizado} no encontrado")
+            return None
+        
+        row = results[0]
+        
+        server_config = {
+            'unidad_negocio_codigo': row.get('unidad_negocio_codigo'),
+            'unidad_negocio_nombre': row.get('unidad_negocio_nombre'),
+            'unidad_negocio_id': str(row.get('unidad_negocio_id', '')),
+            'server_id': str(row.get('server_id', '')),
+            'sucursal_origen_id': row.get('sucursal_origen_id'),
+            'system_type': row.get('unidad_system_type'),
+            'orden': row.get('orden'),
+            # Datos del servidor
+            'servidor_nombre': row.get('servidor_nombre'),
+            'host': row.get('host'),
+            'port': row.get('port', 1433),
+            'database': row.get('database_name'),
+            'username': row.get('username'),
+            'servidor_system_type': row.get('servidor_system_type'),
+            'servidor_activo': bool(row.get('servidor_activo', False)),
+            'visible_en_operaciones': bool(row.get('visible_en_operaciones', False)),
+            'empresa_id': row.get('empresa_id'),
+            # Metadata
+            'fuente': 'EDARSAHUB',
+            'config_origin': 'EDARSAHUB_SQL'
+        }
+        
+        logger.info(f"[SERVER_REGISTRY][UNIDADES][SQL_HIT] Servidor resuelto para {codigo_normalizado}")
+        return server_config
+        
+    except Exception as e:
+        logger.error(f"[SERVER_REGISTRY][UNIDADES][SQL_ERROR] Error obteniendo servidor por código {codigo}: {e}")
+        return None
+
+
+def resolve_unidad_by_server_sucursal(server_id: str, sucursal_id: Optional[str] = None) -> Optional[Dict]:
+    """
+    Resuelve la unidad de negocio por server_id y sucursal_id.
+    
+    FASE M1: Crítico para MPRO donde múltiples unidades comparten servidor.
+    
+    Args:
+        server_id: ID del servidor
+        sucursal_id: ID de sucursal (requerido para MPRO)
+    
+    Returns:
+        Dict con datos de la unidad o None si no se encuentra
+    
+    Examples:
+        # SoftRestaurant (sin sucursal)
+        >>> resolve_unidad_by_server_sucursal('a5547321-...')
+        {'codigo': '130MID', ...}
+        
+        # MPRO con sucursal 0021
+        >>> resolve_unidad_by_server_sucursal('1b230a06-...', '0021')
+        {'codigo': '130QRO', ...}
+        
+        # MPRO con sucursal 0023
+        >>> resolve_unidad_by_server_sucursal('1b230a06-...', '0023')
+        {'codigo': 'ORIGEN', ...}
+    """
+    if not server_id:
+        return None
+    
+    try:
+        from core.db import execute_sql_query
+        
+        # Escapar para SQL
+        safe_server_id = server_id.replace("'", "''")
+        
+        # Si hay sucursal, buscar coincidencia exacta
+        if sucursal_id:
+            safe_sucursal = sucursal_id.replace("'", "''")
+            query = f"""
+            SELECT 
+                CAST(id AS VARCHAR(50)) as id,
+                codigo,
+                nombre,
+                CAST(server_id AS VARCHAR(50)) as server_id,
+                sucursal_origen_id,
+                system_type,
+                activo,
+                orden
+            FROM Unidades_Negocio
+            WHERE (CAST(server_id AS VARCHAR(50)) = '{safe_server_id}' 
+                   OR server_id = '{safe_server_id}')
+              AND sucursal_origen_id = '{safe_sucursal}'
+              AND activo = 1
+            """
+        else:
+            # Sin sucursal, buscar por server_id donde sucursal sea null (SoftRestaurant)
+            query = f"""
+            SELECT 
+                CAST(id AS VARCHAR(50)) as id,
+                codigo,
+                nombre,
+                CAST(server_id AS VARCHAR(50)) as server_id,
+                sucursal_origen_id,
+                system_type,
+                activo,
+                orden
+            FROM Unidades_Negocio
+            WHERE (CAST(server_id AS VARCHAR(50)) = '{safe_server_id}' 
+                   OR server_id = '{safe_server_id}')
+              AND (sucursal_origen_id IS NULL OR sucursal_origen_id = '')
+              AND activo = 1
+            """
+        
+        results = execute_sql_query(
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            query
+        )
+        
+        if not results:
+            # Si no encontró con sucursal null, intentar sin ese filtro
+            if not sucursal_id:
+                query_fallback = f"""
+                SELECT 
+                    CAST(id AS VARCHAR(50)) as id,
+                    codigo,
+                    nombre,
+                    CAST(server_id AS VARCHAR(50)) as server_id,
+                    sucursal_origen_id,
+                    system_type,
+                    activo,
+                    orden
+                FROM Unidades_Negocio
+                WHERE (CAST(server_id AS VARCHAR(50)) = '{safe_server_id}' 
+                       OR server_id = '{safe_server_id}')
+                  AND activo = 1
+                ORDER BY orden
+                """
+                results = execute_sql_query(
+                    EDARSAHUB_CONFIG['host'],
+                    EDARSAHUB_CONFIG['port'],
+                    EDARSAHUB_CONFIG['database'],
+                    EDARSAHUB_CONFIG['username'],
+                    EDARSAHUB_CONFIG['password'],
+                    query_fallback
+                )
+        
+        if not results:
+            logger.warning(f"[SERVER_REGISTRY][RESOLVE] No se encontró unidad para server={server_id}, sucursal={sucursal_id}")
+            return None
+        
+        row = results[0]
+        
+        unidad = {
+            'id': str(row.get('id', '')),
+            'codigo': row.get('codigo', ''),
+            'nombre': row.get('nombre', ''),
+            'server_id': str(row.get('server_id', '')),
+            'sucursal_origen_id': row.get('sucursal_origen_id'),
+            'system_type': row.get('system_type', ''),
+            'activo': bool(row.get('activo', False)),
+            'orden': row.get('orden', 0),
+            'fuente': 'EDARSAHUB'
+        }
+        
+        logger.info(f"[SERVER_REGISTRY][RESOLVE][SQL_HIT] Unidad {unidad['codigo']} resuelta para server={server_id}, sucursal={sucursal_id}")
+        return unidad
+        
+    except Exception as e:
+        logger.error(f"[SERVER_REGISTRY][RESOLVE][SQL_ERROR] Error resolviendo unidad: {e}")
+        return None
+
+
+def validate_registry_integrity() -> Dict:
+    """
+    Valida la integridad del registro de unidades y servidores.
+    
+    FASE M1: Verificación de consistencia EDARSAHUB.
+    
+    Validaciones:
+    - Existen las 5 unidades oficiales
+    - No hay códigos legacy activos
+    - Cada unidad tiene server_id
+    - MPRO tiene sucursal_origen_id correcta (130QRO=0021, ORIGEN=0023)
+    - No hay códigos duplicados activos
+    - Servidores asociados existen
+    
+    Returns:
+        Dict con:
+        - ok: bool
+        - errors: list
+        - warnings: list
+        - unidades_detectadas: list
+        - fuente: "EDARSAHUB"
+    
+    Example:
+        >>> result = validate_registry_integrity()
+        >>> result['ok']
+        True
+        >>> len(result['unidades_detectadas'])
+        5
+    """
+    result = {
+        'ok': True,
+        'errors': [],
+        'warnings': [],
+        'unidades_detectadas': [],
+        'servidores_asociados': [],
+        'fuente': 'EDARSAHUB',
+        'timestamp': datetime.now(timezone.utc).isoformat()
+    }
+    
+    try:
+        # Obtener todas las unidades activas
+        unidades = _get_unidades_from_sql(active_only=True)
+        result['unidades_detectadas'] = [u['codigo'] for u in unidades]
+        
+        # 1. Verificar que existen las 5 unidades oficiales
+        for codigo_oficial in CODIGOS_CANONICOS_OFICIALES:
+            if codigo_oficial not in result['unidades_detectadas']:
+                result['errors'].append(f"Unidad oficial faltante: {codigo_oficial}")
+                result['ok'] = False
+        
+        # 2. Verificar que no hay códigos legacy activos
+        codigos_legacy = ['130-MER', '130-QRO', 'LA-ESTELAR']
+        for codigo_legacy in codigos_legacy:
+            if codigo_legacy in result['unidades_detectadas']:
+                result['errors'].append(f"Código legacy activo detectado: {codigo_legacy}")
+                result['ok'] = False
+        
+        # 3. Verificar que cada unidad tiene server_id
+        for u in unidades:
+            if not u.get('server_id'):
+                result['errors'].append(f"Unidad {u['codigo']} sin server_id")
+                result['ok'] = False
+        
+        # 4. Verificar sucursales MPRO
+        for u in unidades:
+            if u['codigo'] == '130QRO' and u.get('sucursal_origen_id') != '0021':
+                result['errors'].append(f"130QRO debe tener sucursal_origen_id='0021', tiene '{u.get('sucursal_origen_id')}'")
+                result['ok'] = False
+            
+            if u['codigo'] == 'ORIGEN' and u.get('sucursal_origen_id') != '0023':
+                result['errors'].append(f"ORIGEN debe tener sucursal_origen_id='0023', tiene '{u.get('sucursal_origen_id')}'")
+                result['ok'] = False
+        
+        # 5. Verificar duplicados
+        codigos_count = {}
+        for u in unidades:
+            codigo = u['codigo']
+            codigos_count[codigo] = codigos_count.get(codigo, 0) + 1
+        
+        for codigo, count in codigos_count.items():
+            if count > 1:
+                result['errors'].append(f"Código duplicado: {codigo} ({count} veces)")
+                result['ok'] = False
+        
+        # 6. Verificar que los servidores asociados existen
+        server_ids = set(u['server_id'] for u in unidades if u.get('server_id'))
+        
+        for server_id in server_ids:
+            server = _get_server_by_id_from_sql(server_id)
+            if server:
+                result['servidores_asociados'].append({
+                    'id': server_id,
+                    'nombre': server.get('name', 'N/A'),
+                    'activo': server.get('active', False)
+                })
+                if not server.get('active'):
+                    result['warnings'].append(f"Servidor {server_id} ({server.get('name')}) está inactivo")
+            else:
+                result['errors'].append(f"Servidor no encontrado: {server_id}")
+                result['ok'] = False
+        
+        # Resumen
+        if result['ok']:
+            logger.info(f"[SERVER_REGISTRY][INTEGRITY] Validación exitosa: {len(unidades)} unidades, {len(server_ids)} servidores")
+        else:
+            logger.warning(f"[SERVER_REGISTRY][INTEGRITY] Validación fallida: {len(result['errors'])} errores")
+        
+    except Exception as e:
+        result['ok'] = False
+        result['errors'].append(f"Error ejecutando validación: {str(e)}")
+        logger.error(f"[SERVER_REGISTRY][INTEGRITY][ERROR] {e}")
+    
+    return result
+
+
+# ============================================================================
+# FASE M1: WRAPPERS MÍNIMOS (Opcionales)
+# ============================================================================
+
+def list_operational_servers() -> List[Dict]:
+    """
+    Lista servidores operacionales activos desde EDARSAHUB.
+    
+    Wrapper sobre _get_servers_from_sql.
+    """
+    return _get_servers_from_sql(filter_active=True, filter_visible_listado=False, exclude_core=True)
+
+
+def get_visible_servers_for_operaciones() -> List[Dict]:
+    """
+    Lista servidores visibles en módulo de operaciones.
+    
+    Filtra por visible_en_operaciones=True.
+    """
+    servers = _get_servers_from_sql(filter_active=True, filter_visible_listado=False, exclude_core=True)
+    return [s for s in servers if s.get('visible_en_operaciones', False)]
+
+
+def get_connection_config(server_id: str) -> Optional[Dict]:
+    """
+    Obtiene configuración de conexión de un servidor.
+    
+    Wrapper sobre _get_server_by_id_from_sql con solo datos de conexión.
+    """
+    server = _get_server_by_id_from_sql(server_id)
+    if not server:
+        return None
+    
+    return {
+        'id': server.get('id'),
+        'name': server.get('name'),
+        'host': server.get('host'),
+        'port': server.get('port', 1433),
+        'database': server.get('database'),
+        'username': server.get('username'),
+        'system_type': server.get('system_type'),
+        'system_type_normalized': server.get('system_type_normalized'),
+        'config_origin': 'EDARSAHUB_SQL'
+    }
+
+
+# ============================================================================
 # EXPORTS ACTUALIZADOS
 # ============================================================================
 
@@ -1693,6 +2237,16 @@ __all__ = [
     'build_legacy_mongo_server_document',
     'map_sql_to_api_server_response',
     'reconcile_sql_mongo_servers',
+    # FASE M1: Unidades de Negocio (EDARSAHUB-ONLY)
+    'list_unidades_negocio',
+    'get_server_by_unidad_codigo',
+    'resolve_unidad_by_server_sucursal',
+    'normalize_unidad_codigo',
+    'validate_registry_integrity',
+    'list_operational_servers',
+    'get_visible_servers_for_operaciones',
+    'get_connection_config',
+    'CODIGOS_CANONICOS_OFICIALES',
     # Config
     'USE_SQL_FOR_SERVERS',
     'EDARSAHUB_CONFIG'
