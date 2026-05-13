@@ -617,38 +617,31 @@ async def get_tesoreria_sucursales_operativas() -> List[Dict]:
             logger.warning("[TESORERIA][EDARSAHUB_EMPTY] EDARSAHUB no retornó servidores, intentando fallback MongoDB")
             
     except Exception as e:
-        logger.warning(f"[TESORERIA][EDARSAHUB_ERROR] Error consultando EDARSAHUB: {e}. Usando fallback MongoDB.")
-        fuente_usada = "MONGODB_FALLBACK"
+        logger.warning(f"[TESORERIA][EDARSAHUB_ERROR] Error consultando EDARSAHUB: {e}. Usando fallback server_registry.")
+        fuente_usada = "SERVER_REGISTRY_FALLBACK"
     
-    # FALLBACK LEGACY: MongoDB (solo si EDARSAHUB falló)
+    # FALLBACK: server_registry.py (FASE T2.2: Reemplaza MongoDB)
+    # Este fallback usa la capa centralizada que también lee de EDARSAHUB
     try:
-        from server import db
+        from core.server_registry import list_operational_servers
         
-        logger.warning("[TESORERIA][MONGODB_FALLBACK] Usando MongoDB como fallback legacy")
+        logger.info("[TESORERIA][REGISTRY_FALLBACK] Usando server_registry.py como fallback")
         
-        # Query MongoDB con filtros estrictos
-        mongo_query = {
-            'active': True,
-            'tipo_conexion': {'$nin': ['CORE', 'API_LOCAL']},
-            'system_type': {'$in': ['SoftRestaurant', 'SOFTRESTAURANT', 'SR', 'ManagementPro', 'MANAGEMENTPRO', 'MPRO']}
-        }
+        registry_servers = list_operational_servers()
         
-        mongo_servers = await db.servers.find(mongo_query, {'_id': 0}).to_list(50)
-        
-        for s in mongo_servers:
-            # IMPORTANTE: En MongoDB, si visible_en_operaciones NO existe, NO asumir True
+        for s in registry_servers:
+            # Verificar visible_en_operaciones
             vis_op = s.get('visible_en_operaciones')
             
-            if vis_op is None:
-                # Campo no existe - servidor legacy pendiente de conciliación
-                logger.warning(f"[TESORERIA][MONGODB_FALLBACK] Servidor {s.get('id')} sin campo visible_en_operaciones - EXCLUIDO como legacy pendiente")
+            if vis_op is None or not vis_op:
+                # No visible en operaciones - excluir
                 continue
             
-            if not vis_op:
-                # Campo existe pero es False
-                continue
+            system_type = (s.get('system_type') or s.get('system_type_normalized') or '').upper()
             
-            system_type = (s.get('system_type') or '').upper()
+            # Solo incluir sistemas de Tesorería (SoftRestaurant y MPRO)
+            if system_type not in ['SOFTRESTAURANT', 'SR', 'MANAGEMENTPRO', 'MPRO']:
+                continue
             
             if system_type in ['SOFTRESTAURANT', 'SR']:
                 fuente = 'SOFTRESTAURANT'
@@ -665,10 +658,10 @@ async def get_tesoreria_sucursales_operativas() -> List[Dict]:
                 "activo": s.get('active', True)
             })
         
-        logger.info(f"[TESORERIA][MONGODB_FALLBACK] Obtenidos {len(sucursales)} servidores operativos desde MongoDB (fallback)")
+        logger.info(f"[TESORERIA][REGISTRY_FALLBACK] Obtenidos {len(sucursales)} servidores operativos desde server_registry")
         
     except Exception as e:
-        logger.error(f"[TESORERIA][MONGODB_ERROR] Error en fallback MongoDB: {e}")
+        logger.error(f"[TESORERIA][REGISTRY_ERROR] Error en fallback server_registry: {e}")
     
     return sucursales
 
@@ -680,7 +673,8 @@ async def listar_sucursales(
     """
     Lista las sucursales/servidores OPERATIVOS para consultar Cortes Z.
     
-    P1-FASE4A: Usa EDARSAHUB como fuente primaria con fallback legacy a MongoDB.
+    P1-FASE4A: Usa EDARSAHUB como fuente primaria.
+    FASE T2.2: Fallback migrado a server_registry.py (elimina MongoDB).
     Solo devuelve servidores con visible_en_operaciones = True.
     """
     try:
