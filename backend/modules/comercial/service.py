@@ -49,6 +49,413 @@ from modules.comercial.queries.mpro import query_ventas_periodo_mpro, query_vent
 
 
 # ============================================================================
+# CONFIGURACIÓN EDARSAHUB - TABLERO EJECUTIVO (Mayo 2026)
+# ============================================================================
+# MÁXIMA: EDARSAHUB es el cerebro del sistema.
+# Tablero Ejecutivo lee exclusivamente de Comercial_KPIs_Diarios_v2.
+# NO consulta servidores locales ni MongoDB para KPIs.
+
+EDARSAHUB_TABLERO_CONFIG = {
+    'host': '54.39.104.176',
+    'port': 1433,
+    'database': 'EDARSAHUB',
+    'username': 'HRLectura',
+    'password': 'National09$'
+}
+
+
+def _query_edarsahub_tablero(query: str) -> List[Dict]:
+    """
+    Ejecuta query de SOLO LECTURA en EDARSAHUB para Tablero Ejecutivo.
+    Fuente: Comercial_KPIs_Diarios_v2 y Comercial_Ventas_Dia_Abiertas_v2.
+    NO usa MongoDB. NO usa servidores locales.
+    """
+    try:
+        result = execute_sql_query(
+            EDARSAHUB_TABLERO_CONFIG['host'],
+            EDARSAHUB_TABLERO_CONFIG['port'],
+            EDARSAHUB_TABLERO_CONFIG['database'],
+            EDARSAHUB_TABLERO_CONFIG['username'],
+            EDARSAHUB_TABLERO_CONFIG['password'],
+            query
+        )
+        return result or []
+    except Exception as e:
+        logging.error(f"[TABLERO-EDARSAHUB] Error ejecutando query: {e}")
+        return []
+
+
+def _get_ultimo_dia_con_datos_edarsahub(server_id: str, mes: int, anio: int) -> Optional[int]:
+    """
+    Obtiene el último día con ventas registradas en Comercial_KPIs_Diarios_v2.
+    Retorna el día (1-31) o None si no hay datos.
+    """
+    query = f"""
+    SELECT MAX(dia) as ultimo_dia
+    FROM Comercial_KPIs_Diarios_v2
+    WHERE server_id = '{server_id}'
+      AND anio = {anio}
+      AND mes = {mes}
+      AND ventas_total > 0
+    """
+    result = _query_edarsahub_tablero(query)
+    if result and result[0].get('ultimo_dia'):
+        return int(result[0]['ultimo_dia'])
+    return None
+
+
+def _get_kpis_periodo_edarsahub(
+    server_id: str,
+    fecha_ini: str,  # YYYY-MM-DD
+    fecha_fin: str,  # YYYY-MM-DD (inclusivo)
+    sucursal_id: str = 'DEFAULT'
+) -> Dict:
+    """
+    Obtiene KPIs agregados de Comercial_KPIs_Diarios_v2 para un período.
+    
+    Retorna:
+        {
+            'ventas': float,
+            'pax': int,
+            'cheques': int,
+            'registros': int,
+            'existe_data': bool
+        }
+    """
+    # Usar rangos semiabiertos: fecha >= ini AND fecha < fin+1
+    query = f"""
+    SELECT 
+        ISNULL(SUM(ventas_total), 0) as ventas,
+        ISNULL(SUM(pax_total), 0) as pax,
+        ISNULL(SUM(tickets_total), 0) as cheques,
+        COUNT(*) as registros
+    FROM Comercial_KPIs_Diarios_v2
+    WHERE server_id = '{server_id}'
+      AND sucursal_id = '{sucursal_id}'
+      AND fecha_operacion >= '{fecha_ini}'
+      AND fecha_operacion <= '{fecha_fin}'
+      AND ventas_total > 0
+    """
+    result = _query_edarsahub_tablero(query)
+    
+    if result and len(result) > 0:
+        row = result[0]
+        ventas = float(row.get('ventas') or 0)
+        pax = int(row.get('pax') or 0)
+        cheques = int(row.get('cheques') or 0)
+        registros = int(row.get('registros') or 0)
+        
+        return {
+            'ventas': ventas,
+            'pax': pax,
+            'cheques': cheques,
+            'registros': registros,
+            'existe_data': registros > 0
+        }
+    
+    return {
+        'ventas': 0,
+        'pax': 0,
+        'cheques': 0,
+        'registros': 0,
+        'existe_data': False
+    }
+
+
+def _get_ventas_abiertas_edarsahub(server_id: str, sucursal_id: str = 'DEFAULT') -> Dict:
+    """
+    Obtiene ventas abiertas del día desde Comercial_Ventas_Dia_Abiertas_v2.
+    Para modo "Ventas del Día" en Tablero Ejecutivo.
+    """
+    query = f"""
+    SELECT TOP 1
+        ventas_abiertas,
+        tickets_abiertos,
+        pax_abiertos,
+        ventas_cerradas_dia,
+        tickets_cerrados_dia,
+        pax_cerrados_dia,
+        total_estimado_dia,
+        snapshot_timestamp,
+        fecha_operacion
+    FROM Comercial_Ventas_Dia_Abiertas_v2
+    WHERE server_id = '{server_id}'
+      AND sucursal_id = '{sucursal_id}'
+    ORDER BY snapshot_timestamp DESC
+    """
+    result = _query_edarsahub_tablero(query)
+    
+    if result and len(result) > 0:
+        row = result[0]
+        return {
+            'existe': True,
+            'ventas': float(row.get('ventas_abiertas') or 0) + float(row.get('ventas_cerradas_dia') or 0),
+            'pax': int(row.get('pax_abiertos') or 0) + int(row.get('pax_cerrados_dia') or 0),
+            'cheques': int(row.get('tickets_abiertos') or 0) + int(row.get('tickets_cerrados_dia') or 0),
+            'snapshot_timestamp': row.get('snapshot_timestamp'),
+            'fecha_operacion': row.get('fecha_operacion')
+        }
+    
+    return {
+        'existe': False,
+        'ventas': 0,
+        'pax': 0,
+        'cheques': 0,
+        'snapshot_timestamp': None,
+        'fecha_operacion': None
+    }
+
+
+def _calcular_variacion_pct(valor_actual: float, valor_comparativo: float) -> Optional[float]:
+    """
+    Calcula variación porcentual respetando reglas de negocio.
+    
+    Reglas:
+    - Si valor_comparativo es None o no existe: retorna None (no 0)
+    - Si valor_comparativo = 0 y valor_actual > 0: retorna None (evita división por cero)
+    - Si valor_actual = 0 y valor_comparativo > 0: retorna -100%
+    - Si ambos son 0 y existen registros: retorna 0%
+    - No devolver 0% falso si no se pudo calcular
+    """
+    if valor_comparativo is None:
+        return None
+    
+    if valor_comparativo == 0:
+        if valor_actual > 0:
+            return None  # No dividir entre cero
+        else:
+            return 0.0  # Ambos son 0
+    
+    variacion = ((valor_actual - valor_comparativo) / valor_comparativo) * 100
+    return round(variacion, 1)
+
+
+def _obtener_kpis_tablero_desde_edarsahub(
+    server_id: str,
+    unidad_negocio_id: str,
+    sucursal_id: str,
+    fecha_ini: str,
+    fecha_fin: str,
+    dias_mes: int,
+    nombre_unidad: str = ''
+) -> Optional[Dict]:
+    """
+    FUNCIÓN PRINCIPAL - TABLERO EJECUTIVO DESDE EDARSAHUB
+    =====================================================
+    Obtiene KPIs para Tablero Ejecutivo EXCLUSIVAMENTE desde EDARSAHUB.
+    
+    MÁXIMA: EDARSAHUB es el cerebro del sistema.
+    - NO consulta servidores locales
+    - NO consulta MongoDB
+    - Lee de Comercial_KPIs_Diarios_v2
+    
+    REGLA DE COMPARATIVOS:
+    1. Mes parcial: compara mismos días
+    2. Mes completo: compara mes vs mes completo
+    
+    Args:
+        server_id: ID del servidor EDARSAHUB (para mapear unidad)
+        unidad_negocio_id: ID de unidad (130-MER, CIENFUEGOS, etc.)
+        sucursal_id: ID de sucursal (DEFAULT, 0021, 0023)
+        fecha_ini: Fecha inicio período actual (YYYY-MM-DD)
+        fecha_fin: Fecha fin período actual (YYYY-MM-DD)
+        dias_mes: Días totales del mes para proyección
+        nombre_unidad: Nombre de la unidad (para logs)
+    
+    Returns:
+        Dict con KPIs o None si hay error
+    """
+    logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad or unidad_negocio_id}: Consultando KPIs desde EDARSAHUB")
+    
+    # Parsear fechas
+    anio_ini = int(fecha_ini[:4])
+    mes_ini = int(fecha_ini[5:7])
+    anio_fin = int(fecha_fin[:4])
+    mes_fin = int(fecha_fin[5:7])
+    dia_fin = int(fecha_fin[8:10])
+    
+    # 1. DETECTAR ÚLTIMO DÍA CON VENTAS EN EL PERÍODO ACTUAL
+    query_ultimo_dia = f"""
+    SELECT MAX(fecha_operacion) as ultimo_dia_venta, MAX(dia) as dia_max
+    FROM Comercial_KPIs_Diarios_v2
+    WHERE unidad_negocio_id = '{unidad_negocio_id}'
+      AND sucursal_id = '{sucursal_id}'
+      AND fecha_operacion >= '{fecha_ini}'
+      AND fecha_operacion <= '{fecha_fin}'
+      AND ventas_total > 0
+    """
+    result_ultimo = _query_edarsahub_tablero(query_ultimo_dia)
+    
+    if not result_ultimo or not result_ultimo[0].get('ultimo_dia_venta'):
+        logging.warning(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Sin datos en período {fecha_ini} a {fecha_fin}")
+        return None
+    
+    ultimo_dia_venta = result_ultimo[0]['ultimo_dia_venta']
+    if isinstance(ultimo_dia_venta, str):
+        partes = ultimo_dia_venta.split('T')[0].split('-') if 'T' in ultimo_dia_venta else ultimo_dia_venta.split('-')
+        anio_ultimo = int(partes[0])
+        mes_ultimo = int(partes[1])
+        dia_ultimo = int(partes[2])
+    else:
+        anio_ultimo = ultimo_dia_venta.year
+        mes_ultimo = ultimo_dia_venta.month
+        dia_ultimo = ultimo_dia_venta.day
+    
+    # Determinar si el mes está completo o parcial
+    ultimo_dia_mes = calendar.monthrange(anio_ultimo, mes_ultimo)[1]
+    mes_completo = (dia_ultimo >= ultimo_dia_mes)
+    
+    logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Último día con datos: {anio_ultimo}-{mes_ultimo:02d}-{dia_ultimo:02d}, Mes completo: {mes_completo}")
+    
+    # 2. CALCULAR RANGOS DE FECHAS PARA COMPARATIVOS
+    # Período actual: desde inicio hasta último día con ventas
+    fecha_fin_real = f"{anio_ultimo}-{mes_ultimo:02d}-{dia_ultimo:02d}"
+    
+    # Mes anterior
+    if mes_ultimo == 1:
+        mes_ant = 12
+        anio_ant = anio_ultimo - 1
+    else:
+        mes_ant = mes_ultimo - 1
+        anio_ant = anio_ultimo
+    
+    ultimo_dia_mes_ant = calendar.monthrange(anio_ant, mes_ant)[1]
+    
+    if mes_completo:
+        # Mes completo: comparar mes vs mes completo
+        fecha_ini_ant = f"{anio_ant}-{mes_ant:02d}-01"
+        fecha_fin_ant = f"{anio_ant}-{mes_ant:02d}-{ultimo_dia_mes_ant:02d}"
+    else:
+        # Mes parcial: comparar mismos días
+        dia_comparar_ant = min(dia_ultimo, ultimo_dia_mes_ant)
+        fecha_ini_ant = f"{anio_ant}-{mes_ant:02d}-01"
+        fecha_fin_ant = f"{anio_ant}-{mes_ant:02d}-{dia_comparar_ant:02d}"
+    
+    # Año anterior
+    anio_pasado = anio_ultimo - 1
+    ultimo_dia_mes_anio_ant = calendar.monthrange(anio_pasado, mes_ultimo)[1]
+    
+    if mes_completo:
+        # Mes completo: comparar mes vs mes completo del año anterior
+        fecha_ini_anio_ant = f"{anio_pasado}-{mes_ultimo:02d}-01"
+        fecha_fin_anio_ant = f"{anio_pasado}-{mes_ultimo:02d}-{ultimo_dia_mes_anio_ant:02d}"
+    else:
+        # Mes parcial: comparar mismos días del año anterior
+        dia_comparar_anio_ant = min(dia_ultimo, ultimo_dia_mes_anio_ant)
+        fecha_ini_anio_ant = f"{anio_pasado}-{mes_ultimo:02d}-01"
+        fecha_fin_anio_ant = f"{anio_pasado}-{mes_ultimo:02d}-{dia_comparar_anio_ant:02d}"
+    
+    logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Rangos - Actual: {fecha_ini} a {fecha_fin_real}, Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_anio_ant} a {fecha_fin_anio_ant}")
+    
+    # 3. OBTENER KPIs PERÍODO ACTUAL
+    kpis_actual = _get_kpis_periodo_edarsahub(server_id, fecha_ini, fecha_fin_real, sucursal_id)
+    
+    if not kpis_actual['existe_data']:
+        logging.warning(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Sin datos reales en período actual")
+        return None
+    
+    ventas = kpis_actual['ventas']
+    pax = kpis_actual['pax']
+    cheques = kpis_actual['cheques']
+    
+    # Calcular días transcurridos para proyección
+    fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
+    fecha_fin_dt = datetime(anio_ultimo, mes_ultimo, dia_ultimo)
+    dias_transcurridos = (fecha_fin_dt - fecha_ini_dt).days + 1
+    
+    # 4. OBTENER KPIs MES ANTERIOR
+    kpis_mes_ant = _get_kpis_periodo_edarsahub(server_id, fecha_ini_ant, fecha_fin_ant, sucursal_id)
+    
+    if kpis_mes_ant['existe_data']:
+        ventas_ant = kpis_mes_ant['ventas']
+        pax_ant = kpis_mes_ant['pax']
+        cheques_ant = kpis_mes_ant['cheques']
+    else:
+        ventas_ant = None
+        pax_ant = None
+        cheques_ant = None
+        logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Sin datos de mes anterior ({fecha_ini_ant} a {fecha_fin_ant})")
+    
+    # 5. OBTENER KPIs AÑO ANTERIOR
+    kpis_anio_ant = _get_kpis_periodo_edarsahub(server_id, fecha_ini_anio_ant, fecha_fin_anio_ant, sucursal_id)
+    
+    if kpis_anio_ant['existe_data']:
+        ventas_año = kpis_anio_ant['ventas']
+        pax_año = kpis_anio_ant['pax']
+        cheques_año = kpis_anio_ant['cheques']
+    else:
+        ventas_año = None
+        pax_año = None
+        cheques_año = None
+        logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Sin datos de año anterior ({fecha_ini_anio_ant} a {fecha_fin_anio_ant})")
+    
+    # 6. CALCULAR MÉTRICAS DERIVADAS
+    ticket_prom = round(ventas / pax, 2) if pax and pax > 0 else 0
+    cheque_prom = round(ventas / cheques, 2) if cheques and cheques > 0 else 0
+    proyeccion = round((ventas / dias_transcurridos) * dias_mes, 2) if dias_transcurridos > 0 else 0
+    
+    # 7. CALCULAR VARIACIONES (respetando reglas de null)
+    var_vs_mes_ant = _calcular_variacion_pct(ventas, ventas_ant)
+    var_vs_año_ant = _calcular_variacion_pct(ventas, ventas_año)
+    var_pax_mes = _calcular_variacion_pct(pax, pax_ant)
+    var_pax_año = _calcular_variacion_pct(pax, pax_año)
+    var_cheques_mes = _calcular_variacion_pct(cheques, cheques_ant)
+    var_cheques_año = _calcular_variacion_pct(cheques, cheques_año)
+    
+    logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Ventas=${ventas:,.0f}, vs Mes Ant={var_vs_mes_ant}%, vs Año Ant={var_vs_año_ant}%")
+    
+    return {
+        "ventas": ventas,
+        "ventas_ant": ventas_ant if ventas_ant is not None else 0,
+        "ventas_año": ventas_año if ventas_año is not None else 0,
+        "var_vs_mes_ant": var_vs_mes_ant if var_vs_mes_ant is not None else 0,
+        "var_vs_año_ant": var_vs_año_ant if var_vs_año_ant is not None else 0,
+        "proyeccion": proyeccion,
+        "pax": pax,
+        "pax_ant": pax_ant if pax_ant is not None else 0,
+        "pax_año": pax_año if pax_año is not None else 0,
+        "var_pax_mes": var_pax_mes if var_pax_mes is not None else 0,
+        "var_pax_año": var_pax_año if var_pax_año is not None else 0,
+        "cheques": cheques,
+        "cheques_ant": cheques_ant if cheques_ant is not None else 0,
+        "cheques_año": cheques_año if cheques_año is not None else 0,
+        "var_cheques_mes": var_cheques_mes if var_cheques_mes is not None else 0,
+        "var_cheques_año": var_cheques_año if var_cheques_año is not None else 0,
+        "ticket_prom": ticket_prom,
+        "cheque_prom": cheque_prom,
+        "fuente": "EDARSAHUB",
+        "_meta": {
+            "tabla": "Comercial_KPIs_Diarios_v2",
+            "ultimo_dia_con_datos": f"{anio_ultimo}-{mes_ultimo:02d}-{dia_ultimo:02d}",
+            "mes_completo": mes_completo,
+            "dias_transcurridos": dias_transcurridos,
+            "rango_actual": f"{fecha_ini} a {fecha_fin_real}",
+            "rango_mes_ant": f"{fecha_ini_ant} a {fecha_fin_ant}",
+            "rango_anio_ant": f"{fecha_ini_anio_ant} a {fecha_fin_anio_ant}",
+            "tiene_datos_mes_ant": ventas_ant is not None,
+            "tiene_datos_anio_ant": ventas_año is not None
+        }
+    }
+
+
+# Mapeo de unidades EDARSAHUB (equivalente a la configuración de los jobs de sync)
+UNIDADES_EDARSAHUB_MAP = {
+    # SoftRestaurant
+    "a5547321-1139-4d2b-9d53-182ca737b6b6": {"unidad_negocio_id": "130-MER", "nombre": "130° MÉRIDA", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+    "6d053c22-523e-48c0-b72b-96081e2d781b": {"unidad_negocio_id": "CIENFUEGOS", "nombre": "CIENFUEGOS", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+    "a5ff0e25-f029-43db-b634-d4ac814c904f": {"unidad_negocio_id": "LA-ESTELAR", "nombre": "LA ESTELAR", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+    # MPRO (necesitan sucursal específica)
+    "1b230a06-ffaf-4c70-bd27-b1be3579dea6": {
+        "sucursales": {
+            "0021": {"unidad_negocio_id": "130-QRO", "nombre": "130° QUERETARO"},
+            "0023": {"unidad_negocio_id": "ORIGEN", "nombre": "ORIGEN"}
+        },
+        "sistema": "MPRO"
+    }
+}
+
+
+# ============================================================================
 # FUNCIONES AUXILIARES
 # ============================================================================
 
@@ -332,520 +739,247 @@ async def guardar_metas(server_id: str, sucursal: str, mes: int, anio: int, meta
 # ============================================================================
 # HELPERS DEL TABLERO EJECUTIVO - MIGRADOS FASE 5B-2 (Abril 2026)
 # ============================================================================
-# Estas funciones fueron migradas desde server.py sin cambios funcionales.
-# Mantienen la misma firma, mismos nombres de campos, misma estructura JSON.
+# ACTUALIZACIÓN MAYO 2026 - MIGRACIÓN A EDARSAHUB:
+# Estas funciones ahora leen EXCLUSIVAMENTE de EDARSAHUB SQL Server.
+# - Fuente: Comercial_KPIs_Diarios_v2
+# - NO consultan servidores locales para KPIs del Tablero Ejecutivo
+# - NO consultan MongoDB como fuente de datos
+# MÁXIMA: EDARSAHUB es el cerebro del sistema.
 
 def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia=False):
-    """Query reutilizable para SoftRestaurant - misma lógica análisis inventarios
-    
-    FASE 3.1 - COMPORTAMIENTO:
-    - solo_ventas_dia=True → SoftRestaurant NO tiene API local, usa SQL nube (ventas acumuladas)
-    - solo_ventas_dia=False → Usa SQL nube del menú Servidores
-    
-    NOTA: SoftRestaurant no tiene API local configurada. Cuando se solicitan ventas del día,
-    se muestran las ventas acumuladas del SQL nube en su lugar.
-    PENDIENTE: Inspección local en servidores para revisar configuración de API local SoftRestaurant.
     """
+    TABLERO EJECUTIVO - KPIs SoftRestaurant desde EDARSAHUB
+    =======================================================
+    
+    ACTUALIZACIÓN MAYO 2026:
+    - Lee EXCLUSIVAMENTE de EDARSAHUB (Comercial_KPIs_Diarios_v2)
+    - NO consulta servidores SQL locales para históricos
+    - NO consulta MongoDB
+    
+    Para solo_ventas_dia=True:
+    - Lee de Comercial_Ventas_Dia_Abiertas_v2 en EDARSAHUB
+    
+    Mantiene la misma firma y estructura de respuesta para compatibilidad.
+    """
+    server_id = server.get('id', '')
+    nombre = server.get('name', 'SoftRestaurant')
+    
+    # Obtener mapeo de unidad EDARSAHUB
+    unidad_config = UNIDADES_EDARSAHUB_MAP.get(server_id, {})
+    if not unidad_config:
+        logging.warning(f"[TABLERO-EDARSAHUB] {nombre}: server_id {server_id} no tiene mapeo de unidad")
+        return None
+    
+    unidad_negocio_id = unidad_config.get('unidad_negocio_id', '')
+    sucursal_id = unidad_config.get('sucursal_id', 'DEFAULT')
+    
+    logging.info(f"[TABLERO-EDARSAHUB] {nombre}: Iniciando consulta - unidad={unidad_negocio_id}, sucursal={sucursal_id}")
     
     # ============================================================================
-    # VENTAS DEL DÍA: Priorizar cheques cerrados del último turno, fallback a tempcheques
-    # - Si hay turno cerrado en las últimas 24h → mostrar cheques de ese turno
-    # - Si NO hay turno cerrado reciente → mostrar tempcheques (operación en curso)
+    # MODO VENTAS DEL DÍA: Leer de Comercial_Ventas_Dia_Abiertas_v2
     # ============================================================================
     if solo_ventas_dia:
-        logging.info(f"SoftRestaurant {server['name']}: Modo Ventas del Día")
+        logging.info(f"[TABLERO-EDARSAHUB] {nombre}: Modo Ventas del Día - consultando snapshot EDARSAHUB")
         
-        ventas = 0
-        cheques = 0
-        pax = 0
-        origen = None
+        ventas_abiertas = _get_ventas_abiertas_edarsahub(server_id, sucursal_id)
         
-        # Verificar si la tabla tempcheques tiene columna 'propina'
-        has_propina_temp = check_column_exists(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], 'tempcheques', 'propina'
-        )
-        propina_expr_temp = get_propina_safe_column_tempcheques(has_propina_temp)
-        
-        # VENTAS DEL DÍA = SIEMPRE tempcheques (turno abierto actual)
-        try:
-            # NOTA: Se excluyen propinas de las ventas SI la columna existe
-            query_temp = f"""
-SELECT 
-    COUNT(DISTINCT folio) as cheques,
-    ISNULL(SUM(total{propina_expr_temp}), 0) as ventas,
-    ISNULL(SUM(nopersonas), 0) as pax
-FROM tempcheques
-WHERE cancelado = 0
-"""
-            result_temp = execute_sql_query(server['host'], server['port'], server['database'], 
-                                            server['username'], server['password'], query_temp)
-            if result_temp and len(result_temp) > 0:
-                ventas = float(result_temp[0]['ventas'] or 0)
-                cheques = int(result_temp[0]['cheques'] or 0)
-                pax = int(result_temp[0]['pax'] or 0)
-                if cheques > 0 or ventas > 0:
-                    origen = "tempcheques"
-                    logging.info(f"SoftRestaurant {server['name']} - Tempcheques: ${ventas:,.2f}, {cheques} cheques")
-        except Exception as e:
-            logging.warning(f"SoftRestaurant {server['name']}: Error tempcheques: {e}")
-        
-        # Si no hay datos en tempcheques
-        if origen is None:
-            logging.warning(f"SoftRestaurant {server['name']}: Sin datos del día (tempcheques vacío)")
-            return None
-        
-        if pax == 0 and cheques > 0:
-            pax = cheques
-        
-        ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
-        cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
-        
-        return {
-            "ventas": ventas,
-            "ventas_ant": 0,
-            "ventas_año": 0,
-            "var_vs_mes_ant": 0,
-            "var_vs_año_ant": 0,
-            "proyeccion": 0,
-            "pax": pax,
-            "pax_ant": 0,
-            "pax_año": 0,
-            "var_pax_mes": 0,
-            "var_pax_año": 0,
-            "cheques": cheques,
-            "cheques_ant": 0,
-            "cheques_año": 0,
-            "var_cheques_mes": 0,
-            "var_cheques_año": 0,
-            "ticket_prom": ticket_prom,
-            "cheque_prom": cheque_prom,
-            "es_ventas_dia": True,
-            "origen": origen
-        }
-    
-    # ============================================================================
-    # VENTAS HISTÓRICAS / ACUMULADAS: Usar SQL nube del menú Servidores
-    # (Solo se ejecuta si solo_ventas_dia=False)
-    # ============================================================================
-    
-    # VALIDACIÓN DE RANGO DE FECHAS (FIX ESTRUCTURAL)
-    if not is_valid_range(fecha_ini, fecha_fin):
-        logging.error(f"SoftRestaurant {server['name']}: Rango de fechas inválido ({fecha_ini} > {fecha_fin})")
-        return None
-    
-    # Usar formato YYYYMMDD sin guiones para evitar problemas de conversión de fecha
-    try:
-        fi, ff = to_yyyymmdd_range(fecha_ini, fecha_fin)
-    except ValueError as e:
-        logging.error(f"SoftRestaurant {server['name']}: Error convirtiendo fechas: {e}")
-        return None
-    
-    # VALIDACIÓN DE CONEXIÓN: Verificar que el servidor SQL responde antes de continuar
-    # CORRECCIÓN 2026-04-29: Usar configuración de EDARSAHUB SQL (menú Servidores)
-    logging.info(f"[TABLERO] SoftRestaurant {server['name']}: Iniciando consulta SQL - Host={server['host']}:{server['port']}, DB={server['database']}, config_origin={server.get('config_origin', 'EDARSAHUB_SQL')}")
-    try:
-        test_query = "SELECT 1 as test"
-        test_result = execute_sql_query(server['host'], server['port'], server['database'], 
-                                        server['username'], server['password'], test_query)
-        if not test_result:
-            # La conexión se estableció pero no devolvió datos - problema de configuración
-            logging.warning(f"[TABLERO] SoftRestaurant {server['name']}: Conexión SQL establecida pero sin respuesta - posible problema de configuración")
-            return {"error": "CONFIG_QUERY_ERROR", "mensaje": "Conexión establecida pero sin respuesta de la base de datos"}
-    except Exception as conn_error:
-        # Error de conexión - puede ser limitación del entorno o servidor caído
-        error_msg = str(conn_error).lower()
-        logging.warning(f"[TABLERO] SoftRestaurant {server['name']}: Error de conexión SQL - {conn_error}")
-        
-        # Clasificar el tipo de error para el frontend
-        if 'timeout' in error_msg or 'timed out' in error_msg:
-            return {"error": "SERVER_TIMEOUT", "mensaje": f"Timeout conectando a {server['host']} - verificar accesibilidad de red"}
-        elif 'login' in error_msg or 'authentication' in error_msg or 'password' in error_msg:
-            return {"error": "AUTH_ERROR", "mensaje": "Error de autenticación SQL - verificar credenciales en configuración"}
-        elif 'does not exist' in error_msg or 'cannot open' in error_msg:
-            return {"error": "DATABASE_NOT_FOUND", "mensaje": f"Base de datos {server['database']} no encontrada"}
+        if ventas_abiertas['existe']:
+            ventas = ventas_abiertas['ventas']
+            pax = ventas_abiertas['pax']
+            cheques = ventas_abiertas['cheques']
+            
+            if pax == 0 and cheques > 0:
+                pax = cheques
+            
+            ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
+            cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
+            
+            return {
+                "ventas": ventas,
+                "ventas_ant": 0,
+                "ventas_año": 0,
+                "var_vs_mes_ant": 0,
+                "var_vs_año_ant": 0,
+                "proyeccion": 0,
+                "pax": pax,
+                "pax_ant": 0,
+                "pax_año": 0,
+                "var_pax_mes": 0,
+                "var_pax_año": 0,
+                "cheques": cheques,
+                "cheques_ant": 0,
+                "cheques_año": 0,
+                "var_cheques_mes": 0,
+                "var_cheques_año": 0,
+                "ticket_prom": ticket_prom,
+                "cheque_prom": cheque_prom,
+                "es_ventas_dia": True,
+                "origen": "EDARSAHUB_snapshot",
+                "fuente": "EDARSAHUB"
+            }
         else:
-            # Error genérico de conexión - probablemente red/DNS
-            return {"error": "SERVER_UNREACHABLE", "mensaje": f"No fue posible conectar con {server['host']} - verificar desde entorno local/VPN"}
+            logging.warning(f"[TABLERO-EDARSAHUB] {nombre}: Sin snapshot de ventas abiertas disponible")
+            return None
     
-    # DEBUG: Log para verificar fechas recibidas
-    logging.info(f"[TABLERO] SoftRestaurant {server['name']} - Conexión OK - Fechas: {fecha_ini} a {fecha_fin}")
+    # ============================================================================
+    # MODO KPIs HISTÓRICOS/ACUMULADOS: Leer de Comercial_KPIs_Diarios_v2
+    # ============================================================================
     
-    # Extraer mes y año de fecha_fin para usarlos en recálculos (importante para multiselección de meses)
-    mes_final = int(fecha_fin[5:7])  # Mes de fecha_fin (ej: 04 para abril)
-    anio_final = int(fecha_fin[:4])  # Año de fecha_fin
-    
-    # PASO 1: Detectar el último día real con ventas en el período
-    # IMPORTANTE: Usar CONVERT con formato 112 para evitar problemas de configuración regional
-    query_ultimo_dia = f"""
-SELECT MAX(CONVERT(DATE, turnos.apertura)) as ultimo_dia_venta
-FROM cheques
-INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE CONVERT(varchar, turnos.apertura, 112) >= '{fi}'
-  AND CONVERT(varchar, turnos.apertura, 112) <= '{ff}'
-  AND cheques.cancelado = 0
-"""
-    try:
-        result_ultimo = execute_sql_query(server['host'], server['port'], server['database'], 
-                                          server['username'], server['password'], query_ultimo_dia)
-        if result_ultimo and result_ultimo[0]['ultimo_dia_venta']:
-            ultimo_dia_venta = result_ultimo[0]['ultimo_dia_venta']
-            if isinstance(ultimo_dia_venta, str):
-                # Parsear la fecha completa (YYYY-MM-DD)
-                partes = ultimo_dia_venta.split('-') if '-' in ultimo_dia_venta else None
-                if partes and len(partes) == 3:
-                    anio_ultimo = int(partes[0])
-                    mes_ultimo = int(partes[1])
-                    dia_con_datos = int(partes[2])
-                else:
-                    dia_con_datos = int(ultimo_dia_venta[-2:])
-                    mes_ultimo = mes_final
-                    anio_ultimo = anio_final
-            else:
-                dia_con_datos = ultimo_dia_venta.day
-                mes_ultimo = ultimo_dia_venta.month
-                anio_ultimo = ultimo_dia_venta.year
-            
-            logging.info(f"SoftRestaurant {server['name']} - Último día con ventas: {anio_ultimo}-{mes_ultimo:02d}-{dia_con_datos:02d}")
-            
-            # Actualizar fecha_fin usando el MES CORRECTO del último día con ventas
-            # CORRECCIÓN: Usar el mes y año del último día con ventas, no del mes inicial
-            ff = f"{anio_ultimo}{str(mes_ultimo).zfill(2)}{str(dia_con_datos).zfill(2)}"
-            
-            # Calcular días transcurridos desde fecha_ini hasta el último día con ventas
-            fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
-            fecha_ultimo_dt = datetime(anio_ultimo, mes_ultimo, dia_con_datos)
-            dias_transcurridos = (fecha_ultimo_dt - fecha_ini_dt).days + 1
-            
-            logging.info(f"SoftRestaurant {server['name']} - Período ajustado: {fi} a {ff}, días: {dias_transcurridos}")
-            
-            # Recalcular fechas de comparación basadas en días reales
-            mes_actual = mes_ultimo  # Usar el mes del último día con ventas
-            anio_actual = anio_ultimo
-            
-            # Mes anterior
-            if mes_actual == 1:
-                mes_ant = 12
-                anio_ant = anio_actual - 1
-            else:
-                mes_ant = mes_actual - 1
-                anio_ant = anio_actual
-            
-            max_dia_mes_ant = calendar.monthrange(anio_ant, mes_ant)[1]
-            dia_comparar = min(dia_con_datos, max_dia_mes_ant)
-            fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
-            fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
-            
-            # Año anterior - CORRECCIÓN: NO sobrescribir fecha_ini_año_ant
-            # El Tablero Ejecutivo ya calcula correctamente el rango completo (ej: 01-ene-2025 a 08-abr-2025)
-            # Solo ajustamos fecha_fin_año_ant al día correcto del mes final
-            anio_pasado = anio_actual - 1
-            max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_ultimo)[1]
-            dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
-            # PRESERVAR fecha_ini_año_ant original (viene del Tablero con el mes inicial correcto)
-            # Solo actualizar fecha_fin_año_ant con el día ajustado del mes final
-            fecha_fin_año_ant = f"{anio_pasado}-{str(mes_ultimo).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
-            
-            logging.info(f"Períodos ajustados - Actual: {fi[:4]}-{fi[4:6]}-01 a {ff}, Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_año_ant} a {fecha_fin_año_ant}")
-    except Exception as e:
-        logging.warning(f"Error detectando último día: {e}")
-        # Si falla, continuar con las fechas originales
-    
-    # Query principal
-    # BLOQUE 4: Migrado a query centralizada query_ventas_periodo_sr()
-    # ORIGEN ANTERIOR: SQL directo líneas 341-363 (ahora en queries/softrestaurant.py)
-    result_principal = query_ventas_periodo_sr(server, fecha_ini, fecha_fin)
-    
-    if result_principal.success:
-        ventas = result_principal.total_venta
-        pax = result_principal.pax
-        cheques = result_principal.cheques
-    else:
-        logging.warning(f"Error consultando {server['name']}: {result_principal.error}")
+    # VALIDACIÓN DE RANGO DE FECHAS
+    if not is_valid_range(fecha_ini, fecha_fin):
+        logging.error(f"[TABLERO-EDARSAHUB] {nombre}: Rango de fechas inválido ({fecha_ini} > {fecha_fin})")
         return None
     
-    # Verificar si las tablas tienen columna 'propina'
-    has_propina_cheques = check_column_exists(
-        server['host'], server['port'], server['database'],
-        server['username'], server['password'], 'cheques', 'propina'
+    # Obtener KPIs desde EDARSAHUB
+    kpis = _obtener_kpis_tablero_desde_edarsahub(
+        server_id=server_id,
+        unidad_negocio_id=unidad_negocio_id,
+        sucursal_id=sucursal_id,
+        fecha_ini=fecha_ini,
+        fecha_fin=fecha_fin,
+        dias_mes=dias_mes,
+        nombre_unidad=nombre
     )
-    has_propina_temp = check_column_exists(
-        server['host'], server['port'], server['database'],
-        server['username'], server['password'], 'tempcheques', 'propina'
-    )
-    propina_expr = get_propina_safe_column(has_propina_cheques)
-    propina_expr_temp = get_propina_safe_column_tempcheques(has_propina_temp)
     
-    # SUMAR ventas del día sin corte (tempcheques) a las ventas históricas
-    # NOTA: Se excluyen propinas de las ventas SI la columna existe
-    try:
-        query_temp = f"""
-SELECT 
-    COUNT(DISTINCT folio) as cheques,
-    ISNULL(SUM(total{propina_expr_temp}), 0) as ventas,
-    ISNULL(SUM(nopersonas), 0) as pax
-FROM tempcheques
-WHERE cancelado = 0
-"""
-        result_temp = execute_sql_query(server['host'], server['port'], server['database'], 
-                                        server['username'], server['password'], query_temp)
-        if result_temp and len(result_temp) > 0:
-            ventas_temp = float(result_temp[0]['ventas'] or 0)
-            pax_temp = int(result_temp[0]['pax'] or 0)
-            cheques_temp = int(result_temp[0]['cheques'] or 0)
-            # Sumar a los totales
-            ventas += ventas_temp
-            pax += pax_temp
-            cheques += cheques_temp
-            logging.info(f"SoftRestaurant {server['name']} - Tempcheques sumados: ventas={ventas_temp}, pax={pax_temp}, cheques={cheques_temp}")
-    except Exception as e:
-        logging.warning(f"Error consultando tempcheques {server['name']}: {e} - continuando sin ventas del día")
+    if kpis is None:
+        logging.warning(f"[TABLERO-EDARSAHUB] {nombre}: Sin datos disponibles en EDARSAHUB")
+        return None
     
-    # Mes anterior (mismos días) - Usar formato seguro
-    # NOTA: Se excluyen propinas de las ventas SI la columna existe
-    fia = fecha_ini_ant.replace('-', '')
-    ffa = fecha_fin_ant.replace('-', '')
-    query_ant = f"""
-SELECT ISNULL(SUM(cheques.total{propina_expr}), 0) as ventas, ISNULL(SUM(cheques.nopersonas), 0) as pax, COUNT(DISTINCT cheques.folio) as cheques
-FROM cheques INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE CONVERT(varchar, turnos.apertura, 112) >= '{fia}' AND CONVERT(varchar, turnos.apertura, 112) <= '{ffa}' AND cheques.cancelado = 0
-"""
-    try:
-        r_ant = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], query_ant)
-        ventas_ant = float(r_ant[0]['ventas'] or 0) if r_ant else 0
-        pax_ant = int(r_ant[0]['pax'] or 0) if r_ant else 0
-        cheques_ant = int(r_ant[0]['cheques'] or 0) if r_ant else 0
-    except Exception:
-        ventas_ant, pax_ant, cheques_ant = 0, 0, 0
-    
-    # Año anterior (mismos días) - Usar formato seguro
-    # NOTA: Se excluyen propinas de las ventas SI la columna existe
-    fiaa = fecha_ini_año_ant.replace('-', '')
-    ffaa = fecha_fin_año_ant.replace('-', '')
-    query_año = f"""
-SELECT ISNULL(SUM(cheques.total{propina_expr}), 0) as ventas, ISNULL(SUM(cheques.nopersonas), 0) as pax, COUNT(DISTINCT cheques.folio) as cheques
-FROM cheques INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE CONVERT(varchar, turnos.apertura, 112) >= '{fiaa}' AND CONVERT(varchar, turnos.apertura, 112) <= '{ffaa}' AND cheques.cancelado = 0
-"""
-    try:
-        r_año = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], query_año)
-        ventas_año = float(r_año[0]['ventas'] or 0) if r_año else 0
-        pax_año = int(r_año[0]['pax'] or 0) if r_año else 0
-        cheques_año = int(r_año[0]['cheques'] or 0) if r_año else 0
-    except Exception:
-        ventas_año, pax_año, cheques_año = 0, 0, 0
-    
-    # Cálculos
-    ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
-    cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
-    
-    # Proyección mes completo
-    proyeccion = round((ventas / dias_transcurridos) * dias_mes, 2) if dias_transcurridos > 0 else 0
-    
-    # Variaciones %
-    var_vs_mes_ant = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
-    var_vs_año_ant = round(((ventas - ventas_año) / ventas_año * 100), 1) if ventas_año > 0 else 0
-    var_pax_mes = round(((pax - pax_ant) / pax_ant * 100), 1) if pax_ant > 0 else 0
-    var_pax_año = round(((pax - pax_año) / pax_año * 100), 1) if pax_año > 0 else 0
-    var_cheques_mes = round(((cheques - cheques_ant) / cheques_ant * 100), 1) if cheques_ant > 0 else 0
-    var_cheques_año = round(((cheques - cheques_año) / cheques_año * 100), 1) if cheques_año > 0 else 0
-    
-    return {
-        "ventas": ventas,
-        "ventas_ant": ventas_ant,
-        "ventas_año": ventas_año,
-        "var_vs_mes_ant": var_vs_mes_ant,
-        "var_vs_año_ant": var_vs_año_ant,
-        "proyeccion": proyeccion,
-        "pax": pax,
-        "pax_ant": pax_ant,
-        "pax_año": pax_año,
-        "var_pax_mes": var_pax_mes,
-        "var_pax_año": var_pax_año,
-        "cheques": cheques,
-        "cheques_ant": cheques_ant,
-        "cheques_año": cheques_año,
-        "var_cheques_mes": var_cheques_mes,
-        "var_cheques_año": var_cheques_año,
-        "ticket_prom": ticket_prom,
-        "cheque_prom": cheque_prom
-    }
+    return kpis
 
 
 def get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes):
-    """Query reutilizable para MPRO - ventas desde tabla Venta"""
+    """
+    TABLERO EJECUTIVO - KPIs MPRO desde EDARSAHUB
+    ==============================================
     
-    # Formato YYYYMMDD para MPRO
-    fi = fecha_ini.replace('-', '')
-    ff = fecha_fin.replace('-', '')
+    ACTUALIZACIÓN MAYO 2026:
+    - Lee EXCLUSIVAMENTE de EDARSAHUB (Comercial_KPIs_Diarios_v2)
+    - NO consulta servidores SQL locales para históricos
+    - NO consulta MongoDB
     
-    # Extraer mes y año de fecha_fin para usarlos en recálculos (importante para multiselección de meses)
-    mes_final = int(fecha_fin[5:7])  # Mes de fecha_fin (ej: 04 para abril)
-    anio_final = int(fecha_fin[:4])  # Año de fecha_fin
+    NOTA: MPRO tiene múltiples sucursales (0021 = 130° QUERETARO, 0023 = ORIGEN).
+    Esta función consolida todas las sucursales del servidor.
+    Para KPIs por sucursal individual, usar get_kpis_mpro_por_sucursal.
     
-    # PASO 1: Detectar el último día real con ventas en el período
-    # IMPORTANTE: Usar CONVERT con formato 112 para evitar problemas de configuración regional
-    query_ultimo_dia = f"""
-SELECT MAX(CONVERT(DATE, Vn_Fecha)) as ultimo_dia_venta
-FROM Venta
-WHERE CONVERT(varchar, Vn_Fecha, 112) >= '{fi}' AND CONVERT(varchar, Vn_Fecha, 112) <= '{ff}'
-  AND ISNULL(Es_Cve_Estado, '') <> 'CA'
-"""
-    try:
-        result_ultimo = execute_sql_query(server['host'], server['port'], server['database'], 
-                                          server['username'], server['password'], query_ultimo_dia)
-        if result_ultimo and result_ultimo[0]['ultimo_dia_venta']:
-            ultimo_dia_venta = result_ultimo[0]['ultimo_dia_venta']
-            if isinstance(ultimo_dia_venta, str):
-                # Parsear la fecha completa (YYYY-MM-DD)
-                partes = ultimo_dia_venta.split('-') if '-' in ultimo_dia_venta else None
-                if partes and len(partes) == 3:
-                    anio_ultimo = int(partes[0])
-                    mes_ultimo = int(partes[1])
-                    dia_con_datos = int(partes[2])
-                else:
-                    dia_con_datos = int(ultimo_dia_venta[-2:])
-                    mes_ultimo = mes_final
-                    anio_ultimo = anio_final
-            else:
-                dia_con_datos = ultimo_dia_venta.day
-                mes_ultimo = ultimo_dia_venta.month
-                anio_ultimo = ultimo_dia_venta.year
-            
-            logging.info(f"MPRO {server['name']} - Último día con ventas: {anio_ultimo}-{mes_ultimo:02d}-{dia_con_datos:02d}")
-            
-            # CORRECCIÓN: Usar el mes y año del último día con ventas, no del mes inicial
-            ff = f"{anio_ultimo}{str(mes_ultimo).zfill(2)}{str(dia_con_datos).zfill(2)}"
-            
-            # Calcular días transcurridos desde fecha_ini hasta el último día con ventas
-            fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
-            fecha_ultimo_dt = datetime(anio_ultimo, mes_ultimo, dia_con_datos)
-            dias_transcurridos = (fecha_ultimo_dt - fecha_ini_dt).days + 1
-            
-            logging.info(f"MPRO {server['name']} - Período ajustado: {fi} a {ff}, días: {dias_transcurridos}")
-            
-            # Recalcular fechas de comparación basadas en días reales
-            mes_actual = mes_ultimo  # Usar el mes del último día con ventas
-            anio_actual = anio_ultimo
-            
-            # Mes anterior
-            if mes_actual == 1:
-                mes_ant = 12
-                anio_ant = anio_actual - 1
-            else:
-                mes_ant = mes_actual - 1
-                anio_ant = anio_actual
-            
-            max_dia_mes_ant = calendar.monthrange(anio_ant, mes_ant)[1]
-            dia_comparar = min(dia_con_datos, max_dia_mes_ant)
-            fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
-            fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
-            
-            # Año anterior - usar el RANGO completo de meses (desde mes_min hasta mes_max)
-            # Extraer mes_min de fecha_ini
-            mes_min = int(fecha_ini[5:7])
-            anio_pasado = int(fecha_ini[:4]) - 1
-            
-            # fecha_ini_año_ant: primer día del primer mes del año anterior
-            fecha_ini_año_ant = f"{anio_pasado}-{str(mes_min).zfill(2)}-01"
-            
-            # fecha_fin_año_ant: mismo día del año anterior
-            max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_ultimo)[1]
-            dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
-            fecha_fin_año_ant = f"{anio_pasado}-{str(mes_ultimo).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
-            
-            logging.info(f"MPRO Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_año_ant} a {fecha_fin_año_ant}")
-    except Exception as e:
-        logging.warning(f"MPRO Error detectando último día: {e}")
+    Mantiene la misma firma y estructura de respuesta para compatibilidad.
+    """
+    server_id = server.get('id', '')
+    nombre = server.get('name', 'MPRO')
     
-    # MPRO usa Vn_Folio para identificar tickets y Vn_Precio_Neto_Importe para el monto de venta
-    # IMPORTANTE: Usar CONVERT para evitar problemas de configuración regional
-    query = f"""
-SELECT 
-    COUNT(DISTINCT Vn_Folio) as cheques,
-    ISNULL(SUM(Vn_Precio_Neto_Importe), 0) as ventas
-FROM Venta
-WHERE CONVERT(varchar, Vn_Fecha, 112) >= '{fi}' AND CONVERT(varchar, Vn_Fecha, 112) <= '{ff}'
-  AND ISNULL(Es_Cve_Estado, '') <> 'CA'
-"""
-    try:
-        result = execute_sql_query(server['host'], server['port'], server['database'], 
-                                   server['username'], server['password'], query)
-        if result and len(result) > 0:
-            ventas = float(result[0]['ventas'] or 0)
-            cheques = int(result[0]['cheques'] or 0)
-        else:
-            ventas, cheques = 0, 0
-        logging.info(f"MPRO {server['name']}: Ventas={ventas}, Cheques={cheques}")
-    except Exception as e:
-        logging.warning(f"Error consultando MPRO {server['name']}: {e}")
+    # Obtener configuración de unidades MPRO
+    mpro_config = UNIDADES_EDARSAHUB_MAP.get(server_id, {})
+    
+    if not mpro_config or 'sucursales' not in mpro_config:
+        logging.warning(f"[TABLERO-EDARSAHUB] {nombre}: server_id {server_id} no tiene mapeo de unidad MPRO")
         return None
     
-    # MPRO no tiene PAX normalmente, estimamos como cheques
-    pax = cheques
+    sucursales = mpro_config.get('sucursales', {})
     
-    # Mes anterior - Usar CONVERT para compatibilidad
-    fia = fecha_ini_ant.replace('-', '')
-    ffa = fecha_fin_ant.replace('-', '')
-    query_ant = f"""
-SELECT ISNULL(SUM(Vn_Precio_Neto_Importe), 0) as ventas, COUNT(DISTINCT Vn_Folio) as cheques
-FROM Venta WHERE CONVERT(varchar, Vn_Fecha, 112) >= '{fia}' AND CONVERT(varchar, Vn_Fecha, 112) <= '{ffa}' AND ISNULL(Es_Cve_Estado, '') <> 'CA'
-"""
-    try:
-        r_ant = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], query_ant)
-        ventas_ant = float(r_ant[0]['ventas'] or 0) if r_ant else 0
-        cheques_ant = int(r_ant[0]['cheques'] or 0) if r_ant else 0
-    except Exception:
-        ventas_ant, cheques_ant = 0, 0
-    pax_ant = cheques_ant
+    logging.info(f"[TABLERO-EDARSAHUB] {nombre}: Iniciando consulta consolidada de {len(sucursales)} sucursales desde EDARSAHUB")
     
-    # Año anterior - Usar CONVERT para compatibilidad
-    fiaa = fecha_ini_año_ant.replace('-', '')
-    ffaa = fecha_fin_año_ant.replace('-', '')
-    query_año = f"""
-SELECT ISNULL(SUM(Vn_Precio_Neto_Importe), 0) as ventas, COUNT(DISTINCT Vn_Folio) as cheques
-FROM Venta WHERE CONVERT(varchar, Vn_Fecha, 112) >= '{fiaa}' AND CONVERT(varchar, Vn_Fecha, 112) <= '{ffaa}' AND ISNULL(Es_Cve_Estado, '') <> 'CA'
-"""
-    try:
-        r_año = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], query_año)
-        ventas_año = float(r_año[0]['ventas'] or 0) if r_año else 0
-        cheques_año = int(r_año[0]['cheques'] or 0) if r_año else 0
-    except Exception:
-        ventas_año, cheques_año = 0, 0
-    pax_año = cheques_año
+    # VALIDACIÓN DE RANGO DE FECHAS
+    if not is_valid_range(fecha_ini, fecha_fin):
+        logging.error(f"[TABLERO-EDARSAHUB] {nombre}: Rango de fechas inválido ({fecha_ini} > {fecha_fin})")
+        return None
     
-    # Cálculos
-    ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
-    cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
-    proyeccion = round((ventas / dias_transcurridos) * dias_mes, 2) if dias_transcurridos > 0 else 0
+    # Agregar KPIs de todas las sucursales MPRO
+    ventas_total = 0
+    pax_total = 0
+    cheques_total = 0
+    ventas_ant_total = 0
+    pax_ant_total = 0
+    cheques_ant_total = 0
+    ventas_año_total = 0
+    pax_año_total = 0
+    cheques_año_total = 0
+    sucursales_con_datos = 0
+    tiene_datos_mes_ant = False
+    tiene_datos_anio_ant = False
     
-    # Variaciones %
-    var_vs_mes_ant = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
-    var_vs_año_ant = round(((ventas - ventas_año) / ventas_año * 100), 1) if ventas_año > 0 else 0
-    var_pax_mes = round(((pax - pax_ant) / pax_ant * 100), 1) if pax_ant > 0 else 0
-    var_pax_año = round(((pax - pax_año) / pax_año * 100), 1) if pax_año > 0 else 0
-    var_cheques_mes = round(((cheques - cheques_ant) / cheques_ant * 100), 1) if cheques_ant > 0 else 0
-    var_cheques_año = round(((cheques - cheques_año) / cheques_año * 100), 1) if cheques_año > 0 else 0
+    for sucursal_id, sucursal_config in sucursales.items():
+        unidad_negocio_id = sucursal_config.get('unidad_negocio_id', '')
+        nombre_sucursal = sucursal_config.get('nombre', sucursal_id)
+        
+        kpis = _obtener_kpis_tablero_desde_edarsahub(
+            server_id=server_id,
+            unidad_negocio_id=unidad_negocio_id,
+            sucursal_id=sucursal_id,
+            fecha_ini=fecha_ini,
+            fecha_fin=fecha_fin,
+            dias_mes=dias_mes,
+            nombre_unidad=nombre_sucursal
+        )
+        
+        if kpis:
+            sucursales_con_datos += 1
+            ventas_total += kpis.get('ventas', 0)
+            pax_total += kpis.get('pax', 0)
+            cheques_total += kpis.get('cheques', 0)
+            
+            # Comparativos mes anterior
+            if kpis.get('_meta', {}).get('tiene_datos_mes_ant', False):
+                tiene_datos_mes_ant = True
+                ventas_ant_total += kpis.get('ventas_ant', 0)
+                pax_ant_total += kpis.get('pax_ant', 0)
+                cheques_ant_total += kpis.get('cheques_ant', 0)
+            
+            # Comparativos año anterior
+            if kpis.get('_meta', {}).get('tiene_datos_anio_ant', False):
+                tiene_datos_anio_ant = True
+                ventas_año_total += kpis.get('ventas_año', 0)
+                pax_año_total += kpis.get('pax_año', 0)
+                cheques_año_total += kpis.get('cheques_año', 0)
+    
+    if sucursales_con_datos == 0:
+        logging.warning(f"[TABLERO-EDARSAHUB] {nombre}: Sin datos en ninguna sucursal")
+        return None
+    
+    # Calcular métricas derivadas
+    ticket_prom = round(ventas_total / pax_total, 2) if pax_total > 0 else 0
+    cheque_prom = round(ventas_total / cheques_total, 2) if cheques_total > 0 else 0
+    
+    # Proyección (calculamos días transcurridos basado en el último día con datos)
+    fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
+    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d')
+    dias_transcurridos_calc = (fecha_fin_dt - fecha_ini_dt).days + 1
+    proyeccion = round((ventas_total / dias_transcurridos_calc) * dias_mes, 2) if dias_transcurridos_calc > 0 else 0
+    
+    # Variaciones (respetando reglas de null)
+    var_vs_mes_ant = _calcular_variacion_pct(ventas_total, ventas_ant_total if tiene_datos_mes_ant else None)
+    var_vs_año_ant = _calcular_variacion_pct(ventas_total, ventas_año_total if tiene_datos_anio_ant else None)
+    var_pax_mes = _calcular_variacion_pct(pax_total, pax_ant_total if tiene_datos_mes_ant else None)
+    var_pax_año = _calcular_variacion_pct(pax_total, pax_año_total if tiene_datos_anio_ant else None)
+    var_cheques_mes = _calcular_variacion_pct(cheques_total, cheques_ant_total if tiene_datos_mes_ant else None)
+    var_cheques_año = _calcular_variacion_pct(cheques_total, cheques_año_total if tiene_datos_anio_ant else None)
+    
+    logging.info(f"[TABLERO-EDARSAHUB] {nombre}: Consolidado ${ventas_total:,.0f}, vs Mes Ant={var_vs_mes_ant}%, vs Año Ant={var_vs_año_ant}%")
     
     return {
-        "ventas": ventas,
-        "ventas_ant": ventas_ant,
-        "ventas_año": ventas_año,
-        "var_vs_mes_ant": var_vs_mes_ant,
-        "var_vs_año_ant": var_vs_año_ant,
+        "ventas": ventas_total,
+        "ventas_ant": ventas_ant_total if tiene_datos_mes_ant else 0,
+        "ventas_año": ventas_año_total if tiene_datos_anio_ant else 0,
+        "var_vs_mes_ant": var_vs_mes_ant if var_vs_mes_ant is not None else 0,
+        "var_vs_año_ant": var_vs_año_ant if var_vs_año_ant is not None else 0,
         "proyeccion": proyeccion,
-        "pax": pax,
-        "pax_ant": pax_ant,
-        "pax_año": pax_año,
-        "var_pax_mes": var_pax_mes,
-        "var_pax_año": var_pax_año,
-        "cheques": cheques,
-        "cheques_ant": cheques_ant,
-        "cheques_año": cheques_año,
-        "var_cheques_mes": var_cheques_mes,
-        "var_cheques_año": var_cheques_año,
+        "pax": pax_total,
+        "pax_ant": pax_ant_total if tiene_datos_mes_ant else 0,
+        "pax_año": pax_año_total if tiene_datos_anio_ant else 0,
+        "var_pax_mes": var_pax_mes if var_pax_mes is not None else 0,
+        "var_pax_año": var_pax_año if var_pax_año is not None else 0,
+        "cheques": cheques_total,
+        "cheques_ant": cheques_ant_total if tiene_datos_mes_ant else 0,
+        "cheques_año": cheques_año_total if tiene_datos_anio_ant else 0,
+        "var_cheques_mes": var_cheques_mes if var_cheques_mes is not None else 0,
+        "var_cheques_año": var_cheques_año if var_cheques_año is not None else 0,
         "ticket_prom": ticket_prom,
-        "cheque_prom": cheque_prom
+        "cheque_prom": cheque_prom,
+        "fuente": "EDARSAHUB",
+        "_meta": {
+            "sucursales_consolidadas": sucursales_con_datos,
+            "tiene_datos_mes_ant": tiene_datos_mes_ant,
+            "tiene_datos_anio_ant": tiene_datos_anio_ant
+        }
     }
 
 
