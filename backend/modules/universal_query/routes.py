@@ -157,11 +157,21 @@ def substitute_parameters(sql: str, parameters: Dict[str, Any]) -> str:
 # FUNCIONES DE EJECUCIÓN
 # ============================================================================
 
-async def get_server_and_validate(server_id: str, db) -> Dict:
-    """Obtiene servidor y valida que existe."""
-    from server import decrypt_server_secrets
+async def get_server_and_validate(server_id: str, db=None) -> Dict:
+    """
+    Obtiene servidor y valida que existe.
     
-    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    FASE P1.3 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    El parámetro `db` se mantiene por compatibilidad pero ya no se usa.
+    
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones via server_registry
+    NO FUENTE: MongoDB db.servers
+    """
+    from server import decrypt_server_secrets
+    from core.server_registry import get_server_connection_info_with_secrets
+    
+    # Obtener desde EDARSAHUB SQL (NO MongoDB)
+    server = get_server_connection_info_with_secrets(server_id)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
@@ -234,13 +244,16 @@ async def execute_universal_query_test(
     - Acepta cualquier consulta SELECT válida
     - Acepta cualquier módulo libre
     - Acepta cualquier parámetro libre
+    
+    FASE P1.3 (Dic 2025): Migrado de MongoDB a EDARSAHUB SQL via server_registry.
     """
-    from server import db, decrypt_server_secrets, get_current_user
+    from server import decrypt_server_secrets, get_current_user
+    from core.server_registry import get_server_connection_info_with_secrets
     
     start_time = time.time()
     
-    # Obtener servidor
-    server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+    # Obtener servidor desde EDARSAHUB SQL (NO MongoDB)
+    server = get_server_connection_info_with_secrets(server_id)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     

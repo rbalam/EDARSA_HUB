@@ -2316,6 +2316,52 @@ def get_connection_config(server_id: str) -> Optional[Dict]:
     }
 
 
+def get_server_connection_info_with_secrets(server_id: str) -> Optional[Dict]:
+    """
+    USO INTERNO BACKEND - Obtiene configuración completa de conexión incluyendo credenciales.
+    
+    FASE P1.3 (Dic 2025): Función pública controlada para casos de uso internos
+    que requieren ejecutar conexiones SQL (ej: Universal Query, sincronización).
+    
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
+    NO FUENTE: MongoDB db.servers
+    
+    SEGURIDAD:
+    - NO exponer como endpoint público
+    - NO imprimir password en logs
+    - NO devolver password al frontend
+    - Solo usar internamente para ejecutar conexión SQL
+    
+    Returns:
+        Dict con campos compatibles con decrypt_server_secrets():
+        - id, mongodb_id, name, system_type
+        - host, port, database, username, password
+        - active
+        O None si no existe
+    """
+    server = _get_server_by_id_from_sql(server_id)
+    if not server:
+        logger.debug(f"[SERVER_REGISTRY] Servidor {server_id} no encontrado para conexión")
+        return None
+    
+    # Retornar estructura completa compatible con decrypt_server_secrets()
+    return {
+        'id': server.get('id'),
+        'mongodb_id': server.get('mongodb_id'),
+        'name': server.get('name'),
+        'system_type': server.get('system_type'),
+        'system_type_normalized': server.get('system_type_normalized'),
+        'host': server.get('host'),
+        'port': server.get('port', 1433),
+        'database': server.get('database'),
+        'username': server.get('username'),
+        'password': server.get('password'),  # password_encrypted desde SQL
+        'api_key': server.get('api_key'),    # api_key_encrypted desde SQL
+        'active': server.get('active', False),
+        'config_origin': 'EDARSAHUB_SQL'
+    }
+
+
 # ============================================================================
 # EXPORTS ACTUALIZADOS
 # ============================================================================
@@ -2349,6 +2395,8 @@ __all__ = [
     'list_operational_servers',
     'get_visible_servers_for_operaciones',
     'get_connection_config',
+    # FASE P1.3: Conexión con secretos para uso interno backend
+    'get_server_connection_info_with_secrets',
     'CODIGOS_CANONICOS_OFICIALES',
     # Config
     'USE_SQL_FOR_SERVERS',
