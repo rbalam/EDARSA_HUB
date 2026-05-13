@@ -24,6 +24,7 @@ CREADO: FASE 3B - Diciembre 2025
 
 import logging
 import os
+import json
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timezone
 
@@ -162,6 +163,44 @@ def _parse_tipos_movimiento(value) -> List[str]:
     
     logger.warning(f"[SERVER_REGISTRY] tipos_movimiento tipo inesperado: {type(value)}")
     return []
+
+
+def _serialize_catalog_field(value, field_name: str) -> Optional[str]:
+    """
+    P0: Serializa un campo de catálogo (tipos_movimiento, categorias, departamentos) a JSON string.
+    
+    Args:
+        value: Puede ser lista, dict, string JSON, o None
+        field_name: Nombre del campo para logging
+    
+    Returns:
+        String JSON válido o None si el valor no es serializable
+    """
+    if value is None:
+        return None
+    
+    # Si ya es string, validar que sea JSON válido
+    if isinstance(value, str):
+        if not value.strip():
+            return '[]'  # String vacío → array vacío
+        try:
+            # Validar JSON
+            json.loads(value)
+            return value  # Ya es JSON válido
+        except json.JSONDecodeError:
+            logger.warning(f"[SERVER_REGISTRY] {field_name}: string no es JSON válido, ignorando")
+            return None
+    
+    # Si es lista o dict, serializar
+    if isinstance(value, (list, dict)):
+        try:
+            return json.dumps(value, ensure_ascii=False)
+        except (TypeError, ValueError) as e:
+            logger.warning(f"[SERVER_REGISTRY] {field_name}: error serializando: {e}")
+            return None
+    
+    logger.warning(f"[SERVER_REGISTRY] {field_name}: tipo no soportado {type(value)}")
+    return None
 
 
 # ============================================================================
@@ -1192,6 +1231,13 @@ async def update_server(
         'visible_en_listado': 'visible_en_listado'
     }
     
+    # P0: Campos JSON de catálogos (requieren serialización)
+    json_field_mapping = {
+        'tipos_movimiento': 'tipos_movimiento',
+        'categorias': 'categorias',
+        'departamentos': 'departamentos'
+    }
+    
     for api_field, sql_field in field_mapping.items():
         if api_field in payload and payload[api_field] is not None:
             # Evitar duplicados (ej: name y nombre mapean a mismo campo)
@@ -1199,6 +1245,17 @@ async def update_server(
                 update_fields.append(f"{sql_field} = %s")
                 update_values.append(payload[api_field])
                 processed_sql_fields.add(sql_field)
+    
+    # P0: Procesar campos JSON de catálogos
+    for api_field, sql_field in json_field_mapping.items():
+        if api_field in payload:
+            value = payload[api_field]
+            if sql_field not in processed_sql_fields:
+                json_value = _serialize_catalog_field(value, api_field)
+                if json_value is not None:  # Solo actualizar si hay valor válido
+                    update_fields.append(f"{sql_field} = %s")
+                    update_values.append(json_value)
+                    processed_sql_fields.add(sql_field)
     
     # FASE 3C: Password solo si viene explícito y no enmascarado
     from core.secret_manager import should_preserve_existing_secret, encrypt_secret

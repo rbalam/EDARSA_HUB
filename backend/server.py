@@ -1934,114 +1934,75 @@ def _infer_tipo_from_codigo(codigo: str, is_mpro: bool = False) -> str:
 @api_router.get("/servers/{server_id}/categorias")
 async def get_categorias(server_id: str, current_user: Dict = Depends(get_current_user)):
     """
-    Obtiene la lista de categorías/grupos desde SQL Server.
+    Obtiene la lista de categorías/grupos.
     
-    CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 2:
-    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
-    para usar EDARSAHUB SQL como fuente primaria.
+    P0 CATÁLOGOS EDARSAHUB-FIRST:
+    Lee categorías desde EDARSAHUB.Servidores_Conexiones.categorias
+    NO consulta BD viva del restaurante.
+    NO consulta MongoDB.
+    
+    MÁXIMA: EDARSAHUB es el cerebro del sistema.
+    El modal no debe depender de conexión viva.
+    
+    Returns:
+        Lista de objetos [{codigo, descripcion}] o [] si no hay datos
     """
-    from core.server_registry import get_server_connection_info
+    from core.server_registry import get_server_by_id
     
-    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
-    # AHORA: Usar registry que prioriza EDARSAHUB SQL
-    server = await get_server_connection_info(server_id, db=db)
+    # Obtener servidor desde EDARSAHUB
+    server = await get_server_by_id(server_id, db=db)
     
     if not server:
-        logging.warning(f"[GET_CATEGORIAS] Servidor no encontrado via registry. ID={server_id}")
+        logging.warning(f"[GET_CATEGORIAS] Servidor no encontrado. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
-    logging.debug(f"[GET_CATEGORIAS] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
+    # P0: Leer categorías desde EDARSAHUB
+    categorias = server.get('categorias', [])
     
-    try:
-        if is_mpro_system(server.get('system_type')):
-            query = """
-                SELECT 
-                    Ct_Cve_Categoria as codigo,
-                    Ct_Descripcion as descripcion
-                FROM Categoria
-                WHERE Es_Cve_Estado <> 'BA'
-                ORDER BY Ct_Cve_Categoria
-            """
-        elif is_softrestaurant_system(server.get('system_type')):
-            # SoftRestaurant usa 'gruposi' para categorías de insumos
-            query = """
-                SELECT 
-                    idgruposi as codigo,
-                    descripcion
-                FROM gruposi
-                ORDER BY descripcion
-            """
-        else:
-            return []
-        
-        results = execute_sql_query(
-            server['host'],
-            server['port'],
-            server['database'],
-            server['username'],
-            server['password'],
-            query
-        )
-        return results
-    except Exception as e:
-        logging.error(f"Error obteniendo categorías: {str(e)}")
-        return []
+    if categorias:
+        logging.info(f"[GET_CATEGORIAS] EDARSAHUB-FIRST: {len(categorias)} categorías. Server={server.get('name', 'N/A')}")
+        return categorias
+    
+    # Sin datos en EDARSAHUB
+    logging.info(f"[GET_CATEGORIAS] Sin categorías en EDARSAHUB (pendiente sync). Server={server.get('name', 'N/A')}")
+    return []
+
 
 @api_router.get("/servers/{server_id}/departamentos")
 async def get_departamentos(server_id: str, current_user: Dict = Depends(get_current_user)):
     """
-    Obtiene la lista de departamentos/almacenes desde SQL Server.
+    Obtiene la lista de departamentos/almacenes.
     
-    CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 2:
-    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
-    para usar EDARSAHUB SQL como fuente primaria.
+    P0 CATÁLOGOS EDARSAHUB-FIRST:
+    Lee departamentos desde EDARSAHUB.Servidores_Conexiones.departamentos
+    NO consulta BD viva del restaurante.
+    NO consulta MongoDB.
+    
+    MÁXIMA: EDARSAHUB es el cerebro del sistema.
+    El modal no debe depender de conexión viva.
+    
+    Returns:
+        Lista de objetos [{codigo, descripcion}] o [] si no hay datos
     """
-    from core.server_registry import get_server_connection_info
+    from core.server_registry import get_server_by_id
     
-    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
-    # AHORA: Usar registry que prioriza EDARSAHUB SQL
-    server = await get_server_connection_info(server_id, db=db)
+    # Obtener servidor desde EDARSAHUB
+    server = await get_server_by_id(server_id, db=db)
     
     if not server:
-        logging.warning(f"[GET_DEPARTAMENTOS] Servidor no encontrado via registry. ID={server_id}")
+        logging.warning(f"[GET_DEPARTAMENTOS] Servidor no encontrado. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
-    logging.debug(f"[GET_DEPARTAMENTOS] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
+    # P0: Leer departamentos desde EDARSAHUB
+    departamentos = server.get('departamentos', [])
     
-    try:
-        if is_mpro_system(server.get('system_type')):
-            query = """
-                SELECT 
-                    Dp_Cve_Departamento as codigo,
-                    Dp_Descripcion as descripcion
-                FROM Departamento
-                WHERE Es_Cve_Estado <> 'BA'
-                ORDER BY Dp_Cve_Departamento
-            """
-        elif is_softrestaurant_system(server.get('system_type')):
-            # SoftRestaurant usa 'almacen' como departamentos
-            query = """
-                SELECT 
-                    idalmacen as codigo,
-                    nombre as descripcion
-                FROM almacen
-                ORDER BY idalmacen
-            """
-        else:
-            return []
-        
-        results = execute_sql_query(
-            server['host'],
-            server['port'],
-            server['database'],
-            server['username'],
-            server['password'],
-            query
-        )
-        return results
-    except Exception as e:
-        logging.error(f"Error obteniendo departamentos: {str(e)}")
-        return []
+    if departamentos:
+        logging.info(f"[GET_DEPARTAMENTOS] EDARSAHUB-FIRST: {len(departamentos)} departamentos. Server={server.get('name', 'N/A')}")
+        return departamentos
+    
+    # Sin datos en EDARSAHUB
+    logging.info(f"[GET_DEPARTAMENTOS] Sin departamentos en EDARSAHUB (pendiente sync). Server={server.get('name', 'N/A')}")
+    return []
 
 async def filter_sucursales_by_config(sucursales: List[Dict], server_id: str) -> List[Dict]:
     """
