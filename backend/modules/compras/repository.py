@@ -107,9 +107,13 @@ async def get_server_by_id(server_id: str) -> Optional[Dict]:
     Obtiene un servidor activo por ID.
     
     FASE 3C.1: Descifra automáticamente el password si está cifrado.
+    FASE T3.1: Migrado de MongoDB db.servers a server_registry (EDARSAHUB).
     """
-    server = await get_db().servers.find_one({"id": server_id, "active": True}, {"_id": 0})
-    return _decrypt_server_password(server)
+    # FASE T3.1: Usar server_registry en lugar de MongoDB
+    from core.server_registry import get_server_connection_info
+    server = await get_server_connection_info(server_id, db=get_db())
+    # get_server_connection_info ya descifra credenciales, no necesita _decrypt_server_password
+    return server
 
 
 # ============================================================================

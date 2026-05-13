@@ -26,30 +26,20 @@ logger = logging.getLogger(__name__)
 
 
 def get_edarsahub_server():
-    """Obtiene configuración del servidor EDARSAHUB desde MongoDB."""
-    from dotenv import load_dotenv
-    load_dotenv('/app/backend/.env')
-    from pymongo import MongoClient
+    """
+    Obtiene configuración del servidor EDARSAHUB.
     
-    client = MongoClient(os.environ['MONGO_URL'])
-    db = client[os.environ['DB_NAME']]
-    
-    srv = db.servers.find_one({'name': 'EDARSA HUB', 'active': True})
-    if not srv:
-        raise ValueError("Servidor EDARSA HUB no encontrado en MongoDB")
-    
-    # Descifrar password si está cifrado
-    password = srv.get('password', '')
-    if password.startswith('enc:'):
-        from core.secret_manager import decrypt_secret
-        password = decrypt_secret(password)
+    FASE T3.1: Migrado de MongoDB db.servers a EDARSAHUB_CONFIG de server_registry.
+    Ya no consulta MongoDB para obtener conexión EDARSAHUB.
+    """
+    from core.server_registry import EDARSAHUB_CONFIG
     
     return {
-        "host": srv.get("host"),
-        "port": srv.get("port", 1433),
-        "database": srv.get("database"),
-        "username": srv.get("username"),
-        "password": password,
+        "host": EDARSAHUB_CONFIG['host'],
+        "port": EDARSAHUB_CONFIG['port'],
+        "database": EDARSAHUB_CONFIG['database'],
+        "username": EDARSAHUB_CONFIG['username'],
+        "password": EDARSAHUB_CONFIG['password'],
     }
 
 
