@@ -1,6 +1,6 @@
 # PRD — EDARSAHUB Dashboard Ejecutivo
 
-**Última actualización:** 06-Mayo-2026
+**Última actualización:** 13-Mayo-2026
 
 ---
 
@@ -91,6 +91,9 @@ REACT_APP_COMERCIAL_V2_ENABLED=true
 || ✅ BUG-RUZ-002 Ventas por Hora | ✅ CERRADO (06-Mayo-2026) - Validado en LA ESTELAR, 130° MÉRIDA, CIENFUEGOS |
 || ✅ BUG-ARQUITECTONICO Fuente No Disponible | ✅ CERRADO (06-Mayo-2026) - Fallback EDARSAHUB para Ventas del Día |
 | ✅ P1-FASE5A.1-FUNC-FRONTEND | ✅ IMPLEMENTADO (06-Mayo-2026) - UI Cuentas Bancarias + Tab en Finanzas |
+| ✅ **FASE T1: Migración Códigos Legacy a Canónicos** | ✅ COMPLETADO (13-Mayo-2026) |
+| ✅ **FASE T1-A: Diagnóstico Colisiones** | ✅ COMPLETADO (13-Mayo-2026) |
+| ✅ **Backend V2: Códigos Canónicos** | ✅ COMPLETADO (13-Mayo-2026) |
 | P1-FASE5A.2 Captura manual de saldos | ⏸️ BACKLOG |
 | P1-FASE5A.3 Widget posición efectivo | ⏸️ BACKLOG |
 | P1-FASE5A.4 Integración efectivo pendiente | ⏸️ BACKLOG |

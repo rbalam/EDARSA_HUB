@@ -59,21 +59,26 @@ router = APIRouter(prefix="/comercial", tags=["Comercial V2"])
 
 
 # =============================================================================
-# MAPEO DE CÓDIGOS: Tablas KPI (NO OFICIAL) → Unidades_Negocio.codigo (OFICIAL)
+# MAPEO DE CÓDIGOS: FASE T1 COMPLETADA - CÓDIGOS CANÓNICOS UNIFICADOS
 # =============================================================================
-# FASE 2: Este mapeo permite que V2 devuelva unidad_negocio_codigo oficial
-# mientras las tablas KPI aún usan códigos legacy (130-MER, LA-ESTELAR, etc.)
-# Cuando se ejecute FASE T1 (UPDATE en tablas), este mapeo se simplificará.
+# POST FASE T1 (2026-05-13): Las tablas KPI ahora usan códigos canónicos oficiales.
+# Este mapeo se mantiene solo como compatibilidad defensiva (identidad).
+# Los códigos legacy (130-MER, 130-QRO, LA-ESTELAR) ya no existen en las tablas.
 
 MAPEO_KPI_A_CODIGO_CANONICO = {
+    # Códigos canónicos oficiales (identidad)
+    '130MID': '130MID',
+    '130QRO': '130QRO',
+    'CIENFUEGOS': 'CIENFUEGOS',
+    'ESTELAR': 'ESTELAR',
+    'ORIGEN': 'ORIGEN',
+    # Legacy (compatibilidad defensiva - no deberían existir en BD)
     '130-MER': '130MID',
     '130-QRO': '130QRO',
     'LA-ESTELAR': 'ESTELAR',
-    'CIENFUEGOS': 'CIENFUEGOS',
-    'ORIGEN': 'ORIGEN',
 }
 
-MAPEO_CODIGO_CANONICO_A_KPI = {v: k for k, v in MAPEO_KPI_A_CODIGO_CANONICO.items()}
+MAPEO_CODIGO_CANONICO_A_KPI = {v: k for k, v in MAPEO_KPI_A_CODIGO_CANONICO.items() if '-' not in k}
 
 
 # =============================================================================
@@ -467,33 +472,45 @@ def _calcular_totales_variaciones(
 async def get_unidades_permitidas_v2(current_user: dict) -> List[str]:
     """
     Obtiene las unidades de negocio permitidas por RBAC.
-    Mapea a los IDs usados en Comercial v2.
+    
+    POST FASE T1 (2026-05-13): Ahora usa códigos canónicos oficiales de EDARSAHUB.
+    FUENTE: Unidades_Negocio.codigo
+    CÓDIGOS: 130MID, 130QRO, CIENFUEGOS, ESTELAR, ORIGEN
+    
+    MÁXIMA: EDARSAHUB es el cerebro del sistema.
     """
+    # Códigos canónicos oficiales (desde EDARSAHUB)
+    CODIGOS_CANONICOS_OFICIALES = ['CIENFUEGOS', 'ESTELAR', '130MID', '130QRO', 'ORIGEN']
+    
     try:
+        # Si es SuperAdmin o Director, dar acceso a todas las unidades
+        if current_user.get('role') in ['SuperAdministrador', 'Director']:
+            return CODIGOS_CANONICOS_OFICIALES
+        
+        # Obtener unidades asignadas al usuario desde el contexto
         unidades_mongo = await get_user_unidades_negocio(current_user)
         
-        # Mapear códigos de unidad a los IDs de v2
-        # Las unidades en v2 usan: CIENFUEGOS, LA-ESTELAR, 130-MER, 130-QRO, ORIGEN
+        # Mapear a códigos canónicos oficiales
         unidades_v2 = []
         
         for u in unidades_mongo:
             codigo = u.get('codigo', '').upper()
             nombre = u.get('nombre', '').upper()
             
-            if 'CIENFUEGOS' in nombre and 'TABLAJERIA' not in nombre:
+            # Mapeo por código directo (preferido)
+            if codigo in CODIGOS_CANONICOS_OFICIALES:
+                unidades_v2.append(codigo)
+            # Mapeo por nombre (fallback)
+            elif 'CIENFUEGOS' in nombre and 'TABLAJERIA' not in nombre:
                 unidades_v2.append('CIENFUEGOS')
             elif 'ESTELAR' in nombre:
-                unidades_v2.append('LA-ESTELAR')
-            elif 'MERIDA' in nombre or 'MER' in codigo or 'MID' in codigo:
-                unidades_v2.append('130-MER')
-            elif 'QUERETARO' in nombre or 'QRO' in codigo:
-                unidades_v2.append('130-QRO')
+                unidades_v2.append('ESTELAR')
+            elif 'MERIDA' in nombre or '130MID' in codigo or 'MID' in codigo:
+                unidades_v2.append('130MID')
+            elif 'QUERETARO' in nombre or '130QRO' in codigo or 'QRO' in codigo:
+                unidades_v2.append('130QRO')
             elif 'ORIGEN' in nombre:
                 unidades_v2.append('ORIGEN')
-        
-        # Si es SuperAdmin, dar acceso a todas
-        if current_user.get('role') in ['SuperAdministrador', 'Director']:
-            return ['CIENFUEGOS', 'LA-ESTELAR', '130-MER', '130-QRO', 'ORIGEN']
         
         return list(set(unidades_v2)) if unidades_v2 else []
         
