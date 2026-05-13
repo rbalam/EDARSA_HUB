@@ -547,13 +547,15 @@ def test_sync_una_unidad_softrestaurant(
     Usado para validación inicial en Subfase 1.
     
     Unidad de prueba: LA ESTELAR (SoftRestaurant)
+    
+    FASE P0 (2026-05-13): Actualizado a código canónico ESTELAR
     """
     if fecha is None:
         fecha = date.today() - timedelta(days=1)  # Ayer
     
-    # Configuración de LA ESTELAR
+    # Configuración de LA ESTELAR con código canónico
     config = UnidadNegocioConfig(
-        unidad_negocio_id='LA-ESTELAR',
+        unidad_negocio_id='ESTELAR',  # FASE P0: Código canónico oficial
         unidad_negocio_nombre='LA ESTELAR',
         server_id='a5ff0e25-f029-43db-b634-d4ac814c904f',
         sucursal_id='DEFAULT',
@@ -573,13 +575,15 @@ def test_sync_una_unidad_mpro(
     Usado para validación inicial en Subfase 1.
     
     Unidad de prueba: 130° QUERETARO (MPRO sucursal 0021)
+    
+    FASE P0 (2026-05-13): Actualizado a código canónico 130QRO
     """
     if fecha is None:
         fecha = date.today() - timedelta(days=1)  # Ayer
     
-    # Configuración de 130° QRO
+    # Configuración de 130° QRO con código canónico
     config = UnidadNegocioConfig(
-        unidad_negocio_id='130-QRO',
+        unidad_negocio_id='130QRO',  # FASE P0: Código canónico oficial
         unidad_negocio_nombre='130° QUERETARO',
         server_id='1b230a06-ffaf-4c70-bd27-b1be3579dea6',
         sucursal_id='0021',
