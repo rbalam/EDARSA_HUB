@@ -670,8 +670,8 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 | Fase | Descripción | Estado |
 |------|-------------|--------|
-| **P1.4-D: Config Sucursales** | Migrar /servers/{id}/sucursales-config, comparativo-inventarios | ⏸️ PENDIENTE |
 | **P1.4-E: Auditorías** | Migrar POST /auditorias y endpoints relacionados | ⏸️ PENDIENTE |
+| **P1.4-D2: server_sucursales_config** | Diagnóstico y diseño de migración a EDARSAHUB SQL | ⏸️ NUEVA DEUDA |
 | **P1.4-F: Módulo Configuración** | config_asignaciones_repository, almacenes_sync_service | ⏸️ PENDIENTE |
 | **P1-C: Sincronización Catálogos** | **Scheduler de catálogos tipos_movimiento, categorias, departamentos** | ⏸️ RETOMAR |
 | **FASE T3** | **Migrar módulo de Compras de MongoDB a EDARSAHUB** | ⏸️ PRÓXIMA (P1) |
@@ -685,6 +685,38 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 | FASE A5 | Poblar Usuario_EmpresasAsignacion | ⏸️ BACKLOG |
 | FASE A6 | Dual-read en login | ⏸️ BACKLOG |
 | FASES SYNC-C0+ | Sincronización incremental de Compras | ⏸️ BACKLOG |
+
+---
+
+## Registro P1.4-D1 — SUCURSALES-CONFIG DIAGNÓSTICO (14-Dic-2025)
+
+**Estado:** ✅ CERRADO (Objetivo ya cumplido)
+
+**Hallazgo:** Los endpoints `/servers/{id}/sucursales-config` ya NO usan `db.servers`. Fueron migrados a `server_registry` en una fase anterior (CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 2).
+
+**Colección diferente detectada:** `db.server_sucursales_config` (MongoDB) — NO es `db.servers`. Almacena configuración de visibilidad de sucursales en UI. Migración a EDARSAHUB requiere nueva fase P1.4-D2.
+
+**Documentación:** `/app/memory/P1_4D1_SUCURSALES_CONFIG_DIAGNOSTICO.md`
+
+---
+
+## Registro P1.4-D2 — NUEVA DEUDA: server_sucursales_config (14-Dic-2025)
+
+**Estado:** ⏸️ PENDIENTE DIAGNÓSTICO
+
+**Objetivo:** Migrar `db.server_sucursales_config` de MongoDB a EDARSAHUB SQL.
+
+**Requerimientos de diagnóstico:**
+1. Estructura actual de la colección
+2. Endpoints que la leen/escriben
+3. Campos contenidos
+4. Relación con Servidores_Conexiones y Unidades_Negocio
+5. Tabla equivalente en EDARSAHUB (si existe)
+6. Propuesta de tabla si no existe
+
+**Nombre tentativo:** `Servidores_Sucursales_Config` o `Config_Sucursales_Visibilidad`
+
+**Restricciones:** No ejecutar DDL sin autorización. No crear tablas fuera del patrón EDARSAHUB.
 
 ---
 
