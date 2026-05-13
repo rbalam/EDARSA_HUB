@@ -75,6 +75,8 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       : 0;
     
     // Transformar unidades al formato v1
+    // CORRECCIÓN MAYO 2026: Preservar variaciones si V2 las devuelve, si no usar null (no 0 falso)
+    // Las variaciones vienen de EDARSAHUB cuando el backend V2 las calcula
     const unidadesTransformadas = unidades.map(u => ({
       id: u.unidad_negocio_id,
       unidad: u.unidad_negocio_nombre,
@@ -86,14 +88,15 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       ticket_prom: u.ticket_promedio || (u.tickets_total > 0 ? u.ventas_total / u.tickets_total : 0),
       cheque_prom: u.pax_total > 0 ? u.ventas_total / u.pax_total : 0,
       proyeccion: calcularProyeccion(u.ventas_total || 0),
-      var_vs_mes_ant: 0, // v2 no calcula variaciones por ahora
-      var_vs_año_ant: 0,
-      ventas_ant: 0,
-      ventas_año: 0,
-      pax_ant: 0,
-      pax_año: 0,
-      cheques_ant: 0,
-      cheques_año: 0,
+      // CORRECCIÓN: Usar valores de backend si existen, si no null (no 0 falso)
+      var_vs_mes_ant: u.var_vs_mes_ant !== undefined ? u.var_vs_mes_ant : null,
+      var_vs_año_ant: u.var_vs_año_ant !== undefined ? u.var_vs_año_ant : null,
+      ventas_ant: u.ventas_ant !== undefined ? u.ventas_ant : null,
+      ventas_año: u.ventas_año !== undefined ? u.ventas_año : null,
+      pax_ant: u.pax_ant !== undefined ? u.pax_ant : null,
+      pax_año: u.pax_año !== undefined ? u.pax_año : null,
+      cheques_ant: u.cheques_ant !== undefined ? u.cheques_ant : null,
+      cheques_año: u.cheques_año !== undefined ? u.cheques_año : null,
       status: 'online',
       data_status: 'DATA_OK',
       live_status: 'LIVE_UNKNOWN',
@@ -105,6 +108,7 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
     }));
     
     // Construir respuesta en formato v1
+    // CORRECCIÓN MAYO 2026: Preservar variaciones si V2 las devuelve, si no usar null
     const resultado = {
       periodo: {
         mes: mesSeleccionado,
@@ -120,14 +124,16 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
         ticket_prom: ticketProm,
         cheque_prom: chequeProm,
         proyeccion: calcularProyeccion(totales.ventas_total || 0),
-        var_vs_mes_ant: 0,
-        var_vs_año_ant: 0,
-        var_pax_mes: 0,
-        var_pax_año: 0,
-        var_cheques_mes: 0,
-        var_cheques_año: 0,
-        var_proy_vs_año: 0,
-        ventas_año: 0,
+        // CORRECCIÓN: Usar valores de backend si existen, si no null (no 0 falso)
+        var_vs_mes_ant: totales.var_vs_mes_ant !== undefined ? totales.var_vs_mes_ant : null,
+        var_vs_año_ant: totales.var_vs_año_ant !== undefined ? totales.var_vs_año_ant : null,
+        var_pax_mes: totales.var_pax_mes !== undefined ? totales.var_pax_mes : null,
+        var_pax_año: totales.var_pax_año !== undefined ? totales.var_pax_año : null,
+        var_cheques_mes: totales.var_cheques_mes !== undefined ? totales.var_cheques_mes : null,
+        var_cheques_año: totales.var_cheques_año !== undefined ? totales.var_cheques_año : null,
+        var_proy_vs_año: totales.var_proy_vs_año !== undefined ? totales.var_proy_vs_año : null,
+        ventas_ant: totales.ventas_ant !== undefined ? totales.ventas_ant : null,
+        ventas_año: totales.ventas_año !== undefined ? totales.ventas_año : null,
         unidades_año_ant: totales.total_unidades || 0
       },
       unidades: unidadesTransformadas,
@@ -726,7 +732,9 @@ export default function TableroEjecutivo() {
             usedV2 = true;
             logger.log(`[COMERCIAL_V2] Éxito: ${responseData.unidades?.length} unidades desde EDARSAHUB v2`);
             
-            // MODO PARALELO: Comparar con v1 (solo log, no afecta UI)
+            // CORRECCIÓN MAYO 2026: Enriquecer V2 con variaciones de V1
+            // V2 no calcula variaciones, V1 sí (desde EDARSAHUB).
+            // Backend V1 es la autoridad para variaciones.
             try {
               const v1Response = await api.get(`/comercial/tablero-ejecutivo`, {
                 params: { 
@@ -737,7 +745,70 @@ export default function TableroEjecutivo() {
                 timeout: 30000
               });
               
-              if (v1Response.data?.totales?.ventas && responseData?.totales?.ventas) {
+              if (v1Response.data?.totales) {
+                const v1Totales = v1Response.data.totales;
+                const v1Unidades = v1Response.data.unidades || [];
+                
+                // Enriquecer totales con variaciones de V1
+                if (v1Totales.var_vs_mes_ant !== undefined) {
+                  responseData.totales.var_vs_mes_ant = v1Totales.var_vs_mes_ant;
+                }
+                if (v1Totales.var_vs_año_ant !== undefined) {
+                  responseData.totales.var_vs_año_ant = v1Totales.var_vs_año_ant;
+                }
+                if (v1Totales.var_pax_mes !== undefined) {
+                  responseData.totales.var_pax_mes = v1Totales.var_pax_mes;
+                }
+                if (v1Totales.var_pax_año !== undefined) {
+                  responseData.totales.var_pax_año = v1Totales.var_pax_año;
+                }
+                if (v1Totales.var_cheques_mes !== undefined) {
+                  responseData.totales.var_cheques_mes = v1Totales.var_cheques_mes;
+                }
+                if (v1Totales.var_cheques_año !== undefined) {
+                  responseData.totales.var_cheques_año = v1Totales.var_cheques_año;
+                }
+                if (v1Totales.var_proy_vs_año !== undefined) {
+                  responseData.totales.var_proy_vs_año = v1Totales.var_proy_vs_año;
+                }
+                if (v1Totales.ventas_ant !== undefined) {
+                  responseData.totales.ventas_ant = v1Totales.ventas_ant;
+                }
+                if (v1Totales.ventas_año !== undefined) {
+                  responseData.totales.ventas_año = v1Totales.ventas_año;
+                }
+                
+                // Enriquecer unidades con variaciones de V1 (mapeo por nombre)
+                const v1UnidadesMap = {};
+                v1Unidades.forEach(u => {
+                  const key = (u.unidad || u.nombre || '').toLowerCase().trim();
+                  v1UnidadesMap[key] = u;
+                });
+                
+                responseData.unidades = responseData.unidades.map(u2 => {
+                  const key = (u2.unidad || u2.nombre || '').toLowerCase().trim();
+                  const v1Match = v1UnidadesMap[key];
+                  
+                  if (v1Match) {
+                    return {
+                      ...u2,
+                      var_vs_mes_ant: v1Match.var_vs_mes_ant !== undefined ? v1Match.var_vs_mes_ant : u2.var_vs_mes_ant,
+                      var_vs_año_ant: v1Match.var_vs_año_ant !== undefined ? v1Match.var_vs_año_ant : u2.var_vs_año_ant,
+                      ventas_ant: v1Match.ventas_ant !== undefined ? v1Match.ventas_ant : u2.ventas_ant,
+                      ventas_año: v1Match.ventas_año !== undefined ? v1Match.ventas_año : u2.ventas_año,
+                      pax_ant: v1Match.pax_ant !== undefined ? v1Match.pax_ant : u2.pax_ant,
+                      pax_año: v1Match.pax_año !== undefined ? v1Match.pax_año : u2.pax_año,
+                      cheques_ant: v1Match.cheques_ant !== undefined ? v1Match.cheques_ant : u2.cheques_ant,
+                      cheques_año: v1Match.cheques_año !== undefined ? v1Match.cheques_año : u2.cheques_año,
+                      _variaciones_source: 'V1_EDARSAHUB'
+                    };
+                  }
+                  return u2;
+                });
+                
+                logger.log(`[COMERCIAL_V2] Variaciones enriquecidas desde V1 (EDARSAHUB)`);
+                
+                // Log de comparación de ventas
                 const v1Ventas = v1Response.data.totales.ventas;
                 const v2Ventas = responseData.totales.ventas;
                 const diffPercent = Math.abs(v1Ventas - v2Ventas) / Math.max(v1Ventas, 1) * 100;
@@ -748,8 +819,8 @@ export default function TableroEjecutivo() {
                   logger.log(`[COMERCIAL_V2_COMPARE] Datos coinciden: diff=${diffPercent.toFixed(2)}%`);
                 }
               }
-            } catch (compareError) {
-              logger.log('[COMERCIAL_V2_COMPARE] No se pudo comparar con v1 (no crítico)');
+            } catch (enrichError) {
+              logger.log('[COMERCIAL_V2] No se pudieron obtener variaciones de V1 (continuando sin ellas)');
             }
           } else {
             throw new Error('Respuesta v2 no exitosa');
