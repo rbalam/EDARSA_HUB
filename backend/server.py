@@ -5487,7 +5487,13 @@ async def export_comparativo_inventarios(request: ComparativoInventariosRequest,
     Usa cache en MongoDB para evitar recalcular.
     Soporta múltiples almacenes (multi-selección).
     FASE 8: Aplica validación RBAC de servidor y almacenes.
+    
+    FASE P1.4-E3 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
+    NO FUENTE: MongoDB db.servers
     """
+    from core.server_registry import get_server_connection_info_with_secrets
+    
     # FASE 8: Validar acceso y obtener contexto
     context = await resolve_user_access_context(current_user)
     
@@ -5495,8 +5501,10 @@ async def export_comparativo_inventarios(request: ComparativoInventariosRequest,
         logging.warning(f"[RBAC-EXPORT-INV] {current_user.get('email')} sin acceso a servidor {request.server_id}")
         raise HTTPException(status_code=403, detail="No tiene acceso a este servidor")
     
-    server = decrypt_server_secrets(await db.servers.find_one({"id": request.server_id, "active": True}))
-    if not server:
+    # FASE P1.4-E3: Obtener servidor desde EDARSAHUB SQL via server_registry
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": request.server_id, "active": True}))
+    server = decrypt_server_secrets(get_server_connection_info_with_secrets(request.server_id))
+    if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     # FASE 8: Obtener almacenes permitidos

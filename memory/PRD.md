@@ -670,7 +670,6 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 | Fase | Descripción | Estado |
 |------|-------------|--------|
-| **P1.4-E3: Comparativo Inventarios** | Migrar POST /reports/export/comparativo-inventarios | ⏸️ PENDIENTE |
 | **P1.4-E4: Explorador/Catálogo** | Diagnóstico y migración de ejecutar-con-credenciales, ejecutar-rich | ⏸️ PENDIENTE |
 | **P1.4-D2: server_sucursales_config** | Diagnóstico y diseño de migración a EDARSAHUB SQL | ⏸️ NUEVA DEUDA |
 | **P1.4-F: Módulo Configuración** | config_asignaciones_repository, almacenes_sync_service | ⏸️ PENDIENTE |
@@ -680,6 +679,24 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 | Auth Token Bug | Persistencia de token en frontend Finanzas | ⏸️ PENDIENTE |
 | P2: Migrar Comercial V1 tabs | mesas, detalle, precios → EDARSAHUB | ⏸️ BACKLOG |
 | P3: FASE M3/M4 | Desactivar fallback MongoDB, deprecar `servers` | ⏸️ BACKLOG |
+
+---
+
+## Registro P1.4-E3 — COMPARATIVO INVENTARIOS MIGRADO (14-Dic-2025)
+
+**Estado:** ✅ CERRADO
+
+**Endpoint migrado:** `POST /reports/export/comparativo-inventarios`
+
+**Cambio:** Reemplazado `db.servers.find_one()` (MongoDB) por `server_registry.get_server_connection_info_with_secrets()` (EDARSAHUB SQL).
+
+**Campos usados desde EDARSAHUB:**
+- host, port, database, username, password (conexión SQL)
+- system_type, name
+
+**Referencias restantes a `db.servers`:** 2 (para fase E4: explorador/catálogo)
+
+**Documentación:** `/app/memory/P1_4E3_COMPARATIVO_INVENTARIOS_MIGRADO_EDARSAHUB.md`
 
 ---
 
