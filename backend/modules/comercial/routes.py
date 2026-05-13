@@ -138,6 +138,7 @@ from modules.comercial.repository import (
     USE_SQL_FOR_SERVERS,
 )
 # FASE 3A.2: Import de utilidades de normalización de system_type
+from core.server_registry import list_unidades_negocio
 from core.system_type_utils import (
     normalize_system_type,
     is_mpro_system,
@@ -1222,6 +1223,94 @@ async def _tablero_ejecutivo_internal(
     
     # Contar unidades que tenían ventas el año anterior (ventas_año > 0)
     totales["unidades_año_ant"] = sum(1 for u in resultados if (u.get("ventas_año") or 0) > 0)
+    
+    # =========================================================================
+    # P1 FIX (Dic 2025): DEDUPLICACIÓN POR unidad_negocio_codigo
+    # REGLA: Cada unidad de negocio canónica debe aparecer UNA SOLA VEZ
+    # CASO: LA ESTELAR aparecía 2 veces (caché válido + error de conexión)
+    # =========================================================================
+    
+    # Construir mapa de server_id → codigo para resolver entradas con código vacío
+    # FUENTE: EDARSAHUB.Unidades_Negocio (NO MongoDB)
+    try:
+        unidades_edarsahub = list_unidades_negocio(active_only=True)
+        server_to_codigo_map = {}
+        for u in unidades_edarsahub:
+            sid = u.get('server_id', '')
+            suc = u.get('sucursal_origen_id', '')
+            codigo = u.get('codigo', '')
+            # Para SoftRestaurant: 1 unidad por servidor (sucursal_origen_id es NULL)
+            # Para MPRO: usar server_id + sucursal_origen_id (ya corregido en P0)
+            if sid and not suc:  # SoftRestaurant
+                server_to_codigo_map[sid] = codigo
+    except Exception as e:
+        logging.warning(f"[P1-DEDUP] Error cargando unidades EDARSAHUB: {e}")
+        server_to_codigo_map = {}
+    
+    # Función para resolver código de deduplicación
+    def resolver_codigo_dedup(unidad: Dict) -> str:
+        """
+        Resuelve el código canónico para deduplicación.
+        Prioridad:
+        1. unidad_negocio_codigo si existe
+        2. Resolver desde EDARSAHUB por server_id (SoftRestaurant)
+        3. Fallback defensivo: UNKNOWN:{server_id}
+        """
+        codigo = unidad.get('unidad_negocio_codigo', '').strip()
+        if codigo:
+            return codigo
+        
+        # Intentar resolver por server_id desde EDARSAHUB
+        server_id = unidad.get('server_id', '')
+        if server_id and server_id in server_to_codigo_map:
+            codigo_resuelto = server_to_codigo_map[server_id]
+            logging.info(f"[P1-DEDUP] Código resuelto via EDARSAHUB: server_id={server_id[:8]}... → {codigo_resuelto}")
+            return codigo_resuelto
+        
+        # Fallback defensivo (no debería ocurrir si EDARSAHUB está bien configurado)
+        logging.warning(f"[P1-DEDUP] No se pudo resolver código para server_id={server_id[:8]}...")
+        return f"UNKNOWN:{server_id}" if server_id else "UNKNOWN"
+    
+    # Prioridad de estados para elegir la mejor entrada
+    prioridad_status = {
+        DataStatus.DATA_OK: 1,
+        DataStatus.DATA_FROM_CACHE: 2,
+        DataStatus.NO_DATA_CONFIRMED: 3,
+        DataStatus.DATA_ERROR: 4,
+    }
+    
+    # Deduplicar por código canónico
+    resultados_dedup = {}
+    for unidad in resultados:
+        codigo_key = resolver_codigo_dedup(unidad)
+        
+        if codigo_key not in resultados_dedup:
+            resultados_dedup[codigo_key] = unidad
+        else:
+            # Ya existe: comparar prioridad de data_status
+            existente = resultados_dedup[codigo_key]
+            prioridad_existente = prioridad_status.get(existente.get('data_status'), 99)
+            prioridad_nueva = prioridad_status.get(unidad.get('data_status'), 99)
+            
+            if prioridad_nueva < prioridad_existente:
+                # La nueva entrada tiene mejor estado → reemplazar
+                logging.info(f"[P1-DEDUP] Reemplazando entrada: {codigo_key} ({existente.get('data_status')} → {unidad.get('data_status')})")
+                resultados_dedup[codigo_key] = unidad
+            else:
+                # Conservar la existente (mejor o igual prioridad)
+                # Opcionalmente guardar warning del error si la perdedora tiene error
+                if unidad.get('data_status') == DataStatus.DATA_ERROR and unidad.get('error_message'):
+                    logging.info(f"[P1-DEDUP] Descartando entrada duplicada con error: {codigo_key}")
+    
+    # Reemplazar resultados con lista deduplicada
+    resultados_antes = len(resultados)
+    resultados = list(resultados_dedup.values())
+    if resultados_antes != len(resultados):
+        logging.info(f"[P1-DEDUP] Deduplicación aplicada: {resultados_antes} → {len(resultados)} unidades")
+    
+    # =========================================================================
+    # FIN P1 FIX DEDUPLICACIÓN
+    # =========================================================================
     
     # ================================================================
     # P0 TAREA 9: CONSOLIDADO SUPERIOR CON ESTADOS SEPARADOS

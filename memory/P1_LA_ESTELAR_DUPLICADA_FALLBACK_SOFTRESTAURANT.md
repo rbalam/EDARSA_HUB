@@ -180,11 +180,34 @@ if server['id'] not in server_ids_agregados:
 - [x] Bug identificado
 - [x] Causa probable documentada
 - [x] Propuesta de fix definida
-- [ ] Diagnóstico detallado (pendiente)
-- [ ] Autorización para implementar
-- [ ] Implementación
-- [ ] Testing
-- [ ] Validación usuario
+- [x] Diagnóstico detallado
+- [x] Autorización para implementar
+- [x] Implementación (13-Dic-2025)
+- [x] Testing (curl + screenshot)
+- [x] Validación usuario
+
+---
+
+## FIX IMPLEMENTADO (13-Dic-2025)
+
+**Archivo modificado:** `/app/backend/modules/comercial/routes.py`
+
+**Cambio:** Se agregó bloque de deduplicación después de línea 1225, antes de `status_summary`.
+
+**Lógica:**
+1. Construir mapa `server_id → codigo` desde EDARSAHUB.Unidades_Negocio
+2. Función `resolver_codigo_dedup()` para obtener código canónico
+3. Deduplicar por código canónico priorizando por `data_status`
+4. Prioridad: DATA_OK > DATA_FROM_CACHE > NO_DATA_CONFIRMED > DATA_ERROR
+
+**Resultado:**
+- ✅ Endpoint devuelve exactamente 5 unidades
+- ✅ LA ESTELAR aparece una sola vez
+- ✅ Sin código vacío
+- ✅ Sin Unidad Desconocida
+- ✅ EDARSA no reaparece
+- ✅ No se usó MongoDB
+- ✅ No se tocó frontend
 
 ---
 

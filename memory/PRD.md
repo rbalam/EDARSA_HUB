@@ -637,11 +637,39 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 ---
 
+## Registro P1 — LA ESTELAR DUPLICADA (13-Dic-2025)
+
+**Estado:** ✅ CERRADO
+
+**Problema:** LA ESTELAR aparecía duplicada en el Tablero Ejecutivo (una entrada con caché válido, otra con error y código vacío).
+
+**Causa raíz:** 
+1. El flujo "servidor offline" agregaba entrada con caché
+2. El `except` externo agregaba otra entrada con `kpis=None` y código vacío
+
+**Solución implementada:**
+- Deduplicación por `unidad_negocio_codigo` antes de retornar `resultados`
+- Función `resolver_codigo_dedup()` que resuelve códigos vacíos desde EDARSAHUB
+- Prioridad de estados: DATA_OK > DATA_FROM_CACHE > NO_DATA_CONFIRMED > DATA_ERROR
+
+**Archivo modificado:** `/app/backend/modules/comercial/routes.py`
+**Ubicación:** Bloque después de línea 1225, antes de `status_summary`
+
+**Resultado:** 
+- ✅ Exactamente 5 unidades en Tablero Ejecutivo
+- ✅ LA ESTELAR aparece una sola vez
+- ✅ Sin código vacío
+- ✅ Sin Unidad Desconocida
+- ✅ EDARSA no reaparece
+- ✅ No MongoDB
+- ✅ No frontend modificado
+
+---
+
 ## Próximas Fases Pendientes de Autorización
 
 | Fase | Descripción | Estado |
 |------|-------------|--------|
-| **P1: LA ESTELAR DUPLICADA** | **Deduplicación por unidad_negocio_codigo en Tablero Ejecutivo** | ⏸️ DIAGNOSTICADO |
 | **P1-C: Sincronización Catálogos** | **Scheduler de catálogos tipos_movimiento, categorias, departamentos** | ⏸️ RETOMAR |
 | **FASE T3** | **Migrar módulo de Compras de MongoDB a EDARSAHUB** | ⏸️ PRÓXIMA (P1) |
 | FASE Q1.3 (Pasiva) | Dry-run: Generar INSERTs de migración SIN ejecutar | ⏸️ PENDIENTE |
