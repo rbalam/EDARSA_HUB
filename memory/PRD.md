@@ -606,10 +606,43 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 ---
 
+## Registro P0 — FIX EDARSA / UNIDAD DESCONOCIDA (13-Dic-2025)
+
+**Estado:** ✅ CERRADO
+
+**Problema:** Las unidades MPRO (130° QUERETARO, ORIGEN) aparecían como "Unidad Desconocida" en Tablero Ejecutivo / Ventas del Día. La sucursal técnica EDARSA (del SQL de MPRO) también aparecía incorrectamente.
+
+**Causa raíz:** 
+1. El mapeo de sucursales usaba identificadores internos (`'ORIGEN'`, `'130_QRO'`) que no coincidían con `sucursal_origen_id` de EDARSAHUB (`0021`, `0023`)
+2. El flujo histórico no filtraba sucursales no registradas en `Unidades_Negocio`
+
+**Solución implementada:**
+- Uso de `server_registry.resolve_unidad_by_server_sucursal(server_id, sucursal_origen_id)`
+- Filtro que omite sucursales no registradas como unidades activas en EDARSAHUB
+- Log de sucursales omitidas: `[MPRO] Sucursal no visible omitida: sucursal_origen_id=..., nombre=...`
+
+**Archivo modificado:** `/app/backend/modules/comercial/service.py`
+**Función:** `get_kpis_mpro_por_sucursal()`
+
+**Resultado:** 
+- ✅ Tablero muestra exactamente 5 unidades
+- ✅ No "Unidad Desconocida"
+- ✅ No "EDARSA"
+- ✅ 130° QUERETARO resuelto con codigo=130QRO
+- ✅ ORIGEN resuelto con codigo=ORIGEN
+- ✅ No MongoDB
+- ✅ No frontend modificado
+
+**Issue relacionado detectado:** P1 LA ESTELAR DUPLICADA (documento separado)
+
+---
+
 ## Próximas Fases Pendientes de Autorización
 
 | Fase | Descripción | Estado |
 |------|-------------|--------|
+| **P1: LA ESTELAR DUPLICADA** | **Deduplicación por unidad_negocio_codigo en Tablero Ejecutivo** | ⏸️ DIAGNOSTICADO |
+| **P1-C: Sincronización Catálogos** | **Scheduler de catálogos tipos_movimiento, categorias, departamentos** | ⏸️ RETOMAR |
 | **FASE T3** | **Migrar módulo de Compras de MongoDB a EDARSAHUB** | ⏸️ PRÓXIMA (P1) |
 | FASE Q1.3 (Pasiva) | Dry-run: Generar INSERTs de migración SIN ejecutar | ⏸️ PENDIENTE |
 | FASE Q1.4 | Ejecutar DDL en EDARSAHUB | ⏸️ PENDIENTE |
@@ -624,5 +657,5 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 ---
 
-**Última actualización:** 14-Mayo-2026
+**Última actualización:** 13-Dic-2025
 
