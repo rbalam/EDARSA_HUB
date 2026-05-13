@@ -127,6 +127,43 @@ def _parse_json_field(value) -> Any:
         return None
 
 
+def _parse_tipos_movimiento(value) -> List[str]:
+    """
+    FASE T3.4-B4: Parsea tipos_movimiento desde SQL.
+    
+    El campo tipos_movimiento en EDARSAHUB es NVARCHAR(MAX) con JSON array de strings.
+    Ejemplo: '["ECA", "EDE", "EIE", ...]'
+    
+    Returns:
+        Lista de códigos de tipos de movimiento, o [] si es NULL/inválido.
+    """
+    import json
+    
+    if value is None:
+        return []
+    
+    if isinstance(value, list):
+        # Ya es una lista, asegurar que todos los elementos sean strings
+        return [str(v) for v in value if v is not None]
+    
+    if isinstance(value, str):
+        if not value.strip():
+            return []
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, list):
+                return [str(v) for v in parsed if v is not None]
+            else:
+                logger.warning(f"[SERVER_REGISTRY] tipos_movimiento no es array: {type(parsed)}")
+                return []
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.warning(f"[SERVER_REGISTRY] Error parseando tipos_movimiento: {e}")
+            return []
+    
+    logger.warning(f"[SERVER_REGISTRY] tipos_movimiento tipo inesperado: {type(value)}")
+    return []
+
+
 # ============================================================================
 # LECTURA DESDE EDARSAHUB SQL
 # ============================================================================
@@ -135,8 +172,14 @@ def _sql_row_to_server_dict(row: Dict, source: str = "EDARSAHUB_SQL") -> Dict:
     """
     Convierte una fila de Servidores_Conexiones (SQL) al formato del sistema.
     Garantiza paridad con el esquema de MongoDB.
+    
+    FASE T3.4-B4: Agregado parsing de tipos_movimiento desde SQL.
     """
     system_type_raw = row.get('system_type', '')
+    
+    # FASE T3.4-B4: Parsear tipos_movimiento desde SQL (NVARCHAR JSON -> list)
+    tipos_movimiento_raw = row.get('tipos_movimiento')
+    tipos_movimiento = _parse_tipos_movimiento(tipos_movimiento_raw)
     
     return {
         'id': str(row.get('id', '')),
@@ -161,6 +204,7 @@ def _sql_row_to_server_dict(row: Dict, source: str = "EDARSAHUB_SQL") -> Dict:
         'sucursales': _parse_json_field(row.get('sucursales')),
         'categorias': _parse_json_field(row.get('categorias')),
         'departamentos': _parse_json_field(row.get('departamentos')),
+        'tipos_movimiento': tipos_movimiento,  # FASE T3.4-B4: Nuevo campo
         'date_calculation_method': row.get('date_calculation_method'),
         'queries_configured': bool(row.get('queries_configured', False)),
         'query_ventas': _parse_json_field(row.get('query_ventas')),
@@ -645,6 +689,7 @@ async def get_server_connection_info(
         'system_type': server.get('system_type'),
         'system_type_normalized': server.get('system_type_normalized'),
         'config_origin': server.get('config_origin'),
+        'tipos_movimiento': server.get('tipos_movimiento', []),  # FASE T3.4-B4
         **credentials
     }
 

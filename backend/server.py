@@ -1811,24 +1811,34 @@ async def delete_server_query(
 @api_router.get("/servers/{server_id}/tipos-movimiento")
 async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_current_user)):
     """
-    Obtiene la lista de tipos de movimiento desde SQL Server.
+    Obtiene la lista de tipos de movimiento.
     
-    CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 1:
-    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
-    para usar EDARSAHUB SQL como fuente primaria.
+    FASE T3.4-B4/MODAL: Refactorizado para usar EDARSAHUB-first.
+    
+    ESTRATEGIA:
+    1. PRIMERO: Intentar obtener datos en vivo desde la BD del servidor (si hay conexión)
+    2. FALLBACK: Si falla la conexión viva, usar tipos_movimiento guardados en EDARSAHUB
+    
+    MÁXIMAS:
+    - EDARSAHUB es el cerebro del sistema
+    - No usar MongoDB
+    - Mantener contrato API compatible con frontend
+    
+    Returns:
+        Lista de objetos [{codigo, descripcion, tipo}] compatibles con frontend
     """
-    from core.server_registry import get_server_connection_info
+    from core.server_registry import get_server_connection_info, get_server_by_id
     
-    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
-    # AHORA: Usar registry que prioriza EDARSAHUB SQL
+    # Obtener servidor desde registry (EDARSAHUB-first)
     server = await get_server_connection_info(server_id, db=db)
     
     if not server:
         logging.warning(f"[GET_TIPOS_MOVIMIENTO] Servidor no encontrado via registry. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
-    logging.debug(f"[GET_TIPOS_MOVIMIENTO] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
+    logging.info(f"[GET_TIPOS_MOVIMIENTO] Servidor obtenido. Origin={server.get('config_origin', 'UNKNOWN')}, Name={server.get('name', 'N/A')}")
     
+    # PASO 1: Intentar obtener tipos en vivo desde la BD del servidor
     try:
         if is_mpro_system(server.get('system_type')):
             query = """
@@ -1841,7 +1851,6 @@ async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_
                 ORDER BY Tm_Cve_Tipo_Movimiento
             """
         elif is_softrestaurant_system(server.get('system_type')):
-            # SoftRestaurant usa tabla 'conceptos' para tipos de movimiento
             query = """
                 SELECT 
                     idconcepto as codigo,
@@ -1851,8 +1860,11 @@ async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_
                 ORDER BY idconcepto
             """
         else:
-            return []
+            # Sistema no reconocido: retornar tipos desde EDARSAHUB si existen
+            logging.info(f"[GET_TIPOS_MOVIMIENTO] Sistema no reconocido ({server.get('system_type')}), usando EDARSAHUB")
+            return _build_tipos_from_edarsahub(server)
         
+        # Ejecutar query en BD viva del servidor
         results = execute_sql_query(
             server['host'],
             server['port'],
@@ -1861,10 +1873,90 @@ async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_
             server['password'],
             query
         )
-        return results
+        
+        if results:
+            logging.info(f"[GET_TIPOS_MOVIMIENTO] BD viva respondió con {len(results)} tipos. Source=BD_VIVA")
+            return results
+        else:
+            # BD viva conectó pero no hay datos, intentar EDARSAHUB
+            logging.info(f"[GET_TIPOS_MOVIMIENTO] BD viva sin datos, usando EDARSAHUB")
+            return _build_tipos_from_edarsahub(server)
+            
     except Exception as e:
-        logging.error(f"Error obteniendo tipos de movimiento: {str(e)}")
+        # PASO 2: Fallback a EDARSAHUB si la conexión viva falla
+        logging.warning(f"[GET_TIPOS_MOVIMIENTO] Error BD viva: {str(e)[:100]}. Usando EDARSAHUB fallback.")
+        return _build_tipos_from_edarsahub(server)
+
+
+def _build_tipos_from_edarsahub(server: dict) -> list:
+    """
+    FASE T3.4-B4: Construye lista de tipos de movimiento desde EDARSAHUB.
+    
+    Convierte los códigos guardados en tipos_movimiento a formato compatible con frontend.
+    El frontend espera: [{codigo, descripcion, tipo}]
+    
+    Args:
+        server: Dict con datos del servidor (debe tener 'tipos_movimiento')
+    
+    Returns:
+        Lista de tipos en formato compatible con frontend
+    """
+    tipos_codigos = server.get('tipos_movimiento', [])
+    
+    if not tipos_codigos:
+        logging.info(f"[GET_TIPOS_MOVIMIENTO][EDARSAHUB] No hay tipos_movimiento configurados para servidor {server.get('name', 'N/A')}")
         return []
+    
+    # Construir objetos compatibles con frontend
+    # El frontend usa: tipo.codigo, tipo.descripcion, tipo.tipo
+    result = []
+    for codigo in tipos_codigos:
+        if codigo:
+            result.append({
+                'codigo': str(codigo),
+                'descripcion': str(codigo),  # Sin descripción detallada, usar código
+                'tipo': _infer_tipo_from_codigo(str(codigo))  # Inferir entrada/salida
+            })
+    
+    logging.info(f"[GET_TIPOS_MOVIMIENTO][EDARSAHUB] Retornando {len(result)} tipos desde EDARSAHUB. Server={server.get('name', 'N/A')}")
+    return result
+
+
+def _infer_tipo_from_codigo(codigo: str) -> str:
+    """
+    Infiere si un tipo de movimiento es entrada o salida basándose en el código.
+    
+    Convenciones comunes:
+    - SoftRestaurant: Códigos que empiezan con 'E' = Entrada, 'S' = Salida
+    - MPRO: Códigos pares = Entrada, impares = Salida (aproximación)
+    
+    Returns:
+        'EN' para entrada, 'SA' para salida
+    """
+    if not codigo:
+        return 'EN'
+    
+    codigo_upper = codigo.upper().strip()
+    
+    # SoftRestaurant: E* = Entrada, S* = Salida
+    if codigo_upper.startswith('E'):
+        return 'EN'
+    elif codigo_upper.startswith('S'):
+        return 'SA'
+    
+    # MPRO: Intentar inferir por número
+    try:
+        num = int(codigo)
+        # Convención MPRO: números que terminan en 0,2,4,6,8 son generalmente entradas
+        if num % 2 == 0:
+            return 'EN'
+        else:
+            return 'SA'
+    except ValueError:
+        pass
+    
+    # Por defecto: Entrada
+    return 'EN'
 
 @api_router.get("/servers/{server_id}/categorias")
 async def get_categorias(server_id: str, current_user: Dict = Depends(get_current_user)):
