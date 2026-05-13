@@ -38,7 +38,8 @@ from .repository_readonly import (
     get_ventas_dia_abiertas,
     get_sync_status,
     get_last_sync_by_unidad,
-    get_unidades_disponibles
+    get_unidades_disponibles,
+    _execute_readonly_query
 )
 from .schemas_api import (
     HealthResponse,
@@ -55,6 +56,408 @@ logger = logging.getLogger(__name__)
 
 # Router v2 aislado
 router = APIRouter(prefix="/comercial", tags=["Comercial V2"])
+
+
+# =============================================================================
+# MAPEO DE CÓDIGOS: Tablas KPI (NO OFICIAL) → Unidades_Negocio.codigo (OFICIAL)
+# =============================================================================
+# FASE 2: Este mapeo permite que V2 devuelva unidad_negocio_codigo oficial
+# mientras las tablas KPI aún usan códigos legacy (130-MER, LA-ESTELAR, etc.)
+# Cuando se ejecute FASE T1 (UPDATE en tablas), este mapeo se simplificará.
+
+MAPEO_KPI_A_CODIGO_CANONICO = {
+    '130-MER': '130MID',
+    '130-QRO': '130QRO',
+    'LA-ESTELAR': 'ESTELAR',
+    'CIENFUEGOS': 'CIENFUEGOS',
+    'ORIGEN': 'ORIGEN',
+}
+
+MAPEO_CODIGO_CANONICO_A_KPI = {v: k for k, v in MAPEO_KPI_A_CODIGO_CANONICO.items()}
+
+
+# =============================================================================
+# HELPERS: CÁLCULO DE VARIACIONES (FASE 2)
+# =============================================================================
+
+def _calcular_dias_periodo(fecha_inicio: date, fecha_fin: date, fecha_max_datos: date) -> int:
+    """
+    Calcula días efectivos del período basado en último día con datos.
+    
+    REGLA: Si el mes está parcial, usar hasta el último día con ventas.
+    """
+    fecha_efectiva = min(fecha_fin, fecha_max_datos)
+    dias = (fecha_efectiva - fecha_inicio).days + 1
+    return max(0, dias)
+
+
+def _get_variaciones_comparativas(
+    unidad_negocio_id: str,
+    fecha_inicio: date,
+    fecha_fin: date,
+    fecha_max_datos: date
+) -> dict:
+    """
+    FASE 2: Calcula variaciones vs mes anterior y año anterior.
+    
+    FUENTE: EDARSAHUB.Comercial_KPIs_Diarios_v2
+    
+    REGLAS:
+    - Usa rangos semiabiertos: fecha >= inicio AND fecha < fin_exclusiva
+    - Si mes actual parcial: compara mismos días del mes anterior
+    - Si no hay datos comparativos: devuelve null (NO 0 falso)
+    - Si variación real es 0.0%: devuelve 0.0
+    
+    Args:
+        unidad_negocio_id: ID en tabla KPI (ej: '130-MER', 'LA-ESTELAR')
+        fecha_inicio: Inicio del período actual
+        fecha_fin: Fin del período actual
+        fecha_max_datos: Último día con datos en el período actual
+    
+    Returns:
+        dict con variaciones o null si no hay base comparativa
+    """
+    try:
+        # Calcular días efectivos del período actual
+        dias_efectivos = _calcular_dias_periodo(fecha_inicio, fecha_fin, fecha_max_datos)
+        
+        if dias_efectivos <= 0:
+            return {
+                'ventas_ant': None,
+                'ventas_año': None,
+                'pax_ant': None,
+                'pax_año': None,
+                'cheques_ant': None,
+                'cheques_año': None,
+                'var_vs_mes_ant': None,
+                'var_vs_año_ant': None,
+                'var_pax_mes': None,
+                'var_pax_año': None,
+                'var_cheques_mes': None,
+                'var_cheques_año': None,
+                '_meta_variaciones': {'error': 'Sin días efectivos'}
+            }
+        
+        # =====================================================================
+        # CALCULAR RANGOS DE COMPARACIÓN
+        # =====================================================================
+        
+        # Período actual efectivo (hasta último día con datos)
+        fecha_fin_efectiva = min(fecha_fin, fecha_max_datos)
+        
+        # Mes anterior: mismo rango de días
+        from dateutil.relativedelta import relativedelta
+        fecha_inicio_mes_ant = fecha_inicio - relativedelta(months=1)
+        fecha_fin_mes_ant = fecha_fin_efectiva - relativedelta(months=1)
+        
+        # Año anterior: mismo rango de días
+        fecha_inicio_año_ant = fecha_inicio - relativedelta(years=1)
+        fecha_fin_año_ant = fecha_fin_efectiva - relativedelta(years=1)
+        
+        # =====================================================================
+        # CONSULTAR DATOS DE PERÍODO ACTUAL (ya tenemos, pero necesitamos PAX)
+        # =====================================================================
+        
+        query_actual = f"""
+        SELECT 
+            SUM(ventas_total) as ventas,
+            SUM(pax_total) as pax,
+            SUM(tickets_total) as cheques
+        FROM Comercial_KPIs_Diarios_v2
+        WHERE unidad_negocio_id = '{unidad_negocio_id}'
+          AND fecha_operacion >= '{fecha_inicio.isoformat()}'
+          AND fecha_operacion < '{(fecha_fin_efectiva + timedelta(days=1)).isoformat()}'
+          AND activo = 1
+          AND es_demo = 0
+        """
+        
+        result_actual = _execute_readonly_query(query_actual)
+        ventas_actual = float(result_actual[0].get('ventas') or 0) if result_actual else 0
+        pax_actual = int(result_actual[0].get('pax') or 0) if result_actual else 0
+        cheques_actual = int(result_actual[0].get('cheques') or 0) if result_actual else 0
+        
+        # =====================================================================
+        # CONSULTAR DATOS DE MES ANTERIOR
+        # =====================================================================
+        
+        query_mes_ant = f"""
+        SELECT 
+            SUM(ventas_total) as ventas,
+            SUM(pax_total) as pax,
+            SUM(tickets_total) as cheques,
+            COUNT(*) as dias
+        FROM Comercial_KPIs_Diarios_v2
+        WHERE unidad_negocio_id = '{unidad_negocio_id}'
+          AND fecha_operacion >= '{fecha_inicio_mes_ant.isoformat()}'
+          AND fecha_operacion < '{(fecha_fin_mes_ant + timedelta(days=1)).isoformat()}'
+          AND activo = 1
+          AND es_demo = 0
+        """
+        
+        result_mes_ant = _execute_readonly_query(query_mes_ant)
+        
+        # Verificar si hay datos del mes anterior
+        tiene_datos_mes_ant = result_mes_ant and result_mes_ant[0].get('dias', 0) > 0
+        ventas_ant = float(result_mes_ant[0].get('ventas') or 0) if tiene_datos_mes_ant else None
+        pax_ant = int(result_mes_ant[0].get('pax') or 0) if tiene_datos_mes_ant else None
+        cheques_ant = int(result_mes_ant[0].get('cheques') or 0) if tiene_datos_mes_ant else None
+        
+        # =====================================================================
+        # CONSULTAR DATOS DE AÑO ANTERIOR
+        # =====================================================================
+        
+        query_año_ant = f"""
+        SELECT 
+            SUM(ventas_total) as ventas,
+            SUM(pax_total) as pax,
+            SUM(tickets_total) as cheques,
+            COUNT(*) as dias
+        FROM Comercial_KPIs_Diarios_v2
+        WHERE unidad_negocio_id = '{unidad_negocio_id}'
+          AND fecha_operacion >= '{fecha_inicio_año_ant.isoformat()}'
+          AND fecha_operacion < '{(fecha_fin_año_ant + timedelta(days=1)).isoformat()}'
+          AND activo = 1
+          AND es_demo = 0
+        """
+        
+        result_año_ant = _execute_readonly_query(query_año_ant)
+        
+        # Verificar si hay datos del año anterior
+        tiene_datos_año_ant = result_año_ant and result_año_ant[0].get('dias', 0) > 0
+        ventas_año = float(result_año_ant[0].get('ventas') or 0) if tiene_datos_año_ant else None
+        pax_año = int(result_año_ant[0].get('pax') or 0) if tiene_datos_año_ant else None
+        cheques_año = int(result_año_ant[0].get('cheques') or 0) if tiene_datos_año_ant else None
+        
+        # =====================================================================
+        # CALCULAR VARIACIONES
+        # REGLA: Si no hay base, devolver null. Si variación real es 0, devolver 0.0
+        # =====================================================================
+        
+        # Variación vs mes anterior
+        if ventas_ant is not None and ventas_ant > 0:
+            var_vs_mes_ant = round(((ventas_actual - ventas_ant) / ventas_ant) * 100, 1)
+        elif ventas_ant is not None and ventas_ant == 0:
+            var_vs_mes_ant = 0.0 if ventas_actual == 0 else None  # División por cero
+        else:
+            var_vs_mes_ant = None  # Sin base comparativa
+        
+        # Variación vs año anterior
+        if ventas_año is not None and ventas_año > 0:
+            var_vs_año_ant = round(((ventas_actual - ventas_año) / ventas_año) * 100, 1)
+        elif ventas_año is not None and ventas_año == 0:
+            var_vs_año_ant = 0.0 if ventas_actual == 0 else None
+        else:
+            var_vs_año_ant = None  # Sin base comparativa
+        
+        # Variaciones de PAX
+        if pax_ant is not None and pax_ant > 0:
+            var_pax_mes = round(((pax_actual - pax_ant) / pax_ant) * 100, 1)
+        elif pax_ant is not None and pax_ant == 0:
+            var_pax_mes = 0.0 if pax_actual == 0 else None
+        else:
+            var_pax_mes = None
+        
+        if pax_año is not None and pax_año > 0:
+            var_pax_año = round(((pax_actual - pax_año) / pax_año) * 100, 1)
+        elif pax_año is not None and pax_año == 0:
+            var_pax_año = 0.0 if pax_actual == 0 else None
+        else:
+            var_pax_año = None
+        
+        # Variaciones de cheques
+        if cheques_ant is not None and cheques_ant > 0:
+            var_cheques_mes = round(((cheques_actual - cheques_ant) / cheques_ant) * 100, 1)
+        elif cheques_ant is not None and cheques_ant == 0:
+            var_cheques_mes = 0.0 if cheques_actual == 0 else None
+        else:
+            var_cheques_mes = None
+        
+        if cheques_año is not None and cheques_año > 0:
+            var_cheques_año = round(((cheques_actual - cheques_año) / cheques_año) * 100, 1)
+        elif cheques_año is not None and cheques_año == 0:
+            var_cheques_año = 0.0 if cheques_actual == 0 else None
+        else:
+            var_cheques_año = None
+        
+        return {
+            'ventas_ant': ventas_ant,
+            'ventas_año': ventas_año,
+            'pax_ant': pax_ant,
+            'pax_año': pax_año,
+            'cheques_ant': cheques_ant,
+            'cheques_año': cheques_año,
+            'var_vs_mes_ant': var_vs_mes_ant,
+            'var_vs_año_ant': var_vs_año_ant,
+            'var_pax_mes': var_pax_mes,
+            'var_pax_año': var_pax_año,
+            'var_cheques_mes': var_cheques_mes,
+            'var_cheques_año': var_cheques_año,
+            '_meta_variaciones': {
+                'fecha_inicio_actual': fecha_inicio.isoformat(),
+                'fecha_fin_efectiva': fecha_fin_efectiva.isoformat(),
+                'dias_efectivos': dias_efectivos,
+                'rango_mes_ant': f"{fecha_inicio_mes_ant.isoformat()} a {fecha_fin_mes_ant.isoformat()}",
+                'rango_año_ant': f"{fecha_inicio_año_ant.isoformat()} a {fecha_fin_año_ant.isoformat()}",
+                'tiene_datos_mes_ant': tiene_datos_mes_ant,
+                'tiene_datos_año_ant': tiene_datos_año_ant
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error calculando variaciones para {unidad_negocio_id}: {e}")
+        return {
+            'ventas_ant': None,
+            'ventas_año': None,
+            'pax_ant': None,
+            'pax_año': None,
+            'cheques_ant': None,
+            'cheques_año': None,
+            'var_vs_mes_ant': None,
+            'var_vs_año_ant': None,
+            'var_pax_mes': None,
+            'var_pax_año': None,
+            'var_cheques_mes': None,
+            'var_cheques_año': None,
+            '_meta_variaciones': {'error': str(e)}
+        }
+
+
+def _calcular_totales_variaciones(
+    totales_actual: dict,
+    fecha_inicio: date,
+    fecha_fin: date,
+    fecha_max_datos: date,
+    unidades_permitidas: List[str]
+) -> dict:
+    """
+    FASE 2: Calcula variaciones agregadas para totales del dashboard.
+    
+    Args:
+        totales_actual: Totales del período actual
+        fecha_inicio: Inicio del período
+        fecha_fin: Fin del período
+        fecha_max_datos: Último día con datos
+        unidades_permitidas: Lista de unidades a incluir
+    
+    Returns:
+        dict con totales enriquecidos con variaciones
+    """
+    try:
+        from dateutil.relativedelta import relativedelta
+        
+        # Período efectivo
+        fecha_fin_efectiva = min(fecha_fin, fecha_max_datos) if fecha_max_datos else fecha_fin
+        
+        # Rangos de comparación
+        fecha_inicio_mes_ant = fecha_inicio - relativedelta(months=1)
+        fecha_fin_mes_ant = fecha_fin_efectiva - relativedelta(months=1)
+        fecha_inicio_año_ant = fecha_inicio - relativedelta(years=1)
+        fecha_fin_año_ant = fecha_fin_efectiva - relativedelta(years=1)
+        
+        # IDs en formato de tabla KPI
+        ids_quoted = ','.join([f"'{u}'" for u in unidades_permitidas])
+        
+        # Query mes anterior
+        query_mes_ant = f"""
+        SELECT 
+            SUM(ventas_total) as ventas,
+            SUM(pax_total) as pax,
+            SUM(tickets_total) as cheques,
+            COUNT(DISTINCT fecha_operacion) as dias
+        FROM Comercial_KPIs_Diarios_v2
+        WHERE unidad_negocio_id IN ({ids_quoted})
+          AND fecha_operacion >= '{fecha_inicio_mes_ant.isoformat()}'
+          AND fecha_operacion < '{(fecha_fin_mes_ant + timedelta(days=1)).isoformat()}'
+          AND activo = 1
+          AND es_demo = 0
+        """
+        
+        result_mes_ant = _execute_readonly_query(query_mes_ant)
+        tiene_datos_mes_ant = result_mes_ant and result_mes_ant[0].get('dias', 0) > 0
+        
+        ventas_ant = float(result_mes_ant[0].get('ventas') or 0) if tiene_datos_mes_ant else None
+        pax_ant = int(result_mes_ant[0].get('pax') or 0) if tiene_datos_mes_ant else None
+        cheques_ant = int(result_mes_ant[0].get('cheques') or 0) if tiene_datos_mes_ant else None
+        
+        # Query año anterior
+        query_año_ant = f"""
+        SELECT 
+            SUM(ventas_total) as ventas,
+            SUM(pax_total) as pax,
+            SUM(tickets_total) as cheques,
+            COUNT(DISTINCT fecha_operacion) as dias
+        FROM Comercial_KPIs_Diarios_v2
+        WHERE unidad_negocio_id IN ({ids_quoted})
+          AND fecha_operacion >= '{fecha_inicio_año_ant.isoformat()}'
+          AND fecha_operacion < '{(fecha_fin_año_ant + timedelta(days=1)).isoformat()}'
+          AND activo = 1
+          AND es_demo = 0
+        """
+        
+        result_año_ant = _execute_readonly_query(query_año_ant)
+        tiene_datos_año_ant = result_año_ant and result_año_ant[0].get('dias', 0) > 0
+        
+        ventas_año = float(result_año_ant[0].get('ventas') or 0) if tiene_datos_año_ant else None
+        pax_año = int(result_año_ant[0].get('pax') or 0) if tiene_datos_año_ant else None
+        cheques_año = int(result_año_ant[0].get('cheques') or 0) if tiene_datos_año_ant else None
+        
+        # Calcular variaciones
+        ventas_actual = float(totales_actual.get('ventas_total') or 0)
+        pax_actual = int(totales_actual.get('pax_total') or 0)
+        cheques_actual = int(totales_actual.get('tickets_total') or 0)
+        
+        # Variaciones de ventas
+        if ventas_ant is not None and ventas_ant > 0:
+            var_vs_mes_ant = round(((ventas_actual - ventas_ant) / ventas_ant) * 100, 1)
+        else:
+            var_vs_mes_ant = None if ventas_ant is None else 0.0
+        
+        if ventas_año is not None and ventas_año > 0:
+            var_vs_año_ant = round(((ventas_actual - ventas_año) / ventas_año) * 100, 1)
+        else:
+            var_vs_año_ant = None if ventas_año is None else 0.0
+        
+        # Variaciones de PAX
+        if pax_ant is not None and pax_ant > 0:
+            var_pax_mes = round(((pax_actual - pax_ant) / pax_ant) * 100, 1)
+        else:
+            var_pax_mes = None if pax_ant is None else 0.0
+        
+        if pax_año is not None and pax_año > 0:
+            var_pax_año = round(((pax_actual - pax_año) / pax_año) * 100, 1)
+        else:
+            var_pax_año = None if pax_año is None else 0.0
+        
+        # Variaciones de cheques
+        if cheques_ant is not None and cheques_ant > 0:
+            var_cheques_mes = round(((cheques_actual - cheques_ant) / cheques_ant) * 100, 1)
+        else:
+            var_cheques_mes = None if cheques_ant is None else 0.0
+        
+        if cheques_año is not None and cheques_año > 0:
+            var_cheques_año = round(((cheques_actual - cheques_año) / cheques_año) * 100, 1)
+        else:
+            var_cheques_año = None if cheques_año is None else 0.0
+        
+        return {
+            **totales_actual,
+            'ventas_ant': ventas_ant,
+            'ventas_año': ventas_año,
+            'pax_ant': pax_ant,
+            'pax_año': pax_año,
+            'cheques_ant': cheques_ant,
+            'cheques_año': cheques_año,
+            'var_vs_mes_ant': var_vs_mes_ant,
+            'var_vs_año_ant': var_vs_año_ant,
+            'var_pax_mes': var_pax_mes,
+            'var_pax_año': var_pax_año,
+            'var_cheques_mes': var_cheques_mes,
+            'var_cheques_año': var_cheques_año
+        }
+        
+    except Exception as e:
+        logger.error(f"Error calculando totales variaciones: {e}")
+        return totales_actual
 
 
 # =============================================================================
@@ -333,20 +736,95 @@ async def comercial_v2_dashboard(
         # Actualizar conteo de unidades
         totales['total_unidades'] = len(por_unidad)
         
+        # =====================================================================
+        # FASE 2: CALCULAR VARIACIONES Y ENRIQUECER CON CÓDIGO CANÓNICO
+        # =====================================================================
+        
+        # Determinar último día con datos para rangos de comparación
+        fecha_max_datos = None
+        for u in por_unidad:
+            if u.get('fecha_max'):
+                try:
+                    fm = u['fecha_max']
+                    if isinstance(fm, str):
+                        fm = datetime.strptime(fm, '%Y-%m-%d').date()
+                    elif isinstance(fm, datetime):
+                        fm = fm.date()
+                    if fecha_max_datos is None or fm > fecha_max_datos:
+                        fecha_max_datos = fm
+                except:
+                    pass
+        
+        if fecha_max_datos is None:
+            fecha_max_datos = fecha_fin
+        
+        # Calcular variaciones por unidad
+        for u in por_unidad:
+            uid = u['unidad_negocio_id']
+            
+            # FASE 2: Agregar código canónico oficial
+            u['unidad_negocio_codigo'] = MAPEO_KPI_A_CODIGO_CANONICO.get(uid, uid)
+            
+            # Calcular variaciones comparativas
+            variaciones = _get_variaciones_comparativas(
+                uid, 
+                fecha_inicio, 
+                fecha_fin,
+                fecha_max_datos
+            )
+            
+            # Agregar variaciones al diccionario de la unidad
+            u['ventas_ant'] = variaciones.get('ventas_ant')
+            u['ventas_año'] = variaciones.get('ventas_año')
+            u['pax_ant'] = variaciones.get('pax_ant')
+            u['pax_año'] = variaciones.get('pax_año')
+            u['cheques_ant'] = variaciones.get('cheques_ant')
+            u['cheques_año'] = variaciones.get('cheques_año')
+            u['var_vs_mes_ant'] = variaciones.get('var_vs_mes_ant')
+            u['var_vs_año_ant'] = variaciones.get('var_vs_año_ant')
+            u['var_pax_mes'] = variaciones.get('var_pax_mes')
+            u['var_pax_año'] = variaciones.get('var_pax_año')
+            u['var_cheques_mes'] = variaciones.get('var_cheques_mes')
+            u['var_cheques_año'] = variaciones.get('var_cheques_año')
+            u['_meta_variaciones'] = variaciones.get('_meta_variaciones', {})
+        
+        # Calcular variaciones para totales
+        totales_con_variaciones = _calcular_totales_variaciones(
+            totales, 
+            fecha_inicio, 
+            fecha_fin, 
+            fecha_max_datos,
+            unidades_permitidas
+        )
+        
         # Construir respuesta
         response_data = {
             "totales": serialize_response({
-                "ventas_total": totales.get('ventas_total', 0),
-                "tickets_total": totales.get('tickets_total', 0),
-                "pax_total": totales.get('pax_total', 0),
-                "total_registros": totales.get('total_registros', 0),
-                "total_unidades": totales.get('total_unidades', 0),
-                "total_dias": totales.get('total_dias', 0),
+                "ventas_total": totales_con_variaciones.get('ventas_total', 0),
+                "tickets_total": totales_con_variaciones.get('tickets_total', 0),
+                "pax_total": totales_con_variaciones.get('pax_total', 0),
+                "total_registros": totales_con_variaciones.get('total_registros', 0),
+                "total_unidades": totales_con_variaciones.get('total_unidades', 0),
+                "total_dias": totales_con_variaciones.get('total_dias', 0),
+                # FASE 2: Variaciones en totales
+                "ventas_ant": totales_con_variaciones.get('ventas_ant'),
+                "ventas_año": totales_con_variaciones.get('ventas_año'),
+                "pax_ant": totales_con_variaciones.get('pax_ant'),
+                "pax_año": totales_con_variaciones.get('pax_año'),
+                "cheques_ant": totales_con_variaciones.get('cheques_ant'),
+                "cheques_año": totales_con_variaciones.get('cheques_año'),
+                "var_vs_mes_ant": totales_con_variaciones.get('var_vs_mes_ant'),
+                "var_vs_año_ant": totales_con_variaciones.get('var_vs_año_ant'),
+                "var_pax_mes": totales_con_variaciones.get('var_pax_mes'),
+                "var_pax_año": totales_con_variaciones.get('var_pax_año'),
+                "var_cheques_mes": totales_con_variaciones.get('var_cheques_mes'),
+                "var_cheques_año": totales_con_variaciones.get('var_cheques_año'),
                 "_incluye_ventas_abiertas": incluye_hoy and len(ventas_abiertas_hoy) > 0
             }),
             "unidades": serialize_response([
                 {
                     "unidad_negocio_id": u['unidad_negocio_id'],
+                    "unidad_negocio_codigo": u.get('unidad_negocio_codigo', u['unidad_negocio_id']),  # FASE 2
                     "unidad_negocio_nombre": u['unidad_negocio_nombre'],
                     "sistema_origen": u['sistema_origen'],
                     "ventas_total": u['ventas_total'],
@@ -358,6 +836,19 @@ async def comercial_v2_dashboard(
                     "dias": u['dias'],
                     "fecha_min": u['fecha_min'],
                     "fecha_max": u['fecha_max'],
+                    # FASE 2: Variaciones por unidad
+                    "ventas_ant": u.get('ventas_ant'),
+                    "ventas_año": u.get('ventas_año'),
+                    "pax_ant": u.get('pax_ant'),
+                    "pax_año": u.get('pax_año'),
+                    "cheques_ant": u.get('cheques_ant'),
+                    "cheques_año": u.get('cheques_año'),
+                    "var_vs_mes_ant": u.get('var_vs_mes_ant'),
+                    "var_vs_año_ant": u.get('var_vs_año_ant'),
+                    "var_pax_mes": u.get('var_pax_mes'),
+                    "var_pax_año": u.get('var_pax_año'),
+                    "var_cheques_mes": u.get('var_cheques_mes'),
+                    "var_cheques_año": u.get('var_cheques_año'),
                     # Datos de ventas abiertas del día (si aplica)
                     "_ventas_abiertas_hoy": u.get('_ventas_abiertas_hoy', 0),
                     "_ventas_cerradas_hoy": u.get('_ventas_cerradas_hoy', 0),
@@ -370,7 +861,8 @@ async def comercial_v2_dashboard(
                     "_status_v2": u.get('_status_v2', 'DESCONOCIDO'),
                     "_status_v2_desc": u.get('_status_v2_desc', ''),
                     "_v2_fuente": "EDARSAHUB",
-                    "_v2_tabla": "Comercial_KPIs_Diarios_v2" if u.get('dias', 0) > 0 else "Comercial_Ventas_Dia_Abiertas_v2"
+                    "_v2_tabla": "Comercial_KPIs_Diarios_v2" if u.get('dias', 0) > 0 else "Comercial_Ventas_Dia_Abiertas_v2",
+                    "_meta_variaciones": u.get('_meta_variaciones', {})  # FASE 2
                 }
                 for u in por_unidad
             ]),
