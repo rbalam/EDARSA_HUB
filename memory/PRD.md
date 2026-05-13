@@ -95,6 +95,8 @@ REACT_APP_COMERCIAL_V2_ENABLED=true
 | ✅ **FASE T1-A: Diagnóstico Colisiones** | ✅ COMPLETADO (13-Mayo-2026) |
 | ✅ **Backend V2: Códigos Canónicos** | ✅ COMPLETADO (13-Mayo-2026) |
 | ✅ **FASE T2.3: Migrar Propinas TPV Routes** | ✅ COMPLETADO (13-Mayo-2026) |
+| ✅ **FASE T2.4: Migrar Propinas TPV Services** | ✅ COMPLETADO (14-Mayo-2026) |
+| ✅ **FASE T2: Finanzas 100% Libre MongoDB** | ✅ COMPLETADO (14-Mayo-2026) |
 | P1-FASE5A.2 Captura manual de saldos | ⏸️ BACKLOG |
 | P1-FASE5A.3 Widget posición efectivo | ⏸️ BACKLOG |
 | P1-FASE5A.4 Integración efectivo pendiente | ⏸️ BACKLOG |
@@ -608,15 +610,19 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 | Fase | Descripción | Estado |
 |------|-------------|--------|
+| **FASE T3** | **Migrar módulo de Compras de MongoDB a EDARSAHUB** | ⏸️ PRÓXIMA (P1) |
 | FASE Q1.3 (Pasiva) | Dry-run: Generar INSERTs de migración SIN ejecutar | ⏸️ PENDIENTE |
 | FASE Q1.4 | Ejecutar DDL en EDARSAHUB | ⏸️ PENDIENTE |
 | FASE A4.2 (Pasiva) | Diagnóstico para asignación de roles a 9 usuarios | ⏸️ PENDIENTE |
 | Auth Token Bug | Persistencia de token en frontend Finanzas | ⏸️ PENDIENTE |
+| P2: Migrar Comercial V1 tabs | mesas, detalle, precios → EDARSAHUB | ⏸️ BACKLOG |
+| P2: Migrar Configuración/Catálogos | Abandonar MongoDB | ⏸️ BACKLOG |
+| P3: FASE M3/M4 | Desactivar fallback MongoDB, deprecar `servers` | ⏸️ BACKLOG |
 | FASE A5 | Poblar Usuario_EmpresasAsignacion | ⏸️ BACKLOG |
 | FASE A6 | Dual-read en login | ⏸️ BACKLOG |
 | FASES SYNC-C0+ | Sincronización incremental de Compras | ⏸️ BACKLOG |
 
 ---
 
-**Última actualización:** 11-Mayo-2026
+**Última actualización:** 14-Mayo-2026
 

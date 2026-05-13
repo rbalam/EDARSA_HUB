@@ -35,6 +35,8 @@ from .models import (
     EstadoCuadre,
     SincronizarResponse
 )
+# FASE T2.4: Usar server_registry centralizado en lugar de MongoDB
+from core.server_registry import list_operational_servers
 
 logger = logging.getLogger(__name__)
 
@@ -152,12 +154,13 @@ class PropinasTPVSQLService:
         """
         logger.info(f"Sincronización SQL: {fecha_inicio} a {fecha_fin}")
         
-        # Obtener servidores SoftRestaurant
-        filtro_servers = {'system_type': 'SoftRestaurant'}
-        if server_id:
-            filtro_servers['id'] = server_id
+        # FASE T2.4: Obtener servidores desde EDARSAHUB via server_registry
+        # Ya no usar MongoDB: self.db['servers']
+        servers = list_operational_servers(system_type_filter='SoftRestaurant')
         
-        servers = await self.db['servers'].find(filtro_servers, {'_id': 0}).to_list(100)
+        # Filtrar por server_id específico si se proporciona
+        if server_id:
+            servers = [s for s in servers if s.get('id') == server_id]
         
         if not servers:
             logger.warning("No se encontraron servidores SoftRestaurant")
