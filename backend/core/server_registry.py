@@ -128,15 +128,16 @@ def _parse_json_field(value) -> Any:
         return None
 
 
-def _parse_tipos_movimiento(value) -> List[str]:
+def _parse_tipos_movimiento(value) -> List:
     """
-    FASE T3.4-B4: Parsea tipos_movimiento desde SQL.
+    FASE T3.4-B4 / P1: Parsea tipos_movimiento desde SQL.
     
-    El campo tipos_movimiento en EDARSAHUB es NVARCHAR(MAX) con JSON array de strings.
-    Ejemplo: '["ECA", "EDE", "EIE", ...]'
+    Soporta dos formatos:
+    A) Lista de strings: '["ECA", "EDE", ...]' → devuelve como está para compatibilidad
+    B) Lista de objetos: '[{"codigo":"ECA","descripcion":"...","tipo":"EN"}, ...]' → devuelve objetos
     
     Returns:
-        Lista de códigos de tipos de movimiento, o [] si es NULL/inválido.
+        Lista de tipos de movimiento (strings u objetos según formato guardado)
     """
     import json
     
@@ -144,8 +145,8 @@ def _parse_tipos_movimiento(value) -> List[str]:
         return []
     
     if isinstance(value, list):
-        # Ya es una lista, asegurar que todos los elementos sean strings
-        return [str(v) for v in value if v is not None]
+        # Ya es una lista, devolver como está
+        return value
     
     if isinstance(value, str):
         if not value.strip():
@@ -153,7 +154,7 @@ def _parse_tipos_movimiento(value) -> List[str]:
         try:
             parsed = json.loads(value)
             if isinstance(parsed, list):
-                return [str(v) for v in parsed if v is not None]
+                return parsed  # Devolver lista tal cual (strings u objetos)
             else:
                 logger.warning(f"[SERVER_REGISTRY] tipos_movimiento no es array: {type(parsed)}")
                 return []

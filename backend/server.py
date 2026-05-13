@@ -1857,9 +1857,12 @@ async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_
 
 def _build_tipos_from_edarsahub(server: dict) -> list:
     """
-    FASE T3.4-B4: Construye lista de tipos de movimiento desde EDARSAHUB.
+    FASE T3.4-B4 / P1: Construye lista de tipos de movimiento desde EDARSAHUB.
     
-    Convierte los códigos guardados en tipos_movimiento a formato compatible con frontend.
+    Soporta dos formatos en tipos_movimiento:
+    A) Lista de strings: ["ECA", "EDE"] → convierte a objetos
+    B) Lista de objetos: [{"codigo":"ECA","descripcion":"...","tipo":"EN"}] → devuelve directo
+    
     El frontend espera: [{codigo, descripcion, tipo}]
     
     Args:
@@ -1868,22 +1871,25 @@ def _build_tipos_from_edarsahub(server: dict) -> list:
     Returns:
         Lista de tipos en formato compatible con frontend
     """
-    tipos_codigos = server.get('tipos_movimiento', [])
+    tipos_data = server.get('tipos_movimiento', [])
     
-    if not tipos_codigos:
+    if not tipos_data:
         return []
     
-    # Determinar si es sistema MPRO para reglas de inferencia específicas
+    # Si ya son objetos enriquecidos, devolverlos directamente
+    if tipos_data and isinstance(tipos_data[0], dict):
+        return tipos_data
+    
+    # Son códigos simples, convertir a objetos
     is_mpro = is_mpro_system(server.get('system_type', ''))
     
-    # Construir objetos compatibles con frontend
     result = []
-    for codigo in tipos_codigos:
+    for codigo in tipos_data:
         if codigo:
             codigo_str = str(codigo)
             result.append({
                 'codigo': codigo_str,
-                'descripcion': codigo_str,  # Sin descripción detallada, usar código
+                'descripcion': codigo_str,  # Fallback: descripcion = codigo
                 'tipo': _infer_tipo_from_codigo(codigo_str, is_mpro)
             })
     
