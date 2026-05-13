@@ -8139,7 +8139,9 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
     Obtiene el detalle de movimientos de un producto específico en un período.
     Muestra cada movimiento individual que compone el total.
     """
-    server = decrypt_server_secrets(await db.servers.find_one({"id": request.server_id, "active": True}, {"_id": 0}))
+    # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
+    from core.server_registry import get_server_connection_info
+    server = await get_server_connection_info(request.server_id, db=db)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
@@ -8316,7 +8318,9 @@ async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current
     Obtiene el detalle de consumos/ventas de un producto específico en un período.
     Para SoftRestaurant: ventas directas o a través de recetas.
     """
-    server = decrypt_server_secrets(await db.servers.find_one({"id": request.server_id, "active": True}, {"_id": 0}))
+    # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
+    from core.server_registry import get_server_connection_info
+    server = await get_server_connection_info(request.server_id, db=db)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
@@ -8890,7 +8894,9 @@ async def obtener_facturas_proveedor(server_id: str, proveedor_codigo: str, anio
     """Obtiene las facturas/entradas de un proveedor específico"""
     verify_token(credentials.credentials)
     
-    server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+    # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
+    from core.server_registry import get_server_connection_info
+    server = await get_server_connection_info(server_id, db=db)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
@@ -8955,7 +8961,9 @@ async def obtener_detalle_factura(server_id: str, folio: str, credentials: HTTPA
     """Obtiene el detalle de productos de una factura/entrada"""
     verify_token(credentials.credentials)
     
-    server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+    # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
+    from core.server_registry import get_server_connection_info
+    server = await get_server_connection_info(server_id, db=db)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
