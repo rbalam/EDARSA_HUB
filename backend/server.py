@@ -593,9 +593,10 @@ class Server(BaseModel):
     date_calculation_method: str = "inventory_dates"  # Método para calcular fechas de ventas
     sucursales: List[str] = []  # IDs de sucursales
     # Filtros configurables para consultas
-    tipos_movimiento: List[str] = []  # Códigos de tipos de movimiento a incluir
-    categorias: List[str] = []  # Códigos de categorías a incluir
-    departamentos: List[str] = []  # Códigos de departamentos a incluir
+    # FASE P1.4-B (Dic 2025): Corregido para aceptar objetos JSON (EDARSAHUB) o strings (legacy MongoDB)
+    tipos_movimiento: Optional[List[Any]] = []  # Códigos o objetos de tipos de movimiento
+    categorias: Optional[List[Any]] = []  # Códigos o objetos de categorías
+    departamentos: Optional[List[Any]] = []  # Códigos o objetos de departamentos
     # Consultas SQL personalizadas para el análisis de inventario
     query_inventario: Optional[Dict] = None  # Consulta para obtener inventarios
     query_ventas: Optional[Dict] = None  # Consulta para obtener ventas
@@ -1593,7 +1594,13 @@ async def validate_server_query(
     """
     Valida una consulta SQL para un servidor.
     Ejecuta la consulta y verifica que devuelva las columnas necesarias.
+    
+    FASE P1.4-B (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
+    NO FUENTE: MongoDB db.servers
     """
+    from core.server_registry import get_server_connection_info_with_secrets
+    
     query_type = request.get("query_type")  # "inventario", "ventas", "movimientos"
     sql = request.get("sql", "").strip()
     
@@ -1603,9 +1610,10 @@ async def validate_server_query(
     if not sql:
         raise HTTPException(status_code=400, detail="La consulta SQL es requerida")
     
-    # Obtener servidor
-    server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
-    if not server:
+    # FASE P1.4-B: Obtener servidor desde EDARSAHUB SQL via server_registry
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+    server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
+    if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     try:
@@ -1684,7 +1692,13 @@ async def save_server_query(
 ):
     """
     Guarda una consulta SQL validada para un servidor.
+    
+    FASE P1.4-B (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
+    NO FUENTE: MongoDB db.servers
     """
+    from core.server_registry import get_server_connection_info_with_secrets, update_server as registry_update_server, get_server_by_id
+    
     if query_type not in REQUIRED_COLUMNS:
         raise HTTPException(status_code=400, detail=f"Tipo de consulta inválido. Usa: {list(REQUIRED_COLUMNS.keys())}")
     
@@ -1694,9 +1708,10 @@ async def save_server_query(
     if not sql:
         raise HTTPException(status_code=400, detail="La consulta SQL es requerida")
     
-    # Verificar que el servidor existe
-    server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
-    if not server:
+    # FASE P1.4-B: Verificar que el servidor existe via server_registry
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+    server = get_server_connection_info_with_secrets(server_id)
+    if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     # Crear objeto de configuración de consulta
@@ -1707,25 +1722,40 @@ async def save_server_query(
         "validation_message": "Validada correctamente" if validated else "Pendiente de validación"
     }
     
-    # Actualizar el servidor con la nueva consulta
+    # FASE P1.4-B: Actualizar el servidor via server_registry (SQL-first)
     field_name = f"query_{query_type}"
-    await db.servers.update_one(
-        {"id": server_id},
-        {"$set": {field_name: query_config}}
+    # ANTES: await db.servers.update_one({"id": server_id}, {"$set": {field_name: query_config}})
+    result = await registry_update_server(
+        server_id=server_id,
+        payload={field_name: query_config},
+        db=db,
+        user=current_user,
+        sync_mongo=True  # Mantener espejo MongoDB para compatibilidad
     )
     
-    # Verificar si todas las consultas están configuradas
-    updated_server = decrypt_server_secrets(await db.servers.find_one({"id": server_id}, {"_id": 0}))
-    all_configured = all([
-        updated_server.get("query_inventario", {}).get("validated", False),
-        updated_server.get("query_ventas", {}).get("validated", False),
-        updated_server.get("query_movimientos", {}).get("validated", False)
-    ])
+    if not result.get('success'):
+        raise HTTPException(status_code=500, detail=result.get('error', 'Error al guardar query'))
     
-    await db.servers.update_one(
-        {"id": server_id},
-        {"$set": {"queries_configured": all_configured}}
-    )
+    # FASE P1.4-B: Verificar si todas las consultas están configuradas
+    # ANTES: updated_server = decrypt_server_secrets(await db.servers.find_one({"id": server_id}, {"_id": 0}))
+    updated_server = await get_server_by_id(server_id, db=db, mask_secrets=True)
+    if updated_server:
+        all_configured = all([
+            (updated_server.get("query_inventario") or {}).get("validated", False),
+            (updated_server.get("query_ventas") or {}).get("validated", False),
+            (updated_server.get("query_movimientos") or {}).get("validated", False)
+        ])
+        
+        # ANTES: await db.servers.update_one({"id": server_id}, {"$set": {"queries_configured": all_configured}})
+        await registry_update_server(
+            server_id=server_id,
+            payload={"queries_configured": all_configured},
+            db=db,
+            user=current_user,
+            sync_mongo=True
+        )
+    else:
+        all_configured = False
     
     return {
         "message": f"Consulta de {query_type} guardada exitosamente",
@@ -1739,9 +1769,17 @@ async def save_server_query(
 async def get_server_queries(server_id: str, current_user: Dict = Depends(get_current_user)):
     """
     Obtiene el estado de configuración de consultas de un servidor.
+    
+    FASE P1.4-B (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
+    NO FUENTE: MongoDB db.servers
     """
-    server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
-    if not server:
+    from core.server_registry import get_server_by_id
+    
+    # FASE P1.4-B: Obtener servidor desde EDARSAHUB SQL
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+    server = await get_server_by_id(server_id, db=db, mask_secrets=True)
+    if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     return {
@@ -1752,27 +1790,27 @@ async def get_server_queries(server_id: str, current_user: Dict = Depends(get_cu
         "queries": {
             "inventario": {
                 "configured": server.get("query_inventario") is not None,
-                "validated": server.get("query_inventario", {}).get("validated", False),
-                "sql": server.get("query_inventario", {}).get("sql", ""),
-                "last_validated": server.get("query_inventario", {}).get("last_validated"),
+                "validated": (server.get("query_inventario") or {}).get("validated", False),
+                "sql": (server.get("query_inventario") or {}).get("sql", ""),
+                "last_validated": (server.get("query_inventario") or {}).get("last_validated"),
                 "description": REQUIRED_COLUMNS["inventario"]["description"],
                 "required_columns": REQUIRED_COLUMNS["inventario"]["required"],
                 "optional_columns": REQUIRED_COLUMNS["inventario"]["optional"]
             },
             "ventas": {
                 "configured": server.get("query_ventas") is not None,
-                "validated": server.get("query_ventas", {}).get("validated", False),
-                "sql": server.get("query_ventas", {}).get("sql", ""),
-                "last_validated": server.get("query_ventas", {}).get("last_validated"),
+                "validated": (server.get("query_ventas") or {}).get("validated", False),
+                "sql": (server.get("query_ventas") or {}).get("sql", ""),
+                "last_validated": (server.get("query_ventas") or {}).get("last_validated"),
                 "description": REQUIRED_COLUMNS["ventas"]["description"],
                 "required_columns": REQUIRED_COLUMNS["ventas"]["required"],
                 "optional_columns": REQUIRED_COLUMNS["ventas"]["optional"]
             },
             "movimientos": {
                 "configured": server.get("query_movimientos") is not None,
-                "validated": server.get("query_movimientos", {}).get("validated", False),
-                "sql": server.get("query_movimientos", {}).get("sql", ""),
-                "last_validated": server.get("query_movimientos", {}).get("last_validated"),
+                "validated": (server.get("query_movimientos") or {}).get("validated", False),
+                "sql": (server.get("query_movimientos") or {}).get("sql", ""),
+                "last_validated": (server.get("query_movimientos") or {}).get("last_validated"),
                 "description": REQUIRED_COLUMNS["movimientos"]["description"],
                 "required_columns": REQUIRED_COLUMNS["movimientos"]["required"],
                 "optional_columns": REQUIRED_COLUMNS["movimientos"]["optional"]
@@ -1790,19 +1828,35 @@ async def delete_server_query(
 ):
     """
     Elimina una consulta configurada de un servidor.
+    
+    FASE P1.4-B (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
+    NO FUENTE: MongoDB db.servers
     """
+    from core.server_registry import get_server_connection_info_with_secrets, update_server as registry_update_server
+    
     if query_type not in REQUIRED_COLUMNS:
         raise HTTPException(status_code=400, detail=f"Tipo de consulta inválido")
     
-    server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
-    if not server:
+    # FASE P1.4-B: Verificar que el servidor existe via server_registry
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+    server = get_server_connection_info_with_secrets(server_id)
+    if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
+    # FASE P1.4-B: Actualizar via server_registry (SQL-first)
     field_name = f"query_{query_type}"
-    await db.servers.update_one(
-        {"id": server_id},
-        {"$set": {field_name: None, "queries_configured": False}}
+    # ANTES: await db.servers.update_one({"id": server_id}, {"$set": {field_name: None, "queries_configured": False}})
+    result = await registry_update_server(
+        server_id=server_id,
+        payload={field_name: None, "queries_configured": False},
+        db=db,
+        user=current_user,
+        sync_mongo=True
     )
+    
+    if not result.get('success'):
+        raise HTTPException(status_code=500, detail=result.get('error', 'Error al eliminar query'))
     
     return {"message": f"Consulta de {query_type} eliminada"}
 

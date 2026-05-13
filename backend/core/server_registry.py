@@ -1236,8 +1236,19 @@ async def update_server(
     json_field_mapping = {
         'tipos_movimiento': 'tipos_movimiento',
         'categorias': 'categorias',
-        'departamentos': 'departamentos'
+        'departamentos': 'departamentos',
+        # P1.4-B: Campos de queries configuradas
+        'query_inventario': 'query_inventario',
+        'query_ventas': 'query_ventas',
+        'query_movimientos': 'query_movimientos'
     }
+    
+    # P1.4-B: Campo booleano queries_configured
+    if 'queries_configured' in payload:
+        if 'queries_configured' not in processed_sql_fields:
+            update_fields.append("queries_configured = %s")
+            update_values.append(1 if payload['queries_configured'] else 0)
+            processed_sql_fields.add('queries_configured')
     
     for api_field, sql_field in field_mapping.items():
         if api_field in payload and payload[api_field] is not None:

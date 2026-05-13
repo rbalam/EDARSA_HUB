@@ -670,6 +670,10 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 | Fase | Descripción | Estado |
 |------|-------------|--------|
+| **P1.4-C: Endpoints Inventario** | Migrar analyze-inventory, inventory-summary, generate-report | ⏸️ PENDIENTE |
+| **P1.4-D: Config Sucursales** | Migrar /servers/{id}/sucursales-config | ⏸️ PENDIENTE |
+| **P1.4-E: Auditorías** | Migrar POST /auditorias | ⏸️ PENDIENTE |
+| **P1.4-F: Módulo Configuración** | config_asignaciones_repository, almacenes_sync_service | ⏸️ PENDIENTE |
 | **P1-C: Sincronización Catálogos** | **Scheduler de catálogos tipos_movimiento, categorias, departamentos** | ⏸️ RETOMAR |
 | **FASE T3** | **Migrar módulo de Compras de MongoDB a EDARSAHUB** | ⏸️ PRÓXIMA (P1) |
 | FASE Q1.3 (Pasiva) | Dry-run: Generar INSERTs de migración SIN ejecutar | ⏸️ PENDIENTE |
@@ -685,5 +689,36 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 ---
 
-**Última actualización:** 13-Dic-2025
+## Registro P1.4-B — QUERIES MIGRADO (14-Dic-2025)
+
+**Estado:** ✅ CERRADO
+
+**Problema:** Los endpoints de configuración de queries SQL de servidores (`/api/servers/{id}/queries/*`) usaban `db.servers` directo de MongoDB en lugar de `server_registry` / EDARSAHUB SQL.
+
+**Solución implementada:**
+- 4 endpoints migrados a `server_registry`:
+  - `GET /servers/{id}/queries` → `get_server_by_id()`
+  - `POST /servers/{id}/queries/validate` → `get_server_connection_info_with_secrets()`
+  - `PUT /servers/{id}/queries/{type}` → `get_server_connection_info_with_secrets()` + `update_server()`
+  - `DELETE /servers/{id}/queries/{type}` → `get_server_connection_info_with_secrets()` + `update_server()`
+- Corregido modelo Pydantic `Server` para aceptar objetos JSON en `tipos_movimiento`, `categorias`, `departamentos`
+- Corregido manejo de `None` en `get_server_queries()`
+- Agregado soporte a `update_server()` para campos `query_inventario`, `query_ventas`, `query_movimientos`, `queries_configured`
+
+**Archivos modificados:** 
+- `/app/backend/server.py` (líneas 596-598, 1587-1860)
+- `/app/backend/core/server_registry.py` (líneas ~1245)
+
+**Resultado:** 
+- ✅ 0 referencias activas a `db.servers` en endpoints de queries (líneas 1590-1900)
+- ✅ Endpoints funcionan correctamente (validado con curl)
+- ✅ No regresión en Tablero Ejecutivo, Catálogos, Finanzas
+- ✅ Passwords no expuestos
+- ✅ MongoDB solo como espejo para sync (sync_mongo=True)
+
+**Documentación:** `/app/memory/P1_4B_QUERIES_MIGRADO_EDARSAHUB.md`
+
+---
+
+**Última actualización:** 14-Dic-2025
 
