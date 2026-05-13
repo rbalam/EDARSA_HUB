@@ -670,9 +670,8 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 | Fase | Descripción | Estado |
 |------|-------------|--------|
-| **P1.4-C: Endpoints Inventario** | Migrar analyze-inventory, inventory-summary, generate-report | ⏸️ PENDIENTE |
-| **P1.4-D: Config Sucursales** | Migrar /servers/{id}/sucursales-config | ⏸️ PENDIENTE |
-| **P1.4-E: Auditorías** | Migrar POST /auditorias | ⏸️ PENDIENTE |
+| **P1.4-D: Config Sucursales** | Migrar /servers/{id}/sucursales-config, comparativo-inventarios | ⏸️ PENDIENTE |
+| **P1.4-E: Auditorías** | Migrar POST /auditorias y endpoints relacionados | ⏸️ PENDIENTE |
 | **P1.4-F: Módulo Configuración** | config_asignaciones_repository, almacenes_sync_service | ⏸️ PENDIENTE |
 | **P1-C: Sincronización Catálogos** | **Scheduler de catálogos tipos_movimiento, categorias, departamentos** | ⏸️ RETOMAR |
 | **FASE T3** | **Migrar módulo de Compras de MongoDB a EDARSAHUB** | ⏸️ PRÓXIMA (P1) |
@@ -686,6 +685,32 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 | FASE A5 | Poblar Usuario_EmpresasAsignacion | ⏸️ BACKLOG |
 | FASE A6 | Dual-read en login | ⏸️ BACKLOG |
 | FASES SYNC-C0+ | Sincronización incremental de Compras | ⏸️ BACKLOG |
+
+---
+
+## Registro P1.4-C — INVENTARIO/REPORTES MIGRADO (14-Dic-2025)
+
+**Estado:** ✅ CERRADO
+
+**Problema:** Los endpoints de reportes de inventario (`/reports/inventory`, `/reports/inventory-analysis`, `/reports/movement-details`, `/reports/sales-details`) usaban `db.servers` directo de MongoDB.
+
+**Solución implementada:**
+- 4 endpoints migrados a `server_registry.get_server_connection_info_with_secrets()`:
+  - `POST /reports/inventory`
+  - `POST /reports/inventory-analysis`
+  - `POST /reports/movement-details`
+  - `POST /reports/sales-details`
+
+**Archivos modificados:** 
+- `/app/backend/server.py` (líneas ~3148, ~3316, ~4654, ~4895)
+
+**Resultado:** 
+- ✅ Líneas 3155, 3372, 4667, 4907 ya no usan `db.servers`
+- ✅ Endpoints funcionan correctamente (validado con curl)
+- ✅ No regresión en Tablero Ejecutivo, Catálogos, Finanzas, Servidores
+- ✅ Passwords no expuestos
+
+**Documentación:** `/app/memory/P1_4C_INVENTARIO_MIGRADO_EDARSAHUB.md`
 
 ---
 

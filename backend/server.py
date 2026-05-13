@@ -3147,13 +3147,23 @@ async def get_insumos_pendientes(
 
 @api_router.post("/reports/inventory")
 async def generate_inventory_report(report_params: Dict, current_user: Dict = Depends(get_current_user)):
+    """
+    Genera un reporte de inventario usando queries predefinidas.
+    
+    FASE P1.4-C (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
+    NO FUENTE: MongoDB db.servers
+    """
+    from core.server_registry import get_server_connection_info_with_secrets
+    
     server_id = report_params.get('server_id')
     query_type = report_params.get('query_type')  # ventas, movimientos, productos, inventarios
     params = report_params.get('params', {})
     
-    # Get server
-    server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
-    if not server:
+    # FASE P1.4-C: Obtener servidor desde EDARSAHUB SQL via server_registry
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+    server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
+    if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     # Get query template
@@ -3324,7 +3334,13 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     - Cálculo de diferencias
     Usa filtros configurables por servidor (tipos_movimiento, categorias, departamentos)
     Acepta filtros adicionales del frontend (categorias, familias, subfamilias)
+    
+    FASE P1.4-C (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
+    NO FUENTE: MongoDB db.servers
     """
+    from core.server_registry import get_server_connection_info_with_secrets
+    
     server_id = report_params.get('server_id')
     sucursal = report_params.get('sucursal')
     almacen = report_params.get('almacen')
@@ -3368,9 +3384,10 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     logging.info(f"Filtros recibidos del frontend - Categorias: {filtro_categorias_frontend}, Familias: {filtro_familias_frontend}, SubFamilias: {filtro_subfamilias_frontend}")
     logging.info(f"Agrupar insumos: {agrupar_insumos}")
     
-    # Get server
-    server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
-    if not server:
+    # FASE P1.4-C: Obtener servidor desde EDARSAHUB SQL via server_registry
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+    server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
+    if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     try:
@@ -4656,7 +4673,13 @@ async def get_movement_details(params: Dict, current_user: Dict = Depends(get_cu
     """
     Obtiene el detalle de los movimientos para un producto específico.
     Devuelve: folio, fecha, cantidad, tipo de movimiento, descripción.
+    
+    FASE P1.4-C (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
+    NO FUENTE: MongoDB db.servers
     """
+    from core.server_registry import get_server_connection_info_with_secrets
+    
     server_id = params.get('server_id')
     producto_codigo = params.get('producto_codigo')
     sucursal = params.get('sucursal')
@@ -4664,8 +4687,10 @@ async def get_movement_details(params: Dict, current_user: Dict = Depends(get_cu
     fecha_ini = params.get('fecha_ini')
     fecha_fin = params.get('fecha_fin')
     
-    server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
-    if not server:
+    # FASE P1.4-C: Obtener servidor desde EDARSAHUB SQL via server_registry
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+    server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
+    if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     try:
@@ -4897,15 +4922,23 @@ async def get_sales_details(params: Dict, current_user: Dict = Depends(get_curre
     """
     Obtiene el detalle de las ventas para un producto específico.
     Devuelve: folio, fecha, cantidad, tipo de venta (directa/kit).
+    
+    FASE P1.4-C (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
+    NO FUENTE: MongoDB db.servers
     """
+    from core.server_registry import get_server_connection_info_with_secrets
+    
     server_id = params.get('server_id')
     producto_codigo = params.get('producto_codigo')
     sucursal = params.get('sucursal')
     fecha_ini = params.get('fecha_ini')
     fecha_fin = params.get('fecha_fin')
     
-    server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
-    if not server:
+    # FASE P1.4-C: Obtener servidor desde EDARSAHUB SQL via server_registry
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+    server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
+    if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     try:
