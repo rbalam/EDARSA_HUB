@@ -42,6 +42,7 @@ from core.source_resolver import (
 )
 from modules.comercial.adapters import sumar_ventas_api_local_a_sucursal
 from modules.comercial import repository as repo
+from core.server_registry import resolve_unidad_by_server_sucursal
 
 # BLOQUE 4: Import de queries centralizadas (Fase 1 Plan Migración)
 from modules.comercial.queries.softrestaurant import query_ventas_periodo_sr
@@ -1226,11 +1227,13 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
         
         hoy = dt_local.now()
         
-        # Mapeo de sucursales MPRO conocidas para buscar en APIs locales
-        # IMPORTANTE: Los nombres deben coincidir EXACTAMENTE con server_sucursales_config
+        # FIX P0 (Dic 2025): Mapeo de sucursales MPRO con sucursal_origen_id real de EDARSAHUB
+        # - api_key: Identificador operacional para consultar API local
+        # - sucursal_origen_id: Identificador canónico en EDARSAHUB.Unidades_Negocio
+        # REGLA: Resolver unidad via server_registry.resolve_unidad_by_server_sucursal()
         sucursales_mpro = [
-            {"nombre": "ORIGEN", "sucursal_id": "ORIGEN", "api_key": "origen"},
-            {"nombre": "130° QUERETARO", "sucursal_id": "130_QRO", "api_key": "130_qro"},
+            {"api_key": "origen", "sucursal_origen_id": "0023"},      # ORIGEN
+            {"api_key": "130_qro", "sucursal_origen_id": "0021"},     # 130° QUERETARO
         ]
         
         unidades = []
@@ -1238,9 +1241,17 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
         
         for suc in sucursales_mpro:
             try:
+                # FIX P0: Resolver unidad desde EDARSAHUB ANTES de consultar API
+                unidad_edarsahub = resolve_unidad_by_server_sucursal(
+                    server['id'], suc['sucursal_origen_id']
+                )
+                
+                # Obtener nombre canónico para la llamada a API local
+                nombre_api = unidad_edarsahub.get('nombre', 'DESCONOCIDO') if unidad_edarsahub else 'DESCONOCIDO'
+                
                 ventas_api = sumar_ventas_api_local_a_sucursal(
                     server_host=server['host'],
-                    sucursal_nombre=suc['nombre'],
+                    sucursal_nombre=nombre_api,
                     fecha_fin=fecha_fin,
                     mes_solicitado=hoy.month,
                     anio_solicitado=hoy.year,
@@ -1257,13 +1268,12 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
                     ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
                     cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
                     
-                    # CAMBIO B: Obtener código canónico desde EDARSAHUB
-                    codigo_canonico, nombre_canonico = _obtener_codigo_canonico_mpro(
-                        server['id'], suc['sucursal_id'], suc['nombre']
-                    )
+                    # FIX P0: Usar datos canónicos de EDARSAHUB via server_registry
+                    codigo_canonico = unidad_edarsahub.get('codigo', suc['sucursal_origen_id']) if unidad_edarsahub else suc['sucursal_origen_id']
+                    nombre_canonico = unidad_edarsahub.get('nombre', 'Unidad Desconocida') if unidad_edarsahub else 'Unidad Desconocida'
                     
                     unidades.append({
-                        "unidad": nombre_canonico,  # Usar nombre canónico de EDARSAHUB
+                        "unidad": nombre_canonico,  # Nombre canónico de EDARSAHUB
                         "server_id": server['id'],
                         "system_type": "MPRO",
                         "ventas": ventas,
@@ -1286,13 +1296,14 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
                         "cheque_prom": cheque_prom,
                         "es_ventas_dia": True,
                         "origen": "api_local",
-                        # CAMBIO B: Campos canónicos desde Unidades_Negocio EDARSAHUB
+                        # FIX P0: Campos canónicos desde Unidades_Negocio EDARSAHUB
                         "unidad_negocio_codigo": codigo_canonico,
                         "unidad_negocio_nombre": nombre_canonico,
+                        "sucursal_origen_id": suc['sucursal_origen_id'],  # Trazabilidad
                     })
-                    logging.info(f"MPRO {server['name']} - {suc['nombre']}: API local OK - ${ventas:,.2f}")
+                    logging.info(f"MPRO {server['name']} - {nombre_canonico}: API local OK - ${ventas:,.2f}")
             except Exception as e:
-                logging.warning(f"MPRO {server['name']} - {suc['nombre']}: API local error - {e}")
+                logging.warning(f"MPRO {server['name']} - sucursal_origen_id={suc['sucursal_origen_id']}: API local error - {e}")
         
         if api_local_funciono and unidades:
             return unidades
@@ -1307,13 +1318,16 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
         
         unidades_offline = []
         for suc in sucursales_mpro:
-            # CAMBIO B: Obtener código canónico desde EDARSAHUB
-            codigo_canonico, nombre_canonico = _obtener_codigo_canonico_mpro(
-                server['id'], suc['sucursal_id'], suc['nombre']
+            # FIX P0: Resolver unidad desde EDARSAHUB via server_registry
+            unidad_edarsahub = resolve_unidad_by_server_sucursal(
+                server['id'], suc['sucursal_origen_id']
             )
             
+            codigo_canonico = unidad_edarsahub.get('codigo', suc['sucursal_origen_id']) if unidad_edarsahub else suc['sucursal_origen_id']
+            nombre_canonico = unidad_edarsahub.get('nombre', 'Unidad Desconocida') if unidad_edarsahub else 'Unidad Desconocida'
+            
             unidades_offline.append({
-                "unidad": nombre_canonico,  # Usar nombre canónico de EDARSAHUB
+                "unidad": nombre_canonico,  # Nombre canónico de EDARSAHUB
                 "server_id": server['id'],
                 "system_type": "MPRO",
                 "ventas": 0,
@@ -1339,9 +1353,10 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
                 "status": "offline",
                 "source_status": "NO_DATA",
                 "message": "API local no disponible - Sin datos de ventas del día",
-                # CAMBIO B: Campos canónicos desde Unidades_Negocio EDARSAHUB
+                # FIX P0: Campos canónicos desde Unidades_Negocio EDARSAHUB
                 "unidad_negocio_codigo": codigo_canonico,
                 "unidad_negocio_nombre": nombre_canonico,
+                "sucursal_origen_id": suc['sucursal_origen_id'],  # Trazabilidad
             })
         return unidades_offline
     
