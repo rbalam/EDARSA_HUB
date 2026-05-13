@@ -3,6 +3,8 @@ EDARSA HUB - Catálogos Repository
 =================================
 Acceso a datos para el módulo de catálogos.
 Ejecuta queries dinámicos contra SQL Server (EDARSA HUB).
+
+FASE P1.2 (Dic 2025): Migrado de MongoDB db.servers a EDARSAHUB_CONFIG de server_registry.
 """
 
 import logging
@@ -10,12 +12,14 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 
 from core.db import execute_sql_query
+from core.server_registry import EDARSAHUB_CONFIG
 from modules.catalogos.schemas import ESTRUCTURA_TABLAS
 
 logger = logging.getLogger(__name__)
 
 
-# ID del servidor EDARSA HUB
+# ID del servidor EDARSA HUB (legacy - ya no se usa para conexión)
+# FASE P1.2: La conexión ahora viene de EDARSAHUB_CONFIG, no de MongoDB
 EDARSA_HUB_SERVER_ID = "bea40259-35f1-4693-bda2-d2d10e13e56a"
 
 
@@ -26,12 +30,23 @@ def escape_sql_string(value: str) -> str:
     return str(value).replace("'", "''")
 
 
-async def get_edarsa_hub_connection(db) -> Dict:
-    """Obtiene las credenciales del servidor EDARSA HUB desde MongoDB."""
-    server = await db.servers.find_one({"id": EDARSA_HUB_SERVER_ID, "active": True})
-    if not server:
-        raise Exception("Servidor EDARSA HUB no configurado")
-    return server
+async def get_edarsa_hub_connection(db=None) -> Dict:
+    """
+    Obtiene las credenciales del servidor EDARSA HUB.
+    
+    FASE P1.2 (Dic 2025): Migrado de MongoDB db.servers a server_registry.EDARSAHUB_CONFIG.
+    El parámetro `db` se mantiene por compatibilidad pero ya no se usa.
+    
+    FUENTE: core.server_registry.EDARSAHUB_CONFIG (variables de entorno)
+    NO FUENTE: MongoDB db.servers
+    """
+    return {
+        'host': EDARSAHUB_CONFIG['host'],
+        'port': EDARSAHUB_CONFIG['port'],
+        'database': EDARSAHUB_CONFIG['database'],
+        'username': EDARSAHUB_CONFIG['username'],
+        'password': EDARSAHUB_CONFIG['password'],
+    }
 
 
 def execute_edarsa_query(server: Dict, query: str) -> List[Dict]:
