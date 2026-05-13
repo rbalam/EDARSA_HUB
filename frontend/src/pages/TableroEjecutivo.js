@@ -75,16 +75,14 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       : 0;
     
     // Transformar unidades al formato v1
-    // CORRECCIÓN MAYO 2026: Preservar variaciones si V2 las devuelve, si no usar null (no 0 falso)
-    // Las variaciones vienen de EDARSAHUB cuando el backend V2 las calcula
-    // CAMBIO D JUNIO 2026: Mapear unidad_negocio_id de V2 a código canónico para cruce con V1
-    const mapV2IdToCodigoCanonigo = {
-      '130-MER': '130MID',
-      '130-QRO': '130QRO',
-      'CIENFUEGOS': 'CIENFUEGOS',
-      'LA-ESTELAR': 'ESTELAR',
-      'ORIGEN': 'ORIGEN'
-    };
+    // =========================================================================
+    // FASE 3 (Junio 2026): V2 es la fuente ÚNICA para Tablero Ejecutivo Comercial
+    // - V2 ya devuelve unidad_negocio_codigo oficial desde EDARSAHUB
+    // - V2 ya calcula variaciones (var_vs_mes_ant, var_vs_año_ant, etc.)
+    // - NO se requiere llamar a V1 para enriquecer
+    // - Si variación es null: mostrar "-"
+    // - Si variación es 0.0: mostrar "0.0%" (valor real)
+    // =========================================================================
     
     const unidadesTransformadas = unidades.map(u => ({
       id: u.unidad_negocio_id,
@@ -97,7 +95,9 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       ticket_prom: u.ticket_promedio || (u.tickets_total > 0 ? u.ventas_total / u.tickets_total : 0),
       cheque_prom: u.pax_total > 0 ? u.ventas_total / u.pax_total : 0,
       proyeccion: calcularProyeccion(u.ventas_total || 0),
-      // CORRECCIÓN: Usar valores de backend si existen, si no null (no 0 falso)
+      // FASE 3: Variaciones vienen directamente de V2 (EDARSAHUB)
+      // null = sin base comparativa (mostrar "-")
+      // 0.0 = variación real cero (mostrar "0.0%")
       var_vs_mes_ant: u.var_vs_mes_ant !== undefined ? u.var_vs_mes_ant : null,
       var_vs_año_ant: u.var_vs_año_ant !== undefined ? u.var_vs_año_ant : null,
       ventas_ant: u.ventas_ant !== undefined ? u.ventas_ant : null,
@@ -106,8 +106,12 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       pax_año: u.pax_año !== undefined ? u.pax_año : null,
       cheques_ant: u.cheques_ant !== undefined ? u.cheques_ant : null,
       cheques_año: u.cheques_año !== undefined ? u.cheques_año : null,
-      // CAMBIO D: Agregar código canónico para cruce con V1
-      unidad_negocio_codigo: mapV2IdToCodigoCanonigo[u.unidad_negocio_id] || u.unidad_negocio_id,
+      var_pax_mes: u.var_pax_mes !== undefined ? u.var_pax_mes : null,
+      var_pax_año: u.var_pax_año !== undefined ? u.var_pax_año : null,
+      var_cheques_mes: u.var_cheques_mes !== undefined ? u.var_cheques_mes : null,
+      var_cheques_año: u.var_cheques_año !== undefined ? u.var_cheques_año : null,
+      // FASE 3: Código canónico viene directamente de V2 (Unidades_Negocio.codigo)
+      unidad_negocio_codigo: u.unidad_negocio_codigo || u.unidad_negocio_id,
       unidad_negocio_nombre: u.unidad_negocio_nombre,
       status: 'online',
       data_status: 'DATA_OK',
@@ -116,7 +120,8 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       cache_warning: null,
       error_message: null,
       _v2_fuente: u._v2_fuente || 'EDARSAHUB',
-      _v2_tabla: u._v2_tabla || 'Comercial_KPIs_Diarios_v2'
+      _v2_tabla: u._v2_tabla || 'Comercial_KPIs_Diarios_v2',
+      _variaciones_source: 'V2_EDARSAHUB'  // FASE 3: Marcador de origen
     }));
     
     // Construir respuesta en formato v1
@@ -742,124 +747,22 @@ export default function TableroEjecutivo() {
           if (v2Response.data?.success) {
             responseData = transformV2ToV1Format(v2Response.data, selectedMeses, selectedAnios, logger);
             usedV2 = true;
-            logger.log(`[COMERCIAL_V2] Éxito: ${responseData.unidades?.length} unidades desde EDARSAHUB v2`);
+            logger.log(`[FASE3] Tablero Ejecutivo Comercial: V2 es fuente ÚNICA (${responseData.unidades?.length} unidades desde EDARSAHUB)`);
             
-            // CORRECCIÓN MAYO 2026: Enriquecer V2 con variaciones de V1
-            // V2 no calcula variaciones, V1 sí (desde EDARSAHUB).
-            // Backend V1 es la autoridad para variaciones.
-            try {
-              const v1Response = await api.get(`/comercial/tablero-ejecutivo`, {
-                params: { 
-                  meses: selectedMeses.join(','),
-                  anios: selectedAnios.join(','),
-                  tipo_comparacion: tipoComparacion
-                },
-                timeout: 30000
-              });
-              
-              if (v1Response.data?.totales) {
-                const v1Totales = v1Response.data.totales;
-                const v1Unidades = v1Response.data.unidades || [];
-                
-                // Enriquecer totales con variaciones de V1
-                if (v1Totales.var_vs_mes_ant !== undefined) {
-                  responseData.totales.var_vs_mes_ant = v1Totales.var_vs_mes_ant;
-                }
-                if (v1Totales.var_vs_año_ant !== undefined) {
-                  responseData.totales.var_vs_año_ant = v1Totales.var_vs_año_ant;
-                }
-                if (v1Totales.var_pax_mes !== undefined) {
-                  responseData.totales.var_pax_mes = v1Totales.var_pax_mes;
-                }
-                if (v1Totales.var_pax_año !== undefined) {
-                  responseData.totales.var_pax_año = v1Totales.var_pax_año;
-                }
-                if (v1Totales.var_cheques_mes !== undefined) {
-                  responseData.totales.var_cheques_mes = v1Totales.var_cheques_mes;
-                }
-                if (v1Totales.var_cheques_año !== undefined) {
-                  responseData.totales.var_cheques_año = v1Totales.var_cheques_año;
-                }
-                if (v1Totales.var_proy_vs_año !== undefined) {
-                  responseData.totales.var_proy_vs_año = v1Totales.var_proy_vs_año;
-                }
-                if (v1Totales.ventas_ant !== undefined) {
-                  responseData.totales.ventas_ant = v1Totales.ventas_ant;
-                }
-                if (v1Totales.ventas_año !== undefined) {
-                  responseData.totales.ventas_año = v1Totales.ventas_año;
-                }
-                
-                // =========================================================================
-                // CAMBIO D: Cruce V1/V2 por unidad_negocio_codigo (llave canónica)
-                // FUENTE MAESTRA: Unidades_Negocio.codigo (EDARSAHUB)
-                // NO usar nombre visible como llave principal
-                // Fallback defensivo: nombre normalizado solo si no existe código
-                // =========================================================================
-                const v1UnidadesMap = {};
-                const v1UnidadesMapByName = {};  // Fallback defensivo
-                
-                v1Unidades.forEach(u => {
-                  // Llave primaria: unidad_negocio_codigo (canónico de EDARSAHUB)
-                  const codigo = u.unidad_negocio_codigo || '';
-                  if (codigo) {
-                    v1UnidadesMap[codigo.toUpperCase()] = u;
-                  }
-                  
-                  // Llave secundaria (fallback): nombre normalizado
-                  const keyName = (u.unidad || u.nombre || '').toLowerCase().trim();
-                  v1UnidadesMapByName[keyName] = u;
-                });
-                
-                responseData.unidades = responseData.unidades.map(u2 => {
-                  // Intentar cruce por código canónico primero
-                  const codigo2 = (u2.unidad_negocio_codigo || '').toUpperCase();
-                  let v1Match = codigo2 ? v1UnidadesMap[codigo2] : null;
-                  
-                  // Fallback defensivo: cruce por nombre normalizado
-                  if (!v1Match) {
-                    const keyName = (u2.unidad || u2.nombre || '').toLowerCase().trim();
-                    v1Match = v1UnidadesMapByName[keyName];
-                    if (v1Match) {
-                      logger.log(`[CAMBIO_D] Cruce por fallback (nombre) para: ${u2.unidad}`);
-                    }
-                  }
-                  
-                  if (v1Match) {
-                    return {
-                      ...u2,
-                      var_vs_mes_ant: v1Match.var_vs_mes_ant !== undefined ? v1Match.var_vs_mes_ant : u2.var_vs_mes_ant,
-                      var_vs_año_ant: v1Match.var_vs_año_ant !== undefined ? v1Match.var_vs_año_ant : u2.var_vs_año_ant,
-                      ventas_ant: v1Match.ventas_ant !== undefined ? v1Match.ventas_ant : u2.ventas_ant,
-                      ventas_año: v1Match.ventas_año !== undefined ? v1Match.ventas_año : u2.ventas_año,
-                      pax_ant: v1Match.pax_ant !== undefined ? v1Match.pax_ant : u2.pax_ant,
-                      pax_año: v1Match.pax_año !== undefined ? v1Match.pax_año : u2.pax_año,
-                      cheques_ant: v1Match.cheques_ant !== undefined ? v1Match.cheques_ant : u2.cheques_ant,
-                      cheques_año: v1Match.cheques_año !== undefined ? v1Match.cheques_año : u2.cheques_año,
-                      // Preservar código canónico de V1 si existe
-                      unidad_negocio_codigo: v1Match.unidad_negocio_codigo || u2.unidad_negocio_codigo,
-                      _variaciones_source: 'V1_EDARSAHUB'
-                    };
-                  }
-                  return u2;
-                });
-                
-                logger.log(`[COMERCIAL_V2] Variaciones enriquecidas desde V1 (EDARSAHUB)`);
-                
-                // Log de comparación de ventas
-                const v1Ventas = v1Response.data.totales.ventas;
-                const v2Ventas = responseData.totales.ventas;
-                const diffPercent = Math.abs(v1Ventas - v2Ventas) / Math.max(v1Ventas, 1) * 100;
-                
-                if (diffPercent > 1) {
-                  logger.warn(`[COMERCIAL_V2_COMPARE] Diferencia >1%: v1=$${v1Ventas.toLocaleString()}, v2=$${v2Ventas.toLocaleString()}, diff=${diffPercent.toFixed(2)}%`);
-                } else {
-                  logger.log(`[COMERCIAL_V2_COMPARE] Datos coinciden: diff=${diffPercent.toFixed(2)}%`);
-                }
-              }
-            } catch (enrichError) {
-              logger.log('[COMERCIAL_V2] No se pudieron obtener variaciones de V1 (continuando sin ellas)');
-            }
+            // =========================================================================
+            // FASE 3 (Junio 2026): V2 ES LA FUENTE ÚNICA
+            // - V2 ya devuelve variaciones calculadas (var_vs_mes_ant, var_vs_año_ant)
+            // - V2 ya devuelve unidad_negocio_codigo oficial
+            // - NO se llama a V1 para enriquecer
+            // - Endpoint V1 (/comercial/tablero-ejecutivo) sigue existiendo pero no se usa aquí
+            // =========================================================================
+            
+            // Log de validación de variaciones
+            const unidadesConVariaciones = responseData.unidades.filter(u => 
+              u.var_vs_mes_ant !== null || u.var_vs_año_ant !== null
+            );
+            logger.log(`[FASE3] Unidades con variaciones de V2: ${unidadesConVariaciones.length}/${responseData.unidades?.length}`);
+            
           } else {
             throw new Error('Respuesta v2 no exitosa');
           }
