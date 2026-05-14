@@ -166,22 +166,89 @@ def get_kpis_por_unidad(
 ) -> List[Dict]:
     """
     Obtiene KPIs agregados por unidad para el dashboard.
+    
+    CORRECCIÓN BUG 14-May-2026 (v2):
+    - Se detectaron datos DUPLICADOS en Comercial_KPIs_Diarios_v2 para Mérida
+    - Días 10-12 mayo tienen registros con 130MID y 130-MER (mismo monto duplicado)
+    - La solución es usar ROW_NUMBER para eliminar duplicados por fecha+nombre normalizado
+    - El valor correcto validado desde fuente: $1,577,253 (no $1.99M)
     """
-    where_clauses = [
+    base_where = [
         f"fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'",
         "activo = 1",
         "es_demo = 0"
     ]
     
     if unidades_permitidas:
-        ids_quoted = ','.join([f"'{u}'" for u in unidades_permitidas])
-        where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
+        # Expandir IDs para incluir variantes conocidas
+        expanded_ids = []
+        for uid in unidades_permitidas:
+            expanded_ids.append(uid)
+            if uid == '130MID':
+                expanded_ids.extend(['130-MER', '130-MID'])
+            elif uid == '130QRO':
+                expanded_ids.extend(['130-QRO'])
+            elif uid == 'ESTELAR':
+                expanded_ids.extend(['LA-ESTELAR'])
+        ids_quoted = ','.join([f"'{u}'" for u in set(expanded_ids)])
+        base_where.append(f"unidad_negocio_id IN ({ids_quoted})")
     
+    # Query con deduplicación:
+    # 1. Normalizar nombres e IDs
+    # 2. Usar ROW_NUMBER para detectar duplicados por fecha+nombre
+    # 3. Tomar solo el primer registro de cada grupo (rn=1)
     query = f"""
+    WITH datos_normalizados AS (
+        SELECT 
+            fecha_operacion,
+            -- Normalizar nombre
+            CASE 
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%MERIDA%' 
+                  OR UPPER(unidad_negocio_nombre) LIKE '%MÉRIDA%' THEN '130° MERIDA'
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%QUERETARO%' 
+                  OR UPPER(unidad_negocio_nombre) LIKE '%QUERÉTARO%' THEN '130° QUERETARO'
+                ELSE UPPER(TRIM(unidad_negocio_nombre))
+            END as nombre_normalizado,
+            -- ID canónico
+            CASE 
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%MERIDA%' 
+                  OR UPPER(unidad_negocio_nombre) LIKE '%MÉRIDA%' THEN '130MID'
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%QUERETARO%' 
+                  OR UPPER(unidad_negocio_nombre) LIKE '%QUERÉTARO%' THEN '130QRO'
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%CIENFUEGOS%' THEN 'CIENFUEGOS'
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%ESTELAR%' THEN 'ESTELAR'
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%ORIGEN%' THEN 'ORIGEN'
+                ELSE unidad_negocio_id
+            END as id_normalizado,
+            sistema_origen,
+            ventas_total,
+            ventas_sin_propina,
+            propinas_total,
+            tickets_total,
+            pax_total,
+            ticket_promedio,
+            -- Detectar duplicados: mismo día + mismo nombre normalizado
+            ROW_NUMBER() OVER (
+                PARTITION BY fecha_operacion, 
+                    CASE 
+                        WHEN UPPER(unidad_negocio_nombre) LIKE '%MERIDA%' 
+                          OR UPPER(unidad_negocio_nombre) LIKE '%MÉRIDA%' THEN '130° MERIDA'
+                        WHEN UPPER(unidad_negocio_nombre) LIKE '%QUERETARO%' 
+                          OR UPPER(unidad_negocio_nombre) LIKE '%QUERÉTARO%' THEN '130° QUERETARO'
+                        ELSE UPPER(TRIM(unidad_negocio_nombre))
+                    END
+                ORDER BY id DESC  -- Preferir el ID más reciente
+            ) as rn
+        FROM Comercial_KPIs_Diarios_v2
+        WHERE {' AND '.join(base_where)}
+    ),
+    datos_sin_duplicados AS (
+        SELECT * FROM datos_normalizados WHERE rn = 1
+    )
     SELECT 
-        unidad_negocio_id,
-        unidad_negocio_nombre,
-        sistema_origen,
+        id_normalizado as unidad_negocio_id,
+        nombre_normalizado as unidad_negocio_nombre,
+        MAX(sistema_origen) as sistema_origen,
         COUNT(*) as dias,
         SUM(ventas_total) as ventas_total,
         SUM(ventas_sin_propina) as ventas_sin_propina,
@@ -191,10 +258,9 @@ def get_kpis_por_unidad(
         AVG(ticket_promedio) as ticket_promedio_avg,
         MIN(fecha_operacion) as fecha_min,
         MAX(fecha_operacion) as fecha_max
-    FROM Comercial_KPIs_Diarios_v2
-    WHERE {' AND '.join(where_clauses)}
-    GROUP BY unidad_negocio_id, unidad_negocio_nombre, sistema_origen
-    ORDER BY unidad_negocio_id
+    FROM datos_sin_duplicados
+    GROUP BY id_normalizado, nombre_normalizado
+    ORDER BY ventas_total DESC
     """
     
     return _execute_readonly_query(query)

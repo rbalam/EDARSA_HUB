@@ -814,6 +814,9 @@ async def comercial_v2_dashboard(
             unidades_permitidas
         )
         
+        # Ordenar unidades por ventas_total DESC (corrección bug ordenamiento)
+        por_unidad.sort(key=lambda x: float(x.get('ventas_total') or 0), reverse=True)
+        
         # Construir respuesta
         response_data = {
             "totales": serialize_response({
