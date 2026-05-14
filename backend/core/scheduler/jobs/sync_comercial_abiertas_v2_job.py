@@ -230,8 +230,12 @@ WHERE cancelado = 0
   AND CAST(fecha AS DATE) = CAST(GETDATE() AS DATE)
 """
 
-# MPRO: Ventas abiertas (Comanda = sin cerrar)
-QUERY_MPRO_VENTAS_ABIERTAS = """
+# =============================================================================
+# QUERIES MPRO - ORIGEN (usa Venta_Encabezado estándar)
+# =============================================================================
+
+# MPRO ORIGEN: Ventas abiertas (Comanda = sin cerrar)
+QUERY_MPRO_VENTAS_ABIERTAS_ORIGEN = """
 SELECT 
     CAST(GETDATE() AS DATE) as fecha,
     SUM(ISNULL(ve.Vn_Precio_Neto_Importe, 0)) as ventas_abiertas,
@@ -244,8 +248,8 @@ WHERE CAST(ve.Vn_Fecha AS DATE) = CAST(GETDATE() AS DATE)
   AND ve.Vn_Tabla = 'Comanda'
 """
 
-# MPRO: Ventas cerradas del día
-QUERY_MPRO_CERRADAS_HOY = """
+# MPRO ORIGEN: Ventas cerradas del día
+QUERY_MPRO_CERRADAS_HOY_ORIGEN = """
 SELECT 
     SUM(ISNULL(ve.Vn_Precio_Neto_Importe, 0)) as ventas_cerradas_dia,
     COUNT(DISTINCT ve.Vn_Folio) as tickets_cerrados_dia,
@@ -255,6 +259,43 @@ LEFT JOIN Comanda c ON ve.Vn_Documento = c.Co_Folio AND ve.Sc_Cve_Sucursal = c.S
 WHERE CAST(ve.Vn_Fecha AS DATE) = CAST(GETDATE() AS DATE)
   AND ve.Sc_Cve_Sucursal = '{sucursal_id}'
   AND ve.Vn_Tabla <> 'Comanda'
+"""
+
+# =============================================================================
+# QUERIES MPRO - QRO (usa Comanda + Comanda_Detalle directamente)
+# NOTA: QRO no tiene datos en Venta_Encabezado, solo en Comanda/Comanda_Detalle
+# =============================================================================
+
+# MPRO QRO: Ventas abiertas (Comanda + Comanda_Detalle, estado 'AC', sin baja)
+QUERY_MPRO_VENTAS_ABIERTAS_QRO = """
+SELECT 
+    CAST(GETDATE() AS DATE) as fecha,
+    SUM(ISNULL(cd.Cd_Importe, 0)) as ventas_abiertas,
+    COUNT(DISTINCT c.Co_Folio) as tickets_abiertos,
+    SUM(DISTINCT ISNULL(c.Co_Personas, 1)) as pax_abiertos
+FROM Comanda c
+INNER JOIN Comanda_Detalle cd ON c.Co_Folio = cd.Co_Folio
+WHERE CAST(c.Co_Fecha AS DATE) = CAST(GETDATE() AS DATE)
+  AND c.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND cd.Es_Cve_Estado = 'AC'
+  AND cd.Fecha_Baja IS NULL
+  AND c.Es_Cve_Estado = 'AC'
+"""
+
+# MPRO QRO: Ventas cerradas del día (Comanda con cierre)
+# NOTA: En QRO, las ventas cerradas se identifican por Es_Cve_Estado diferente o Fecha_Baja
+QUERY_MPRO_CERRADAS_HOY_QRO = """
+SELECT 
+    SUM(ISNULL(cd.Cd_Importe, 0)) as ventas_cerradas_dia,
+    COUNT(DISTINCT c.Co_Folio) as tickets_cerrados_dia,
+    SUM(DISTINCT ISNULL(c.Co_Personas, 1)) as pax_cerrados_dia
+FROM Comanda c
+INNER JOIN Comanda_Detalle cd ON c.Co_Folio = cd.Co_Folio
+WHERE CAST(c.Co_Fecha AS DATE) = CAST(GETDATE() AS DATE)
+  AND c.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND c.Es_Cve_Estado <> 'AC'
+  AND cd.Es_Cve_Estado = 'AC'
+  AND cd.Fecha_Baja IS NULL
 """
 
 
@@ -471,16 +512,40 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             
             logger.info(f"[SYNC_ABIERTAS_V2] Usando API: {api_config['api_url']} para sucursal {sucursal_id}")
             
+            # =================================================================
+            # SELECCIONAR QUERY SEGÚN UNIDAD
+            # ORIGEN: Usa Venta_Encabezado (estructura estándar MPRO)
+            # 130QRO: Usa Comanda + Comanda_Detalle (estructura alternativa)
+            # =================================================================
+            if unidad_id == '130QRO':
+                # QRO usa estructura diferente: Comanda + Comanda_Detalle
+                query_template_abiertas = QUERY_MPRO_VENTAS_ABIERTAS_QRO
+                query_template_cerradas = QUERY_MPRO_CERRADAS_HOY_QRO
+                logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Usando query Comanda+Comanda_Detalle")
+            else:
+                # ORIGEN y otras unidades MPRO usan Venta_Encabezado estándar
+                query_template_abiertas = QUERY_MPRO_VENTAS_ABIERTAS_ORIGEN
+                query_template_cerradas = QUERY_MPRO_CERRADAS_HOY_ORIGEN
+                logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Usando query Venta_Encabezado estándar")
+            
             # Query ventas abiertas via API local
-            query_abiertas = QUERY_MPRO_VENTAS_ABIERTAS.format(sucursal_id=sucursal_id)
+            query_abiertas = query_template_abiertas.format(sucursal_id=sucursal_id)
             rows_abiertas, conn_status = _execute_query_via_api_local(api_config, query_abiertas)
             
             # REGLA: Si falla API, NO escribir $0
             if conn_status != "API_LOCAL_OK":
                 raise Exception(f"API Local falló: {conn_status}")
             
+            # REGLA: Si la query retorna null/vacío, NO escribir $0 (conservar último dato válido)
+            abiertas_data = rows_abiertas[0] if rows_abiertas else {}
+            ventas_value = abiertas_data.get('ventas_abiertas')
+            if ventas_value is None and (not rows_abiertas or rows_abiertas[0].get('tickets_abiertos', 0) == 0):
+                # La API respondió pero no hay datos - verificar si es error de query o sin operación
+                logger.warning(f"[SYNC_ABIERTAS_V2] {nombre}: API OK pero ventas_abiertas=null, tickets=0")
+                # Solo registrar error si realmente no hubo datos (no confundir con $0 legítimo)
+            
             # Query ventas cerradas via API local
-            query_cerradas = QUERY_MPRO_CERRADAS_HOY.format(sucursal_id=sucursal_id)
+            query_cerradas = query_template_cerradas.format(sucursal_id=sucursal_id)
             rows_cerradas, _ = _execute_query_via_api_local(api_config, query_cerradas)
             
             # Extraer valores

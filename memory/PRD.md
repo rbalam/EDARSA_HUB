@@ -767,3 +767,50 @@ Las siguientes funciones SIGUEN usando MongoDB y deben migrarse en fases futuras
 - ✅ FASE 3-A: Diagnóstico pasivo
 - ✅ FASE 3-B: DDL y migración de datos
 
+---
+
+## ✅ BUG-VENTAS-DIA-QRO-001 RESUELTO (14-May-2026)
+
+**Problema:** 130° QUERETARO mostraba $0 en Ventas del Día en el Tablero Ejecutivo.
+
+**Causa raíz identificada:**
+- La query MPRO usada por `sync_comercial_abiertas_v2_job.py` consultaba la tabla `Venta_Encabezado` con filtro `Vn_Tabla = 'Comanda'`
+- ORIGEN funciona con esa estructura de tablas
+- QRO tiene una estructura diferente: sus ventas están en `Comanda` + `Comanda_Detalle` (no en `Venta_Encabezado`)
+- El job escribía $0 porque la query no encontraba datos en la estructura esperada
+
+**Diagnóstico realizado:**
+1. Confirmé que el Tablero NO consulta APIs en vivo (arquitectura correcta)
+2. Confirmé que el endpoint `/v2/comercial/ventas-dia` lee solo de EDARSAHUB SQL
+3. Confirmé que ambas APIs locales (QRO y ORIGEN) responden HTTP 200
+4. Confirmé que la estructura de BD de QRO es `Comanda` + `Comanda_Detalle`
+5. Identifiqué que el campo `Es_Cve_Estado = 'AC'` indica registros activos en QRO
+
+**Solución implementada:**
+- Creé queries específicas para QRO que leen de `Comanda` + `Comanda_Detalle`:
+  - `QUERY_MPRO_VENTAS_ABIERTAS_QRO`: Lee ventas abiertas sumando `Cd_Importe` de `Comanda_Detalle`
+  - `QUERY_MPRO_CERRADAS_HOY_QRO`: Lee ventas cerradas del día
+- Modifiqué `sync_comercial_abiertas_v2_job.py` para seleccionar la query correcta según la unidad:
+  - `130QRO`: Usa queries de `Comanda + Comanda_Detalle`
+  - `ORIGEN`: Usa queries de `Venta_Encabezado` (sin cambio)
+- Mantuve la regla de NO escribir $0 si la sincronización falla
+
+**Archivo modificado:** `/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py`
+
+**Validación realizada:**
+1. ✅ Tabla EDARSAHUB SQL: `Comercial_Ventas_Dia_Abiertas_v2` tiene 130QRO con $12,978.00
+2. ✅ Endpoint: `/v2/comercial/ventas-dia` devuelve 130QRO correctamente
+3. ✅ Job manual: Sincroniza correctamente 130QRO ($12,978) y ORIGEN ($10,749)
+4. ✅ Sin regresión en otras unidades (SoftRestaurant)
+
+**Confirmaciones de arquitectura:**
+- ✅ El tablero NO usa conexiones live
+- ✅ El endpoint solo lee EDARSAHUB SQL
+- ✅ QRO y ORIGEN usan la misma lógica de sincronización (diferente query)
+- ✅ Sin SQL MPRO central
+- ✅ Sin MongoDB como fuente de negocio
+- ✅ Sin hardcodeo de importes
+- ✅ Sin $0 falso por error de credenciales
+
+**Snapshot QRO:** 2026-05-14T20:24:06 (última sincronización exitosa)
+
