@@ -85,18 +85,27 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 | Sistema_EmpresasMongoMap | 5 | ✓ Completo |
 | Usuario_MigracionMongoTrace | 11 | ✓ Completo |
 
+### FASE 2-C - Validación Post-Migración (Completada - 14-Dic-2025)
+- [x] Validación cruzada MongoDB vs SQL completada
+- [x] 11/11 usuarios con integridad de datos
+- [x] 11/11 hashes bcrypt válidos
+- [x] 11/11 UUIDs y MongoLegacyID presentes
+- [x] 5/5 empresas mapeadas correctamente
+- [x] 27/27 asignaciones de empresas válidas
+- [x] Sin duplicados ni inconsistencias críticas
+- [x] 4 usuarios sin empresas documentados (consistente con MongoDB)
+- [x] Recomendación SUPERADMIN: Opción B (acceso global implícito)
+- [x] Reporte: `/app/docs/reports/FASE2C_VALIDACION_POST_MIGRACION_AUTH_RBAC_SQL.md`
+
 ---
 
 ## Fases Pendientes (P0)
 
-### FASE 2-C - Validación Post-Migración
-- [ ] Validación cruzada MongoDB vs SQL
-- [ ] Verificación de integridad de mapeos
-- [ ] Prueba de consistencia de auth
-
-### FASE 2-D - Auth Repository SQL
+### FASE 2-D - Auth Repository SQL Paralelo
 - [ ] Crear user_repository_sql.py
 - [ ] Implementar funciones equivalentes a MongoDB
+- [ ] Implementar regla SUPERADMIN (acceso global implícito)
+- [ ] Usar PublicUUID como user['id'] en respuestas
 
 ### FASE 2-C - Validación Post-Migración
 - [ ] Validar conteos MongoDB vs SQL
@@ -168,8 +177,9 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - `/app/docs/reports/FASE2B2_POBLADO_USUARIO_ROLES_ASIGNACION.md`
 - `/app/docs/reports/FASE2B2_1_MAPEO_EMPRESAS_MONGO_SQL.md`
 - `/app/docs/reports/FASE2B3_POBLADO_USUARIO_EMPRESAS_ASIGNACION.md`
+- `/app/docs/reports/FASE2C_VALIDACION_POST_MIGRACION_AUTH_RBAC_SQL.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE 2-B3 Completada (FASE 2 Base Auth/RBAC Completada)*
+*Última actualización: 14-Dic-2025 - FASE 2-C Completada (Migración Base Validada)*
