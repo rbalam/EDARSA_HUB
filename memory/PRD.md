@@ -313,7 +313,35 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 
 ---
 
-*Última actualización: 14-May-2026 - FASE RBAC-SCOPE-F Completada*
+*Última actualización: 14-May-2026 - FASE RBAC-SCOPE-G Completada*
+
+## ✅ RBAC-SCOPE-G COMPLETADA (14-May-2026)
+
+**Objetivo:** Eliminar dependencia MongoDB del módulo Usuarios/Roles para operaciones productivas.
+
+**Funciones migradas a SQL:**
+- `find_user_by_email()` → `find_user_by_email_sql()`
+- `find_user_by_id()` → `find_user_by_id_sql()`
+- `create_user()` → `create_user_sql()`
+- `update_user()` → `update_user_sql()`
+- `deactivate_user()` → `deactivate_user_sql()`
+
+**Validaciones:**
+- ✅ Crear usuario nuevo escribe en SQL (no en MongoDB)
+- ✅ Usuario puede hacer login (leído desde SQL)
+- ✅ Desactivar usuario actualiza SQL
+- ✅ Usuario desactivado no puede hacer login
+- ✅ GET /api/users devuelve 11 usuarios activos
+- ✅ MongoDB NO fue modificado
+
+**Referencias MongoDB residuales (justificadas):**
+- `password_reset.py`: Flujo de reset de passwords (fuera de alcance)
+- `context_service.py`: Contexto de UI (fuera de alcance)
+- `repository.py:get_all_users()`: Solo para campos `sec_*` (metadatos piloto)
+
+**Reporte:** `/app/docs/reports/RBAC_SCOPE_G_ELIMINACION_MONGODB_USUARIOS_ROLES.md`
+
+---
 
 ## ✅ RBAC-SCOPE-F COMPLETADA (14-May-2026)
 
@@ -515,13 +543,14 @@ Las siguientes funciones SIGUEN usando MongoDB y deben migrarse en fases futuras
 - [ ] Verificar que los cambios persisten al recargar
 - [ ] Validar que no hay errores de UI ni consola
 
-### RBAC-SCOPE-G (SIGUIENTE - Pendiente autorización)
-**Objetivo:** Eliminar dependencia MongoDB del módulo Usuarios/Roles.
-- [ ] Migrar `create_user()` a SQL
-- [ ] Migrar `update_user()` a SQL
-- [ ] Migrar `deactivate_user()` a SQL
-- [ ] Eliminar código MongoDB residual
+### FASE 3 (SIGUIENTE - Pendiente autorización)
+**Objetivo:** Migración de empresas/sucursales/mapeos a EDARSAHUB SQL.
+- [ ] Auditar referencias MongoDB para empresas
+- [ ] Migrar lectura de empresas a SQL
+- [ ] Migrar escritura de empresas a SQL
+- [ ] Validar configuraciones de servidor-sucursal
 
 **Prerequisitos completados:**
 - ✅ RBAC-SCOPE-E (Escritura permisos a SQL)
 - ✅ RBAC-SCOPE-F (Validación e2e modal permisos)
+- ✅ RBAC-SCOPE-G (CRUD usuarios migrado a SQL)

@@ -1,11 +1,14 @@
 """
 EDARSA HUB - Auth Module Repository
 ===================================
-Acceso a datos para usuarios y roles en MongoDB.
+RBAC-SCOPE-G: Repositorio de usuarios migrado a EDARSAHUB SQL.
+
+MongoDB ya NO es fuente productiva para operaciones de usuarios.
+Las funciones de usuarios ahora delegan a user_repository_sql.py.
 
 FASE 3 DEL REFACTOR MODULAR (Diciembre 2025):
-- Encapsula operaciones de MongoDB para auth
-- Inyección de dependencia de DB
+- Encapsula operaciones para auth
+- RBAC-SCOPE-G: Migrado a SQL (14-May-2026)
 """
 
 from typing import Dict, List, Optional, Any
@@ -14,7 +17,7 @@ from datetime import datetime, timezone
 
 
 # ============================================================================
-# INYECCIÓN DE DEPENDENCIA: MongoDB
+# INYECCIÓN DE DEPENDENCIA: MongoDB (Legacy - solo para roles)
 # ============================================================================
 
 _db = None
@@ -24,6 +27,9 @@ def init_auth_repository(database) -> None:
     """
     Inicializa el repositorio con la conexión a MongoDB.
     
+    RBAC-SCOPE-G: MongoDB solo se usa para roles (db.roles).
+    Usuarios se manejan 100% desde SQL.
+    
     Args:
         database: Instancia de AsyncIOMotorDatabase
     """
@@ -32,57 +38,48 @@ def init_auth_repository(database) -> None:
 
 
 def get_db():
-    """Obtiene la conexión a MongoDB inyectada."""
+    """
+    Obtiene la conexión a MongoDB inyectada.
+    
+    RBAC-SCOPE-G: Solo usada para operaciones de roles.
+    """
     if _db is None:
         raise RuntimeError("Auth repository not initialized. Call init_auth_repository(db) first.")
     return _db
 
 
 # ============================================================================
-# USUARIOS
+# USUARIOS - RBAC-SCOPE-G: 100% SQL
 # ============================================================================
 
 async def find_user_by_email(email: str, include_password: bool = False) -> Optional[Dict]:
-    """Busca un usuario por email."""
-    projection = {"_id": 0}
-    if not include_password:
-        projection["password"] = 0
-    return await get_db().users.find_one({"email": email}, projection)
+    """
+    RBAC-SCOPE-G: Busca un usuario por email en EDARSAHUB SQL.
+    MongoDB ya NO es fuente productiva.
+    """
+    from core.auth.user_repository_sql import find_user_by_email_sql
+    return find_user_by_email_sql(email, include_password)
 
 
 async def find_user_by_id(user_id: str, include_password: bool = False) -> Optional[Dict]:
     """
-    Busca un usuario por ID.
-    
-    BUG-RBAC-PERM-001: Búsqueda case-insensitive para PublicUUID.
-    SQL devuelve UUIDs en mayúsculas, MongoDB puede tenerlos en minúsculas.
+    RBAC-SCOPE-G: Busca un usuario por PublicUUID en EDARSAHUB SQL.
+    MongoDB ya NO es fuente productiva.
     """
-    projection = {"_id": 0}
-    if not include_password:
-        projection["password"] = 0
-    
-    # Intentar búsqueda exacta primero (más rápido)
-    user = await get_db().users.find_one({"id": user_id}, projection)
-    
-    if not user:
-        # Fallback: búsqueda case-insensitive (UUIDs pueden diferir en case)
-        user = await get_db().users.find_one({"id": user_id.lower()}, projection)
-    
-    if not user:
-        # Último intento: uppercase
-        user = await get_db().users.find_one({"id": user_id.upper()}, projection)
-    
-    return user
+    from core.auth.user_repository_sql import find_user_by_id_sql
+    return find_user_by_id_sql(user_id, include_password)
 
 
 async def get_all_users() -> List[Dict]:
     """
     Obtiene todos los usuarios sin contraseña.
     
-    FASE 2-G / BUG-AUTH-USERS-001: Datos base de EDARSAHUB SQL.
-    RBAC-SCOPE-D: Permisos operativos (allowed_servers, allowed_sucursales, 
-                  allowed_warehouses) ahora se leen desde EDARSAHUB SQL.
-                  MongoDB ya NO alimenta permisos productivos.
+    RBAC-SCOPE-G: Datos base de EDARSAHUB SQL.
+    Permisos operativos (allowed_servers, allowed_sucursales, 
+    allowed_warehouses) se leen desde EDARSAHUB SQL.
+    
+    MongoDB solo se consulta para campos RBAC piloto (sec_*, telefono)
+    que son metadatos no productivos.
     
     Returns:
         Lista de usuarios con estructura compatible con modelo User de Pydantic.
@@ -276,32 +273,30 @@ async def get_users_by_empresas(empresas_ids: List[str]) -> List[Dict]:
 
 
 async def create_user(user_doc: Dict) -> None:
-    """Inserta un nuevo usuario en la BD."""
-    await get_db().users.insert_one(user_doc)
+    """
+    RBAC-SCOPE-G: Inserta un nuevo usuario en EDARSAHUB SQL.
+    MongoDB ya NO es fuente productiva.
+    """
+    from core.auth.user_repository_sql import create_user_sql
+    create_user_sql(user_doc)
 
 
 async def update_user(user_id: str, update_data: Dict) -> None:
     """
-    Actualiza un usuario por ID.
-    
-    BUG-RBAC-PERM-001: Búsqueda case-insensitive para PublicUUID.
+    RBAC-SCOPE-G: Actualiza un usuario en EDARSAHUB SQL.
+    MongoDB ya NO es fuente productiva.
     """
-    if update_data:
-        # Intentar con ID exacto
-        result = await get_db().users.update_one({"id": user_id}, {"$set": update_data})
-        
-        if result.matched_count == 0:
-            # Fallback: intentar con lowercase
-            result = await get_db().users.update_one({"id": user_id.lower()}, {"$set": update_data})
-        
-        if result.matched_count == 0:
-            # Fallback: intentar con uppercase
-            await get_db().users.update_one({"id": user_id.upper()}, {"$set": update_data})
+    from core.auth.user_repository_sql import update_user_sql
+    update_user_sql(user_id, update_data)
 
 
 async def deactivate_user(user_id: str) -> None:
-    """Desactiva un usuario (soft delete)."""
-    await get_db().users.update_one({"id": user_id}, {"$set": {"active": False}})
+    """
+    RBAC-SCOPE-G: Desactiva un usuario en EDARSAHUB SQL (soft delete).
+    MongoDB ya NO es fuente productiva.
+    """
+    from core.auth.user_repository_sql import deactivate_user_sql
+    deactivate_user_sql(user_id)
 
 
 # ============================================================================

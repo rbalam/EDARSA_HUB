@@ -298,7 +298,7 @@ class AuthRepositorySQL:
         return user
     
     def list_all_users_sql(self) -> List[Dict]:
-        """Lista todos los usuarios SQL con su contexto completo"""
+        """Lista todos los usuarios activos SQL con su contexto completo"""
         conn = self._get_connection()
         try:
             cur = conn.cursor()
@@ -313,6 +313,7 @@ class AuthRepositorySQL:
                     CAST(PublicUUID AS VARCHAR(36)) as PublicUUID,
                     MongoLegacyID
                 FROM Usuario_Catalogo
+                WHERE Activo = 1
                 ORDER BY UsuarioID
             ''')
             
@@ -350,7 +351,6 @@ async def compare_user_mongo_vs_sql(email: str) -> Dict:
     Returns:
         Dict con comparación detallada
     """
-    import os
     from motor.motor_asyncio import AsyncIOMotorClient
     
     # Obtener de SQL
@@ -542,6 +542,400 @@ def validate_superadmin_rule() -> Dict:
 
 
 # =========================================================================
+# RBAC-SCOPE-G: FUNCIONES DE ESCRITURA USUARIOS SQL
+# =========================================================================
+
+def create_user_sql(user_data: Dict) -> Dict:
+    """
+    RBAC-SCOPE-G: Crea un nuevo usuario en EDARSAHUB SQL.
+    
+    Args:
+        user_data: Dict con campos del usuario:
+            - email (obligatorio)
+            - name/nombre (obligatorio)
+            - password_hash (obligatorio, hash bcrypt)
+            - role (opcional, default='Usuario')
+            - empresas_permitidas (opcional)
+            - empresa_default_id (opcional)
+            
+    Returns:
+        Dict con usuario creado incluyendo id (PublicUUID)
+        
+    Raises:
+        ValueError: Si email ya existe o datos inválidos
+        RuntimeError: Si hay error SQL
+    """
+    import uuid
+    import logging
+    
+    email = user_data.get('email', '').strip().lower()
+    nombre = user_data.get('name') or user_data.get('nombre', '').strip()
+    password_hash = user_data.get('password')
+    role = user_data.get('role', 'Usuario')
+    empresas = user_data.get('empresas_permitidas', [])
+    empresa_default = user_data.get('empresa_default_id')
+    
+    if not email:
+        raise ValueError("Email es obligatorio")
+    if not nombre:
+        raise ValueError("Nombre es obligatorio")
+    if not password_hash:
+        raise ValueError("Password hash es obligatorio")
+    
+    # Mapeo de rol MongoDB a SQL
+    ROL_MONGO_TO_SQL = {
+        'SuperAdministrador': 'SUPERADMIN',
+        'Administrador': 'ADMIN',
+        'Supervisor': 'SUPERVISOR',
+        'Usuario': 'USUARIO',
+        'Visor': 'VISOR',
+        'Gerencia': 'GERENCIA',
+        'Compras': 'COMPRAS',
+        'Ventas': 'VENTAS',
+        'Tesoreria': 'TESORERIA',
+    }
+    rol_codigo = ROL_MONGO_TO_SQL.get(role, 'USUARIO')
+    
+    # Generar PublicUUID
+    public_uuid = str(uuid.uuid4()).upper()
+    
+    repo = AuthRepositorySQL()
+    conn = repo._get_connection()
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Verificar que el email no exista
+        cursor.execute("SELECT UsuarioID FROM Usuario_Catalogo WHERE LOWER(Email) = %s", (email,))
+        if cursor.fetchone():
+            raise ValueError(f"El email {email} ya está registrado")
+        
+        # Generar código de usuario y username (usando parte del UUID)
+        codigo_usuario = f"USR-{public_uuid[:8].upper()}"
+        username = email.split('@')[0]  # Usar parte antes del @ como username
+        
+        # Insertar en Usuario_Catalogo
+        cursor.execute("""
+            INSERT INTO Usuario_Catalogo 
+            (CodigoUsuario, Username, Email, Nombre, PasswordHashTexto, Activo, PublicUUID, FechaAlta, CreatedBy)
+            VALUES (%s, %s, %s, %s, %s, 1, %s, GETDATE(), %s)
+        """, (codigo_usuario, username, email, nombre, password_hash, public_uuid, 'RBAC-SCOPE-G'))
+        
+        # Obtener UsuarioID generado
+        cursor.execute("SELECT @@IDENTITY")
+        usuario_id = int(cursor.fetchone()[0])
+        
+        # Obtener RolID
+        cursor.execute("SELECT RolID FROM Usuario_Roles WHERE CodigoRol = %s", (rol_codigo,))
+        rol_row = cursor.fetchone()
+        if rol_row:
+            rol_id = rol_row[0]
+            # Asignar rol
+            cursor.execute("""
+                INSERT INTO Usuario_RolesAsignacion 
+                (UsuarioID, RolID, EsPrincipal, Activo, CreatedAt, CreatedBy)
+                VALUES (%s, %s, 1, 1, GETDATE(), %s)
+            """, (usuario_id, rol_id, 'RBAC-SCOPE-G'))
+        
+        # Asignar empresas si se proporcionaron
+        if empresas:
+            for emp_uuid in empresas:
+                # Buscar EmpresaID_SQL
+                cursor.execute("""
+                    SELECT EmpresaID_SQL FROM Sistema_EmpresasMongoMap 
+                    WHERE EmpresaMongoUUID = %s
+                """, (emp_uuid,))
+                emp_row = cursor.fetchone()
+                if emp_row:
+                    emp_id = emp_row[0]
+                    es_principal = 1 if emp_uuid == empresa_default else 0
+                    cursor.execute("""
+                        INSERT INTO Usuario_EmpresasAsignacion 
+                        (UsuarioID, EmpresaID, EsPrincipal, Activo, CreatedAt, CreatedBy)
+                        VALUES (%s, %s, %s, 1, GETDATE(), %s)
+                    """, (usuario_id, emp_id, es_principal, 'RBAC-SCOPE-G'))
+        
+        conn.commit()
+        logging.info(f"[RBAC-SCOPE-G] Usuario creado en SQL: {email} (UUID: {public_uuid})")
+        
+        # Retornar usuario creado
+        return {
+            'id': public_uuid,
+            'email': email,
+            'name': nombre,
+            'role': role,
+            'active': True,
+            'empresas_permitidas': empresas,
+            'empresa_default_id': empresa_default,
+            '_source': 'EDARSAHUB_SQL'
+        }
+        
+    except ValueError:
+        raise
+    except Exception as e:
+        logging.error(f"[RBAC-SCOPE-G] Error creando usuario en SQL: {e}")
+        raise RuntimeError(f"Error creando usuario en SQL: {str(e)}")
+    finally:
+        conn.close()
+
+
+def update_user_sql(user_id: str, update_data: Dict) -> bool:
+    """
+    RBAC-SCOPE-G: Actualiza un usuario en EDARSAHUB SQL.
+    
+    Args:
+        user_id: PublicUUID del usuario
+        update_data: Dict con campos a actualizar:
+            - name/nombre
+            - role
+            - active
+            - empresas_permitidas
+            - empresa_default_id
+            
+    Returns:
+        True si se actualizó correctamente
+        
+    Raises:
+        ValueError: Si usuario no existe
+        RuntimeError: Si hay error SQL
+    """
+    import logging
+    
+    if not update_data:
+        return True  # Nada que actualizar
+    
+    repo = AuthRepositorySQL()
+    conn = repo._get_connection()
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Obtener UsuarioID
+        cursor.execute("""
+            SELECT UsuarioID FROM Usuario_Catalogo 
+            WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = LOWER(%s)
+        """, (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            raise ValueError(f"Usuario con ID {user_id} no encontrado en SQL")
+        
+        usuario_id = row[0]
+        
+        # Actualizar campos en Usuario_Catalogo
+        updates = []
+        params = []
+        
+        if 'name' in update_data or 'nombre' in update_data:
+            nombre = update_data.get('name') or update_data.get('nombre')
+            updates.append("Nombre = %s")
+            params.append(nombre)
+        
+        if 'active' in update_data:
+            updates.append("Activo = %s")
+            params.append(1 if update_data['active'] else 0)
+        
+        if updates:
+            updates.append("FechaModificacion = GETDATE()")
+            updates.append("ModifiedBy = %s")
+            params.append('RBAC-SCOPE-G')
+            params.append(usuario_id)
+            
+            sql = f"UPDATE Usuario_Catalogo SET {', '.join(updates)} WHERE UsuarioID = %s"
+            cursor.execute(sql, tuple(params))
+        
+        # Actualizar rol si se proporcionó
+        if 'role' in update_data:
+            ROL_MONGO_TO_SQL = {
+                'SuperAdministrador': 'SUPERADMIN',
+                'Administrador': 'ADMIN',
+                'Supervisor': 'SUPERVISOR',
+                'Usuario': 'USUARIO',
+                'Visor': 'VISOR',
+                'Gerencia': 'GERENCIA',
+                'Compras': 'COMPRAS',
+                'Ventas': 'VENTAS',
+                'Tesoreria': 'TESORERIA',
+            }
+            rol_codigo = ROL_MONGO_TO_SQL.get(update_data['role'], 'USUARIO')
+            
+            cursor.execute("SELECT RolID FROM Usuario_Roles WHERE CodigoRol = %s", (rol_codigo,))
+            rol_row = cursor.fetchone()
+            if rol_row:
+                rol_id = rol_row[0]
+                # Desactivar roles anteriores
+                cursor.execute("""
+                    UPDATE Usuario_RolesAsignacion SET Activo = 0
+                    WHERE UsuarioID = %s AND Activo = 1
+                """, (usuario_id,))
+                # Asignar nuevo rol
+                cursor.execute("""
+                    INSERT INTO Usuario_RolesAsignacion 
+                    (UsuarioID, RolID, EsPrincipal, Activo, CreatedAt, CreatedBy)
+                    VALUES (%s, %s, 1, 1, GETDATE(), %s)
+                """, (usuario_id, rol_id, 'RBAC-SCOPE-G'))
+        
+        # Actualizar empresas si se proporcionaron
+        if 'empresas_permitidas' in update_data:
+            empresas = update_data.get('empresas_permitidas', [])
+            empresa_default = update_data.get('empresa_default_id')
+            
+            # Desactivar empresas anteriores
+            cursor.execute("""
+                UPDATE Usuario_EmpresasAsignacion SET Activo = 0
+                WHERE UsuarioID = %s AND Activo = 1
+            """, (usuario_id,))
+            
+            # Asignar nuevas empresas
+            for emp_uuid in empresas:
+                cursor.execute("""
+                    SELECT EmpresaID_SQL FROM Sistema_EmpresasMongoMap 
+                    WHERE EmpresaMongoUUID = %s
+                """, (emp_uuid,))
+                emp_row = cursor.fetchone()
+                if emp_row:
+                    emp_id = emp_row[0]
+                    es_principal = 1 if emp_uuid == empresa_default else 0
+                    cursor.execute("""
+                        INSERT INTO Usuario_EmpresasAsignacion 
+                        (UsuarioID, EmpresaID, EsPrincipal, Activo, CreatedAt, CreatedBy)
+                        VALUES (%s, %s, %s, 1, GETDATE(), %s)
+                    """, (usuario_id, emp_id, es_principal, 'RBAC-SCOPE-G'))
+        
+        conn.commit()
+        logging.info(f"[RBAC-SCOPE-G] Usuario actualizado en SQL: {user_id}")
+        return True
+        
+    except ValueError:
+        raise
+    except Exception as e:
+        logging.error(f"[RBAC-SCOPE-G] Error actualizando usuario en SQL: {e}")
+        raise RuntimeError(f"Error actualizando usuario en SQL: {str(e)}")
+    finally:
+        conn.close()
+
+
+def deactivate_user_sql(user_id: str) -> bool:
+    """
+    RBAC-SCOPE-G: Desactiva un usuario en EDARSAHUB SQL (soft delete).
+    
+    Args:
+        user_id: PublicUUID del usuario
+        
+    Returns:
+        True si se desactivó correctamente
+        
+    Raises:
+        ValueError: Si usuario no existe
+        RuntimeError: Si hay error SQL
+    """
+    import logging
+    
+    repo = AuthRepositorySQL()
+    conn = repo._get_connection()
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Verificar que existe
+        cursor.execute("""
+            SELECT UsuarioID FROM Usuario_Catalogo 
+            WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = LOWER(%s)
+        """, (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            raise ValueError(f"Usuario con ID {user_id} no encontrado en SQL")
+        
+        usuario_id = row[0]
+        
+        # Desactivar usuario
+        cursor.execute("""
+            UPDATE Usuario_Catalogo 
+            SET Activo = 0, FechaModificacion = GETDATE(), ModifiedBy = 'RBAC-SCOPE-G'
+            WHERE UsuarioID = %s
+        """, (usuario_id,))
+        
+        # Desactivar asignaciones relacionadas
+        cursor.execute("""
+            UPDATE Usuario_RolesAsignacion SET Activo = 0
+            WHERE UsuarioID = %s
+        """, (usuario_id,))
+        
+        cursor.execute("""
+            UPDATE Usuario_EmpresasAsignacion SET Activo = 0
+            WHERE UsuarioID = %s
+        """, (usuario_id,))
+        
+        cursor.execute("""
+            UPDATE Usuario_ServidoresAsignacion SET Activo = 0, FechaModificacion = GETDATE()
+            WHERE UsuarioID = %s
+        """, (usuario_id,))
+        
+        cursor.execute("""
+            UPDATE Usuario_SucursalesAsignacion SET Activo = 0, FechaModificacion = GETDATE()
+            WHERE UsuarioID = %s
+        """, (usuario_id,))
+        
+        cursor.execute("""
+            UPDATE Usuario_AlmacenesAsignacion SET Activo = 0, FechaModificacion = GETDATE()
+            WHERE UsuarioID = %s
+        """, (usuario_id,))
+        
+        conn.commit()
+        logging.info(f"[RBAC-SCOPE-G] Usuario desactivado en SQL: {user_id}")
+        return True
+        
+    except ValueError:
+        raise
+    except Exception as e:
+        logging.error(f"[RBAC-SCOPE-G] Error desactivando usuario en SQL: {e}")
+        raise RuntimeError(f"Error desactivando usuario en SQL: {str(e)}")
+    finally:
+        conn.close()
+
+
+def find_user_by_email_sql(email: str, include_password: bool = False) -> Optional[Dict]:
+    """
+    RBAC-SCOPE-G: Busca usuario por email en SQL.
+    Reemplaza la función find_user_by_email de MongoDB.
+    
+    Args:
+        email: Email del usuario
+        include_password: Si incluir el hash de password
+        
+    Returns:
+        Dict con usuario o None
+    """
+    repo = AuthRepositorySQL()
+    user = repo.get_user_by_email_sql(email)
+    
+    if user and not include_password:
+        user.pop('password', None)
+    
+    return user
+
+
+def find_user_by_id_sql(user_id: str, include_password: bool = False) -> Optional[Dict]:
+    """
+    RBAC-SCOPE-G: Busca usuario por PublicUUID en SQL.
+    Reemplaza la función find_user_by_id de MongoDB.
+    
+    Args:
+        user_id: PublicUUID del usuario
+        include_password: Si incluir el hash de password
+        
+    Returns:
+        Dict con usuario o None
+    """
+    repo = AuthRepositorySQL()
+    user = repo.get_user_by_public_uuid_sql(user_id)
+    
+    if user and not include_password:
+        user.pop('password', None)
+    
+    return user
+
+
+# =========================================================================
 # EXPORTACIONES
 # =========================================================================
 
@@ -550,4 +944,10 @@ __all__ = [
     'compare_user_mongo_vs_sql',
     'list_auth_migration_differences',
     'validate_superadmin_rule',
+    # RBAC-SCOPE-G: Funciones de escritura SQL
+    'create_user_sql',
+    'update_user_sql',
+    'deactivate_user_sql',
+    'find_user_by_email_sql',
+    'find_user_by_id_sql',
 ]
