@@ -277,8 +277,24 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] Usuario buscado en `Usuario_Catalogo`
 - [x] Password actualizado en `PasswordHashTexto`
 - [x] Invalidación automática de tokens anteriores
-- [x] DEUDA P2: `rate_limit_password_reset` y `audit_password_reset` (MongoDB) — plan AUTH-RESET-P2
 - [x] Reporte: `/app/docs/reports/FASE3I_PASSWORD_RESET_SQL.md`
+
+### ✅ AUTH-RESET-P2 - Migración Rate Limit y Auditoría a SQL (Completada - 14-May-2026)
+- [x] Tabla `Usuario_RateLimitRecuperacion` creada (rate limit por IP/email)
+- [x] Tabla `Usuario_LogRecuperacion` creada (auditoría de eventos)
+- [x] `password_reset.py` ahora es **100% SQL** - 0 referencias a MongoDB
+- [x] Funciones migradas: `check_rate_limit_sql()`, `increment_rate_limit_sql()`, `audit_log_sql()`
+- [x] Rate limit validado funcionando en SQL
+- [x] Auditoría validada funcionando en SQL
+- [x] Reset de contraseña completamente operativo
+- [x] GREP confirma 0 código activo MongoDB en password_reset.py
+- [x] Reporte: `/app/docs/reports/AUTH_RESET_P2_RATE_LIMIT_AUDIT_SQL.md`
+
+**✅ Flujo de Recuperación de Contraseña es ahora 100% EDARSAHUB SQL:**
+- Usuario_Catalogo (usuarios)
+- Usuario_TokensRecuperacion (tokens)
+- Usuario_RateLimitRecuperacion (rate limit)
+- Usuario_LogRecuperacion (auditoría)
 
 ---
 
@@ -317,8 +333,9 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 ```
 
 ### Deuda Técnica Auth (MongoDB residual):
-- `/app/backend/modules/auth/password_reset.py` - usa db.users
-- `/app/backend/modules/auth/context_service.py` - usa db.users
+- `/app/backend/modules/auth/password_reset.py` - ✅ **100% SQL** (AUTH-RESET-P2 completado)
+- `/app/backend/modules/auth/context_service.py` - ✅ **100% SQL** (FASE 3-E completado)
+- ❌ **0 dependencias MongoDB productivas en módulo Auth**
 
 ### Usuarios @test.com:
 | Email | Rol SQL | Empresas SQL |

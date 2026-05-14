@@ -1,8 +1,8 @@
 """
-Password Reset Module - MIGRADO A EDARSAHUB SQL
-================================================
+Password Reset Module - 100% EDARSAHUB SQL
+===========================================
 
-FASE 3-I: Migración de MongoDB a EDARSAHUB SQL
+FASE AUTH-RESET-P2: Migración completa a EDARSAHUB SQL
 Fecha: 2026-05-14
 Autorización: Explícita
 
@@ -10,26 +10,28 @@ ARQUITECTURA:
 - EDARSAHUB SQL es el cerebro del sistema
 - Usuario_Catalogo: usuarios, email, PasswordHashTexto
 - Usuario_TokensRecuperacion: tokens de reset
-- MongoDB ya NO es fuente productiva para usuarios/password/tokens
+- Usuario_RateLimitRecuperacion: rate limit por IP/email
+- Usuario_LogRecuperacion: auditoría de eventos
+- MongoDB ya NO se usa en este módulo
 
 FLUJO:
-1. Solicitar reset → buscar usuario en SQL → generar token → guardar hash en SQL
+1. Solicitar reset → verificar rate limit (SQL) → buscar usuario (SQL) → generar token → guardar hash (SQL) → audit (SQL)
 2. Validar token → buscar en SQL → verificar expiración/uso
-3. Cambiar password → actualizar PasswordHashTexto en SQL → marcar token usado
+3. Cambiar password → actualizar PasswordHashTexto (SQL) → marcar token usado → audit (SQL)
 
-DEUDA P2 DOCUMENTADA:
-- rate_limit_password_reset: Permanece en MongoDB (defensa en profundidad)
-- audit_password_reset: Permanece en MongoDB (log de soporte)
-- Migrar en subfase AUTH-RESET-P2
+TABLAS SQL USADAS:
+- Usuario_Catalogo: Datos de usuarios
+- Usuario_TokensRecuperacion: Tokens de recuperación
+- Usuario_RateLimitRecuperacion: Rate limit (AUTH-RESET-P2)
+- Usuario_LogRecuperacion: Auditoría (AUTH-RESET-P2)
 """
 
 import secrets
 import hashlib
 import re
+import json
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Tuple, Dict, Any
-from pymongo import MongoClient
-from pymongo.database import Database
 import pymssql
 import bcrypt
 import os
@@ -45,11 +47,11 @@ RATE_LIMIT_WINDOW_HOURS = 1
 
 
 # =========================================================================
-# CONEXIONES
+# CONEXIÓN SQL
 # =========================================================================
 
 def _get_sql_connection():
-    """Obtener conexión a EDARSAHUB SQL (fuente productiva)."""
+    """Obtener conexión a EDARSAHUB SQL (fuente única)."""
     return pymssql.connect(
         server='54.39.104.176',
         port=1433,
@@ -57,18 +59,6 @@ def _get_sql_connection():
         password='National09$',
         database='EDARSAHUB'
     )
-
-
-def get_db() -> Database:
-    """
-    Obtener conexión a MongoDB.
-    SOLO para rate_limit y audit (DEUDA P2).
-    NO usar para usuarios, passwords ni tokens.
-    """
-    mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
-    db_name = os.environ.get("DB_NAME", "edarsa_hub")
-    client = MongoClient(mongo_url)
-    return client[db_name]
 
 
 # =========================================================================
@@ -116,65 +106,143 @@ def validate_password_strength(password: str) -> Tuple[bool, str]:
 
 
 # =========================================================================
-# RATE LIMIT (MongoDB - DEUDA P2)
+# RATE LIMIT (SQL - AUTH-RESET-P2)
 # =========================================================================
 
-def check_rate_limit(db: Database, key: str, limit: int) -> Tuple[bool, int]:
+def check_rate_limit_sql(tipo: str, valor: str, limit: int) -> Tuple[bool, int]:
     """
-    Verificar rate limit (MongoDB - DEUDA P2).
+    Verificar rate limit usando EDARSAHUB SQL.
+    AUTH-RESET-P2: Reemplaza MongoDB rate_limit_password_reset.
     
+    Args:
+        tipo: 'ip' o 'email'
+        valor: Valor de la llave (IP o email)
+        limit: Límite de solicitudes permitidas
+        
     Returns:
         (allowed: bool, remaining: int)
     """
-    now = datetime.now(timezone.utc)
-    window_start = now - timedelta(hours=RATE_LIMIT_WINDOW_HOURS)
-    
-    record = db.rate_limit_password_reset.find_one({"key": key})
-    
-    if record:
-        if record.get("window_start", now) > window_start:
-            count = record.get("count", 0)
-            if count >= limit:
-                return False, 0
-            return True, limit - count - 1
-    
-    return True, limit - 1
+    conn = _get_sql_connection()
+    try:
+        cursor = conn.cursor()
+        now = datetime.now(timezone.utc)
+        
+        # Buscar registro existente
+        cursor.execute('''
+            SELECT RateLimitID, Contador, VentanaExpiracion
+            FROM Usuario_RateLimitRecuperacion
+            WHERE TipoLlave = %s AND ValorLlave = %s
+        ''', (tipo, valor))
+        
+        row = cursor.fetchone()
+        
+        if row:
+            rate_limit_id, contador, ventana_exp = row
+            
+            # Verificar si la ventana expiró
+            if ventana_exp and ventana_exp.replace(tzinfo=timezone.utc) > now:
+                # Ventana activa
+                if contador >= limit:
+                    return False, 0
+                return True, limit - contador - 1
+            else:
+                # Ventana expirada - reiniciar
+                return True, limit - 1
+        
+        # No existe registro - permitir
+        return True, limit - 1
+        
+    finally:
+        conn.close()
 
 
-def increment_rate_limit(db: Database, key: str):
-    """Incrementar contador de rate limit (MongoDB - DEUDA P2)."""
-    now = datetime.now(timezone.utc)
-    expires_at = now + timedelta(hours=RATE_LIMIT_WINDOW_HOURS)
-    
-    db.rate_limit_password_reset.update_one(
-        {"key": key},
-        {
-            "$inc": {"count": 1},
-            "$setOnInsert": {
-                "window_start": now,
-                "expires_at": expires_at
-            }
-        },
-        upsert=True
-    )
+def increment_rate_limit_sql(tipo: str, valor: str):
+    """
+    Incrementar contador de rate limit en EDARSAHUB SQL.
+    AUTH-RESET-P2: Reemplaza MongoDB rate_limit_password_reset.
+    """
+    conn = _get_sql_connection()
+    try:
+        cursor = conn.cursor()
+        now = datetime.now(timezone.utc)
+        expires_at = now + timedelta(hours=RATE_LIMIT_WINDOW_HOURS)
+        
+        # Intentar actualizar si existe y ventana activa
+        cursor.execute('''
+            UPDATE Usuario_RateLimitRecuperacion
+            SET Contador = Contador + 1,
+                FechaModificacion = GETUTCDATE()
+            WHERE TipoLlave = %s 
+              AND ValorLlave = %s 
+              AND VentanaExpiracion > GETUTCDATE()
+        ''', (tipo, valor))
+        
+        if cursor.rowcount == 0:
+            # No existe o ventana expirada - insertar/reiniciar
+            # Primero intentar eliminar registro expirado si existe
+            cursor.execute('''
+                DELETE FROM Usuario_RateLimitRecuperacion
+                WHERE TipoLlave = %s AND ValorLlave = %s
+            ''', (tipo, valor))
+            
+            # Insertar nuevo registro
+            cursor.execute('''
+                INSERT INTO Usuario_RateLimitRecuperacion 
+                    (TipoLlave, ValorLlave, Contador, VentanaInicio, VentanaExpiracion)
+                VALUES (%s, %s, 1, GETUTCDATE(), %s)
+            ''', (tipo, valor, expires_at))
+        
+        conn.commit()
+        
+    finally:
+        conn.close()
 
 
 # =========================================================================
-# AUDITORÍA (MongoDB - DEUDA P2)
+# AUDITORÍA (SQL - AUTH-RESET-P2)
 # =========================================================================
 
-def audit_log(db: Database, event: str, email: str, ip: str, user_agent: str, 
-              success: bool, details: Optional[Dict] = None):
-    """Registrar evento en auditoria (MongoDB - DEUDA P2)."""
-    db.audit_password_reset.insert_one({
-        "event": event,
-        "email": email,
-        "ip": ip,
-        "user_agent": user_agent,
-        "success": success,
-        "details": details or {},
-        "timestamp": datetime.now(timezone.utc)
-    })
+def audit_log_sql(event: str, email: str, ip: str, user_agent: str, 
+                  success: bool, details: Optional[Dict] = None):
+    """
+    Registrar evento de auditoría en EDARSAHUB SQL.
+    AUTH-RESET-P2: Reemplaza MongoDB audit_password_reset.
+    
+    Args:
+        event: Tipo de evento
+        email: Email involucrado
+        ip: IP de origen
+        user_agent: User-Agent del navegador
+        success: True si fue exitoso
+        details: Detalles adicionales (se guardan como JSON)
+    """
+    conn = _get_sql_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # Serializar detalles como JSON si existen
+        detalle_json = json.dumps(details) if details else None
+        
+        cursor.execute('''
+            INSERT INTO Usuario_LogRecuperacion 
+                (Evento, Email, IPOrigen, UserAgent, Resultado, Detalle)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        ''', (
+            event,
+            email,
+            ip,
+            user_agent[:500] if user_agent else None,
+            1 if success else 0,
+            detalle_json
+        ))
+        
+        conn.commit()
+        
+    except Exception as e:
+        logger.warning(f"Error registrando auditoría: {e}")
+        # No fallar silenciosamente pero tampoco bloquear el flujo
+    finally:
+        conn.close()
 
 
 # =========================================================================
@@ -184,7 +252,6 @@ def audit_log(db: Database, event: str, email: str, ip: str, user_agent: str,
 def _find_user_by_email_sql(email: str) -> Optional[Dict]:
     """
     Buscar usuario por email en Usuario_Catalogo (SQL).
-    FASE 3-I: Fuente productiva.
     """
     conn = _get_sql_connection()
     try:
@@ -348,7 +415,6 @@ def _mark_token_used_sql(token_id: int, ip: str, user_agent: str):
 def _update_password_sql(usuario_id_sql: int, password_hash: str):
     """
     Actualizar PasswordHashTexto en Usuario_Catalogo (SQL).
-    FASE 3-I: Fuente productiva.
     """
     conn = _get_sql_connection()
     try:
@@ -381,8 +447,11 @@ def request_password_reset(
     """
     Solicitar recuperación de password.
     
-    FASE 3-I: Usuario se busca en EDARSAHUB SQL.
-    Token se guarda en Usuario_TokensRecuperacion (SQL).
+    AUTH-RESET-P2: 100% SQL
+    - Usuario se busca en EDARSAHUB SQL
+    - Token se guarda en Usuario_TokensRecuperacion (SQL)
+    - Rate limit en Usuario_RateLimitRecuperacion (SQL)
+    - Auditoría en Usuario_LogRecuperacion (SQL)
     
     SIEMPRE retorna mensaje genérico para no revelar si el email existe.
     
@@ -395,7 +464,6 @@ def request_password_reset(
     Returns:
         {"success": True, "message": "..."}
     """
-    db = get_db()  # Solo para rate_limit y audit (DEUDA P2)
     generic_message = "Si el email esta registrado, recibiras instrucciones de recuperacion"
     
     # Validar formato de email básico
@@ -404,40 +472,44 @@ def request_password_reset(
     
     email = email.lower().strip()
     
-    # Verificar rate limit por IP (MongoDB - DEUDA P2)
-    ip_key = f"ip:{ip}"
-    allowed, _ = check_rate_limit(db, ip_key, RATE_LIMIT_PER_IP)
+    # =========================================================================
+    # AUTH-RESET-P2: Verificar rate limit por IP (SQL)
+    # =========================================================================
+    allowed, _ = check_rate_limit_sql('ip', ip, RATE_LIMIT_PER_IP)
     if not allowed:
-        audit_log(db, "rate_limit_ip", email, ip, user_agent, False, {"key": ip_key})
+        audit_log_sql("rate_limit_ip", email, ip, user_agent, False, {"key": f"ip:{ip}"})
         logger.warning(f"Rate limit por IP alcanzado: {ip}")
         return {"success": True, "message": generic_message}
     
-    # Verificar rate limit por email (MongoDB - DEUDA P2)
-    email_key = f"email:{email}"
-    allowed, _ = check_rate_limit(db, email_key, RATE_LIMIT_PER_EMAIL)
+    # =========================================================================
+    # AUTH-RESET-P2: Verificar rate limit por email (SQL)
+    # =========================================================================
+    allowed, _ = check_rate_limit_sql('email', email, RATE_LIMIT_PER_EMAIL)
     if not allowed:
-        audit_log(db, "rate_limit_email", email, ip, user_agent, False, {"key": email_key})
+        audit_log_sql("rate_limit_email", email, ip, user_agent, False, {"key": f"email:{email}"})
         logger.warning(f"Rate limit por email alcanzado: {email}")
         return {"success": True, "message": generic_message}
     
-    # Incrementar rate limits (MongoDB - DEUDA P2)
-    increment_rate_limit(db, ip_key)
-    increment_rate_limit(db, email_key)
+    # =========================================================================
+    # AUTH-RESET-P2: Incrementar rate limits (SQL)
+    # =========================================================================
+    increment_rate_limit_sql('ip', ip)
+    increment_rate_limit_sql('email', email)
     
     # =========================================================================
-    # FASE 3-I: Buscar usuario en EDARSAHUB SQL (fuente productiva)
+    # Buscar usuario en EDARSAHUB SQL
     # =========================================================================
     user = _find_user_by_email_sql(email)
     
     if not user:
-        audit_log(db, "request_user_not_found", email, ip, user_agent, False)
+        audit_log_sql("request_user_not_found", email, ip, user_agent, False)
         logger.info(f"Password reset solicitado para email inexistente: {email}")
         return {"success": True, "message": generic_message}
     
     # Verificar si usuario está activo
     if not user.get("active", True):
-        audit_log(db, "request_user_inactive", email, ip, user_agent, False, 
-                  {"user_id": user.get("id")})
+        audit_log_sql("request_user_inactive", email, ip, user_agent, False, 
+                      {"user_id": user.get("id")})
         logger.info(f"Password reset solicitado para usuario inactivo: {email}")
         return {"success": True, "message": generic_message}
     
@@ -445,7 +517,7 @@ def request_password_reset(
     usuario_id_sql = user.get("usuario_id_sql")
     
     # =========================================================================
-    # FASE 3-I: Invalidar tokens anteriores en SQL
+    # Invalidar tokens anteriores en SQL
     # =========================================================================
     _invalidate_previous_tokens_sql(usuario_id_sql, "new_request")
     
@@ -456,7 +528,7 @@ def request_password_reset(
     expires_at = now + timedelta(hours=TOKEN_TTL_HOURS)
     
     # =========================================================================
-    # FASE 3-I: Guardar token hasheado en SQL (NUNCA token plano)
+    # Guardar token hasheado en SQL (NUNCA token plano)
     # =========================================================================
     _save_token_sql(token_hash, usuario_id_sql, email, expires_at, ip, user_agent)
     
@@ -466,8 +538,8 @@ def request_password_reset(
     # Enviar email
     email_sent = send_reset_email(email, user.get("nombre", ""), reset_url)
     
-    audit_log(db, "request_success", email, ip, user_agent, email_sent, 
-              {"user_id": user_id, "email_sent": email_sent})
+    audit_log_sql("request_success", email, ip, user_agent, email_sent, 
+                  {"user_id": user_id, "email_sent": email_sent})
     
     if email_sent:
         logger.info(f"Password reset email enviado a: {email}")
@@ -486,8 +558,10 @@ def reset_password(
     """
     Cambiar password usando token válido.
     
-    FASE 3-I: Token se valida en SQL.
-    Password se actualiza en Usuario_Catalogo (SQL).
+    AUTH-RESET-P2: 100% SQL
+    - Token se valida en SQL
+    - Password se actualiza en Usuario_Catalogo (SQL)
+    - Auditoría en Usuario_LogRecuperacion (SQL)
     
     Args:
         token: Token de reset (en texto plano)
@@ -498,8 +572,6 @@ def reset_password(
     Returns:
         {"success": True/False, "message": "..."}
     """
-    db = get_db()  # Solo para audit (DEUDA P2)
-    
     # Validar que hay token
     if not token:
         return {"success": False, "message": "Token invalido o expirado"}
@@ -508,13 +580,13 @@ def reset_password(
     token_hash = hash_token(token)
     
     # =========================================================================
-    # FASE 3-I: Buscar token válido en SQL
+    # Buscar token válido en SQL
     # =========================================================================
     token_record = _find_valid_token_sql(token_hash)
     
     if not token_record:
-        audit_log(db, "reset_invalid_token", "unknown", ip, user_agent, False,
-                  {"token_hash_partial": token_hash[:16]})
+        audit_log_sql("reset_invalid_token", "unknown", ip, user_agent, False,
+                      {"token_hash_partial": token_hash[:16]})
         logger.warning(f"Intento de reset con token invalido desde IP: {ip}")
         return {"success": False, "message": "Token invalido o expirado"}
     
@@ -525,12 +597,12 @@ def reset_password(
     # Validar complejidad del nuevo password
     valid, error_msg = validate_password_strength(new_password)
     if not valid:
-        audit_log(db, "reset_weak_password", email, ip, user_agent, False,
-                  {"usuario_id_sql": usuario_id_sql})
+        audit_log_sql("reset_weak_password", email, ip, user_agent, False,
+                      {"usuario_id_sql": usuario_id_sql})
         return {"success": False, "message": error_msg}
     
     # =========================================================================
-    # FASE 3-I: Buscar usuario en SQL para obtener PublicUUID
+    # Buscar usuario en SQL para obtener PublicUUID
     # =========================================================================
     conn = _get_sql_connection()
     try:
@@ -542,8 +614,8 @@ def reset_password(
         ''', (usuario_id_sql,))
         row = cursor.fetchone()
         if not row:
-            audit_log(db, "reset_user_not_found", email, ip, user_agent, False,
-                      {"usuario_id_sql": usuario_id_sql})
+            audit_log_sql("reset_user_not_found", email, ip, user_agent, False,
+                          {"usuario_id_sql": usuario_id_sql})
             return {"success": False, "message": "Token invalido o expirado"}
         user_id = row[0]
     finally:
@@ -553,26 +625,26 @@ def reset_password(
     new_password_hash = hash_password(new_password)
     
     # =========================================================================
-    # FASE 3-I: Actualizar password en Usuario_Catalogo (SQL)
+    # Actualizar password en Usuario_Catalogo (SQL)
     # =========================================================================
     updated = _update_password_sql(usuario_id_sql, new_password_hash)
     
     if not updated:
-        audit_log(db, "reset_update_failed", email, ip, user_agent, False,
-                  {"usuario_id_sql": usuario_id_sql})
+        audit_log_sql("reset_update_failed", email, ip, user_agent, False,
+                      {"usuario_id_sql": usuario_id_sql})
         logger.error(f"Fallo al actualizar password para usuario_id_sql: {usuario_id_sql}")
         return {"success": False, "message": "Error al actualizar contrasena"}
     
     # =========================================================================
-    # FASE 3-I: Marcar token como usado en SQL
+    # Marcar token como usado en SQL
     # =========================================================================
     _mark_token_used_sql(token_id, ip, user_agent)
     
     # Invalidar otros tokens pendientes del usuario
     _invalidate_previous_tokens_sql(usuario_id_sql, "password_reset_completed")
     
-    audit_log(db, "reset_success", email, ip, user_agent, True,
-              {"user_id": user_id})
+    audit_log_sql("reset_success", email, ip, user_agent, True,
+                  {"user_id": user_id})
     
     logger.info(f"Password reset completado para: {email}")
     
