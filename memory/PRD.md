@@ -313,7 +313,31 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE RBAC-SCOPE-B Completada*
+*Última actualización: 14-Dic-2025 - FASE RBAC-SCOPE-C Completada*
+
+## ✅ RBAC-SCOPE-C COMPLETADA (14-Dic-2025)
+
+**Objetivo:** Migrar permisos legacy de MongoDB a tablas SQL creadas en RBAC-SCOPE-B.
+
+**Datos migrados:**
+- `allowed_servers` → `Usuario_ServidoresAsignacion`: **19 registros**
+- `allowed_sucursales` → `Usuario_SucursalesAsignacion`: **5 registros**
+- `allowed_warehouses` → `Usuario_AlmacenesAsignacion`: **52 registros**
+
+**Usuarios migrados:** 7 (con permisos configurados)
+
+**Validaciones:**
+- ✅ admin@inventario.com: 8 servidores
+- ✅ carlosruz@edarsa.com.mx: 1 servidor, 2 almacenes
+- ✅ noxte@alpyc.com: 1 servidor, 2 sucursales, 5 almacenes
+- ✅ auditoria@edarsa.com.mx: 3 servidores, 2 sucursales, 20 almacenes
+- ✅ almacen@cienfuegos.mx: 1 servidor, 10 almacenes
+
+**Comportamiento productivo:** Sin cambios. Hotfix MongoDB sigue activo.
+
+**Reporte:** `/app/docs/reports/RBAC_SCOPE_C_MIGRACION_PERMISOS_LEGACY_SQL.md`
+
+---
 
 ## ✅ RBAC-SCOPE-B COMPLETADA (14-Dic-2025)
 
