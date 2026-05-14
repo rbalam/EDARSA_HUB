@@ -452,6 +452,8 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 - `/app/docs/reports/VENTAS_DIA_CAMBIO_ARQUITECTONICO.md`
 - `/app/docs/reports/FASE_4A_DIAGNOSTICO_REGLAS_VIVAS_MONGODB.md`
 - `/app/docs/reports/FASE_4B_RBAC_PROPUESTA_TECNICA.md`
+- `/app/docs/reports/FASE_4B_RBAC_EJECUCION_FINAL.md`
+- `/app/docs/reports/FASE_4B_FASE2_OPERATIVO_PROPUESTA_TECNICA.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
