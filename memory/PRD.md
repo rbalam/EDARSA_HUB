@@ -308,6 +308,8 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] **Ordenamiento por venta DESC** implementado
 - [x] Frecuencia: cada 5 minutos
 - [x] Tabla destino: `Comercial_Ventas_Dia_Abiertas_v2` (reutilizada)
+- [x] **BUG DECIMAL CORREGIDO** - El job escribía $0 por error de serialización JSON de Decimal
+- [x] **FRONTEND ACTUALIZADO** - Ventas del Día ahora usa endpoint V2 `/v2/comercial/ventas-dia`
 - [x] Reporte: `/app/docs/reports/VENTAS_DIA_CAMBIO_ARQUITECTONICO.md`
 
 **✅ Flujo Ventas del Día ahora es 100% EDARSAHUB SQL:**

@@ -739,47 +739,118 @@ export default function TableroEjecutivo() {
       let usedV2 = false;
       
       // SUBFASE 5: Si v2 está habilitado, intentar primero
-      if (USE_COMERCIAL_V2 && !esVentasDelDia) {
+      // CAMBIO ARQUITECTÓNICO (14-May-2026): También usar V2 para Ventas del Día
+      if (USE_COMERCIAL_V2) {
         try {
-          logger.log('[COMERCIAL_V2] Consultando endpoints v2...');
-          
-          // Calcular fechas para v2
-          const anioActual = parseInt(selectedAnios[0]) || new Date().getFullYear();
-          const mesInicio = Math.min(...selectedMeses.map(m => parseInt(m)));
-          const mesFin = Math.max(...selectedMeses.map(m => parseInt(m)));
-          const fechaInicio = `${anioActual}-${String(mesInicio).padStart(2, '0')}-01`;
-          const ultimoDia = new Date(anioActual, mesFin, 0).getDate();
-          const fechaFin = `${anioActual}-${String(mesFin).padStart(2, '0')}-${ultimoDia}`;
-          
-          const v2Response = await api.get(`/v2/comercial/dashboard`, {
-            params: { 
-              fecha_inicio: fechaInicio,
-              fecha_fin: fechaFin
-            },
-            timeout: 30000
-          });
-          
-          if (v2Response.data?.success) {
-            responseData = transformV2ToV1Format(v2Response.data, selectedMeses, selectedAnios, logger);
-            usedV2 = true;
-            logger.log(`[FASE3] Tablero Ejecutivo Comercial: V2 es fuente ÚNICA (${responseData.unidades?.length} unidades desde EDARSAHUB)`);
+          // =========================================================================
+          // VENTAS DEL DÍA: Usar endpoint específico V2
+          // Lee desde Comercial_Ventas_Dia_Abiertas_v2 (EDARSAHUB SQL)
+          // =========================================================================
+          if (esVentasDelDia) {
+            logger.log('[COMERCIAL_V2] Consultando ventas-dia desde EDARSAHUB SQL...');
             
-            // =========================================================================
-            // FASE 3 (Junio 2026): V2 ES LA FUENTE ÚNICA
-            // - V2 ya devuelve variaciones calculadas (var_vs_mes_ant, var_vs_año_ant)
-            // - V2 ya devuelve unidad_negocio_codigo oficial
-            // - NO se llama a V1 para enriquecer
-            // - Endpoint V1 (/comercial/tablero-ejecutivo) sigue existiendo pero no se usa aquí
-            // =========================================================================
+            const v2VentasDia = await api.get(`/v2/comercial/ventas-dia`, { timeout: 30000 });
             
-            // Log de validación de variaciones
-            const unidadesConVariaciones = responseData.unidades.filter(u => 
-              u.var_vs_mes_ant !== null || u.var_vs_año_ant !== null
-            );
-            logger.log(`[FASE3] Unidades con variaciones de V2: ${unidadesConVariaciones.length}/${responseData.unidades?.length}`);
+            if (v2VentasDia.data?.success) {
+              const ventasDiaData = v2VentasDia.data.data;
+              const resumen = ventasDiaData.resumen || {};
+              const porUnidad = ventasDiaData.por_unidad || [];
+              
+              // Transformar a formato esperado por el frontend
+              responseData = {
+                totales: {
+                  ventas: resumen.total_estimado_dia || 0,
+                  pax: resumen.total_pax || 0,
+                  cheques: resumen.total_tickets || 0,
+                  ticket_prom: resumen.total_tickets > 0 
+                    ? (resumen.total_estimado_dia / resumen.total_tickets) 
+                    : 0,
+                  cheque_prom: resumen.total_tickets > 0
+                    ? (resumen.total_estimado_dia / resumen.total_tickets)
+                    : 0,
+                  var_vs_mes_ant: null,  // No aplica para Ventas del Día
+                  var_vs_año_ant: null,  // No aplica para Ventas del Día
+                  proyeccion: null  // No aplica para Ventas del Día
+                },
+                periodo: {
+                  mes: new Date().getMonth() + 1,
+                  anio: new Date().getFullYear(),
+                  dias_transcurridos: new Date().getDate(),
+                  dias_mes: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(),
+                  modo_ventas_dia: true  // Flag para indicar modo Ventas del Día
+                },
+                unidades: porUnidad
+                  .sort((a, b) => (b.total_estimado_dia || 0) - (a.total_estimado_dia || 0))
+                  .map(u => ({
+                    // Campos requeridos por el componente de tarjeta
+                    sucursal_id: u.unidad_negocio_id,
+                    sucursal_nombre: u.unidad_negocio_nombre,
+                    unidad_negocio_codigo: u.unidad_negocio_id,
+                    unidad: u.unidad_negocio_nombre,
+                    server_id: u.server_id,
+                    sistema_tipo: u.sistema_origen,
+                    // Métricas - nombres exactos que usa el componente
+                    ventas: u.total_estimado_dia || 0,
+                    pax: (u.pax_abiertos || 0) + (u.pax_cerrados_dia || 0),
+                    cheques: (u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0),
+                    ticket_prom: ((u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0)) > 0
+                      ? u.total_estimado_dia / ((u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0))
+                      : 0,
+                    proyeccion: 0,  // No aplica para Ventas del Día
+                    var_vs_mes_ant: null,  // No aplica
+                    var_vs_año_ant: null,  // No aplica
+                    // Estado de datos - CRÍTICO para que no muestre "Error de conexión"
+                    data_status: u.dato_vencido ? 'DATA_FROM_CACHE' : 'DATA_OK',
+                    live_status: 'NOT_APPLICABLE',  // Ventas del Día no usa live
+                    source_used: 'EDARSAHUB_SQL_V2',
+                    // Campos de última actualización
+                    snapshot_timestamp: u.snapshot_timestamp,
+                    minutos_desde_ultima_actualizacion: u.minutos_desde_ultima_actualizacion,
+                    dato_vencido: u.dato_vencido,
+                    fuente_original: u.fuente_original,
+                    _fuente: 'EDARSAHUB_SQL_V2'
+                  }))
+              };
+              usedV2 = true;
+              logger.log(`[VENTAS_DIA_V2] Cargadas ${responseData.unidades.length} unidades desde EDARSAHUB SQL, ordenadas por venta DESC`);
+            } else {
+              throw new Error('Respuesta ventas-dia v2 no exitosa');
+            }
             
           } else {
-            throw new Error('Respuesta v2 no exitosa');
+            // VENTAS MES/AÑO: Usar endpoint dashboard V2
+            logger.log('[COMERCIAL_V2] Consultando endpoints v2...');
+          
+            // Calcular fechas para v2
+            const anioActual = parseInt(selectedAnios[0]) || new Date().getFullYear();
+            const mesInicio = Math.min(...selectedMeses.map(m => parseInt(m)));
+            const mesFin = Math.max(...selectedMeses.map(m => parseInt(m)));
+            const fechaInicio = `${anioActual}-${String(mesInicio).padStart(2, '0')}-01`;
+            const ultimoDia = new Date(anioActual, mesFin, 0).getDate();
+            const fechaFin = `${anioActual}-${String(mesFin).padStart(2, '0')}-${ultimoDia}`;
+            
+            const v2Response = await api.get(`/v2/comercial/dashboard`, {
+              params: { 
+                fecha_inicio: fechaInicio,
+                fecha_fin: fechaFin
+              },
+              timeout: 30000
+            });
+            
+            if (v2Response.data?.success) {
+              responseData = transformV2ToV1Format(v2Response.data, selectedMeses, selectedAnios, logger);
+              
+              // ORDENAR POR VENTA DESC
+              if (responseData.unidades && responseData.unidades.length > 0) {
+                responseData.unidades.sort((a, b) => (b.ventas || 0) - (a.ventas || 0));
+                logger.log('[COMERCIAL_V2] Unidades ordenadas por venta DESC');
+              }
+              
+              usedV2 = true;
+              logger.log(`[FASE3] Tablero Ejecutivo Comercial: V2 es fuente ÚNICA (${responseData.unidades?.length} unidades desde EDARSAHUB)`);
+            } else {
+              throw new Error('Respuesta v2 no exitosa');
+            }
           }
           
         } catch (v2Error) {

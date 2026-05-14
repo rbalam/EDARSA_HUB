@@ -304,8 +304,8 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
         "unidades_procesadas": 0,
         "unidades_exitosas": 0,
         "unidades_fallidas": 0,
-        "total_ventas_abiertas": Decimal("0"),
-        "total_estimado_dia": Decimal("0"),
+        "total_ventas_abiertas": 0.0,
+        "total_estimado_dia": 0.0,
         "detalles_unidades": [],
         "errores": []
     }
@@ -389,8 +389,8 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             upsert_result = upsert_ventas_dia_abiertas(ventas_model)
             
             results["unidades_exitosas"] += 1
-            results["total_ventas_abiertas"] += ventas_abiertas
-            results["total_estimado_dia"] += total_estimado_dia
+            results["total_ventas_abiertas"] += float(ventas_abiertas)
+            results["total_estimado_dia"] += float(total_estimado_dia)
             results["detalles_unidades"].append({
                 "unidad_negocio_id": unidad_id,
                 "unidad": nombre,
@@ -522,8 +522,8 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             upsert_result = upsert_ventas_dia_abiertas(ventas_model)
             
             results["unidades_exitosas"] += 1
-            results["total_ventas_abiertas"] += ventas_abiertas
-            results["total_estimado_dia"] += total_estimado_dia
+            results["total_ventas_abiertas"] += float(ventas_abiertas)
+            results["total_estimado_dia"] += float(total_estimado_dia)
             results["detalles_unidades"].append({
                 "unidad_negocio_id": unidad_id,
                 "unidad": nombre,
