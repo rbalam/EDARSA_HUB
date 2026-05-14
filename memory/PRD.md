@@ -49,18 +49,22 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] Hashes bcrypt intactos
 - [x] Reporte: `/app/docs/reports/FASE2B1_POBLADO_USUARIOS_BASE_SQL.md`
 
+### FASE 2-B2 - Poblado Roles Asignación (Completada - 14-Dic-2025)
+- [x] 11 asignaciones insertadas en Usuario_RolesAsignacion
+- [x] Mapeo: SuperAdministrador→SUPERADMIN, Administrador→ADMIN, Supervisor→SUPERVISOR, Usuario→USUARIO
+- [x] 2 SuperAdministradores preservados (admin@inventario.com, ricardo@edarsa.com.mx)
+- [x] 4 ADMIN, 2 SUPERVISOR, 3 USUARIO
+- [x] Usuario_EmpresasAsignacion sigue vacía
+- [x] Reporte: `/app/docs/reports/FASE2B2_POBLADO_USUARIO_ROLES_ASIGNACION.md`
+
 ---
 
 ## Fases Pendientes (P0)
 
-### FASE 2-B2 - Poblar Roles y Asignaciones
-- [ ] Poblar Usuario_RolesAsignacion para 11 usuarios
-- [ ] Mapear role MongoDB → RolID SQL
-- [ ] Validar SuperAdministradores preservados
-
 ### FASE 2-B3 - Poblar Empresas Asignación
-- [ ] Poblar Usuario_EmpresasAsignacion
 - [ ] Crear tabla mapeo Empresas MongoDB → SQL
+- [ ] Poblar Usuario_EmpresasAsignacion
+- [ ] Marcar empresa principal (empresa_default_id)
 - [ ] Validar empresas_permitidas
 
 ### FASE 2-C - Validación Post-Migración
@@ -100,9 +104,9 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 ### Tablas SQL Auth/RBAC
 | Tabla | Registros | Estado |
 |-------|-----------|--------|
-| Usuario_Catalogo | 11 | +2 usuarios nuevos, todos con UUID y MongoID |
+| Usuario_Catalogo | 11 | Completo con UUID y MongoID |
 | Usuario_Roles | 9 | Completo con roles canónicos |
-| Usuario_RolesAsignacion | 0 | Vacía (poblar en 2-B2) |
+| Usuario_RolesAsignacion | 11 | Completo (4 ADMIN, 2 SUPERADMIN, 2 SUPERVISOR, 3 USUARIO) |
 | Usuario_EmpresasAsignacion | 0 | Vacía (poblar en 2-B3) |
 | Usuario_MigracionMongoTrace | 11 | Trazabilidad completa |
 
@@ -123,8 +127,9 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - `/app/docs/reports/FASE2A1_VALIDACION_DDL_AUTH_RBAC_PRE_MIGRACION.md`
 - `/app/docs/reports/FASE2A2_PRECONDICIONES_DDL_AUTH_RBAC_SQL.md`
 - `/app/docs/reports/FASE2B1_POBLADO_USUARIOS_BASE_SQL.md`
+- `/app/docs/reports/FASE2B2_POBLADO_USUARIO_ROLES_ASIGNACION.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE 2-B1 Completada*
+*Última actualización: 14-Dic-2025 - FASE 2-B2 Completada*
