@@ -313,7 +313,31 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE RBAC-SCOPE-D Completada*
+*Última actualización: 13-May-2026 - FASE RBAC-SCOPE-E Completada*
+
+## ✅ RBAC-SCOPE-E COMPLETADA (13-May-2026)
+
+**Objetivo:** Modificar `update_user_permissions()` para escribir permisos operativos en EDARSAHUB SQL en lugar de MongoDB.
+
+**Cambio implementado:**
+- Función `update_user_permissions()` en `service.py` reescrita completamente
+- Escribe en `Usuario_ServidoresAsignacion`, `Usuario_SucursalesAsignacion`, `Usuario_AlmacenesAsignacion`
+- MongoDB ya NO recibe permisos operativos en escritura
+- Estrategia de idempotencia: desactivar asignaciones anteriores (`Activo=0`) antes de insertar nuevas
+
+**Validaciones:**
+- ✅ PUT /api/users/{id}/permissions responde HTTP 200
+- ✅ Permisos persisten en SQL (verificado con queries directas)
+- ✅ MongoDB NO fue modificado
+- ✅ GET /api/users recarga datos desde SQL correctamente
+- ✅ 11 usuarios visibles
+- ✅ No hay duplicados activos en las 3 tablas
+- ✅ Login y JWT sin cambios
+- ✅ Operación transaccional (commit/rollback)
+
+**Reporte:** `/app/docs/reports/RBAC_SCOPE_E_UPDATE_USER_PERMISSIONS_ESCRIBE_SQL.md`
+
+---
 
 ## ✅ RBAC-SCOPE-D COMPLETADA (14-Dic-2025)
 
@@ -451,3 +475,21 @@ Las siguientes funciones SIGUEN usando MongoDB y deben migrarse en fases futuras
 - `deactivate_user()` - Actualiza db.users
 - `find_user_by_email()` - Lee de db.users (usado por login)
 - `find_user_by_id()` - Lee de db.users (case-insensitive fix aplicado)
+
+---
+
+## Próximas Fases RBAC
+
+### RBAC-SCOPE-F (SIGUIENTE)
+**Objetivo:** Validar modal de permisos completo (lectura/escritura SQL) y persistencia e2e.
+- [ ] Abrir modal de permisos desde frontend
+- [ ] Modificar permisos y guardar
+- [ ] Verificar que los cambios persisten al recargar
+- [ ] Validar que no hay errores de UI ni consola
+
+### RBAC-SCOPE-G (FUTURA)
+**Objetivo:** Eliminar dependencia MongoDB del módulo Usuarios/Roles.
+- [ ] Migrar `create_user()` a SQL
+- [ ] Migrar `update_user()` a SQL
+- [ ] Migrar `deactivate_user()` a SQL
+- [ ] Eliminar código MongoDB residual
