@@ -54,14 +54,12 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] Mapeo: SuperAdministrador→SUPERADMIN, Administrador→ADMIN, Supervisor→SUPERVISOR, Usuario→USUARIO
 - [x] 2 SuperAdministradores preservados (admin@inventario.com, ricardo@edarsa.com.mx)
 - [x] 4 ADMIN, 2 SUPERVISOR, 3 USUARIO
-- [x] Usuario_EmpresasAsignacion sigue vacía
 - [x] Reporte: `/app/docs/reports/FASE2B2_POBLADO_USUARIO_ROLES_ASIGNACION.md`
 
 ### FASE 2-B2.1 - Mapeo Empresas MongoDB → SQL (Completada - 14-Dic-2025)
 - [x] Tabla `Sistema_EmpresasMongoMap` creada
 - [x] 5 mapeos creados por código exacto (ORIGEN, 130QRO, CIENFUEGOS, ESTELAR, 130MID)
 - [x] Sin ambigüedades ni conflictos
-- [x] Usuario_EmpresasAsignacion sigue vacía
 - [x] Reporte: `/app/docs/reports/FASE2B2_1_MAPEO_EMPRESAS_MONGO_SQL.md`
 
 ### FASE 2-B3 - Poblado Usuario_EmpresasAsignacion (Completada - 14-Dic-2025)
@@ -71,19 +69,6 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] 7 usuarios con empresa principal correcta
 - [x] 4 usuarios omitidos (sin empresas_permitidas) - pendientes de decisión
 - [x] Reporte: `/app/docs/reports/FASE2B3_POBLADO_USUARIO_EMPRESAS_ASIGNACION.md`
-
----
-
-## ✅ FASE 2 COMPLETADA: Migración Base Auth/RBAC
-
-| Tabla SQL | Registros | Estado |
-|-----------|-----------|--------|
-| Usuario_Catalogo | 11 | ✓ Completo |
-| Usuario_Roles | 9 | ✓ Completo |
-| Usuario_RolesAsignacion | 11 | ✓ Completo |
-| Usuario_EmpresasAsignacion | 27 | ✓ Completo |
-| Sistema_EmpresasMongoMap | 5 | ✓ Completo |
-| Usuario_MigracionMongoTrace | 11 | ✓ Completo |
 
 ### FASE 2-C - Validación Post-Migración (Completada - 14-Dic-2025)
 - [x] Validación cruzada MongoDB vs SQL completada
@@ -97,32 +82,56 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] Recomendación SUPERADMIN: Opción B (acceso global implícito)
 - [x] Reporte: `/app/docs/reports/FASE2C_VALIDACION_POST_MIGRACION_AUTH_RBAC_SQL.md`
 
+### ✅ FASE 2-D - Auth Repository SQL Paralelo (Completada - 14-Dic-2025)
+- [x] Archivo creado: `/app/backend/core/auth/user_repository_sql.py`
+- [x] Clase `AuthRepositorySQL` con funciones equivalentes a MongoDB
+- [x] Regla SUPERADMIN implementada (acceso global implícito a 5 empresas)
+- [x] PublicUUID usado como `user['id']` para compatibilidad JWT
+- [x] Funciones de comparación MongoDB vs SQL incluidas
+- [x] Validación exitosa: 2 SUPERADMIN con acceso a 5/5 empresas
+- [x] Código productivo (security.py, service.py) NO MODIFICADO
+- [x] MongoDB sigue siendo la fuente productiva de Auth
+- [x] Reporte: `/app/docs/reports/FASE2D_AUTH_REPOSITORY_SQL_PARALELO.md`
+
 ---
 
-## Fases Pendientes (P0)
+## ✅ FASE 2 BASE COMPLETADA: Migración Auth/RBAC a SQL
 
-### FASE 2-D - Auth Repository SQL Paralelo
-- [ ] Crear user_repository_sql.py
-- [ ] Implementar funciones equivalentes a MongoDB
-- [ ] Implementar regla SUPERADMIN (acceso global implícito)
-- [ ] Usar PublicUUID como user['id'] en respuestas
+| Tabla SQL | Registros | Estado |
+|-----------|-----------|--------|
+| Usuario_Catalogo | 11 | ✓ Completo |
+| Usuario_Roles | 9 | ✓ Completo |
+| Usuario_RolesAsignacion | 11 | ✓ Completo |
+| Usuario_EmpresasAsignacion | 27 | ✓ Completo |
+| Sistema_EmpresasMongoMap | 5 | ✓ Completo |
+| Usuario_MigracionMongoTrace | 11 | ✓ Completo |
 
-### FASE 2-C - Validación Post-Migración
-- [ ] Validar conteos MongoDB vs SQL
-- [ ] Verificar hashes bcrypt
-- [ ] Confirmar SuperAdministrador preservado
+### Repositorio SQL Paralelo:
+- `AuthRepositorySQL.get_user_by_email_sql()` ✓
+- `AuthRepositorySQL.get_user_by_public_uuid_sql()` ✓
+- `validate_superadmin_rule()` ✓ (2 SUPERADMIN = 5/5 empresas)
 
-### FASE 2-D - Auth Repository SQL
-- [ ] Crear user_repository_sql.py
-- [ ] Implementar funciones equivalentes a MongoDB
+---
 
-### FASE 2-E - SQL-First con Fallback
-- [ ] Modificar get_current_user() a SQL-first
-- [ ] Mantener fallback a MongoDB
+## Fases Pendientes (P0) - Requieren Autorización
 
-### FASE 2-F/G - Apagar MongoDB Auth
-- [ ] Período de observación
-- [ ] Eliminar fallback MongoDB
+### FASE 2-E - SQL-First con Fallback MongoDB (SIGUIENTE)
+- [ ] Modificar `get_current_user()` en `/app/backend/core/security.py`
+- [ ] Usar `AuthRepositorySQL` como fuente principal
+- [ ] Mantener fallback a MongoDB si SQL no encuentra el usuario
+- [ ] Logging de fuente usada (SQL vs MongoDB)
+- **Impacto:** Cambia la fuente de autenticación de MongoDB a SQL
+- **Riesgo:** Bajo (fallback garantiza continuidad)
+
+### FASE 2-F - Período de Observación
+- [ ] Monitorear logs de fallback MongoDB
+- [ ] Validar que todos los logins resuelven desde SQL
+- [ ] Documentar casos de fallback
+
+### FASE 2-G - Eliminar Fallback MongoDB
+- [ ] Remover código de fallback
+- [ ] `get_current_user` depende 100% de SQL
+- [ ] Verificar que Login no requiere MongoDB
 
 ---
 
@@ -141,31 +150,28 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 
 ## Estado Actual del Sistema
 
-### Tablas SQL Auth/RBAC
-| Tabla | Registros | Estado |
-|-------|-----------|--------|
-| Usuario_Catalogo | 11 | ✓ Completo con UUID y MongoID |
-| Usuario_Roles | 9 | ✓ Completo con roles canónicos |
-| Usuario_RolesAsignacion | 11 | ✓ Completo (4 ADMIN, 2 SUPERADMIN, 2 SUPERVISOR, 3 USUARIO) |
-| Usuario_EmpresasAsignacion | 27 | ✓ Completo (7 usuarios con empresas) |
-| Usuario_MigracionMongoTrace | 11 | ✓ Trazabilidad completa |
-| Sistema_EmpresasMongoMap | 5 | ✓ Mapeo MongoDB→SQL completo |
+### Flujo de Autenticación:
+```
+[PRODUCTIVO]
+POST /api/auth/login → service.py → MongoDB (db.users)
+GET /api/auth/me → security.py → MongoDB (db.users)
 
-### Usuarios pendientes de decisión (sin empresas_permitidas)
-- ricardo@edarsa.com.mx (SUPERADMIN)
-- david.ricardez@cienfuegos.mx (USUARIO)
-- carlos@alpuntoycoma.mx (ADMIN)
-- eduardo@alpuntoycoma.mx (ADMIN)
+[PARALELO - NO PRODUCTIVO]
+user_repository_sql.py → EDARSAHUB SQL
+```
 
-### Usuarios MongoDB vs SQL
+### Usuarios pendientes de decisión (sin empresas_permitidas en MongoDB):
+| Email | Rol SQL | Empresas SQL |
+|-------|---------|--------------|
+| ricardo@edarsa.com.mx | SUPERADMIN | 5 (regla implícita) ✅ |
+| david.ricardez@cienfuegos.mx | USUARIO | 0 |
+| carlos@alpuntoycoma.mx | ADMIN | 0 |
+| eduardo@alpuntoycoma.mx | ADMIN | 0 |
+
+### Usuarios MongoDB vs SQL:
 - MongoDB: 17 (14 activos, 3 inactivos)
 - SQL: 11 migrados (9 originales + 2 nuevos)
 - Pendientes: 0 productivos (solo usuarios test)
-
-### Decisiones Documentadas
-- superadmin@test.com: Excluido (sin UUID en MongoDB)
-- 3 usuarios @test.com activos: Excluidos (requieren decisión explícita)
-- 3 usuarios inactivos: Excluidos (test/deshabilitados)
 
 ---
 
@@ -178,8 +184,9 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - `/app/docs/reports/FASE2B2_1_MAPEO_EMPRESAS_MONGO_SQL.md`
 - `/app/docs/reports/FASE2B3_POBLADO_USUARIO_EMPRESAS_ASIGNACION.md`
 - `/app/docs/reports/FASE2C_VALIDACION_POST_MIGRACION_AUTH_RBAC_SQL.md`
+- `/app/docs/reports/FASE2D_AUTH_REPOSITORY_SQL_PARALELO.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE 2-C Completada (Migración Base Validada)*
+*Última actualización: 14-Dic-2025 - FASE 2-D Completada (Repositorio SQL Paralelo)*
