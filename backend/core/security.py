@@ -50,6 +50,14 @@ ACCESS_TOKEN_MINUTES: int = int(os.environ.get('ACCESS_TOKEN_MINUTES', '15'))
 security = HTTPBearer()
 
 # ============================================================================
+# FASE 2-D.1: FEATURE FLAG SQL-FIRST AUTH
+# ============================================================================
+# IMPORTANTE: Este flag DEBE estar apagado hasta que se autorice FASE 2-E.
+# Valor por defecto: false (MongoDB sigue siendo la fuente productiva)
+
+AUTH_SQL_FIRST_ENABLED: bool = os.environ.get('AUTH_SQL_FIRST_ENABLED', 'false').lower() == 'true'
+
+# ============================================================================
 # INYECCIÓN DE DEPENDENCIA: MongoDB
 # ============================================================================
 # La conexión a MongoDB se inyecta desde server.py para evitar imports circulares
@@ -569,4 +577,171 @@ __all__ = [
     'user_has_server_access',
     'filter_servers_by_permissions',
     'filter_sucursales_by_permissions',
+    # FASE 2-D.1: Preflight SQL-First
+    'AUTH_SQL_FIRST_ENABLED',
+    'compare_user_mongo_vs_sql_passive',
+    'log_auth_preflight_status',
 ]
+
+
+# ============================================================================
+# FASE 2-D.1: PREFLIGHT SQL-FIRST AUTH (COMPARACIÓN PASIVA)
+# ============================================================================
+# IMPORTANTE:
+# - Estas funciones NO cambian el comportamiento productivo
+# - MongoDB sigue siendo la fuente de autenticación
+# - Solo comparan de forma pasiva para validar que SQL está listo
+# - NO loggear passwords, hashes ni tokens completos
+
+def _safe_user_for_log(user: Optional[Dict[str, Any]], source: str) -> Dict[str, Any]:
+    """
+    Genera versión segura de usuario para logging (sin secretos).
+    """
+    if not user:
+        return {'source': source, 'exists': False}
+    
+    return {
+        'source': source,
+        'exists': True,
+        'id': user.get('id', 'N/A'),
+        'email': user.get('email', 'N/A'),
+        'role': user.get('role', user.get('rol', 'N/A')),
+        'active': user.get('active', user.get('activo', 'N/A')),
+        'empresas_count': len(user.get('empresas_permitidas', [])),
+        'empresa_default': user.get('empresa_default_id', 'N/A'),
+        'has_password_hash': bool(user.get('password')),
+    }
+
+
+def compare_user_mongo_vs_sql_passive(user_mongo: Dict[str, Any], email: str) -> Dict[str, Any]:
+    """
+    FASE 2-D.1: Comparación pasiva MongoDB vs SQL.
+    
+    NO cambia el comportamiento productivo.
+    NO loggea secretos (password, hash, token).
+    
+    Args:
+        user_mongo: Usuario obtenido de MongoDB (actual productivo)
+        email: Email para buscar en SQL
+        
+    Returns:
+        Dict con resultado de comparación
+    """
+    from core.auth.user_repository_sql import AuthRepositorySQL
+    
+    result = {
+        'email': email,
+        'auth_source': 'MONGODB_CURRENT',
+        'auth_sql_ready': False,
+        'auth_sql_diff': False,
+        'differences': [],
+        'mongo': _safe_user_for_log(user_mongo, 'MONGODB'),
+        'sql': None,
+    }
+    
+    try:
+        repo_sql = AuthRepositorySQL()
+        user_sql = repo_sql.get_user_by_email_sql(email)
+        
+        if not user_sql:
+            result['differences'].append('Usuario no existe en SQL')
+            result['sql'] = _safe_user_for_log(None, 'SQL')
+            return result
+        
+        result['sql'] = _safe_user_for_log(user_sql, 'SQL')
+        result['auth_sql_ready'] = True
+        
+        # Comparar campos críticos
+        differences = []
+        
+        # ID (PublicUUID vs MongoDB id)
+        mongo_id = user_mongo.get('id')
+        sql_id = user_sql.get('id')
+        if mongo_id != sql_id:
+            differences.append(f'id: mongo={mongo_id} vs sql={sql_id}')
+        
+        # Role
+        mongo_role = user_mongo.get('role', user_mongo.get('rol'))
+        sql_role = user_sql.get('role')
+        if mongo_role != sql_role:
+            differences.append(f'role: mongo={mongo_role} vs sql={sql_role}')
+        
+        # Active
+        mongo_active = user_mongo.get('active', user_mongo.get('activo', False))
+        sql_active = user_sql.get('active', False)
+        if bool(mongo_active) != bool(sql_active):
+            differences.append(f'active: mongo={mongo_active} vs sql={sql_active}')
+        
+        # Empresas permitidas (contar, no listar UUIDs completos)
+        mongo_empresas = set(user_mongo.get('empresas_permitidas', []))
+        sql_empresas = set(user_sql.get('empresas_permitidas', []))
+        if mongo_empresas != sql_empresas:
+            only_mongo = len(mongo_empresas - sql_empresas)
+            only_sql = len(sql_empresas - mongo_empresas)
+            if only_mongo > 0:
+                differences.append(f'empresas: {only_mongo} solo en mongo')
+            if only_sql > 0:
+                differences.append(f'empresas: {only_sql} solo en sql')
+        
+        # Empresa default
+        mongo_default = user_mongo.get('empresa_default_id')
+        sql_default = user_sql.get('empresa_default_id')
+        if mongo_default != sql_default:
+            differences.append(f'empresa_default: mongo={mongo_default} vs sql={sql_default}')
+        
+        # Password hash presente (no comparar el hash en sí)
+        mongo_has_hash = bool(user_mongo.get('password'))
+        sql_has_hash = bool(user_sql.get('password'))
+        if mongo_has_hash != sql_has_hash:
+            differences.append(f'has_password: mongo={mongo_has_hash} vs sql={sql_has_hash}')
+        
+        if differences:
+            result['auth_sql_diff'] = True
+            result['differences'] = differences
+        
+        return result
+        
+    except Exception as e:
+        result['differences'].append(f'Error SQL: {str(e)[:100]}')
+        return result
+
+
+def log_auth_preflight_status(user_mongo: Dict[str, Any], email: str) -> None:
+    """
+    FASE 2-D.1: Loggea estado de preflight de forma segura.
+    
+    NO loggea:
+    - Passwords o hashes
+    - Tokens completos
+    - UUIDs de empresas (solo conteos)
+    
+    Args:
+        user_mongo: Usuario de MongoDB
+        email: Email del usuario
+    """
+    if not AUTH_SQL_FIRST_ENABLED:
+        # Flag apagado: comparación pasiva en background
+        try:
+            comparison = compare_user_mongo_vs_sql_passive(user_mongo, email)
+            
+            # Log estructurado sin secretos
+            log_data = {
+                'event': 'auth_preflight',
+                'email': email,
+                'auth_source': comparison['auth_source'],
+                'auth_sql_ready': comparison['auth_sql_ready'],
+                'auth_sql_diff': comparison['auth_sql_diff'],
+                'diff_count': len(comparison['differences']),
+            }
+            
+            if comparison['auth_sql_diff']:
+                log_data['differences'] = comparison['differences']
+            
+            logging.info(f"[AUTH-PREFLIGHT] {log_data}")
+            
+        except Exception as e:
+            logging.warning(f"[AUTH-PREFLIGHT] Error en comparación pasiva: {str(e)[:100]}")
+    else:
+        # Flag encendido: esto solo debería pasar en FASE 2-E
+        logging.info(f"[AUTH-SQL-FIRST] ACTIVO para {email} (requiere FASE 2-E)")
+

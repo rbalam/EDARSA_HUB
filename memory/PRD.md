@@ -93,6 +93,20 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] MongoDB sigue siendo la fuente productiva de Auth
 - [x] Reporte: `/app/docs/reports/FASE2D_AUTH_REPOSITORY_SQL_PARALELO.md`
 
+### ✅ FASE 2-D.1 - Preflight Auth SQL-First (Completada - 14-Dic-2025)
+- [x] Feature flag agregado: `AUTH_SQL_FIRST_ENABLED=false`
+- [x] Feature flag APAGADO por defecto (MongoDB productivo)
+- [x] Funciones de comparación pasiva agregadas a `security.py`
+- [x] 11/11 usuarios SQL validados contra MongoDB
+- [x] UUIDs coinciden (normalización case-insensitive)
+- [x] Regla SUPERADMIN validada (2/2 con acceso global)
+- [x] 3 usuarios sin empresas documentados
+- [x] Logging seguro (sin passwords/hashes/tokens)
+- [x] JWT no modificado
+- [x] `get_current_user()` no modificado
+- [x] Endpoints críticos funcionan (/api/servers, /api/auth/me, dashboard)
+- [x] Reporte: `/app/docs/reports/FASE2D1_PREFLIGHT_AUTH_SQL_FIRST.md`
+
 ---
 
 ## ✅ FASE 2 BASE COMPLETADA: Migración Auth/RBAC a SQL
@@ -115,11 +129,13 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 
 ## Fases Pendientes (P0) - Requieren Autorización
 
-### FASE 2-E - SQL-First con Fallback MongoDB (SIGUIENTE)
+### FASE 2-E - SQL-First con Fallback MongoDB (SIGUIENTE - Requiere Autorización)
 - [ ] Modificar `get_current_user()` en `/app/backend/core/security.py`
+- [ ] Cambiar `AUTH_SQL_FIRST_ENABLED=true`
 - [ ] Usar `AuthRepositorySQL` como fuente principal
 - [ ] Mantener fallback a MongoDB si SQL no encuentra el usuario
 - [ ] Logging de fuente usada (SQL vs MongoDB)
+- **Prerequisito:** FASE 2-D.1 ✅ COMPLETADA
 - **Impacto:** Cambia la fuente de autenticación de MongoDB a SQL
 - **Riesgo:** Bajo (fallback garantiza continuidad)
 
@@ -185,8 +201,9 @@ user_repository_sql.py → EDARSAHUB SQL
 - `/app/docs/reports/FASE2B3_POBLADO_USUARIO_EMPRESAS_ASIGNACION.md`
 - `/app/docs/reports/FASE2C_VALIDACION_POST_MIGRACION_AUTH_RBAC_SQL.md`
 - `/app/docs/reports/FASE2D_AUTH_REPOSITORY_SQL_PARALELO.md`
+- `/app/docs/reports/FASE2D1_PREFLIGHT_AUTH_SQL_FIRST.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE 2-D Completada (Repositorio SQL Paralelo)*
+*Última actualización: 14-Dic-2025 - FASE 2-D.1 Completada (Preflight SQL-First)*
