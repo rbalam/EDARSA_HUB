@@ -64,14 +64,39 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] Usuario_EmpresasAsignacion sigue vacía
 - [x] Reporte: `/app/docs/reports/FASE2B2_1_MAPEO_EMPRESAS_MONGO_SQL.md`
 
+### FASE 2-B3 - Poblado Usuario_EmpresasAsignacion (Completada - 14-Dic-2025)
+- [x] 27 asignaciones insertadas para 7 usuarios con empresas_permitidas
+- [x] 5 usuarios con 5 empresas cada uno (acceso global)
+- [x] 2 usuarios con 1 empresa (CIENFUEGOS - acceso limitado)
+- [x] 7 usuarios con empresa principal correcta
+- [x] 4 usuarios omitidos (sin empresas_permitidas) - pendientes de decisión
+- [x] Reporte: `/app/docs/reports/FASE2B3_POBLADO_USUARIO_EMPRESAS_ASIGNACION.md`
+
+---
+
+## ✅ FASE 2 COMPLETADA: Migración Base Auth/RBAC
+
+| Tabla SQL | Registros | Estado |
+|-----------|-----------|--------|
+| Usuario_Catalogo | 11 | ✓ Completo |
+| Usuario_Roles | 9 | ✓ Completo |
+| Usuario_RolesAsignacion | 11 | ✓ Completo |
+| Usuario_EmpresasAsignacion | 27 | ✓ Completo |
+| Sistema_EmpresasMongoMap | 5 | ✓ Completo |
+| Usuario_MigracionMongoTrace | 11 | ✓ Completo |
+
 ---
 
 ## Fases Pendientes (P0)
 
-### FASE 2-B3 - Poblar Usuario_EmpresasAsignacion
-- [ ] Poblar asignaciones para 7 usuarios con empresas_permitidas
-- [ ] Marcar empresa principal (empresa_default_id)
-- [ ] Decidir sobre 4 usuarios sin empresas_permitidas
+### FASE 2-C - Validación Post-Migración
+- [ ] Validación cruzada MongoDB vs SQL
+- [ ] Verificación de integridad de mapeos
+- [ ] Prueba de consistencia de auth
+
+### FASE 2-D - Auth Repository SQL
+- [ ] Crear user_repository_sql.py
+- [ ] Implementar funciones equivalentes a MongoDB
 
 ### FASE 2-C - Validación Post-Migración
 - [ ] Validar conteos MongoDB vs SQL
@@ -110,12 +135,18 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 ### Tablas SQL Auth/RBAC
 | Tabla | Registros | Estado |
 |-------|-----------|--------|
-| Usuario_Catalogo | 11 | Completo con UUID y MongoID |
-| Usuario_Roles | 9 | Completo con roles canónicos |
-| Usuario_RolesAsignacion | 11 | Completo (4 ADMIN, 2 SUPERADMIN, 2 SUPERVISOR, 3 USUARIO) |
-| Usuario_EmpresasAsignacion | 0 | Vacía (poblar en 2-B3) |
-| Usuario_MigracionMongoTrace | 11 | Trazabilidad completa |
-| Sistema_EmpresasMongoMap | 5 | Mapeo MongoDB→SQL completo |
+| Usuario_Catalogo | 11 | ✓ Completo con UUID y MongoID |
+| Usuario_Roles | 9 | ✓ Completo con roles canónicos |
+| Usuario_RolesAsignacion | 11 | ✓ Completo (4 ADMIN, 2 SUPERADMIN, 2 SUPERVISOR, 3 USUARIO) |
+| Usuario_EmpresasAsignacion | 27 | ✓ Completo (7 usuarios con empresas) |
+| Usuario_MigracionMongoTrace | 11 | ✓ Trazabilidad completa |
+| Sistema_EmpresasMongoMap | 5 | ✓ Mapeo MongoDB→SQL completo |
+
+### Usuarios pendientes de decisión (sin empresas_permitidas)
+- ricardo@edarsa.com.mx (SUPERADMIN)
+- david.ricardez@cienfuegos.mx (USUARIO)
+- carlos@alpuntoycoma.mx (ADMIN)
+- eduardo@alpuntoycoma.mx (ADMIN)
 
 ### Usuarios MongoDB vs SQL
 - MongoDB: 17 (14 activos, 3 inactivos)
@@ -136,8 +167,9 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - `/app/docs/reports/FASE2B1_POBLADO_USUARIOS_BASE_SQL.md`
 - `/app/docs/reports/FASE2B2_POBLADO_USUARIO_ROLES_ASIGNACION.md`
 - `/app/docs/reports/FASE2B2_1_MAPEO_EMPRESAS_MONGO_SQL.md`
+- `/app/docs/reports/FASE2B3_POBLADO_USUARIO_EMPRESAS_ASIGNACION.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE 2-B2.1 Completada*
+*Última actualización: 14-Dic-2025 - FASE 2-B3 Completada (FASE 2 Base Auth/RBAC Completada)*
