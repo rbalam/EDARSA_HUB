@@ -41,16 +41,27 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] Script idempotente confirmado
 - [x] Reporte: `/app/docs/reports/FASE2A2_PRECONDICIONES_DDL_AUTH_RBAC_SQL.md`
 
+### FASE 2-B1 - Poblado Usuarios Base (Completada - 14-Dic-2025)
+- [x] 9 usuarios existentes actualizados con PublicUUID y MongoLegacyID
+- [x] 2 usuarios productivos insertados (carlos@, eduardo@alpuntoycoma.mx)
+- [x] 6 usuarios omitidos (3 inactivos, 3 test/@test.com)
+- [x] superadmin@test.com excluido (sin UUID - documentado)
+- [x] Hashes bcrypt intactos
+- [x] Reporte: `/app/docs/reports/FASE2B1_POBLADO_USUARIOS_BASE_SQL.md`
+
 ---
 
 ## Fases Pendientes (P0)
 
-### FASE 2-B - Poblar Tablas SQL desde MongoDB
-- [ ] Poblar PublicUUID y MongoLegacyID para 9 usuarios existentes
-- [ ] Insertar 5 usuarios productivos faltantes
-- [ ] Poblar Usuario_RolesAsignacion
+### FASE 2-B2 - Poblar Roles y Asignaciones
+- [ ] Poblar Usuario_RolesAsignacion para 11 usuarios
+- [ ] Mapear role MongoDB → RolID SQL
+- [ ] Validar SuperAdministradores preservados
+
+### FASE 2-B3 - Poblar Empresas Asignación
 - [ ] Poblar Usuario_EmpresasAsignacion
-- [ ] Validar conteos y hashes
+- [ ] Crear tabla mapeo Empresas MongoDB → SQL
+- [ ] Validar empresas_permitidas
 
 ### FASE 2-C - Validación Post-Migración
 - [ ] Validar conteos MongoDB vs SQL
@@ -89,19 +100,21 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 ### Tablas SQL Auth/RBAC
 | Tabla | Registros | Estado |
 |-------|-----------|--------|
-| Usuario_Catalogo | 9 | +2 columnas nuevas |
-| Usuario_Roles | 9 | +4 roles nuevos |
-| Usuario_RolesAsignacion | 0 | Vacía (poblar en 2-B) |
-| Usuario_EmpresasAsignacion | 0 | Vacía (poblar en 2-B) |
+| Usuario_Catalogo | 11 | +2 usuarios nuevos, todos con UUID y MongoID |
+| Usuario_Roles | 9 | Completo con roles canónicos |
+| Usuario_RolesAsignacion | 0 | Vacía (poblar en 2-B2) |
+| Usuario_EmpresasAsignacion | 0 | Vacía (poblar en 2-B3) |
+| Usuario_MigracionMongoTrace | 11 | Trazabilidad completa |
 
 ### Usuarios MongoDB vs SQL
 - MongoDB: 17 (14 activos, 3 inactivos)
-- SQL: 9 migrados
-- Pendientes: 5 productivos + decisión sobre 3 test
+- SQL: 11 migrados (9 originales + 2 nuevos)
+- Pendientes: 0 productivos (solo usuarios test)
 
 ### Decisiones Documentadas
-- superadmin@test.com: Excluir (sin UUID)
-- 3 usuarios test inactivos: Excluir
+- superadmin@test.com: Excluido (sin UUID en MongoDB)
+- 3 usuarios @test.com activos: Excluidos (requieren decisión explícita)
+- 3 usuarios inactivos: Excluidos (test/deshabilitados)
 
 ---
 
@@ -109,8 +122,9 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - `/app/docs/proposals/FASE2A_DDL_AUTH_RBAC_EDARSAHUB_SQL.md`
 - `/app/docs/reports/FASE2A1_VALIDACION_DDL_AUTH_RBAC_PRE_MIGRACION.md`
 - `/app/docs/reports/FASE2A2_PRECONDICIONES_DDL_AUTH_RBAC_SQL.md`
+- `/app/docs/reports/FASE2B1_POBLADO_USUARIOS_BASE_SQL.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE 2-A.2 Completada*
+*Última actualización: 14-Dic-2025 - FASE 2-B1 Completada*
