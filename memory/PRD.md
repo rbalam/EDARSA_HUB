@@ -313,7 +313,30 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 
 ---
 
-*Última actualización: 14-Dic-2025 - BUG-RBAC-PERM-001 Corregido*
+*Última actualización: 14-Dic-2025 - FASE RBAC-SCOPE-B Completada*
+
+## ✅ RBAC-SCOPE-B COMPLETADA (14-Dic-2025)
+
+**Objetivo:** Crear tablas SQL para migrar permisos operativos legacy de MongoDB.
+
+**Tablas creadas en EDARSAHUB:**
+1. `Usuario_ServidoresAsignacion` — Reemplazará `allowed_servers`
+2. `Usuario_SucursalesAsignacion` — Reemplazará `allowed_sucursales`
+3. `Usuario_AlmacenesAsignacion` — Reemplazará `allowed_warehouses`
+
+**Características:**
+- DDL idempotente (IF NOT EXISTS)
+- FK hacia Usuario_Catalogo y Servidores_Conexiones
+- Índices para rendimiento
+- Constraints únicos para evitar duplicados activos
+- Campo `LegacyMongoValue` para trazabilidad
+- Campos de auditoría completos
+
+**Estado:** Tablas vacías. Datos se migrarán en RBAC-SCOPE-C.
+
+**Reporte:** `/app/docs/reports/RBAC_SCOPE_B_CREACION_TABLAS_PERMISOS_SQL.md`
+
+---
 
 ## 🎉 HITO: FASE 2 COMPLETADA
 **EDARSAHUB SQL es ahora la ÚNICA fuente de autenticación productiva.**
