@@ -1,0 +1,35 @@
+[
+  {
+    "_id": "69ecf530ed56676342abcb6f",
+    "email": "superadmin@test.com",
+    "id": null,
+    "name": "SuperAdmin Test",
+    "role": "SuperAdministrador",
+    "active": true,
+    "empresas_permitidas": [],
+    "empresa_default_id": null,
+    "backup_timestamp": "2026-05-14T02:19:40.803877"
+  },
+  {
+    "_id": "69ecf6d9f86a14a2afac42eb",
+    "email": "superadmin2@test.com",
+    "id": "ec59635e-e2d0-45e7-8234-987a8d5b6768",
+    "name": "Super Admin Test",
+    "role": "SuperAdministrador",
+    "active": true,
+    "empresas_permitidas": [],
+    "empresa_default_id": null,
+    "backup_timestamp": "2026-05-14T02:19:40.804295"
+  },
+  {
+    "_id": "69f01b22abd7c1501e4dec07",
+    "email": "usuario_test_portal@test.com",
+    "id": "20bb73a7-361d-4432-8bcf-bda44f10699c",
+    "name": "Usuario Test Portal",
+    "role": "Usuario",
+    "active": true,
+    "empresas_permitidas": [],
+    "empresa_default_id": null,
+    "backup_timestamp": "2026-05-14T02:19:40.804611"
+  }
+]

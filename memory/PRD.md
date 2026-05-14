@@ -141,6 +141,17 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] Prerrequisitos para FASE 2-G identificados
 - [x] Reporte: `/app/docs/reports/FASE2F1_CIERRE_PENDIENTES_AUTH_RBAC_PRE_FALLBACK_OFF.md`
 
+### ✅ FASE 2-F.2 - Saneamiento Usuarios Pre-Fallback Off (Completada - 14-Dic-2025)
+- [x] Desactivados 3 usuarios @test.com en MongoDB (superadmin@, superadmin2@, usuario_test_portal@)
+- [x] david.ricardez@cienfuegos.mx: Asignada empresa CIENFUEGOS (1 empresa)
+- [x] carlos@alpuntoycoma.mx: Asignadas 5 empresas (ORIGEN principal)
+- [x] eduardo@alpuntoycoma.mx: Asignadas 5 empresas (ORIGEN principal)
+- [x] 11/11 usuarios productivos: EDARSAHUB_SQL
+- [x] MONGODB_FALLBACK productivos: 0
+- [x] SQL_ERROR_FALLBACK: 0
+- [x] Sistema listo para FASE 2-G
+- [x] Reporte: `/app/docs/reports/FASE2F2_SANEAMIENTO_USUARIOS_PRE_FALLBACK_OFF.md`
+
 ---
 
 ## ✅ FASE 2 BASE COMPLETADA: Migración Auth/RBAC a SQL
@@ -163,23 +174,16 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 
 ## Fases Pendientes (P0) - Requieren Autorización
 
-### FASE 2-F.2 - Ejecutar Acciones sobre Usuarios Pendientes (Opcional)
-Acciones que requieren autorización individual:
-- [ ] Desactivar superadmin@test.com en MongoDB
-- [ ] Desactivar superadmin2@test.com en MongoDB
-- [ ] Desactivar/verificar usuario_test_portal@test.com
-- [ ] Asignar CIENFUEGOS a david.ricardez@cienfuegos.mx en SQL
-- [ ] Definir empresas para carlos@alpuntoycoma.mx
-- [ ] Definir empresas para eduardo@alpuntoycoma.mx
-
-### FASE 2-G - Eliminar Fallback MongoDB (NO AUTORIZADA)
-- [ ] Remover código de fallback
+### FASE 2-G - Eliminar Fallback MongoDB (LISTA PARA AUTORIZACIÓN)
+- [ ] Remover código de fallback en `security.py`
 - [ ] `get_current_user` depende 100% de SQL
 - [ ] Verificar que Login no requiere MongoDB
-- **Prerequisitos:**
-  - Desactivar 3 usuarios @test.com activos (superadmin@, superadmin2@, usuario_test_portal@)
-  - O aceptar que perderán acceso
-  - Decisión sobre usuarios sin empresas (pueden continuar con acceso limitado)
+- **Prerequisitos:** ✅ TODOS CUMPLIDOS
+  - ✅ Usuarios @test.com desactivados (3)
+  - ✅ Usuarios productivos sin empresas resueltos (3)
+  - ✅ MONGODB_FALLBACK = 0 para productivos
+  - ✅ SQL_ERROR_FALLBACK = 0
+- **Riesgo:** MÍNIMO (ningún usuario productivo depende de MongoDB)
 
 ---
 
@@ -255,15 +259,17 @@ AUTH_SQL_FIRST_ENABLED=true  (SQL es fuente primaria)
 - **Acción requerida:** Carga de datos históricos (fuera del scope de FASE 2)
 
 ### Usuarios Pendientes de Decisión
-| Usuario | Estado | Recomendación |
-|---------|--------|---------------|
-| superadmin@test.com | MongoDB, sin UUID | Desactivar |
-| superadmin2@test.com | MongoDB fallback | Desactivar |
-| usuario_test_portal@test.com | MongoDB fallback | Verificar portal, desactivar |
-| david.ricardez@cienfuegos.mx | SQL, 0 empresas | Asignar CIENFUEGOS |
-| carlos@alpuntoycoma.mx | SQL, 0 empresas | Asignar empresas o desactivar |
-| eduardo@alpuntoycoma.mx | SQL, 0 empresas | Asignar empresas o desactivar |
+| Usuario | Estado | Acción |
+|---------|--------|--------|
+| ~~superadmin@test.com~~ | ✅ Desactivado | FASE 2-F.2 |
+| ~~superadmin2@test.com~~ | ✅ Desactivado | FASE 2-F.2 |
+| ~~usuario_test_portal@test.com~~ | ✅ Desactivado | FASE 2-F.2 |
+| ~~david.ricardez@cienfuegos.mx~~ | ✅ 1 empresa | FASE 2-F.2 |
+| ~~carlos@alpuntoycoma.mx~~ | ✅ 5 empresas | FASE 2-F.2 |
+| ~~eduardo@alpuntoycoma.mx~~ | ✅ 5 empresas | FASE 2-F.2 |
+
+**Todos los pendientes resueltos en FASE 2-F.2**
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE 2-F.1 Completada (Cierre Pendientes Auth/RBAC)*
+*Última actualización: 14-Dic-2025 - FASE 2-F.2 Completada (Saneamiento Pre-Fallback Off)*
