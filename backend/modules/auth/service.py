@@ -340,12 +340,20 @@ async def delete_user(user_id: str, current_user: Dict) -> Dict:
 
 async def update_user_permissions(user_id: str, permissions: Dict, current_user: Dict) -> Dict:
     """
-    Actualiza los permisos de un usuario.
+    RBAC-SCOPE-E: Actualiza los permisos operativos de un usuario en EDARSAHUB SQL.
+    
+    Ya NO escribe en MongoDB. Los permisos operativos se guardan en:
+    - Usuario_ServidoresAsignacion
+    - Usuario_SucursalesAsignacion
+    - Usuario_AlmacenesAsignacion
     
     Raises:
         HTTPException 403: Si no tiene permisos o intenta modificar un SuperAdministrador
         HTTPException 404: Si el usuario no existe
     """
+    import pymssql
+    import logging
+    
     current_level = _get_role_level(current_user.get('role', ''))
     if current_level < 3:  # Mínimo Administrador
         raise HTTPException(status_code=403, detail="No autorizado")
@@ -361,13 +369,133 @@ async def update_user_permissions(user_id: str, permissions: Dict, current_user:
             detail="No tiene permisos para modificar permisos de usuarios SuperAdministrador"
         )
     
-    update_data = {}
-    for field in ['allowed_servers', 'allowed_sucursales', 'allowed_warehouses']:
-        if field in permissions:
-            update_data[field] = permissions[field]
-    
-    await repo.update_user(user_id, update_data)
-    return {"message": "Permisos actualizados"}
+    # RBAC-SCOPE-E: Escribir permisos en EDARSAHUB SQL
+    try:
+        conn = pymssql.connect(
+            server='54.39.104.176',
+            port=1433,
+            user='HRLectura',
+            password='National09$',
+            database='EDARSAHUB'
+        )
+        cursor = conn.cursor()
+        
+        # Resolver UsuarioID SQL desde PublicUUID
+        user_id_lower = user_id.lower()
+        cursor.execute("""
+            SELECT UsuarioID 
+            FROM Usuario_Catalogo 
+            WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = %s AND Activo = 1
+        """, (user_id_lower,))
+        
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            raise HTTPException(status_code=404, detail="Usuario no encontrado en SQL")
+        
+        usuario_id_sql = row[0]
+        modificado_por = None  # TODO: Obtener UsuarioID del current_user si se desea
+        
+        # 1. ACTUALIZAR SERVIDORES
+        if 'allowed_servers' in permissions:
+            allowed_servers = permissions['allowed_servers'] or []
+            
+            # Desactivar asignaciones anteriores
+            cursor.execute("""
+                UPDATE Usuario_ServidoresAsignacion 
+                SET Activo = 0, FechaModificacion = GETDATE(), ModificadoPor = %s,
+                    Observaciones = CONCAT(ISNULL(Observaciones, ''), ' | Desactivado RBAC-SCOPE-E')
+                WHERE UsuarioID = %s AND Activo = 1
+            """, (modificado_por, usuario_id_sql))
+            
+            # Insertar nuevas asignaciones
+            for server_uuid in allowed_servers:
+                # Verificar que el servidor existe
+                cursor.execute("""
+                    SELECT id FROM Servidores_Conexiones 
+                    WHERE LOWER(CAST(id AS VARCHAR(36))) = %s AND activo = 1
+                """, (server_uuid.lower(),))
+                
+                if cursor.fetchone():
+                    cursor.execute("""
+                        INSERT INTO Usuario_ServidoresAsignacion 
+                        (UsuarioID, ServidorID, LegacyMongoValue, Activo, FechaCreacion, Observaciones)
+                        VALUES (%s, %s, %s, 1, GETDATE(), 'RBAC-SCOPE-E: Escritura SQL productiva')
+                    """, (usuario_id_sql, server_uuid, server_uuid))
+                else:
+                    logging.warning(f"[RBAC-SCOPE-E] Servidor no encontrado: {server_uuid}")
+        
+        # 2. ACTUALIZAR SUCURSALES
+        if 'allowed_sucursales' in permissions:
+            allowed_sucursales = permissions['allowed_sucursales'] or {}
+            
+            # Desactivar asignaciones anteriores
+            cursor.execute("""
+                UPDATE Usuario_SucursalesAsignacion 
+                SET Activo = 0, FechaModificacion = GETDATE(), ModificadoPor = %s,
+                    Observaciones = CONCAT(ISNULL(Observaciones, ''), ' | Desactivado RBAC-SCOPE-E')
+                WHERE UsuarioID = %s AND Activo = 1
+            """, (modificado_por, usuario_id_sql))
+            
+            # Insertar nuevas asignaciones
+            for server_uuid, sucursales in allowed_sucursales.items():
+                # Verificar que el servidor existe
+                cursor.execute("""
+                    SELECT id FROM Servidores_Conexiones 
+                    WHERE LOWER(CAST(id AS VARCHAR(36))) = %s AND activo = 1
+                """, (server_uuid.lower(),))
+                
+                if cursor.fetchone():
+                    for suc_codigo in (sucursales or []):
+                        if suc_codigo:
+                            cursor.execute("""
+                                INSERT INTO Usuario_SucursalesAsignacion 
+                                (UsuarioID, ServidorID, SucursalCodigo, LegacyMongoValue, Activo, FechaCreacion, Observaciones)
+                                VALUES (%s, %s, %s, %s, 1, GETDATE(), 'RBAC-SCOPE-E: Escritura SQL productiva')
+                            """, (usuario_id_sql, server_uuid, suc_codigo, suc_codigo))
+                else:
+                    logging.warning(f"[RBAC-SCOPE-E] Servidor no encontrado para sucursales: {server_uuid}")
+        
+        # 3. ACTUALIZAR ALMACENES
+        if 'allowed_warehouses' in permissions:
+            allowed_warehouses = permissions['allowed_warehouses'] or {}
+            
+            # Desactivar asignaciones anteriores
+            cursor.execute("""
+                UPDATE Usuario_AlmacenesAsignacion 
+                SET Activo = 0, FechaModificacion = GETDATE(), ModificadoPor = %s,
+                    Observaciones = CONCAT(ISNULL(Observaciones, ''), ' | Desactivado RBAC-SCOPE-E')
+                WHERE UsuarioID = %s AND Activo = 1
+            """, (modificado_por, usuario_id_sql))
+            
+            # Insertar nuevas asignaciones
+            for server_uuid, almacenes in allowed_warehouses.items():
+                # Verificar que el servidor existe
+                cursor.execute("""
+                    SELECT id FROM Servidores_Conexiones 
+                    WHERE LOWER(CAST(id AS VARCHAR(36))) = %s AND activo = 1
+                """, (server_uuid.lower(),))
+                
+                if cursor.fetchone():
+                    for alm_codigo in (almacenes or []):
+                        if alm_codigo:
+                            cursor.execute("""
+                                INSERT INTO Usuario_AlmacenesAsignacion 
+                                (UsuarioID, ServidorID, AlmacenCodigo, LegacyMongoValue, Activo, FechaCreacion, Observaciones)
+                                VALUES (%s, %s, %s, %s, 1, GETDATE(), 'RBAC-SCOPE-E: Escritura SQL productiva')
+                            """, (usuario_id_sql, server_uuid, alm_codigo, alm_codigo))
+                else:
+                    logging.warning(f"[RBAC-SCOPE-E] Servidor no encontrado para almacenes: {server_uuid}")
+        
+        conn.commit()
+        conn.close()
+        
+        logging.info(f"[RBAC-SCOPE-E] Permisos actualizados en SQL para usuario {user_id}")
+        return {"message": "Permisos actualizados"}
+        
+    except pymssql.Error as e:
+        logging.error(f"[RBAC-SCOPE-E] Error SQL al actualizar permisos: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al guardar permisos en SQL: {str(e)}")
 
 
 async def create_user_admin(user_data: Dict, current_user: Dict) -> Dict:
