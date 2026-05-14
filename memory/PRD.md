@@ -57,15 +57,21 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] Usuario_EmpresasAsignacion sigue vacía
 - [x] Reporte: `/app/docs/reports/FASE2B2_POBLADO_USUARIO_ROLES_ASIGNACION.md`
 
+### FASE 2-B2.1 - Mapeo Empresas MongoDB → SQL (Completada - 14-Dic-2025)
+- [x] Tabla `Sistema_EmpresasMongoMap` creada
+- [x] 5 mapeos creados por código exacto (ORIGEN, 130QRO, CIENFUEGOS, ESTELAR, 130MID)
+- [x] Sin ambigüedades ni conflictos
+- [x] Usuario_EmpresasAsignacion sigue vacía
+- [x] Reporte: `/app/docs/reports/FASE2B2_1_MAPEO_EMPRESAS_MONGO_SQL.md`
+
 ---
 
 ## Fases Pendientes (P0)
 
-### FASE 2-B3 - Poblar Empresas Asignación
-- [ ] Crear tabla mapeo Empresas MongoDB → SQL
-- [ ] Poblar Usuario_EmpresasAsignacion
+### FASE 2-B3 - Poblar Usuario_EmpresasAsignacion
+- [ ] Poblar asignaciones para 7 usuarios con empresas_permitidas
 - [ ] Marcar empresa principal (empresa_default_id)
-- [ ] Validar empresas_permitidas
+- [ ] Decidir sobre 4 usuarios sin empresas_permitidas
 
 ### FASE 2-C - Validación Post-Migración
 - [ ] Validar conteos MongoDB vs SQL
@@ -109,6 +115,7 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 | Usuario_RolesAsignacion | 11 | Completo (4 ADMIN, 2 SUPERADMIN, 2 SUPERVISOR, 3 USUARIO) |
 | Usuario_EmpresasAsignacion | 0 | Vacía (poblar en 2-B3) |
 | Usuario_MigracionMongoTrace | 11 | Trazabilidad completa |
+| Sistema_EmpresasMongoMap | 5 | Mapeo MongoDB→SQL completo |
 
 ### Usuarios MongoDB vs SQL
 - MongoDB: 17 (14 activos, 3 inactivos)
@@ -128,8 +135,9 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - `/app/docs/reports/FASE2A2_PRECONDICIONES_DDL_AUTH_RBAC_SQL.md`
 - `/app/docs/reports/FASE2B1_POBLADO_USUARIOS_BASE_SQL.md`
 - `/app/docs/reports/FASE2B2_POBLADO_USUARIO_ROLES_ASIGNACION.md`
+- `/app/docs/reports/FASE2B2_1_MAPEO_EMPRESAS_MONGO_SQL.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE 2-B2 Completada*
+*Última actualización: 14-Dic-2025 - FASE 2-B2.1 Completada*
