@@ -276,6 +276,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
             tickets_cerrados_dia = {ventas.tickets_cerrados_dia},
             pax_cerrados_dia = {ventas.pax_cerrados_dia},
             total_estimado_dia = {ventas.total_estimado_dia},
+            fuente_original = '{ventas.fuente_original}',
             sync_run_id = '{ventas.sync_run_id}',
             fecha_ultima_actualizacion = SYSUTCDATETIME()
         WHERE id = '{record_id}'

@@ -171,6 +171,9 @@ class VentasDiaAbiertasV2(BaseModel):
     
     fuente_original: FuenteOriginal
     sync_run_id: Optional[str] = None
+    
+    # Campo para diagnóstico técnico (no visual principal)
+    source_status: Optional[str] = "SYNC_OK"
 
     class Config:
         use_enum_values = True

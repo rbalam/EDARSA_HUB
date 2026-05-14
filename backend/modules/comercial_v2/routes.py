@@ -19,7 +19,7 @@ RBAC:
 - No hardcodea unidades
 """
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 import logging
@@ -1032,13 +1032,21 @@ async def comercial_v2_ventas_dia(
     """
     Ventas del día v2.
     
-    Lee desde: Comercial_Ventas_Dia_Abiertas_v2
+    Lee desde: Comercial_Ventas_Dia_Abiertas_v2 (EDARSAHUB SQL)
     Actualizado cada 5 minutos por sync_comercial_abiertas_v2_job.py
     
+    REGLAS IMPLEMENTADAS:
+    - Tablero lee SOLO desde EDARSAHUB SQL (no conexiones live)
+    - Muestra última actualización (snapshot_timestamp)
+    - Ordenamiento por venta DESC (mayor a menor)
+    - dato_vencido si última actualización > 10 minutos
+    - NO mostrar $0 falso si no hay dato sincronizado válido
+    
     Retorna:
-    - ventas_abiertas: Ventas sin cierre aún
-    - ventas_cerradas_dia: Ventas ya cerradas del mismo día
     - total_estimado_dia: Total del día (abiertas + cerradas)
+    - snapshot_timestamp: Última actualización del dato
+    - minutos_desde_ultima_actualizacion
+    - dato_vencido: true si > 10 minutos sin actualizar
     """
     try:
         if fecha is None:
@@ -1049,15 +1057,87 @@ async def comercial_v2_ventas_dia(
         if not unidades_permitidas:
             raise HTTPException(status_code=403, detail="No tiene unidades asignadas")
         
-        # Obtener datos de ventas abiertas
+        # Obtener datos de ventas desde EDARSAHUB SQL
         datos = get_ventas_dia_abiertas(fecha, unidades_permitidas)
         
-        # Calcular totales
-        total_ventas_abiertas = sum(float(d.get('ventas_abiertas') or 0) for d in datos)
-        total_ventas_cerradas = sum(float(d.get('ventas_cerradas_dia') or 0) for d in datos)
-        total_estimado = sum(float(d.get('total_estimado_dia') or 0) for d in datos)
-        total_tickets = sum(int(d.get('tickets_abiertos') or 0) + int(d.get('tickets_cerrados_dia') or 0) for d in datos)
-        total_pax = sum(int(d.get('pax_abiertos') or 0) + int(d.get('pax_cerrados_dia') or 0) for d in datos)
+        # Hora actual para calcular frescura
+        ahora = datetime.now(timezone.utc)
+        
+        # Procesar y enriquecer datos
+        datos_enriquecidos = []
+        for d in datos:
+            # Calcular minutos desde última actualización
+            snapshot = d.get('snapshot_timestamp')
+            minutos_desde_actualizacion = None
+            dato_vencido = False
+            
+            if snapshot:
+                try:
+                    if isinstance(snapshot, str):
+                        snapshot_dt = datetime.fromisoformat(snapshot.replace('Z', '+00:00'))
+                    else:
+                        snapshot_dt = snapshot
+                    
+                    if snapshot_dt.tzinfo is None:
+                        snapshot_dt = snapshot_dt.replace(tzinfo=timezone.utc)
+                    
+                    diff = ahora - snapshot_dt
+                    minutos_desde_actualizacion = int(diff.total_seconds() / 60)
+                    dato_vencido = minutos_desde_actualizacion > 10
+                except:
+                    minutos_desde_actualizacion = None
+                    dato_vencido = True
+            else:
+                dato_vencido = True
+            
+            total_dia = float(d.get('total_estimado_dia') or 0)
+            
+            datos_enriquecidos.append({
+                "unidad_negocio_id": d['unidad_negocio_id'],
+                "unidad_negocio_nombre": d['unidad_negocio_nombre'],
+                "server_id": d.get('server_id'),
+                "sistema_origen": d['sistema_origen'],
+                "ventas_abiertas": float(d.get('ventas_abiertas') or 0),
+                "tickets_abiertos": int(d.get('tickets_abiertos') or 0),
+                "pax_abiertos": int(d.get('pax_abiertos') or 0),
+                "ventas_cerradas_dia": float(d.get('ventas_cerradas_dia') or 0),
+                "tickets_cerrados_dia": int(d.get('tickets_cerrados_dia') or 0),
+                "pax_cerrados_dia": int(d.get('pax_cerrados_dia') or 0),
+                "total_estimado_dia": total_dia,
+                # Campos de última actualización (REGLA PRINCIPAL)
+                "snapshot_timestamp": str(d.get('snapshot_timestamp') or ''),
+                "minutos_desde_ultima_actualizacion": minutos_desde_actualizacion,
+                "dato_vencido": dato_vencido,
+                # Campos técnicos opcionales
+                "fuente_original": d.get('fuente_original'),
+                "sync_run_id": d.get('sync_run_id'),
+                "_fuente": "EDARSAHUB_SQL"
+            })
+        
+        # ORDENAMIENTO: Mayor venta a menor venta
+        # Regla: Ventas positivas primero (DESC), luego ceros, luego sin dato/vencido
+        def sort_key(item):
+            venta = item.get('total_estimado_dia', 0)
+            vencido = item.get('dato_vencido', True)
+            # Prioridad: 
+            # 1. Ventas positivas válidas (orden desc)
+            # 2. Ventas en cero válidas
+            # 3. Sin dato o vencido
+            if vencido and venta == 0:
+                return (2, 0, item.get('unidad_negocio_nombre', ''))
+            elif venta == 0:
+                return (1, 0, item.get('unidad_negocio_nombre', ''))
+            else:
+                return (0, -venta, item.get('unidad_negocio_nombre', ''))
+        
+        datos_ordenados = sorted(datos_enriquecidos, key=sort_key)
+        
+        # Calcular totales (solo de datos válidos)
+        total_ventas_abiertas = sum(d['ventas_abiertas'] for d in datos_ordenados)
+        total_ventas_cerradas = sum(d['ventas_cerradas_dia'] for d in datos_ordenados)
+        total_estimado = sum(d['total_estimado_dia'] for d in datos_ordenados)
+        total_tickets = sum(d['tickets_abiertos'] + d['tickets_cerrados_dia'] for d in datos_ordenados)
+        total_pax = sum(d['pax_abiertos'] + d['pax_cerrados_dia'] for d in datos_ordenados)
         
         return VentasDiaResponse(
             success=True,
@@ -1069,26 +1149,16 @@ async def comercial_v2_ventas_dia(
                     "total_estimado_dia": total_estimado,
                     "total_tickets": total_tickets,
                     "total_pax": total_pax,
-                    "unidades_con_datos": len(datos)
+                    "unidades_con_datos": len(datos_ordenados),
+                    "unidades_dato_vencido": sum(1 for d in datos_ordenados if d['dato_vencido'])
                 },
-                "por_unidad": [
-                    {
-                        "unidad_negocio_id": d['unidad_negocio_id'],
-                        "unidad_negocio_nombre": d['unidad_negocio_nombre'],
-                        "sistema_origen": d['sistema_origen'],
-                        "ventas_abiertas": float(d.get('ventas_abiertas') or 0),
-                        "tickets_abiertos": int(d.get('tickets_abiertos') or 0),
-                        "pax_abiertos": int(d.get('pax_abiertos') or 0),
-                        "ventas_cerradas_dia": float(d.get('ventas_cerradas_dia') or 0),
-                        "tickets_cerrados_dia": int(d.get('tickets_cerrados_dia') or 0),
-                        "pax_cerrados_dia": int(d.get('pax_cerrados_dia') or 0),
-                        "total_estimado_dia": float(d.get('total_estimado_dia') or 0),
-                        "snapshot_timestamp": str(d.get('snapshot_timestamp') or ''),
-                        "sync_run_id": d.get('sync_run_id'),
-                        "_fuente": "Comercial_Ventas_Dia_Abiertas_v2"
-                    }
-                    for d in datos
-                ]
+                "por_unidad": datos_ordenados,
+                "_info": {
+                    "fuente": "EDARSAHUB_SQL",
+                    "tabla": "Comercial_Ventas_Dia_Abiertas_v2",
+                    "frecuencia_sync": "5 minutos",
+                    "ordenamiento": "venta_desc"
+                }
             }),
             fecha=fecha.isoformat(),
             metadata=MetadataV2()

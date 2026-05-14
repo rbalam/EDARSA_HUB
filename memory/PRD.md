@@ -298,6 +298,25 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 
 ---
 
+### ✅ CAMBIO ARQUITECTÓNICO: Ventas del Día → EDARSAHUB SQL (Completado - 14-May-2026)
+- [x] Job `sync_comercial_abiertas_v2_job.py` reescrito
+- [x] **ORIGEN y 130QRO usan APIs locales MPRO** (NO SQL Server MPRO central)
+- [x] **130° MÉRIDA** funciona correctamente ($4,441.00)
+- [x] **NO escribe $0 falso** si falla conexión al origen
+- [x] Tablero lee **exclusivamente desde EDARSAHUB SQL**
+- [x] Payload incluye: `snapshot_timestamp`, `minutos_desde_ultima_actualizacion`, `dato_vencido`
+- [x] **Ordenamiento por venta DESC** implementado
+- [x] Frecuencia: cada 5 minutos
+- [x] Tabla destino: `Comercial_Ventas_Dia_Abiertas_v2` (reutilizada)
+- [x] Reporte: `/app/docs/reports/VENTAS_DIA_CAMBIO_ARQUITECTONICO.md`
+
+**✅ Flujo Ventas del Día ahora es 100% EDARSAHUB SQL:**
+- SoftRestaurant → tempcheques → EDARSAHUB SQL → Tablero
+- MPRO ORIGEN → API Local → EDARSAHUB SQL → Tablero  
+- MPRO QRO → API Local → EDARSAHUB SQL → Tablero
+
+---
+
 ## Fases Pendientes (P1) - Requieren Autorización
 
 ---
