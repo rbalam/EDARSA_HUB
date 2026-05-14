@@ -253,14 +253,12 @@ async def get_current_user(
     """
     FastAPI Dependency para obtener el usuario actual desde el token JWT.
     
-    FASE 2-E: SQL-first con fallback MongoDB.
+    FASE 2-G: SQL-only (sin fallback MongoDB).
     
     Flujo:
-    1. Si AUTH_SQL_FIRST_ENABLED=true:
-       - Intentar SQL primero (AuthRepositorySQL)
-       - Si falla o no encuentra, fallback a MongoDB
-    2. Si AUTH_SQL_FIRST_ENABLED=false:
-       - Usar MongoDB directamente (comportamiento legacy)
+    1. Verificar token JWT
+    2. Buscar usuario en EDARSAHUB SQL
+    3. Si no existe en SQL, rechazar con 401
     
     Args:
         credentials: Credenciales HTTP Bearer extraídas automáticamente por FastAPI
@@ -269,26 +267,30 @@ async def get_current_user(
         Diccionario con datos del usuario (sin _id ni password)
         
     Raises:
-        HTTPException 401: Token inválido o expirado
-        HTTPException 404: Usuario no encontrado en BD
+        HTTPException 401: Token inválido, expirado o usuario no encontrado
     """
     token = credentials.credentials
     payload = verify_token(token)
     email = payload.get('email')
     user_id_from_token = payload.get('user_id')
     
-    # FASE 2-E: SQL-first con fallback MongoDB
-    if AUTH_SQL_FIRST_ENABLED:
-        user, auth_source = await _get_user_sql_first_with_fallback(email, user_id_from_token)
-    else:
-        # Comportamiento legacy: MongoDB directo
-        db = get_db()
-        user = await db.users.find_one({"email": email}, {"_id": 0})
-        auth_source = "MONGODB_LEGACY"
+    # FASE 2-G: SQL-only (sin fallback MongoDB)
+    user, auth_source = await _get_user_sql_only(email, user_id_from_token)
     
     if not user:
-        logging.warning(f"[AUTH] Usuario no encontrado: {email}, source={auth_source}")
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        logging.warning(f"[AUTH] Usuario no encontrado en SQL: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Usuario no autorizado"
+        )
+    
+    # Verificar si usuario está activo
+    if not user.get('active', True):
+        logging.warning(f"[AUTH] Usuario inactivo: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario desactivado"
+        )
     
     # Log de auditoría seguro (sin secretos)
     logging.info(f"[AUTH] auth_source={auth_source}, email={email}, role={user.get('role', 'N/A')}")
@@ -296,9 +298,9 @@ async def get_current_user(
     return user
 
 
-async def _get_user_sql_first_with_fallback(email: str, user_id_from_token: str = None) -> tuple:
+async def _get_user_sql_only(email: str, user_id_from_token: str = None) -> tuple:
     """
-    FASE 2-E: Intenta obtener usuario de SQL primero, fallback a MongoDB.
+    FASE 2-G: Obtiene usuario SOLO de EDARSAHUB SQL (sin fallback MongoDB).
     
     Args:
         email: Email del usuario
@@ -309,15 +311,14 @@ async def _get_user_sql_first_with_fallback(email: str, user_id_from_token: str 
         
     auth_source puede ser:
         - EDARSAHUB_SQL: Usuario obtenido exitosamente de SQL
-        - MONGODB_FALLBACK: SQL no encontró usuario, MongoDB sí
-        - SQL_ERROR_FALLBACK: Error en SQL, se usó MongoDB
+        - SQL_NOT_FOUND: Usuario no existe en SQL
+        - SQL_ERROR: Error al consultar SQL
     """
     from core.auth.user_repository_sql import AuthRepositorySQL
     
     user = None
-    auth_source = None
+    auth_source = "SQL_NOT_FOUND"
     
-    # Intentar SQL primero
     try:
         repo_sql = AuthRepositorySQL()
         
@@ -335,28 +336,13 @@ async def _get_user_sql_first_with_fallback(email: str, user_id_from_token: str 
             return user, auth_source
         else:
             # SQL no encontró o estructura inválida
-            logging.info(f"[AUTH-SQL] Usuario no encontrado en SQL, usando fallback: {email}")
+            logging.info(f"[AUTH-SQL] Usuario no encontrado en SQL: {email}")
+            return None, "SQL_NOT_FOUND"
             
     except Exception as e:
-        # Error en SQL - usar fallback
-        logging.warning(f"[AUTH-SQL] Error SQL, usando fallback: {str(e)[:100]}")
-        auth_source = "SQL_ERROR_FALLBACK"
-    
-    # Fallback a MongoDB
-    try:
-        db = get_db()
-        user = await db.users.find_one({"email": email}, {"_id": 0})
-        
-        if user:
-            if auth_source != "SQL_ERROR_FALLBACK":
-                auth_source = "MONGODB_FALLBACK"
-            logging.info(f"[AUTH-FALLBACK] Usuario resuelto desde MongoDB: {email}, reason={auth_source}")
-            return user, auth_source
-        
-    except Exception as e:
-        logging.error(f"[AUTH-FALLBACK] Error MongoDB fallback: {str(e)[:100]}")
-    
-    return None, auth_source or "NOT_FOUND"
+        # Error en SQL - NO usar fallback, reportar error
+        logging.error(f"[AUTH-SQL] Error SQL: {str(e)[:100]}")
+        return None, "SQL_ERROR"
 
 
 def _validate_sql_user_structure(user: Dict[str, Any]) -> bool:
@@ -441,18 +427,23 @@ async def get_current_user_dual(request) -> Dict[str, Any]:
     email = payload.get('email')
     user_id_from_token = payload.get('user_id')
     
-    # FASE 2-E: SQL-first con fallback MongoDB
-    if AUTH_SQL_FIRST_ENABLED:
-        user, auth_source = await _get_user_sql_first_with_fallback(email, user_id_from_token)
-    else:
-        # Comportamiento legacy: MongoDB directo
-        db = get_db()
-        user = await db.users.find_one({"email": email}, {"_id": 0})
-        auth_source = "MONGODB_LEGACY"
+    # FASE 2-G: SQL-only (sin fallback MongoDB)
+    user, auth_source = await _get_user_sql_only(email, user_id_from_token)
     
     if not user:
-        logging.warning(f"[AUTH-DUAL] Usuario no encontrado: {email}, source={auth_source}")
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        logging.warning(f"[AUTH-DUAL] Usuario no encontrado en SQL: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Usuario no autorizado"
+        )
+    
+    # Verificar si usuario está activo
+    if not user.get('active', True):
+        logging.warning(f"[AUTH-DUAL] Usuario inactivo: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario desactivado"
+        )
     
     # Log de auditoría seguro
     logging.info(f"[AUTH-DUAL] auth_source={auth_source}, email={email}")
@@ -700,12 +691,12 @@ __all__ = [
     'user_has_server_access',
     'filter_servers_by_permissions',
     'filter_sucursales_by_permissions',
-    # FASE 2-D.1: Preflight SQL-First
+    # FASE 2-D.1: Preflight SQL-First (legacy - ya no usado)
     'AUTH_SQL_FIRST_ENABLED',
     'compare_user_mongo_vs_sql_passive',
     'log_auth_preflight_status',
-    # FASE 2-E: SQL-First con Fallback
-    '_get_user_sql_first_with_fallback',
+    # FASE 2-G: SQL-Only (sin fallback MongoDB)
+    '_get_user_sql_only',
     '_validate_sql_user_structure',
 ]
 

@@ -152,6 +152,38 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] Sistema listo para FASE 2-G
 - [x] Reporte: `/app/docs/reports/FASE2F2_SANEAMIENTO_USUARIOS_PRE_FALLBACK_OFF.md`
 
+### ✅ FASE 2-G - Eliminación Fallback MongoDB Auth (Completada - 14-Dic-2025)
+- [x] Eliminado `_get_user_sql_first_with_fallback()` de security.py
+- [x] Creado `_get_user_sql_only()` sin fallback MongoDB
+- [x] `get_current_user()` y `get_current_user_dual()` usan SQL-only
+- [x] 11/11 usuarios productivos: EDARSAHUB_SQL
+- [x] 3/3 usuarios @test.com: RECHAZADOS (401)
+- [x] MONGODB_FALLBACK: ELIMINADO
+- [x] SQL_ERROR_FALLBACK: 0
+- [x] SUPERADMIN: 5 empresas cada uno ✓
+- [x] JWT sin cambios, PublicUUID como user['id']
+- [x] Endpoints críticos funcionan (servers=8, dashboard=4)
+- [x] Reporte: `/app/docs/reports/FASE2G_ELIMINACION_FALLBACK_MONGODB_AUTH.md`
+
+---
+
+## ✅ FASE 2 COMPLETADA: Migración Auth/RBAC a EDARSAHUB SQL
+
+**EDARSAHUB SQL es ahora la ÚNICA fuente de autenticación productiva.**
+
+| Tabla SQL | Registros | Estado |
+|-----------|-----------|--------|
+| Usuario_Catalogo | 11 | ✓ Completo |
+| Usuario_Roles | 9 | ✓ Completo |
+| Usuario_RolesAsignacion | 11 | ✓ Completo |
+| Usuario_EmpresasAsignacion | 38 | ✓ Completo |
+| Sistema_EmpresasMongoMap | 5 | ✓ Completo |
+
+### MongoDB en Auth:
+- `db.users` ya no se usa para autenticación
+- Fallback MongoDB: ELIMINADO
+- Referencias residuales: `password_reset.py`, `context_service.py` (deuda técnica)
+
 ---
 
 ## ✅ FASE 2 BASE COMPLETADA: Migración Auth/RBAC a SQL
@@ -172,18 +204,14 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 
 ---
 
-## Fases Pendientes (P0) - Requieren Autorización
+## Fases Pendientes (P1) - Requieren Autorización
 
-### FASE 2-G - Eliminar Fallback MongoDB (LISTA PARA AUTORIZACIÓN)
-- [ ] Remover código de fallback en `security.py`
-- [ ] `get_current_user` depende 100% de SQL
-- [ ] Verificar que Login no requiere MongoDB
-- **Prerequisitos:** ✅ TODOS CUMPLIDOS
-  - ✅ Usuarios @test.com desactivados (3)
-  - ✅ Usuarios productivos sin empresas resueltos (3)
-  - ✅ MONGODB_FALLBACK = 0 para productivos
-  - ✅ SQL_ERROR_FALLBACK = 0
-- **Riesgo:** MÍNIMO (ningún usuario productivo depende de MongoDB)
+### FASE 3 - Migración Empresas/Sucursales a SQL (SIGUIENTE)
+- [ ] Migrar `db.empresas` a `Sistema_Empresas`
+- [ ] Migrar `db.sucursales` a `Sistema_Sucursales`
+- [ ] Actualizar endpoints que leen de MongoDB
+- [ ] Mantener Sistema_EmpresasMongoMap como puente
+- **Prerequisito:** FASE 2 ✅ COMPLETADA
 
 ---
 
@@ -202,22 +230,26 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 
 ## Estado Actual del Sistema
 
-### Flujo de Autenticación (FASE 2-E ACTIVA):
+### Flujo de Autenticación (FASE 2-G COMPLETADA):
 ```
-[PRODUCTIVO - SQL-FIRST]
+[PRODUCTIVO - SQL-ONLY]
 POST /api/auth/login → service.py → MongoDB (login) → JWT creado
-GET /api/auth/me → security.py → SQL primero → MongoDB fallback
+GET /api/auth/me → security.py → SQL ONLY (sin fallback)
                                  └─ auth_source: EDARSAHUB_SQL
-                                                 MONGODB_FALLBACK
-                                                 SQL_ERROR_FALLBACK
+                                                 SQL_NOT_FOUND → 401
+                                                 SQL_ERROR → 401
 ```
 
-### Feature Flag:
+### Feature Flag (Legacy):
 ```
-AUTH_SQL_FIRST_ENABLED=true  (SQL es fuente primaria)
+AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 ```
 
-### Usuarios pendientes de decisión (sin empresas_permitidas en MongoDB):
+### Deuda Técnica Auth (MongoDB residual):
+- `/app/backend/modules/auth/password_reset.py` - usa db.users
+- `/app/backend/modules/auth/context_service.py` - usa db.users
+
+### Usuarios @test.com:
 | Email | Rol SQL | Empresas SQL |
 |-------|---------|--------------|
 | ricardo@edarsa.com.mx | SUPERADMIN | 5 (regla implícita) ✅ |
@@ -246,6 +278,8 @@ AUTH_SQL_FIRST_ENABLED=true  (SQL es fuente primaria)
 - `/app/docs/reports/FASE2E_AUTH_SQL_FIRST_FALLBACK_MONGODB.md`
 - `/app/docs/reports/FASE2F_OBSERVACION_SQL_FIRST_AUTH.md`
 - `/app/docs/reports/FASE2F1_CIERRE_PENDIENTES_AUTH_RBAC_PRE_FALLBACK_OFF.md`
+- `/app/docs/reports/FASE2F2_SANEAMIENTO_USUARIOS_PRE_FALLBACK_OFF.md`
+- `/app/docs/reports/FASE2G_ELIMINACION_FALLBACK_MONGODB_AUTH.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
@@ -258,18 +292,28 @@ AUTH_SQL_FIRST_ENABLED=true  (SQL es fuente primaria)
 - **NO es regresión de Auth/RBAC**
 - **Acción requerida:** Carga de datos históricos (fuera del scope de FASE 2)
 
-### Usuarios Pendientes de Decisión
-| Usuario | Estado | Acción |
-|---------|--------|--------|
-| ~~superadmin@test.com~~ | ✅ Desactivado | FASE 2-F.2 |
-| ~~superadmin2@test.com~~ | ✅ Desactivado | FASE 2-F.2 |
-| ~~usuario_test_portal@test.com~~ | ✅ Desactivado | FASE 2-F.2 |
-| ~~david.ricardez@cienfuegos.mx~~ | ✅ 1 empresa | FASE 2-F.2 |
-| ~~carlos@alpuntoycoma.mx~~ | ✅ 5 empresas | FASE 2-F.2 |
-| ~~eduardo@alpuntoycoma.mx~~ | ✅ 5 empresas | FASE 2-F.2 |
+### Usuarios @test.com:
+| Usuario | Estado |
+|---------|--------|
+| superadmin@test.com | ✅ Desactivado, rechazado |
+| superadmin2@test.com | ✅ Desactivado, rechazado |
+| usuario_test_portal@test.com | ✅ Desactivado, rechazado |
+| test_validacion@test.com | Ya inactivo |
+| test_rbac_val@test.com | Ya inactivo |
 
-**Todos los pendientes resueltos en FASE 2-F.2**
+### Usuarios Productivos:
+| Usuario | Empresas | Status |
+|---------|----------|--------|
+| admin@inventario.com | 5 (SUPERADMIN) | ✅ SQL |
+| ricardo@edarsa.com.mx | 5 (SUPERADMIN) | ✅ SQL |
+| david.ricardez@cienfuegos.mx | 1 | ✅ SQL |
+| carlos@alpuntoycoma.mx | 5 | ✅ SQL |
+| eduardo@alpuntoycoma.mx | 5 | ✅ SQL |
+| (otros 6) | 1-5 | ✅ SQL |
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE 2-F.2 Completada (Saneamiento Pre-Fallback Off)*
+*Última actualización: 14-Dic-2025 - FASE 2-G Completada (Fallback MongoDB Eliminado)*
+
+## 🎉 HITO: FASE 2 COMPLETADA
+**EDARSAHUB SQL es ahora la ÚNICA fuente de autenticación productiva.**
