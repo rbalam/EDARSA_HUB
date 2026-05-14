@@ -270,6 +270,16 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] Sin regresión en módulos principales
 - [x] Reporte: `/app/docs/reports/FASE3H_SECURITY_ALCANCE_HELPER_SQL.md`
 
+### ✅ FASE 3-I - Migración password_reset.py a SQL (Completada - 14-May-2026)
+- [x] Tabla `Usuario_TokensRecuperacion` creada (DDL autorizado)
+- [x] `password_reset.py` migrado de MongoDB a EDARSAHUB SQL
+- [x] Token hasheado (SHA-256), nunca plano
+- [x] Usuario buscado en `Usuario_Catalogo`
+- [x] Password actualizado en `PasswordHashTexto`
+- [x] Invalidación automática de tokens anteriores
+- [x] DEUDA P2: `rate_limit_password_reset` y `audit_password_reset` (MongoDB) — plan AUTH-RESET-P2
+- [x] Reporte: `/app/docs/reports/FASE3I_PASSWORD_RESET_SQL.md`
+
 ---
 
 ## Fases Pendientes (P1) - Requieren Autorización
@@ -352,6 +362,7 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 - `/app/docs/reports/FASE3E_CONTEXT_SERVICE_SQL.md`
 - `/app/docs/reports/FASE3FG_AUDITORIA_FINAL_EMPRESAS_SUCURSALES_CONTEXTO_SQL.md`
 - `/app/docs/reports/FASE3H_SECURITY_ALCANCE_HELPER_SQL.md`
+- `/app/docs/reports/FASE3I_PASSWORD_RESET_SQL.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
