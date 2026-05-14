@@ -59,28 +59,84 @@ async def find_user_by_id(user_id: str, include_password: bool = False) -> Optio
 
 
 async def get_all_users() -> List[Dict]:
-    """Obtiene todos los usuarios sin contraseña."""
-    return await get_db().users.find({}, {"_id": 0, "password": 0}).to_list(1000)
+    """
+    Obtiene todos los usuarios sin contraseña.
+    
+    FASE 2-G / BUG-AUTH-USERS-001: Migrado a EDARSAHUB SQL.
+    Ya no consulta MongoDB db.users.
+    
+    Returns:
+        Lista de usuarios con estructura compatible con modelo User de Pydantic.
+    """
+    from core.auth.user_repository_sql import AuthRepositorySQL
+    
+    try:
+        repo_sql = AuthRepositorySQL()
+        users_sql = repo_sql.list_all_users_sql()
+        
+        # Mapear a estructura compatible con Pydantic User schema
+        result = []
+        for u in users_sql:
+            # Excluir password y campos internos SQL
+            user_dict = {
+                'id': u.get('id'),
+                'email': u.get('email'),
+                'name': u.get('name') or u.get('nombre') or '',
+                'role': u.get('role') or u.get('rol') or 'Usuario',
+                'active': u.get('active', True),
+                'sucursales': [],  # Legacy, no migrado a SQL
+                'allowed_servers': [],  # Legacy, no migrado a SQL
+                'allowed_sucursales': {},  # Legacy, no migrado a SQL
+                'allowed_warehouses': {},  # Legacy, no migrado a SQL
+                'empresas_permitidas': u.get('empresas_permitidas', []),
+                'empresa_default_id': u.get('empresa_default_id'),
+                '_source': 'EDARSAHUB_SQL'
+            }
+            # Solo incluir usuarios con id válido (PublicUUID)
+            if user_dict['id']:
+                result.append(user_dict)
+        
+        return result
+        
+    except Exception as e:
+        import logging
+        logging.error(f"[AUTH-REPO] Error obteniendo usuarios de SQL: {e}")
+        # NO hacer fallback a MongoDB - reportar error
+        raise RuntimeError(f"Error consultando usuarios en EDARSAHUB SQL: {str(e)}")
 
 
 async def get_users_by_empresas(empresas_ids: List[str]) -> List[Dict]:
     """
-    FASE 16: Obtiene usuarios filtrados por empresas.
+    FASE 16 / BUG-AUTH-USERS-001: Obtiene usuarios filtrados por empresas.
     
-    Filtra usuarios cuyo empresa_default_id esté en la lista proporcionada.
+    Migrado a EDARSAHUB SQL. Filtra usuarios cuyo empresa_default_id 
+    esté en la lista proporcionada.
     
     Args:
-        empresas_ids: Lista de IDs de empresas permitidas
+        empresas_ids: Lista de IDs de empresas permitidas (UUIDs)
         
     Returns:
         Lista de usuarios (sin password) que pertenecen a esas empresas
     """
     if not empresas_ids:
         return []
-    return await get_db().users.find(
-        {"empresa_default_id": {"$in": empresas_ids}},
-        {"_id": 0, "password": 0}
-    ).to_list(1000)
+    
+    # Obtener todos los usuarios de SQL y filtrar por empresas
+    all_users = await get_all_users()
+    
+    # Filtrar: incluir usuarios cuya empresa_default_id o cualquier empresa en empresas_permitidas
+    # coincida con las empresas del alcance
+    empresas_set = set(empresas_ids)
+    filtered = []
+    for u in all_users:
+        emp_default = u.get('empresa_default_id')
+        emp_permitidas = set(u.get('empresas_permitidas', []))
+        
+        # Si tiene empresa_default en el alcance O alguna empresa_permitida
+        if emp_default in empresas_set or emp_permitidas.intersection(empresas_set):
+            filtered.append(u)
+    
+    return filtered
 
 
 async def create_user(user_doc: Dict) -> None:

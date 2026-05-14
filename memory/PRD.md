@@ -313,7 +313,33 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE 2-G Completada (Fallback MongoDB Eliminado)*
+*Última actualización: 14-Dic-2025 - BUG-AUTH-USERS-001 Corregido*
 
 ## 🎉 HITO: FASE 2 COMPLETADA
 **EDARSAHUB SQL es ahora la ÚNICA fuente de autenticación productiva.**
+
+---
+
+## ✅ BUG-AUTH-USERS-001 RESUELTO (14-Dic-2025)
+
+**Problema:** La pantalla Usuarios y Roles → pestaña Usuarios mostraba "Error al cargar usuarios".
+
+**Causa raíz:** La función `get_all_users()` en `repository.py` consultaba MongoDB mientras que `get_current_user()` ya usaba SQL-only (FASE 2-G). MongoDB retornaba datos con `None` en campos que Pydantic esperaba como `List[str]`.
+
+**Solución:**
+- `get_all_users()` migrado a EDARSAHUB SQL via `AuthRepositorySQL.list_all_users_sql()`
+- `get_users_by_empresas()` migrado a filtrar sobre datos SQL
+- NO se reactivó MongoDB como fuente primaria
+- NO se exponen hashes, passwords ni tokens
+
+**Resultado:** 11 usuarios productivos cargan correctamente desde EDARSAHUB SQL.
+
+**Reporte:** `/app/docs/reports/BUG_AUTH_USERS_001_ERROR_CARGAR_USUARIOS_SQL_FIRST.md`
+
+### Deuda Técnica Post-Fix (repository.py):
+Las siguientes funciones SIGUEN usando MongoDB y deben migrarse en fases futuras:
+- `create_user()` - Escribe en db.users
+- `update_user()` - Actualiza db.users
+- `deactivate_user()` - Actualiza db.users
+- `find_user_by_email()` - Lee de db.users (usado por login)
+- `find_user_by_id()` - Lee de db.users
