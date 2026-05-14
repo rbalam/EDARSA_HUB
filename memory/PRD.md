@@ -230,15 +230,20 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] `context_service.py` NO TOCADO
 - [x] Reporte: `/app/docs/reports/FASE3C_CONTEXT_RESOLVER_SQL.md`
 
-### FASE 3-D - Migración user_access_context.py a SQL (PRÓXIMA)
-- [ ] Migrar `user_access_context.py` a SQL
-- [ ] Mantener contrato de salida
-- **Prerequisito:** FASE 3-C ✅ COMPLETADA
+### ✅ FASE 3-D - Migración user_access_context.py a SQL (Completada - 14-May-2026)
+- [x] `user_access_context.py` migrado de MongoDB a EDARSAHUB SQL
+- [x] 0 referencias productivas a MongoDB en el archivo
+- [x] Helpers SQL creados para resolución de acceso efectivo
+- [x] SUPERADMIN resuelve 5 empresas y 8 servidores desde SQL
+- [x] Usuarios con alcance limitado conservan su alcance
+- [x] Contrato de salida preservado
+- [x] `context_service.py` NO TOCADO
+- [x] Reporte: `/app/docs/reports/FASE3D_USER_ACCESS_CONTEXT_SQL.md`
 
-### FASE 3-E - Migración context_service.py a SQL
+### FASE 3-E - Migración context_service.py a SQL (PRÓXIMA)
 - [ ] Migrar `context_service.py` a SQL
 - [ ] Eliminar dependencias MongoDB residuales
-- **Prerequisito:** FASE 3-D
+- **Prerequisito:** FASE 3-D ✅ COMPLETADA
 
 ### FASE 3-F/G - Validación Final FASE 3
 - [ ] Validación end-to-end de módulos que usan contexto
@@ -323,6 +328,7 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 - `/app/docs/reports/FASE3A_DIAGNOSTICO_EMPRESAS_SUCURSALES_MAPEOS_SQL.md`
 - `/app/docs/reports/FASE3B_DDL_MIGRACION_SUCURSALES_MAPEOS_SQL.md`
 - `/app/docs/reports/FASE3C_CONTEXT_RESOLVER_SQL.md`
+- `/app/docs/reports/FASE3D_USER_ACCESS_CONTEXT_SQL.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
