@@ -250,11 +250,16 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] Contrato de salida preservado
 - [x] Reporte: `/app/docs/reports/FASE3E_CONTEXT_SERVICE_SQL.md`
 
-### FASE 3-F/G - Validación Final FASE 3 (PRÓXIMA)
-- [ ] Auditoría completa de referencias MongoDB en capa de contexto
-- [ ] Validación end-to-end desde login hasta UI
-- [ ] Documentación de deuda técnica (rbac_permisos)
-- **Prerequisito:** FASE 3-E ✅ COMPLETADA
+### ✅ FASE 3-F/G - Auditoría Final FASE 3 (Completada - 14-May-2026)
+- [x] Auditoría completa de referencias MongoDB en capa de contexto
+- [x] 3 archivos core migrados: context_resolver, user_access_context, context_service
+- [x] 0 referencias MongoDB productivas en archivos core de contexto
+- [x] 5/5 relaciones canónicas validadas
+- [x] 7/7 usuarios validan correctamente
+- [x] Referencias MongoDB residuales clasificadas (DEUDA TÉCNICA: security.py, alcance_helper.py, password_reset.py)
+- [x] Reporte: `/app/docs/reports/FASE3FG_AUDITORIA_FINAL_EMPRESAS_SUCURSALES_CONTEXTO_SQL.md`
+
+**✅ FASE 3 COMPLETADA: EDARSAHUB SQL es fuente productiva para Empresas/Sucursales/Mapeos/Contexto**
 
 ---
 
@@ -336,6 +341,7 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 - `/app/docs/reports/FASE3C_CONTEXT_RESOLVER_SQL.md`
 - `/app/docs/reports/FASE3D_USER_ACCESS_CONTEXT_SQL.md`
 - `/app/docs/reports/FASE3E_CONTEXT_SERVICE_SQL.md`
+- `/app/docs/reports/FASE3FG_AUDITORIA_FINAL_EMPRESAS_SUCURSALES_CONTEXTO_SQL.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
