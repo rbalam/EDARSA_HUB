@@ -313,10 +313,31 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 
 ---
 
-*Última actualización: 14-Dic-2025 - BUG-AUTH-USERS-001 Corregido*
+*Última actualización: 14-Dic-2025 - BUG-RBAC-PERM-001 Corregido*
 
 ## 🎉 HITO: FASE 2 COMPLETADA
 **EDARSAHUB SQL es ahora la ÚNICA fuente de autenticación productiva.**
+
+---
+
+## ✅ BUG-RBAC-PERM-001 RESUELTO (14-Dic-2025)
+
+**Problema:** Modal de permisos en Usuarios y Roles:
+1. Departamentos sin labels visibles (checkboxes vacíos)
+2. Error al guardar permisos (404 "Usuario no encontrado")
+
+**Causas raíz:**
+1. Endpoint `/api/servers/{id}/departamentos` devolvía strings (`["002"]`) en lugar de objetos (`[{codigo, descripcion}]`)
+2. `find_user_by_id()` y `update_user()` hacían búsqueda case-sensitive, fallando porque SQL devuelve UUIDs en mayúsculas y MongoDB los tiene en minúsculas
+
+**Solución:**
+- Normalización de respuesta de departamentos a objetos `{codigo, descripcion}`
+- Búsqueda case-insensitive en `find_user_by_id()` y `update_user()`
+- Enriquecimiento de `get_all_users()` con permisos legacy de MongoDB
+
+**Resultado:** Modal de permisos funciona correctamente, permisos persisten.
+
+**Reporte:** `/app/docs/reports/BUG_RBAC_PERM_001_DEPARTAMENTOS_GUARDAR_PERMISOS.md`
 
 ---
 
@@ -339,7 +360,7 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 ### Deuda Técnica Post-Fix (repository.py):
 Las siguientes funciones SIGUEN usando MongoDB y deben migrarse en fases futuras:
 - `create_user()` - Escribe en db.users
-- `update_user()` - Actualiza db.users
+- `update_user()` - Actualiza db.users (case-insensitive fix aplicado)
 - `deactivate_user()` - Actualiza db.users
 - `find_user_by_email()` - Lee de db.users (usado por login)
-- `find_user_by_id()` - Lee de db.users
+- `find_user_by_id()` - Lee de db.users (case-insensitive fix aplicado)

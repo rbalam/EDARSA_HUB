@@ -2054,9 +2054,32 @@ async def get_departamentos(server_id: str, current_user: Dict = Depends(get_cur
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     # P0: Leer departamentos desde EDARSAHUB
-    departamentos = server.get('departamentos', [])
+    departamentos_raw = server.get('departamentos', [])
     
-    if departamentos:
+    if departamentos_raw:
+        # BUG-RBAC-PERM-001: Normalizar formato de respuesta
+        # Frontend espera [{codigo, descripcion}] pero EDARSAHUB puede tener strings o dicts
+        departamentos = []
+        for dep in departamentos_raw:
+            if isinstance(dep, dict):
+                # Ya es objeto: preservar estructura
+                departamentos.append({
+                    'codigo': dep.get('codigo') or dep.get('Codigo') or str(dep),
+                    'descripcion': dep.get('descripcion') or dep.get('Descripcion') or dep.get('nombre') or dep.get('Nombre') or dep.get('codigo') or str(dep)
+                })
+            elif isinstance(dep, str):
+                # Es string puro: convertir a objeto
+                departamentos.append({
+                    'codigo': dep,
+                    'descripcion': dep  # Usar código como descripción si no hay más datos
+                })
+            else:
+                # Tipo desconocido: convertir a string
+                departamentos.append({
+                    'codigo': str(dep),
+                    'descripcion': str(dep)
+                })
+        
         logging.info(f"[GET_DEPARTAMENTOS] EDARSAHUB-FIRST: {len(departamentos)} departamentos. Server={server.get('name', 'N/A')}")
         return departamentos
     

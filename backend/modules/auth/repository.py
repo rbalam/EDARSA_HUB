@@ -51,45 +51,113 @@ async def find_user_by_email(email: str, include_password: bool = False) -> Opti
 
 
 async def find_user_by_id(user_id: str, include_password: bool = False) -> Optional[Dict]:
-    """Busca un usuario por ID."""
+    """
+    Busca un usuario por ID.
+    
+    BUG-RBAC-PERM-001: Búsqueda case-insensitive para PublicUUID.
+    SQL devuelve UUIDs en mayúsculas, MongoDB puede tenerlos en minúsculas.
+    """
     projection = {"_id": 0}
     if not include_password:
         projection["password"] = 0
-    return await get_db().users.find_one({"id": user_id}, projection)
+    
+    # Intentar búsqueda exacta primero (más rápido)
+    user = await get_db().users.find_one({"id": user_id}, projection)
+    
+    if not user:
+        # Fallback: búsqueda case-insensitive (UUIDs pueden diferir en case)
+        user = await get_db().users.find_one({"id": user_id.lower()}, projection)
+    
+    if not user:
+        # Último intento: uppercase
+        user = await get_db().users.find_one({"id": user_id.upper()}, projection)
+    
+    return user
 
 
 async def get_all_users() -> List[Dict]:
     """
     Obtiene todos los usuarios sin contraseña.
     
-    FASE 2-G / BUG-AUTH-USERS-001: Migrado a EDARSAHUB SQL.
-    Ya no consulta MongoDB db.users.
+    FASE 2-G / BUG-AUTH-USERS-001: Datos base de EDARSAHUB SQL.
+    BUG-RBAC-PERM-001: Permisos legacy (allowed_servers, allowed_sucursales, 
+                       allowed_warehouses) se enriquecen desde MongoDB temporalmente
+                       hasta migración completa.
     
     Returns:
         Lista de usuarios con estructura compatible con modelo User de Pydantic.
     """
     from core.auth.user_repository_sql import AuthRepositorySQL
+    import logging
     
     try:
         repo_sql = AuthRepositorySQL()
         users_sql = repo_sql.list_all_users_sql()
         
+        # BUG-RBAC-PERM-001: Obtener permisos legacy de MongoDB para enriquecer
+        mongo_perms = {}
+        try:
+            mongo_users = await get_db().users.find(
+                {}, 
+                {
+                    "_id": 0, 
+                    "id": 1, 
+                    "allowed_servers": 1, 
+                    "allowed_sucursales": 1, 
+                    "allowed_warehouses": 1,
+                    "telefono": 1,
+                    "sec_permisos": 1,
+                    "sec_rol": 1,
+                    "sec_roles": 1,
+                    "sec_perfil": 1,
+                    "sec_roles_alcance": 1
+                }
+            ).to_list(1000)
+            
+            for mu in mongo_users:
+                mongo_id = mu.get('id', '').lower()
+                if mongo_id:
+                    mongo_perms[mongo_id] = mu
+        except Exception as mongo_err:
+            logging.warning(f"[AUTH-REPO] No se pudieron leer permisos de MongoDB: {mongo_err}")
+        
         # Mapear a estructura compatible con Pydantic User schema
         result = []
         for u in users_sql:
-            # Excluir password y campos internos SQL
+            sql_id = u.get('id', '')
+            sql_id_lower = sql_id.lower() if sql_id else ''
+            
+            # Obtener permisos de MongoDB si existen
+            mongo_data = mongo_perms.get(sql_id_lower, {})
+            
+            # Limpiar allowed_warehouses de None (legacy bug)
+            allowed_wh = mongo_data.get('allowed_warehouses', {})
+            if isinstance(allowed_wh, dict):
+                allowed_wh = {
+                    k: [v for v in vals if v is not None] 
+                    for k, vals in allowed_wh.items() 
+                    if isinstance(vals, list)
+                }
+            
             user_dict = {
-                'id': u.get('id'),
+                'id': sql_id,
                 'email': u.get('email'),
                 'name': u.get('name') or u.get('nombre') or '',
                 'role': u.get('role') or u.get('rol') or 'Usuario',
+                'telefono': mongo_data.get('telefono'),
                 'active': u.get('active', True),
-                'sucursales': [],  # Legacy, no migrado a SQL
-                'allowed_servers': [],  # Legacy, no migrado a SQL
-                'allowed_sucursales': {},  # Legacy, no migrado a SQL
-                'allowed_warehouses': {},  # Legacy, no migrado a SQL
+                'sucursales': [],  # Legacy, no usado
+                'allowed_servers': mongo_data.get('allowed_servers', []),
+                'allowed_sucursales': mongo_data.get('allowed_sucursales', {}),
+                'allowed_warehouses': allowed_wh,
                 'empresas_permitidas': u.get('empresas_permitidas', []),
                 'empresa_default_id': u.get('empresa_default_id'),
+                # Campos RBAC piloto (desde MongoDB temporalmente)
+                'sec_permisos': mongo_data.get('sec_permisos', []),
+                'sec_rol': mongo_data.get('sec_rol'),
+                'sec_roles': mongo_data.get('sec_roles', []),
+                'sec_perfil': mongo_data.get('sec_perfil'),
+                'sec_roles_alcance': mongo_data.get('sec_roles_alcance', {}),
                 '_source': 'EDARSAHUB_SQL'
             }
             # Solo incluir usuarios con id válido (PublicUUID)
@@ -145,9 +213,22 @@ async def create_user(user_doc: Dict) -> None:
 
 
 async def update_user(user_id: str, update_data: Dict) -> None:
-    """Actualiza un usuario por ID."""
+    """
+    Actualiza un usuario por ID.
+    
+    BUG-RBAC-PERM-001: Búsqueda case-insensitive para PublicUUID.
+    """
     if update_data:
-        await get_db().users.update_one({"id": user_id}, {"$set": update_data})
+        # Intentar con ID exacto
+        result = await get_db().users.update_one({"id": user_id}, {"$set": update_data})
+        
+        if result.matched_count == 0:
+            # Fallback: intentar con lowercase
+            result = await get_db().users.update_one({"id": user_id.lower()}, {"$set": update_data})
+        
+        if result.matched_count == 0:
+            # Fallback: intentar con uppercase
+            await get_db().users.update_one({"id": user_id.upper()}, {"$set": update_data})
 
 
 async def deactivate_user(user_id: str) -> None:
