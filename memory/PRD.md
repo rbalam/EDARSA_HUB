@@ -565,18 +565,31 @@ Las siguientes funciones SIGUEN usando MongoDB y deben migrarse en fases futuras
 - [ ] Verificar que los cambios persisten al recargar
 - [ ] Validar que no hay errores de UI ni consola
 
-### FASE 3-B (SIGUIENTE - Pendiente autorización)
+### FASE 3-B COMPLETADA (14-May-2026)
 **Objetivo:** DDL y Migración de Datos de Empresas/Sucursales/Mapeos a SQL.
 
-**Tablas SQL a crear:**
-- [ ] `Sistema_Sucursales` (reemplaza `db.sucursales_catalogo`)
-- [ ] `Sistema_SucursalServidorMap` (reemplaza `db.sucursal_servidor_map`)
-- [ ] `Sistema_ServidorSucursalesConfig` (reemplaza `db.server_sucursales_config`)
+**Decisión:** Opción B - Crear `Sistema_Sucursales` nueva (NO usar `RH_Cat_Sucursales` como tabla transversal).
+
+**Tablas SQL creadas:**
+- [x] `Sistema_Sucursales` (5 sucursales migradas)
+- [x] `Sistema_SucursalServidorMapeo` (5 mapeos migrados)
+- [x] `Sistema_ServidorSucursalesConfig` (7 configs migradas)
+
+**Trazabilidad legacy:** Campos MongoUUID, MongoEmpresaUUID, FuenteMigracion incluidos.
+
+**Reporte:** `/app/docs/reports/FASE3B_DDL_MIGRACION_SUCURSALES_MAPEOS_SQL.md`
+
+---
+
+### FASE 3-C (SIGUIENTE - Pendiente autorización)
+**Objetivo:** Migrar `context_resolver.py` para leer de SQL en lugar de MongoDB.
+
+**Tablas SQL disponibles:**
+- ✅ `Sistema_Sucursales` (5 sucursales)
+- ✅ `Sistema_SucursalServidorMapeo` (5 mapeos)
+- ✅ `Sistema_ServidorSucursalesConfig` (7 configs)
 
 **Prerequisitos completados:**
-- ✅ FASE 3-A: Diagnóstico pasivo completado
-- ✅ 4 colecciones MongoDB identificadas
-- ✅ 5 tablas SQL existentes mapeadas
-- ✅ DDL propuesto para 3 tablas faltantes
+- ✅ FASE 3-A: Diagnóstico pasivo
+- ✅ FASE 3-B: DDL y migración de datos
 
-**Reporte diagnóstico:** `/app/docs/reports/FASE3A_DIAGNOSTICO_EMPRESAS_SUCURSALES_MAPEOS_SQL.md`
