@@ -313,7 +313,31 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 
 ---
 
-*Última actualización: 14-Dic-2025 - BUG-USERS-LIST-002 Corregido*
+*Última actualización: 14-Dic-2025 - FASE RBAC-SCOPE-D Completada*
+
+## ✅ RBAC-SCOPE-D COMPLETADA (14-Dic-2025)
+
+**Objetivo:** Modificar `get_all_users()` para leer permisos operativos desde EDARSAHUB SQL.
+
+**Cambio implementado:**
+- `allowed_servers` → Lee de `Usuario_ServidoresAsignacion`
+- `allowed_sucursales` → Lee de `Usuario_SucursalesAsignacion`
+- `allowed_warehouses` → Lee de `Usuario_AlmacenesAsignacion`
+
+**MongoDB ya NO alimenta permisos operativos productivos.**
+Solo se usa para campos RBAC piloto (`sec_*`, `telefono`) como metadatos.
+
+**Validaciones:**
+- ✅ 11 usuarios visibles
+- ✅ SQL y MongoDB coinciden 100%
+- ✅ Usuarios sin permisos = arrays vacíos
+- ✅ admin@inventario.com: 8 servidores
+- ✅ carlosruz@edarsa.com.mx: 1 servidor, 2 almacenes
+- ✅ Sin regresión
+
+**Reporte:** `/app/docs/reports/RBAC_SCOPE_D_GET_ALL_USERS_LEE_PERMISOS_SQL.md`
+
+---
 
 ## ✅ BUG-USERS-LIST-002 CORREGIDO (14-Dic-2025)
 

@@ -80,31 +80,100 @@ async def get_all_users() -> List[Dict]:
     Obtiene todos los usuarios sin contraseña.
     
     FASE 2-G / BUG-AUTH-USERS-001: Datos base de EDARSAHUB SQL.
-    BUG-RBAC-PERM-001: Permisos legacy (allowed_servers, allowed_sucursales, 
-                       allowed_warehouses) se enriquecen desde MongoDB temporalmente
-                       hasta migración completa.
+    RBAC-SCOPE-D: Permisos operativos (allowed_servers, allowed_sucursales, 
+                  allowed_warehouses) ahora se leen desde EDARSAHUB SQL.
+                  MongoDB ya NO alimenta permisos productivos.
     
     Returns:
         Lista de usuarios con estructura compatible con modelo User de Pydantic.
     """
     from core.auth.user_repository_sql import AuthRepositorySQL
     import logging
+    import pymssql
     
     try:
         repo_sql = AuthRepositorySQL()
         users_sql = repo_sql.list_all_users_sql()
         
-        # BUG-RBAC-PERM-001: Obtener permisos legacy de MongoDB para enriquecer
-        mongo_perms = {}
+        # RBAC-SCOPE-D: Obtener permisos operativos desde EDARSAHUB SQL
+        # Conexión directa para queries de permisos
+        conn = pymssql.connect(
+            server='54.39.104.176',
+            port=1433,
+            user='HRLectura',
+            password='National09$',
+            database='EDARSAHUB'
+        )
+        cursor = conn.cursor()
+        
+        # Obtener mapeo UsuarioID SQL → permisos
+        sql_perms = {}
+        
+        # 1. Servidores asignados por usuario
+        cursor.execute("""
+            SELECT 
+                u.UsuarioID,
+                LOWER(CAST(u.PublicUUID AS VARCHAR(36))) as PublicUUID,
+                LOWER(CAST(s.ServidorID AS VARCHAR(36))) as ServidorUUID
+            FROM Usuario_Catalogo u
+            LEFT JOIN Usuario_ServidoresAsignacion s ON u.UsuarioID = s.UsuarioID AND s.Activo = 1
+            WHERE u.Activo = 1
+        """)
+        for row in cursor.fetchall():
+            usuario_id, public_uuid, servidor_uuid = row
+            if public_uuid not in sql_perms:
+                sql_perms[public_uuid] = {
+                    'allowed_servers': [],
+                    'allowed_sucursales': {},
+                    'allowed_warehouses': {}
+                }
+            if servidor_uuid:
+                sql_perms[public_uuid]['allowed_servers'].append(servidor_uuid)
+        
+        # 2. Sucursales asignadas por usuario/servidor
+        cursor.execute("""
+            SELECT 
+                LOWER(CAST(u.PublicUUID AS VARCHAR(36))) as PublicUUID,
+                LOWER(CAST(s.ServidorID AS VARCHAR(36))) as ServidorUUID,
+                s.SucursalCodigo
+            FROM Usuario_Catalogo u
+            JOIN Usuario_SucursalesAsignacion s ON u.UsuarioID = s.UsuarioID AND s.Activo = 1
+            WHERE u.Activo = 1
+        """)
+        for row in cursor.fetchall():
+            public_uuid, servidor_uuid, suc_codigo = row
+            if public_uuid in sql_perms:
+                if servidor_uuid not in sql_perms[public_uuid]['allowed_sucursales']:
+                    sql_perms[public_uuid]['allowed_sucursales'][servidor_uuid] = []
+                sql_perms[public_uuid]['allowed_sucursales'][servidor_uuid].append(suc_codigo)
+        
+        # 3. Almacenes asignados por usuario/servidor
+        cursor.execute("""
+            SELECT 
+                LOWER(CAST(u.PublicUUID AS VARCHAR(36))) as PublicUUID,
+                LOWER(CAST(a.ServidorID AS VARCHAR(36))) as ServidorUUID,
+                a.AlmacenCodigo
+            FROM Usuario_Catalogo u
+            JOIN Usuario_AlmacenesAsignacion a ON u.UsuarioID = a.UsuarioID AND a.Activo = 1
+            WHERE u.Activo = 1
+        """)
+        for row in cursor.fetchall():
+            public_uuid, servidor_uuid, alm_codigo = row
+            if public_uuid in sql_perms:
+                if servidor_uuid not in sql_perms[public_uuid]['allowed_warehouses']:
+                    sql_perms[public_uuid]['allowed_warehouses'][servidor_uuid] = []
+                sql_perms[public_uuid]['allowed_warehouses'][servidor_uuid].append(alm_codigo)
+        
+        conn.close()
+        
+        # RBAC-SCOPE-D: MongoDB solo para campos RBAC piloto (sec_*), NO para permisos operativos
+        mongo_rbac_data = {}
         try:
             mongo_users = await get_db().users.find(
                 {}, 
                 {
                     "_id": 0, 
                     "id": 1, 
-                    "allowed_servers": 1, 
-                    "allowed_sucursales": 1, 
-                    "allowed_warehouses": 1,
                     "telefono": 1,
                     "sec_permisos": 1,
                     "sec_rol": 1,
@@ -117,9 +186,9 @@ async def get_all_users() -> List[Dict]:
             for mu in mongo_users:
                 mongo_id = mu.get('id', '').lower()
                 if mongo_id:
-                    mongo_perms[mongo_id] = mu
+                    mongo_rbac_data[mongo_id] = mu
         except Exception as mongo_err:
-            logging.warning(f"[AUTH-REPO] No se pudieron leer permisos de MongoDB: {mongo_err}")
+            logging.warning(f"[AUTH-REPO] No se pudieron leer campos RBAC piloto de MongoDB: {mongo_err}")
         
         # Mapear a estructura compatible con Pydantic User schema
         result = []
@@ -127,37 +196,36 @@ async def get_all_users() -> List[Dict]:
             sql_id = u.get('id', '')
             sql_id_lower = sql_id.lower() if sql_id else ''
             
-            # Obtener permisos de MongoDB si existen
-            mongo_data = mongo_perms.get(sql_id_lower, {})
+            # Obtener permisos desde SQL (RBAC-SCOPE-D)
+            perms = sql_perms.get(sql_id_lower, {
+                'allowed_servers': [],
+                'allowed_sucursales': {},
+                'allowed_warehouses': {}
+            })
             
-            # Limpiar allowed_warehouses de None (legacy bug)
-            allowed_wh = mongo_data.get('allowed_warehouses', {})
-            if isinstance(allowed_wh, dict):
-                allowed_wh = {
-                    k: [v for v in vals if v is not None] 
-                    for k, vals in allowed_wh.items() 
-                    if isinstance(vals, list)
-                }
+            # Obtener campos RBAC piloto de MongoDB (solo metadatos, no permisos operativos)
+            rbac_data = mongo_rbac_data.get(sql_id_lower, {})
             
             user_dict = {
                 'id': sql_id,
                 'email': u.get('email'),
                 'name': u.get('name') or u.get('nombre') or '',
                 'role': u.get('role') or u.get('rol') or 'Usuario',
-                'telefono': mongo_data.get('telefono'),
+                'telefono': rbac_data.get('telefono'),
                 'active': u.get('active', True),
                 'sucursales': [],  # Legacy, no usado
-                'allowed_servers': mongo_data.get('allowed_servers', []),
-                'allowed_sucursales': mongo_data.get('allowed_sucursales', {}),
-                'allowed_warehouses': allowed_wh,
+                # RBAC-SCOPE-D: Permisos operativos desde SQL
+                'allowed_servers': perms.get('allowed_servers', []),
+                'allowed_sucursales': perms.get('allowed_sucursales', {}),
+                'allowed_warehouses': perms.get('allowed_warehouses', {}),
                 'empresas_permitidas': u.get('empresas_permitidas', []),
                 'empresa_default_id': u.get('empresa_default_id'),
-                # Campos RBAC piloto (desde MongoDB temporalmente)
-                'sec_permisos': mongo_data.get('sec_permisos', []),
-                'sec_rol': mongo_data.get('sec_rol'),
-                'sec_roles': mongo_data.get('sec_roles', []),
-                'sec_perfil': mongo_data.get('sec_perfil'),
-                'sec_roles_alcance': mongo_data.get('sec_roles_alcance', {}),
+                # Campos RBAC piloto (desde MongoDB - solo metadatos)
+                'sec_permisos': rbac_data.get('sec_permisos', []),
+                'sec_rol': rbac_data.get('sec_rol'),
+                'sec_roles': rbac_data.get('sec_roles', []),
+                'sec_perfil': rbac_data.get('sec_perfil'),
+                'sec_roles_alcance': rbac_data.get('sec_roles_alcance', {}),
                 '_source': 'EDARSAHUB_SQL'
             }
             # Solo incluir usuarios con id válido (PublicUUID)
