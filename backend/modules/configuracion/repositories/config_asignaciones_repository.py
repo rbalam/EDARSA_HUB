@@ -246,10 +246,10 @@ class ConfigAsignacionesRepository:
             server_id = empresa.get("server_id")
             sucursal_id = None
             if server_id:
-                server = await self.db.servers.find_one(
-                    {"id": server_id},
-                    {"_id": 0, "sucursal_origen_id": 1}
-                )
+                # FASE P1.4-F (Dic 2025): Migrado de MongoDB db.servers a server_registry
+                # ANTES: server = await self.db.servers.find_one({"id": server_id}, {"_id": 0, "sucursal_origen_id": 1})
+                from core.server_registry import get_server_by_id
+                server = await get_server_by_id(server_id, db=self.db, mask_secrets=True)
                 sucursal_id = server.get("sucursal_origen_id") if server else None
             
             actualizaciones["unidad_negocio_id"] = unidad_negocio_id

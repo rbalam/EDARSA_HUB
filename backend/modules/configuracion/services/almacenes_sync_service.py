@@ -134,8 +134,12 @@ async def sincronizar_almacenes_desde_origen(
         
         # =====================================================================
         # PASO 2: Obtener credenciales del servidor
+        # FASE P1.4-F (Dic 2025): Migrado de MongoDB db.servers a server_registry
+        # FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
         # =====================================================================
-        server = await db.servers.find_one({"id": server_id}, {"_id": 0})
+        from core.server_registry import get_server_connection_info_with_secrets
+        # ANTES: server = await db.servers.find_one({"id": server_id}, {"_id": 0})
+        server = get_server_connection_info_with_secrets(server_id)
         if not server:
             result.status = QueryStatus.UNKNOWN_ERROR
             result.error_message = "Servidor no encontrado en configuración"

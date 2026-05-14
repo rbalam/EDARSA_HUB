@@ -670,7 +670,6 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 | Fase | Descripción | Estado |
 |------|-------------|--------|
-| **P1.4-F: Módulo Configuración** | config_asignaciones_repository, almacenes_sync_service | ⏸️ PENDIENTE |
 | **P1.4-D2: server_sucursales_config** | Diagnóstico y diseño de migración a EDARSAHUB SQL | ⏸️ NUEVA DEUDA |
 | **FASE 2: Auth/Users/Roles** | Migrar db.users, RBAC a EDARSAHUB SQL | ⏸️ Requiere DDL |
 | **FASE 3: Empresas/Sucursales** | Migrar db.empresas, sucursales_catalogo a SQL | ⏸️ Requiere DDL |
@@ -682,10 +681,42 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 ---
 
-## 🎯 HITO: server.py 100% MIGRADO (14-Dic-2025)
+## 🎯 HITO: FASE P1.4 100% COMPLETADA (14-Dic-2025)
 
-El archivo principal `server.py` ya **NO TIENE** referencias activas a `db.servers`.
-Todas las lecturas de servidores/conexiones en endpoints de server.py usan `server_registry` (EDARSAHUB SQL).
+**server.py** y **modules/configuracion** ya **NO TIENEN** referencias activas a `db.servers`.
+Todas las lecturas de servidores/conexiones en estos componentes usan `server_registry` (EDARSAHUB SQL).
+
+### Resumen P1.4
+
+| Subfase | Componente | Endpoints/Funciones | Estado |
+|---------|------------|---------------------|--------|
+| P1.4-B | Queries | 4 | ✅ |
+| P1.4-C | Inventario/Reportes | 4 | ✅ |
+| P1.4-D1 | Sucursales-config | 4 (ya migrados) | ✅ |
+| P1.4-E1 | Auditoría Operativa | 1 | ✅ |
+| P1.4-E2 | Dashboard Inventory | 1 | ✅ |
+| P1.4-E3 | Comparativo Inventarios | 1 | ✅ |
+| P1.4-E4 | Explorador/Catálogo | 3 | ✅ |
+| **P1.4-F** | **Módulo Configuración** | **2** | ✅ |
+
+**Total: ~20 endpoints/funciones migrados**
+
+---
+
+## Registro P1.4-F — MÓDULO CONFIGURACIÓN MIGRADO (14-Dic-2025)
+
+**Estado:** ✅ CERRADO
+
+**Archivos migrados:**
+- `modules/configuracion/repositories/config_asignaciones_repository.py`
+- `modules/configuracion/services/almacenes_sync_service.py`
+
+**Cambio:** Reemplazado `db.servers.find_one()` por `server_registry.get_server_by_id()` y `get_server_connection_info_with_secrets()`.
+
+**Resultado:**
+- ✅ **0 referencias activas a `db.servers` en modules/configuracion**
+
+**Documentación:** `/app/docs/reports/P1.4-F_MIGRACION_DB_SERVERS_CONFIGURACION.md`
 
 ---
 
