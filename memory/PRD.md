@@ -204,14 +204,50 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 
 ---
 
-## Fases Pendientes (P1) - Requieren Autorización
+## FASE 3 - Migración Empresas/Sucursales/Context a SQL
 
-### FASE 3 - Migración Empresas/Sucursales a SQL (SIGUIENTE)
-- [ ] Migrar `db.empresas` a `Sistema_Empresas`
-- [ ] Migrar `db.sucursales` a `Sistema_Sucursales`
-- [ ] Actualizar endpoints que leen de MongoDB
-- [ ] Mantener Sistema_EmpresasMongoMap como puente
-- **Prerequisito:** FASE 2 ✅ COMPLETADA
+### ✅ FASE 3-A - Diagnóstico Empresas/Sucursales/Mapeos (Completada - 14-May-2026)
+- [x] Diagnóstico de `db.empresas`, `db.sucursales_catalogo`, `db.sucursal_servidor_map`, `db.server_sucursales_config`
+- [x] Identificación de estructura de datos MongoDB
+- [x] Reporte: `/app/docs/reports/FASE3A_DIAGNOSTICO_EMPRESAS_SUCURSALES_MAPEOS_SQL.md`
+
+### ✅ FASE 3-B - DDL y Migración Sucursales/Mapeos (Completada - 14-May-2026)
+- [x] Tabla `Sistema_Sucursales` creada y poblada (5 registros)
+- [x] Tabla `Sistema_SucursalServidorMapeo` creada y poblada (5 registros)
+- [x] Tabla `Sistema_ServidorSucursalesConfig` creada y poblada (7 registros)
+- [x] Trazabilidad MongoDB preservada (MongoUUID en todas las tablas)
+- [x] `RH_Cat_Sucursales` NO usada como transversal (conserva rol RH)
+- [x] Reporte: `/app/docs/reports/FASE3B_DDL_MIGRACION_SUCURSALES_MAPEOS_SQL.md`
+
+### ✅ FASE 3-C - Migración context_resolver.py a SQL (Completada - 14-May-2026)
+- [x] `context_resolver.py` migrado de MongoDB a EDARSAHUB SQL
+- [x] 0 referencias productivas a MongoDB en el archivo
+- [x] Helpers SQL creados: `_get_empresas_by_uuids_sql()`, `_get_sucursales_by_empresas_sql()`, etc.
+- [x] Tablas usadas: `Sistema_Empresas`, `Sistema_Sucursales`, `Sistema_SucursalServidorMapeo`, `Servidores_Conexiones`
+- [x] 5 relaciones canónicas validadas (ORIGEN→ManagmentPro, 130QRO→ManagmentPro, etc.)
+- [x] Contrato de salida preservado (compatibilidad UUID MongoDB)
+- [x] `user_access_context.py` NO TOCADO
+- [x] `context_service.py` NO TOCADO
+- [x] Reporte: `/app/docs/reports/FASE3C_CONTEXT_RESOLVER_SQL.md`
+
+### FASE 3-D - Migración user_access_context.py a SQL (PRÓXIMA)
+- [ ] Migrar `user_access_context.py` a SQL
+- [ ] Mantener contrato de salida
+- **Prerequisito:** FASE 3-C ✅ COMPLETADA
+
+### FASE 3-E - Migración context_service.py a SQL
+- [ ] Migrar `context_service.py` a SQL
+- [ ] Eliminar dependencias MongoDB residuales
+- **Prerequisito:** FASE 3-D
+
+### FASE 3-F/G - Validación Final FASE 3
+- [ ] Validación end-to-end de módulos que usan contexto
+- [ ] Auditoría final de referencias MongoDB en capa de contexto
+- **Prerequisito:** FASE 3-E
+
+---
+
+## Fases Pendientes (P1) - Requieren Autorización
 
 ---
 
@@ -280,6 +316,13 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 - `/app/docs/reports/FASE2F1_CIERRE_PENDIENTES_AUTH_RBAC_PRE_FALLBACK_OFF.md`
 - `/app/docs/reports/FASE2F2_SANEAMIENTO_USUARIOS_PRE_FALLBACK_OFF.md`
 - `/app/docs/reports/FASE2G_ELIMINACION_FALLBACK_MONGODB_AUTH.md`
+- `/app/docs/reports/RBAC_SCOPE_E_UPDATE_USER_PERMISSIONS_ESCRIBE_SQL.md`
+- `/app/docs/reports/RBAC_SCOPE_F_VALIDACION_E2E_MODAL_PERMISOS_SQL.md`
+- `/app/docs/reports/RBAC_SCOPE_G_ELIMINACION_MONGODB_USUARIOS_ROLES.md`
+- `/app/docs/reports/RBAC_CLOSE_001_AUDITORIA_FINAL_AUTH_RBAC_SQL.md`
+- `/app/docs/reports/FASE3A_DIAGNOSTICO_EMPRESAS_SUCURSALES_MAPEOS_SQL.md`
+- `/app/docs/reports/FASE3B_DDL_MIGRACION_SUCURSALES_MAPEOS_SQL.md`
+- `/app/docs/reports/FASE3C_CONTEXT_RESOLVER_SQL.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
