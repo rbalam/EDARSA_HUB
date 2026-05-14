@@ -565,14 +565,18 @@ Las siguientes funciones SIGUEN usando MongoDB y deben migrarse en fases futuras
 - [ ] Verificar que los cambios persisten al recargar
 - [ ] Validar que no hay errores de UI ni consola
 
-### FASE 3 (SIGUIENTE - Pendiente autorización)
-**Objetivo:** Migración de empresas/sucursales/mapeos a EDARSAHUB SQL.
-- [ ] Auditar referencias MongoDB para empresas
-- [ ] Migrar lectura de empresas a SQL
-- [ ] Migrar escritura de empresas a SQL
-- [ ] Validar configuraciones de servidor-sucursal
+### FASE 3-B (SIGUIENTE - Pendiente autorización)
+**Objetivo:** DDL y Migración de Datos de Empresas/Sucursales/Mapeos a SQL.
+
+**Tablas SQL a crear:**
+- [ ] `Sistema_Sucursales` (reemplaza `db.sucursales_catalogo`)
+- [ ] `Sistema_SucursalServidorMap` (reemplaza `db.sucursal_servidor_map`)
+- [ ] `Sistema_ServidorSucursalesConfig` (reemplaza `db.server_sucursales_config`)
 
 **Prerequisitos completados:**
-- ✅ RBAC-SCOPE-E (Escritura permisos a SQL)
-- ✅ RBAC-SCOPE-F (Validación e2e modal permisos)
-- ✅ RBAC-SCOPE-G (CRUD usuarios migrado a SQL)
+- ✅ FASE 3-A: Diagnóstico pasivo completado
+- ✅ 4 colecciones MongoDB identificadas
+- ✅ 5 tablas SQL existentes mapeadas
+- ✅ DDL propuesto para 3 tablas faltantes
+
+**Reporte diagnóstico:** `/app/docs/reports/FASE3A_DIAGNOSTICO_EMPRESAS_SUCURSALES_MAPEOS_SQL.md`
