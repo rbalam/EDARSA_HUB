@@ -59,17 +59,43 @@ async def _resolver_empresa(alcance_data: Dict, _db) -> Set[str]:
     return {empresa_id} if empresa_id else set()
 
 
-async def _resolver_unidad(alcance_data: Dict, db) -> Set[str]:
-    """Resuelve empresas para alcance tipo UNIDAD."""
+async def _resolver_unidad(alcance_data: Dict, _db) -> Set[str]:
+    """
+    Resuelve empresas para alcance tipo UNIDAD.
+    FASE 3-H: Migrado a EDARSAHUB SQL.
+    """
+    import pymssql
+    
     empresas = set()
     unidades_ids = alcance_data.get('unidades_ids', [])
     
-    for unidad_id in unidades_ids:
-        sucursales = await db.sucursales_catalogo.find(
-            {"unidad_negocio_id": unidad_id},
-            {"empresa_id": 1, "_id": 0}
-        ).to_list(100)
-        empresas.update(s['empresa_id'] for s in sucursales if s.get('empresa_id'))
+    if unidades_ids:
+        conn = pymssql.connect(
+            server='54.39.104.176', port=1433,
+            user='HRLectura', password='National09$',
+            database='EDARSAHUB'
+        )
+        try:
+            cursor = conn.cursor()
+            
+            # Buscar empresas por unidad via Sistema_Sucursales
+            # (Las sucursales están asociadas a empresas, y las unidades son las empresas en este modelo)
+            placeholders = ', '.join(['%s'] * len(unidades_ids))
+            
+            cursor.execute(f'''
+                SELECT DISTINCT m.EmpresaMongoUUID
+                FROM Sistema_Sucursales s
+                JOIN Sistema_EmpresasMongoMap m ON s.EmpresaID = m.EmpresaID_SQL
+                WHERE s.MongoUUID IN ({placeholders})
+                   OR m.EmpresaMongoUUID IN ({placeholders})
+                  AND s.Activo = 1
+            ''', tuple(unidades_ids) + tuple(unidades_ids))
+            
+            for row in cursor.fetchall():
+                if row[0]:
+                    empresas.add(row[0])
+        finally:
+            conn.close()
     
     # Fallback: empresa_id directa
     if alcance_data.get('empresa_id'):
@@ -78,17 +104,41 @@ async def _resolver_unidad(alcance_data: Dict, db) -> Set[str]:
     return empresas
 
 
-async def _resolver_sucursal(alcance_data: Dict, db) -> Set[str]:
-    """Resuelve empresas para alcance tipo SUCURSAL."""
+async def _resolver_sucursal(alcance_data: Dict, _db) -> Set[str]:
+    """
+    Resuelve empresas para alcance tipo SUCURSAL.
+    FASE 3-H: Migrado a EDARSAHUB SQL.
+    """
+    import pymssql
+    
     empresas = set()
     sucursales_ids = alcance_data.get('sucursales_ids', [])
     
-    for suc_id in sucursales_ids:
-        sucursal = await db.sucursales_catalogo.find_one(
-            {"id": suc_id}, {"empresa_id": 1, "_id": 0}
+    if sucursales_ids:
+        conn = pymssql.connect(
+            server='54.39.104.176', port=1433,
+            user='HRLectura', password='National09$',
+            database='EDARSAHUB'
         )
-        if sucursal and sucursal.get('empresa_id'):
-            empresas.add(sucursal['empresa_id'])
+        try:
+            cursor = conn.cursor()
+            
+            # Buscar empresa de cada sucursal
+            placeholders = ', '.join(['%s'] * len(sucursales_ids))
+            
+            cursor.execute(f'''
+                SELECT DISTINCT m.EmpresaMongoUUID
+                FROM Sistema_Sucursales s
+                JOIN Sistema_EmpresasMongoMap m ON s.EmpresaID = m.EmpresaID_SQL
+                WHERE s.MongoUUID IN ({placeholders})
+                  AND s.Activo = 1
+            ''', tuple(sucursales_ids))
+            
+            for row in cursor.fetchall():
+                if row[0]:
+                    empresas.add(row[0])
+        finally:
+            conn.close()
     
     # Fallback: empresa_id directa
     if alcance_data.get('empresa_id'):

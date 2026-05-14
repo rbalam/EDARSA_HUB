@@ -474,26 +474,44 @@ def get_current_user_dual_dependency():
 async def get_user_empresas_permitidas(user: Dict[str, Any]) -> List[str]:
     """
     Obtiene las empresas permitidas para un usuario.
-    FASE 3: Usa el nuevo modelo de contexto.
+    FASE 3-H: Migrado a EDARSAHUB SQL.
     
     Returns:
-        Lista de empresa_ids permitidos
+        Lista de empresa_ids permitidos (UUIDs MongoDB para compatibilidad)
     """
+    import pymssql
+    
+    def _get_all_empresas_sql() -> List[str]:
+        """Obtiene todas las empresas activas desde SQL."""
+        conn = pymssql.connect(
+            server='54.39.104.176', port=1433,
+            user='HRLectura', password='National09$',
+            database='EDARSAHUB'
+        )
+        try:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT m.EmpresaMongoUUID
+                FROM Sistema_Empresas e
+                JOIN Sistema_EmpresasMongoMap m ON e.EmpresaID = m.EmpresaID_SQL
+                WHERE e.Activo = 1
+                ORDER BY e.EmpresaID
+            ''')
+            return [row[0] for row in cursor.fetchall()]
+        finally:
+            conn.close()
+    
     # SuperAdministrador tiene acceso a todas las empresas
     if user.get('role') == 'SuperAdministrador':
-        db = get_db()
-        empresas = await db.empresas.find({'activa': True}, {'id': 1}).to_list(100)
-        return [e['id'] for e in empresas]
+        return _get_all_empresas_sql()
     
-    # Nuevo modelo: empresas_permitidas
+    # Nuevo modelo: empresas_permitidas (ya viene del user dict resuelto desde SQL)
     if user.get('empresas_permitidas'):
         return user['empresas_permitidas']
     
     # Fallback legacy: Si es Administrador, todas las empresas
     if user.get('role') in ['Administrador', 'admin', 'Admin']:
-        db = get_db()
-        empresas = await db.empresas.find({'activa': True}, {'id': 1}).to_list(100)
-        return [e['id'] for e in empresas]
+        return _get_all_empresas_sql()
     
     # Sin acceso
     return []
@@ -502,30 +520,40 @@ async def get_user_empresas_permitidas(user: Dict[str, Any]) -> List[str]:
 async def get_servers_for_empresas(empresa_ids: List[str]) -> List[str]:
     """
     Obtiene los server_ids asociados a una lista de empresas.
-    FASE 3: Traduce empresas → servidores para compatibilidad.
+    FASE 3-H: Migrado a EDARSAHUB SQL.
     
     Returns:
-        Lista de server_ids
+        Lista de server_ids (UUIDs lowercase)
     """
     if not empresa_ids:
         return []
     
-    db = get_db()
-    # Obtener sucursales de las empresas
-    sucursales = await db.sucursales_catalogo.find(
-        {'empresa_id': {'$in': empresa_ids}},
-        {'id': 1}
-    ).to_list(100)
+    import pymssql
     
-    sucursal_ids = [s['id'] for s in sucursales]
-    
-    # Obtener mapeos a servidores
-    mapeos = await db.sucursal_servidor_map.find(
-        {'sucursal_id': {'$in': sucursal_ids}},
-        {'server_id': 1}
-    ).to_list(100)
-    
-    return list(set(m['server_id'] for m in mapeos))
+    conn = pymssql.connect(
+        server='54.39.104.176', port=1433,
+        user='HRLectura', password='National09$',
+        database='EDARSAHUB'
+    )
+    try:
+        cursor = conn.cursor()
+        
+        # Construir IN clause para empresas (UUIDs MongoDB)
+        placeholders = ', '.join(['%s'] * len(empresa_ids))
+        
+        cursor.execute(f'''
+            SELECT DISTINCT LOWER(CAST(m.ServidorID AS VARCHAR(36))) as ServidorID
+            FROM Sistema_SucursalServidorMapeo m
+            JOIN Sistema_Sucursales s ON m.SucursalID = s.SucursalID
+            JOIN Sistema_EmpresasMongoMap em ON s.EmpresaID = em.EmpresaID_SQL
+            WHERE em.EmpresaMongoUUID IN ({placeholders})
+              AND m.Activo = 1
+              AND s.Activo = 1
+        ''', tuple(empresa_ids))
+        
+        return [row[0] for row in cursor.fetchall()]
+    finally:
+        conn.close()
 
 
 async def user_has_empresa_access(user: Dict[str, Any], empresa_id: str) -> bool:

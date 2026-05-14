@@ -261,6 +261,15 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 
 **✅ FASE 3 COMPLETADA: EDARSAHUB SQL es fuente productiva para Empresas/Sucursales/Mapeos/Contexto**
 
+### ✅ FASE 3-H - Migración deuda P1 security.py y alcance_helper.py (Completada - 14-May-2026)
+- [x] `security.py`: Funciones `get_user_empresas_permitidas()` y `get_servers_for_empresas()` migradas a SQL
+- [x] `alcance_helper.py`: Funciones `_resolver_unidad()` y `_resolver_sucursal()` migradas a SQL
+- [x] 0 referencias `db.*` productivas en ambos archivos
+- [x] SUPERADMIN resuelve 5 empresas desde SQL
+- [x] Usuarios limitados conservan alcance correcto
+- [x] Sin regresión en módulos principales
+- [x] Reporte: `/app/docs/reports/FASE3H_SECURITY_ALCANCE_HELPER_SQL.md`
+
 ---
 
 ## Fases Pendientes (P1) - Requieren Autorización
@@ -342,6 +351,7 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 - `/app/docs/reports/FASE3D_USER_ACCESS_CONTEXT_SQL.md`
 - `/app/docs/reports/FASE3E_CONTEXT_SERVICE_SQL.md`
 - `/app/docs/reports/FASE3FG_AUDITORIA_FINAL_EMPRESAS_SUCURSALES_CONTEXTO_SQL.md`
+- `/app/docs/reports/FASE3H_SECURITY_ALCANCE_HELPER_SQL.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
