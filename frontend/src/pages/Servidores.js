@@ -128,6 +128,16 @@ const Servidores = () => {
   // Estado para tipos de sistema (cargados desde catálogo)
   const [tiposSistema, setTiposSistema] = useState([]);
   const [loadingTiposSistema, setLoadingTiposSistema] = useState(false);
+  const [permisosSistemas, setPermisosSistemas] = useState({
+    puede_crear: false,
+    puede_solicitar: false,
+    mostrar_nuevo: false
+  });
+  
+  // Estado para modal de nuevo tipo de sistema
+  const [nuevoSistemaModalOpen, setNuevoSistemaModalOpen] = useState(false);
+  const [nuevoSistemaDescripcion, setNuevoSistemaDescripcion] = useState('');
+  const [creandoSistema, setCreandoSistema] = useState(false);
   
   // Cargar tipos de sistema desde catálogo
   const loadTiposSistema = async () => {
@@ -136,6 +146,10 @@ const Servidores = () => {
       const response = await api.get('/catalogos/sistemas/activos');
       if (response.data.success && response.data.data) {
         setTiposSistema(response.data.data);
+        // Guardar permisos del usuario
+        if (response.data.permisos) {
+          setPermisosSistemas(response.data.permisos);
+        }
       }
     } catch (error) {
       console.error('Error cargando tipos de sistema:', error);
@@ -147,6 +161,70 @@ const Servidores = () => {
       ]);
     } finally {
       setLoadingTiposSistema(false);
+    }
+  };
+  
+  // Crear o solicitar nuevo tipo de sistema
+  const handleCrearNuevoSistema = async () => {
+    if (!nuevoSistemaDescripcion.trim()) {
+      toast.error('La descripción es obligatoria');
+      return;
+    }
+    
+    setCreandoSistema(true);
+    try {
+      // Si puede crear, crear directamente. Si solo puede solicitar, solicitar.
+      const endpoint = permisosSistemas.puede_crear 
+        ? '/catalogos/sistemas' 
+        : '/catalogos/sistemas/solicitar';
+      
+      const response = await api.post(endpoint, {
+        datos: {
+          Descripcion: nuevoSistemaDescripcion.trim()
+        }
+      });
+      
+      if (response.data.success) {
+        if (permisosSistemas.puede_crear) {
+          // Sistema creado exitosamente, refrescar combo y seleccionar el nuevo
+          toast.success('Sistema creado exitosamente');
+          await loadTiposSistema();
+          // Seleccionar el nuevo sistema en el formulario
+          if (response.data.codigo) {
+            setFormData(prev => ({ ...prev, system_type: response.data.codigo }));
+          }
+        } else {
+          // Solicitud enviada
+          toast.success('Solicitud enviada para autorización');
+        }
+        setNuevoSistemaModalOpen(false);
+        setNuevoSistemaDescripcion('');
+      } else {
+        toast.error(response.data.message || 'Error al procesar la solicitud');
+      }
+    } catch (error) {
+      console.error('Error creando sistema:', error);
+      toast.error(error.response?.data?.detail || 'Error al crear/solicitar sistema');
+    } finally {
+      setCreandoSistema(false);
+    }
+  };
+  
+  // Manejar selección del combo de tipo de sistema
+  const handleTipoSistemaChange = (value) => {
+    if (value === '__NUEVO__') {
+      setNuevoSistemaModalOpen(true);
+    } else {
+      setFormData({ ...formData, system_type: value });
+    }
+  };
+  
+  // Manejar selección del combo de tipo de sistema (para API)
+  const handleTipoSistemaApiChange = (value) => {
+    if (value === '__NUEVO__') {
+      setNuevoSistemaModalOpen(true);
+    } else {
+      setApiFormData({ ...apiFormData, tipo: value });
     }
   };
   
@@ -1400,7 +1478,7 @@ const Servidores = () => {
                 <Label htmlFor="api_tipo">Tipo de Sistema</Label>
                 <Select 
                   value={apiFormData.tipo} 
-                  onValueChange={(value) => setApiFormData({...apiFormData, tipo: value})}
+                  onValueChange={handleTipoSistemaApiChange}
                   disabled={loadingTiposSistema}
                 >
                   <SelectTrigger>
@@ -1412,6 +1490,11 @@ const Servidores = () => {
                         {tipo.Descripcion}
                       </SelectItem>
                     ))}
+                    {permisosSistemas.mostrar_nuevo && (
+                      <SelectItem value="__NUEVO__" className="text-blue-600 font-medium border-t mt-1 pt-1">
+                        + Nuevo tipo de sistema
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -1545,7 +1628,7 @@ const Servidores = () => {
                 <Label htmlFor="system_type">Tipo de Sistema</Label>
                 <Select 
                   value={formData.system_type} 
-                  onValueChange={(value) => setFormData({...formData, system_type: value})}
+                  onValueChange={handleTipoSistemaChange}
                   disabled={loadingTiposSistema}
                 >
                   <SelectTrigger data-testid="system-type-select">
@@ -1557,6 +1640,11 @@ const Servidores = () => {
                         {tipo.Descripcion}
                       </SelectItem>
                     ))}
+                    {permisosSistemas.mostrar_nuevo && (
+                      <SelectItem value="__NUEVO__" className="text-blue-600 font-medium border-t mt-1 pt-1">
+                        + Nuevo tipo de sistema
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -1992,6 +2080,74 @@ const Servidores = () => {
         server={serverForUniversalTest}
         connectionType={universalTestConnectionType}
       />
+
+      {/* Modal para crear nuevo tipo de sistema */}
+      <Dialog open={nuevoSistemaModalOpen} onOpenChange={setNuevoSistemaModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Nuevo Tipo de Sistema
+            </DialogTitle>
+            <DialogDescription>
+              {permisosSistemas.puede_crear 
+                ? "Crear un nuevo tipo de sistema que estará disponible inmediatamente."
+                : "Solicitar un nuevo tipo de sistema. Quedará pendiente de autorización."
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="nuevo_sistema_desc">Nombre / Descripción</Label>
+              <Input
+                id="nuevo_sistema_desc"
+                value={nuevoSistemaDescripcion}
+                onChange={(e) => setNuevoSistemaDescripcion(e.target.value)}
+                placeholder="Ej: SAP Business One"
+                disabled={creandoSistema}
+                data-testid="nuevo-sistema-input"
+              />
+            </div>
+            
+            {!permisosSistemas.puede_crear && (
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-sm text-amber-800">
+                <strong>Nota:</strong> No tiene permisos para crear sistemas directamente. 
+                Su solicitud será enviada para autorización.
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setNuevoSistemaModalOpen(false);
+                setNuevoSistemaDescripcion('');
+              }}
+              disabled={creandoSistema}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleCrearNuevoSistema}
+              disabled={creandoSistema || !nuevoSistemaDescripcion.trim()}
+              data-testid="crear-sistema-btn"
+            >
+              {creandoSistema ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Procesando...
+                </>
+              ) : permisosSistemas.puede_crear ? (
+                'Crear Sistema'
+              ) : (
+                'Solicitar'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

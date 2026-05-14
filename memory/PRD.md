@@ -849,3 +849,43 @@ Las siguientes funciones SIGUEN usando MongoDB y deben migrarse en fases futuras
 - ✅ Sin modificación a Comercial, Finanzas, Compras, Inventarios, Operaciones, Tablero Ejecutivo
 - ✅ MongoDB no participa
 
+---
+
+## ✅ FEATURE: Sistema_Catalogo v2 - Alta Rápida con Permisos (14-May-2026)
+
+**Objetivo:** Permitir crear/solicitar nuevos tipos de sistema directamente desde el combo "Tipo de Sistema" del modal de servidores, con flujo de autorización.
+
+**Implementación:**
+
+### 1. DDL Extendido (EDARSAHUB SQL)
+Campos adicionales en `Sistema_Catalogo`:
+- `Estado` (PENDIENTE, ACTIVO, INACTIVO, RECHAZADO)
+- `SolicitadoPorEmail`, `AutorizadoPorEmail`
+- `FechaSolicitud`, `FechaAutorizacion`
+
+### 2. Endpoints Adicionales
+- `POST /api/catalogos/sistemas/solicitar` - Crear solicitud PENDIENTE
+- `PATCH /api/catalogos/sistemas/{id}/autorizar` - Aprobar solicitud
+- `PATCH /api/catalogos/sistemas/{id}/rechazar` - Rechazar solicitud
+
+### 3. Permisos Implementados
+- `CATALOGOS_SISTEMAS_CREAR` - Crear directamente (ACTIVO)
+- `CATALOGOS_SISTEMAS_SOLICITAR` - Solo solicitar (PENDIENTE)
+- `CATALOGOS_SISTEMAS_AUTORIZAR` - Aprobar/Rechazar
+
+### 4. Frontend Servidores
+- Opción "+ Nuevo tipo de sistema" al final del combo
+- Modal de alta rápida con validación de permisos
+- Botón "Crear Sistema" o "Solicitar" según permiso
+- Refresco automático del combo tras crear
+
+**Validaciones completadas:**
+- ✅ Usuario con permiso Crear ve opción "+ Nuevo tipo de sistema"
+- ✅ Usuario puede crear sistema activo desde el combo
+- ✅ Sistema nuevo aparece inmediatamente en combo
+- ✅ Sin regresión en servidores existentes
+- ✅ Sin tocar otros módulos
+- ✅ MongoDB no participa
+
+**Reporte técnico:** `/app/docs/reports/SISTEMA_CATALOGO_IMPLEMENTACION.md`
+

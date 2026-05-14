@@ -37,21 +37,52 @@ router = APIRouter(prefix="/catalogos", tags=["Catálogos"])
 # ENDPOINTS ESPECÍFICOS - SISTEMAS (para combo de Servidores)
 # ============================================================================
 
+# Constantes de permisos
+PERM_SISTEMAS_SOLICITAR = "CATALOGOS_SISTEMAS_SOLICITAR"
+PERM_SISTEMAS_CREAR = "CATALOGOS_SISTEMAS_CREAR"
+PERM_SISTEMAS_AUTORIZAR = "CATALOGOS_SISTEMAS_AUTORIZAR"
+PERM_SISTEMAS_EDITAR = "CATALOGOS_SISTEMAS_EDITAR"
+PERM_SISTEMAS_ACTIVAR = "CATALOGOS_SISTEMAS_ACTIVAR_INACTIVAR"
+
+def _tiene_permiso_sistemas(user: Dict, permiso: str) -> bool:
+    """Verifica si el usuario tiene un permiso específico de sistemas."""
+    # SuperAdmin y Administrador tienen todos los permisos
+    role = user.get('role', '')
+    if role in ['Administrador', 'SuperAdministrador']:
+        return True
+    # Supervisor puede solicitar, crear y editar
+    if role == 'Supervisor' and permiso in [PERM_SISTEMAS_SOLICITAR, PERM_SISTEMAS_CREAR, PERM_SISTEMAS_EDITAR]:
+        return True
+    # Verificar permisos específicos del usuario
+    permisos = user.get('permisos', []) or []
+    return permiso in permisos
+
+
 @router.get("/sistemas")
 async def listar_sistemas(
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    Lista todos los tipos de sistema (activos e inactivos).
+    Lista todos los tipos de sistema (activos, inactivos, pendientes, rechazados).
     
     Usado por: Catálogos > Sistemas
     """
     from core.db import execute_sql_query
     
     query = """
-        SELECT SistemaID, Codigo, Descripcion, Activo, FechaCreacion, FechaActualizacion
+        SELECT SistemaID, Codigo, Descripcion, Activo, Estado,
+               SolicitadoPorEmail, AutorizadoPorEmail,
+               FechaSolicitud, FechaAutorizacion,
+               FechaCreacion, FechaActualizacion
         FROM Sistema_Catalogo
-        ORDER BY SistemaID
+        ORDER BY 
+            CASE Estado 
+                WHEN 'PENDIENTE' THEN 1 
+                WHEN 'ACTIVO' THEN 2 
+                WHEN 'INACTIVO' THEN 3 
+                ELSE 4 
+            END,
+            SistemaID
     """
     
     try:
@@ -72,13 +103,14 @@ async def listar_sistemas_activos(
     Lista solo tipos de sistema activos para poblar combos.
     
     Usado por: Modal Agregar/Editar Servidor
+    Filtra: Activo = 1 AND Estado = 'ACTIVO'
     """
     from core.db import execute_sql_query
     
     query = """
         SELECT SistemaID, Codigo, Descripcion
         FROM Sistema_Catalogo
-        WHERE Activo = 1
+        WHERE Activo = 1 AND Estado = 'ACTIVO'
         ORDER BY Descripcion
     """
     
@@ -87,9 +119,85 @@ async def listar_sistemas_activos(
             '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
             query
         )
-        return {"success": True, "data": rows or []}
+        
+        # Determinar permisos del usuario para mostrar opción "+ Nuevo"
+        puede_crear = _tiene_permiso_sistemas(current_user, PERM_SISTEMAS_CREAR)
+        puede_solicitar = _tiene_permiso_sistemas(current_user, PERM_SISTEMAS_SOLICITAR)
+        
+        return {
+            "success": True, 
+            "data": rows or [],
+            "permisos": {
+                "puede_crear": puede_crear,
+                "puede_solicitar": puede_solicitar,
+                "mostrar_nuevo": puede_crear or puede_solicitar
+            }
+        }
     except Exception as e:
-        return {"success": False, "error": str(e), "data": []}
+        return {"success": False, "error": str(e), "data": [], "permisos": {}}
+
+
+@router.post("/sistemas/solicitar")
+async def solicitar_sistema(
+    body: CatalogoRegistroCreate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Solicita un nuevo tipo de sistema (queda PENDIENTE de autorización).
+    
+    Requiere: CATALOGOS_SISTEMAS_SOLICITAR
+    """
+    from fastapi import HTTPException
+    from core.db import execute_sql_query
+    
+    if not _tiene_permiso_sistemas(current_user, PERM_SISTEMAS_SOLICITAR):
+        raise HTTPException(status_code=403, detail="Sin permisos para solicitar sistemas")
+    
+    descripcion = body.datos.get('Descripcion', '').strip()
+    
+    if not descripcion:
+        raise HTTPException(status_code=400, detail="Descripción es obligatoria")
+    
+    # Generar código automático basado en descripción
+    codigo = descripcion.upper().replace(' ', '_')[:20]
+    
+    # Verificar duplicados
+    check_query = f"""
+        SELECT COUNT(*) as cnt FROM Sistema_Catalogo 
+        WHERE Descripcion = '{descripcion.replace("'", "''")}'
+    """
+    try:
+        result = execute_sql_query(
+            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            check_query
+        )
+        if result and result[0].get('cnt', 0) > 0:
+            raise HTTPException(status_code=400, detail="Ya existe un sistema con esa descripción")
+        
+        user_email = current_user.get('email', 'unknown')
+        
+        # Insertar como PENDIENTE
+        insert_query = f"""
+            INSERT INTO Sistema_Catalogo (Codigo, Descripcion, Activo, Estado, SolicitadoPorEmail, FechaSolicitud)
+            OUTPUT INSERTED.SistemaID
+            VALUES ('{codigo}', '{descripcion.replace("'", "''")}', 0, 'PENDIENTE', '{user_email}', SYSDATETIME())
+        """
+        result = execute_sql_query(
+            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            insert_query
+        )
+        nuevo_id = result[0].get('SistemaID') if result else None
+        
+        return {
+            "success": True, 
+            "message": "Solicitud enviada para autorización",
+            "id": nuevo_id,
+            "estado": "PENDIENTE"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/sistemas")
@@ -98,26 +206,30 @@ async def crear_sistema(
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    Crea un nuevo tipo de sistema.
+    Crea un nuevo tipo de sistema directamente (ACTIVO).
     
-    Requiere: Administrador
+    Requiere: CATALOGOS_SISTEMAS_CREAR
     """
     from fastapi import HTTPException
     from core.db import execute_sql_query
     
-    if current_user.get('role') not in ['Administrador', 'Supervisor']:
+    if not _tiene_permiso_sistemas(current_user, PERM_SISTEMAS_CREAR):
         raise HTTPException(status_code=403, detail="Sin permisos para crear sistemas")
     
     codigo = body.datos.get('Codigo', '').strip()
     descripcion = body.datos.get('Descripcion', '').strip()
     
-    if not codigo or not descripcion:
-        raise HTTPException(status_code=400, detail="Código y Descripción son obligatorios")
+    if not descripcion:
+        raise HTTPException(status_code=400, detail="Descripción es obligatoria")
+    
+    # Si no viene código, generarlo
+    if not codigo:
+        codigo = descripcion.upper().replace(' ', '_')[:20]
     
     # Verificar duplicados
     check_query = f"""
         SELECT COUNT(*) as cnt FROM Sistema_Catalogo 
-        WHERE Codigo = '{codigo}' OR Descripcion = '{descripcion}'
+        WHERE Codigo = '{codigo}' OR Descripcion = '{descripcion.replace("'", "''")}'
     """
     try:
         result = execute_sql_query(
@@ -127,19 +239,32 @@ async def crear_sistema(
         if result and result[0].get('cnt', 0) > 0:
             raise HTTPException(status_code=400, detail="Ya existe un sistema con ese código o descripción")
         
-        # Insertar
+        user_email = current_user.get('email', 'unknown')
+        
+        # Insertar como ACTIVO
         insert_query = f"""
-            INSERT INTO Sistema_Catalogo (Codigo, Descripcion, Activo)
-            OUTPUT INSERTED.SistemaID
-            VALUES ('{codigo}', '{descripcion}', 1)
+            INSERT INTO Sistema_Catalogo (Codigo, Descripcion, Activo, Estado, SolicitadoPorEmail, FechaSolicitud, AutorizadoPorEmail, FechaAutorizacion)
+            OUTPUT INSERTED.SistemaID, INSERTED.Codigo, INSERTED.Descripcion
+            VALUES ('{codigo}', '{descripcion.replace("'", "''")}', 1, 'ACTIVO', '{user_email}', SYSDATETIME(), '{user_email}', SYSDATETIME())
         """
         result = execute_sql_query(
             '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
             insert_query
         )
-        nuevo_id = result[0].get('SistemaID') if result else None
         
-        return {"success": True, "message": "Sistema creado", "id": nuevo_id}
+        if result:
+            nuevo = result[0]
+            return {
+                "success": True, 
+                "message": "Sistema creado exitosamente",
+                "id": nuevo.get('SistemaID'),
+                "codigo": nuevo.get('Codigo'),
+                "descripcion": nuevo.get('Descripcion'),
+                "estado": "ACTIVO"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Error al crear sistema")
+            
     except HTTPException:
         raise
     except Exception as e:
@@ -207,17 +332,17 @@ async def toggle_sistema_activo(
     """
     Activa o inactiva un tipo de sistema.
     
-    Requiere: Administrador
+    Requiere: CATALOGOS_SISTEMAS_ACTIVAR_INACTIVAR
     """
     from fastapi import HTTPException
     from core.db import execute_sql_query
     
-    if current_user.get('role') != 'Administrador':
-        raise HTTPException(status_code=403, detail="Solo administradores pueden activar/inactivar sistemas")
+    if not _tiene_permiso_sistemas(current_user, PERM_SISTEMAS_ACTIVAR):
+        raise HTTPException(status_code=403, detail="Sin permisos para activar/inactivar sistemas")
     
     try:
         # Obtener estado actual
-        get_query = f"SELECT Activo FROM Sistema_Catalogo WHERE SistemaID = {sistema_id}"
+        get_query = f"SELECT Activo, Estado FROM Sistema_Catalogo WHERE SistemaID = {sistema_id}"
         result = execute_sql_query(
             '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
             get_query
@@ -226,12 +351,17 @@ async def toggle_sistema_activo(
         if not result:
             raise HTTPException(status_code=404, detail="Sistema no encontrado")
         
-        nuevo_estado = 0 if result[0].get('Activo') else 1
+        nuevo_activo = 0 if result[0].get('Activo') else 1
+        nuevo_estado = 'ACTIVO' if nuevo_activo else 'INACTIVO'
+        
+        user_email = current_user.get('email', 'unknown')
         
         # Actualizar
         update_query = f"""
             UPDATE Sistema_Catalogo 
-            SET Activo = {nuevo_estado}, FechaActualizacion = SYSDATETIME()
+            SET Activo = {nuevo_activo}, 
+                Estado = '{nuevo_estado}',
+                FechaActualizacion = SYSDATETIME()
             WHERE SistemaID = {sistema_id}
         """
         execute_sql_query(
@@ -239,8 +369,126 @@ async def toggle_sistema_activo(
             update_query
         )
         
-        estado_texto = "activado" if nuevo_estado else "inactivado"
-        return {"success": True, "message": f"Sistema {estado_texto}", "activo": bool(nuevo_estado)}
+        estado_texto = "activado" if nuevo_activo else "inactivado"
+        return {"success": True, "message": f"Sistema {estado_texto}", "activo": bool(nuevo_activo), "estado": nuevo_estado}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/sistemas/{sistema_id}/autorizar")
+async def autorizar_sistema(
+    sistema_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Autoriza una solicitud de sistema pendiente.
+    
+    Requiere: CATALOGOS_SISTEMAS_AUTORIZAR
+    """
+    from fastapi import HTTPException
+    from core.db import execute_sql_query
+    
+    if not _tiene_permiso_sistemas(current_user, PERM_SISTEMAS_AUTORIZAR):
+        raise HTTPException(status_code=403, detail="Sin permisos para autorizar sistemas")
+    
+    try:
+        # Verificar que existe y está pendiente
+        get_query = f"SELECT Estado, Descripcion FROM Sistema_Catalogo WHERE SistemaID = {sistema_id}"
+        result = execute_sql_query(
+            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            get_query
+        )
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Sistema no encontrado")
+        
+        if result[0].get('Estado') != 'PENDIENTE':
+            raise HTTPException(status_code=400, detail="Solo se pueden autorizar sistemas pendientes")
+        
+        user_email = current_user.get('email', 'unknown')
+        descripcion = result[0].get('Descripcion', '')
+        
+        # Autorizar
+        update_query = f"""
+            UPDATE Sistema_Catalogo 
+            SET Activo = 1, 
+                Estado = 'ACTIVO',
+                AutorizadoPorEmail = '{user_email}',
+                FechaAutorizacion = SYSDATETIME(),
+                FechaActualizacion = SYSDATETIME()
+            WHERE SistemaID = {sistema_id}
+        """
+        execute_sql_query(
+            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            update_query
+        )
+        
+        return {
+            "success": True, 
+            "message": f"Sistema '{descripcion}' autorizado exitosamente",
+            "estado": "ACTIVO"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/sistemas/{sistema_id}/rechazar")
+async def rechazar_sistema(
+    sistema_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Rechaza una solicitud de sistema pendiente.
+    
+    Requiere: CATALOGOS_SISTEMAS_AUTORIZAR
+    """
+    from fastapi import HTTPException
+    from core.db import execute_sql_query
+    
+    if not _tiene_permiso_sistemas(current_user, PERM_SISTEMAS_AUTORIZAR):
+        raise HTTPException(status_code=403, detail="Sin permisos para rechazar sistemas")
+    
+    try:
+        # Verificar que existe y está pendiente
+        get_query = f"SELECT Estado, Descripcion FROM Sistema_Catalogo WHERE SistemaID = {sistema_id}"
+        result = execute_sql_query(
+            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            get_query
+        )
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Sistema no encontrado")
+        
+        if result[0].get('Estado') != 'PENDIENTE':
+            raise HTTPException(status_code=400, detail="Solo se pueden rechazar sistemas pendientes")
+        
+        user_email = current_user.get('email', 'unknown')
+        descripcion = result[0].get('Descripcion', '')
+        
+        # Rechazar
+        update_query = f"""
+            UPDATE Sistema_Catalogo 
+            SET Activo = 0, 
+                Estado = 'RECHAZADO',
+                AutorizadoPorEmail = '{user_email}',
+                FechaAutorizacion = SYSDATETIME(),
+                FechaActualizacion = SYSDATETIME()
+            WHERE SistemaID = {sistema_id}
+        """
+        execute_sql_query(
+            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            update_query
+        )
+        
+        return {
+            "success": True, 
+            "message": f"Sistema '{descripcion}' rechazado",
+            "estado": "RECHAZADO"
+        }
     except HTTPException:
         raise
     except Exception as e:
