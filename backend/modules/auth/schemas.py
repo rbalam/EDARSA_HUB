@@ -33,6 +33,9 @@ class User(BaseModel):
     allowed_servers: List[str] = []  # IDs de servidores permitidos
     allowed_sucursales: Dict[str, List[str]] = {}  # server_id -> [sucursal_ids]
     allowed_warehouses: Dict[str, List[str]] = {}  # server_id -> [warehouse_codes]
+    # BUG-USERS-LIST-002: Campos de empresas asignadas desde EDARSAHUB SQL
+    empresas_permitidas: List[str] = []  # UUIDs de empresas asignadas
+    empresa_default_id: Optional[str] = None  # UUID de empresa principal
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     active: bool = True
     # FASE 7: Campos RBAC piloto (solo visualización/administración en UI)

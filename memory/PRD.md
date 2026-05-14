@@ -313,7 +313,23 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE RBAC-SCOPE-C Completada*
+*Última actualización: 14-Dic-2025 - BUG-USERS-LIST-002 Corregido*
+
+## ✅ BUG-USERS-LIST-002 CORREGIDO (14-Dic-2025)
+
+**Problema:** Los usuarios carlos@alpuntoycoma.mx y eduardo@alpuntoycoma.mx mostraban `empresas_permitidas: []` aunque tenían 5 empresas en SQL.
+
+**Causa raíz:** El modelo Pydantic `User` no incluía los campos `empresas_permitidas` ni `empresa_default_id`. Con `extra="ignore"`, estos campos se eliminaban de la respuesta JSON.
+
+**Solución:** Agregados campos al modelo `User` en `/app/backend/modules/auth/schemas.py`:
+- `empresas_permitidas: List[str] = []`
+- `empresa_default_id: Optional[str] = None`
+
+**Resultado:** Los 11 usuarios ahora muestran correctamente sus empresas asignadas desde EDARSAHUB SQL.
+
+**Reporte:** `/app/docs/reports/BUG_USERS_LIST_002_USUARIOS_SQL_NO_VISIBLES.md`
+
+---
 
 ## ✅ RBAC-SCOPE-C COMPLETADA (14-Dic-2025)
 
