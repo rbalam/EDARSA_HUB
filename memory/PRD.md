@@ -121,6 +121,17 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] JWT sin cambios
 - [x] Reporte: `/app/docs/reports/FASE2E_AUTH_SQL_FIRST_FALLBACK_MONGODB.md`
 
+### ✅ FASE 2-F - Observación SQL-First Auth (Completada - 14-Dic-2025)
+- [x] 8 usuarios productivos resuelven desde EDARSAHUB_SQL
+- [x] 1 usuario @test.com usa MongoDB fallback (esperado)
+- [x] 0 SQL_ERROR_FALLBACK
+- [x] SUPERADMIN (admin@inventario.com, ricardo@edarsa.com.mx) = 5 empresas ✓
+- [x] Dashboard 4 unidades (LA ESTELAR sin datos KPIs - NO es regresión Auth)
+- [x] /api/servers = 8 servidores ✓
+- [x] Rollback por feature flag validado
+- [x] Diagnóstico 4 vs 5 unidades completado: LA ESTELAR no tiene datos en Comercial_KPIs_Diarios_v2 para dic 2024
+- [x] Reporte: `/app/docs/reports/FASE2F_OBSERVACION_SQL_FIRST_AUTH.md`
+
 ---
 
 ## ✅ FASE 2 BASE COMPLETADA: Migración Auth/RBAC a SQL
@@ -143,20 +154,15 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 
 ## Fases Pendientes (P0) - Requieren Autorización
 
-### FASE 2-F - Período de Observación (SIGUIENTE - Requiere Autorización)
-- [ ] Monitorear logs de auth_source durante operación normal
-- [ ] Identificar usuarios que usan fallback MongoDB
-- [ ] Medir % de requests SQL vs MongoDB
-- [ ] Documentar cualquier fallback inesperado
-- [ ] Confirmar estabilidad con usuarios reales
-- **Prerequisito:** FASE 2-E ✅ COMPLETADA
-- **Duración sugerida:** 1-7 días de observación
-
-### FASE 2-G - Eliminar Fallback MongoDB (Futuro)
+### FASE 2-G - Eliminar Fallback MongoDB (NO AUTORIZADA)
 - [ ] Remover código de fallback
 - [ ] `get_current_user` depende 100% de SQL
 - [ ] Verificar que Login no requiere MongoDB
-- **Prerequisito:** FASE 2-F completada sin incidentes
+- **Prerequisitos pendientes:**
+  - Período de observación más largo (1-7 días operación real)
+  - Decisión sobre usuarios @test.com
+  - Decisión sobre usuarios sin empresas
+  - Cero SQL_ERROR_FALLBACK en producción
 
 ---
 
@@ -217,8 +223,19 @@ AUTH_SQL_FIRST_ENABLED=true  (SQL es fuente primaria)
 - `/app/docs/reports/FASE2D_AUTH_REPOSITORY_SQL_PARALELO.md`
 - `/app/docs/reports/FASE2D1_PREFLIGHT_AUTH_SQL_FIRST.md`
 - `/app/docs/reports/FASE2E_AUTH_SQL_FIRST_FALLBACK_MONGODB.md`
+- `/app/docs/reports/FASE2F_OBSERVACION_SQL_FIRST_AUTH.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE 2-E Completada (SQL-First con Fallback MongoDB)*
+## Hallazgos Documentados
+
+### LA ESTELAR - Sin datos KPIs (Dic 2024)
+- **Problema:** LA ESTELAR no aparece en Tablero Ejecutivo (4 unidades vs 5 esperadas)
+- **Causa:** No hay registros en `Comercial_KPIs_Diarios_v2` para dic 2024
+- **NO es regresión de Auth/RBAC**
+- **Acción requerida:** Carga de datos históricos (fuera del scope de FASE 2)
+
+---
+
+*Última actualización: 14-Dic-2025 - FASE 2-F Completada (Observación SQL-First)*
