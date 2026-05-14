@@ -253,8 +253,14 @@ async def get_current_user(
     """
     FastAPI Dependency para obtener el usuario actual desde el token JWT.
     
-    Este es el punto de entrada de autenticación para todos los endpoints protegidos.
-    Extrae el token del header Authorization, lo verifica, y busca el usuario en MongoDB.
+    FASE 2-E: SQL-first con fallback MongoDB.
+    
+    Flujo:
+    1. Si AUTH_SQL_FIRST_ENABLED=true:
+       - Intentar SQL primero (AuthRepositorySQL)
+       - Si falla o no encuentra, fallback a MongoDB
+    2. Si AUTH_SQL_FIRST_ENABLED=false:
+       - Usar MongoDB directamente (comportamiento legacy)
     
     Args:
         credentials: Credenciales HTTP Bearer extraídas automáticamente por FastAPI
@@ -268,14 +274,119 @@ async def get_current_user(
     """
     token = credentials.credentials
     payload = verify_token(token)
+    email = payload.get('email')
+    user_id_from_token = payload.get('user_id')
     
-    db = get_db()
-    user = await db.users.find_one({"email": payload['email']}, {"_id": 0})
+    # FASE 2-E: SQL-first con fallback MongoDB
+    if AUTH_SQL_FIRST_ENABLED:
+        user, auth_source = await _get_user_sql_first_with_fallback(email, user_id_from_token)
+    else:
+        # Comportamiento legacy: MongoDB directo
+        db = get_db()
+        user = await db.users.find_one({"email": email}, {"_id": 0})
+        auth_source = "MONGODB_LEGACY"
     
     if not user:
+        logging.warning(f"[AUTH] Usuario no encontrado: {email}, source={auth_source}")
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     
+    # Log de auditoría seguro (sin secretos)
+    logging.info(f"[AUTH] auth_source={auth_source}, email={email}, role={user.get('role', 'N/A')}")
+    
     return user
+
+
+async def _get_user_sql_first_with_fallback(email: str, user_id_from_token: str = None) -> tuple:
+    """
+    FASE 2-E: Intenta obtener usuario de SQL primero, fallback a MongoDB.
+    
+    Args:
+        email: Email del usuario
+        user_id_from_token: user_id del JWT (PublicUUID)
+        
+    Returns:
+        tuple: (user_dict, auth_source)
+        
+    auth_source puede ser:
+        - EDARSAHUB_SQL: Usuario obtenido exitosamente de SQL
+        - MONGODB_FALLBACK: SQL no encontró usuario, MongoDB sí
+        - SQL_ERROR_FALLBACK: Error en SQL, se usó MongoDB
+    """
+    from core.auth.user_repository_sql import AuthRepositorySQL
+    
+    user = None
+    auth_source = None
+    
+    # Intentar SQL primero
+    try:
+        repo_sql = AuthRepositorySQL()
+        
+        # Primero intentar por user_id (PublicUUID) si existe
+        if user_id_from_token:
+            user = repo_sql.get_user_by_public_uuid_sql(user_id_from_token)
+        
+        # Si no encontró por UUID, intentar por email
+        if not user and email:
+            user = repo_sql.get_user_by_email_sql(email)
+        
+        if user and _validate_sql_user_structure(user):
+            auth_source = "EDARSAHUB_SQL"
+            logging.debug(f"[AUTH-SQL] Usuario resuelto desde SQL: {email}")
+            return user, auth_source
+        else:
+            # SQL no encontró o estructura inválida
+            logging.info(f"[AUTH-SQL] Usuario no encontrado en SQL, usando fallback: {email}")
+            
+    except Exception as e:
+        # Error en SQL - usar fallback
+        logging.warning(f"[AUTH-SQL] Error SQL, usando fallback: {str(e)[:100]}")
+        auth_source = "SQL_ERROR_FALLBACK"
+    
+    # Fallback a MongoDB
+    try:
+        db = get_db()
+        user = await db.users.find_one({"email": email}, {"_id": 0})
+        
+        if user:
+            if auth_source != "SQL_ERROR_FALLBACK":
+                auth_source = "MONGODB_FALLBACK"
+            logging.info(f"[AUTH-FALLBACK] Usuario resuelto desde MongoDB: {email}, reason={auth_source}")
+            return user, auth_source
+        
+    except Exception as e:
+        logging.error(f"[AUTH-FALLBACK] Error MongoDB fallback: {str(e)[:100]}")
+    
+    return None, auth_source or "NOT_FOUND"
+
+
+def _validate_sql_user_structure(user: Dict[str, Any]) -> bool:
+    """
+    Valida que el usuario SQL tiene la estructura mínima requerida.
+    
+    Args:
+        user: Dict del usuario de SQL
+        
+    Returns:
+        True si la estructura es válida
+    """
+    if not user:
+        return False
+    
+    # Campos obligatorios
+    required_fields = ['id', 'email', 'role']
+    
+    for field in required_fields:
+        if not user.get(field):
+            logging.warning(f"[AUTH-SQL] Usuario SQL sin campo obligatorio: {field}")
+            return False
+    
+    # Validar que 'id' parece un UUID (no un int)
+    user_id = user.get('id', '')
+    if isinstance(user_id, int) or (isinstance(user_id, str) and user_id.isdigit()):
+        logging.warning(f"[AUTH-SQL] user['id'] no es UUID: {user_id}")
+        return False
+    
+    return True
 
 
 async def get_current_user_dual(request) -> Dict[str, Any]:
@@ -327,12 +438,24 @@ async def get_current_user_dual(request) -> Dict[str, Any]:
     except HTTPException:
         raise  # Re-lanzar 401 de verify_token
     
-    # Buscar usuario
-    db = get_db()
-    user = await db.users.find_one({"email": payload['email']}, {"_id": 0})
+    email = payload.get('email')
+    user_id_from_token = payload.get('user_id')
+    
+    # FASE 2-E: SQL-first con fallback MongoDB
+    if AUTH_SQL_FIRST_ENABLED:
+        user, auth_source = await _get_user_sql_first_with_fallback(email, user_id_from_token)
+    else:
+        # Comportamiento legacy: MongoDB directo
+        db = get_db()
+        user = await db.users.find_one({"email": email}, {"_id": 0})
+        auth_source = "MONGODB_LEGACY"
     
     if not user:
+        logging.warning(f"[AUTH-DUAL] Usuario no encontrado: {email}, source={auth_source}")
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # Log de auditoría seguro
+    logging.info(f"[AUTH-DUAL] auth_source={auth_source}, email={email}")
     
     return user
 
@@ -581,6 +704,9 @@ __all__ = [
     'AUTH_SQL_FIRST_ENABLED',
     'compare_user_mongo_vs_sql_passive',
     'log_auth_preflight_status',
+    # FASE 2-E: SQL-First con Fallback
+    '_get_user_sql_first_with_fallback',
+    '_validate_sql_user_structure',
 ]
 
 

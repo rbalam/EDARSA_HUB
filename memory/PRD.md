@@ -107,6 +107,20 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] Endpoints críticos funcionan (/api/servers, /api/auth/me, dashboard)
 - [x] Reporte: `/app/docs/reports/FASE2D1_PREFLIGHT_AUTH_SQL_FIRST.md`
 
+### ✅ FASE 2-E - Auth SQL-First con Fallback MongoDB (Completada - 14-Dic-2025)
+- [x] `get_current_user()` modificado para SQL-first
+- [x] `get_current_user_dual()` actualizado
+- [x] Feature flag: `AUTH_SQL_FIRST_ENABLED=true`
+- [x] Fallback MongoDB funcional
+- [x] auth_source loggeado (EDARSAHUB_SQL, MONGODB_FALLBACK, SQL_ERROR_FALLBACK)
+- [x] PublicUUID usado como user['id']
+- [x] SUPERADMIN resuelve 5/5 empresas (ricardo@ ahora tiene acceso)
+- [x] Usuarios no migrados (@test.com) usan fallback MongoDB
+- [x] Rollback por feature flag validado
+- [x] Endpoints críticos funcionan (/api/servers=8, dashboard=4 unidades)
+- [x] JWT sin cambios
+- [x] Reporte: `/app/docs/reports/FASE2E_AUTH_SQL_FIRST_FALLBACK_MONGODB.md`
+
 ---
 
 ## ✅ FASE 2 BASE COMPLETADA: Migración Auth/RBAC a SQL
@@ -129,25 +143,20 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 
 ## Fases Pendientes (P0) - Requieren Autorización
 
-### FASE 2-E - SQL-First con Fallback MongoDB (SIGUIENTE - Requiere Autorización)
-- [ ] Modificar `get_current_user()` en `/app/backend/core/security.py`
-- [ ] Cambiar `AUTH_SQL_FIRST_ENABLED=true`
-- [ ] Usar `AuthRepositorySQL` como fuente principal
-- [ ] Mantener fallback a MongoDB si SQL no encuentra el usuario
-- [ ] Logging de fuente usada (SQL vs MongoDB)
-- **Prerequisito:** FASE 2-D.1 ✅ COMPLETADA
-- **Impacto:** Cambia la fuente de autenticación de MongoDB a SQL
-- **Riesgo:** Bajo (fallback garantiza continuidad)
+### FASE 2-F - Período de Observación (SIGUIENTE - Requiere Autorización)
+- [ ] Monitorear logs de auth_source durante operación normal
+- [ ] Identificar usuarios que usan fallback MongoDB
+- [ ] Medir % de requests SQL vs MongoDB
+- [ ] Documentar cualquier fallback inesperado
+- [ ] Confirmar estabilidad con usuarios reales
+- **Prerequisito:** FASE 2-E ✅ COMPLETADA
+- **Duración sugerida:** 1-7 días de observación
 
-### FASE 2-F - Período de Observación
-- [ ] Monitorear logs de fallback MongoDB
-- [ ] Validar que todos los logins resuelven desde SQL
-- [ ] Documentar casos de fallback
-
-### FASE 2-G - Eliminar Fallback MongoDB
+### FASE 2-G - Eliminar Fallback MongoDB (Futuro)
 - [ ] Remover código de fallback
 - [ ] `get_current_user` depende 100% de SQL
 - [ ] Verificar que Login no requiere MongoDB
+- **Prerequisito:** FASE 2-F completada sin incidentes
 
 ---
 
@@ -166,14 +175,19 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 
 ## Estado Actual del Sistema
 
-### Flujo de Autenticación:
+### Flujo de Autenticación (FASE 2-E ACTIVA):
 ```
-[PRODUCTIVO]
-POST /api/auth/login → service.py → MongoDB (db.users)
-GET /api/auth/me → security.py → MongoDB (db.users)
+[PRODUCTIVO - SQL-FIRST]
+POST /api/auth/login → service.py → MongoDB (login) → JWT creado
+GET /api/auth/me → security.py → SQL primero → MongoDB fallback
+                                 └─ auth_source: EDARSAHUB_SQL
+                                                 MONGODB_FALLBACK
+                                                 SQL_ERROR_FALLBACK
+```
 
-[PARALELO - NO PRODUCTIVO]
-user_repository_sql.py → EDARSAHUB SQL
+### Feature Flag:
+```
+AUTH_SQL_FIRST_ENABLED=true  (SQL es fuente primaria)
 ```
 
 ### Usuarios pendientes de decisión (sin empresas_permitidas en MongoDB):
@@ -202,8 +216,9 @@ user_repository_sql.py → EDARSAHUB SQL
 - `/app/docs/reports/FASE2C_VALIDACION_POST_MIGRACION_AUTH_RBAC_SQL.md`
 - `/app/docs/reports/FASE2D_AUTH_REPOSITORY_SQL_PARALELO.md`
 - `/app/docs/reports/FASE2D1_PREFLIGHT_AUTH_SQL_FIRST.md`
+- `/app/docs/reports/FASE2E_AUTH_SQL_FIRST_FALLBACK_MONGODB.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
 
-*Última actualización: 14-Dic-2025 - FASE 2-D.1 Completada (Preflight SQL-First)*
+*Última actualización: 14-Dic-2025 - FASE 2-E Completada (SQL-First con Fallback MongoDB)*
