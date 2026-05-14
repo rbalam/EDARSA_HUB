@@ -313,7 +313,29 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 
 ---
 
-*Última actualización: 14-May-2026 - FASE RBAC-SCOPE-G Completada*
+*Última actualización: 14-May-2026 - RBAC-CLOSE-001 Completada*
+
+## ✅ RBAC-CLOSE-001 COMPLETADA (14-May-2026)
+
+### HITO CONFIRMADO:
+> **EDARSAHUB SQL es la fuente única productiva para el módulo Usuarios/Roles/Auth-RBAC operativo.**
+
+**Auditoría final:**
+- ✅ Login usa SQL (`_get_user_sql_only`)
+- ✅ `get_current_user()` usa SQL-only (sin fallback MongoDB)
+- ✅ CRUD usuarios migrado a SQL
+- ✅ Permisos operativos en SQL
+- ✅ Usuario de prueba desactivado (no activo productivo)
+- ✅ MongoDB NO participa en operaciones productivas Auth/RBAC
+
+**Referencias MongoDB residuales (fuera de alcance):**
+- `password_reset.py`: Flujo de reset de passwords
+- `context_service.py`: Contexto de UI
+- Campos `sec_*`: Metadatos piloto
+
+**Reporte:** `/app/docs/reports/RBAC_CLOSE_001_AUDITORIA_FINAL_AUTH_RBAC_SQL.md`
+
+---
 
 ## ✅ RBAC-SCOPE-G COMPLETADA (14-May-2026)
 
