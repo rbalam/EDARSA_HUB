@@ -64,6 +64,7 @@ const ICONOS_DOMINIO = {
   ventas: TrendingUp,
   seguridad: Shield,
   homologacion: GitMerge,
+  configuracion: Settings,
 };
 
 const Catalogos = () => {

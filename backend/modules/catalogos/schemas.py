@@ -131,6 +131,14 @@ DOMINIOS_CATALOGOS = {
             {"tabla": "Usuario_TiposAutorizacion", "nombre": "Tipos de Autorización", "nuevo": False},
         ]
     },
+    "configuracion": {
+        "nombre": "Configuración",
+        "descripcion": "Catálogos de configuración del sistema",
+        "icono": "Settings",
+        "catalogos": [
+            {"tabla": "Sistema_Catalogo", "nombre": "Sistemas", "nuevo": True},
+        ]
+    },
     "homologacion": {
         "nombre": "Homologación",
         "descripcion": "Tablas de equivalencias y mapeo entre sistemas",
@@ -566,6 +574,15 @@ ESTRUCTURA_TABLAS = {
         "campos_editables": ["TipoCatalogo", "ValorOrigen", "ValorNormalizado", "CatalogoID", "Estado"],
         "campo_nombre": "ValorNormalizado",
         "campo_activo": None,  # No tiene campo activo
+    },
+    
+    # === CONFIGURACIÓN ===
+    "Sistema_Catalogo": {
+        "pk": "SistemaID",
+        "campos": ["SistemaID", "Codigo", "Descripcion", "Activo", "FechaCreacion", "FechaActualizacion"],
+        "campos_editables": ["Codigo", "Descripcion", "Activo"],
+        "campo_nombre": "Descripcion",
+        "campo_activo": "Activo",
     },
 }
 

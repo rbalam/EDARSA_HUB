@@ -814,3 +814,38 @@ Las siguientes funciones SIGUEN usando MongoDB y deben migrarse en fases futuras
 
 **Snapshot QRO:** 2026-05-14T20:24:06 (última sincronización exitosa)
 
+---
+
+## ✅ FEATURE: Sistema_Catalogo para Tipos de Sistema (14-May-2026)
+
+**Objetivo:** Eliminar opciones hardcodeadas del combo "Tipo de Sistema" en Servidores y administrarlas dinámicamente desde Catálogos.
+
+**Implementación:**
+
+### 1. DDL (EDARSAHUB SQL)
+- Tabla `Sistema_Catalogo` creada con campos: SistemaID, Codigo, Descripcion, Activo, FechaCreacion, FechaActualizacion
+- Datos base insertados: MPRO, SOFTRESTAURANT, OTRO
+
+### 2. Backend (`/app/backend/modules/catalogos/routes.py`)
+- `GET /api/catalogos/sistemas` - Lista todos los sistemas
+- `GET /api/catalogos/sistemas/activos` - Lista sistemas activos (para combos)
+- `POST /api/catalogos/sistemas` - Crear nuevo sistema
+- `PUT /api/catalogos/sistemas/{id}` - Actualizar descripción
+- `PATCH /api/catalogos/sistemas/{id}/toggle-activo` - Activar/Inactivar
+
+### 3. Frontend Catálogos (`/app/frontend/src/pages/Catalogos.js`)
+- Dominio "Configuración" agregado con icono Settings
+- Catálogo "Sistemas" disponible con CRUD completo
+
+### 4. Frontend Servidores (`/app/frontend/src/pages/Servidores.js`)
+- Combo "Tipo de Sistema" ahora carga desde `/api/catalogos/sistemas/activos`
+- Fallback a valores default si falla la API
+- Aplica a modal "Agregar Servidor" y modal "Conexiones API"
+
+**Validaciones completadas:**
+- ✅ Catálogos > Configuración > Sistemas muestra 3 registros
+- ✅ Combo Tipo de Sistema en Servidores carga dinámicamente
+- ✅ Servidores existentes siguen funcionando
+- ✅ Sin modificación a Comercial, Finanzas, Compras, Inventarios, Operaciones, Tablero Ejecutivo
+- ✅ MongoDB no participa
+

@@ -125,6 +125,31 @@ const Servidores = () => {
     visible_en_operaciones: false
   });
   
+  // Estado para tipos de sistema (cargados desde catálogo)
+  const [tiposSistema, setTiposSistema] = useState([]);
+  const [loadingTiposSistema, setLoadingTiposSistema] = useState(false);
+  
+  // Cargar tipos de sistema desde catálogo
+  const loadTiposSistema = async () => {
+    setLoadingTiposSistema(true);
+    try {
+      const response = await api.get('/catalogos/sistemas/activos');
+      if (response.data.success && response.data.data) {
+        setTiposSistema(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error cargando tipos de sistema:', error);
+      // Fallback a valores por defecto si falla
+      setTiposSistema([
+        { Codigo: 'MPRO', Descripcion: 'ManagementPro (MPRO)' },
+        { Codigo: 'SOFTRESTAURANT', Descripcion: 'SoftRestaurant' },
+        { Codigo: 'OTRO', Descripcion: 'Otro' }
+      ]);
+    } finally {
+      setLoadingTiposSistema(false);
+    }
+  };
+  
   // Cargar conexiones API desde backend
   const loadApiConnections = async () => {
     setLoadingApis(true);
@@ -295,6 +320,7 @@ const Servidores = () => {
   useEffect(() => {
     loadServers();
     loadApiConnections();  // Cargar conexiones API desde backend
+    loadTiposSistema();    // Cargar tipos de sistema desde catálogo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1375,13 +1401,17 @@ const Servidores = () => {
                 <Select 
                   value={apiFormData.tipo} 
                   onValueChange={(value) => setApiFormData({...apiFormData, tipo: value})}
+                  disabled={loadingTiposSistema}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder={loadingTiposSistema ? "Cargando..." : "Seleccionar tipo"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MPRO">MPRO</SelectItem>
-                    <SelectItem value="SoftRestaurant">SoftRestaurant</SelectItem>
+                    {tiposSistema.map((tipo) => (
+                      <SelectItem key={tipo.Codigo} value={tipo.Codigo}>
+                        {tipo.Descripcion}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -1516,14 +1546,17 @@ const Servidores = () => {
                 <Select 
                   value={formData.system_type} 
                   onValueChange={(value) => setFormData({...formData, system_type: value})}
+                  disabled={loadingTiposSistema}
                 >
                   <SelectTrigger data-testid="system-type-select">
-                    <SelectValue />
+                    <SelectValue placeholder={loadingTiposSistema ? "Cargando..." : "Seleccionar tipo"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MPRO">ManagementPro (MPRO)</SelectItem>
-                    <SelectItem value="SoftRestaurant">SoftRestaurant</SelectItem>
-                    <SelectItem value="Otro">Otro</SelectItem>
+                    {tiposSistema.map((tipo) => (
+                      <SelectItem key={tipo.Codigo} value={tipo.Codigo}>
+                        {tipo.Descripcion}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
