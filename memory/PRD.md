@@ -240,15 +240,21 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 - [x] `context_service.py` NO TOCADO
 - [x] Reporte: `/app/docs/reports/FASE3D_USER_ACCESS_CONTEXT_SQL.md`
 
-### FASE 3-E - Migración context_service.py a SQL (PRÓXIMA)
-- [ ] Migrar `context_service.py` a SQL
-- [ ] Eliminar dependencias MongoDB residuales
-- **Prerequisito:** FASE 3-D ✅ COMPLETADA
+### ✅ FASE 3-E - Migración context_service.py a SQL (Completada - 14-May-2026)
+- [x] `context_service.py` migrado de MongoDB a EDARSAHUB SQL
+- [x] 0 referencias productivas a MongoDB en el archivo
+- [x] Funciones migradas: `get_user_context()`, `get_user_context_for_empresa()`, `get_empresas_disponibles()`
+- [x] Tablas SQL usadas: `Usuario_Catalogo`, `Usuario_Roles`, `Usuario_RolesAsignacion`, `Usuario_EmpresasAsignacion`, `Sistema_Empresas`, `Sistema_Sucursales`
+- [x] 7 usuarios validados correctamente
+- [x] 5 relaciones empresa→sucursal correctas
+- [x] Contrato de salida preservado
+- [x] Reporte: `/app/docs/reports/FASE3E_CONTEXT_SERVICE_SQL.md`
 
-### FASE 3-F/G - Validación Final FASE 3
-- [ ] Validación end-to-end de módulos que usan contexto
-- [ ] Auditoría final de referencias MongoDB en capa de contexto
-- **Prerequisito:** FASE 3-E
+### FASE 3-F/G - Validación Final FASE 3 (PRÓXIMA)
+- [ ] Auditoría completa de referencias MongoDB en capa de contexto
+- [ ] Validación end-to-end desde login hasta UI
+- [ ] Documentación de deuda técnica (rbac_permisos)
+- **Prerequisito:** FASE 3-E ✅ COMPLETADA
 
 ---
 
@@ -329,6 +335,7 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 - `/app/docs/reports/FASE3B_DDL_MIGRACION_SUCURSALES_MAPEOS_SQL.md`
 - `/app/docs/reports/FASE3C_CONTEXT_RESOLVER_SQL.md`
 - `/app/docs/reports/FASE3D_USER_ACCESS_CONTEXT_SQL.md`
+- `/app/docs/reports/FASE3E_CONTEXT_SERVICE_SQL.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
