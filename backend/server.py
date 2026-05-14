@@ -6525,11 +6525,24 @@ async def get_dashboard_servers(current_user: Dict = Depends(get_current_user)):
 
 @api_router.get("/dashboard/metrics")
 async def get_dashboard_metrics(current_user: Dict = Depends(get_current_user)):
-    """Métricas básicas para el dashboard - mantenido por compatibilidad"""
-    total_servers = await db.servers.count_documents({"active": True})
+    """
+    Métricas básicas para el dashboard - mantenido por compatibilidad
+    
+    FASE P1.4-E4 (Dic 2025): Parcialmente migrado a server_registry.
+    NOTA: db.users y db.alerts aún usan MongoDB (fuera del alcance de P1.4-E4).
+    """
+    from core.server_registry import list_servers as registry_list_servers
+    
+    # FASE P1.4-E4: Obtener contadores de servidores desde EDARSAHUB SQL
+    # ANTES: total_servers = await db.servers.count_documents({"active": True})
+    # ANTES: servers_configured = await db.servers.count_documents({"active": True, "queries_configured": True})
+    all_servers = await registry_list_servers(db=db, filter_active=True, mask_secrets=True)
+    total_servers = len(all_servers)
+    servers_configured = len([s for s in all_servers if s.get('queries_configured', False)])
+    
+    # NOTA: db.users y db.alerts aún usan MongoDB (migración en Fase 2)
     total_users = await db.users.count_documents({"active": True})
     total_alerts = await db.alerts.count_documents({"active": True})
-    servers_configured = await db.servers.count_documents({"active": True, "queries_configured": True})
     
     return {
         "total_servers": total_servers,
@@ -11601,12 +11614,20 @@ async def ejecutar_script_con_credenciales(
     """
     Ejecuta un script SQL usando credenciales de administrador proporcionadas.
     Las credenciales se usan solo para esta ejecución (no se guardan).
+    
+    FASE P1.4-E4 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
+    NO FUENTE: MongoDB db.servers
     """
+    from core.server_registry import get_server_connection_info_with_secrets
+    
     if current_user.get('role') != 'Administrador':
         raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar scripts")
     
-    server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
-    if not server:
+    # FASE P1.4-E4: Obtener servidor desde EDARSAHUB SQL via server_registry
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+    server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
+    if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     script_id = body.get('script_id')
@@ -12359,8 +12380,11 @@ async def ejecutar_consulta_catalogo(
         parametros = body or {}
     
     # Verificar servidor
-    server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
-    if not server:
+    # FASE P1.4-E4: Obtener servidor desde EDARSAHUB SQL via server_registry
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+    from core.server_registry import get_server_connection_info_with_secrets
+    server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
+    if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     # Verificar que el sistema coincida

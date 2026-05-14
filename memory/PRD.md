@@ -670,15 +670,43 @@ SELECT TOP 1 name FROM sys.tables ORDER BY name
 
 | Fase | Descripción | Estado |
 |------|-------------|--------|
-| **P1.4-E4: Explorador/Catálogo** | Diagnóstico y migración de ejecutar-con-credenciales, ejecutar-rich | ⏸️ PENDIENTE |
-| **P1.4-D2: server_sucursales_config** | Diagnóstico y diseño de migración a EDARSAHUB SQL | ⏸️ NUEVA DEUDA |
 | **P1.4-F: Módulo Configuración** | config_asignaciones_repository, almacenes_sync_service | ⏸️ PENDIENTE |
+| **P1.4-D2: server_sucursales_config** | Diagnóstico y diseño de migración a EDARSAHUB SQL | ⏸️ NUEVA DEUDA |
+| **FASE 2: Auth/Users/Roles** | Migrar db.users, RBAC a EDARSAHUB SQL | ⏸️ Requiere DDL |
+| **FASE 3: Empresas/Sucursales** | Migrar db.empresas, sucursales_catalogo a SQL | ⏸️ Requiere DDL |
 | **P1-C: Sincronización Catálogos** | **Scheduler de catálogos tipos_movimiento, categorias, departamentos** | ⏸️ RETOMAR |
 | **FASE T3** | **Migrar módulo de Compras de MongoDB a EDARSAHUB** | ⏸️ PRÓXIMA (P1) |
-| FASE Q1.3 (Pasiva) | Dry-run: Generar INSERTs de migración SIN ejecutar | ⏸️ PENDIENTE |
 | Auth Token Bug | Persistencia de token en frontend Finanzas | ⏸️ PENDIENTE |
 | P2: Migrar Comercial V1 tabs | mesas, detalle, precios → EDARSAHUB | ⏸️ BACKLOG |
 | P3: FASE M3/M4 | Desactivar fallback MongoDB, deprecar `servers` | ⏸️ BACKLOG |
+
+---
+
+## 🎯 HITO: server.py 100% MIGRADO (14-Dic-2025)
+
+El archivo principal `server.py` ya **NO TIENE** referencias activas a `db.servers`.
+Todas las lecturas de servidores/conexiones en endpoints de server.py usan `server_registry` (EDARSAHUB SQL).
+
+---
+
+## Registro P1.4-E4 — EXPLORADOR/CATÁLOGO MIGRADO (14-Dic-2025)
+
+**Estado:** ✅ CERRADO
+
+**Endpoints migrados:**
+- `POST /explorador/ejecutar-con-credenciales/{server_id}`
+- `POST /catalogo/ejecutar-rich/{consulta_id}`
+- `GET /dashboard/metrics`
+
+**Cambio:** Reemplazado `db.servers.find_one()` y `db.servers.count_documents()` por `server_registry.get_server_connection_info_with_secrets()` y `server_registry.list_servers()`.
+
+**Resultado:**
+- ✅ **0 referencias activas a `db.servers` en server.py**
+- ✅ server.py 100% libre de MongoDB para servidores
+
+**Referencias restantes:** En módulos `core/`, `modules/configuracion/`, `routes/portal_proveedores.py` (fuera de alcance P1.4-E4)
+
+**Documentación:** `/app/docs/reports/P1.4-E4_MIGRACION_DB_SERVERS_EXPLORADOR_CATALOGO.md`
 
 ---
 
