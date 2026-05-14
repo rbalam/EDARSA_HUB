@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-05-14  
 **Fase:** FASE 3-A (Diagnóstico Pasivo)  
-**Estado:** COMPLETADA  
+**Estado:** COMPLETADA (ACTUALIZADO)  
 **Autor:** Agente E1  
 **Régimen:** Autorización Controlada
 
@@ -17,22 +17,26 @@
    - `db.sucursal_servidor_map` (6 referencias)
    - `db.server_sucursales_config` (12 referencias)
 
-2. **Tablas SQL equivalentes ya existen:**
-   - `Sistema_Empresas` (5 empresas activas)
-   - `Sistema_EmpresasMongoMap` (5 mapeos UUID→SQL)
-   - `Unidades_Negocio` (5 unidades)
-   - `Servidores_Conexiones` (con columna `EmpresaID`)
+2. **Tablas SQL equivalentes YA EXISTEN (más de lo identificado inicialmente):**
+   - `Sistema_Empresas` (5 empresas activas) ✅
+   - `Sistema_EmpresasMongoMap` (5 mapeos UUID→SQL) ✅
+   - `RH_Cat_Sucursales` (8 sucursales) ✅ **NUEVO HALLAZGO**
+   - `RH_Cat_SucursalesFiscal` (con FK a EmpresaID) ✅ **NUEVO HALLAZGO**
+   - `Usuario_SucursalesAsignacion` (ya usada por RBAC) ✅ **NUEVO HALLAZGO**
+   - `Servidores_Conexiones` (con columna `EmpresaID`) ✅
+   - `Unidades_Negocio` (5 unidades) ✅
 
-3. **Tablas SQL faltantes:**
-   - Sucursales canónicas (equivalente a `db.sucursales_catalogo`)
-   - Mapeo sucursal→servidor (equivalente a `db.sucursal_servidor_map`)
-   - Configuración servidor→sucursales (equivalente a `db.server_sucursales_config`)
+3. **Tablas SQL faltantes (REVISADO):**
+   - **NO se necesita** `Sistema_Sucursales` - usar `RH_Cat_Sucursales` existente
+   - **SE NECESITA** mapeo sucursal→servidor (equivalente a `db.sucursal_servidor_map`)
+   - **SE NECESITA** configuración servidor→sucursales (equivalente a `db.server_sucursales_config`)
 
-4. **Archivos críticos (P0):**
-   - `/app/backend/core/context_resolver.py` - 42 referencias MongoDB
-   - `/app/backend/core/user_access_context.py` - 42 referencias MongoDB
-   - `/app/backend/modules/auth/context_service.py` - 46 referencias MongoDB
-   - `/app/backend/core/security.py` - 50 referencias empresas/sucursales
+4. **IMPORTANTE - Patrón de Nomenclatura Validado:**
+   - Tablas de sistema: `Sistema_*` (ej: `Sistema_Empresas`)
+   - Tablas de RH: `RH_Cat_*` para catálogos (ej: `RH_Cat_Sucursales`)
+   - Tablas de asignación: `Usuario_*Asignacion` (ej: `Usuario_SucursalesAsignacion`)
+   - Tablas de servidores: `Servidores_*` (ej: `Servidores_Conexiones`)
+   - Campos de auditoría: `FechaAlta`, `FechaModificacion`, `CreatedBy`, `UpdatedBy`, `Activo`
 
 ---
 
@@ -141,7 +145,7 @@
 
 ---
 
-## 5. Tablas SQL Existentes Útiles
+## 5. Tablas SQL Existentes Útiles (ACTUALIZADO)
 
 ### Sistema_Empresas ✅
 ```sql
@@ -165,80 +169,135 @@ MapID | EmpresaMongoUUID | EmpresaID_SQL | CodigoEmpresa
 ```
 **Uso:** Traduce UUIDs de MongoDB a IDs de SQL.
 
-### Usuario_EmpresasAsignacion ✅
-**Ya en uso** por RBAC-SCOPE-G para asignación de empresas a usuarios.
+### RH_Cat_Sucursales ✅ **NUEVO HALLAZGO**
+```sql
+SucursalID | Nombre_Sucursal   | Ciudad  | Activa
+1          | 130° QUERETARO    | México  | True
+2          | 130° TULUM        | México  | True
+3          | CIEN FUEGOS       | México  | True
+4          | EDARSA            | México  | True
+5          | GARCIA LAVIN      | México  | True
+6          | MECA              | México  | True
+7          | ORIGEN            | México  | True
+8          | XCANATUN          | México  | True
+```
+**Uso:** YA EXISTE catálogo de sucursales. Puede reemplazar `db.sucursales_catalogo`.
+**Nota:** Falta campo `EmpresaID` - evaluar ALTER TABLE vs nueva tabla.
+
+### RH_Cat_SucursalesFiscal ✅ **NUEVO HALLAZGO**
+```sql
+Columnas: SucursalFiscalID, SucursalID, EmpresaID, RFC, RazonSocial, etc.
+```
+**Uso:** Ya tiene relación Sucursal→Empresa via FK.
+
+### Usuario_SucursalesAsignacion ✅ **YA EN USO (RBAC)**
+```sql
+AsignacionID | UsuarioID | ServidorID | SucursalCodigo | Activo
+```
+**Uso:** Ya usada por RBAC-SCOPE-C/D/E para asignar sucursales a usuarios.
 
 ### Servidores_Conexiones ✅
-```sql
-Columnas relevantes:
-- id (uniqueidentifier)
-- nombre
-- system_type
-- EmpresaID (FK a Sistema_Empresas)
-- visible_en_operaciones
-- activo
+```
+Servidor                | EmpresaID | Empresa      | vis_op
+130° MERIDA             | 5         | 130 MID      | True
+CIENFUEGOS              | 3         | CIENFUEGOS   | True
+LA ESTELAR              | 4         | LA ESTELAR   | True
+ManagmentPro            | NULL      | NULL         | True
+HR2020 ESCRITURA        | NULL      | NULL         | False
 ```
 **Uso:** Ya tiene `EmpresaID` que vincula servidor con empresa.
+**Nota:** Algunos servidores tienen `EmpresaID=NULL` - completar mapeo.
 
 ### Unidades_Negocio ✅
-```sql
-nombre | codigo | server_id | system_type | activo
-ORIGEN | ORIGEN | ...       | MPRO        | True
-```
 **Uso:** Alternativa a context_resolver para unidades de negocio.
 
 ---
 
-## 6. Tablas SQL Faltantes
+## 6. Tablas SQL Faltantes (REVISADO según nomenclatura EDARSAHUB)
 
-### 6.1. Sistema_Sucursales (NUEVA)
-**Propósito:** Reemplazar `db.sucursales_catalogo`
+### OPCIÓN A: Usar tablas existentes con ALTER TABLE
 
+**6.1. ALTER TABLE RH_Cat_Sucursales**
+Si se decide usar `RH_Cat_Sucursales` existente:
 ```sql
-CREATE TABLE Sistema_Sucursales (
+ALTER TABLE RH_Cat_Sucursales ADD 
+    EmpresaID INT NULL FOREIGN KEY REFERENCES Sistema_Empresas(EmpresaID),
+    MongoUUID VARCHAR(36) NULL,
+    CodigoSucursal VARCHAR(50) NULL;
+```
+**Ventaja:** No duplica tablas, sigue patrón RH_Cat_*.
+**Riesgo:** RH ya usa esta tabla para nóminas - evaluar impacto.
+
+### OPCIÓN B: Crear nuevas tablas Sistema_* (si RH_Cat_* no es adecuada)
+
+**6.2. Sistema_SucursalesCatalogo** (NUEVA - solo si se descarta usar RH_Cat_Sucursales)
+```sql
+-- Sigue patrón de Sistema_Empresas
+CREATE TABLE Sistema_SucursalesCatalogo (
     SucursalID INT IDENTITY(1,1) PRIMARY KEY,
     CodigoSucursal VARCHAR(50) NOT NULL,
     NombreSucursal NVARCHAR(200) NOT NULL,
     EmpresaID INT NOT NULL FOREIGN KEY REFERENCES Sistema_Empresas(EmpresaID),
-    MongoUUID VARCHAR(36) NULL,  -- Para migración
-    Activa BIT NOT NULL DEFAULT 1,
+    MongoUUID VARCHAR(36) NULL,
+    Activo BIT NOT NULL DEFAULT 1,
     FechaAlta DATETIME2 NOT NULL DEFAULT GETDATE(),
-    CreatedBy VARCHAR(100)
+    FechaModificacion DATETIME2 NULL,
+    CreatedBy VARCHAR(100) NULL,
+    UpdatedBy VARCHAR(100) NULL
 );
 ```
 
-### 6.2. Sistema_SucursalServidorMap (NUEVA)
+### 6.3. Sistema_SucursalServidorMapeo (NUEVA)
 **Propósito:** Reemplazar `db.sucursal_servidor_map`
-
 ```sql
-CREATE TABLE Sistema_SucursalServidorMap (
+-- Sigue patrón de Sistema_EmpresasMongoMap
+CREATE TABLE Sistema_SucursalServidorMapeo (
     MapeoID INT IDENTITY(1,1) PRIMARY KEY,
-    SucursalID INT NOT NULL FOREIGN KEY REFERENCES Sistema_Sucursales(SucursalID),
-    ServidorID UNIQUEIDENTIFIER NOT NULL,  -- FK a Servidores_Conexiones
-    SucursalOrigenID VARCHAR(50) NULL,  -- ID en sistema externo (MPRO)
+    SucursalID INT NOT NULL,  -- FK según tabla elegida
+    ServidorID UNIQUEIDENTIFIER NOT NULL,
+    SucursalOrigenID VARCHAR(50) NULL,
+    MongoMapUUID VARCHAR(36) NULL,
     Activo BIT NOT NULL DEFAULT 1,
     FechaCreacion DATETIME2 NOT NULL DEFAULT GETDATE(),
-    CreatedBy VARCHAR(100)
+    FechaActualizacion DATETIME2 NULL,
+    CreatedBy VARCHAR(100) NULL,
+    Observaciones NVARCHAR(500) NULL
 );
 ```
 
-### 6.3. Sistema_ServidorSucursalesConfig (NUEVA)
+### 6.4. Sistema_ServidorSucursalesConfig (NUEVA)
 **Propósito:** Reemplazar `db.server_sucursales_config`
-
 ```sql
+-- Sigue patrón Sistema_* con campos de visibilidad
 CREATE TABLE Sistema_ServidorSucursalesConfig (
     ConfigID INT IDENTITY(1,1) PRIMARY KEY,
     ServidorID UNIQUEIDENTIFIER NOT NULL,
     SucursalNombre NVARCHAR(200) NOT NULL,
     SucursalCodigo VARCHAR(50) NULL,
+    SucursalID INT NULL,  -- FK opcional si se resuelve
     VisibleEnOperaciones BIT NOT NULL DEFAULT 0,
     VisibleEnComercial BIT NOT NULL DEFAULT 0,
     Activo BIT NOT NULL DEFAULT 1,
     FechaCreacion DATETIME2 NOT NULL DEFAULT GETDATE(),
     FechaModificacion DATETIME2 NULL,
-    CreatedBy VARCHAR(100)
+    CreatedBy VARCHAR(100) NULL,
+    UpdatedBy VARCHAR(100) NULL
 );
 ```
+
+---
+
+## 6.5. DECISIÓN PENDIENTE: ¿Usar RH_Cat_Sucursales o crear Sistema_SucursalesCatalogo?
+
+| Criterio | RH_Cat_Sucursales | Sistema_SucursalesCatalogo |
+|----------|-------------------|---------------------------|
+| Ya existe | ✅ Sí (8 registros) | ❌ No |
+| Tiene EmpresaID | ❌ No (agregar con ALTER) | ✅ Sí (desde diseño) |
+| Patrón de nomenclatura | RH_Cat_* (módulo RH) | Sistema_* (institucional) |
+| Riesgo de impacto | Alto (nóminas usan) | Bajo (tabla nueva) |
+| Duplicación | ❌ No duplica | ⚠️ Podría duplicar datos |
+
+**RECOMENDACIÓN:** Evaluar con el usuario si RH_Cat_Sucursales es la fuente canónica de sucursales o si debe crearse una tabla institucional separada en Sistema_*.
 
 ---
 
@@ -300,22 +359,37 @@ CREATE TABLE Sistema_ServidorSucursalesConfig (
 
 ---
 
-## 10. Reglas de Nomenclatura SQL Aplicables
+## 10. Reglas de Nomenclatura SQL Validadas (EDARSAHUB)
 
-Según el patrón existente en EDARSAHUB:
+### Patrón Existente Confirmado:
 
-| Grupo | Prefijo | Ejemplos Existentes |
-|-------|---------|---------------------|
-| Sistema/Config | `Sistema_` | `Sistema_Empresas`, `Sistema_EmpresasMongoMap` |
-| Usuarios | `Usuario_` | `Usuario_Catalogo`, `Usuario_EmpresasAsignacion` |
-| Servidores | `Servidores_` | `Servidores_Conexiones`, `Servidores_Conexiones_Log` |
-| RH | `RH_` | `RH_Cat_Sucursales` |
-| Finanzas | `Finanzas_` | `Finanzas_ConfiguracionTPV_Sucursal` |
+| Grupo Funcional | Prefijo | Ejemplos Reales | Campos de Auditoría |
+|-----------------|---------|-----------------|---------------------|
+| Sistema/Config | `Sistema_` | `Sistema_Empresas`, `Sistema_EmpresasMongoMap` | FechaAlta, FechaModificacion, CreatedBy, UpdatedBy, Activo |
+| Usuarios | `Usuario_*Asignacion` | `Usuario_EmpresasAsignacion`, `Usuario_RolesAsignacion` | CreatedAt, UpdatedAt, CreatedBy, UpdatedBy, Activo |
+| Servidores | `Servidores_` | `Servidores_Conexiones`, `Servidores_Conexiones_Log` | created_at, updated_at |
+| RH Catálogos | `RH_Cat_` | `RH_Cat_Sucursales`, `RH_Cat_SucursalesFiscal` | FechaAlta, FechaModificacion, Activo/Activa |
+| Finanzas | `Finanzas_` | `Finanzas_ConfiguracionTPV_Sucursal` | FechaAlta, FechaModificacion, Activo |
 
-**Nuevas tablas deben seguir:**
-- `Sistema_Sucursales` (no `Sucursales_Catalogo`)
-- `Sistema_SucursalServidorMap` (no `Sucursal_Servidor_Map`)
-- `Sistema_ServidorSucursalesConfig` (no `Server_Sucursales_Config`)
+### Reglas Aplicables a FASE 3-B:
+
+1. **Catálogos institucionales:** Usar `Sistema_*` (ej: `Sistema_SucursalesCatalogo`)
+2. **Mapeos de migración:** Usar `Sistema_*MongoMap` o `Sistema_*Mapeo`
+3. **Asignaciones por usuario:** Usar `Usuario_*Asignacion` (ya existe `Usuario_SucursalesAsignacion`)
+4. **Configuraciones:** Usar `Sistema_*Config` para configuración de módulos
+5. **No mezclar idiomas:** Usar español consistente (Sucursal, no Sucursal/Branch)
+6. **PK:** `[Entidad]ID` como INT IDENTITY (ej: SucursalID, MapeoID, ConfigID)
+7. **FK:** Nombrar igual que PK de tabla referenciada
+8. **Auditoría:** Incluir FechaCreacion/FechaAlta, FechaModificacion, CreatedBy, Activo
+
+### Decisión sobre RH_Cat_Sucursales vs Sistema_SucursalesCatalogo:
+
+**PREGUNTA PARA EL USUARIO:**
+> ¿RH_Cat_Sucursales debe ser la tabla canónica de sucursales del sistema, o debe crearse una nueva tabla Sistema_SucursalesCatalogo para separar el catálogo institucional del módulo RH?
+
+**Implicaciones:**
+- Si se usa `RH_Cat_Sucursales`: Agregar campo `EmpresaID` con ALTER TABLE
+- Si se crea `Sistema_SucursalesCatalogo`: Migrar datos y crear FK entre ambas
 
 ---
 
@@ -324,11 +398,18 @@ Según el patrón existente en EDARSAHUB:
 FASE 3-B puede autorizarse si:
 
 1. ✅ Se identificaron las 4 colecciones MongoDB afectadas
-2. ✅ Se definieron las 3 tablas SQL faltantes con DDL propuesto
-3. ✅ Se mapearon las 5 empresas existentes SQL ↔ MongoDB
-4. ✅ Se identificaron los 4 archivos críticos P0
-5. ✅ Se propuso orden de fases sin tocar producción
-6. ✅ Se generó este reporte
+2. ✅ Se identificaron **7 tablas SQL existentes** útiles (incluyendo RH_Cat_*)
+3. ✅ Se definieron opciones de DDL respetando nomenclatura EDARSAHUB
+4. ✅ Se mapearon las 5 empresas existentes SQL ↔ MongoDB
+5. ✅ Se identificaron los 4 archivos críticos P0
+6. ✅ Se propuso orden de fases sin tocar producción
+7. ✅ Se documentó patrón de nomenclatura existente
+8. ✅ Se generó este reporte
+
+### DECISIÓN PENDIENTE ANTES DE FASE 3-B:
+> **¿Usar RH_Cat_Sucursales existente (con ALTER TABLE) o crear Sistema_SucursalesCatalogo nueva?**
+
+Esta decisión afecta el DDL de FASE 3-B.
 
 ---
 
@@ -361,18 +442,22 @@ FASE 3-B puede autorizarse si:
 
 ---
 
-## Resumen Ejecutivo
+## Resumen Ejecutivo (ACTUALIZADO)
 
 | Aspecto | Estado |
 |---------|--------|
 | Colecciones MongoDB identificadas | 4 |
 | Referencias totales | 47 |
 | Archivos P0 (críticos) | 4 |
-| Tablas SQL existentes útiles | 5 |
-| Tablas SQL faltantes | 3 |
-| DDL propuesto | ✅ |
+| Tablas SQL existentes útiles | **7** (incluye RH_Cat_*) |
+| Tablas SQL que requieren DDL nuevo | 2 (mapeo y config) |
+| Tablas que pueden reutilizarse con ALTER | 1 (RH_Cat_Sucursales) |
+| DDL propuesto | ✅ Con opciones |
 | Ruta de migración definida | ✅ |
+| Nomenclatura validada | ✅ |
 
 **FASE 3-A: COMPLETADA (Diagnóstico Pasivo)**
 
-**Próximo paso:** Solicitar autorización para FASE 3-B (DDL y Migración de Datos).
+**Próximo paso:** 
+1. Decidir sobre uso de RH_Cat_Sucursales vs nueva tabla Sistema_*
+2. Solicitar autorización para FASE 3-B (DDL y Migración de Datos)
