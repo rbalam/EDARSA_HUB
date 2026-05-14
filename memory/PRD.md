@@ -319,16 +319,63 @@ Eliminar progresivamente las dependencias funcionales de MongoDB y consolidar ED
 
 ---
 
+## FASE 4 - Migración RBAC MongoDB → EDARSAHUB SQL
+
+### ✅ FASE 4A - Diagnóstico Pasivo de Reglas Vivas MongoDB (Completada - 14-May-2026)
+- [x] Auditoría pasiva (grep) de referencias MongoDB en todo el código
+- [x] Identificadas 775 líneas con referencias MongoDB/Motor/PyMongo
+- [x] Identificados 41 archivos con imports activos
+- [x] Clasificación por módulo y riesgo
+- [x] **Sin modificaciones de código**
+- [x] Reporte: `/app/docs/reports/FASE_4A_DIAGNOSTICO_REGLAS_VIVAS_MONGODB.md`
+
+### ✅ FASE 4B-RBAC - Migración RBAC a SQL (Completada - 14-May-2026)
+- [x] Tabla `Usuario_LogRBACVerificacion` creada (auditoría RBAC)
+- [x] 11 módulos insertados en `Usuario_Modulos`
+- [x] 6 acciones insertadas en `Usuario_Acciones`
+- [x] 4 roles insertados en `Usuario_Roles` (DIRECCION, GERENTE_OPS, OPERADOR, AUDITOR)
+- [x] 95 registros en `Usuario_PermisosRolModulo` (matriz de permisos)
+- [x] 598 registros migrados de `rbac_audit_log` a SQL
+- [x] `/app/backend/core/rbac/repository.py` migrado a SQL-first
+- [x] `/app/backend/core/rbac/repository_sql.py` creado
+- [x] `/app/backend/core/rbac/service.py` actualizado (LEGACY_ROLE_MAPPING)
+- [x] **MongoDB ya NO es fuente de datos para RBAC**
+- [x] Validaciones: Login ✓, Permisos ✓, Roles ✓, Usuarios ✓, Servidores ✓
+- [x] Reporte: `/app/docs/reports/FASE_4B_RBAC_PROPUESTA_TECNICA.md`
+
+**✅ Flujo RBAC ahora es 100% EDARSAHUB SQL:**
+- Usuario_Roles (roles del sistema)
+- Usuario_RolesAsignacion (asignaciones usuario-rol)
+- Usuario_Modulos (módulos del sistema)
+- Usuario_Acciones (acciones del sistema)
+- Usuario_PermisosRolModulo (matriz de permisos)
+- Usuario_LogRBACVerificacion (auditoría)
+
+**Conteos Finales FASE 4B-RBAC:**
+| Tabla | Registros |
+|-------|-----------|
+| Usuario_Roles | 13 |
+| Usuario_Modulos | 19 |
+| Usuario_Acciones | 16 |
+| Usuario_PermisosRolModulo | 95 |
+| Usuario_RolesAsignacion | 13 (11 activos) |
+| Usuario_LogRBACVerificacion | 599 |
+
+---
+
 ## Fases Pendientes (P1) - Requieren Autorización
+
+### P1: FASE 4B - Migración Restante
+- [ ] FASE 4B-FASE2_OPERATIVO: Migrar módulo fase2_operativo (118 refs MongoDB)
+- [ ] FASE 4B-COMERCIAL_CACHE: Migrar cache comercial (12 refs MongoDB)
 
 ---
 
 ## Fases Futuras (P1/P2)
 
 ### P1: Migración de Entidades
-- P1.4-D2: server_sucursales_config
-- FASE 3: Empresas/Sucursales/Mapeos
-- FASE 4: Reglas de negocio
+- FASE 4B-FASE2_OPERATIVO: Tareas/Workflows inventario
+- FASE 4B-COMERCIAL_CACHE: Cache KPIs comercial
 
 ### P2: Hardening y Limpieza
 - FASE 5-6: Eliminación total de fallback MongoDB
@@ -401,6 +448,10 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 - `/app/docs/reports/FASE3FG_AUDITORIA_FINAL_EMPRESAS_SUCURSALES_CONTEXTO_SQL.md`
 - `/app/docs/reports/FASE3H_SECURITY_ALCANCE_HELPER_SQL.md`
 - `/app/docs/reports/FASE3I_PASSWORD_RESET_SQL.md`
+- `/app/docs/reports/AUTH_RESET_P2_RATE_LIMIT_AUDIT_SQL.md`
+- `/app/docs/reports/VENTAS_DIA_CAMBIO_ARQUITECTONICO.md`
+- `/app/docs/reports/FASE_4A_DIAGNOSTICO_REGLAS_VIVAS_MONGODB.md`
+- `/app/docs/reports/FASE_4B_RBAC_PROPUESTA_TECNICA.md`
 - `/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md`
 
 ---
@@ -434,7 +485,7 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 
 ---
 
-*Última actualización: 14-May-2026 - RBAC-CLOSE-001 Completada*
+*Última actualización: 14-May-2026 - FASE 4B-RBAC Completada*
 
 ## ✅ RBAC-CLOSE-001 COMPLETADA (14-May-2026)
 

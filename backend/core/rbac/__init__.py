@@ -1,14 +1,26 @@
 """
 EDARSA HUB - RBAC (Role-Based Access Control) Core Module
 ==========================================================
-Fase 2D - Sistema de control de acceso granular basado en roles.
+FASE 4B-RBAC: Sistema de control de acceso granular basado en roles.
+
+MIGRACIÓN COMPLETADA: RBAC ahora usa EDARSAHUB SQL Server como fuente única.
+MongoDB ya NO es fuente de datos para RBAC.
 
 Componentes:
 - schemas.py: Modelos Pydantic para roles, permisos y asignaciones
-- repository.py: Acceso a datos MongoDB
+- repository.py: Proxy que delega a repository_sql.py
+- repository_sql.py: Acceso a datos EDARSAHUB SQL Server
 - service.py: Motor de autorización central
 - middleware.py: Decoradores y middleware para FastAPI
 - routes.py: Endpoints de administración RBAC
+
+Tablas SQL:
+- Usuario_Roles
+- Usuario_RolesAsignacion
+- Usuario_Modulos
+- Usuario_Acciones
+- Usuario_PermisosRolModulo
+- Usuario_LogRBACVerificacion
 """
 
 from .schemas import (
