@@ -313,7 +313,35 @@ AUTH_SQL_FIRST_ENABLED=true  (ya no controla fallback, SQL es único)
 
 ---
 
-*Última actualización: 13-May-2026 - FASE RBAC-SCOPE-E Completada*
+*Última actualización: 14-May-2026 - FASE RBAC-SCOPE-F Completada*
+
+## ✅ RBAC-SCOPE-F COMPLETADA (14-May-2026)
+
+**Objetivo:** Validar modal de permisos completo (lectura/escritura SQL) y persistencia e2e.
+
+**Validaciones realizadas:**
+- ✅ GET /api/users devuelve 11 usuarios
+- ✅ Modal de permisos muestra servidores disponibles
+- ✅ Servidor asignado (CIENFUEGOS) aparece marcado
+- ✅ PUT /api/users/{id}/permissions responde HTTP 200
+- ✅ Permisos persisten en SQL tras modificación
+- ✅ API recarga datos actualizados desde SQL
+- ✅ MongoDB NO fue modificado
+- ✅ No hay duplicados activos en las 3 tablas
+- ✅ Auth SQL-first sigue funcionando
+- ✅ Login y JWT sin cambios
+
+**Usuarios probados:**
+- admin@inventario.com (8 servidores)
+- carlosruz@edarsa.com.mx (1 servidor, 2 almacenes)
+- noxte@alpyc.com (1 servidor, 2 sucursales, 5 almacenes)
+- auditoria@edarsa.com.mx (3 servidores, 2 sucursales, 20 almacenes)
+- carlos@alpuntoycoma.mx (sin permisos)
+- eduardo@alpuntoycoma.mx (sin permisos)
+
+**Reporte:** `/app/docs/reports/RBAC_SCOPE_F_VALIDACION_E2E_MODAL_PERMISOS_SQL.md`
+
+---
 
 ## ✅ RBAC-SCOPE-E COMPLETADA (13-May-2026)
 
@@ -487,9 +515,13 @@ Las siguientes funciones SIGUEN usando MongoDB y deben migrarse en fases futuras
 - [ ] Verificar que los cambios persisten al recargar
 - [ ] Validar que no hay errores de UI ni consola
 
-### RBAC-SCOPE-G (FUTURA)
+### RBAC-SCOPE-G (SIGUIENTE - Pendiente autorización)
 **Objetivo:** Eliminar dependencia MongoDB del módulo Usuarios/Roles.
 - [ ] Migrar `create_user()` a SQL
 - [ ] Migrar `update_user()` a SQL
 - [ ] Migrar `deactivate_user()` a SQL
 - [ ] Eliminar código MongoDB residual
+
+**Prerequisitos completados:**
+- ✅ RBAC-SCOPE-E (Escritura permisos a SQL)
+- ✅ RBAC-SCOPE-F (Validación e2e modal permisos)
