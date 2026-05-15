@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap, Building2, Eye, EyeOff, RefreshCw, GripVertical, TestTube2, AlertTriangle, Play, Table2, LayoutGrid, List } from 'lucide-react';
+import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap, Building2, Eye, EyeOff, RefreshCw, GripVertical, TestTube2, AlertTriangle, Play, Table2, LayoutGrid, List, Minus, Maximize2, X, Move } from 'lucide-react';
 import { toast } from 'sonner';
 import QueryConfigWizard from '@/components/QueryConfigWizard';
 import UniversalQueryTester from '@/components/UniversalQueryTester';
@@ -151,6 +151,8 @@ const Servidores = () => {
   const [sqlModalPosition, setSqlModalPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [apiModalMinimized, setApiModalMinimized] = useState(false);
+  const [sqlModalMinimized, setSqlModalMinimized] = useState(false);
   
   // Estado para tipos de sistema (cargados desde catálogo)
   const [tiposSistema, setTiposSistema] = useState([]);
@@ -549,23 +551,29 @@ const Servidores = () => {
         e.target.closest('button') || e.target.closest('input')) {
       return;
     }
+    e.preventDefault();
     setIsDragging(true);
-    const rect = e.currentTarget.closest('[role="dialog"]').getBoundingClientRect();
-    setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    });
+    const dialog = e.currentTarget.closest('[role="dialog"]');
+    if (dialog) {
+      const rect = dialog.getBoundingClientRect();
+      setDragOffset({
+        x: e.clientX - rect.left - rect.width / 2,
+        y: e.clientY - rect.top - rect.height / 2
+      });
+    }
   };
 
   const handleDrag = useCallback((e, setPosition) => {
     if (!isDragging) return;
+    e.preventDefault();
     
-    const newX = e.clientX - dragOffset.x - window.innerWidth / 2 + 250;
-    const newY = e.clientY - dragOffset.y - window.innerHeight / 2 + 200;
+    // Calcular posición relativa al centro de la pantalla
+    const newX = e.clientX - window.innerWidth / 2 - dragOffset.x;
+    const newY = e.clientY - window.innerHeight / 2 - dragOffset.y;
     
-    // Limitar para que no salga de pantalla
-    const maxX = window.innerWidth / 2 - 100;
-    const maxY = window.innerHeight / 2 - 50;
+    // Limitar para que no salga de pantalla (margen de 50px)
+    const maxX = window.innerWidth / 2 - 200;
+    const maxY = window.innerHeight / 2 - 100;
     
     setPosition({
       x: Math.max(-maxX, Math.min(maxX, newX)),
@@ -580,12 +588,23 @@ const Servidores = () => {
   // Reset posición cuando se cierra el modal
   const resetApiModalPosition = () => {
     setApiModalPosition({ x: 0, y: 0 });
+    setApiModalMinimized(false);
     setApiDialogOpen(false);
   };
 
   const resetSqlModalPosition = () => {
     setSqlModalPosition({ x: 0, y: 0 });
+    setSqlModalMinimized(false);
     setDialogOpen(false);
+  };
+
+  // Restaurar al centro
+  const centerApiModal = () => {
+    setApiModalPosition({ x: 0, y: 0 });
+  };
+
+  const centerSqlModal = () => {
+    setSqlModalPosition({ x: 0, y: 0 });
   };
 
   const loadServers = async () => {
@@ -1925,40 +1944,88 @@ const Servidores = () => {
       {/* Dialog para agregar/editar Conexión API */}
       <Dialog open={apiDialogOpen} onOpenChange={(open) => { if (!open) resetApiModalPosition(); else setApiDialogOpen(true); }}>
         <DialogContent 
-          className="max-w-lg flex flex-col max-h-[90vh]"
+          className={`max-w-lg flex flex-col transition-all duration-200 ${
+            apiModalMinimized 
+              ? 'max-h-16 overflow-hidden' 
+              : 'max-h-[85vh]'
+          }`}
           style={{
             transform: `translate(${apiModalPosition.x}px, ${apiModalPosition.y}px)`,
-            transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+            transition: isDragging ? 'none' : 'transform 0.15s ease-out',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
           }}
           onMouseMove={(e) => isDragging && handleDrag(e, setApiModalPosition)}
           onMouseUp={handleDragEnd}
           onMouseLeave={handleDragEnd}
         >
-          <DialogHeader 
-            className="cursor-move select-none border-b border-zinc-100 pb-3"
+          {/* Header arrastrable con controles de ventana */}
+          <div 
+            className="flex items-center justify-between border-b border-zinc-200 pb-3 cursor-move select-none bg-zinc-50 -mx-6 -mt-6 px-6 pt-4 rounded-t-lg"
             onMouseDown={(e) => handleDragStart(e, setApiModalPosition)}
           >
-            <DialogTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
-              {editingApi ? 'Editar Conexión API' : 'Nueva Conexión API'}
-              <span className="ml-auto text-xs text-zinc-400 font-normal">(arrastra para mover)</span>
-            </DialogTitle>
-            <DialogDescription>
-              Configura la conexión a una API local para obtener ventas en tiempo real
-            </DialogDescription>
-          </DialogHeader>
-          
-          {/* Cuerpo con scroll */}
-          <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0">
-            <div className="space-y-2">
-              <Label htmlFor="api_name">Nombre</Label>
-              <Input
-                id="api_name"
-                value={apiFormData.name}
-                onChange={(e) => setApiFormData({...apiFormData, name: e.target.value})}
-                placeholder="130° QRO LOCAL"
-              />
+            <div className="flex items-center gap-2">
+              <Move className="h-4 w-4 text-zinc-400" />
+              <Globe className="h-5 w-5 text-zinc-700" />
+              <span className="font-semibold text-zinc-800">
+                {editingApi ? 'Editar Conexión API' : 'Nueva Conexión API'}
+              </span>
             </div>
+            
+            {/* Controles de ventana */}
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-zinc-200"
+                onClick={centerApiModal}
+                title="Centrar ventana"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-zinc-200"
+                onClick={() => setApiModalMinimized(!apiModalMinimized)}
+                title={apiModalMinimized ? "Restaurar" : "Minimizar"}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600"
+                onClick={resetApiModalPosition}
+                title="Cerrar"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Contenido (oculto cuando minimizado) */}
+          {!apiModalMinimized && (
+            <>
+              <DialogHeader className="pt-3">
+                <DialogDescription>
+                  Configura la conexión a una API local para obtener ventas en tiempo real
+                </DialogDescription>
+              </DialogHeader>
+              
+              {/* Cuerpo con scroll */}
+              <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0 max-h-[60vh]">
+                <div className="space-y-2">
+                  <Label htmlFor="api_name">Nombre</Label>
+                  <Input
+                    id="api_name"
+                    value={apiFormData.name}
+                    onChange={(e) => setApiFormData({...apiFormData, name: e.target.value})}
+                    placeholder="130° QRO LOCAL"
+                  />
+                </div>
             
             <div className="space-y-2">
               <Label htmlFor="api_url">URL del Endpoint</Label>
@@ -2251,7 +2318,7 @@ const Servidores = () => {
           
           {/* Footer fijo con botones */}
           <DialogFooter className="border-t border-zinc-100 pt-4 mt-2 flex-shrink-0">
-            <Button variant="outline" onClick={() => setApiDialogOpen(false)}>
+            <Button variant="outline" onClick={resetApiModalPosition}>
               Cancelar
             </Button>
             <Button 
@@ -2277,7 +2344,7 @@ const Servidores = () => {
                       toast.success('Conexión agregada');
                     }
                   }
-                  setApiDialogOpen(false);
+                  resetApiModalPosition();
                 } catch (error) {
                   console.error('Error guardando conexión API:', error);
                   toast.error('Error al guardar conexión');
@@ -2288,52 +2355,102 @@ const Servidores = () => {
               {editingApi ? 'Guardar Cambios' : 'Agregar Conexión'}
             </Button>
           </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
       {/* Add/Edit Server Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) { resetForm(); resetSqlModalPosition(); } else setDialogOpen(true); }}>
         <DialogContent 
-          className="max-w-2xl flex flex-col max-h-[90vh]"
+          className={`max-w-2xl flex flex-col transition-all duration-200 ${
+            sqlModalMinimized 
+              ? 'max-h-16 overflow-hidden' 
+              : 'max-h-[85vh]'
+          }`}
           style={{
             transform: `translate(${sqlModalPosition.x}px, ${sqlModalPosition.y}px)`,
-            transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+            transition: isDragging ? 'none' : 'transform 0.15s ease-out',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
           }}
           onMouseMove={(e) => isDragging && handleDrag(e, setSqlModalPosition)}
           onMouseUp={handleDragEnd}
           onMouseLeave={handleDragEnd}
         >
-          <DialogHeader 
-            className="cursor-move select-none border-b border-zinc-100 pb-3"
+          {/* Header arrastrable con controles de ventana */}
+          <div 
+            className="flex items-center justify-between border-b border-zinc-200 pb-3 cursor-move select-none bg-zinc-50 -mx-6 -mt-6 px-6 pt-4 rounded-t-lg"
             onMouseDown={(e) => handleDragStart(e, setSqlModalPosition)}
           >
-            <DialogTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              {editingServer ? 'Editar Servidor' : 'Agregar Nuevo Servidor'}
-              <span className="ml-auto text-xs text-zinc-400 font-normal">(arrastra para mover)</span>
-            </DialogTitle>
-            <DialogDescription>
-              {editingServer ? 'Modifica los parámetros de conexión' : 'Configura la conexión a un servidor SQL'}
-            </DialogDescription>
-          </DialogHeader>
+            <div className="flex items-center gap-2">
+              <Move className="h-4 w-4 text-zinc-400" />
+              <Database className="h-5 w-5 text-zinc-700" />
+              <span className="font-semibold text-zinc-800">
+                {editingServer ? 'Editar Servidor' : 'Agregar Nuevo Servidor'}
+              </span>
+            </div>
+            
+            {/* Controles de ventana */}
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-zinc-200"
+                onClick={centerSqlModal}
+                title="Centrar ventana"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-zinc-200"
+                onClick={() => setSqlModalMinimized(!sqlModalMinimized)}
+                title={sqlModalMinimized ? "Restaurar" : "Minimizar"}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600"
+                onClick={() => { resetForm(); resetSqlModalPosition(); }}
+                title="Cerrar"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
           
-          {/* Cuerpo con scroll */}
-          <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nombre</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  required
-                  placeholder="Mi Servidor"
-                  data-testid="server-name-input"
-                />
-              </div>
+          {/* Contenido (oculto cuando minimizado) */}
+          {!sqlModalMinimized && (
+            <>
+              <DialogHeader className="pt-3">
+                <DialogDescription>
+                  {editingServer ? 'Modifica los parámetros de conexión' : 'Configura la conexión a un servidor SQL'}
+                </DialogDescription>
+              </DialogHeader>
               
-              <div className="space-y-2">
-                <Label htmlFor="system_type">Tipo de Sistema</Label>
+              {/* Cuerpo con scroll */}
+              <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0 max-h-[55vh]">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nombre</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      required
+                      placeholder="Mi Servidor"
+                      data-testid="server-name-input"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="system_type">Tipo de Sistema</Label>
                 <Select 
                   value={formData.system_type} 
                   onValueChange={handleTipoSistemaChange}
