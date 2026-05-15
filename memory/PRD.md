@@ -1719,3 +1719,46 @@ Autorizar ejecución del DML seed para cargar las 17 consultas en ConsultasSQL_C
 ### Reporte:
 `/app/docs/reports/FASE_1A_SANITIZACION_SQL_REPORTE.md`
 
+---
+
+## FASE 2 CATÁLOGO SQL - DML EJECUTADO (15-May-2026)
+
+### Consultas Cargadas en ConsultasSQL_Catalogo: 20
+
+| Sistema | Cantidad |
+|---------|----------|
+| SoftRestaurant | 14 |
+| MPRO | 6 |
+
+| Módulo | Cantidad |
+|--------|----------|
+| Ventas | 12 |
+| Compras | 5 |
+| Pagos | 2 |
+| Inventarios | 1 |
+
+### Parámetros Cargados: 38
+- fecha_ini: 18 usos
+- fecha_fin: 18 usos
+- fecha: 1 uso
+- almacen: 1 uso
+
+### Validaciones:
+- ✅ Sin duplicados
+- ✅ Sin SQL nulo
+- ✅ Sin palabras prohibidas (DELETE, UPDATE, INSERT, DROP, etc.)
+- ✅ Todas SoloLectura=1
+- ✅ Todas Activo=1
+- ✅ ConfigOrigen='LEGACY_PYTHON'
+
+### Backend Operativo:
+- ✅ Login funciona
+- ✅ /api/servers funciona
+- ✅ Catálogo legacy sin cambios
+
+### Reporte:
+`/app/docs/reports/FASE_2_DML_CONSULTAS_SQL_CATALOGO_EJECUCION.md`
+
+### Próxima Fase:
+FASE 3: Repository SQL-First para Consultas
+
