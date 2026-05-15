@@ -1762,3 +1762,78 @@ Autorizar ejecución del DML seed para cargar las 17 consultas en ConsultasSQL_C
 ### Próxima Fase:
 FASE 3: Repository SQL-First para Consultas
 
+---
+
+## FASE 3 REPOSITORY SQL-FIRST - COMPLETADA (15-May-2026)
+
+### Módulo Creado: `/app/backend/modules/consultas_sql/`
+
+| Archivo | Descripción |
+|---------|-------------|
+| `__init__.py` | Exports públicos |
+| `models.py` | Modelos Pydantic/dataclass |
+| `validator.py` | Validador SQL estricto |
+| `repository.py` | Acceso a datos SQL |
+| `service.py` | Lógica de negocio |
+| `README.md` | Documentación |
+
+### Clases Creadas:
+- `ConsultaSQLCatalogo`, `ConsultaSQLParametro`, `ConsultaSQLVersion`, `ConsultaSQLServidor`
+- `ConsultaSQLFilter`, `ConsultaSQLValidationResult`
+- `SQLValidator`, `ConsultasSQLRepository`, `ConsultasSQLService`
+
+### Validador SQL Estricto:
+- Solo SELECT/WITH permitidos
+- Palabras bloqueadas: DELETE, UPDATE, INSERT, DROP, ALTER, TRUNCATE, EXEC, CREATE, MERGE, GRANT, REVOKE, DENY, BACKUP, RESTORE, DBCC, xp_, sp_
+- Múltiples statements bloqueados
+- Comentarios detectados
+
+### Script de Validación:
+`/app/backend/scripts/validate_consultas_sql_repository.py`
+
+### Resultados Validación:
+- 18/18 checks pasados
+- 20/20 consultas validadas
+- 38/38 parámetros confirmados
+- 14 SoftRestaurant + 6 MPRO
+- 4 módulos: Compras, Inventarios, Pagos, Ventas
+
+### Confirmaciones:
+- ✅ No se modificó frontend
+- ✅ No se modificaron endpoints legacy
+- ✅ No se ejecutaron consultas LIVE
+- ✅ No se escribió en MongoDB
+- ✅ Backend operativo
+
+### Reporte:
+`/app/docs/reports/FASE_3_REPOSITORY_CONSULTAS_SQL_SQLFIRST.md`
+
+### Próxima Fase:
+FASE 4: Endpoints /api/consultas-sql/*
+
+---
+
+## Tareas Pendientes
+
+### P0 - Sanitización SQL FASE 1B (Pausada por FASE 3)
+| ID | Riesgo | Endpoint | Parámetro |
+|----|--------|----------|-----------|
+| A01 | ALTO | /almacenes | sucursal_id |
+| A02 | ALTO | /operativo/inventario-mpro | almacen |
+| A03 | ALTO | /explorador/tabla | tabla |
+| A04 | ALTO | /operativo/analisis-inventario | folios |
+
+### P1 - FASE 3A: Ventas por Hora/Día de Semana
+- Implementar lógica SQL en EDARSAHUB
+- Lectura de históricos (rango de fechas)
+
+### P2 - Corrección de Fechas Peligrosas
+- 172 instancias de `datetime.now()`, `date.today()` detectadas
+- Centralizar en `get_operational_window()`
+
+### P2 - FASE 4B: Migración Final fuera de MongoDB
+- Deprecar MongoDB como fuente de datos
+
+### P3 - Limpieza de Registros Legacy
+- Eliminar registros duplicados en BD
+
