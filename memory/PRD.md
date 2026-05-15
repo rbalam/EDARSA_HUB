@@ -1983,12 +1983,64 @@ FASE 4: Endpoints /api/consultas-sql/*
 
 ---
 
+## FASE SYNC-2 PRUEBA REAL HISTÓRICOS - COMPLETADA (15-May-2026)
+
+### Resumen:
+| Aspecto | Resultado |
+|---------|-----------|
+| SERVER_SECRET_KEY | ✅ Válida (fingerprint: d60eba8b) |
+| Descifrado de credenciales | ✅ Funcional |
+| Conexión SoftRestaurant | ✅ OK (130° MERIDA) |
+| Conexión MPRO | ✅ OK (ManagmentPro) |
+| Dry-run | ✅ 16/16 registros simulados |
+| Escritura real | ✅ 16/16 registros escritos |
+| Idempotencia | ✅ Validada (2 ejecuciones) |
+| Anti-$0 falso | ✅ Funcionando |
+| Ventana 13:00-11:00 | ✅ Correcta |
+| No regresión | ✅ Login y servicios OK |
+
+### Servidores Probados:
+| ID | Nombre | Tipo | Host |
+|----|--------|------|------|
+| a5547321-... | 130° MERIDA | SoftRestaurant | 130mid.ddns.net |
+| 1b230a06-... | ManagmentPro | MPRO | 54.39.104.176 |
+
+### Datos Escritos en Sync_Ventas_Historicas:
+| Fecha | SR (130° MERIDA) | MPRO (ManagmentPro) |
+|-------|------------------|---------------------|
+| 2026-05-07 | $87,372 (21 tkts) | $98,938 (26 tkts) |
+| 2026-05-08 | $150,247 (37 tkts) | $230,444 (68 tkts) |
+| 2026-05-09 | $181,868 (49 tkts) | $340,787 (116 tkts) |
+| 2026-05-10 | $199,744 (46 tkts) | $400,476 (128 tkts) |
+| 2026-05-11 | $122,962 (24 tkts) | $87,490 (33 tkts) |
+| 2026-05-12 | $87,186 (18 tkts) | $117,376 (42 tkts) |
+| 2026-05-13 | $165,747 (30 tkts) | $122,499 (38 tkts) |
+| 2026-05-14 | $31,693 (6 tkts) | $249,987 (72 tkts) |
+
+### Bitácora Sync_Control_Ejecuciones:
+| Run ID | Status | Procesados | Insertados | Actualizados |
+|--------|--------|------------|------------|--------------|
+| SYNC-...-ccc62d48 (1ra) | SUCCESS | 16 | 16 | 0 |
+| SYNC-...-8c86f4b0 (2da) | SUCCESS | 16 | 0 | 16 |
+
+### Correcciones Aplicadas:
+1. Query MPRO: `Vn_Importe` → `Vn_Precio_Neto_Importe`
+2. Fix empresa_id: `server.get('empresa_id', 0)` → validación explícita de None
+
+### Reporte:
+`/app/docs/reports/FASE_SYNC_2_PRUEBA_REAL_HISTORICOS_REPORTE.md`
+
+**✅ Sistema listo para escalar a todos los servidores en FASE SYNC-3.**
+
+---
+
 ## Próximas Fases Pendientes
 
-### P0 - FASE SYNC-2: Sincronización de Prueba Real
-- Configurar SERVER_SECRET_KEY
-- Probar 1 servidor SR + 1 servidor MPRO
-- Ejecutar sync real últimos 7 días
+### P0 - FASE SYNC-3: Sincronización a Escala
+- Expandir a todos los 8 servidores activos
+- Implementar sync por hora (`Sync_Ventas_PorHora`)
+- Implementar sync por día de semana (`Sync_Ventas_PorDiaSemana`)
+- Histórico 30 días
 
 ### P1 - Ventas por Hora/Día de Semana
 - Implementar lógica SQL en EDARSAHUB

@@ -169,20 +169,25 @@ class SyncHistoricosService:
         ventana_fin: time
     ) -> Optional[Dict]:
         """
-        Obtiene ventas del día para MPRO.
+        Obtiene ventas del día para MPRO (ManagementPro).
         
         PROTECCIÓN ANTI-$0 FALSO:
         - Si falla, retorna None (NO Decimal(0))
+        
+        FASE SYNC-2: Corregido esquema MPRO:
+        - Columna importe: Vn_Precio_Neto_Importe
+        - Estado activo: Es_Cve_Estado = 'AC' (no 'CA')
         """
         try:
             fecha_str = fecha_operacion.strftime('%Y-%m-%d')
             
+            # Query MPRO corregida según esquema real tabla Venta
             query = f"""
             SELECT 
-                ISNULL(SUM(Vn_Importe), 0) as venta_total,
+                ISNULL(SUM(Vn_Precio_Neto_Importe), 0) as venta_total,
                 COUNT(DISTINCT Vn_Folio) as num_tickets
-            FROM venta
-            WHERE Es_Cve_Estado <> 'CA'
+            FROM Venta
+            WHERE Es_Cve_Estado = 'AC'
               AND CAST(Vn_Fecha AS DATE) = '{fecha_str}'
             """
             
@@ -360,9 +365,14 @@ class SyncHistoricosService:
                         continue
                     
                     # Crear registro de venta
+                    # FASE SYNC-2: Asegurar empresa_id no sea None
+                    empresa_id_val = server.get('empresa_id')
+                    if empresa_id_val is None:
+                        empresa_id_val = 0
+                    
                     venta = SyncVentaHistorica(
                         server_id=server_id,
-                        empresa_id=server.get('empresa_id', 0),
+                        empresa_id=empresa_id_val,
                         sucursal_id=server.get('sucursal_id'),
                         unidad_negocio_id=server.get('unidad_negocio_id'),
                         system_type=system_type,
