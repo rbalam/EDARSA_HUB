@@ -324,11 +324,63 @@ def _get_kpis_periodo_edarsahub(
     }
 
 
-def _get_ventas_abiertas_edarsahub(server_id: str, sucursal_id: str = 'DEFAULT') -> Dict:
+def _get_ventas_abiertas_edarsahub(server_id: str, sucursal_id: str = 'DEFAULT', unidad_negocio_id: str = None) -> Dict:
     """
     Obtiene ventas abiertas del día desde Comercial_Ventas_Dia_Abiertas_v2.
     Para modo "Ventas del Día" en Tablero Ejecutivo.
+    
+    FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+    en lugar de simplemente ordenar por snapshot_timestamp DESC.
+    
+    REGLA DE NEGOCIO:
+    - A las 00:30 del día 15, si el restaurante cierra a las 03:00,
+      todavía pertenece a la jornada del día 14.
+    - No se debe mostrar $0 del día 15 si la jornada del 14 sigue abierta.
+    
+    TRANSICIÓN (mientras job se actualiza):
+    - Busca en fecha_operacion calculada O fecha calendario siguiente
+    - Toma el snapshot más reciente con ventas > 0
     """
+    import pytz
+    from datetime import datetime, time as dt_time, timedelta
+    
+    mexico_tz = pytz.timezone('America/Mexico_City')
+    now_mx = datetime.now(mexico_tz)
+    fecha_calendario = now_mx.date().isoformat()
+    
+    # =================================================================
+    # FIX 2026-05-15: Calcular FechaOperacion activa
+    # =================================================================
+    if unidad_negocio_id:
+        # Usar ventana operativa de la unidad específica
+        from core.utils.operational_window import get_operational_window
+        fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_id, now_mx)
+        fecha_operacion = fecha_op_calc.isoformat()
+        logging.info(
+            f"[TABLERO-EDARSAHUB] _get_ventas_abiertas: {unidad_negocio_id} FechaOperacion={fecha_operacion} "
+            f"(hora actual={now_mx.strftime('%H:%M')}, horario={hora_ini}-{hora_fin})"
+        )
+    else:
+        # Sin unidad específica: usar horario por defecto 13:00-03:00
+        hora_actual = now_mx.time()
+        hora_fin_default = dt_time(3, 0, 0)
+        
+        if hora_actual < hora_fin_default:
+            # Estamos entre 00:00 y 03:00: pertenece al día anterior
+            fecha_operacion = (now_mx.date() - timedelta(days=1)).isoformat()
+        else:
+            fecha_operacion = now_mx.date().isoformat()
+        
+        logging.info(
+            f"[TABLERO-EDARSAHUB] _get_ventas_abiertas: server_id={server_id} FechaOperacion default={fecha_operacion} "
+            f"(hora actual={now_mx.strftime('%H:%M')}, usando horario default 13:00-03:00)"
+        )
+    
+    # =================================================================
+    # QUERY ROBUSTA: Buscar en fecha_operacion calculada O fecha calendario
+    # TRANSICIÓN: Mientras el job se actualiza, los datos pueden tener
+    # fecha_operacion = fecha_calendario en lugar de fecha_operacion correcta
+    # =================================================================
     query = f"""
     SELECT TOP 1
         ventas_abiertas,
@@ -343,28 +395,43 @@ def _get_ventas_abiertas_edarsahub(server_id: str, sucursal_id: str = 'DEFAULT')
     FROM Comercial_Ventas_Dia_Abiertas_v2
     WHERE server_id = '{server_id}'
       AND sucursal_id = '{sucursal_id}'
-    ORDER BY snapshot_timestamp DESC
+      AND fecha_operacion IN ('{fecha_operacion}', '{fecha_calendario}')
+    ORDER BY 
+        CASE WHEN fecha_operacion = '{fecha_operacion}' THEN 0 ELSE 1 END,
+        snapshot_timestamp DESC
     """
     result = _query_edarsahub_tablero(query)
     
     if result and len(result) > 0:
         row = result[0]
+        ventas_total = float(row.get('ventas_abiertas') or 0) + float(row.get('ventas_cerradas_dia') or 0)
+        fecha_op_usada = row.get('fecha_operacion')
+        logging.info(
+            f"[TABLERO-EDARSAHUB] _get_ventas_abiertas: server_id={server_id} "
+            f"fecha_op_calculada={fecha_operacion}, fecha_op_db={fecha_op_usada}, ventas=${ventas_total:,.2f}"
+        )
         return {
             'existe': True,
-            'ventas': float(row.get('ventas_abiertas') or 0) + float(row.get('ventas_cerradas_dia') or 0),
+            'ventas': ventas_total,
             'pax': int(row.get('pax_abiertos') or 0) + int(row.get('pax_cerrados_dia') or 0),
             'cheques': int(row.get('tickets_abiertos') or 0) + int(row.get('tickets_cerrados_dia') or 0),
             'snapshot_timestamp': row.get('snapshot_timestamp'),
-            'fecha_operacion': row.get('fecha_operacion')
+            'fecha_operacion': fecha_op_usada,
+            'fecha_operacion_usada': fecha_operacion  # Para debug
         }
     
+    logging.warning(
+        f"[TABLERO-EDARSAHUB] _get_ventas_abiertas: Sin datos para server_id={server_id}, "
+        f"sucursal={sucursal_id}, fecha_op={fecha_operacion}"
+    )
     return {
         'existe': False,
         'ventas': 0,
         'pax': 0,
         'cheques': 0,
         'snapshot_timestamp': None,
-        'fecha_operacion': None
+        'fecha_operacion': None,
+        'fecha_operacion_usada': fecha_operacion
     }
 
 
@@ -992,7 +1059,8 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
     if solo_ventas_dia:
         logging.info(f"[TABLERO-EDARSAHUB] {nombre}: Modo Ventas del Día - consultando snapshot EDARSAHUB")
         
-        ventas_abiertas = _get_ventas_abiertas_edarsahub(server_id, sucursal_id)
+        # FIX 2026-05-15: Pasar unidad_negocio_codigo para calcular FechaOperacion correcta
+        ventas_abiertas = _get_ventas_abiertas_edarsahub(server_id, sucursal_id, unidad_negocio_id=unidad_negocio_codigo)
         
         if ventas_abiertas['existe']:
             ventas = ventas_abiertas['ventas']

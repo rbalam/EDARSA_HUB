@@ -1177,3 +1177,51 @@ Horario QRO: 13:00 - 03:00 (cruza medianoche)
 13:00 del día 15 → FechaOperacion = día 15 (nueva jornada inicia)
 ```
 
+
+
+---
+
+## ✅ FIX COMPLETADO: Regresión Ventas $0 al Cambiar Calendario (15-May-2026 01:00)
+
+### Problema Reportado:
+Después de implementar `operational_window.py`, el Tablero Ejecutivo en modo "Ventas del Día" mostraba $0 cuando el calendario cambió al día 15. Las ventas del día operativo 14 desaparecieron.
+
+### Causa Raíz:
+1. **El job** guardaba correctamente usando `get_operational_window()`, pero...
+2. **Los endpoints de lectura** (`routes.py`, `service.py`, `comercial_v2/routes.py`) usaban `datetime.now().date()` (fecha calendario) en lugar de la fecha operativa.
+3. Resultado: A las 00:32 del día 15, el endpoint buscaba `fecha_operacion = 2026-05-15` pero los datos válidos tenían `fecha_operacion = 2026-05-14`.
+
+### Archivos Corregidos:
+
+#### 1. `/app/backend/modules/comercial/routes.py`
+- Función `get_ventas_dia_snapshot_from_edarsahub()` ahora calcula `FechaOperacion` usando `get_operational_window()`
+- Si `unidad_negocio_id` se provee: usa horario específico de la unidad
+- Si no: usa horario por defecto 13:00-03:00 (el más común del grupo)
+- Nuevo parámetro: `unidad_negocio_id` para cálculo preciso
+
+#### 2. `/app/backend/modules/comercial/service.py`
+- Función `_get_ventas_abiertas_edarsahub()` ahora calcula `FechaOperacion` usando `get_operational_window()`
+- Query modificada para buscar en AMBAS fechas (calculada Y calendario) como fallback de transición
+- Prioriza fecha calculada, pero lee calendario si no hay datos de la fecha operativa
+
+#### 3. `/app/backend/modules/comercial_v2/routes.py`
+- Endpoint `/ventas-dia`: Ahora calcula `FechaOperacion` activa en lugar de `datetime.now().date()`
+- Endpoint `/dashboard`: Ahora usa `fecha_operativa` en lugar de `fecha_hoy` para ventas abiertas
+- Logs añadidos para debug de hora y fecha calculada
+
+### Validación Exitosa:
+
+```
+Hora actual México: 2026-05-15 00:47
+FechaOperacion activa: 2026-05-14 ✅
+
+CIENFUEGOS: ventas=$283,645.00 ✅
+130° MERIDA: ventas=$177,436.00 ✅
+LA ESTELAR: ventas=$153,380.00 ✅
+TOTALES: $614,461.00 ✅
+```
+
+### Regla Implementada:
+> **El endpoint de "Ventas del Día" NUNCA debe usar `datetime.now().date()` directamente.**  
+> Debe calcular la FechaOperacion activa usando `get_operational_window()`.
+

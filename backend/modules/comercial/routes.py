@@ -137,6 +137,12 @@ from modules.comercial.repository import (
     EDARSAHUB_CONFIG,
     USE_SQL_FOR_SERVERS,
 )
+
+# =============================================================================
+# FIX 2026-05-15: Import de Ventana Operativa para FechaOperacion correcta
+# REGLA: El tablero debe mostrar FechaOperacion activa, NO fecha calendario
+# =============================================================================
+from core.utils.operational_window import get_operational_window
 # FASE 3A.2: Import de utilidades de normalización de system_type
 from core.server_registry import list_unidades_negocio
 from core.system_type_utils import (
@@ -247,15 +253,23 @@ async def get_user_context_or_403(current_user: Dict) -> UserAccessContext:
 # de Comercial_Ventas_Dia_Abiertas_v2 en EDARSAHUB como fallback.
 # REGLA: NUNCA mostrar "Fuente no disponible" si hay snapshot válido.
 # =============================================================================
+# FIX 2026-05-15: Usar FechaOperacion activa, NO fecha calendario
+# REGLA DE NEGOCIO: A las 00:30 del día 15, si el restaurante cierra a las 03:00,
+# todavía pertenece a la jornada del día 14. El tablero debe mostrar ventas del 14.
+# =============================================================================
 
-def get_ventas_dia_snapshot_from_edarsahub(server_id: str, fecha_operacion: str = None) -> Dict:
+def get_ventas_dia_snapshot_from_edarsahub(server_id: str, fecha_operacion: str = None, unidad_negocio_id: str = None) -> Dict:
     """
     Obtiene snapshot de ventas del día desde EDARSAHUB.
     Tabla: Comercial_Ventas_Dia_Abiertas_v2
     
+    FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+    en lugar de datetime.now().date() (fecha calendario).
+    
     Args:
         server_id: ID del servidor
-        fecha_operacion: Fecha en formato YYYY-MM-DD (default: hoy)
+        fecha_operacion: Fecha en formato YYYY-MM-DD (si se provee explícitamente)
+        unidad_negocio_id: ID de la unidad para calcular FechaOperacion (opcional, pero recomendado)
     
     Returns:
         Dict con datos del snapshot o None si no existe
@@ -268,13 +282,45 @@ def get_ventas_dia_snapshot_from_edarsahub(server_id: str, fecha_operacion: str 
             'snapshot_timestamp': datetime,
             'estado_dato': 'VIGENTE' | 'DESACTUALIZADO' | 'MUY_DESACTUALIZADO',
             'minutos_desde_sync': int,
-            'fuente': 'EDARSAHUB_SNAPSHOT'
+            'fuente': 'EDARSAHUB_SNAPSHOT',
+            'fecha_operacion_usada': str  # Para debug
         }
     """
     from datetime import datetime, timezone
+    import pytz
     
+    mexico_tz = pytz.timezone('America/Mexico_City')
+    now_mx = datetime.now(mexico_tz)
+    
+    # =================================================================
+    # FIX 2026-05-15: Calcular FechaOperacion activa
+    # =================================================================
     if fecha_operacion is None:
-        fecha_operacion = datetime.now().strftime('%Y-%m-%d')
+        if unidad_negocio_id:
+            # Usar ventana operativa de la unidad específica
+            fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_id, now_mx)
+            fecha_operacion = fecha_op_calc.isoformat()
+            logging.info(
+                f"[EDARSAHUB-SNAPSHOT] {unidad_negocio_id}: FechaOperacion calculada = {fecha_operacion} "
+                f"(hora actual = {now_mx.strftime('%H:%M')}, horario = {hora_ini}-{hora_fin})"
+            )
+        else:
+            # Sin unidad específica: usar horario por defecto 13:00-03:00
+            # que es el más común en el grupo de restaurantes
+            hora_actual = now_mx.time()
+            from datetime import time as dt_time, timedelta
+            hora_fin_default = dt_time(3, 0, 0)
+            
+            if hora_actual < hora_fin_default:
+                # Estamos entre 00:00 y 03:00: pertenece al día anterior
+                fecha_operacion = (now_mx.date() - timedelta(days=1)).isoformat()
+            else:
+                fecha_operacion = now_mx.date().isoformat()
+            
+            logging.info(
+                f"[EDARSAHUB-SNAPSHOT] server_id={server_id}: FechaOperacion default = {fecha_operacion} "
+                f"(hora actual = {now_mx.strftime('%H:%M')}, usando horario default 13:00-03:00)"
+            )
     
     # Query a EDARSAHUB
     query = f"""
@@ -369,7 +415,8 @@ def get_ventas_dia_snapshot_from_edarsahub(server_id: str, fecha_operacion: str 
             'snapshot_timestamp': ultima_sync,
             'estado_dato': estado_dato,
             'minutos_desde_sync': minutos_desde_sync,
-            'fuente': 'EDARSAHUB_SNAPSHOT'
+            'fuente': 'EDARSAHUB_SNAPSHOT',
+            'fecha_operacion_usada': fecha_operacion  # FIX 2026-05-15: Para debug
         }
         
     except Exception as e:

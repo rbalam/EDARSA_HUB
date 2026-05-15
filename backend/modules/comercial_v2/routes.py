@@ -611,16 +611,33 @@ async def comercial_v2_dashboard(
         # COMBINAR CON VENTAS ABIERTAS DEL DÍA ACTUAL
         # =====================================================================
         
-        # CORRECCIÓN: Usar zona horaria de México para fecha operativa
+        # =================================================================
+        # FIX 2026-05-15: Usar FechaOperacion activa, NO fecha calendario
+        # =================================================================
         import pytz
+        from datetime import time as dt_time, timedelta as td
+        
         mexico_tz = pytz.timezone('America/Mexico_City')
-        fecha_hoy = datetime.now(mexico_tz).date()
-        incluye_hoy = fecha_fin >= fecha_hoy
+        now_mx = datetime.now(mexico_tz)
+        
+        # Calcular FechaOperacion usando horario por defecto 13:00-03:00
+        hora_actual = now_mx.time()
+        hora_fin_default = dt_time(3, 0, 0)
+        
+        if hora_actual < hora_fin_default:
+            # Estamos entre 00:00 y 03:00: FechaOperacion = día anterior
+            fecha_operativa = now_mx.date() - td(days=1)
+        else:
+            fecha_operativa = now_mx.date()
+        
+        # Incluye hoy si la fecha_fin incluye la FechaOperacion activa
+        incluye_hoy = fecha_fin >= fecha_operativa
         ventas_abiertas_hoy = []
         
         if incluye_hoy:
-            # Obtener ventas abiertas del día (actualizadas cada 5 min)
-            ventas_abiertas_hoy = get_ventas_dia_abiertas(fecha_hoy, unidades_permitidas)
+            # Obtener ventas abiertas del día operativo (actualizadas cada 5 min)
+            logger.info(f"[V2-DASHBOARD] Consultando ventas abiertas para FechaOperacion={fecha_operativa}")
+            ventas_abiertas_hoy = get_ventas_dia_abiertas(fecha_operativa, unidades_permitidas)
         
         # =====================================================================
         # UNIÓN DE UNIDADES: CERRADAS + ABIERTAS
@@ -1111,7 +1128,7 @@ async def comercial_v2_kpis_mensuales(
 
 @router.get("/ventas-dia", response_model=VentasDiaResponse)
 async def comercial_v2_ventas_dia(
-    fecha: date = Query(default=None, description="Fecha (default: hoy)"),
+    fecha: date = Query(default=None, description="Fecha (default: FechaOperacion activa)"),
     current_user: dict = Depends(get_current_user_dual_dependency())
 ):
     """
@@ -1127,6 +1144,10 @@ async def comercial_v2_ventas_dia(
     - dato_vencido si última actualización > 10 minutos
     - NO mostrar $0 falso si no hay dato sincronizado válido
     
+    FIX 2026-05-15: Calcula FechaOperacion activa usando operational_window.py
+    - A las 00:30 del día 15, si el restaurante cierra a las 03:00, muestra ventas del día 14
+    - No usa fecha calendario simple
+    
     Retorna:
     - total_estimado_dia: Total del día (abiertas + cerradas)
     - snapshot_timestamp: Última actualización del dato
@@ -1135,10 +1156,34 @@ async def comercial_v2_ventas_dia(
     """
     try:
         if fecha is None:
-            # CORRECCIÓN: Usar zona horaria de México para calcular fecha operativa
+            # =================================================================
+            # FIX 2026-05-15: Usar FechaOperacion activa, NO fecha calendario
+            # =================================================================
+            # REGLA: A las 00:30 del día 15, si el horario es 13:00-03:00,
+            # la jornada del día 14 sigue abierta y eso es lo que debe mostrar.
             import pytz
+            from datetime import time as dt_time, timedelta as td
+            from core.utils.operational_window import get_operational_window
+            
             mexico_tz = pytz.timezone('America/Mexico_City')
-            fecha = datetime.now(mexico_tz).date()
+            now_mx = datetime.now(mexico_tz)
+            
+            # Usar horario por defecto 13:00-03:00 para calcular fecha operativa global
+            # (todas las unidades del grupo usan este horario aproximadamente)
+            hora_actual = now_mx.time()
+            hora_fin_default = dt_time(3, 0, 0)
+            
+            if hora_actual < hora_fin_default:
+                # Estamos entre 00:00 y 03:00: FechaOperacion = día anterior
+                fecha = now_mx.date() - td(days=1)
+                logger.info(
+                    f"[V2-VENTAS-DIA] FechaOperacion={fecha} (hora actual={now_mx.strftime('%H:%M')}, antes de cierre 03:00)"
+                )
+            else:
+                fecha = now_mx.date()
+                logger.info(
+                    f"[V2-VENTAS-DIA] FechaOperacion={fecha} (hora actual={now_mx.strftime('%H:%M')}, después de apertura)"
+                )
         
         unidades_permitidas = await get_unidades_permitidas_v2(current_user)
         
