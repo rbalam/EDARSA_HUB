@@ -6,14 +6,20 @@ de una unidad de negocio basándose en sus horarios de servicio configurados.
 
 REGLA DE NEGOCIO:
 - El día operativo de un restaurante NO cambia automáticamente a las 00:00
-- Si el restaurante opera de 13:00 a 03:00, a las 02:00 del día 15 todavía
+- Si el restaurante opera de 13:00 a 11:00, a las 02:00 del día 15 todavía
   pertenece al día operativo 14
-- Solo después del cierre operativo (ej: 03:00) inicia el nuevo día operativo
+- Solo después del cierre operativo (ej: 11:00) inicia el nuevo día operativo
 
-Ejemplo con horario 13:00 - 03:00:
+VENTANA OPERATIVA DEFAULT: 13:00 - 11:00 (cruza medianoche)
+- FASE SYNC-1: Actualizado de 03:00 a 11:00 según autorización
+- PREPARACIÓN: Futuro módulo de Horarios de Operación permitirá configurar por unidad
+
+Ejemplo con horario 13:00 - 11:00:
 - 14:00 del día 15 → fecha_operacion = 15 (dentro de jornada del 15)
 - 02:00 del día 15 → fecha_operacion = 14 (jornada del 14 no ha cerrado)
-- 04:00 del día 15 → fecha_operacion = 15 (jornada del 14 ya cerró)
+- 10:00 del día 15 → fecha_operacion = 14 (jornada del 14 no ha cerrado)
+- 12:00 del día 15 → fecha_operacion = 14 (cerrado, pertenece a última jornada)
+- 13:00 del día 15 → fecha_operacion = 15 (nueva jornada del 15 inicia)
 
 Autor: Sistema EDARSAHUB
 Fecha: 2026-05-15
@@ -154,14 +160,16 @@ def get_operational_window(
     horario = _get_horario_unidad(unidad_negocio_id, dia_semana)
     
     if horario is None:
-        # Sin configuración: usar horario por defecto (13:00 - 03:00)
+        # Sin configuración: usar horario por defecto (13:00 - 11:00)
+        # FASE SYNC-1: Actualizado de 03:00 a 11:00 según autorización
+        # PREPARACIÓN: Futuro módulo de Horarios de Operación permitirá configurar por unidad
         logger.warning(
             f"[OPERATIONAL_WINDOW] {unidad_negocio_id}: Sin horario configurado, "
-            f"usando default 13:00-03:00"
+            f"usando default 13:00-11:00"
         )
         horario = {
             'hora_inicio': time(13, 0, 0),
-            'hora_fin': time(3, 0, 0),
+            'hora_fin': time(11, 0, 0),
             'cruza_medianoche': True
         }
     
@@ -323,3 +331,105 @@ def debug_operational_window(unidad_negocio_id: str):
     print(f"  Dentro de horario operativo: {dentro}")
     
     return fecha_op
+
+
+# ============================================================================
+# FASE SYNC-1: Funciones para sincronización histórica
+# ============================================================================
+
+# Constantes de ventana operativa default
+# NOTA: Preparado para futuro módulo de Horarios de Operación por unidad
+DEFAULT_VENTANA_INICIO_HORA = 13  # 13:00
+DEFAULT_VENTANA_FIN_HORA = 11     # 11:00 del día siguiente
+DEFAULT_CRUZA_MEDIANOCHE = True
+
+
+def get_sync_operational_window(
+    timestamp: datetime,
+    ventana_inicio_hora: int = DEFAULT_VENTANA_INICIO_HORA,
+    ventana_fin_hora: int = DEFAULT_VENTANA_FIN_HORA,
+    cruza_medianoche: bool = DEFAULT_CRUZA_MEDIANOCHE
+) -> Tuple[date, time, time, bool]:
+    """
+    Calcula la ventana operativa para sincronización histórica.
+    
+    FASE SYNC-1: Función específica para procesos de sincronización.
+    Permite pasar parámetros explícitos de ventana para preparar
+    futuro módulo de Horarios de Operación por unidad.
+    
+    Args:
+        timestamp: Momento a evaluar (debe tener timezone México)
+        ventana_inicio_hora: Hora de inicio (default 13)
+        ventana_fin_hora: Hora de fin (default 11)
+        cruza_medianoche: Si la jornada cruza medianoche (default True)
+    
+    Returns:
+        Tuple con:
+        - fecha_operacion: La fecha operativa calculada
+        - hora_inicio: time de inicio de jornada
+        - hora_fin: time de fin de jornada
+        - cruza_medianoche: bool
+    
+    Ejemplo con ventana 13:00-11:00:
+        timestamp = 2026-05-15 02:00:00 México
+        → fecha_operacion = 2026-05-14 (jornada del 14 no ha cerrado a las 11:00)
+    """
+    # Asegurar timezone México
+    if timestamp.tzinfo is None:
+        timestamp = MEXICO_TZ.localize(timestamp)
+    else:
+        timestamp = timestamp.astimezone(MEXICO_TZ)
+    
+    fecha_calendario = timestamp.date()
+    hora_actual = timestamp.time()
+    
+    hora_inicio = time(ventana_inicio_hora, 0, 0)
+    hora_fin = time(ventana_fin_hora, 0, 0)
+    
+    # Calcular FechaOperacion
+    if cruza_medianoche:
+        # Jornada cruza medianoche (ej: 13:00 - 11:00)
+        if hora_actual < hora_fin:
+            # Antes del cierre: pertenece al día ANTERIOR
+            fecha_operacion = fecha_calendario - timedelta(days=1)
+        elif hora_actual >= hora_inicio:
+            # Después de apertura: día actual
+            fecha_operacion = fecha_calendario
+        else:
+            # Entre cierre (11:00) y apertura (13:00): cerrado
+            # Pertenece al día anterior (última jornada que cerró)
+            fecha_operacion = fecha_calendario - timedelta(days=1)
+    else:
+        # Jornada NO cruza medianoche
+        if hora_actual < hora_inicio:
+            fecha_operacion = fecha_calendario - timedelta(days=1)
+        else:
+            fecha_operacion = fecha_calendario
+    
+    return fecha_operacion, hora_inicio, hora_fin, cruza_medianoche
+
+
+def get_mexico_now() -> datetime:
+    """
+    Obtiene el timestamp actual en zona horaria México.
+    
+    FASE SYNC-1: Usar en lugar de datetime.now() o datetime.utcnow().
+    """
+    return datetime.now(MEXICO_TZ)
+
+
+def get_fecha_operacion_now(
+    ventana_inicio_hora: int = DEFAULT_VENTANA_INICIO_HORA,
+    ventana_fin_hora: int = DEFAULT_VENTANA_FIN_HORA
+) -> date:
+    """
+    Calcula la fecha operativa para el momento actual.
+    
+    FASE SYNC-1: Conveniencia para obtener fecha_operacion sin crear timestamp.
+    """
+    now = get_mexico_now()
+    fecha_op, _, _, _ = get_sync_operational_window(
+        now, ventana_inicio_hora, ventana_fin_hora
+    )
+    return fecha_op
+

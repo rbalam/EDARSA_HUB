@@ -1943,11 +1943,52 @@ FASE 4: Endpoints /api/consultas-sql/*
 
 ---
 
+## FASE SYNC-1 INFRAESTRUCTURA HISTÓRICOS - COMPLETADA (15-May-2026)
+
+### Resumen:
+| Componente | Estado |
+|------------|--------|
+| Módulo `sync_historicos` | ✅ Creado |
+| Tablas Sync_* en EDARSAHUB | ✅ Creadas |
+| Ventana operativa 13:00-11:00 | ✅ Configurada |
+| Protección anti-$0 falso | ✅ Verificada |
+| UPSERT idempotente | ✅ Implementado |
+
+### Tablas Creadas:
+- `Sync_Ventas_Historicas`
+- `Sync_Ventas_PorHora`
+- `Sync_Ventas_PorDiaSemana`
+- `Sync_Control_Ejecuciones`
+
+### Módulo:
+```
+/app/backend/modules/sync_historicos/
+├── __init__.py
+├── models.py
+├── repository.py
+├── service.py
+├── sync_ventas.py
+└── README.md
+```
+
+### Ventana Operativa:
+- Default: 13:00 - 11:00 (cruza medianoche)
+- Helper actualizado en `core/utils/operational_window.py`
+- Preparado para futuro módulo de Horarios de Operación
+
+### Reporte:
+`/app/docs/reports/FASE_SYNC_1_INFRAESTRUCTURA_HISTORICOS_REPORTE.md`
+
+**✅ Infraestructura lista para FASE SYNC-2 (prueba con servidores reales).**
+
+---
+
 ## Próximas Fases Pendientes
 
-### P1 - FASE SYNC: Sincronización de Históricos
-- Propuesta aprobada: `/app/docs/proposals/PROP_SYNC_HISTORICOS_EDARSAHUB.md`
-- Inventarios, Almacenes, Ventas a EDARSAHUB
+### P0 - FASE SYNC-2: Sincronización de Prueba Real
+- Configurar SERVER_SECRET_KEY
+- Probar 1 servidor SR + 1 servidor MPRO
+- Ejecutar sync real últimos 7 días
 
 ### P1 - Ventas por Hora/Día de Semana
 - Implementar lógica SQL en EDARSAHUB
