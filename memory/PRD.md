@@ -2062,6 +2062,12 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 ### Reporte:
 `/app/docs/reports/FASE_API_LOCAL_QUERY_EDITOR_REPORTE.md`
 
+### Actualización (15-May-2026):
+- ✅ **Consulta DEFAULT** para nuevas conexiones: `SELECT TOP 1 name FROM sys.tables ORDER BY name`
+- ✅ **Vista Compacta** (Lista) para Conexiones API y Servidores SQL
+- Estados `apiViewMode` y `sqlViewMode` para alternar entre Tarjetas/Lista
+- No expone secretos (API Key, passwords, connection strings)
+
 ---
 
 ## Próximas Fases Pendientes

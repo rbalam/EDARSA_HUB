@@ -294,5 +294,131 @@ En esta fase, las consultas de prueba NO se persisten automáticamente con la co
 
 ---
 
+## 14. CONSULTA DEFAULT PARA NUEVAS CONEXIONES
+
+### Ajuste Implementado (15-May-2026)
+
+Al crear una **nueva conexión API**, el textarea de "Consulta SELECT" viene precargado con:
+
+```sql
+SELECT TOP 1 name FROM sys.tables ORDER BY name
+```
+
+### Reglas:
+| Regla | Cumplimiento |
+|-------|--------------|
+| Solo en alta de nueva conexión | ✅ |
+| En edición carga consulta guardada si existe | ✅ |
+| En edición sin consulta guardada, sugiere default | ✅ |
+| Usuario puede modificar antes de probar | ✅ |
+| Pasa por validador SQL | ✅ |
+| No se ejecuta automáticamente | ✅ |
+| Solo ejecuta al presionar "Probar consulta" | ✅ |
+
+### Propósito:
+Prueba técnica básica para validar que la API puede consultar SQL Server (lista tablas del sistema).
+
+---
+
+## 15. VISTA COMPACTA PARA CONEXIONES API Y CONEXIONES SQL
+
+### Ajuste Implementado (15-May-2026)
+
+Se agregó selector de vista (Tarjetas / Lista) para ambos tipos de conexiones:
+
+### Componentes Afectados
+
+| Componente | Archivo |
+|------------|---------|
+| Tab "Servidores SQL" | `/app/frontend/src/pages/Servidores.js` |
+| Tab "APIs Locales" | `/app/frontend/src/pages/Servidores.js` |
+
+### Estados Agregados
+```javascript
+const [apiViewMode, setApiViewMode] = useState('cards'); // 'cards' | 'list'
+const [sqlViewMode, setSqlViewMode] = useState('cards'); // 'cards' | 'list'
+```
+
+### Campos Mostrados - Vista Lista Compacta
+
+#### Conexiones API
+| Columna | Descripción |
+|---------|-------------|
+| Estado | Loading / Error / Parcial / OK / Sin probar |
+| Nombre | Nombre de la conexión |
+| Sistema | MPRO / SoftRestaurant / etc |
+| URL/Host | URL abreviada (max 30 chars) |
+| Sucursal | Sucursal destino |
+| Hora Réplica | Hora de replicación |
+| Activo | Sí / No |
+| Acciones | Probar / Editar / Test Universal |
+
+#### Servidores SQL
+| Columna | Descripción |
+|---------|-------------|
+| Estado | Ping... / Online / Offline / Desconocido |
+| Nombre | Nombre del servidor formateado |
+| Sistema | SoftRestaurant / MPRO / SQL Server |
+| Host:Puerto | Host:port abreviado |
+| Base de datos | Nombre de BD |
+| Visible Op. | Si aparece en Operaciones |
+| Activo | Sí / No |
+| Acciones | Ping / Editar / Test Universal |
+
+### Acciones Disponibles
+
+#### APIs (Vista Lista)
+- ⚡ Probar conexión
+- ✏️ Editar conexión + consulta SELECT
+- 🧪 Test Universal
+
+#### SQL (Vista Lista)
+- 📡 Ping (probar conexión SQL)
+- ✏️ Editar servidor
+- 🧪 Test Universal
+
+### Seguridad en Vista Compacta
+
+| Aspecto | Verificación |
+|---------|--------------|
+| API Key | ❌ NO mostrada |
+| Password | ❌ NO mostrada |
+| Connection string | ❌ NO mostrada |
+| Tokens | ❌ NO mostrados |
+| URL completa | Solo primeros 30 caracteres |
+
+### Validaciones Realizadas
+
+| Test | Resultado |
+|------|-----------|
+| Vista tarjetas funciona | ✅ OK |
+| Vista lista funciona | ✅ OK |
+| Alternar entre vistas | ✅ OK |
+| Acciones API en lista | ✅ OK |
+| Acciones SQL en lista | ✅ OK |
+| No expone secretos | ✅ Verificado |
+| Alta conexión API | ✅ OK |
+| Edición conexión API | ✅ OK |
+| Consulta SELECT default | ✅ OK |
+| Probar conexión SQL | ✅ OK |
+| Editar servidor SQL | ✅ OK |
+| Test Universal | ✅ OK |
+
+### No Regresión Confirmada
+
+- ✅ Login funciona
+- ✅ Listado conexiones API
+- ✅ Listado servidores SQL
+- ✅ Probar conexión API
+- ✅ Probar conexión SQL
+- ✅ Editar conexión API
+- ✅ Editar servidor SQL
+- ✅ Test Universal
+- ✅ `/api/consultas-sql/*`
+- ✅ Auth/RBAC
+
+---
+
 *Documento generado por E1 Agent*  
-*Fecha: 2026-05-15*
+*Fecha: 2026-05-15*  
+*Actualizado: 2026-05-15 (Consulta DEFAULT + Vista Compacta)*

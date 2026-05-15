@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap, Building2, Eye, EyeOff, RefreshCw, GripVertical, TestTube2, AlertTriangle, Play, Table2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap, Building2, Eye, EyeOff, RefreshCw, GripVertical, TestTube2, AlertTriangle, Play, Table2, LayoutGrid, List } from 'lucide-react';
 import { toast } from 'sonner';
 import QueryConfigWizard from '@/components/QueryConfigWizard';
 import UniversalQueryTester from '@/components/UniversalQueryTester';
@@ -127,10 +127,13 @@ const Servidores = () => {
   });
   
   // Estado para sección de consulta de prueba en el modal de conexión API
+  // CONSULTA DEFAULT para nuevas conexiones: prueba técnica básica
+  const DEFAULT_SQL_QUERY = 'SELECT TOP 1 name FROM sys.tables ORDER BY name';
+  
   const [queryTestData, setQueryTestData] = useState({
     tipo_uso: 'Otro',
     nombre_consulta: '',
-    sql_query: '',
+    sql_query: DEFAULT_SQL_QUERY,
     timeout: 30
   });
   const [testingQuery, setTestingQuery] = useState(false);
@@ -138,6 +141,10 @@ const Servidores = () => {
   
   // Tipos de uso disponibles
   const TIPOS_USO = ['Ventas del día', 'Inventario', 'Cortes', 'Compras', 'Otro'];
+  
+  // Estado para vista compacta (APIs y Servidores SQL)
+  const [apiViewMode, setApiViewMode] = useState('cards'); // 'cards' | 'list'
+  const [sqlViewMode, setSqlViewMode] = useState('cards'); // 'cards' | 'list'
   
   // Estado para tipos de sistema (cargados desde catálogo)
   const [tiposSistema, setTiposSistema] = useState([]);
@@ -961,11 +968,180 @@ const Servidores = () => {
             </Button>
           </div>
 
+          {/* Selector de vista SQL */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm text-zinc-500">
+              {servers.length} servidores SQL
+            </span>
+            <div className="flex items-center gap-1 bg-zinc-100 rounded-lg p-1">
+              <Button
+                variant={sqlViewMode === 'cards' ? 'default' : 'ghost'}
+                size="sm"
+                className={`h-7 px-3 ${sqlViewMode === 'cards' ? 'bg-white shadow-sm' : ''}`}
+                onClick={() => setSqlViewMode('cards')}
+              >
+                <LayoutGrid className="h-4 w-4 mr-1" />
+                Tarjetas
+              </Button>
+              <Button
+                variant={sqlViewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                className={`h-7 px-3 ${sqlViewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
+                onClick={() => setSqlViewMode('list')}
+              >
+                <List className="h-4 w-4 mr-1" />
+                Lista
+              </Button>
+            </div>
+          </div>
+
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-900"></div>
             </div>
           ) : (
+            <>
+            {/* VISTA LISTA COMPACTA - SERVIDORES SQL */}
+            {sqlViewMode === 'list' && (
+              <div className="border border-zinc-200 rounded-lg overflow-hidden mb-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-zinc-50 border-b border-zinc-200">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium text-zinc-600">Estado</th>
+                        <th className="px-3 py-2 text-left font-medium text-zinc-600">Nombre</th>
+                        <th className="px-3 py-2 text-left font-medium text-zinc-600">Sistema</th>
+                        <th className="px-3 py-2 text-left font-medium text-zinc-600">Host:Puerto</th>
+                        <th className="px-3 py-2 text-left font-medium text-zinc-600">Base de datos</th>
+                        <th className="px-3 py-2 text-left font-medium text-zinc-600">Visible Op.</th>
+                        <th className="px-3 py-2 text-left font-medium text-zinc-600">Activo</th>
+                        <th className="px-3 py-2 text-right font-medium text-zinc-600">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {servers.map((server) => (
+                        <tr key={server.id} className="border-b border-zinc-100 hover:bg-zinc-50">
+                          {/* Estado */}
+                          <td className="px-3 py-2">
+                            {pingStatus[server.id]?.loading ? (
+                              <span className="inline-flex items-center gap-1 text-blue-600">
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                <span className="text-xs">Ping...</span>
+                              </span>
+                            ) : pingStatus[server.id]?.online ? (
+                              <span className="inline-flex items-center gap-1 text-green-600">
+                                <Wifi className="h-3 w-3" />
+                                <span className="text-xs">Online</span>
+                              </span>
+                            ) : pingStatus[server.id]?.error ? (
+                              <span className="inline-flex items-center gap-1 text-red-600">
+                                <WifiOff className="h-3 w-3" />
+                                <span className="text-xs">Offline</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-zinc-400">
+                                <Clock className="h-3 w-3" />
+                                <span className="text-xs">Desconocido</span>
+                              </span>
+                            )}
+                          </td>
+                          {/* Nombre */}
+                          <td className="px-3 py-2 font-medium text-zinc-800">{formatNombreSucursal(server.name)}</td>
+                          {/* Sistema */}
+                          <td className="px-3 py-2">
+                            <Badge variant="outline" className="text-xs">{server.system_type}</Badge>
+                          </td>
+                          {/* Host:Puerto */}
+                          <td className="px-3 py-2 text-zinc-600 text-xs font-mono max-w-40 truncate" title={`${server.host}:${server.port}`}>
+                            {server.host ? `${server.host.substring(0, 25)}${server.host.length > 25 ? '...' : ''}:${server.port}` : '-'}
+                          </td>
+                          {/* Base de datos */}
+                          <td className="px-3 py-2 text-zinc-600 text-xs">{server.database || '-'}</td>
+                          {/* Visible Operaciones */}
+                          <td className="px-3 py-2">
+                            {server.visible_en_operaciones ? (
+                              <span className="text-green-600 text-xs">Sí</span>
+                            ) : (
+                              <span className="text-zinc-400 text-xs">No</span>
+                            )}
+                          </td>
+                          {/* Activo */}
+                          <td className="px-3 py-2">
+                            {server.activo !== false ? (
+                              <span className="text-green-600 text-xs">Sí</span>
+                            ) : (
+                              <span className="text-zinc-400 text-xs">No</span>
+                            )}
+                          </td>
+                          {/* Acciones */}
+                          <td className="px-3 py-2">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={() => pingServer(server.id)}
+                                disabled={pingStatus[server.id]?.loading}
+                                title="Probar conexión SQL"
+                              >
+                                {pingStatus[server.id]?.loading ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Wifi className="h-3 w-3" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={() => {
+                                  setEditingServer(server);
+                                  setFormData({
+                                    name: server.name || '',
+                                    host: server.host || '',
+                                    port: server.port || 1433,
+                                    database: server.database || '',
+                                    username: server.username || '',
+                                    password: '',
+                                    system_type: server.system_type || '',
+                                    activo: server.activo !== false,
+                                    visible_en_operaciones: server.visible_en_operaciones || false
+                                  });
+                                  setDialogOpen(true);
+                                }}
+                                title="Editar servidor"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={() => {
+                                  setSelectedConnection(server);
+                                  setUniversalTesterOpen(true);
+                                }}
+                                title="Test Universal"
+                              >
+                                <TestTube2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {servers.length === 0 && (
+                  <div className="text-center py-8 text-zinc-500">
+                    No hay servidores SQL configurados
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* VISTA TARJETAS - SERVIDORES SQL */}
+            {sqlViewMode === 'cards' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {servers.map((server) => (
             <Card key={server.id} className="border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors" data-testid="server-card">
@@ -1156,6 +1332,8 @@ const Servidores = () => {
             </Card>
           ))}
         </div>
+        )}
+        </>
       )}
         </TabsContent>
 
@@ -1180,7 +1358,7 @@ const Servidores = () => {
                 setQueryTestData({
                   tipo_uso: 'Otro',
                   nombre_consulta: '',
-                  sql_query: '',
+                  sql_query: DEFAULT_SQL_QUERY,
                   timeout: 30
                 });
                 setQueryTestResult(null);
@@ -1215,6 +1393,181 @@ const Servidores = () => {
             </div>
           </div>
 
+          {/* Selector de vista */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm text-zinc-500">
+              {apiConnections.length} conexiones API
+            </span>
+            <div className="flex items-center gap-1 bg-zinc-100 rounded-lg p-1">
+              <Button
+                variant={apiViewMode === 'cards' ? 'default' : 'ghost'}
+                size="sm"
+                className={`h-7 px-3 ${apiViewMode === 'cards' ? 'bg-white shadow-sm' : ''}`}
+                onClick={() => setApiViewMode('cards')}
+              >
+                <LayoutGrid className="h-4 w-4 mr-1" />
+                Tarjetas
+              </Button>
+              <Button
+                variant={apiViewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                className={`h-7 px-3 ${apiViewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
+                onClick={() => setApiViewMode('list')}
+              >
+                <List className="h-4 w-4 mr-1" />
+                Lista
+              </Button>
+            </div>
+          </div>
+
+          {/* VISTA LISTA COMPACTA - APIs */}
+          {apiViewMode === 'list' && (
+            <div className="border border-zinc-200 rounded-lg overflow-hidden mb-4">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-zinc-50 border-b border-zinc-200">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Estado</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Nombre</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Sistema</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">URL/Host</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Sucursal</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Hora Réplica</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Activo</th>
+                      <th className="px-3 py-2 text-right font-medium text-zinc-600">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {apiConnections.map((apiConn) => (
+                      <tr key={apiConn.id} className="border-b border-zinc-100 hover:bg-zinc-50">
+                        {/* Estado */}
+                        <td className="px-3 py-2">
+                          {apiTestStatus[apiConn.id]?.loading ? (
+                            <span className="inline-flex items-center gap-1 text-blue-600">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              <span className="text-xs">Probando</span>
+                            </span>
+                          ) : apiTestStatus[apiConn.id]?.status === 'error' ? (
+                            <span className="inline-flex items-center gap-1 text-red-600">
+                              <WifiOff className="h-3 w-3" />
+                              <span className="text-xs">Error</span>
+                            </span>
+                          ) : apiTestStatus[apiConn.id]?.status === 'warning' ? (
+                            <span className="inline-flex items-center gap-1 text-amber-600">
+                              <AlertTriangle className="h-3 w-3" />
+                              <span className="text-xs">Parcial</span>
+                            </span>
+                          ) : apiTestStatus[apiConn.id]?.status === 'success' ? (
+                            <span className="inline-flex items-center gap-1 text-green-600">
+                              <Wifi className="h-3 w-3" />
+                              <span className="text-xs">OK</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-zinc-400">
+                              <Clock className="h-3 w-3" />
+                              <span className="text-xs">Sin probar</span>
+                            </span>
+                          )}
+                        </td>
+                        {/* Nombre */}
+                        <td className="px-3 py-2 font-medium text-zinc-800">{apiConn.name}</td>
+                        {/* Sistema */}
+                        <td className="px-3 py-2">
+                          <Badge variant="outline" className="text-xs">{apiConn.tipo}</Badge>
+                        </td>
+                        {/* URL abreviada */}
+                        <td className="px-3 py-2 text-zinc-600 text-xs font-mono max-w-40 truncate" title={apiConn.url}>
+                          {apiConn.url ? apiConn.url.replace(/^https?:\/\//, '').substring(0, 30) + (apiConn.url.length > 30 ? '...' : '') : '-'}
+                        </td>
+                        {/* Sucursal */}
+                        <td className="px-3 py-2 text-zinc-600">{apiConn.sucursal_destino || '-'}</td>
+                        {/* Hora Réplica */}
+                        <td className="px-3 py-2 text-zinc-600">{apiConn.hora_replica || '04:00'}</td>
+                        {/* Activo */}
+                        <td className="px-3 py-2">
+                          {apiConn.activo ? (
+                            <span className="text-green-600 text-xs">Sí</span>
+                          ) : (
+                            <span className="text-zinc-400 text-xs">No</span>
+                          )}
+                        </td>
+                        {/* Acciones */}
+                        <td className="px-3 py-2">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => testApiConnection(apiConn)}
+                              disabled={apiTestStatus[apiConn.id]?.loading}
+                              title="Probar conexión"
+                            >
+                              {apiTestStatus[apiConn.id]?.loading ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Zap className="h-3 w-3" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => {
+                                setEditingApi(apiConn);
+                                setApiFormData({
+                                  name: apiConn.name,
+                                  url: apiConn.url,
+                                  api_key: '',
+                                  tipo: apiConn.tipo,
+                                  servidor_padre: apiConn.servidor_padre,
+                                  sucursal_destino: apiConn.sucursal_destino,
+                                  hora_replica: apiConn.hora_replica,
+                                  solo_ventas_dia: apiConn.solo_ventas_dia,
+                                  activo: apiConn.activo,
+                                  visible_en_operaciones: apiConn.visible_en_operaciones
+                                });
+                                setQueryTestData({
+                                  tipo_uso: apiConn.tipo_uso || 'Otro',
+                                  nombre_consulta: apiConn.nombre_consulta || '',
+                                  sql_query: apiConn.sql_query || DEFAULT_SQL_QUERY,
+                                  timeout: 30
+                                });
+                                setQueryTestResult(null);
+                                setApiDialogOpen(true);
+                              }}
+                              title="Editar conexión"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => {
+                                setSelectedConnection(apiConn);
+                                setUniversalTesterOpen(true);
+                              }}
+                              title="Test Universal"
+                            >
+                              <TestTube2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {apiConnections.length === 0 && (
+                <div className="text-center py-8 text-zinc-500">
+                  No hay conexiones API configuradas
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* VISTA TARJETAS - APIs */}
+          {apiViewMode === 'cards' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {apiConnections.map((apiConn) => (
               <Card key={apiConn.id} className="border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors">
@@ -1440,10 +1793,11 @@ const Servidores = () => {
                             visible_en_operaciones: apiConn.visible_en_operaciones
                           });
                           // Resetear sección de consulta de prueba
+                          // En edición: si tiene consulta guardada, cargarla; si no, sugerir la default
                           setQueryTestData({
-                            tipo_uso: 'Otro',
-                            nombre_consulta: '',
-                            sql_query: '',
+                            tipo_uso: apiConn.tipo_uso || 'Otro',
+                            nombre_consulta: apiConn.nombre_consulta || '',
+                            sql_query: apiConn.sql_query || DEFAULT_SQL_QUERY,
                             timeout: 30
                           });
                           setQueryTestResult(null);
@@ -1503,8 +1857,9 @@ const Servidores = () => {
               </Card>
             ))}
           </div>
+          )}
 
-          {apiConnections.length === 0 && (
+          {apiConnections.length === 0 && apiViewMode === 'cards' && (
             <div className="text-center py-12 text-zinc-500">
               <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No hay conexiones API configuradas</p>
