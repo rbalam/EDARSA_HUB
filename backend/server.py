@@ -3740,7 +3740,7 @@ INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = E.Sc_Cve_Sucursal
 INNER JOIN Almacen A ON A.Al_Cve_Almacen = E.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = S.Sc_Cve_Sucursal
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
 INNER JOIN Producto P ON P.Pr_Cve_Producto = E.Pr_Cve_Producto
-WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+WHERE S.Sc_Descripcion LIKE '%{_escape_like_pattern(sucursal) if sucursal else ""}%'
     AND E.Al_Cve_Almacen IN ({almacenes_sql})
     AND E.Es_Cve_Estado <> 'CA'
     {filtro_tipos_mov}
@@ -4413,7 +4413,7 @@ INNER JOIN gruposi GP ON GP.idgruposi = insumos.idgruposi
 INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = GP.idgruposiclasificacion
 LEFT JOIN almacen ON almacen.idalmacen = movsinv.idalmacen
 WHERE movsinv.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
-  AND almacen.nombre LIKE '%{almacen}%'
+  AND almacen.nombre LIKE '%{almacen_safe}%'
   {filtro_conceptos_insumos}
 GROUP BY RTRIM(LTRIM(movsinv.idinsumo))
 
@@ -4429,7 +4429,7 @@ INNER JOIN gruposi ON gruposi.idgruposi = insumospresentaciones.idgruposi
 INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = gruposi.idgruposiclasificacion
 LEFT JOIN almacen ON almacen.idalmacen = movtosalmacen.idalmacen
 WHERE movtosalmacen.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
-  AND almacen.nombre LIKE '%{almacen}%'
+  AND almacen.nombre LIKE '%{almacen_safe}%'
   {filtro_conceptos_presentaciones}
 GROUP BY RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
 """
@@ -4499,7 +4499,7 @@ INNER JOIN turnos ON turnos.idturno = cheques.idturno
 WHERE turnos.APERTURA BETWEEN CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_ini_sql}',103),103) 
                           AND CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_fin_sql}',103),103)
   AND cheques.cancelado = 0
-  AND AL.nombre LIKE '%{almacen}%'
+  AND AL.nombre LIKE '%{almacen_safe}%'
 GROUP BY RTRIM(LTRIM(receta.idinsumo))
 """
                 try:
@@ -4539,7 +4539,7 @@ INNER JOIN turnos ON turnos.idturno = cheques.idturno
 WHERE turnos.APERTURA BETWEEN CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_ini_sql}',103),103) 
                           AND CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_fin_sql}',103),103)
   AND cheques.cancelado = 0
-  AND AL.nombre LIKE '%{almacen}%'
+  AND AL.nombre LIKE '%{almacen_safe}%'
 GROUP BY RTRIM(LTRIM(receta.idinsumo))
 """
                 try:
@@ -4783,13 +4783,17 @@ async def get_movement_details(params: Dict, current_user: Dict = Depends(get_cu
             fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
             fecha_ini_mov = (fecha_ini_dt + timedelta(days=1)).strftime('%Y-%m-%d')
             
+            # FASE 1C: Sanitizar entradas LIKE
+            almacen_safe = _escape_like_pattern(almacen) if almacen else ""
+            sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
+            
             # Obtener código del almacén
             almacen_query = f"""
 SELECT TOP 1 A.Al_Cve_Almacen as codigo
 FROM Almacen A
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
-WHERE A.Al_Descripcion LIKE '%{almacen}%'
-    AND S.Sc_Descripcion LIKE '%{sucursal}%'
+WHERE A.Al_Descripcion LIKE '%{almacen_safe}%'
+    AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
 """
             almacen_result = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -4837,7 +4841,7 @@ INNER JOIN Producto P ON P.Pr_Cve_Producto = M.Pr_Cve_Producto
 INNER JOIN Almacen A ON A.Al_Cve_Almacen = M.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
 WHERE M.Pr_Cve_Producto = '{producto_codigo}'
-    AND S.Sc_Descripcion LIKE '%{sucursal}%'
+    AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
     AND M.Al_Cve_Almacen = '{almacen_codigo}'
     AND M.Es_Cve_Estado <> 'CA'
     {filtro_tipos_mov}
@@ -4896,6 +4900,9 @@ ORDER BY Fecha DESC
             # PRESENTACIONES: el idinsumospresentaciones ya tiene el código completo (ej: B130009)
             # INSUMOS: el código se genera como prefijo + idinsumo (ej: B + 12345 = B12345)
             
+            # FASE 1C: Sanitizar entradas LIKE
+            almacen_safe = _escape_like_pattern(almacen) if almacen else ""
+            
             # Formatear fechas para SQL Server: YYYYMMDD HH:MM:SS
             # Si solo viene fecha (YYYY-MM-DD), agregar hora inicio/fin
             fecha_ini_fmt = fecha_ini.replace('-', '').replace('T', ' ') if fecha_ini else ''
@@ -4926,7 +4933,7 @@ INNER JOIN conceptos C ON C.idconcepto = M.idconcepto
 INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = M.idinsumospresentaciones
 LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
 WHERE RTRIM(LTRIM(M.idinsumospresentaciones)) = '{producto_codigo}'
-    AND A.nombre LIKE '%{almacen}%'
+    AND A.nombre LIKE '%{almacen_safe}%'
     AND M.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
     AND M.idconcepto <> ''
 ORDER BY M.fecha DESC
@@ -4960,7 +4967,7 @@ INNER JOIN conceptos C ON C.idconcepto = M.idconcepto
 INNER JOIN insumos I ON I.idinsumo = M.idinsumo
 LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
 WHERE RTRIM(LTRIM(M.idinsumo)) = '{producto_codigo}'
-    AND A.nombre LIKE '%{almacen}%'
+    AND A.nombre LIKE '%{almacen_safe}%'
     AND M.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
     AND M.idconcepto <> ''
 ORDER BY M.fecha DESC
@@ -5026,6 +5033,9 @@ async def get_sales_details(params: Dict, current_user: Dict = Depends(get_curre
     
     try:
         if is_mpro_system(server.get('system_type')):
+            # FASE 1C: Sanitizar entradas LIKE
+            sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
+            
             # Consulta detalle de ventas - combina ventas directas y de kits
             query = f"""
 SELECT * FROM (
@@ -5045,7 +5055,7 @@ SELECT * FROM (
     INNER JOIN producto PV ON PV.Pr_Cve_Producto = V.Pr_Cve_Producto
     INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
     WHERE PK.Pk_Producto = '{producto_codigo}'
-        AND S.Sc_Descripcion LIKE '%{sucursal}%'
+        AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
         AND V.Es_Cve_Estado <> 'CA'
         AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
     
@@ -5065,7 +5075,7 @@ SELECT * FROM (
     INNER JOIN producto P ON P.Pr_Cve_Producto = V.Pr_Cve_Producto
     INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
     WHERE V.Pr_Cve_Producto = '{producto_codigo}'
-        AND S.Sc_Descripcion LIKE '%{sucursal}%'
+        AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
         AND V.Es_Cve_Estado <> 'CA'
         AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
 ) AS VentasDetalle
@@ -5095,6 +5105,9 @@ ORDER BY Fecha DESC
             # Para SoftRestaurant - detalle de ventas usando recetasalmacenes
             # El código puede ser INSUMO (con prefijo) o PRESENTACION (código directo)
             almacen = params.get('almacen', '')
+            
+            # FASE 1C: Sanitizar entradas LIKE
+            almacen_safe = _escape_like_pattern(almacen) if almacen else ""
             
             # Formatear fechas para SQL Server: YYYYMMDD HH:MM:SS
             fecha_ini_fmt = fecha_ini.replace('-', '').replace('T', ' ') if fecha_ini else ''
@@ -5134,7 +5147,7 @@ INNER JOIN turnos ON turnos.idturno = cheques.idturno
 WHERE RTRIM(LTRIM(receta.idinsumo)) = '{producto_codigo}'
   AND turnos.APERTURA BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
   AND cheques.cancelado = 0
-  AND AL.nombre LIKE '%{almacen}%'
+  AND AL.nombre LIKE '%{almacen_safe}%'
 ORDER BY turnos.APERTURA DESC
 """
             result = execute_sql_query(
@@ -6087,10 +6100,14 @@ async def debug_test_queries(params: Dict, current_user: Dict = Depends(get_curr
     results = {"parametros": params}
     
     try:
+        # FASE 1C: Sanitizar entradas LIKE
+        sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
+        almacen_safe = _escape_like_pattern(almacen) if almacen else ""
+        
         # Obtener código del almacén si se proporcionó nombre
         almacen_codigo = None
         if almacen:
-            almacen_query = f"SELECT TOP 1 Al_Cve_Almacen as codigo FROM Almacen WHERE Al_Descripcion LIKE '%{almacen}%'"
+            almacen_query = f"SELECT TOP 1 Al_Cve_Almacen as codigo FROM Almacen WHERE Al_Descripcion LIKE '%{almacen_safe}%'"
             almacen_result = execute_sql_query(
                 conn_info['host'], conn_info['port'], conn_info['database'],
                 conn_info['username'], conn_info['password'], almacen_query
@@ -6109,7 +6126,7 @@ SELECT
 FROM Movimiento E
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = E.Sc_Cve_Sucursal
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
-WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+WHERE S.Sc_Descripcion LIKE '%{sucursal_safe}%'
     AND E.Pr_Cve_Producto = '{producto_codigo}'
     AND E.Es_Cve_Estado <> 'CA'
     AND E.Tm_Cve_Tipo_Movimiento IN ('050','100','106','108','112','202','400','500','506','508','510','512')
@@ -6133,7 +6150,7 @@ SELECT SUM(cantidad) as Total_Ventas FROM (
     FROM venta
     INNER JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
     INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
-    WHERE sucursal.Sc_Descripcion LIKE '%{sucursal}%'
+    WHERE sucursal.Sc_Descripcion LIKE '%{sucursal_safe}%'
         AND venta.Es_Cve_Estado <> 'CA'
         AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
         AND Producto_Kit.Pk_Producto = '{producto_codigo}'
@@ -6145,7 +6162,7 @@ SELECT SUM(cantidad) as Total_Ventas FROM (
         SUM(venta.Vn_Cantidad_Control_1) as cantidad
     FROM venta
     INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
-    WHERE sucursal.Sc_Descripcion LIKE '%{sucursal}%'
+    WHERE sucursal.Sc_Descripcion LIKE '%{sucursal_safe}%'
         AND venta.Es_Cve_Estado <> 'CA'
         AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
         AND venta.Pr_Cve_Producto = '{producto_codigo}'
@@ -6171,7 +6188,7 @@ FROM Movimiento E
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = E.Sc_Cve_Sucursal
 INNER JOIN Almacen A ON A.Al_Cve_Almacen = E.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = S.Sc_Cve_Sucursal
 INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
-WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+WHERE S.Sc_Descripcion LIKE '%{sucursal_safe}%'
     AND E.Pr_Cve_Producto = '{producto_codigo}'
     AND E.Es_Cve_Estado <> 'CA'
     AND E.Tm_Cve_Tipo_Movimiento IN ('050','100','106','108','112','202','400','500','506','508','510','512')
@@ -6192,7 +6209,7 @@ SELECT TOP 10 V.Vn_Folio, V.Vn_Fecha, V.Pr_Cve_Producto as Producto_Vendido,
 FROM venta V
 INNER JOIN producto_kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto
 INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
-WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+WHERE S.Sc_Descripcion LIKE '%{sucursal_safe}%'
     AND V.Es_Cve_Estado <> 'CA'
     AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
     AND PK.Pk_Producto = '{producto_codigo}'
@@ -6210,7 +6227,7 @@ SELECT TOP 10 V.Vn_Folio, V.Vn_Fecha, V.Pr_Cve_Producto,
     V.Vn_Cantidad_1, V.Vn_Cantidad_Control_1
 FROM venta V
 INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
-WHERE S.Sc_Descripcion LIKE '%{sucursal}%'
+WHERE S.Sc_Descripcion LIKE '%{sucursal_safe}%'
     AND V.Es_Cve_Estado <> 'CA'
     AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
     AND V.Pr_Cve_Producto = '{producto_codigo}'
@@ -6773,10 +6790,14 @@ async def obtener_inventarios_fisicos(server_id: str, sucursal: str = None, sucu
         # FASE 8: Filtro RBAC por almacenes permitidos
         almacen_rbac_filter = get_almacenes_sql_filter(context, server_id, "A.Al_Cve_Almacen")
         
+        # FASE 1C: Sanitizar entradas LIKE
+        almacen_safe = _escape_like_pattern(almacen) if almacen else ""
+        sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
+        
         # Filtro adicional por almacén del frontend
         almacen_filtro = ""
         if almacen and almacen != "TODOS" and almacen:
-            almacen_filtro = f"AND A.Al_Descripcion LIKE '%{almacen}%'"
+            almacen_filtro = f"AND A.Al_Descripcion LIKE '%{almacen_safe}%'"
         
         # Filtro por sucursal - CRÍTICO: detectar si es clave numérica o nombre
         sucursal_filtro = "1=1"
@@ -6790,7 +6811,7 @@ async def obtener_inventarios_fisicos(server_id: str, sucursal: str = None, sucu
                 logging.info(f"[INVENTARIOS-FISICOS] Filtro por CLAVE de sucursal: {sucursal}")
             else:
                 # Es un nombre de sucursal
-                sucursal_filtro = f"S.Sc_Descripcion LIKE '%{sucursal}%'"
+                sucursal_filtro = f"S.Sc_Descripcion LIKE '%{sucursal_safe}%'"
                 logging.info(f"[INVENTARIOS-FISICOS] Filtro por NOMBRE de sucursal: {sucursal}")
         
         query = f"""
@@ -6827,10 +6848,13 @@ ORDER BY F.Fi_Folio DESC
         # FASE 8: Filtro RBAC por almacenes permitidos
         almacen_rbac_filter = get_almacenes_sql_filter(context, server_id, "A.idalmacen")
         
+        # FASE 1C: Sanitizar entradas LIKE
+        almacen_safe = _escape_like_pattern(almacen) if almacen else ""
+        
         # Filtro adicional por almacén del frontend
         almacen_filtro = ""
         if almacen and almacen != "TODOS":
-            almacen_filtro = f"AND A.nombre LIKE '%{almacen}%'"
+            almacen_filtro = f"AND A.nombre LIKE '%{almacen_safe}%'"
         
         query = f"""
 SELECT DISTINCT 
@@ -6882,10 +6906,13 @@ async def obtener_pedidos_vigentes(server_id: str, sucursal: str = None, credent
         # Filtrar por estado: RCT=Recepción Total, PXA=Por Autorizar, AC=Activa
         # El usuario quiere ver folio/proveedor, NO folio/comprador
         
+        # FASE 1C: Sanitizar entradas LIKE
+        sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
+        
         # Filtro de sucursal - solo aplicar si se especifica
         sucursal_filtro = "1=1"
         if sucursal:
-            sucursal_filtro = f"(S.Sc_Cve_Sucursal = '{sucursal}' OR S.Sc_Descripcion LIKE '%{sucursal}%')"
+            sucursal_filtro = f"(S.Sc_Cve_Sucursal = '{sucursal}' OR S.Sc_Descripcion LIKE '%{sucursal_safe}%')"
         
         query = f"""
 SELECT 'OC' as tipo, OC.Oc_Folio as folio, OC.Oc_Fecha as fecha, 
@@ -7171,21 +7198,25 @@ async def calcular_pedido_sugerido(request: CalculoPedidoRequest, credentials: H
         # FASE 8: Agregar filtro RBAC a la query de almacenes
         almacen_rbac_filter = get_almacenes_sql_filter(context, request.server_id, "A.Al_Cve_Almacen")
         
+        # FASE 1C: Sanitizar entradas LIKE
+        sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
+        
         # Obtener códigos de almacenes
         if "TODOS" in almacenes:
             almacen_query = f"""
 SELECT A.Al_Cve_Almacen as codigo, A.Al_Descripcion as nombre, A.Sc_Cve_Sucursal as sucursal_codigo
 FROM Almacen A
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
-WHERE S.Sc_Descripcion LIKE '%{sucursal}%' AND A.Es_Cve_Estado <> 'BA'{almacen_rbac_filter}
+WHERE S.Sc_Descripcion LIKE '%{sucursal_safe}%' AND A.Es_Cve_Estado <> 'BA'{almacen_rbac_filter}
 """
         else:
-            almacen_likes = " OR ".join([f"A.Al_Descripcion LIKE '%{a}%'" for a in almacenes])
+            # FASE 1C: Sanitizar cada almacén de la lista
+            almacen_likes = " OR ".join([f"A.Al_Descripcion LIKE '%{_escape_like_pattern(a)}%'" for a in almacenes])
             almacen_query = f"""
 SELECT A.Al_Cve_Almacen as codigo, A.Al_Descripcion as nombre, A.Sc_Cve_Sucursal as sucursal_codigo
 FROM Almacen A
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
-WHERE S.Sc_Descripcion LIKE '%{sucursal}%' AND ({almacen_likes}) AND A.Es_Cve_Estado <> 'BA'{almacen_rbac_filter}
+WHERE S.Sc_Descripcion LIKE '%{sucursal_safe}%' AND ({almacen_likes}) AND A.Es_Cve_Estado <> 'BA'{almacen_rbac_filter}
 """
         
         almacen_result = execute_sql_query(
@@ -9078,6 +9109,9 @@ async def obtener_analisis_compras(request: AnalisisComprasRequest, credentials:
     
     try:
         if is_mpro_system(server.get('system_type')):
+            # FASE 1C: Sanitizar entradas LIKE
+            sucursal_safe = _escape_like_pattern(request.sucursal) if request.sucursal else ""
+            
             # Construir condición de meses
             meses_cond = " OR ".join([f"MONTH(M.Mv_Fecha) = {int(m)}" for m in request.meses])
             # Construir condición de años
@@ -9097,7 +9131,7 @@ INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
 WHERE TM.Tm_Tipo = 'E'
     AND ({anios_cond})
     AND ({meses_cond})
-    AND S.Sc_Descripcion LIKE '%{request.sucursal}%'
+    AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
     AND ISNULL(M.Es_Cve_Estado, '') <> 'CA'
 GROUP BY P.Pv_Cve_Proveedor, P.Pv_Nombre, MONTH(M.Mv_Fecha), YEAR(M.Mv_Fecha)
 ORDER BY P.Pv_Nombre, YEAR(M.Mv_Fecha), MONTH(M.Mv_Fecha)

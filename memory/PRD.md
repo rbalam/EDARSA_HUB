@@ -1882,9 +1882,46 @@ FASE 4: Endpoints /api/consultas-sql/*
 - Implementar lógica SQL en EDARSAHUB
 - Lectura de históricos (rango de fechas)
 
-### P1 - FASE 1C: Sanitización SQL restante
-- ~15 instancias de LIKE sin escapar en otros endpoints
-- Completar cobertura A02
+## FASE 1C SANITIZACIÓN SQL LIKE - COMPLETADA (15-May-2026)
+
+### Resumen:
+| Métrica | Valor |
+|---------|-------|
+| Total instancias revisadas | 36 |
+| Instancias corregidas | 26 |
+| Instancias ya sanitizadas | 10 |
+| Lotes ejecutados | 6 |
+| py_compile por lote | 6/6 exitosos |
+
+### Endpoints Corregidos:
+- `POST /reports/inventory-analysis` (MPRO/SR)
+- `GET /detalle-movimientos/{server_id}` (MPRO/SR)
+- `GET /detalle-ventas/{server_id}` (MPRO/SR)
+- `GET /debug-producto/{server_id}` (MPRO)
+- `GET /compras/inventarios-fisicos/{server_id}` (MPRO/SR)
+- `GET /compras/pedidos-vigentes/{server_id}` (MPRO)
+- `POST /compras/sugerido-compras` (MPRO)
+- `POST /compras/proveedores` (MPRO)
+
+### Función utilizada:
+`_escape_like_pattern()` - Escapa caracteres [ ] % _ ' para SQL Server LIKE
+
+### Reporte:
+`/app/docs/reports/FASE_1C_SANITIZACION_SQL_LIKE_REPORTE.md`
+
+**✅ Todas las vulnerabilidades de inyección SQL mediante cláusulas LIKE han sido cerradas.**
+
+---
+
+## Próximas Fases Pendientes
+
+### P1 - FASE SYNC: Sincronización de Históricos
+- Propuesta aprobada: `/app/docs/proposals/PROP_SYNC_HISTORICOS_EDARSAHUB.md`
+- Inventarios, Almacenes, Ventas a EDARSAHUB
+
+### P1 - Ventas por Hora/Día de Semana
+- Implementar lógica SQL en EDARSAHUB
+- Lectura de históricos (rango de fechas)
 
 ### P2 - Corrección de Fechas Peligrosas
 - 172 instancias de `datetime.now()`, `date.today()` detectadas
