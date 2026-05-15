@@ -235,34 +235,44 @@ WHERE cancelado = 0
 """
 
 # =============================================================================
-# QUERIES MPRO - ORIGEN (usa Venta_Encabezado estándar)
+# QUERIES MPRO - ORIGEN (FIX 15-May-2026: Usar Comanda como QRO)
+# =============================================================================
+# NOTA: ORIGEN tiene la misma estructura que QRO (Comanda + Comanda_Detalle)
+# La tabla Venta_Encabezado NO tiene la columna Vn_Personas en ORIGEN
+# Por lo tanto, usamos las mismas queries que QRO.
+# =============================================================================
+# FIX: fecha_operacion calculada por backend en zona México
 # =============================================================================
 
-# MPRO ORIGEN: Ventas abiertas (Comanda = sin cerrar)
+# MPRO ORIGEN: Ventas abiertas (Comanda + Comanda_Detalle)
 QUERY_MPRO_VENTAS_ABIERTAS_ORIGEN = """
 SELECT 
-    CAST(GETDATE() AS DATE) as fecha,
-    SUM(ISNULL(ve.Vn_Precio_Neto_Importe, 0)) as ventas_abiertas,
-    COUNT(DISTINCT ve.Vn_Folio) as tickets_abiertos,
-    SUM(ISNULL(c.Co_Personas, 1)) as pax_abiertos
-FROM Venta_Encabezado ve
-LEFT JOIN Comanda c ON ve.Vn_Documento = c.Co_Folio AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal
-WHERE CAST(ve.Vn_Fecha AS DATE) = CAST(GETDATE() AS DATE)
-  AND ve.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND ve.Vn_Tabla = 'Comanda'
+    '{fecha_operacion}' as fecha,
+    SUM(ISNULL(cd.Cd_Importe, 0)) as ventas_abiertas,
+    COUNT(DISTINCT c.Co_Folio) as tickets_abiertos,
+    SUM(DISTINCT ISNULL(c.Co_Personas, 1)) as pax_abiertos
+FROM Comanda c
+INNER JOIN Comanda_Detalle cd ON c.Co_Folio = cd.Co_Folio
+WHERE CAST(c.Co_Fecha AS DATE) = '{fecha_operacion}'
+  AND c.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND cd.Es_Cve_Estado = 'AC'
+  AND cd.Fecha_Baja IS NULL
+  AND c.Es_Cve_Estado = 'AC'
 """
 
 # MPRO ORIGEN: Ventas cerradas del día
 QUERY_MPRO_CERRADAS_HOY_ORIGEN = """
 SELECT 
-    SUM(ISNULL(ve.Vn_Precio_Neto_Importe, 0)) as ventas_cerradas_dia,
-    COUNT(DISTINCT ve.Vn_Folio) as tickets_cerrados_dia,
-    SUM(ISNULL(c.Co_Personas, 1)) as pax_cerrados_dia
-FROM Venta_Encabezado ve
-LEFT JOIN Comanda c ON ve.Vn_Documento = c.Co_Folio AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal
-WHERE CAST(ve.Vn_Fecha AS DATE) = CAST(GETDATE() AS DATE)
-  AND ve.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND ve.Vn_Tabla <> 'Comanda'
+    SUM(ISNULL(cd.Cd_Importe, 0)) as ventas_cerradas_dia,
+    COUNT(DISTINCT c.Co_Folio) as tickets_cerrados_dia,
+    SUM(DISTINCT ISNULL(c.Co_Personas, 1)) as pax_cerrados_dia
+FROM Comanda c
+INNER JOIN Comanda_Detalle cd ON c.Co_Folio = cd.Co_Folio
+WHERE CAST(c.Co_Fecha AS DATE) = '{fecha_operacion}'
+  AND c.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND c.Es_Cve_Estado <> 'AC'
+  AND cd.Es_Cve_Estado = 'AC'
+  AND cd.Fecha_Baja IS NULL
 """
 
 # =============================================================================
