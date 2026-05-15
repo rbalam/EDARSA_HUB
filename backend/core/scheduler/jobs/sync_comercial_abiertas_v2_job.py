@@ -159,6 +159,46 @@ def _execute_query_via_api_local(api_config: Dict, query: str) -> Tuple[List[Dic
         return [], "API_LOCAL_FAILED"
 
 
+def _get_existing_ventas_dia(unidad_negocio_id: str, sucursal_id: str) -> Optional[Dict]:
+    """
+    Consulta el dato existente en Comercial_Ventas_Dia_Abiertas_v2 para una unidad.
+    
+    Se usa para verificar si hay un dato válido antes de sobrescribir con $0.
+    
+    Args:
+        unidad_negocio_id: Código de la unidad (ej: 'ORIGEN', '130QRO')
+        sucursal_id: ID de la sucursal
+        
+    Returns:
+        Dict con los datos existentes o None si no hay
+    """
+    from core.db import execute_sql_query
+    
+    query = f"""
+    SELECT 
+        total_estimado_dia,
+        ventas_abiertas,
+        ventas_cerradas_dia,
+        fecha_operacion,
+        snapshot_timestamp
+    FROM Comercial_Ventas_Dia_Abiertas_v2
+    WHERE unidad_negocio_id = '{unidad_negocio_id}'
+      AND sucursal_id = '{sucursal_id}'
+    """
+    
+    try:
+        rows = execute_sql_query(
+            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            query
+        )
+        if rows:
+            return rows[0]
+        return None
+    except Exception as e:
+        logger.warning(f"[SYNC_ABIERTAS_V2] Error consultando dato existente para {unidad_negocio_id}: {e}")
+        return None
+
+
 # =============================================================================
 # CONFIGURACIÓN DE UNIDADES
 # =============================================================================
@@ -359,7 +399,6 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
     
     # CORRECCIÓN: Usar zona horaria de México para fecha operativa
     # En México, la fecha operativa corresponde a la hora local, no UTC
-    import pytz
     mexico_tz = pytz.timezone('America/Mexico_City')
     fecha_hoy = datetime.now(mexico_tz).date()
     
@@ -615,40 +654,92 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             ventas_abiertas_raw = abiertas_data.get('ventas_abiertas')
             ventas_cerradas_raw = cerradas_data.get('ventas_cerradas_dia')
             
-            # FIX 2026-05-15: QRO - Si ambas son NULL, conservar último dato válido
-            # Pero si ventas_cerradas tiene valor, es dato válido (aunque abiertas sea NULL)
-            if unidad_id == '130QRO':
-                logger.info(f"[SYNC_ABIERTAS_V2] QRO RAW: abiertas={ventas_abiertas_raw}, cerradas={ventas_cerradas_raw}")
+            # =================================================================
+            # FIX P0 2026-05-15: PROTECCIÓN ANTI-$0 PARA TODAS LAS UNIDADES MPRO
+            # =================================================================
+            # REGLA: Si AMBAS queries retornan NULL o $0, NO sobrescribir datos existentes.
+            # Esto protege contra:
+            # - fecha_operacion incorrecta
+            # - errores de conexión no detectados
+            # - problemas de esquema en la fuente
+            # =================================================================
+            
+            logger.info(f"[SYNC_ABIERTAS_V2] {nombre} RAW: abiertas={ventas_abiertas_raw}, cerradas={ventas_cerradas_raw}")
+            
+            # Calcular valores numéricos para evaluación
+            abiertas_valor = float(ventas_abiertas_raw) if ventas_abiertas_raw is not None else 0.0
+            cerradas_valor = float(ventas_cerradas_raw) if ventas_cerradas_raw is not None else 0.0
+            total_calculado = abiertas_valor + cerradas_valor
+            
+            # CASO 1: Hay datos válidos (al menos una query tiene valor > 0)
+            if total_calculado > 0:
+                logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Datos válidos detectados, total=${total_calculado:,.2f}")
+            
+            # CASO 2: AMBAS son NULL - NO sobrescribir
+            elif ventas_abiertas_raw is None and ventas_cerradas_raw is None:
+                logger.warning(f"[SYNC_ABIERTAS_V2] {nombre}: AMBAS queries retornaron NULL - CONSERVANDO último dato válido")
+                log = SyncLogV2(
+                    run_id=run_id,
+                    run_type=SyncRunType.ABIERTAS,
+                    unidad_negocio_id=unidad_id,
+                    server_id=server_id,
+                    sucursal_id=sucursal_id,
+                    fecha_inicio=fecha_operacion,
+                    fecha_fin=fecha_operacion,
+                    status=SyncStatus.SKIPPED,
+                    records_processed=0,
+                    records_skipped=1,
+                    error_message=f"AMBAS queries NULL para fecha_operacion={fecha_operacion_str}. Conservando último dato válido.",
+                    source_connection_status="API_LOCAL_OK_BOTH_NULL"
+                )
+                insert_sync_log(log)
+                results["detalles_unidades"].append({
+                    "unidad_negocio_id": unidad_id,
+                    "unidad": nombre,
+                    "status": "SKIPPED_BOTH_NULL",
+                    "fecha_operacion": fecha_operacion_str,
+                    "mensaje": "Conservando último dato válido - AMBAS NULL"
+                })
+                continue  # NO sobrescribir con $0
+            
+            # CASO 3: Total es $0 pero hay dato existente válido - Verificar antes de sobrescribir
+            elif total_calculado == 0:
+                # Consultar dato existente en EDARSAHUB
+                existing_data = _get_existing_ventas_dia(unidad_id, sucursal_id)
+                existing_total = float(existing_data.get('total_estimado_dia') or 0) if existing_data else 0
                 
-                # Si ventas_cerradas tiene valor, es dato válido
-                if ventas_cerradas_raw is not None and float(ventas_cerradas_raw) > 0:
-                    logger.info(f"[SYNC_ABIERTAS_V2] QRO: Usando ventas_cerradas=${ventas_cerradas_raw:,.2f} (abiertas puede ser NULL)")
-                elif ventas_abiertas_raw is None and ventas_cerradas_raw is None:
-                    # AMBAS son NULL - conservar último dato válido
-                    logger.warning(f"[SYNC_ABIERTAS_V2] {nombre}: AMBAS queries retornaron NULL - CONSERVANDO último dato válido")
+                if existing_total > 0:
+                    logger.warning(
+                        f"[SYNC_ABIERTAS_V2] {nombre}: Total calculado=$0 pero existe dato válido=${existing_total:,.2f}. "
+                        f"PROTECCIÓN: Conservando dato existente para fecha_operacion={fecha_operacion_str}"
+                    )
                     log = SyncLogV2(
                         run_id=run_id,
                         run_type=SyncRunType.ABIERTAS,
                         unidad_negocio_id=unidad_id,
                         server_id=server_id,
                         sucursal_id=sucursal_id,
-                        fecha_inicio=fecha_operacion,  # Usar fecha_operacion, no fecha_hoy
+                        fecha_inicio=fecha_operacion,
                         fecha_fin=fecha_operacion,
                         status=SyncStatus.SKIPPED,
                         records_processed=0,
                         records_skipped=1,
-                        error_message=f"AMBAS queries NULL para fecha_operacion={fecha_operacion_str}. Conservando último dato válido.",
-                        source_connection_status="API_LOCAL_OK_BOTH_NULL"
+                        error_message=f"Total=$0 pero existe dato válido=${existing_total:,.2f}. Protección anti-sobrescritura activada.",
+                        source_connection_status="API_LOCAL_OK_ZERO_WITH_EXISTING"
                     )
                     insert_sync_log(log)
                     results["detalles_unidades"].append({
-                        "unidad": unidad_id,
-                        "nombre": nombre,
-                        "status": "SKIPPED_BOTH_NULL",
+                        "unidad_negocio_id": unidad_id,
+                        "unidad": nombre,
+                        "status": "SKIPPED_ZERO_PROTECTION",
                         "fecha_operacion": fecha_operacion_str,
-                        "mensaje": "Conservando último dato válido"
+                        "existing_total": existing_total,
+                        "mensaje": f"Protección: No sobrescribir ${existing_total:,.2f} con $0"
                     })
-                    continue  # NO sobrescribir con $0
+                    continue  # NO sobrescribir dato válido con $0
+                else:
+                    # No hay dato existente o ya es $0, proceder normalmente
+                    logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Total=$0 y sin dato existente válido, procediendo con sync")
             
             # Extraer valores finales (abiertas_data y cerradas_data ya están definidos arriba)
             ventas_abiertas = Decimal(str(abiertas_data.get('ventas_abiertas') or 0))
@@ -663,7 +754,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             
             # FIX 2026-05-15: Log detallado para QRO (diagnóstico de bug $0)
             if unidad_id == '130QRO':
-                logger.info(f"[SYNC_ABIERTAS_V2] QRO DETALLE:")
+                logger.info("[SYNC_ABIERTAS_V2] QRO DETALLE:")
                 logger.info(f"  fecha_operacion_backend: {fecha_operacion_str}")
                 logger.info(f"  server_id: {server_id}")
                 logger.info(f"  api_url: {api_config['api_url']}")

@@ -1252,3 +1252,47 @@ ORIGEN: $0.00        origen=EDARSAHUB_SQL (API servidor con error 500)
 > El Tablero Ejecutivo NUNCA debe hacer conexiones LIVE a APIs locales.
 > Debe leer SOLO de EDARSAHUB SQL.
 
+---
+
+## ✅ FIX P0 COMPLETADO: Scheduler FechaOperacion ORIGEN/130QRO (15-May-2026 01:39)
+
+### Problema:
+El job de sincronización automática (`sync_comercial_abiertas_v2_job.py`) sobrescribía datos válidos de ORIGEN ($79,988) y 130QRO ($207,323) con $0 porque calculaba la FechaOperacion incorrectamente durante la madrugada (00:00-03:00).
+
+### Causa Raíz:
+- A las 01:00 AM del día 15, el job consultaba cuentas del día 15 en lugar del día 14 (jornada operativa vigente).
+- Las queries no encontraban datos porque buscaban en la fecha incorrecta.
+- Los datos válidos eran reemplazados por $0.
+
+### Solución Implementada:
+1. **Confirmado uso de `get_operational_window()`** para todas las unidades MPRO
+2. **Añadida función `_get_existing_ventas_dia()`** para verificar datos existentes antes de sobrescribir
+3. **Extendida protección anti-$0** a todas las unidades MPRO (antes solo 130QRO)
+4. **Lógica de 3 casos**:
+   - CASO 1: Datos válidos (total > 0) → Sincronizar normalmente
+   - CASO 2: AMBAS queries NULL → NO sobrescribir, conservar dato existente
+   - CASO 3: Total=$0 pero existe dato válido → Protección activada, NO sobrescribir
+
+### Archivos Modificados:
+- `/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py`
+
+### Resultado Post-Fix:
+```
+Hora ejecución: 01:39 AM del día 15
+FechaOperacion calculada: 2026-05-14 ✅ (día operativo correcto)
+
+ORIGEN:     $79,988.01  (FechaOp=2026-05-14) ✅
+130QRO:     $207,323.00 (FechaOp=2026-05-14) ✅
+CIENFUEGOS: $285,325.00 (FechaOp=2026-05-14) ✅
+ESTELAR:    $185,670.00 (FechaOp=2026-05-14) ✅
+130MID:     $177,436.00 (FechaOp=2026-05-14) ✅
+```
+
+### Reporte Detallado:
+`/app/docs/reports/FIX_P0_SCHEDULER_FECHA_OPERACION_ORIGEN.md`
+
+### Regla Arquitectónica Cumplida:
+> MPRO debe usar exactamente la misma regla de jornada operativa que SoftRestaurant.
+> La venta del día pertenece a la FechaOperacion del turno/jornada, no al día calendario.
+> $0 solo es válido si la fuente respondió correctamente y confirmó venta real cero.
+
