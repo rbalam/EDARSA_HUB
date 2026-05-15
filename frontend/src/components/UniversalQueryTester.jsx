@@ -447,101 +447,283 @@ const UniversalQueryTester = ({ open, onClose, server, connectionType = 'sql' })
         </div>
 
         <div className="space-y-4">
-          {/* Fila 1: Nombre y Tipo */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Nombre de prueba</Label>
-              <Input
-                placeholder="Ej: Listar tablas, Validar conexión..."
-                value={testName}
-                onChange={(e) => setTestName(e.target.value)}
-                data-testid="test-name-input"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Tipo de prueba</Label>
-              <Select value={testType} onValueChange={setTestType}>
-                <SelectTrigger data-testid="test-type-select">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TEST_TYPES.map((type) => (
-                    <SelectItem key={type.key} value={type.key}>
-                      <div className="flex items-center gap-2">
-                        <type.icon className="h-4 w-4" />
-                        <span>{type.label}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          {/* PARA CONEXIONES API: Resumen simplificado de solo lectura */}
+          {connectionType === 'api' ? (
+            <>
+              {/* Resumen de la conexión */}
+              <Card className="bg-zinc-50 border-zinc-200">
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    Resumen de prueba
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-zinc-500">Servidor:</span>
+                    <p className="font-medium">{server?.name || 'Sin nombre'}</p>
+                  </div>
+                  <div>
+                    <span className="text-zinc-500">Sistema:</span>
+                    <p className="font-medium">{server?.system_type || 'API REST'}</p>
+                  </div>
+                  <div>
+                    <span className="text-zinc-500">Tipo de prueba:</span>
+                    <p className="font-medium">Conexión API REST (GET)</p>
+                  </div>
+                  <div>
+                    <span className="text-zinc-500">Método:</span>
+                    <Badge variant="outline" className="text-xs">GET</Badge>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Fila 2: Sistema y Módulo */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Sistema detectado</Label>
-              <Input
-                value={server?.system_type || 'Desconocido'}
-                disabled
-                className="bg-zinc-50"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Módulo relacionado (opcional)</Label>
-              <Input
-                placeholder="Ej: Nóminas, RH, Contabilidad, Ninguno..."
-                value={moduleRelated}
-                onChange={(e) => setModuleRelated(e.target.value)}
-                data-testid="module-input"
-              />
-              <p className="text-xs text-zinc-500">Campo libre. Escribe cualquier módulo o déjalo vacío.</p>
-            </div>
-          </div>
+              {/* Configuración de la prueba API */}
+              <Card>
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm font-medium">Configuración de prueba</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Path adicional */}
+                  <div className="space-y-2">
+                    <Label className="text-sm flex items-center gap-1">
+                      Path adicional
+                      <span className="text-xs text-zinc-500">(opcional)</span>
+                    </Label>
+                    <Input
+                      placeholder="/ventas, /inventario?sucursal=0021"
+                      value={apiEndpointPath}
+                      onChange={(e) => setApiEndpointPath(e.target.value)}
+                      className="font-mono text-sm"
+                      data-testid="api-endpoint-path-input"
+                    />
+                    <p className="text-xs text-zinc-500">
+                      Ruta que se agregará a la URL base de la conexión. Ejemplo: /ventas o /inventario?sucursal=0021
+                    </p>
+                  </div>
 
-          {/* Parámetros dinámicos */}
-          <Card>
-            <CardHeader className="py-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">Parámetros dinámicos (opcional)</CardTitle>
-                <Button variant="outline" size="sm" onClick={addParameter}>
-                  <Plus className="h-3 w-3 mr-1" /> Agregar
-                </Button>
-              </div>
-            </CardHeader>
-            {parameters.length > 0 && (
-              <CardContent className="pt-0">
-                <div className="space-y-2">
-                  {parameters.map((param, index) => (
-                    <div key={index} className="flex gap-2 items-center">
-                      <Input
-                        placeholder="Clave"
-                        value={param.key}
-                        onChange={(e) => updateParameter(index, 'key', e.target.value)}
-                        className="w-1/3"
-                      />
-                      <Input
-                        placeholder="Valor"
-                        value={param.value}
-                        onChange={(e) => updateParameter(index, 'value', e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button variant="ghost" size="sm" onClick={() => removeParameter(index)}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                  {/* Vista previa de URL */}
+                  <div className="bg-zinc-100 rounded-lg p-3 space-y-1">
+                    <Label className="text-xs text-zinc-600">Vista previa de URL final:</Label>
+                    <div className="font-mono text-sm text-zinc-800 break-all">
+                      <Badge variant="secondary" className="mr-2">GET</Badge>
+                      <span className="text-zinc-500">[URL_BASE_CONEXIÓN]</span>
+                      <span className="text-blue-600">{apiEndpointPath || ''}</span>
+                      {apiParams.length > 0 && (
+                        <span className="text-green-600">
+                          ?{apiParams.filter(p => p.key).map(p => `${p.key}=${p.value || '...'}`).join('&')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Headers opcionales */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm flex items-center gap-1">
+                        Headers
+                        <span className="text-xs text-zinc-500">(opcional)</span>
+                      </Label>
+                      <Button variant="ghost" size="sm" onClick={addApiHeader} className="h-7">
+                        <Plus className="h-3 w-3 mr-1" /> Agregar
                       </Button>
                     </div>
-                  ))}
-                </div>
-                <p className="text-xs text-zinc-500 mt-2">
-                  Usa {'{clave}'} en tu query para sustituir el valor.
-                </p>
-              </CardContent>
-            )}
-          </Card>
+                    {apiHeaders.length === 0 ? (
+                      <p className="text-xs text-zinc-500 italic">
+                        Usa headers cuando la API requiera autenticación o configuración adicional.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {apiHeaders.map((header, index) => (
+                          <div key={index} className="flex gap-2 items-center">
+                            <Input
+                              placeholder="Clave (ej: X-Custom-Header)"
+                              value={header.key}
+                              onChange={(e) => updateApiHeader(index, 'key', e.target.value)}
+                              className="w-1/3 h-8 text-xs"
+                            />
+                            <Input
+                              placeholder="Valor"
+                              value={header.value}
+                              onChange={(e) => updateApiHeader(index, 'value', e.target.value)}
+                              className="flex-1 h-8 text-xs"
+                              type={header.key.toLowerCase().includes('auth') || 
+                                    header.key.toLowerCase().includes('token') || 
+                                    header.key.toLowerCase().includes('key') ? 'password' : 'text'}
+                            />
+                            <Button variant="ghost" size="sm" onClick={() => removeApiHeader(index)} className="h-8 w-8 p-0">
+                              <Trash2 className="h-3 w-3 text-red-500" />
+                            </Button>
+                          </div>
+                        ))}
+                        <p className="text-xs text-zinc-500">Los valores sensibles se enmascaran automáticamente.</p>
+                      </div>
+                    )}
+                  </div>
 
-          {/* Configuración según tipo */}
-          {testType === 'sql_libre' && (
+                  {/* Query Params opcionales */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm flex items-center gap-1">
+                        Query Params
+                        <span className="text-xs text-zinc-500">(opcional)</span>
+                      </Label>
+                      <Button variant="ghost" size="sm" onClick={addApiParam} className="h-7">
+                        <Plus className="h-3 w-3 mr-1" /> Agregar
+                      </Button>
+                    </div>
+                    {apiParams.length === 0 ? (
+                      <p className="text-xs text-zinc-500 italic">
+                        Filtros enviados en la URL. Ejemplo: fecha=2026-05-15, sucursal=0021
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {apiParams.map((param, index) => (
+                          <div key={index} className="flex gap-2 items-center">
+                            <Input
+                              placeholder="Clave"
+                              value={param.key}
+                              onChange={(e) => updateApiParam(index, 'key', e.target.value)}
+                              className="w-1/3 h-8 text-xs"
+                            />
+                            <Input
+                              placeholder="Valor"
+                              value={param.value}
+                              onChange={(e) => updateApiParam(index, 'value', e.target.value)}
+                              className="flex-1 h-8 text-xs"
+                            />
+                            <Button variant="ghost" size="sm" onClick={() => removeApiParam(index)} className="h-8 w-8 p-0">
+                              <Trash2 className="h-3 w-3 text-red-500" />
+                            </Button>
+                          </div>
+                        ))}
+                        <p className="text-xs text-zinc-500">No se permite SQL libre en los parámetros.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Timeout */}
+                  <div className="flex items-center gap-3">
+                    <Label className="text-sm">Timeout:</Label>
+                    <Select value={String(apiTimeout)} onValueChange={(v) => setApiTimeout(Number(v))}>
+                      <SelectTrigger className="w-24 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TIMEOUT_OPTIONS.map((n) => (
+                          <SelectItem key={n} value={String(n)}>{n} segundos</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-xs text-zinc-500">Tiempo máximo de espera para la respuesta.</span>
+                  </div>
+
+                  {/* Aviso de seguridad */}
+                  <div className="flex items-center gap-2 text-amber-600 text-xs bg-amber-50 p-2 rounded">
+                    <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                    <span>Solo método GET permitido. Los headers sensibles se enmascararán. No se permite SQL libre.</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            /* FORMULARIO ORIGINAL PARA SQL */
+            <>
+              {/* Fila 1: Nombre y Tipo */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nombre de prueba</Label>
+                  <Input
+                    placeholder="Ej: Listar tablas, Validar conexión..."
+                    value={testName}
+                    onChange={(e) => setTestName(e.target.value)}
+                    data-testid="test-name-input"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tipo de prueba</Label>
+                  <Select value={testType} onValueChange={setTestType}>
+                    <SelectTrigger data-testid="test-type-select">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TEST_TYPES.map((type) => (
+                        <SelectItem key={type.key} value={type.key}>
+                          <div className="flex items-center gap-2">
+                            <type.icon className="h-4 w-4" />
+                            <span>{type.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Fila 2: Sistema y Módulo */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Sistema detectado</Label>
+                  <Input
+                    value={server?.system_type || 'Desconocido'}
+                    disabled
+                    className="bg-zinc-50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Módulo relacionado (opcional)</Label>
+                  <Input
+                    placeholder="Ej: Nóminas, RH, Contabilidad, Ninguno..."
+                    value={moduleRelated}
+                    onChange={(e) => setModuleRelated(e.target.value)}
+                    data-testid="module-input"
+                  />
+                  <p className="text-xs text-zinc-500">Campo libre. Escribe cualquier módulo o déjalo vacío.</p>
+                </div>
+              </div>
+
+              {/* Parámetros dinámicos */}
+              <Card>
+                <CardHeader className="py-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium">Parámetros dinámicos (opcional)</CardTitle>
+                    <Button variant="outline" size="sm" onClick={addParameter}>
+                      <Plus className="h-3 w-3 mr-1" /> Agregar
+                    </Button>
+                  </div>
+                </CardHeader>
+                {parameters.length > 0 && (
+                  <CardContent className="pt-0">
+                    <div className="space-y-2">
+                      {parameters.map((param, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <Input
+                            placeholder="Clave"
+                            value={param.key}
+                            onChange={(e) => updateParameter(index, 'key', e.target.value)}
+                            className="w-1/3"
+                          />
+                          <Input
+                            placeholder="Valor"
+                            value={param.value}
+                            onChange={(e) => updateParameter(index, 'value', e.target.value)}
+                            className="flex-1"
+                          />
+                          <Button variant="ghost" size="sm" onClick={() => removeParameter(index)}>
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-zinc-500 mt-2">
+                      Usa {'{clave}'} en tu query para sustituir el valor.
+                    </p>
+                  </CardContent>
+                )}
+              </Card>
+
+              {/* Configuración según tipo */}
+              {testType === 'sql_libre' && (
             <Card>
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium">Editor SQL</CardTitle>
@@ -733,7 +915,7 @@ const UniversalQueryTester = ({ open, onClose, server, connectionType = 'sql' })
           {/* Botón ejecutar */}
           <Button 
             onClick={executeTest} 
-            disabled={executing || (testType === 'api_rest' && !apiUrl)}
+            disabled={executing || (connectionType !== 'api' && testType === 'api_rest' && !apiUrl)}
             className="w-full"
             data-testid="execute-test-btn"
           >
