@@ -434,6 +434,13 @@ from modules.universal_query import router as universal_query_router
 api_router.include_router(universal_query_router)
 
 # ============================================================================
+# FASE 4: Consultas SQL - Endpoints /api/consultas-sql/*
+# Expone módulo SQL-First de forma controlada y segura
+# ============================================================================
+from modules.consultas_sql import get_consultas_sql_router
+api_router.include_router(get_consultas_sql_router())
+
+# ============================================================================
 # FASE 4E: Cache Management Endpoints (Admin Only)
 # ============================================================================
 from modules.comercial.cache_service import cleanup_expired_cache, get_cache_stats, init_cache_service

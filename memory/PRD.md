@@ -1842,11 +1842,41 @@ FASE 4: Endpoints /api/consultas-sql/*
 
 ---
 
+## FASE 4 ENDPOINTS CONSULTAS SQL - COMPLETADA (15-May-2026)
+
+### Endpoints Creados:
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/api/consultas-sql/catalogo` | GET | Listar consultas |
+| `/api/consultas-sql/catalogo/{codigo}` | GET | Detalle de consulta |
+| `/api/consultas-sql/validar` | POST | Validar consulta |
+| `/api/consultas-sql/ejecutar` | POST | Ejecutar consulta autorizada |
+| `/api/consultas-sql/sistemas` | GET | Listar sistemas |
+| `/api/consultas-sql/modulos` | GET | Listar módulos |
+
+### Archivos Creados:
+- `/app/backend/modules/consultas_sql/routes.py` (~450 líneas)
+- `/app/backend/modules/consultas_sql/schemas.py` (~180 líneas)
+
+### Seguridad:
+- No acepta SQL libre desde frontend
+- Solo ejecuta consultas del catálogo EDARSAHUB
+- Valida con SQLSanitizer antes de ejecutar
+- RBAC temporal: Administrador/SuperAdministrador
+- SQL visible solo para SuperAdministrador
+
+### Tests: 9/9 ✅
+
+### Reporte:
+`/app/docs/reports/FASE_4_ENDPOINTS_CONSULTAS_SQL_SQLFIRST.md`
+
+---
+
 ## Tareas Pendientes
 
-### P1 - FASE 4: Endpoints /api/consultas-sql/*
-- Exponer módulo SQL-First via API
-- Sin modificar endpoints legacy
+### P1 - FASE 4B: Frontend para Catálogo SQL
+- Crear UI para consumir endpoints `/api/consultas-sql/*`
+- Componentes: CatalogoSQLPage, ConsultaSQLCard, ConsultaSQLDetalle
 
 ### P1 - FASE 3A: Ventas por Hora/Día de Semana
 - Implementar lógica SQL en EDARSAHUB
@@ -1860,7 +1890,7 @@ FASE 4: Endpoints /api/consultas-sql/*
 - 172 instancias de `datetime.now()`, `date.today()` detectadas
 - Centralizar en `get_operational_window()`
 
-### P2 - FASE 4B: Migración Final fuera de MongoDB
+### P2 - Migración Final fuera de MongoDB
 - Deprecar MongoDB como fuente de datos
 
 ### P3 - Limpieza de Registros Legacy
