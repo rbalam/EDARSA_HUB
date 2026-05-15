@@ -1624,11 +1624,45 @@ La migración de servidores YA ESTÁ COMPLETA. El único componente pendiente es
 - Migración de consultas hardcodeadas
 - Implementación de auditoría y permisos
 
-### Próximas Fases Propuestas:
+### Próximas Fases Propuestas (Catálogo SQL):
 1. FASE 1: DDL de tablas ConsultasSQL_*
 2. FASE 2: Carga de consultas predefinidas desde Python
 3. FASE 3: Repository y endpoints SQL-first
 4. FASE 4: Wrapper dual-read temporal
 5. FASE 5: Auditoría y permisos
 6. FASE 6: Deprecar código legacy
+
+---
+
+## AUDITORÍA PASIVA COMPLETA DEL REPOSITORIO (15-May-2026)
+
+### Métricas Críticas Detectadas:
+| Métrica | Valor | Severidad |
+|---------|-------|-----------|
+| server.py | **16,408 líneas** | 🔴 CRÍTICO |
+| Endpoints en server.py | 203 | 🔴 ALTO |
+| Modelos Pydantic en server.py | 41 | 🔴 ALTO |
+| Queries f-string (SQL injection risk) | 58 | 🔴 CRÍTICO |
+| Usos datetime.now() sin ventana operativa | 172 | 🔴 ALTO |
+| Referencias MongoDB | 918 | 🟡 MEDIO |
+| Tests frontend | **0** | 🔴 CRÍTICO |
+| Comentarios TODO/LEGACY | 458 | 🟡 MEDIO |
+
+### Hallazgos Principales:
+1. **server.py es un monolito inmanejable** - 16K líneas, 203 endpoints, 41 modelos
+2. **58 queries SQL vulnerables** - Uso de f-string sin sanitización
+3. **172 usos de fechas peligrosas** - datetime.now() sin ventana operativa
+4. **0 tests de frontend** - Sin cobertura de UI
+5. **MongoDB parcialmente migrado** - 918 referencias, pero db.servers = 0 documentos
+
+### Plan de Limpieza Recomendado:
+1. 🔴 FASE 2: Sanitización SQL (58 queries)
+2. 🔴 FASE 3: Ventana Operativa (comercial/routes.py)
+3. 🟡 FASE 1: Refactor server.py (dividir monolito)
+4. 🟡 FASE 6: Limpieza archivos (.backup, test_reports)
+5. 🟢 FASE 4: MongoDB cleanup (documentar legacy)
+6. 🟢 FASE 5: Frontend components (dividir archivos grandes)
+
+### Documento Generado:
+`/app/docs/reports/AUDITORIA_DEPURACION_LIMPIEZA_REPO_EDARSAHUB.md`
 
