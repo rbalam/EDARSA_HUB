@@ -274,7 +274,7 @@ const formatLastUpdate = (isoDate) => {
 };
 
 // Tarjeta de Unidad clickeable - P0: Usando data_status y live_status separados
-const UnidadCard = ({ unidad, onClick, esMultiMes = false }) => {
+const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false }) => {
   const isPositive = unidad.var_vs_mes_ant >= 0;
   
   // P0 TAREA 6: Determinar estado visual basado en data_status y live_status
@@ -374,14 +374,14 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false }) => {
           {/* Ocultar "vs Mes Ant" cuando hay multiselección de meses */}
           {!esMultiMes && hasValidData && (
             <div className="flex justify-between items-center">
-              <span className="text-xs text-zinc-500">vs Mes Ant</span>
+              <span className="text-xs text-zinc-500">{modoVentasDia ? 'vs Día Ant.' : 'vs Mes Ant.'}</span>
               <VariacionBadge valor={unidad.var_vs_mes_ant} />
             </div>
           )}
           
           {hasValidData && (
             <div className="flex justify-between items-center">
-              <span className="text-xs text-zinc-500">{esMultiMes ? 'vs Periodo Ant' : 'vs Año Ant'}</span>
+              <span className="text-xs text-zinc-500">{modoVentasDia ? 'vs Mismo Día Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Año Ant.')}</span>
               <VariacionBadge valor={unidad.var_vs_año_ant} />
             </div>
           )}
@@ -1187,14 +1187,14 @@ export default function TableroEjecutivo() {
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
                   {!esMultiMes && (
                     <div className="text-center">
-                      <span className="text-xs text-zinc-400 block">vs Mes</span>
+                      <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Día Ant.' : 'vs Mes'}</span>
                       <p className={`font-bold ${data.totales.var_vs_mes_ant >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {formatPercent(data.totales.var_vs_mes_ant)}
                       </p>
                     </div>
                   )}
                   <div className="text-center">
-                    <span className="text-xs text-zinc-400 block">{esMultiMes ? 'vs Periodo Ant.' : 'vs Año'}</span>
+                    <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Año')}</span>
                     <p className={`font-bold ${data.totales.var_vs_año_ant >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {formatPercent(data.totales.var_vs_año_ant)}
                     </p>
@@ -1210,14 +1210,14 @@ export default function TableroEjecutivo() {
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
                   {!esMultiMes && (
                     <div className="text-center">
-                      <span className="text-xs text-zinc-400 block">vs Mes</span>
+                      <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Día Ant.' : 'vs Mes'}</span>
                       <p className={`text-sm font-bold ${(data.totales.var_pax_mes || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {formatPercent(data.totales.var_pax_mes || 0)}
                       </p>
                     </div>
                   )}
                   <div className="text-center">
-                    <span className="text-xs text-zinc-400 block">{esMultiMes ? 'vs Periodo Ant.' : 'vs Año'}</span>
+                    <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Año')}</span>
                     <p className={`text-sm font-bold ${(data.totales.var_pax_año || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {formatPercent(data.totales.var_pax_año || 0)}
                     </p>
@@ -1233,14 +1233,14 @@ export default function TableroEjecutivo() {
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
                   {!esMultiMes && (
                     <div className="text-center">
-                      <span className="text-xs text-zinc-400 block">vs Mes</span>
+                      <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Día Ant.' : 'vs Mes'}</span>
                       <p className={`text-sm font-bold ${(data.totales.var_cheques_mes || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {formatPercent(data.totales.var_cheques_mes || 0)}
                       </p>
                     </div>
                   )}
                   <div className="text-center">
-                    <span className="text-xs text-zinc-400 block">{esMultiMes ? 'vs Periodo Ant.' : 'vs Año'}</span>
+                    <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Año')}</span>
                     <p className={`text-sm font-bold ${(data.totales.var_cheques_año || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {formatPercent(data.totales.var_cheques_año || 0)}
                     </p>
@@ -1268,7 +1268,7 @@ export default function TableroEjecutivo() {
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
                   <div className="text-center">
                     <span className="text-xs text-zinc-400 block">
-                      {esMultiMes ? 'vs Ventas Año Ant.' : 'vs Año Ant.'}
+                      {data?.periodo?.modo_ventas_dia ? 'vs Mismo Día Año Ant.' : (esMultiMes ? 'vs Ventas Año Ant.' : 'vs Año Ant.')}
                     </span>
                     <p className={`text-sm font-bold ${(() => {
                       if (esMultiMes) {
@@ -1355,6 +1355,7 @@ export default function TableroEjecutivo() {
                 unidad={unidad} 
                 onClick={setUnidadSeleccionada}
                 esMultiMes={esMultiMes}
+                modoVentasDia={data?.periodo?.modo_ventas_dia || false}
               />
             ))}
           </div>

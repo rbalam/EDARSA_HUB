@@ -889,3 +889,29 @@ Campos adicionales en `Sistema_Catalogo`:
 
 **Reporte técnico:** `/app/docs/reports/SISTEMA_CATALOGO_IMPLEMENTACION.md`
 
+---
+
+## CORRECCIÓN VISUAL - Etiquetas Dinámicas Ventas del Día (15-Mayo-2026)
+
+### Problema Resuelto
+Las tarjetas del Tablero Ejecutivo mostraban etiquetas hardcodeadas "vs Mes Ant" y "vs Año Ant" incluso cuando el selector estaba en modo "Ventas del Día".
+
+### Solución Implementada
+Se modificó `/app/frontend/src/pages/TableroEjecutivo.js`:
+
+1. **Componente `UnidadCard`**: Se agregó prop `modoVentasDia` y se hicieron dinámicas las etiquetas:
+   - `{modoVentasDia ? 'vs Día Ant.' : 'vs Mes Ant.'}`
+   - `{modoVentasDia ? 'vs Mismo Día Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Año Ant.')}`
+
+2. **Tarjetas Consolidadas (Header)**: Ventas, PAX, Cheques ahora usan:
+   - `{data?.periodo?.modo_ventas_dia ? 'vs Día Ant.' : 'vs Mes'}`
+   - `{data?.periodo?.modo_ventas_dia ? 'vs Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Año')}`
+
+3. **Tarjeta Proyección**: 
+   - `{data?.periodo?.modo_ventas_dia ? 'vs Mismo Día Año Ant.' : (esMultiMes ? 'vs Ventas Año Ant.' : 'vs Año Ant.')}`
+
+### Validación
+- ✅ Screenshot confirmando etiquetas correctas en vista "Ventas del Día"
+- ✅ Sin errores de lint
+- ✅ Sin regresión en vistas mensuales/anuales
+
