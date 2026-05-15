@@ -329,16 +329,50 @@ def get_ventas_dia_abiertas(
     - ventas_abiertas: Ventas sin cierre aún
     - ventas_cerradas_dia: Ventas ya cerradas del mismo día
     - total_estimado_dia: ventas_abiertas + ventas_cerradas_dia
+    
+    NOTA: Por desfase de zona horaria UTC vs México, los datos pueden estar
+    guardados con fecha UTC (día siguiente). Se buscan ambas fechas y se
+    prioriza la más reciente.
     """
+    from datetime import timedelta
+    
+    fecha_siguiente = fecha + timedelta(days=1)
+    
     where_clauses = [
-        f"fecha_operacion = '{fecha.isoformat()}'"
+        f"(fecha_operacion = '{fecha.isoformat()}' OR fecha_operacion = '{fecha_siguiente.isoformat()}')"
     ]
     
     if unidades_permitidas:
         ids_quoted = ','.join([f"'{u}'" for u in unidades_permitidas])
         where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
     
+    # Usar ROW_NUMBER para obtener solo el registro más reciente por unidad
     query = f"""
+    WITH RankedData AS (
+        SELECT 
+            id,
+            unidad_negocio_id,
+            unidad_negocio_nombre,
+            server_id,
+            sucursal_id,
+            sucursal_nombre,
+            sistema_origen,
+            snapshot_timestamp,
+            fecha_operacion,
+            ventas_abiertas,
+            tickets_abiertos,
+            pax_abiertos,
+            ventas_cerradas_dia,
+            tickets_cerrados_dia,
+            pax_cerrados_dia,
+            total_estimado_dia,
+            fuente_original,
+            sync_run_id,
+            fecha_ultima_actualizacion,
+            ROW_NUMBER() OVER (PARTITION BY unidad_negocio_id ORDER BY snapshot_timestamp DESC) as rn
+        FROM Comercial_Ventas_Dia_Abiertas_v2
+        WHERE {' AND '.join(where_clauses)}
+    )
     SELECT 
         id,
         unidad_negocio_id,
@@ -359,8 +393,8 @@ def get_ventas_dia_abiertas(
         fuente_original,
         sync_run_id,
         fecha_ultima_actualizacion
-    FROM Comercial_Ventas_Dia_Abiertas_v2
-    WHERE {' AND '.join(where_clauses)}
+    FROM RankedData
+    WHERE rn = 1
     ORDER BY unidad_negocio_id
     """
     

@@ -335,7 +335,12 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
     
     start_time = datetime.now(timezone.utc)
     run_id = f"ABIERTA-{start_time.strftime('%Y%m%d-%H%M%S')}-{str(uuid.uuid4())[:4]}"
-    fecha_hoy = date.today()
+    
+    # CORRECCIÓN: Usar zona horaria de México para fecha operativa
+    # En México, la fecha operativa corresponde a la hora local, no UTC
+    import pytz
+    mexico_tz = pytz.timezone('America/Mexico_City')
+    fecha_hoy = datetime.now(mexico_tz).date()
     
     results = {
         "job_name": JOB_NAME,

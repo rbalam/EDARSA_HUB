@@ -611,7 +611,10 @@ async def comercial_v2_dashboard(
         # COMBINAR CON VENTAS ABIERTAS DEL DÍA ACTUAL
         # =====================================================================
         
-        fecha_hoy = date.today()
+        # CORRECCIÓN: Usar zona horaria de México para fecha operativa
+        import pytz
+        mexico_tz = pytz.timezone('America/Mexico_City')
+        fecha_hoy = datetime.now(mexico_tz).date()
         incluye_hoy = fecha_fin >= fecha_hoy
         ventas_abiertas_hoy = []
         
@@ -1054,7 +1057,10 @@ async def comercial_v2_ventas_dia(
     """
     try:
         if fecha is None:
-            fecha = date.today()
+            # CORRECCIÓN: Usar zona horaria de México para calcular fecha operativa
+            import pytz
+            mexico_tz = pytz.timezone('America/Mexico_City')
+            fecha = datetime.now(mexico_tz).date()
         
         unidades_permitidas = await get_unidades_permitidas_v2(current_user)
         

@@ -988,3 +988,31 @@ Modificación en `/app/backend/modules/comercial_v2/repository_readonly.py` func
 - ✅ No hay SQL MPRO central
 - ✅ Fallback no confunde ausencia de sync con venta real cero
 
+---
+
+## CORRECCIÓN ZONA HORARIA - Fecha Operativa México (15-Mayo-2026)
+
+### Problema Identificado
+El servidor usa UTC, donde la fecha era 15-May cuando en México era 14-May (22:40 hora local). Esto causaba:
+1. El job de sincronización guardaba `fecha_operacion = 2026-05-15` (UTC)
+2. El endpoint buscaba `fecha_operacion = 2026-05-14` (México)
+3. No encontraba datos porque las fechas no coincidían
+
+### Correcciones Aplicadas
+
+| Archivo | Cambio |
+|---------|--------|
+| `routes.py` | `date.today()` → `datetime.now(mexico_tz).date()` |
+| `sync_comercial_abiertas_v2_job.py` | `date.today()` → `datetime.now(mexico_tz).date()` |
+| `repository_readonly.py` | Búsqueda en fecha México Y fecha UTC con prioridad por snapshot reciente |
+
+### Regla Establecida
+> **La fecha operativa SIEMPRE debe calcularse en zona horaria América/Mexico_City**
+> Los datos comerciales corresponden al día de operación en México, no al día UTC del servidor.
+
+### Validación
+- ✅ Endpoint ventas-día retorna fecha correcta (14-May México)
+- ✅ Datos históricos del día anterior (13-May) encontrados para todas las unidades
+- ✅ Variaciones calculadas correctamente
+- ✅ Modal muestra comparativos reales, no $0 falsos
+
