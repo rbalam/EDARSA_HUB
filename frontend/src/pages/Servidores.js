@@ -2576,6 +2576,8 @@ const Servidores = () => {
                 )}
               </Button>
           </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
