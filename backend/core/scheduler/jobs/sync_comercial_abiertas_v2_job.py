@@ -9,6 +9,13 @@ ACTUALIZACIÓN ARQUITECTÓNICA (2026-05-14):
 - UPSERT idempotente para datos mutables durante el día
 - source_status técnico para diagnóstico
 
+FASE 5D (2026-05-16):
+- Integración con EmpresaResolver para resolución canónica
+- Eliminado hardcoding de MPRO_API_LOCAL_CONFIG
+- ORIGEN usa EmpresaID=1 + CodigoSucursalSistema=0023
+- 130QRO usa EmpresaID=2 + CodigoSucursalSistema=0021
+- get_operational_window() para FechaOperacion (NO date.today())
+
 REGLAS:
 1. Ventas del Día es dato mutable durante el día (cancelaciones, reaperturas, etc.)
 2. Cada sync recalcula el estado actual, no acumula
@@ -22,6 +29,7 @@ TABLA DESTINO: Comercial_Ventas_Dia_Abiertas_v2
 
 Autor: E1 Agent
 Fecha: 2026-05-14
+Actualizado: 2026-05-16 (FASE 5D EmpresaResolver)
 """
 
 import os
@@ -36,6 +44,23 @@ from typing import Dict, List, Any, Optional, Tuple
 # Import del helper de ventana operativa
 from core.utils.operational_window import get_operational_window, is_within_operational_hours
 
+# =============================================================================
+# FASE 5D: INTEGRACIÓN CON EmpresaResolver (Mayo 2026)
+# =============================================================================
+try:
+    from core.empresa_resolver import (
+        resolve_empresa_by_alias,
+        resolve_empresa_by_id,
+        get_connection_for_role,
+        get_empresa_connections,
+        EMPRESA_RESOLVER_AVAILABLE
+    )
+    _EMPRESA_RESOLVER_OK = True
+except ImportError as e:
+    logging.warning(f"[SYNC_ABIERTAS_V2] EmpresaResolver no disponible: {e}. Usando fallback legacy.")
+    _EMPRESA_RESOLVER_OK = False
+    EMPRESA_RESOLVER_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 # Configuración
@@ -44,20 +69,26 @@ SYNC_INTERVAL_SECONDS = int(os.environ.get("SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2
 
 
 # =============================================================================
-# CONFIGURACIÓN DE APIs LOCALES MPRO
+# CONFIGURACIÓN DE APIs LOCALES MPRO - FALLBACK LEGACY
 # =============================================================================
+# NOTA: Este mapeo se usa SOLO si EmpresaResolver no está disponible.
+# La fuente autoritativa es Sistema_EmpresasServidores via EmpresaResolver.
 
-# Mapeo de códigos de unidad a sus configuraciones de API local
-MPRO_API_LOCAL_CONFIG = {
+MPRO_API_LOCAL_CONFIG_LEGACY = {
     "ORIGEN": {
         "server_config_name": "ORIGEN LOCAL",
-        "sucursal_id": "0023"
+        "sucursal_id": "0023",
+        "empresa_id": 1
     },
     "130QRO": {
         "server_config_name": "130° QRO LOCAL", 
-        "sucursal_id": "0021"
+        "sucursal_id": "0021",
+        "empresa_id": 2
     }
 }
+
+# Alias para compatibilidad
+MPRO_API_LOCAL_CONFIG = MPRO_API_LOCAL_CONFIG_LEGACY
 
 
 def _get_api_local_config(unidad_codigo: str) -> Optional[Dict]:
