@@ -1225,3 +1225,30 @@ TOTALES: $614,461.00 ✅
 > **El endpoint de "Ventas del Día" NUNCA debe usar `datetime.now().date()` directamente.**  
 > Debe calcular la FechaOperacion activa usando `get_operational_window()`.
 
+
+
+---
+
+## ✅ FIX P0 COMPLETADO: Tablero MPRO Lee Solo de EDARSAHUB SQL (15-May-2026 01:20)
+
+### Problema:
+130° QUERÉTARO y ORIGEN mostraban $0 en Ventas del Día porque el tablero intentaba conexión LIVE a APIs locales (PROHIBIDO).
+
+### Solución Implementada:
+1. **Refactorizado `get_kpis_mpro_por_sucursal()`** para leer SOLO de EDARSAHUB SQL
+2. **ELIMINADA** llamada a `sumar_ventas_api_local_a_sucursal()` desde el tablero
+3. **MODIFICADA** query de `_get_ventas_abiertas_edarsahub()` para buscar por `unidad_negocio_id`
+
+### Archivos Modificados:
+- `/app/backend/modules/comercial/service.py`
+
+### Resultado:
+```
+130QRO: $207,323.00  origen=EDARSAHUB_SQL ✅
+ORIGEN: $0.00        origen=EDARSAHUB_SQL (API servidor con error 500)
+```
+
+### Regla Arquitectónica Cumplida:
+> El Tablero Ejecutivo NUNCA debe hacer conexiones LIVE a APIs locales.
+> Debe leer SOLO de EDARSAHUB SQL.
+

@@ -381,25 +381,50 @@ def _get_ventas_abiertas_edarsahub(server_id: str, sucursal_id: str = 'DEFAULT',
     # TRANSICIÓN: Mientras el job se actualiza, los datos pueden tener
     # fecha_operacion = fecha_calendario en lugar de fecha_operacion correcta
     # =================================================================
-    query = f"""
-    SELECT TOP 1
-        ventas_abiertas,
-        tickets_abiertos,
-        pax_abiertos,
-        ventas_cerradas_dia,
-        tickets_cerrados_dia,
-        pax_cerrados_dia,
-        total_estimado_dia,
-        snapshot_timestamp,
-        fecha_operacion
-    FROM Comercial_Ventas_Dia_Abiertas_v2
-    WHERE server_id = '{server_id}'
-      AND sucursal_id = '{sucursal_id}'
-      AND fecha_operacion IN ('{fecha_operacion}', '{fecha_calendario}')
-    ORDER BY 
-        CASE WHEN fecha_operacion = '{fecha_operacion}' THEN 0 ELSE 1 END,
-        snapshot_timestamp DESC
-    """
+    # FIX P0 (15-May-2026): Buscar por unidad_negocio_id en lugar de server_id
+    # Los server_ids pueden variar, pero unidad_negocio_id es el código canónico
+    # =================================================================
+    if unidad_negocio_id:
+        # Priorizar búsqueda por unidad_negocio_id (más confiable)
+        query = f"""
+        SELECT TOP 1
+            ventas_abiertas,
+            tickets_abiertos,
+            pax_abiertos,
+            ventas_cerradas_dia,
+            tickets_cerrados_dia,
+            pax_cerrados_dia,
+            total_estimado_dia,
+            snapshot_timestamp,
+            fecha_operacion
+        FROM Comercial_Ventas_Dia_Abiertas_v2
+        WHERE unidad_negocio_id = '{unidad_negocio_id}'
+          AND fecha_operacion IN ('{fecha_operacion}', '{fecha_calendario}')
+        ORDER BY 
+            CASE WHEN fecha_operacion = '{fecha_operacion}' THEN 0 ELSE 1 END,
+            snapshot_timestamp DESC
+        """
+    else:
+        # Fallback: buscar por server_id + sucursal_id
+        query = f"""
+        SELECT TOP 1
+            ventas_abiertas,
+            tickets_abiertos,
+            pax_abiertos,
+            ventas_cerradas_dia,
+            tickets_cerrados_dia,
+            pax_cerrados_dia,
+            total_estimado_dia,
+            snapshot_timestamp,
+            fecha_operacion
+        FROM Comercial_Ventas_Dia_Abiertas_v2
+        WHERE server_id = '{server_id}'
+          AND sucursal_id = '{sucursal_id}'
+          AND fecha_operacion IN ('{fecha_operacion}', '{fecha_calendario}')
+        ORDER BY 
+            CASE WHEN fecha_operacion = '{fecha_operacion}' THEN 0 ELSE 1 END,
+            snapshot_timestamp DESC
+        """
     result = _query_edarsahub_tablero(query)
     
     if result and len(result) > 0:
@@ -1274,159 +1299,145 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
     Query para MPRO que devuelve KPIs DIVIDIDOS POR SUCURSAL (como en Inventarios).
     Retorna una lista de unidades, no un solo bloque.
     
-    FASE 3.1 - COMPORTAMIENTO:
-    - solo_ventas_dia=True → Intenta API local. Si falla, usa SQL nube (ventas acumuladas sin ventas del día)
-    - solo_ventas_dia=False → Usa SQL nube del menú Servidores
+    FIX P0 (15-May-2026): REFACTORIZADO PARA LEER SOLO DE EDARSAHUB SQL
+    =====================================================================
+    REGLA ARQUITECTÓNICA OBLIGATORIA:
+    - El tablero NO debe hacer conexiones LIVE a APIs locales
+    - Ventas del día debe leerse desde Comercial_Ventas_Dia_Abiertas_v2 (EDARSAHUB SQL)
+    - Las APIs locales SOLO pueden ser consultadas por jobs de sincronización
     
-    NOTA: Si API local no responde, se muestran ventas acumuladas.
-    PENDIENTE: Inspección local en servidores para revisar por qué no levanta SQL local o API local.
+    COMPORTAMIENTO:
+    - solo_ventas_dia=True → Lee de EDARSAHUB SQL (Comercial_Ventas_Dia_Abiertas_v2)
+    - solo_ventas_dia=False → Lee de EDARSAHUB SQL (ventas históricas/acumuladas)
     """
     
     logging.debug(f"MPRO {server['name']}: solo_ventas_dia={solo_ventas_dia}, fecha_ini={fecha_ini}, fecha_fin={fecha_fin}")
     
     # ============================================================================
-    # VENTAS DEL DÍA: Intentar API local primero
+    # FIX P0 (15-May-2026): VENTAS DEL DÍA - LEER DE EDARSAHUB SQL
+    # ============================================================================
+    # PROHIBIDO: Llamar a APIs locales desde el tablero
+    # OBLIGATORIO: Leer desde Comercial_Ventas_Dia_Abiertas_v2
     # ============================================================================
     if solo_ventas_dia:
-        logging.info(f"MPRO {server['name']}: Modo Ventas del Día - intentando API local")
+        logging.info(f"[FIX-P0] MPRO {server['name']}: Modo Ventas del Día - LEYENDO DE EDARSAHUB SQL (NO API local)")
         
-        # NOTA: sumar_ventas_api_local_a_sucursal se importa globalmente en la línea 29
-        from datetime import datetime as dt_local
-        
-        hoy = dt_local.now()
-        
-        # FIX P0 (Dic 2025): Mapeo de sucursales MPRO con sucursal_origen_id real de EDARSAHUB
-        # - api_key: Identificador operacional para consultar API local
-        # - sucursal_origen_id: Identificador canónico en EDARSAHUB.Unidades_Negocio
-        # REGLA: Resolver unidad via server_registry.resolve_unidad_by_server_sucursal()
+        # Mapeo de sucursales MPRO con sus server_id específicos en EDARSAHUB
+        # Estos datos vienen de Servidores_Conexiones donde tipo_conexion='API_LOCAL'
         sucursales_mpro = [
-            {"api_key": "origen", "sucursal_origen_id": "0023"},      # ORIGEN
-            {"api_key": "130_qro", "sucursal_origen_id": "0021"},     # 130° QUERETARO
+            {
+                "codigo": "ORIGEN",
+                "sucursal_id": "0023",
+                "server_id": "817a0aa8-d570-4738-a8f6-a72ac36ba0df"  # ORIGEN LOCAL
+            },
+            {
+                "codigo": "130QRO",
+                "sucursal_id": "0021",
+                "server_id": "72f6e9a7-4a4f-4c15-beee-54c55e62b9e9"  # 130° QRO LOCAL
+            },
         ]
         
         unidades = []
-        api_local_funciono = False
         
         for suc in sucursales_mpro:
-            try:
-                # FIX P0: Resolver unidad desde EDARSAHUB ANTES de consultar API
-                unidad_edarsahub = resolve_unidad_by_server_sucursal(
-                    server['id'], suc['sucursal_origen_id']
-                )
-                
-                # Obtener nombre canónico para la llamada a API local
-                nombre_api = unidad_edarsahub.get('nombre', 'DESCONOCIDO') if unidad_edarsahub else 'DESCONOCIDO'
-                
-                ventas_api = sumar_ventas_api_local_a_sucursal(
-                    server_host=server['host'],
-                    sucursal_nombre=nombre_api,
-                    fecha_fin=fecha_fin,
-                    mes_solicitado=hoy.month,
-                    anio_solicitado=hoy.year,
-                    solo_ventas_dia=True
-                )
-                
-                if ventas_api.get("aplicado", False) and ventas_api.get("ventas", 0) > 0:
-                    # Solo contar como éxito si realmente hay ventas
-                    api_local_funciono = True
-                    ventas = ventas_api.get("ventas", 0)
-                    cheques = ventas_api.get("cheques", 0)
-                    pax = ventas_api.get("pax", 0) or cheques
-                    
-                    ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
-                    cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
-                    
-                    # FIX P0: Usar datos canónicos de EDARSAHUB via server_registry
-                    codigo_canonico = unidad_edarsahub.get('codigo', suc['sucursal_origen_id']) if unidad_edarsahub else suc['sucursal_origen_id']
-                    nombre_canonico = unidad_edarsahub.get('nombre', 'Unidad Desconocida') if unidad_edarsahub else 'Unidad Desconocida'
-                    
-                    unidades.append({
-                        "unidad": nombre_canonico,  # Nombre canónico de EDARSAHUB
-                        "server_id": server['id'],
-                        "system_type": "MPRO",
-                        "ventas": ventas,
-                        "ventas_ant": 0,
-                        "ventas_año": 0,
-                        "var_vs_mes_ant": 0,
-                        "var_vs_año_ant": 0,
-                        "proyeccion": 0,
-                        "pax": pax,
-                        "pax_ant": 0,
-                        "pax_año": 0,
-                        "var_pax_mes": 0,
-                        "var_pax_año": 0,
-                        "cheques": cheques,
-                        "cheques_ant": 0,
-                        "cheques_año": 0,
-                        "var_cheques_mes": 0,
-                        "var_cheques_año": 0,
-                        "ticket_prom": ticket_prom,
-                        "cheque_prom": cheque_prom,
-                        "es_ventas_dia": True,
-                        "origen": "api_local",
-                        # FIX P0: Campos canónicos desde Unidades_Negocio EDARSAHUB
-                        "unidad_negocio_codigo": codigo_canonico,
-                        "unidad_negocio_nombre": nombre_canonico,
-                        "sucursal_origen_id": suc['sucursal_origen_id'],  # Trazabilidad
-                    })
-                    logging.info(f"MPRO {server['name']} - {nombre_canonico}: API local OK - ${ventas:,.2f}")
-            except Exception as e:
-                logging.warning(f"MPRO {server['name']} - sucursal_origen_id={suc['sucursal_origen_id']}: API local error - {e}")
-        
-        if api_local_funciono and unidades:
-            return unidades
-        
-        # ============================================================================
-        # API LOCAL FALLÓ EN MODO VENTAS DEL DÍA
-        # ============================================================================
-        # REGLA: Si es "ventas del día" y la API local no funciona,
-        # Mostrar las sucursales con source_status="NO_DATA" para que el usuario
-        # sepa que existen pero no hay conexión.
-        logging.warning(f"MPRO {server['name']}: API local no disponible - mostrando sucursales como offline")
-        
-        unidades_offline = []
-        for suc in sucursales_mpro:
-            # FIX P0: Resolver unidad desde EDARSAHUB via server_registry
+            # Resolver unidad desde EDARSAHUB
             unidad_edarsahub = resolve_unidad_by_server_sucursal(
-                server['id'], suc['sucursal_origen_id']
+                suc['server_id'], suc['sucursal_id']
             )
             
-            codigo_canonico = unidad_edarsahub.get('codigo', suc['sucursal_origen_id']) if unidad_edarsahub else suc['sucursal_origen_id']
-            nombre_canonico = unidad_edarsahub.get('nombre', 'Unidad Desconocida') if unidad_edarsahub else 'Unidad Desconocida'
+            codigo_canonico = unidad_edarsahub.get('codigo', suc['codigo']) if unidad_edarsahub else suc['codigo']
+            nombre_canonico = unidad_edarsahub.get('nombre', suc['codigo']) if unidad_edarsahub else suc['codigo']
             
-            unidades_offline.append({
-                "unidad": nombre_canonico,  # Nombre canónico de EDARSAHUB
-                "server_id": server['id'],
-                "system_type": "MPRO",
-                "ventas": 0,
-                "ventas_ant": 0,
-                "ventas_año": 0,
-                "var_vs_mes_ant": 0,
-                "var_vs_año_ant": 0,
-                "proyeccion": 0,
-                "pax": 0,
-                "pax_ant": 0,
-                "pax_año": 0,
-                "var_pax_mes": 0,
-                "var_pax_año": 0,
-                "cheques": 0,
-                "cheques_ant": 0,
-                "cheques_año": 0,
-                "var_cheques_mes": 0,
-                "var_cheques_año": 0,
-                "ticket_prom": 0,
-                "cheque_prom": 0,
-                "es_ventas_dia": True,
-                "origen": "api_local",
-                "status": "offline",
-                "source_status": "NO_DATA",
-                "message": "API local no disponible - Sin datos de ventas del día",
-                # FIX P0: Campos canónicos desde Unidades_Negocio EDARSAHUB
-                "unidad_negocio_codigo": codigo_canonico,
-                "unidad_negocio_nombre": nombre_canonico,
-                "sucursal_origen_id": suc['sucursal_origen_id'],  # Trazabilidad
-            })
-        return unidades_offline
+            # FIX P0: Leer de EDARSAHUB SQL usando _get_ventas_abiertas_edarsahub()
+            datos_edarsahub = _get_ventas_abiertas_edarsahub(
+                server_id=suc['server_id'],
+                sucursal_id=suc['sucursal_id'],
+                unidad_negocio_id=codigo_canonico
+            )
+            
+            if datos_edarsahub.get('existe', False):
+                ventas = datos_edarsahub.get('ventas', 0)
+                cheques = datos_edarsahub.get('cheques', 0)
+                pax = datos_edarsahub.get('pax', 0) or cheques
+                
+                ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
+                cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
+                
+                unidades.append({
+                    "unidad": nombre_canonico,
+                    "server_id": suc['server_id'],
+                    "system_type": "MPRO",
+                    "ventas": ventas,
+                    "ventas_ant": 0,
+                    "ventas_año": 0,
+                    "var_vs_mes_ant": 0,
+                    "var_vs_año_ant": 0,
+                    "proyeccion": 0,
+                    "pax": pax,
+                    "pax_ant": 0,
+                    "pax_año": 0,
+                    "var_pax_mes": 0,
+                    "var_pax_año": 0,
+                    "cheques": cheques,
+                    "cheques_ant": 0,
+                    "cheques_año": 0,
+                    "var_cheques_mes": 0,
+                    "var_cheques_año": 0,
+                    "ticket_prom": ticket_prom,
+                    "cheque_prom": cheque_prom,
+                    "es_ventas_dia": True,
+                    "origen": "EDARSAHUB_SQL",  # FIX P0: Indica que viene de EDARSAHUB
+                    "source_status": "DATA_FROM_EDARSAHUB_SQL",
+                    "snapshot_timestamp": datos_edarsahub.get('snapshot_timestamp'),
+                    "fecha_operacion": datos_edarsahub.get('fecha_operacion'),
+                    # Campos canónicos
+                    "unidad_negocio_codigo": codigo_canonico,
+                    "unidad_negocio_nombre": nombre_canonico,
+                    "sucursal_origen_id": suc['sucursal_id'],
+                })
+                logging.info(
+                    f"[FIX-P0] MPRO {nombre_canonico}: EDARSAHUB SQL OK - "
+                    f"${ventas:,.2f}, fecha_op={datos_edarsahub.get('fecha_operacion')}"
+                )
+            else:
+                # Sin datos en EDARSAHUB - mostrar estado claro, NO $0 falso
+                unidades.append({
+                    "unidad": nombre_canonico,
+                    "server_id": suc['server_id'],
+                    "system_type": "MPRO",
+                    "ventas": None,  # None indica "sin dato", no $0
+                    "ventas_ant": 0,
+                    "ventas_año": 0,
+                    "var_vs_mes_ant": 0,
+                    "var_vs_año_ant": 0,
+                    "proyeccion": 0,
+                    "pax": None,
+                    "pax_ant": 0,
+                    "pax_año": 0,
+                    "var_pax_mes": 0,
+                    "var_pax_año": 0,
+                    "cheques": None,
+                    "cheques_ant": 0,
+                    "cheques_año": 0,
+                    "var_cheques_mes": 0,
+                    "var_cheques_año": 0,
+                    "ticket_prom": 0,
+                    "cheque_prom": 0,
+                    "es_ventas_dia": True,
+                    "origen": "EDARSAHUB_SQL",
+                    "source_status": "NO_SYNC_DATA",  # Estado claro: sin sincronización
+                    "message": "Sin datos sincronizados para esta fecha operativa",
+                    # Campos canónicos
+                    "unidad_negocio_codigo": codigo_canonico,
+                    "unidad_negocio_nombre": nombre_canonico,
+                    "sucursal_origen_id": suc['sucursal_id'],
+                })
+                logging.warning(
+                    f"[FIX-P0] MPRO {nombre_canonico}: Sin datos en EDARSAHUB SQL - "
+                    f"fecha_op_buscada={datos_edarsahub.get('fecha_operacion_usada')}"
+                )
+        
+        return unidades
     
     # ============================================================================
     # VENTAS HISTÓRICAS / ACUMULADAS: Usar SQL nube del menú Servidores
