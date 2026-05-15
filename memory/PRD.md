@@ -1666,3 +1666,32 @@ La migración de servidores YA ESTÁ COMPLETA. El único componente pendiente es
 ### Documento Generado:
 `/app/docs/reports/AUDITORIA_DEPURACION_LIMPIEZA_REPO_EDARSAHUB.md`
 
+---
+
+## FASE 1 CATÁLOGO SQL - DDL EJECUTADO (15-May-2026)
+
+### Tablas Creadas en EDARSAHUB:
+| Tabla | Columnas | Estado |
+|-------|----------|--------|
+| ConsultasSQL_Catalogo | 22 | ✅ CREADA |
+| ConsultasSQL_Parametros | 14 | ✅ CREADA |
+| ConsultasSQL_Servidores | 9 | ✅ CREADA |
+| ConsultasSQL_EjecucionesLog | 13 | ✅ CREADA |
+| ConsultasSQL_Permisos | 11 | ✅ CREADA |
+| ConsultasSQL_Versiones | 8 | ✅ CREADA |
+
+### Índices Creados: 13
+### Foreign Keys: 5
+
+### Documentos Generados:
+- `/app/docs/reports/FASE_1_CONSULTAS_SQL_DDL_EJECUCION.md`
+- `/app/docs/reports/FASE_2_INVENTARIO_CONSULTAS_HARDCODEADAS.md`
+- `/app/backend/sql/migrations/prepare_consultas_sql_catalogo_seed.sql` (NO EJECUTADO)
+
+### Consultas Inventariadas: 17
+- SoftRestaurant: 12 (Ventas:8, Compras:3, Inventarios:1, Pagos:2)
+- MPRO: 5 (Ventas:4, Compras:2)
+
+### Próximo Paso:
+Autorizar ejecución del DML seed para cargar las 17 consultas en ConsultasSQL_Catalogo
+
