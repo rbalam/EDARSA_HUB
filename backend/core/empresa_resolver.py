@@ -29,6 +29,9 @@ from core.db import execute_sql_query
 
 logger = logging.getLogger(__name__)
 
+# Flag para indicar si el módulo está disponible
+EMPRESA_RESOLVER_AVAILABLE = True
+
 
 # =============================================================================
 # CONFIGURACIÓN EDARSAHUB

@@ -1418,6 +1418,50 @@ Crear componente centralizado para resolver empresas, aliases, servidores, roles
 
 
 ### Siguiente Fase (Pendiente Autorización):
+
+---
+
+## ✅ FASE 5A COMPLETADA: Refactor Mínimo adapters.py (16-May-2026)
+
+### Objetivo:
+Eliminar matching textual riesgoso en adapters.py y usar EmpresaResolver para resolución canónica.
+
+### Archivo Modificado:
+`/app/backend/modules/comercial/adapters.py`
+
+### Cambios Realizados:
+1. **ELIMINADO**: `sucursal_destino in sucursal_actual` (matching textual riesgoso)
+2. **AGREGADO**: `_resolver_empresa_id_desde_alias()` - Wrapper para EmpresaResolver
+3. **AGREGADO**: `_obtener_api_local_por_empresa_id()` - Obtiene API por EmpresaID + RolConexion
+4. **MANTENIDO**: Fallback legacy para códigos técnicos (0021, 0023)
+
+### Pruebas Ejecutadas:
+- ✅ 8/8 pruebas de resolución de aliases
+- ✅ 5/5 pruebas de conexión por RolConexion
+- ✅ 6/6 pruebas integrales de `sumar_ventas_api_local_a_sucursal()`
+- ✅ Backend reiniciado y funcionando
+
+### Validaciones Críticas:
+- ✅ `130-QRO`, `130 QRO`, `QRO` → EmpresaID=2, API=130° QRO LOCAL, Sucursal=21/0021
+- ✅ `ORIGEN` → EmpresaID=1, API=ORIGEN LOCAL, Sucursal=23/0023
+- ✅ `130MID`, `LA ESTELAR`, `CIENFUEGOS` → Sin API local (correcto - SoftRestaurant)
+- ✅ Códigos MPRO (0021, 0023) funcionan via fallback legacy
+
+### Confirmaciones:
+- ✅ No se modificó frontend
+- ✅ No se modificaron jobs
+- ✅ No se reactivó LIVE desde tablero
+- ✅ No se ejecutó DDL/DML
+
+### Reporte Detallado:
+`/app/docs/reports/FASE_5A_REFACTOR_ADAPTERS_EMPRESARESOLVER.md`
+
+### Siguiente Fase (Pendiente Autorización):
+1. P0: Refactorizar `service.py` para usar EmpresaResolver
+2. P0: Refactorizar `mpro.py` para usar EmpresaResolver
+3. P1: Refactorizar jobs del scheduler
+
+
 1. **P0**: Implementar `EmpresaResolver` en backend
 2. **P0**: Refactorizar `adapters.py` para usar aliases canónicos
 3. **P1**: Refactorizar jobs del scheduler
