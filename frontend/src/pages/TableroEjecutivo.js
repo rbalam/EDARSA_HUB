@@ -364,6 +364,10 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false
         )}
         
         <div className="space-y-2">
+          {/* ============================================================ */}
+          {/* BLOQUE PRINCIPAL: Ventas + Proyección                        */}
+          {/* FIX UI 15-May-2026: Proyección debajo de Ventas              */}
+          {/* ============================================================ */}
           <div className="flex justify-between items-center">
             <span className="text-xs text-zinc-500">Ventas</span>
             <span className={`font-bold ${hasError ? 'text-zinc-400' : 'text-green-600'}`}>
@@ -371,38 +375,58 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false
             </span>
           </div>
           
-          {/* Ocultar "vs Mes Ant" cuando hay multiselección de meses */}
-          {!esMultiMes && hasValidData && (
+          {hasValidData && (
             <div className="flex justify-between items-center">
-              <span className="text-xs text-zinc-500">{modoVentasDia ? 'vs Día Ant.' : 'vs Mes Ant.'}</span>
-              <VariacionBadge valor={unidad.var_vs_mes_ant} />
+              <span className="text-xs text-zinc-500">Proyección</span>
+              <span className="font-semibold text-orange-600">{formatCurrency(unidad.proyeccion)}</span>
             </div>
           )}
           
+          {/* ============================================================ */}
+          {/* BLOQUE COMPARATIVOS: vs Día/Mes Ant. + vs Año Ant.           */}
+          {/* ============================================================ */}
           {hasValidData && (
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-zinc-500">{modoVentasDia ? 'vs Mismo Día Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Año Ant.')}</span>
-              <VariacionBadge valor={unidad.var_vs_año_ant} />
+            <div className="border-t pt-2 mt-2 space-y-1">
+              {/* Ocultar "vs Mes Ant" cuando hay multiselección de meses */}
+              {!esMultiMes && (
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-zinc-500">{modoVentasDia ? 'vs Día Ant.' : 'vs Mes Ant.'}</span>
+                  <VariacionBadge valor={unidad.var_vs_mes_ant} />
+                </div>
+              )}
+              
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-zinc-500">{modoVentasDia ? 'vs Mismo Día Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Año Ant.')}</span>
+                <VariacionBadge valor={unidad.var_vs_año_ant} />
+              </div>
             </div>
           )}
           
+          {/* ============================================================ */}
+          {/* BLOQUE OPERATIVO: PAX + Cheques en 2 columnas                */}
+          {/* FIX UI 15-May-2026: PAX Prom debajo de PAX, Cheque Prom debajo de Cheques */}
+          {/* ============================================================ */}
           {hasValidData && (
-            <div className="border-t pt-2 mt-2 grid grid-cols-2 gap-2 text-xs">
+            <div className="border-t pt-2 mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              {/* Columna izquierda: PAX */}
               <div>
                 <span className="text-zinc-500">PAX</span>
-                <p className="font-semibold">{unidad.pax?.toLocaleString()}</p>
+                <p className="font-semibold">{unidad.pax?.toLocaleString() ?? '-'}</p>
               </div>
+              {/* Columna derecha: Cheques */}
               <div>
                 <span className="text-zinc-500">Cheques</span>
-                <p className="font-semibold">{unidad.cheques?.toLocaleString()}</p>
+                <p className="font-semibold">{unidad.cheques?.toLocaleString() ?? '-'}</p>
               </div>
+              {/* Columna izquierda: PAX Promedio */}
+              <div>
+                <span className="text-zinc-500">PAX Prom.</span>
+                <p className="font-semibold">{unidad.pax_promedio ? formatCurrency(unidad.pax_promedio) : '-'}</p>
+              </div>
+              {/* Columna derecha: Cheque Promedio */}
               <div>
                 <span className="text-zinc-500">Cheque Prom.</span>
                 <p className="font-semibold">{formatCurrency(unidad.cheque_promedio)}</p>
-              </div>
-              <div>
-                <span className="text-zinc-500">Proyección</span>
-                <p className="font-semibold text-orange-600">{formatCurrency(unidad.proyeccion)}</p>
               </div>
             </div>
           )}
@@ -1012,6 +1036,18 @@ export default function TableroEjecutivo() {
           timeout: 60000  // Aumentado a 60s para conexiones lentas
         });
         responseData = response.data;
+        
+        // FIX UI 15-May-2026: Calcular promedios si V1 no los incluye
+        // cheque_promedio = ventas / cheques
+        // pax_promedio = ventas / pax
+        if (responseData?.unidades) {
+          responseData.unidades = responseData.unidades.map(u => ({
+            ...u,
+            cheque_promedio: u.cheque_promedio ?? (u.cheques > 0 ? u.ventas / u.cheques : null),
+            pax_promedio: u.pax_promedio ?? (u.pax > 0 ? u.ventas / u.pax : null)
+          }));
+        }
+        
         logger.log(`[P0-LOG] tablero_using_v1: unidades=${responseData?.unidades?.length}`);
       }
       
