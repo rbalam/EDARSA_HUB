@@ -1602,3 +1602,33 @@ Validar que el job del scheduler usa EmpresaResolver y FechaOperacion correctame
 
 *Última actualización: 16-May-2026 - FASE 5D Completada*
 
+---
+
+## DIAGNÓSTICO: Servidores, Conexiones API y Consultas SQL (15-May-2026)
+
+### Estado Detectado:
+- **Servidores**: ✅ COMPLETAMENTE MIGRADO a EDARSAHUB SQL via `server_registry.py`
+- **Conexiones API Local**: ✅ MIGRADO a EDARSAHUB SQL (tipo_conexion=API_LOCAL)
+- **Sistema_Tipos**: ✅ Tabla poblada con 5 tipos (SOFTRESTAURANT, MPRO, API_LOCAL, etc.)
+- **MongoDB db.servers**: ✅ DESACOPLADO (0 documentos)
+- **MongoDB db.consultas_custom**: ✅ SIN USO (0 documentos)
+- **Catálogo Consultas SQL**: ⚠️ PENDIENTE - 20+ consultas hardcodeadas en Python
+
+### Documentos Generados:
+1. `/app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md`
+2. `/app/docs/proposals/PROP_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md`
+
+### Conclusión:
+La migración de servidores YA ESTÁ COMPLETA. El único componente pendiente es el **Catálogo de Consultas SQL** que requiere:
+- DDL para 6 tablas nuevas
+- Migración de consultas hardcodeadas
+- Implementación de auditoría y permisos
+
+### Próximas Fases Propuestas:
+1. FASE 1: DDL de tablas ConsultasSQL_*
+2. FASE 2: Carga de consultas predefinidas desde Python
+3. FASE 3: Repository y endpoints SQL-first
+4. FASE 4: Wrapper dual-read temporal
+5. FASE 5: Auditoría y permisos
+6. FASE 6: Deprecar código legacy
+
