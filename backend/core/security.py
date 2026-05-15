@@ -890,3 +890,189 @@ def log_auth_preflight_status(user_mongo: Dict[str, Any], email: str) -> None:
         # Flag encendido: esto solo debería pasar en FASE 2-E
         logging.info(f"[AUTH-SQL-FIRST] ACTIVO para {email} (requiere FASE 2-E)")
 
+
+# ============================================================================
+# FASE 1B: SQL SANITIZER - Sanitización de SQL
+# ============================================================================
+"""
+Sanitizador SQL centralizado para prevenir SQL Injection.
+Valida y bloquea SQL peligroso antes de ejecución.
+"""
+
+import re
+from dataclasses import dataclass, field
+
+# Palabras clave peligrosas (operaciones de escritura/admin)
+DANGEROUS_SQL_KEYWORDS = [
+    'DELETE', 'UPDATE', 'INSERT', 'DROP', 'ALTER', 'TRUNCATE',
+    'EXEC', 'EXECUTE', 'CREATE', 'MERGE', 'GRANT', 'REVOKE',
+    'DENY', 'BACKUP', 'RESTORE', 'DBCC', 'KILL', 'SHUTDOWN',
+    'RECONFIGURE', 'WAITFOR', 'OPENROWSET', 'OPENDATASOURCE',
+    'BULK', 'WRITETEXT', 'UPDATETEXT', 'READTEXT',
+]
+
+# Prefijos de procedimientos peligrosos
+DANGEROUS_SQL_PREFIXES = ['xp_', 'sp_', 'fn_']
+
+
+@dataclass
+class SQLValidationResult:
+    """Resultado de validación SQL."""
+    is_safe: bool
+    sql: str
+    normalized_sql: Optional[str] = None
+    blocked_reason: Optional[str] = None
+    blocked_keyword: Optional[str] = None
+    warnings: List[str] = field(default_factory=list)
+    validation_timestamp: Optional[str] = None
+    
+    def to_dict(self):
+        return {
+            'is_safe': self.is_safe,
+            'blocked_reason': self.blocked_reason,
+            'blocked_keyword': self.blocked_keyword,
+            'warnings': self.warnings,
+        }
+
+
+class SQLSanitizer:
+    """Sanitizador SQL centralizado."""
+    
+    _dangerous_pattern = re.compile(
+        r'\b(' + '|'.join(DANGEROUS_SQL_KEYWORDS) + r')\b',
+        re.IGNORECASE
+    )
+    _prefix_patterns = [
+        re.compile(rf'\b{prefix}', re.IGNORECASE)
+        for prefix in DANGEROUS_SQL_PREFIXES
+    ]
+    _multi_statement_pattern = re.compile(r';\s*\S', re.MULTILINE)
+    _comment_patterns = [r'/\*', r'\*/', r'--']
+    
+    @classmethod
+    def _normalize_sql(cls, sql: str) -> str:
+        if not sql:
+            return ""
+        return re.sub(r'\s+', ' ', sql).strip()
+    
+    @classmethod
+    def validate(cls, sql: str, allow_comments: bool = False, strict_mode: bool = True) -> SQLValidationResult:
+        """Valida una consulta SQL."""
+        result = SQLValidationResult(
+            is_safe=True,
+            sql=sql,
+            validation_timestamp=datetime.now(timezone.utc).isoformat()
+        )
+        
+        if not sql or not sql.strip():
+            result.is_safe = False
+            result.blocked_reason = "SQL vacío o nulo"
+            return result
+        
+        normalized = cls._normalize_sql(sql)
+        result.normalized_sql = normalized
+        upper_sql = normalized.upper().lstrip()
+        
+        # Verificar inicio con SELECT o WITH
+        if not (upper_sql.startswith('SELECT') or upper_sql.startswith('WITH')):
+            first_word = upper_sql.split()[0] if upper_sql.split() else "EMPTY"
+            result.is_safe = False
+            result.blocked_reason = f"Solo SELECT o WITH permitidos. Encontrado: {first_word}"
+            return result
+        
+        # WITH debe ser CTE válido
+        if upper_sql.startswith('WITH') and not re.match(r'^WITH\s+\w+\s+AS\s*\(', upper_sql, re.IGNORECASE):
+            result.is_safe = False
+            result.blocked_reason = "WITH clause malformado"
+            return result
+        
+        # Buscar palabras peligrosas
+        match = cls._dangerous_pattern.search(sql)
+        if match:
+            result.is_safe = False
+            result.blocked_reason = f"Palabra peligrosa detectada: {match.group(1).upper()}"
+            result.blocked_keyword = match.group(1).upper()
+            return result
+        
+        # Buscar prefijos peligrosos
+        for pattern in cls._prefix_patterns:
+            match = pattern.search(sql)
+            if match:
+                result.is_safe = False
+                result.blocked_reason = f"Prefijo de procedimiento peligroso: {match.group(0)}"
+                result.blocked_keyword = match.group(0)
+                return result
+        
+        # Detectar comentarios
+        if not allow_comments:
+            for pattern_str in cls._comment_patterns:
+                if re.search(pattern_str, sql):
+                    if strict_mode:
+                        result.is_safe = False
+                        result.blocked_reason = "Comentarios SQL no permitidos (pueden ocultar código)"
+                        return result
+                    result.warnings.append("SQL contiene comentarios")
+        
+        # Detectar múltiples statements
+        if cls._multi_statement_pattern.search(sql):
+            result.is_safe = False
+            result.blocked_reason = "Múltiples statements no permitidos"
+        
+        return result
+    
+    @classmethod
+    def validate_for_catalog(cls, sql: str, allow_parameters: bool = True) -> SQLValidationResult:
+        """Validación para consultas del catálogo."""
+        result = cls.validate(sql, allow_comments=False, strict_mode=True)
+        if result.is_safe and allow_parameters:
+            placeholders = re.findall(r'\{([a-zA-Z_][a-zA-Z0-9_]*)\}', sql)
+            if placeholders:
+                result.warnings.append(f"Placeholders encontrados: {placeholders}")
+        return result
+    
+    @classmethod
+    def validate_for_explorer(cls, sql: str, user_role: str = None) -> SQLValidationResult:
+        """Validación para el Explorador BD."""
+        result = cls.validate(sql, allow_comments=False, strict_mode=True)
+        if user_role and user_role not in ['Administrador', 'SuperAdministrador']:
+            result.is_safe = False
+            result.blocked_reason = "Solo administradores pueden usar el explorador SQL"
+        return result
+    
+    @classmethod
+    def quick_validate(cls, sql: str) -> bool:
+        """Validación rápida."""
+        if not sql or not sql.strip():
+            return False
+        normalized = cls._normalize_sql(sql).upper()
+        if not (normalized.startswith('SELECT') or normalized.startswith('WITH')):
+            return False
+        if cls._dangerous_pattern.search(sql):
+            return False
+        for pattern in cls._prefix_patterns:
+            if pattern.search(sql):
+                return False
+        if cls._multi_statement_pattern.search(sql):
+            return False
+        return True
+
+
+def validate_sql_safe(sql: str) -> bool:
+    """Función helper para validación rápida."""
+    return SQLSanitizer.quick_validate(sql)
+
+
+def validate_sql_detailed(sql: str) -> SQLValidationResult:
+    """Función helper para validación detallada."""
+    return SQLSanitizer.validate(sql)
+
+
+def log_blocked_sql(result: SQLValidationResult, endpoint: str = None, user_email: str = None):
+    """Registra intento de SQL bloqueado."""
+    logging.warning(
+        f"[SQL-BLOCKED] endpoint={endpoint or 'unknown'}, "
+        f"user={user_email or 'unknown'}, "
+        f"reason={result.blocked_reason}, "
+        f"keyword={result.blocked_keyword or 'none'}"
+    )
+

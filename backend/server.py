@@ -1598,8 +1598,11 @@ async def validate_server_query(
     FASE P1.4-B (Dic 2025): Migrado de MongoDB db.servers a server_registry.
     FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
     NO FUENTE: MongoDB db.servers
+    
+    FASE 1B: Sanitización SQL - Validación obligatoria antes de ejecución.
     """
     from core.server_registry import get_server_connection_info_with_secrets
+    from core.security import SQLSanitizer, log_blocked_sql
     
     query_type = request.get("query_type")  # "inventario", "ventas", "movimientos"
     sql = request.get("sql", "").strip()
@@ -1609,6 +1612,12 @@ async def validate_server_query(
     
     if not sql:
         raise HTTPException(status_code=400, detail="La consulta SQL es requerida")
+    
+    # FASE 1B: Validar SQL antes de ejecutar
+    validation = SQLSanitizer.validate_for_catalog(sql)
+    if not validation.is_safe:
+        log_blocked_sql(validation, endpoint="/servers/queries/validate", user_email=current_user.get('email'))
+        raise HTTPException(status_code=400, detail=f"SQL bloqueado: {validation.blocked_reason}")
     
     # FASE P1.4-B: Obtener servidor desde EDARSAHUB SQL via server_registry
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
@@ -9695,28 +9704,28 @@ async def ejecutar_query_libre(
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
     
-    SEGURIDAD: Mantiene validación de rol Administrador y bloqueo de palabras prohibidas.
+    FASE 1B: Sanitización SQL completa con SQLSanitizer.
+    SEGURIDAD: Validación estricta de rol Administrador + bloqueo de SQL peligroso.
     """
-    if current_user.get('role') != 'Administrador':
+    # FASE 1B: Validación de rol
+    if current_user.get('role') not in ['Administrador', 'SuperAdministrador']:
         raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar queries libres")
     
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     from core.server_registry import get_server_connection_info
+    from core.security import SQLSanitizer, log_blocked_sql
+    
     conn_info = await get_server_connection_info(server_id, db=db)
     if not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
     
     query = body.get('query', '').strip()
     
-    # Validar que sea solo SELECT
-    if not query.upper().startswith('SELECT'):
-        raise HTTPException(status_code=400, detail="Solo se permiten consultas SELECT")
-    
-    # Bloquear palabras peligrosas
-    palabras_prohibidas = ['DROP', 'DELETE', 'UPDATE', 'INSERT', 'TRUNCATE', 'ALTER', 'CREATE', 'EXEC']
-    for palabra in palabras_prohibidas:
-        if palabra in query.upper():
-            raise HTTPException(status_code=400, detail=f"Query contiene operación prohibida: {palabra}")
+    # FASE 1B: Validación SQL completa con sanitizador centralizado
+    validation = SQLSanitizer.validate_for_explorer(query, user_role=current_user.get('role'))
+    if not validation.is_safe:
+        log_blocked_sql(validation, endpoint="/explorador/query", user_email=current_user.get('email'))
+        raise HTTPException(status_code=400, detail=f"SQL bloqueado: {validation.blocked_reason}")
     
     try:
         result = execute_sql_query(
@@ -9741,17 +9750,26 @@ async def ejecutar_script_sql(
 ):
     """
     Ejecuta un script SQL completo (CREATE, INSERT, UPDATE, DELETE, etc.).
-    SOLO ADMINISTRADORES - USAR CON PRECAUCIÓN.
-    Ejecuta cada statement por separado y devuelve el resultado de cada uno.
+    SOLO SUPERADMINISTRADOR - ENDPOINT ALTAMENTE RESTRINGIDO.
+    
+    FASE 1B: BLOQUEADO por defecto. Solo SuperAdministrador puede usar.
+    Este endpoint permite DDL/DML y es extremadamente peligroso.
     
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
-    
-    SEGURIDAD: Mantiene validación de rol Administrador.
     """
-    # Verificar que sea admin
-    if current_user.get('role') != 'Administrador':
-        raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar scripts SQL")
+    # FASE 1B: Solo SuperAdministrador puede ejecutar scripts SQL completos
+    # Este endpoint permite DDL/DML, es extremadamente peligroso
+    if current_user.get('role') != 'SuperAdministrador':
+        logging.warning(
+            f"[SQL-SCRIPT-BLOCKED] User {current_user.get('email')} intentó ejecutar script SQL. "
+            f"Rol: {current_user.get('role')}. Solo SuperAdministrador permitido."
+        )
+        raise HTTPException(
+            status_code=403, 
+            detail="Solo SuperAdministrador puede ejecutar scripts SQL completos. "
+                   "Este es un endpoint de alto riesgo."
+        )
     
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     from core.server_registry import get_server_connection_info
@@ -9764,6 +9782,12 @@ async def ejecutar_script_sql(
     
     if not script:
         raise HTTPException(status_code=400, detail="El script está vacío")
+    
+    # FASE 1B: Log de auditoría para scripts SQL (sin exponer el script completo)
+    logging.warning(
+        f"[SQL-SCRIPT-AUDIT] SuperAdmin {current_user.get('email')} ejecutando script. "
+        f"Server: {server_id}, Titulo: {titulo}, Length: {len(script)} chars"
+    )
     
     # Parsear el script en statements individuales
     # Dividir por GO (batch separator de SQL Server) o por punto y coma
@@ -12587,7 +12611,11 @@ async def ejecutar_consulta_catalogo(
     Ejecuta una consulta del catálogo (predefinida o personalizada) con los parámetros dados.
     Body debe contener: { "fecha_ini": "2026-03-01", "fecha_fin": "2026-03-27" }
     o { "parametros": { "fecha_ini": "...", ... } }
+    
+    FASE 1B: Validación SQL obligatoria para consultas custom.
     """
+    from core.security import SQLSanitizer, log_blocked_sql
+    
     # Buscar primero en consultas predefinidas
     consulta = None
     es_custom = False
@@ -12603,6 +12631,18 @@ async def ejecutar_consulta_catalogo(
     
     if not consulta:
         raise HTTPException(status_code=404, detail=f"Consulta '{consulta_id}' no encontrada en el catálogo")
+    
+    # FASE 1B: Validar SQL de consultas custom antes de ejecutar
+    if es_custom:
+        sql_to_validate = consulta.get('sql', '')
+        validation = SQLSanitizer.validate_for_catalog(sql_to_validate)
+        if not validation.is_safe:
+            log_blocked_sql(validation, endpoint=f"/catalogo/ejecutar-rich/{consulta_id}", user_email=current_user.get('email'))
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Consulta custom bloqueada: {validation.blocked_reason}. "
+                       "Esta consulta contiene SQL no permitido y no puede ejecutarse."
+            )
     
     # Extraer parámetros del body (soporta ambos formatos)
     if body and 'parametros' in body:
@@ -12711,9 +12751,14 @@ async def listar_consultas_custom(current_user: Dict = Depends(get_current_user)
 
 @api_router.post("/catalogo/consultas-custom")
 async def crear_consulta_custom(body: Dict, current_user: Dict = Depends(get_current_user)):
-    """Crea una nueva consulta personalizada"""
+    """
+    Crea una nueva consulta personalizada.
+    FASE 1B: Validación SQL obligatoria antes de guardar.
+    """
+    from core.security import SQLSanitizer, log_blocked_sql
+    
     # Solo admin puede crear consultas
-    if current_user.get('role') != 'Administrador':
+    if current_user.get('role') not in ['Administrador', 'SuperAdministrador']:
         raise HTTPException(status_code=403, detail="Solo administradores pueden crear consultas")
     
     # Validar campos requeridos
@@ -12721,6 +12766,16 @@ async def crear_consulta_custom(body: Dict, current_user: Dict = Depends(get_cur
     for field in required:
         if field not in body or not body[field]:
             raise HTTPException(status_code=400, detail=f"Campo requerido: {field}")
+    
+    # FASE 1B: Validar SQL antes de guardar
+    sql_to_validate = body['sql']
+    validation = SQLSanitizer.validate_for_catalog(sql_to_validate)
+    if not validation.is_safe:
+        log_blocked_sql(validation, endpoint="/catalogo/consultas-custom", user_email=current_user.get('email'))
+        raise HTTPException(
+            status_code=400, 
+            detail=f"SQL no permitido: {validation.blocked_reason}. Solo se permiten consultas SELECT/WITH."
+        )
     
     # Generar ID único
     import uuid
@@ -12736,19 +12791,27 @@ async def crear_consulta_custom(body: Dict, current_user: Dict = Depends(get_cur
         "sql": body['sql'],
         "created_by": current_user.get('email'),
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "active": True
+        "active": True,
+        "validated": True,  # FASE 1B: Marcamos como validada
+        "validation_timestamp": validation.validation_timestamp
     }
     
     await db.consultas_custom.insert_one(consulta)
     consulta.pop('_id', None)
     
+    logging.info(f"[CATALOGO-CUSTOM] Consulta creada: {consulta_id} por {current_user.get('email')}")
     return {"message": "Consulta creada exitosamente", "consulta": consulta}
 
 
 @api_router.put("/catalogo/consultas-custom/{consulta_id}")
 async def actualizar_consulta_custom(consulta_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
-    """Actualiza una consulta personalizada"""
-    if current_user.get('role') != 'Administrador':
+    """
+    Actualiza una consulta personalizada.
+    FASE 1B: Validación SQL obligatoria si se actualiza el campo sql.
+    """
+    from core.security import SQLSanitizer, log_blocked_sql
+    
+    if current_user.get('role') not in ['Administrador', 'SuperAdministrador']:
         raise HTTPException(status_code=403, detail="Solo administradores pueden editar consultas")
     
     consulta = await db.consultas_custom.find_one({"id": consulta_id})
@@ -12763,11 +12826,24 @@ async def actualizar_consulta_custom(consulta_id: str, body: Dict, current_user:
             else:
                 update_data[field] = body[field]
     
+    # FASE 1B: Si se actualiza el SQL, validarlo
+    if 'sql' in update_data:
+        validation = SQLSanitizer.validate_for_catalog(update_data['sql'])
+        if not validation.is_safe:
+            log_blocked_sql(validation, endpoint=f"/catalogo/consultas-custom/{consulta_id}", user_email=current_user.get('email'))
+            raise HTTPException(
+                status_code=400, 
+                detail=f"SQL no permitido: {validation.blocked_reason}. Solo se permiten consultas SELECT/WITH."
+            )
+        update_data['validated'] = True
+        update_data['validation_timestamp'] = validation.validation_timestamp
+    
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     update_data['updated_by'] = current_user.get('email')
     
     await db.consultas_custom.update_one({"id": consulta_id}, {"$set": update_data})
     
+    logging.info(f"[CATALOGO-CUSTOM] Consulta actualizada: {consulta_id} por {current_user.get('email')}")
     return {"message": "Consulta actualizada"}
 
 

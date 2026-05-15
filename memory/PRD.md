@@ -1813,48 +1813,32 @@ FASE 4: Endpoints /api/consultas-sql/*
 
 ---
 
-## FASE 1B SANITIZACIÓN SQL ALTAS - COMPLETADA (15-May-2026)
+## FASE 1B SANITIZACIÓN SQL EXHAUSTIVA - COMPLETADA (15-May-2026)
 
-### Vulnerabilidades Corregidas:
+### Vulnerabilidades A01-A04 Cerradas + 6 Endpoints Adicionales
 
-| ID | Riesgo | Endpoint | Corrección |
-|----|--------|----------|------------|
-| A01 | ALTO | /almacenes | Parametrización `%s` + validación de `sucursal_id` |
-| A02 | ALTO | /reports/inventory-analysis | `_escape_like_pattern()` para `almacen` en LIKE |
-| A03 | ALTO | /explorador/columnas, /relaciones, /preview | Whitelist + parametrización de `tabla` |
-| A04 | ALTO | /reports/inventory-analysis | `_sanitize_folio_list()` con límite 50 y escape |
+| ID | Endpoint | Corrección |
+|----|----------|------------|
+| A01 | /almacenes | Parametrización `%s` + `_validate_identifier()` |
+| A02 | /reports/inventory-analysis | `_escape_like_pattern()` para LIKE |
+| A03 | /explorador/columnas,relaciones,preview | Whitelist + parametrización |
+| A04 | /reports/inventory-analysis | `_sanitize_folio_list()` |
+| NEW | /servers/{id}/queries/validate | SQLSanitizer.validate_for_catalog() |
+| NEW | /explorador/query/{id} | SQLSanitizer.validate_for_explorer() |
+| NEW | /explorador/ejecutar-script/{id} | Solo SuperAdministrador |
+| NEW | /catalogo/consultas-custom POST/PUT | Validación antes de guardar |
+| NEW | /catalogo/ejecutar-rich/{id} | Validación para consultas custom |
 
-### Funciones Helper Creadas:
-- `_validate_identifier()`: Valida caracteres alfanuméricos
-- `_sanitize_identifier()`: Escapa comillas
-- `_validate_table_name()`: Whitelist de tablas permitidas
-- `_build_safe_folios_condition()`: Placeholders dinámicos para IN
-- `_sanitize_folio_list()`: Sanitiza lista de folios
+### SQLSanitizer Centralizado (core/security.py):
+- Bloquea: DELETE, UPDATE, INSERT, DROP, ALTER, TRUNCATE, EXEC, xp_, sp_, comentarios, múltiples statements
+- Permite: SELECT, WITH (CTE), JOINs, UNIONs, subqueries
+- Log: `log_blocked_sql()` registra intentos
 
-### Whitelist de Tablas:
-```python
-EXPLORADOR_TABLAS_PERMITIDAS = {
-    'almacen', 'cheques', 'cheqdet', 'productos', 'categorias', 'turnos',
-    'meseros', 'cuentas', 'folios', 'formasdepago', 'movsinventario', 
-    'movsalmacen', 'gruposi', 'gruposiclasificacion', 'productosreceta',
-    'productosi', 'usuarios', 'tiposdecheques', 'impuestos', 'preciosi',
-    'producto', 'sucursal', 'proveedor', 'movimiento', 'entrada', 'salida',
-    'fisico', 'compras', 'ventas', 'clientes', 'categoria', 'familia',
-    'subfamilia', 'unidad', 'tipo_movimiento',
-    'information_schema.tables', 'information_schema.columns',
-}
-```
+### Tests: 27/27 ✅
 
-### Validaciones:
-- ✅ Backend operativo
-- ✅ Login funciona
-- ✅ Payloads maliciosos rechazados
-- ✅ Valores normales aceptados
-- ✅ Sin regresión FASE 1A
-- ✅ Sin regresión FASE 3
-
-### Reporte:
-`/app/docs/reports/FASE_1B_SANITIZACION_SQL_ALTAS_REPORTE.md`
+### Reportes:
+- `/app/docs/reports/FASE_1B_SANITIZACION_SQL_VULNERABILIDADES_ALTAS.md`
+- `/app/backend/scripts/validate_sql_sanitization_fase_1b.py`
 
 ---
 
