@@ -516,3 +516,102 @@ def check_v2_health() -> Dict:
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return {"status": "error", "message": str(e)}
+
+
+
+# =============================================================================
+# FUNCIONES DE LECTURA - COMPARATIVOS DIARIOS
+# =============================================================================
+
+def get_comparativos_diarios(
+    unidad_negocio_id: str,
+    fecha_actual: date
+) -> Dict[str, Any]:
+    """
+    Obtiene datos comparativos diarios para una unidad:
+    - Día actual (de Comercial_Ventas_Dia_Abiertas_v2)
+    - Día anterior (de Comercial_KPIs_Diarios_v2)
+    - Mismo día año anterior (de Comercial_KPIs_Diarios_v2)
+    
+    Si no existe dato, retorna 0 (no error).
+    """
+    from datetime import timedelta
+    
+    fecha_anterior = fecha_actual - timedelta(days=1)
+    fecha_anio_ant = fecha_actual.replace(year=fecha_actual.year - 1)
+    
+    # Manejar año bisiesto: si fecha_anio_ant no existe (29 feb), usar 28 feb
+    try:
+        fecha_anio_ant_str = fecha_anio_ant.isoformat()
+    except ValueError:
+        fecha_anio_ant = fecha_actual.replace(year=fecha_actual.year - 1, day=28)
+        fecha_anio_ant_str = fecha_anio_ant.isoformat()
+    
+    result = {
+        'dia_actual': {'ventas': 0, 'pax': 0, 'cheques': 0},
+        'dia_anterior': {'ventas': 0, 'pax': 0, 'cheques': 0},
+        'dia_anio_ant': {'ventas': 0, 'pax': 0, 'cheques': 0}
+    }
+    
+    # Obtener día actual (de Ventas Abiertas)
+    query_actual = f"""
+    SELECT 
+        ISNULL(total_estimado_dia, 0) as ventas,
+        ISNULL(pax_abiertos, 0) + ISNULL(pax_cerrados_dia, 0) as pax,
+        ISNULL(tickets_abiertos, 0) + ISNULL(tickets_cerrados_dia, 0) as cheques
+    FROM Comercial_Ventas_Dia_Abiertas_v2
+    WHERE unidad_negocio_id = '{unidad_negocio_id}'
+      AND fecha_operacion = '{fecha_actual.isoformat()}'
+    """
+    
+    rows_actual = _execute_readonly_query(query_actual)
+    if rows_actual:
+        result['dia_actual'] = {
+            'ventas': float(rows_actual[0].get('ventas', 0) or 0),
+            'pax': int(rows_actual[0].get('pax', 0) or 0),
+            'cheques': int(rows_actual[0].get('cheques', 0) or 0)
+        }
+    
+    # Obtener día anterior (de KPIs Diarios)
+    query_anterior = f"""
+    SELECT 
+        ISNULL(ventas_total, 0) as ventas,
+        ISNULL(pax_total, 0) as pax,
+        ISNULL(tickets_total, 0) as cheques
+    FROM Comercial_KPIs_Diarios_v2
+    WHERE unidad_negocio_id = '{unidad_negocio_id}'
+      AND anio = {fecha_anterior.year}
+      AND mes = {fecha_anterior.month}
+      AND dia = {fecha_anterior.day}
+    """
+    
+    rows_anterior = _execute_readonly_query(query_anterior)
+    if rows_anterior:
+        result['dia_anterior'] = {
+            'ventas': float(rows_anterior[0].get('ventas', 0) or 0),
+            'pax': int(rows_anterior[0].get('pax', 0) or 0),
+            'cheques': int(rows_anterior[0].get('cheques', 0) or 0)
+        }
+    
+    # Obtener mismo día año anterior (de KPIs Diarios)
+    query_anio_ant = f"""
+    SELECT 
+        ISNULL(ventas_total, 0) as ventas,
+        ISNULL(pax_total, 0) as pax,
+        ISNULL(tickets_total, 0) as cheques
+    FROM Comercial_KPIs_Diarios_v2
+    WHERE unidad_negocio_id = '{unidad_negocio_id}'
+      AND anio = {fecha_anio_ant.year}
+      AND mes = {fecha_anio_ant.month}
+      AND dia = {fecha_anio_ant.day}
+    """
+    
+    rows_anio_ant = _execute_readonly_query(query_anio_ant)
+    if rows_anio_ant:
+        result['dia_anio_ant'] = {
+            'ventas': float(rows_anio_ant[0].get('ventas', 0) or 0),
+            'pax': int(rows_anio_ant[0].get('pax', 0) or 0),
+            'cheques': int(rows_anio_ant[0].get('cheques', 0) or 0)
+        }
+    
+    return result

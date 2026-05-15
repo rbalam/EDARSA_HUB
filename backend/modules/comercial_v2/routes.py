@@ -36,6 +36,7 @@ from .repository_readonly import (
     get_kpis_por_unidad,
     get_kpis_mensuales,
     get_ventas_dia_abiertas,
+    get_comparativos_diarios,
     get_sync_status,
     get_last_sync_by_unidad,
     get_unidades_disponibles,
@@ -1095,6 +1096,10 @@ async def comercial_v2_ventas_dia(
             
             total_dia = float(d.get('total_estimado_dia') or 0)
             
+            # Obtener comparativos diarios desde EDARSAHUB SQL
+            unidad_id = d['unidad_negocio_id']
+            comparativos = get_comparativos_diarios(unidad_id, fecha)
+            
             datos_enriquecidos.append({
                 "unidad_negocio_id": d['unidad_negocio_id'],
                 "unidad_negocio_nombre": d['unidad_negocio_nombre'],
@@ -1107,6 +1112,13 @@ async def comercial_v2_ventas_dia(
                 "tickets_cerrados_dia": int(d.get('tickets_cerrados_dia') or 0),
                 "pax_cerrados_dia": int(d.get('pax_cerrados_dia') or 0),
                 "total_estimado_dia": total_dia,
+                # Comparativos diarios (de EDARSAHUB SQL)
+                "dia_anterior_ventas": comparativos['dia_anterior']['ventas'],
+                "dia_anterior_pax": comparativos['dia_anterior']['pax'],
+                "dia_anterior_cheques": comparativos['dia_anterior']['cheques'],
+                "dia_anio_ant_ventas": comparativos['dia_anio_ant']['ventas'],
+                "dia_anio_ant_pax": comparativos['dia_anio_ant']['pax'],
+                "dia_anio_ant_cheques": comparativos['dia_anio_ant']['cheques'],
                 # Campos de última actualización (REGLA PRINCIPAL)
                 "snapshot_timestamp": str(d.get('snapshot_timestamp') or ''),
                 "minutos_desde_ultima_actualizacion": minutos_desde_actualizacion,

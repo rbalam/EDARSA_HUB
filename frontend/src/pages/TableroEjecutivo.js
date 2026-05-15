@@ -496,8 +496,9 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                   <p className="text-xl font-bold text-blue-600">{unidad.pax?.toLocaleString()}</p>
                   <p className="text-xs text-zinc-500">Pax Prom: {formatCurrency(unidad.pax_promedio)}</p>
                   <div className="flex justify-center gap-2 mt-1">
-                    <span className="text-xs">Mes: <VariacionBadge valor={unidad.pax_ant > 0 ? ((unidad.pax - unidad.pax_ant) / unidad.pax_ant * 100) : 0} /></span>
-                    <span className="text-xs">Año: <VariacionBadge valor={unidad.pax_año > 0 ? ((unidad.pax - unidad.pax_año) / unidad.pax_año * 100) : 0} /></span>
+                    {/* CORRECCIÓN: Etiquetas dinámicas según selector */}
+                    <span className="text-xs">{modoVentasDia ? 'Día Ant:' : 'Mes:'} <VariacionBadge valor={unidad.pax_ant > 0 ? ((unidad.pax - unidad.pax_ant) / unidad.pax_ant * 100) : 0} /></span>
+                    <span className="text-xs">{modoVentasDia ? 'Año Ant:' : 'Año:'} <VariacionBadge valor={unidad.pax_año > 0 ? ((unidad.pax - unidad.pax_año) / unidad.pax_año * 100) : 0} /></span>
                   </div>
                 </CardContent>
               </Card>
@@ -511,8 +512,9 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                   <p className="text-xl font-bold text-purple-600">{unidad.cheques?.toLocaleString()}</p>
                   <p className="text-xs text-zinc-500">Cheque Prom: {formatCurrency(unidad.cheque_promedio)}</p>
                   <div className="flex justify-center gap-2 mt-1">
-                    <span className="text-xs">Mes: <VariacionBadge valor={unidad.cheques_ant > 0 ? ((unidad.cheques - unidad.cheques_ant) / unidad.cheques_ant * 100) : 0} /></span>
-                    <span className="text-xs">Año: <VariacionBadge valor={unidad.cheques_año > 0 ? ((unidad.cheques - unidad.cheques_año) / unidad.cheques_año * 100) : 0} /></span>
+                    {/* CORRECCIÓN: Etiquetas dinámicas según selector */}
+                    <span className="text-xs">{modoVentasDia ? 'Día Ant:' : 'Mes:'} <VariacionBadge valor={unidad.cheques_ant > 0 ? ((unidad.cheques - unidad.cheques_ant) / unidad.cheques_ant * 100) : 0} /></span>
+                    <span className="text-xs">{modoVentasDia ? 'Año Ant:' : 'Año:'} <VariacionBadge valor={unidad.cheques_año > 0 ? ((unidad.cheques - unidad.cheques_año) / unidad.cheques_año * 100) : 0} /></span>
                   </div>
                 </CardContent>
               </Card>
@@ -521,13 +523,13 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                 <CardContent className="p-3 text-center">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <Target className="h-4 w-4 text-orange-600" />
-                    <span className="text-xs text-zinc-600">Proyección</span>
+                    <span className="text-xs text-zinc-600">{modoVentasDia ? 'Resumen' : 'Proyección'}</span>
                   </div>
-                  <p className="text-xl font-bold text-orange-600">{formatCurrency(unidad.proyeccion)}</p>
-                  <p className="text-xs text-zinc-500">Mes completo</p>
+                  <p className="text-xl font-bold text-orange-600">{formatCurrency(modoVentasDia ? unidad.ventas : unidad.proyeccion)}</p>
+                  <p className="text-xs text-zinc-500">{modoVentasDia ? 'Día actual' : 'Mes completo'}</p>
                   <div className="flex justify-center gap-2 mt-1">
-                    <span className="text-xs">vs Mes: <VariacionBadge valor={unidad.ventas_ant > 0 ? ((unidad.proyeccion - unidad.ventas_ant) / unidad.ventas_ant * 100) : 0} /></span>
-                    <span className="text-xs">vs Año: <VariacionBadge valor={unidad.ventas_año > 0 ? ((unidad.proyeccion - unidad.ventas_año) / unidad.ventas_año * 100) : 0} /></span>
+                    <span className="text-xs">{modoVentasDia ? 'vs Día Ant:' : 'vs Mes:'} <VariacionBadge valor={unidad.ventas_ant > 0 ? (((modoVentasDia ? unidad.ventas : unidad.proyeccion) - unidad.ventas_ant) / unidad.ventas_ant * 100) : 0} /></span>
+                    <span className="text-xs">{modoVentasDia ? 'vs Año Ant:' : 'vs Año:'} <VariacionBadge valor={unidad.ventas_año > 0 ? (((modoVentasDia ? unidad.ventas : unidad.proyeccion) - unidad.ventas_año) / unidad.ventas_año * 100) : 0} /></span>
                   </div>
                 </CardContent>
               </Card>
@@ -814,6 +816,13 @@ export default function TableroEjecutivo() {
                       ? u.total_estimado_dia / ((u.pax_abiertos || 0) + (u.pax_cerrados_dia || 0))
                       : 0,
                     proyeccion: 0,  // No aplica para Ventas del Día
+                    // Comparativos diarios desde EDARSAHUB SQL
+                    ventas_ant: u.dia_anterior_ventas || 0,
+                    pax_ant: u.dia_anterior_pax || 0,
+                    cheques_ant: u.dia_anterior_cheques || 0,
+                    ventas_año: u.dia_anio_ant_ventas || 0,
+                    pax_año: u.dia_anio_ant_pax || 0,
+                    cheques_año: u.dia_anio_ant_cheques || 0,
                     var_vs_mes_ant: null,  // No aplica
                     var_vs_año_ant: null,  // No aplica
                     // Estado de datos - CRÍTICO para que no muestre "Error de conexión"
