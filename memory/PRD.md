@@ -1296,3 +1296,79 @@ ESTELAR:    $185,670.00 (FechaOp=2026-05-14) ✅
 > La venta del día pertenece a la FechaOperacion del turno/jornada, no al día calendario.
 > $0 solo es válido si la fuente respondió correctamente y confirmó venta real cero.
 
+
+
+---
+
+## ✅ FASE 3 DML COMPLETADA: Catálogo Canónico Empresas/Servidores/Sucursales (16-May-2026)
+
+### Objetivo:
+Poblar las tablas canónicas creadas en DDL anterior para establecer la base de datos que soportará el `EmpresaResolver`.
+
+### DML Ejecutado:
+
+| Tabla | Registros | Estado |
+|-------|-----------|--------|
+| Sistema_Tipos | 5 | ✅ |
+| Sistema_EmpresasAlias | 12 (únicos) | ✅ |
+| Sistema_EmpresasServidores | 7 | ✅ |
+
+### Sistema_Tipos (5 tipos de sistema):
+- SOFTRESTAURANT
+- MPRO
+- API_LOCAL
+- EDARSAHUB_SQL
+- OTRO
+
+### Sistema_EmpresasAlias (12 aliases únicos):
+| EmpresaID | Empresa | Aliases Insertados |
+|-----------|---------|-------------------|
+| 1 | ORIGEN | ORIGEN |
+| 2 | 130QRO | 130QRO, 130 QUERETARO, QUERETARO, QRO |
+| 3 | CIENFUEGOS | CIENFUEGOS, CF |
+| 4 | ESTELAR | ESTELAR, LA ESTELAR |
+| 5 | 130MID | 130MID, 130-MER, 130 MERIDA |
+
+**Reglas de Aliases Críticas Validadas:**
+- ✅ `130-MER` → EmpresaID=5 (130MID), NO empresa nueva
+- ✅ `LA ESTELAR` → EmpresaID=4 (ESTELAR), NO empresa nueva
+- ✅ `130-QRO` normalizó a `130QRO` → EmpresaID=2
+
+### Sistema_EmpresasServidores (7 relaciones):
+| EmpresaID | Empresa | RolConexion | NumSucursal | Servidor |
+|-----------|---------|-------------|-------------|----------|
+| 1 | ORIGEN | PRINCIPAL_SQL | 23 | ManagmentPro |
+| 1 | ORIGEN | VENTAS_DIA_API_LOCAL | 23 | ORIGEN LOCAL |
+| 2 | 130QRO | PRINCIPAL_SQL | 21 | ManagmentPro |
+| 2 | 130QRO | VENTAS_DIA_API_LOCAL | 21 | 130° QRO LOCAL |
+| 3 | CIENFUEGOS | PRINCIPAL_SQL | NULL | CIENFUEGOS |
+| 4 | ESTELAR | PRINCIPAL_SQL | NULL | LA ESTELAR |
+| 5 | 130MID | PRINCIPAL_SQL | NULL | 130° MERIDA |
+
+### Validaciones Post-DML:
+- ✅ ORIGEN usa CodigoSucursalSistema=0023 / NumeroSucursalSistema=23
+- ✅ 130QRO usa CodigoSucursalSistema=0021 / NumeroSucursalSistema=21
+- ✅ APIs Locales usan RolConexion=VENTAS_DIA_API_LOCAL (NO PRINCIPAL_SQL)
+- ✅ SoftRestaurant usa NumeroSucursalSistema=NULL
+- ✅ Sistema_Empresas NO modificada (sigue con 5 empresas canónicas)
+- ✅ No se ejecutó UPDATE/DELETE
+- ✅ No se crearon empresas nuevas
+- ✅ No hay aliases duplicados activos
+- ✅ No hay relaciones duplicadas activas
+
+### Confirmaciones de Alcance:
+- ✅ No se modificó código backend
+- ✅ No se modificó frontend
+- ✅ No se modificaron jobs
+- ✅ No se tocó Tablero Ejecutivo/Comercial/Finanzas/Compras
+- ✅ No se implementó EmpresaResolver todavía
+- ✅ No se refactorizó adapters.py/mpro.py/service.py
+
+### Reporte Detallado:
+`/app/docs/reports/FASE_3_DML_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES_EJECUTADO.md`
+
+### Siguiente Fase (Pendiente Autorización):
+1. **P0**: Implementar `EmpresaResolver` en backend
+2. **P0**: Refactorizar `adapters.py` para usar aliases canónicos
+3. **P1**: Refactorizar jobs del scheduler
+
