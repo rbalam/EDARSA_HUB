@@ -5,6 +5,10 @@
  * CORRECCIÓN P0 - 2026-05-08:
  * Migrado de axios directo a cliente API centralizado para garantizar
  * envío de Authorization header cuando cookie httpOnly falla por CORS/proxy.
+ * 
+ * CORRECCIÓN P1 - 2026-05-15:
+ * Filtro de sistemas ahora es dinámico desde Sistema_Catalogo (EDARSAHUB).
+ * Ya no hardcodea SoftRestaurant y MPRO.
  */
 import { useState, useEffect, useCallback } from 'react';
 // FASE AUTH-SECURITY-01 / FASE 4.1: Usa cliente API centralizado con interceptor de token
@@ -20,6 +24,10 @@ export function useCatalogoConsultasData() {
   const [servers, setServers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [ejecutando, setEjecutando] = useState(false);
+  
+  // CORRECCIÓN P1: Sistemas dinámicos desde catálogo
+  const [sistemasDisponibles, setSistemasDisponibles] = useState([]);
+  const [loadingSistemas, setLoadingSistemas] = useState(false);
   
   // Filtros
   const [filtroCategoria, setFiltroCategoria] = useState('');
@@ -88,11 +96,32 @@ export function useCatalogoConsultasData() {
     }
   }, []);
 
+  // CORRECCIÓN P1: Cargar sistemas dinámicos desde EDARSAHUB
+  const cargarSistemasDisponibles = useCallback(async () => {
+    setLoadingSistemas(true);
+    try {
+      const response = await api.get('/catalogos/sistemas/activos');
+      if (response.data?.success && response.data?.data) {
+        setSistemasDisponibles(response.data.data);
+      }
+    } catch (error) {
+      logger.error('Error cargando sistemas:', error);
+      // Fallback: al menos mostrar los básicos si falla
+      setSistemasDisponibles([
+        { Codigo: 'SOFTRESTAURANT', Descripcion: 'SoftRestaurant' },
+        { Codigo: 'MPRO', Descripcion: 'ManagementPro (MPRO)' }
+      ]);
+    } finally {
+      setLoadingSistemas(false);
+    }
+  }, []);
+
   // Carga inicial
   useEffect(() => {
     cargarConsultas();
     cargarServers();
-  }, [cargarConsultas, cargarServers]);
+    cargarSistemasDisponibles(); // CORRECCIÓN P1: Cargar sistemas dinámicos
+  }, [cargarConsultas, cargarServers, cargarSistemasDisponibles]);
 
   // Seleccionar consulta
   const seleccionarConsulta = useCallback((consulta) => {
@@ -294,6 +323,9 @@ export function useCatalogoConsultasData() {
     showNuevaConsulta,
     nuevaConsulta,
     guardando,
+    // CORRECCIÓN P1: Sistemas dinámicos
+    sistemasDisponibles,
+    loadingSistemas,
     
     // Setters
     setFiltroCategoria,

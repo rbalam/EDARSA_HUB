@@ -27,6 +27,8 @@ export default function CatalogoConsultas() {
     resultados, mostrarSQL, modoEdicion, sqlEditado,
     modoTest, resultadosTest, ejecutandoTest,
     showNuevaConsulta, nuevaConsulta, guardando,
+    // CORRECCIÓN P1: Sistemas dinámicos
+    sistemasDisponibles,
     // Setters
     setFiltroCategoria, setFiltroSistema, setServerSeleccionado,
     setParametros, setMostrarSQL, setModoEdicion, setSqlEditado,
@@ -51,12 +53,26 @@ export default function CatalogoConsultas() {
   }, [cargarConsultas]);
 
   // Filtrar servers por sistema de la consulta seleccionada
+  // CORRECCIÓN P1: Usa código del sistema dinámico, no hardcodeado
   const serversDisponibles = useMemo(() => {
     if (!consultaSeleccionada) return servers;
     return servers.filter(s => {
-      if (consultaSeleccionada.sistema === 'SoftRestaurant') return s.system_type === 'SoftRestaurant';
-      if (consultaSeleccionada.sistema === 'MPRO') return s.system_type === 'MPRO';
-      return true;
+      // Comparar el system_type del servidor con el sistema de la consulta
+      // Normalizar para comparación (algunos usan código, otros descripción)
+      const sistemaConsulta = consultaSeleccionada.sistema?.toUpperCase();
+      const sistemaServer = s.system_type?.toUpperCase();
+      
+      // Si la consulta no tiene sistema específico, mostrar todos
+      if (!sistemaConsulta) return true;
+      
+      // Mapeo de variantes conocidas
+      if (sistemaConsulta === 'SOFTRESTAURANT' && sistemaServer === 'SOFTRESTAURANT') return true;
+      if (sistemaConsulta === 'MPRO' && sistemaServer === 'MPRO') return true;
+      if (sistemaConsulta === 'MANAGEMENTPRO (MPRO)' && sistemaServer === 'MPRO') return true;
+      
+      // Comparación directa para sistemas nuevos
+      return sistemaServer === sistemaConsulta || 
+             s.system_type === consultaSeleccionada.sistema;
     });
   }, [consultaSeleccionada, servers]);
 
@@ -104,8 +120,12 @@ export default function CatalogoConsultas() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="SoftRestaurant">SoftRestaurant</SelectItem>
-                  <SelectItem value="MPRO">MPRO</SelectItem>
+                  {/* CORRECCIÓN P1: Sistemas dinámicos desde EDARSAHUB */}
+                  {sistemasDisponibles.map(s => (
+                    <SelectItem key={s.Codigo} value={s.Codigo}>
+                      {s.Descripcion}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -142,10 +162,15 @@ export default function CatalogoConsultas() {
                           </div>
                           <p className="text-xs text-zinc-500 truncate">{c.descripcion}</p>
                           <div className="flex gap-1 mt-1 items-center">
+                            {/* CORRECCIÓN P1: Colores dinámicos por sistema */}
                             <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                              c.sistema === 'MPRO' 
+                              c.sistema?.toUpperCase() === 'MPRO' 
                                 ? 'bg-purple-100 text-purple-700' 
-                                : 'bg-blue-100 text-blue-700'
+                                : c.sistema?.toUpperCase() === 'SOFTRESTAURANT'
+                                ? 'bg-blue-100 text-blue-700'
+                                : c.sistema?.toUpperCase() === 'SAP_BUSINESS_ONE'
+                                ? 'bg-orange-100 text-orange-700'
+                                : 'bg-zinc-100 text-zinc-700'
                             }`}>{c.sistema}</span>
                             <span className="text-xs px-1 bg-zinc-100 rounded">{c.categoria}</span>
                             {esPersonalizada && (
@@ -527,8 +552,12 @@ export default function CatalogoConsultas() {
                       <SelectValue placeholder="Seleccionar..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="SoftRestaurant">SoftRestaurant</SelectItem>
-                      <SelectItem value="MPRO">MPRO</SelectItem>
+                      {/* CORRECCIÓN P1: Sistemas dinámicos desde EDARSAHUB */}
+                      {sistemasDisponibles.map(s => (
+                        <SelectItem key={s.Codigo} value={s.Codigo}>
+                          {s.Descripcion}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

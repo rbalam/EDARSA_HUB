@@ -2123,3 +2123,55 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 ### P3 - Limpieza de Registros Legacy
 - Eliminar registros duplicados en BD
 
+
+
+
+---
+
+## Actualizaciones Recientes (2026-05-15)
+
+### FIX: Filtro Dinámico de Sistemas en Catálogo de Consultas
+**Estado:** ✅ COMPLETADO
+
+**Problema:** El filtro de "Sistema" en Catálogo de Consultas estaba hardcodeado mostrando solo SoftRestaurant y MPRO, ignorando nuevos sistemas creados en `Catálogos > Configuración > Sistemas`.
+
+**Solución:**
+- Modificado `useCatalogoConsultasData.js` para cargar sistemas desde `/api/catalogos/sistemas/activos`
+- Reemplazados SelectItems hardcodeados por mapeo dinámico de `sistemasDisponibles`
+- Afecta: filtro principal + modal Nueva Consulta
+
+**Sistemas ahora disponibles (dinámicos desde EDARSAHUB):**
+- MPRO: ManagementPro (MPRO)
+- OTRO: Otro
+- SAP_BUSINESS_ONE: SAP Business One
+- SOFRESATAURANT_ENTER: Sofresataurant Enterprise
+- SOFTRESTAURANT: SoftRestaurant
+
+**Archivos modificados:**
+- `/app/frontend/src/components/catalogo-consultas/useCatalogoConsultasData.js`
+- `/app/frontend/src/pages/CatalogoConsultas.js`
+
+**Reporte:** `/app/docs/reports/FIX_CATALOGO_CONSULTAS_SISTEMAS_DINAMICOS.md`
+
+### FIX: Modal Drag & Drop en Servidores.js
+**Estado:** ✅ COMPLETADO
+
+**Problema:** El modal de edición de conexiones no se arrastraba correctamente debido a conflicto con transform CSS de Shadcn.
+
+**Solución:**
+- Modificado `dialog.jsx` con props `draggable`, `hideCloseButton`, `overlayClassName`
+- Reimplementado drag con event listeners globales en `document`
+- Transform ahora usa `calc(-50% + Xpx)` para mantener centrado + offset
+
+**Archivos modificados:**
+- `/app/frontend/src/components/ui/dialog.jsx`
+- `/app/frontend/src/pages/Servidores.js`
+
+### FIX: Compilación JSX - Fragmento sin cerrar
+**Estado:** ✅ COMPLETADO
+
+**Problema:** Error `Expected corresponding JSX closing tag for <>` en Servidores.js línea 2579.
+
+**Causa:** Fragmento `<>` abierto dentro de `{!sqlModalMinimized && (<>...` no tenía cierre `</>` ni `)}`.
+
+**Solución:** Agregado `</>` y `)}` después de `</DialogFooter>`.
