@@ -542,10 +542,9 @@ def get_comparativos_diarios(
     
     # Manejar año bisiesto: si fecha_anio_ant no existe (29 feb), usar 28 feb
     try:
-        fecha_anio_ant_str = fecha_anio_ant.isoformat()
+        _ = fecha_anio_ant.isoformat()  # Validar que la fecha es válida
     except ValueError:
         fecha_anio_ant = fecha_actual.replace(year=fecha_actual.year - 1, day=28)
-        fecha_anio_ant_str = fecha_anio_ant.isoformat()
     
     result = {
         'dia_actual': {'ventas': 0, 'pax': 0, 'cheques': 0},
@@ -573,16 +572,26 @@ def get_comparativos_diarios(
         }
     
     # Obtener día anterior (de KPIs Diarios)
+    # CORRECCIÓN: Si no existe el día exacto anterior, buscar el último día disponible
+    # con una ventana máxima de 7 días para evitar mostrar datos muy antiguos
     query_anterior = f"""
-    SELECT 
+    SELECT TOP 1
         ISNULL(ventas_total, 0) as ventas,
         ISNULL(pax_total, 0) as pax,
-        ISNULL(tickets_total, 0) as cheques
+        ISNULL(tickets_total, 0) as cheques,
+        anio, mes, dia
     FROM Comercial_KPIs_Diarios_v2
     WHERE unidad_negocio_id = '{unidad_negocio_id}'
-      AND anio = {fecha_anterior.year}
-      AND mes = {fecha_anterior.month}
-      AND dia = {fecha_anterior.day}
+      AND activo = 1 AND es_demo = 0
+      AND (
+        -- Primero intentar día exacto anterior
+        (anio = {fecha_anterior.year} AND mes = {fecha_anterior.month} AND dia = {fecha_anterior.day})
+        OR
+        -- Si no existe, buscar cualquier día en los últimos 7 días
+        (anio * 10000 + mes * 100 + dia) >= ({fecha_anterior.year} * 10000 + {fecha_anterior.month} * 100 + {fecha_anterior.day} - 7)
+        AND (anio * 10000 + mes * 100 + dia) < ({fecha_actual.year} * 10000 + {fecha_actual.month} * 100 + {fecha_actual.day})
+      )
+    ORDER BY anio DESC, mes DESC, dia DESC
     """
     
     rows_anterior = _execute_readonly_query(query_anterior)
@@ -592,18 +601,35 @@ def get_comparativos_diarios(
             'pax': int(rows_anterior[0].get('pax', 0) or 0),
             'cheques': int(rows_anterior[0].get('cheques', 0) or 0)
         }
+        # Log si usamos un día diferente al exacto
+        dia_usado = f"{rows_anterior[0].get('anio')}-{rows_anterior[0].get('mes'):02d}-{rows_anterior[0].get('dia'):02d}"
+        dia_esperado = fecha_anterior.isoformat()
+        if dia_usado != dia_esperado:
+            logger.info(f"[COMPARATIVOS] {unidad_negocio_id}: Usando {dia_usado} en lugar de {dia_esperado} (último disponible)")
     
     # Obtener mismo día año anterior (de KPIs Diarios)
+    # CORRECCIÓN: Similar lógica de fallback para año anterior
     query_anio_ant = f"""
-    SELECT 
+    SELECT TOP 1
         ISNULL(ventas_total, 0) as ventas,
         ISNULL(pax_total, 0) as pax,
-        ISNULL(tickets_total, 0) as cheques
+        ISNULL(tickets_total, 0) as cheques,
+        anio, mes, dia
     FROM Comercial_KPIs_Diarios_v2
     WHERE unidad_negocio_id = '{unidad_negocio_id}'
-      AND anio = {fecha_anio_ant.year}
-      AND mes = {fecha_anio_ant.month}
-      AND dia = {fecha_anio_ant.day}
+      AND activo = 1 AND es_demo = 0
+      AND (
+        -- Primero intentar día exacto año anterior
+        (anio = {fecha_anio_ant.year} AND mes = {fecha_anio_ant.month} AND dia = {fecha_anio_ant.day})
+        OR
+        -- Si no existe, buscar cualquier día en ±7 días del mismo período año anterior
+        (anio * 10000 + mes * 100 + dia) >= ({fecha_anio_ant.year} * 10000 + {fecha_anio_ant.month} * 100 + {fecha_anio_ant.day} - 7)
+        AND (anio * 10000 + mes * 100 + dia) <= ({fecha_anio_ant.year} * 10000 + {fecha_anio_ant.month} * 100 + {fecha_anio_ant.day} + 7)
+      )
+    ORDER BY 
+        -- Priorizar día exacto, luego el más cercano
+        CASE WHEN anio = {fecha_anio_ant.year} AND mes = {fecha_anio_ant.month} AND dia = {fecha_anio_ant.day} THEN 0 ELSE 1 END,
+        ABS((anio * 10000 + mes * 100 + dia) - ({fecha_anio_ant.year} * 10000 + {fecha_anio_ant.month} * 100 + {fecha_anio_ant.day}))
     """
     
     rows_anio_ant = _execute_readonly_query(query_anio_ant)

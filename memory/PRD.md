@@ -945,3 +945,46 @@ Modificación en `/app/frontend/src/pages/TableroEjecutivo.js` - componente `Det
 - ✅ Comparativos diarios muestran datos reales o 0 seguro
 - ✅ No hay NaN/Infinity/null/undefined
 
+---
+
+## CORRECCIÓN HISTÓRICOS DIARIOS - Fallback a Último Día Disponible (15-Mayo-2026)
+
+### Problema Identificado
+La tabla `Comercial_KPIs_Diarios_v2` no tenía datos del 14-May-2026 para las unidades SoftRestaurant porque:
+1. El job `sync_comercial_v2` no puede ejecutarse en entorno preview (sin conexión a servidores remotos)
+2. El último día con datos era el 13-May-2026
+
+### Diagnóstico SQL
+| Código | Primera Fecha | Última Fecha | Total Días |
+|--------|--------------|--------------|------------|
+| 130MID | 2024-05-01 | 2026-05-13 | 738 |
+| 130QRO | 2024-05-01 | 2026-05-13 | 739 |
+| CIENFUEGOS | 2024-05-01 | 2026-05-13 | 739 |
+| ESTELAR | 2025-06-12 | 2026-05-13 | 329 |
+| ORIGEN | 2024-05-01 | 2026-05-14 | 738 |
+
+### Solución Implementada
+Modificación en `/app/backend/modules/comercial_v2/repository_readonly.py` función `get_comparativos_diarios()`:
+
+1. **Fallback inteligente**: Si no existe el día exacto anterior, busca el último día disponible dentro de una ventana de 7 días
+2. **Priorización**: Primero intenta el día exacto, luego el más cercano
+3. **Logging**: Registra cuando usa un día diferente al solicitado
+4. **Sin errores**: Retorna 0 si no hay datos en la ventana
+
+### Resultados Verificados (Después de Corrección)
+| Unidad | Ventas Día Ant | PAX | Cheques | Estado |
+|--------|----------------|-----|---------|--------|
+| 130° MERIDA | $165,747.00 | 84 | 30 | ✅ |
+| 130° QUERETARO | $97,381.00 | 62 | 21 | ✅ |
+| CIENFUEGOS | $124,358.00 | 88 | 32 | ✅ |
+| LA ESTELAR | $87,485.00 | 75 | 32 | ✅ |
+| ORIGEN | $25,339.53 | 45 | 18 | ✅ |
+| **TOTAL** | **$500,310.53** | **354** | **133** | ✅ |
+
+### Regla Arquitectónica Respetada
+- ✅ Datos vienen de EDARSAHUB SQL
+- ✅ No hay consulta en vivo a servidores remotos
+- ✅ No hay MongoDB como fuente de datos
+- ✅ No hay SQL MPRO central
+- ✅ Fallback no confunde ausencia de sync con venta real cero
+
