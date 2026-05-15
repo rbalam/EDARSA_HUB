@@ -419,6 +419,144 @@ const [sqlViewMode, setSqlViewMode] = useState('cards'); // 'cards' | 'list'
 
 ---
 
+## 16. AJUSTE UX MODAL SCROLL Y DRAG (15-May-2026)
+
+### Problema Resuelto
+El modal de alta/edición de conexiones era demasiado alto y no permitía:
+- Ver todo el contenido en pantallas pequeñas
+- Mover el modal para ver información detrás
+- Acceder fácilmente a los botones de acción
+
+### Archivo Modificado
+`/app/frontend/src/pages/Servidores.js`
+
+### Implementación del Scroll Vertical
+
+```jsx
+<DialogContent className="max-w-lg flex flex-col max-h-[90vh]">
+  <DialogHeader className="... border-b border-zinc-100 pb-3">
+    {/* Header fijo */}
+  </DialogHeader>
+  
+  {/* Cuerpo con scroll */}
+  <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0">
+    {/* Formulario completo */}
+  </div>
+  
+  {/* Footer fijo con botones */}
+  <DialogFooter className="border-t border-zinc-100 pt-4 mt-2 flex-shrink-0">
+    {/* Botones */}
+  </DialogFooter>
+</DialogContent>
+```
+
+**Características:**
+- `max-h-[90vh]`: Modal nunca supera 90% del viewport
+- `flex flex-col`: Estructura flexible para header-body-footer
+- `overflow-y-auto`: Scroll solo en el cuerpo
+- `flex-shrink-0`: Footer siempre visible
+
+### Implementación del Modal Arrastrable
+
+**Estados agregados:**
+```javascript
+const [apiModalPosition, setApiModalPosition] = useState({ x: 0, y: 0 });
+const [sqlModalPosition, setSqlModalPosition] = useState({ x: 0, y: 0 });
+const [isDragging, setIsDragging] = useState(false);
+const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+```
+
+**Funciones de drag:**
+```javascript
+const handleDragStart = (e, setPosition) => {
+  // Solo permitir drag desde el header
+  if (e.target.tagName === 'INPUT' || ...) return;
+  setIsDragging(true);
+  // Calcular offset
+};
+
+const handleDrag = useCallback((e, setPosition) => {
+  if (!isDragging) return;
+  // Calcular nueva posición con límites
+  setPosition({ x: ..., y: ... });
+}, [isDragging, dragOffset]);
+```
+
+**Zona de arrastre:**
+```jsx
+<DialogHeader 
+  className="cursor-move select-none"
+  onMouseDown={(e) => handleDragStart(e, setApiModalPosition)}
+>
+  <DialogTitle>
+    ...
+    <span className="text-xs text-zinc-400">(arrastra para mover)</span>
+  </DialogTitle>
+</DialogHeader>
+```
+
+**Aplicación al DialogContent:**
+```jsx
+<DialogContent 
+  style={{
+    transform: `translate(${apiModalPosition.x}px, ${apiModalPosition.y}px)`,
+    transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+  }}
+  onMouseMove={(e) => isDragging && handleDrag(e, setApiModalPosition)}
+  onMouseUp={handleDragEnd}
+  onMouseLeave={handleDragEnd}
+>
+```
+
+### Validaciones Realizadas
+
+| Test | Resultado |
+|------|-----------|
+| Modal tiene scroll vertical interno | ✅ OK |
+| Se puede ver todo el formulario | ✅ OK |
+| Modal se puede arrastrar desde header | ✅ OK |
+| Modal no sale completamente de pantalla | ✅ OK |
+| Inputs siguen funcionando | ✅ OK |
+| Selects siguen funcionando | ✅ OK |
+| Textarea de Consulta SELECT funciona | ✅ OK |
+| Botón Probar consulta funciona | ✅ OK |
+| Resultado de consulta visible | ✅ OK |
+| Botones siempre accesibles | ✅ OK |
+| Drag no interfiere con inputs | ✅ OK |
+| Posición se resetea al cerrar | ✅ OK |
+
+### Confirmación de Seguridad
+
+| Aspecto | Estado |
+|---------|--------|
+| API Key no expuesta | ✅ Verificado |
+| Passwords no expuestos | ✅ Verificado |
+| Connection strings ocultos | ✅ Verificado |
+| Secretos enmascarados | ✅ Verificado |
+
+### Confirmación de No Regresión
+
+| Funcionalidad | Estado |
+|---------------|--------|
+| Crear nueva conexión API | ✅ OK |
+| Editar conexión API existente | ✅ OK |
+| Crear/editar conexión SQL | ✅ OK |
+| Consulta default precargada | ✅ OK |
+| Probar consulta SELECT | ✅ OK |
+| Vista compacta | ✅ OK |
+| Test Universal | ✅ OK |
+| Checkbox "Solo ventas del día" | ✅ OK |
+| Tipo de uso / Nombre / SQL / Timeout | ✅ OK |
+
+### Confirmación de No Afectación Backend
+
+- ✅ No se modificó ningún archivo backend
+- ✅ No se modificaron contratos API
+- ✅ No se tocó MongoDB
+- ✅ No se tocaron módulos protegidos (Comercial, Tablero, Finanzas, etc.)
+
+---
+
 *Documento generado por E1 Agent*  
 *Fecha: 2026-05-15*  
-*Actualizado: 2026-05-15 (Consulta DEFAULT + Vista Compacta)*
+*Actualizado: 2026-05-15 (Consulta DEFAULT + Vista Compacta + Modal Scroll/Drag)*

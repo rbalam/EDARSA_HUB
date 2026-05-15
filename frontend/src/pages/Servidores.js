@@ -146,6 +146,12 @@ const Servidores = () => {
   const [apiViewMode, setApiViewMode] = useState('cards'); // 'cards' | 'list'
   const [sqlViewMode, setSqlViewMode] = useState('cards'); // 'cards' | 'list'
   
+  // Estado para modal arrastrable (API y SQL)
+  const [apiModalPosition, setApiModalPosition] = useState({ x: 0, y: 0 });
+  const [sqlModalPosition, setSqlModalPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  
   // Estado para tipos de sistema (cargados desde catálogo)
   const [tiposSistema, setTiposSistema] = useState([]);
   const [loadingTiposSistema, setLoadingTiposSistema] = useState(false);
@@ -534,6 +540,53 @@ const Servidores = () => {
     // This effect runs once when apiConnections load, not on every status update
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiConnections]);
+
+  // ========== FUNCIONES DE DRAG PARA MODALES ==========
+  const handleDragStart = (e, setPosition) => {
+    // Solo permitir drag desde el header (no desde inputs, buttons, etc.)
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || 
+        e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' ||
+        e.target.closest('button') || e.target.closest('input')) {
+      return;
+    }
+    setIsDragging(true);
+    const rect = e.currentTarget.closest('[role="dialog"]').getBoundingClientRect();
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+  };
+
+  const handleDrag = useCallback((e, setPosition) => {
+    if (!isDragging) return;
+    
+    const newX = e.clientX - dragOffset.x - window.innerWidth / 2 + 250;
+    const newY = e.clientY - dragOffset.y - window.innerHeight / 2 + 200;
+    
+    // Limitar para que no salga de pantalla
+    const maxX = window.innerWidth / 2 - 100;
+    const maxY = window.innerHeight / 2 - 50;
+    
+    setPosition({
+      x: Math.max(-maxX, Math.min(maxX, newX)),
+      y: Math.max(-maxY, Math.min(maxY, newY))
+    });
+  }, [isDragging, dragOffset]);
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Reset posición cuando se cierra el modal
+  const resetApiModalPosition = () => {
+    setApiModalPosition({ x: 0, y: 0 });
+    setApiDialogOpen(false);
+  };
+
+  const resetSqlModalPosition = () => {
+    setSqlModalPosition({ x: 0, y: 0 });
+    setDialogOpen(false);
+  };
 
   const loadServers = async () => {
     try {
@@ -1870,19 +1923,33 @@ const Servidores = () => {
       </Tabs>
 
       {/* Dialog para agregar/editar Conexión API */}
-      <Dialog open={apiDialogOpen} onOpenChange={setApiDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+      <Dialog open={apiDialogOpen} onOpenChange={(open) => { if (!open) resetApiModalPosition(); else setApiDialogOpen(true); }}>
+        <DialogContent 
+          className="max-w-lg flex flex-col max-h-[90vh]"
+          style={{
+            transform: `translate(${apiModalPosition.x}px, ${apiModalPosition.y}px)`,
+            transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+          }}
+          onMouseMove={(e) => isDragging && handleDrag(e, setApiModalPosition)}
+          onMouseUp={handleDragEnd}
+          onMouseLeave={handleDragEnd}
+        >
+          <DialogHeader 
+            className="cursor-move select-none border-b border-zinc-100 pb-3"
+            onMouseDown={(e) => handleDragStart(e, setApiModalPosition)}
+          >
             <DialogTitle className="flex items-center gap-2">
               <Globe className="h-5 w-5" />
               {editingApi ? 'Editar Conexión API' : 'Nueva Conexión API'}
+              <span className="ml-auto text-xs text-zinc-400 font-normal">(arrastra para mover)</span>
             </DialogTitle>
             <DialogDescription>
               Configura la conexión a una API local para obtener ventas en tiempo real
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
+          {/* Cuerpo con scroll */}
+          <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0">
             <div className="space-y-2">
               <Label htmlFor="api_name">Nombre</Label>
               <Input
@@ -2182,7 +2249,8 @@ const Servidores = () => {
             {/* ========== FIN SECCIÓN DE CONSULTA DE PRUEBA ========== */}
           </div>
           
-          <DialogFooter>
+          {/* Footer fijo con botones */}
+          <DialogFooter className="border-t border-zinc-100 pt-4 mt-2 flex-shrink-0">
             <Button variant="outline" onClick={() => setApiDialogOpen(false)}>
               Cancelar
             </Button>
@@ -2224,16 +2292,33 @@ const Servidores = () => {
       </Dialog>
 
       {/* Add/Edit Server Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingServer ? 'Editar Servidor' : 'Agregar Nuevo Servidor'}</DialogTitle>
+      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) { resetForm(); resetSqlModalPosition(); } else setDialogOpen(true); }}>
+        <DialogContent 
+          className="max-w-2xl flex flex-col max-h-[90vh]"
+          style={{
+            transform: `translate(${sqlModalPosition.x}px, ${sqlModalPosition.y}px)`,
+            transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+          }}
+          onMouseMove={(e) => isDragging && handleDrag(e, setSqlModalPosition)}
+          onMouseUp={handleDragEnd}
+          onMouseLeave={handleDragEnd}
+        >
+          <DialogHeader 
+            className="cursor-move select-none border-b border-zinc-100 pb-3"
+            onMouseDown={(e) => handleDragStart(e, setSqlModalPosition)}
+          >
+            <DialogTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              {editingServer ? 'Editar Servidor' : 'Agregar Nuevo Servidor'}
+              <span className="ml-auto text-xs text-zinc-400 font-normal">(arrastra para mover)</span>
+            </DialogTitle>
             <DialogDescription>
               {editingServer ? 'Modifica los parámetros de conexión' : 'Configura la conexión a un servidor SQL'}
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
+          {/* Cuerpo con scroll */}
+          <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre</Label>
@@ -2348,9 +2433,11 @@ const Servidores = () => {
                 <li>• <strong>SoftRestaurant:</strong> Fecha inicial +1 seg, fecha final -1 seg</li>
               </ul>
             </div>
+          </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+          {/* Footer fijo con botones */}
+          <DialogFooter className="border-t border-zinc-100 pt-4 flex-shrink-0">
+              <Button type="button" variant="outline" onClick={() => { resetForm(); resetSqlModalPosition(); }}>
                 Cancelar
               </Button>
               <Button 
@@ -2371,8 +2458,7 @@ const Servidores = () => {
                   </>
                 )}
               </Button>
-            </DialogFooter>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
