@@ -1499,6 +1499,51 @@ Eliminar hardcoding de sucursales y mapeos en service.py usando EmpresaResolver.
 1. P0: Refactorizar `mpro.py` para usar EmpresaResolver
 2. P1: Refactorizar jobs del scheduler
 
+---
+
+## ✅ FASE 5C COMPLETADA: Refactor Mínimo mpro.py (16-May-2026)
+
+### Objetivo:
+Eliminar LIKE por nombre y matching textual en mpro.py usando EmpresaResolver.
+
+### Archivo Modificado:
+`/app/backend/modules/comercial/queries/mpro.py`
+
+### Función Nueva:
+- **`_resolver_codigo_sucursal_mpro(sucursal)`** - Resuelve alias a CodigoSucursalSistema
+
+### Cambios Clave:
+- ✅ Eliminado `LIKE '%{sucursal}%'` de la ruta principal
+- ✅ Ahora resuelve: alias → EmpresaID → PRINCIPAL_SQL → CodigoSucursalSistema
+- ✅ LIKE solo se usa como fallback con warning en logs
+- ✅ Fallback hardcodeado mantenido para resiliencia
+
+### Pruebas Ejecutadas:
+- ✅ 8/8 pruebas de `_resolver_codigo_sucursal_mpro()`
+- ✅ 6/6 pruebas de `_build_sucursal_filter_mpro_flexible()`
+- ✅ 7/7 validaciones EmpresaResolver
+- ✅ Backend reiniciado y funcionando
+
+### Validaciones Críticas:
+- ✅ ORIGEN → EmpresaID=1 → Sucursal=23/0023 (NO usa 0001)
+- ✅ 130QRO, 130-QRO, QRO, QUERETARO → EmpresaID=2 → Sucursal=21/0021
+- ✅ `_build_sucursal_filter_mpro_flexible('ORIGEN')` → `VE.Sc_Cve_Sucursal = '0023'`
+- ✅ `_build_sucursal_filter_mpro_flexible('130QRO')` → `VE.Sc_Cve_Sucursal = '0021'`
+
+### Confirmaciones:
+- ✅ No se modificó frontend
+- ✅ No se modificaron jobs
+- ✅ No se reactivó LIVE desde tablero
+
+### Reporte Detallado:
+`/app/docs/reports/FASE_5C_REFACTOR_MPRO_EMPRESARESOLVER.md`
+
+### Siguiente Fase (Pendiente Autorización):
+1. P1: Refactorizar jobs del scheduler para usar EmpresaResolver
+2. P2: Limpiar registros legacy duplicados
+
+
+
 
 2. P0: Refactorizar `mpro.py` para usar EmpresaResolver
 3. P1: Refactorizar jobs del scheduler

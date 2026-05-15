@@ -42,6 +42,7 @@ CONSUMIDORES:
 Fecha creación: 2026-04-23
 Estado: BLOQUE_1 - Estructura preparada, sin implementación
 FASE 3A.3: Migrado a helpers centralizados de system_type
+FASE 5C: Integración con EmpresaResolver para resolución canónica
 """
 
 from typing import Dict, Optional, List
@@ -53,6 +54,23 @@ from core.db import execute_sql_query
 
 # FASE 3A.3: Import de helpers centralizados de system_type
 from core.system_type_utils import is_mpro_system
+
+# =============================================================================
+# FASE 5C: INTEGRACIÓN CON EmpresaResolver (Mayo 2026)
+# =============================================================================
+# Importar EmpresaResolver para resolución canónica de sucursales MPRO
+try:
+    from core.empresa_resolver import (
+        resolve_empresa_by_alias,
+        get_connection_for_role,
+        normalize_alias,
+        EMPRESA_RESOLVER_AVAILABLE
+    )
+    _EMPRESA_RESOLVER_OK = True
+except ImportError as e:
+    logging.warning(f"[MPRO] EmpresaResolver no disponible: {e}. Usando fallback.")
+    _EMPRESA_RESOLVER_OK = False
+    EMPRESA_RESOLVER_AVAILABLE = False
 
 # =============================================================================
 # CONSTANTES
@@ -292,7 +310,8 @@ def query_ventas_periodo_mpro_con_filtro_flexible(
     ff = _format_fecha_mpro(fecha_fin, es_fin=True)
     
     # ==========================================================================
-    # LÓGICA DE FILTRO FLEXIBLE (copiada de routes.py líneas 3129-3146)
+    # FASE 5C: RESOLUCIÓN CANÓNICA CON EmpresaResolver
+    # Reemplaza LIKE '%{sucursal}%' por filtro con CodigoSucursalSistema
     # ==========================================================================
     sucursal_join = ""
     sucursal_filter = ""
@@ -309,17 +328,28 @@ def query_ventas_periodo_mpro_con_filtro_flexible(
     )
     
     if not skip_sucursal_filter:
-        # Detectar tipo de filtro: por código o por nombre
-        es_codigo = sucursal.isdigit() or (len(sucursal) == 4 and sucursal[0] == '0')
+        # FASE 5C: Intentar resolver con EmpresaResolver primero
+        codigo_sucursal_resuelto = _resolver_codigo_sucursal_mpro(sucursal)
         
-        if es_codigo:
-            # Filtro por código exacto (sin JOIN adicional)
+        if codigo_sucursal_resuelto:
+            # Resuelto por EmpresaResolver - usar código exacto
             sucursal_join = ""
-            sucursal_filter = f" AND VE.Sc_Cve_Sucursal = '{sucursal}'"
+            sucursal_filter = f" AND VE.Sc_Cve_Sucursal = '{codigo_sucursal_resuelto}'"
+            logging.info(f"[MPRO] Filtro resuelto por EmpresaResolver: '{sucursal}' -> '{codigo_sucursal_resuelto}'")
         else:
-            # Filtro por nombre (requiere JOIN con tabla Sucursal)
-            sucursal_join = "INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal"
-            sucursal_filter = f" AND S.Sc_Descripcion LIKE '%{sucursal}%'"
+            # Fallback: Detectar tipo de filtro por formato
+            es_codigo = sucursal.isdigit() or (len(sucursal) == 4 and sucursal[0] == '0')
+            
+            if es_codigo:
+                # Filtro por código exacto (sin JOIN adicional)
+                sucursal_join = ""
+                sucursal_filter = f" AND VE.Sc_Cve_Sucursal = '{sucursal}'"
+            else:
+                # FALLBACK LEGACY: Filtro por nombre (requiere JOIN con tabla Sucursal)
+                # NOTA: Este path solo se usa si EmpresaResolver no tiene el alias
+                sucursal_join = "INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal"
+                sucursal_filter = f" AND S.Sc_Descripcion LIKE '%{sucursal}%'"
+                logging.warning(f"[MPRO] Filtro LIKE legacy para '{sucursal}' - considerar agregar alias a EmpresaResolver")
     
     # ==========================================================================
     # FILTRO DE CANCELADOS
@@ -440,6 +470,86 @@ def _build_sucursal_filter_mpro(sucursal_id: Optional[str], alias: str = "VE") -
     return ""
 
 
+def _resolver_codigo_sucursal_mpro(sucursal: str) -> Optional[str]:
+    """
+    FASE 5C HELPER: Resuelve un alias/nombre de sucursal a CodigoSucursalSistema MPRO.
+    
+    Usa EmpresaResolver para resolver:
+    - Alias de empresa (ORIGEN, QRO, 130-QRO, etc.)
+    - Nombre de sucursal
+    
+    Y devuelve el CodigoSucursalSistema correspondiente (ej: "0023", "0021").
+    
+    MAPEO CRÍTICO:
+    - ORIGEN → EmpresaID=1 → CodigoSucursalSistema=0023
+    - 130QRO → EmpresaID=2 → CodigoSucursalSistema=0021
+    
+    Args:
+        sucursal: Alias o nombre de sucursal
+        
+    Returns:
+        CodigoSucursalSistema o None si no se puede resolver
+    """
+    if not sucursal:
+        return None
+    
+    # Si ya es un código de sucursal (4 dígitos empezando con 0), retornar tal cual
+    if len(sucursal) == 4 and sucursal[0] == '0' and sucursal.isdigit():
+        return sucursal
+    
+    if sucursal.isdigit():
+        return sucursal
+    
+    # =========================================================================
+    # FASE 5C: Resolver con EmpresaResolver
+    # =========================================================================
+    if _EMPRESA_RESOLVER_OK and EMPRESA_RESOLVER_AVAILABLE:
+        try:
+            # Paso 1: Resolver alias a empresa
+            empresa = resolve_empresa_by_alias(sucursal)
+            
+            if empresa:
+                logging.debug(f"[MPRO] _resolver_codigo_sucursal_mpro: '{sucursal}' -> EmpresaID={empresa.empresa_id}")
+                
+                # Paso 2: Obtener conexión PRINCIPAL_SQL para esta empresa
+                connection = get_connection_for_role(empresa.empresa_id, 'PRINCIPAL_SQL')
+                
+                if connection and connection.codigo_sucursal_sistema:
+                    logging.info(f"[MPRO] _resolver_codigo_sucursal_mpro: EmpresaID={empresa.empresa_id} -> CodigoSucursal={connection.codigo_sucursal_sistema}")
+                    return connection.codigo_sucursal_sistema
+                
+                # Si no tiene PRINCIPAL_SQL, intentar con VENTAS_DIA_API_LOCAL
+                connection_api = get_connection_for_role(empresa.empresa_id, 'VENTAS_DIA_API_LOCAL')
+                if connection_api and connection_api.codigo_sucursal_sistema:
+                    logging.info(f"[MPRO] _resolver_codigo_sucursal_mpro: EmpresaID={empresa.empresa_id} -> CodigoSucursal={connection_api.codigo_sucursal_sistema} (via API_LOCAL)")
+                    return connection_api.codigo_sucursal_sistema
+                
+        except Exception as e:
+            logging.warning(f"[MPRO] Error en _resolver_codigo_sucursal_mpro para '{sucursal}': {e}")
+    
+    # =========================================================================
+    # Fallback: Mapeo hardcodeado para resiliencia
+    # =========================================================================
+    fallback_map = {
+        'ORIGEN': '0023',
+        'origen': '0023',
+        'QRO': '0021',
+        'qro': '0021',
+        '130QRO': '0021',
+        '130-QRO': '0021',
+        '130 QRO': '0021',
+        'QUERETARO': '0021',
+        '130° QUERETARO': '0021',
+    }
+    
+    codigo = fallback_map.get(sucursal.upper().strip())
+    if codigo:
+        logging.warning(f"[MPRO] _resolver_codigo_sucursal_mpro: Usando fallback hardcodeado para '{sucursal}' -> '{codigo}'")
+        return codigo
+    
+    return None
+
+
 def _build_sucursal_filter_mpro_flexible(
     sucursal: Optional[str], 
     alias_venta: str = "VE",
@@ -447,7 +557,9 @@ def _build_sucursal_filter_mpro_flexible(
 ) -> str:
     """
     Construye filtro SQL flexible para sucursal en MPRO.
-    Soporta búsqueda por código o descripción parcial.
+    
+    FASE 5C: Usa _resolver_codigo_sucursal_mpro() para resolución canónica.
+    El LIKE solo se usa como fallback si EmpresaResolver no tiene el alias.
     
     Args:
         sucursal: Código o nombre parcial de sucursal
@@ -460,7 +572,14 @@ def _build_sucursal_filter_mpro_flexible(
     if not sucursal or sucursal.lower() in ('all', 'todos', ''):
         return "1=1"
     
-    # Buscar por código exacto O descripción parcial
+    # FASE 5C: Intentar resolver con EmpresaResolver primero
+    codigo_resuelto = _resolver_codigo_sucursal_mpro(sucursal)
+    
+    if codigo_resuelto:
+        # Resuelto por EmpresaResolver - usar código exacto
+        return f"{alias_venta}.Sc_Cve_Sucursal = '{codigo_resuelto}'"
+    
+    # Fallback legacy: Buscar por código exacto O descripción parcial
     return (
         f"({alias_sucursal}.Sc_Cve_Sucursal = '{sucursal}' "
         f"OR {alias_sucursal}.Sc_Descripcion LIKE '%{sucursal}%')"
