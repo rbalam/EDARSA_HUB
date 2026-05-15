@@ -132,6 +132,8 @@ def verificar_estado_sync() -> Dict:
         'tablas_faltantes': [],
         'ultimo_sync': None,
         'registros_sync_ventas': 0,
+        'registros_sync_por_hora': 0,
+        'registros_sync_por_dia_semana': 0,
     }
     
     tablas_esperadas = [
@@ -157,7 +159,7 @@ def verificar_estado_sync() -> Dict:
             else:
                 estado['tablas_faltantes'].append(tabla)
         
-        # Contar registros si existe la tabla
+        # Contar registros si existen las tablas
         if 'Sync_Ventas_Historicas' in estado['tablas_existentes']:
             count = execute_sql_query(
                 EDARSAHUB_CONFIG['host'],
@@ -169,7 +171,151 @@ def verificar_estado_sync() -> Dict:
             )
             estado['registros_sync_ventas'] = count[0]['total'] if count else 0
         
+        if 'Sync_Ventas_PorHora' in estado['tablas_existentes']:
+            count = execute_sql_query(
+                EDARSAHUB_CONFIG['host'],
+                EDARSAHUB_CONFIG['port'],
+                EDARSAHUB_CONFIG['database'],
+                EDARSAHUB_CONFIG['username'],
+                EDARSAHUB_CONFIG['password'],
+                "SELECT COUNT(*) as total FROM Sync_Ventas_PorHora"
+            )
+            estado['registros_sync_por_hora'] = count[0]['total'] if count else 0
+        
+        if 'Sync_Ventas_PorDiaSemana' in estado['tablas_existentes']:
+            count = execute_sql_query(
+                EDARSAHUB_CONFIG['host'],
+                EDARSAHUB_CONFIG['port'],
+                EDARSAHUB_CONFIG['database'],
+                EDARSAHUB_CONFIG['username'],
+                EDARSAHUB_CONFIG['password'],
+                "SELECT COUNT(*) as total FROM Sync_Ventas_PorDiaSemana"
+            )
+            estado['registros_sync_por_dia_semana'] = count[0]['total'] if count else 0
+        
     except Exception as e:
         estado['error'] = str(e)
     
     return estado
+
+
+# ============================================================================
+# FASE SYNC-2B: Sync Ventas Por Hora
+# ============================================================================
+
+def ejecutar_sync_ventas_por_hora_dry_run(
+    server_ids: Optional[List[str]] = None,
+    dias_atras: int = 7,
+    ventana_inicio_hora: int = DEFAULT_VENTANA_INICIO_HORA,
+    ventana_fin_hora: int = DEFAULT_VENTANA_FIN_HORA,
+) -> SyncRunResult:
+    """
+    Ejecuta sincronización de ventas por hora en modo DRY-RUN.
+    """
+    logger.info(
+        f"[SYNC-POR-HORA] Iniciando DRY-RUN. "
+        f"Servidores: {server_ids or 'TODOS'}, "
+        f"Días: {dias_atras}"
+    )
+    
+    config = SyncRunConfig(
+        server_ids=server_ids,
+        dias_atras=dias_atras,
+        ventana_inicio_hora=ventana_inicio_hora,
+        ventana_fin_hora=ventana_fin_hora,
+        dry_run=True
+    )
+    
+    service = SyncHistoricosService()
+    return service.sync_ventas_por_hora(config)
+
+
+def ejecutar_sync_ventas_por_hora_real(
+    server_ids: List[str],
+    dias_atras: int = 7,
+    ventana_inicio_hora: int = DEFAULT_VENTANA_INICIO_HORA,
+    ventana_fin_hora: int = DEFAULT_VENTANA_FIN_HORA,
+) -> SyncRunResult:
+    """
+    Ejecuta sincronización de ventas por hora con escritura real.
+    """
+    if not server_ids:
+        raise ValueError("Debe especificar server_ids para escritura real")
+    
+    logger.info(
+        f"[SYNC-POR-HORA] Iniciando ESCRITURA REAL. "
+        f"Servidores: {server_ids}, "
+        f"Días: {dias_atras}"
+    )
+    
+    config = SyncRunConfig(
+        server_ids=server_ids,
+        dias_atras=dias_atras,
+        ventana_inicio_hora=ventana_inicio_hora,
+        ventana_fin_hora=ventana_fin_hora,
+        dry_run=False
+    )
+    
+    service = SyncHistoricosService()
+    return service.sync_ventas_por_hora(config)
+
+
+# ============================================================================
+# FASE SYNC-2B: Sync Ventas Por Día de Semana
+# ============================================================================
+
+def ejecutar_sync_ventas_por_dia_semana_dry_run(
+    server_ids: Optional[List[str]] = None,
+    dias_atras: int = 7,
+    ventana_inicio_hora: int = DEFAULT_VENTANA_INICIO_HORA,
+    ventana_fin_hora: int = DEFAULT_VENTANA_FIN_HORA,
+) -> SyncRunResult:
+    """
+    Ejecuta sincronización de ventas por día de semana en modo DRY-RUN.
+    """
+    logger.info(
+        f"[SYNC-DIA-SEMANA] Iniciando DRY-RUN. "
+        f"Servidores: {server_ids or 'TODOS'}, "
+        f"Días: {dias_atras}"
+    )
+    
+    config = SyncRunConfig(
+        server_ids=server_ids,
+        dias_atras=dias_atras,
+        ventana_inicio_hora=ventana_inicio_hora,
+        ventana_fin_hora=ventana_fin_hora,
+        dry_run=True
+    )
+    
+    service = SyncHistoricosService()
+    return service.sync_ventas_por_dia_semana(config)
+
+
+def ejecutar_sync_ventas_por_dia_semana_real(
+    server_ids: List[str],
+    dias_atras: int = 7,
+    ventana_inicio_hora: int = DEFAULT_VENTANA_INICIO_HORA,
+    ventana_fin_hora: int = DEFAULT_VENTANA_FIN_HORA,
+) -> SyncRunResult:
+    """
+    Ejecuta sincronización de ventas por día de semana con escritura real.
+    """
+    if not server_ids:
+        raise ValueError("Debe especificar server_ids para escritura real")
+    
+    logger.info(
+        f"[SYNC-DIA-SEMANA] Iniciando ESCRITURA REAL. "
+        f"Servidores: {server_ids}, "
+        f"Días: {dias_atras}"
+    )
+    
+    config = SyncRunConfig(
+        server_ids=server_ids,
+        dias_atras=dias_atras,
+        ventana_inicio_hora=ventana_inicio_hora,
+        ventana_fin_hora=ventana_fin_hora,
+        dry_run=False
+    )
+    
+    service = SyncHistoricosService()
+    return service.sync_ventas_por_dia_semana(config)

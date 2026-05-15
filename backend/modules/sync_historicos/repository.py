@@ -500,3 +500,182 @@ class SyncHistoricosRepository:
         """
         result = self._execute(query)
         return result[0] if result else None
+    
+    # =========================================================================
+    # UPSERT - Ventas Por Hora
+    # =========================================================================
+    
+    def upsert_venta_por_hora(self, venta: SyncVentaPorHora) -> bool:
+        """
+        Inserta o actualiza una venta por hora.
+        
+        UPSERT idempotente basado en (ServerID, EmpresaID, FechaOperacion, Hora).
+        Solo actualiza si el hash cambió.
+        
+        Returns:
+            True si se insertó/actualizó, False si ya existía con mismo hash
+        """
+        # Verificar si existe con mismo hash
+        check_query = f"""
+        SELECT RowHash FROM Sync_Ventas_PorHora
+        WHERE ServerID = '{venta.server_id}'
+          AND EmpresaID = {venta.empresa_id}
+          AND FechaOperacion = '{venta.fecha_operacion}'
+          AND Hora = {venta.hora}
+        """
+        existing = self._execute(check_query)
+        
+        if existing and existing[0]['RowHash'] == venta.row_hash:
+            logger.debug(f"[SYNC-UPSERT] VentaPorHora ya existe con mismo hash: {venta.server_id}/{venta.fecha_operacion}/{venta.hora}")
+            return False
+        
+        # UPSERT
+        upsert_query = f"""
+        MERGE Sync_Ventas_PorHora AS target
+        USING (SELECT 
+            '{venta.server_id}' AS ServerID,
+            {venta.empresa_id} AS EmpresaID,
+            '{venta.fecha_operacion}' AS FechaOperacion,
+            {venta.hora} AS Hora
+        ) AS source
+        ON target.ServerID = source.ServerID 
+           AND target.EmpresaID = source.EmpresaID 
+           AND target.FechaOperacion = source.FechaOperacion
+           AND target.Hora = source.Hora
+        WHEN MATCHED THEN
+            UPDATE SET
+                SucursalID = {f"'{venta.sucursal_id}'" if venta.sucursal_id else 'NULL'},
+                UnidadNegocioID = {f"'{venta.unidad_negocio_id}'" if venta.unidad_negocio_id else 'NULL'},
+                SystemType = '{venta.system_type}',
+                VentanaInicio = '{venta.ventana_inicio}',
+                VentanaFin = '{venta.ventana_fin}',
+                CruzaMedianoche = {1 if venta.cruza_medianoche else 0},
+                VentanaInicioHoraConfig = {venta.ventana_inicio_hora_config},
+                VentanaFinHoraConfig = {venta.ventana_fin_hora_config},
+                VentaHora = {venta.venta_hora},
+                NumTicketsHora = {venta.num_tickets_hora},
+                SyncRunID = '{venta.sync_run_id}',
+                SourceStatus = '{venta.source_status}',
+                SourceType = '{venta.source_type}',
+                SyncedAtMexico = '{venta.synced_at_mexico.strftime('%Y-%m-%d %H:%M:%S')}',
+                RowHash = '{venta.row_hash}',
+                UpdatedAt = SYSDATETIME()
+        WHEN NOT MATCHED THEN
+            INSERT (
+                ServerID, EmpresaID, SucursalID, UnidadNegocioID, SystemType,
+                FechaOperacion, Hora,
+                VentanaInicio, VentanaFin, CruzaMedianoche,
+                VentanaInicioHoraConfig, VentanaFinHoraConfig,
+                VentaHora, NumTicketsHora,
+                SyncRunID, SourceStatus, SourceType, SyncedAtMexico, RowHash
+            )
+            VALUES (
+                '{venta.server_id}', {venta.empresa_id}, 
+                {f"'{venta.sucursal_id}'" if venta.sucursal_id else 'NULL'},
+                {f"'{venta.unidad_negocio_id}'" if venta.unidad_negocio_id else 'NULL'},
+                '{venta.system_type}',
+                '{venta.fecha_operacion}', {venta.hora},
+                '{venta.ventana_inicio}', '{venta.ventana_fin}',
+                {1 if venta.cruza_medianoche else 0},
+                {venta.ventana_inicio_hora_config}, {venta.ventana_fin_hora_config},
+                {venta.venta_hora}, {venta.num_tickets_hora},
+                '{venta.sync_run_id}', '{venta.source_status}', '{venta.source_type}',
+                '{venta.synced_at_mexico.strftime('%Y-%m-%d %H:%M:%S')}', '{venta.row_hash}'
+            );
+        """
+        try:
+            self._execute(upsert_query)
+            return True
+        except Exception as e:
+            logger.error(f"[SYNC-UPSERT] Error VentaPorHora: {e}")
+            raise
+    
+    # =========================================================================
+    # UPSERT - Ventas Por Día Semana
+    # =========================================================================
+    
+    def upsert_venta_por_dia_semana(self, venta: SyncVentaPorDiaSemana) -> bool:
+        """
+        Inserta o actualiza una venta por día de semana.
+        
+        UPSERT idempotente basado en (ServerID, EmpresaID, FechaInicioPeriodo, FechaFinPeriodo, DiaSemana).
+        Solo actualiza si el hash cambió.
+        
+        Returns:
+            True si se insertó/actualizó, False si ya existía con mismo hash
+        """
+        # Verificar si existe con mismo hash
+        check_query = f"""
+        SELECT RowHash FROM Sync_Ventas_PorDiaSemana
+        WHERE ServerID = '{venta.server_id}'
+          AND EmpresaID = {venta.empresa_id}
+          AND FechaInicioPeriodo = '{venta.fecha_inicio_periodo}'
+          AND FechaFinPeriodo = '{venta.fecha_fin_periodo}'
+          AND DiaSemana = {venta.dia_semana}
+        """
+        existing = self._execute(check_query)
+        
+        if existing and existing[0]['RowHash'] == venta.row_hash:
+            logger.debug(f"[SYNC-UPSERT] VentaPorDiaSemana ya existe con mismo hash")
+            return False
+        
+        # UPSERT
+        upsert_query = f"""
+        MERGE Sync_Ventas_PorDiaSemana AS target
+        USING (SELECT 
+            '{venta.server_id}' AS ServerID,
+            {venta.empresa_id} AS EmpresaID,
+            '{venta.fecha_inicio_periodo}' AS FechaInicioPeriodo,
+            '{venta.fecha_fin_periodo}' AS FechaFinPeriodo,
+            {venta.dia_semana} AS DiaSemana
+        ) AS source
+        ON target.ServerID = source.ServerID 
+           AND target.EmpresaID = source.EmpresaID 
+           AND target.FechaInicioPeriodo = source.FechaInicioPeriodo
+           AND target.FechaFinPeriodo = source.FechaFinPeriodo
+           AND target.DiaSemana = source.DiaSemana
+        WHEN MATCHED THEN
+            UPDATE SET
+                SucursalID = {f"'{venta.sucursal_id}'" if venta.sucursal_id else 'NULL'},
+                UnidadNegocioID = {f"'{venta.unidad_negocio_id}'" if venta.unidad_negocio_id else 'NULL'},
+                SystemType = '{venta.system_type}',
+                DiaSemananombre = '{venta.dia_semana_nombre}',
+                VentanaInicioHoraConfig = {venta.ventana_inicio_hora_config},
+                VentanaFinHoraConfig = {venta.ventana_fin_hora_config},
+                VentaPromedio = {venta.venta_promedio},
+                VentaMin = {venta.venta_min},
+                VentaMax = {venta.venta_max},
+                NumDiasConDatos = {venta.num_dias_con_datos},
+                SyncRunID = '{venta.sync_run_id}',
+                SourceStatus = '{venta.source_status}',
+                SourceType = '{venta.source_type}',
+                SyncedAtMexico = '{venta.synced_at_mexico.strftime('%Y-%m-%d %H:%M:%S')}',
+                RowHash = '{venta.row_hash}',
+                UpdatedAt = SYSDATETIME()
+        WHEN NOT MATCHED THEN
+            INSERT (
+                ServerID, EmpresaID, SucursalID, UnidadNegocioID, SystemType,
+                FechaInicioPeriodo, FechaFinPeriodo, DiaSemana, DiaSemananombre,
+                VentanaInicioHoraConfig, VentanaFinHoraConfig,
+                VentaPromedio, VentaMin, VentaMax, NumDiasConDatos,
+                SyncRunID, SourceStatus, SourceType, SyncedAtMexico, RowHash
+            )
+            VALUES (
+                '{venta.server_id}', {venta.empresa_id}, 
+                {f"'{venta.sucursal_id}'" if venta.sucursal_id else 'NULL'},
+                {f"'{venta.unidad_negocio_id}'" if venta.unidad_negocio_id else 'NULL'},
+                '{venta.system_type}',
+                '{venta.fecha_inicio_periodo}', '{venta.fecha_fin_periodo}',
+                {venta.dia_semana}, '{venta.dia_semana_nombre}',
+                {venta.ventana_inicio_hora_config}, {venta.ventana_fin_hora_config},
+                {venta.venta_promedio}, {venta.venta_min}, {venta.venta_max}, {venta.num_dias_con_datos},
+                '{venta.sync_run_id}', '{venta.source_status}', '{venta.source_type}',
+                '{venta.synced_at_mexico.strftime('%Y-%m-%d %H:%M:%S')}', '{venta.row_hash}'
+            );
+        """
+        try:
+            self._execute(upsert_query)
+            return True
+        except Exception as e:
+            logger.error(f"[SYNC-UPSERT] Error VentaPorDiaSemana: {e}")
+            raise

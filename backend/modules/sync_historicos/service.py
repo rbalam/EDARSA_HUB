@@ -37,6 +37,8 @@ from core.utils.operational_window import (
 
 from .models import (
     SyncVentaHistorica,
+    SyncVentaPorHora,
+    SyncVentaPorDiaSemana,
     SyncControlEjecucion,
     SyncRunConfig,
     SyncRunResult,
@@ -454,6 +456,567 @@ class SyncHistoricosService:
         
         logger.info(
             f"[SYNC-VENTAS] Finalizado {sync_run_id}. "
+            f"Servidores: {result.servidores_exitosos}/{result.total_servidores}, "
+            f"Registros: {result.total_registros_procesados}, "
+            f"Duración: {result.duration_seconds}s"
+        )
+        
+        return result
+    
+    # =========================================================================
+    # FASE SYNC-2B: Ventas Por Hora
+    # =========================================================================
+    
+    def _obtener_ventas_por_hora_softrestaurant(
+        self,
+        server_info: Dict,
+        fecha_operacion: date
+    ) -> Optional[List[Dict]]:
+        """
+        Obtiene ventas por hora para SoftRestaurant.
+        
+        PROTECCIÓN ANTI-$0 FALSO: Si falla, retorna None.
+        
+        Returns:
+            Lista de dicts {hora, venta, tickets} o None si error
+        """
+        try:
+            fecha_str = fecha_operacion.strftime('%Y-%m-%d')
+            
+            query = f"""
+            SELECT 
+                DATEPART(HOUR, fecha) as hora,
+                ISNULL(SUM(total), 0) as venta_hora,
+                COUNT(DISTINCT folio) as num_tickets
+            FROM cheques
+            WHERE cancelado = 0
+              AND CAST(fecha AS DATE) = '{fecha_str}'
+            GROUP BY DATEPART(HOUR, fecha)
+            ORDER BY hora
+            """
+            
+            result = execute_sql_query(
+                server_info['host'],
+                server_info['port'],
+                server_info['database'],
+                server_info['username'],
+                server_info['password'],
+                query
+            )
+            
+            if result is not None:
+                return [
+                    {
+                        'hora': int(r.get('hora', 0)),
+                        'venta_hora': Decimal(str(r.get('venta_hora', 0) or 0)),
+                        'num_tickets': int(r.get('num_tickets', 0) or 0)
+                    }
+                    for r in result
+                ]
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"[SYNC-POR-HORA-SR] Error: {e}")
+            return None
+    
+    def _obtener_ventas_por_hora_mpro(
+        self,
+        server_info: Dict,
+        fecha_operacion: date
+    ) -> Optional[List[Dict]]:
+        """
+        Obtiene ventas por hora para MPRO.
+        
+        FASE SYNC-2: Usa Vn_Precio_Neto_Importe y Es_Cve_Estado = 'AC'
+        """
+        try:
+            fecha_str = fecha_operacion.strftime('%Y-%m-%d')
+            
+            query = f"""
+            SELECT 
+                DATEPART(HOUR, Vn_Fecha) as hora,
+                ISNULL(SUM(Vn_Precio_Neto_Importe), 0) as venta_hora,
+                COUNT(DISTINCT Vn_Folio) as num_tickets
+            FROM Venta
+            WHERE Es_Cve_Estado = 'AC'
+              AND CAST(Vn_Fecha AS DATE) = '{fecha_str}'
+            GROUP BY DATEPART(HOUR, Vn_Fecha)
+            ORDER BY hora
+            """
+            
+            result = execute_sql_query(
+                server_info['host'],
+                server_info['port'],
+                server_info['database'],
+                server_info['username'],
+                server_info['password'],
+                query
+            )
+            
+            if result is not None:
+                return [
+                    {
+                        'hora': int(r.get('hora', 0)),
+                        'venta_hora': Decimal(str(r.get('venta_hora', 0) or 0)),
+                        'num_tickets': int(r.get('num_tickets', 0) or 0)
+                    }
+                    for r in result
+                ]
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"[SYNC-POR-HORA-MPRO] Error: {e}")
+            return None
+    
+    def sync_ventas_por_hora(
+        self,
+        config: SyncRunConfig
+    ) -> SyncRunResult:
+        """
+        Sincroniza ventas por hora.
+        
+        FASE SYNC-2B: Distribución horaria de ventas.
+        """
+        sync_run_id = self._generar_sync_run_id()
+        started_at = get_mexico_now()
+        
+        logger.info(
+            f"[SYNC-POR-HORA] Iniciando {sync_run_id}. "
+            f"DryRun: {config.dry_run}, "
+            f"Ventana: {config.ventana_inicio_hora}:00-{config.ventana_fin_hora}:00"
+        )
+        
+        fecha_inicio, fecha_fin = self._calcular_rango_fechas(config)
+        
+        all_servers = _get_servers_from_sql(filter_active=True)
+        if config.server_ids:
+            servers = [s for s in all_servers if s.get('id') in config.server_ids]
+        else:
+            servers = all_servers
+        
+        result = SyncRunResult(
+            sync_run_id=sync_run_id,
+            sync_type='VENTAS_POR_HORA',
+            total_servidores=len(servers),
+            servidores_exitosos=0,
+            servidores_con_error=0,
+            total_registros_procesados=0,
+            total_registros_insertados=0,
+            total_registros_actualizados=0,
+            total_registros_error=0,
+            is_dry_run=config.dry_run,
+            started_at=started_at
+        )
+        
+        # Registrar inicio (solo si NO dry-run)
+        if not config.dry_run:
+            try:
+                control = SyncControlEjecucion(
+                    sync_run_id=sync_run_id,
+                    sync_type='VENTAS_POR_HORA',
+                    server_id=config.server_ids[0] if config.server_ids and len(config.server_ids) == 1 else None,
+                    empresa_id=None,
+                    fecha_inicio=fecha_inicio,
+                    fecha_fin=fecha_fin,
+                    ventana_inicio_hora_config=config.ventana_inicio_hora,
+                    ventana_fin_hora_config=config.ventana_fin_hora,
+                    is_dry_run=config.dry_run,
+                    registros_procesados=0,
+                    registros_insertados=0,
+                    registros_actualizados=0,
+                    registros_error=0,
+                    status='RUNNING',
+                    error_message=None,
+                    started_at_mexico=started_at,
+                    finished_at_mexico=None,
+                    duration_seconds=None
+                )
+                self._repo.registrar_inicio_ejecucion(control)
+            except Exception as e:
+                logger.warning(f"[SYNC-POR-HORA] No se pudo registrar inicio: {e}")
+        
+        for server in servers:
+            server_id = server['id']
+            system_type = server.get('system_type', 'UNKNOWN')
+            
+            logger.info(f"[SYNC-POR-HORA] Procesando servidor {server_id} ({system_type})")
+            
+            server_result = {
+                'server_id': server_id,
+                'system_type': system_type,
+                'fechas_procesadas': 0,
+                'registros_ok': 0,
+                'registros_error': 0,
+                'errores': []
+            }
+            
+            try:
+                server_info = _get_server_by_id_from_sql(server_id)
+                if not server_info:
+                    raise Exception(f"No se encontró configuración para servidor {server_id}")
+                
+                creds = get_decrypted_credentials(server_info)
+                server_info.update(creds)
+                
+                empresa_id_val = server.get('empresa_id')
+                if empresa_id_val is None:
+                    empresa_id_val = 0
+                
+                fecha_actual = fecha_inicio
+                while fecha_actual <= fecha_fin:
+                    ts = datetime.combine(fecha_actual, time(14, 0))
+                    ts = MEXICO_TZ.localize(ts)
+                    
+                    fecha_op, v_inicio, v_fin, cruza = get_sync_operational_window(
+                        ts,
+                        config.ventana_inicio_hora,
+                        config.ventana_fin_hora
+                    )
+                    
+                    # Obtener ventas por hora según tipo
+                    ventas_hora = None
+                    if 'SOFT' in system_type.upper():
+                        ventas_hora = self._obtener_ventas_por_hora_softrestaurant(
+                            server_info, fecha_actual
+                        )
+                        source_type = SourceType.SOFTRESTAURANT.value
+                    elif 'MPRO' in system_type.upper():
+                        ventas_hora = self._obtener_ventas_por_hora_mpro(
+                            server_info, fecha_actual
+                        )
+                        source_type = SourceType.MPRO.value
+                    else:
+                        fecha_actual += timedelta(days=1)
+                        continue
+                    
+                    # PROTECCIÓN ANTI-$0 FALSO
+                    if ventas_hora is None:
+                        server_result['registros_error'] += 1
+                        server_result['errores'].append(f"Error obteniendo datos hora para {fecha_actual}")
+                        logger.warning(f"[SYNC-POR-HORA] {server_id}/{fecha_actual}: Fuente falló")
+                        fecha_actual += timedelta(days=1)
+                        continue
+                    
+                    # Procesar cada hora con datos
+                    for hora_data in ventas_hora:
+                        venta = SyncVentaPorHora(
+                            server_id=server_id,
+                            empresa_id=empresa_id_val,
+                            sucursal_id=server.get('sucursal_id'),
+                            unidad_negocio_id=server.get('unidad_negocio_id'),
+                            system_type=system_type,
+                            fecha_operacion=fecha_actual,
+                            hora=hora_data['hora'],
+                            ventana_inicio=v_inicio,
+                            ventana_fin=v_fin,
+                            cruza_medianoche=cruza,
+                            ventana_inicio_hora_config=config.ventana_inicio_hora,
+                            ventana_fin_hora_config=config.ventana_fin_hora,
+                            venta_hora=hora_data['venta_hora'],
+                            num_tickets_hora=hora_data['num_tickets'],
+                            sync_run_id=sync_run_id,
+                            source_status=SourceStatus.SUCCESS.value,
+                            source_type=source_type,
+                            synced_at_mexico=get_mexico_now(),
+                            row_hash=''
+                        )
+                        venta.row_hash = venta.compute_hash()
+                        
+                        if config.dry_run:
+                            logger.info(
+                                f"[SYNC-POR-HORA] DRY-RUN {server_id}/{fecha_actual}/{hora_data['hora']}h: "
+                                f"Venta=${hora_data['venta_hora']}, Tickets={hora_data['num_tickets']}"
+                            )
+                            server_result['registros_ok'] += 1
+                        else:
+                            try:
+                                inserted = self._repo.upsert_venta_por_hora(venta)
+                                if inserted:
+                                    result.total_registros_insertados += 1
+                                else:
+                                    result.total_registros_actualizados += 1
+                                server_result['registros_ok'] += 1
+                            except Exception as e:
+                                logger.error(f"[SYNC-POR-HORA] Error UPSERT: {e}")
+                                server_result['registros_error'] += 1
+                                result.total_registros_error += 1
+                        
+                        result.total_registros_procesados += 1
+                    
+                    server_result['fechas_procesadas'] += 1
+                    fecha_actual += timedelta(days=1)
+                
+                result.servidores_exitosos += 1
+                
+            except Exception as e:
+                logger.error(f"[SYNC-POR-HORA] Error procesando servidor {server_id}: {e}")
+                server_result['errores'].append(str(e))
+                result.servidores_con_error += 1
+            
+            result.resultados_por_servidor[server_id] = server_result
+        
+        finished_at = get_mexico_now()
+        result.finished_at = finished_at
+        result.duration_seconds = int((finished_at - started_at).total_seconds())
+        result.success = result.servidores_con_error == 0
+        
+        if not config.dry_run:
+            try:
+                status = 'SUCCESS' if result.success else 'PARTIAL' if result.servidores_exitosos > 0 else 'FAILED'
+                self._repo.actualizar_fin_ejecucion(
+                    sync_run_id=sync_run_id,
+                    status=status,
+                    registros_procesados=result.total_registros_procesados,
+                    registros_insertados=result.total_registros_insertados,
+                    registros_actualizados=result.total_registros_actualizados,
+                    registros_error=result.total_registros_error
+                )
+            except Exception as e:
+                logger.warning(f"[SYNC-POR-HORA] No se pudo actualizar bitácora: {e}")
+        
+        logger.info(
+            f"[SYNC-POR-HORA] Finalizado {sync_run_id}. "
+            f"Servidores: {result.servidores_exitosos}/{result.total_servidores}, "
+            f"Registros: {result.total_registros_procesados}, "
+            f"Duración: {result.duration_seconds}s"
+        )
+        
+        return result
+    
+    # =========================================================================
+    # FASE SYNC-2B: Ventas Por Día de Semana
+    # =========================================================================
+    
+    # Nombres de días de semana (0=Lunes, 6=Domingo)
+    DIAS_SEMANA_NOMBRES = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
+    
+    def sync_ventas_por_dia_semana(
+        self,
+        config: SyncRunConfig
+    ) -> SyncRunResult:
+        """
+        Sincroniza ventas agregadas por día de semana.
+        
+        FASE SYNC-2B: Analítica de ventas por día de semana.
+        
+        Convención: 0=Lunes, 6=Domingo (ISO 8601)
+        """
+        sync_run_id = self._generar_sync_run_id()
+        started_at = get_mexico_now()
+        
+        logger.info(
+            f"[SYNC-DIA-SEMANA] Iniciando {sync_run_id}. "
+            f"DryRun: {config.dry_run}, "
+            f"Ventana: {config.ventana_inicio_hora}:00-{config.ventana_fin_hora}:00"
+        )
+        
+        fecha_inicio, fecha_fin = self._calcular_rango_fechas(config)
+        
+        all_servers = _get_servers_from_sql(filter_active=True)
+        if config.server_ids:
+            servers = [s for s in all_servers if s.get('id') in config.server_ids]
+        else:
+            servers = all_servers
+        
+        result = SyncRunResult(
+            sync_run_id=sync_run_id,
+            sync_type='VENTAS_POR_DIA_SEMANA',
+            total_servidores=len(servers),
+            servidores_exitosos=0,
+            servidores_con_error=0,
+            total_registros_procesados=0,
+            total_registros_insertados=0,
+            total_registros_actualizados=0,
+            total_registros_error=0,
+            is_dry_run=config.dry_run,
+            started_at=started_at
+        )
+        
+        if not config.dry_run:
+            try:
+                control = SyncControlEjecucion(
+                    sync_run_id=sync_run_id,
+                    sync_type='VENTAS_POR_DIA_SEMANA',
+                    server_id=config.server_ids[0] if config.server_ids and len(config.server_ids) == 1 else None,
+                    empresa_id=None,
+                    fecha_inicio=fecha_inicio,
+                    fecha_fin=fecha_fin,
+                    ventana_inicio_hora_config=config.ventana_inicio_hora,
+                    ventana_fin_hora_config=config.ventana_fin_hora,
+                    is_dry_run=config.dry_run,
+                    registros_procesados=0,
+                    registros_insertados=0,
+                    registros_actualizados=0,
+                    registros_error=0,
+                    status='RUNNING',
+                    error_message=None,
+                    started_at_mexico=started_at,
+                    finished_at_mexico=None,
+                    duration_seconds=None
+                )
+                self._repo.registrar_inicio_ejecucion(control)
+            except Exception as e:
+                logger.warning(f"[SYNC-DIA-SEMANA] No se pudo registrar inicio: {e}")
+        
+        for server in servers:
+            server_id = server['id']
+            system_type = server.get('system_type', 'UNKNOWN')
+            
+            logger.info(f"[SYNC-DIA-SEMANA] Procesando servidor {server_id} ({system_type})")
+            
+            server_result = {
+                'server_id': server_id,
+                'system_type': system_type,
+                'dias_procesados': 0,
+                'registros_ok': 0,
+                'registros_error': 0,
+                'errores': []
+            }
+            
+            try:
+                server_info = _get_server_by_id_from_sql(server_id)
+                if not server_info:
+                    raise Exception(f"No se encontró configuración para servidor {server_id}")
+                
+                creds = get_decrypted_credentials(server_info)
+                server_info.update(creds)
+                
+                empresa_id_val = server.get('empresa_id')
+                if empresa_id_val is None:
+                    empresa_id_val = 0
+                
+                # Determinar tipo de fuente
+                if 'SOFT' in system_type.upper():
+                    source_type = SourceType.SOFTRESTAURANT.value
+                elif 'MPRO' in system_type.upper():
+                    source_type = SourceType.MPRO.value
+                else:
+                    continue
+                
+                # Agrupar ventas por día de semana del período
+                # Dict: dia_semana -> [ventas]
+                ventas_por_dia: Dict[int, List[Decimal]] = {i: [] for i in range(7)}
+                
+                fecha_actual = fecha_inicio
+                while fecha_actual <= fecha_fin:
+                    # Obtener ventas del día
+                    if 'SOFT' in system_type.upper():
+                        ventas_data = self._obtener_ventas_dia_softrestaurant(
+                            server_info, fecha_actual, time(13, 0), time(11, 0)
+                        )
+                    else:
+                        ventas_data = self._obtener_ventas_dia_mpro(
+                            server_info, fecha_actual, time(13, 0), time(11, 0)
+                        )
+                    
+                    if ventas_data is not None:
+                        # weekday() retorna 0=Lunes, 6=Domingo (ISO 8601)
+                        dia_semana = fecha_actual.weekday()
+                        ventas_por_dia[dia_semana].append(ventas_data['venta_total'])
+                    else:
+                        server_result['registros_error'] += 1
+                        server_result['errores'].append(f"Error obteniendo datos para {fecha_actual}")
+                    
+                    fecha_actual += timedelta(days=1)
+                
+                # Crear registros agregados por día de semana
+                for dia_semana, ventas_lista in ventas_por_dia.items():
+                    if not ventas_lista:
+                        continue  # No hay datos para este día
+                    
+                    venta_promedio = sum(ventas_lista) / len(ventas_lista)
+                    venta_min = min(ventas_lista)
+                    venta_max = max(ventas_lista)
+                    num_dias = len(ventas_lista)
+                    
+                    venta = SyncVentaPorDiaSemana(
+                        server_id=server_id,
+                        empresa_id=empresa_id_val,
+                        sucursal_id=server.get('sucursal_id'),
+                        unidad_negocio_id=server.get('unidad_negocio_id'),
+                        system_type=system_type,
+                        fecha_inicio_periodo=fecha_inicio,
+                        fecha_fin_periodo=fecha_fin,
+                        dia_semana=dia_semana,
+                        dia_semana_nombre=self.DIAS_SEMANA_NOMBRES[dia_semana],
+                        ventana_inicio_hora_config=config.ventana_inicio_hora,
+                        ventana_fin_hora_config=config.ventana_fin_hora,
+                        venta_promedio=venta_promedio,
+                        venta_min=venta_min,
+                        venta_max=venta_max,
+                        num_dias_con_datos=num_dias,
+                        sync_run_id=sync_run_id,
+                        source_status=SourceStatus.SUCCESS.value,
+                        source_type=source_type,
+                        synced_at_mexico=get_mexico_now(),
+                        row_hash=''
+                    )
+                    # Calcular hash manualmente
+                    import hashlib, json
+                    hash_data = {
+                        'server_id': venta.server_id,
+                        'empresa_id': venta.empresa_id,
+                        'fecha_inicio': str(venta.fecha_inicio_periodo),
+                        'fecha_fin': str(venta.fecha_fin_periodo),
+                        'dia_semana': venta.dia_semana,
+                        'venta_promedio': str(venta.venta_promedio),
+                    }
+                    venta.row_hash = hashlib.sha256(json.dumps(hash_data, sort_keys=True).encode()).hexdigest()[:32]
+                    
+                    if config.dry_run:
+                        logger.info(
+                            f"[SYNC-DIA-SEMANA] DRY-RUN {server_id}/{self.DIAS_SEMANA_NOMBRES[dia_semana]}: "
+                            f"Promedio=${venta_promedio:.2f}, Min=${venta_min:.2f}, Max=${venta_max:.2f}, Días={num_dias}"
+                        )
+                        server_result['registros_ok'] += 1
+                    else:
+                        try:
+                            inserted = self._repo.upsert_venta_por_dia_semana(venta)
+                            if inserted:
+                                result.total_registros_insertados += 1
+                            else:
+                                result.total_registros_actualizados += 1
+                            server_result['registros_ok'] += 1
+                        except Exception as e:
+                            logger.error(f"[SYNC-DIA-SEMANA] Error UPSERT: {e}")
+                            server_result['registros_error'] += 1
+                            result.total_registros_error += 1
+                    
+                    result.total_registros_procesados += 1
+                    server_result['dias_procesados'] += 1
+                
+                result.servidores_exitosos += 1
+                
+            except Exception as e:
+                logger.error(f"[SYNC-DIA-SEMANA] Error procesando servidor {server_id}: {e}")
+                server_result['errores'].append(str(e))
+                result.servidores_con_error += 1
+            
+            result.resultados_por_servidor[server_id] = server_result
+        
+        finished_at = get_mexico_now()
+        result.finished_at = finished_at
+        result.duration_seconds = int((finished_at - started_at).total_seconds())
+        result.success = result.servidores_con_error == 0
+        
+        if not config.dry_run:
+            try:
+                status = 'SUCCESS' if result.success else 'PARTIAL' if result.servidores_exitosos > 0 else 'FAILED'
+                self._repo.actualizar_fin_ejecucion(
+                    sync_run_id=sync_run_id,
+                    status=status,
+                    registros_procesados=result.total_registros_procesados,
+                    registros_insertados=result.total_registros_insertados,
+                    registros_actualizados=result.total_registros_actualizados,
+                    registros_error=result.total_registros_error
+                )
+            except Exception as e:
+                logger.warning(f"[SYNC-DIA-SEMANA] No se pudo actualizar bitácora: {e}")
+        
+        logger.info(
+            f"[SYNC-DIA-SEMANA] Finalizado {sync_run_id}. "
             f"Servidores: {result.servidores_exitosos}/{result.total_servidores}, "
             f"Registros: {result.total_registros_procesados}, "
             f"Duración: {result.duration_seconds}s"

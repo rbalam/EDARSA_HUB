@@ -2070,17 +2070,44 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 
 ---
 
+## FASE SYNC-2B VENTAS POR HORA Y DÍA SEMANA - COMPLETADA (15-May-2026)
+
+### Resumen:
+| Tabla | Registros | Estado |
+|-------|-----------|--------|
+| Sync_Ventas_PorHora | 69 | ✅ OK |
+| Sync_Ventas_PorDiaSemana | 14 | ✅ OK |
+
+### Servidores Probados:
+- SoftRestaurant: 130° MERIDA (62 registros hora + 7 días)
+- MPRO: ManagmentPro (7 registros hora + 7 días)
+
+### Validaciones:
+- ✅ Ventana 13:00-11:00 correcta
+- ✅ NO se usó 03:00
+- ✅ Dry-run exitoso
+- ✅ Escritura real exitosa
+- ✅ Idempotencia validada (segunda ejecución no duplicó)
+- ✅ Anti-$0 falso verificado
+- ✅ Bitácora funcionando
+
+### Métodos Agregados:
+- `sync_ventas_por_hora()` - Sincronización de ventas por hora
+- `sync_ventas_por_dia_semana()` - Sincronización de ventas por día de semana
+- Helpers: `ejecutar_sync_ventas_por_hora_dry_run()`, `ejecutar_sync_ventas_por_hora_real()`, etc.
+
+### Reporte:
+`/app/docs/reports/FASE_SYNC_2B_VENTAS_HORA_DIASEMANA_REPORTE.md`
+
+---
+
 ## Próximas Fases Pendientes
 
 ### P0 - FASE SYNC-3: Sincronización a Escala
 - Expandir a todos los 8 servidores activos
-- Implementar sync por hora (`Sync_Ventas_PorHora`)
-- Implementar sync por día de semana (`Sync_Ventas_PorDiaSemana`)
 - Histórico 30 días
-
-### P1 - Ventas por Hora/Día de Semana
-- Implementar lógica SQL en EDARSAHUB
-- Lectura de históricos (rango de fechas)
+- Investigar hora MPRO (Vn_Fecha parece no tener timestamp)
+- Schedulers automáticos
 
 ### P1 - FASE 5: Logging de Ejecuciones
 - Implementar escritura a ConsultasSQL_EjecucionesLog
