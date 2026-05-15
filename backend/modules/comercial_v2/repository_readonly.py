@@ -113,8 +113,8 @@ def get_kpis_diarios(
         es_corte_cerrado,
         fuente_original,
         hash_origen,
-        fecha_creacion,
-        fecha_ultima_actualizacion
+        fecha_alta,
+        fecha_sincronizacion
     FROM Comercial_KPIs_Diarios_v2
     WHERE {' AND '.join(where_clauses)}
     ORDER BY fecha_operacion DESC, unidad_negocio_id

@@ -426,15 +426,54 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
     const cargarDetalle = async () => {
       setLoading(true);
       try {
-        // CORRECCIÓN BUG: En modo Ventas del Día, NO hacer llamadas API adicionales
-        // Los datos ya vienen completos desde el endpoint /api/v2/comercial/ventas-dia
+        // En modo Ventas del Día, NO hacer llamadas a endpoints legacy (que consultan en vivo)
+        // En su lugar, calcular datos desde EDARSAHUB SQL sincronizado
         if (modoVentasDia) {
-          // En modo diario, usar los datos que ya tenemos de la unidad
+          // Intentar obtener datos de ventas por día de semana desde el historial
+          // Esto usa Comercial_KPIs_Diarios_v2 que ya está sincronizado
+          let ventasPorDia = null;
+          
+          try {
+            // Obtener últimos 7 días de la unidad para mostrar tendencia semanal
+            const histResponse = await api.get(`/v2/comercial/kpis-diarios/${unidad.unidad_negocio_id || unidad.id}`, {
+              params: { dias: 7 }
+            });
+            
+            if (histResponse.data?.success && histResponse.data?.data?.length > 0) {
+              // Agrupar por día de semana
+              const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+              const ventasPorDiaSemana = {};
+              
+              histResponse.data.data.forEach(d => {
+                const fecha = new Date(d.fecha_operacion);
+                const diaNombre = diasSemana[fecha.getDay()];
+                if (!ventasPorDiaSemana[diaNombre]) {
+                  ventasPorDiaSemana[diaNombre] = { ventas: 0, pax: 0, count: 0 };
+                }
+                ventasPorDiaSemana[diaNombre].ventas += d.ventas_total || 0;
+                ventasPorDiaSemana[diaNombre].pax += d.pax_total || 0;
+                ventasPorDiaSemana[diaNombre].count++;
+              });
+              
+              ventasPorDia = Object.entries(ventasPorDiaSemana).map(([dia, data]) => ({
+                dia,
+                ventas: data.ventas,
+                pax: data.pax
+              }));
+            }
+          } catch (e) {
+            logger.warn('[DetalleUnidad] No se pudo obtener historial para día de semana:', e.message);
+          }
+          
           setDetalleData({
             dashboard: null,
-            ventasTiempo: null,
+            ventasTiempo: ventasPorDia ? { 
+              por_hora: null, // No hay datos de hora sincronizados en EDARSAHUB
+              por_dia: ventasPorDia 
+            } : null,
             mesas: null,
-            modoVentasDia: true
+            modoVentasDia: true,
+            sinDatosHora: true // Flag para mostrar mensaje informativo
           });
           setLoading(false);
           return;
@@ -623,7 +662,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
             </Card>
 
             {/* Ventas por Hora */}
-            {detalleData?.ventasTiempo?.por_hora?.length > 0 && (
+            {detalleData?.ventasTiempo?.por_hora?.length > 0 ? (
               <Card>
                 <CardHeader className="py-2 bg-zinc-100">
                   <CardTitle className="text-sm flex items-center gap-2">
@@ -641,6 +680,20 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                       </div>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+            ) : detalleData?.sinDatosHora && (
+              <Card>
+                <CardHeader className="py-2 bg-zinc-100">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Ventas por Hora
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3">
+                  <p className="text-sm text-zinc-500 text-center py-4">
+                    Sin datos de hora sincronizados para Ventas del Día
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -855,6 +908,9 @@ export default function TableroEjecutivo() {
                 unidades: porUnidad
                   .sort((a, b) => (b.total_estimado_dia || 0) - (a.total_estimado_dia || 0))
                   .map(u => ({
+                    // ID de la unidad (necesario para consultas al backend)
+                    unidad_negocio_id: u.unidad_negocio_id,
+                    id: u.unidad_negocio_id, // Alias para compatibilidad
                     // Campos requeridos por el componente de tarjeta
                     sucursal_id: u.unidad_negocio_id,
                     sucursal_nombre: u.unidad_negocio_nombre,

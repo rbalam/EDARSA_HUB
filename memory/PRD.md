@@ -1076,3 +1076,52 @@ Modificación en `/app/frontend/src/pages/TableroEjecutivo.js`:
 | Ventas del Mes | Proyección Mes | Si mantiene ritmo |
 | Ventas del Año | Proyección Anual | X días → 365 días |
 
+---
+
+## SECCIONES MODAL RESTAURADAS - Ventas por Día de Semana (15-Mayo-2026)
+
+### Problema
+El modal de detalle de unidad ya no mostraba las secciones "Ventas por Hora" ni "Ventas por Día de Semana" después de la corrección del toast rojo.
+
+### Causa Raíz
+1. En modo `modoVentasDia=true`, el código retornaba temprano sin cargar datos adicionales
+2. El mapeo de `unidades` no incluía `unidad_negocio_id`, causando error 403 en el endpoint
+3. No existen tablas de "Ventas por Hora" sincronizadas en EDARSAHUB SQL
+
+### Solución
+1. **Nuevo endpoint** `/api/v2/comercial/kpis-diarios/{unidad_id}`:
+   - Lee de `Comercial_KPIs_Diarios_v2` (EDARSAHUB SQL)
+   - NO consulta en vivo
+   - Retorna últimos N días de historial
+
+2. **Frontend**: Calcular "Ventas por Día de Semana" desde el historial:
+   - Agrupa los últimos 7-10 días por día de semana
+   - Muestra distribución Lun-Dom
+
+3. **Ventas por Hora**: Mensaje informativo "Sin datos de hora sincronizados para Ventas del Día"
+   - No hay tabla en EDARSAHUB para datos granulares por hora
+   - Requiere DDL autorizado para crear tabla y job de sincronización
+
+### Corrección de Mapeo
+```javascript
+unidades: porUnidad.map(u => ({
+  unidad_negocio_id: u.unidad_negocio_id,  // ← Añadido
+  id: u.unidad_negocio_id,  // ← Añadido alias
+  // ...resto de campos
+}))
+```
+
+### Validación Visual ✅
+- KPIs principales: ✅
+- Comparativo (Día Actual, Anterior, Año Ant): ✅
+- Ventas por Hora (mensaje informativo): ✅
+- **Ventas por Día de Semana: ✅ RESTAURADO**
+- Sin toast rojo: ✅
+- Sin errores de consola: ✅
+
+### Regla Arquitectónica Respetada
+- ✅ Datos vienen de EDARSAHUB SQL
+- ✅ No hay consulta en vivo
+- ✅ No hay MongoDB
+- ✅ No hay endpoints legacy que consulten fuentes vivas
+

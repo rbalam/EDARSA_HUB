@@ -981,6 +981,84 @@ async def comercial_v2_kpis_diarios(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+# =============================================================================
+# ENDPOINT: KPIS DIARIOS POR UNIDAD (para modal de detalle)
+# =============================================================================
+
+@router.get("/kpis-diarios/{unidad_negocio_id}")
+async def comercial_v2_kpis_diarios_unidad(
+    unidad_negocio_id: str,
+    dias: int = Query(7, ge=1, le=30, description="Últimos N días"),
+    current_user: dict = Depends(get_current_user_dual_dependency())
+):
+    """
+    KPIs diarios de una unidad específica.
+    
+    Lee desde: Comercial_KPIs_Diarios_v2 (EDARSAHUB SQL)
+    NO consulta en vivo.
+    
+    Usado para: Modal de detalle - Ventas por Día de Semana
+    """
+    try:
+        from datetime import timedelta
+        
+        unidades_permitidas = await get_unidades_permitidas_v2(current_user)
+        
+        if not unidades_permitidas:
+            raise HTTPException(status_code=403, detail="No tiene unidades asignadas")
+        
+        if unidad_negocio_id not in unidades_permitidas:
+            raise HTTPException(status_code=403, detail="No tiene acceso a esa unidad")
+        
+        # Buscar la última fecha disponible para esta unidad
+        from modules.comercial_v2.repository_readonly import _execute_readonly_query
+        
+        query_ultima_fecha = f"""
+        SELECT MAX(fecha_operacion) as ultima_fecha
+        FROM Comercial_KPIs_Diarios_v2
+        WHERE unidad_negocio_id = '{unidad_negocio_id}'
+          AND activo = 1 AND es_demo = 0
+        """
+        result = _execute_readonly_query(query_ultima_fecha)
+        
+        if not result or not result[0].get('ultima_fecha'):
+            return {
+                "success": True,
+                "data": [],
+                "total": 0,
+                "unidad_negocio_id": unidad_negocio_id,
+                "periodo": None
+            }
+        
+        fecha_fin = result[0]['ultima_fecha']
+        if isinstance(fecha_fin, str):
+            fecha_fin = date.fromisoformat(fecha_fin)
+        fecha_inicio = fecha_fin - timedelta(days=dias)
+        
+        # Obtener datos desde EDARSAHUB SQL
+        datos = get_kpis_diarios(fecha_inicio, fecha_fin, [unidad_negocio_id])
+        
+        return {
+            "success": True,
+            "data": serialize_response(datos),
+            "total": len(datos),
+            "unidad_negocio_id": unidad_negocio_id,
+            "periodo": {
+                "fecha_inicio": fecha_inicio.isoformat(),
+                "fecha_fin": fecha_fin.isoformat() if hasattr(fecha_fin, 'isoformat') else str(fecha_fin),
+                "dias": dias
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"KPIs diarios unidad error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 # =============================================================================
 # ENDPOINT: KPIS MENSUALES
 # =============================================================================
