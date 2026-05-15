@@ -12150,6 +12150,22 @@ PRINT '=== Script de inicialización completado ===';
 #     ... # Código original comentado - ver modules/rh/routes.py
 
 
+def _escape_like_pattern(value: str) -> str:
+    """
+    Escapa caracteres especiales para LIKE en SQL Server.
+    FASE 1A - Sanitización SQL Injection.
+    Caracteres escapados: [ ] % _ '
+    """
+    if not value:
+        return value
+    # Escapar en orden: primero [ (para no afectar los escapes posteriores)
+    result = value.replace('[', '[[]')
+    result = result.replace('%', '[%]')
+    result = result.replace('_', '[_]')
+    result = result.replace("'", "''")
+    return result
+
+
 @api_router.get("/explorador/buscar/{server_id}")
 async def buscar_en_bd(
     server_id: str,
@@ -12165,6 +12181,8 @@ async def buscar_en_bd(
     
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
+    
+    FASE 1A: Sanitizado contra SQL Injection usando _escape_like_pattern()
     """
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     from core.server_registry import get_server_connection_info
@@ -12175,6 +12193,9 @@ async def buscar_en_bd(
     # FASE 6-8: Validar acceso usando función centralizada
     await validate_server_access_unified(current_user, server_id)
     
+    # FASE 1A: Sanitizar parámetro de búsqueda contra SQL Injection
+    q_safe = _escape_like_pattern(q)
+    
     resultados = {
         "termino": q,
         "tablas": [],
@@ -12183,6 +12204,9 @@ async def buscar_en_bd(
         "total": 0
     }
     
+    # FASE 1A: Sanitizar nombre de tabla si se proporciona
+    tabla_safe = _escape_like_pattern(tabla) if tabla else None
+    
     try:
         # 1. Buscar en nombres de TABLAS
         if tipo in ["todo", "tablas"]:
@@ -12190,7 +12214,7 @@ async def buscar_en_bd(
 SELECT TABLE_NAME as tabla, TABLE_TYPE as tipo
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_TYPE = 'BASE TABLE'
-  AND TABLE_NAME LIKE '%{q}%'
+  AND TABLE_NAME LIKE '%{q_safe}%'
 ORDER BY TABLE_NAME
 """
             tablas = execute_sql_query(
@@ -12207,7 +12231,7 @@ SELECT
     COLUMN_NAME as columna,
     DATA_TYPE as tipo_dato
 FROM INFORMATION_SCHEMA.COLUMNS
-WHERE COLUMN_NAME LIKE '%{q}%'
+WHERE COLUMN_NAME LIKE '%{q_safe}%'
 ORDER BY TABLE_NAME, COLUMN_NAME
 """
             columnas = execute_sql_query(
@@ -12220,10 +12244,13 @@ ORDER BY TABLE_NAME, COLUMN_NAME
         if tipo in ["todo", "datos"] and tabla:
             # Buscar en una tabla específica
             # Obtener columnas de tipo texto de la tabla
+            # FASE 1A: Validar que tabla solo contenga caracteres alfanuméricos y _
+            if not tabla.replace('_', '').replace(' ', '').isalnum():
+                raise HTTPException(status_code=400, detail="Nombre de tabla inválido")
             query_cols_texto = f"""
 SELECT COLUMN_NAME
 FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = '{tabla}'
+WHERE TABLE_NAME = '{tabla_safe}'
   AND DATA_TYPE IN ('varchar', 'nvarchar', 'char', 'nchar', 'text', 'ntext')
 """
             cols_texto = execute_sql_query(
@@ -12233,7 +12260,8 @@ WHERE TABLE_NAME = '{tabla}'
             
             if cols_texto:
                 # Construir WHERE con OR para cada columna de texto
-                condiciones = " OR ".join([f"[{c['COLUMN_NAME']}] LIKE '%{q}%'" for c in cols_texto])
+                # FASE 1A: Usar q_safe para prevenir SQL injection
+                condiciones = " OR ".join([f"[{c['COLUMN_NAME']}] LIKE '%{q_safe}%'" for c in cols_texto])
                 query_datos = f"""
 SELECT TOP {limite} *
 FROM [{tabla}]
@@ -12262,11 +12290,14 @@ WHERE DATA_TYPE IN ('varchar', 'nvarchar', 'char', 'nchar', 'text', 'ntext')
             datos_encontrados = []
             for t in (tablas_texto or [])[:5]:
                 tabla_nombre = t['TABLE_NAME']
+                # FASE 1A: tabla_nombre viene de INFORMATION_SCHEMA (confiable)
+                # pero sanitizamos por seguridad en profundidad
+                tabla_nombre_safe = _escape_like_pattern(tabla_nombre)
                 # Obtener columnas de texto
                 query_cols = f"""
 SELECT COLUMN_NAME
 FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = '{tabla_nombre}'
+WHERE TABLE_NAME = '{tabla_nombre_safe}'
   AND DATA_TYPE IN ('varchar', 'nvarchar', 'char', 'nchar', 'text', 'ntext')
 """
                 cols = execute_sql_query(
@@ -12275,7 +12306,8 @@ WHERE TABLE_NAME = '{tabla_nombre}'
                 )
                 
                 if cols:
-                    condiciones = " OR ".join([f"[{c['COLUMN_NAME']}] LIKE '%{q}%'" for c in cols[:5]])
+                    # FASE 1A: Usar q_safe para prevenir SQL injection
+                    condiciones = " OR ".join([f"[{c['COLUMN_NAME']}] LIKE '%{q_safe}%'" for c in cols[:5]])
                     query_datos = f"SELECT TOP 10 * FROM [{tabla_nombre}] WHERE {condiciones}"
                     try:
                         datos = execute_sql_query(

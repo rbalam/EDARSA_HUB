@@ -1695,3 +1695,27 @@ La migración de servidores YA ESTÁ COMPLETA. El único componente pendiente es
 ### Próximo Paso:
 Autorizar ejecución del DML seed para cargar las 17 consultas en ConsultasSQL_Catalogo
 
+---
+
+## FASE 1A SANITIZACIÓN SQL - COMPLETADA (15-May-2026)
+
+### Vulnerabilidades Corregidas:
+**5 vulnerabilidades CRÍTICAS** en endpoint `/api/explorador/buscar/{server_id}`:
+- C01-C05: Parámetro `q` (búsqueda) inyectable via SQL LIKE
+
+### Corrección Implementada:
+- Nueva función `_escape_like_pattern()` en server.py línea 12153
+- Escapa caracteres: `[` → `[[]`, `%` → `[%]`, `_` → `[_]`, `'` → `''`
+- Validación de nombre de tabla con `isalnum()`
+
+### Pendientes FASE 1B:
+| ID | Riesgo | Descripción |
+|----|--------|-------------|
+| A01 | ALTO | /almacenes - sucursal_id |
+| A02 | ALTO | /operativo/inventario-mpro - almacen LIKE |
+| A03 | ALTO | /explorador/tabla - tabla sin whitelist |
+| A04 | ALTO | /operativo/analisis-inventario - folios |
+
+### Reporte:
+`/app/docs/reports/FASE_1A_SANITIZACION_SQL_REPORTE.md`
+
