@@ -1,5 +1,5 @@
 import logger from '../services/logger';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -544,6 +544,9 @@ const Servidores = () => {
   }, [apiConnections]);
 
   // ========== FUNCIONES DE DRAG PARA MODALES ==========
+  // Usar refs para almacenar setPosition callback actual
+  const currentSetPositionRef = useRef(null);
+  
   const handleDragStart = (e, setPosition) => {
     // Solo permitir drag desde el header (no desde inputs, buttons, etc.)
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || 
@@ -553,36 +556,57 @@ const Servidores = () => {
     }
     e.preventDefault();
     setIsDragging(true);
-    const dialog = e.currentTarget.closest('[role="dialog"]');
-    if (dialog) {
-      const rect = dialog.getBoundingClientRect();
-      setDragOffset({
-        x: e.clientX - rect.left - rect.width / 2,
-        y: e.clientY - rect.top - rect.height / 2
-      });
-    }
+    currentSetPositionRef.current = setPosition;
+    
+    // Guardar offset desde donde se hizo click respecto al centro actual del modal
+    setDragOffset({
+      x: e.clientX,
+      y: e.clientY
+    });
   };
 
-  const handleDrag = useCallback((e, setPosition) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    
-    // Calcular posición relativa al centro de la pantalla
-    const newX = e.clientX - window.innerWidth / 2 - dragOffset.x;
-    const newY = e.clientY - window.innerHeight / 2 - dragOffset.y;
-    
-    // Limitar para que no salga de pantalla (margen de 50px)
-    const maxX = window.innerWidth / 2 - 200;
-    const maxY = window.innerHeight / 2 - 100;
-    
-    setPosition({
-      x: Math.max(-maxX, Math.min(maxX, newX)),
-      y: Math.max(-maxY, Math.min(maxY, newY))
-    });
+  // Usar useEffect para manejar drag globalmente
+  useEffect(() => {
+    const handleGlobalMouseMove = (e) => {
+      if (!isDragging || !currentSetPositionRef.current) return;
+      
+      const deltaX = e.clientX - dragOffset.x;
+      const deltaY = e.clientY - dragOffset.y;
+      
+      currentSetPositionRef.current(prev => ({
+        x: prev.x + deltaX,
+        y: prev.y + deltaY
+      }));
+      
+      setDragOffset({
+        x: e.clientX,
+        y: e.clientY
+      });
+    };
+
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+      currentSetPositionRef.current = null;
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
   }, [isDragging, dragOffset]);
+
+  const handleDrag = useCallback((e, setPosition) => {
+    // Ya no se usa - el drag se maneja globalmente
+  }, []);
 
   const handleDragEnd = () => {
     setIsDragging(false);
+    currentSetPositionRef.current = null;
   };
 
   // Reset posición cuando se cierra el modal
@@ -1944,19 +1968,19 @@ const Servidores = () => {
       {/* Dialog para agregar/editar Conexión API */}
       <Dialog open={apiDialogOpen} onOpenChange={(open) => { if (!open) resetApiModalPosition(); else setApiDialogOpen(true); }}>
         <DialogContent 
+          draggable={true}
+          hideCloseButton={true}
+          overlayClassName="bg-black/50"
           className={`max-w-lg flex flex-col transition-all duration-200 ${
             apiModalMinimized 
               ? 'max-h-16 overflow-hidden' 
               : 'max-h-[85vh]'
           }`}
           style={{
-            transform: `translate(${apiModalPosition.x}px, ${apiModalPosition.y}px)`,
+            transform: `translate(calc(-50% + ${apiModalPosition.x}px), calc(-50% + ${apiModalPosition.y}px))`,
             transition: isDragging ? 'none' : 'transform 0.15s ease-out',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
           }}
-          onMouseMove={(e) => isDragging && handleDrag(e, setApiModalPosition)}
-          onMouseUp={handleDragEnd}
-          onMouseLeave={handleDragEnd}
         >
           {/* Header arrastrable con controles de ventana */}
           <div 
@@ -2363,19 +2387,19 @@ const Servidores = () => {
       {/* Add/Edit Server Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) { resetForm(); resetSqlModalPosition(); } else setDialogOpen(true); }}>
         <DialogContent 
+          draggable={true}
+          hideCloseButton={true}
+          overlayClassName="bg-black/50"
           className={`max-w-2xl flex flex-col transition-all duration-200 ${
             sqlModalMinimized 
               ? 'max-h-16 overflow-hidden' 
               : 'max-h-[85vh]'
           }`}
           style={{
-            transform: `translate(${sqlModalPosition.x}px, ${sqlModalPosition.y}px)`,
+            transform: `translate(calc(-50% + ${sqlModalPosition.x}px), calc(-50% + ${sqlModalPosition.y}px))`,
             transition: isDragging ? 'none' : 'transform 0.15s ease-out',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
           }}
-          onMouseMove={(e) => isDragging && handleDrag(e, setSqlModalPosition)}
-          onMouseUp={handleDragEnd}
-          onMouseLeave={handleDragEnd}
         >
           {/* Header arrastrable con controles de ventana */}
           <div 
