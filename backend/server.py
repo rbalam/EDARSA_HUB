@@ -2280,18 +2280,32 @@ async def get_almacenes(server_id: str, sucursal_id: Optional[str] = None, sucur
     )
     
     try:
+        # FASE 1B: Importar execute_sql_query_params para parametrización segura
+        from core.db import execute_sql_query_params
+        
+        # FASE 1B: Validar sucursal_id si se proporciona
+        if sucursal_id:
+            if not _validate_identifier(sucursal_id, max_length=50):
+                logging.warning(f"[A01-SANITIZADO] sucursal_id inválido rechazado: {sucursal_id[:50]}")
+                raise HTTPException(status_code=400, detail="sucursal_id contiene caracteres no permitidos")
+        
         if is_mpro_system(server.get('system_type')):
             # FASE 8: Filtro por almacenes permitidos
             almacen_filter = get_almacenes_sql_filter(context, server_id, "Al_Cve_Almacen")
             
+            # FASE 1B: Parametrización segura de sucursal_id
             if sucursal_id:
-                query = f"SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Sc_Cve_Sucursal = '{sucursal_id}' AND Es_Cve_Estado <> 'BA'{almacen_filter}"
+                query = f"SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Sc_Cve_Sucursal = %s AND Es_Cve_Estado <> 'BA'{almacen_filter}"
+                results = execute_sql_query_params(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query, (sucursal_id,)
+                )
             else:
                 query = f"SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Es_Cve_Estado <> 'BA'{almacen_filter}"
-            results = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
+                results = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query
+                )
             logging.info(f"[RBAC-ALMACENES] MPRO devolvió {len(results)} almacenes (filtrado RBAC)")
             return results
         
@@ -2318,14 +2332,19 @@ ORDER BY nombre
         else:
             # Query genérica para otros sistemas con filtro RBAC
             almacen_filter = get_almacenes_sql_filter(context, server_id, "Al_Cve_Almacen")
+            # FASE 1B: Parametrización segura de sucursal_id
             if sucursal_id:
-                query = f"SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Sc_Cve_Sucursal = '{sucursal_id}'{almacen_filter}"
+                query = f"SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Sc_Cve_Sucursal = %s{almacen_filter}"
+                results = execute_sql_query_params(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query, (sucursal_id,)
+                )
             else:
                 query = f"SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE 1=1{almacen_filter}"
-            results = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
+                results = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query
+                )
             return results
     except Exception as e:
         logging.error(f"Error obteniendo almacenes: {str(e)}")
@@ -3396,6 +3415,28 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     else:
         lista_folios_fin = []
     
+    # FASE 1B: Validar y sanitizar folios para prevenir SQL Injection
+    MAX_FOLIOS = 50  # Límite máximo de folios por solicitud
+    
+    def _sanitize_folio_list(folios: list, max_count: int = MAX_FOLIOS) -> list:
+        """Valida y sanitiza una lista de folios."""
+        if not folios:
+            return []
+        sanitized = []
+        for f in folios[:max_count]:
+            if f and isinstance(f, str):
+                # Solo permitir caracteres alfanuméricos, guiones y guiones bajos
+                if _validate_identifier(str(f), max_length=50):
+                    # Escapar comillas simples
+                    sanitized.append(str(f).replace("'", "''"))
+                else:
+                    logging.warning(f"[A04-SANITIZADO] Folio inválido rechazado: {str(f)[:20]}")
+        return sanitized
+    
+    # Aplicar sanitización a las listas de folios
+    lista_folios_ini = _sanitize_folio_list(lista_folios_ini)
+    lista_folios_fin = _sanitize_folio_list(lista_folios_fin)
+    
     # Filtros adicionales del frontend
     filtro_categorias_frontend = report_params.get('categorias', [])
     filtro_familias_frontend = report_params.get('familias', [])
@@ -3512,8 +3553,9 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             if not lista_almacenes:
                 raise HTTPException(status_code=400, detail="Debe seleccionar al menos un almacén")
             
-            # Construir condición SQL para múltiples almacenes
-            almacenes_like_conditions = " OR ".join([f"A.Al_Descripcion LIKE '%{alm}%'" for alm in lista_almacenes])
+            # FASE 1B: Escapar caracteres especiales de LIKE para prevenir SQL Injection
+            almacenes_like_conditions = " OR ".join([f"A.Al_Descripcion LIKE '%{_escape_like_pattern(alm)}%'" for alm in lista_almacenes])
+            sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
             
             almacen_query = f"""
 SELECT 
@@ -3523,7 +3565,7 @@ SELECT
 FROM Almacen A
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
 WHERE ({almacenes_like_conditions})
-    AND S.Sc_Descripcion LIKE '%{sucursal}%'
+    AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
 """
             almacen_result = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -4112,13 +4154,15 @@ ORDER BY folio
             # 1. Obtener información del almacén incluyendo el TIPO
             # TIPO = 1: Almacén de consumo (tiene ventas)
             # TIPO = 2: Almacén de presentaciones (NO tiene ventas)
+            # FASE 1B: Escapar caracteres especiales de LIKE
+            almacen_safe = _escape_like_pattern(almacen) if almacen else ""
             almacen_query = f"""
 SELECT TOP 1 
     idalmacen as codigo,
     nombre,
     ISNULL(tipo, 1) as tipo
 FROM almacen
-WHERE nombre LIKE '%{almacen}%'
+WHERE nombre LIKE '%{almacen_safe}%'
 """
             almacen_result = execute_sql_query(
                 server['host'], server['port'], server['database'],
@@ -4256,7 +4300,7 @@ LEFT JOIN insumos I_INS ON I_INS.idinsumo = FMOV.idinsumo
 LEFT JOIN gruposi GP_INS ON GP_INS.idgruposi = I_INS.idgruposi
 LEFT JOIN gruposiclasificacion GC_INS ON GC_INS.idgruposiclasificacion = GP_INS.idgruposiclasificacion
 WHERE FMOV.folio IN ({all_folios_sql})
-  AND AL.nombre LIKE '%{almacen}%'
+  AND AL.nombre LIKE '%{almacen_safe}%'
 ORDER BY FMOV.folio, CODIGO
 """
             
@@ -9484,9 +9528,12 @@ async def listar_columnas(
     
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
+    FASE 1B: Whitelist de tablas + parametrización
     """
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     from core.server_registry import get_server_connection_info
+    from core.db import execute_sql_query_params
+    
     conn_info = await get_server_connection_info(server_id, db=db)
     if not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
@@ -9494,7 +9541,14 @@ async def listar_columnas(
     # FASE 6-8: Validar acceso usando función centralizada
     await validate_server_access_unified(current_user, server_id)
     
-    query = f"""
+    # FASE 1B: Validar tabla contra whitelist
+    is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'))
+    if not is_valid:
+        logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]}")
+        raise HTTPException(status_code=400, detail=error_msg)
+    
+    # FASE 1B: Usar parametrización segura
+    query = """
 SELECT 
     COLUMN_NAME as columna,
     DATA_TYPE as tipo,
@@ -9502,13 +9556,13 @@ SELECT
     IS_NULLABLE as nullable,
     COLUMN_DEFAULT as default_value
 FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = '{tabla}'
+WHERE TABLE_NAME = %s
 ORDER BY ORDINAL_POSITION
 """
     try:
-        result = execute_sql_query(
+        result = execute_sql_query_params(
             conn_info['host'], conn_info['port'], conn_info['database'],
-            conn_info['username'], conn_info['password'], query
+            conn_info['username'], conn_info['password'], query, (tabla,)
         )
         return {
             "tabla": tabla,
@@ -9530,9 +9584,12 @@ async def listar_relaciones(
     
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
+    FASE 1B: Whitelist de tablas + parametrización
     """
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     from core.server_registry import get_server_connection_info
+    from core.db import execute_sql_query_params
+    
     conn_info = await get_server_connection_info(server_id, db=db)
     if not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
@@ -9540,7 +9597,14 @@ async def listar_relaciones(
     # FASE 6-8: Validar acceso usando función centralizada
     await validate_server_access_unified(current_user, server_id)
     
-    query = f"""
+    # FASE 1B: Validar tabla contra whitelist
+    is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'))
+    if not is_valid:
+        logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]}")
+        raise HTTPException(status_code=400, detail=error_msg)
+    
+    # FASE 1B: Usar parametrización segura (tabla pasada 2 veces)
+    query = """
 SELECT 
     fk.name as nombre_fk,
     tp.name as tabla_padre,
@@ -9553,13 +9617,13 @@ INNER JOIN sys.tables tp ON tp.object_id = fk.parent_object_id
 INNER JOIN sys.columns cp ON cp.object_id = fk.parent_object_id AND cp.column_id = fkc.parent_column_id
 INNER JOIN sys.tables tr ON tr.object_id = fk.referenced_object_id
 INNER JOIN sys.columns cr ON cr.object_id = fk.referenced_object_id AND cr.column_id = fkc.referenced_column_id
-WHERE tp.name = '{tabla}' OR tr.name = '{tabla}'
+WHERE tp.name = %s OR tr.name = %s
 ORDER BY fk.name
 """
     try:
-        result = execute_sql_query(
+        result = execute_sql_query_params(
             conn_info['host'], conn_info['port'], conn_info['database'],
-            conn_info['username'], conn_info['password'], query
+            conn_info['username'], conn_info['password'], query, (tabla, tabla)
         )
         return {
             "tabla": tabla,
@@ -9582,6 +9646,7 @@ async def preview_tabla(
     
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
+    FASE 1B: Whitelist de tablas
     """
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     from core.server_registry import get_server_connection_info
@@ -9592,10 +9657,14 @@ async def preview_tabla(
     # FASE 6-8: Validar acceso usando función centralizada
     await validate_server_access_unified(current_user, server_id)
     
-    # Sanitizar nombre de tabla para evitar SQL injection
-    if not tabla.replace('_', '').isalnum():
-        raise HTTPException(status_code=400, detail="Nombre de tabla inválido")
+    # FASE 1B: Validar tabla contra whitelist (reemplaza validación isalnum anterior)
+    is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'))
+    if not is_valid:
+        logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]}")
+        raise HTTPException(status_code=400, detail=error_msg)
     
+    # FASE 1B: Tabla validada, usar brackets para identificador seguro
+    # limite ya está validado por FastAPI (le=100)
     query = f"SELECT TOP {limite} * FROM [{tabla}]"
     
     try:
@@ -12164,6 +12233,113 @@ def _escape_like_pattern(value: str) -> str:
     result = result.replace('_', '[_]')
     result = result.replace("'", "''")
     return result
+
+
+def _validate_identifier(value: str, max_length: int = 128) -> bool:
+    """
+    FASE 1B - Valida que un identificador sea seguro para usar en SQL.
+    Solo permite caracteres alfanuméricos, guiones bajos y guiones.
+    """
+    if not value or not isinstance(value, str):
+        return False
+    if len(value) > max_length:
+        return False
+    # Solo alfanuméricos, guiones bajos, guiones y puntos (para esquemas)
+    import re
+    return bool(re.match(r'^[a-zA-Z0-9_\-\.]+$', value))
+
+
+def _sanitize_identifier(value: str) -> str:
+    """
+    FASE 1B - Sanitiza un identificador escapando comillas.
+    Usar SOLO después de validar con _validate_identifier().
+    """
+    if not value:
+        return value
+    return value.replace("'", "''")
+
+
+# FASE 1B - Whitelist de tablas permitidas para explorador SQL
+# Actualizar esta lista según las tablas que deben ser consultables
+EXPLORADOR_TABLAS_PERMITIDAS = {
+    # SoftRestaurant
+    'almacen', 'cheques', 'cheqdet', 'productos', 'categorias', 'turnos',
+    'meseros', 'cuentas', 'folios', 'formasdepago', 'movsinventario', 
+    'movsalmacen', 'gruposi', 'gruposiclasificacion', 'productosreceta',
+    'productosi', 'usuarios', 'tiposdecheques', 'impuestos', 'preciosi',
+    # MPRO
+    'producto', 'almacen', 'sucursal', 'proveedor', 'movimiento', 
+    'entrada', 'salida', 'fisico', 'compras', 'ventas', 'clientes',
+    'categoria', 'familia', 'subfamilia', 'unidad', 'tipo_movimiento',
+    # Tablas de sistema
+    'information_schema.tables', 'information_schema.columns',
+}
+
+
+def _validate_table_name(tabla: str, system_type: str = None) -> tuple:
+    """
+    FASE 1B - Valida nombre de tabla contra whitelist.
+    
+    Returns:
+        tuple: (is_valid: bool, error_message: str or None)
+    """
+    if not tabla:
+        return (False, "Nombre de tabla vacío")
+    
+    tabla_lower = tabla.lower().strip()
+    
+    # Verificar caracteres básicos primero
+    if not _validate_identifier(tabla_lower, max_length=128):
+        return (False, f"Nombre de tabla inválido: caracteres no permitidos")
+    
+    # Verificar contra whitelist
+    if tabla_lower in EXPLORADOR_TABLAS_PERMITIDAS:
+        return (True, None)
+    
+    # Verificar prefijos comunes seguros
+    safe_prefixes = ('dbo.', 'sys.', 'information_schema.')
+    for prefix in safe_prefixes:
+        if tabla_lower.startswith(prefix):
+            base_table = tabla_lower[len(prefix):]
+            if base_table in EXPLORADOR_TABLAS_PERMITIDAS:
+                return (True, None)
+    
+    return (False, f"Tabla '{tabla}' no está en la lista permitida")
+
+
+def _build_safe_folios_condition(folios: list, column_name: str, max_folios: int = 50) -> tuple:
+    """
+    FASE 1B - Construye condición IN segura para lista de folios.
+    
+    Args:
+        folios: Lista de folios
+        column_name: Nombre de la columna (ya validado)
+        max_folios: Máximo de folios permitidos
+        
+    Returns:
+        tuple: (sql_condition: str, params: tuple)
+        Si folios vacío, retorna condición que no coincide con nada.
+    """
+    if not folios:
+        return ("1=0", ())  # Condición que nunca se cumple
+    
+    # Limitar cantidad
+    folios_limitados = folios[:max_folios]
+    
+    # Validar cada folio
+    folios_validos = []
+    for f in folios_limitados:
+        if f and isinstance(f, str) and _validate_identifier(f, max_length=50):
+            folios_validos.append(f)
+    
+    if not folios_validos:
+        return ("1=0", ())
+    
+    # Construir placeholders dinámicos (%s para cada folio)
+    placeholders = ", ".join(["%s"] * len(folios_validos))
+    sql_condition = f"{column_name} IN ({placeholders})"
+    
+    return (sql_condition, tuple(folios_validos))
 
 
 @api_router.get("/explorador/buscar/{server_id}")

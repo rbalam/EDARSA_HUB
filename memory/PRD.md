@@ -1813,19 +1813,64 @@ FASE 4: Endpoints /api/consultas-sql/*
 
 ---
 
+## FASE 1B SANITIZACIÓN SQL ALTAS - COMPLETADA (15-May-2026)
+
+### Vulnerabilidades Corregidas:
+
+| ID | Riesgo | Endpoint | Corrección |
+|----|--------|----------|------------|
+| A01 | ALTO | /almacenes | Parametrización `%s` + validación de `sucursal_id` |
+| A02 | ALTO | /reports/inventory-analysis | `_escape_like_pattern()` para `almacen` en LIKE |
+| A03 | ALTO | /explorador/columnas, /relaciones, /preview | Whitelist + parametrización de `tabla` |
+| A04 | ALTO | /reports/inventory-analysis | `_sanitize_folio_list()` con límite 50 y escape |
+
+### Funciones Helper Creadas:
+- `_validate_identifier()`: Valida caracteres alfanuméricos
+- `_sanitize_identifier()`: Escapa comillas
+- `_validate_table_name()`: Whitelist de tablas permitidas
+- `_build_safe_folios_condition()`: Placeholders dinámicos para IN
+- `_sanitize_folio_list()`: Sanitiza lista de folios
+
+### Whitelist de Tablas:
+```python
+EXPLORADOR_TABLAS_PERMITIDAS = {
+    'almacen', 'cheques', 'cheqdet', 'productos', 'categorias', 'turnos',
+    'meseros', 'cuentas', 'folios', 'formasdepago', 'movsinventario', 
+    'movsalmacen', 'gruposi', 'gruposiclasificacion', 'productosreceta',
+    'productosi', 'usuarios', 'tiposdecheques', 'impuestos', 'preciosi',
+    'producto', 'sucursal', 'proveedor', 'movimiento', 'entrada', 'salida',
+    'fisico', 'compras', 'ventas', 'clientes', 'categoria', 'familia',
+    'subfamilia', 'unidad', 'tipo_movimiento',
+    'information_schema.tables', 'information_schema.columns',
+}
+```
+
+### Validaciones:
+- ✅ Backend operativo
+- ✅ Login funciona
+- ✅ Payloads maliciosos rechazados
+- ✅ Valores normales aceptados
+- ✅ Sin regresión FASE 1A
+- ✅ Sin regresión FASE 3
+
+### Reporte:
+`/app/docs/reports/FASE_1B_SANITIZACION_SQL_ALTAS_REPORTE.md`
+
+---
+
 ## Tareas Pendientes
 
-### P0 - Sanitización SQL FASE 1B (Pausada por FASE 3)
-| ID | Riesgo | Endpoint | Parámetro |
-|----|--------|----------|-----------|
-| A01 | ALTO | /almacenes | sucursal_id |
-| A02 | ALTO | /operativo/inventario-mpro | almacen |
-| A03 | ALTO | /explorador/tabla | tabla |
-| A04 | ALTO | /operativo/analisis-inventario | folios |
+### P1 - FASE 4: Endpoints /api/consultas-sql/*
+- Exponer módulo SQL-First via API
+- Sin modificar endpoints legacy
 
 ### P1 - FASE 3A: Ventas por Hora/Día de Semana
 - Implementar lógica SQL en EDARSAHUB
 - Lectura de históricos (rango de fechas)
+
+### P1 - FASE 1C: Sanitización SQL restante
+- ~15 instancias de LIKE sin escapar en otros endpoints
+- Completar cobertura A02
 
 ### P2 - Corrección de Fechas Peligrosas
 - 172 instancias de `datetime.now()`, `date.today()` detectadas
