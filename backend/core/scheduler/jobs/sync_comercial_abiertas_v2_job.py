@@ -707,38 +707,51 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 # Consultar dato existente en EDARSAHUB
                 existing_data = _get_existing_ventas_dia(unidad_id, sucursal_id)
                 existing_total = float(existing_data.get('total_estimado_dia') or 0) if existing_data else 0
+                existing_fecha = existing_data.get('fecha_operacion') if existing_data else None
                 
+                # PROTECCIÓN MEJORADA: Si hay dato existente válido del MISMO día operativo,
+                # NO sobrescribir con $0. Si es de día anterior, es válido escribir $0 (inicio de día).
                 if existing_total > 0:
-                    logger.warning(
-                        f"[SYNC_ABIERTAS_V2] {nombre}: Total calculado=$0 pero existe dato válido=${existing_total:,.2f}. "
-                        f"PROTECCIÓN: Conservando dato existente para fecha_operacion={fecha_operacion_str}"
-                    )
-                    log = SyncLogV2(
-                        run_id=run_id,
-                        run_type=SyncRunType.ABIERTAS,
-                        unidad_negocio_id=unidad_id,
-                        server_id=server_id,
-                        sucursal_id=sucursal_id,
-                        fecha_inicio=fecha_operacion,
-                        fecha_fin=fecha_operacion,
-                        status=SyncStatus.SKIPPED,
-                        records_processed=0,
-                        records_skipped=1,
-                        error_message=f"Total=$0 pero existe dato válido=${existing_total:,.2f}. Protección anti-sobrescritura activada.",
-                        source_connection_status="API_LOCAL_OK_ZERO_WITH_EXISTING"
-                    )
-                    insert_sync_log(log)
-                    results["detalles_unidades"].append({
-                        "unidad_negocio_id": unidad_id,
-                        "unidad": nombre,
-                        "status": "SKIPPED_ZERO_PROTECTION",
-                        "fecha_operacion": fecha_operacion_str,
-                        "existing_total": existing_total,
-                        "mensaje": f"Protección: No sobrescribir ${existing_total:,.2f} con $0"
-                    })
-                    continue  # NO sobrescribir dato válido con $0
+                    # Comparar fechas para decidir si proteger
+                    if existing_fecha and str(existing_fecha) == fecha_operacion_str:
+                        # MISMO día operativo con dato válido - PROTEGER
+                        logger.warning(
+                            f"[SYNC_ABIERTAS_V2] {nombre}: Total calculado=$0 pero existe dato válido=${existing_total:,.2f} "
+                            f"del MISMO día {fecha_operacion_str}. PROTECCIÓN ACTIVADA."
+                        )
+                        log = SyncLogV2(
+                            run_id=run_id,
+                            run_type=SyncRunType.ABIERTAS,
+                            unidad_negocio_id=unidad_id,
+                            server_id=server_id,
+                            sucursal_id=sucursal_id,
+                            fecha_inicio=fecha_operacion,
+                            fecha_fin=fecha_operacion,
+                            status=SyncStatus.SKIPPED,
+                            records_processed=0,
+                            records_skipped=1,
+                            error_message=f"Total=$0 pero existe dato válido=${existing_total:,.2f} del mismo día. Protección anti-sobrescritura activada.",
+                            source_connection_status="API_LOCAL_OK_ZERO_WITH_EXISTING"
+                        )
+                        insert_sync_log(log)
+                        results["detalles_unidades"].append({
+                            "unidad_negocio_id": unidad_id,
+                            "unidad": nombre,
+                            "status": "SKIPPED_ZERO_PROTECTION",
+                            "fecha_operacion": fecha_operacion_str,
+                            "existing_total": existing_total,
+                            "existing_fecha": str(existing_fecha),
+                            "mensaje": f"Protección: No sobrescribir ${existing_total:,.2f} con $0"
+                        })
+                        continue  # NO sobrescribir dato válido con $0
+                    else:
+                        # Día diferente - posible inicio de nueva jornada
+                        logger.info(
+                            f"[SYNC_ABIERTAS_V2] {nombre}: Total=$0 para nuevo día {fecha_operacion_str}, "
+                            f"dato anterior de {existing_fecha}. Permitiendo actualización."
+                        )
                 else:
-                    # No hay dato existente o ya es $0, proceder normalmente
+                    # No hay dato existente válido, proceder normalmente
                     logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Total=$0 y sin dato existente válido, procediendo con sync")
             
             # Extraer valores finales (abiertas_data y cerradas_data ya están definidos arriba)
