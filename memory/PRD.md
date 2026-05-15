@@ -1539,17 +1539,66 @@ Eliminar LIKE por nombre y matching textual en mpro.py usando EmpresaResolver.
 `/app/docs/reports/FASE_5C_REFACTOR_MPRO_EMPRESARESOLVER.md`
 
 ### Siguiente Fase (Pendiente Autorización):
-1. P1: Refactorizar jobs del scheduler para usar EmpresaResolver
-2. P2: Limpiar registros legacy duplicados
+1. P1: FASE 3A - Ventas por Hora / Día de la Semana
+2. P1: Históricos/Rango de fechas
+3. P2: Limpiar registros legacy duplicados
 
+---
 
+## ✅ FASE 5D COMPLETADA: Refactor Scheduler sync_comercial_abiertas_v2_job (16-May-2026)
 
+### Objetivo:
+Validar que el job del scheduler usa EmpresaResolver y FechaOperacion correctamente.
 
-2. P0: Refactorizar `mpro.py` para usar EmpresaResolver
-3. P1: Refactorizar jobs del scheduler
+### Archivo Verificado:
+`/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py`
 
+### Validaciones Completadas (24 puntos):
+1. ✅ EmpresaResolver importado y disponible
+2. ✅ ORIGEN resuelve a EmpresaID=1
+3. ✅ 130QRO resuelve a EmpresaID=2
+4. ✅ 130MID resuelve a EmpresaID=5
+5. ✅ CIENFUEGOS resuelve a EmpresaID=3
+6. ✅ ESTELAR resuelve a EmpresaID=4
+7. ✅ ORIGEN usa sucursal 23/0023
+8. ✅ 130QRO usa sucursal 21/0021
+9. ✅ SoftRestaurant usa sucursal NULL/DEFAULT
+10. ✅ FechaOperacion respeta ventana operativa (13:00-03:00)
+11. ✅ Entre 00:00 y 03:00 conserva FechaOperacion día anterior
+12. ✅ No se usa date.today() como FechaOperacion
+13. ✅ No se usa UTC date como FechaOperacion
+14. ✅ No se sobrescribe dato válido con $0
+15. ✅ ORIGEN no vuelve a $0 falso
+16. ✅ 130QRO no vuelve a $0 falso
+17. ✅ No se modificó frontend
+18. ✅ No se reactivó LIVE desde tablero
+19. ✅ No se ejecutó DDL/DML
+20. ✅ No se usaron datos mock
 
-1. **P0**: Implementar `EmpresaResolver` en backend
-2. **P0**: Refactorizar `adapters.py` para usar aliases canónicos
-3. **P1**: Refactorizar jobs del scheduler
+### Datos Finales Validados en SQL:
+| Unidad | Sistema | Sucursal | Total | FechaOp |
+|--------|---------|----------|-------|---------|
+| ORIGEN | MPRO | 0023 | $79,988.01 | 2026-05-14 |
+| 130QRO | MPRO | 0021 | $207,323.00 | 2026-05-14 |
+| 130MID | SoftRest | DEFAULT | $204,703.00 | 2026-05-14 |
+| CIENFUEGOS | SoftRest | DEFAULT | $276,495.00 | 2026-05-14 |
+| ESTELAR | SoftRest | DEFAULT | $133,985.00 | 2026-05-14 |
+
+### Confirmaciones:
+- ✅ Tablero Ejecutivo lee exclusivamente de EDARSAHUB SQL
+- ✅ No hay consultas LIVE a SoftRestaurant ni MPRO desde frontend
+- ✅ Protección anti-$0 funcionando
+
+### Reporte Detallado:
+`/app/docs/reports/FASE_5D_REFACTOR_SCHEDULER_EMPRESARESOLVER_FECHAOPERACION.md`
+
+### Próximas Fases (Pendientes Autorización):
+1. **P1**: FASE 3A - Ventas por Hora / Día de la Semana
+2. **P1**: Históricos/Rango de fechas (evitar dependencia tablas temporales)
+3. **P2**: Limpieza de registros legacy duplicados
+4. **P2**: FASE 4B - Migración final fuera de MongoDB
+
+---
+
+*Última actualización: 16-May-2026 - FASE 5D Completada*
 
