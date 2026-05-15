@@ -1306,21 +1306,31 @@ export default function TableroEjecutivo() {
                 </div>
               </div>
               
-              {/* Proyección Mes/Anual */}
+              {/* Proyección Mes/Anual/Día - Dinámico según selector */}
               <div className="flex flex-col text-center">
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">
-                  {esMultiMes ? 'Proyección Anual' : 'Proyección Mes'}
+                  {data?.periodo?.modo_ventas_dia 
+                    ? 'Proyección del Día'
+                    : (esMultiMes ? 'Proyección Anual' : 'Proyección Mes')
+                  }
                 </p>
                 <p className="text-2xl font-bold text-orange-400">
-                  {formatCurrency(esMultiMes 
-                    ? (data.totales.ventas / (data.periodo?.dias_transcurridos || 1)) * 365
-                    : data.totales.proyeccion
+                  {formatCurrency(
+                    data?.periodo?.modo_ventas_dia
+                      ? data.totales.ventas  // En Ventas del Día, la proyección ES la venta actual (al cierre será = venta real)
+                      : (esMultiMes 
+                          ? (data.totales.ventas / (data.periodo?.dias_transcurridos || 1)) * 365
+                          : data.totales.proyeccion
+                        )
                   )}
                 </p>
                 <p className="text-xs text-zinc-400 mt-1">
-                  {esMultiMes 
-                    ? `${data.periodo?.dias_transcurridos || 0} días → 365 días`
-                    : 'Si mantiene ritmo'
+                  {data?.periodo?.modo_ventas_dia
+                    ? 'Al cierre del día'
+                    : (esMultiMes 
+                        ? `${data.periodo?.dias_transcurridos || 0} días → 365 días`
+                        : 'Si mantiene ritmo'
+                      )
                   }
                 </p>
                 <div className="flex gap-4 mt-auto pt-2 justify-center">

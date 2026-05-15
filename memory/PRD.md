@@ -1016,3 +1016,63 @@ El servidor usa UTC, donde la fecha era 15-May cuando en México era 14-May (22:
 - ✅ Variaciones calculadas correctamente
 - ✅ Modal muestra comparativos reales, no $0 falsos
 
+---
+
+## BUG CORREGIDO - 130° QUERÉTARO $0 (15-Mayo-2026)
+
+### Problema
+130° QUERÉTARO mostraba $0 en Ventas del Día cuando la base de datos tenía $207,258.
+
+### Causa Raíz
+1. El job `sync_comercial_abiertas_v2` ejecutó antes del reinicio y escribió con fecha UTC (2026-05-15)
+2. Posteriormente sobrescribió con $0 porque no pudo conectar al servidor
+3. La corrección de zona horaria no estaba activa en esa ejecución
+
+### Solución
+1. Reinicio del backend con corrección de zona horaria México
+2. Ejecución manual del job: `POST /api/v2/scheduler/jobs/sync_comercial_abiertas_v2/run`
+3. Datos sincronizados correctamente con fecha 2026-05-14
+
+### Resultado
+| Unidad | Antes | Después |
+|--------|-------|---------|
+| 130° QUERÉTARO | $0 | **$207,258** ✅ |
+
+---
+
+## CORRECCIÓN ETIQUETAS PROYECCIÓN (15-Mayo-2026)
+
+### Problema
+El KPI de proyección mostraba "PROYECCIÓN MES" y "Si mantiene ritmo" cuando el selector estaba en "Ventas del Día".
+
+### Solución
+Modificación en `/app/frontend/src/pages/TableroEjecutivo.js`:
+
+```javascript
+// Título dinámico según selector
+{data?.periodo?.modo_ventas_dia 
+  ? 'Proyección del Día'
+  : (esMultiMes ? 'Proyección Anual' : 'Proyección Mes')
+}
+
+// Subtítulo dinámico
+{data?.periodo?.modo_ventas_dia
+  ? 'Al cierre del día'
+  : (esMultiMes ? 'X días → 365 días' : 'Si mantiene ritmo')
+}
+
+// Valor: En Ventas del Día, proyección = venta actual (al cierre será = venta real)
+```
+
+### Algoritmo de Proyección del Día
+- **Durante el día:** `proyección = venta_actual`
+- **Al cierre:** `proyección = venta_real` (son iguales)
+- **Regla:** No usar fórmula de extrapolación porque al final del día la proyección DEBE ser igual a la venta real
+
+### Resultado
+| Selector | Título | Subtítulo |
+|----------|--------|-----------|
+| Ventas del Día | **Proyección del Día** | **Al cierre del día** |
+| Ventas del Mes | Proyección Mes | Si mantiene ritmo |
+| Ventas del Año | Proyección Anual | X días → 365 días |
+
