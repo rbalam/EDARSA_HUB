@@ -250,9 +250,25 @@ def _get_unidades_from_edarsahub() -> tuple:
 # =============================================================================
 
 # SoftRestaurant: Cuentas abiertas desde tempcheques
+# =============================================================================
+# QUERIES SOFTRESTAURANT
+# =============================================================================
+# REGLA DE NEGOCIO: La fecha de la venta será la fecha del turno de caja 
+# en el cual se aperturó la cuenta.
+#
+# - NO usar GETDATE() del servidor (puede ser UTC o zona horaria diferente)
+# - Usar {fecha_operacion} calculada por backend en zona México
+# - Si la tabla temporal (tempcheques) está vacía después del corte,
+#   buscar en la tabla definitiva (cheques)
+# - La venta pertenece a la FechaOperacion del turno de apertura, no al día del cierre
+# =============================================================================
+
+# SoftRestaurant: Ventas abiertas (turno aún abierto)
+# Tabla: tempcheques (temporal mientras el turno está abierto)
+# Filtrar por fecha_operacion para evitar sumar cheques de días anteriores no cerrados
 QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS = """
 SELECT 
-    CAST(GETDATE() AS DATE) as fecha,
+    '{fecha_operacion}' as fecha,
     ISNULL(SUM(total), 0) as ventas_abiertas,
     COUNT(*) as tickets_abiertos,
     ISNULL(SUM(nopersonas), 0) as pax_abiertos,
@@ -260,9 +276,12 @@ SELECT
 FROM tempcheques
 WHERE cancelado = 0
   AND total > 0
+  AND CAST(fecha AS DATE) = '{fecha_operacion}'
 """
 
-# SoftRestaurant: Ventas cerradas del día
+# SoftRestaurant: Ventas cerradas del día (turno ya cerrado)
+# Tabla: cheques (tabla definitiva después del corte)
+# Buscar por fecha de apertura de la cuenta (campo 'fecha'), NO por GETDATE()
 QUERY_SOFTRESTAURANT_CERRADAS_HOY = """
 SELECT 
     SUM(ISNULL(total, 0)) as ventas_cerradas_dia,
@@ -271,7 +290,7 @@ SELECT
 FROM cheques
 WHERE cancelado = 0
   AND cierre IS NOT NULL
-  AND CAST(fecha AS DATE) = CAST(GETDATE() AS DATE)
+  AND CAST(fecha AS DATE) = '{fecha_operacion}'
 """
 
 # =============================================================================
@@ -447,10 +466,17 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             if not server_config:
                 raise Exception(f"No se encontró config para server_id {server_id}")
             
-            # Query ventas abiertas
+            # =================================================================
+            # REGLA DE NEGOCIO: Usar fecha_operacion del turno de apertura
+            # =================================================================
+            
+            # Query ventas abiertas (tempcheques - turno aún abierto)
+            query_abiertas = QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS.format(
+                fecha_operacion=fecha_operacion_str
+            )
             rows_abiertas, conn_status = execute_query_on_server(
                 server_config, 
-                QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS
+                query_abiertas
             )
             
             # REGLA: Si falla conexión, NO escribir $0
@@ -461,10 +487,14 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             if not rows_abiertas or rows_abiertas[0] is None:
                 raise Exception("Query retornó vacío - posible error de credenciales")
             
-            # Query ventas cerradas
+            # Query ventas cerradas (cheques - turno ya cerrado)
+            # REGLA: Buscar por fecha de apertura de la cuenta, NO por GETDATE()
+            query_cerradas = QUERY_SOFTRESTAURANT_CERRADAS_HOY.format(
+                fecha_operacion=fecha_operacion_str
+            )
             rows_cerradas, _ = execute_query_on_server(
                 server_config, 
-                QUERY_SOFTRESTAURANT_CERRADAS_HOY
+                query_cerradas
             )
             
             # Extraer valores
@@ -480,6 +510,44 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             pax_cerrados_dia = int(cerradas_data.get('pax_cerrados_dia') or 0)
             
             total_estimado_dia = ventas_abiertas + ventas_cerradas_dia
+            
+            # =================================================================
+            # PROTECCIÓN ANTI-$0 PARA SOFTRESTAURANT
+            # =================================================================
+            # REGLA: No escribir $0 cuando:
+            # - La tabla temporal está vacía después del corte
+            # - Hay dato existente válido
+            # Solo escribir $0 si la fuente confirmó venta real cero
+            # =================================================================
+            
+            if total_estimado_dia == 0:
+                # Verificar si hay dato existente válido
+                existing_data = _get_existing_ventas_dia(unidad_id, unidad["sucursal_id"])
+                existing_total = float(existing_data.get('total_estimado_dia') or 0) if existing_data else 0
+                existing_fecha = existing_data.get('fecha_operacion') if existing_data else None
+                
+                if existing_total > 0 and str(existing_fecha) == fecha_operacion_str:
+                    # Dato existente válido del MISMO día - PROTEGER
+                    logger.warning(
+                        f"[SYNC_ABIERTAS_V2] {nombre} (SR): Total=$0 pero existe dato válido=${existing_total:,.2f}. "
+                        f"PROTECCIÓN: Conservando dato existente. Posible turno recién cerrado."
+                    )
+                    results["detalles_unidades"].append({
+                        "unidad_negocio_id": unidad_id,
+                        "unidad": nombre,
+                        "sistema": "SoftRestaurant",
+                        "estatus": "SKIPPED_ZERO_PROTECTION",
+                        "source_status": "SYNC_PROTECTED",
+                        "fecha_operacion": fecha_operacion_str,
+                        "existing_total": existing_total,
+                        "mensaje": "Conservando dato válido - tempcheques vacía pero cheques tiene dato"
+                    })
+                    continue  # NO sobrescribir
+                
+                logger.info(f"[SYNC_ABIERTAS_V2] {nombre} (SR): Total=$0 confirmado (sin dato existente o nuevo día)")
+            
+            # Determinar fuente original
+            fuente = FuenteOriginal.TEMPCHEQUES if ventas_abiertas > 0 else FuenteOriginal.CHEQUES
             
             # Crear modelo y upsert
             ventas_model = VentasDiaAbiertasV2(
@@ -498,7 +566,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 tickets_cerrados_dia=tickets_cerrados_dia,
                 pax_cerrados_dia=pax_cerrados_dia,
                 total_estimado_dia=total_estimado_dia,
-                fuente_original=FuenteOriginal.TEMPCHEQUES,
+                fuente_original=fuente,
                 sync_run_id=run_id,
                 source_status="SYNC_OK"
             )
@@ -709,50 +777,51 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 existing_total = float(existing_data.get('total_estimado_dia') or 0) if existing_data else 0
                 existing_fecha = existing_data.get('fecha_operacion') if existing_data else None
                 
-                # PROTECCIÓN MEJORADA: Si hay dato existente válido del MISMO día operativo,
-                # NO sobrescribir con $0. Si es de día anterior, es válido escribir $0 (inicio de día).
+                # =================================================================
+                # PROTECCIÓN MEJORADA ANTI-$0 (FIX 2026-05-15)
+                # =================================================================
+                # REGLA: NUNCA sobrescribir dato válido con $0
+                # Si la API devuelve $0 pero hay un dato existente válido, 
+                # es más probable que haya un error en la API que una venta real de $0.
+                # 
+                # Solo escribir $0 si:
+                # - No hay dato existente (nueva unidad)
+                # - El dato existente ya es $0
+                # =================================================================
                 if existing_total > 0:
-                    # Comparar fechas para decidir si proteger
-                    if existing_fecha and str(existing_fecha) == fecha_operacion_str:
-                        # MISMO día operativo con dato válido - PROTEGER
-                        logger.warning(
-                            f"[SYNC_ABIERTAS_V2] {nombre}: Total calculado=$0 pero existe dato válido=${existing_total:,.2f} "
-                            f"del MISMO día {fecha_operacion_str}. PROTECCIÓN ACTIVADA."
-                        )
-                        log = SyncLogV2(
-                            run_id=run_id,
-                            run_type=SyncRunType.ABIERTAS,
-                            unidad_negocio_id=unidad_id,
-                            server_id=server_id,
-                            sucursal_id=sucursal_id,
-                            fecha_inicio=fecha_operacion,
-                            fecha_fin=fecha_operacion,
-                            status=SyncStatus.SKIPPED,
-                            records_processed=0,
-                            records_skipped=1,
-                            error_message=f"Total=$0 pero existe dato válido=${existing_total:,.2f} del mismo día. Protección anti-sobrescritura activada.",
-                            source_connection_status="API_LOCAL_OK_ZERO_WITH_EXISTING"
-                        )
-                        insert_sync_log(log)
-                        results["detalles_unidades"].append({
-                            "unidad_negocio_id": unidad_id,
-                            "unidad": nombre,
-                            "status": "SKIPPED_ZERO_PROTECTION",
-                            "fecha_operacion": fecha_operacion_str,
-                            "existing_total": existing_total,
-                            "existing_fecha": str(existing_fecha),
-                            "mensaje": f"Protección: No sobrescribir ${existing_total:,.2f} con $0"
-                        })
-                        continue  # NO sobrescribir dato válido con $0
-                    else:
-                        # Día diferente - posible inicio de nueva jornada
-                        logger.info(
-                            f"[SYNC_ABIERTAS_V2] {nombre}: Total=$0 para nuevo día {fecha_operacion_str}, "
-                            f"dato anterior de {existing_fecha}. Permitiendo actualización."
-                        )
+                    logger.warning(
+                        f"[SYNC_ABIERTAS_V2] {nombre}: Total calculado=$0 pero existe dato válido=${existing_total:,.2f} "
+                        f"(fecha_existente={existing_fecha}, fecha_nueva={fecha_operacion_str}). "
+                        f"PROTECCIÓN ACTIVADA - NO SE PERMITE SOBRESCRIBIR DATO VÁLIDO CON $0."
+                    )
+                    log = SyncLogV2(
+                        run_id=run_id,
+                        run_type=SyncRunType.ABIERTAS,
+                        unidad_negocio_id=unidad_id,
+                        server_id=server_id,
+                        sucursal_id=sucursal_id,
+                        fecha_inicio=fecha_operacion,
+                        fecha_fin=fecha_operacion,
+                        status=SyncStatus.SKIPPED,
+                        records_processed=0,
+                        records_skipped=1,
+                        error_message=f"PROTECCIÓN: No sobrescribir ${existing_total:,.2f} con $0. API puede estar fallando.",
+                        source_connection_status="API_LOCAL_ZERO_BLOCKED"
+                    )
+                    insert_sync_log(log)
+                    results["detalles_unidades"].append({
+                        "unidad_negocio_id": unidad_id,
+                        "unidad": nombre,
+                        "status": "SKIPPED_ZERO_PROTECTION",
+                        "fecha_operacion": fecha_operacion_str,
+                        "existing_total": existing_total,
+                        "existing_fecha": str(existing_fecha),
+                        "mensaje": f"PROTECCIÓN: No se permite sobrescribir ${existing_total:,.2f} con $0"
+                    })
+                    continue  # NO sobrescribir dato válido con $0
                 else:
-                    # No hay dato existente válido, proceder normalmente
-                    logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Total=$0 y sin dato existente válido, procediendo con sync")
+                    # No hay dato existente válido (o ya es $0), proceder normalmente
+                    logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Total=$0 confirmado (sin dato existente válido)")
             
             # Extraer valores finales (abiertas_data y cerradas_data ya están definidos arriba)
             ventas_abiertas = Decimal(str(abiertas_data.get('ventas_abiertas') or 0))
