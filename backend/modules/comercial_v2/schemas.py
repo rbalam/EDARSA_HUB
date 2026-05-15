@@ -25,6 +25,7 @@ class FuenteOriginal(str, Enum):
     HISTORICAL_LOAD = "HISTORICAL_LOAD"
     API_LOCAL = "API_LOCAL"
     TEMPCHEQUES = "TEMPCHEQUES"
+    CHEQUES = "CHEQUES"  # Tabla definitiva de SoftRestaurant (turno cerrado)
 
 
 class SyncRunType(str, Enum):
