@@ -771,6 +771,8 @@ const UniversalQueryTester = ({ open, onClose, server, connectionType = 'sql' })
               </CardContent>
             </Card>
           )}
+            </>
+          )}
 
           {testType === 'api_rest' && (
             <Card>
