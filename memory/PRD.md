@@ -2034,6 +2034,36 @@ FASE 4: Endpoints /api/consultas-sql/*
 
 ---
 
+## FASE API_LOCAL_QUERY_EDITOR - COMPLETADA (15-May-2026)
+
+### Resumen:
+Se implementó una sección dentro del modal de Alta/Edición de Conexiones API que permite configurar y probar consultas SELECT asociadas a cada conexión, sin repetir credenciales.
+
+### Endpoints Creados:
+| Endpoint | Descripción |
+|----------|-------------|
+| `POST /api/api-connections/{id}/test-query` | Prueba consulta contra conexión existente |
+| `POST /api/api-connections/test-query-draft` | Prueba consulta sin conexión guardada |
+
+### Validaciones SQL Implementadas:
+- ✅ Solo SELECT/WITH permitidos
+- ✅ Bloqueo de DELETE, UPDATE, INSERT, DROP, ALTER, TRUNCATE
+- ✅ Bloqueo de EXEC, xp_, sp_, fn_
+- ✅ Bloqueo de múltiples statements (;)
+- ✅ Bloqueo de comentarios (-- / /* */)
+
+### Archivos Modificados:
+| Archivo | Cambios |
+|---------|---------|
+| `/app/backend/modules/api_connections/repository.py` | +`get_api_connection_with_decrypted_key()`, +`execute_test_query()` |
+| `/app/backend/modules/api_connections/routes.py` | +Endpoints test-query |
+| `/app/frontend/src/pages/Servidores.js` | +Sección "Consulta de prueba" en modal |
+
+### Reporte:
+`/app/docs/reports/FASE_API_LOCAL_QUERY_EDITOR_REPORTE.md`
+
+---
+
 ## Próximas Fases Pendientes
 
 ### P0 - FASE SYNC-3: Sincronización a Escala

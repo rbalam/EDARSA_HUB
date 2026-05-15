@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap, Building2, Eye, EyeOff, RefreshCw, GripVertical, TestTube2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap, Building2, Eye, EyeOff, RefreshCw, GripVertical, TestTube2, AlertTriangle, Play, Table2 } from 'lucide-react';
 import { toast } from 'sonner';
 import QueryConfigWizard from '@/components/QueryConfigWizard';
 import UniversalQueryTester from '@/components/UniversalQueryTester';
@@ -124,6 +125,19 @@ const Servidores = () => {
     activo: true,
     visible_en_operaciones: false
   });
+  
+  // Estado para sección de consulta de prueba en el modal de conexión API
+  const [queryTestData, setQueryTestData] = useState({
+    tipo_uso: 'Otro',
+    nombre_consulta: '',
+    sql_query: '',
+    timeout: 30
+  });
+  const [testingQuery, setTestingQuery] = useState(false);
+  const [queryTestResult, setQueryTestResult] = useState(null);
+  
+  // Tipos de uso disponibles
+  const TIPOS_USO = ['Ventas del día', 'Inventario', 'Cortes', 'Compras', 'Otro'];
   
   // Estado para tipos de sistema (cargados desde catálogo)
   const [tiposSistema, setTiposSistema] = useState([]);
@@ -351,6 +365,67 @@ const Servidores = () => {
         }
       }));
       toast.error(`${apiConn.name}: ${errorMsg.substring(0, 100)}`);
+    }
+  };
+  
+  /**
+   * Ejecuta una consulta SQL de prueba contra una conexión API.
+   * Si la conexión ya existe (editingApi), usa el endpoint test-query.
+   * Si es nueva, usa test-query-draft con URL y API key manuales.
+   */
+  const executeTestQuery = async () => {
+    if (!queryTestData.sql_query.trim()) {
+      toast.error('Ingresa una consulta SQL');
+      return;
+    }
+    
+    setTestingQuery(true);
+    setQueryTestResult(null);
+    
+    try {
+      let response;
+      
+      if (editingApi?.id) {
+        // Conexión existente: usar credenciales guardadas
+        response = await api.post(`/api-connections/${editingApi.id}/test-query`, {
+          sql_query: queryTestData.sql_query,
+          tipo_uso: queryTestData.tipo_uso,
+          nombre_consulta: queryTestData.nombre_consulta,
+          timeout: queryTestData.timeout
+        });
+      } else {
+        // Conexión nueva: usar URL y API key del formulario
+        if (!apiFormData.url) {
+          toast.error('Configura primero la URL del endpoint');
+          setTestingQuery(false);
+          return;
+        }
+        response = await api.post('/api-connections/test-query-draft', {
+          url: apiFormData.url,
+          api_key: apiFormData.api_key || undefined,
+          sql_query: queryTestData.sql_query,
+          timeout: queryTestData.timeout
+        });
+      }
+      
+      setQueryTestResult(response.data);
+      
+      if (response.data.success) {
+        toast.success(`Consulta ejecutada: ${response.data.rows_count || 0} filas`);
+      } else if (response.data.sql_blocked) {
+        toast.error('SQL bloqueado: ' + (response.data.validation_errors?.[0] || 'Consulta no permitida'));
+      } else {
+        toast.error(response.data.error || 'Error ejecutando consulta');
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || error.message || 'Error de conexión';
+      setQueryTestResult({
+        success: false,
+        error: errorMsg
+      });
+      toast.error(errorMsg);
+    } finally {
+      setTestingQuery(false);
     }
   };
   
@@ -1102,6 +1177,13 @@ const Servidores = () => {
                   activo: true,
                   visible_en_operaciones: false
                 });
+                setQueryTestData({
+                  tipo_uso: 'Otro',
+                  nombre_consulta: '',
+                  sql_query: '',
+                  timeout: 30
+                });
+                setQueryTestResult(null);
                 setApiDialogOpen(true);
               }}
               className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
@@ -1357,6 +1439,14 @@ const Servidores = () => {
                             activo: apiConn.activo,
                             visible_en_operaciones: apiConn.visible_en_operaciones
                           });
+                          // Resetear sección de consulta de prueba
+                          setQueryTestData({
+                            tipo_uso: 'Otro',
+                            nombre_consulta: '',
+                            sql_query: '',
+                            timeout: 30
+                          });
+                          setQueryTestResult(null);
                           setApiDialogOpen(true);
                         }}
                       >
@@ -1557,6 +1647,184 @@ const Servidores = () => {
                 momento en que esta API deja de sumar para evitar duplicación.
               </p>
             </div>
+            
+            {/* ========== SECCIÓN DE CONSULTA DE PRUEBA ========== */}
+            <div className="border-t border-zinc-200 pt-4 mt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <TestTube2 className="h-4 w-4 text-blue-600" />
+                <h4 className="text-sm font-medium text-zinc-800">Consulta de prueba / Consulta operativa</h4>
+              </div>
+              
+              <div className="space-y-3">
+                {/* Fila 1: Tipo de uso y Nombre */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Tipo de uso</Label>
+                    <Select 
+                      value={queryTestData.tipo_uso} 
+                      onValueChange={(v) => setQueryTestData({...queryTestData, tipo_uso: v})}
+                    >
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TIPOS_USO.map(tipo => (
+                          <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label className="text-xs">Nombre de consulta</Label>
+                    <Input
+                      className="h-8 text-sm"
+                      value={queryTestData.nombre_consulta}
+                      onChange={(e) => setQueryTestData({...queryTestData, nombre_consulta: e.target.value})}
+                      placeholder="Ej: Ventas diarias"
+                    />
+                  </div>
+                </div>
+                
+                {/* Fila 2: Consulta SQL */}
+                <div className="space-y-1">
+                  <Label className="text-xs">Consulta SELECT</Label>
+                  <Textarea
+                    className="font-mono text-xs min-h-20 resize-none"
+                    value={queryTestData.sql_query}
+                    onChange={(e) => setQueryTestData({...queryTestData, sql_query: e.target.value})}
+                    placeholder="SELECT TOP 10 * FROM cheques WHERE fecha = CAST(GETDATE() AS DATE)"
+                    data-testid="api-query-sql-input"
+                  />
+                  <p className="text-xs text-zinc-500 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3 text-amber-500" />
+                    Solo consultas SELECT. DELETE, UPDATE, INSERT están bloqueados.
+                  </p>
+                </div>
+                
+                {/* Fila 3: Timeout y Botón */}
+                <div className="flex items-end gap-3">
+                  <div className="space-y-1 w-24">
+                    <Label className="text-xs">Timeout</Label>
+                    <Select 
+                      value={String(queryTestData.timeout)} 
+                      onValueChange={(v) => setQueryTestData({...queryTestData, timeout: Number(v)})}
+                    >
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15">15s</SelectItem>
+                        <SelectItem value="30">30s</SelectItem>
+                        <SelectItem value="60">60s</SelectItem>
+                        <SelectItem value="90">90s</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={executeTestQuery}
+                    disabled={testingQuery || !queryTestData.sql_query.trim()}
+                    className="bg-blue-600 hover:bg-blue-700 text-white h-8"
+                    data-testid="api-test-query-btn"
+                  >
+                    {testingQuery ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        Ejecutando...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-3 w-3 mr-1" />
+                        Probar consulta
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                {/* Resultado de la consulta */}
+                {queryTestResult && (
+                  <div className={`rounded-md p-3 text-sm ${
+                    queryTestResult.success 
+                      ? 'bg-green-50 border border-green-200' 
+                      : 'bg-red-50 border border-red-200'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      {queryTestResult.success ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4 text-red-600" />
+                      )}
+                      <span className={queryTestResult.success ? 'text-green-800' : 'text-red-800'}>
+                        {queryTestResult.success ? 'Consulta exitosa' : 'Error'}
+                      </span>
+                      {queryTestResult.response_time_ms && (
+                        <span className="text-xs text-zinc-500 ml-auto">
+                          {queryTestResult.response_time_ms}ms
+                        </span>
+                      )}
+                    </div>
+                    
+                    {queryTestResult.success ? (
+                      <div className="space-y-2">
+                        <div className="flex gap-4 text-xs text-zinc-600">
+                          <span><strong>Filas:</strong> {queryTestResult.rows_count || 0}</span>
+                          <span><strong>Columnas:</strong> {queryTestResult.columns?.length || 0}</span>
+                        </div>
+                        
+                        {/* Preview de datos */}
+                        {queryTestResult.preview_data?.length > 0 && (
+                          <div className="max-h-40 overflow-auto border border-zinc-200 rounded bg-white">
+                            <table className="w-full text-xs">
+                              <thead className="bg-zinc-50 sticky top-0">
+                                <tr>
+                                  {queryTestResult.columns?.map((col, i) => (
+                                    <th key={i} className="px-2 py-1 text-left font-medium text-zinc-700 border-b">
+                                      {col}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {queryTestResult.preview_data.slice(0, 5).map((row, rowIdx) => (
+                                  <tr key={rowIdx} className="border-b border-zinc-100">
+                                    {queryTestResult.columns?.map((col, colIdx) => (
+                                      <td key={colIdx} className="px-2 py-1 text-zinc-600 truncate max-w-32">
+                                        {String(row[col] ?? '')}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {queryTestResult.preview_data.length > 5 && (
+                              <div className="px-2 py-1 text-xs text-zinc-500 bg-zinc-50 text-center">
+                                +{queryTestResult.preview_data.length - 5} filas más...
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-red-700">
+                        {queryTestResult.sql_blocked && queryTestResult.validation_errors?.length > 0 ? (
+                          <ul className="list-disc list-inside">
+                            {queryTestResult.validation_errors.map((err, i) => (
+                              <li key={i}>{err}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p>{queryTestResult.error || 'Error desconocido'}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* ========== FIN SECCIÓN DE CONSULTA DE PRUEBA ========== */}
           </div>
           
           <DialogFooter>

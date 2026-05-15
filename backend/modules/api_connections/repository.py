@@ -614,6 +614,238 @@ async def test_api_connection_health(api_id: str = None, url: str = None, api_ke
 
 
 # ============================================================================
+# TEST QUERY - EJECUCIÓN DE CONSULTAS SQL CONTROLADAS
+# ============================================================================
+
+def get_api_connection_with_decrypted_key(api_id: str) -> Optional[Dict]:
+    """
+    Obtiene una conexión API con la API key descifrada.
+    SOLO PARA USO INTERNO EN TEST-QUERY.
+    NUNCA exponer en responses de API.
+    """
+    try:
+        query = f"""
+        SELECT * FROM Servidores_Conexiones
+        WHERE id = '{_escape_sql(api_id)}'
+          AND tipo_conexion = 'API_LOCAL'
+        """
+        results = execute_sql_query(
+            EDARSAHUB_CONFIG['host'], EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'], EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'], query
+        )
+        if not results:
+            return None
+        
+        row = results[0]
+        
+        # Descifrar API key
+        api_key_encrypted = row.get('api_key_encrypted', '')
+        api_key_decrypted = ''
+        if api_key_encrypted:
+            try:
+                from core.secret_manager import decrypt_secret, is_encrypted_secret
+                if is_encrypted_secret(api_key_encrypted):
+                    api_key_decrypted = decrypt_secret(api_key_encrypted)
+                else:
+                    api_key_decrypted = api_key_encrypted
+            except Exception as e:
+                logging.warning(f"[API_CONNECTIONS] Error descifrando API key: {e}")
+                return None
+        
+        return {
+            'id': str(row.get('id', '')),
+            'name': row.get('nombre', ''),
+            'url': row.get('api_url', ''),
+            'api_key_decrypted': api_key_decrypted,  # SOLO USO INTERNO
+            'tipo': row.get('system_type', 'MPRO'),
+            'activo': bool(row.get('activo', True)),
+        }
+    except Exception as e:
+        logging.error(f"[API_CONNECTIONS] Error obteniendo conexión con key: {e}")
+        return None
+
+
+async def execute_test_query(
+    api_id: str,
+    sql_query: str,
+    timeout: int = 30,
+    executed_by: str = "system"
+) -> Dict:
+    """
+    Ejecuta una consulta SQL de prueba contra una conexión API registrada.
+    
+    SEGURIDAD:
+    1. Valida SQL con SQLValidator
+    2. Solo permite SELECT
+    3. Usa credenciales cifradas de la conexión
+    4. No expone API key en respuesta
+    5. Registra en auditoría
+    
+    Args:
+        api_id: ID de la conexión API
+        sql_query: Consulta SQL a ejecutar
+        timeout: Timeout en segundos
+        executed_by: Usuario que ejecuta
+        
+    Returns:
+        Dict con resultado o error
+    """
+    import time
+    import requests
+    from modules.consultas_sql.validator import get_validator
+    
+    start_time = time.time()
+    
+    # 1. Validar SQL
+    validator = get_validator()
+    validation = validator.validate_sql_text(sql_query, strict_mode=True)
+    
+    if not validation.is_valid:
+        errors = [e['message'] for e in validation.errors]
+        logging.warning(f"[API_CONNECTIONS][TEST-QUERY] SQL rechazado: {errors}")
+        return {
+            "success": False,
+            "error": "SQL no válido",
+            "validation_errors": errors,
+            "sql_blocked": True
+        }
+    
+    # 2. Obtener conexión con API key descifrada
+    connection = get_api_connection_with_decrypted_key(api_id)
+    if not connection:
+        return {
+            "success": False,
+            "error": "Conexión API no encontrada o API key no descifrable"
+        }
+    
+    if not connection.get('activo'):
+        return {
+            "success": False,
+            "error": "Conexión API inactiva"
+        }
+    
+    url = connection.get('url')
+    api_key = connection.get('api_key_decrypted', '')
+    
+    if not url:
+        return {
+            "success": False,
+            "error": "URL de API no configurada"
+        }
+    
+    # 3. Ejecutar consulta
+    try:
+        headers = {"x-api-key": api_key} if api_key else {}
+        
+        response = requests.get(
+            url,
+            headers=headers,
+            params={"sql": sql_query},
+            timeout=timeout
+        )
+        
+        elapsed_ms = round((time.time() - start_time) * 1000, 2)
+        
+        if response.status_code == 200:
+            try:
+                data = response.json()
+                
+                # Extraer datos de respuesta
+                rows = []
+                columns = []
+                
+                if isinstance(data, list):
+                    rows = data[:20]  # Max 20 filas para preview
+                    if rows:
+                        columns = list(rows[0].keys()) if isinstance(rows[0], dict) else []
+                elif isinstance(data, dict):
+                    if 'data' in data:
+                        rows = data['data'][:20] if isinstance(data['data'], list) else []
+                        if rows and isinstance(rows[0], dict):
+                            columns = list(rows[0].keys())
+                    elif 'results' in data:
+                        rows = data['results'][:20] if isinstance(data['results'], list) else []
+                        if rows and isinstance(rows[0], dict):
+                            columns = list(rows[0].keys())
+                
+                result = {
+                    "success": True,
+                    "status_code": 200,
+                    "response_time_ms": elapsed_ms,
+                    "rows_count": len(rows),
+                    "columns": columns,
+                    "preview_data": rows,
+                    "message": f"Consulta ejecutada exitosamente ({len(rows)} filas)"
+                }
+                
+            except Exception as parse_error:
+                result = {
+                    "success": True,
+                    "status_code": 200,
+                    "response_time_ms": elapsed_ms,
+                    "message": "Respuesta recibida pero no es JSON válido",
+                    "raw_response_preview": response.text[:500] if response.text else ""
+                }
+        else:
+            # Extraer mensaje de error sin exponer detalles sensibles
+            error_msg = f"HTTP {response.status_code}"
+            try:
+                err_json = response.json()
+                if isinstance(err_json, dict) and 'error' in err_json:
+                    error_msg = str(err_json['error'])[:200]
+                elif isinstance(err_json, dict) and 'detail' in err_json:
+                    error_msg = str(err_json['detail'])[:200]
+            except:
+                pass
+            
+            result = {
+                "success": False,
+                "status_code": response.status_code,
+                "response_time_ms": elapsed_ms,
+                "error": error_msg
+            }
+            
+    except requests.exceptions.Timeout:
+        result = {
+            "success": False,
+            "error": f"Timeout ({timeout}s)",
+            "response_time_ms": timeout * 1000
+        }
+    except requests.exceptions.ConnectionError as conn_err:
+        result = {
+            "success": False,
+            "error": "Sin conexión a la API"
+        }
+    except Exception as e:
+        logging.error(f"[API_CONNECTIONS][TEST-QUERY] Error: {e}")
+        result = {
+            "success": False,
+            "error": "Error ejecutando consulta"
+        }
+    
+    # 4. Registrar en auditoría (sin exponer SQL completo)
+    try:
+        _log_operation(
+            api_id,
+            'TEST_QUERY',
+            {},
+            {
+                'sql_length': len(sql_query),
+                'sql_preview': sql_query[:50] + '...' if len(sql_query) > 50 else sql_query,
+                'result_success': result.get('success', False),
+                'response_time_ms': result.get('response_time_ms'),
+                'rows_count': result.get('rows_count', 0)
+            },
+            executed_by
+        )
+    except:
+        pass
+    
+    return result
+
+
+# ============================================================================
 # COMPATIBILIDAD CON ADAPTERS.PY (LECTURA PARA VENTAS DEL DÍA)
 # ============================================================================
 

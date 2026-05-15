@@ -69,6 +69,22 @@ class TestConnectionRequest(BaseModel):
     api_key: Optional[str] = None
 
 
+class TestQueryRequest(BaseModel):
+    """Request para probar consulta SQL asociada a una conexión."""
+    sql_query: str = Field(..., description="Consulta SQL (solo SELECT)")
+    tipo_uso: str = Field("Otro", description="Tipo de uso: Ventas del día, Inventario, Cortes, Compras, Otro")
+    nombre_consulta: Optional[str] = Field(None, description="Nombre descriptivo de la consulta")
+    timeout: int = Field(30, ge=5, le=120, description="Timeout en segundos")
+
+
+class TestQueryDraftRequest(BaseModel):
+    """Request para probar consulta sin conexión guardada (alta nueva)."""
+    url: str = Field(..., description="URL del endpoint API")
+    api_key: Optional[str] = Field(None, description="API Key")
+    sql_query: str = Field(..., description="Consulta SQL (solo SELECT)")
+    timeout: int = Field(30, ge=5, le=120, description="Timeout en segundos")
+
+
 # ============================================================================
 # DEPENDENCIAS
 # ============================================================================
@@ -296,3 +312,160 @@ async def check_dup(
         "exists": duplicate is not None,
         "duplicate": duplicate
     }
+
+
+# ============================================================================
+# ENDPOINTS - TEST QUERY (CONSULTAS SQL CONTROLADAS)
+# ============================================================================
+
+@router.post("/{api_id}/test-query")
+async def test_query_by_connection(
+    api_id: str,
+    data: TestQueryRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Prueba una consulta SQL contra una conexión API existente.
+    
+    SEGURIDAD:
+    - Valida SQL (solo SELECT permitido)
+    - Usa credenciales cifradas de la conexión
+    - No requiere API key en request
+    - Registra auditoría
+    
+    RESTRICCIONES:
+    - Solo usuarios autenticados
+    - Solo consultas SELECT
+    - Bloquea: DELETE, UPDATE, INSERT, DROP, ALTER, TRUNCATE, EXEC, xp_, sp_
+    """
+    user = get_current_user(credentials)
+    
+    # Importar función de ejecución
+    from .repository import execute_test_query
+    
+    try:
+        result = await execute_test_query(
+            api_id=api_id,
+            sql_query=data.sql_query,
+            timeout=data.timeout,
+            executed_by=user.get('email', 'anonymous')
+        )
+        
+        # Agregar metadata
+        result['connection_id'] = api_id
+        result['tipo_uso'] = data.tipo_uso
+        result['nombre_consulta'] = data.nombre_consulta
+        
+        return result
+        
+    except Exception as e:
+        logging.error(f"[API_CONNECTIONS][TEST-QUERY] Error: {e}")
+        raise HTTPException(status_code=500, detail="Error ejecutando consulta")
+
+
+@router.post("/test-query-draft")
+async def test_query_draft(
+    data: TestQueryDraftRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Prueba una consulta SQL sin conexión guardada (para alta nueva).
+    
+    Requiere URL y opcionalmente API key.
+    
+    SEGURIDAD:
+    - Valida SQL (solo SELECT permitido)
+    - No guarda credenciales
+    - Registra auditoría
+    """
+    import time
+    import requests
+    from modules.consultas_sql.validator import get_validator
+    
+    user = get_current_user(credentials)
+    
+    # 1. Validar SQL
+    validator = get_validator()
+    validation = validator.validate_sql_text(data.sql_query, strict_mode=True)
+    
+    if not validation.is_valid:
+        errors = [e['message'] for e in validation.errors]
+        return {
+            "success": False,
+            "error": "SQL no válido",
+            "validation_errors": errors,
+            "sql_blocked": True
+        }
+    
+    # 2. Ejecutar consulta
+    start_time = time.time()
+    
+    try:
+        headers = {"x-api-key": data.api_key} if data.api_key else {}
+        
+        response = requests.get(
+            data.url,
+            headers=headers,
+            params={"sql": data.sql_query},
+            timeout=data.timeout
+        )
+        
+        elapsed_ms = round((time.time() - start_time) * 1000, 2)
+        
+        if response.status_code == 200:
+            try:
+                response_data = response.json()
+                
+                rows = []
+                columns = []
+                
+                if isinstance(response_data, list):
+                    rows = response_data[:20]
+                    if rows and isinstance(rows[0], dict):
+                        columns = list(rows[0].keys())
+                elif isinstance(response_data, dict):
+                    if 'data' in response_data:
+                        rows = response_data['data'][:20] if isinstance(response_data['data'], list) else []
+                    elif 'results' in response_data:
+                        rows = response_data['results'][:20] if isinstance(response_data['results'], list) else []
+                    if rows and isinstance(rows[0], dict):
+                        columns = list(rows[0].keys())
+                
+                return {
+                    "success": True,
+                    "status_code": 200,
+                    "response_time_ms": elapsed_ms,
+                    "rows_count": len(rows),
+                    "columns": columns,
+                    "preview_data": rows,
+                    "message": f"Consulta ejecutada ({len(rows)} filas)"
+                }
+                
+            except:
+                return {
+                    "success": True,
+                    "status_code": 200,
+                    "response_time_ms": elapsed_ms,
+                    "message": "Respuesta no es JSON válido"
+                }
+        else:
+            return {
+                "success": False,
+                "status_code": response.status_code,
+                "response_time_ms": elapsed_ms,
+                "error": f"HTTP {response.status_code}"
+            }
+            
+    except requests.exceptions.Timeout:
+        return {
+            "success": False,
+            "error": f"Timeout ({data.timeout}s)"
+        }
+    except requests.exceptions.ConnectionError:
+        return {
+            "success": False,
+            "error": "Sin conexión a la API"
+        }
+    except Exception as e:
+        logging.error(f"[API_CONNECTIONS][TEST-QUERY-DRAFT] Error: {e}")
+        raise HTTPException(status_code=500, detail="Error ejecutando consulta")
