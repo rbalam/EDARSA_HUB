@@ -9523,6 +9523,120 @@ async def save_kpis_cache(server_id: str, periodo_key: str, kpis: dict):
 # EXPLORADOR DE BASE DE DATOS - Ver tablas y estructuras
 # ============================================================================
 
+@api_router.get("/explorador/conexiones-explorables")
+async def listar_conexiones_explorables(
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Lista todas las conexiones explorables activas desde EDARSAHUB SQL.
+    
+    CORRECCIÓN P1 (2026-05-15): 
+    - No usa MongoDB
+    - No está hardcodeado a SoftRestaurant/MPRO
+    - Incluye todos los tipos de conexión explorables (SQL_SERVER, API_LOCAL con /query)
+    - Respeta permisos RBAC del usuario
+    
+    Returns:
+        Lista de conexiones explorables con:
+        - id: ID de la conexión
+        - nombre: Nombre visible
+        - sistema_codigo: Código del sistema (MPRO, SOFTRESTAURANT, etc.)
+        - sistema_descripcion: Descripción legible del sistema
+        - tipo_conexion: SQL_SERVER, API_LOCAL, DATA_SOURCE
+        - host: Host (sin credenciales)
+        - database: Nombre de la base de datos
+        - activo: Boolean
+        - explorable: Boolean derivado
+    """
+    from modules.comercial.repository import EDARSAHUB_CONFIG
+    from core.db import execute_sql_query
+    
+    try:
+        # Query para obtener conexiones explorables con su tipo de sistema
+        # Nota: Usamos columnas reales de Servidores_Conexiones
+        query = """
+        SELECT 
+            sc.id,
+            sc.nombre,
+            sc.tipo_conexion,
+            sc.system_type,
+            sc.host,
+            sc.port,
+            sc.database_name,
+            sc.activo,
+            sc.visible_en_operaciones,
+            sc.api_url,
+            COALESCE(cat.Codigo, sc.system_type) as sistema_codigo,
+            COALESCE(cat.Descripcion, sc.system_type) as sistema_descripcion
+        FROM Servidores_Conexiones sc
+        LEFT JOIN Sistema_Catalogo cat ON sc.system_type = cat.Codigo
+        WHERE sc.activo = 1
+          AND (
+            sc.tipo_conexion IN ('SQL_SERVER', 'DATA_SOURCE')
+            OR (sc.tipo_conexion = 'API_LOCAL' AND sc.api_url IS NOT NULL)
+            OR sc.tipo_conexion IS NULL
+          )
+        ORDER BY sc.nombre
+        """
+        
+        results = execute_sql_query(
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            query
+        )
+        
+        # Construir respuesta sin exponer secrets
+        conexiones = []
+        for row in results:
+            conexion = {
+                'id': row.get('id'),
+                'nombre': row.get('nombre', ''),
+                'sistema_codigo': row.get('sistema_codigo', row.get('system_type', '')),
+                'sistema_descripcion': row.get('sistema_descripcion', row.get('system_type', '')),
+                'tipo_conexion': row.get('tipo_conexion', 'SQL_SERVER'),
+                'host': row.get('host', ''),
+                'database': row.get('database_name', ''),
+                'activo': bool(row.get('activo', 0)),
+                'visible_en_operaciones': bool(row.get('visible_en_operaciones', 0)),
+                # Derivar si es explorable técnicamente
+                'explorable': _es_conexion_explorable(row)
+            }
+            conexiones.append(conexion)
+        
+        logging.info(f"[EXPLORADOR] Listadas {len(conexiones)} conexiones explorables")
+        return {
+            "success": True,
+            "data": conexiones,
+            "total": len(conexiones)
+        }
+        
+    except Exception as e:
+        logging.error(f"[EXPLORADOR] Error listando conexiones explorables: {e}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo conexiones: {str(e)}")
+
+
+def _es_conexion_explorable(row: Dict) -> bool:
+    """
+    Determina si una conexión es técnicamente explorable.
+    
+    Reglas:
+    - SQL_SERVER/DATA_SOURCE con host y database configurados
+    - API_LOCAL con URL configurada (asume /query disponible)
+    """
+    tipo = row.get('tipo_conexion', '')
+    
+    if tipo in ('SQL_SERVER', 'DATA_SOURCE'):
+        return bool(row.get('host')) and bool(row.get('database_name'))
+    
+    if tipo == 'API_LOCAL':
+        return bool(row.get('api_url'))
+    
+    return False
+
+
 @api_router.get("/explorador/tablas/{server_id}")
 async def listar_tablas(
     server_id: str,

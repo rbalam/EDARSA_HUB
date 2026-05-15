@@ -2174,4 +2174,29 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 
 **Causa:** Fragmento `<>` abierto dentro de `{!sqlModalMinimized && (<>...` no tenía cierre `</>` ni `)}`.
 
+### FIX: Explorador BD - Conexiones Explorables Dinámicas
+**Estado:** ✅ COMPLETADO
+
+**Problema:** El Explorador de BD solo mostraba 5 unidades operativas tradicionales, excluyendo nuevos servidores como CHAPUR NORTE, 130° QRO LOCAL, ORIGEN LOCAL.
+
+**Solución:**
+- Nuevo endpoint `GET /api/explorador/conexiones-explorables` que consulta `Servidores_Conexiones` con join a `Sistema_Catalogo`
+- Nuevo servicio frontend `exploradorService.js`
+- Modificado `ExploradorBD.js` para usar nuevo servicio
+
+**Conexiones ahora disponibles (12 total):**
+- Todas las tradicionales (130° MERIDA, CIENFUEGOS, LA ESTELAR, etc.)
+- + 130° QRO LOCAL (MPRO API)
+- + CHAPUR NORTE (Sofresataurant Enterprise)
+- + CHAPUR NORTE BACKOFICE (Sofresataurant Enterprise)
+- + ORIGEN LOCAL (MPRO API)
+
+**Archivos modificados:**
+- `/app/backend/server.py`
+- `/app/frontend/src/services/exploradorService.js` (NUEVO)
+- `/app/frontend/src/pages/ExploradorBD.js`
+
+**Reporte:** `/app/docs/reports/FIX_EXPLORADOR_BD_CONEXIONES_EXPLORABLES_DINAMICAS.md`
+
+
 **Solución:** Agregado `</>` y `)}` después de `</DialogFooter>`.

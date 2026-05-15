@@ -5,7 +5,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 // AUDITORIA-TABLEROS-KPIS-FILTROS-01: Migrado de axios directo a api centralizado
 import api from '../lib/api';
-import { fetchUnidadesNegocio } from '@/services/unidadesNegocioService';
+// CORRECCIÓN P1 (2026-05-15): Usar servicio dedicado para conexiones explorables
+import { fetchConexionesExplorables, fetchSistemasDisponibles } from '@/services/exploradorService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -795,22 +796,30 @@ function BuscadorGlobal({ serverSeleccionado, onSelectTabla }) {
 export default function ExploradorBD() {
   const navigate = useNavigate();
   
-  // === FASE 3.2: UNIDADES DE NEGOCIO ===
-  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
-  const [selectedUnidad, setSelectedUnidad] = useState('');
-  const [loadingUnidades, setLoadingUnidades] = useState(true);
+  // === CORRECCIÓN P1 (2026-05-15): CONEXIONES EXPLORABLES DINÁMICAS ===
+  const [conexionesExplorables, setConexionesExplorables] = useState([]);
+  const [sistemasDisponibles, setSistemasDisponibles] = useState([]);
+  const [filtroSistema, setFiltroSistema] = useState(''); // '' = Todos
+  const [loadingConexiones, setLoadingConexiones] = useState(true);
   
-  // servers derivado de unidadesNegocio para compatibilidad interna
+  // Conexiones filtradas por sistema
+  const conexionesFiltradas = useMemo(() => {
+    if (!filtroSistema) return conexionesExplorables;
+    return conexionesExplorables.filter(c => c.sistema_codigo === filtroSistema);
+  }, [conexionesExplorables, filtroSistema]);
+  
+  // servers derivado de conexiones para compatibilidad interna
   const servers = useMemo(() => {
-    return unidadesNegocio.map(u => ({
-      id: u.server_id,
-      name: u.nombre,
-      system_type: u.system_type,
-      unidad_id: u.id,
-      sucursal_origen_id: u.sucursal_origen_id,
-      active: true
+    return conexionesFiltradas.map(c => ({
+      id: c.id,
+      name: c.nombre,
+      system_type: c.sistema_codigo,
+      sistema_descripcion: c.sistema_descripcion,
+      tipo_conexion: c.tipo_conexion,
+      active: c.activo,
+      explorable: c.explorable
     }));
-  }, [unidadesNegocio]);
+  }, [conexionesFiltradas]);
   
   const [serverSeleccionado, setServerSeleccionado] = useState('');
   const [serverInfo, setServerInfo] = useState(null);
@@ -830,50 +839,54 @@ export default function ExploradorBD() {
   const [showAgregarTablas, setShowAgregarTablas] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // === FASE 3.2: Cargar Unidades de Negocio (RBAC) ===
+  // === CORRECCIÓN P1: Cargar Conexiones Explorables (NO unidades operativas) ===
   useEffect(() => {
-    const loadUnidadesNegocio = async () => {
-      setLoadingUnidades(true);
+    const loadConexionesExplorables = async () => {
+      setLoadingConexiones(true);
       try {
-        logger.log('[ExploradorBD] Cargando unidades de negocio...');
-        const unidades = await fetchUnidadesNegocio();
-        logger.log('[ExploradorBD] Unidades cargadas:', unidades.length);
-        setUnidadesNegocio(unidades);
+        logger.log('[ExploradorBD] Cargando conexiones explorables...');
         
-        // Auto-seleccionar si el usuario tiene solo una unidad
-        if (unidades.length === 1) {
-          const unidad = unidades[0];
-          setSelectedUnidad(unidad.id);
-          setServerSeleccionado(unidad.server_id);
-          logger.log(`[ExploradorBD] Auto-seleccionada unidad única: ${unidad.nombre}`);
-          // Cargar tablas automáticamente
-          cargarTablas(unidad.server_id);
+        // Cargar conexiones y sistemas en paralelo
+        const [conexiones, sistemas] = await Promise.all([
+          fetchConexionesExplorables(),
+          fetchSistemasDisponibles()
+        ]);
+        
+        logger.log('[ExploradorBD] Conexiones cargadas:', conexiones.length);
+        logger.log('[ExploradorBD] Sistemas disponibles:', sistemas.length);
+        
+        setConexionesExplorables(conexiones);
+        setSistemasDisponibles(sistemas);
+        
+        // Auto-seleccionar si solo hay una conexión
+        if (conexiones.length === 1) {
+          const conexion = conexiones[0];
+          setServerSeleccionado(conexion.id);
+          logger.log(`[ExploradorBD] Auto-seleccionada conexión única: ${conexion.nombre}`);
+          cargarTablas(conexion.id);
         }
       } catch (error) {
-        logger.error('[ExploradorBD] Error al cargar unidades de negocio:', error);
-        toast.error('Error al cargar unidades de negocio');
-        setUnidadesNegocio([]);
+        logger.error('[ExploradorBD] Error al cargar conexiones explorables:', error);
+        toast.error('Error al cargar conexiones');
+        setConexionesExplorables([]);
       } finally {
-        setLoadingUnidades(false);
+        setLoadingConexiones(false);
       }
     };
     
-    loadUnidadesNegocio();
+    loadConexionesExplorables();
     
     // Verificar si el usuario es admin
     const user = getSessionUser() || {};
     setIsAdmin(user.rol === 'Administrador' || user.email === 'admin@inventario.com' || user.role === 'Administrador');
   }, []);
   
-  // Handler para cambio de unidad de negocio
-  const handleUnidadChange = (unidadId) => {
-    setSelectedUnidad(unidadId);
-    const unidad = unidadesNegocio.find(u => u.id === unidadId);
-    if (unidad) {
-      setServerSeleccionado(unidad.server_id);
-      cargarTablas(unidad.server_id);
+  // Handler para cambio de conexión/servidor
+  const handleConexionChange = (conexionId) => {
+    setServerSeleccionado(conexionId);
+    if (conexionId) {
+      cargarTablas(conexionId);
     } else {
-      setServerSeleccionado('');
       setTablas([]);
       setServerInfo(null);
     }
@@ -1099,34 +1112,69 @@ export default function ExploradorBD() {
       </div>
 
       <div className={fullscreenMode ? "space-y-4 mt-4" : "space-y-4"}>
-      {/* Selector de Unidad de Negocio - FASE 3.2 */}
+      {/* Selector de Conexión Explorable - CORRECCIÓN P1 (2026-05-15) */}
       <Card className="border">
         <CardContent className="py-4">
           <div className="flex items-center gap-4 flex-wrap">
-            <Building2 className="h-5 w-5 text-zinc-400" />
-            {unidadesNegocio.length === 1 ? (
-              <div className="flex h-10 items-center rounded-md border border-zinc-300 bg-zinc-50 px-4 py-2 text-sm w-64">
-                <Building2 className="h-4 w-4 mr-2 text-zinc-500" />
-                {unidadesNegocio[0].nombre}
+            <Database className="h-5 w-5 text-zinc-400" />
+            
+            {/* Filtro por Sistema */}
+            <Select 
+              value={filtroSistema || "all"} 
+              onValueChange={(v) => {
+                setFiltroSistema(v === "all" ? "" : v);
+                setServerSeleccionado(''); // Resetear conexión al cambiar sistema
+                setTablas([]);
+                setServerInfo(null);
+              }}
+            >
+              <SelectTrigger className="w-48" data-testid="explorador-sistema-filter">
+                <SelectValue placeholder="Sistema" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los sistemas</SelectItem>
+                {sistemasDisponibles.map(s => (
+                  <SelectItem key={s.Codigo} value={s.Codigo}>
+                    {s.Descripcion}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Selector de Conexión */}
+            {conexionesFiltradas.length === 1 ? (
+              <div className="flex h-10 items-center rounded-md border border-zinc-300 bg-zinc-50 px-4 py-2 text-sm w-72">
+                <Server className="h-4 w-4 mr-2 text-zinc-500" />
+                {conexionesFiltradas[0].nombre} ({conexionesFiltradas[0].sistema_descripcion})
               </div>
             ) : (
               <Select 
-                value={selectedUnidad} 
-                onValueChange={handleUnidadChange}
-                disabled={loadingUnidades}
+                value={serverSeleccionado} 
+                onValueChange={handleConexionChange}
+                disabled={loadingConexiones}
               >
-                <SelectTrigger className="w-64" data-testid="explorador-unidad-select">
-                  <SelectValue placeholder={loadingUnidades ? "Cargando..." : "Seleccionar unidad..."} />
+                <SelectTrigger className="w-72" data-testid="explorador-conexion-select">
+                  <SelectValue placeholder={loadingConexiones ? "Cargando..." : "Seleccionar conexión..."} />
                 </SelectTrigger>
                 <SelectContent>
-                  {unidadesNegocio.map(u => (
-                    <SelectItem key={u.id} value={u.id}>
-                      <span className="flex items-center gap-2">
-                        <Building2 className="h-3 w-3" />
-                        {u.nombre} ({u.system_type})
-                      </span>
-                    </SelectItem>
-                  ))}
+                  {conexionesFiltradas.length === 0 ? (
+                    <div className="px-2 py-4 text-center text-sm text-zinc-500">
+                      {filtroSistema 
+                        ? "No hay conexiones para este sistema"
+                        : "No hay conexiones explorables disponibles"
+                      }
+                    </div>
+                  ) : (
+                    conexionesFiltradas.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        <span className="flex items-center gap-2">
+                          <Server className="h-3 w-3" />
+                          {c.nombre} 
+                          <span className="text-zinc-400">({c.sistema_descripcion})</span>
+                        </span>
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             )}
