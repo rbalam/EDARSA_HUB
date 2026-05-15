@@ -67,10 +67,13 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
     logger.log(`[COMERCIAL_V2] Proyección: mes=${mesSeleccionado}, diasTranscurridos=${diasTranscurridos}, diasProyectables=${diasProyectables}`);
     
     // Calcular promedios
-    const ticketProm = totales.tickets_total > 0 
+    // CORRECCIÓN GLOBAL: Nomenclatura correcta
+    // cheque_promedio = ventas / cheques (tickets_total)
+    // pax_promedio = ventas / pax (pax_total)
+    const chequePromedio = totales.tickets_total > 0 
       ? totales.ventas_total / totales.tickets_total 
       : 0;
-    const chequeProm = totales.pax_total > 0 
+    const paxPromedio = totales.pax_total > 0 
       ? totales.ventas_total / totales.pax_total 
       : 0;
     
@@ -92,8 +95,11 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       ventas: u.ventas_total || 0,
       pax: u.pax_total || 0,
       cheques: u.tickets_total || 0,
-      ticket_prom: u.ticket_promedio || (u.tickets_total > 0 ? u.ventas_total / u.tickets_total : 0),
-      cheque_prom: u.pax_total > 0 ? u.ventas_total / u.pax_total : 0,
+      // CORRECCIÓN GLOBAL: Nomenclatura correcta de KPIs
+      // cheque_promedio = ventas / cheques
+      // pax_promedio = ventas / pax
+      cheque_promedio: u.tickets_total > 0 ? u.ventas_total / u.tickets_total : 0,
+      pax_promedio: u.pax_total > 0 ? u.ventas_total / u.pax_total : 0,
       proyeccion: calcularProyeccion(u.ventas_total || 0),
       // FASE 3: Variaciones vienen directamente de V2 (EDARSAHUB)
       // null = sin base comparativa (mostrar "-")
@@ -138,8 +144,9 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
         ventas: totales.ventas_total || 0,
         pax: totales.pax_total || 0,
         cheques: totales.tickets_total || 0,
-        ticket_prom: ticketProm,
-        cheque_prom: chequeProm,
+        // CORRECCIÓN GLOBAL: Nomenclatura correcta de promedios
+        cheque_promedio: chequePromedio,
+        pax_prom: paxPromedio,
         proyeccion: calcularProyeccion(totales.ventas_total || 0),
         // CORRECCIÓN: Usar valores de backend si existen, si no null (no 0 falso)
         var_vs_mes_ant: totales.var_vs_mes_ant !== undefined ? totales.var_vs_mes_ant : null,
@@ -390,8 +397,8 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false }) => {
                 <p className="font-semibold">{unidad.cheques?.toLocaleString()}</p>
               </div>
               <div>
-                <span className="text-zinc-500">Ticket</span>
-                <p className="font-semibold">{formatCurrency(unidad.ticket_prom)}</p>
+                <span className="text-zinc-500">Cheque Prom.</span>
+                <p className="font-semibold">{formatCurrency(unidad.cheque_promedio)}</p>
               </div>
               <div>
                 <span className="text-zinc-500">Proyección</span>
@@ -406,9 +413,14 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false }) => {
 };
 
 // Detalle de Unidad (Drill-down)
-const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
+const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) => {
   const [detalleData, setDetalleData] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // CORRECCIÓN GLOBAL: Leyendas dinámicas según selector de periodo
+  const leyendasComparativo = modoVentasDia 
+    ? { actual: 'Día Actual', anterior: 'Día Anterior', anioAnt: 'Día Año Ant.' }
+    : { actual: 'Mes Actual', anterior: 'Mes Anterior', anioAnt: 'Mes Año Ant.' };
 
   useEffect(() => {
     const cargarDetalle = async () => {
@@ -482,7 +494,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
                     <span className="text-xs text-zinc-600">PAX</span>
                   </div>
                   <p className="text-xl font-bold text-blue-600">{unidad.pax?.toLocaleString()}</p>
-                  <p className="text-xs text-zinc-500">Ticket: {formatCurrency(unidad.ticket_prom)}</p>
+                  <p className="text-xs text-zinc-500">Pax Prom: {formatCurrency(unidad.pax_promedio)}</p>
                   <div className="flex justify-center gap-2 mt-1">
                     <span className="text-xs">Mes: <VariacionBadge valor={unidad.pax_ant > 0 ? ((unidad.pax - unidad.pax_ant) / unidad.pax_ant * 100) : 0} /></span>
                     <span className="text-xs">Año: <VariacionBadge valor={unidad.pax_año > 0 ? ((unidad.pax - unidad.pax_año) / unidad.pax_año * 100) : 0} /></span>
@@ -497,7 +509,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
                     <span className="text-xs text-zinc-600">Cheques</span>
                   </div>
                   <p className="text-xl font-bold text-purple-600">{unidad.cheques?.toLocaleString()}</p>
-                  <p className="text-xs text-zinc-500">Promedio: {formatCurrency(unidad.cheque_prom)}</p>
+                  <p className="text-xs text-zinc-500">Cheque Prom: {formatCurrency(unidad.cheque_promedio)}</p>
                   <div className="flex justify-center gap-2 mt-1">
                     <span className="text-xs">Mes: <VariacionBadge valor={unidad.cheques_ant > 0 ? ((unidad.cheques - unidad.cheques_ant) / unidad.cheques_ant * 100) : 0} /></span>
                     <span className="text-xs">Año: <VariacionBadge valor={unidad.cheques_año > 0 ? ((unidad.cheques - unidad.cheques_año) / unidad.cheques_año * 100) : 0} /></span>
@@ -521,7 +533,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
               </Card>
             </div>
 
-            {/* Comparativo */}
+            {/* Comparativo - CORRECCIÓN GLOBAL: Leyendas dinámicas según selector */}
             <Card>
               <CardHeader className="py-2 bg-zinc-100">
                 <CardTitle className="text-sm">Comparativo</CardTitle>
@@ -529,22 +541,22 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio }) => {
               <CardContent className="p-3">
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-xs text-zinc-500">Mes Actual</p>
-                    <p className="font-bold text-lg">{formatCurrency(unidad.ventas)}</p>
+                    <p className="text-xs text-zinc-500">{leyendasComparativo.actual}</p>
+                    <p className="font-bold text-lg">{formatCurrency(unidad.ventas || 0)}</p>
                     <p className="text-xs text-purple-600">{unidad.pax || 0} pax</p>
-                    <p className="text-xs">{unidad.cheques} cheques</p>
+                    <p className="text-xs">{unidad.cheques || 0} cheques</p>
                   </div>
                   <div>
-                    <p className="text-xs text-zinc-500">Mes Anterior</p>
-                    <p className="font-bold text-lg">{formatCurrency(unidad.ventas_ant)}</p>
+                    <p className="text-xs text-zinc-500">{leyendasComparativo.anterior}</p>
+                    <p className="font-bold text-lg">{formatCurrency(unidad.ventas_ant || 0)}</p>
                     <p className="text-xs text-purple-600">{unidad.pax_ant || 0} pax</p>
-                    <p className="text-xs">{unidad.cheques_ant} cheques</p>
+                    <p className="text-xs">{unidad.cheques_ant || 0} cheques</p>
                   </div>
                   <div>
-                    <p className="text-xs text-zinc-500">Año Anterior</p>
-                    <p className="font-bold text-lg">{formatCurrency(unidad.ventas_año)}</p>
+                    <p className="text-xs text-zinc-500">{leyendasComparativo.anioAnt}</p>
+                    <p className="font-bold text-lg">{formatCurrency(unidad.ventas_año || 0)}</p>
                     <p className="text-xs text-purple-600">{unidad.pax_año || 0} pax</p>
-                    <p className="text-xs">{unidad.cheques_año} cheques</p>
+                    <p className="text-xs">{unidad.cheques_año || 0} cheques</p>
                   </div>
                 </div>
               </CardContent>
@@ -762,11 +774,12 @@ export default function TableroEjecutivo() {
                   ventas: resumen.total_estimado_dia || 0,
                   pax: resumen.total_pax || 0,
                   cheques: resumen.total_tickets || 0,
-                  ticket_prom: resumen.total_tickets > 0 
+                  // CORRECCIÓN GLOBAL: Nomenclatura correcta
+                  cheque_promedio: resumen.total_tickets > 0 
                     ? (resumen.total_estimado_dia / resumen.total_tickets) 
                     : 0,
-                  cheque_prom: resumen.total_tickets > 0
-                    ? (resumen.total_estimado_dia / resumen.total_tickets)
+                  pax_prom: resumen.total_pax > 0
+                    ? (resumen.total_estimado_dia / resumen.total_pax)
                     : 0,
                   var_vs_mes_ant: null,  // No aplica para Ventas del Día
                   var_vs_año_ant: null,  // No aplica para Ventas del Día
@@ -793,8 +806,12 @@ export default function TableroEjecutivo() {
                     ventas: u.total_estimado_dia || 0,
                     pax: (u.pax_abiertos || 0) + (u.pax_cerrados_dia || 0),
                     cheques: (u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0),
-                    ticket_prom: ((u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0)) > 0
+                    // CORRECCIÓN GLOBAL: Nomenclatura correcta
+                    cheque_promedio: ((u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0)) > 0
                       ? u.total_estimado_dia / ((u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0))
+                      : 0,
+                    pax_promedio: ((u.pax_abiertos || 0) + (u.pax_cerrados_dia || 0)) > 0
+                      ? u.total_estimado_dia / ((u.pax_abiertos || 0) + (u.pax_cerrados_dia || 0))
                       : 0,
                     proyeccion: 0,  // No aplica para Ventas del Día
                     var_vs_mes_ant: null,  // No aplica
@@ -902,7 +919,7 @@ export default function TableroEjecutivo() {
         setData({
           periodo: { mes: new Date().getMonth() + 1, anio: new Date().getFullYear(), dias_transcurridos: new Date().getDate(), dias_mes: 30 },
           unidades: [],
-          totales: { ventas: null, pax: null, cheques: null, ticket_prom: null, cheque_prom: null, proyeccion: null },
+          totales: { ventas: null, pax: null, cheques: null, cheque_promedio: null, pax_prom: null, proyeccion: null },
           error: true,  // Flag para indicar error
           errorMessage: 'Error de conexión. Intente actualizar la página.'
         });
@@ -1180,7 +1197,7 @@ export default function TableroEjecutivo() {
               <div className="flex flex-col text-center">
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">PAX Total</p>
                 <p className="text-2xl font-bold">{data.totales.pax?.toLocaleString()}</p>
-                <p className="text-xs text-zinc-400 mt-1">Ticket: {formatCurrency(data.totales.ticket_prom)}</p>
+                <p className="text-xs text-zinc-400 mt-1">Pax Prom: {formatCurrency(data.totales.pax_prom || (data.totales.pax > 0 ? data.totales.ventas / data.totales.pax : 0))}</p>
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
                   {!esMultiMes && (
                     <div className="text-center">
@@ -1203,7 +1220,7 @@ export default function TableroEjecutivo() {
               <div className="flex flex-col text-center">
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">Cheques</p>
                 <p className="text-2xl font-bold">{data.totales.cheques?.toLocaleString()}</p>
-                <p className="text-xs text-zinc-400 mt-1">Promedio: {formatCurrency(data.totales.cheque_prom)}</p>
+                <p className="text-xs text-zinc-400 mt-1">Cheque Prom: {formatCurrency(data.totales.cheque_promedio || (data.totales.cheques > 0 ? data.totales.ventas / data.totales.cheques : 0))}</p>
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
                   {!esMultiMes && (
                     <div className="text-center">
@@ -1385,6 +1402,7 @@ export default function TableroEjecutivo() {
           onClose={() => setUnidadSeleccionada(null)}
           mes={selectedMeses.length > 0 ? selectedMeses[0] : null}
           anio={selectedAnios.length > 0 ? selectedAnios[0] : null}
+          modoVentasDia={data?.periodo?.modo_ventas_dia || false}
         />
       )}
     </div>
