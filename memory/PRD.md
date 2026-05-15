@@ -1882,6 +1882,36 @@ FASE 4: Endpoints /api/consultas-sql/*
 - Implementar lógica SQL en EDARSAHUB
 - Lectura de históricos (rango de fechas)
 
+## FASE 4B CIERRE ENDPOINTS CONSULTAS SQL - COMPLETADA (15-May-2026)
+
+### Resumen:
+| Acción | Estado |
+|--------|--------|
+| Documentar diseño actual como aceptado | ✅ |
+| Agregar endpoint `/versiones` | ✅ |
+| Agregar endpoint `/servidores` | ✅ |
+| Agregar endpoint `/validar-texto` | ✅ |
+| Blindar endpoint `/ejecutar` | ✅ |
+
+### Endpoints Nuevos:
+- `GET /api/consultas-sql/catalogo/{codigo}/versiones` - Versiones históricas
+- `GET /api/consultas-sql/catalogo/{codigo}/servidores` - Servidores asociados
+- `POST /api/consultas-sql/validar-texto` - Validar SQL libre (Admin only)
+
+### Blindaje /ejecutar:
+- Solo Admin/SuperAdministrador
+- Verifica `PermiteEjecucionManual=1`
+- Límite reducido a 5000 filas
+- No acepta SQL libre
+- Rechaza parámetros no declarados
+
+### Reporte:
+`/app/docs/reports/FASE_4B_CIERRE_ENDPOINTS_CONSULTAS_SQL_SQLFIRST.md`
+
+**✅ Endpoints SQL-First listos para producción bajo control estricto.**
+
+---
+
 ## FASE 1C SANITIZACIÓN SQL LIKE - COMPLETADA (15-May-2026)
 
 ### Resumen:
@@ -1922,6 +1952,10 @@ FASE 4: Endpoints /api/consultas-sql/*
 ### P1 - Ventas por Hora/Día de Semana
 - Implementar lógica SQL en EDARSAHUB
 - Lectura de históricos (rango de fechas)
+
+### P1 - FASE 5: Logging de Ejecuciones
+- Implementar escritura a ConsultasSQL_EjecucionesLog
+- Dashboard de auditoría (backend-only)
 
 ### P2 - Corrección de Fechas Peligrosas
 - 172 instancias de `datetime.now()`, `date.today()` detectadas

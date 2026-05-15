@@ -2,24 +2,29 @@
 EDARSA HUB - Consultas SQL: API Routes
 ======================================
 FASE 4: Endpoints /api/consultas-sql/* para exponer módulo SQL-First.
+FASE 4B: Endpoints adicionales y blindaje de seguridad.
 
 SEGURIDAD:
-- No acepta SQL libre desde frontend
+- No acepta SQL libre desde frontend (excepto validar-texto para Admin)
 - Solo ejecuta consultas del catálogo EDARSAHUB
 - Aplica validación con SQLSanitizer
 - RBAC: Temporalmente restringido a SuperAdministrador/Administrador
 - No expone credenciales ni SQL sensible
 
 ENDPOINTS:
-- GET  /catalogo           - Listar consultas
-- GET  /catalogo/{codigo}  - Detalle de consulta
-- POST /validar            - Validar consulta
-- POST /ejecutar           - Ejecutar consulta autorizada
-- GET  /sistemas           - Listar sistemas
-- GET  /modulos            - Listar módulos
+- GET  /catalogo                     - Listar consultas
+- GET  /catalogo/{codigo}            - Detalle de consulta
+- GET  /catalogo/{codigo}/versiones  - Versiones históricas (FASE 4B)
+- GET  /catalogo/{codigo}/servidores - Servidores asociados (FASE 4B)
+- POST /validar                      - Validar consulta del catálogo
+- POST /validar-texto                - Validar SQL libre (FASE 4B, Admin only)
+- POST /ejecutar                     - Ejecutar consulta autorizada (blindado FASE 4B)
+- GET  /sistemas                     - Listar sistemas
+- GET  /modulos                      - Listar módulos
 """
 
 import logging
+import re
 import time
 from typing import Dict, Optional, Any
 from datetime import datetime, timezone
@@ -53,6 +58,13 @@ from .schemas import (
     ModulosResponse,
     ModuloItem,
     ErrorResponse,
+    # FASE 4B: Nuevos schemas
+    ValidarTextoRequest,
+    ValidarTextoResponse,
+    VersionItem,
+    VersionesResponse,
+    ServidorAsociadoItem,
+    ServidoresAsociadosResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -293,7 +305,276 @@ async def obtener_detalle_consulta(
         raise HTTPException(status_code=500, detail="Error interno al obtener detalle")
 
 
-@router.post("/validar", response_model=ValidacionResponse)
+# ============================================================================
+# FASE 4B: NUEVOS ENDPOINTS
+# ============================================================================
+
+@router.get("/catalogo/{codigo_consulta}/versiones", response_model=VersionesResponse)
+async def listar_versiones_consulta(
+    codigo_consulta: str,
+    incluir_sql: bool = Query(False, description="Incluir SQL (requiere SuperAdmin)"),
+    user: Dict = Depends(require_permission("VER_DETALLE"))
+):
+    """
+    Lista versiones históricas de una consulta.
+    
+    FASE 4B: Endpoint de versiones.
+    
+    SEGURIDAD:
+    - Requiere autenticación
+    - SQL de versiones solo visible para SuperAdministrador con incluir_sql=True
+    - No ejecuta SQL
+    - No expone credenciales
+    """
+    try:
+        service = get_service()
+        
+        # Obtener consulta
+        consulta = service.obtener_consulta(codigo=codigo_consulta, include_sql=False)
+        if not consulta:
+            raise HTTPException(status_code=404, detail=f"Consulta '{codigo_consulta}' no encontrada")
+        
+        # Obtener versiones desde ConsultasSQL_Versiones
+        versiones_query = f"""
+        SELECT 
+            VersionID,
+            Version,
+            ConsultaSQL,
+            MotivoCambio,
+            FechaCreacion,
+            UsuarioCreacionID
+        FROM ConsultasSQL_Versiones
+        WHERE ConsultaID = {consulta.consulta_id}
+        ORDER BY Version DESC
+        """
+        
+        from core.db import execute_sql_query
+        from core.server_registry import EDARSAHUB_CONFIG
+        versiones_rows = execute_sql_query(
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            versiones_query
+        )
+        
+        # Determinar si mostrar SQL
+        puede_ver_sql = incluir_sql and user.get('role') == 'SuperAdministrador'
+        
+        versiones = []
+        for v in versiones_rows:
+            versiones.append(VersionItem(
+                version_id=v['VersionID'],
+                version=v['Version'],
+                motivo_cambio=v.get('MotivoCambio'),
+                fecha_creacion=str(v['FechaCreacion']) if v.get('FechaCreacion') else None,
+                usuario_creacion=v.get('UsuarioCreacionID'),
+                sql=v.get('ConsultaSQL') if puede_ver_sql else None
+            ))
+        
+        logger.info(
+            f"[CONSULTAS-SQL] Versiones consultadas. User: {user.get('email')}, "
+            f"Consulta: {codigo_consulta}, Total: {len(versiones)}"
+        )
+        
+        return VersionesResponse(
+            success=True,
+            codigo_consulta=codigo_consulta,
+            consulta_id=consulta.consulta_id,
+            total_versiones=len(versiones),
+            versiones=versiones
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CONSULTAS-SQL] Error listando versiones: {e}")
+        raise HTTPException(status_code=500, detail="Error interno al listar versiones")
+
+
+@router.get("/catalogo/{codigo_consulta}/servidores", response_model=ServidoresAsociadosResponse)
+async def listar_servidores_asociados(
+    codigo_consulta: str,
+    user: Dict = Depends(require_permission("VER_DETALLE"))
+):
+    """
+    Lista servidores asociados a una consulta.
+    
+    FASE 4B: Endpoint de servidores asociados.
+    
+    SEGURIDAD:
+    - Requiere autenticación
+    - NO expone: password, api_key, connection_string, host, usuario
+    - Solo metadatos seguros: nombre, sistema, empresa, activo
+    - No ejecuta conexión LIVE
+    """
+    try:
+        service = get_service()
+        
+        # Obtener consulta
+        consulta = service.obtener_consulta(codigo=codigo_consulta, include_sql=False)
+        if not consulta:
+            raise HTTPException(status_code=404, detail=f"Consulta '{codigo_consulta}' no encontrada")
+        
+        # Obtener servidores asociados - JOIN con Servidores_Conexiones para metadatos seguros
+        # IMPORTANTE: NO exponer host, port, username, password, api_key, connection_string
+        servidores_query = f"""
+        SELECT 
+            CS.ConsultaServidorID,
+            CAST(CS.ServidorID AS NVARCHAR(36)) as ServidorID,
+            SC.Nombre as ServidorNombre,
+            CASE SC.SistemaTipoID 
+                WHEN 1 THEN 'SOFTRESTAURANT'
+                WHEN 2 THEN 'MPRO'
+                ELSE 'OTRO'
+            END as SistemaTipo,
+            E.Nombre as EmpresaNombre,
+            CS.Activo,
+            ISNULL(CS.Prioridad, 0) as Prioridad
+        FROM ConsultasSQL_Servidores CS
+        INNER JOIN Servidores_Conexiones SC ON SC.ServidorID = CS.ServidorID
+        LEFT JOIN Sistema_Empresas E ON E.EmpresaID = CS.EmpresaID
+        WHERE CS.ConsultaID = {consulta.consulta_id}
+        ORDER BY CS.Prioridad, SC.Nombre
+        """
+        
+        from core.db import execute_sql_query
+        from core.server_registry import EDARSAHUB_CONFIG
+        servidores_rows = execute_sql_query(
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            servidores_query
+        )
+        
+        servidores = []
+        for s in servidores_rows:
+            servidores.append(ServidorAsociadoItem(
+                consulta_servidor_id=s['ConsultaServidorID'],
+                servidor_id=s['ServidorID'],
+                servidor_nombre=s.get('ServidorNombre'),
+                sistema_tipo=s.get('SistemaTipo'),
+                empresa_nombre=s.get('EmpresaNombre'),
+                activo=bool(s.get('Activo', False)),
+                prioridad=s.get('Prioridad', 0)
+            ))
+        
+        logger.info(
+            f"[CONSULTAS-SQL] Servidores asociados consultados. User: {user.get('email')}, "
+            f"Consulta: {codigo_consulta}, Total: {len(servidores)}"
+        )
+        
+        return ServidoresAsociadosResponse(
+            success=True,
+            codigo_consulta=codigo_consulta,
+            consulta_id=consulta.consulta_id,
+            total_servidores=len(servidores),
+            servidores=servidores
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CONSULTAS-SQL] Error listando servidores asociados: {e}")
+        raise HTTPException(status_code=500, detail="Error interno al listar servidores")
+
+
+@router.post("/validar-texto", response_model=ValidarTextoResponse)
+async def validar_texto_sql(
+    request: ValidarTextoRequest,
+    user: Dict = Depends(require_permission("VER_CATALOGO"))
+):
+    """
+    Valida texto SQL libre.
+    
+    FASE 4B: Endpoint de validación de texto SQL.
+    
+    SEGURIDAD:
+    - Requiere autenticación
+    - Restringido a Admin/SuperAdministrador
+    - Usa SQLSanitizer centralizado
+    - NO guarda el SQL
+    - NO ejecuta el SQL
+    - Registra intentos bloqueados con log_blocked_sql()
+    - Responde con errores controlados (sin stacktrace)
+    """
+    try:
+        # Verificar permiso especial para validar texto libre
+        role = user.get('role', '')
+        if role not in ['SuperAdministrador', 'Administrador']:
+            logger.warning(
+                f"[CONSULTAS-SQL-SECURITY] Intento no autorizado de validar texto SQL. "
+                f"User: {user.get('email')}, Role: {role}"
+            )
+            raise HTTPException(
+                status_code=403,
+                detail="Solo Administrador/SuperAdministrador puede validar texto SQL libre"
+            )
+        
+        sql_texto = request.sql_texto.strip()
+        
+        # Validar con SQLSanitizer
+        validation = SQLSanitizer.validate(sql_texto)
+        
+        errors = []
+        warnings = []
+        
+        if not validation.is_safe:
+            # Registrar intento bloqueado
+            log_blocked_sql(
+                validation,
+                endpoint="/api/consultas-sql/validar-texto",
+                user_email=user.get('email')
+            )
+            errors.append({
+                "code": "SQL_BLOCKED",
+                "message": validation.blocked_reason,
+                "severity": "HIGH"
+            })
+        
+        # Detectar parámetros (patrones {nombre})
+        import re
+        parametros_detectados = list(set(re.findall(r'\{(\w+)\}', sql_texto)))
+        
+        # Warnings adicionales
+        sql_upper = sql_texto.upper()
+        if 'SELECT *' in sql_upper:
+            warnings.append({
+                "code": "SELECT_STAR",
+                "message": "Se recomienda especificar columnas en lugar de SELECT *",
+                "severity": "LOW"
+            })
+        
+        if 'TOP' not in sql_upper[:50] and sql_upper.startswith('SELECT'):
+            warnings.append({
+                "code": "NO_LIMIT",
+                "message": "Se recomienda usar TOP o LIMIT para evitar resultados masivos",
+                "severity": "MEDIUM"
+            })
+        
+        logger.info(
+            f"[CONSULTAS-SQL] Validación de texto SQL. User: {user.get('email')}, "
+            f"Valid: {validation.is_safe}, Params: {parametros_detectados}"
+        )
+        
+        return ValidarTextoResponse(
+            success=True,
+            is_valid=validation.is_safe,
+            sql_analizado=True,
+            errors=errors,
+            warnings=warnings,
+            parametros_detectados=parametros_detectados,
+            timestamp=datetime.now(timezone.utc).isoformat()
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CONSULTAS-SQL] Error validando texto SQL: {e}")
+        raise HTTPException(status_code=500, detail="Error interno al validar SQL")
 async def validar_consulta(
     request: ValidarConsultaRequest,
     user: Dict = Depends(require_permission("VER_CATALOGO"))
@@ -358,26 +639,46 @@ async def ejecutar_consulta(
     """
     Ejecuta una consulta autorizada del catálogo.
     
-    SEGURIDAD:
-    - No acepta SQL libre
-    - Solo ejecuta consultas del catálogo EDARSAHUB
-    - Valida consulta antes de ejecutar
-    - Verifica SoloLectura=1
-    - Verifica acceso al servidor
-    - Aplica límite de filas
-    - No expone credenciales
+    FASE 4B: BLINDAJE DE SEGURIDAD
+    
+    SEGURIDAD ESTRICTA:
+    1. Solo Admin/SuperAdministrador
+    2. No acepta SQL libre
+    3. Solo consultas del catálogo EDARSAHUB
+    4. Consulta debe tener Activo=1
+    5. Consulta debe tener SoloLectura=1
+    6. Consulta debe tener PermiteEjecucionManual=1
+    7. Valida con SQLSanitizer antes de ejecutar
+    8. Parámetros validados contra ConsultasSQL_Parametros
+    9. No permite parámetros no declarados
+    10. Límite máximo de 5000 filas (reducido por seguridad)
+    11. No expone credenciales en logs
+    12. Registra intentos bloqueados
     """
     start_time = time.time()
     
     try:
         service = get_service()
         
-        # 1. Validar que se proporcione identificador
+        # FASE 4B: Verificar rol estricto
+        role = user.get('role', '')
+        if role not in ['SuperAdministrador', 'Administrador']:
+            logger.warning(
+                f"[CONSULTAS-SQL-SECURITY] Intento no autorizado de ejecutar. "
+                f"User: {user.get('email')}, Role: {role}"
+            )
+            return EjecucionResponse(
+                success=False,
+                status="PERMISSION_DENIED",
+                errors=["Solo Administrador/SuperAdministrador puede ejecutar consultas"]
+            )
+        
+        # 1. Validar que se proporcione identificador (no SQL libre)
         if not request.codigo_consulta and not request.consulta_id:
             return EjecucionResponse(
                 success=False,
                 status="VALIDATION_FAILED",
-                errors=["Debe proporcionar codigo_consulta o consulta_id"]
+                errors=["Debe proporcionar codigo_consulta o consulta_id. No se acepta SQL libre."]
             )
         
         # 2. Obtener consulta del catálogo
@@ -390,18 +691,22 @@ async def ejecutar_consulta(
             return EjecucionResponse(
                 success=False,
                 status="NOT_FOUND",
-                errors=["Consulta no encontrada en catálogo"]
+                errors=["Consulta no encontrada en catálogo EDARSAHUB"]
             )
         
         # 3. Verificar que esté activa
         if not consulta.activo:
+            logger.warning(
+                f"[CONSULTAS-SQL-SECURITY] Intento de ejecutar consulta inactiva. "
+                f"User: {user.get('email')}, Consulta: {consulta.codigo_consulta}"
+            )
             return EjecucionResponse(
                 success=False,
                 status="INACTIVE",
-                errors=["Consulta inactiva"]
+                errors=["Consulta inactiva - no permitida para ejecución"]
             )
         
-        # 4. Verificar SoloLectura
+        # 4. Verificar SoloLectura=1
         if not consulta.solo_lectura:
             logger.warning(
                 f"[CONSULTAS-SQL-SECURITY] Intento de ejecutar consulta no SoloLectura. "
@@ -410,10 +715,22 @@ async def ejecutar_consulta(
             return EjecucionResponse(
                 success=False,
                 status="SECURITY_BLOCKED",
-                errors=["Solo se permiten consultas de solo lectura"]
+                errors=["Solo se permiten consultas de solo lectura (SoloLectura=1)"]
             )
         
-        # 5. Validar SQL con SQLSanitizer
+        # FASE 4B: 5. Verificar PermiteEjecucionManual=1
+        if not consulta.permite_ejecucion_manual:
+            logger.warning(
+                f"[CONSULTAS-SQL-SECURITY] Intento de ejecutar consulta no autorizada para ejecución manual. "
+                f"User: {user.get('email')}, Consulta: {consulta.codigo_consulta}"
+            )
+            return EjecucionResponse(
+                success=False,
+                status="EXECUTION_NOT_ALLOWED",
+                errors=["Esta consulta no está autorizada para ejecución manual (PermiteEjecucionManual=0)"]
+            )
+        
+        # 6. Validar SQL con SQLSanitizer
         validation = SQLSanitizer.validate(consulta.consulta_sql)
         if not validation.is_safe:
             log_blocked_sql(
@@ -424,19 +741,19 @@ async def ejecutar_consulta(
             return EjecucionResponse(
                 success=False,
                 status="SQL_BLOCKED",
-                errors=[f"SQL bloqueado: {validation.blocked_reason}"]
+                errors=[f"SQL bloqueado por política de seguridad: {validation.blocked_reason}"]
             )
         
-        # 6. Obtener información del servidor
+        # 7. Obtener información del servidor
         server_info = get_server_connection_info_with_secrets(request.servidor_id)
         if not server_info:
             return EjecucionResponse(
                 success=False,
                 status="SERVER_NOT_FOUND",
-                errors=[f"Servidor {request.servidor_id} no encontrado"]
+                errors=["Servidor no encontrado o no autorizado"]
             )
         
-        # 7. Verificar que el servidor esté activo
+        # 8. Verificar que el servidor esté activo
         if not server_info.get('active', True):
             return EjecucionResponse(
                 success=False,
@@ -444,22 +761,27 @@ async def ejecutar_consulta(
                 errors=["Servidor inactivo"]
             )
         
-        # 8. Obtener parámetros definidos
+        # 9. Obtener parámetros definidos
         params_definidos = service._repo.get_parametros(consulta.consulta_id)
         params_nombres = {p.nombre_parametro for p in params_definidos}
         
-        # 9. Verificar parámetros enviados
+        # 10. Verificar parámetros enviados - NO permitir parámetros no declarados
         params_enviados = request.parametros or {}
         params_extra = set(params_enviados.keys()) - params_nombres
         
         if params_extra:
+            logger.warning(
+                f"[CONSULTAS-SQL-SECURITY] Parámetros no autorizados detectados. "
+                f"User: {user.get('email')}, Consulta: {consulta.codigo_consulta}, "
+                f"Params extra: {list(params_extra)}"
+            )
             return EjecucionResponse(
                 success=False,
                 status="INVALID_PARAMS",
-                errors=[f"Parámetros no definidos: {list(params_extra)}"]
+                errors=[f"Parámetros no declarados en catálogo: {list(params_extra)}"]
             )
         
-        # 10. Verificar parámetros requeridos
+        # 11. Verificar parámetros requeridos
         for p in params_definidos:
             if p.requerido and p.nombre_parametro not in params_enviados:
                 if p.valor_default is None:
@@ -469,7 +791,7 @@ async def ejecutar_consulta(
                         errors=[f"Parámetro requerido faltante: {p.nombre_parametro}"]
                     )
         
-        # 11. Preparar SQL con parámetros
+        # 12. Preparar SQL con parámetros (escapando valores)
         sql_final = consulta.consulta_sql
         for param_name, param_value in params_enviados.items():
             # Escapar valor para prevenir SQL injection
@@ -484,13 +806,14 @@ async def ejecutar_consulta(
             
             sql_final = sql_final.replace(f"{{{param_name}}}", safe_value)
         
-        # 12. Aplicar límite si el SQL no tiene TOP
-        limit = min(request.limit, 10000)
+        # FASE 4B: 13. Aplicar límite máximo reducido (5000 en lugar de 10000)
+        MAX_ROWS = 5000
+        limit = min(request.limit, MAX_ROWS)
         sql_upper = sql_final.upper().strip()
         if sql_upper.startswith('SELECT') and 'TOP' not in sql_upper[:50]:
             sql_final = sql_final.replace('SELECT', f'SELECT TOP {limit}', 1)
         
-        # 13. Ejecutar consulta
+        # 14. Ejecutar consulta
         try:
             rows = execute_sql_query(
                 host=server_info['host'],
@@ -501,25 +824,26 @@ async def ejecutar_consulta(
                 query=sql_final
             )
         except Exception as exec_error:
+            # FASE 4B: No loggear detalles de conexión
             logger.error(
                 f"[CONSULTAS-SQL] Error ejecutando. User: {user.get('email')}, "
-                f"Consulta: {consulta.codigo_consulta}, Error: {str(exec_error)[:200]}"
+                f"Consulta: {consulta.codigo_consulta}, Error: {str(exec_error)[:100]}"
             )
             return EjecucionResponse(
                 success=False,
                 status="EXECUTION_ERROR",
-                errors=[f"Error de ejecución: {str(exec_error)[:200]}"]
+                errors=["Error de ejecución - contacte al administrador"]
             )
         
-        # 14. Calcular tiempo
+        # 15. Calcular tiempo
         elapsed_ms = int((time.time() - start_time) * 1000)
         
-        # 15. Obtener columnas
+        # 16. Obtener columnas
         columns = list(rows[0].keys()) if rows else []
         
         logger.info(
             f"[CONSULTAS-SQL] Ejecución exitosa. User: {user.get('email')}, "
-            f"Consulta: {consulta.codigo_consulta}, Server: {request.servidor_id}, "
+            f"Consulta: {consulta.codigo_consulta}, Server: {request.servidor_id[:8]}..., "
             f"Rows: {len(rows)}, Time: {elapsed_ms}ms"
         )
         
@@ -537,7 +861,7 @@ async def ejecutar_consulta(
             rows=rows,
             row_count=len(rows),
             elapsed_ms=elapsed_ms,
-            warnings=[],
+            warnings=[f"Límite aplicado: {limit} filas máximo"] if len(rows) == limit else [],
             errors=[],
         )
         

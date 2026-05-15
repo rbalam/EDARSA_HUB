@@ -173,3 +173,63 @@ class ErrorResponse(BaseModel):
     error: str
     error_code: str
     details: Optional[Dict[str, Any]] = None
+
+
+# ============================================================================
+# FASE 4B: Schemas adicionales
+# ============================================================================
+
+class ValidarTextoRequest(BaseModel):
+    """Request para validar texto SQL libre (solo Admin/SuperAdmin)."""
+    sql_texto: str = Field(..., description="Texto SQL a validar", min_length=1, max_length=10000)
+
+
+class ValidarTextoResponse(BaseModel):
+    """Response para validación de texto SQL."""
+    success: bool
+    is_valid: bool
+    sql_analizado: bool = True
+    errors: List[Dict[str, Any]] = []
+    warnings: List[Dict[str, Any]] = []
+    parametros_detectados: List[str] = []
+    timestamp: str
+
+
+class VersionItem(BaseModel):
+    """Item de versión de consulta."""
+    version_id: int
+    version: int
+    motivo_cambio: Optional[str] = None
+    fecha_creacion: str
+    usuario_creacion: Optional[str] = None
+    # SQL solo para SuperAdmin
+    sql: Optional[str] = None
+
+
+class VersionesResponse(BaseModel):
+    """Response para listado de versiones."""
+    success: bool
+    codigo_consulta: str
+    consulta_id: int
+    total_versiones: int
+    versiones: List[VersionItem]
+
+
+class ServidorAsociadoItem(BaseModel):
+    """Item de servidor asociado (sin datos sensibles)."""
+    consulta_servidor_id: int
+    servidor_id: str
+    servidor_nombre: Optional[str] = None
+    sistema_tipo: Optional[str] = None
+    empresa_nombre: Optional[str] = None
+    activo: bool
+    prioridad: int
+
+
+class ServidoresAsociadosResponse(BaseModel):
+    """Response para listado de servidores asociados."""
+    success: bool
+    codigo_consulta: str
+    consulta_id: int
+    total_servidores: int
+    servidores: List[ServidorAsociadoItem]
