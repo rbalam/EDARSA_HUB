@@ -48,6 +48,26 @@ from core.server_registry import resolve_unidad_by_server_sucursal
 from modules.comercial.queries.softrestaurant import query_ventas_periodo_sr
 from modules.comercial.queries.mpro import query_ventas_periodo_mpro, query_ventas_por_sucursal_mpro
 
+# ============================================================================
+# FASE 5B: INTEGRACIÓN CON EmpresaResolver (Mayo 2026)
+# ============================================================================
+# Importar EmpresaResolver para resolución canónica
+try:
+    from core.empresa_resolver import (
+        resolve_empresa_by_alias,
+        resolve_empresa_by_id,
+        get_connection_for_role,
+        get_empresa_connections,
+        get_system_branch_context,
+        normalize_alias,
+        EMPRESA_RESOLVER_AVAILABLE
+    )
+    _EMPRESA_RESOLVER_OK = True
+except ImportError as e:
+    logging.warning(f"[SERVICE] EmpresaResolver no disponible: {e}. Usando fallback legacy.")
+    _EMPRESA_RESOLVER_OK = False
+    EMPRESA_RESOLVER_AVAILABLE = False
+
 
 # ============================================================================
 # CONFIGURACIÓN EDARSAHUB - TABLERO EJECUTIVO (Mayo 2026)
@@ -192,8 +212,10 @@ def _obtener_codigo_canonico_mpro(server_id: str, sucursal_id: str, sucursal_nom
     """
     CAMBIO B HELPER: Obtiene código y nombre canónico para una sucursal MPRO.
     
-    FUENTE MAESTRA: Unidades_Negocio (EDARSAHUB)
-    NO usar MongoDB como fuente funcional.
+    FASE 5B REFACTOR (Mayo 2026):
+    - Usa EmpresaResolver como fuente primaria
+    - Fallback a Unidades_Negocio (EDARSAHUB) si EmpresaResolver no resuelve
+    - Fallback final hardcodeado solo si nada responde
     
     Args:
         server_id: ID del servidor MPRO
@@ -203,6 +225,43 @@ def _obtener_codigo_canonico_mpro(server_id: str, sucursal_id: str, sucursal_nom
     Returns:
         Tuple (unidad_negocio_codigo, unidad_negocio_nombre)
     """
+    # =========================================================================
+    # FASE 5B: Intentar resolver con EmpresaResolver primero
+    # =========================================================================
+    if _EMPRESA_RESOLVER_OK and EMPRESA_RESOLVER_AVAILABLE:
+        # Intentar resolver por nombre de sucursal
+        empresa = resolve_empresa_by_alias(sucursal_nombre)
+        if empresa:
+            logging.debug(f"[SERVICE] _obtener_codigo_canonico_mpro: EmpresaResolver resolvió '{sucursal_nombre}' -> {empresa.codigo_empresa}")
+            return empresa.codigo_empresa, empresa.nombre_comercial or empresa.codigo_empresa
+        
+        # Intentar resolver por código de sucursal (0021, 0023)
+        # Los códigos MPRO deben estar en Sistema_EmpresasServidores
+        try:
+            # Buscar empresa por NumeroSucursalSistema
+            from core.db import execute_sql_query
+            query = f"""
+            SELECT DISTINCT e.CodigoEmpresa, e.NombreComercial
+            FROM Sistema_EmpresasServidores es
+            JOIN Sistema_Empresas e ON es.EmpresaID = e.EmpresaID
+            WHERE es.CodigoSucursalSistema = '{sucursal_id}'
+              AND es.Activo = 1
+              AND e.Activo = 1
+            """
+            from core.empresa_resolver import _execute_query
+            rows = _execute_query(query)
+            if rows:
+                codigo = rows[0].get('CodigoEmpresa', '').strip()
+                nombre = rows[0].get('NombreComercial', '').strip()
+                if codigo:
+                    logging.debug(f"[SERVICE] _obtener_codigo_canonico_mpro: Resuelto por CodigoSucursalSistema '{sucursal_id}' -> {codigo}")
+                    return codigo, nombre
+        except Exception as e:
+            logging.warning(f"[SERVICE] Error buscando por CodigoSucursalSistema: {e}")
+    
+    # =========================================================================
+    # Fallback: Buscar en Unidades_Negocio (EDARSAHUB)
+    # =========================================================================
     unidad_edarsahub = obtener_unidad_negocio_edarsahub(server_id, sucursal=sucursal_id)
     
     codigo = unidad_edarsahub.get('codigo', '')
@@ -211,7 +270,10 @@ def _obtener_codigo_canonico_mpro(server_id: str, sucursal_id: str, sucursal_nom
     if codigo and nombre:
         return codigo, nombre
     
-    # Fallback: Mapeo hardcodeado solo si EDARSAHUB no responde
+    # =========================================================================
+    # Fallback final: Mapeo hardcodeado (solo si nada responde)
+    # NOTA: Este fallback se mantiene para resiliencia pero debe ser temporal
+    # =========================================================================
     fallback_map = {
         '0021': ('130QRO', '130° QUERETARO'),
         '0023': ('ORIGEN', 'ORIGEN'),
@@ -224,6 +286,169 @@ def _obtener_codigo_canonico_mpro(server_id: str, sucursal_id: str, sucursal_nom
     
     # Fallback final: usar nombre visible
     return (sucursal_id, sucursal_nombre)
+
+
+
+def _mapear_codigo_a_unidad_negocio_id(codigo_empresa: str) -> str:
+    """
+    FASE 5B HELPER: Mapea código canónico de empresa a unidad_negocio_id legacy.
+    
+    La tabla Comercial_KPIs_Diarios_v2 usa formatos legacy como "130-MER", "LA-ESTELAR".
+    Esta función traduce códigos canónicos (130MID, ESTELAR) a esos formatos.
+    
+    PRIORIDAD:
+    1. EmpresaResolver: Buscar en Sistema_EmpresasAlias para obtener alias legacy
+    2. Fallback hardcodeado: Para compatibilidad temporal
+    
+    Args:
+        codigo_empresa: Código canónico (130MID, ESTELAR, CIENFUEGOS, 130QRO, ORIGEN)
+    
+    Returns:
+        unidad_negocio_id en formato legacy (130-MER, LA-ESTELAR, etc.)
+    """
+    if not codigo_empresa:
+        return codigo_empresa
+    
+    # =========================================================================
+    # FASE 5B: Intentar resolver alias legacy desde EmpresaResolver
+    # =========================================================================
+    if _EMPRESA_RESOLVER_OK and EMPRESA_RESOLVER_AVAILABLE:
+        try:
+            empresa = resolve_empresa_by_alias(codigo_empresa)
+            if empresa:
+                # Buscar alias legacy más común para esta empresa
+                from core.empresa_resolver import get_all_aliases_for_empresa
+                aliases = get_all_aliases_for_empresa(empresa.empresa_id)
+                
+                # Preferir alias LEGACY que tenga guión (130-MER, LA-ESTELAR)
+                for alias_info in aliases:
+                    alias = alias_info.get('alias', '')
+                    if alias_info.get('origen') == 'LEGACY' and '-' in alias:
+                        logging.debug(f"[SERVICE] _mapear_codigo_a_unidad_negocio_id: {codigo_empresa} -> {alias} (via EmpresaResolver)")
+                        return alias
+                
+                # Si no hay alias con guión, retornar el código canónico
+                return empresa.codigo_empresa
+        except Exception as e:
+            logging.warning(f"[SERVICE] Error en EmpresaResolver para mapeo: {e}")
+    
+    # =========================================================================
+    # Fallback: Mapeo hardcodeado (temporal, para compatibilidad)
+    # =========================================================================
+    fallback_map = {
+        '130MID': '130-MER',
+        'CIENFUEGOS': 'CIENFUEGOS',
+        'ESTELAR': 'LA-ESTELAR',
+        '130QRO': '130-QRO',
+        'ORIGEN': 'ORIGEN'
+    }
+    
+
+
+def _obtener_sucursales_mpro_desde_resolver() -> List[Dict[str, Any]]:
+    """
+    FASE 5B HELPER: Obtiene la lista de sucursales MPRO desde EmpresaResolver.
+    
+    Lee de Sistema_EmpresasServidores las empresas que tienen conexión MPRO
+    (RolConexion = PRINCIPAL_SQL o VENTAS_DIA_API_LOCAL) con NumeroSucursalSistema.
+    
+    Returns:
+        Lista de dicts con: codigo, sucursal_id, server_id, empresa_id
+    """
+    sucursales = []
+    
+    # =========================================================================
+    # FASE 5B: Intentar obtener desde EmpresaResolver
+    # =========================================================================
+    if _EMPRESA_RESOLVER_OK and EMPRESA_RESOLVER_AVAILABLE:
+        try:
+            from core.empresa_resolver import _execute_query
+            
+            # Buscar empresas con conexiones MPRO (tienen NumeroSucursalSistema)
+            # Usar ROW_NUMBER para obtener solo una conexión por empresa, preferir VENTAS_DIA_API_LOCAL
+            query = """
+            WITH RankedConnections AS (
+                SELECT 
+                    e.EmpresaID,
+                    e.CodigoEmpresa,
+                    e.NombreComercial,
+                    es.NumeroSucursalSistema,
+                    es.CodigoSucursalSistema,
+                    CONVERT(VARCHAR(36), es.ServidorID) as ServidorID,
+                    sc.nombre as NombreServidor,
+                    es.RolConexion,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY e.EmpresaID 
+                        ORDER BY 
+                            CASE es.RolConexion 
+                                WHEN 'VENTAS_DIA_API_LOCAL' THEN 1 
+                                ELSE 2 
+                            END
+                    ) as rn
+                FROM Sistema_EmpresasServidores es
+                JOIN Sistema_Empresas e ON es.EmpresaID = e.EmpresaID
+                JOIN Servidores_Conexiones sc ON es.ServidorID = sc.id
+                WHERE es.NumeroSucursalSistema IS NOT NULL
+                  AND es.RolConexion IN ('PRINCIPAL_SQL', 'VENTAS_DIA_API_LOCAL')
+                  AND es.Activo = 1
+                  AND e.Activo = 1
+            )
+            SELECT EmpresaID, CodigoEmpresa, NombreComercial, NumeroSucursalSistema,
+                   CodigoSucursalSistema, ServidorID, NombreServidor, RolConexion
+            FROM RankedConnections
+            WHERE rn = 1
+            ORDER BY EmpresaID
+            """
+            
+            rows = _execute_query(query)
+            
+            for row in rows:
+                codigo = row['CodigoEmpresa'].strip() if row['CodigoEmpresa'] else ''
+                sucursal_id = row['CodigoSucursalSistema'].strip() if row['CodigoSucursalSistema'] else str(row['NumeroSucursalSistema'])
+                server_id = row['ServidorID'].lower() if row['ServidorID'] else ''
+                
+                if codigo and sucursal_id and server_id:
+                    sucursales.append({
+                        "codigo": codigo,
+                        "sucursal_id": sucursal_id,
+                        "server_id": server_id,
+                        "empresa_id": row['EmpresaID'],
+                        "nombre_servidor": row['NombreServidor'],
+                        "rol": row['RolConexion'],
+                        "fuente": "EmpresaResolver"
+                    })
+            
+            if sucursales:
+                logging.info(f"[SERVICE] _obtener_sucursales_mpro_desde_resolver: {len(sucursales)} sucursales obtenidas via EmpresaResolver")
+                return sucursales
+                
+        except Exception as e:
+            logging.warning(f"[SERVICE] Error obteniendo sucursales MPRO desde EmpresaResolver: {e}")
+    
+    # =========================================================================
+    # Fallback: Hardcodeado (temporal, para resiliencia)
+    # =========================================================================
+    logging.warning("[SERVICE] _obtener_sucursales_mpro_desde_resolver: Usando fallback hardcodeado")
+    return [
+        {
+            "codigo": "ORIGEN",
+            "sucursal_id": "0023",
+            "server_id": "817a0aa8-6170-4738-a8f6-a72ac36ba0df",
+            "empresa_id": 1,
+            "fuente": "LEGACY_FALLBACK"
+        },
+        {
+            "codigo": "130QRO",
+            "sucursal_id": "0021",
+            "server_id": "72f6e9a7-8ea2-4eb2-802e-4ee31753435e",
+            "empresa_id": 2,
+            "fuente": "LEGACY_FALLBACK"
+        },
+    ]
+
+
+    return fallback_map.get(codigo_empresa, codigo_empresa)
+
 
 
 def _query_edarsahub_tablero(query: str) -> List[Dict]:
@@ -1065,16 +1290,12 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
         logging.warning(f"[TABLERO-EDARSAHUB] server_id {server_id} no encontrado en Unidades_Negocio EDARSAHUB")
         return None
     
-    # Mapear código canónico a unidad_negocio_id usado en Comercial_KPIs_Diarios_v2
-    # NOTA: La tabla usa formatos como "130-MER", "CIENFUEGOS", etc.
-    unidad_negocio_id_map = {
-        '130MID': '130-MER',
-        'CIENFUEGOS': 'CIENFUEGOS',
-        'ESTELAR': 'LA-ESTELAR',
-        '130QRO': '130-QRO',
-        'ORIGEN': 'ORIGEN'
-    }
-    unidad_negocio_id = unidad_negocio_id_map.get(unidad_negocio_codigo, unidad_negocio_codigo)
+    # =========================================================================
+    # FASE 5B: Usar EmpresaResolver para obtener mapeo de unidad_negocio_id
+    # El mapeo traduce códigos canónicos (130MID) a formatos legacy (130-MER)
+    # usados en Comercial_KPIs_Diarios_v2
+    # =========================================================================
+    unidad_negocio_id = _mapear_codigo_a_unidad_negocio_id(unidad_negocio_codigo)
     
     logging.info(f"[TABLERO-EDARSAHUB] {nombre}: Iniciando consulta - unidad={unidad_negocio_id}, sucursal={sucursal_id}")
     
@@ -1322,20 +1543,11 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
     if solo_ventas_dia:
         logging.info(f"[FIX-P0] MPRO {server['name']}: Modo Ventas del Día - LEYENDO DE EDARSAHUB SQL (NO API local)")
         
-        # Mapeo de sucursales MPRO con sus server_id específicos en EDARSAHUB
-        # Estos datos vienen de Servidores_Conexiones donde tipo_conexion='API_LOCAL'
-        sucursales_mpro = [
-            {
-                "codigo": "ORIGEN",
-                "sucursal_id": "0023",
-                "server_id": "817a0aa8-d570-4738-a8f6-a72ac36ba0df"  # ORIGEN LOCAL
-            },
-            {
-                "codigo": "130QRO",
-                "sucursal_id": "0021",
-                "server_id": "72f6e9a7-4a4f-4c15-beee-54c55e62b9e9"  # 130° QRO LOCAL
-            },
-        ]
+        # =====================================================================
+        # FASE 5B: Obtener sucursales MPRO desde EmpresaResolver
+        # Reemplaza el hardcoding de sucursales_mpro
+        # =====================================================================
+        sucursales_mpro = _obtener_sucursales_mpro_desde_resolver()
         
         unidades = []
         

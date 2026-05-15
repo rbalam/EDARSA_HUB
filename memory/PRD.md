@@ -1458,6 +1458,48 @@ Eliminar matching textual riesgoso en adapters.py y usar EmpresaResolver para re
 
 ### Siguiente Fase (Pendiente Autorización):
 1. P0: Refactorizar `service.py` para usar EmpresaResolver
+
+---
+
+## ✅ FASE 5B COMPLETADA: Refactor Mínimo service.py (16-May-2026)
+
+### Objetivo:
+Eliminar hardcoding de sucursales y mapeos en service.py usando EmpresaResolver.
+
+### Archivo Modificado:
+`/app/backend/modules/comercial/service.py`
+
+### Funciones Nuevas/Modificadas:
+1. **`_obtener_codigo_canonico_mpro()`** - Ahora usa EmpresaResolver primero
+2. **`_mapear_codigo_a_unidad_negocio_id()`** - NUEVA: Mapea código canónico a formato legacy
+3. **`_obtener_sucursales_mpro_desde_resolver()`** - NUEVA: Obtiene sucursales MPRO dinámicamente
+
+### Cambios Clave:
+- ✅ Eliminado hardcoding de `sucursales_mpro = [...]` en `get_kpis_mpro()`
+- ✅ Eliminado hardcoding de `unidad_negocio_id_map = {...}` en `get_kpis_softrestaurant()`
+- ✅ EmpresaResolver integrado como fuente primaria
+- ✅ Fallbacks legacy mantenidos para resiliencia
+
+### Pruebas Ejecutadas:
+- ✅ 9/9 pruebas de aliases
+- ✅ 2/2 pruebas de PRINCIPAL_SQL
+- ✅ 2/2 pruebas de VENTAS_DIA_API_LOCAL
+- ✅ 2/2 pruebas de sucursales MPRO
+- ✅ Backend reiniciado y funcionando
+
+### Confirmaciones:
+- ✅ No se modificó frontend
+- ✅ No se modificaron jobs
+- ✅ No se reactivó LIVE desde tablero
+
+### Reporte Detallado:
+`/app/docs/reports/FASE_5B_REFACTOR_SERVICE_EMPRESARESOLVER.md`
+
+### Siguiente Fase (Pendiente Autorización):
+1. P0: Refactorizar `mpro.py` para usar EmpresaResolver
+2. P1: Refactorizar jobs del scheduler
+
+
 2. P0: Refactorizar `mpro.py` para usar EmpresaResolver
 3. P1: Refactorizar jobs del scheduler
 
