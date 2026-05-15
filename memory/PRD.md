@@ -1125,3 +1125,55 @@ unidades: porUnidad.map(u => ({
 - ✅ No hay MongoDB
 - ✅ No hay endpoints legacy que consulten fuentes vivas
 
+
+---
+
+## ✅ FIX COMPLETADO: Bug Zona Horaria y Ventana Operativa QRO (15-May-2026)
+
+### Problema Original:
+El sistema usaba `datetime.now(mexico_tz).date()` (fecha calendario) en lugar de la fecha operativa basada en horarios de servicio. A las 00:02 del día 15, QRO mostraba $0 porque el sistema asumía que era día 15, pero la jornada operativa del día 14 (13:00-03:00) no había terminado.
+
+### Solución Implementada:
+
+#### 1. Tabla `Sistema_HorariosServicioUnidad` en EDARSAHUB
+- DDL creado y ejecutado
+- 5 unidades configuradas con horarios operativos:
+  - 130QRO, ORIGEN, 130MID: 13:00 - 03:00 (cruza medianoche)
+  - CIENFUEGOS, ESTELAR: 13:00 - 23:00 (NO cruza medianoche)
+- 7 días de la semana por unidad = 35 registros
+
+#### 2. Helper `/app/backend/core/utils/operational_window.py`
+- Función principal: `get_operational_window(unidad_negocio_id)`
+- Calcula FechaOperacion según:
+  - Si estamos entre 00:00 y hora_fin_operativo → día anterior
+  - Si estamos después de hora_inicio_operativo → día actual
+- Incluye cache para evitar consultas repetidas
+
+#### 3. Modificaciones al Job de Sincronización
+- `/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py` actualizado:
+  - Import del helper `get_operational_window`
+  - Cálculo de `fecha_operacion` por unidad (no global)
+  - Queries de QRO usan `{fecha_operacion}` en lugar de `GETDATE()`
+  - Logs detallados para debug
+
+### Validaciones Completadas:
+- ✅ A las 00:15 del día 15, FechaOperacion calculada = 2026-05-14
+- ✅ 130QRO muestra $207,323.00 (venta del día 14)
+- ✅ Server_id correcto: 72f6e9a7-8ea2-4eb2-802e-4ee31753435e
+- ✅ 3 ejecuciones consecutivas exitosas del job
+- ✅ Frontend muestra 130° QUERETARO con datos correctos
+
+### Archivos Modificados/Creados:
+- `/app/backend/core/utils/operational_window.py` (NUEVO)
+- `/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py` (MODIFICADO)
+- `/app/backend/modules/comercial_v2/repository_comercial_edarsahub.py` (MODIFICADO - server_id en UPDATE)
+
+### Regla de Negocio Implementada:
+```
+Horario QRO: 13:00 - 03:00 (cruza medianoche)
+
+00:02 del día 15 → FechaOperacion = día 14 (jornada no cerrada)
+03:01 del día 15 → FechaOperacion = día 14 (restaurante cerrado, última jornada)
+13:00 del día 15 → FechaOperacion = día 15 (nueva jornada inicia)
+```
+

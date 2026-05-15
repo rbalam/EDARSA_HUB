@@ -28,9 +28,13 @@ import os
 import uuid
 import logging
 import requests
-from datetime import datetime, date, timezone
+import pytz
+from datetime import datetime, date, timezone, timedelta
 from decimal import Decimal
 from typing import Dict, List, Any, Optional, Tuple
+
+# Import del helper de ventana operativa
+from core.utils.operational_window import get_operational_window, is_within_operational_hours
 
 logger = logging.getLogger(__name__)
 
@@ -379,6 +383,17 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
         try:
             logger.info(f"[SYNC_ABIERTAS_V2] Procesando {nombre} (SoftRestaurant)...")
             
+            # =================================================================
+            # CALCULAR FechaOperacion SEGÚN VENTANA OPERATIVA DE LA UNIDAD
+            # =================================================================
+            fecha_operacion, hora_inicio, hora_fin, cruza_medianoche = get_operational_window(unidad_id)
+            fecha_operacion_str = fecha_operacion.isoformat()
+            
+            logger.info(
+                f"[SYNC_ABIERTAS_V2] {nombre}: FechaOperacion={fecha_operacion_str} "
+                f"(horario={hora_inicio}-{hora_fin})"
+            )
+            
             server_config = get_server_connection_config(server_id)
             if not server_config:
                 raise Exception(f"No se encontró config para server_id {server_id}")
@@ -426,7 +441,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 sucursal_nombre=nombre,
                 sistema_origen=SistemaOrigen.SOFTRESTAURANT,
                 snapshot_timestamp=datetime.now(timezone.utc),
-                fecha_operacion=fecha_hoy,
+                fecha_operacion=fecha_operacion,  # Usar fecha_operacion calculada
                 ventas_abiertas=ventas_abiertas,
                 tickets_abiertos=tickets_abiertos,
                 pax_abiertos=pax_abiertos,
@@ -450,11 +465,12 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 "sistema": "SoftRestaurant",
                 "estatus": "OK",
                 "source_status": "SYNC_OK",
+                "fecha_operacion": fecha_operacion_str,  # Agregar para debug
                 "ventas_abiertas": float(ventas_abiertas),
                 "total_estimado_dia": float(total_estimado_dia)
             })
             
-            logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: total=${total_estimado_dia:,.2f}")
+            logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: fecha_op={fecha_operacion_str}, total=${total_estimado_dia:,.2f}")
             
             # Log exitoso
             log = SyncLogV2(
@@ -462,8 +478,8 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 run_type=SyncRunType.VENTAS_DIA,
                 unidad_negocio_id=unidad_id,
                 server_id=server_id,
-                fecha_inicio=fecha_hoy,
-                fecha_fin=fecha_hoy,
+                fecha_inicio=fecha_operacion,  # Usar fecha_operacion
+                fecha_fin=fecha_operacion,
                 status=SyncStatus.SUCCESS,
                 records_processed=1,
                 records_inserted=1 if upsert_result.get('action') == 'INSERT' else 0,
@@ -488,14 +504,14 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 "mensaje_error": error_msg[:200]
             })
             
-            # Log de error
+            # Log de error - usar fecha_hoy como fallback si fecha_operacion no está definida
             log = SyncLogV2(
                 run_id=run_id,
                 run_type=SyncRunType.VENTAS_DIA,
                 unidad_negocio_id=unidad_id,
                 server_id=server_id,
-                fecha_inicio=fecha_hoy,
-                fecha_fin=fecha_hoy,
+                fecha_inicio=fecha_operacion if 'fecha_operacion' in dir() else fecha_hoy,
+                fecha_fin=fecha_operacion if 'fecha_operacion' in dir() else fecha_hoy,
                 status=SyncStatus.FAILED,
                 error_message=error_msg[:500],
                 source_connection_status=ConnectionStatus.OFFLINE
@@ -525,24 +541,41 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             logger.info(f"[SYNC_ABIERTAS_V2] Usando API: {api_config['api_url']} para sucursal {sucursal_id}")
             
             # =================================================================
+            # CALCULAR FechaOperacion SEGÚN VENTANA OPERATIVA DE LA UNIDAD
+            # =================================================================
+            # FIX 2026-05-15: NO usar fecha calendario simple
+            # Usar get_operational_window() para calcular FechaOperacion
+            # 
+            # REGLA DE NEGOCIO:
+            # - Si QRO opera de 13:00 a 03:00, a las 02:00 del día 15 todavía
+            #   pertenece a la jornada del día 14
+            # - Solo después del cierre (03:00) inicia el nuevo día operativo
+            # =================================================================
+            
+            fecha_operacion, hora_inicio, hora_fin, cruza_medianoche = get_operational_window(unidad_id)
+            fecha_operacion_str = fecha_operacion.isoformat()  # YYYY-MM-DD
+            
+            logger.info(
+                f"[SYNC_ABIERTAS_V2] {nombre}: FechaOperacion={fecha_operacion_str} "
+                f"(horario={hora_inicio}-{hora_fin}, cruza_medianoche={cruza_medianoche})"
+            )
+            
+            # =================================================================
             # SELECCIONAR QUERY SEGÚN UNIDAD
             # ORIGEN: Usa Venta_Encabezado (estructura estándar MPRO)
             # 130QRO: Usa Comanda + Comanda_Detalle (estructura alternativa)
             # =================================================================
-            # FIX 2026-05-15: fecha_operacion_str para queries de QRO
-            fecha_operacion_str = fecha_hoy.isoformat()  # YYYY-MM-DD en zona México
             
             if unidad_id == '130QRO':
                 # QRO usa estructura diferente: Comanda + Comanda_Detalle
-                # FIX: Usar fecha_operacion calculada en México, NO GETDATE() remoto
                 query_template_abiertas = QUERY_MPRO_VENTAS_ABIERTAS_QRO
                 query_template_cerradas = QUERY_MPRO_CERRADAS_HOY_QRO
-                logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Usando query Comanda+Comanda_Detalle con fecha_operacion={fecha_operacion_str}")
+                logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Query Comanda+Comanda_Detalle, fecha_op={fecha_operacion_str}")
             else:
                 # ORIGEN y otras unidades MPRO usan Venta_Encabezado estándar
                 query_template_abiertas = QUERY_MPRO_VENTAS_ABIERTAS_ORIGEN
                 query_template_cerradas = QUERY_MPRO_CERRADAS_HOY_ORIGEN
-                logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Usando query Venta_Encabezado estándar")
+                logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Query Venta_Encabezado estándar")
             
             # Query ventas abiertas via API local
             # FIX: Incluir fecha_operacion para QRO (para ORIGEN no afecta, usa GETDATE)
@@ -589,12 +622,12 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                         unidad_negocio_id=unidad_id,
                         server_id=server_id,
                         sucursal_id=sucursal_id,
-                        fecha_inicio=fecha_hoy,
-                        fecha_fin=fecha_hoy,
+                        fecha_inicio=fecha_operacion,  # Usar fecha_operacion, no fecha_hoy
+                        fecha_fin=fecha_operacion,
                         status=SyncStatus.SKIPPED,
                         records_processed=0,
                         records_skipped=1,
-                        error_message=f"AMBAS queries NULL para fecha {fecha_operacion_str}. Conservando último dato válido.",
+                        error_message=f"AMBAS queries NULL para fecha_operacion={fecha_operacion_str}. Conservando último dato válido.",
                         source_connection_status="API_LOCAL_OK_BOTH_NULL"
                     )
                     insert_sync_log(log)
@@ -639,7 +672,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 sucursal_nombre=nombre,
                 sistema_origen=SistemaOrigen.MPRO,
                 snapshot_timestamp=datetime.now(timezone.utc),
-                fecha_operacion=fecha_hoy,
+                fecha_operacion=fecha_operacion,  # Usar fecha_operacion calculada
                 ventas_abiertas=ventas_abiertas,
                 tickets_abiertos=tickets_abiertos,
                 pax_abiertos=pax_abiertos,
@@ -664,11 +697,12 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 "fuente": "API_LOCAL",
                 "estatus": "OK",
                 "source_status": "SYNC_OK",
+                "fecha_operacion": fecha_operacion_str,  # Agregar para debug
                 "ventas_abiertas": float(ventas_abiertas),
                 "total_estimado_dia": float(total_estimado_dia)
             })
             
-            logger.info(f"[SYNC_ABIERTAS_V2] {nombre} (API Local): total=${total_estimado_dia:,.2f}")
+            logger.info(f"[SYNC_ABIERTAS_V2] {nombre} (API Local): fecha_op={fecha_operacion_str}, total=${total_estimado_dia:,.2f}")
             
             # Log exitoso
             log = SyncLogV2(
@@ -676,8 +710,8 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 run_type=SyncRunType.VENTAS_DIA,
                 unidad_negocio_id=unidad_id,
                 server_id=server_id,
-                fecha_inicio=fecha_hoy,
-                fecha_fin=fecha_hoy,
+                fecha_inicio=fecha_operacion,  # Usar fecha_operacion
+                fecha_fin=fecha_operacion,
                 status=SyncStatus.SUCCESS,
                 records_processed=1,
                 records_inserted=1 if upsert_result.get('action') == 'INSERT' else 0,
@@ -703,14 +737,14 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 "mensaje_error": error_msg[:200]
             })
             
-            # Log de error
+            # Log de error - usar fecha_operacion si está disponible
             log = SyncLogV2(
                 run_id=run_id,
                 run_type=SyncRunType.VENTAS_DIA,
                 unidad_negocio_id=unidad_id,
                 server_id=unidad.get("server_id", "UNKNOWN"),
-                fecha_inicio=fecha_hoy,
-                fecha_fin=fecha_hoy,
+                fecha_inicio=fecha_operacion if 'fecha_operacion' in dir() else fecha_hoy,
+                fecha_fin=fecha_operacion if 'fecha_operacion' in dir() else fecha_hoy,
                 status=SyncStatus.FAILED,
                 error_message=error_msg[:500],
                 source_connection_status=ConnectionStatus.OFFLINE
