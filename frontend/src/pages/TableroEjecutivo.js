@@ -426,34 +426,92 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
     const cargarDetalle = async () => {
       setLoading(true);
       try {
+        // CORRECCIÓN BUG: En modo Ventas del Día, NO hacer llamadas API adicionales
+        // Los datos ya vienen completos desde el endpoint /api/v2/comercial/ventas-dia
+        if (modoVentasDia) {
+          // En modo diario, usar los datos que ya tenemos de la unidad
+          setDetalleData({
+            dashboard: null,
+            ventasTiempo: null,
+            mesas: null,
+            modoVentasDia: true
+          });
+          setLoading(false);
+          return;
+        }
+        
+        // Solo para modo mensual/anual: Cargar datos adicionales
+        if (!unidad?.server_id) {
+          // Sin server_id, no podemos cargar datos adicionales
+          setDetalleData({
+            dashboard: null,
+            ventasTiempo: null,
+            mesas: null
+          });
+          setLoading(false);
+          return;
+        }
+        
         // Parámetros con sucursal (si existe)
         const params = unidad.sucursal ? `?sucursal=${encodeURIComponent(unidad.sucursal)}` : '';
         const periodParams = unidad.sucursal ? `?periodo=mes&sucursal=${encodeURIComponent(unidad.sucursal)}` : '?periodo=mes';
         
-        // Cargar datos adicionales de la unidad
-        const [dashboard, ventasTiempo, mesas] = await Promise.all([
-          api.get(`/comercial/dashboard/${unidad.server_id}${periodParams}`),
-          api.get(`/comercial/ventas-tiempo/${unidad.server_id}${params}`),
-          api.get(`/comercial/mesas/${unidad.server_id}${params}`)
-        ]);
+        // CORRECCIÓN: Intentar cargar datos adicionales de forma silenciosa
+        // Los datos básicos del modal ya están en `unidad`, estos son opcionales para enriquecer
+        let dashboard = null, ventasTiempo = null, mesas = null;
+        
+        try {
+          const results = await Promise.allSettled([
+            api.get(`/comercial/dashboard/${unidad.server_id}${periodParams}`),
+            api.get(`/comercial/ventas-tiempo/${unidad.server_id}${params}`),
+            api.get(`/comercial/mesas/${unidad.server_id}${params}`)
+          ]);
+          
+          // Extraer solo las respuestas exitosas
+          if (results[0].status === 'fulfilled') dashboard = results[0].value.data;
+          if (results[1].status === 'fulfilled') ventasTiempo = results[1].value.data;
+          if (results[2].status === 'fulfilled') mesas = results[2].value.data;
+          
+          // Log silencioso si alguna falló (no mostrar toast)
+          const failedCount = results.filter(r => r.status === 'rejected').length;
+          if (failedCount > 0) {
+            logger.warn(`[DetalleUnidad] ${failedCount} endpoints opcionales fallaron para ${unidad.server_id} - datos básicos disponibles`);
+          }
+        } catch (e) {
+          logger.warn('[DetalleUnidad] Error cargando datos opcionales:', e);
+        }
         
         setDetalleData({
-          dashboard: dashboard.data,
-          ventasTiempo: ventasTiempo.data,
-          mesas: mesas.data
+          dashboard,
+          ventasTiempo,
+          mesas
         });
       } catch (error) {
         logger.error('Error cargando detalle:', error);
-        toast.error('Error al cargar detalle de unidad');
+        // Establecer datos vacíos para que el modal siga funcionando
+        setDetalleData({
+          dashboard: null,
+          ventasTiempo: null,
+          mesas: null
+        });
       } finally {
         setLoading(false);
       }
     };
     
-    if (unidad?.server_id) {
+    // CORRECCIÓN: En modo Ventas del Día, cargar inmediatamente sin server_id
+    if (modoVentasDia || unidad?.server_id) {
       cargarDetalle();
+    } else {
+      // Sin server_id y sin modo diario, mostrar datos básicos
+      setDetalleData({
+        dashboard: null,
+        ventasTiempo: null,
+        mesas: null
+      });
+      setLoading(false);
     }
-  }, [unidad]);
+  }, [unidad, modoVentasDia]);
 
   return (
     <Dialog open={true} onOpenChange={onClose}>

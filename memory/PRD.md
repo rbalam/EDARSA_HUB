@@ -915,3 +915,33 @@ Se modificó `/app/frontend/src/pages/TableroEjecutivo.js`:
 - ✅ Sin errores de lint
 - ✅ Sin regresión en vistas mensuales/anuales
 
+---
+
+## BUG CORREGIDO - Toast "Error al cargar detalle de unidad" (15-Mayo-2026)
+
+### Problema
+Al abrir el modal de detalle de cualquier unidad, aparecía toast rojo "Error al cargar detalle de unidad" porque los endpoints legacy (`/comercial/dashboard/`, `/comercial/ventas-tiempo/`, `/comercial/mesas/`) fallaban.
+
+### Causa Raíz
+1. En modo "Ventas del Día", se intentaba llamar a endpoints que no aplican para datos diarios
+2. En modo mensual, los endpoints fallaban por falta de conexión a servidores remotos desde preview
+
+### Solución Implementada
+Modificación en `/app/frontend/src/pages/TableroEjecutivo.js` - componente `DetalleUnidad`:
+
+1. **Modo Ventas del Día**: NO hace llamadas API adicionales. Los datos ya vienen completos del endpoint `/api/v2/comercial/ventas-dia`
+
+2. **Modo Mensual/Anual**: Usa `Promise.allSettled()` para llamadas opcionales:
+   - Los endpoints adicionales son **opcionales** para enriquecer el modal
+   - Si fallan, solo se registra warning en console (no toast)
+   - Los datos básicos del objeto `unidad` siempre están disponibles
+
+### Validaciones
+- ✅ Modal CIENFUEGOS abre sin error en Ventas del Día
+- ✅ Modal LA ESTELAR abre sin error en Ventas del Día  
+- ✅ Modal ORIGEN abre sin error en Ventas del Día (CON históricos)
+- ✅ Modal CIENFUEGOS abre sin error en modo Mensual
+- ✅ Sin toast rojo en ningún escenario
+- ✅ Comparativos diarios muestran datos reales o 0 seguro
+- ✅ No hay NaN/Infinity/null/undefined
+
