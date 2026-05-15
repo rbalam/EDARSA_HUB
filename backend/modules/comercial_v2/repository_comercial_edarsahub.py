@@ -267,6 +267,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
         record_id = existing[0].get('id')
         update_query = f"""
         UPDATE Comercial_Ventas_Dia_Abiertas_v2 SET
+            server_id = '{ventas.server_id}',
             snapshot_timestamp = '{ventas.snapshot_timestamp.isoformat()}',
             fecha_operacion = '{ventas.fecha_operacion.isoformat()}',
             ventas_abiertas = {ventas.ventas_abiertas},

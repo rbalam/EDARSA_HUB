@@ -265,17 +265,23 @@ WHERE CAST(ve.Vn_Fecha AS DATE) = CAST(GETDATE() AS DATE)
 # QUERIES MPRO - QRO (usa Comanda + Comanda_Detalle directamente)
 # NOTA: QRO no tiene datos en Venta_Encabezado, solo en Comanda/Comanda_Detalle
 # =============================================================================
+# FIX 2026-05-15: Usar {fecha_operacion} (calculada en México) en lugar de GETDATE()
+# GETDATE() del servidor remoto puede estar en UTC o zona horaria diferente,
+# causando que la query no encuentre datos y guarde $0 falso.
+# La fecha_operacion DEBE ser la misma que se guarda en EDARSAHUB.
+# =============================================================================
 
 # MPRO QRO: Ventas abiertas (Comanda + Comanda_Detalle, estado 'AC', sin baja)
+# {fecha_operacion} = fecha operativa calculada por backend en zona México
 QUERY_MPRO_VENTAS_ABIERTAS_QRO = """
 SELECT 
-    CAST(GETDATE() AS DATE) as fecha,
+    '{fecha_operacion}' as fecha,
     SUM(ISNULL(cd.Cd_Importe, 0)) as ventas_abiertas,
     COUNT(DISTINCT c.Co_Folio) as tickets_abiertos,
     SUM(DISTINCT ISNULL(c.Co_Personas, 1)) as pax_abiertos
 FROM Comanda c
 INNER JOIN Comanda_Detalle cd ON c.Co_Folio = cd.Co_Folio
-WHERE CAST(c.Co_Fecha AS DATE) = CAST(GETDATE() AS DATE)
+WHERE CAST(c.Co_Fecha AS DATE) = '{fecha_operacion}'
   AND c.Sc_Cve_Sucursal = '{sucursal_id}'
   AND cd.Es_Cve_Estado = 'AC'
   AND cd.Fecha_Baja IS NULL
@@ -284,6 +290,7 @@ WHERE CAST(c.Co_Fecha AS DATE) = CAST(GETDATE() AS DATE)
 
 # MPRO QRO: Ventas cerradas del día (Comanda con cierre)
 # NOTA: En QRO, las ventas cerradas se identifican por Es_Cve_Estado diferente o Fecha_Baja
+# {fecha_operacion} = fecha operativa calculada por backend en zona México
 QUERY_MPRO_CERRADAS_HOY_QRO = """
 SELECT 
     SUM(ISNULL(cd.Cd_Importe, 0)) as ventas_cerradas_dia,
@@ -291,7 +298,7 @@ SELECT
     SUM(DISTINCT ISNULL(c.Co_Personas, 1)) as pax_cerrados_dia
 FROM Comanda c
 INNER JOIN Comanda_Detalle cd ON c.Co_Folio = cd.Co_Folio
-WHERE CAST(c.Co_Fecha AS DATE) = CAST(GETDATE() AS DATE)
+WHERE CAST(c.Co_Fecha AS DATE) = '{fecha_operacion}'
   AND c.Sc_Cve_Sucursal = '{sucursal_id}'
   AND c.Es_Cve_Estado <> 'AC'
   AND cd.Es_Cve_Estado = 'AC'
@@ -522,11 +529,15 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             # ORIGEN: Usa Venta_Encabezado (estructura estándar MPRO)
             # 130QRO: Usa Comanda + Comanda_Detalle (estructura alternativa)
             # =================================================================
+            # FIX 2026-05-15: fecha_operacion_str para queries de QRO
+            fecha_operacion_str = fecha_hoy.isoformat()  # YYYY-MM-DD en zona México
+            
             if unidad_id == '130QRO':
                 # QRO usa estructura diferente: Comanda + Comanda_Detalle
+                # FIX: Usar fecha_operacion calculada en México, NO GETDATE() remoto
                 query_template_abiertas = QUERY_MPRO_VENTAS_ABIERTAS_QRO
                 query_template_cerradas = QUERY_MPRO_CERRADAS_HOY_QRO
-                logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Usando query Comanda+Comanda_Detalle")
+                logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Usando query Comanda+Comanda_Detalle con fecha_operacion={fecha_operacion_str}")
             else:
                 # ORIGEN y otras unidades MPRO usan Venta_Encabezado estándar
                 query_template_abiertas = QUERY_MPRO_VENTAS_ABIERTAS_ORIGEN
@@ -534,29 +545,69 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Usando query Venta_Encabezado estándar")
             
             # Query ventas abiertas via API local
-            query_abiertas = query_template_abiertas.format(sucursal_id=sucursal_id)
+            # FIX: Incluir fecha_operacion para QRO (para ORIGEN no afecta, usa GETDATE)
+            query_abiertas = query_template_abiertas.format(
+                sucursal_id=sucursal_id,
+                fecha_operacion=fecha_operacion_str
+            )
             rows_abiertas, conn_status = _execute_query_via_api_local(api_config, query_abiertas)
             
             # REGLA: Si falla API, NO escribir $0
             if conn_status != "API_LOCAL_OK":
                 raise Exception(f"API Local falló: {conn_status}")
             
-            # REGLA: Si la query retorna null/vacío, NO escribir $0 (conservar último dato válido)
+            # REGLA ANTI-$0 FALSO: Primero obtener AMBAS queries antes de decidir
             abiertas_data = rows_abiertas[0] if rows_abiertas else {}
-            ventas_value = abiertas_data.get('ventas_abiertas')
-            if ventas_value is None and (not rows_abiertas or rows_abiertas[0].get('tickets_abiertos', 0) == 0):
-                # La API respondió pero no hay datos - verificar si es error de query o sin operación
-                logger.warning(f"[SYNC_ABIERTAS_V2] {nombre}: API OK pero ventas_abiertas=null, tickets=0")
-                # Solo registrar error si realmente no hubo datos (no confundir con $0 legítimo)
             
             # Query ventas cerradas via API local
-            query_cerradas = query_template_cerradas.format(sucursal_id=sucursal_id)
+            # FIX: Incluir fecha_operacion para QRO
+            query_cerradas = query_template_cerradas.format(
+                sucursal_id=sucursal_id,
+                fecha_operacion=fecha_operacion_str
+            )
             rows_cerradas, _ = _execute_query_via_api_local(api_config, query_cerradas)
-            
-            # Extraer valores
-            abiertas_data = rows_abiertas[0] if rows_abiertas else {}
             cerradas_data = rows_cerradas[0] if rows_cerradas else {}
             
+            # Extraer valores ANTES de decidir
+            ventas_abiertas_raw = abiertas_data.get('ventas_abiertas')
+            ventas_cerradas_raw = cerradas_data.get('ventas_cerradas_dia')
+            
+            # FIX 2026-05-15: QRO - Si ambas son NULL, conservar último dato válido
+            # Pero si ventas_cerradas tiene valor, es dato válido (aunque abiertas sea NULL)
+            if unidad_id == '130QRO':
+                logger.info(f"[SYNC_ABIERTAS_V2] QRO RAW: abiertas={ventas_abiertas_raw}, cerradas={ventas_cerradas_raw}")
+                
+                # Si ventas_cerradas tiene valor, es dato válido
+                if ventas_cerradas_raw is not None and float(ventas_cerradas_raw) > 0:
+                    logger.info(f"[SYNC_ABIERTAS_V2] QRO: Usando ventas_cerradas=${ventas_cerradas_raw:,.2f} (abiertas puede ser NULL)")
+                elif ventas_abiertas_raw is None and ventas_cerradas_raw is None:
+                    # AMBAS son NULL - conservar último dato válido
+                    logger.warning(f"[SYNC_ABIERTAS_V2] {nombre}: AMBAS queries retornaron NULL - CONSERVANDO último dato válido")
+                    log = SyncLogV2(
+                        run_id=run_id,
+                        run_type=SyncRunType.ABIERTAS,
+                        unidad_negocio_id=unidad_id,
+                        server_id=server_id,
+                        sucursal_id=sucursal_id,
+                        fecha_inicio=fecha_hoy,
+                        fecha_fin=fecha_hoy,
+                        status=SyncStatus.SKIPPED,
+                        records_processed=0,
+                        records_skipped=1,
+                        error_message=f"AMBAS queries NULL para fecha {fecha_operacion_str}. Conservando último dato válido.",
+                        source_connection_status="API_LOCAL_OK_BOTH_NULL"
+                    )
+                    insert_sync_log(log)
+                    results["detalles_unidades"].append({
+                        "unidad": unidad_id,
+                        "nombre": nombre,
+                        "status": "SKIPPED_BOTH_NULL",
+                        "fecha_operacion": fecha_operacion_str,
+                        "mensaje": "Conservando último dato válido"
+                    })
+                    continue  # NO sobrescribir con $0
+            
+            # Extraer valores finales (abiertas_data y cerradas_data ya están definidos arriba)
             ventas_abiertas = Decimal(str(abiertas_data.get('ventas_abiertas') or 0))
             tickets_abiertos = int(abiertas_data.get('tickets_abiertos') or 0)
             pax_abiertos = int(abiertas_data.get('pax_abiertos') or 0)
@@ -566,6 +617,18 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             pax_cerrados_dia = int(cerradas_data.get('pax_cerrados_dia') or 0)
             
             total_estimado_dia = ventas_abiertas + ventas_cerradas_dia
+            
+            # FIX 2026-05-15: Log detallado para QRO (diagnóstico de bug $0)
+            if unidad_id == '130QRO':
+                logger.info(f"[SYNC_ABIERTAS_V2] QRO DETALLE:")
+                logger.info(f"  fecha_operacion_backend: {fecha_operacion_str}")
+                logger.info(f"  server_id: {server_id}")
+                logger.info(f"  api_url: {api_config['api_url']}")
+                logger.info(f"  raw_abiertas: {abiertas_data}")
+                logger.info(f"  raw_cerradas: {cerradas_data}")
+                logger.info(f"  ventas_abiertas: ${ventas_abiertas:,.2f}")
+                logger.info(f"  ventas_cerradas_dia: ${ventas_cerradas_dia:,.2f}")
+                logger.info(f"  total_estimado_dia: ${total_estimado_dia:,.2f}")
             
             # Crear modelo y upsert
             ventas_model = VentasDiaAbiertasV2(
@@ -584,7 +647,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 tickets_cerrados_dia=tickets_cerrados_dia,
                 pax_cerrados_dia=pax_cerrados_dia,
                 total_estimado_dia=total_estimado_dia,
-                fuente_original=FuenteOriginal.API_LOCAL,  # Nuevo valor
+                fuente_original=FuenteOriginal.API_LOCAL,
                 sync_run_id=run_id,
                 source_status="SYNC_OK"
             )
