@@ -1367,6 +1367,56 @@ Poblar las tablas canónicas creadas en DDL anterior para establecer la base de 
 ### Reporte Detallado:
 `/app/docs/reports/FASE_3_DML_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES_EJECUTADO.md`
 
+
+---
+
+## ✅ FASE 4 COMPLETADA: EmpresaResolver Read-Only (16-May-2026)
+
+### Objetivo:
+Crear componente centralizado para resolver empresas, aliases, servidores, roles de conexión y sucursales desde EDARSAHUB SQL.
+
+### Archivo Creado:
+`/app/backend/core/empresa_resolver.py`
+
+### Funciones Implementadas:
+1. `normalize_alias(texto)` - Normaliza alias (mayúsculas, sin acentos, sin °)
+2. `resolve_empresa_by_alias(alias)` - Busca en Sistema_EmpresasAlias → EmpresaID
+3. `resolve_empresa_by_id(empresa_id)` - Obtiene datos canónicos
+4. `get_empresa_connections(empresa_id)` - Retorna conexiones activas
+5. `get_connection_for_role(empresa_id, rol)` - Conexión específica por rol
+6. `get_system_branch_context(empresa_id, rol)` - Contexto completo
+7. `validate_no_ambiguous_alias(alias)` - Valida unicidad
+8. `health_check_empresa_resolver()` - Valida estado del resolver
+
+### Validaciones Exitosas:
+- ✅ 15/15 pruebas de normalización
+- ✅ 16/16 pruebas de resolución de aliases
+- ✅ 7/7 pruebas de conexiones empresa-servidor-sucursal
+- ✅ Health Check: STATUS=OK
+- ✅ ORIGEN → Sucursal 23/0023
+- ✅ 130QRO → Sucursal 21/0021
+- ✅ APIs Locales → VENTAS_DIA_API_LOCAL
+- ✅ SoftRestaurant → NumeroSucursalSistema=NULL
+
+### Aliases Insertados vs Omitidos:
+- **12 aliases insertados** (con AliasNormalizado único)
+- **14 aliases omitidos** (por duplicidad de AliasNormalizado - comportamiento correcto)
+- **Impacto**: Ninguno. La normalización resuelve todas las variantes.
+
+### Confirmaciones:
+- ✅ No consulta MongoDB como fuente autoritativa
+- ✅ No se modificaron módulos funcionales
+- ✅ No se ejecutó DDL/DML
+
+### Reporte Detallado:
+`/app/docs/reports/FASE_4_EMPRESARESOLVER_READONLY.md`
+
+### Siguiente Fase (Pendiente Autorización):
+1. P0: Refactorizar `adapters.py` para usar EmpresaResolver
+2. P0: Refactorizar `service.py` para usar EmpresaResolver
+3. P1: Refactorizar jobs del scheduler
+
+
 ### Siguiente Fase (Pendiente Autorización):
 1. **P0**: Implementar `EmpresaResolver` en backend
 2. **P0**: Refactorizar `adapters.py` para usar aliases canónicos
