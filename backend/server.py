@@ -9631,19 +9631,57 @@ def _es_conexion_explorable(row: Dict) -> bool:
     """
     Determina si una conexión es técnicamente explorable.
     
+    FASE 6 - Integración Catálogo Maestro:
+    Ahora usa SystemCapabilityResolver para validar si el sistema
+    tiene capacidad EXPLORADOR_BD activa en SQL.
+    
     Reglas:
-    - SQL_SERVER/DATA_SOURCE con host y database configurados
-    - API_LOCAL con URL configurada (asume /query disponible)
+    1. Validar técnicamente (host/database o api_url configurados)
+    2. Validar por capacidad (sistema tiene EXPLORADOR_BD activo)
+    
+    Fallback: Si el resolver falla, usa solo validación técnica (permisivo)
     """
+    # Validación técnica básica
     tipo = row.get('tipo_conexion', '')
     
     if tipo in ('SQL_SERVER', 'DATA_SOURCE'):
-        return bool(row.get('host')) and bool(row.get('database_name'))
+        tech_valid = bool(row.get('host')) and bool(row.get('database_name'))
+    elif tipo == 'API_LOCAL':
+        tech_valid = bool(row.get('api_url'))
+    else:
+        tech_valid = False
     
-    if tipo == 'API_LOCAL':
-        return bool(row.get('api_url'))
+    if not tech_valid:
+        return False
     
-    return False
+    # FASE 6: Validar capacidad EXPLORADOR_BD via Catálogo Maestro
+    try:
+        from core.system_capability_integration import is_system_explorable
+        
+        system_type = row.get('sistema_codigo') or row.get('system_type') or ''
+        
+        if not system_type:
+            # Sin system_type, permitir por compatibilidad
+            logging.debug(f"[EXPLORADOR] Conexión sin system_type, permitiendo por compatibilidad")
+            return True
+        
+        # Consultar resolver - es permisivo si hay errores
+        is_explorable = is_system_explorable(system_type)
+        
+        logging.debug(
+            f"[EXPLORADOR-CAPACIDAD] {system_type}: "
+            f"explorable={is_explorable} (via Catálogo Maestro)"
+        )
+        
+        return is_explorable
+        
+    except Exception as e:
+        # Fallback: Si el resolver falla, usar solo validación técnica
+        logging.warning(
+            f"[EXPLORADOR] Error consultando Catálogo Maestro: {e}. "
+            f"Usando validación técnica solamente."
+        )
+        return True  # Permisivo para no romper funcionalidad
 
 
 @api_router.get("/explorador/tablas/{server_id}")

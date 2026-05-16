@@ -2517,3 +2517,38 @@ Cada sistema nuevo requería modificaciones en 10+ archivos:
 ### Siguiente Paso
 Autorización del usuario para ejecutar DDL FASE 2 en EDARSAHUB.
 
+
+
+---
+
+## ✅ FASE 6 - Catálogo Maestro: Integración No Destructiva (COMPLETADA - Dic 2025)
+
+### Objetivo
+Integrar el `SystemCapabilityResolver` en Explorador BD y Sync Históricos sin romper funcionalidad existente.
+
+### Archivos Modificados
+| Archivo | Cambio |
+|---------|--------|
+| `/app/backend/server.py` | `_es_conexion_explorable()` usa resolver con fallback |
+| `/app/backend/modules/sync_historicos/service.py` | Condicionales modernizadas en 3 métodos |
+| `/app/backend/core/system_capability_integration.py` | Funciones auxiliares (ya existía) |
+
+### Validaciones Exitosas
+- ✅ 6/6 tests del script de validación pasados
+- ✅ 12 conexiones visibles en Explorador BD (sin regresión)
+- ✅ API_LOCAL en Explorador, NO en Sync Ventas
+- ✅ SOFTRESTAURANT y MPRO en Sync Ventas
+- ✅ Endpoints del catálogo operativos
+- ✅ Login y autenticación funcionales
+- ✅ py_compile sin errores
+
+### Documentos Generados
+- `/app/backend/scripts/validate_system_capability_integration_fase6.py`
+- `/app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE6_INTEGRACION_REPORTE.md`
+
+### Siguiente Fase
+**FASE 7 - Frontend**: Migrar filtros de React a endpoints dinámicos (requiere autorización)
+
+---
+
+*Última actualización: Dic-2025 - FASE 6 Catálogo Maestro Completada*

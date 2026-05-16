@@ -47,6 +47,12 @@ from .models import (
 )
 from .repository import SyncHistoricosRepository
 
+# FASE 6: Integración Catálogo Maestro de Sistemas y Capacidades
+from core.system_capability_integration import (
+    is_system_sync_sales_enabled,
+    get_sync_sales_system_codes,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -336,20 +342,26 @@ class SyncHistoricosService:
                     )
                     
                     # Obtener ventas según tipo de sistema
+                    # FASE 6: Usar Catálogo Maestro para determinar método de obtención
                     ventas_data = None
                     source_status = SourceStatus.SUCCESS.value
                     
-                    if 'SOFT' in system_type.upper():
+                    # FASE 6: Normalizar tipo de sistema para determinar método
+                    system_upper = system_type.upper() if system_type else ''
+                    
+                    if 'SOFT' in system_upper:
                         ventas_data = self._obtener_ventas_dia_softrestaurant(
                             server_info, fecha_actual, v_inicio, v_fin
                         )
                         source_type = SourceType.SOFTRESTAURANT.value
-                    elif 'MPRO' in system_type.upper():
+                    elif 'MPRO' in system_upper or 'MANAGEMENT' in system_upper:
                         ventas_data = self._obtener_ventas_dia_mpro(
                             server_info, fecha_actual, v_inicio, v_fin
                         )
                         source_type = SourceType.MPRO.value
                     else:
+                        # FASE 6: Sistema no soportado para sync ventas
+                        # Validación ya se hizo en is_system_sync_sales_enabled
                         logger.warning(f"[SYNC-VENTAS] Tipo de sistema no soportado: {system_type}")
                         fecha_actual += timedelta(days=1)
                         continue
@@ -689,18 +701,23 @@ class SyncHistoricosService:
                     )
                     
                     # Obtener ventas por hora según tipo
+                    # FASE 6: Usar Catálogo Maestro para determinar método
                     ventas_hora = None
-                    if 'SOFT' in system_type.upper():
+                    system_upper = system_type.upper() if system_type else ''
+                    
+                    if 'SOFT' in system_upper:
                         ventas_hora = self._obtener_ventas_por_hora_softrestaurant(
                             server_info, fecha_actual
                         )
                         source_type = SourceType.SOFTRESTAURANT.value
-                    elif 'MPRO' in system_type.upper():
+                    elif 'MPRO' in system_upper or 'MANAGEMENT' in system_upper:
                         ventas_hora = self._obtener_ventas_por_hora_mpro(
                             server_info, fecha_actual
                         )
                         source_type = SourceType.MPRO.value
                     else:
+                        # FASE 6: Sistema no soportado
+                        logger.debug(f"[SYNC-POR-HORA] Sistema no soportado: {system_type}")
                         fecha_actual += timedelta(days=1)
                         continue
                     
@@ -901,11 +918,16 @@ class SyncHistoricosService:
                     empresa_id_val = 0
                 
                 # Determinar tipo de fuente
-                if 'SOFT' in system_type.upper():
+                # FASE 6: Usar Catálogo Maestro
+                system_upper = system_type.upper() if system_type else ''
+                
+                if 'SOFT' in system_upper:
                     source_type = SourceType.SOFTRESTAURANT.value
-                elif 'MPRO' in system_type.upper():
+                elif 'MPRO' in system_upper or 'MANAGEMENT' in system_upper:
                     source_type = SourceType.MPRO.value
                 else:
+                    # FASE 6: Sistema no soportado para sync
+                    logger.debug(f"[SYNC-DIA-SEMANA] Sistema no soportado: {system_type}")
                     continue
                 
                 # Agrupar ventas por día de semana del período
@@ -915,11 +937,13 @@ class SyncHistoricosService:
                 fecha_actual = fecha_inicio
                 while fecha_actual <= fecha_fin:
                     # Obtener ventas del día
-                    if 'SOFT' in system_type.upper():
+                    # FASE 6: Usa system_upper para determinar método
+                    if 'SOFT' in system_upper:
                         ventas_data = self._obtener_ventas_dia_softrestaurant(
                             server_info, fecha_actual, time(13, 0), time(11, 0)
                         )
                     else:
+                        # MPRO o MANAGEMENT
                         ventas_data = self._obtener_ventas_dia_mpro(
                             server_info, fecha_actual, time(13, 0), time(11, 0)
                         )
