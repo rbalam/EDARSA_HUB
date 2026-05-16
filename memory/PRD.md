@@ -2265,3 +2265,33 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 
 **Reporte:** `/app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_ENTERPRISE_API_LOCAL_V2.md`
 
+
+
+---
+
+### FASE SYNC-2C: Diagnóstico y Corrección Hora MPRO
+**Fecha:** 2026-05-16
+**Estado:** ✅ COMPLETADO - OPCIÓN A (Campo válido encontrado)
+
+**Problema:** MPRO registraba todas las ventas en hora 0 en `Sync_Ventas_PorHora` porque `Vn_Fecha` solo contiene fecha (hora siempre 00:00:00).
+
+**Diagnóstico:**
+- `Vn_Fecha`: Fecha operativa del documento (sin hora real)
+- `Fecha_Alta`: Timestamp real de registro (con hora: 09:00-23:00, 00:00-01:00)
+
+**Solución implementada:**
+- Query MPRO corregida: usa `DATEPART(HOUR, Fecha_Alta)` para hora
+- Filtro mantiene `CAST(Vn_Fecha AS DATE)` para fecha operativa
+- Total cuadra 100% con `Sync_Ventas_Historicas`
+
+**Validación:**
+| Aspecto | Antes | Después |
+|---------|-------|---------|
+| Registros PorHora | 7 (hora 0) | 75 (distribución real) |
+| Horas por día | 1 | 10-13 |
+| Totales | Correctos | Correctos (sin cambio) |
+
+**Archivo modificado:** `/app/backend/modules/sync_historicos/service.py`
+
+**Reporte:** `/app/docs/reports/FASE_SYNC_2C_DIAGNOSTICO_HORA_MPRO_REPORTE.md`
+

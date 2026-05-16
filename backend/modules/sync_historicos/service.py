@@ -529,19 +529,32 @@ class SyncHistoricosService:
         Obtiene ventas por hora para MPRO.
         
         FASE SYNC-2: Usa Vn_Precio_Neto_Importe y Es_Cve_Estado = 'AC'
+        
+        FASE SYNC-2C (2026-05-16): Corrección hora MPRO
+        - PROBLEMA: Vn_Fecha solo contiene fecha (hora siempre 00:00:00)
+        - SOLUCIÓN: Usar Fecha_Alta para extraer hora real de registro
+        - VALIDACIÓN: 
+          * Vn_Fecha: Fecha operativa (día al que pertenece la venta)
+          * Fecha_Alta: Timestamp real del sistema (contiene hora)
+        - EVIDENCIA: Análisis de esquema MPRO CENTRAL2020 confirmó que Fecha_Alta
+          tiene distribución horaria real (09:00-23:00, 00:00-01:00)
+        - TOTAL: Cuadra exactamente con Sync_Ventas_Historicas
         """
         try:
             fecha_str = fecha_operacion.strftime('%Y-%m-%d')
             
+            # FASE SYNC-2C: Query corregida
+            # - Filtrar por Vn_Fecha (fecha operativa del documento)
+            # - Extraer hora de Fecha_Alta (timestamp real de registro)
             query = f"""
             SELECT 
-                DATEPART(HOUR, Vn_Fecha) as hora,
+                DATEPART(HOUR, Fecha_Alta) as hora,
                 ISNULL(SUM(Vn_Precio_Neto_Importe), 0) as venta_hora,
                 COUNT(DISTINCT Vn_Folio) as num_tickets
             FROM Venta
             WHERE Es_Cve_Estado = 'AC'
               AND CAST(Vn_Fecha AS DATE) = '{fecha_str}'
-            GROUP BY DATEPART(HOUR, Vn_Fecha)
+            GROUP BY DATEPART(HOUR, Fecha_Alta)
             ORDER BY hora
             """
             
