@@ -2423,7 +2423,7 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 
 ## FASE ARQ-SISTEMAS-CAPACIDADES - Catálogo Maestro SQL-First
 
-### Estado: FASE 2 DDL COMPLETADA ✅
+### Estado: FASE 3 SEED COMPLETADA ✅
 
 **Fecha inicio:** 2025-12-XX
 
@@ -2453,12 +2453,16 @@ Cada sistema nuevo requería modificaciones en 10+ archivos:
 - [x] Backend operativo post-ejecución
 - [x] No regresión confirmada
 
-### FASES PENDIENTES (Requieren Autorización)
+### FASE 3 - Seed Inicial (COMPLETADO ✅)
+- [x] Cargar capacidades SR (15 capacidades)
+- [x] Cargar capacidades MPRO (17 capacidades incluyendo SUCURSALES_VISIBLES, CUENTAS_POR_PAGAR)
+- [x] Cargar capacidades API_LOCAL/Enterprise (4 capacidades - solo EXPLORADOR)
+- [x] Cargar variantes de nombres (18 variantes para 5 sistemas)
+- [x] Cargar visibilidad por módulo (16 registros)
+- [x] Cero duplicados, FKs válidas
+- [x] **DECISIÓN:** Enterprise NO tiene SYNC_VENTAS_* (sin query_ventas validada)
 
-#### FASE 3 - Seed Inicial
-- [ ] Cargar capacidades SR (16 capacidades)
-- [ ] Cargar capacidades MPRO (18 capacidades)
-- [ ] Cargar variantes de nombres
+### FASES PENDIENTES (Requieren Autorización)
 
 #### FASE 4 - Resolver Central
 - [ ] Implementar `SystemCapabilityResolver`
