@@ -2321,3 +2321,38 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 
 **Reporte:** `/app/docs/reports/FASE_SYNC_2C_APLICACION_CORRECCION_MPRO_PORHORA_REPORTE.md`
 
+
+
+---
+
+### FASE SYNC-3A: Expansión Controlada 7 Días
+**Fecha:** 2026-05-16
+**Estado:** ⚠️ PARCIALMENTE COMPLETADO
+
+**Alcance:**
+- Rango: 2026-05-08 a 2026-05-15 (7 días)
+- Ventana: 13:00 - 11:00
+- Fuente: EDARSAHUB SQL
+
+**Servidores:**
+| Servidor | Estado |
+|----------|--------|
+| ManagmentPro (MPRO) | ✅ SINCRONIZADO |
+| 130° MERIDA | ⚠️ CREDENCIALES_NO_DESCIFRABLES |
+| CIENFUEGOS | ⚠️ CREDENCIALES_NO_DESCIFRABLES |
+| LA ESTELAR | ⚠️ CREDENCIALES_NO_DESCIFRABLES |
+| CHAPUR NORTE | PENDIENTE_API_LOCAL_VENTAS |
+| CHAPUR NORTE BACKOFICE | PENDIENTE_API_LOCAL_VENTAS |
+| PRUEBAS SOFTRESTAURANT | EXCLUIDO_PRUEBAS |
+
+**Resultado MPRO:**
+- Sync_Ventas_Historicas: 9 registros (2026-05-07 a 2026-05-15)
+- Sync_Ventas_PorHora: 89 registros (distribución real)
+- Totales cuadran 100% (±$0.01 redondeo)
+
+**Protección anti-$0:** ✅ Funcionó (no guardó datos falsos)
+
+**Bloqueador:** `SERVER_SECRET_KEY` no configurada en preview
+
+**Reporte:** `/app/docs/reports/FASE_SYNC_3A_EXPANSION_8_SERVIDORES_7_DIAS_REPORTE.md`
+
