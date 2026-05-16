@@ -2417,3 +2417,80 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 
 **Reporte:** `/app/docs/reports/FASE_SYNC_3A_R_ESCRITURA_REAL_SOFTRESTAURANT_REPORTE.md`
 
+
+
+---
+
+## FASE ARQ-SISTEMAS-CAPACIDADES - Catálogo Maestro SQL-First
+
+### Estado: FASE 1 DIAGNÓSTICO COMPLETADO
+
+**Fecha inicio:** 2025-12-XX
+
+### Objetivo
+Eliminar hardcoding de sistemas (MPRO, SoftRestaurant, Enterprise) en código frontend y backend mediante un Catálogo Maestro de Sistemas + Motor de Capacidades SQL-First.
+
+### Problema Resuelto
+Cada sistema nuevo requería modificaciones en 10+ archivos:
+- Filtros frontend (Servidores.js, Reportes.js, Compras.js)
+- Explorador BD
+- Sync Históricos
+- Queries por sistema
+- Normalizadores system_type
+
+### FASE 1 - Diagnóstico (COMPLETADO)
+- [x] Matriz de auditoría: 30+ puntos de hardcoding identificados
+- [x] DDL propuesto: IF NOT EXISTS (idempotente)
+- [x] SEED inicial preparado para SR y MPRO
+- [x] Plan de fases 2-7 documentado
+
+### FASES PENDIENTES (Requieren Autorización)
+
+#### FASE 2 - DDL SQL-First
+- [ ] Crear tabla `Sistema_Capacidades`
+- [ ] Crear tabla `Sistema_ModulosVisibilidad`
+- [ ] Crear tabla `Sistema_TiposVariantes`
+
+#### FASE 3 - Seed Inicial
+- [ ] Cargar capacidades SR (16 capacidades)
+- [ ] Cargar capacidades MPRO (18 capacidades)
+- [ ] Cargar variantes de nombres
+
+#### FASE 4 - Resolver Central
+- [ ] Implementar `SystemCapabilityResolver`
+- [ ] Funciones: system_supports(), get_systems_for_capability()
+
+#### FASE 5 - Endpoints
+- [ ] GET /api/catalogos/sistemas/capacidades
+- [ ] GET /api/catalogos/sistemas/por-capacidad/{cap}
+
+#### FASE 6 - Integración No Destructiva
+- [ ] Integrar en Explorador BD
+- [ ] Integrar en Sync Históricos
+
+#### FASE 7 - Frontend
+- [ ] Migrar filtros a endpoints dinámicos
+- [ ] Eliminar listas hardcodeadas
+
+### Documentos Generados
+- `/app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE1_DIAGNOSTICO.md`
+- `/app/docs/ddl/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_DDL_FASE2.sql`
+- `/app/docs/ddl/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_SEED_FASE3.sql`
+- `/app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_SQLFIRST_REPORTE.md`
+
+### Capacidades Propuestas
+| Capacidad | SR | MPRO |
+|-----------|:--:|:----:|
+| EXPLORADOR_BD | ✓ | ✓ |
+| SYNC_VENTAS_HISTORICAS | ✓ | ✓ |
+| SYNC_VENTAS_POR_HORA | ✓ | ✓ |
+| VENTAS_DIA | ✓ | ✓ |
+| VENTAS_PERIODO | ✓ | ✓ |
+| COMPRAS | ✓ | ✓ |
+| INVENTARIOS | ✓ | ✓ |
+| SUCURSALES_VISIBLES | ✗ | ✓ |
+| CUENTAS_POR_PAGAR | ✗ | ✓ |
+
+### Siguiente Paso
+Autorización del usuario para ejecutar DDL FASE 2 en EDARSAHUB.
+
