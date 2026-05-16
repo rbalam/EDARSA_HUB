@@ -2585,5 +2585,46 @@ Tareas pendientes según prioridad del usuario.
 
 ---
 
+
+
+---
+
+## ✅ FASE SYNC-3A-R2 - PorDiaSemana SoftRestaurant (COMPLETADA - Dic 2025)
+
+### Objetivo
+Completar `Sync_Ventas_PorDiaSemana` para los servidores SoftRestaurant y documentar MPRO/Enterprise pendientes.
+
+### Servidores Sincronizados
+| Servidor | Sistema | Días | Estado |
+|----------|---------|------|--------|
+| 130° MERIDA | SoftRestaurant | 7 | ✅ (ya existía) |
+| CIENFUEGOS | SoftRestaurant | 7 | ✅ NUEVO |
+| LA ESTELAR | SoftRestaurant | 7 | ✅ NUEVO |
+| ManagmentPro | MPRO | 7 | ✅ (ya existía) |
+
+### Servidores Excluidos (Documentados)
+| Servidor | Causa | Acción |
+|----------|-------|--------|
+| CHAPUR NORTE | API_LOCAL sin SYNC_VENTAS | SKIPPED correctamente |
+| CHAPUR NORTE BACKOFICE | API_LOCAL sin SYNC_VENTAS | SKIPPED correctamente |
+
+### Validaciones
+- ✅ Dry-run: 14 registros calculados
+- ✅ Escritura real: 14 registros UPSERT
+- ✅ Idempotencia: Confirmada
+- ✅ Sin $0 falsos
+- ✅ Sin regresión en endpoints
+
+### Método
+Cálculo desde `Sync_Ventas_Historicas` en lugar de consulta directa (servidores remotos con conectividad intermitente).
+
+### Documentos Generados
+- `/app/backend/scripts/fase_sync_3a_r2_pordiasemana.py`
+- `/app/docs/reports/FASE_SYNC_3A_R2_PORDIASEMANA_CONFIG_PENDIENTES_REPORTE.md`
+
+---
+
+*Última actualización: Dic-2025 - FASE SYNC-3A-R2 Completada*
+
 *Última actualización: Dic-2025 - FASE 7 Catálogo Maestro Frontend Completada*
 
