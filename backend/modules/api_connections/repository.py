@@ -837,6 +837,7 @@ async def execute_test_query(
                     "rows_count": len(rows),
                     "columns": columns,
                     "preview_data": rows,
+                    "data": rows,  # CORRECCIÓN P1: Agregar 'data' para compatibilidad con Explorador
                     "message": f"Consulta ejecutada exitosamente ({len(rows)} filas)"
                 }
                 

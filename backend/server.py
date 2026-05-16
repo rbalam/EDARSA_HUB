@@ -9694,16 +9694,17 @@ async def _cargar_tablas_api_local(api_conn: Dict, server_id: str) -> Dict:
     """
     Carga tablas desde una conexión API_LOCAL usando endpoint /query.
     
-    Usa GET con parámetro ?sql= (SELECT readonly) para obtener lista de tablas.
-    Compatible con APIs legacy de MPRO, Enterprise, etc.
-    """
-    import httpx
-    from modules.api_connections.repository import get_decrypted_api_key
+    CORRECCIÓN P1 (2026-05-16): Reutiliza execute_test_query que ya funciona
+    para APIs Enterprise (CHAPUR NORTE, etc.) en lugar de httpx directo.
     
-    api_url = api_conn.get('url', api_conn.get('api_url', ''))
-    api_key = await get_decrypted_api_key(api_conn)
+    Usa INFORMATION_SCHEMA.TABLES que es más compatible que sys.tables.
+    TOP 500 para obtener todas las tablas de la base de datos.
+    """
+    from modules.api_connections.repository import execute_test_query
+    
     nombre = api_conn.get('nombre', api_conn.get('name', 'API'))
     sistema = api_conn.get('tipo', api_conn.get('system_type', 'UNKNOWN'))
+    api_url = api_conn.get('url', api_conn.get('api_url', ''))
     
     if not api_url:
         return {
@@ -9715,65 +9716,54 @@ async def _cargar_tablas_api_local(api_conn: Dict, server_id: str) -> Dict:
             "tipo_conexion": "API_LOCAL"
         }
     
-    # Query seguro para obtener tablas (SELECT readonly)
-    metadata_query = "SELECT name AS tabla FROM sys.tables ORDER BY name"
+    # Query compatible con Enterprise y SoftRestaurant - TOP 500 para metadata completa
+    metadata_query = """
+SELECT TOP 500 TABLE_NAME as tabla 
+FROM INFORMATION_SCHEMA.TABLES 
+WHERE TABLE_TYPE = 'BASE TABLE' 
+ORDER BY TABLE_NAME
+"""
     
     try:
-        # Construir URL del endpoint (GET con ?sql=)
-        base_url = api_url.rstrip('/')
+        # Usar la función ya probada que funciona con CHAPUR NORTE
+        result = await execute_test_query(
+            api_id=server_id,
+            sql_query=metadata_query.strip(),
+            timeout=60  # Más tiempo para queries de metadata grandes
+        )
         
-        # Headers con API key
-        headers = {"x-api-key": api_key} if api_key else {}
-        
-        # Hacer request GET con SQL como parámetro
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                base_url,
-                params={"sql": metadata_query},
-                headers=headers
-            )
+        if result.get('success') and result.get('status_code') == 200:
+            # Extraer tablas de la respuesta
+            preview_data = result.get('preview_data', result.get('data', []))
+            tablas = []
             
-            if response.status_code == 200:
-                data = response.json()
-                tablas = []
-                
-                # Parsear respuesta (puede variar según el endpoint)
-                if isinstance(data, list):
-                    tablas = [{"tabla": r.get('tabla', r.get('name', str(r))), "tipo": "TABLE"} for r in data if r]
-                elif isinstance(data, dict):
-                    rows = data.get('data', data.get('rows', data.get('results', [])))
-                    if isinstance(rows, list):
-                        tablas = [{"tabla": r.get('tabla', r.get('name', str(r))), "tipo": "TABLE"} for r in rows if r]
-                
-                logging.info(f"[EXPLORADOR][API_LOCAL] {nombre}: {len(tablas)} tablas obtenidas")
-                return {
-                    "servidor": nombre,
-                    "sistema": sistema,
-                    "database": api_conn.get('sucursal_destino', 'API'),
-                    "tablas": tablas,
-                    "tipo_conexion": "API_LOCAL"
-                }
-            else:
-                logging.warning(f"[EXPLORADOR][API_LOCAL] {nombre}: HTTP {response.status_code}")
-                return {
-                    "servidor": nombre,
-                    "sistema": sistema,
-                    "database": "API",
-                    "tablas": [],
-                    "error": f"Error de API: HTTP {response.status_code}",
-                    "tipo_conexion": "API_LOCAL"
-                }
-                
-    except httpx.TimeoutException:
-        logging.warning(f"[EXPLORADOR][API_LOCAL] {nombre}: Timeout")
-        return {
-            "servidor": nombre,
-            "sistema": sistema,
-            "database": "API",
-            "tablas": [],
-            "error": "Timeout al conectar con la API",
-            "tipo_conexion": "API_LOCAL"
-        }
+            if isinstance(preview_data, list):
+                for row in preview_data:
+                    if isinstance(row, dict):
+                        tabla_name = row.get('tabla', row.get('TABLE_NAME', row.get('name', '')))
+                        if tabla_name:
+                            tablas.append({"tabla": tabla_name, "tipo": "TABLE"})
+            
+            logging.info(f"[EXPLORADOR][API_LOCAL] {nombre}: {len(tablas)} tablas obtenidas via test_query")
+            return {
+                "servidor": nombre,
+                "sistema": sistema,
+                "database": api_conn.get('sucursal_destino', 'API'),
+                "tablas": tablas,
+                "tipo_conexion": "API_LOCAL"
+            }
+        else:
+            error_msg = result.get('error', result.get('message', 'Error desconocido'))
+            logging.warning(f"[EXPLORADOR][API_LOCAL] {nombre}: {error_msg}")
+            return {
+                "servidor": nombre,
+                "sistema": sistema,
+                "database": "API",
+                "tablas": [],
+                "error": f"Error de API: {error_msg[:100]}",
+                "tipo_conexion": "API_LOCAL"
+            }
+            
     except Exception as e:
         logging.error(f"[EXPLORADOR][API_LOCAL] {nombre}: {e}")
         return {
