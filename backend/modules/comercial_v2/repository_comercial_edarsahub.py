@@ -72,6 +72,7 @@ def get_unidades_negocio_config() -> List[UnidadNegocioConfig]:
     
     Retorna lista de UnidadNegocioConfig con las 5 unidades activas.
     """
+    # FIX IDENTIDAD CANÓNICA (2026-05-16): Usar códigos CANÓNICOS, no aliases legacy
     query = """
     SELECT 
         id as server_id,
@@ -79,9 +80,9 @@ def get_unidades_negocio_config() -> List[UnidadNegocioConfig]:
         system_type,
         host,
         CASE 
-            WHEN nombre LIKE '%MERIDA%' OR nombre LIKE '%MID%' THEN '130-MER'
+            WHEN nombre LIKE '%MERIDA%' OR nombre LIKE '%MID%' THEN '130MID'
             WHEN nombre LIKE '%CIENFUEGOS%' AND nombre NOT LIKE '%TABLAJERIA%' THEN 'CIENFUEGOS'
-            WHEN nombre LIKE '%ESTELAR%' THEN 'LA-ESTELAR'
+            WHEN nombre LIKE '%ESTELAR%' THEN 'ESTELAR'
             WHEN nombre = 'ManagmentPro' THEN 'MPRO-MULTI'
             ELSE REPLACE(UPPER(nombre), ' ', '-')
         END as unidad_id_calculado
@@ -123,10 +124,12 @@ def get_sucursales_mpro(server_id: str) -> List[Dict[str, str]]:
     """
     Para MPRO, obtiene las sucursales específicas (QRO=0021, ORIGEN=0023).
     MPRO tiene múltiples sucursales en un solo server_id.
+    
+    FIX IDENTIDAD CANÓNICA (2026-05-16): Usar códigos CANÓNICOS
     """
-    # Mapeo conocido de sucursales MPRO
+    # Mapeo conocido de sucursales MPRO con códigos CANÓNICOS
     return [
-        {'sucursal_id': '0021', 'nombre': '130° QUERETARO', 'unidad_id': '130-QRO'},
+        {'sucursal_id': '0021', 'nombre': '130° QUERÉTARO', 'unidad_id': '130QRO'},
         {'sucursal_id': '0023', 'nombre': 'ORIGEN', 'unidad_id': 'ORIGEN'},
     ]
 

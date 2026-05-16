@@ -291,62 +291,80 @@ def _obtener_codigo_canonico_mpro(server_id: str, sucursal_id: str, sucursal_nom
 
 def _mapear_codigo_a_unidad_negocio_id(codigo_empresa: str) -> str:
     """
-    FASE 5B HELPER: Mapea código canónico de empresa a unidad_negocio_id legacy.
+    FIX IDENTIDAD CANÓNICA (2026-05-16):
+    =====================================
+    Esta función ahora retorna el CÓDIGO CANÓNICO sin traducción.
     
-    La tabla Comercial_KPIs_Diarios_v2 usa formatos legacy como "130-MER", "LA-ESTELAR".
-    Esta función traduce códigos canónicos (130MID, ESTELAR) a esos formatos.
+    REGLA DE NEGOCIO:
+    - La identidad principal es unidad_negocio_id CANÓNICO (130MID, 130QRO, etc.)
+    - Los aliases (130-MER, 130-QRO) son solo para compatibilidad de lectura histórica
+    - NUNCA traducir el código canónico a un alias para ESCRITURA
+    - Los datos en Comercial_KPIs_Diarios_v2 deben usar códigos canónicos
     
-    PRIORIDAD:
-    1. EmpresaResolver: Buscar en Sistema_EmpresasAlias para obtener alias legacy
-    2. Fallback hardcodeado: Para compatibilidad temporal
+    CÓDIGOS CANÓNICOS OFICIALES (según Unidades_Negocio en EDARSAHUB):
+    - 130MID (130° MÉRIDA)
+    - 130QRO (130° QUERÉTARO)  
+    - CIENFUEGOS
+    - ESTELAR (LA ESTELAR)
+    - ORIGEN
     
     Args:
-        codigo_empresa: Código canónico (130MID, ESTELAR, CIENFUEGOS, 130QRO, ORIGEN)
+        codigo_empresa: Código de empresa/unidad
     
     Returns:
-        unidad_negocio_id en formato legacy (130-MER, LA-ESTELAR, etc.)
+        Código canónico SIN traducción a alias legacy
     """
     if not codigo_empresa:
         return codigo_empresa
     
-    # =========================================================================
-    # FASE 5B: Intentar resolver alias legacy desde EmpresaResolver
-    # =========================================================================
-    if _EMPRESA_RESOLVER_OK and EMPRESA_RESOLVER_AVAILABLE:
-        try:
-            empresa = resolve_empresa_by_alias(codigo_empresa)
-            if empresa:
-                # Buscar alias legacy más común para esta empresa
-                from core.empresa_resolver import get_all_aliases_for_empresa
-                aliases = get_all_aliases_for_empresa(empresa.empresa_id)
-                
-                # Preferir alias LEGACY que tenga guión (130-MER, LA-ESTELAR)
-                for alias_info in aliases:
-                    alias = alias_info.get('alias', '')
-                    if alias_info.get('origen') == 'LEGACY' and '-' in alias:
-                        logging.debug(f"[SERVICE] _mapear_codigo_a_unidad_negocio_id: {codigo_empresa} -> {alias} (via EmpresaResolver)")
-                        return alias
-                
-                # Si no hay alias con guión, retornar el código canónico
-                return empresa.codigo_empresa
-        except Exception as e:
-            logging.warning(f"[SERVICE] Error en EmpresaResolver para mapeo: {e}")
+    codigo_upper = codigo_empresa.upper().strip()
     
     # =========================================================================
-    # Fallback: Mapeo hardcodeado (temporal, para compatibilidad)
+    # FIX: Normalizar aliases LEGACY hacia códigos CANÓNICOS
+    # NUNCA al revés (canónico -> legacy)
     # =========================================================================
-    fallback_map = {
-        '130MID': '130-MER',
+    
+    # Mapeo de aliases LEGACY hacia códigos CANÓNICOS
+    # Esto permite que consultas con datos históricos que usan aliases
+    # se resuelvan al código canónico correcto
+    normalizacion_a_canonico = {
+        # Mérida - todas las variantes resuelven a 130MID
+        '130-MER': '130MID',
+        '130-MID': '130MID',
+        '130MER': '130MID',
+        '130 MERIDA': '130MID',
+        '130 MÉRIDA': '130MID',
+        '130° MERIDA': '130MID',
+        '130° MÉRIDA': '130MID',
+        'MERIDA': '130MID',
+        'MÉRIDA': '130MID',
+        # Querétaro - todas las variantes resuelven a 130QRO
+        '130-QRO': '130QRO',
+        '130 QRO': '130QRO',
+        '130 QUERETARO': '130QRO',
+        '130 QUERÉTARO': '130QRO',
+        '130° QUERETARO': '130QRO',
+        '130° QUERÉTARO': '130QRO',
+        'QUERETARO': '130QRO',
+        'QUERÉTARO': '130QRO',
+        # La Estelar
+        'LA-ESTELAR': 'ESTELAR',
+        'LA ESTELAR': 'ESTELAR',
+        # Códigos canónicos (no cambiar)
+        '130MID': '130MID',
+        '130QRO': '130QRO',
         'CIENFUEGOS': 'CIENFUEGOS',
-        'ESTELAR': 'LA-ESTELAR',
-        '130QRO': '130-QRO',
-        'ORIGEN': 'ORIGEN'
+        'ESTELAR': 'ESTELAR',
+        'ORIGEN': 'ORIGEN',
     }
     
-    # FIX: Retornar el alias del fallback_map, o el código original si no está mapeado
-    resultado = fallback_map.get(codigo_empresa.upper(), codigo_empresa)
-    logging.debug(f"[SERVICE] _mapear_codigo_a_unidad_negocio_id: {codigo_empresa} -> {resultado} (fallback)")
-    return resultado
+    # Buscar en el mapa de normalización
+    codigo_canonico = normalizacion_a_canonico.get(codigo_upper, codigo_upper)
+    
+    if codigo_canonico != codigo_upper:
+        logging.info(f"[IDENTIDAD-CANONICA] Normalizado: '{codigo_empresa}' -> '{codigo_canonico}'")
+    
+    return codigo_canonico
 
 
 def _obtener_sucursales_mpro_desde_resolver() -> List[Dict[str, Any]]:
@@ -979,16 +997,23 @@ def _obtener_kpis_tablero_desde_edarsahub(
     }
 
 
-# Mapeo de unidades EDARSAHUB (equivalente a la configuración de los jobs de sync)
+# ============================================================================
+# MAPEO DE UNIDADES EDARSAHUB - CÓDIGOS CANÓNICOS
+# ============================================================================
+# FIX IDENTIDAD CANÓNICA (2026-05-16):
+# - Usar SIEMPRE códigos CANÓNICOS según tabla Unidades_Negocio en EDARSAHUB
+# - NUNCA usar aliases legacy (130-MER, 130-QRO, LA-ESTELAR)
+# - Los códigos canónicos son: 130MID, 130QRO, CIENFUEGOS, ESTELAR, ORIGEN
+# ============================================================================
 UNIDADES_EDARSAHUB_MAP = {
     # SoftRestaurant
-    "a5547321-1139-4d2b-9d53-182ca737b6b6": {"unidad_negocio_id": "130-MER", "nombre": "130° MÉRIDA", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+    "a5547321-1139-4d2b-9d53-182ca737b6b6": {"unidad_negocio_id": "130MID", "nombre": "130° MÉRIDA", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
     "6d053c22-523e-48c0-b72b-96081e2d781b": {"unidad_negocio_id": "CIENFUEGOS", "nombre": "CIENFUEGOS", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
-    "a5ff0e25-f029-43db-b634-d4ac814c904f": {"unidad_negocio_id": "LA-ESTELAR", "nombre": "LA ESTELAR", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+    "a5ff0e25-f029-43db-b634-d4ac814c904f": {"unidad_negocio_id": "ESTELAR", "nombre": "LA ESTELAR", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
     # MPRO (necesitan sucursal específica)
     "1b230a06-ffaf-4c70-bd27-b1be3579dea6": {
         "sucursales": {
-            "0021": {"unidad_negocio_id": "130-QRO", "nombre": "130° QUERETARO"},
+            "0021": {"unidad_negocio_id": "130QRO", "nombre": "130° QUERÉTARO"},
             "0023": {"unidad_negocio_id": "ORIGEN", "nombre": "ORIGEN"}
         },
         "sistema": "MPRO"
