@@ -2423,7 +2423,7 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 
 ## FASE ARQ-SISTEMAS-CAPACIDADES - Catálogo Maestro SQL-First
 
-### Estado: FASE 3 SEED COMPLETADA ✅
+### Estado: FASE 4 RESOLVER COMPLETADA ✅
 
 **Fecha inicio:** 2025-12-XX
 
@@ -2462,11 +2462,18 @@ Cada sistema nuevo requería modificaciones en 10+ archivos:
 - [x] Cero duplicados, FKs válidas
 - [x] **DECISIÓN:** Enterprise NO tiene SYNC_VENTAS_* (sin query_ventas validada)
 
-### FASES PENDIENTES (Requieren Autorización)
+### FASE 4 - Resolver Central (COMPLETADO ✅)
+- [x] Implementar `SystemCapabilityResolver` en `/app/backend/core/system_capability_resolver.py`
+- [x] Funciones: normalize_system_type(), system_supports(), get_capabilities()
+- [x] Funciones: get_systems_for_capability(), get_explorable_systems(), get_sync_sales_systems()
+- [x] Funciones: get_visible_systems_for_module(), get_visibility(), explain_system()
+- [x] Cache ligero en memoria con TTL (5 min)
+- [x] Compatibilidad temporal con system_type_utils.py (fallback)
+- [x] Script de validación: 37/37 tests pasados (100%)
+- [x] **CONFIRMADO:** API_LOCAL NO aparece en sync_sales_systems
+- [x] **CONFIRMADO:** API_LOCAL SÍ aparece en explorable_systems
 
-#### FASE 4 - Resolver Central
-- [ ] Implementar `SystemCapabilityResolver`
-- [ ] Funciones: system_supports(), get_systems_for_capability()
+### FASES PENDIENTES (Requieren Autorización)
 
 #### FASE 5 - Endpoints
 - [ ] GET /api/catalogos/sistemas/capacidades
