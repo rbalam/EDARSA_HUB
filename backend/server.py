@@ -381,6 +381,15 @@ api_router.include_router(saldos_bancarios_router)
 # MÓDULO CATÁLOGOS: Registrar router de catálogos
 api_router.include_router(get_catalogos_router())
 
+# ============================================================================
+# FASE 5 ARQ: Catálogo Maestro de Sistemas y Capacidades SQL-First
+# Endpoints: /api/catalogos/sistemas/*
+# FUENTE: EDARSAHUB (Sistema_Tipos, Sistema_Capacidades, etc.)
+# NO usa MongoDB
+# ============================================================================
+from api.catalogos_sistemas import router as catalogos_sistemas_router
+api_router.include_router(catalogos_sistemas_router)
+
 # MÓDULO PROPINAS TPV: Registrar router de propinas TPV (FASE 1 MVP - Solo SoftRestaurant)
 # Endpoints bajo /api/finanzas/propinas/*
 # ARQUITECTURA: SQL Server EDARSA HUB (persistencia) + MongoDB (cache)

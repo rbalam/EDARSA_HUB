@@ -2423,7 +2423,7 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 
 ## FASE ARQ-SISTEMAS-CAPACIDADES - Catálogo Maestro SQL-First
 
-### Estado: FASE 4 RESOLVER COMPLETADA ✅
+### Estado: FASE 5 ENDPOINTS COMPLETADA ✅
 
 **Fecha inicio:** 2025-12-XX
 
@@ -2473,11 +2473,19 @@ Cada sistema nuevo requería modificaciones en 10+ archivos:
 - [x] **CONFIRMADO:** API_LOCAL NO aparece en sync_sales_systems
 - [x] **CONFIRMADO:** API_LOCAL SÍ aparece en explorable_systems
 
-### FASES PENDIENTES (Requieren Autorización)
+### FASE 5 - Endpoints (COMPLETADO ✅)
+- [x] Router creado en `/app/backend/api/catalogos_sistemas.py`
+- [x] GET /api/catalogos/sistemas-capacidades
+- [x] GET /api/catalogos/sistemas-capacidades/explorables
+- [x] GET /api/catalogos/sistemas-capacidades/sync-ventas
+- [x] GET /api/catalogos/sistemas-capacidades/normalizar/{system_type}
+- [x] GET /api/catalogos/sistemas-capacidades/diagnostico/{system_type}
+- [x] GET /api/catalogos/sistemas-capacidades/capacidades/{capacidad}
+- [x] Autenticación RBAC aplicada
+- [x] **CONFIRMADO:** API_LOCAL en explorables, NO en sync-ventas
+- [x] Script validación: 14/14 tests críticos pasados
 
-#### FASE 5 - Endpoints
-- [ ] GET /api/catalogos/sistemas/capacidades
-- [ ] GET /api/catalogos/sistemas/por-capacidad/{cap}
+### FASES PENDIENTES (Requieren Autorización)
 
 #### FASE 6 - Integración No Destructiva
 - [ ] Integrar en Explorador BD
