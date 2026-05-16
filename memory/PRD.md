@@ -2803,6 +2803,41 @@ u['fecha_max'] = fecha_operativa.isoformat()
 | ORIGEN | $1.20M | $2.33M |
 
 **Estado:** ✅ COMPLETADO
+
+---
+
+## FIX: PROYECCIÓN MENSUAL - VALIDACIÓN EXHAUSTIVA (16-May-2026)
+
+### Regla de Negocio Final
+
+```
+ProyecciónMensual = VentasAcumuladas / DiasÚltimoRegistro * DíasMes
+```
+
+**Donde:**
+- `DiasÚltimoRegistro` = Día del último registro de ventas en EDARSAHUB **por UNIDAD**
+- Cada unidad usa su propio último día (no un valor global)
+
+### Validación Final por Unidad
+
+| Unidad | Ventas | Días | Proyección | Fórmula |
+|--------|--------|------|------------|---------|
+| CIENFUEGOS | $2,543,511 | 16 | $4,928,053 | /16*31 |
+| 130° QUERETARO | $1,911,561 | 15 | $3,950,559 | /15*31 |
+| **130° MERIDA** | **$1,827,730** | **15** | **$3,777,309** | **/15*31** |
+| LA ESTELAR | $1,512,404 | 16 | $2,930,283 | /16*31 |
+| ORIGEN | $1,201,739 | 15 | $2,483,594 | /15*31 |
+
+### Archivos Modificados
+- `/app/backend/modules/comercial/routes.py` - Obtener último día de EDARSAHUB
+- `/app/backend/modules/comercial/service.py` - Proyección individual por unidad
+- `/app/backend/modules/comercial_v2/routes.py` - Fix `fecha_hoy` undefined
+- `/app/frontend/src/pages/TableroEjecutivo.js` - Usar `u.dias` del API (no hoy.getDate())
+
+### Reporte Completo
+`/app/docs/reports/VALIDACION_PROYECCION_MENSUAL_TABLERO_EJECUTIVO.md`
+
+**Estado:** ✅ VALIDADO Y DOCUMENTADO (16-May-2026)
 ---
 
 *Última actualización: 16-May-2026 - Fix Identidad Canónica y Proyección Mensual Completado*

@@ -860,62 +860,29 @@ def _obtener_kpis_tablero_desde_edarsahub(
     cheques = kpis_actual['cheques']
     
     # =========================================================================
-    # FIX PROYECCIÓN MENSUAL: Usar días transcurridos OPERATIVOS del mes
+    # PROYECCIÓN MENSUAL: Usar ÚLTIMO DÍA CON VENTAS REGISTRADAS
     # =========================================================================
-    # REGLA CANÓNICA:
-    # ProyeccionMensual = VentasAcumuladas / DiasTranscurridosOperativos * DiasMes
+    # REGLA DE NEGOCIO:
+    # ProyeccionMensual = VentasAcumuladas / DiasUltimoRegistro * DiasMes
     #
-    # DiasTranscurridosOperativos = Días calendario desde inicio del mes hasta
-    # la FechaOperacion actual (zona horaria México), NO el último día con datos.
+    # Donde:
+    # - DiasUltimoRegistro = día del último registro de ventas en EDARSAHUB
+    # - Si último día con ventas = 15, entonces dias_transcurridos = 15
+    # - NO usar fecha operativa actual, usar datos reales
     #
     # Ejemplo Mayo 2026:
-    # - Si hoy es 15 de mayo (México), dias_transcurridos = 15
-    # - Independiente de si hay 6, 10 o 14 días con ventas registradas
+    # - Hoy es 16 de mayo, pero último día con ventas = 15
+    # - dias_transcurridos = 15
+    # - proyección = ventas / 15 * 31
     #
-    # PROHIBIDO: Usar COUNT(DISTINCT fecha_operacion) como divisor
+    # Ventana operativa: Jornada cierra a las 11:00 AM del día siguiente (turno 24h)
     # =========================================================================
     
-    # Obtener fecha operativa actual en zona horaria México
-    try:
-        from zoneinfo import ZoneInfo
-        tz_mexico = ZoneInfo('America/Mexico_City')
-    except ImportError:
-        import pytz
-        tz_mexico = pytz.timezone('America/Mexico_City')
+    # Usar dia_ultimo (obtenido en línea ~803) como días transcurridos
+    # dia_ultimo ya contiene el día del último registro con ventas
+    dias_transcurridos = dia_ultimo
     
-    from datetime import datetime, timezone
-    ahora_mexico = datetime.now(tz_mexico)
-    
-    # Determinar la FechaOperacion actual respetando ventana operativa restaurante
-    # Si es antes de las 03:00, pertenece al día operativo anterior
-    hora_actual = ahora_mexico.hour
-    if hora_actual < 3:  # Antes de las 3 AM, sigue siendo el día operativo anterior
-        fecha_operacion_actual = ahora_mexico.date() - timedelta(days=1)
-    else:
-        fecha_operacion_actual = ahora_mexico.date()
-    
-    # Calcular días transcurridos operativos del mes
-    fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d').date()
-    
-    # Si la fecha operativa actual está después del rango solicitado, usar fecha_fin
-    # Esto maneja consultas de meses anteriores correctamente
-    fecha_fin_consulta = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
-    
-    if fecha_operacion_actual > fecha_fin_consulta:
-        # Consulta de mes cerrado: usar el último día del rango
-        dias_transcurridos_operativos = (fecha_fin_consulta - fecha_ini_dt).days + 1
-        logging.info(f"[PROYECCION-FIX] {nombre_unidad}: Mes cerrado, usando días del rango: {dias_transcurridos_operativos}")
-    elif fecha_operacion_actual >= fecha_ini_dt:
-        # Consulta del mes actual: usar días hasta fecha operativa actual
-        dias_transcurridos_operativos = (fecha_operacion_actual - fecha_ini_dt).days + 1
-        logging.info(f"[PROYECCION-FIX] {nombre_unidad}: Mes actual, FechaOperacion={fecha_operacion_actual}, días={dias_transcurridos_operativos}")
-    else:
-        # Consulta de mes futuro (no debería ocurrir)
-        dias_transcurridos_operativos = 1
-        logging.warning(f"[PROYECCION-FIX] {nombre_unidad}: Consulta de mes futuro, usando días=1")
-    
-    # Usar días transcurridos OPERATIVOS para la proyección
-    dias_transcurridos = dias_transcurridos_operativos
+    logging.info(f"[PROYECCION] {nombre_unidad}: Último día con ventas={dia_ultimo}, dias_transcurridos={dias_transcurridos}, dias_mes={dias_mes}")
     
     # 4. OBTENER KPIs MES ANTERIOR
     kpis_mes_ant = _get_kpis_periodo_edarsahub(server_id, fecha_ini_ant, fecha_fin_ant, sucursal_id)

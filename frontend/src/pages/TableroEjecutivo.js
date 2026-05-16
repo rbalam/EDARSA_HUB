@@ -87,6 +87,14 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
     // - Si variación es 0.0: mostrar "0.0%" (valor real)
     // =========================================================================
     
+    // FIX PROYECCIÓN: Cada unidad usa su propio "dias" del API (último día con ventas)
+    // NO usar hoy.getDate() que es del navegador local
+    const calcularProyeccionIndividual = (ventas, diasUnidad) => {
+      const dias = diasUnidad || diasTranscurridos; // Fallback a días globales si no viene del API
+      if (dias <= 0 || ventas <= 0) return 0;
+      return Math.round((ventas / dias) * diasProyectables);
+    };
+    
     const unidadesTransformadas = unidades.map(u => ({
       id: u.unidad_negocio_id,
       unidad: u.unidad_negocio_nombre,
@@ -100,7 +108,8 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       // pax_promedio = ventas / pax
       cheque_promedio: u.tickets_total > 0 ? u.ventas_total / u.tickets_total : 0,
       pax_promedio: u.pax_total > 0 ? u.ventas_total / u.pax_total : 0,
-      proyeccion: calcularProyeccion(u.ventas_total || 0),
+      // FIX: Usar días de la unidad (del API), no días globales del navegador
+      proyeccion: calcularProyeccionIndividual(u.ventas_total || 0, u.dias),
       // FASE 3: Variaciones vienen directamente de V2 (EDARSAHUB)
       // null = sin base comparativa (mostrar "-")
       // 0.0 = variación real cero (mostrar "0.0%")

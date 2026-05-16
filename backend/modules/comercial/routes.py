@@ -562,14 +562,61 @@ async def _tablero_ejecutivo_internal(
     # fecha_ini: primer día del PRIMER mes seleccionado
     fecha_ini = f"{anio}-{mes_min:02d}-01"
     
+    # =========================================================================
+    # REGLA DE NEGOCIO: Usar último día CON VENTAS REGISTRADAS en EDARSAHUB
+    # =========================================================================
+    # La proyección debe calcularse como:
+    #   ventas_acumuladas / dias_ultimo_registro * dias_mes
+    #
+    # Donde:
+    # - dias_ultimo_registro = día del último registro de ventas en EDARSAHUB
+    # - Si EDARSAHUB tiene ventas hasta día 15, usar 15 como divisor
+    # - NO usar hora actual para determinar si la jornada cerró
+    #
+    # Ventana operativa: Jornada cierra 11:00 AM día siguiente (turno 24h)
+    # - Esto aplica para sincronización y operaciones, pero NO para proyección
+    # - La proyección usa los DATOS REALES disponibles en EDARSAHUB
+    # =========================================================================
+    
+    # Obtener el último día CON VENTAS en EDARSAHUB para el mes actual
+    # Esto determina fecha_fin para la consulta del tablero
+    try:
+        from modules.comercial.service import _query_edarsahub_tablero
+        
+        query_ultimo_dia = f"""
+        SELECT MAX(dia) as ultimo_dia, MAX(fecha_operacion) as ultima_fecha
+        FROM Comercial_KPIs_Diarios_v2
+        WHERE anio = {anio} AND mes = {mes_max}
+          AND ventas_total > 0
+        """
+        result = _query_edarsahub_tablero(query_ultimo_dia)
+        
+        if result and result[0].get('ultimo_dia'):
+            ultimo_dia_con_datos = result[0]['ultimo_dia']
+            ultima_fecha_con_datos = result[0]['ultima_fecha']
+            if isinstance(ultima_fecha_con_datos, str):
+                ultima_fecha_con_datos = ultima_fecha_con_datos.split('T')[0]
+            else:
+                ultima_fecha_con_datos = ultima_fecha_con_datos.strftime('%Y-%m-%d')
+            logging.info(f"[TABLERO-EJECUTIVO] Último día con datos en EDARSAHUB: {ultimo_dia_con_datos} ({ultima_fecha_con_datos})")
+        else:
+            # Sin datos en EDARSAHUB, usar ayer como fallback
+            ultimo_dia_con_datos = (hoy - timedelta(days=1)).day
+            ultima_fecha_con_datos = (hoy - timedelta(days=1)).strftime('%Y-%m-%d')
+            logging.warning(f"[TABLERO-EJECUTIVO] Sin datos en EDARSAHUB, usando ayer: {ultima_fecha_con_datos}")
+    except Exception as e:
+        logging.error(f"[TABLERO-EJECUTIVO] Error obteniendo último día: {e}")
+        # Fallback a ayer
+        ultimo_dia_con_datos = (hoy - timedelta(days=1)).day
+        ultima_fecha_con_datos = (hoy - timedelta(days=1)).strftime('%Y-%m-%d')
+    
     # fecha_fin: depende de si el último mes es el actual o ya pasó
     if anio == hoy.year and mes_max == hoy.month:
-        # Mes actual incompleto - ventas hasta AYER (hoy no se cuenta)
-        ayer = hoy - timedelta(days=1)
-        fecha_fin = ayer.strftime('%Y-%m-%d')
-        # Calcular días transcurridos desde inicio del rango hasta ayer
+        # Mes actual - usar último día CON DATOS en EDARSAHUB
+        fecha_fin = ultima_fecha_con_datos
         fecha_inicio_dt = datetime(anio, mes_min, 1)
-        dias_transcurridos = (ayer - fecha_inicio_dt).days + 1
+        dias_transcurridos = ultimo_dia_con_datos
+        logging.info(f"[TABLERO-EJECUTIVO] Mes actual: fecha_fin={fecha_fin}, dias_transcurridos={dias_transcurridos}")
     else:
         # Todos los meses seleccionados ya pasaron - usar meses completos
         ultimo_dia = calendar.monthrange(anio, mes_max)[1]
