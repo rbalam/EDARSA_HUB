@@ -2387,3 +2387,33 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 
 **Reporte:** `/app/docs/reports/FASE_ENV_SECRET_01_SERVER_SECRET_KEY_REPORTE.md`
 
+
+
+---
+
+### FASE SYNC-3A-R: Escritura Real SoftRestaurant
+**Fecha:** 2026-05-16
+**Estado:** ✅ COMPLETADO
+
+**Servidores sincronizados:**
+| Servidor | Históricos | PorHora | VentaTotal |
+|----------|------------|---------|------------|
+| 130° MERIDA | 7 | 62 | $939,447.00 |
+| CIENFUEGOS | 8 | 75 | $1,423,603.00 |
+| LA ESTELAR | 8 | 80 | $793,865.00 |
+
+**Totales finales:**
+| Tabla | MPRO | SoftRestaurant | Total |
+|-------|------|----------------|-------|
+| Sync_Ventas_Historicas | 9 | 24 | 33 |
+| Sync_Ventas_PorHora | 89 | 217 | 306 |
+| Sync_Ventas_PorDiaSemana | 7 | 7 | 14 |
+
+**Validaciones:**
+- ✅ PorHora vs Históricas: 100% cuadra
+- ✅ Idempotencia: No duplicados
+- ✅ Ventana 13:00-11:00
+- ✅ Anti-$0 falso activo
+
+**Reporte:** `/app/docs/reports/FASE_SYNC_3A_R_ESCRITURA_REAL_SOFTRESTAURANT_REPORTE.md`
+
