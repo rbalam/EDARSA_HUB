@@ -2241,6 +2241,10 @@ def _get_kpis_periodo_edarsahub_flexible(
     
     Si sucursal_id='DEFAULT' y no hay datos, intenta sin filtro de sucursal.
     Esto maneja casos donde los datos no tienen sucursal_id configurada.
+    
+    FIX MPRO: Si no encuentra por server_id, intenta buscar por unidad_negocio_id
+    derivado del nombre del servidor. Esto maneja casos donde los datos MPRO
+    tienen un server_id diferente al de Servidores_Conexiones.
     """
     # Primer intento: con sucursal específica
     kpis = _get_kpis_periodo_edarsahub(server_id, fecha_ini, fecha_fin, sucursal_id)
@@ -2284,6 +2288,57 @@ def _get_kpis_periodo_edarsahub_flexible(
                     'existe_data': True
                 }
     
+    # =========================================================================
+    # FIX MPRO: Buscar por unidad_negocio_id si no encontramos por server_id
+    # =========================================================================
+    # Este fallback maneja el caso donde los datos MPRO en Comercial_KPIs_Diarios_v2
+    # tienen un server_id diferente (ej: ManagmentPro) pero el unidad_negocio_id
+    # corresponde a la unidad correcta (ORIGEN, 130QRO, etc.)
+    
+    # Obtener nombre del servidor para derivar unidad_negocio_id
+    unidad_ids = _obtener_unidad_ids_desde_servidor(server_id)
+    
+    if unidad_ids:
+        logging.info(f"[DASHBOARD-EDARSAHUB-MPRO-FIX] Intentando búsqueda por unidad_negocio_id: {unidad_ids}")
+        
+        # Construir condición IN para múltiples posibles IDs
+        ids_str = ", ".join([f"'{uid}'" for uid in unidad_ids])
+        
+        query_mpro = f"""
+        SELECT 
+            ISNULL(SUM(ventas_total), 0) as ventas,
+            ISNULL(SUM(pax_total), 0) as pax,
+            ISNULL(SUM(tickets_total), 0) as cheques,
+            COUNT(*) as registros
+        FROM Comercial_KPIs_Diarios_v2
+        WHERE unidad_negocio_id IN ({ids_str})
+          AND fecha_operacion >= '{fecha_ini}'
+          AND fecha_operacion <= '{fecha_fin}'
+          AND ventas_total > 0
+        """
+        
+        result_mpro = _query_edarsahub_tablero(query_mpro)
+        
+        if result_mpro and len(result_mpro) > 0:
+            row = result_mpro[0]
+            ventas = float(row.get('ventas') or 0)
+            pax = int(row.get('pax') or 0)
+            cheques = int(row.get('cheques') or 0)
+            registros = int(row.get('registros') or 0)
+            
+            if registros > 0:
+                logging.info(
+                    f"[DASHBOARD-EDARSAHUB-MPRO-FIX] Datos MPRO encontrados por unidad_negocio_id: "
+                    f"ventas=${ventas:,.2f}, registros={registros}"
+                )
+                return {
+                    'ventas': ventas,
+                    'pax': pax,
+                    'cheques': cheques,
+                    'registros': registros,
+                    'existe_data': True
+                }
+    
     return {
         'ventas': 0,
         'pax': 0,
@@ -2291,3 +2346,25 @@ def _get_kpis_periodo_edarsahub_flexible(
         'registros': 0,
         'existe_data': False
     }
+
+
+def _obtener_unidad_ids_desde_servidor(server_id: str) -> List[str]:
+    """
+    Obtiene posibles unidad_negocio_id a partir del server_id.
+    
+    Mapeo basado en nombres de servidor:
+    - ORIGEN LOCAL -> ['ORIGEN']
+    - 130° QRO LOCAL -> ['130QRO', '130-QRO']
+    - etc.
+    """
+    # Mapeo de server_id a posibles unidad_negocio_id
+    mapeo_servidor_unidad = {
+        # ORIGEN LOCAL
+        '817a0aa8-6170-4738-a8f6-a72ac36ba0df': ['ORIGEN'],
+        # 130° QRO LOCAL
+        '72f6e9a7-8ea2-4eb2-802e-4ee31753435e': ['130QRO', '130-QRO'],
+        # ManagmentPro (servidor MPRO principal) - no necesita fallback
+        '1b230a06-ffaf-4c70-bd27-b1be3579dea6': [],
+    }
+    
+    return mapeo_servidor_unidad.get(server_id, [])

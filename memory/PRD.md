@@ -2671,3 +2671,33 @@ Dashboard Comercial mostraba "Sin Datos" para 130° MERIDA, CIENFUEGOS y LA ESTE
 
 *Última actualización: Dic-2025 - Fix Comercial Dashboard Completado*
 
+
+
+
+---
+
+## ✅ FIX: MPRO en Comercial Dashboard (COMPLETADO - Dic 2025)
+
+### Problema
+Dashboard Comercial mostraba "Sin Datos" para ORIGEN y 130° QRO (MPRO) aunque `Comercial_KPIs_Diarios_v2` sí tenía datos.
+
+### Causa Raíz
+Los datos MPRO tenían `server_id` diferente al de `Servidores_Conexiones`:
+- ORIGEN: busca `817a0aa8...` pero datos tienen `1b230a06...`
+- 130° QRO: busca `72f6e9a7...` pero datos tienen `1b230a06...`
+
+### Solución
+Fallback por `unidad_negocio_id` cuando no hay datos por `server_id`.
+
+### Validaciones
+| Unidad | ANTES | DESPUÉS |
+|--------|-------|---------|
+| ORIGEN | "Sin Datos" | $1,201,738 ✅ |
+| 130° QRO | "Sin Datos" | $2,269,702 ✅ |
+
+### Reporte
+`/app/docs/reports/FIX_SYNC_MPRO_COMERCIAL_KPIS_DIARIOS_V2.md`
+
+---
+
+*Última actualización: Dic-2025 - Fix MPRO Dashboard Completado*
