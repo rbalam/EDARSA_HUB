@@ -2698,6 +2698,60 @@ Fallback por `unidad_negocio_id` cuando no hay datos por `server_id`.
 ### Reporte
 `/app/docs/reports/FIX_SYNC_MPRO_COMERCIAL_KPIS_DIARIOS_V2.md`
 
+
+
 ---
 
-*Última actualización: Dic-2025 - Fix MPRO Dashboard Completado*
+## FIX: IDENTIDAD CANÓNICA 130° MÉRIDA Y PROYECCIÓN MENSUAL (16-May-2026)
+
+### Problema Crítico 1: Duplicidad de Identidad
+130° MÉRIDA existía con múltiples variantes como identidades separadas:
+- `130MID` (canónico) - 740 registros, $117M
+- `130-MER` (alias legacy) - 3 registros, $409K
+
+### Problema Crítico 2: Proyección Inflada
+El cálculo de proyección usaba `UltimaFechaConDatos` en vez de `FechaOperacionActual`.
+
+### Causa Raíz
+```python
+# ANTES (INCORRECTO)
+fallback_map = {'130MID': '130-MER', ...}  # Traducía canónico → legacy
+```
+
+### Solución Aplicada
+
+#### 1. Código Corregido
+- `_mapear_codigo_a_unidad_negocio_id()` ahora normaliza aliases HACIA canónico
+- `UNIDADES_EDARSAHUB_MAP` usa códigos canónicos (130MID, 130QRO, ESTELAR)
+
+#### 2. Datos Normalizados
+- 9 registros duplicados eliminados (130-MER, 130-QRO, LA-ESTELAR)
+- Todas las variantes resuelven a código canónico
+
+### Validación Final - Tablero Ejecutivo
+
+| Unidad | Ventas Mayo | Proyección | unidad_negocio_id |
+|--------|-------------|------------|-------------------|
+| CIENFUEGOS | $2,543,031 | $5,255,597 | CIENFUEGOS |
+| 130° QUERETARO | $1,911,561 | $3,950,559 | 130QRO |
+| **130° MERIDA** | **$1,827,730** | **$3,777,309** | **130MID** ✅ |
+| LA ESTELAR | $1,500,059 | $3,100,122 | ESTELAR |
+| ORIGEN | $1,201,739 | $2,483,593 | ORIGEN |
+
+### Códigos Canónicos Oficiales
+| Código | Nombre | Aliases que resuelven |
+|--------|--------|----------------------|
+| `130MID` | 130° MÉRIDA | 130-MER, MERIDA, MÉRIDA, 130-MID |
+| `130QRO` | 130° QUERÉTARO | 130-QRO, QUERETARO, QUERÉTARO |
+| `ESTELAR` | LA ESTELAR | LA-ESTELAR, LA ESTELAR |
+| `CIENFUEGOS` | CIENFUEGOS | - |
+| `ORIGEN` | ORIGEN | - |
+
+### Reportes
+- `/app/docs/reports/FIX_IDENTIDAD_CANONICA_130_MERIDA_TABLERO_EJECUTIVO.md`
+- `/app/docs/reports/DIAGNOSTICO_IDENTIDAD_CANONICA_130_MERIDA.md`
+
+**Estado:** ✅ COMPLETADO (16-May-2026)
+---
+
+*Última actualización: 16-May-2026 - Fix Identidad Canónica y Proyección Mensual Completado*

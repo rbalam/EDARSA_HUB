@@ -212,19 +212,46 @@ ORDER BY fecha_operacion;
 - [x] `UNIDADES_EDARSAHUB_MAP` usa códigos canónicos
 - [x] Pruebas unitarias pasan
 - [x] Backend reinicia sin errores
-- [ ] Normalización histórica ejecutada (PENDIENTE AUTORIZACIÓN)
-- [ ] Tablero Ejecutivo muestra UNA sola Mérida
-- [ ] Proyección mensual usa datos consolidados
+- [x] Normalización histórica ejecutada (9 duplicados eliminados: 130-MER, 130-QRO, LA-ESTELAR)
+- [x] Tablero Ejecutivo muestra UNA sola Mérida con `unidad_negocio_id: 130MID`
+- [x] Proyección mensual usa datos consolidados y días operativos correctos
 
 ---
 
-## 10. PRÓXIMOS PASOS
+## 10. VALIDACIÓN FINAL (2026-05-16)
 
-1. **Usuario debe verificar** el Tablero Ejecutivo y Comercial Dashboard
-2. **Si autoriza normalización histórica**: Ejecutar script de limpieza
-3. **Monitorear** que nuevos registros usen `130MID`
+### Tablero Ejecutivo - Estado Actual
+
+| Unidad | Ventas Mayo | Proyección | unidad_negocio_id | Status |
+|--------|-------------|------------|-------------------|--------|
+| CIENFUEGOS | $2,543,031 | $5,255,597 | CIENFUEGOS | ✅ DATA_OK |
+| 130° QUERETARO | $1,911,561 | $3,950,559 | 130QRO | ✅ DATA_OK |
+| **130° MERIDA** | **$1,827,730** | **$3,777,309** | **130MID** | ✅ DATA_OK |
+| LA ESTELAR | $1,500,059 | $3,100,122 | ESTELAR | ✅ DATA_OK |
+| ORIGEN | $1,201,739 | $2,483,593 | ORIGEN | ✅ DATA_OK |
+
+### Validación de Proyección Mérida
+```
+Fórmula: ventas / días_transcurridos * días_mes
+$1,827,730 / 15 * 31 = $3,777,309 ✅
+```
+
+### Registros Normalizados
+- `130-MER` → `130MID`: 3 duplicados eliminados
+- `130-QRO` → `130QRO`: 3 duplicados eliminados  
+- `LA-ESTELAR` → `ESTELAR`: 3 duplicados eliminados
+- **Total**: 9 registros duplicados eliminados
+
+---
+
+## 11. PRÓXIMOS PASOS
+
+1. ✅ **COMPLETADO**: Tablero Ejecutivo validado
+2. **Usuario debe verificar** el frontend del Tablero Ejecutivo y Comercial Dashboard
+3. **Monitorear** que nuevos registros de sincronización usen códigos canónicos
 
 ---
 
 **Documento creado**: 2026-05-16  
-**Última actualización**: 2026-05-16
+**Última actualización**: 2026-05-16  
+**Estado**: ✅ COMPLETADO
