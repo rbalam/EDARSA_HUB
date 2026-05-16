@@ -2628,3 +2628,46 @@ Cálculo desde `Sync_Ventas_Historicas` en lugar de consulta directa (servidores
 
 *Última actualización: Dic-2025 - FASE 7 Catálogo Maestro Frontend Completada*
 
+
+
+---
+
+## ✅ FIX: Comercial Dashboard Fuente Ventas (COMPLETADO - Dic 2025)
+
+### Problema
+Dashboard Comercial mostraba "Sin Datos" para 130° MERIDA, CIENFUEGOS y LA ESTELAR cuando:
+- Los servidores remotos estaban offline
+- PERO EDARSAHUB sí tenía datos en `Comercial_KPIs_Diarios_v2`
+
+### Causa Raíz
+1. Dashboard Comercial consultaba directamente al servidor remoto SoftRestaurant
+2. Función `_mapear_codigo_a_unidad_negocio_id()` no retornaba valor en fallback
+
+### Solución Implementada
+- Dashboard Comercial ahora usa EDARSAHUB como fuente principal (igual que Tablero Ejecutivo)
+- Nueva función `get_dashboard_kpis_from_edarsahub()` en service.py
+- Corregido return faltante en `_mapear_codigo_a_unidad_negocio_id()`
+
+### Archivos Modificados
+- `/app/backend/modules/comercial/service.py`
+- `/app/backend/modules/comercial/routes.py`
+
+### Validaciones
+| Unidad | ANTES | DESPUÉS |
+|--------|-------|---------|
+| 130° MERIDA | $0 | $2,018,823 ✅ |
+| CIENFUEGOS | $0 | $2,361,002 ✅ |
+| LA ESTELAR | $0 | $1,547,504 ✅ |
+
+### Sin Regresión
+- ✅ Tablero Ejecutivo funciona igual
+- ✅ No se tocó MongoDB
+- ✅ RBAC sin cambios
+
+### Reporte
+`/app/docs/reports/FIX_COMERCIAL_DASHBOARD_FUENTE_VENTAS_TABLERO_EJECUTIVO.md`
+
+---
+
+*Última actualización: Dic-2025 - Fix Comercial Dashboard Completado*
+

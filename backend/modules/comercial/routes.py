@@ -4142,6 +4142,68 @@ WHERE CONVERT(varchar, turnos.apertura, 112) >= '{f_ini}'
             logging.info(f"SoftRestaurant Query - Período: {f_ini} a {f_fin}, Mes ant: {f_ini_ant} a {f_fin_ant}, Año ant: {f_ini_ano_ant} a {f_fin_ano_ant}")
             
             # ============================================================================
+            # FASE 7-FIX: EDARSAHUB COMO FUENTE PRINCIPAL
+            # ============================================================================
+            # PROBLEMA: Dashboard mostraba "Sin Datos" cuando servidor remoto fallaba
+            # PERO EDARSAHUB sí tiene datos en Comercial_KPIs_Diarios_v2.
+            #
+            # SOLUCIÓN: Usar EDARSAHUB primero (igual que Tablero Ejecutivo).
+            # MÁXIMA: EDARSAHUB SQL es el cerebro del sistema.
+            # Solo ir a servidor remoto si EDARSAHUB no tiene datos.
+            # ============================================================================
+            
+            from .service import get_dashboard_kpis_from_edarsahub
+            
+            # Intentar obtener datos de EDARSAHUB primero
+            edarsahub_kpis = get_dashboard_kpis_from_edarsahub(
+                server_id=server_id,
+                fecha_ini=fecha_ini,
+                fecha_fin=fecha_fin,
+                fecha_ini_ant=fecha_ini_ant if fecha_ini_ant != "PENDIENTE" else None,
+                fecha_fin_ant=fecha_fin_ant if fecha_fin_ant != "PENDIENTE" else None,
+                fecha_ini_ano_ant=fecha_ini_ano_ant,
+                fecha_fin_ano_ant=fecha_fin_ano_ant,
+                sucursal_id=sucursal if sucursal else 'DEFAULT'
+            )
+            
+            if edarsahub_kpis:
+                # EDARSAHUB tiene datos - usar estos como fuente principal
+                logging.info(f"[DASHBOARD-FIX] {server['name']}: Usando datos de EDARSAHUB (ventas=${edarsahub_kpis['ventas_periodo']:,.2f})")
+                
+                return {
+                    "source_status": "SUCCESS",
+                    "source_message": f"Datos consolidados de EDARSAHUB ({edarsahub_kpis['registros_consultados']} días)",
+                    "source_type": edarsahub_kpis['source'],
+                    "server_name": server.get('name', 'Desconocido'),
+                    "server_type": server.get('system_type', 'Desconocido'),
+                    "fecha_inicio": fecha_ini,
+                    "fecha_fin": fecha_fin,
+                    "kpis": {
+                        "ventas_periodo": edarsahub_kpis['ventas_periodo'],
+                        "ticket_promedio": edarsahub_kpis['ticket_promedio'],
+                        "cheques_total": edarsahub_kpis['cheques_total'],
+                        "pax_total": edarsahub_kpis['pax_total'],
+                        "pax_promedio": edarsahub_kpis['pax_promedio'],
+                        "consumo_persona": edarsahub_kpis['consumo_persona'],
+                        "mesas_atendidas": edarsahub_kpis['mesas_atendidas'],
+                        "rotacion_mesas": edarsahub_kpis['rotacion_mesas'],
+                        "venta_por_hora": edarsahub_kpis['venta_por_hora']
+                    },
+                    "comparativo": {
+                        "vs_periodo_anterior": edarsahub_kpis['vs_periodo_anterior'],
+                        "vs_ano_anterior": edarsahub_kpis['vs_ano_anterior'],
+                        "vs_presupuesto": edarsahub_kpis['vs_presupuesto'],
+                        "tipo_comparacion": tipo_comparacion,
+                        "ventas_anterior": edarsahub_kpis['ventas_anterior'],
+                        "ventas_ano_anterior": edarsahub_kpis['ventas_ano_anterior']
+                    },
+                    "alertas": []
+                }
+            
+            # Si EDARSAHUB no tiene datos, verificar estado del servidor y luego intentar conexión remota
+            logging.info(f"[DASHBOARD-FIX] {server['name']}: EDARSAHUB sin datos, verificando servidor remoto")
+            
+            # ============================================================================
             # VERIFICACIÓN DE ESTADO: Usar la misma fuente que el menú de Servidores
             # ============================================================================
             # Consultar el estado guardado por el endpoint /servers/{id}/ping
@@ -4174,7 +4236,7 @@ WHERE CONVERT(varchar, turnos.apertura, 112) >= '{f_ini}'
                     "alertas": [{"tipo": "error", "mensaje": "Servidor offline. Verifique el estado en el menú Servidores."}]
                 }
             
-            # Si el servidor está online o no hay registro de estado, intentar consulta
+            # Si el servidor está online o no hay registro de estado, intentar consulta al servidor remoto
             
             # ============================================================================
             # BLOQUE 5.1: MIGRACIÓN A QUERIES CENTRALIZADAS (SoftRestaurant)

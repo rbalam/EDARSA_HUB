@@ -343,6 +343,10 @@ def _mapear_codigo_a_unidad_negocio_id(codigo_empresa: str) -> str:
         'ORIGEN': 'ORIGEN'
     }
     
+    # FIX: Retornar el alias del fallback_map, o el código original si no está mapeado
+    resultado = fallback_map.get(codigo_empresa.upper(), codigo_empresa)
+    logging.debug(f"[SERVICE] _mapear_codigo_a_unidad_negocio_id: {codigo_empresa} -> {resultado} (fallback)")
+    return resultado
 
 
 def _obtener_sucursales_mpro_desde_resolver() -> List[Dict[str, Any]]:
@@ -2089,4 +2093,201 @@ __all__ = [
     'get_kpis_mpro_por_sucursal',
     # FASE 4.4: Con SourceQueryResult
     'get_kpis_mpro_con_estado',
+    # FASE 7-FIX: Dashboard Comercial desde EDARSAHUB
+    'get_dashboard_kpis_from_edarsahub',
 ]
+
+
+# ============================================================================
+# FASE 7-FIX: Dashboard Comercial desde EDARSAHUB
+# ============================================================================
+# OBJETIVO: Corregir Dashboard Comercial que mostraba "Sin Datos" cuando
+# EDARSAHUB SÍ tiene datos en Comercial_KPIs_Diarios_v2.
+# 
+# PROBLEMA: Dashboard Comercial consultaba directamente al servidor remoto
+# SoftRestaurant. Si la conexión fallaba, mostraba "Sin Datos" aunque EDARSAHUB
+# tiene datos consolidados.
+#
+# SOLUCIÓN: Usar la MISMA fuente que Tablero Ejecutivo (Comercial_KPIs_Diarios_v2)
+# como fuente PRINCIPAL para Dashboard Comercial.
+#
+# MÁXIMA: EDARSAHUB SQL es el cerebro del sistema.
+# ============================================================================
+
+def get_dashboard_kpis_from_edarsahub(
+    server_id: str,
+    fecha_ini: str,  # YYYY-MM-DD
+    fecha_fin: str,  # YYYY-MM-DD
+    fecha_ini_ant: str = None,
+    fecha_fin_ant: str = None,
+    fecha_ini_ano_ant: str = None,
+    fecha_fin_ano_ant: str = None,
+    sucursal_id: str = 'DEFAULT'
+) -> Dict:
+    """
+    DASHBOARD COMERCIAL - KPIs desde EDARSAHUB (Comercial_KPIs_Diarios_v2)
+    ======================================================================
+    
+    Usa la MISMA fuente que el Tablero Ejecutivo para garantizar consistencia.
+    
+    FUENTE: Comercial_KPIs_Diarios_v2 en EDARSAHUB
+    NO consulta: Servidores remotos SoftRestaurant
+    NO consulta: MongoDB
+    
+    Args:
+        server_id: UUID del servidor
+        fecha_ini, fecha_fin: Período actual (YYYY-MM-DD)
+        fecha_ini_ant, fecha_fin_ant: Período anterior para comparativo
+        fecha_ini_ano_ant, fecha_fin_ano_ant: Año anterior para comparativo
+        sucursal_id: ID de sucursal (DEFAULT si no se especifica)
+    
+    Returns:
+        Dict con KPIs o None si no hay datos
+    """
+    logging.info(
+        f"[DASHBOARD-EDARSAHUB] server_id={server_id[:8]}... "
+        f"período={fecha_ini} a {fecha_fin} sucursal={sucursal_id}"
+    )
+    
+    # 1. OBTENER DATOS DEL PERÍODO ACTUAL
+    # Primero intentar sin filtro de sucursal (para detectar si hay datos)
+    kpis_actual = _get_kpis_periodo_edarsahub_flexible(server_id, fecha_ini, fecha_fin, sucursal_id)
+    
+    if not kpis_actual['existe_data']:
+        logging.warning(
+            f"[DASHBOARD-EDARSAHUB] Sin datos para server_id={server_id[:8]}... "
+            f"en período {fecha_ini} a {fecha_fin} (sucursal={sucursal_id})"
+        )
+        return None
+    
+    ventas = kpis_actual['ventas']
+    pax = kpis_actual['pax']
+    cheques = kpis_actual['cheques']
+    
+    logging.info(
+        f"[DASHBOARD-EDARSAHUB] Datos encontrados: "
+        f"ventas=${ventas:,.2f}, pax={pax}, cheques={cheques}"
+    )
+    
+    # 2. CALCULAR MÉTRICAS DERIVADAS
+    ticket_promedio = ventas / cheques if cheques > 0 else 0
+    pax_promedio = pax / cheques if cheques > 0 else 0
+    consumo_persona = ventas / pax if pax > 0 else 0
+    
+    # 3. OBTENER DATOS DEL PERÍODO ANTERIOR (si se proporcionan fechas)
+    ventas_ant = 0
+    pax_ant = 0
+    cheques_ant = 0
+    
+    if fecha_ini_ant and fecha_fin_ant and fecha_ini_ant != "PENDIENTE":
+        kpis_ant = _get_kpis_periodo_edarsahub_flexible(server_id, fecha_ini_ant, fecha_fin_ant, sucursal_id)
+        if kpis_ant['existe_data']:
+            ventas_ant = kpis_ant['ventas']
+            pax_ant = kpis_ant['pax']
+            cheques_ant = kpis_ant['cheques']
+    
+    # 4. OBTENER DATOS DEL AÑO ANTERIOR (si se proporcionan fechas)
+    ventas_ano_ant = 0
+    pax_ano_ant = 0
+    cheques_ano_ant = 0
+    
+    if fecha_ini_ano_ant and fecha_fin_ano_ant:
+        kpis_ano = _get_kpis_periodo_edarsahub_flexible(server_id, fecha_ini_ano_ant, fecha_fin_ano_ant, sucursal_id)
+        if kpis_ano['existe_data']:
+            ventas_ano_ant = kpis_ano['ventas']
+            pax_ano_ant = kpis_ano['pax']
+            cheques_ano_ant = kpis_ano['cheques']
+    
+    # 5. CALCULAR COMPARATIVOS
+    vs_periodo_anterior = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
+    vs_ano_anterior = round(((ventas - ventas_ano_ant) / ventas_ano_ant * 100), 1) if ventas_ano_ant > 0 else 0
+    
+    # 6. CONSTRUIR RESPUESTA
+    return {
+        'ventas_periodo': ventas,
+        'pax_total': pax,
+        'cheques_total': cheques,
+        'ticket_promedio': ticket_promedio,
+        'pax_promedio': pax_promedio,
+        'consumo_persona': consumo_persona,
+        'mesas_atendidas': cheques,  # Aproximación
+        'rotacion_mesas': 1.0,  # No disponible en datos consolidados
+        'venta_por_hora': 0,  # No disponible en datos consolidados
+        # Comparativos
+        'ventas_anterior': ventas_ant,
+        'pax_anterior': pax_ant,
+        'cheques_anterior': cheques_ant,
+        'ventas_ano_anterior': ventas_ano_ant,
+        'pax_ano_anterior': pax_ano_ant,
+        'cheques_ano_anterior': cheques_ano_ant,
+        'vs_periodo_anterior': vs_periodo_anterior,
+        'vs_ano_anterior': vs_ano_anterior,
+        'vs_presupuesto': 0,  # No disponible en EDARSAHUB
+        # Metadata
+        'source': 'EDARSAHUB_SQL',
+        'source_table': 'Comercial_KPIs_Diarios_v2',
+        'registros_consultados': kpis_actual['registros'],
+    }
+
+
+def _get_kpis_periodo_edarsahub_flexible(
+    server_id: str,
+    fecha_ini: str,
+    fecha_fin: str,
+    sucursal_id: str = 'DEFAULT'
+) -> Dict:
+    """
+    Obtiene KPIs de EDARSAHUB con lógica flexible de sucursal.
+    
+    Si sucursal_id='DEFAULT' y no hay datos, intenta sin filtro de sucursal.
+    Esto maneja casos donde los datos no tienen sucursal_id configurada.
+    """
+    # Primer intento: con sucursal específica
+    kpis = _get_kpis_periodo_edarsahub(server_id, fecha_ini, fecha_fin, sucursal_id)
+    
+    if kpis['existe_data']:
+        return kpis
+    
+    # Si no hay datos con sucursal DEFAULT, intentar SIN filtro de sucursal
+    if sucursal_id == 'DEFAULT':
+        query = f"""
+        SELECT 
+            ISNULL(SUM(ventas_total), 0) as ventas,
+            ISNULL(SUM(pax_total), 0) as pax,
+            ISNULL(SUM(tickets_total), 0) as cheques,
+            COUNT(*) as registros
+        FROM Comercial_KPIs_Diarios_v2
+        WHERE server_id = '{server_id}'
+          AND fecha_operacion >= '{fecha_ini}'
+          AND fecha_operacion <= '{fecha_fin}'
+          AND ventas_total > 0
+        """
+        result = _query_edarsahub_tablero(query)
+        
+        if result and len(result) > 0:
+            row = result[0]
+            ventas = float(row.get('ventas') or 0)
+            pax = int(row.get('pax') or 0)
+            cheques = int(row.get('cheques') or 0)
+            registros = int(row.get('registros') or 0)
+            
+            if registros > 0:
+                logging.info(
+                    f"[DASHBOARD-EDARSAHUB] Datos encontrados SIN filtro sucursal: "
+                    f"ventas=${ventas:,.2f}, registros={registros}"
+                )
+                return {
+                    'ventas': ventas,
+                    'pax': pax,
+                    'cheques': cheques,
+                    'registros': registros,
+                    'existe_data': True
+                }
+    
+    return {
+        'ventas': 0,
+        'pax': 0,
+        'cheques': 0,
+        'registros': 0,
+        'existe_data': False
+    }
