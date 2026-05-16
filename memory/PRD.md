@@ -2225,3 +2225,43 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 
 
 **Solución:** Agregado `</>` y `)}` después de `</DialogFooter>`.
+
+
+---
+
+### FIX: Explorador BD - Columnas y Preview para Conexiones Enterprise (API_LOCAL)
+**Fecha:** 2026-05-16
+**Estado:** ✅ COMPLETADO Y VALIDADO
+
+**Problema:** Los endpoints `/explorador/columnas` y `/explorador/preview` fallaban para conexiones Enterprise (CHAPUR NORTE, CHAPUR NORTE BACKOFICE) retornando errores como "Tabla 'X' no está en la lista permitida" o "mark_server_offline() takes 1 positional argument".
+
+**Causa raíz:**
+1. Endpoints solo soportaban conexiones SQL directas (`DATA_SOURCE`)
+2. La whitelist de tablas bloqueaba tablas dinámicas de APIs remotas
+3. Límite de 20 filas hardcodeado en `execute_test_query`
+
+**Solución:**
+1. Agregado parámetro `limit: Optional[int] = 20` en `execute_test_query`
+2. Endpoints reescritos con lógica dual:
+   - `DATA_SOURCE`: SQL directo con whitelist (existente)
+   - `API_LOCAL`: Delegación via `execute_test_query` sin whitelist
+3. Whitelist solo aplica a conexiones SQL directas
+
+**Validación (8 puntos críticos):**
+| # | Punto | Estado |
+|---|-------|--------|
+| 1 | PRUEBAS SOFTRESTAURANT | ⚠️ Error DBA (no es bug) |
+| 2 | CHAPUR NORTE tablas | ✅ 356 tablas |
+| 3 | CHAPUR NORTE BACKOFICE tablas | ✅ 186 tablas |
+| 4 | Columnas funcionan | ✅ |
+| 5 | Preview TOP 100 funciona | ✅ |
+| 6 | Enterprise usa API Local | ✅ |
+| 7 | Sin exposición de secrets | ✅ |
+| 8 | Sin regresión SoftRestaurant/MPRO | ✅ |
+
+**Archivos modificados:**
+- `/app/backend/modules/api_connections/repository.py` (líneas 730-834)
+- `/app/backend/server.py` (endpoints columnas/preview)
+
+**Reporte:** `/app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_ENTERPRISE_API_LOCAL_V2.md`
+

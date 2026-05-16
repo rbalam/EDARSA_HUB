@@ -9726,10 +9726,12 @@ ORDER BY TABLE_NAME
     
     try:
         # Usar la función ya probada que funciona con CHAPUR NORTE
+        # CORRECCIÓN P1 (2026-05-16): limit=None para obtener TODAS las tablas
         result = await execute_test_query(
             api_id=server_id,
             sql_query=metadata_query.strip(),
-            timeout=60  # Más tiempo para queries de metadata grandes
+            timeout=60,  # Más tiempo para queries de metadata grandes
+            limit=None  # Sin límite para obtener todas las tablas de metadata
         )
         
         if result.get('success') and result.get('status_code') == 200:
@@ -9891,29 +9893,94 @@ async def listar_columnas(
     """
     Lista las columnas de una tabla específica.
     
-    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
-    CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
-    FASE 1B: Whitelist de tablas + parametrización
+    CORRECCIÓN P1 (2026-05-16): Soporte Multi-Tipo de Conexión
+    - DATA_SOURCE: Usa INFORMATION_SCHEMA.COLUMNS con SQL directo
+    - API_LOCAL: Usa execute_test_query para consultar via API remota
+    
+    La whitelist solo aplica para DATA_SOURCE (tablas conocidas del sistema).
+    Para API_LOCAL las tablas son dinámicas del servidor remoto.
     """
-    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     from core.server_registry import get_server_connection_info
     from core.db import execute_sql_query_params
+    from modules.api_connections.repository import get_api_connection_by_id_full, execute_test_query
     
-    conn_info = await get_server_connection_info(server_id, db=db)
-    if not conn_info:
+    # Determinar tipo de conexión
+    tipo_conexion = None
+    conn_info = None
+    api_conn = None
+    
+    # Primero intentar como API_LOCAL
+    try:
+        api_conn = await get_api_connection_by_id_full(server_id)
+        if api_conn and api_conn.get('tipo_conexion') == 'API_LOCAL':
+            tipo_conexion = 'API_LOCAL'
+    except Exception as e:
+        logging.debug(f"[EXPLORADOR][COLUMNAS] {server_id} no es API_LOCAL: {e}")
+    
+    # Si no es API_LOCAL, buscar como SQL_SERVER/DATA_SOURCE
+    if tipo_conexion != 'API_LOCAL':
+        conn_info = await get_server_connection_info(server_id, db=db)
+        if conn_info:
+            tipo_conexion = conn_info.get('tipo_conexion', 'DATA_SOURCE')
+    
+    if not api_conn and not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
     
-    # FASE 6-8: Validar acceso usando función centralizada
+    # Validar acceso
     await validate_server_access_unified(current_user, server_id)
     
-    # FASE 1B: Validar tabla contra whitelist
-    is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'))
-    if not is_valid:
-        logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]}")
-        raise HTTPException(status_code=400, detail=error_msg)
+    # === CASO 1: API_LOCAL ===
+    if tipo_conexion == 'API_LOCAL' and api_conn:
+        nombre = api_conn.get('nombre', api_conn.get('name', 'API'))
+        
+        # Query para obtener columnas de la tabla via API remota
+        # Usamos comillas simples escapadas en la query para el nombre de tabla
+        tabla_escaped = tabla.replace("'", "''")
+        columns_query = f"""
+SELECT 
+    COLUMN_NAME as columna,
+    DATA_TYPE as tipo,
+    CHARACTER_MAXIMUM_LENGTH as longitud,
+    IS_NULLABLE as nullable,
+    COLUMN_DEFAULT as default_value
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = '{tabla_escaped}'
+ORDER BY ORDINAL_POSITION
+"""
+        try:
+            result = await execute_test_query(
+                api_id=server_id,
+                sql_query=columns_query.strip(),
+                timeout=30,
+                limit=None  # Sin límite para metadata
+            )
+            
+            if result.get('success') and result.get('status_code') == 200:
+                columnas = result.get('preview_data', result.get('data', []))
+                return {
+                    "tabla": tabla,
+                    "servidor": nombre,
+                    "columnas": columnas,
+                    "tipo_conexion": "API_LOCAL"
+                }
+            else:
+                error_msg = result.get('error', 'Error desconocido')
+                raise HTTPException(status_code=500, detail=f"Error API: {error_msg}")
+        except HTTPException:
+            raise
+        except Exception as e:
+            logging.error(f"[EXPLORADOR][COLUMNAS][API_LOCAL] {nombre}: {e}")
+            raise HTTPException(status_code=500, detail=f"Error consultando columnas: {str(e)[:100]}")
     
-    # FASE 1B: Usar parametrización segura
-    query = """
+    # === CASO 2: DATA_SOURCE (SQL directo) ===
+    if conn_info:
+        # Validar tabla contra whitelist (solo para conexiones SQL directas)
+        is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'))
+        if not is_valid:
+            logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]}")
+            raise HTTPException(status_code=400, detail=error_msg)
+        
+        query = """
 SELECT 
     COLUMN_NAME as columna,
     DATA_TYPE as tipo,
@@ -9924,18 +9991,19 @@ FROM INFORMATION_SCHEMA.COLUMNS
 WHERE TABLE_NAME = %s
 ORDER BY ORDINAL_POSITION
 """
-    try:
-        result = execute_sql_query_params(
-            conn_info['host'], conn_info['port'], conn_info['database'],
-            conn_info['username'], conn_info['password'], query, (tabla,)
-        )
-        return {
-            "tabla": tabla,
-            "servidor": conn_info['name'],
-            "columnas": result
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        try:
+            result = execute_sql_query_params(
+                conn_info['host'], conn_info['port'], conn_info['database'],
+                conn_info['username'], conn_info['password'], query, (tabla,)
+            )
+            return {
+                "tabla": tabla,
+                "servidor": conn_info['name'],
+                "columnas": result,
+                "tipo_conexion": "DATA_SOURCE"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @api_router.get("/explorador/relaciones/{server_id}/{tabla}")
@@ -10009,42 +10077,101 @@ async def preview_tabla(
     """
     Muestra las primeras N filas de una tabla.
     
-    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
-    CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
-    FASE 1B: Whitelist de tablas
+    CORRECCIÓN P1 (2026-05-16): Soporte Multi-Tipo de Conexión
+    - DATA_SOURCE: Usa SELECT TOP N directo con SQL Server
+    - API_LOCAL: Usa execute_test_query para consultar via API remota
+    
+    La whitelist solo aplica para DATA_SOURCE (tablas conocidas del sistema).
+    Para API_LOCAL las tablas son dinámicas del servidor remoto.
     """
-    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     from core.server_registry import get_server_connection_info
-    conn_info = await get_server_connection_info(server_id, db=db)
-    if not conn_info:
+    from modules.api_connections.repository import get_api_connection_by_id_full, execute_test_query
+    
+    # Determinar tipo de conexión
+    tipo_conexion = None
+    conn_info = None
+    api_conn = None
+    
+    # Primero intentar como API_LOCAL
+    try:
+        api_conn = await get_api_connection_by_id_full(server_id)
+        if api_conn and api_conn.get('tipo_conexion') == 'API_LOCAL':
+            tipo_conexion = 'API_LOCAL'
+    except Exception as e:
+        logging.debug(f"[EXPLORADOR][PREVIEW] {server_id} no es API_LOCAL: {e}")
+    
+    # Si no es API_LOCAL, buscar como SQL_SERVER/DATA_SOURCE
+    if tipo_conexion != 'API_LOCAL':
+        conn_info = await get_server_connection_info(server_id, db=db)
+        if conn_info:
+            tipo_conexion = conn_info.get('tipo_conexion', 'DATA_SOURCE')
+    
+    if not api_conn and not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
     
-    # FASE 6-8: Validar acceso usando función centralizada
+    # Validar acceso
     await validate_server_access_unified(current_user, server_id)
     
-    # FASE 1B: Validar tabla contra whitelist (reemplaza validación isalnum anterior)
-    is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'))
-    if not is_valid:
-        logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]}")
-        raise HTTPException(status_code=400, detail=error_msg)
+    # === CASO 1: API_LOCAL ===
+    if tipo_conexion == 'API_LOCAL' and api_conn:
+        nombre = api_conn.get('nombre', api_conn.get('name', 'API'))
+        
+        # Query para preview de datos via API remota
+        # Usamos brackets para identificador seguro
+        tabla_safe = tabla.replace("]", "]]")  # Escapar corchetes
+        preview_query = f"SELECT TOP {limite} * FROM [{tabla_safe}]"
+        
+        try:
+            result = await execute_test_query(
+                api_id=server_id,
+                sql_query=preview_query.strip(),
+                timeout=30,
+                limit=limite  # Aplicar límite también a la respuesta
+            )
+            
+            if result.get('success') and result.get('status_code') == 200:
+                datos = result.get('preview_data', result.get('data', []))
+                return {
+                    "tabla": tabla,
+                    "servidor": nombre,
+                    "registros": len(datos),
+                    "datos": datos,
+                    "tipo_conexion": "API_LOCAL"
+                }
+            else:
+                error_msg = result.get('error', 'Error desconocido')
+                raise HTTPException(status_code=500, detail=f"Error API: {error_msg}")
+        except HTTPException:
+            raise
+        except Exception as e:
+            logging.error(f"[EXPLORADOR][PREVIEW][API_LOCAL] {nombre}: {e}")
+            raise HTTPException(status_code=500, detail=f"Error consultando datos: {str(e)[:100]}")
     
-    # FASE 1B: Tabla validada, usar brackets para identificador seguro
-    # limite ya está validado por FastAPI (le=100)
-    query = f"SELECT TOP {limite} * FROM [{tabla}]"
-    
-    try:
-        result = execute_sql_query(
-            conn_info['host'], conn_info['port'], conn_info['database'],
-            conn_info['username'], conn_info['password'], query
-        )
-        return {
-            "tabla": tabla,
-            "servidor": conn_info['name'],
-            "registros": len(result),
-            "datos": result
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # === CASO 2: DATA_SOURCE (SQL directo) ===
+    if conn_info:
+        # Validar tabla contra whitelist (solo para conexiones SQL directas)
+        is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'))
+        if not is_valid:
+            logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]}")
+            raise HTTPException(status_code=400, detail=error_msg)
+        
+        # Tabla validada, usar brackets para identificador seguro
+        query = f"SELECT TOP {limite} * FROM [{tabla}]"
+        
+        try:
+            result = execute_sql_query(
+                conn_info['host'], conn_info['port'], conn_info['database'],
+                conn_info['username'], conn_info['password'], query
+            )
+            return {
+                "tabla": tabla,
+                "servidor": conn_info['name'],
+                "registros": len(result),
+                "datos": result,
+                "tipo_conexion": "DATA_SOURCE"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @api_router.post("/explorador/query/{server_id}")

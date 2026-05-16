@@ -731,7 +731,8 @@ async def execute_test_query(
     api_id: str,
     sql_query: str,
     timeout: int = 30,
-    executed_by: str = "system"
+    executed_by: str = "system",
+    limit: Optional[int] = 20
 ) -> Dict:
     """
     Ejecuta una consulta SQL de prueba contra una conexión API registrada.
@@ -816,17 +817,22 @@ async def execute_test_query(
                 rows = []
                 columns = []
                 
+                # CORRECCIÓN P1: Usar parámetro limit configurable (None = sin límite)
+                max_rows = limit if limit is not None else None
+                
                 if isinstance(data, list):
-                    rows = data[:20]  # Max 20 filas para preview
+                    rows = data[:max_rows] if max_rows else data
                     if rows:
                         columns = list(rows[0].keys()) if isinstance(rows[0], dict) else []
                 elif isinstance(data, dict):
                     if 'data' in data:
-                        rows = data['data'][:20] if isinstance(data['data'], list) else []
+                        raw_data = data['data'] if isinstance(data['data'], list) else []
+                        rows = raw_data[:max_rows] if max_rows else raw_data
                         if rows and isinstance(rows[0], dict):
                             columns = list(rows[0].keys())
                     elif 'results' in data:
-                        rows = data['results'][:20] if isinstance(data['results'], list) else []
+                        raw_results = data['results'] if isinstance(data['results'], list) else []
+                        rows = raw_results[:max_rows] if max_rows else raw_results
                         if rows and isinstance(rows[0], dict):
                             columns = list(rows[0].keys())
                 
