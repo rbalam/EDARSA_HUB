@@ -252,21 +252,57 @@ No se ejecutó escritura real en esta fase. La corrección está lista para escr
 
 ---
 
-## 15. NO REGRESIÓN
+## 15. NO REGRESIÓN (Validado desde EDARSAHUB SQL)
+
+**ENFOQUE CORRECTO:** Validación desde tablas Sync_* en EDARSAHUB SQL, no conexión LIVE.
+
+### 15.1 Datos ya sincronizados en Sync_Ventas_PorHora
+
+| Sistema | Registros | Horas Distintas |
+|---------|-----------|-----------------|
+| SoftRestaurant | 62 | 12 (horas 12-23) |
+| MPRO | 7 | 1 (hora 0 - pendiente corrección) |
+
+### 15.2 Comparación Histórica vs PorHora
+
+| Sistema | Días | Cuadran | Pendiente |
+|---------|------|---------|-----------|
+| SoftRestaurant | 8 | 7/8 | 2026-05-07 sin PorHora |
+| MPRO | 8 | 7/8 | 2026-05-07 sin PorHora |
+
+**Nota:** El día 2026-05-07 no tiene datos PorHora porque la sync inicial empezó el 08.
+
+### 15.3 SoftRestaurant desde EDARSAHUB (no LIVE)
+
+Datos SR 2026-05-14 ya sincronizados:
+```
+Hora   | Tickets | VentaHora
+13:00  |    1    |  3,820.00
+14:00  |    2    | 10,756.00
+15:00  |    3    | 17,117.00
+TOTAL  |    6    | 31,693.00
+```
+
+✅ **SR tiene distribución horaria REAL** - Query SR no fue modificada, usa campo `fecha` con hora.
+
+### 15.4 Sync_Control_Ejecuciones
+
+| SyncType | Status | Registros | DryRun | Fecha |
+|----------|--------|-----------|--------|-------|
+| VENTAS_POR_HORA | SUCCESS | 69 | No | 2026-05-15 13:04 |
+| VENTAS_POR_DIA_SEMANA | SUCCESS | 14 | No | 2026-05-15 13:04 |
+| VENTAS_HISTORICAS | SUCCESS | 16 | No | 2026-05-15 10:57 |
+
+### 15.5 Componentes
 
 | Componente | Estado | Notas |
 |------------|--------|-------|
-| Sync_Ventas_Historicas | ✅ OK | No afectado |
-| Sync_Ventas_PorDiaSemana | ✅ OK | No afectado |
-| SoftRestaurant PorHora | ✅ OK | Query no modificada, usa `fecha` |
-| Login | ✅ OK | No afectado |
+| Sync_Ventas_Historicas | ✅ OK | 16 registros |
+| Sync_Ventas_PorDiaSemana | ✅ OK | 14 registros |
+| Sync_Ventas_PorHora SR | ✅ OK | 62 registros, horas 12-23 |
+| Sync_Ventas_PorHora MPRO | ⚠️ CORREGIDO | 7 registros hora 0 → query actualizada |
 | Backend | ✅ RUNNING | Recargado exitosamente |
-| Comercial | ✅ OK | No afectado |
-| Tablero Ejecutivo | ✅ OK | No afectado |
-| Servidores | ✅ OK | No afectado |
-| Catálogos | ✅ OK | No afectado |
-| Auth/RBAC | ✅ OK | No afectado |
-| /api/consultas-sql/* | ✅ OK | No afectado |
+| SR LIVE | ℹ️ N/A | No requerido para validar sync existente |
 
 ---
 
@@ -280,9 +316,10 @@ No se ejecutó escritura real en esta fase. La corrección está lista para escr
 
 | Riesgo | Severidad | Mitigación |
 |--------|-----------|------------|
-| Registros existentes con hora 0 | BAJA | Se sobrescribirán en próxima ejecución |
+| Registros MPRO existentes con hora 0 | BAJA | Se sobrescribirán en próxima ejecución |
 | Diferencia Vn_Fecha vs Fecha_Alta para madrugada | INFO | Es correcto: Vn_Fecha es operativa, Fecha_Alta es timestamp |
-| Conectividad SR no disponible para validación | BAJA | Datos existentes en EDARSAHUB confirman funcionamiento |
+| SR LIVE no accesible | N/A | **No bloquea la fase** - Datos validados desde EDARSAHUB SQL |
+| Día 2026-05-07 sin PorHora | INFO | Sync inicial empezó el 08, se completará en FASE SYNC-3 |
 
 ---
 
