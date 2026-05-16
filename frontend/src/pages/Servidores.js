@@ -169,8 +169,33 @@ const Servidores = () => {
   const [creandoSistema, setCreandoSistema] = useState(false);
   
   // Cargar tipos de sistema desde catálogo
+  // FASE 7: Usa Catálogo Maestro con fallback a catálogo legacy
   const loadTiposSistema = async () => {
     setLoadingTiposSistema(true);
+    try {
+      // FASE 7: Intentar primero el Catálogo Maestro
+      const response = await api.get('/catalogos/sistemas-capacidades');
+      
+      if (response.data.success && response.data.data) {
+        // Transformar respuesta del Catálogo Maestro al formato esperado
+        const sistemas = response.data.data.map(s => ({
+          Codigo: s.codigo_sistema,
+          Descripcion: s.nombre_sistema
+        }));
+        setTiposSistema(sistemas);
+        // Catálogo Maestro no tiene permisos de crear nuevos, usar defaults
+        setPermisosSistemas({
+          puede_crear: false,
+          puede_solicitar: false,
+          mostrar_nuevo: false
+        });
+        return;
+      }
+    } catch (catalogoMaestroError) {
+      console.warn('Catálogo Maestro no disponible, usando legacy:', catalogoMaestroError);
+    }
+    
+    // Fallback: Usar catálogo legacy
     try {
       const response = await api.get('/catalogos/sistemas/activos');
       if (response.data.success && response.data.data) {
@@ -182,10 +207,11 @@ const Servidores = () => {
       }
     } catch (error) {
       console.error('Error cargando tipos de sistema:', error);
-      // Fallback a valores por defecto si falla
+      // Fallback final a valores hardcodeados (último recurso)
       setTiposSistema([
         { Codigo: 'MPRO', Descripcion: 'ManagementPro (MPRO)' },
         { Codigo: 'SOFTRESTAURANT', Descripcion: 'SoftRestaurant' },
+        { Codigo: 'API_LOCAL', Descripcion: 'API Local (Enterprise)' },
         { Codigo: 'OTRO', Descripcion: 'Otro' }
       ]);
     } finally {

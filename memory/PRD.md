@@ -2552,3 +2552,38 @@ Integrar el `SystemCapabilityResolver` en Explorador BD y Sync Históricos sin r
 ---
 
 *Última actualización: Dic-2025 - FASE 6 Catálogo Maestro Completada*
+
+
+---
+
+## ✅ FASE 7 - Catálogo Maestro: Frontend Dinámico (COMPLETADA - Dic 2025)
+
+### Objetivo
+Migrar filtros/listas frontend hardcodeadas hacia endpoints dinámicos del Catálogo Maestro.
+
+### Archivos Modificados
+| Archivo | Cambio |
+|---------|--------|
+| `/app/frontend/src/services/exploradorService.js` | Usa `/catalogos/sistemas-capacidades/explorables` con fallback |
+| `/app/frontend/src/pages/Servidores.js` | `loadTiposSistema()` usa Catálogo Maestro primero |
+
+### Validaciones Exitosas
+- ✅ Frontend compila sin errores
+- ✅ Login funciona
+- ✅ 12 conexiones en Explorador BD (sin regresión)
+- ✅ API_LOCAL visible en Explorador
+- ✅ API_LOCAL excluido de Sync Ventas
+- ✅ SOFTRESTAURANT y MPRO en ambos filtros
+- ✅ Endpoints Catálogo Maestro operativos
+- ✅ Fallback a catálogo legacy implementado
+
+### Documentos Generados
+- `/app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE7_FRONTEND_DINAMICO_REPORTE.md`
+
+### Siguiente Paso
+Tareas pendientes según prioridad del usuario.
+
+---
+
+*Última actualización: Dic-2025 - FASE 7 Catálogo Maestro Frontend Completada*
+
