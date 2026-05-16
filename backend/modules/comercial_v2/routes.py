@@ -725,8 +725,9 @@ async def comercial_v2_dashboard(
                     u['tickets_total'] = tickets
                     u['pax_total'] = pax
                     u['dias'] = 1 if total_dia > 0 else 0
-                    u['fecha_min'] = fecha_hoy.isoformat()
-                    u['fecha_max'] = fecha_hoy.isoformat()
+                    # FIX: Usar fecha_operativa (definida en línea 629-631) en lugar de fecha_hoy
+                    u['fecha_min'] = fecha_operativa.isoformat()
+                    u['fecha_max'] = fecha_operativa.isoformat()
             else:
                 u['_ventas_abiertas_hoy'] = 0
                 u['_ventas_cerradas_hoy'] = 0
@@ -909,7 +910,7 @@ async def comercial_v2_dashboard(
             ]),
             # Resumen de ventas abiertas del día
             "ventas_dia_actual": serialize_response({
-                "fecha": fecha_hoy.isoformat(),
+                "fecha": fecha_operativa.isoformat(),
                 "incluido_en_periodo": incluye_hoy,
                 "unidades_con_datos": len(ventas_abiertas_hoy),
                 "detalle": [

@@ -2751,7 +2751,58 @@ fallback_map = {'130MID': '130-MER', ...}  # Traducía canónico → legacy
 - `/app/docs/reports/FIX_IDENTIDAD_CANONICA_130_MERIDA_TABLERO_EJECUTIVO.md`
 - `/app/docs/reports/DIAGNOSTICO_IDENTIDAD_CANONICA_130_MERIDA.md`
 
+### Archivos Modificados en Esta Sesión
+1. `/app/backend/modules/comercial/service.py` - Fix `_mapear_codigo_a_unidad_negocio_id()` y `UNIDADES_EDARSAHUB_MAP`
+2. `/app/backend/modules/comercial_v2/repository_comercial_edarsahub.py` - Códigos canónicos en SQL
+3. `/app/backend/modules/comercial_v2/routes.py` - Fix `fecha_hoy` undefined → `fecha_operativa`
+
 **Estado:** ✅ COMPLETADO (16-May-2026)
+
+---
+
+## FIX: BLOQUEO DE CARGA TABLERO EJECUTIVO - fecha_hoy undefined (16-May-2026)
+
+### Problema
+El Tablero Ejecutivo mostraba "Consultando todas las unidades..." indefinidamente aunque el endpoint API `/api/comercial/tablero-ejecutivo` (V1) respondía correctamente.
+
+### Causa Raíz
+El frontend usa `REACT_APP_COMERCIAL_V2_ENABLED=true`, lo que hace que primero intente el endpoint `/api/v2/comercial/dashboard`.
+
+Este endpoint V2 fallaba con error:
+```json
+{"detail":"name 'fecha_hoy' is not defined"}
+```
+
+**Archivo**: `/app/backend/modules/comercial_v2/routes.py`  
+**Líneas**: 728-729 y 913
+
+La variable `fecha_hoy` se usaba pero nunca fue definida. Debería usar `fecha_operativa` que sí está definida en línea 629-631.
+
+### Solución
+```python
+# ANTES (ERROR)
+u['fecha_min'] = fecha_hoy.isoformat()
+u['fecha_max'] = fecha_hoy.isoformat()
+
+# DESPUÉS (CORRECTO)
+u['fecha_min'] = fecha_operativa.isoformat()
+u['fecha_max'] = fecha_operativa.isoformat()
+```
+
+### Validación
+
+**Tiempo de respuesta V2:** ~1.4 segundos
+
+**Tablero Ejecutivo cargado:**
+| Unidad | Ventas Mayo | Proyección |
+|--------|-------------|------------|
+| CIENFUEGOS | $2.54M | $4.93M |
+| 130° QUERETARO | $1.91M | $3.70M |
+| **130° MERIDA** | **$1.83M** | **$3.54M** |
+| LA ESTELAR | $1.51M | $2.93M |
+| ORIGEN | $1.20M | $2.33M |
+
+**Estado:** ✅ COMPLETADO
 ---
 
 *Última actualización: 16-May-2026 - Fix Identidad Canónica y Proyección Mensual Completado*
