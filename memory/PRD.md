@@ -2295,3 +2295,29 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 
 **Reporte:** `/app/docs/reports/FASE_SYNC_2C_DIAGNOSTICO_HORA_MPRO_REPORTE.md`
 
+
+
+---
+
+### FASE SYNC-2C: Aplicación Corrección MPRO PorHora
+**Fecha:** 2026-05-16
+**Estado:** ✅ COMPLETADO
+
+**Operación:** Escritura real UPSERT con query corregida (Fecha_Alta)
+
+**Resultado:**
+| Métrica | Antes | Después |
+|---------|-------|---------|
+| Registros MPRO | 7 | 87 |
+| Horas distintas | 1 (hora 0) | 17 (0,1,9-23) |
+| Totales vs Históricos | ✅ | ✅ (±$0.01 redondeo) |
+
+**Validaciones:**
+- ✅ Baseline desde EDARSAHUB SQL (no live)
+- ✅ No tocó SoftRestaurant
+- ✅ Hora 0 = ventas reales madrugada (31 tickets)
+- ✅ UPSERT idempotente
+- ✅ Anti-$0 falso
+
+**Reporte:** `/app/docs/reports/FASE_SYNC_2C_APLICACION_CORRECCION_MPRO_PORHORA_REPORTE.md`
+
