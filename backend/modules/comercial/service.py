@@ -30,7 +30,7 @@ FASE 4.4 (Abril 2026):
 from typing import Dict, List, Any, Optional
 import logging
 import calendar
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException
 
 from core.db import execute_sql_query, check_column_exists, get_propina_safe_column, get_propina_safe_column_tempcheques
@@ -841,10 +841,63 @@ def _obtener_kpis_tablero_desde_edarsahub(
     pax = kpis_actual['pax']
     cheques = kpis_actual['cheques']
     
-    # Calcular días transcurridos para proyección
-    fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
-    fecha_fin_dt = datetime(anio_ultimo, mes_ultimo, dia_ultimo)
-    dias_transcurridos = (fecha_fin_dt - fecha_ini_dt).days + 1
+    # =========================================================================
+    # FIX PROYECCIÓN MENSUAL: Usar días transcurridos OPERATIVOS del mes
+    # =========================================================================
+    # REGLA CANÓNICA:
+    # ProyeccionMensual = VentasAcumuladas / DiasTranscurridosOperativos * DiasMes
+    #
+    # DiasTranscurridosOperativos = Días calendario desde inicio del mes hasta
+    # la FechaOperacion actual (zona horaria México), NO el último día con datos.
+    #
+    # Ejemplo Mayo 2026:
+    # - Si hoy es 15 de mayo (México), dias_transcurridos = 15
+    # - Independiente de si hay 6, 10 o 14 días con ventas registradas
+    #
+    # PROHIBIDO: Usar COUNT(DISTINCT fecha_operacion) como divisor
+    # =========================================================================
+    
+    # Obtener fecha operativa actual en zona horaria México
+    try:
+        from zoneinfo import ZoneInfo
+        tz_mexico = ZoneInfo('America/Mexico_City')
+    except ImportError:
+        import pytz
+        tz_mexico = pytz.timezone('America/Mexico_City')
+    
+    from datetime import datetime, timezone
+    ahora_mexico = datetime.now(tz_mexico)
+    
+    # Determinar la FechaOperacion actual respetando ventana operativa restaurante
+    # Si es antes de las 03:00, pertenece al día operativo anterior
+    hora_actual = ahora_mexico.hour
+    if hora_actual < 3:  # Antes de las 3 AM, sigue siendo el día operativo anterior
+        fecha_operacion_actual = ahora_mexico.date() - timedelta(days=1)
+    else:
+        fecha_operacion_actual = ahora_mexico.date()
+    
+    # Calcular días transcurridos operativos del mes
+    fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d').date()
+    
+    # Si la fecha operativa actual está después del rango solicitado, usar fecha_fin
+    # Esto maneja consultas de meses anteriores correctamente
+    fecha_fin_consulta = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+    
+    if fecha_operacion_actual > fecha_fin_consulta:
+        # Consulta de mes cerrado: usar el último día del rango
+        dias_transcurridos_operativos = (fecha_fin_consulta - fecha_ini_dt).days + 1
+        logging.info(f"[PROYECCION-FIX] {nombre_unidad}: Mes cerrado, usando días del rango: {dias_transcurridos_operativos}")
+    elif fecha_operacion_actual >= fecha_ini_dt:
+        # Consulta del mes actual: usar días hasta fecha operativa actual
+        dias_transcurridos_operativos = (fecha_operacion_actual - fecha_ini_dt).days + 1
+        logging.info(f"[PROYECCION-FIX] {nombre_unidad}: Mes actual, FechaOperacion={fecha_operacion_actual}, días={dias_transcurridos_operativos}")
+    else:
+        # Consulta de mes futuro (no debería ocurrir)
+        dias_transcurridos_operativos = 1
+        logging.warning(f"[PROYECCION-FIX] {nombre_unidad}: Consulta de mes futuro, usando días=1")
+    
+    # Usar días transcurridos OPERATIVOS para la proyección
+    dias_transcurridos = dias_transcurridos_operativos
     
     # 4. OBTENER KPIs MES ANTERIOR
     kpis_mes_ant = _get_kpis_periodo_edarsahub(server_id, fecha_ini_ant, fecha_fin_ant, sucursal_id)
@@ -1475,10 +1528,43 @@ def get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fe
     ticket_prom = round(ventas_total / pax_total, 2) if pax_total > 0 else 0
     cheque_prom = round(ventas_total / cheques_total, 2) if cheques_total > 0 else 0
     
-    # Proyección (calculamos días transcurridos basado en el último día con datos)
-    fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
-    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d')
-    dias_transcurridos_calc = (fecha_fin_dt - fecha_ini_dt).days + 1
+    # =========================================================================
+    # FIX PROYECCIÓN MENSUAL MPRO: Usar días transcurridos OPERATIVOS
+    # =========================================================================
+    # REGLA CANÓNICA: Misma que SoftRestaurant
+    # ProyeccionMensual = VentasAcumuladas / DiasTranscurridosOperativos * DiasMes
+    # =========================================================================
+    
+    # Obtener fecha operativa actual en zona horaria México
+    try:
+        from zoneinfo import ZoneInfo
+        tz_mexico = ZoneInfo('America/Mexico_City')
+    except ImportError:
+        import pytz
+        tz_mexico = pytz.timezone('America/Mexico_City')
+    
+    ahora_mexico = datetime.now(tz_mexico)
+    
+    # Determinar la FechaOperacion actual respetando ventana operativa
+    hora_actual = ahora_mexico.hour
+    if hora_actual < 3:
+        fecha_operacion_actual = ahora_mexico.date() - timedelta(days=1)
+    else:
+        fecha_operacion_actual = ahora_mexico.date()
+    
+    # Calcular días transcurridos operativos
+    fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d').date()
+    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+    
+    if fecha_operacion_actual > fecha_fin_dt:
+        dias_transcurridos_calc = (fecha_fin_dt - fecha_ini_dt).days + 1
+        logging.info(f"[PROYECCION-FIX-MPRO] {nombre}: Mes cerrado, días={dias_transcurridos_calc}")
+    elif fecha_operacion_actual >= fecha_ini_dt:
+        dias_transcurridos_calc = (fecha_operacion_actual - fecha_ini_dt).days + 1
+        logging.info(f"[PROYECCION-FIX-MPRO] {nombre}: Mes actual, FechaOp={fecha_operacion_actual}, días={dias_transcurridos_calc}")
+    else:
+        dias_transcurridos_calc = 1
+    
     proyeccion = round((ventas_total / dias_transcurridos_calc) * dias_mes, 2) if dias_transcurridos_calc > 0 else 0
     
     # Variaciones (respetando reglas de null)
