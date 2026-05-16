@@ -9791,6 +9791,9 @@ async def _cargar_tablas_sql_server(conn_info: Dict) -> Dict:
     Carga tablas desde una conexión SQL Server directa.
     
     Funciona para SoftRestaurant, NOMIPAQ, EDARSAHUB, cualquier SQL Server.
+    
+    CORRECCIÓN P1 (2026-05-16): Mejor manejo de errores para mostrar
+    mensaje claro cuando hay problemas de conexión o permisos.
     """
     query = """
 SELECT 
@@ -9800,48 +9803,93 @@ FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_TYPE = 'BASE TABLE'
 ORDER BY TABLE_NAME
 """
+    nombre = conn_info.get('name', 'Unknown')
+    sistema = conn_info.get('system_type', 'Unknown')
+    database = conn_info.get('database', '')
+    host = conn_info.get('host', '')
+    tipo_conexion = conn_info.get('tipo_conexion', 'SQL_SERVER')
+    
+    # Verificar que hay credenciales SQL
+    if not host or not database:
+        return {
+            "servidor": nombre,
+            "sistema": sistema,
+            "database": database or "N/A",
+            "tablas": [],
+            "error": "Configuración SQL incompleta (falta host o database)",
+            "tipo_conexion": tipo_conexion
+        }
+    
     try:
-        # Verificar que hay credenciales SQL
-        host = conn_info.get('host', '')
-        database = conn_info.get('database', '')
+        # Usar conexión directa con mejor manejo de errores
+        from core.db import _execute_sql_direct_with_error
         
-        if not host or not database:
-            return {
-                "servidor": conn_info.get('name', 'Unknown'),
-                "sistema": conn_info.get('system_type', 'Unknown'),
-                "database": database or "N/A",
-                "tablas": [],
-                "error": "Configuración SQL incompleta (falta host o database)",
-                "tipo_conexion": conn_info.get('tipo_conexion', 'SQL_SERVER')
-            }
-        
-        result = execute_sql_query(
-            host, 
-            conn_info.get('port', 1433), 
+        result, error_msg = await _execute_sql_direct_with_error(
+            host,
+            conn_info.get('port', 1433),
             database,
-            conn_info.get('username', ''), 
-            conn_info.get('password', ''), 
+            conn_info.get('username', ''),
+            conn_info.get('password', ''),
             query
         )
         
-        logging.info(f"[EXPLORADOR][SQL] {conn_info.get('name')}: {len(result)} tablas")
+        if error_msg:
+            logging.warning(f"[EXPLORADOR][SQL] {nombre}: {error_msg}")
+            # Sanitizar mensaje de error (no exponer credenciales)
+            safe_error = _sanitize_error_message(error_msg)
+            return {
+                "servidor": nombre,
+                "sistema": sistema,
+                "database": database,
+                "tablas": [],
+                "error": safe_error,
+                "tipo_conexion": tipo_conexion
+            }
+        
+        logging.info(f"[EXPLORADOR][SQL] {nombre}: {len(result)} tablas")
         return {
-            "servidor": conn_info.get('name'),
-            "sistema": conn_info.get('system_type'),
+            "servidor": nombre,
+            "sistema": sistema,
             "database": database,
             "tablas": result,
-            "tipo_conexion": conn_info.get('tipo_conexion', 'SQL_SERVER')
+            "tipo_conexion": tipo_conexion
         }
+        
     except Exception as e:
-        logging.error(f"[EXPLORADOR][SQL] {conn_info.get('name')}: {e}")
+        logging.error(f"[EXPLORADOR][SQL] {nombre}: {e}")
+        safe_error = _sanitize_error_message(str(e))
         return {
-            "servidor": conn_info.get('name', 'Unknown'),
-            "sistema": conn_info.get('system_type', 'Unknown'),
-            "database": conn_info.get('database', 'N/A'),
+            "servidor": nombre,
+            "sistema": sistema,
+            "database": database,
             "tablas": [],
-            "error": f"Error SQL: {str(e)[:100]}",
-            "tipo_conexion": conn_info.get('tipo_conexion', 'SQL_SERVER')
+            "error": safe_error,
+            "tipo_conexion": tipo_conexion
         }
+
+
+def _sanitize_error_message(error: str) -> str:
+    """
+    Sanitiza mensajes de error para no exponer información sensible.
+    """
+    # Patrones a ocultar
+    sensitive_patterns = [
+        (r"password[=:]\s*\S+", "password=***"),
+        (r"pwd[=:]\s*\S+", "pwd=***"),
+        (r"user[=:]\s*\S+", "user=***"),
+        (r"uid[=:]\s*\S+", "uid=***"),
+    ]
+    
+    import re
+    result = error
+    for pattern, replacement in sensitive_patterns:
+        result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
+    
+    # Truncar si es muy largo
+    if len(result) > 200:
+        result = result[:200] + "..."
+    
+    return result
 
 
 @api_router.get("/explorador/columnas/{server_id}/{tabla}")

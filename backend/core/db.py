@@ -678,6 +678,79 @@ def execute_sql_query(
         )
 
 
+async def _execute_sql_direct_with_error(
+    host: str,
+    port: int,
+    database: str,
+    username: str,
+    password: str,
+    query: str,
+    timeout_seconds: int = 30
+) -> tuple:
+    """
+    Ejecuta una consulta SQL y retorna (resultado, error_mensaje).
+    
+    CORRECCIÓN P1 (2026-05-16): Para el Explorador de BD que necesita
+    distinguir entre "0 resultados" y "error de conexión".
+    
+    Returns:
+        (list, None) si éxito
+        ([], str) si error (el str es el mensaje de error)
+    """
+    # parse_sql_server_host está en este mismo módulo (db.py)
+    hostname, parsed_port, instance = parse_sql_server_host(host, port)
+    
+    # Intentar con pytds primero (más robusto)
+    try:
+        import pytds
+        conn_kwargs = {
+            'server': hostname,
+            'port': parsed_port,
+            'database': database,
+            'user': username,
+            'password': password,
+            'login_timeout': timeout_seconds,
+            'timeout': timeout_seconds,
+            'autocommit': True,
+        }
+        
+        with pytds.connect(**conn_kwargs) as conn:
+            cursor = conn.cursor()
+            cursor.execute(query)
+            
+            if cursor.description:
+                columns = [desc[0] for desc in cursor.description]
+                rows = cursor.fetchall()
+                results = []
+                for row in rows:
+                    row_dict = {}
+                    for i, col in enumerate(columns):
+                        row_dict[col] = row[i]
+                    results.append(row_dict)
+                return (results, None)
+            else:
+                return ([], None)
+                
+    except Exception as pytds_error:
+        error_msg = str(pytds_error)
+        
+        # Detectar errores específicos y dar mensaje claro
+        if "login" in error_msg.lower() or "inicio de sesión" in error_msg.lower():
+            return ([], f"Error de autenticación: El usuario no tiene acceso a la base de datos '{database}'")
+        
+        if "connection refused" in error_msg.lower() or "unavailable" in error_msg.lower():
+            return ([], f"Error de conexión: No se puede conectar al servidor {hostname}:{parsed_port}")
+        
+        if "timeout" in error_msg.lower():
+            return ([], f"Timeout: El servidor no respondió en {timeout_seconds} segundos")
+        
+        if "database" in error_msg.lower() and "does not exist" in error_msg.lower():
+            return ([], f"Error: La base de datos '{database}' no existe")
+        
+        # Error genérico
+        return ([], f"Error SQL: {error_msg[:150]}")
+
+
 def execute_sql_query_params(
     host: str, 
     port: int, 

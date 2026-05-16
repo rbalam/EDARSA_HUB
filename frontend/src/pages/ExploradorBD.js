@@ -19,7 +19,7 @@ import {
   Loader2, Database, Table, Columns, Link2, Eye, Play, 
   ChevronRight, Search, Download, Server, X, FileText,
   Plus, Upload, Terminal, CheckCircle2, XCircle, AlertTriangle, Pencil,
-  Maximize2, Minimize2, Building2
+  Maximize2, Minimize2, Building2, AlertCircle
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -838,6 +838,9 @@ export default function ExploradorBD() {
   // Modal Agregar Tablas
   const [showAgregarTablas, setShowAgregarTablas] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // CORRECCIÓN P1: Estado para error de carga de tablas
+  const [errorTablas, setErrorTablas] = useState(null);
 
   // === CORRECCIÓN P1: Cargar Conexiones Explorables (NO unidades operativas) ===
   useEffect(() => {
@@ -898,6 +901,7 @@ export default function ExploradorBD() {
     setColumnas([]);
     setRelaciones([]);
     setPreview(null);
+    setErrorTablas(null);  // CORRECCIÓN P1: Limpiar error anterior
     
     try {
       const response = await api.get(`/explorador/tablas/${serverId}`);
@@ -907,9 +911,21 @@ export default function ExploradorBD() {
         sistema: response.data.sistema,
         database: response.data.database
       });
-      toast.success(`${response.data.tablas.length} tablas encontradas`);
+      
+      // CORRECCIÓN P1: Mostrar error claro si existe
+      if (response.data.error) {
+        setErrorTablas(response.data.error);  // Guardar error
+        toast.error(response.data.error);
+        logger.warn(`[ExploradorBD] ${response.data.servidor}: ${response.data.error}`);
+      } else if (response.data.tablas.length === 0) {
+        toast.info('No se encontraron tablas en esta base de datos');
+      } else {
+        toast.success(`${response.data.tablas.length} tablas encontradas`);
+      }
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error cargando tablas');
+      const errMsg = error.response?.data?.detail || 'Error cargando tablas';
+      setErrorTablas(errMsg);
+      toast.error(errMsg);
       setTablas([]);
     } finally {
       setLoading(prev => ({...prev, tablas: false}));
@@ -1270,8 +1286,18 @@ export default function ExploradorBD() {
                     <Loader2 className="h-5 w-5 animate-spin" />
                   </div>
                 ) : Object.keys(tablasAgrupadas).length === 0 ? (
-                  <div className="text-center py-4 text-zinc-400 text-sm">
-                    No se encontraron tablas
+                  <div className="text-center py-4 text-sm">
+                    {errorTablas ? (
+                      <div className="space-y-2">
+                        <AlertCircle className="h-8 w-8 mx-auto text-red-400" />
+                        <p className="text-red-500 font-medium">Error al cargar tablas</p>
+                        <p className="text-zinc-500 text-xs px-4">{errorTablas}</p>
+                      </div>
+                    ) : (
+                      <div className="text-zinc-400">
+                        No se encontraron tablas
+                      </div>
+                    )}
                   </div>
                 ) : (
                   Object.entries(tablasAgrupadas).map(([grupo, tablasGrupo]) => (
