@@ -2423,7 +2423,7 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 
 ## FASE ARQ-SISTEMAS-CAPACIDADES - Catálogo Maestro SQL-First
 
-### Estado: FASE 1 DIAGNÓSTICO COMPLETADO
+### Estado: FASE 2 DDL COMPLETADA ✅
 
 **Fecha inicio:** 2025-12-XX
 
@@ -2438,18 +2438,22 @@ Cada sistema nuevo requería modificaciones en 10+ archivos:
 - Queries por sistema
 - Normalizadores system_type
 
-### FASE 1 - Diagnóstico (COMPLETADO)
+### FASE 1 - Diagnóstico (COMPLETADO ✅)
 - [x] Matriz de auditoría: 30+ puntos de hardcoding identificados
 - [x] DDL propuesto: IF NOT EXISTS (idempotente)
 - [x] SEED inicial preparado para SR y MPRO
 - [x] Plan de fases 2-7 documentado
 
-### FASES PENDIENTES (Requieren Autorización)
+### FASE 2 - DDL SQL-First (COMPLETADO ✅)
+- [x] Crear tabla `Sistema_Capacidades` (10 columnas, PK, FK, 2 índices)
+- [x] Crear tabla `Sistema_ModulosVisibilidad` (9 columnas, PK, FK, 1 índice)
+- [x] Crear tabla `Sistema_TiposVariantes` (6 columnas, PK, FK, 1 índice)
+- [x] FKs vinculadas a Sistema_Tipos existente
+- [x] Sin DROP/TRUNCATE/DELETE
+- [x] Backend operativo post-ejecución
+- [x] No regresión confirmada
 
-#### FASE 2 - DDL SQL-First
-- [ ] Crear tabla `Sistema_Capacidades`
-- [ ] Crear tabla `Sistema_ModulosVisibilidad`
-- [ ] Crear tabla `Sistema_TiposVariantes`
+### FASES PENDIENTES (Requieren Autorización)
 
 #### FASE 3 - Seed Inicial
 - [ ] Cargar capacidades SR (16 capacidades)
