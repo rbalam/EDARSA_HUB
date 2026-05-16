@@ -2199,4 +2199,29 @@ Se implementó una sección dentro del modal de Alta/Edición de Conexiones API 
 **Reporte:** `/app/docs/reports/FIX_EXPLORADOR_BD_CONEXIONES_EXPLORABLES_DINAMICAS.md`
 
 
+### FIX: Explorador BD Multi-Sistema (Carga de Tablas)
+**Estado:** ✅ COMPLETADO
+
+**Problema:** El Explorador solo cargaba tablas de SoftRestaurant; MPRO, Enterprise y otros sistemas mostraban "0 tablas".
+
+**Causa:** El endpoint `/explorador/tablas/{server_id}` asumía que todas las conexiones tienen SQL directo. Las conexiones `API_LOCAL` (MPRO API, Enterprise) usan endpoint `/query?sql=`, no SQL credentials.
+
+**Solución:**
+- Refactorizado endpoint para detectar tipo de conexión
+- **SQL_SERVER/DATA_SOURCE**: Usa `INFORMATION_SCHEMA.TABLES` (sin cambios)
+- **API_LOCAL**: Usa `GET /query?sql=SELECT name FROM sys.tables`
+- Agregadas funciones `get_api_connection_by_id_full()` y `get_decrypted_api_key()`
+
+**Validación:**
+- ✅ SoftRestaurant 130° MERIDA: 365 tablas (NO REGRESIÓN)
+- ✅ MPRO ManagementPro: 1076 tablas
+- ✅ APIs remotas (CHAPUR NORTE): Muestra error claro si no disponible
+
+**Archivos modificados:**
+- `/app/backend/server.py`
+- `/app/backend/modules/api_connections/repository.py`
+
+**Reporte:** `/app/docs/reports/FIX_EXPLORADOR_BD_MULTISISTEMA_TABLAS.md`
+
+
 **Solución:** Agregado `</>` y `)}` después de `</DialogFooter>`.

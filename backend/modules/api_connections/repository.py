@@ -666,6 +666,67 @@ def get_api_connection_with_decrypted_key(api_id: str) -> Optional[Dict]:
         return None
 
 
+async def get_api_connection_by_id_full(api_id: str) -> Optional[Dict]:
+    """
+    Obtiene una conexión API_LOCAL completa por ID.
+    
+    CORRECCIÓN P1 (2026-05-15): Para uso del Explorador de BD multisistema.
+    Retorna todos los campos necesarios para exploración de tablas.
+    """
+    try:
+        query = f"""
+        SELECT * FROM Servidores_Conexiones
+        WHERE id = '{_escape_sql(api_id)}'
+          AND tipo_conexion = 'API_LOCAL'
+          AND activo = 1
+        """
+        results = execute_sql_query(
+            EDARSAHUB_CONFIG['host'], EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'], EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'], query
+        )
+        if not results:
+            return None
+        
+        row = results[0]
+        return {
+            'id': str(row.get('id', '')),
+            'nombre': row.get('nombre', ''),
+            'name': row.get('nombre', ''),
+            'url': row.get('api_url', ''),
+            'api_url': row.get('api_url', ''),
+            'api_key_encrypted': row.get('api_key_encrypted', ''),
+            'tipo': row.get('system_type', ''),
+            'system_type': row.get('system_type', ''),
+            'tipo_conexion': row.get('tipo_conexion', 'API_LOCAL'),
+            'sucursal_destino': row.get('sucursal_destino', ''),
+            'activo': bool(row.get('activo', True)),
+        }
+    except Exception as e:
+        logging.error(f"[API_CONNECTIONS] Error obteniendo API conn {api_id}: {e}")
+        return None
+
+
+async def get_decrypted_api_key(api_conn: Dict) -> str:
+    """
+    Descifra la API key de una conexión.
+    
+    CORRECCIÓN P1 (2026-05-15): Para uso seguro en Explorador BD.
+    """
+    api_key_encrypted = api_conn.get('api_key_encrypted', '')
+    if not api_key_encrypted:
+        return ''
+    
+    try:
+        from core.secret_manager import decrypt_secret, is_encrypted_secret
+        if is_encrypted_secret(api_key_encrypted):
+            return decrypt_secret(api_key_encrypted)
+        return api_key_encrypted
+    except Exception as e:
+        logging.warning(f"[API_CONNECTIONS] Error descifrando API key: {e}")
+        return ''
+
+
 async def execute_test_query(
     api_id: str,
     sql_query: str,

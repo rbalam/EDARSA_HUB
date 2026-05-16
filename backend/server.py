@@ -9645,19 +9645,153 @@ async def listar_tablas(
     """
     Lista todas las tablas de la base de datos del servidor.
     
-    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
-    CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
+    CORRECCIÓN P1 (2026-05-15): Soporte Multi-Sistema
+    - SQL_SERVER / DATA_SOURCE: Usa metadata SQL Server (INFORMATION_SCHEMA)
+    - API_LOCAL: Usa endpoint /query con SELECT readonly
+    
+    No limitado a SoftRestaurant. Soporta MPRO, Enterprise, NOMIPAQ, EDARSAHUB, etc.
     """
-    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     from core.server_registry import get_server_connection_info
-    conn_info = await get_server_connection_info(server_id, db=db)
-    if not conn_info:
+    from modules.api_connections.repository import get_api_connection_by_id_full
+    
+    # Determinar tipo de conexión
+    tipo_conexion = None
+    conn_info = None
+    api_conn = None
+    
+    # Primero intentar como API_LOCAL
+    try:
+        api_conn = await get_api_connection_by_id_full(server_id)
+        if api_conn and api_conn.get('tipo_conexion') == 'API_LOCAL':
+            tipo_conexion = 'API_LOCAL'
+    except Exception as e:
+        logging.debug(f"[EXPLORADOR] {server_id} no es API_LOCAL: {e}")
+    
+    # Si no es API_LOCAL, buscar como SQL_SERVER/DATA_SOURCE
+    if tipo_conexion != 'API_LOCAL':
+        conn_info = await get_server_connection_info(server_id, db=db)
+        if conn_info:
+            tipo_conexion = conn_info.get('tipo_conexion', 'DATA_SOURCE')
+    
+    if not api_conn and not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
     
-    # FASE 6-8: Validar acceso usando función centralizada
+    # FASE 6-8: Validar acceso
     await validate_server_access_unified(current_user, server_id)
     
-    # Query para listar tablas (SQL Server)
+    # === CASO 1: API_LOCAL (MPRO, Enterprise, etc. via API /query) ===
+    if tipo_conexion == 'API_LOCAL' and api_conn:
+        return await _cargar_tablas_api_local(api_conn, server_id)
+    
+    # === CASO 2: SQL_SERVER / DATA_SOURCE (conexión directa SQL) ===
+    if conn_info:
+        return await _cargar_tablas_sql_server(conn_info)
+    
+    raise HTTPException(status_code=400, detail="Tipo de conexión no soportado para exploración")
+
+
+async def _cargar_tablas_api_local(api_conn: Dict, server_id: str) -> Dict:
+    """
+    Carga tablas desde una conexión API_LOCAL usando endpoint /query.
+    
+    Usa GET con parámetro ?sql= (SELECT readonly) para obtener lista de tablas.
+    Compatible con APIs legacy de MPRO, Enterprise, etc.
+    """
+    import httpx
+    from modules.api_connections.repository import get_decrypted_api_key
+    
+    api_url = api_conn.get('url', api_conn.get('api_url', ''))
+    api_key = await get_decrypted_api_key(api_conn)
+    nombre = api_conn.get('nombre', api_conn.get('name', 'API'))
+    sistema = api_conn.get('tipo', api_conn.get('system_type', 'UNKNOWN'))
+    
+    if not api_url:
+        return {
+            "servidor": nombre,
+            "sistema": sistema,
+            "database": "API",
+            "tablas": [],
+            "error": "URL de API no configurada",
+            "tipo_conexion": "API_LOCAL"
+        }
+    
+    # Query seguro para obtener tablas (SELECT readonly)
+    metadata_query = "SELECT name AS tabla FROM sys.tables ORDER BY name"
+    
+    try:
+        # Construir URL del endpoint (GET con ?sql=)
+        base_url = api_url.rstrip('/')
+        
+        # Headers con API key
+        headers = {"x-api-key": api_key} if api_key else {}
+        
+        # Hacer request GET con SQL como parámetro
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                base_url,
+                params={"sql": metadata_query},
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                tablas = []
+                
+                # Parsear respuesta (puede variar según el endpoint)
+                if isinstance(data, list):
+                    tablas = [{"tabla": r.get('tabla', r.get('name', str(r))), "tipo": "TABLE"} for r in data if r]
+                elif isinstance(data, dict):
+                    rows = data.get('data', data.get('rows', data.get('results', [])))
+                    if isinstance(rows, list):
+                        tablas = [{"tabla": r.get('tabla', r.get('name', str(r))), "tipo": "TABLE"} for r in rows if r]
+                
+                logging.info(f"[EXPLORADOR][API_LOCAL] {nombre}: {len(tablas)} tablas obtenidas")
+                return {
+                    "servidor": nombre,
+                    "sistema": sistema,
+                    "database": api_conn.get('sucursal_destino', 'API'),
+                    "tablas": tablas,
+                    "tipo_conexion": "API_LOCAL"
+                }
+            else:
+                logging.warning(f"[EXPLORADOR][API_LOCAL] {nombre}: HTTP {response.status_code}")
+                return {
+                    "servidor": nombre,
+                    "sistema": sistema,
+                    "database": "API",
+                    "tablas": [],
+                    "error": f"Error de API: HTTP {response.status_code}",
+                    "tipo_conexion": "API_LOCAL"
+                }
+                
+    except httpx.TimeoutException:
+        logging.warning(f"[EXPLORADOR][API_LOCAL] {nombre}: Timeout")
+        return {
+            "servidor": nombre,
+            "sistema": sistema,
+            "database": "API",
+            "tablas": [],
+            "error": "Timeout al conectar con la API",
+            "tipo_conexion": "API_LOCAL"
+        }
+    except Exception as e:
+        logging.error(f"[EXPLORADOR][API_LOCAL] {nombre}: {e}")
+        return {
+            "servidor": nombre,
+            "sistema": sistema,
+            "database": "API",
+            "tablas": [],
+            "error": f"Error: {str(e)[:100]}",
+            "tipo_conexion": "API_LOCAL"
+        }
+
+
+async def _cargar_tablas_sql_server(conn_info: Dict) -> Dict:
+    """
+    Carga tablas desde una conexión SQL Server directa.
+    
+    Funciona para SoftRestaurant, NOMIPAQ, EDARSAHUB, cualquier SQL Server.
+    """
     query = """
 SELECT 
     TABLE_NAME as tabla,
@@ -9667,18 +9801,47 @@ WHERE TABLE_TYPE = 'BASE TABLE'
 ORDER BY TABLE_NAME
 """
     try:
+        # Verificar que hay credenciales SQL
+        host = conn_info.get('host', '')
+        database = conn_info.get('database', '')
+        
+        if not host or not database:
+            return {
+                "servidor": conn_info.get('name', 'Unknown'),
+                "sistema": conn_info.get('system_type', 'Unknown'),
+                "database": database or "N/A",
+                "tablas": [],
+                "error": "Configuración SQL incompleta (falta host o database)",
+                "tipo_conexion": conn_info.get('tipo_conexion', 'SQL_SERVER')
+            }
+        
         result = execute_sql_query(
-            conn_info['host'], conn_info['port'], conn_info['database'],
-            conn_info['username'], conn_info['password'], query
+            host, 
+            conn_info.get('port', 1433), 
+            database,
+            conn_info.get('username', ''), 
+            conn_info.get('password', ''), 
+            query
         )
+        
+        logging.info(f"[EXPLORADOR][SQL] {conn_info.get('name')}: {len(result)} tablas")
         return {
-            "servidor": conn_info['name'],
-            "sistema": conn_info['system_type'],
-            "database": conn_info['database'],
-            "tablas": result
+            "servidor": conn_info.get('name'),
+            "sistema": conn_info.get('system_type'),
+            "database": database,
+            "tablas": result,
+            "tipo_conexion": conn_info.get('tipo_conexion', 'SQL_SERVER')
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"[EXPLORADOR][SQL] {conn_info.get('name')}: {e}")
+        return {
+            "servidor": conn_info.get('name', 'Unknown'),
+            "sistema": conn_info.get('system_type', 'Unknown'),
+            "database": conn_info.get('database', 'N/A'),
+            "tablas": [],
+            "error": f"Error SQL: {str(e)[:100]}",
+            "tipo_conexion": conn_info.get('tipo_conexion', 'SQL_SERVER')
+        }
 
 
 @api_router.get("/explorador/columnas/{server_id}/{tabla}")
