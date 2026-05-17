@@ -2907,4 +2907,58 @@ live_status = LiveStatus.LIVE_NOT_APPLICABLE if data_type == "HUB" else LiveStat
 
 ---
 
+## ✅ FASE 1 COMPLETADA: Circuit Breaker HUB - EDARSAHUB SQL No MongoDB (17-May-2026)
+
+### Problema Resuelto
+El Tablero Ejecutivo V1 usaba MongoDB (`server_status`) para circuit breaker, bloqueando consultas a EDARSAHUB SQL que siempre funcionan.
+
+### Regla Implementada
+- **Modo HUB:** `should_try = True` siempre (EDARSAHUB SQL es la fuente)
+- **Modo LIVE-C:** Circuit breaker MongoDB preservado (conexiones reales)
+
+### Cambios en `/app/backend/modules/comercial/routes.py`
+
+| Cambio | Descripción |
+|--------|-------------|
+| `should_try = True` para HUB | Circuit breaker ignorado para EDARSAHUB SQL |
+| NO `save_server_connection_status()` para HUB | MongoDB no se actualiza para consultas SQL |
+| NO `get_cached_kpis()` fallback para HUB | Si EDARSAHUB falla → error SQL, NO caché MongoDB |
+| `source_period = "EDARSAHUB_SQL"` | Indica claramente la fuente |
+| `live_status = "LIVE_NOT_APPLICABLE"` | HUB no usa conexión LIVE |
+
+### Validación Final
+
+| Unidad | ANTES | DESPUÉS |
+|--------|-------|---------|
+| CIENFUEGOS | `DATA_FROM_CACHE` | `DATA_OK` ✅ |
+| 130° MÉRIDA | `DATA_FROM_CACHE` | `DATA_OK` ✅ |
+| LA ESTELAR | `DATA_FROM_CACHE` | `DATA_OK` ✅ |
+| 130° QUERÉTARO | `DATA_OK` | `DATA_OK` ✅ |
+| ORIGEN | `DATA_OK` | `DATA_OK` ✅ |
+
+**Status Summary:**
+- Total: 5 | DATA_OK: **5** | DATA_FROM_CACHE: **0** | DATA_ERROR: 0
+
+### Validaciones Adicionales
+- ✅ Login funciona
+- ✅ `/api/users` retorna 11
+- ✅ `/api/servers` retorna 8
+- ✅ Comercial V2 carga
+- ✅ Tablero Ejecutivo carga
+- ✅ Sin error 500, sin regresión
+
+### Riesgos Residuales (Fase 2)
+- Dashboard individual SoftRestaurant (línea 4282) - usa MongoDB
+- Dashboard MPRO (línea 4541) - usa MongoDB
+- Estos flujos son para consultas LIVE reales, fuera de alcance Fase 1
+
+### Reportes
+- `/app/docs/reports/COMERCIAL_CIRCUIT_BREAKER_MONGO_A_SQL_DIAGNOSTICO.md`
+- `/app/docs/reports/FIX_CIRCUIT_BREAKER_HUB_TABLERO_EJECUTIVO.md`
+- `/app/docs/reports/COMERCIAL_CIRCUIT_BREAKER_FASE1_HUB_SQL_NO_MONGO.md`
+
+**FASE 1 CERRADA ✅**
+
+---
+
 *Última actualización: 17-May-2026 - Fix Circuit Breaker HUB Tablero Ejecutivo Completado*

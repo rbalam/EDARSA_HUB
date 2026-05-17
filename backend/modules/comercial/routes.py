@@ -964,48 +964,74 @@ async def _tablero_ejecutivo_internal(
                             )
                             resultados.append(unit_response)
                     else:
-                        # HUB: Intentar caché como fallback
-                        cached = await get_cached_kpis(server['id'], periodo_key)
-                        if cached and cached.get('kpis'):
-                            kpis_cached = cached['kpis']
-                            logging.info(f"[P0-LOG] tablero_cache_used_connection_fallback: server={server['name']}")
+                        # =================================================================
+                        # FIX CIRCUIT BREAKER HUB (2026-05-17):
+                        # Para modo HUB, NO usar caché MongoDB como fallback.
+                        # Si EDARSAHUB SQL falla, reportar error SQL directamente.
+                        # MongoDB NO debe ser fuente productiva de datos.
+                        # =================================================================
+                        if data_type == "HUB":
+                            # HUB: Reportar error SQL, NO usar caché MongoDB
+                            logging.warning(f"[HUB-EDARSAHUB-ERROR] {server['name']}: Error leyendo EDARSAHUB SQL - NO hay fallback MongoDB")
                             
-                            unit_response = build_unit_response(
-                                server=server,
-                                kpis=kpis_cached,
-                                data_status=DataStatus.DATA_FROM_CACHE,
-                                live_status=live_status,
-                                cache_status=CacheStatus.USED_CONNECTION_FALLBACK,
-                                source_used=SourceUsed.CACHE,
-                                source_real_attempted=True,
-                                source_real_status=source_real_status,
-                                source_period="CACHE_VALIDATED",
-                                source_live="NOT_USED",
-                                cache_warning=f"Mostrando último dato disponible (cache: {cached.get('updated_at', 'N/A')})",
-                            )
-                            resultados.append(unit_response)
-                            
-                            # Acumular totales del caché
-                            for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
-                                      "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
-                                totales[k] += kpis_cached.get(k, 0)
-                        else:
-                            # Sin caché disponible
                             unit_response = build_unit_response(
                                 server=server,
                                 kpis=None,
                                 data_status=DataStatus.DATA_ERROR,
-                                live_status=live_status,
-                                cache_status=CacheStatus.MISSING,
+                                live_status=LiveStatus.LIVE_NOT_APPLICABLE,
+                                cache_status=CacheStatus.NOT_USED,
                                 source_used=SourceUsed.NONE,
                                 source_real_attempted=True,
                                 source_real_status=source_real_status,
-                                source_period="NONE",
-                                source_live="ERROR",
-                                error_code="NO_CACHE",
-                                error_message="Conexión no disponible y sin datos en caché",
+                                source_period="EDARSAHUB_SQL_ERROR",
+                                source_live="NOT_APPLICABLE",
+                                error_code="EDARSAHUB_SQL_ERROR",
+                                error_message=f"Error consultando EDARSAHUB SQL: {str(sr_error_captured)[:100]}",
                             )
                             resultados.append(unit_response)
+                        else:
+                            # LIVE-C: Mantener fallback a caché MongoDB (conexión real fallida)
+                            cached = await get_cached_kpis(server['id'], periodo_key)
+                            if cached and cached.get('kpis'):
+                                kpis_cached = cached['kpis']
+                                logging.info(f"[P0-LOG] tablero_cache_used_connection_fallback: server={server['name']}")
+                                
+                                unit_response = build_unit_response(
+                                    server=server,
+                                    kpis=kpis_cached,
+                                    data_status=DataStatus.DATA_FROM_CACHE,
+                                    live_status=live_status,
+                                    cache_status=CacheStatus.USED_CONNECTION_FALLBACK,
+                                    source_used=SourceUsed.CACHE,
+                                    source_real_attempted=True,
+                                    source_real_status=source_real_status,
+                                    source_period="CACHE_VALIDATED",
+                                    source_live="NOT_USED",
+                                    cache_warning=f"Mostrando último dato disponible (cache: {cached.get('updated_at', 'N/A')})",
+                                )
+                                resultados.append(unit_response)
+                                
+                                # Acumular totales del caché
+                                for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
+                                          "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
+                                    totales[k] += kpis_cached.get(k, 0)
+                            else:
+                                # Sin caché disponible
+                                unit_response = build_unit_response(
+                                    server=server,
+                                    kpis=None,
+                                    data_status=DataStatus.DATA_ERROR,
+                                    live_status=live_status,
+                                    cache_status=CacheStatus.MISSING,
+                                    source_used=SourceUsed.NONE,
+                                    source_real_attempted=True,
+                                    source_real_status=source_real_status,
+                                    source_period="NONE",
+                                    source_live="ERROR",
+                                    error_code="NO_CACHE",
+                                    error_message="Conexión no disponible y sin datos en caché",
+                                )
+                                resultados.append(unit_response)
                             
                 elif not should_try:
                     # CASO: No se intentó conexión (servidor marcado como offline)
