@@ -2838,6 +2838,73 @@ ProyecciónMensual = VentasAcumuladas / DiasÚltimoRegistro * DíasMes
 `/app/docs/reports/VALIDACION_PROYECCION_MENSUAL_TABLERO_EJECUTIVO.md`
 
 **Estado:** ✅ VALIDADO Y DOCUMENTADO (16-May-2026)
+
 ---
 
-*Última actualización: 16-May-2026 - Fix Identidad Canónica y Proyección Mensual Completado*
+## ✅ FIX: Circuit Breaker HUB - Tablero Ejecutivo V1 (17-May-2026)
+
+### Problema Detectado
+El Tablero Ejecutivo V1 (`/api/comercial/tablero-ejecutivo`) mostraba `DATA_FROM_CACHE` para 3 de 5 unidades (CIENFUEGOS, 130° MÉRIDA, LA ESTELAR) a pesar de que EDARSAHUB SQL tenía datos frescos.
+
+### Causa Raíz
+El circuit breaker (`should_attempt_live_query()`) consultaba MongoDB `server_status` para verificar si el servidor local estaba offline. Cuando detectaba servidor offline, usaba caché MongoDB en lugar de consultar EDARSAHUB SQL.
+
+**PROBLEMA:** `get_kpis_softrestaurant()` ya lee de EDARSAHUB SQL (no del servidor local), por lo que el circuit breaker de servidor local era irrelevante y bloqueaba una consulta que siempre funciona.
+
+### Solución Implementada
+
+**Regla:** Para `data_type == "HUB"` (Tablero Ejecutivo modo consolidado), SIEMPRE intentar leer de EDARSAHUB SQL sin aplicar circuit breaker de servidor local.
+
+**Cambios en `/app/backend/modules/comercial/routes.py`:**
+
+1. **Bypass circuit breaker para HUB:**
+```python
+if data_type == "HUB":
+    should_try = True  # EDARSAHUB SQL siempre disponible
+else:
+    should_try = await should_attempt_live_query(server['id'], data_type)
+```
+
+2. **No guardar estado MongoDB para HUB:**
+```python
+if data_type != "HUB":  # Solo para LIVE-C
+    await save_server_connection_status(server['id'], True/False)
+```
+
+3. **Source indica EDARSAHUB_SQL:**
+```python
+source_period = "EDARSAHUB_SQL" if data_type == "HUB" else "SQL"
+live_status = LiveStatus.LIVE_NOT_APPLICABLE if data_type == "HUB" else LiveStatus.LIVE_CONNECTED
+```
+
+### Resultado Post-Fix
+
+| Unidad | ANTES | DESPUÉS |
+|--------|-------|---------|
+| CIENFUEGOS | `DATA_FROM_CACHE` | `DATA_OK` ✅ |
+| 130° MÉRIDA | `DATA_FROM_CACHE` | `DATA_OK` ✅ |
+| LA ESTELAR | `DATA_FROM_CACHE` | `DATA_OK` ✅ |
+| 130° QUERÉTARO | `DATA_OK` | `DATA_OK` ✅ |
+| ORIGEN | `DATA_OK` | `DATA_OK` ✅ |
+
+**Status Summary Post-Fix:**
+- Total unidades: 5
+- DATA_OK: **5** ✅
+- DATA_FROM_CACHE: **0** ✅
+- DATA_ERROR: 0
+
+### Reglas Preservadas
+- ✅ Circuit breaker LIVE-C sigue funcionando para conexiones reales
+- ✅ MongoDB `server_status` NO se usa para decisiones HUB
+- ✅ EDARSAHUB SQL es fuente primaria del Tablero Ejecutivo
+- ✅ Comercial V2, Auth/RBAC no afectados
+
+### Reportes
+- `/app/docs/reports/COMERCIAL_CIRCUIT_BREAKER_MONGO_A_SQL_DIAGNOSTICO.md`
+- `/app/docs/reports/FIX_CIRCUIT_BREAKER_HUB_TABLERO_EJECUTIVO.md`
+
+**Estado:** ✅ COMPLETADO Y VALIDADO (17-May-2026)
+
+---
+
+*Última actualización: 17-May-2026 - Fix Circuit Breaker HUB Tablero Ejecutivo Completado*

@@ -761,8 +761,25 @@ async def _tablero_ejecutivo_internal(
             else:
                 data_type = "HUB"  # El tablero normal usa datos consolidados
             
-            # FASE P0: Usar nueva función de clasificación
-            should_try = await should_attempt_live_query(server['id'], data_type)
+            # =================================================================
+            # FIX CIRCUIT BREAKER HUB (2026-05-17):
+            # Para modo HUB, SIEMPRE intentar leer de EDARSAHUB SQL.
+            # 
+            # RAZÓN: get_kpis_softrestaurant() lee de EDARSAHUB SQL (no del 
+            # servidor local), por lo que el circuit breaker de servidor local
+            # NO debe bloquear esta consulta.
+            #
+            # REGLA:
+            # - HUB: should_try = True (EDARSAHUB SQL es la fuente)
+            # - LIVE-C: Aplicar circuit breaker normal (conexión a servidor real)
+            # =================================================================
+            if data_type == "HUB":
+                # EDARSAHUB SQL siempre disponible - no aplicar circuit breaker
+                should_try = True
+                logging.info(f"[HUB-EDARSAHUB] {server['name']}: Modo HUB - lectura directa desde EDARSAHUB SQL (circuit breaker ignorado)")
+            else:
+                # LIVE-C: Aplicar circuit breaker normal para conexiones reales
+                should_try = await should_attempt_live_query(server['id'], data_type)
             
             # FASE 3A.2: Migrado a helper centralizado
             if is_softrestaurant_system(server.get('system_type')):
@@ -778,33 +795,45 @@ async def _tablero_ejecutivo_internal(
                         sr_error_captured = sr_error
                         kpis = None
                     
-                    if kpis and not kpis.get('error'):
-                        # Conexión exitosa - marcar como online
-                        await save_server_connection_status(server['id'], True)
-                    elif not solo_ventas_dia:
-                        # Solo marcar offline si NO es ventas del día
-                        await save_server_connection_status(server['id'], False)
+                    # =================================================================
+                    # FIX CIRCUIT BREAKER HUB (2026-05-17):
+                    # Para modo HUB, NO guardar estado de conexión en MongoDB.
+                    # La consulta es a EDARSAHUB SQL, no al servidor local.
+                    # Solo guardar estado para modo LIVE-C (conexión real).
+                    # =================================================================
+                    if data_type != "HUB":
+                        if kpis and not kpis.get('error'):
+                            # LIVE-C: Conexión exitosa al servidor real
+                            await save_server_connection_status(server['id'], True)
+                        elif not solo_ventas_dia:
+                            # LIVE-C: Marcar offline solo si NO es ventas del día
+                            await save_server_connection_status(server['id'], False)
                 else:
+                    # Este bloque ya no se ejecuta para HUB (should_try siempre True)
                     logging.info(f"[FASE P0] Servidor {server['name']} offline - usando caché (tipo: {data_type})")
                 
                 # ================================================================
                 # P0: CONSTRUIR RESPUESTA CON ESTRUCTURA ESTÁNDAR
                 # ================================================================
                 if kpis and not kpis.get('error'):
-                    # CASO A: Conexión exitosa, datos reales
-                    logging.info(f"[P0-LOG] tablero_real_source_success: server={server['name']}, ventas={kpis.get('ventas', 0)}")
+                    # CASO A: Consulta exitosa desde EDARSAHUB SQL
+                    # FIX 2026-05-17: Para HUB, la fuente es EDARSAHUB_SQL, no servidor local
+                    source_period = "EDARSAHUB_SQL" if data_type == "HUB" else "SQL"
+                    source_live = "EDARSAHUB_SQL" if data_type == "HUB" else ("TEMPCHEQUES" if solo_ventas_dia else "SQL")
+                    
+                    logging.info(f"[P0-LOG] tablero_real_source_success: server={server['name']}, ventas={kpis.get('ventas', 0)}, source={source_period}")
                     
                     unit_response = build_unit_response(
                         server=server,
                         kpis=kpis,
                         data_status=DataStatus.DATA_OK,
-                        live_status=LiveStatus.LIVE_CONNECTED,
+                        live_status=LiveStatus.LIVE_NOT_APPLICABLE if data_type == "HUB" else LiveStatus.LIVE_CONNECTED,
                         cache_status=CacheStatus.NOT_USED,
                         source_used=SourceUsed.REAL_SOURCE,
                         source_real_attempted=True,
                         source_real_status=SourceRealStatus.SUCCESS,
-                        source_period="SQL",
-                        source_live="TEMPCHEQUES" if solo_ventas_dia else "SQL",
+                        source_period=source_period,
+                        source_live=source_live,
                     )
                     resultados.append(unit_response)
                     
