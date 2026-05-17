@@ -1227,19 +1227,36 @@ async def _tablero_ejecutivo_internal(
                             )
                         else:
                             # Unidad con datos reales
-                            logging.info(f"[P0-LOG] tablero_real_source_success: unidad={unidad_nombre}, ventas={unidad.get('ventas', 0)}, origen={unidad.get('origen', 'unknown')}")
+                            # FIX CIRCUIT BREAKER HUB (17-May-2026):
+                            # Determinar source_period según el origen real de los datos
+                            origen = unidad.get('origen', 'unknown')
+                            if origen == 'api_local':
+                                source_period_mpro = "MPRO_API_LOCAL"
+                                source_live_mpro = "LOCAL_API"
+                                live_status_mpro = LiveStatus.LIVE_CONNECTED
+                            elif origen == 'EDARSAHUB_SQL':
+                                source_period_mpro = "EDARSAHUB_SQL"
+                                source_live_mpro = "EDARSAHUB_SQL"
+                                live_status_mpro = LiveStatus.LIVE_NOT_APPLICABLE
+                            else:
+                                # SQL genérico (bases MPRO directas) - NO debe ocurrir en modo HUB
+                                source_period_mpro = "MPRO_SQL_DIRECT"
+                                source_live_mpro = "SQL_DIRECT"
+                                live_status_mpro = LiveStatus.LIVE_CONNECTED
+                            
+                            logging.info(f"[P0-LOG] tablero_real_source_success: unidad={unidad_nombre}, ventas={unidad.get('ventas', 0)}, origen={origen}, source_period={source_period_mpro}")
                             
                             unit_response = build_unit_response(
                                 server=server,
                                 kpis=unidad,
                                 data_status=DataStatus.DATA_OK,
-                                live_status=LiveStatus.LIVE_CONNECTED,
+                                live_status=live_status_mpro,
                                 cache_status=CacheStatus.NOT_USED,
                                 source_used=SourceUsed.REAL_SOURCE,
                                 source_real_attempted=True,
                                 source_real_status=SourceRealStatus.SUCCESS,
-                                source_period="API" if unidad.get('origen') == 'api_local' else "SQL",
-                                source_live="LOCAL_API" if unidad.get('origen') == 'api_local' else "SQL",
+                                source_period=source_period_mpro,
+                                source_live=source_live_mpro,
                                 sucursal=unidad_nombre,
                             )
                         

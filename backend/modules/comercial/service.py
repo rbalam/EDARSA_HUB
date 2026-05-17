@@ -517,10 +517,19 @@ def _get_kpis_periodo_edarsahub(
     server_id: str,
     fecha_ini: str,  # YYYY-MM-DD
     fecha_fin: str,  # YYYY-MM-DD (inclusivo)
-    sucursal_id: str = 'DEFAULT'
+    sucursal_id: str = 'DEFAULT',
+    unidad_negocio_id: str = None  # FIX: Agregar unidad_negocio_id como parámetro opcional
 ) -> Dict:
     """
     Obtiene KPIs agregados de Comercial_KPIs_Diarios_v2 para un período.
+    
+    FIX CIRCUIT BREAKER HUB (17-May-2026):
+    - Si se proporciona unidad_negocio_id, filtrar por unidad_negocio_id + sucursal_id
+    - Si no, usar server_id + sucursal_id (comportamiento legacy)
+    
+    RAZÓN: Para MPRO, los datos en Comercial_KPIs_Diarios_v2 tienen un server_id
+    diferente al que está configurado en Servidores_Conexiones. Usar unidad_negocio_id
+    es más confiable.
     
     Retorna:
         {
@@ -531,7 +540,16 @@ def _get_kpis_periodo_edarsahub(
             'existe_data': bool
         }
     """
-    # Usar rangos semiabiertos: fecha >= ini AND fecha < fin+1
+    # Determinar filtro a usar
+    if unidad_negocio_id:
+        # FIX: Usar unidad_negocio_id para MPRO
+        filtro_principal = f"unidad_negocio_id = '{unidad_negocio_id}'"
+        logging.info(f"[EDARSAHUB-QUERY] Usando unidad_negocio_id={unidad_negocio_id}, sucursal_id={sucursal_id}")
+    else:
+        # Legacy: Usar server_id
+        filtro_principal = f"server_id = '{server_id}'"
+    
+    # Usar rangos semiabiertos: fecha >= ini AND fecha <= fin
     query = f"""
     SELECT 
         ISNULL(SUM(ventas_total), 0) as ventas,
@@ -539,7 +557,7 @@ def _get_kpis_periodo_edarsahub(
         ISNULL(SUM(tickets_total), 0) as cheques,
         COUNT(*) as registros
     FROM Comercial_KPIs_Diarios_v2
-    WHERE server_id = '{server_id}'
+    WHERE {filtro_principal}
       AND sucursal_id = '{sucursal_id}'
       AND fecha_operacion >= '{fecha_ini}'
       AND fecha_operacion <= '{fecha_fin}'
@@ -857,7 +875,8 @@ def _obtener_kpis_tablero_desde_edarsahub(
     logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Rangos - Actual: {fecha_ini} a {fecha_fin_real}, Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_anio_ant} a {fecha_fin_anio_ant}")
     
     # 3. OBTENER KPIs PERÍODO ACTUAL
-    kpis_actual = _get_kpis_periodo_edarsahub(server_id, fecha_ini, fecha_fin_real, sucursal_id)
+    # FIX: Pasar unidad_negocio_id para filtro más confiable (especialmente para MPRO)
+    kpis_actual = _get_kpis_periodo_edarsahub(server_id, fecha_ini, fecha_fin_real, sucursal_id, unidad_negocio_id=unidad_negocio_id)
     
     if not kpis_actual['existe_data']:
         logging.warning(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Sin datos reales en período actual")
@@ -896,7 +915,7 @@ def _obtener_kpis_tablero_desde_edarsahub(
     logging.info(f"[PROYECCION] {nombre_unidad}: dias_transcurridos={dias_transcurridos}, dia_ultimo_datos={dia_ultimo}, sync_lag={sync_lag}, dias_mes={dias_mes}")
     
     # 4. OBTENER KPIs MES ANTERIOR
-    kpis_mes_ant = _get_kpis_periodo_edarsahub(server_id, fecha_ini_ant, fecha_fin_ant, sucursal_id)
+    kpis_mes_ant = _get_kpis_periodo_edarsahub(server_id, fecha_ini_ant, fecha_fin_ant, sucursal_id, unidad_negocio_id=unidad_negocio_id)
     
     if kpis_mes_ant['existe_data']:
         ventas_ant = kpis_mes_ant['ventas']
@@ -909,7 +928,7 @@ def _obtener_kpis_tablero_desde_edarsahub(
         logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Sin datos de mes anterior ({fecha_ini_ant} a {fecha_fin_ant})")
     
     # 5. OBTENER KPIs AÑO ANTERIOR
-    kpis_anio_ant = _get_kpis_periodo_edarsahub(server_id, fecha_ini_anio_ant, fecha_fin_anio_ant, sucursal_id)
+    kpis_anio_ant = _get_kpis_periodo_edarsahub(server_id, fecha_ini_anio_ant, fecha_fin_anio_ant, sucursal_id, unidad_negocio_id=unidad_negocio_id)
     
     if kpis_anio_ant['existe_data']:
         ventas_año = kpis_anio_ant['ventas']
@@ -1753,12 +1772,104 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
         return unidades
     
     # ============================================================================
-    # VENTAS HISTÓRICAS / ACUMULADAS: Usar SQL nube del menú Servidores
-    # (Solo se ejecuta si solo_ventas_dia=False)
+    # FIX CIRCUIT BREAKER HUB (17-May-2026):
+    # VENTAS HISTÓRICAS / ACUMULADAS PARA MODO HUB
+    # 
+    # REGLA ARQUITECTÓNICA:
+    # - Para modo HUB (Tablero Ejecutivo), MPRO debe leer de EDARSAHUB SQL
+    # - NO consultar servidores MPRO directamente (bases QUERETARO, ORIGEN)
+    # - Usar la misma fuente que SoftRestaurant: Comercial_KPIs_Diarios_v2
+    # 
+    # RAZÓN: EDARSAHUB SQL es la fuente consolidada y canónica.
+    # Las bases MPRO (QUERETARO, ORIGEN) son fuentes de extracción, no de lectura.
     # ============================================================================
     
-    # VALIDACIÓN DE CONEXIÓN: Verificar que el servidor SQL responde
-    logging.info(f"[TABLERO] MPRO {server['name']}: Iniciando consulta SQL - Host={server['host']}:{server['port']}, DB={server['database']}")
+    logging.info(f"[FIX-HUB] MPRO {server['name']}: Modo Histórico/Acumulado - LEYENDO DE EDARSAHUB SQL (NO bases MPRO)")
+    
+    # Obtener sucursales MPRO desde EmpresaResolver
+    sucursales_mpro = _obtener_sucursales_mpro_desde_resolver()
+    
+    unidades = []
+    
+    for suc in sucursales_mpro:
+        # Resolver unidad desde EDARSAHUB
+        unidad_edarsahub = resolve_unidad_by_server_sucursal(
+            suc['server_id'], suc['sucursal_id']
+        )
+        
+        codigo_canonico = unidad_edarsahub.get('codigo', suc['codigo']) if unidad_edarsahub else suc['codigo']
+        nombre_canonico = unidad_edarsahub.get('nombre', suc['codigo']) if unidad_edarsahub else suc['codigo']
+        sucursal_id = suc['sucursal_id']
+        
+        # Mapear código a unidad_negocio_id usado en Comercial_KPIs_Diarios_v2
+        unidad_negocio_id = _mapear_codigo_a_unidad_negocio_id(codigo_canonico)
+        
+        # Usar la misma función que SoftRestaurant para leer de EDARSAHUB
+        kpis = _obtener_kpis_tablero_desde_edarsahub(
+            server_id=suc['server_id'],
+            unidad_negocio_id=unidad_negocio_id,
+            sucursal_id=sucursal_id,
+            fecha_ini=fecha_ini,
+            fecha_fin=fecha_fin,
+            dias_mes=dias_mes,
+            dias_transcurridos=dias_transcurridos,
+            nombre_unidad=nombre_canonico
+        )
+        
+        if kpis:
+            # Datos encontrados en EDARSAHUB
+            kpis['unidad'] = nombre_canonico
+            kpis['server_id'] = suc['server_id']
+            kpis['sucursal_id'] = sucursal_id
+            kpis['sucursal_origen_id'] = sucursal_id
+            kpis['system_type'] = "MPRO"
+            kpis['origen'] = "EDARSAHUB_SQL"  # Indica fuente correcta
+            kpis['source_status'] = "DATA_FROM_EDARSAHUB_SQL"
+            kpis['unidad_negocio_codigo'] = codigo_canonico
+            kpis['unidad_negocio_nombre'] = nombre_canonico
+            
+            unidades.append(kpis)
+            logging.info(
+                f"[FIX-HUB] MPRO {nombre_canonico}: EDARSAHUB SQL OK - "
+                f"${kpis.get('ventas', 0):,.2f}"
+            )
+        else:
+            # Sin datos en EDARSAHUB para este período
+            unidades.append({
+                "unidad": nombre_canonico,
+                "server_id": suc['server_id'],
+                "sucursal_id": sucursal_id,
+                "sucursal_origen_id": sucursal_id,
+                "system_type": "MPRO",
+                "ventas": None,
+                "ventas_ant": 0,
+                "ventas_año": 0,
+                "var_vs_mes_ant": 0,
+                "var_vs_año_ant": 0,
+                "proyeccion": 0,
+                "pax": None,
+                "pax_ant": 0,
+                "pax_año": 0,
+                "var_pax_mes": 0,
+                "var_pax_año": 0,
+                "cheques": None,
+                "cheques_ant": 0,
+                "cheques_año": 0,
+                "var_cheques_mes": 0,
+                "var_cheques_año": 0,
+                "ticket_prom": 0,
+                "cheque_prom": 0,
+                "origen": "EDARSAHUB_SQL",
+                "source_status": "NO_DATA_SQL",
+                "message": "Sin datos en EDARSAHUB para este período",
+                "unidad_negocio_codigo": codigo_canonico,
+                "unidad_negocio_nombre": nombre_canonico,
+            })
+            logging.warning(
+                f"[FIX-HUB] MPRO {nombre_canonico}: Sin datos en EDARSAHUB SQL para período {fecha_ini} a {fecha_fin}"
+            )
+    
+    return unidades
     
     # VALIDACIÓN DE RANGO DE FECHAS (FIX ESTRUCTURAL)
     # Usar helper centralizado para evitar rangos inválidos
