@@ -2961,4 +2961,54 @@ El Tablero Ejecutivo V1 usaba MongoDB (`server_status`) para circuit breaker, bl
 
 ---
 
-*Última actualización: 17-May-2026 - Fix Circuit Breaker HUB Tablero Ejecutivo Completado*
+## ✅ P1 COMPLETADO: Auditoría y Documentación Corte 06:00 AM (17-May-2026)
+
+### P1.1 Script de Auditoría
+**Archivo:** `/app/backend/scripts/audit_fecha_operativa_0600.py`
+
+| Característica | Descripción |
+|----------------|-------------|
+| Propósito | Diagnosticar registros con hora < 06:00 AM |
+| Tablas auditadas | `Comercial_KPIs_Diarios_v2`, `Sync_Ventas_PorHora`, `Comercial_Ventas_Dia_Abiertas_v2` |
+| Modifica datos | **NO** - Solo diagnóstico |
+| Resultado | Sin inconsistencias críticas detectadas |
+
+### P1.2 Reporte de Cambio
+**Archivo:** `/app/docs/reports/CAMBIO_REGLA_FECHA_OPERATIVA_CORTE_0600.md`
+
+Documenta:
+- Regla anterior (03:00 AM) vs nueva (06:00 AM)
+- Archivos modificados
+- Fórmula de proyección mensual
+- Resultado de auditoría
+
+### P1.3 Validación Proyección Mensual
+```
+Período: 5/2026
+Días transcurridos (FechaOperacionActual.day): 17
+Días del mes: 31
+
+VALIDACIÓN POR UNIDAD:
+  CIENFUEGOS:   Divisor = 17.00 ✅
+  130° MÉRIDA:  Divisor = 17.00 ✅
+  130QRO:       Divisor = 17.00 ✅
+  LA ESTELAR:   Divisor = 17.00 ✅
+  ORIGEN:       Divisor = 17.00 ✅
+
+Fórmula: Proyección = Ventas / FechaOperacionActual.day * DíasMes
+✅ TODAS LAS UNIDADES USAN DIVISOR CORRECTO
+```
+
+### Criterios de Aceptación P1
+- ✅ Script de auditoría creado (solo diagnóstico)
+- ✅ Script NO modifica datos
+- ✅ Reporte de cambio generado
+- ✅ Proyección usa `FechaOperacionActual.day` (17)
+- ✅ Proyección NO usa último registro por unidad
+- ✅ Corte 06:00 AM implementado
+
+**P1 COMPLETADO ✅**
+
+---
+
+*Última actualización: 17-May-2026 - P1 Auditoría Fecha Operativa 06:00 AM Completado*

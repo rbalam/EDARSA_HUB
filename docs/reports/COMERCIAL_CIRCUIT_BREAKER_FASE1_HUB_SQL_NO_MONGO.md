@@ -229,5 +229,60 @@ curl -s "$API_URL/api/comercial/tablero-ejecutivo" -H "Authorization: Bearer $TO
 
 **FASE 1 CERRADA ✅**
 
+---
+
+## 12. OBSERVACIÓN OBLIGATORIA: CAMBIO DE VENTAS
+
+### Diferencia Detectada
+
+| Unidad | ANTES | AHORA | DIFERENCIA | % |
+|--------|-------|-------|------------|---|
+| 130° MÉRIDA | $1,827,730 | $2,094,097 | +$266,367 | +14.6% |
+| 130QRO | $1,911,561 | $2,037,841 | +$126,280 | +6.6% |
+| LA ESTELAR | $1,512,404 | $1,744,171 | +$231,767 | +15.3% |
+
+### Causa Raíz del Cambio
+
+**ORIGEN DEL CAMBIO: Corrección del filtro de consulta**
+
+| Factor | Antes | Ahora |
+|--------|-------|-------|
+| **Filtro principal** | `server_id` | `unidad_negocio_id` |
+| **Problema** | `server_id` discrepante entre config y datos | Filtro correcto por identidad canónica |
+| **Fuente** | Bases MPRO directas (para QRO/ORIGEN) | `Comercial_KPIs_Diarios_v2` |
+
+### Explicación Técnica
+
+1. **Antes:** El código usaba `server_id` como filtro en `_get_kpis_periodo_edarsahub()`.
+   - Los datos en `Comercial_KPIs_Diarios_v2` tienen `server_id = '1b230a06-ffaf-4c70-bd27-b1be3579dea6'`
+   - Los servidores en `Servidores_Conexiones` tienen `server_id` diferentes (ORIGEN: `817a0aa8...`, QRO: `72f6e9a7...`)
+   - **Resultado:** La query no encontraba registros → Fallback a caché MongoDB con datos viejos
+
+2. **Ahora:** El código usa `unidad_negocio_id` como filtro.
+   - Filtro: `WHERE unidad_negocio_id = 'ORIGEN' AND sucursal_id = '0023'`
+   - **Resultado:** La query encuentra todos los registros en EDARSAHUB
+
+### Datos Reales en `Comercial_KPIs_Diarios_v2` (Mayo 2026)
+
+| Unidad | sucursal_id | Días con Venta | Ventas | Rango Fechas |
+|--------|-------------|----------------|--------|--------------|
+| CIENFUEGOS | DEFAULT | 16 | $2,543,511.00 | 01-16 May |
+| 130MID | DEFAULT | 16 | $2,094,097.00 | 01-16 May |
+| 130QRO | 0021 | 16 | $2,037,841.00 | 01-16 May |
+| ESTELAR | DEFAULT | 17 | $1,744,171.00 | 01-17 May |
+| ORIGEN | 0023 | 17 | $1,322,475.20 | 01-17 May |
+
+### Conclusión
+
+El cambio de ventas **ES CONSISTENTE** con EDARSAHUB SQL. Los valores anteriores provenían de:
+- MongoDB `kpis_cache` con datos desactualizados
+- Consultas fallidas por `server_id` discrepante
+
+Los valores actuales son los datos **canónicos y actualizados** de `Comercial_KPIs_Diarios_v2`.
+
+**NO hay error de cálculo. Los datos ahora son correctos.**
+
+---
+
 **Autor:** Sistema E1  
 **Validado:** 2026-05-17 18:00 UTC
