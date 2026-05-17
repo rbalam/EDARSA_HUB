@@ -305,21 +305,21 @@ def get_ventas_dia_snapshot_from_edarsahub(server_id: str, fecha_operacion: str 
                 f"(hora actual = {now_mx.strftime('%H:%M')}, horario = {hora_ini}-{hora_fin})"
             )
         else:
-            # Sin unidad específica: usar horario por defecto 13:00-03:00
-            # que es el más común en el grupo de restaurantes
+            # Sin unidad específica: usar horario por defecto 13:00-06:00
+            # ACTUALIZACIÓN 16-May-2026: Corte operativo cambiado de 03:00 a 06:00
             hora_actual = now_mx.time()
             from datetime import time as dt_time, timedelta
-            hora_fin_default = dt_time(3, 0, 0)
+            hora_fin_default = dt_time(6, 0, 0)
             
             if hora_actual < hora_fin_default:
-                # Estamos entre 00:00 y 03:00: pertenece al día anterior
+                # Estamos entre 00:00 y 06:00: pertenece al día anterior
                 fecha_operacion = (now_mx.date() - timedelta(days=1)).isoformat()
             else:
                 fecha_operacion = now_mx.date().isoformat()
             
             logging.info(
                 f"[EDARSAHUB-SNAPSHOT] server_id={server_id}: FechaOperacion default = {fecha_operacion} "
-                f"(hora actual = {now_mx.strftime('%H:%M')}, usando horario default 13:00-03:00)"
+                f"(hora actual = {now_mx.strftime('%H:%M')}, usando horario default 13:00-06:00)"
             )
     
     # Query a EDARSAHUB
@@ -563,59 +563,55 @@ async def _tablero_ejecutivo_internal(
     fecha_ini = f"{anio}-{mes_min:02d}-01"
     
     # =========================================================================
-    # REGLA DE NEGOCIO: Usar último día CON VENTAS REGISTRADAS en EDARSAHUB
+    # REGLA CANÓNICA: FechaOperacionActual con corte a las 06:00 AM
+    # ACTUALIZACIÓN 16-May-2026: La proyección usa FechaOperacionActual.day
     # =========================================================================
-    # La proyección debe calcularse como:
-    #   ventas_acumuladas / dias_ultimo_registro * dias_mes
+    # ProyecciónMensual = VentasAcumuladas / DiasTranscurridosOperativos * DiasMes
     #
     # Donde:
-    # - dias_ultimo_registro = día del último registro de ventas en EDARSAHUB
-    # - Si EDARSAHUB tiene ventas hasta día 15, usar 15 como divisor
-    # - NO usar hora actual para determinar si la jornada cerró
+    # - DiasTranscurridosOperativos = FechaOperacionActual.day
+    # - FechaOperacionActual se calcula con timezone México y corte 06:00 AM
     #
-    # Ventana operativa: Jornada cierra 11:00 AM día siguiente (turno 24h)
-    # - Esto aplica para sincronización y operaciones, pero NO para proyección
-    # - La proyección usa los DATOS REALES disponibles en EDARSAHUB
+    # Ejemplo: Hoy es 16 de mayo a las 05:30 AM México:
+    # - FechaOperacionActual = 15 (porque < 06:00)
+    # - DiasTranscurridosOperativos = 15
+    #
+    # Ejemplo: Hoy es 16 de mayo a las 08:00 AM México:
+    # - FechaOperacionActual = 16 (porque >= 06:00)
+    # - DiasTranscurridosOperativos = 16
+    #
+    # Queda PROHIBIDO usar:
+    # - Último día con datos en EDARSAHUB como divisor
+    # - MAX(fecha) como divisor
+    # - Días con venta como divisor
     # =========================================================================
-    
-    # Obtener el último día CON VENTAS en EDARSAHUB para el mes actual
-    # Esto determina fecha_fin para la consulta del tablero
     try:
-        from modules.comercial.service import _query_edarsahub_tablero
-        
-        query_ultimo_dia = f"""
-        SELECT MAX(dia) as ultimo_dia, MAX(fecha_operacion) as ultima_fecha
-        FROM Comercial_KPIs_Diarios_v2
-        WHERE anio = {anio} AND mes = {mes_max}
-          AND ventas_total > 0
-        """
-        result = _query_edarsahub_tablero(query_ultimo_dia)
-        
-        if result and result[0].get('ultimo_dia'):
-            ultimo_dia_con_datos = result[0]['ultimo_dia']
-            ultima_fecha_con_datos = result[0]['ultima_fecha']
-            if isinstance(ultima_fecha_con_datos, str):
-                ultima_fecha_con_datos = ultima_fecha_con_datos.split('T')[0]
-            else:
-                ultima_fecha_con_datos = ultima_fecha_con_datos.strftime('%Y-%m-%d')
-            logging.info(f"[TABLERO-EJECUTIVO] Último día con datos en EDARSAHUB: {ultimo_dia_con_datos} ({ultima_fecha_con_datos})")
-        else:
-            # Sin datos en EDARSAHUB, usar ayer como fallback
-            ultimo_dia_con_datos = (hoy - timedelta(days=1)).day
-            ultima_fecha_con_datos = (hoy - timedelta(days=1)).strftime('%Y-%m-%d')
-            logging.warning(f"[TABLERO-EJECUTIVO] Sin datos en EDARSAHUB, usando ayer: {ultima_fecha_con_datos}")
-    except Exception as e:
-        logging.error(f"[TABLERO-EJECUTIVO] Error obteniendo último día: {e}")
-        # Fallback a ayer
-        ultimo_dia_con_datos = (hoy - timedelta(days=1)).day
-        ultima_fecha_con_datos = (hoy - timedelta(days=1)).strftime('%Y-%m-%d')
+        from zoneinfo import ZoneInfo
+        tz_mexico = ZoneInfo('America/Mexico_City')
+    except ImportError:
+        import pytz
+        tz_mexico = pytz.timezone('America/Mexico_City')
+    
+    ahora_mexico = datetime.now(tz_mexico)
+    hora_actual = ahora_mexico.hour
+    
+    # Calcular FechaOperacionActual con corte a las 06:00
+    if hora_actual < 6:
+        # Antes de las 06:00: FechaOperacion = día anterior
+        fecha_operacion_actual = ahora_mexico.date() - timedelta(days=1)
+    else:
+        # Desde las 06:00: FechaOperacion = día actual
+        fecha_operacion_actual = ahora_mexico.date()
+    
+    logging.info(f"[TABLERO-EJECUTIVO] Hora México={hora_actual}:xx, FechaOperacionActual={fecha_operacion_actual}")
     
     # fecha_fin: depende de si el último mes es el actual o ya pasó
     if anio == hoy.year and mes_max == hoy.month:
-        # Mes actual - usar último día CON DATOS en EDARSAHUB
-        fecha_fin = ultima_fecha_con_datos
+        # Mes actual - usar FechaOperacionActual
+        fecha_fin = fecha_operacion_actual.strftime('%Y-%m-%d')
         fecha_inicio_dt = datetime(anio, mes_min, 1)
-        dias_transcurridos = ultimo_dia_con_datos
+        # DiasTranscurridosOperativos = FechaOperacionActual.day
+        dias_transcurridos = fecha_operacion_actual.day
         logging.info(f"[TABLERO-EJECUTIVO] Mes actual: fecha_fin={fecha_fin}, dias_transcurridos={dias_transcurridos}")
     else:
         # Todos los meses seleccionados ya pasaron - usar meses completos

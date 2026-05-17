@@ -6,23 +6,22 @@ de una unidad de negocio basándose en sus horarios de servicio configurados.
 
 REGLA DE NEGOCIO:
 - El día operativo de un restaurante NO cambia automáticamente a las 00:00
-- Si el restaurante opera de 13:00 a 11:00, a las 02:00 del día 15 todavía
-  pertenece al día operativo 14
-- Solo después del cierre operativo (ej: 11:00) inicia el nuevo día operativo
+- La jornada operativa cierra a las 06:00 AM del día siguiente
+- Si una venta ocurre entre 00:00 y 05:59, pertenece al día operativo ANTERIOR
 
-VENTANA OPERATIVA DEFAULT: 13:00 - 11:00 (cruza medianoche)
-- FASE SYNC-1: Actualizado de 03:00 a 11:00 según autorización
+VENTANA OPERATIVA DEFAULT: 13:00 - 06:00 (cruza medianoche)
+- ACTUALIZACIÓN 16-May-2026: Corte operativo cambiado de 11:00/03:00 a 06:00
 - PREPARACIÓN: Futuro módulo de Horarios de Operación permitirá configurar por unidad
 
-Ejemplo con horario 13:00 - 11:00:
+Ejemplo con horario 13:00 - 06:00:
 - 14:00 del día 15 → fecha_operacion = 15 (dentro de jornada del 15)
-- 02:00 del día 15 → fecha_operacion = 14 (jornada del 14 no ha cerrado)
-- 10:00 del día 15 → fecha_operacion = 14 (jornada del 14 no ha cerrado)
-- 12:00 del día 15 → fecha_operacion = 14 (cerrado, pertenece a última jornada)
-- 13:00 del día 15 → fecha_operacion = 15 (nueva jornada del 15 inicia)
+- 02:00 del día 16 → fecha_operacion = 15 (jornada del 15 no ha cerrado)
+- 05:30 del día 16 → fecha_operacion = 15 (jornada del 15 no ha cerrado)
+- 06:00 del día 16 → fecha_operacion = 16 (nueva jornada del 16 inicia)
+- 13:00 del día 16 → fecha_operacion = 16 (jornada del 16)
 
 Autor: Sistema EDARSAHUB
-Fecha: 2026-05-15
+Fecha: 2026-05-16
 """
 
 import logging
@@ -160,16 +159,15 @@ def get_operational_window(
     horario = _get_horario_unidad(unidad_negocio_id, dia_semana)
     
     if horario is None:
-        # Sin configuración: usar horario por defecto (13:00 - 11:00)
-        # FASE SYNC-1: Actualizado de 03:00 a 11:00 según autorización
-        # PREPARACIÓN: Futuro módulo de Horarios de Operación permitirá configurar por unidad
+        # Sin configuración: usar horario por defecto (13:00 - 06:00)
+        # ACTUALIZACIÓN 16-May-2026: Corte operativo cambiado de 11:00 a 06:00
         logger.warning(
             f"[OPERATIONAL_WINDOW] {unidad_negocio_id}: Sin horario configurado, "
-            f"usando default 13:00-11:00"
+            f"usando default 13:00-06:00"
         )
         horario = {
             'hora_inicio': time(13, 0, 0),
-            'hora_fin': time(11, 0, 0),
+            'hora_fin': time(6, 0, 0),
             'cruza_medianoche': True
         }
     

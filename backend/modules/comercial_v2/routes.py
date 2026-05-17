@@ -620,12 +620,15 @@ async def comercial_v2_dashboard(
         mexico_tz = pytz.timezone('America/Mexico_City')
         now_mx = datetime.now(mexico_tz)
         
-        # Calcular FechaOperacion usando horario por defecto 13:00-03:00
+        # =========================================================================
+        # REGLA CANÓNICA: FechaOperacion con corte a las 06:00 AM
+        # ACTUALIZACIÓN 16-May-2026: Corte operativo cambiado de 03:00 a 06:00
+        # =========================================================================
         hora_actual = now_mx.time()
-        hora_fin_default = dt_time(3, 0, 0)
+        hora_fin_default = dt_time(6, 0, 0)
         
         if hora_actual < hora_fin_default:
-            # Estamos entre 00:00 y 03:00: FechaOperacion = día anterior
+            # Estamos entre 00:00 y 06:00: FechaOperacion = día anterior
             fecha_operativa = now_mx.date() - td(days=1)
         else:
             fecha_operativa = now_mx.date()

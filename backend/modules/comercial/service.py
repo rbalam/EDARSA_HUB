@@ -608,19 +608,20 @@ def _get_ventas_abiertas_edarsahub(server_id: str, sucursal_id: str = 'DEFAULT',
             f"(hora actual={now_mx.strftime('%H:%M')}, horario={hora_ini}-{hora_fin})"
         )
     else:
-        # Sin unidad específica: usar horario por defecto 13:00-03:00
+        # Sin unidad específica: usar horario por defecto 13:00-06:00
+        # ACTUALIZACIÓN 16-May-2026: Corte operativo cambiado de 03:00 a 06:00
         hora_actual = now_mx.time()
-        hora_fin_default = dt_time(3, 0, 0)
+        hora_fin_default = dt_time(6, 0, 0)
         
         if hora_actual < hora_fin_default:
-            # Estamos entre 00:00 y 03:00: pertenece al día anterior
+            # Estamos entre 00:00 y 06:00: pertenece al día anterior
             fecha_operacion = (now_mx.date() - timedelta(days=1)).isoformat()
         else:
             fecha_operacion = now_mx.date().isoformat()
         
         logging.info(
             f"[TABLERO-EDARSAHUB] _get_ventas_abiertas: server_id={server_id} FechaOperacion default={fecha_operacion} "
-            f"(hora actual={now_mx.strftime('%H:%M')}, usando horario default 13:00-03:00)"
+            f"(hora actual={now_mx.strftime('%H:%M')}, usando horario default 13:00-06:00)"
         )
     
     # =================================================================
@@ -738,6 +739,7 @@ def _obtener_kpis_tablero_desde_edarsahub(
     fecha_ini: str,
     fecha_fin: str,
     dias_mes: int,
+    dias_transcurridos: int,
     nombre_unidad: str = ''
 ) -> Optional[Dict]:
     """
@@ -750,23 +752,29 @@ def _obtener_kpis_tablero_desde_edarsahub(
     - NO consulta MongoDB
     - Lee de Comercial_KPIs_Diarios_v2
     
+    ACTUALIZACIÓN 16-May-2026: REGLA CANÓNICA DE PROYECCIÓN
+    - dias_transcurridos = FechaOperacionActual.day (con corte 06:00 AM)
+    - NO usar dia_ultimo (último día con datos) como divisor
+    - ProyecciónMensual = ventas / dias_transcurridos * dias_mes
+    
     REGLA DE COMPARATIVOS:
     1. Mes parcial: compara mismos días
     2. Mes completo: compara mes vs mes completo
     
     Args:
         server_id: ID del servidor EDARSAHUB (para mapear unidad)
-        unidad_negocio_id: ID de unidad (130-MER, CIENFUEGOS, etc.)
+        unidad_negocio_id: ID de unidad (130MID, CIENFUEGOS, etc.)
         sucursal_id: ID de sucursal (DEFAULT, 0021, 0023)
         fecha_ini: Fecha inicio período actual (YYYY-MM-DD)
         fecha_fin: Fecha fin período actual (YYYY-MM-DD)
         dias_mes: Días totales del mes para proyección
+        dias_transcurridos: Días operativos transcurridos (FechaOperacionActual.day)
         nombre_unidad: Nombre de la unidad (para logs)
     
     Returns:
         Dict con KPIs o None si hay error
     """
-    logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad or unidad_negocio_id}: Consultando KPIs desde EDARSAHUB")
+    logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad or unidad_negocio_id}: Consultando KPIs desde EDARSAHUB, dias_transcurridos={dias_transcurridos}")
     
     # Parsear fechas
     anio_ini = int(fecha_ini[:4])
@@ -862,27 +870,30 @@ def _obtener_kpis_tablero_desde_edarsahub(
     # =========================================================================
     # PROYECCIÓN MENSUAL: Usar ÚLTIMO DÍA CON VENTAS REGISTRADAS
     # =========================================================================
-    # REGLA DE NEGOCIO:
-    # ProyeccionMensual = VentasAcumuladas / DiasUltimoRegistro * DiasMes
+    # REGLA CANÓNICA: ProyecciónMensual con FechaOperacionActual.day
+    # ACTUALIZACIÓN 16-May-2026: Usar días transcurridos operativos
+    # =========================================================================
+    # ProyeccionMensual = VentasAcumuladas / DiasTranscurridosOperativos * DiasMes
     #
     # Donde:
-    # - DiasUltimoRegistro = día del último registro de ventas en EDARSAHUB
-    # - Si último día con ventas = 15, entonces dias_transcurridos = 15
-    # - NO usar fecha operativa actual, usar datos reales
+    # - DiasTranscurridosOperativos = parámetro dias_transcurridos (viene de FechaOperacionActual.day)
+    # - NO usar dia_ultimo (último día con datos en EDARSAHUB)
+    # - NO usar MAX(fecha) como divisor
     #
-    # Ejemplo Mayo 2026:
-    # - Hoy es 16 de mayo, pero último día con ventas = 15
-    # - dias_transcurridos = 15
-    # - proyección = ventas / 15 * 31
+    # Ejemplo Mayo 2026, hora actual 08:15 AM México:
+    # - FechaOperacionActual = 16 (porque >= 06:00)
+    # - dias_transcurridos = 16
+    # - proyección = ventas / 16 * 31
     #
-    # Ventana operativa: Jornada cierra a las 11:00 AM del día siguiente (turno 24h)
+    # El dia_ultimo se usa SOLO para diagnóstico de frescura de datos:
+    # - sync_lag = dias_transcurridos - dia_ultimo
     # =========================================================================
     
-    # Usar dia_ultimo (obtenido en línea ~803) como días transcurridos
-    # dia_ultimo ya contiene el día del último registro con ventas
-    dias_transcurridos = dia_ultimo
+    # Diagnóstico de frescura (no afecta la proyección)
+    sync_lag = dias_transcurridos - dia_ultimo if dia_ultimo else dias_transcurridos
+    estado_frescura = "SUCCESS" if sync_lag <= 0 else f"SYNC_LAG_{sync_lag}d"
     
-    logging.info(f"[PROYECCION] {nombre_unidad}: Último día con ventas={dia_ultimo}, dias_transcurridos={dias_transcurridos}, dias_mes={dias_mes}")
+    logging.info(f"[PROYECCION] {nombre_unidad}: dias_transcurridos={dias_transcurridos}, dia_ultimo_datos={dia_ultimo}, sync_lag={sync_lag}, dias_mes={dias_mes}")
     
     # 4. OBTENER KPIs MES ANTERIOR
     kpis_mes_ant = _get_kpis_periodo_edarsahub(server_id, fecha_ini_ant, fecha_fin_ant, sucursal_id)
@@ -1415,6 +1426,7 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
         fecha_ini=fecha_ini,
         fecha_fin=fecha_fin,
         dias_mes=dias_mes,
+        dias_transcurridos=dias_transcurridos,
         nombre_unidad=nombre
     )
     
@@ -1489,6 +1501,7 @@ def get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fe
             fecha_ini=fecha_ini,
             fecha_fin=fecha_fin,
             dias_mes=dias_mes,
+            dias_transcurridos=dias_transcurridos,
             nombre_unidad=nombre_sucursal
         )
         
@@ -1537,9 +1550,15 @@ def get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fe
     
     ahora_mexico = datetime.now(tz_mexico)
     
-    # Determinar la FechaOperacion actual respetando ventana operativa
+    # =========================================================================
+    # REGLA CANÓNICA: FechaOperacion con corte a las 06:00 AM
+    # ACTUALIZACIÓN 16-May-2026: Corte operativo cambiado de 03:00 a 06:00
+    # =========================================================================
+    # Si hora < 06:00: pertenece al día operativo ANTERIOR
+    # Si hora >= 06:00: pertenece al día operativo ACTUAL
+    # =========================================================================
     hora_actual = ahora_mexico.hour
-    if hora_actual < 3:
+    if hora_actual < 6:
         fecha_operacion_actual = ahora_mexico.date() - timedelta(days=1)
     else:
         fecha_operacion_actual = ahora_mexico.date()

@@ -87,12 +87,19 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
     // - Si variación es 0.0: mostrar "0.0%" (valor real)
     // =========================================================================
     
-    // FIX PROYECCIÓN: Cada unidad usa su propio "dias" del API (último día con ventas)
-    // NO usar hoy.getDate() que es del navegador local
-    const calcularProyeccionIndividual = (ventas, diasUnidad) => {
-      const dias = diasUnidad || diasTranscurridos; // Fallback a días globales si no viene del API
-      if (dias <= 0 || ventas <= 0) return 0;
-      return Math.round((ventas / dias) * diasProyectables);
+    // =========================================================================
+    // REGLA CANÓNICA: Proyección usa DiasTranscurridosOperativos GLOBAL
+    // ACTUALIZACIÓN 16-May-2026: Usar FechaOperacionActual.day para TODAS las unidades
+    // =========================================================================
+    // El divisor es el mismo para todas las unidades: diasTranscurridos
+    // diasTranscurridos = FechaOperacionActual.day (calculado en backend con corte 06:00 AM)
+    //
+    // Queda PROHIBIDO usar u.dias (último día con datos de cada unidad)
+    // =========================================================================
+    const calcularProyeccion = (ventas) => {
+      // SIEMPRE usar diasTranscurridos (período global, viene del backend)
+      if (diasTranscurridos <= 0 || ventas <= 0) return 0;
+      return Math.round((ventas / diasTranscurridos) * diasProyectables);
     };
     
     const unidadesTransformadas = unidades.map(u => ({
@@ -108,8 +115,8 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       // pax_promedio = ventas / pax
       cheque_promedio: u.tickets_total > 0 ? u.ventas_total / u.tickets_total : 0,
       pax_promedio: u.pax_total > 0 ? u.ventas_total / u.pax_total : 0,
-      // FIX: Usar días de la unidad (del API), no días globales del navegador
-      proyeccion: calcularProyeccionIndividual(u.ventas_total || 0, u.dias),
+      // ACTUALIZADO: Usar días GLOBALES (FechaOperacionActual.day), NO u.dias
+      proyeccion: calcularProyeccion(u.ventas_total || 0),
       // FASE 3: Variaciones vienen directamente de V2 (EDARSAHUB)
       // null = sin base comparativa (mostrar "-")
       // 0.0 = variación real cero (mostrar "0.0%")
