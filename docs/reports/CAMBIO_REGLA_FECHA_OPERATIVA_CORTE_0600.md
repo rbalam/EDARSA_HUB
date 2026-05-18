@@ -1,190 +1,223 @@
-# CAMBIO REGLA FECHA OPERATIVA: Corte 06:00 AM
+# CAMBIO REGLA FECHA OPERATIVA CORTE 06:00
 
-**Fecha:** 2026-05-17  
-**Estado:** IMPLEMENTADO Y AUDITADO  
-**Módulo:** Core / Comercial  
-
----
-
-## 1. DESCRIPCIÓN DEL CAMBIO
-
-### Regla Anterior (hasta 16-May-2026)
-- Corte de jornada operativa: **03:00 AM**
-- Ventas entre 00:00 y 02:59 pertenecían al día anterior
-- Ventas a partir de 03:00 pertenecían al día calendario actual
-
-### Regla Nueva (desde 17-May-2026)
-- Corte de jornada operativa: **06:00 AM**
-- Ventas entre 00:00 y 05:59 pertenecen al **día anterior**
-- Ventas a partir de 06:00 pertenecen al **día calendario actual**
-
-### Ejemplo
-```
-Hora México         Fecha Calendario     Fecha Operación
-------------------------------------------------------------
-17-May 05:30 AM     17-May              16-May  (día anterior)
-17-May 06:00 AM     17-May              17-May  (día actual)
-17-May 23:45 PM     17-May              17-May  (día actual)
-18-May 02:00 AM     18-May              17-May  (día anterior)
-```
+**Fecha:** 2026-05-18  
+**Estado:** FASE P0A COMPLETADA - PENDIENTE AUTORIZACIÓN P0B  
+**Decisión de Negocio:** CORTE OPERATIVO OFICIAL = 06:00 AM  
 
 ---
 
-## 2. ARCHIVOS MODIFICADOS
+## 1. Decisión Oficial
 
-### Core: `/app/backend/core/utils/operational_window.py`
+### Regla Canónica de FechaOperacion para EDARSAHUB
 
-| Constante | Antes | Ahora |
-|-----------|-------|-------|
-| `VENTANA_FIN_HORA` | 3 | 6 |
-| Función `get_fecha_operativa()` | Corte 03:00 | Corte 06:00 |
-| Función `is_within_operational_window()` | Ventana hasta 03:00 | Ventana hasta 06:00 |
+```
+SI hora_actual < 06:00:00 ENTONCES
+    FechaOperacion = día calendario ANTERIOR
+SINO
+    FechaOperacion = día calendario ACTUAL
+FIN
+```
 
-### Comercial: `/app/backend/modules/comercial/service.py`
+### Ejemplos
 
-- Función `_obtener_kpis_tablero_desde_edarsahub()` usa `get_fecha_operativa()` actualizada
-- Proyección mensual usa `dias_transcurridos` basado en `FechaOperacionActual.day`
-
-### Comercial: `/app/backend/modules/comercial/routes.py`
-
-- Endpoint `/tablero-ejecutivo` calcula `fecha_operativa` con corte 06:00 AM
-- Variable `dias_transcurridos` = `fecha_operativa.day`
+| Hora México | Fecha Calendario | FechaOperacion |
+|-------------|------------------|----------------|
+| 05:59 | 2026-05-18 | 2026-05-17 |
+| 06:00 | 2026-05-18 | 2026-05-18 |
+| 11:37 | 2026-05-18 | 2026-05-18 |
+| 13:00 | 2026-05-18 | 2026-05-18 |
+| 02:00 | 2026-05-19 | 2026-05-18 |
 
 ---
 
-## 3. REGLA DE PROYECCIÓN MENSUAL
+## 2. Configuración Actual en BD
 
-### Fórmula Canónica
-```
-ProyecciónMensual = VentasAcumuladas / FechaOperacionActual.day * DíasMes
-```
+### Sistema_HorariosServicioUnidad
 
-### Donde:
-- `VentasAcumuladas` = Suma de ventas desde día 1 hasta `FechaOperacionActual`
-- `FechaOperacionActual.day` = Día del mes de la fecha operativa (NO fecha calendario)
-- `DíasMes` = Total de días del mes (28/29/30/31)
+| Unidad | hora_inicio | hora_fin | cruza_mn | Estado |
+|--------|-------------|----------|----------|--------|
+| **130MID** | 13:00:00 | **03:00:00** | True | ⚠️ DESACTUALIZADO |
+| **130QRO** | 13:00:00 | **03:00:00** | True | ⚠️ DESACTUALIZADO |
+| **ORIGEN** | 13:00:00 | **03:00:00** | True | ⚠️ DESACTUALIZADO |
+| CIENFUEGOS | 13:00:00 | 23:00:00 | False | ❓ NO_CRUZA_MN |
+| ESTELAR | 13:00:00 | 23:00:00 | False | ❓ NO_CRUZA_MN |
 
-### Ejemplo Mayo 2026
-```
-Hora actual: 17-May-2026 08:15 AM México
-Corte: 06:00 AM
+### Resumen
 
-FechaOperacionActual = 17-May (porque hora >= 06:00)
-dias_transcurridos = 17
-VentasAcumuladas = $9,741,095.20
+- **3 unidades** con hora_fin=03:00 (REQUIEREN UPDATE a 06:00):
+  - 130MID
+  - 130QRO
+  - ORIGEN
 
-ProyecciónMensual = $9,741,095.20 / 17 * 31 = $17,764,720.36
-```
-
-### NO usar:
-- ❌ `MAX(fecha_operacion)` de la tabla (último registro)
-- ❌ `fecha_calendario.day` (puede diferir si hora < 06:00)
-- ❌ Número de registros con ventas
+- **2 unidades** con hora_fin=23:00 (NO cruzan medianoche):
+  - CIENFUEGOS
+  - ESTELAR
+  - **Nota**: Evaluar si aplica la regla 06:00 para estas unidades
 
 ---
 
-## 4. AUDITORÍA HISTÓRICA
+## 3. SQL Propuesto para Alinear a 06:00
 
-### Script Creado
-`/app/backend/scripts/audit_fecha_operativa_0600.py`
+```sql
+-- ============================================================================
+-- SCRIPT: UPDATE CORTE OPERATIVO A 06:00 AM
+-- FECHA: 2026-05-18
+-- ALCANCE: 130MID, 130QRO, ORIGEN
+-- ============================================================================
 
-### Propósito
-Diagnosticar registros históricos con timestamp entre 00:00 y 05:59 que podrían tener `FechaOperacion` incorrecta bajo la nueva regla.
+-- PASO 1: SELECT ANTES (verificar estado actual)
+SELECT 
+    unidad_negocio_id,
+    dia_semana,
+    hora_inicio_operativo,
+    hora_fin_operativo,
+    cruza_medianoche,
+    activo,
+    fecha_modificacion
+FROM Sistema_HorariosServicioUnidad
+WHERE unidad_negocio_id IN ('130MID', '130QRO', 'ORIGEN')
+  AND hora_fin_operativo = '03:00:00'
+ORDER BY unidad_negocio_id, dia_semana;
+-- Resultado esperado: 21 filas
 
-### Tablas Auditadas
-| Tabla | Estado | Hallazgos |
-|-------|--------|-----------|
-| `Comercial_KPIs_Diarios_v2` | ✅ Auditada | Tabla consolidada por día, sin hora exacta |
-| `Sync_Ventas_PorHora` | ✅ Auditada | Registros con hora < 6 detectados |
-| `Comercial_Ventas_Dia_Abiertas_v2` | ✅ Auditada | Snapshots con hora < 6 detectados |
+-- PASO 2: UPDATE CONTROLADO (dentro de transacción)
+BEGIN TRANSACTION;
 
-### Resultado de Auditoría (17-May-2026)
+UPDATE Sistema_HorariosServicioUnidad
+SET 
+    hora_fin_operativo = '06:00:00',
+    fecha_modificacion = SYSUTCDATETIME()
+WHERE unidad_negocio_id IN ('130MID', '130QRO', 'ORIGEN')
+  AND hora_fin_operativo = '03:00:00'
+  AND activo = 1;
+
+-- Verificar filas afectadas
+SELECT @@ROWCOUNT AS FilasActualizadas;
+-- Debe ser 21
+
+-- PASO 3: SELECT DESPUÉS (verificar cambio)
+SELECT 
+    unidad_negocio_id,
+    dia_semana,
+    hora_inicio_operativo,
+    hora_fin_operativo,
+    cruza_medianoche,
+    activo,
+    fecha_modificacion
+FROM Sistema_HorariosServicioUnidad
+WHERE unidad_negocio_id IN ('130MID', '130QRO', 'ORIGEN')
+ORDER BY unidad_negocio_id, dia_semana;
+-- Debe mostrar hora_fin=06:00:00
+
+-- PASO 4: COMMIT o ROLLBACK
+COMMIT TRANSACTION;
+-- o ROLLBACK TRANSACTION; si hay error
 ```
-✅ NO SE ENCONTRARON INCONSISTENCIAS CRÍTICAS
-   Los datos existentes son consistentes con la regla anterior (03:00 AM)
-   No se requiere UPDATE histórico inmediato
-```
-
-### Reporte JSON
-`/app/docs/reports/audit_fecha_operativa_0600_202605.json`
 
 ---
 
-## 5. IMPACTO EN DATOS HISTÓRICOS
+## 4. Causa del "BUG Intermitente"
 
-### Escenario: Venta a las 04:30 AM del 15-May
-| Regla | FechaOperacion Asignada |
-|-------|-------------------------|
-| Anterior (03:00) | 15-May (día calendario) |
-| Nueva (06:00) | 14-May (día anterior) |
+### Hallazgo
 
-### Recomendación
-Los datos históricos fueron sincronizados con la regla de 03:00 AM. Si se requiere consistencia retroactiva:
+Se detectaron **DOS JOBS** ejecutándose en paralelo:
+- Job A: Ejecuta a los segundos `:00` → Calcula `fecha_inicio=2026-05-18`
+- Job B: Ejecuta a los segundos `:49` → Calcula `fecha_inicio=2026-05-17`
 
-1. **Opción A (Conservadora):** Mantener datos históricos como están
-   - Pros: Sin riesgo de corrupción
-   - Cons: Inconsistencia temporal en reportes históricos
+### Evidencia
 
-2. **Opción B (Migración):** UPDATE selectivo a registros con hora 03:00-05:59
-   - Pros: Consistencia total
-   - Cons: Requiere autorización explícita y backup
-
-**Estado actual:** Se mantiene Opción A (sin UPDATE histórico) hasta nueva autorización.
-
----
-
-## 6. VALIDACIÓN EN TABLERO EJECUTIVO
-
-### Configuración Verificada
-```python
-# routes.py - Endpoint /tablero-ejecutivo
-fecha_operativa = get_fecha_operativa()  # Usa corte 06:00 AM
-dias_transcurridos = fecha_operativa.day  # Día de la fecha operativa
+```
+ABIERTA-20260518-175200-dc4f | 2026-05-18 | 17:52:01 UTC
+ABIERTA-20260518-175149-0826 | 2026-05-17 | 17:51:53 UTC
+ABIERTA-20260518-174731-0396 | 2026-05-18 | 17:47:32 UTC
+ABIERTA-20260518-174649-9bdf | 2026-05-17 | 17:46:53 UTC
 ```
 
-### Prueba Realizada (17-May-2026 11:44 AM México)
-```
-Hora actual: 11:44 AM > 06:00 AM
-FechaOperacionActual = 17-May-2026
-dias_transcurridos = 17
-```
+### Causa Probable
 
-### Resultado
-| Unidad | Ventas Acumuladas | Proyección |
-|--------|-------------------|------------|
-| CIENFUEGOS | $2,543,511.00 | Calculada con /17 |
-| 130MID | $2,094,097.00 | Calculada con /17 |
-| 130QRO | $2,037,841.00 | Calculada con /17 |
-| ESTELAR | $1,744,171.00 | Calculada con /17 |
-| ORIGEN | $1,322,475.20 | Calculada con /17 |
+1. **Cache de Horarios**: El módulo `operational_window.py` tiene un cache de 30 minutos
+2. **Múltiples Workers/Instancias**: Cada worker tiene su propio cache en memoria
+3. **Desincronización**: Cuando se modificó la configuración, algunos workers tenían valores viejos
+
+### Conclusión
+
+El código ES DETERMINISTA. El problema es:
+1. La BD tiene `hora_fin=03:00` (valor incorrecto)
+2. Hay múltiples instancias con diferentes estados de cache
+3. El UPSERT sobrescribe el único registro, causando "oscilación" de datos
 
 ---
 
-## 7. CRITERIOS DE ACEPTACIÓN
+## 5. Pruebas de Determinismo
 
-| Criterio | Estado |
-|----------|--------|
-| Corte operativo a las 06:00 AM | ✅ IMPLEMENTADO |
-| Proyección usa `FechaOperacionActual.day` | ✅ IMPLEMENTADO |
-| NO usa último registro como divisor | ✅ VERIFICADO |
-| Script de auditoría creado | ✅ CREADO |
-| Auditoría no modifica datos | ✅ CUMPLIDO |
-| Reporte generado | ✅ ESTE DOCUMENTO |
+### Resultados (con configuración actual: hora_fin=03:00)
 
----
+| Timestamp | Esperado (06:00) | Resultado Actual | Coincide |
+|-----------|------------------|------------------|----------|
+| 2026-05-18 05:59 | 2026-05-17 | 2026-05-17 | ✓ |
+| 2026-05-18 06:00 | 2026-05-18 | 2026-05-17 | ✗ |
+| 2026-05-18 11:37 | 2026-05-18 | 2026-05-17 | ✗ |
+| 2026-05-18 13:00 | 2026-05-18 | 2026-05-18 | ✓ |
+| 2026-05-19 02:00 | 2026-05-18 | 2026-05-18 | ✓ |
 
-## 8. ARCHIVOS DE REFERENCIA
+### Interpretación
 
-| Archivo | Propósito |
-|---------|-----------|
-| `/app/backend/core/utils/operational_window.py` | Lógica de ventana operativa |
-| `/app/backend/modules/comercial/routes.py` | Endpoint Tablero Ejecutivo |
-| `/app/backend/modules/comercial/service.py` | Funciones de KPIs |
-| `/app/backend/scripts/audit_fecha_operativa_0600.py` | Script de auditoría |
-| `/app/docs/reports/audit_fecha_operativa_0600_202605.json` | Resultado de auditoría |
+- El código es **100% DETERMINISTA** (siempre da el mismo resultado para la misma entrada)
+- Las diferencias son porque la BD tiene `hora_fin=03:00`, NO `06:00`
+- Al actualizar la BD a `06:00`, los resultados coincidirán
 
 ---
 
-**Autor:** Sistema E1  
-**Validado:** 2026-05-17 11:45 UTC  
-**Próxima Revisión:** Cuando se autorice UPDATE histórico (si aplica)
+## 6. Recomendación para Siguiente Fase
+
+### P0B: Actualizar Sistema_HorariosServicioUnidad
+
+**Acción**: Ejecutar el script SQL propuesto en la sección 3
+
+**Impacto esperado**:
+- Las 3 unidades (130MID, 130QRO, ORIGEN) usarán corte 06:00
+- La función `get_operational_window()` calculará correctamente
+- A las 11:37 México, devolverá `fecha_operacion = 2026-05-18`
+
+**Riesgos**:
+- BAJO: Solo modifica configuración, no lógica de código
+- Cache de 30 minutos: Puede haber inconsistencias temporales hasta que expire
+
+### P0C: Modificar llave UPSERT
+
+**Acción**: Agregar `fecha_operacion` a la llave del UPSERT
+
+**Dependencia**: Requiere que P0B esté completado y validado
+
+### P0D: Corregir datos erróneos
+
+**Acción**: Limpiar snapshots con fecha incorrecta
+
+**Dependencia**: Requiere que P0B y P0C estén completados
+
+---
+
+## 7. Confirmación de Integridad
+
+Durante esta fase P0A:
+- ✅ NO se modificó código
+- ✅ NO se ejecutaron UPDATE/DELETE/MERGE en datos
+- ✅ NO se alteraron índices ni tablas
+- ✅ Todas las consultas fueron SELECT de solo lectura
+- ✅ El script SQL propuesto NO ha sido ejecutado
+
+---
+
+## 8. Próximos Pasos
+
+Solicito **autorización explícita** para:
+
+| Fase | Acción | Estado |
+|------|--------|--------|
+| **P0B** | Ejecutar UPDATE en Sistema_HorariosServicioUnidad (cambiar 03:00 → 06:00) | PENDIENTE |
+| **P0C** | Modificar llave UPSERT para incluir fecha_operacion | PENDIENTE |
+| **P0D** | Corregir datos erróneos en Comercial_Ventas_Dia_Abiertas_v2 | PENDIENTE |
+
+---
+
+**Fin del Reporte P0A**

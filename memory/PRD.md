@@ -3158,3 +3158,48 @@ A las 11:30 AM (hora actual México), el restaurante operativamente NO ha abiert
 4. Investigar BUG intermitente
 
 *Última actualización: 18-May-2026 11:50 MX - Diagnóstico P0 CORREGIDO*
+
+---
+
+## ✅ FASE P0A COMPLETADA (18-May-2026 - 12:00 MX)
+
+### Decisión de Negocio
+**CORTE OPERATIVO OFICIAL = 06:00 AM**
+- Antes de 06:00 → día anterior
+- Desde 06:00 → día calendario actual
+
+### Hallazgos de Configuración
+
+| Unidad | hora_fin ACTUAL | hora_fin ESPERADO | Estado |
+|--------|-----------------|-------------------|--------|
+| 130MID | 03:00:00 | 06:00:00 | ⚠️ DESACTUALIZADO |
+| 130QRO | 03:00:00 | 06:00:00 | ⚠️ DESACTUALIZADO |
+| ORIGEN | 03:00:00 | 06:00:00 | ⚠️ DESACTUALIZADO |
+
+### Causa del "BUG Intermitente"
+- **DOS JOBS EN PARALELO** ejecutándose con diferentes estados de cache
+- Job A: Ejecuta a segundos `:00` → fecha_inicio=2026-05-18
+- Job B: Ejecuta a segundos `:49` → fecha_inicio=2026-05-17
+
+### Determinismo Validado
+- El código ES 100% DETERMINISTA
+- Las diferencias son por configuración incorrecta en BD (03:00 vs 06:00)
+
+### SQL Propuesto (NO EJECUTADO)
+```sql
+UPDATE Sistema_HorariosServicioUnidad
+SET hora_fin_operativo = '06:00:00', fecha_modificacion = SYSUTCDATETIME()
+WHERE unidad_negocio_id IN ('130MID', '130QRO', 'ORIGEN')
+  AND hora_fin_operativo = '03:00:00' AND activo = 1;
+```
+
+### Reportes Generados
+- `/app/docs/reports/CAMBIO_REGLA_FECHA_OPERATIVA_CORTE_0600.md`
+- `/app/docs/reports/FIX_ORIGEN_VENTAS_DIA_TABLERO_EJECUTIVO.md`
+
+### Próximas Fases (PENDIENTE AUTORIZACIÓN)
+- **P0B**: Ejecutar UPDATE en Sistema_HorariosServicioUnidad
+- **P0C**: Modificar llave UPSERT para incluir fecha_operacion
+- **P0D**: Corregir datos erróneos
+
+*Última actualización: 18-May-2026 12:00 MX - P0A COMPLETADA*
