@@ -3280,3 +3280,31 @@ Modificar `/app/backend/core/utils/operational_window.py` para implementar "cort
 `/app/docs/reports/FIX_AUTOMATICO_SERVIDORES_NUEVOS_CATALOGO_SQL_EXPLORADOR_BD.md`
 
 *Última actualización: 18-May-2026 - FIX Servidores Nuevos COMPLETADO*
+
+---
+
+## ✅ FIX P0 URGENTE: Explorador BD Post-Conexiones Explorables (18-May-2026)
+
+### Problema Reportado
+- Segundo filtro mostraba "Cargando..." indefinidamente
+- Toast "Error al ejecutar consulta"
+
+### Diagnóstico
+- El Explorador BD YA usaba `fetchConexionesExplorables` antes del fix anterior
+- El mensaje de error proviene de `useCatalogoConsultasData.js` (Catálogo SQL)
+- Endpoints verificados: funcionan correctamente
+- Problema pudo ser transitorio o confusión entre módulos
+
+### Correcciones Preventivas
+1. Validación en `cargarTablas` para evitar llamadas con ID vacío
+2. Validación en `ejecutarQueryLibre` para verificar servidor seleccionado
+
+### Validación Final
+- ✅ Explorador BD carga sin errores
+- ✅ CHAPUR NORTE y BACKOFICE visibles
+- ✅ No regresión en otros módulos
+
+### Reporte
+`/app/docs/reports/FIX_EXPLORADOR_BD_ROTO_POST_CONEXIONES_EXPLORABLES.md`
+
+*Última actualización: 18-May-2026 - FIX Explorador BD COMPLETADO*

@@ -896,6 +896,14 @@ export default function ExploradorBD() {
   };
 
   const cargarTablas = async (serverId) => {
+    // CORRECCIÓN P0-EXPLORADOR: Validar serverId antes de llamar al backend
+    if (!serverId || serverId === 'undefined' || serverId === 'null' || serverId === '__NONE__') {
+      logger.warn('[ExploradorBD] Intento de cargar tablas sin serverId válido');
+      setTablas([]);
+      setLoading(prev => ({...prev, tablas: false}));
+      return;
+    }
+    
     setLoading(prev => ({...prev, tablas: true}));
     setTablaSeleccionada(null);
     setColumnas([]);
@@ -969,6 +977,13 @@ export default function ExploradorBD() {
 
   const ejecutarQueryLibre = async () => {
     if (!queryLibre.trim()) return;
+    
+    // CORRECCIÓN P0-EXPLORADOR: Validar que hay un servidor seleccionado válido
+    if (!serverSeleccionado || serverSeleccionado === '__NONE__' || serverSeleccionado === 'undefined') {
+      toast.error('Selecciona un servidor específico para ejecutar la consulta');
+      return;
+    }
+    
     setLoading(prev => ({...prev, query: true}));
     setResultadoQuery(null);
     
