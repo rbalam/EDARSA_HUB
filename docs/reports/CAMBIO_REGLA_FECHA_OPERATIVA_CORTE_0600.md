@@ -1,7 +1,7 @@
 # CAMBIO REGLA FECHA OPERATIVA CORTE 06:00
 
 **Fecha:** 2026-05-18  
-**Estado:** FASE P0A COMPLETADA - PENDIENTE AUTORIZACIÓN P0B  
+**Estado:** P0B COMPLETADO - CONFIGURACIÓN BD ACTUALIZADA  
 **Decisión de Negocio:** CORTE OPERATIVO OFICIAL = 06:00 AM  
 
 ---
@@ -30,59 +30,14 @@ FIN
 
 ---
 
-## 2. Configuración Actual en BD
+## 2. P0B COMPLETADO: Configuración BD Actualizada
 
-### Sistema_HorariosServicioUnidad
+### Cambio Ejecutado
 
-| Unidad | hora_inicio | hora_fin | cruza_mn | Estado |
-|--------|-------------|----------|----------|--------|
-| **130MID** | 13:00:00 | **03:00:00** | True | ⚠️ DESACTUALIZADO |
-| **130QRO** | 13:00:00 | **03:00:00** | True | ⚠️ DESACTUALIZADO |
-| **ORIGEN** | 13:00:00 | **03:00:00** | True | ⚠️ DESACTUALIZADO |
-| CIENFUEGOS | 13:00:00 | 23:00:00 | False | ❓ NO_CRUZA_MN |
-| ESTELAR | 13:00:00 | 23:00:00 | False | ❓ NO_CRUZA_MN |
+**Fecha/Hora:** 2026-05-18 18:35:08 UTC
 
-### Resumen
-
-- **3 unidades** con hora_fin=03:00 (REQUIEREN UPDATE a 06:00):
-  - 130MID
-  - 130QRO
-  - ORIGEN
-
-- **2 unidades** con hora_fin=23:00 (NO cruzan medianoche):
-  - CIENFUEGOS
-  - ESTELAR
-  - **Nota**: Evaluar si aplica la regla 06:00 para estas unidades
-
----
-
-## 3. SQL Propuesto para Alinear a 06:00
-
+**SQL Ejecutado:**
 ```sql
--- ============================================================================
--- SCRIPT: UPDATE CORTE OPERATIVO A 06:00 AM
--- FECHA: 2026-05-18
--- ALCANCE: 130MID, 130QRO, ORIGEN
--- ============================================================================
-
--- PASO 1: SELECT ANTES (verificar estado actual)
-SELECT 
-    unidad_negocio_id,
-    dia_semana,
-    hora_inicio_operativo,
-    hora_fin_operativo,
-    cruza_medianoche,
-    activo,
-    fecha_modificacion
-FROM Sistema_HorariosServicioUnidad
-WHERE unidad_negocio_id IN ('130MID', '130QRO', 'ORIGEN')
-  AND hora_fin_operativo = '03:00:00'
-ORDER BY unidad_negocio_id, dia_semana;
--- Resultado esperado: 21 filas
-
--- PASO 2: UPDATE CONTROLADO (dentro de transacción)
-BEGIN TRANSACTION;
-
 UPDATE Sistema_HorariosServicioUnidad
 SET 
     hora_fin_operativo = '06:00:00',
@@ -90,134 +45,121 @@ SET
 WHERE unidad_negocio_id IN ('130MID', '130QRO', 'ORIGEN')
   AND hora_fin_operativo = '03:00:00'
   AND activo = 1;
-
--- Verificar filas afectadas
-SELECT @@ROWCOUNT AS FilasActualizadas;
--- Debe ser 21
-
--- PASO 3: SELECT DESPUÉS (verificar cambio)
-SELECT 
-    unidad_negocio_id,
-    dia_semana,
-    hora_inicio_operativo,
-    hora_fin_operativo,
-    cruza_medianoche,
-    activo,
-    fecha_modificacion
-FROM Sistema_HorariosServicioUnidad
-WHERE unidad_negocio_id IN ('130MID', '130QRO', 'ORIGEN')
-ORDER BY unidad_negocio_id, dia_semana;
--- Debe mostrar hora_fin=06:00:00
-
--- PASO 4: COMMIT o ROLLBACK
-COMMIT TRANSACTION;
--- o ROLLBACK TRANSACTION; si hay error
 ```
 
+**Resultado:** 21 filas actualizadas ✅
+
+### Estado Actual en BD
+
+| Unidad | hora_inicio | hora_fin | Estado |
+|--------|-------------|----------|--------|
+| **130MID** | 13:00:00 | **06:00:00** | ✅ ACTUALIZADO |
+| **130QRO** | 13:00:00 | **06:00:00** | ✅ ACTUALIZADO |
+| **ORIGEN** | 13:00:00 | **06:00:00** | ✅ ACTUALIZADO |
+| CIENFUEGOS | 13:00:00 | 23:00:00 | Sin cambio |
+| ESTELAR | 13:00:00 | 23:00:00 | Sin cambio |
+
 ---
 
-## 4. Causa del "BUG Intermitente"
+## 3. Validación de get_operational_window()
 
-### Hallazgo
-
-Se detectaron **DOS JOBS** ejecutándose en paralelo:
-- Job A: Ejecuta a los segundos `:00` → Calcula `fecha_inicio=2026-05-18`
-- Job B: Ejecuta a los segundos `:49` → Calcula `fecha_inicio=2026-05-17`
-
-### Evidencia
-
+### Lectura de BD ✅
 ```
-ABIERTA-20260518-175200-dc4f | 2026-05-18 | 17:52:01 UTC
-ABIERTA-20260518-175149-0826 | 2026-05-17 | 17:51:53 UTC
-ABIERTA-20260518-174731-0396 | 2026-05-18 | 17:47:32 UTC
-ABIERTA-20260518-174649-9bdf | 2026-05-17 | 17:46:53 UTC
+ORIGEN: hora_fin=06:00:00 ✅ CORRECTO
+130QRO: hora_fin=06:00:00 ✅ CORRECTO
+130MID: hora_fin=06:00:00 ✅ CORRECTO
 ```
 
-### Causa Probable
+### Escenarios de FechaOperacion
 
-1. **Cache de Horarios**: El módulo `operational_window.py` tiene un cache de 30 minutos
-2. **Múltiples Workers/Instancias**: Cada worker tiene su propio cache en memoria
-3. **Desincronización**: Cuando se modificó la configuración, algunos workers tenían valores viejos
+| Timestamp | Esperado | ORIGEN | 130QRO | 130MID |
+|-----------|----------|--------|--------|--------|
+| 05:59 | 2026-05-17 | ✅ 2026-05-17 | ✅ 2026-05-17 | ✅ 2026-05-17 |
+| 06:00 | 2026-05-18 | ⚠️ 2026-05-17 | ⚠️ 2026-05-17 | ⚠️ 2026-05-17 |
+| 11:37 | 2026-05-18 | ⚠️ 2026-05-17 | ⚠️ 2026-05-17 | ⚠️ 2026-05-17 |
+| 13:00 | 2026-05-18 | ✅ 2026-05-18 | ✅ 2026-05-18 | ✅ 2026-05-18 |
+| 02:00 (día+1) | 2026-05-18 | ✅ 2026-05-18 | ✅ 2026-05-18 | ✅ 2026-05-18 |
 
-### Conclusión
+### ⚠️ HALLAZGO CRÍTICO
 
-El código ES DETERMINISTA. El problema es:
-1. La BD tiene `hora_fin=03:00` (valor incorrecto)
-2. Hay múltiples instancias con diferentes estados de cache
-3. El UPSERT sobrescribe el único registro, causando "oscilación" de datos
+La configuración de la BD ahora tiene `hora_fin=06:00`, pero la **lógica del código** en `operational_window.py` implementa "período cerrado":
 
----
+```python
+# Código actual (líneas 203-210)
+else:
+    # Entre hora_fin (06:00) y hora_inicio (13:00) → CERRADO
+    fecha_operacion = fecha_calendario - timedelta(days=1)  # ← DÍA ANTERIOR
+```
 
-## 5. Pruebas de Determinismo
+**La regla de negocio dice:** Si `hora >= 06:00` → día ACTUAL (sin considerar "cerrado")
 
-### Resultados (con configuración actual: hora_fin=03:00)
+**El código actual dice:** Si `06:00 <= hora < 13:00` → día ANTERIOR (período cerrado)
 
-| Timestamp | Esperado (06:00) | Resultado Actual | Coincide |
-|-----------|------------------|------------------|----------|
-| 2026-05-18 05:59 | 2026-05-17 | 2026-05-17 | ✓ |
-| 2026-05-18 06:00 | 2026-05-18 | 2026-05-17 | ✗ |
-| 2026-05-18 11:37 | 2026-05-18 | 2026-05-17 | ✗ |
-| 2026-05-18 13:00 | 2026-05-18 | 2026-05-18 | ✓ |
-| 2026-05-19 02:00 | 2026-05-18 | 2026-05-18 | ✓ |
-
-### Interpretación
-
-- El código es **100% DETERMINISTA** (siempre da el mismo resultado para la misma entrada)
-- Las diferencias son porque la BD tiene `hora_fin=03:00`, NO `06:00`
-- Al actualizar la BD a `06:00`, los resultados coincidirán
+**Acción requerida en P0C:** Modificar la lógica del código para implementar la regla "corte 06:00 simple".
 
 ---
 
-## 6. Recomendación para Siguiente Fase
+## 4. Validación de No Regresión ✅
 
-### P0B: Actualizar Sistema_HorariosServicioUnidad
-
-**Acción**: Ejecutar el script SQL propuesto en la sección 3
-
-**Impacto esperado**:
-- Las 3 unidades (130MID, 130QRO, ORIGEN) usarán corte 06:00
-- La función `get_operational_window()` calculará correctamente
-- A las 11:37 México, devolverá `fecha_operacion = 2026-05-18`
-
-**Riesgos**:
-- BAJO: Solo modifica configuración, no lógica de código
-- Cache de 30 minutos: Puede haber inconsistencias temporales hasta que expire
-
-### P0C: Modificar llave UPSERT
-
-**Acción**: Agregar `fecha_operacion` a la llave del UPSERT
-
-**Dependencia**: Requiere que P0B esté completado y validado
-
-### P0D: Corregir datos erróneos
-
-**Acción**: Limpiar snapshots con fecha incorrecta
-
-**Dependencia**: Requiere que P0B y P0C estén completados
+| Validación | Estado |
+|------------|--------|
+| Login funciona | ✅ OK |
+| /api/users | ✅ HTTP 200 |
+| /api/servers | ✅ HTTP 200 |
+| Tablero Ejecutivo responde | ✅ OK |
+| ORIGEN visible | ✅ Sí |
+| 130QRO visible | ✅ Sí |
+| 130MID visible | ✅ Sí |
+| source_period = EDARSAHUB_SQL | ✅ Todas las unidades |
 
 ---
 
-## 7. Confirmación de Integridad
+## 5. Próximos Pasos
 
-Durante esta fase P0A:
+### P0C (PENDIENTE AUTORIZACIÓN)
+
+**Objetivo:** Modificar la lógica del código para implementar "corte 06:00 simple"
+
+**Archivo a modificar:** `/app/backend/core/utils/operational_window.py`
+
+**Cambio propuesto:**
+```python
+# ANTES (líneas 186-210)
+if cruza_medianoche:
+    if hora_actual < hora_fin:
+        fecha_operacion = día_anterior
+    elif hora_actual >= hora_inicio:
+        fecha_operacion = día_actual
+    else:  # período cerrado
+        fecha_operacion = día_anterior  # ← INCORRECTO según nueva regla
+
+# DESPUÉS
+if cruza_medianoche:
+    if hora_actual < hora_fin:
+        fecha_operacion = día_anterior
+    else:
+        fecha_operacion = día_actual  # ← CORRECTO: >= 06:00 siempre es día actual
+```
+
+### P0D (DESPUÉS DE P0C)
+
+Modificar llave UPSERT para incluir `fecha_operacion`.
+
+### P0E (DESPUÉS DE P0D)
+
+Corregir datos erróneos en `Comercial_Ventas_Dia_Abiertas_v2`.
+
+---
+
+## 6. Confirmación de Integridad P0B
+
+- ✅ UPDATE ejecutado exitosamente (21 filas)
+- ✅ Verificación post-UPDATE completada
+- ✅ Validación de no regresión completada
 - ✅ NO se modificó código
-- ✅ NO se ejecutaron UPDATE/DELETE/MERGE en datos
-- ✅ NO se alteraron índices ni tablas
-- ✅ Todas las consultas fueron SELECT de solo lectura
-- ✅ El script SQL propuesto NO ha sido ejecutado
+- ✅ NO se alteraron índices ni otras tablas
+- ✅ Solo se modificó `Sistema_HorariosServicioUnidad`
 
 ---
 
-## 8. Próximos Pasos
-
-Solicito **autorización explícita** para:
-
-| Fase | Acción | Estado |
-|------|--------|--------|
-| **P0B** | Ejecutar UPDATE en Sistema_HorariosServicioUnidad (cambiar 03:00 → 06:00) | PENDIENTE |
-| **P0C** | Modificar llave UPSERT para incluir fecha_operacion | PENDIENTE |
-| **P0D** | Corregir datos erróneos en Comercial_Ventas_Dia_Abiertas_v2 | PENDIENTE |
-
----
-
-**Fin del Reporte P0A**
+**Fin del Reporte P0B**

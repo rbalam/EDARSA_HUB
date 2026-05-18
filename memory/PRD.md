@@ -3203,3 +3203,41 @@ WHERE unidad_negocio_id IN ('130MID', '130QRO', 'ORIGEN')
 - **P0D**: Corregir datos erróneos
 
 *Última actualización: 18-May-2026 12:00 MX - P0A COMPLETADA*
+
+---
+
+## ✅ P0B COMPLETADO (18-May-2026 - 12:35 MX)
+
+### UPDATE Ejecutado
+```sql
+UPDATE Sistema_HorariosServicioUnidad
+SET hora_fin_operativo = '06:00:00', fecha_modificacion = SYSUTCDATETIME()
+WHERE unidad_negocio_id IN ('130MID', '130QRO', 'ORIGEN')
+  AND hora_fin_operativo = '03:00:00' AND activo = 1;
+-- Resultado: 21 filas actualizadas ✅
+```
+
+### Estado Actual BD
+| Unidad | hora_fin |
+|--------|----------|
+| 130MID | 06:00:00 ✅ |
+| 130QRO | 06:00:00 ✅ |
+| ORIGEN | 06:00:00 ✅ |
+
+### Validación No Regresión ✅
+- Login: OK
+- /api/users: HTTP 200
+- /api/servers: HTTP 200
+- Tablero Ejecutivo: Responde
+- source_period: EDARSAHUB_SQL (todas las unidades)
+
+### ⚠️ Hallazgo Crítico
+La BD tiene hora_fin=06:00, pero la **lógica del código** aún implementa "período cerrado":
+- 06:00 <= hora < 13:00 → día ANTERIOR (incorrecto según regla de negocio)
+
+### P0C Requerido
+Modificar `/app/backend/core/utils/operational_window.py` para implementar "corte 06:00 simple":
+- hora < 06:00 → día anterior
+- hora >= 06:00 → día actual (sin "período cerrado")
+
+*Última actualización: 18-May-2026 12:35 MX - P0B COMPLETADO*
