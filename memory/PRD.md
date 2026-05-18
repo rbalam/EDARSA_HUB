@@ -3118,3 +3118,43 @@ A las 11:30 AM (hora actual México), el restaurante operativamente NO ha abiert
 ---
 
 *Última actualización: 18-May-2026 - Diagnóstico P0 ORIGEN completado*
+
+---
+
+## 🔄 ACTUALIZACIÓN DIAGNÓSTICO P0 (18-May-2026 - 11:50 MX)
+
+### Correcciones al Diagnóstico Anterior
+
+1. **Horario Configurado**: La BD tiene `03:00` (NO 06:00). La función `get_operational_window()` lee de `Sistema_HorariosServicioUnidad` y obtiene 03:00.
+
+2. **BUG INTERMITENTE IDENTIFICADO**: El cálculo de FechaOperacion es inconsistente. En el mismo minuto (11:31-11:37), algunas ejecuciones dieron 2026-05-17 y otras 2026-05-18.
+
+3. **Snapshot a las 17:37 UTC = 11:37 México**: A esa hora, según horario 13:00-03:00, la FechaOperacion correcta es 2026-05-17. El job escribió INCORRECTAMENTE 2026-05-18.
+
+### Evidencia del BUG
+
+| Hora México | fecha_inicio BD | Esperado | Estado |
+|-------------|-----------------|----------|--------|
+| 11:37 | 2026-05-18 | 2026-05-17 | ✗ BUG |
+| 11:36 | 2026-05-17 | 2026-05-17 | ✓ OK |
+| 11:32 | 2026-05-18 | 2026-05-17 | ✗ BUG |
+| 11:31 | 2026-05-17 | 2026-05-17 | ✓ OK |
+
+### Problemas Confirmados
+
+| # | Problema | Estado |
+|---|----------|--------|
+| 1 | BUG intermitente en cálculo de FechaOperacion | CONFIRMADO |
+| 2 | Inconsistencia 03:00 (BD) vs 06:00 (docs) | CONFIRMADO |
+| 3 | UPSERT sin fecha_operacion en llave | CONFIRMADO |
+
+### Reporte Actualizado
+`/app/docs/reports/FIX_ORIGEN_VENTAS_DIA_TABLERO_EJECUTIVO.md`
+
+### Pendiente de Autorización
+1. ¿El horario correcto es 03:00 o 06:00?
+2. Modificar índice UNIQUE para incluir fecha_operacion
+3. Modificar UPSERT
+4. Investigar BUG intermitente
+
+*Última actualización: 18-May-2026 11:50 MX - Diagnóstico P0 CORREGIDO*
