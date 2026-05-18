@@ -3055,3 +3055,66 @@ Se detectó y corrigió error de compilación por función `calcularProyeccion` 
 ---
 
 *Última actualización: 17-May-2026 - P2.1 Cerrado sin backfill, Fix función duplicada*
+
+---
+
+## 🔍 DIAGNÓSTICO P0: Ventas ORIGEN No Se Reflejan en Tablero (18-May-2026)
+
+### Estado: DIAGNÓSTICO COMPLETADO - PENDIENTE AUTORIZACIÓN PARA IMPLEMENTAR
+
+### Problema Reportado
+El usuario reportó que ORIGEN tiene ventas del día de hoy, pero no se reflejan en el Tablero Ejecutivo.
+
+### Hallazgos del Diagnóstico
+
+| Aspecto | Hallazgo |
+|---------|----------|
+| **Job de Sync** | ✅ Funciona correctamente (API responde, conexión ONLINE) |
+| **API Local** | ✅ Configurada correctamente (`http://54.39.104.176:8000/query`) |
+| **Queries MPRO** | ✅ Idénticas para ORIGEN y 130QRO (usa Comanda + Comanda_Detalle) |
+| **FechaOperacion** | ⚠️ A las 11:30 AM, calcula 2026-05-17 (día anterior) |
+| **Horario Config** | 13:00 - 03:00 (cruza medianoche) |
+| **UPSERT** | ⚠️ Solo guarda UN registro por unidad (sin discriminar por fecha) |
+
+### Causa Raíz
+A las 11:30 AM (hora actual México), el restaurante operativamente NO ha abierto para el día 18. La jornada operativa del 18 inicia a las 13:00. Por lo tanto:
+- El job calcula `fecha_operacion = 2026-05-17` (correcto según regla de negocio)
+- El UPSERT sobrescribe el único registro con esta fecha
+- El Tablero muestra datos del día 17 porque no hay registro del día 18
+
+**NO es un bug del job ni de la API. Es comportamiento esperado según la configuración actual.**
+
+### Datos Actuales en EDARSAHUB SQL
+
+| Unidad | fecha_operacion | total_estimado_dia | snapshot |
+|--------|----------------|-------------------|----------|
+| ORIGEN | 2026-05-17 | $70,621.01 | 2026-05-18 17:27:13 |
+| 130QRO | 2026-05-17 | $85,923.00 | 2026-05-18 17:27:12 |
+
+### Propuestas de Corrección (PENDIENTE AUTORIZACIÓN)
+
+**OPCIÓN A (RECOMENDADA):** Agregar `fecha_operacion` a la llave del UPSERT
+- Permite mantener múltiples snapshots (uno por fecha)
+- El Tablero podría discriminar entre "hoy" y "ayer"
+- **Riesgo:** BAJO
+
+**OPCIÓN B:** Ajustar horario de corte a 06:00 AM
+- No resolvería el problema completamente (período cerrado 06:00-13:00 seguiría asignando al día anterior)
+
+**OPCIÓN C:** Crear lógica de "día calendario" para Tablero
+- Cambio en frontend/endpoint
+- **Riesgo:** MEDIO - Podría causar confusión
+
+### Reporte Detallado
+`/app/docs/reports/FIX_ORIGEN_VENTAS_DIA_TABLERO_EJECUTIVO.md`
+
+### Confirmación de Integridad
+- ✅ NO se modificó código alguno
+- ✅ NO se ejecutaron queries UPDATE/DELETE/MERGE
+- ✅ Todas las consultas fueron SELECT de solo lectura
+
+**Próximo Paso:** Esperar autorización explícita para implementar corrección.
+
+---
+
+*Última actualización: 18-May-2026 - Diagnóstico P0 ORIGEN completado*
