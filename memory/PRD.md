@@ -3241,3 +3241,42 @@ Modificar `/app/backend/core/utils/operational_window.py` para implementar "cort
 - hora >= 06:00 → día actual (sin "período cerrado")
 
 *Última actualización: 18-May-2026 12:35 MX - P0B COMPLETADO*
+
+---
+
+## ✅ FIX P0: Servidores Nuevos en Catálogo SQL y Explorador BD (18-May-2026)
+
+### Problema Reportado
+- CHAPUR NORTE y CHAPUR NORTE BACKOFICE no aparecían en Catálogo SQL ni Explorador BD
+- El toggle `visible_en_operaciones` no se persistía (UI verde pero BD tenía False)
+
+### Causa Raíz
+
+1. **Toggle no persistía**: `Servidores.js` solo actualizaba estado local, no llamaba al backend
+2. **Catálogo SQL filtraba incorrectamente**: `useCatalogoConsultasData.js` usaba `fetchServersOperativos()` que filtra por `visible_en_operaciones`
+
+### Archivos Modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `Servidores.js` | Toggle ahora llama a `PUT /api-connections/{id}` |
+| `useCatalogoConsultasData.js` | Usa `fetchConexionesExplorables` (NO filtra por visible_ops) |
+
+### Regla Final Automática
+
+**Catálogo SQL / Explorador BD:**
+- Muestra TODO servidor con `activo=1` y autorizado
+- NO filtra por `visible_en_operaciones`
+
+**Tableros / KPIs:**
+- Filtra por `activo=1` + `visible_en_operaciones=1` + `unidad_negocio_id`
+
+### Validación
+- ✅ CHAPUR NORTE y BACKOFICE visibles en Explorador BD
+- ✅ `visible_en_operaciones` persiste en EDARSAHUB SQL
+- ✅ No regresión en Tablero Ejecutivo ni otros módulos
+
+### Reporte
+`/app/docs/reports/FIX_AUTOMATICO_SERVIDORES_NUEVOS_CATALOGO_SQL_EXPLORADOR_BD.md`
+
+*Última actualización: 18-May-2026 - FIX Servidores Nuevos COMPLETADO*

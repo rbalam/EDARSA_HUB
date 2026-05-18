@@ -13,7 +13,8 @@
 import { useState, useEffect, useCallback } from 'react';
 // FASE AUTH-SECURITY-01 / FASE 4.1: Usa cliente API centralizado con interceptor de token
 import api from '../../lib/api';
-import { fetchServersOperativos } from '../../services/serversService';
+// CORRECCIÓN P0-CHAPUR: Catálogo SQL usa servidores técnicos, NO filtrar por visible_en_operaciones
+import { fetchConexionesExplorables } from '../../services/exploradorService';
 import logger from '../../services/logger';
 import { toast } from 'sonner';
 
@@ -87,10 +88,24 @@ export function useCatalogoConsultasData() {
   }, [filtroCategoria, filtroSistema]);
 
   // Cargar servers
+  // CORRECCIÓN P0-CHAPUR: Catálogo SQL es herramienta técnica, NO filtra por visible_en_operaciones
+  // Usa fetchConexionesExplorables que devuelve TODOS los servidores activos
   const cargarServers = useCallback(async () => {
     try {
-      const serversOperativos = await fetchServersOperativos();
-      setServers(serversOperativos);
+      const conexionesExplorables = await fetchConexionesExplorables();
+      // Transformar al formato esperado por el componente
+      const serversTransformados = conexionesExplorables.map(c => ({
+        id: c.id,
+        name: c.nombre,
+        nombre: c.nombre,
+        system_type: c.sistema_codigo,
+        tipo_conexion: c.tipo_conexion,
+        activo: c.activo,
+        visible_en_operaciones: c.visible_en_operaciones,
+        explorable: c.explorable
+      }));
+      setServers(serversTransformados);
+      logger.debug(`[CatalogoSQL] Cargados ${serversTransformados.length} servidores técnicos`);
     } catch (error) {
       logger.error('Error cargando servers:', error);
     }

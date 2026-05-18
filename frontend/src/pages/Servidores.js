@@ -1781,13 +1781,24 @@ const Servidores = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-zinc-500">Visible en Operaciones:</span>
                         <button
-                          onClick={() => {
-                            setApiConnections(prev => prev.map(a => 
-                              a.id === apiConn.id 
-                                ? {...a, visible_en_operaciones: !a.visible_en_operaciones} 
-                                : a
-                            ));
-                            toast.success(apiConn.visible_en_operaciones ? 'Oculto en operaciones' : 'Visible en operaciones');
+                          onClick={async () => {
+                            // CORRECCIÓN P0-CHAPUR: Persistir visible_en_operaciones en EDARSAHUB SQL
+                            const newValue = !apiConn.visible_en_operaciones;
+                            try {
+                              await api.put(`/api-connections/${apiConn.id}`, {
+                                visible_en_operaciones: newValue
+                              });
+                              // Actualizar estado local DESPUÉS de éxito del backend
+                              setApiConnections(prev => prev.map(a => 
+                                a.id === apiConn.id 
+                                  ? {...a, visible_en_operaciones: newValue} 
+                                  : a
+                              ));
+                              toast.success(newValue ? 'Visible en operaciones' : 'Oculto en operaciones');
+                            } catch (error) {
+                              console.error('Error actualizando visible_en_operaciones:', error);
+                              toast.error('Error al guardar cambio');
+                            }
                           }}
                           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                             apiConn.visible_en_operaciones ? 'bg-green-500' : 'bg-zinc-300'
