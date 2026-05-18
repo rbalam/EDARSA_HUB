@@ -96,11 +96,7 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
     //
     // Queda PROHIBIDO usar u.dias (último día con datos de cada unidad)
     // =========================================================================
-    const calcularProyeccion = (ventas) => {
-      // SIEMPRE usar diasTranscurridos (período global, viene del backend)
-      if (diasTranscurridos <= 0 || ventas <= 0) return 0;
-      return Math.round((ventas / diasTranscurridos) * diasProyectables);
-    };
+    // NOTA: calcularProyeccion ya está definida arriba (línea 62-65)
     
     const unidadesTransformadas = unidades.map(u => ({
       id: u.unidad_negocio_id,

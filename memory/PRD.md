@@ -3011,4 +3011,47 @@ Fórmula: Proyección = Ventas / FechaOperacionActual.day * DíasMes
 
 ---
 
-*Última actualización: 17-May-2026 - P1 Auditoría Fecha Operativa 06:00 AM Completado*
+## ✅ P2.1 COMPLETADO: Backfill Sync_Ventas_PorHora 2026-05-07 (17-May-2026)
+
+### Resultado: ❌ DATOS HORARIOS NO DISPONIBLES EN EDARSAHUB SQL
+
+### Búsqueda Exhaustiva Realizada
+
+| Tabla | Registros 2026-05-07 | Tiene Hora | Resultado |
+|-------|---------------------|------------|-----------|
+| `Comercial_KPIs_Diarios_v2` | 5 | ❌ | Solo totales diarios |
+| `Sync_Ventas_Historicas` | 2 | ⚠️ | Solo ventana operativa |
+| `Finanzas_CortesCaja` | 6 | ⚠️ | Cortes de turno, no ventas |
+| `Comercial_Ventas_Dia_Abiertas_v2` | 0 | - | Sin datos |
+| `Venta_Encabezado` | 0 | - | Tabla vacía |
+| `Sync_Ventas_PorHora` | 0 | - | Job inició desde 2026-05-08 |
+
+### Causa Raíz
+El job de `Sync_Ventas_PorHora` comenzó a ejecutarse desde 2026-05-08. El día 2026-05-07 nunca tuvo captura de datos por hora.
+
+### Decisiones Tomadas
+- ❌ **NO conexión LIVE** a SoftRestaurant/MPRO (prohibido por directiva)
+- ❌ **NO datos sintéticos** (prohibido - violaría integridad)
+- ✅ **Documentado** como "DATOS HORARIOS NO DISPONIBLES"
+
+### Impacto
+- **NINGUNO** en Tablero Ejecutivo (usa `Comercial_KPIs_Diarios_v2` que SÍ tiene datos)
+- **NINGUNO** en proyección mensual (totales diarios correctos: $525,918.31)
+
+### Reporte
+`/app/docs/reports/BACKFILL_SYNC_VENTAS_PORHORA_2026_05_07.md`
+
+**P2.1 CERRADO - Sin backfill posible ✅**
+
+---
+
+## 🔧 FIX: Función duplicada en TableroEjecutivo.js (17-May-2026)
+
+Se detectó y corrigió error de compilación por función `calcularProyeccion` duplicada en líneas 62 y 99.
+
+**Archivo:** `/app/frontend/src/pages/TableroEjecutivo.js`
+**Estado:** ✅ CORREGIDO - Frontend compila correctamente
+
+---
+
+*Última actualización: 17-May-2026 - P2.1 Cerrado sin backfill, Fix función duplicada*
