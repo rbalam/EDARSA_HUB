@@ -10021,10 +10021,11 @@ ORDER BY ORDINAL_POSITION
     
     # === CASO 2: DATA_SOURCE (SQL directo) ===
     if conn_info:
-        # Validar tabla contra whitelist (solo para conexiones SQL directas)
-        is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'))
+        # Validar tabla contra whitelist (superadmin bypasea whitelist)
+        user_role = current_user.get('role', current_user.get('rol', 'visor'))
+        is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'), user_role)
         if not is_valid:
-            logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]}")
+            logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]} (rol={user_role})")
             raise HTTPException(status_code=400, detail=error_msg)
         
         query = """
@@ -10077,10 +10078,11 @@ async def listar_relaciones(
     # FASE 6-8: Validar acceso usando función centralizada
     await validate_server_access_unified(current_user, server_id)
     
-    # FASE 1B: Validar tabla contra whitelist
-    is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'))
+    # FASE 1B: Validar tabla contra whitelist (superadmin bypasea)
+    user_role = current_user.get('role', current_user.get('rol', 'visor'))
+    is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'), user_role)
     if not is_valid:
-        logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]}")
+        logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]} (rol={user_role})")
         raise HTTPException(status_code=400, detail=error_msg)
     
     # FASE 1B: Usar parametrización segura (tabla pasada 2 veces)
@@ -10196,10 +10198,11 @@ async def preview_tabla(
     
     # === CASO 2: DATA_SOURCE (SQL directo) ===
     if conn_info:
-        # Validar tabla contra whitelist (solo para conexiones SQL directas)
-        is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'))
+        # Validar tabla contra whitelist (superadmin bypasea whitelist)
+        user_role = current_user.get('role', current_user.get('rol', 'visor'))
+        is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'), user_role)
         if not is_valid:
-            logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]}")
+            logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]} (rol={user_role})")
             raise HTTPException(status_code=400, detail=error_msg)
         
         # Tabla validada, usar brackets para identificador seguro
@@ -12830,9 +12833,14 @@ EXPLORADOR_TABLAS_PERMITIDAS = {
 }
 
 
-def _validate_table_name(tabla: str, system_type: str = None) -> tuple:
+def _validate_table_name(tabla: str, system_type: str = None, user_role: str = None) -> tuple:
     """
     FASE 1B - Valida nombre de tabla contra whitelist.
+    
+    Args:
+        tabla: Nombre de la tabla
+        system_type: Tipo de sistema (SoftRestaurant, MPRO, etc.)
+        user_role: Rol del usuario (superadmin bypasea whitelist)
     
     Returns:
         tuple: (is_valid: bool, error_message: str or None)
@@ -12845,6 +12853,10 @@ def _validate_table_name(tabla: str, system_type: str = None) -> tuple:
     # Verificar caracteres básicos primero
     if not _validate_identifier(tabla_lower, max_length=128):
         return (False, f"Nombre de tabla inválido: caracteres no permitidos")
+    
+    # SUPERADMIN BYPASS: El usuario superadministrador no tiene restricciones
+    if user_role and user_role.lower() in ('superadmin', 'superadministrador'):
+        return (True, None)
     
     # Verificar contra whitelist
     if tabla_lower in EXPLORADOR_TABLAS_PERMITIDAS:
