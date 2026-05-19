@@ -578,3 +578,174 @@ COMMIT TRANSACTION;
 ---
 
 *Reporte finalizado. Migración exitosa sin regresiones.*
+
+---
+
+## VALIDACIÓN FINAL POST-MIGRACIÓN
+
+**Fecha/Hora:** 2026-05-19 02:38 - 02:43 UTC  
+**Usuario:** admin@inventario.com  
+**Método:** Solo lectura (Sin modificaciones)
+
+---
+
+### 1. VALIDACIÓN SQL
+
+#### 1.1 Sistema_Catalogo
+
+| SistemaID | Codigo | Descripcion | Estado |
+|-----------|--------|-------------|--------|
+| 1 | MPRO | ManagementPro (MPRO) | ✅ |
+| 2 | SOFTRESTAURANT_PRO | SoftRestaurant Pro | ✅ |
+| 3 | OTRO | Otro | ✅ |
+| 4 | SAP_BUSINESS_ONE | SAP Business One | ✅ |
+| 5 | ENTERPRISE | Enterprise | ✅ |
+
+**Verificación de códigos viejos:**
+- ✅ `SOFTRESTAURANT`: NO existe como código principal
+- ✅ `SOFRESATAURANT_ENTER`: NO existe como código principal
+
+#### 1.2 Sistema_Tipos
+
+| ID | CodigoSistema | NombreSistema |
+|----|---------------|---------------|
+| 1 | SOFTRESTAURANT_PRO | SoftRestaurant Pro |
+| 2 | MPRO | ManagementPro |
+| 3 | API_LOCAL | API Local |
+| 4 | EDARSAHUB_SQL | EDARSAHUB SQL Server |
+| 5 | OTRO | Otro |
+| 6 | ENTERPRISE | Enterprise |
+
+#### 1.3 Sistema_TiposVariantes (Aliases)
+
+| Variante | Apunta a | Tipo |
+|----------|----------|------|
+| SOFTRESTAURANT | SOFTRESTAURANT_PRO | Canónico |
+| SOFTRESTAURANT_PRO | SOFTRESTAURANT_PRO | Canónico |
+| SR | SOFTRESTAURANT_PRO | Alias |
+| SOFT | SOFTRESTAURANT_PRO | Alias |
+| soft_restaurant | SOFTRESTAURANT_PRO | Alias |
+| Enterprise | ENTERPRISE | Canónico |
+| SOFRESATAURANT_ENTER | ENTERPRISE | Alias |
+| SoftRestaurant Enterprise | ENTERPRISE | Alias |
+| SOFTRESTAURANT_ENTERPRISE | ENTERPRISE | Alias |
+
+**Verificación de aliases críticos:**
+- ✅ SOFTRESTAURANT → SOFTRESTAURANT_PRO
+- ✅ SOFTRESTAURANT_PRO → SOFTRESTAURANT_PRO
+- ✅ SOFRESATAURANT_ENTER → ENTERPRISE
+- ✅ ENTERPRISE → ENTERPRISE
+
+#### 1.4 Servidores_Conexiones
+
+**Servidores SOFTRESTAURANT_PRO (5):**
+- ✅ 130° MERIDA
+- ✅ CIENFUEGOS
+- ✅ CIENFUEGOS TABLAJERIA
+- ✅ LA ESTELAR
+- ✅ PRUEBAS SOFTRESTAURANT
+
+**Servidores ENTERPRISE (2):**
+- ✅ CHAPUR BACKOFFICE
+- ✅ CHAPUR NORTE
+
+**API_LOCAL como tipo de conexión:**
+- ✅ 130° QRO LOCAL (tipo_conexion=API_LOCAL, system_type=MPRO)
+- ✅ CHAPUR BACKOFFICE (tipo_conexion=API_LOCAL, system_type=ENTERPRISE)
+- ✅ CHAPUR NORTE (tipo_conexion=API_LOCAL, system_type=ENTERPRISE)
+- ✅ ORIGEN LOCAL (tipo_conexion=API_LOCAL, system_type=MPRO)
+
+---
+
+### 2. VALIDACIÓN ENDPOINTS
+
+| # | Endpoint | HTTP | Resultado |
+|---|----------|------|-----------|
+| 1 | POST /api/auth/login | 200 | ✅ Token obtenido |
+| 2 | GET /api/auth/me | 200 | ✅ Usuario autenticado |
+| 3 | GET /api/catalogos/dominios | 200 | ✅ 11 dominios |
+| 4 | GET /api/catalogos/sistemas | 200 | ✅ 5 sistemas (incluye SOFTRESTAURANT_PRO, ENTERPRISE) |
+| 5 | GET /api/catalogos/sistemas-capacidades/explorables | 200 | ✅ 4 sistemas explorables |
+| 6 | GET /api/consultas-sql/sistemas | 200 | ✅ SOFTRESTAURANT_PRO (14 consultas), MPRO (6 consultas) |
+| 7 | GET /api/consultas-sql/catalogo | 200 | ✅ 5 consultas |
+| 8 | GET /api/explorador/conexiones-explorables | 200 | ✅ 12 conexiones |
+| 9 | GET /api/catalogos/sistemas-capacidades/explorables-dinamico | 200 | ✅ 3 sistemas (ENTERPRISE, MPRO, SOFTRESTAURANT_PRO) |
+| 10 | GET /api/api-connections | 200 | ✅ 4 conexiones API |
+
+---
+
+### 3. VALIDACIÓN UI
+
+| Módulo | Estado | Evidencia |
+|--------|--------|-----------|
+| A) Catálogos del Sistema | ✅ Carga sin error | Sin toast rojo, muestra dominios |
+| B) Catálogo de Consultas | ✅ Carga sin error | Dropdowns funcionales |
+| C) Explorador BD | ✅ Carga sin error | "Todos los sistemas" visible, conexiones cargando |
+| D) Servidores | ✅ Clasificación correcta | CHAPUR = ENTERPRISE, 130° = SOFTRESTAURANT_PRO |
+| E) Monitor de Conexiones | ℹ️ Endpoint específico 404 | Funciona via api-connections |
+| F) Tablero Ejecutivo | ✅ Carga sin error | "Consultando todas las unidades..." |
+| G) Comercial | ✅ Carga sin error | Dashboard con todas las pestañas |
+
+---
+
+### 4. CONFIRMACIÓN DE NO REGRESIÓN
+
+| Criterio | Estado |
+|----------|--------|
+| 1. No hay toast rojo en Catálogos del Sistema | ✅ |
+| 2. No hay toast rojo en Catálogo SQL | ✅ |
+| 3. No hay toast rojo en Explorador BD | ✅ |
+| 4. No hay error 403 inesperado | ✅ |
+| 5. No hay error 500 | ✅ |
+| 6. Catálogo SQL no mezcla SoftRestaurant Pro con Enterprise | ✅ |
+| 7. Explorador BD clasifica correctamente | ✅ |
+| 8. Tablero Ejecutivo sigue funcionando | ✅ |
+| 9. Comercial sigue funcionando | ✅ |
+| 10. RBAC sigue activo | ✅ |
+| 11. MongoDB no fue usado como fuente principal | ✅ |
+| 12. No se tocaron P0C ni P0E | ✅ |
+| 13. No se hicieron cambios adicionales | ✅ |
+
+---
+
+### 5. EVIDENCIA DE CLASIFICACIÓN
+
+**Explorador BD - Conexiones por Sistema:**
+```
+ENTERPRISE:
+  - CHAPUR BACKOFFICE (Enterprise)
+  - CHAPUR NORTE (Enterprise)
+
+SOFTRESTAURANT_PRO:
+  - 130° MERIDA (SoftRestaurant Pro)
+  - CIENFUEGOS (SoftRestaurant Pro)
+  - CIENFUEGOS TABLAJERIA (SoftRestaurant Pro)
+  - LA ESTELAR (SoftRestaurant Pro)
+  - PRUEBAS SOFTRESTAURANT (SoftRestaurant Pro)
+
+MPRO:
+  - 130° QRO LOCAL (ManagementPro)
+  - HR2020 ESCRITURA (ManagementPro)
+  - ManagmentPro (ManagementPro)
+  - MPRO TABLAJERIA (ManagementPro)
+  - ORIGEN LOCAL (ManagementPro)
+```
+
+---
+
+### 6. CONCLUSIÓN
+
+**VALIDACIÓN FINAL: ✅ EXITOSA**
+
+La migración de códigos canónicos de sistemas se completó correctamente sin regresiones:
+- Sistema_Catalogo muestra los nuevos códigos (SOFTRESTAURANT_PRO, ENTERPRISE)
+- Los aliases de compatibilidad funcionan correctamente
+- Los servidores están clasificados correctamente
+- Todos los módulos UI cargan sin errores
+- API_LOCAL se conserva como tipo de conexión técnica, no como sistema
+
+**No se realizaron modificaciones durante esta validación.**
+
+---
+
+*Validación completada: 2026-05-19 02:43 UTC*
