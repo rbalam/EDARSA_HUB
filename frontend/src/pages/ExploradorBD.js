@@ -803,14 +803,16 @@ export default function ExploradorBD() {
   const [loadingConexiones, setLoadingConexiones] = useState(true);
   
   // Conexiones filtradas por sistema/proveedor
-  // FIX P0 (May-2026): Usar grupo_explorador_codigo para filtrar por proveedor/sistema
-  // El primer combo muestra proveedores/sistemas (SOFRESATAURANT_ENTER, MPRO, SoftRestaurant)
-  // NO tipos de conexión (API_LOCAL, SQL_SERVER)
+  // FIX REGRESIÓN (May-2026): Comparación case-insensitive para evitar mismatch
+  // El primer combo usa códigos canónicos (SOFTRESTAURANT) pero las conexiones 
+  // pueden tener variantes (SoftRestaurant, SOFRESATAURANT_ENTER)
   const conexionesFiltradas = useMemo(() => {
     if (!filtroSistema) return conexionesExplorables;
-    return conexionesExplorables.filter(c => 
-      (c.grupo_explorador_codigo || c.sistema_codigo) === filtroSistema
-    );
+    const filtroUpper = filtroSistema.toUpperCase();
+    return conexionesExplorables.filter(c => {
+      const grupoUpper = (c.grupo_explorador_codigo || c.sistema_codigo || '').toUpperCase();
+      return grupoUpper === filtroUpper;
+    });
   }, [conexionesExplorables, filtroSistema]);
   
   // servers derivado de conexiones para compatibilidad interna

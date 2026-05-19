@@ -53,37 +53,30 @@ export const fetchConexionesExplorables = async () => {
 };
 
 /**
- * FASE 7: Obtiene sistemas con capacidad EXPLORADOR_BD desde Catálogo Maestro.
+ * Obtiene sistemas con capacidad EXPLORADOR_BD desde el Catálogo Maestro.
  * 
  * Endpoint: /api/catalogos/sistemas-capacidades/explorables
  * 
- * Este endpoint retorna SOLO los sistemas que tienen capacidad EXPLORADOR_BD activa
- * en EDARSAHUB SQL. Incluye:
- * - SOFTRESTAURANT
- * - MPRO
- * - API_LOCAL (Enterprise)
- * - EDARSAHUB_SQL
- * 
- * NO incluye sistemas sin capacidad de explorador.
+ * Este endpoint retorna los sistemas que tienen capacidad EXPLORADOR_BD activa
+ * en EDARSAHUB SQL.
  * 
  * @returns {Promise<Array>} Array de sistemas explorables:
- *   - Codigo: Código del sistema (normalizado)
+ *   - Codigo: Código del sistema
  *   - Descripcion: Nombre legible
  */
 export const fetchSistemasDisponibles = async () => {
   try {
-    // FIX P0: Usar endpoint dinámico que lee de Servidores_Conexiones
-    // Este endpoint devuelve proveedores/sistemas reales, no tipos de conexión
-    const response = await api.get('/catalogos/sistemas-capacidades/explorables-dinamico');
+    // RESTAURADO: Usar endpoint estable del Catálogo Maestro
+    // El endpoint dinámico causaba regresiones en múltiples pantallas
+    const response = await api.get('/catalogos/sistemas-capacidades/explorables');
     
     if (response.data?.success && response.data?.data) {
-      // Transformar respuesta del Catálogo Maestro al formato esperado por el frontend
       const sistemas = response.data.data.map(s => ({
         Codigo: s.codigo_sistema,
         Descripcion: s.nombre_sistema
       }));
       
-      logger.debug(`[Explorador] Sistemas explorables desde Catálogo Maestro: ${sistemas.length}`);
+      logger.debug(`[Explorador] Sistemas explorables: ${sistemas.length}`);
       return sistemas;
     }
     
