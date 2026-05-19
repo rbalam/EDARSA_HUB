@@ -298,6 +298,159 @@ WARNING:[FIX-HUB] MPRO 130QRO: Sin datos en EDARSAHUB SQL para período
 
 ---
 
-*Diagnóstico completado: 2026-05-19 03:30 UTC*  
+---
+
+## INVESTIGACIÓN DE API LOCAL QRO Y CÁLCULO DE FECHA OPERACION
+
+### Causa Raíz 1: FechaOperacion Incorrecta
+
+**Hallazgo:** El snapshot de 130QRO se guardó con `fecha_operacion = 2026-05-19` cuando operativamente correspondía `2026-05-18`.
+
+**Análisis del Snapshot:**
+| Campo | Valor |
+|-------|-------|
+| snapshot_timestamp (UTC) | 2026-05-19T03:42:02 |
+| snapshot_timestamp (México) | 2026-05-18 21:42:02 |
+| Hora local al momento | 21:42 |
+| Regla 06:00 aplicada | 21:42 >= 06:00 → fecha actual |
+| FechaOperacion CORRECTA | **2026-05-18** |
+| FechaOperacion GUARDADA | 2026-05-19 ❌ |
+
+**Verificación del helper `get_operational_window()`:**
+- El helper **AHORA calcula correctamente** `2026-05-18`
+- La lógica en línea 703 del job usa `get_operational_window(unidad_id)`
+- **CONCLUSIÓN:** El helper funciona correctamente. El problema ocurrió cuando el job se ejecutó y por algún motivo guardó fecha incorrecta
+
+**Hipótesis probable:**
+El snapshot con fecha 2026-05-19 NO fue generado por el job `sync_comercial_abiertas_v2_job.py` sino por otra ruta de código o un job anterior con lógica diferente.
+
+---
+
+### Causa Raíz 2: "No se encontró API local para 130QRO"
+
+**CAUSA RAÍZ IDENTIFICADA:** `SERVER_SECRET_KEY` no está configurada en el entorno.
+
+**Flujo del error:**
+1. Job llama `_get_api_local_config('130QRO')` (línea 682)
+2. Función encuentra servidor `130° QRO LOCAL` en SQL ✅
+3. Servidor tiene `api_key_encrypted` con valor `enc:v1:gAAAAABp8lB5l...` ✅
+4. Función llama `decrypt_secret(api_key_encrypted)` (línea 129)
+5. `decrypt_secret()` falla con: **"Clave de descifrado no disponible"** ❌
+6. Excepción capturada en línea 131
+7. Función retorna `None`
+8. Job lanza: `"No se encontró configuración API local para 130QRO"` (línea 684)
+
+**Log del error:**
+```
+WARNING:[SECRET_MANAGER] SERVER_SECRET_KEY no configurada. Cifrado deshabilitado.
+ERROR:[SECRET_MANAGER] No se puede descifrar: SERVER_SECRET_KEY no configurada
+```
+
+**Variable faltante:**
+```bash
+# Requerido en backend/.env:
+SERVER_SECRET_KEY=<clave_de_cifrado>
+```
+
+---
+
+### Comparación ORIGEN vs 130QRO
+
+| Aspecto | ORIGEN | 130QRO |
+|---------|--------|--------|
+| Servidor en SQL | ORIGEN LOCAL ✅ | 130° QRO LOCAL ✅ |
+| system_type | MPRO ✅ | MPRO ✅ |
+| tipo_conexion | API_LOCAL ✅ | API_LOCAL ✅ |
+| api_url | http://54.39.104.176:8000/query ✅ | http://54.39.104.176:8001/query ✅ |
+| api_key_encrypted | enc:v1:gAAAAAB... ✅ | enc:v1:gAAAAAB... ✅ |
+| activo | True ✅ | True ✅ |
+| **Descifrado API key** | ❌ FALLA | ❌ FALLA |
+
+**CONCLUSIÓN:** Ambos servidores tienen la misma configuración. El problema afecta a AMBOS porque `SERVER_SECRET_KEY` no está configurada.
+
+**¿Por qué ORIGEN tiene datos entonces?**
+Es posible que:
+1. Los datos de ORIGEN se sincronizaron antes de que se encriptara la API key
+2. O hay otra ruta de código que sincroniza sin requerir API key
+3. O los datos vienen de otro job/endpoint
+
+---
+
+### Líneas Exactas de Código Afectadas
+
+**Archivo:** `/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py`
+
+| Línea | Código | Problema |
+|-------|--------|----------|
+| 129 | `api_key = decrypt_secret(row['api_key_encrypted'])` | Falla por SERVER_SECRET_KEY faltante |
+| 131 | `logger.error(f"Error descifrando API key: {e}")` | Captura la excepción |
+| 132 | `return None` | Retorna None, propagando el error |
+| 684 | `raise Exception(f"No se encontró configuración API local para {unidad_id}")` | Error visible |
+
+**Archivo:** `/app/backend/core/secret_manager.py`
+
+| Línea | Código | Problema |
+|-------|--------|----------|
+| ~15 | `if not os.environ.get('SERVER_SECRET_KEY'):` | Detecta variable faltante |
+| ~18 | `raise ValueError("Clave de descifrado no disponible")` | Lanza excepción |
+
+---
+
+### Propuesta de Corrección Mínima
+
+**OPCIÓN A - Configurar SERVER_SECRET_KEY (Recomendada):**
+1. Agregar `SERVER_SECRET_KEY` al archivo `/app/backend/.env`
+2. La clave debe ser la misma usada para cifrar las API keys originalmente
+3. Reiniciar backend para cargar la variable
+
+**OPCIÓN B - Fallback si no hay API key descifrada:**
+1. Modificar línea 132 para intentar usar API sin autenticación
+2. Riesgo: Las APIs podrían rechazar requests sin key (401)
+
+**OPCIÓN C - Re-encriptar API keys con nueva clave:**
+1. Generar nueva `SERVER_SECRET_KEY`
+2. Re-encriptar las API keys en SQL
+3. Más invasivo, requiere conocer las API keys originales
+
+**RECOMENDACIÓN:** Opción A - Solicitar al usuario la clave `SERVER_SECRET_KEY` original.
+
+---
+
+### Riesgos
+
+| Riesgo | Mitigación |
+|--------|------------|
+| Clave incorrecta | Validar que descifra correctamente antes de usar |
+| Romper otros módulos | SERVER_SECRET_KEY es para cifrado, no afecta otros módulos |
+| Exposición de secretos | La clave solo se guarda en .env, no en código |
+
+---
+
+### Validaciones Requeridas
+
+1. [ ] `SERVER_SECRET_KEY` configurada en `/app/backend/.env`
+2. [ ] `decrypt_secret()` descifra correctamente la API key
+3. [ ] `_get_api_local_config('130QRO')` retorna config válida
+4. [ ] API Local de QRO responde con datos
+5. [ ] Job sincroniza 130QRO con ventas > $0
+6. [ ] FechaOperacion es 2026-05-18 (o la fecha correcta)
+
+---
+
+### Confirmaciones
+
+- ✅ **NO se modificó código** - Solo diagnóstico
+- ✅ **MongoDB NO fue consultado** como fuente de datos
+- ✅ **EDARSAHUB SQL** es la fuente de verdad
+- ✅ **NO se ejecutó UPSERT** ni backfill
+- ✅ **NO se tocó P0C** (operational_window.py)
+- ✅ **NO se tocó P0E** (UPSERT)
+- ✅ **NO se tocó Catálogo SQL**
+- ✅ **NO se tocó Explorador BD**
+- ✅ **NO se insertaron datos falsos**
+
+---
+
+*Diagnóstico completado: 2026-05-19 04:05 UTC*  
 *Autor: Agente E1*  
 *Estado: PENDIENTE AUTORIZACIÓN PARA CORRECCIÓN*
