@@ -72,8 +72,9 @@ export const fetchConexionesExplorables = async () => {
  */
 export const fetchSistemasDisponibles = async () => {
   try {
-    // FASE 7: Usar Catálogo Maestro de Sistemas y Capacidades
-    const response = await api.get('/catalogos/sistemas-capacidades/explorables');
+    // FIX P0: Usar endpoint dinámico que lee de Servidores_Conexiones
+    // Este endpoint devuelve proveedores/sistemas reales, no tipos de conexión
+    const response = await api.get('/catalogos/sistemas-capacidades/explorables-dinamico');
     
     if (response.data?.success && response.data?.data) {
       // Transformar respuesta del Catálogo Maestro al formato esperado por el frontend

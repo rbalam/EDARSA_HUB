@@ -9562,13 +9562,11 @@ async def listar_conexiones_explorables(
     
     try:
         # Query para obtener conexiones explorables con su tipo de sistema
-        # FIX P0 (May-2026): Devolver AMBOS códigos para compatibilidad:
-        #   - sistema_codigo_raw: valor original de system_type (para matching con consultas custom)
-        #   - sistema_codigo: código canónico normalizado (para filtros UI)
-        #   - sistema_nombre: label amigable del sistema canónico
-        # Esto permite que:
-        #   1. Catálogo SQL encuentre servidores por el código RAW de las consultas custom
-        #   2. Explorador BD agrupe por código canónico en los combos
+        # FIX P0 (May-2026): Separar claramente proveedor/sistema vs tipo de conexión
+        #   - grupo_explorador_codigo: system_type RAW = proveedor/sistema (SOFRESATAURANT_ENTER)
+        #   - grupo_explorador_nombre: label amigable del proveedor (Sofrestaurant Enterprise)
+        #   - tipo_conexion: conexión técnica (API_LOCAL, SQL_SERVER)
+        #   - sistema_codigo/sistema_codigo_raw: para matching en Catálogo SQL
         query = """
         SELECT 
             sc.id,
@@ -9582,6 +9580,19 @@ async def listar_conexiones_explorables(
             sc.visible_en_operaciones,
             sc.api_url,
             sc.system_type as sistema_codigo_raw,
+            -- Para grupo del Explorador BD: usar system_type RAW como proveedor
+            sc.system_type as grupo_explorador_codigo,
+            -- Label amigable del proveedor (mapeo manual para Enterprise)
+            CASE 
+                WHEN UPPER(sc.system_type) = 'SOFRESATAURANT_ENTER' THEN 'Sofrestaurant Enterprise'
+                WHEN UPPER(sc.system_type) = 'SOFTRESTAURANT' THEN 'SoftRestaurant'
+                WHEN UPPER(sc.system_type) IN ('SOFT_RESTAURANT', 'SR') THEN 'SoftRestaurant'
+                WHEN UPPER(sc.system_type) = 'MPRO' THEN 'ManagementPro'
+                WHEN UPPER(sc.system_type) IN ('MANAGEMENTPRO', 'MANAGMENTPRO') THEN 'ManagementPro'
+                WHEN UPPER(sc.system_type) IN ('EDARSA_HUB', 'EDARSAHUB', 'EDARSAHUB_SQL') THEN 'EDARSAHUB SQL Server'
+                ELSE sc.system_type
+            END as grupo_explorador_nombre,
+            -- Para compatibilidad con código anterior (normalizado = tipo conexión técnica)
             COALESCE(st.CodigoSistema, sc.system_type) as sistema_codigo_normalizado,
             COALESCE(st.NombreSistema, sc.system_type) as sistema_nombre
         FROM Servidores_Conexiones sc
@@ -9615,14 +9626,17 @@ async def listar_conexiones_explorables(
             conexion = {
                 'id': row.get('id'),
                 'nombre': row.get('nombre', ''),
-                # FIX P0 (May-2026): Devolver ambos códigos para matching flexible
-                # sistema_codigo: código RAW original (para matching con consultas custom que usan RAW)
-                # sistema_codigo_normalizado: código canónico (para filtros UI del Explorador BD)
+                # FIX P0 (May-2026): Campos para Catálogo SQL (matching por RAW)
                 'sistema_codigo': row.get('sistema_codigo_raw', row.get('system_type', '')),
                 'sistema_codigo_raw': row.get('sistema_codigo_raw', row.get('system_type', '')),
+                # FIX P0 (May-2026): Campos para Explorador BD (grupo por proveedor/sistema)
+                'grupo_explorador_codigo': row.get('grupo_explorador_codigo', row.get('system_type', '')),
+                'grupo_explorador_nombre': row.get('grupo_explorador_nombre', row.get('system_type', '')),
+                # Campos de compatibilidad (normalizado = tipo conexión técnica, NO usar para grupo visual)
                 'sistema_codigo_normalizado': row.get('sistema_codigo_normalizado', row.get('system_type', '')),
                 'sistema_nombre': row.get('sistema_nombre', row.get('system_type', '')),
-                'sistema_descripcion': row.get('sistema_nombre', row.get('system_type', '')),
+                'sistema_descripcion': row.get('grupo_explorador_nombre', row.get('system_type', '')),
+                # Tipo de conexión técnica
                 'tipo_conexion': row.get('tipo_conexion', 'SQL_SERVER'),
                 'host': row.get('host', ''),
                 'database': row.get('database_name', ''),

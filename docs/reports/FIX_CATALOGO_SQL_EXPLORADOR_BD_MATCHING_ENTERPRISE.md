@@ -331,5 +331,124 @@ Si el usuario no ve los servidores Chapur al seleccionar "API Local":
 
 ---
 
-*Actualización: 2025-05-19 - Clasificación en Explorador BD VALIDADA*
+## 17. CORRECCIÓN DE CRITERIO: PROVEEDOR/SISTEMA VS TIPO DE CONEXIÓN
+
+### 17.1 Problema Identificado
+El primer filtro del Explorador BD clasificaba servidores por **tipo de conexión** (`API_LOCAL`, `SQL_SERVER`) en lugar de **proveedor/sistema** (`SOFRESATAURANT_ENTER`, `MPRO`, `SoftRestaurant`).
+
+Esto causaba que Chapur apareciera bajo "API Local" en lugar de "Sofrestaurant Enterprise".
+
+### 17.2 Campos Usados ANTES
+
+| Componente | Campo | Problema |
+|------------|-------|----------|
+| Primer combo | `codigo_sistema` de Sistema_Tipos | Solo tenía tipos genéricos (API_LOCAL, MPRO) |
+| Filtro | `sistema_codigo_normalizado` | Mapea a tipo de conexión, no a proveedor |
+
+### 17.3 Campos Usados DESPUÉS
+
+| Componente | Campo | Descripción |
+|------------|-------|-------------|
+| Primer combo | `codigo_sistema` de `/explorables-dinamico` | Proveedores/sistemas reales de servidores |
+| Filtro | `grupo_explorador_codigo` | Proveedor/sistema RAW (SOFRESATAURANT_ENTER) |
+
+### 17.4 Por Qué API Local Era Incorrecto
+
+API Local es un **tipo de conexión técnica**, no un proveedor/sistema:
+- `tipo_conexion = 'API_LOCAL'` → Cómo se conecta EDARSAHUB
+- `system_type = 'SOFRESATAURANT_ENTER'` → Qué sistema es el proveedor
+
+El primer filtro debe clasificar por QUÉ sistema, no por CÓMO se conecta.
+
+### 17.5 Contrato Final del Endpoint `/explorador/conexiones-explorables`
+
+```json
+{
+  "nombre": "CHAPUR NORTE",
+  
+  // Campos para Catálogo SQL (matching por RAW)
+  "sistema_codigo": "SOFRESATAURANT_ENTER",
+  "sistema_codigo_raw": "SOFRESATAURANT_ENTER",
+  
+  // Campos para Explorador BD (grupo por proveedor)
+  "grupo_explorador_codigo": "SOFRESATAURANT_ENTER",
+  "grupo_explorador_nombre": "Sofrestaurant Enterprise",
+  
+  // Tipo de conexión técnica (NO usar para grupo visual)
+  "tipo_conexion": "API_LOCAL",
+  
+  // Compatibilidad (tipo conexión normalizado)
+  "sistema_codigo_normalizado": "API_LOCAL"
+}
+```
+
+### 17.6 Nuevo Endpoint `/catalogos/sistemas-capacidades/explorables-dinamico`
+
+Este endpoint devuelve los proveedores/sistemas DINÁMICAMENTE desde servidores explorables activos:
+
+```json
+[
+  { "codigo_sistema": "MPRO", "nombre_sistema": "ManagementPro" },
+  { "codigo_sistema": "SOFRESATAURANT_ENTER", "nombre_sistema": "Sofrestaurant Enterprise" },
+  { "codigo_sistema": "SoftRestaurant", "nombre_sistema": "SoftRestaurant" }
+]
+```
+
+### 17.7 Evidencia de Sofrestaurant Enterprise en Primer Filtro
+
+```
+GET /api/catalogos/sistemas-capacidades/explorables-dinamico
+
+Opciones del primer filtro:
+  - MPRO: ManagementPro
+  - SOFRESATAURANT_ENTER: Sofrestaurant Enterprise  ← NUEVO
+  - SoftRestaurant: SoftRestaurant
+```
+
+### 17.8 Evidencia de CHAPUR bajo Sofrestaurant Enterprise
+
+```
+Filtro seleccionado: Sofrestaurant Enterprise (SOFRESATAURANT_ENTER)
+
+Conexiones que aparecen:
+  - CHAPUR BACKOFFICE
+  - CHAPUR NORTE
+```
+
+### 17.9 Evidencia de Catálogo SQL sin Regresión
+
+```
+Consulta seleccionada: ALMACENES (sistema: SOFRESATAURANT_ENTER)
+
+Servidores compatibles (matching por sistema_codigo RAW):
+  - CHAPUR BACKOFFICE
+  - CHAPUR NORTE
+```
+
+### 17.10 Archivos Modificados (Fase Final)
+
+| Archivo | Cambio |
+|---------|--------|
+| `/app/backend/server.py` | Query con `grupo_explorador_codigo` y `grupo_explorador_nombre` |
+| `/app/backend/api/catalogos_sistemas.py` | Nuevo endpoint `explorables-dinamico` |
+| `/app/frontend/src/services/exploradorService.js` | Consume `explorables-dinamico` |
+| `/app/frontend/src/pages/ExploradorBD.js` | Filtro usa `grupo_explorador_codigo` |
+
+### 17.11 Backout Plan
+
+```bash
+# Revertir cambios:
+git checkout HEAD~4 -- /app/backend/server.py
+git checkout HEAD~4 -- /app/backend/api/catalogos_sistemas.py
+git checkout HEAD~4 -- /app/frontend/src/services/exploradorService.js
+git checkout HEAD~4 -- /app/frontend/src/pages/ExploradorBD.js
+
+# Reiniciar servicios:
+sudo supervisorctl restart backend
+sudo supervisorctl restart frontend
+```
+
+---
+
+*Actualización: 2025-05-19 - Criterio de clasificación CORREGIDO*
 *Fin del Reporte*

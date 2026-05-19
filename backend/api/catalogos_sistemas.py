@@ -187,6 +187,79 @@ async def listar_sistemas_explorables(
         )
 
 
+@router.get("/explorables-dinamico")
+async def listar_sistemas_explorables_dinamico(
+    current_user: Dict = Depends(require_auth())
+) -> Dict:
+    """
+    Lista proveedores/sistemas DINÁMICAMENTE desde servidores explorables activos.
+    
+    FIX P0 (May-2026): Este endpoint devuelve los system_type DISTINTOS de los
+    servidores explorables, para usar como opciones del primer filtro del Explorador BD.
+    
+    A diferencia de /explorables que lee de Sistema_Tipos (catálogo cerrado),
+    este endpoint lee directamente de Servidores_Conexiones (datos reales).
+    
+    Ejemplo de respuesta:
+    - MPRO: ManagementPro
+    - SOFRESATAURANT_ENTER: Sofrestaurant Enterprise
+    - SoftRestaurant: SoftRestaurant
+    """
+    from modules.comercial.repository import EDARSAHUB_CONFIG
+    from core.db import execute_sql_query
+    
+    try:
+        query = """
+        SELECT DISTINCT 
+            sc.system_type as codigo_sistema,
+            CASE 
+                WHEN UPPER(sc.system_type) = 'SOFRESATAURANT_ENTER' THEN 'Sofrestaurant Enterprise'
+                WHEN UPPER(sc.system_type) = 'SOFTRESTAURANT' THEN 'SoftRestaurant'
+                WHEN UPPER(sc.system_type) IN ('SOFT_RESTAURANT', 'SR') THEN 'SoftRestaurant'
+                WHEN UPPER(sc.system_type) = 'MPRO' THEN 'ManagementPro'
+                WHEN UPPER(sc.system_type) IN ('MANAGEMENTPRO', 'MANAGMENTPRO') THEN 'ManagementPro'
+                WHEN UPPER(sc.system_type) IN ('EDARSA_HUB', 'EDARSAHUB', 'EDARSAHUB_SQL') THEN 'EDARSAHUB SQL Server'
+                ELSE sc.system_type
+            END as nombre_sistema
+        FROM Servidores_Conexiones sc
+        WHERE sc.activo = 1
+          AND (
+            sc.tipo_conexion IN ('SQL_SERVER', 'DATA_SOURCE')
+            OR (sc.tipo_conexion = 'API_LOCAL' AND sc.api_url IS NOT NULL)
+            OR sc.tipo_conexion IS NULL
+          )
+        ORDER BY sc.system_type
+        """
+        
+        results = execute_sql_query(
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            query
+        )
+        
+        sistemas = []
+        for row in results:
+            sistemas.append({
+                'codigo_sistema': row.get('codigo_sistema', ''),
+                'nombre_sistema': row.get('nombre_sistema', '')
+            })
+        
+        logger.info(f"[catalogos/sistemas/explorables-dinamico] {len(sistemas)} proveedores/sistemas")
+        return success_response(
+            data=sistemas,
+            message=f"{len(sistemas)} proveedores/sistemas explorables"
+        )
+    except Exception as e:
+        logger.error(f"[catalogos/sistemas/explorables-dinamico] Error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error obteniendo proveedores/sistemas explorables"
+        )
+
+
 @router.get("/sync-ventas")
 async def listar_sistemas_sync_ventas(
     current_user: Dict = Depends(require_auth())

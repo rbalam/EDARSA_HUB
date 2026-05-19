@@ -3369,8 +3369,8 @@ El endpoint `/explorador/conexiones-explorables` ahora devuelve AMBOS códigos:
 
 ### Validación
 - ✅ Catálogo SQL: Consultas `SOFRESATAURANT_ENTER` muestran servidores Chapur
-- ✅ Explorador BD: Filtro `API_LOCAL` muestra conexiones Chapur
-- ✅ No regresión: SoftRestaurant (5), MPRO (5), API_LOCAL (2)
+- ✅ Explorador BD: Filtro `Sofrestaurant Enterprise` muestra conexiones Chapur
+- ✅ No regresión: SoftRestaurant (5), MPRO (5), SOFRESATAURANT_ENTER (2)
 - ✅ No se usó MongoDB
 - ✅ No se hardcodeó Chapur
 - ✅ No se filtró por `visible_en_operaciones`
@@ -3378,4 +3378,22 @@ El endpoint `/explorador/conexiones-explorables` ahora devuelve AMBOS códigos:
 ### Reporte
 `/app/docs/reports/FIX_CATALOGO_SQL_EXPLORADOR_BD_MATCHING_ENTERPRISE.md`
 
-*Última actualización: 19-May-2026 - FIX Matching Enterprise COMPLETADO*
+---
+
+## ✅ FIX P0: Corrección Criterio de Clasificación (19-May-2026)
+
+### Problema
+El primer filtro del Explorador BD clasificaba por tipo de conexión (`API_LOCAL`) en lugar de proveedor/sistema (`SOFRESATAURANT_ENTER`).
+
+### Solución
+- Nuevo endpoint `/catalogos/sistemas-capacidades/explorables-dinamico` que lee proveedores de `Servidores_Conexiones`
+- Nuevos campos `grupo_explorador_codigo` y `grupo_explorador_nombre` en conexiones
+- Frontend usa `grupo_explorador_codigo` para filtrar
+
+### Resultado
+Primer filtro ahora muestra:
+- MPRO: ManagementPro
+- **SOFRESATAURANT_ENTER: Sofrestaurant Enterprise** ← Chapur aparece aquí
+- SoftRestaurant: SoftRestaurant
+
+*Última actualización: 19-May-2026 - Criterio de clasificación CORREGIDO*
