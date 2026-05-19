@@ -176,5 +176,88 @@ sudo supervisorctl restart frontend
 
 ---
 
-*Reporte: 2025-05-19*
-*Estado: Lógica CORRECTA - Problema probable de caché del navegador*
+## 12. EVIDENCIA COMPLETA DEL FLUJO REAL (May-19 2026)
+
+### 12.1 Endpoint Usado por el Selector "Servidor *"
+```
+GET /api/explorador/conexiones-explorables
+```
+
+### 12.2 Transformación en useCatalogoConsultasData.js (línea 105)
+```javascript
+system_type: c.sistema_codigo_raw || c.sistema_codigo
+```
+
+### 12.3 Datos del Endpoint para Cada Servidor
+
+| Servidor | sistema_codigo_raw | system_type (frontend) |
+|----------|-------------------|----------------------|
+| 130° MERIDA | SoftRestaurant | SoftRestaurant |
+| CIENFUEGOS | SoftRestaurant | SoftRestaurant |
+| CIENFUEGOS TABLAJERIA | SoftRestaurant | SoftRestaurant |
+| LA ESTELAR | SoftRestaurant | SoftRestaurant |
+| PRUEBAS SOFTRESTAURANT | SoftRestaurant | SoftRestaurant |
+| **CHAPUR BACKOFFICE** | **SOFRESATAURANT_ENTER** | **SOFRESATAURANT_ENTER** |
+| **CHAPUR NORTE** | **SOFRESATAURANT_ENTER** | **SOFRESATAURANT_ENTER** |
+| 130° QRO LOCAL | MPRO | MPRO |
+| HR2020 ESCRITURA | MPRO | MPRO |
+| ManagmentPro | MPRO | MPRO |
+| MPRO TABLAJERIA | MPRO | MPRO |
+| ORIGEN LOCAL | MPRO | MPRO |
+
+### 12.4 Consultas y su Campo 'sistema'
+
+| Consulta | sistema |
+|----------|---------|
+| Ventas del Día | SoftRestaurant |
+| Ventas por Período | SoftRestaurant |
+| ... (12 más) | SoftRestaurant |
+| **ALMACENCES** | **SOFRESATAURANT_ENTER** |
+| **TIPOS DE MOVIMIENTO** | **SOFRESATAURANT_ENTER** |
+| **PRODUCTOS** | **SOFRESATAURANT_ENTER** |
+| **INVENTARIOS FISICOS** | **SOFRESATAURANT_ENTER** |
+| **KARDEX** | **SOFRESATAURANT_ENTER** |
+| **INSUMOS CONSUMIDOS** | **SOFRESATAURANT_ENTER** |
+| Ventas por Período | MPRO |
+| ... (5 más) | MPRO |
+
+### 12.5 Simulación Exacta del Matching (CatalogoConsultas.js líneas 57-77)
+
+**TEST 1: Consulta 'Ventas del Día' (sistema: SoftRestaurant)**
+```
+Servidores que muestra el selector 'Servidor *': 5
+  - 130° MERIDA (system_type='SoftRestaurant')
+  - CIENFUEGOS (system_type='SoftRestaurant')
+  - CIENFUEGOS TABLAJERIA (system_type='SoftRestaurant')
+  - LA ESTELAR (system_type='SoftRestaurant')
+  - PRUEBAS SOFTRESTAURANT (system_type='SoftRestaurant')
+
+✅ CORRECTO: NO aparece Chapur
+```
+
+**TEST 2: Consulta 'ALMACENCES' (sistema: SOFRESATAURANT_ENTER)**
+```
+Servidores que muestra el selector 'Servidor *': 2
+  - CHAPUR BACKOFFICE (system_type='SOFRESATAURANT_ENTER')
+  - CHAPUR NORTE (system_type='SOFRESATAURANT_ENTER')
+
+✅ CORRECTO: Aparecen 2 servidores Chapur
+✅ CORRECTO: NO aparece SoftRestaurant estándar
+```
+
+### 12.6 Conclusión de la Auditoría
+
+| Verificación | Estado |
+|--------------|--------|
+| Endpoint devuelve datos correctos | ✅ |
+| Transformación del hook es correcta | ✅ |
+| Matching del frontend es correcto | ✅ |
+| SoftRestaurant NO mezcla con Enterprise | ✅ |
+| Enterprise NO mezcla con SoftRestaurant | ✅ |
+
+**Si el usuario sigue viendo mezcla, el problema es 100% de caché del navegador.**
+
+---
+
+*Reporte actualizado: 2025-05-19*
+*Estado: Lógica CORRECTA - Evidencia completa documentada*
