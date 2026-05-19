@@ -803,9 +803,14 @@ export default function ExploradorBD() {
   const [loadingConexiones, setLoadingConexiones] = useState(true);
   
   // Conexiones filtradas por sistema
+  // FIX P0 (May-2026): Usar sistema_codigo_normalizado para filtrar por código canónico
+  // El primer combo muestra códigos canónicos (API_LOCAL, SOFTRESTAURANT, etc.)
+  // Las conexiones ahora tienen tanto el código RAW como el normalizado
   const conexionesFiltradas = useMemo(() => {
     if (!filtroSistema) return conexionesExplorables;
-    return conexionesExplorables.filter(c => c.sistema_codigo === filtroSistema);
+    return conexionesExplorables.filter(c => 
+      (c.sistema_codigo_normalizado || c.sistema_codigo) === filtroSistema
+    );
   }, [conexionesExplorables, filtroSistema]);
   
   // servers derivado de conexiones para compatibilidad interna
@@ -813,8 +818,10 @@ export default function ExploradorBD() {
     return conexionesFiltradas.map(c => ({
       id: c.id,
       name: c.nombre,
-      system_type: c.sistema_codigo,
-      sistema_descripcion: c.sistema_descripcion,
+      // Usar código normalizado para consistencia con el filtro
+      system_type: c.sistema_codigo_normalizado || c.sistema_codigo,
+      sistema_codigo_raw: c.sistema_codigo_raw || c.sistema_codigo,
+      sistema_descripcion: c.sistema_nombre || c.sistema_descripcion,
       tipo_conexion: c.tipo_conexion,
       active: c.activo,
       explorable: c.explorable

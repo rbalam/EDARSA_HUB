@@ -9562,9 +9562,13 @@ async def listar_conexiones_explorables(
     
     try:
         # Query para obtener conexiones explorables con su tipo de sistema
-        # FIX P0 (Dic-2025): Normalizar system_type usando Sistema_TiposVariantes + Sistema_Tipos
-        # ANTES: LEFT JOIN Sistema_Catalogo (deprecated, no tenía variantes como SOFRESATAURANT_ENTER)
-        # AHORA: LEFT JOIN Sistema_TiposVariantes -> Sistema_Tipos (normalización canónica)
+        # FIX P0 (May-2026): Devolver AMBOS códigos para compatibilidad:
+        #   - sistema_codigo_raw: valor original de system_type (para matching con consultas custom)
+        #   - sistema_codigo: código canónico normalizado (para filtros UI)
+        #   - sistema_nombre: label amigable del sistema canónico
+        # Esto permite que:
+        #   1. Catálogo SQL encuentre servidores por el código RAW de las consultas custom
+        #   2. Explorador BD agrupe por código canónico en los combos
         query = """
         SELECT 
             sc.id,
@@ -9577,8 +9581,9 @@ async def listar_conexiones_explorables(
             sc.activo,
             sc.visible_en_operaciones,
             sc.api_url,
-            COALESCE(st.CodigoSistema, sc.system_type) as sistema_codigo,
-            COALESCE(st.NombreSistema, sc.system_type) as sistema_descripcion
+            sc.system_type as sistema_codigo_raw,
+            COALESCE(st.CodigoSistema, sc.system_type) as sistema_codigo_normalizado,
+            COALESCE(st.NombreSistema, sc.system_type) as sistema_nombre
         FROM Servidores_Conexiones sc
         LEFT JOIN Sistema_TiposVariantes sv 
             ON UPPER(sc.system_type) = UPPER(sv.VarianteNombre) 
@@ -9610,8 +9615,14 @@ async def listar_conexiones_explorables(
             conexion = {
                 'id': row.get('id'),
                 'nombre': row.get('nombre', ''),
-                'sistema_codigo': row.get('sistema_codigo', row.get('system_type', '')),
-                'sistema_descripcion': row.get('sistema_descripcion', row.get('system_type', '')),
+                # FIX P0 (May-2026): Devolver ambos códigos para matching flexible
+                # sistema_codigo: código RAW original (para matching con consultas custom que usan RAW)
+                # sistema_codigo_normalizado: código canónico (para filtros UI del Explorador BD)
+                'sistema_codigo': row.get('sistema_codigo_raw', row.get('system_type', '')),
+                'sistema_codigo_raw': row.get('sistema_codigo_raw', row.get('system_type', '')),
+                'sistema_codigo_normalizado': row.get('sistema_codigo_normalizado', row.get('system_type', '')),
+                'sistema_nombre': row.get('sistema_nombre', row.get('system_type', '')),
+                'sistema_descripcion': row.get('sistema_nombre', row.get('system_type', '')),
                 'tipo_conexion': row.get('tipo_conexion', 'SQL_SERVER'),
                 'host': row.get('host', ''),
                 'database': row.get('database_name', ''),

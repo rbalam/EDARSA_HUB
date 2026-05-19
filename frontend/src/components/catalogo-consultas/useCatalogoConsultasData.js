@@ -94,11 +94,18 @@ export function useCatalogoConsultasData() {
     try {
       const conexionesExplorables = await fetchConexionesExplorables();
       // Transformar al formato esperado por el componente
+      // FIX P0 (May-2026): Exponer tanto código RAW como normalizado
+      // - system_type: código RAW para matching con consultas custom
+      // - system_type_normalizado: código canónico para filtros UI
       const serversTransformados = conexionesExplorables.map(c => ({
         id: c.id,
         name: c.nombre,
         nombre: c.nombre,
-        system_type: c.sistema_codigo,
+        // Código RAW para matching con consultas que usan código raw (ej: SOFRESATAURANT_ENTER)
+        system_type: c.sistema_codigo_raw || c.sistema_codigo,
+        // Código normalizado para filtros (ej: API_LOCAL)
+        system_type_normalizado: c.sistema_codigo_normalizado || c.sistema_codigo,
+        sistema_nombre: c.sistema_nombre,
         tipo_conexion: c.tipo_conexion,
         activo: c.activo,
         visible_en_operaciones: c.visible_en_operaciones,

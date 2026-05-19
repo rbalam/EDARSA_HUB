@@ -3342,3 +3342,40 @@ Modificado el query SQL del endpoint `/explorador/conexiones-explorables` en `/a
 `/app/docs/reports/FIX_EXPLORADOR_BD_ENTERPRISE_TIPOS_SISTEMA_DINAMICOS.md`
 
 *Última actualización: 19-May-2026 - FIX Tipos Sistema Dinámicos COMPLETADO*
+
+
+---
+
+## ✅ FIX P0: Catálogo SQL y Explorador BD - Matching Enterprise (19-May-2026)
+
+### Problema Reportado (Regresión)
+- El fix anterior normalizó `sistema_codigo` a `API_LOCAL`, rompiendo el matching con consultas custom que usan `SOFRESATAURANT_ENTER`
+- Catálogo SQL mostraba "No hay servidores SOFRESATAURANT_ENTER" cuando sí existían
+
+### Causa Raíz
+- Las consultas custom guardan el código RAW (`SOFRESATAURANT_ENTER`)
+- El fix anterior solo devolvía el código normalizado (`API_LOCAL`)
+- Matching fallaba: `'SOFRESATAURANT_ENTER' !== 'API_LOCAL'`
+
+### Solución Implementada
+El endpoint `/explorador/conexiones-explorables` ahora devuelve AMBOS códigos:
+- `sistema_codigo` / `sistema_codigo_raw`: Código RAW para matching con consultas
+- `sistema_codigo_normalizado`: Código canónico para filtros UI
+
+### Archivos Modificados
+- `/app/backend/server.py` (endpoint conexiones-explorables)
+- `/app/frontend/src/components/catalogo-consultas/useCatalogoConsultasData.js`
+- `/app/frontend/src/pages/ExploradorBD.js`
+
+### Validación
+- ✅ Catálogo SQL: Consultas `SOFRESATAURANT_ENTER` muestran servidores Chapur
+- ✅ Explorador BD: Filtro `API_LOCAL` muestra conexiones Chapur
+- ✅ No regresión: SoftRestaurant (5), MPRO (5), API_LOCAL (2)
+- ✅ No se usó MongoDB
+- ✅ No se hardcodeó Chapur
+- ✅ No se filtró por `visible_en_operaciones`
+
+### Reporte
+`/app/docs/reports/FIX_CATALOGO_SQL_EXPLORADOR_BD_MATCHING_ENTERPRISE.md`
+
+*Última actualización: 19-May-2026 - FIX Matching Enterprise COMPLETADO*
