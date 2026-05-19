@@ -9562,7 +9562,9 @@ async def listar_conexiones_explorables(
     
     try:
         # Query para obtener conexiones explorables con su tipo de sistema
-        # Nota: Usamos columnas reales de Servidores_Conexiones
+        # FIX P0 (Dic-2025): Normalizar system_type usando Sistema_TiposVariantes + Sistema_Tipos
+        # ANTES: LEFT JOIN Sistema_Catalogo (deprecated, no tenía variantes como SOFRESATAURANT_ENTER)
+        # AHORA: LEFT JOIN Sistema_TiposVariantes -> Sistema_Tipos (normalización canónica)
         query = """
         SELECT 
             sc.id,
@@ -9575,10 +9577,15 @@ async def listar_conexiones_explorables(
             sc.activo,
             sc.visible_en_operaciones,
             sc.api_url,
-            COALESCE(cat.Codigo, sc.system_type) as sistema_codigo,
-            COALESCE(cat.Descripcion, sc.system_type) as sistema_descripcion
+            COALESCE(st.CodigoSistema, sc.system_type) as sistema_codigo,
+            COALESCE(st.NombreSistema, sc.system_type) as sistema_descripcion
         FROM Servidores_Conexiones sc
-        LEFT JOIN Sistema_Catalogo cat ON sc.system_type = cat.Codigo
+        LEFT JOIN Sistema_TiposVariantes sv 
+            ON UPPER(sc.system_type) = UPPER(sv.VarianteNombre) 
+            AND sv.Activo = 1
+        LEFT JOIN Sistema_Tipos st 
+            ON sv.SistemaTipoID = st.SistemaTipoID 
+            AND st.Activo = 1
         WHERE sc.activo = 1
           AND (
             sc.tipo_conexion IN ('SQL_SERVER', 'DATA_SOURCE')

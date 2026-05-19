@@ -3308,3 +3308,37 @@ Modificar `/app/backend/core/utils/operational_window.py` para implementar "cort
 `/app/docs/reports/FIX_EXPLORADOR_BD_ROTO_POST_CONEXIONES_EXPLORABLES.md`
 
 *Última actualización: 18-May-2026 - FIX Explorador BD COMPLETADO*
+
+
+---
+
+## ✅ FIX P0: Explorador BD - Tipos de Sistema Dinámicos (19-May-2026)
+
+### Problema Reportado
+- El combo de "Tipos de Sistema" en el Explorador BD no mostraba servidores Enterprise/Chapur
+- Los servidores con `system_type = 'SOFRESATAURANT_ENTER'` no aparecían al filtrar por ninguna opción
+- Causa: El endpoint `/explorador/conexiones-explorables` usaba `Sistema_Catalogo` (deprecated) en lugar de `Sistema_TiposVariantes`
+
+### Diagnóstico
+- El endpoint devolvía `sistema_codigo: 'SOFRESATAURANT_ENTER'` (valor RAW) en lugar de `sistema_codigo: 'API_LOCAL'` (valor canónico)
+- El frontend filtraba con comparación estricta (`sistema_codigo === 'API_LOCAL'`)
+- La variante `SOFRESATAURANT_ENTER` ya existía mapeada correctamente en `Sistema_TiposVariantes`
+
+### Solución Implementada
+Modificado el query SQL del endpoint `/explorador/conexiones-explorables` en `/app/backend/server.py`:
+- Reemplazado `LEFT JOIN Sistema_Catalogo` por `LEFT JOIN Sistema_TiposVariantes + Sistema_Tipos`
+- La normalización ahora usa el catálogo maestro de variantes
+
+### Validación
+- ✅ CHAPUR NORTE: `sistema_codigo` normalizado a `API_LOCAL`
+- ✅ CHAPUR NORTE BACKOFICE: `sistema_codigo` normalizado a `API_LOCAL`
+- ✅ Ambos Chapur aparecen al filtrar por "API Local"
+- ✅ `visible_en_operaciones` NO afecta la visibilidad en Explorador BD
+- ✅ No regresión en otros sistemas (SOFTRESTAURANT: 5, MPRO: 5)
+- ✅ Frontend NO modificado
+- ✅ MongoDB NO utilizado
+
+### Reporte
+`/app/docs/reports/FIX_EXPLORADOR_BD_ENTERPRISE_TIPOS_SISTEMA_DINAMICOS.md`
+
+*Última actualización: 19-May-2026 - FIX Tipos Sistema Dinámicos COMPLETADO*

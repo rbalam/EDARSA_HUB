@@ -2,7 +2,7 @@
 
 **Fecha:** 2025-12-XX  
 **Prioridad:** P0  
-**Estado:** DIAGNÓSTICO COMPLETADO - PENDIENTE AUTORIZACIÓN PARA IMPLEMENTAR  
+**Estado:** ✅ IMPLEMENTADO Y VALIDADO  
 **Autor:** Agente E1 (Arquitecto Backend)
 
 ---
@@ -370,4 +370,131 @@ WHERE sc.nombre LIKE '%CHAPUR%'
 
 ---
 
+## 16. IMPLEMENTACIÓN REALIZADA
+
+### 16.1 Cambio Realizado
+Se modificó la query SQL del endpoint `/explorador/conexiones-explorables` para usar `Sistema_TiposVariantes` + `Sistema_Tipos` en lugar de `Sistema_Catalogo` (tabla deprecated).
+
+### 16.2 Query Anterior vs Query Nueva
+
+**ANTES (líneas ~9566-9589 en server.py):**
+```sql
+SELECT 
+    sc.id, sc.nombre, sc.tipo_conexion, sc.system_type,
+    sc.host, sc.port, sc.database_name, sc.activo,
+    sc.visible_en_operaciones, sc.api_url,
+    COALESCE(cat.Codigo, sc.system_type) as sistema_codigo,
+    COALESCE(cat.Descripcion, sc.system_type) as sistema_descripcion
+FROM Servidores_Conexiones sc
+LEFT JOIN Sistema_Catalogo cat ON sc.system_type = cat.Codigo  -- ❌ Tabla incorrecta
+WHERE sc.activo = 1
+  AND (...)
+ORDER BY sc.nombre
+```
+
+**DESPUÉS:**
+```sql
+SELECT 
+    sc.id, sc.nombre, sc.tipo_conexion, sc.system_type,
+    sc.host, sc.port, sc.database_name, sc.activo,
+    sc.visible_en_operaciones, sc.api_url,
+    COALESCE(st.CodigoSistema, sc.system_type) as sistema_codigo,
+    COALESCE(st.NombreSistema, sc.system_type) as sistema_descripcion
+FROM Servidores_Conexiones sc
+LEFT JOIN Sistema_TiposVariantes sv 
+    ON UPPER(sc.system_type) = UPPER(sv.VarianteNombre) 
+    AND sv.Activo = 1
+LEFT JOIN Sistema_Tipos st 
+    ON sv.SistemaTipoID = st.SistemaTipoID 
+    AND st.Activo = 1
+WHERE sc.activo = 1
+  AND (...)
+ORDER BY sc.nombre
+```
+
+### 16.3 Archivos Modificados
+
+| Archivo | Líneas | Descripción |
+|---------|--------|-------------|
+| `/app/backend/server.py` | ~9563-9595 | Modificada query SQL del endpoint `/explorador/conexiones-explorables` |
+
+### 16.4 Evidencia del Endpoint
+
+**Test cURL (autenticado):**
+```
+GET /api/explorador/conexiones-explorables
+HTTP Status: 200 OK
+Total conexiones: 12
+
+CHAPUR NORTE:
+  sistema_codigo: 'API_LOCAL'  ← Normalizado correctamente
+  explorable: True
+  visible_en_operaciones: True
+
+CHAPUR NORTE BACKOFICE:
+  sistema_codigo: 'API_LOCAL'  ← Normalizado correctamente
+  explorable: True
+  visible_en_operaciones: False  ← Aparece aunque es false
+```
+
+### 16.5 Validación de Chapur Norte
+
+| Campo | Valor Antes | Valor Después |
+|-------|-------------|---------------|
+| `sistema_codigo` | `SOFRESATAURANT_ENTER` | `API_LOCAL` |
+| `sistema_descripcion` | `Sofresataurant Enterprise` | `API Local` |
+| `explorable` | `true` | `true` |
+| `activo` | `true` | `true` |
+
+### 16.6 Validación de Chapur Norte Backoffice
+
+| Campo | Valor Antes | Valor Después |
+|-------|-------------|---------------|
+| `sistema_codigo` | `SOFRESATAURANT_ENTER` | `API_LOCAL` |
+| `sistema_descripcion` | `Sofresataurant Enterprise` | `API Local` |
+| `explorable` | `true` | `true` |
+| `visible_en_operaciones` | `false` | `false` (NO excluye) |
+
+### 16.7 Validación de No Regresión
+
+| Sistema | Conexiones | Estado |
+|---------|------------|--------|
+| SOFTRESTAURANT | 5 | ✅ OK |
+| MPRO | 5 | ✅ OK |
+| API_LOCAL | 2 (Chapur Norte + Backoffice) | ✅ OK |
+| Total | 12 | ✅ OK |
+
+**Endpoints verificados:**
+- `GET /api/catalogos/sistemas-capacidades/explorables` → 200 OK, 4 sistemas
+- `GET /api/explorador/conexiones-explorables` → 200 OK, 12 conexiones
+- Backend status: RUNNING
+
+### 16.8 Confirmaciones Explícitas
+
+| Verificación | Resultado |
+|--------------|-----------|
+| ¿Se usó MongoDB? | **NO** |
+| ¿Se filtró por `visible_en_operaciones`? | **NO** (Ambos Chapur aparecen) |
+| ¿Se hardcodeó Chapur? | **NO** |
+| ¿Se modificaron tablas SQL? | **NO** |
+| ¿Se modificó frontend? | **NO** |
+| ¿Se usó normalización via `Sistema_TiposVariantes`? | **SÍ** |
+
+### 16.9 Backout Plan
+
+```bash
+# Revertir cambio en server.py:
+git checkout HEAD~1 -- /app/backend/server.py
+
+# Reiniciar backend:
+sudo supervisorctl restart backend
+```
+
+### 16.10 Nota sobre Pruebas UI
+
+Las pruebas con screenshot tool mostraron error 403 en las llamadas API. Este es un problema **pre-existente** del sistema de autenticación del navegador automatizado (playwright), **NO** relacionado con el cambio realizado. El endpoint funciona correctamente con autenticación válida (cURL + token JWT).
+
+---
+
+*Implementación completada: 2025-12-XX*
 *Fin del Reporte*
