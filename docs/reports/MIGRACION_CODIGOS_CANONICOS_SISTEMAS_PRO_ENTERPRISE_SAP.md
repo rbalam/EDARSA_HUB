@@ -450,4 +450,131 @@ COMMIT TRANSACTION;
 
 ---
 
-*Reporte actualizado con resultados de DRY-RUN en cumplimiento del régimen de Autorización Controlada.*
+## EJECUCIÓN REAL COMPLETADA (2026-05-19 02:22 UTC)
+
+### SQL Ejecutado
+
+```sql
+-- 1. Sistema_Catalogo
+UPDATE Sistema_Catalogo SET Codigo='SOFTRESTAURANT_PRO', Descripcion='SoftRestaurant Pro' WHERE Codigo='SOFTRESTAURANT';
+UPDATE Sistema_Catalogo SET Codigo='ENTERPRISE', Descripcion='Enterprise' WHERE Codigo='SOFRESATAURANT_ENTER';
+
+-- 2. Sistema_Tipos
+UPDATE Sistema_Tipos SET CodigoSistema='SOFTRESTAURANT_PRO', NombreSistema='SoftRestaurant Pro' WHERE CodigoSistema='SOFTRESTAURANT';
+INSERT INTO Sistema_Tipos (CodigoSistema, NombreSistema, Descripcion, Activo) VALUES ('ENTERPRISE', 'Enterprise', 'Sofrestaurant Enterprise', 1);
+
+-- 3. Sistema_TiposVariantes
+INSERT INTO Sistema_TiposVariantes (SistemaTipoID, VarianteNombre, EsCanonico, Activo) VALUES (1, 'SOFTRESTAURANT_PRO', 1, 1);
+UPDATE Sistema_TiposVariantes SET SistemaTipoID=6, EsCanonico=0 WHERE VarianteNombre IN ('SOFRESATAURANT_ENTER', 'SOFTRESTAURANT_ENTERPRISE', 'SoftRestaurant Enterprise');
+UPDATE Sistema_TiposVariantes SET SistemaTipoID=6, EsCanonico=1 WHERE VarianteNombre='Enterprise';
+
+-- 4. Servidores_Conexiones
+UPDATE Servidores_Conexiones SET system_type='SOFTRESTAURANT_PRO' WHERE system_type IN ('SoftRestaurant', 'softrestaurant', 'Softrestaurant');
+UPDATE Servidores_Conexiones SET system_type='ENTERPRISE' WHERE system_type IN ('SOFRESATAURANT_ENTER', 'Sofresataurant_Enter');
+```
+
+### Registros Afectados
+
+| Tabla | Operación | Registros |
+|-------|-----------|-----------|
+| Sistema_Catalogo | UPDATE | 2 |
+| Sistema_Tipos | UPDATE + INSERT | 1 + 1 |
+| Sistema_TiposVariantes | INSERT + UPDATE | 1 + 4 |
+| Servidores_Conexiones | UPDATE | 8 |
+
+### Evidencia ANTES/DESPUÉS
+
+**Sistema_Catalogo:**
+| SistemaID | ANTES | DESPUÉS |
+|-----------|-------|---------|
+| 2 | SOFTRESTAURANT | SOFTRESTAURANT_PRO |
+| 5 | SOFRESATAURANT_ENTER | ENTERPRISE |
+
+**Servidores_Conexiones:**
+| Servidor | ANTES | DESPUÉS |
+|----------|-------|---------|
+| 130° MERIDA | SoftRestaurant | SOFTRESTAURANT_PRO |
+| CIENFUEGOS | SoftRestaurant | SOFTRESTAURANT_PRO |
+| LA ESTELAR | SoftRestaurant | SOFTRESTAURANT_PRO |
+| CHAPUR BACKOFFICE | SOFRESATAURANT_ENTER | ENTERPRISE |
+| CHAPUR NORTE | SOFRESATAURANT_ENTER | ENTERPRISE |
+
+### Validación Post-Ejecución
+
+**A) SQL - Catálogos:**
+- ✅ SOFTRESTAURANT_PRO | SoftRestaurant Pro
+- ✅ ENTERPRISE | Enterprise
+- ✅ SAP_BUSINESS_ONE | SAP Business One
+- ✅ MPRO | ManagementPro
+- ✅ OTRO | Otro
+
+**B) Normalización (Aliases):**
+- ✅ SOFTRESTAURANT → SOFTRESTAURANT_PRO
+- ✅ SOFTRESTAURANT_PRO → SOFTRESTAURANT_PRO
+- ✅ SOFRESATAURANT_ENTER → ENTERPRISE
+- ✅ ENTERPRISE → ENTERPRISE
+
+**C) Endpoints:**
+- ✅ /api/auth/me - HTTP 200
+- ✅ /api/catalogos/sistemas - HTTP 200
+- ✅ /api/catalogos/dominios - HTTP 200
+- ✅ /api/explorador/conexiones-explorables - HTTP 200
+- ✅ /api/consultas-sql/sistemas - HTTP 200
+- ✅ /api/consultas-sql/catalogo - HTTP 200
+- ✅ /api/api-connections - HTTP 200
+
+**D) UI:**
+- ✅ Login OK
+- ✅ Catálogos del Sistema OK (sin toast rojo)
+- ✅ Explorador BD OK (carga sin errores)
+
+**E) No Regresión:**
+- ✅ Catálogo SQL muestra SOFTRESTAURANT_PRO
+- ✅ Explorador BD muestra ENTERPRISE para CHAPUR
+- ✅ Aliases de compatibilidad funcionan
+
+### Código Backend Actualizado
+
+- `/app/backend/server.py` - CASE WHEN actualizado
+- `/app/backend/api/catalogos_sistemas.py` - CASE WHEN actualizado
+- `/app/backend/modules/consultas_sql/routes.py` - Sistemas actualizados
+- `/app/backend/modules/consultas_sql/repository.py` - Mapeo actualizado
+
+---
+
+## ROLLBACK SCRIPT (Si fuera necesario)
+
+```sql
+BEGIN TRANSACTION;
+
+-- Revertir Sistema_Catalogo
+UPDATE Sistema_Catalogo SET Codigo='SOFTRESTAURANT', Descripcion='SoftRestaurant' WHERE Codigo='SOFTRESTAURANT_PRO';
+UPDATE Sistema_Catalogo SET Codigo='SOFRESATAURANT_ENTER', Descripcion='Sofresataurant Enterprise' WHERE Codigo='ENTERPRISE';
+
+-- Revertir Servidores_Conexiones
+UPDATE Servidores_Conexiones SET system_type='SoftRestaurant' WHERE system_type='SOFTRESTAURANT_PRO';
+UPDATE Servidores_Conexiones SET system_type='SOFRESATAURANT_ENTER' WHERE system_type='ENTERPRISE';
+
+-- Revertir Sistema_Tipos
+UPDATE Sistema_Tipos SET CodigoSistema='SOFTRESTAURANT', NombreSistema='SoftRestaurant' WHERE CodigoSistema='SOFTRESTAURANT_PRO';
+DELETE FROM Sistema_Tipos WHERE CodigoSistema='ENTERPRISE';
+
+COMMIT TRANSACTION;
+```
+
+---
+
+## ESTADO FINAL
+
+| Criterio | Estado |
+|----------|--------|
+| Migración SQL | ✅ COMPLETADA |
+| Código actualizado | ✅ COMPLETADO |
+| Validación endpoints | ✅ PASADA |
+| Validación UI | ✅ PASADA |
+| No regresión | ✅ CONFIRMADA |
+| Rollback disponible | ✅ LISTO |
+
+---
+
+*Reporte finalizado. Migración exitosa sin regresiones.*

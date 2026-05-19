@@ -9582,11 +9582,13 @@ async def listar_conexiones_explorables(
             sc.system_type as sistema_codigo_raw,
             -- Para grupo del Explorador BD: usar system_type RAW como proveedor
             sc.system_type as grupo_explorador_codigo,
-            -- Label amigable del proveedor (mapeo manual para Enterprise)
+            -- Label amigable del proveedor (actualizado Mayo 2026)
             CASE 
-                WHEN UPPER(sc.system_type) = 'SOFRESATAURANT_ENTER' THEN 'Sofrestaurant Enterprise'
-                WHEN UPPER(sc.system_type) = 'SOFTRESTAURANT' THEN 'SoftRestaurant'
-                WHEN UPPER(sc.system_type) IN ('SOFT_RESTAURANT', 'SR') THEN 'SoftRestaurant'
+                WHEN UPPER(sc.system_type) = 'ENTERPRISE' THEN 'Enterprise'
+                WHEN UPPER(sc.system_type) = 'SOFRESATAURANT_ENTER' THEN 'Enterprise'
+                WHEN UPPER(sc.system_type) = 'SOFTRESTAURANT_PRO' THEN 'SoftRestaurant Pro'
+                WHEN UPPER(sc.system_type) = 'SOFTRESTAURANT' THEN 'SoftRestaurant Pro'
+                WHEN UPPER(sc.system_type) IN ('SOFT_RESTAURANT', 'SR') THEN 'SoftRestaurant Pro'
                 WHEN UPPER(sc.system_type) = 'MPRO' THEN 'ManagementPro'
                 WHEN UPPER(sc.system_type) IN ('MANAGEMENTPRO', 'MANAGMENTPRO') THEN 'ManagementPro'
                 WHEN UPPER(sc.system_type) IN ('EDARSA_HUB', 'EDARSAHUB', 'EDARSAHUB_SQL') THEN 'EDARSAHUB SQL Server'

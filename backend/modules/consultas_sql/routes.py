@@ -425,8 +425,9 @@ async def listar_servidores_asociados(
             CAST(CS.ServidorID AS NVARCHAR(36)) as ServidorID,
             SC.Nombre as ServidorNombre,
             CASE SC.SistemaTipoID 
-                WHEN 1 THEN 'SOFTRESTAURANT'
+                WHEN 1 THEN 'SOFTRESTAURANT_PRO'
                 WHEN 2 THEN 'MPRO'
+                WHEN 6 THEN 'ENTERPRISE'
                 ELSE 'OTRO'
             END as SistemaTipo,
             E.Nombre as EmpresaNombre,
@@ -884,8 +885,9 @@ async def listar_sistemas(
     Lista sistemas disponibles para filtros.
     
     Sistemas:
-    - SOFTRESTAURANT (SistemaTipoID=1)
+    - SOFTRESTAURANT_PRO (SistemaTipoID=1)
     - MPRO (SistemaTipoID=2)
+    - ENTERPRISE (SistemaTipoID=6)
     """
     try:
         repo = get_repository()
@@ -894,8 +896,8 @@ async def listar_sistemas(
         sistemas = [
             SistemaItem(
                 sistema_tipo_id=1,
-                codigo="SOFTRESTAURANT",
-                nombre="SoftRestaurant",
+                codigo="SOFTRESTAURANT_PRO",
+                nombre="SoftRestaurant Pro",
                 count_consultas=counts.get('consultas_softrestaurant', 0)
             ),
             SistemaItem(

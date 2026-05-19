@@ -3397,3 +3397,48 @@ Primer filtro ahora muestra:
 - SoftRestaurant: SoftRestaurant
 
 *Última actualización: 19-May-2026 - Criterio de clasificación CORREGIDO*
+
+---
+
+## ✅ MIGRACIÓN P0: Códigos Canónicos de Sistemas (19-May-2026)
+
+### Objetivo
+Actualizar códigos canónicos de sistemas para eliminar typos históricos y mejorar claridad:
+- `SOFTRESTAURANT` → `SOFTRESTAURANT_PRO`
+- `SOFRESATAURANT_ENTER` → `ENTERPRISE`
+- `SAP_BUSINESS_ONE` → mantener (solo descripción)
+
+### Tablas Actualizadas
+| Tabla | Operación | Registros |
+|-------|-----------|-----------|
+| Sistema_Catalogo | UPDATE | 2 |
+| Sistema_Tipos | UPDATE + INSERT | 2 |
+| Sistema_TiposVariantes | INSERT + UPDATE | 5 |
+| Servidores_Conexiones | UPDATE | 8 |
+
+### Código Backend Actualizado
+- `/app/backend/server.py` - CASE WHEN para grupo_explorador_nombre
+- `/app/backend/api/catalogos_sistemas.py` - CASE WHEN para sistemas
+- `/app/backend/modules/consultas_sql/routes.py` - Mapeo sistemas
+- `/app/backend/modules/consultas_sql/repository.py` - Mapeo códigos
+
+### Aliases de Compatibilidad (Permanentes)
+- `SOFTRESTAURANT` → `SOFTRESTAURANT_PRO`
+- `SOFRESATAURANT_ENTER` → `ENTERPRISE`
+- `SOFTRESTAURANT_ENTERPRISE` → `ENTERPRISE`
+
+### Validación
+- ✅ Sistema_Catalogo: SOFTRESTAURANT_PRO, ENTERPRISE, SAP_BUSINESS_ONE
+- ✅ Normalización: Todos los aliases funcionan
+- ✅ Explorador BD: CHAPUR con ENTERPRISE
+- ✅ Catálogo SQL: SOFTRESTAURANT_PRO con 14 consultas
+- ✅ UI: Sin errores 403/401
+- ✅ No regresión confirmada
+
+### Reporte
+`/app/docs/reports/MIGRACION_CODIGOS_CANONICOS_SISTEMAS_PRO_ENTERPRISE_SAP.md`
+
+### Rollback Disponible
+Script SQL de rollback preparado en el reporte.
+
+*Actualización: 19-May-2026 02:26 UTC - Migración COMPLETADA*

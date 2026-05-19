@@ -98,11 +98,13 @@ class ConsultasSQLRepository:
             where_clauses.append(f"c.SistemaTipoID = {int(filters.sistema_tipo_id)}")
         
         if filters.codigo_sistema:
-            # Mapeo de código a ID
+            # Mapeo de código a ID (actualizado Mayo 2026)
             sistema_map = {
-                'SOFTRESTAURANT': 1,
+                'SOFTRESTAURANT': 1,  # Alias de compatibilidad
+                'SOFTRESTAURANT_PRO': 1,
                 'MPRO': 2,
                 'API': 3,
+                'ENTERPRISE': 6,
             }
             sistema_id = sistema_map.get(filters.codigo_sistema.upper())
             if sistema_id:

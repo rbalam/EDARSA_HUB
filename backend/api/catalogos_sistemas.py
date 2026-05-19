@@ -200,10 +200,10 @@ async def listar_sistemas_explorables_dinamico(
     A diferencia de /explorables que lee de Sistema_Tipos (catálogo cerrado),
     este endpoint lee directamente de Servidores_Conexiones (datos reales).
     
-    Ejemplo de respuesta:
+    Ejemplo de respuesta (actualizado Mayo 2026):
     - MPRO: ManagementPro
-    - SOFRESATAURANT_ENTER: Sofrestaurant Enterprise
-    - SoftRestaurant: SoftRestaurant
+    - ENTERPRISE: Enterprise
+    - SOFTRESTAURANT_PRO: SoftRestaurant Pro
     """
     from modules.comercial.repository import EDARSAHUB_CONFIG
     from core.db import execute_sql_query
@@ -213,9 +213,11 @@ async def listar_sistemas_explorables_dinamico(
         SELECT DISTINCT 
             sc.system_type as codigo_sistema,
             CASE 
-                WHEN UPPER(sc.system_type) = 'SOFRESATAURANT_ENTER' THEN 'Sofrestaurant Enterprise'
-                WHEN UPPER(sc.system_type) = 'SOFTRESTAURANT' THEN 'SoftRestaurant'
-                WHEN UPPER(sc.system_type) IN ('SOFT_RESTAURANT', 'SR') THEN 'SoftRestaurant'
+                WHEN UPPER(sc.system_type) = 'ENTERPRISE' THEN 'Enterprise'
+                WHEN UPPER(sc.system_type) = 'SOFRESATAURANT_ENTER' THEN 'Enterprise'
+                WHEN UPPER(sc.system_type) = 'SOFTRESTAURANT_PRO' THEN 'SoftRestaurant Pro'
+                WHEN UPPER(sc.system_type) = 'SOFTRESTAURANT' THEN 'SoftRestaurant Pro'
+                WHEN UPPER(sc.system_type) IN ('SOFT_RESTAURANT', 'SR') THEN 'SoftRestaurant Pro'
                 WHEN UPPER(sc.system_type) = 'MPRO' THEN 'ManagementPro'
                 WHEN UPPER(sc.system_type) IN ('MANAGEMENTPRO', 'MANAGMENTPRO') THEN 'ManagementPro'
                 WHEN UPPER(sc.system_type) IN ('EDARSA_HUB', 'EDARSAHUB', 'EDARSAHUB_SQL') THEN 'EDARSAHUB SQL Server'
