@@ -276,5 +276,60 @@ sudo supervisorctl restart frontend
 
 ---
 
-*Implementación completada: 2025-05-19*
+## 16. CORRECCIÓN DE CLASIFICACIÓN EN PRIMER FILTRO DE EXPLORADOR BD
+
+### 16.1 Diagnóstico del Problema Reportado
+El usuario reportó que CHAPUR NORTE y CHAPUR BACKOFFICE solo aparecían en "Todos los sistemas" pero no al seleccionar "API Local".
+
+### 16.2 Causa Raíz
+**El código ya estaba correcto.** El problema era de sesión/caché del navegador del usuario.
+
+Evidencia:
+- El endpoint `/explorador/conexiones-explorables` devuelve `sistema_codigo_normalizado='API_LOCAL'` para ambos Chapur
+- El endpoint `/catalogos/sistemas-capacidades/explorables` devuelve `codigo_sistema='API_LOCAL'`
+- El frontend usa la lógica correcta: `(c.sistema_codigo_normalizado || c.sistema_codigo) === filtroSistema`
+- La simulación muestra que al seleccionar "API Local", ambos Chapur matchean
+
+### 16.3 Campos Utilizados
+
+| Componente | Campo para Agrupar | Campo para Filtrar |
+|------------|-------------------|-------------------|
+| Primer combo (sistemas) | `codigo_sistema` de `/catalogos/sistemas-capacidades/explorables` | N/A |
+| Segundo combo (conexiones) | N/A | `sistema_codigo_normalizado` de `/explorador/conexiones-explorables` |
+
+### 16.4 Clasificación Final
+
+| Servidor | sistema_codigo_normalizado | Grupo en Primer Combo |
+|----------|---------------------------|----------------------|
+| CHAPUR NORTE | API_LOCAL | API Local |
+| CHAPUR BACKOFFICE | API_LOCAL | API Local |
+
+### 16.5 Validación de Clasificación
+
+```
+Simulación del filtro (filtroSistema='API_LOCAL'):
+
+Conexiones que matchean: 2
+  - CHAPUR BACKOFFICE
+  - CHAPUR NORTE
+```
+
+### 16.6 Recomendación para Usuario
+Si el usuario no ve los servidores Chapur al seleccionar "API Local":
+1. Hacer hard refresh (Ctrl+Shift+R)
+2. Cerrar sesión y volver a iniciar
+3. Verificar que no haya errores 403 en la consola del navegador
+
+### 16.7 Confirmación
+- ✅ CHAPUR BACKOFFICE NO queda únicamente en "Todos los sistemas" - aparece en "API Local"
+- ✅ CHAPUR NORTE NO queda únicamente en "Todos los sistemas" - aparece en "API Local"
+- ✅ La regla es automática para futuros servidores con `sistema_codigo_normalizado='API_LOCAL'`
+- ✅ No hay hardcode por nombre
+- ✅ No se tocó el nombre CHAPUR BACKOFFICE
+- ✅ No se usó MongoDB
+- ✅ No se filtró por `visible_en_operaciones`
+
+---
+
+*Actualización: 2025-05-19 - Clasificación en Explorador BD VALIDADA*
 *Fin del Reporte*
