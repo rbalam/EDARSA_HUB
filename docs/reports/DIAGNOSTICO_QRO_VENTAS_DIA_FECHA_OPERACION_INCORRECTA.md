@@ -300,6 +300,125 @@ WARNING:[FIX-HUB] MPRO 130QRO: Sin datos en EDARSAHUB SQL para período
 
 ---
 
+## FASE 1-6: INVESTIGACIÓN EXHAUSTIVA - BUG ACTIVO CONFIRMADO
+
+### HALLAZGO PRINCIPAL
+
+**EL BUG ESTÁ ACTIVO.** Los datos actuales en `Comercial_Ventas_Dia_Abiertas_v2` tienen `fecha_operacion = 2026-05-19` cuando deberían tener `2026-05-18`.
+
+**Estado actual de la tabla (2026-05-19 03:59 UTC):**
+| Unidad | FechaOp | Total | Snapshot (UTC) | Estado |
+|--------|---------|-------|----------------|--------|
+| 130QRO | 2026-05-19 | $0.00 | 03:57:01 | ❌ |
+| ORIGEN | 2026-05-19 | $8,547.48 | 03:57:01 | ❌ |
+| 130MID | 2026-05-19 | $90,357.00 | 03:57:00 | ❌ |
+| CIENFUEGOS | 2026-05-19 | $101,196.00 | 03:57:01 | ❌ |
+| ESTELAR | 2026-05-19 | $7,950.00 | 03:57:01 | ❌ |
+
+**FechaOperacion correcta:** `2026-05-18` (hora México: 21:59, está dentro de horario operativo 13:00-06:00)
+
+---
+
+### FASE 1: Rastreo de Cálculo de FechaOperacion
+
+**Archivo:** `/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py`
+
+| Línea | Código | Análisis |
+|-------|--------|----------|
+| 453 | `fecha_hoy = datetime.now(mexico_tz).date()` | ✅ Usa timezone México |
+| 488 | `fecha_operacion = get_operational_window(unidad_id)` | ✅ Usa helper central |
+| 703 | `fecha_operacion = get_operational_window(unidad_id)` | ✅ Usa helper central |
+| 661 | `fecha_inicio=fecha_operacion if 'fecha_operacion' in dir() else fecha_hoy` | ⚠️ Fallback a fecha_hoy |
+
+**NO se encontró uso directo de:**
+- `date.today()` sin timezone ❌
+- `datetime.utcnow()` para fecha operativa ❌
+- `GETDATE()` de SQL Server ❌
+
+---
+
+### FASE 2: Verificación del Helper get_operational_window()
+
+**Archivo:** `/app/backend/core/utils/operational_window.py`
+
+**Prueba en tiempo real:**
+```
+Hora UTC actual:    2026-05-19 03:59:03
+Hora México actual: 2026-05-18 21:59:03
+
+get_operational_window('130QRO'):
+  FechaOperacion calculada: 2026-05-18 ✅
+  Horario: 13:00:00 - 06:00:00
+  Cruza medianoche: True
+```
+
+**CONCLUSIÓN:** El helper `get_operational_window()` calcula **correctamente** `2026-05-18`.
+
+---
+
+### FASE 3: Jornada Operativa 13:00 a 06:00
+
+**Regla implementada (líneas 187-217 de operational_window.py):**
+```python
+if cruza_medianoche:
+    if hora_actual < hora_fin:  # < 06:00
+        fecha_operacion = fecha_calendario - 1 día
+    elif hora_actual >= hora_inicio:  # >= 13:00
+        fecha_operacion = fecha_calendario  # DÍA ACTUAL
+    else:  # Entre 06:00 y 13:00
+        fecha_operacion = fecha_calendario - 1 día
+```
+
+**Para timestamp 2026-05-18 21:59 México:**
+- `hora_actual (21:59) >= hora_inicio (13:00)` → **fecha_calendario = 2026-05-18** ✅
+
+---
+
+### FASE 4: Datos Erróneos en SQL
+
+**Logs de sincronización muestran DOS tipos de jobs:**
+
+| RunID | RunType | fecha_inicio | Hora (UTC) |
+|-------|---------|--------------|------------|
+| ABIERTA-20260519-035700-d2f6 | VENTAS_DIA | 2026-05-19 ❌ | 03:57 |
+| ABIERTA-20260519-035555-89ef | VENTAS_DIA | 2026-05-18 ✅ | 03:55 |
+| ABIERTA-20260519-035200-9907 | VENTAS_DIA | 2026-05-19 ❌ | 03:52 |
+| ABIERTA-20260519-035048-xxxx | VENTAS_DIA | 2026-05-18 ✅ | 03:50 |
+
+**PATRÓN:** Hay ejecuciones alternadas con fecha correcta (2026-05-18) e incorrecta (2026-05-19).
+
+---
+
+### FASE 5: Comparación UI Servidores vs Scheduler
+
+**UI de Servidores:**
+- 130° QRO LOCAL: Conectado ✅
+- ORIGEN LOCAL: Conectado ✅
+
+**Job Scheduler:**
+- Encuentra servidor en SQL ✅
+- `api_key_encrypted` existe ✅
+- `decrypt_secret()` falla: "SERVER_SECRET_KEY no configurada" ❌
+- Retorna `None` → Error "No se encontró API local"
+
+**PERO:** Los datos de 130QRO muestran $0 mientras ORIGEN tiene $8,547.48. Esto sugiere que ORIGEN SÍ se sincroniza correctamente a veces.
+
+---
+
+### FASE 6: Protección Anti-$0
+
+**Código actual (líneas 737-738):**
+```python
+if conn_status != "API_LOCAL_OK":
+    raise Exception(f"API Local falló: {conn_status}")
+```
+
+**Observación:** El job DEBERÍA fallar si la API no responde, pero los datos muestran que 130QRO tiene $0 guardado con `fecha_operacion = 2026-05-19`. Esto indica que:
+1. La excepción NO se está lanzando, O
+2. Hay otro código que guarda $0 antes de la validación
+
+---
+
 ## INVESTIGACIÓN DE API LOCAL QRO Y CÁLCULO DE FECHA OPERACION
 
 ### Causa Raíz 1: FechaOperacion Incorrecta
@@ -454,3 +573,68 @@ Es posible que:
 *Diagnóstico completado: 2026-05-19 04:05 UTC*  
 *Autor: Agente E1*  
 *Estado: PENDIENTE AUTORIZACIÓN PARA CORRECCIÓN*
+
+---
+
+## CONCLUSIÓN FINAL Y PROPUESTA DE CORRECCIÓN
+
+### Bug Confirmado
+
+El job `sync_comercial_abiertas_v2_job.py` está guardando `fecha_operacion = 2026-05-19` cuando el helper `get_operational_window()` calcula correctamente `2026-05-18`.
+
+### Causa Raíz Probable
+
+**HIPÓTESIS:** Hay una discrepancia entre lo que el código DEBERÍA hacer y lo que REALMENTE está haciendo. Las posibles causas son:
+
+1. **Caché del scheduler:** El scheduler podría estar usando una versión antigua del código en memoria
+2. **Hot-reload incompleto:** Cambios en `operational_window.py` no se propagaron al scheduler
+3. **Múltiples instancias:** Podría haber otra instancia del job corriendo con código antiguo
+4. **Variable sobrescrita:** Algo podría estar modificando `fecha_operacion` después de calcularse
+
+### Propuesta de Corrección Mínima
+
+**OPCIÓN A - Reiniciar backend para limpiar caché:**
+```bash
+sudo supervisorctl restart backend
+```
+Esto forzará al scheduler a cargar el código actualizado.
+
+**OPCIÓN B - Agregar logging diagnóstico:**
+Agregar en línea ~704 del job:
+```python
+logger.warning(
+    f"[DIAG-FECHA] Unidad={unidad_id}, "
+    f"get_operational_window devolvió: {fecha_operacion}, "
+    f"tipo: {type(fecha_operacion)}, "
+    f"será guardado como: {fecha_operacion_str}"
+)
+```
+
+**OPCIÓN C - Forzar recálculo antes del UPSERT:**
+Agregar en línea ~888 (justo antes del UPSERT):
+```python
+# VALIDACIÓN: Recalcular fecha_operacion justo antes de guardar
+fecha_operacion_validada, _, _, _ = get_operational_window(unidad_id)
+if fecha_operacion != fecha_operacion_validada:
+    logger.error(
+        f"[BUG-FECHA] Discrepancia detectada para {unidad_id}: "
+        f"original={fecha_operacion}, recalculado={fecha_operacion_validada}"
+    )
+    fecha_operacion = fecha_operacion_validada
+```
+
+### Riesgos
+
+| Riesgo | Mitigación |
+|--------|------------|
+| Reiniciar backend afecta usuarios | Hacerlo en horario de baja demanda |
+| Logging excesivo | Remover después de confirmar fix |
+| Múltiples cambios | Hacer un cambio a la vez |
+
+### Validaciones Post-Corrección
+
+1. [ ] Reiniciar backend
+2. [ ] Esperar siguiente ejecución del job (5 minutos)
+3. [ ] Verificar que `fecha_operacion` en SQL sea `2026-05-18`
+4. [ ] Verificar que 130QRO tenga ventas > $0
+5. [ ] Verificar ORIGEN, 130MID, CIENFUEGOS, ESTELAR
