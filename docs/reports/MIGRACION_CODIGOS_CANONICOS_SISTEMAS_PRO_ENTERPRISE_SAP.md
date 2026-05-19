@@ -373,26 +373,81 @@ COMMIT TRANSACTION;
 
 ---
 
+## DRY-RUN COMPLETADO (2026-05-19)
+
+### Resumen de Conteos
+
+| Tabla | Registros a Modificar | Acción |
+|-------|----------------------|--------|
+| Sistema_Catalogo | 2 | UPDATE (códigos y descripciones) |
+| Sistema_Tipos | 1 UPDATE + 1 INSERT | UPDATE SOFTRESTAURANT, INSERT ENTERPRISE |
+| Sistema_TiposVariantes | ~6 INSERT/UPDATE | Variantes de compatibilidad |
+| Servidores_Conexiones | 8 | UPDATE system_type |
+| ConsultasSQL_Catalogo | 0 | Usa FK por ID, no por código |
+| ConsultasSQL_Servidores | 0 | Usa ServidorID, no system_type |
+
+### Cuadro ANTES/DESPUÉS
+
+**Sistema_Catalogo:**
+| SistemaID | Antes | Después | Descripción |
+|-----------|-------|---------|-------------|
+| 2 | SOFTRESTAURANT | SOFTRESTAURANT_PRO | SoftRestaurant Pro |
+| 4 | SAP_BUSINESS_ONE | SAP_BUSINESS_ONE | SAP Business One |
+| 5 | SOFRESATAURANT_ENTER | ENTERPRISE | Enterprise |
+
+**Servidores_Conexiones:**
+| Servidor | Antes | Después |
+|----------|-------|---------|
+| 130° MERIDA | SoftRestaurant | SOFTRESTAURANT_PRO |
+| CIENFUEGOS | SoftRestaurant | SOFTRESTAURANT_PRO |
+| LA ESTELAR | SoftRestaurant | SOFTRESTAURANT_PRO |
+| CHAPUR BACKOFFICE | SOFRESATAURANT_ENTER | ENTERPRISE |
+| CHAPUR NORTE | SOFRESATAURANT_ENTER | ENTERPRISE |
+
+### Confirmaciones del Dry-Run
+
+| Criterio | Estado |
+|----------|--------|
+| No se eliminarán registros | ✅ CONFIRMADO |
+| No se modificarán IDs técnicos | ✅ CONFIRMADO |
+| No se cambiarán credenciales | ✅ CONFIRMADO |
+| No se cambiarán hosts | ✅ CONFIRMADO |
+| No se cambiarán endpoints | ✅ CONFIRMADO |
+| No se romperán FK | ✅ CONFIRMADO |
+| No habrá duplicados | ✅ CONFIRMADO |
+| Se conservarán aliases | ✅ CONFIRMADO |
+| Existe rollback | ✅ CONFIRMADO |
+| Plan validación definido | ✅ CONFIRMADO |
+
+### Riesgos Identificados
+
+✅ **CERO RIESGOS CRÍTICOS** detectados en el dry-run.
+
+---
+
 ## ESTADO ACTUAL
 
 | Fase | Estado | Notas |
 |------|--------|-------|
 | 1. Diagnóstico | ✅ COMPLETADO | Todas las referencias documentadas |
 | 2. Mapeo Final | ✅ COMPLETADO | Definido según autorización |
-| 3. Script SQL | 🟡 LISTO | Pendiente autorización para ejecutar |
-| 4. Cambios Código | 🟡 LISTO | Pendiente ejecución SQL primero |
-| 5. Validación | ⏳ PENDIENTE | Después de ejecución |
-| 6. Backout | ✅ LISTO | Script de rollback preparado |
+| 3. DRY-RUN | ✅ COMPLETADO | Cero riesgos críticos |
+| 4. Script SQL | 🟡 LISTO | Pendiente autorización final |
+| 5. Cambios Código | 🟡 LISTO | Pendiente ejecución SQL primero |
+| 6. Validación | ⏳ PENDIENTE | Después de ejecución |
+| 7. Backout | ✅ LISTO | Script de rollback preparado |
 
 ---
 
 ## PRÓXIMOS PASOS
 
-1. **SOLICITO AUTORIZACIÓN** para ejecutar el script SQL de FASE 3
-2. Una vez autorizado, ejecutaré el script y documentaré resultados
-3. Luego actualizaré el código backend (FASE 4)
-4. Finalmente, ejecutaré validaciones completas (FASE 5)
+1. **SOLICITO AUTORIZACIÓN FINAL** para ejecutar el script SQL
+2. Ejecutar script SQL con BEGIN TRANSACTION / COMMIT
+3. Actualizar código backend (CASE WHEN)
+4. Validar endpoints con cURL
+5. Validar UI (Catálogos, Explorador BD, Catálogo SQL)
+6. Documentar resultados finales
 
 ---
 
-*Reporte generado en cumplimiento del régimen de Autorización Controlada.*
+*Reporte actualizado con resultados de DRY-RUN en cumplimiento del régimen de Autorización Controlada.*
