@@ -17244,6 +17244,16 @@ try:
 except Exception as e:
     logger.warning(f"Error registrando Admin CORE router: {e}")
 
+# =============================================================================
+# FASE P0D: DBA Credential Endpoint para Diagnóstico Ejecutor B
+# =============================================================================
+try:
+    from api.dba_credential_p0d import router as dba_cred_router
+    app.include_router(dba_cred_router, prefix="/api", tags=["Admin DBA P0D"])
+    logger.info("✓ DBA Credential P0D router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando DBA Credential P0D router: {e}")
+
 # Startup: Iniciar scheduler
 @app.on_event("startup")
 async def startup_scheduler():
