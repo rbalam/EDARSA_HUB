@@ -17254,6 +17254,16 @@ try:
 except Exception as e:
     logger.warning(f"Error registrando DBA Credential P0D router: {e}")
 
+# =============================================================================
+# Configuración Operativa de Unidades (Turnos / Ventas del Día)
+# =============================================================================
+try:
+    from api.configuracion_operativa_unidades import router as config_operativa_router
+    app.include_router(config_operativa_router, prefix="/api", tags=["Admin Config Operativa"])
+    logger.info("✓ Configuración Operativa Unidades router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Configuración Operativa router: {e}")
+
 # Startup: Iniciar scheduler
 @app.on_event("startup")
 async def startup_scheduler():

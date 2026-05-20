@@ -241,6 +241,7 @@ const Layout = () => {
     { name: 'Explorador BD', href: '/explorador-bd', icon: TableProperties, roles: ['SuperAdministrador', 'Administrador'] },
     { name: 'Alertas', href: '/alertas', icon: Bell, roles: ['SuperAdministrador', 'Supervisor', 'Administrador'] },
     { name: 'Usuarios', href: '/usuarios', icon: Users, roles: ['SuperAdministrador', 'Administrador'] },
+    { name: 'Config. Operativa', href: '/admin/configuracion-operativa', icon: Settings, roles: ['SuperAdministrador', 'Administrador'] },
     { name: 'DBA Diagnóstico', href: '/admin/dba-credential', icon: Key, roles: ['SuperAdministrador'] },
   ];
 
