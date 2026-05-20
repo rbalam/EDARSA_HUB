@@ -200,23 +200,104 @@ WHERE s.command LIKE '%Comercial_Ventas_Dia_Abiertas_v2%'
    OR s.command LIKE '%ABIERTA-%';
 ```
 
-**Documento completo de consultas**: `/app/docs/reports/CONSULTAS_DBA_EJECUTOR_EXTERNO_P0D.md`
+---
+
+## VALIDACIÓN DE CONEXIÓN EDARSAHUB (2026-05-20 03:55 UTC)
+
+### Conexión Usada (del Menú de Servidores)
+
+| Campo | Valor |
+|-------|-------|
+| servidor_conexion_id | `f8a9049a-96e8-4210-84ae-595ffa2822fa` |
+| nombre | EDARSA HUB |
+| host | 54.39.104.176 |
+| port | 1433 |
+| database_name | EDARSAHUB |
+| username | HRLectura |
+| system_type | EDARSA_HUB |
+| tipo_conexion | CORE |
+
+### Identidad SQL Real
+
+```
+SYSTEM_USER: HRLectura
+SUSER_SNAME(): HRLectura
+ORIGINAL_LOGIN(): HRLectura
+CURRENT_USER: HRLectura
+DB_NAME(): EDARSAHUB
+@@SERVERNAME: ns559627
+```
+
+### Permisos en EDARSAHUB
+
+| Permiso | Valor |
+|---------|-------|
+| is_db_owner | **1** (TRUE) |
+| is_db_datareader | **1** (TRUE) |
+| is_db_datawriter | **1** (TRUE) |
+
+### Acceso a msdb
+
+**DENEGADO**
+
+```
+Error: (229, b"The SELECT permission was denied on the object 'sysjobs', 
+database 'msdb', schema 'dbo'.")
+```
+
+**EXPLICACIÓN**: El login `HRLectura` es `db_owner` en EDARSAHUB pero **NO tiene permisos en msdb**. Solo existen 2 logins en el servidor: `HRLectura` y `sa`.
+
+### Timeline de Runs Confirmado (03:33-03:52 UTC)
+
+| Run ID | Hora | FechaOp | En Logs? | Tipo |
+|--------|------|---------|----------|------|
+| 033300-f96d | 03:33-03:37 | 2026-05-19 ✅ | ✅ SÍ | Ejecutor A (backend, pid=5861) |
+| 034200-c406 | 03:42:00-01 | 2026-05-20 ❌ | ❌ NO | **Ejecutor B** |
+| 034800-d7a3 | 03:48:01 | 2026-05-19 ✅ | ✅ SÍ | Ejecutor A (backend, pid=5861) |
+| 035115-5e56 | 03:51:16-17 | 2026-05-20 ❌ | ❌ NO | **Ejecutor B** |
+
+### Conclusión Técnica
+
+1. ✅ Se usó la conexión EDARSAHUB del menú de servidores
+2. ✅ El login real es `HRLectura`
+3. ✅ HRLectura es db_owner en EDARSAHUB
+4. ❌ HRLectura NO tiene permisos en msdb
+5. ❌ El Ejecutor B sigue activo (no se puede identificar sin acceso a msdb)
+
+### Permisos Requeridos para Continuar
+
+El DBA/Admin debe ejecutar con `sa` u otro login con permisos:
+
+```sql
+-- Opción 1: Otorgar permisos a HRLectura
+USE msdb;
+GRANT SELECT ON dbo.sysjobs TO HRLectura;
+GRANT SELECT ON dbo.sysjobsteps TO HRLectura;
+GRANT SELECT ON dbo.sysjobhistory TO HRLectura;
+GRANT SELECT ON dbo.sysschedules TO HRLectura;
+GRANT SELECT ON dbo.sysjobschedules TO HRLectura;
+
+-- Opción 2: Ejecutar las consultas de diagnóstico directamente
+-- Ver archivo: /app/docs/reports/CONSULTAS_DBA_EJECUTOR_EXTERNO_P0D.md
+```
 
 ---
 
-## ESTADO ACTUAL DE BD (03:45 UTC)
+## ESTADO ACTUAL DE BD (03:55 UTC)
 
 | Unidad | FechaOp | Total | RunID | Estado |
 |--------|---------|-------|-------|--------|
-| 130MID | 2026-05-20 | $92,167 | 034200-c406 | ❌ INCORRECTO |
-| ORIGEN | 2026-05-20 | $17,563 | 034200-c406 | ❌ INCORRECTO |
-| 130QRO | 2026-05-20 | $0 | 034200-c406 | ❌ INCORRECTO |
-| ESTELAR | 2026-05-20 | $8,955 | 034200-c406 | ❌ INCORRECTO |
-| CIENFUEGOS | 2026-05-20 | $0 | 034200-c406 | ❌ INCORRECTO |
+| 130MID | 2026-05-20 | $92,167 | 035115-5e56 | ❌ INCORRECTO |
+| ORIGEN | 2026-05-20 | $17,563 | 035115-5e56 | ❌ INCORRECTO |
+| 130QRO | 2026-05-20 | $0 | 035115-5e56 | ❌ INCORRECTO |
+| ESTELAR | 2026-05-20 | $8,955 | 035115-5e56 | ❌ INCORRECTO |
+| CIENFUEGOS | 2026-05-20 | $0 | 035115-5e56 | ❌ INCORRECTO |
 
 **IMPACTO**: 100% de registros con fecha incorrecta debido al Ejecutor B.
+
+**Documento de consultas para DBA**: `/app/docs/reports/CONSULTAS_DBA_EJECUTOR_EXTERNO_P0D.md`
 
 ---
 
 *Documento generado como parte del protocolo de "Autorización Controlada"*
-*Actualización: 2026-05-20 03:45 UTC*
+*Actualización: 2026-05-20 03:55 UTC*
