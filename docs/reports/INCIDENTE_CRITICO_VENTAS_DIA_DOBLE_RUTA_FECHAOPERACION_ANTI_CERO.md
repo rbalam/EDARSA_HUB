@@ -200,7 +200,23 @@ WHERE s.command LIKE '%Comercial_Ventas_Dia_Abiertas_v2%'
    OR s.command LIKE '%ABIERTA-%';
 ```
 
+**Documento completo de consultas**: `/app/docs/reports/CONSULTAS_DBA_EJECUTOR_EXTERNO_P0D.md`
+
+---
+
+## ESTADO ACTUAL DE BD (03:45 UTC)
+
+| Unidad | FechaOp | Total | RunID | Estado |
+|--------|---------|-------|-------|--------|
+| 130MID | 2026-05-20 | $92,167 | 034200-c406 | ❌ INCORRECTO |
+| ORIGEN | 2026-05-20 | $17,563 | 034200-c406 | ❌ INCORRECTO |
+| 130QRO | 2026-05-20 | $0 | 034200-c406 | ❌ INCORRECTO |
+| ESTELAR | 2026-05-20 | $8,955 | 034200-c406 | ❌ INCORRECTO |
+| CIENFUEGOS | 2026-05-20 | $0 | 034200-c406 | ❌ INCORRECTO |
+
+**IMPACTO**: 100% de registros con fecha incorrecta debido al Ejecutor B.
+
 ---
 
 *Documento generado como parte del protocolo de "Autorización Controlada"*
-*Actualización: 2026-05-20 03:40 UTC*
+*Actualización: 2026-05-20 03:45 UTC*
