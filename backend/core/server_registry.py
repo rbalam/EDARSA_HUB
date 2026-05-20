@@ -214,12 +214,18 @@ def _sql_row_to_server_dict(row: Dict, source: str = "EDARSAHUB_SQL") -> Dict:
     Garantiza paridad con el esquema de MongoDB.
     
     FASE T3.4-B4: Agregado parsing de tipos_movimiento desde SQL.
+    FIX 2026-05: Garantiza valores por defecto para campos requeridos por Pydantic.
     """
     system_type_raw = row.get('system_type', '')
     
     # FASE T3.4-B4: Parsear tipos_movimiento desde SQL (NVARCHAR JSON -> list)
     tipos_movimiento_raw = row.get('tipos_movimiento')
     tipos_movimiento = _parse_tipos_movimiento(tipos_movimiento_raw)
+    
+    # FIX 2026-05: Parsear campos JSON y garantizar valores por defecto
+    sucursales_parsed = _parse_json_field(row.get('sucursales'))
+    categorias_parsed = _parse_json_field(row.get('categorias'))
+    departamentos_parsed = _parse_json_field(row.get('departamentos'))
     
     return {
         'id': str(row.get('id', '')),
@@ -241,11 +247,13 @@ def _sql_row_to_server_dict(row: Dict, source: str = "EDARSAHUB_SQL") -> Dict:
         'es_editable_ui': bool(row.get('es_editable_ui', True)),
         'es_eliminable_ui': bool(row.get('es_eliminable_ui', True)),
         'empresa_id': str(row.get('empresa_id', '')) if row.get('empresa_id') else None,
-        'sucursales': _parse_json_field(row.get('sucursales')),
-        'categorias': _parse_json_field(row.get('categorias')),
-        'departamentos': _parse_json_field(row.get('departamentos')),
+        # FIX 2026-05: Garantizar lista vacía si NULL (Pydantic requiere List, no None)
+        'sucursales': sucursales_parsed if isinstance(sucursales_parsed, list) else [],
+        'categorias': categorias_parsed if isinstance(categorias_parsed, list) else [],
+        'departamentos': departamentos_parsed if isinstance(departamentos_parsed, list) else [],
         'tipos_movimiento': tipos_movimiento,  # FASE T3.4-B4: Nuevo campo
-        'date_calculation_method': row.get('date_calculation_method'),
+        # FIX 2026-05: Garantizar string por defecto si NULL (Pydantic requiere str, no None)
+        'date_calculation_method': row.get('date_calculation_method') or 'inventory_dates',
         'queries_configured': bool(row.get('queries_configured', False)),
         'query_ventas': _parse_json_field(row.get('query_ventas')),
         'query_inventario': _parse_json_field(row.get('query_inventario')),
