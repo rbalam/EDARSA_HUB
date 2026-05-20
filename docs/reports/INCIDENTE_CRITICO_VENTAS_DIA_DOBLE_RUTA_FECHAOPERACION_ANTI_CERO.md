@@ -299,5 +299,91 @@ GRANT SELECT ON dbo.sysjobschedules TO HRLectura;
 
 ---
 
+## ACCESO DBA TEMPORAL / CONEXIÓN SUPERADMINISTRADOR
+
+### Fecha: 2025-12-19
+
+### 1. Opción Implementada
+**Opción B**: Formulario visual seguro en el panel de Administración
+
+### 2. Validación de Identidad SQL
+- **SYSTEM_USER**: HRLectura
+- **ORIGINAL_LOGIN()**: HRLectura  
+- **@@SERVERNAME**: ns559627
+- **Base de datos**: EDARSAHUB
+
+### 3. Validación de Permisos
+| Base de Datos | Usuario | Acceso |
+|---------------|---------|--------|
+| EDARSAHUB | HRLectura | ✅ FULL ACCESS (db_owner) |
+| msdb | guest | ❌ Sin acceso a SQL Agent |
+
+### 4. Solución Implementada
+Se creó un endpoint seguro y formulario frontend para registrar credencial SA:
+
+**Backend**: `/app/backend/api/dba_credential_p0d.py`
+- Endpoints protegidos solo para SuperAdministrador
+- Cifrado inmediato con Fernet (SERVER_SECRET_KEY)
+- Almacenamiento temporal en memoria
+- Sin exposición en logs
+
+**Frontend**: `/app/frontend/src/pages/DBACredentialManager.jsx`
+- Accesible en: `/admin/dba-credential`
+- Campo tipo password (nunca muestra valor)
+- Solo visible para rol SuperAdministrador
+- Menú: Sistema → DBA Diagnóstico
+
+### 5. Evidencia de No Exposición de Contraseña
+- La contraseña NO se almacena en texto plano
+- La contraseña NO se imprime en logs
+- La contraseña NO se devuelve en endpoints
+- La contraseña NO se muestra en frontend
+- La contraseña se cifra INMEDIATAMENTE con Fernet
+
+### 6. Usuario Autorizado
+- **Email**: ricardo@edarsa.com.mx
+- **Rol**: SuperAdministrador
+
+### 7. Auditoría Implementada
+Cada acción registra:
+- timestamp
+- user_id
+- user_email
+- action
+- status
+- details (SIN contraseña)
+
+### 8. Endpoints Disponibles
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | /api/admin/dba-credential/status | Estado del sistema |
+| POST | /api/admin/dba-credential/register | Registrar credencial (cifrada) |
+| GET | /api/admin/dba-credential/test-connection | Probar conexión a msdb |
+| POST | /api/admin/dba-credential/execute-diagnostic | Ejecutar diagnóstico |
+| DELETE | /api/admin/dba-credential/clear | Eliminar credencial de memoria |
+
+### 9. Consultas que se Ejecutarán
+Al presionar "Ejecutar Diagnóstico", se ejecutan automáticamente:
+- Jobs activos en SQL Server Agent
+- Steps que mencionan tablas afectadas (Comercial_Ventas_Dia_Abiertas_v2, etc.)
+- Schedules cada 5-10 minutos
+- Historial de ejecuciones de hoy
+
+### 10. Jobs Encontrados
+**PENDIENTE**: Esperando que el usuario registre la credencial SA
+
+### 11. Job Sospechoso
+**PENDIENTE**: Se identificará tras ejecutar el diagnóstico
+
+### 12. Recomendación de Acción Posterior
+**PENDIENTE**: Se determinará tras identificar el Ejecutor B
+
+### 13. Plan de Rollback
+1. Eliminar credencial de memoria: `DELETE /api/admin/dba-credential/clear`
+2. Revocar permisos si se otorgaron a HRLectura
+3. Documentar cualquier cambio realizado
+
+---
+
 *Documento generado como parte del protocolo de "Autorización Controlada"*
-*Actualización: 2026-05-20 03:55 UTC*
+*Actualización: 2025-12-19*

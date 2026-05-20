@@ -32,7 +32,8 @@ import {
   CalendarCheck,
   Shield,
   Settings,
-  UserCog
+  UserCog,
+  Key
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
@@ -240,6 +241,7 @@ const Layout = () => {
     { name: 'Explorador BD', href: '/explorador-bd', icon: TableProperties, roles: ['SuperAdministrador', 'Administrador'] },
     { name: 'Alertas', href: '/alertas', icon: Bell, roles: ['SuperAdministrador', 'Supervisor', 'Administrador'] },
     { name: 'Usuarios', href: '/usuarios', icon: Users, roles: ['SuperAdministrador', 'Administrador'] },
+    { name: 'DBA Diagnóstico', href: '/admin/dba-credential', icon: Key, roles: ['SuperAdministrador'] },
   ];
 
   const filteredModulos = modulos.filter(item => hasAccess(item));

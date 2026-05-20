@@ -27,6 +27,7 @@ import Scheduler from '@/pages/Scheduler';
 import AuditoriasProgramadas from '@/pages/AuditoriasProgramadas';
 import CentroControl from '@/pages/CentroControl';
 import ConfigAsignaciones from '@/pages/ConfigAsignaciones';
+import DBACredentialManager from '@/pages/DBACredentialManager';
 import { isAuthenticated } from '@/lib/auth';
 
 // Portal de Proveedores (Subproyecto separado)
@@ -71,6 +72,7 @@ function App() {
             <Route path="auditorias-programadas" element={<Navigate to="/automatizaciones" replace />} />
             <Route path="centro-control" element={<CentroControl />} />
             <Route path="configuracion/asignaciones" element={<ConfigAsignaciones />} />
+            <Route path="admin/dba-credential" element={<DBACredentialManager />} />
             {/* Redirect /operativo → /reportes (Dashboard Operativo ahora es tab dentro de Operaciones) */}
             <Route path="operativo" element={<Navigate to="/reportes?tab=operativo" replace />} />
           </Route>
