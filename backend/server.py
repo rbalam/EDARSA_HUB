@@ -1228,7 +1228,8 @@ async def get_servers(current_user: Dict = Depends(get_current_user)):
     1. EDARSAHUB SQL (fuente primaria)
     2. MongoDB (fallback legacy)
     
-    Las conexiones CORE (cerebro del sistema) no aparecen en el listado.
+    CORRECCIÓN 2026-05-20: Las conexiones CORE (ej. EDARSAHUB SQL) ahora aparecen
+    en el listado del menú administrativo de servidores.
     """
     from core.server_registry import list_servers as registry_list_servers
     
@@ -1239,7 +1240,7 @@ async def get_servers(current_user: Dict = Depends(get_current_user)):
         allow_mongo_fallback=True,
         filter_active=True,
         filter_visible_listado=True,
-        exclude_core=True,
+        exclude_core=False,
         mask_secrets=True
     )
     
