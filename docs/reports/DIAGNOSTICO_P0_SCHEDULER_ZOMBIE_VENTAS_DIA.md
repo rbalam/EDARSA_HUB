@@ -334,4 +334,52 @@ curl -X POST http://localhost:8001/api/v2/comercial/sync-abiertas \
 
 ---
 
+---
+
+## 15. ACTUALIZACIÓN POST-IMPLEMENTACIÓN (02:48 UTC)
+
+### 15.1 Acciones Ejecutadas
+
+1. ✅ Eliminado `--reload` de supervisor
+2. ✅ Reiniciado backend limpio (pid 3406)
+3. ✅ Verificado UN SOLO proceso uvicorn
+4. ✅ Ejecutada resincronización manual
+
+### 15.2 Hallazgo Inesperado
+
+**Después de eliminar `--reload` y reiniciar**, se detectó que:
+- El scheduler del proceso 3406 calcula `FechaOperacion=2026-05-19` CORRECTAMENTE (según logs)
+- Sin embargo, aparecen runs (ej: `024714`) que escriben `fecha_operacion=2026-05-20` INCORRECTA
+- Estos runs NO generan logs en stderr
+
+### 15.3 Causa Probable
+
+La ejecución manual (script Python con timeout de bash) continuó ejecutando en background después del timeout, generando el run `023704` que sobrescribió datos. Posteriormente aparecen más runs sin logs.
+
+### 15.4 Estado Actual de BD
+
+| Unidad | FechaOp | RunID |
+|--------|---------|-------|
+| 130MID | 2026-05-20 ❌ | 024714 |
+| ORIGEN | 2026-05-20 ❌ | 024714 |
+| 130QRO | 2026-05-20 ❌ | 024714 |
+| ESTELAR | 2026-05-20 ❌ | 024714 |
+| CIENFUEGOS | 2026-05-20 ❌ | 024714 |
+
+### 15.5 Próximos Pasos Requeridos
+
+1. **INVESTIGAR**: Por qué el run 024714 no genera logs pero sí escribe a BD
+2. **VERIFICAR**: Si hay otro job/endpoint que escribe a la tabla
+3. **MONITOREAR**: Próximos ciclos del scheduler para confirmar comportamiento
+
+### 15.6 Estado del Fix de `--reload`
+
+- ✅ `--reload` eliminado de supervisor
+- ✅ UN SOLO proceso backend corriendo
+- ✅ Sin procesos zombie detectados
+- ⚠️ Datos incorrectos persisten por causa diferente
+
+---
+
+*Documento actualizado: 2026-05-20 02:48 UTC*
 *Documento generado como parte del protocolo de "Autorización Controlada"*
