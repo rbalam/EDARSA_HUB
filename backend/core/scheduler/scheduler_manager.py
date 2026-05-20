@@ -747,6 +747,7 @@ class SchedulerManager:
             else:
                 trigger = IntervalTrigger(seconds=sync_comercial_abiertas_v2_config.interval_seconds)
             
+            # P0C: Deshabilitar misfire para evitar ejecuciones fantasma durante reinicio
             self._scheduler.add_job(
                 self._run_sync_comercial_abiertas_v2_job,
                 trigger=trigger,
@@ -754,10 +755,11 @@ class SchedulerManager:
                 name="SYNC Ventas Abiertas V2",
                 replace_existing=True,
                 max_instances=1,
-                coalesce=True
+                coalesce=True,
+                misfire_grace_time=1  # P0C: Mínimo 1 segundo para evitar misfires
             )
             self._jobs["sync_comercial_abiertas_v2"] = sync_comercial_abiertas_v2_config
-            logger.info(f"Job SYNC_ABIERTAS_V2 registrado: intervalo={sync_comercial_abiertas_v2_config.interval_seconds}s")
+            logger.info(f"Job SYNC_ABIERTAS_V2 registrado: intervalo={sync_comercial_abiertas_v2_config.interval_seconds}s (misfire_grace_time=1s)")
     
     async def start(self):
         """Inicia el scheduler."""

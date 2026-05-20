@@ -1,95 +1,121 @@
-# INCIDENTE CRÍTICO: Ventas del Día - Doble Ruta, FechaOperacion y Anti-$0
+# INCIDENTE CRÍTICO: VENTAS DEL DÍA - DOBLE RUTA / FECHAOPERACION / ANTI-CERO
 
-**Fecha:** 2026-05-20  
-**Prioridad:** P0  
-**Estado:** EN PROGRESO - CAUSA RAÍZ IDENTIFICADA
-
----
-
-## 1. Causa Raíz Real: Hot-Reload + APScheduler
-
-### Problema Confirmado
-
-El backend se ejecuta con `--reload` (hot-reload de uvicorn). Esto causa que:
-
-1. Cuando hay cambios de código, uvicorn crea un **nuevo proceso**
-2. El nuevo proceso registra el scheduler APScheduler
-3. Durante la transición, el proceso anterior puede seguir ejecutando brevemente
-4. Resultado: **Dos schedulers** ejecutan el mismo job con **código diferente**
-
-### Evidencia
-
-| RunID | Hora (segundos) | FechaInicio | Tiene Log DIAG |
-|-------|-----------------|-------------|----------------|
-| `014705-09c3` | **:00** | 2026-05-20 ❌ | **NO** |
-| `013834-8fc3` | :34 | 2026-05-19 ✅ | **SÍ** |
-| `012830-8faa` | :30 | 2026-05-19 ✅ | **SÍ** |
-
-**Los jobs del segundo :00 (scheduler antiguo) NO ejecutan el código nuevo con logging DIAG.**
-**Los jobs del segundo :30-:34 (scheduler nuevo) SÍ ejecutan el código correcto.**
+**Fecha Inicio**: 2026-05-19  
+**Última Actualización**: 2026-05-20 03:20 UTC  
+**Estado**: P0C - INVESTIGANDO EJECUTOR B EXTERNO  
+**Severidad**: CRÍTICA  
 
 ---
 
-## 2. Correcciones Implementadas
+## RESUMEN EJECUTIVO
 
-### A) Anti-$0 Falso ✅
-- Si existe snapshot con venta > 0, no sobrescribir con $0
-- Si la fecha_operacion cambia, SIEMPRE actualizar (permite corregir datos)
+Se ha identificado un **EJECUTOR B** que escribe datos con `FechaOperacion` incorrecta a la tabla `Comercial_Ventas_Dia_Abiertas_v2` sin generar logs en el backend. 
 
-### B) Logging Diagnóstico ✅
-- Cada ejecución registra run_id, PID, UTC, México, fecha_hoy
+### Evidencia del Ejecutor B
 
-### C) SERVER_SECRET_KEY ✅
-- Ya está configurada en `/app/backend/.env`
-- El descifrado de API keys funciona correctamente
+| Característica | Ejecutor A (Oficial) | Ejecutor B (No Trazable) |
+|----------------|---------------------|--------------------------|
+| Duración | ~4 minutos | ~1 segundo |
+| Genera logs | ✅ SÍ | ❌ NO |
+| FechaOperacion | 2026-05-19 (CORRECTA) | 2026-05-20 (INCORRECTA) |
+| Pasa por `upsert_ventas_dia_abiertas` | ✅ SÍ | ❌ NO (no activa barrera P0C) |
+| PID en logs | Visible | NO visible |
 
----
+### Hallazgo Crítico
 
-## 3. Estado Actual de Conexiones
-
-| Servidor | Tipo | Estado |
-|----------|------|--------|
-| 130° QRO LOCAL | API_LOCAL | ⚠️ Error 500 - Timeout SQL interno |
-| ORIGEN LOCAL | API_LOCAL | ⚠️ Error 500 - Timeout SQL interno |
-| CIENFUEGOS | SQL | ❌ Timeout |
-| LA ESTELAR | SQL | ❌ Error de login |
-| 130° MÉRIDA | SQL | ⚠️ Sin respuesta |
-
-**Nota:** Las APIs MPRO responden (HTTP 422/500) pero sus conexiones SQL internas fallan.
+El Ejecutor B **NO PASA POR EL CÓDIGO PYTHON DEL BACKEND**. La barrera P0C implementada en `repository_comercial_edarsahub.py` NO fue activada, lo que significa que las escrituras del Ejecutor B se hacen **DIRECTAMENTE A LA BD** sin pasar por la aplicación.
 
 ---
 
-## 4. Solución Propuesta (REQUIERE AUTORIZACIÓN)
+## TIMELINE DE RUNS (desde 02:30 UTC)
 
-### Opción A: Modificar supervisor.conf para quitar --reload
-
-**Archivo:** `/etc/supervisor/conf.d/supervisord.conf`
-
-**Antes:**
-```
-command=/root/.venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001 --workers 1 --reload
-```
-
-**Después:**
-```
-command=/root/.venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001 --workers 1
-```
-
-**Riesgo:** Cambios de código no se recargarán automáticamente (requiere restart manual)
-
-### Opción B: Agregar singleton lock al scheduler
-
-Implementar un lock distribuido (en MongoDB o EDARSAHUB) que prevenga que múltiples instancias del scheduler ejecuten el mismo job.
+| Run ID | Inicio | Fin | Duración | En Logs? | FechaOp |
+|--------|--------|-----|----------|----------|---------|
+| 023110 | 02:31:11 | 02:35:22 | 4 min | ? | 2026-05-19 ✅ |
+| 023200 | 02:32:01 | 02:32:02 | 1 seg | ❌ | 2026-05-20 ❌ |
+| 023550 | 02:35:51 | 02:40:02 | 4 min | ✅ | 2026-05-19 ✅ |
+| 023704 | 02:37:05 | 02:41:12 | 4 min | ❌ | 2026-05-20 ❌ |
+| 024050 | 02:40:50 | 02:40:53 | 3 seg | ✅ | 2026-05-19 ✅ |
+| 024714 | 02:47:14 | 02:47:15 | 1 seg | ❌ | 2026-05-20 ❌ |
+| 025050 | 02:50:50 | 02:55:00 | 4 min | ✅ | 2026-05-19 ✅ |
+| 025200 | 02:52:00 | 02:52:01 | 1 seg | ❌ | 2026-05-20 ❌ |
+| 025700 | 02:57:00 | 02:57:01 | 1 seg | ❌ | 2026-05-20 ❌ |
+| 030700 | 03:07:00 | 03:07:01 | 1 seg | ❌ | 2026-05-20 ❌ |
+| 031200 | 03:12:00 | 03:12:02 | 2 seg | ✅ | 2026-05-19 ✅ |
+| 031709 | 03:17:09 | 03:17:10 | 1 seg | ❌ | 2026-05-20 ❌ |
 
 ---
 
-## 5. Verificaciones Pendientes
+## ACCIONES EJECUTADAS
 
-- [ ] Conexiones SoftRestaurant realmente restablecidas
-- [ ] APIs MPRO pueden conectar a sus SQL internos
-- [ ] Un solo scheduler activo
-- [ ] Todos los datos con FechaOperacion=2026-05-19
+### 1. Eliminación de `--reload` de supervisor ✅
+- **Estado**: Completado
+- **Resultado**: Ya no hay procesos duplicados por hot-reload
+
+### 2. Barrera P0C en `upsert_ventas_dia_abiertas` ✅
+- **Estado**: Implementada
+- **Resultado**: NO fue activada por Ejecutor B (no pasa por este código)
+
+### 3. Reducción de `misfire_grace_time` a 1 segundo ✅
+- **Estado**: Implementado
+- **Resultado**: NO resolvió el problema
 
 ---
 
-*Reporte actualizado: 2026-05-20 01:50 UTC*
+## HIPÓTESIS SOBRE EJECUTOR B
+
+### Descartadas:
+1. ~~Proceso zombie del backend~~ (solo hay 1 proceso uvicorn)
+2. ~~APScheduler misfire~~ (reducir misfire_grace_time no resolvió)
+3. ~~Código Python duplicado~~ (no hay otro escritor en el código)
+4. ~~Endpoint API manual~~ (no hay llamadas HTTP)
+
+### Hipótesis Activa:
+**SQL SERVER AGENT JOB** o proceso externo escribiendo directamente a EDARSAHUB
+
+Evidencia:
+- No genera logs en el backend
+- No activa la barrera P0C
+- Ejecuta en ~1 segundo (demasiado rápido para conectar a 5 orígenes)
+- Escribe a `Comercial_SyncLog_v2` con run_id pero NO aparece en logs Python
+
+---
+
+## PRÓXIMOS PASOS REQUERIDOS
+
+1. **VERIFICAR CON DBA/ADMIN DE BD** si existe un SQL Server Agent Job que escriba a:
+   - `Comercial_Ventas_Dia_Abiertas_v2`
+   - `Comercial_SyncLog_v2`
+
+2. **CONSULTAR LOGS DE SQL SERVER** (requiere acceso administrativo):
+   ```sql
+   -- Ver actividad reciente en la tabla
+   SELECT * FROM sys.fn_dblog(NULL, NULL)
+   WHERE AllocUnitName LIKE '%Comercial_Ventas_Dia_Abiertas_v2%'
+   ```
+
+3. **VERIFICAR TRIGGERS** en la tabla que puedan estar ejecutando código:
+   ```sql
+   SELECT name, type_desc FROM sys.triggers
+   WHERE parent_id = OBJECT_ID('Comercial_Ventas_Dia_Abiertas_v2')
+   ```
+
+4. **DESHABILITAR TEMPORALMENTE** el Ejecutor B (si se identifica)
+
+---
+
+## ESTADO ACTUAL
+
+| Componente | Estado |
+|------------|--------|
+| Backend sin `--reload` | ✅ |
+| Barrera P0C | ✅ (pero no activada) |
+| Ejecutor A (oficial) | ✅ Funcionando correctamente |
+| Ejecutor B (externo) | ❌ **SIGUE ACTIVO** |
+| Datos en BD | ❌ Corruptos (fecha incorrecta) |
+| Endpoint `/api/v2/comercial/ventas-dia` | Lee de EDARSAHUB |
+
+---
+
+*Documento generado como parte del protocolo de "Autorización Controlada"*
+*Actualización: 2026-05-20 03:20 UTC*

@@ -261,19 +261,72 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
        con venta > 0 para la MISMA fecha_operacion, NO sobrescribir.
     2. FECHA CORRECTA: Si la nueva fecha_operacion es DIFERENTE, siempre actualizar
        (esto permite corregir datos con fecha incorrecta).
+    3. BARRERA P0C: Validar que FechaOperacion coincida con get_operational_window().
     """
     import logging
     import os
+    import traceback
     logger = logging.getLogger(__name__)
     
-    # Log diagnóstico obligatorio
+    # =========================================================================
+    # BARRERA P0C: Validación de trazabilidad y FechaOperacion
+    # =========================================================================
+    caller_info = traceback.extract_stack()[-3] if len(traceback.extract_stack()) >= 3 else None
+    caller_file = caller_info.filename if caller_info else "UNKNOWN"
+    caller_func = caller_info.name if caller_info else "UNKNOWN"
+    
+    # VALIDACIÓN 1: Debe tener run_id válido
+    if not ventas.sync_run_id or not ventas.sync_run_id.startswith("ABIERTA-"):
+        logger.error(
+            f"[BARRERA-P0C] BLOQUEADO: run_id inválido. "
+            f"unidad={ventas.unidad_negocio_id}, run_id={ventas.sync_run_id}, "
+            f"caller={caller_file}::{caller_func}, pid={os.getpid()}"
+        )
+        return {
+            'action': 'BLOCKED_INVALID_RUNID',
+            'reason': f'run_id inválido: {ventas.sync_run_id}',
+            'caller': f'{caller_file}::{caller_func}'
+        }
+    
+    # VALIDACIÓN 2: FechaOperacion debe coincidir con get_operational_window()
+    try:
+        from core.utils.operational_window import get_operational_window
+        fecha_correcta, _, _, _ = get_operational_window(ventas.unidad_negocio_id)
+        fecha_recibida = ventas.fecha_operacion
+        
+        # Convertir a date si es necesario
+        if hasattr(fecha_recibida, 'date'):
+            fecha_recibida = fecha_recibida.date()
+        if hasattr(fecha_correcta, 'date'):
+            fecha_correcta = fecha_correcta.date()
+        
+        if str(fecha_recibida) != str(fecha_correcta):
+            logger.error(
+                f"[BARRERA-P0C] BLOQUEADO: FechaOperacion incorrecta. "
+                f"unidad={ventas.unidad_negocio_id}, "
+                f"recibida={fecha_recibida}, correcta={fecha_correcta}, "
+                f"run_id={ventas.sync_run_id}, "
+                f"caller={caller_file}::{caller_func}, pid={os.getpid()}"
+            )
+            return {
+                'action': 'BLOCKED_WRONG_FECHA',
+                'reason': f'FechaOperacion incorrecta: recibida={fecha_recibida}, correcta={fecha_correcta}',
+                'caller': f'{caller_file}::{caller_func}',
+                'fecha_recibida': str(fecha_recibida),
+                'fecha_correcta': str(fecha_correcta)
+            }
+    except Exception as e:
+        logger.warning(f"[BARRERA-P0C] No se pudo validar FechaOperacion: {e}")
+    
+    # Log diagnóstico obligatorio con call stack
     logger.info(
         f"[UPSERT-DIAG] unidad={ventas.unidad_negocio_id}, "
         f"fecha_op={ventas.fecha_operacion}, "
         f"total=${ventas.total_estimado_dia:,.2f}, "
         f"fuente={ventas.fuente_original}, "
         f"run_id={ventas.sync_run_id}, "
-        f"pid={os.getpid()}"
+        f"pid={os.getpid()}, "
+        f"caller={caller_file}::{caller_func}"
     )
     
     # Verificar si existe y obtener valores actuales
