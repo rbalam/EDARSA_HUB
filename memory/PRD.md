@@ -7,6 +7,17 @@ Sistema de gestión centralizado (EDARSAHUB) con múltiples fuentes de datos (SQ
 - **NO existe Ejecutor B externo**. El causante era el propio backend (`operational_window.py`) aplicando una regla global hardcodeada (13:00 a 06:00).
 - Se requiere configuración dinámica de turnos operativos por unidad de negocio.
 
+## Matriz Definitiva de Ventas del Día (2026-05-20)
+Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTRESTAURANT_MPRO_TURNOS.md`
+
+**Resumen de la Matriz**:
+- Ventas del Día = ventas del periodo operativo real (NO 00:00-23:59 calendario)
+- FechaOperacion basada en turno/corte/apertura, NO en cierre/cobro
+- SoftRestaurant: método MIXTO_VALIDADO (turno + apertura/captura)
+- MPRO: método MIXTO_VALIDADO (turno + Co_Fecha)
+- Turnos: DESAYUNO (07:00-13:00), COMIDA (13:01-18:59), CENA (19:00-05:59)
+- Tableros DEBEN leer únicamente de EDARSAHUB SQL
+
 ## Zona Horaria Oficial
 **OBLIGATORIA**: `America/Mexico_City` para todos los cálculos de `FechaOperacion`.
 
@@ -22,6 +33,12 @@ Sistema de gestión centralizado (EDARSAHUB) con múltiples fuentes de datos (SQ
 - **Problema**: `GET /api/servers` retornaba HTTP 500 con `ResponseValidationError`
 - **Causa**: Campos `date_calculation_method` y `sucursales` podían ser `None` desde SQL
 - **Solución**: Garantizar valores por defecto en `_sql_row_to_server_dict()` en `/app/backend/core/server_registry.py`
+
+### 2026-05-20: Matriz Definitiva Ventas del Día
+- **Documento**: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTRESTAURANT_MPRO_TURNOS.md`
+- **Contenido**: Especificación completa de lógica de Ventas del Día para SoftRestaurant y MPRO
+- **Auditoría**: Tablero Ejecutivo y Tablero Comercial V2 verificados
+- **Hallazgo**: Tablero Ejecutivo aún consulta live en modo LIVE-C (propuesta de unificación pendiente)
 
 ### Sesiones Anteriores
 - Tabla `Sistema_TurnosOperativosUnidad` creada en SQL Server
