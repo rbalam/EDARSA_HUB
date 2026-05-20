@@ -450,7 +450,18 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
     # CORRECCIÓN: Usar zona horaria de México para fecha operativa
     # En México, la fecha operativa corresponde a la hora local, no UTC
     mexico_tz = pytz.timezone('America/Mexico_City')
-    fecha_hoy = datetime.now(mexico_tz).date()
+    now_mexico = datetime.now(mexico_tz)
+    fecha_hoy = now_mexico.date()
+    
+    # LOG DIAGNÓSTICO OBLIGATORIO
+    import os
+    logger.warning(
+        f"[SYNC_ABIERTAS_V2] DIAG: run_id={run_id}, "
+        f"UTC={start_time.strftime('%Y-%m-%d %H:%M:%S')}, "
+        f"México={now_mexico.strftime('%Y-%m-%d %H:%M:%S')}, "
+        f"fecha_hoy={fecha_hoy}, "
+        f"pid={os.getpid()}"
+    )
     
     results = {
         "job_name": JOB_NAME,
@@ -488,9 +499,12 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             fecha_operacion, hora_inicio, hora_fin, cruza_medianoche = get_operational_window(unidad_id)
             fecha_operacion_str = fecha_operacion.isoformat()
             
-            logger.info(
-                f"[SYNC_ABIERTAS_V2] {nombre}: FechaOperacion={fecha_operacion_str} "
-                f"(horario={hora_inicio}-{hora_fin})"
+            # LOG DIAGNÓSTICO: Verificar que FechaOperacion es correcta
+            import os
+            logger.warning(
+                f"[SYNC_ABIERTAS_V2] SR {unidad_id}: FechaOperacion={fecha_operacion_str}, "
+                f"horario={hora_inicio}-{hora_fin}, cruza={cruza_medianoche}, "
+                f"run_id={run_id}, pid={os.getpid()}"
             )
             
             server_config = get_server_connection_config(server_id)
@@ -703,9 +717,12 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             fecha_operacion, hora_inicio, hora_fin, cruza_medianoche = get_operational_window(unidad_id)
             fecha_operacion_str = fecha_operacion.isoformat()  # YYYY-MM-DD
             
-            logger.info(
-                f"[SYNC_ABIERTAS_V2] {nombre}: FechaOperacion={fecha_operacion_str} "
-                f"(horario={hora_inicio}-{hora_fin}, cruza_medianoche={cruza_medianoche})"
+            # LOG DIAGNÓSTICO: Verificar que FechaOperacion es correcta
+            import os
+            logger.warning(
+                f"[SYNC_ABIERTAS_V2] MPRO {unidad_id}: FechaOperacion={fecha_operacion_str}, "
+                f"horario={hora_inicio}-{hora_fin}, cruza={cruza_medianoche}, "
+                f"run_id={run_id}, pid={os.getpid()}"
             )
             
             # =================================================================

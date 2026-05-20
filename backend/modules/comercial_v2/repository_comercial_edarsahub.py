@@ -255,10 +255,30 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
     """
     Upsert de snapshot de ventas abiertas.
     Solo mantiene 1 registro por unidad (sobrescribe).
+    
+    REGLAS:
+    1. ANTI-$0 FALSO: Si el nuevo valor es $0 pero existe un snapshot válido 
+       con venta > 0 para la MISMA fecha_operacion, NO sobrescribir.
+    2. FECHA CORRECTA: Si la nueva fecha_operacion es DIFERENTE, siempre actualizar
+       (esto permite corregir datos con fecha incorrecta).
     """
-    # Verificar si existe
+    import logging
+    import os
+    logger = logging.getLogger(__name__)
+    
+    # Log diagnóstico obligatorio
+    logger.info(
+        f"[UPSERT-DIAG] unidad={ventas.unidad_negocio_id}, "
+        f"fecha_op={ventas.fecha_operacion}, "
+        f"total=${ventas.total_estimado_dia:,.2f}, "
+        f"fuente={ventas.fuente_original}, "
+        f"run_id={ventas.sync_run_id}, "
+        f"pid={os.getpid()}"
+    )
+    
+    # Verificar si existe y obtener valores actuales
     check_query = f"""
-    SELECT id 
+    SELECT id, total_estimado_dia, fecha_operacion, sync_run_id
     FROM Comercial_Ventas_Dia_Abiertas_v2
     WHERE unidad_negocio_id = '{ventas.unidad_negocio_id}'
       AND sucursal_id = '{ventas.sucursal_id}'
@@ -268,6 +288,40 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
     
     if existing:
         record_id = existing[0].get('id')
+        existing_total = float(existing[0].get('total_estimado_dia') or 0)
+        existing_fecha = str(existing[0].get('fecha_operacion'))
+        new_fecha = str(ventas.fecha_operacion)
+        
+        # =================================================================
+        # REGLA 1: Si la fecha_operacion es DIFERENTE, SIEMPRE actualizar
+        # Esto permite corregir datos con fecha incorrecta
+        # =================================================================
+        if existing_fecha != new_fecha:
+            logger.warning(
+                f"[UPSERT-FECHA] {ventas.unidad_negocio_id}: Actualizando fecha "
+                f"{existing_fecha} -> {new_fecha}, "
+                f"total existente=${existing_total:,.2f}, nuevo=${ventas.total_estimado_dia:,.2f}"
+            )
+            # Continuar con UPDATE (no retornar)
+        
+        # =================================================================
+        # REGLA 2: ANTI-$0 FALSO (solo aplica si MISMA fecha_operacion)
+        # =================================================================
+        elif ventas.total_estimado_dia == 0 and existing_total > 0:
+            # Nueva venta es $0 pero existe snapshot válido con venta > 0
+            # MISMA fecha_operacion -> NO sobrescribir
+            logger.warning(
+                f"[ANTI-$0] PROTECCIÓN ACTIVADA para {ventas.unidad_negocio_id}: "
+                f"Nuevo=${ventas.total_estimado_dia:,.2f}, Existente=${existing_total:,.2f}, "
+                f"FechaOp={new_fecha}. NO se sobrescribe."
+            )
+            return {
+                'action': 'SKIP_ANTI_ZERO', 
+                'id': record_id,
+                'reason': f'Protección anti-$0: existente=${existing_total:,.2f}',
+                'preserved_total': existing_total
+            }
+        
         update_query = f"""
         UPDATE Comercial_Ventas_Dia_Abiertas_v2 SET
             server_id = '{ventas.server_id}',
@@ -286,6 +340,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
         WHERE id = '{record_id}'
         """
         _execute_query(update_query)
+        logger.info(f"[UPSERT] UPDATE {ventas.unidad_negocio_id}: ${ventas.total_estimado_dia:,.2f}, fecha={ventas.fecha_operacion}")
         return {'action': 'UPDATE', 'id': record_id}
     else:
         new_id = str(uuid.uuid4())
@@ -315,6 +370,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
         )
         """
         _execute_query(insert_query)
+        logger.info(f"[UPSERT] INSERT {ventas.unidad_negocio_id}: ${ventas.total_estimado_dia:,.2f}")
         return {'action': 'INSERT', 'id': new_id}
 
 
