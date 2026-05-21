@@ -138,6 +138,9 @@ from modules.comercial.repository import (
     USE_SQL_FOR_SERVERS,
 )
 
+# FASE P0.5: Import para leer ventas del día desde EDARSAHUB SQL (NO LIVE)
+from modules.comercial_v2.repository_readonly import get_ventas_dia_abiertas
+
 # =============================================================================
 # FIX 2026-05-15: Import de Ventana Operativa para FechaOperacion correcta
 # REGLA: El tablero debe mostrar FechaOperacion activa, NO fecha calendario
@@ -752,34 +755,30 @@ async def _tablero_ejecutivo_internal(
         try:
             logging.info(f"Procesando servidor: {server['name']} - Tipo: {server['system_type']}")
             
-            # FASE P0: Determinar tipo de dato según el modo
-            # - solo_ventas_dia=True: LIVE-C (ventas sin corte, crítico al segundo)
-            # - Solo mes actual (días cerrados): SYNC-S (tolera 15 min)
-            # - Mes/año anterior: HUB (usar cache si disponible)
+            # =================================================================
+            # FASE P0.5: VENTAS DEL DÍA LEE SOLO EDARSAHUB SQL
+            # =================================================================
+            # MÁXIMA: NO consultar tempcheques live desde endpoint de tablero.
+            # El job sync_comercial_abiertas_v2 es el único autorizado para
+            # consultar fuentes origen y grabar snapshots en EDARSAHUB SQL.
+            # El tablero lee ÚNICAMENTE desde EDARSAHUB SQL.
+            #
+            # REGLA:
+            # - solo_ventas_dia=True: Leer de Comercial_Ventas_Dia_Abiertas_v2
+            # - Modo normal (HUB): Leer de tablas consolidadas EDARSAHUB SQL
+            # =================================================================
             if solo_ventas_dia:
-                data_type = "LIVE-C"
+                data_type = "EDARSAHUB_VENTAS_DIA"  # P0.5: NO ES LIVE-C
             else:
                 data_type = "HUB"  # El tablero normal usa datos consolidados
             
             # =================================================================
-            # FIX CIRCUIT BREAKER HUB (2026-05-17):
-            # Para modo HUB, SIEMPRE intentar leer de EDARSAHUB SQL.
-            # 
-            # RAZÓN: get_kpis_softrestaurant() lee de EDARSAHUB SQL (no del 
-            # servidor local), por lo que el circuit breaker de servidor local
-            # NO debe bloquear esta consulta.
-            #
-            # REGLA:
-            # - HUB: should_try = True (EDARSAHUB SQL es la fuente)
-            # - LIVE-C: Aplicar circuit breaker normal (conexión a servidor real)
+            # FIX CIRCUIT BREAKER (2026-05-20 P0.5):
+            # Tanto HUB como VENTAS_DIA leen de EDARSAHUB SQL.
+            # NO aplicar circuit breaker para consultas a EDARSAHUB.
             # =================================================================
-            if data_type == "HUB":
-                # EDARSAHUB SQL siempre disponible - no aplicar circuit breaker
-                should_try = True
-                logging.info(f"[HUB-EDARSAHUB] {server['name']}: Modo HUB - lectura directa desde EDARSAHUB SQL (circuit breaker ignorado)")
-            else:
-                # LIVE-C: Aplicar circuit breaker normal para conexiones reales
-                should_try = await should_attempt_live_query(server['id'], data_type)
+            should_try = True  # EDARSAHUB SQL siempre disponible
+            logging.info(f"[EDARSAHUB-ONLY] {server['name']}: Modo {data_type} - lectura directa desde EDARSAHUB SQL")
             
             # FASE 3A.2: Migrado a helper centralizado
             if is_softrestaurant_system(server.get('system_type')):
@@ -788,28 +787,109 @@ async def _tablero_ejecutivo_internal(
                 
                 if should_try:
                     try:
-                        kpis = get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
-                                                       fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia)
+                        # =============================================================
+                        # FASE P0.5: Para Ventas del Día, leer de EDARSAHUB SQL
+                        # NO consultar tempcheques live
+                        # =============================================================
+                        if data_type == "EDARSAHUB_VENTAS_DIA":
+                            # Obtener fecha operativa actual
+                            from core.utils.operational_window import get_fecha_operacion
+                            from datetime import date
+                            
+                            # Buscar el código de unidad asociado a este servidor
+                            # Intentar obtenerlo desde el nombre del servidor o configuración
+                            unidad_codigo = server.get('unidad_negocio_id') or server.get('codigo_unidad')
+                            
+                            # Si no está en el servidor, buscar en las unidades registradas
+                            if not unidad_codigo:
+                                try:
+                                    from core.unidades_registry import get_unidad_by_server_id
+                                    unidad_info = get_unidad_by_server_id(server['id'])
+                                    if unidad_info:
+                                        unidad_codigo = unidad_info.codigo
+                                except Exception:
+                                    pass
+                            
+                            if unidad_codigo:
+                                fecha_op = get_fecha_operacion(unidad_codigo)
+                            else:
+                                # Fallback: usar fecha actual de México
+                                import pytz
+                                mexico_tz = pytz.timezone('America/Mexico_City')
+                                fecha_op = datetime.now(mexico_tz).date()
+                            
+                            # Leer de Comercial_Ventas_Dia_Abiertas_v2
+                            ventas_dia_snapshot = get_ventas_dia_abiertas(fecha_op, [unidad_codigo] if unidad_codigo else None)
+                            
+                            # Buscar este servidor en los datos
+                            servidor_data = None
+                            for vd in ventas_dia_snapshot:
+                                if vd.get('server_id') == server['id'] or vd.get('unidad_negocio_id') == unidad_codigo:
+                                    servidor_data = vd
+                                    break
+                            
+                            if servidor_data:
+                                # Convertir al formato de KPIs
+                                total_estimado = float(servidor_data.get('total_estimado_dia') or 0)
+                                ventas_abiertas = float(servidor_data.get('ventas_abiertas') or 0)
+                                ventas_cerradas = float(servidor_data.get('ventas_cerradas_dia') or 0)
+                                tickets_abiertos = int(servidor_data.get('tickets_abiertos') or 0)
+                                pax = int(servidor_data.get('pax_abiertos') or 0) + int(servidor_data.get('pax_cerrados_dia') or 0)
+                                
+                                kpis = {
+                                    'ventas': total_estimado,
+                                    'pendiente_cerrar': ventas_abiertas,
+                                    'ventas_cerradas': ventas_cerradas,
+                                    'tickets_abiertos': tickets_abiertos,
+                                    'pax': pax,
+                                    'cheques': tickets_abiertos + int(servidor_data.get('tickets_cerrados_dia') or 0),
+                                    'ventas_ant': 0,  # No disponible en snapshot de ventas del día
+                                    'ventas_año': 0,
+                                    'pax_ant': 0,
+                                    'pax_año': 0,
+                                    'cheques_ant': 0,
+                                    'cheques_año': 0,
+                                    'proyeccion': total_estimado,  # En ventas del día, proyección = total actual
+                                    'snapshot_timestamp': str(servidor_data.get('snapshot_timestamp', '')),
+                                    'fecha_operacion': str(servidor_data.get('fecha_operacion', fecha_op)),
+                                    'fuente': 'EDARSAHUB_SQL',
+                                    '_source': 'Comercial_Ventas_Dia_Abiertas_v2',
+                                }
+                                logging.info(f"[P0.5-EDARSAHUB] {server['name']}: Ventas del día desde EDARSAHUB SQL = ${total_estimado:,.2f}")
+                            else:
+                                # No hay datos para este servidor en Ventas del Día
+                                logging.warning(f"[P0.5-EDARSAHUB] {server['name']}: Sin datos en Comercial_Ventas_Dia_Abiertas_v2")
+                                kpis = {
+                                    'ventas': 0,
+                                    'pendiente_cerrar': 0,
+                                    'pax': 0,
+                                    'cheques': 0,
+                                    'ventas_ant': 0,
+                                    'ventas_año': 0,
+                                    'pax_ant': 0,
+                                    'pax_año': 0,
+                                    'cheques_ant': 0,
+                                    'cheques_año': 0,
+                                    'proyeccion': 0,
+                                    '_warning': 'Sin datos sincronizados',
+                                    '_source': 'EMPTY',
+                                }
+                        else:
+                            # Modo HUB: usar la función existente
+                            kpis = get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
+                                                           fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia)
                     except Exception as sr_error:
                         logging.warning(f"[BLINDAJE] Error SoftRestaurant {server['name']}: {sr_error}")
                         sr_error_captured = sr_error
                         kpis = None
                     
                     # =================================================================
-                    # FIX CIRCUIT BREAKER HUB (2026-05-17):
-                    # Para modo HUB, NO guardar estado de conexión en MongoDB.
-                    # La consulta es a EDARSAHUB SQL, no al servidor local.
-                    # Solo guardar estado para modo LIVE-C (conexión real).
+                    # FASE P0.5: NO guardar estado de conexión para EDARSAHUB SQL
+                    # La consulta no es a servidor local, es a EDARSAHUB.
                     # =================================================================
-                    if data_type != "HUB":
-                        if kpis and not kpis.get('error'):
-                            # LIVE-C: Conexión exitosa al servidor real
-                            await save_server_connection_status(server['id'], True)
-                        elif not solo_ventas_dia:
-                            # LIVE-C: Marcar offline solo si NO es ventas del día
-                            await save_server_connection_status(server['id'], False)
+                    # (Eliminada la lógica de circuit breaker para modo LIVE-C)
                 else:
-                    # Este bloque ya no se ejecuta para HUB (should_try siempre True)
+                    # Este bloque ya no se ejecuta (should_try siempre True para EDARSAHUB)
                     logging.info(f"[FASE P0] Servidor {server['name']} offline - usando caché (tipo: {data_type})")
                 
                 # ================================================================
@@ -817,17 +897,17 @@ async def _tablero_ejecutivo_internal(
                 # ================================================================
                 if kpis and not kpis.get('error'):
                     # CASO A: Consulta exitosa desde EDARSAHUB SQL
-                    # FIX 2026-05-17: Para HUB, la fuente es EDARSAHUB_SQL, no servidor local
-                    source_period = "EDARSAHUB_SQL" if data_type == "HUB" else "SQL"
-                    source_live = "EDARSAHUB_SQL" if data_type == "HUB" else ("TEMPCHEQUES" if solo_ventas_dia else "SQL")
+                    # FASE P0.5: Tanto HUB como VENTAS_DIA leen de EDARSAHUB SQL
+                    source_period = "EDARSAHUB_SQL"
+                    source_live = "EDARSAHUB_SQL" if data_type in ["HUB", "EDARSAHUB_VENTAS_DIA"] else "SQL"
                     
-                    logging.info(f"[P0-LOG] tablero_real_source_success: server={server['name']}, ventas={kpis.get('ventas', 0)}, source={source_period}")
+                    logging.info(f"[P0-LOG] tablero_real_source_success: server={server['name']}, ventas={kpis.get('ventas', 0)}, source={source_period}, data_type={data_type}")
                     
                     unit_response = build_unit_response(
                         server=server,
                         kpis=kpis,
                         data_status=DataStatus.DATA_OK,
-                        live_status=LiveStatus.LIVE_NOT_APPLICABLE if data_type == "HUB" else LiveStatus.LIVE_CONNECTED,
+                        live_status=LiveStatus.LIVE_NOT_APPLICABLE,  # P0.5: No hay LIVE, solo EDARSAHUB
                         cache_status=CacheStatus.NOT_USED,
                         source_used=SourceUsed.REAL_SOURCE,
                         source_real_attempted=True,

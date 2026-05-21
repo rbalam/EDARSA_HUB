@@ -42,7 +42,12 @@ from decimal import Decimal
 from typing import Dict, List, Any, Optional, Tuple
 
 # Import del helper de ventana operativa
-from core.utils.operational_window import get_operational_window, is_within_operational_hours
+from core.utils.operational_window import (
+    get_operational_window,
+    get_operational_window_legacy,
+    is_within_operational_hours,
+    ResultadoVentanaOperativa
+)
 
 # =============================================================================
 # FASE 5D: INTEGRACIÓN CON EmpresaResolver (Mayo 2026)
@@ -495,15 +500,22 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             
             # =================================================================
             # CALCULAR FechaOperacion SEGÚN VENTANA OPERATIVA DE LA UNIDAD
+            # FASE P0.4: Usando nuevo sistema de turnos operativos
             # =================================================================
-            fecha_operacion, hora_inicio, hora_fin, cruza_medianoche = get_operational_window(unidad_id)
+            resultado_ventana = get_operational_window(unidad_id)
+            fecha_operacion = resultado_ventana.fecha_operacion
+            turno_codigo = resultado_ventana.turno_operativo_codigo
+            hora_inicio = resultado_ventana.window_start_mx
+            hora_fin = resultado_ventana.window_end_mx
+            cruza_medianoche = resultado_ventana.cruza_medianoche
             fecha_operacion_str = fecha_operacion.isoformat()
             
             # LOG DIAGNÓSTICO: Verificar que FechaOperacion es correcta
             import os
             logger.warning(
-                f"[SYNC_ABIERTAS_V2] SR {unidad_id}: FechaOperacion={fecha_operacion_str}, "
-                f"horario={hora_inicio}-{hora_fin}, cruza={cruza_medianoche}, "
+                f"[SYNC_ABIERTAS_V2] SR {unidad_id}: FechaOp={fecha_operacion_str}, "
+                f"turno={turno_codigo}, horario={hora_inicio}-{hora_fin}, cruza={cruza_medianoche}, "
+                f"metodo={resultado_ventana.metodo_fecha_operacion}, alertas={resultado_ventana.alertas}, "
                 f"run_id={run_id}, pid={os.getpid()}"
             )
             
@@ -704,24 +716,28 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             
             # =================================================================
             # CALCULAR FechaOperacion SEGÚN VENTANA OPERATIVA DE LA UNIDAD
+            # FASE P0.4: Usando nuevo sistema de turnos operativos
             # =================================================================
-            # FIX 2026-05-15: NO usar fecha calendario simple
-            # Usar get_operational_window() para calcular FechaOperacion
-            # 
             # REGLA DE NEGOCIO:
             # - Si QRO opera de 13:00 a 03:00, a las 02:00 del día 15 todavía
             #   pertenece a la jornada del día 14
-            # - Solo después del cierre (03:00) inicia el nuevo día operativo
+            # - Solo después del cierre inicia el nuevo día operativo
             # =================================================================
             
-            fecha_operacion, hora_inicio, hora_fin, cruza_medianoche = get_operational_window(unidad_id)
-            fecha_operacion_str = fecha_operacion.isoformat()  # YYYY-MM-DD
+            resultado_ventana = get_operational_window(unidad_id)
+            fecha_operacion = resultado_ventana.fecha_operacion
+            turno_codigo = resultado_ventana.turno_operativo_codigo
+            hora_inicio = resultado_ventana.window_start_mx
+            hora_fin = resultado_ventana.window_end_mx
+            cruza_medianoche = resultado_ventana.cruza_medianoche
+            fecha_operacion_str = fecha_operacion.isoformat()
             
             # LOG DIAGNÓSTICO: Verificar que FechaOperacion es correcta
             import os
             logger.warning(
-                f"[SYNC_ABIERTAS_V2] MPRO {unidad_id}: FechaOperacion={fecha_operacion_str}, "
-                f"horario={hora_inicio}-{hora_fin}, cruza={cruza_medianoche}, "
+                f"[SYNC_ABIERTAS_V2] MPRO {unidad_id}: FechaOp={fecha_operacion_str}, "
+                f"turno={turno_codigo}, horario={hora_inicio}-{hora_fin}, cruza={cruza_medianoche}, "
+                f"metodo={resultado_ventana.metodo_fecha_operacion}, alertas={resultado_ventana.alertas}, "
                 f"run_id={run_id}, pid={os.getpid()}"
             )
             

@@ -1,37 +1,43 @@
 """
-Módulo de Ventana Operativa para cálculo de FechaOperacion.
+EDARSA HUB - Módulo de Ventana Operativa y Cálculo de FechaOperacion
+=====================================================================
 
-Este módulo implementa la lógica de negocio para calcular la fecha operativa
-de una unidad de negocio basándose en sus horarios de servicio configurados.
+FASE P0.3 (2026-05-20): Refactorización completa para soportar turnos operativos.
 
-REGLA DE NEGOCIO:
-- El día operativo de un restaurante NO cambia automáticamente a las 00:00
-- La jornada operativa cierra a las 06:00 AM del día siguiente
-- Si una venta ocurre entre 00:00 y 05:59, pertenece al día operativo ANTERIOR
+REGLAS DE NEGOCIO:
+- La FechaOperacion se calcula según la configuración de turnos por unidad
+- Turnos soportados: DESAYUNO, COMIDA, CENA
+- Zona horaria obligatoria: America/Mexico_City
+- NO usar fecha calendario, hora de servidor local, UTC ni GETDATE()
+- Soporta cruza_medianoche
+- Soporta tolerancias de inicio/fin
 
-VENTANA OPERATIVA DEFAULT: 13:00 - 06:00 (cruza medianoche)
-- ACTUALIZACIÓN 16-May-2026: Corte operativo cambiado de 11:00/03:00 a 06:00
-- PREPARACIÓN: Futuro módulo de Horarios de Operación permitirá configurar por unidad
+SALIDA ESTANDAR:
+{
+    "unidad_negocio_id": str,
+    "fecha_operacion": date,
+    "turno_operativo_codigo": str,  # DESAYUNO, COMIDA, CENA, FUERA_HORARIO
+    "window_start_mx": time,
+    "window_end_mx": time,
+    "timezone": "America/Mexico_City",
+    "metodo_fecha_operacion": str,  # TURNO_ACTIVO, PRIMER_TURNO_DIA, ULTIMO_TURNO_DIA_ANTERIOR
+    "alertas": List[str]
+}
 
-Ejemplo con horario 13:00 - 06:00:
-- 14:00 del día 15 → fecha_operacion = 15 (dentro de jornada del 15)
-- 02:00 del día 16 → fecha_operacion = 15 (jornada del 15 no ha cerrado)
-- 05:30 del día 16 → fecha_operacion = 15 (jornada del 15 no ha cerrado)
-- 06:00 del día 16 → fecha_operacion = 16 (nueva jornada del 16 inicia)
-- 13:00 del día 16 → fecha_operacion = 16 (jornada del 16)
-
-Autor: Sistema EDARSAHUB
-Fecha: 2026-05-16
+Autor: EDARSA HUB P0
+Fecha: 2026-05-20
 """
 
 import logging
 from datetime import date, datetime, time, timedelta
-from typing import Optional, Tuple, Dict, Any
-import pytz
-
-from core.db import execute_sql_query
+from typing import Optional, Tuple, Dict, Any, List
+from zoneinfo import ZoneInfo
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
+
+# Zona horaria oficial
+MEXICO_TZ = ZoneInfo("America/Mexico_City")
 
 # Configuración de conexión EDARSAHUB
 EDARSAHUB_CONFIG = {
@@ -42,222 +48,362 @@ EDARSAHUB_CONFIG = {
     'password': 'National09$'
 }
 
-# Zona horaria operativa
-MEXICO_TZ = pytz.timezone('America/Mexico_City')
-
-# Cache de horarios para evitar consultas repetidas
-_horarios_cache: Dict[str, Dict[str, Any]] = {}
+# Cache de configuración de turnos
+_turnos_cache: Dict[str, List[Dict]] = {}
 _cache_timestamp: Optional[datetime] = None
-_CACHE_TTL_MINUTES = 30
+_CACHE_TTL_MINUTES = 15
 
 
-def _get_horario_unidad(unidad_negocio_id: str, dia_semana: int) -> Optional[Dict[str, Any]]:
+@dataclass
+class ResultadoVentanaOperativa:
+    """Estructura de resultado del cálculo de ventana operativa."""
+    unidad_negocio_id: str
+    fecha_operacion: date
+    turno_operativo_codigo: str
+    turno_nombre: str
+    window_start_mx: time
+    window_end_mx: time
+    cruza_medianoche: bool
+    timezone: str
+    metodo_fecha_operacion: str
+    alertas: List[str]
+    timestamp_consulta: datetime
+
+
+def _get_turnos_unidad(unidad_negocio_id: str) -> List[Dict]:
     """
-    Obtiene el horario operativo de una unidad para un día específico.
-    
-    Args:
-        unidad_negocio_id: ID de la unidad (ej: '130QRO')
-        dia_semana: 0=Lunes, 1=Martes, ..., 6=Domingo
+    Obtiene los turnos operativos activos de una unidad desde EDARSAHUB SQL.
     
     Returns:
-        Dict con hora_inicio_operativo, hora_fin_operativo, cruza_medianoche
-        o None si no existe configuración
+        Lista de turnos ordenados por 'orden'.
     """
-    global _horarios_cache, _cache_timestamp
+    global _turnos_cache, _cache_timestamp
     
-    # Verificar cache
-    cache_key = f"{unidad_negocio_id}_{dia_semana}"
     now = datetime.now(MEXICO_TZ)
     
+    # Verificar cache
     if _cache_timestamp and (now - _cache_timestamp).total_seconds() < _CACHE_TTL_MINUTES * 60:
-        if cache_key in _horarios_cache:
-            return _horarios_cache[cache_key]
+        if unidad_negocio_id in _turnos_cache:
+            return _turnos_cache[unidad_negocio_id]
     else:
-        # Cache expirado, limpiar
-        _horarios_cache = {}
+        _turnos_cache = {}
         _cache_timestamp = now
     
-    # Consultar base de datos
-    query = f"""
-    SELECT 
-        hora_inicio_operativo,
-        hora_fin_operativo,
-        cruza_medianoche
-    FROM Sistema_HorariosServicioUnidad
-    WHERE unidad_negocio_id = '{unidad_negocio_id}'
-      AND dia_semana = {dia_semana}
-      AND activo = 1
-    """
-    
+    # Consultar BD
+    import pymssql
     try:
-        results = execute_sql_query(
-            EDARSAHUB_CONFIG['host'],
-            EDARSAHUB_CONFIG['port'],
-            EDARSAHUB_CONFIG['database'],
-            EDARSAHUB_CONFIG['username'],
-            EDARSAHUB_CONFIG['password'],
-            query
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            as_dict=True
         )
+        cursor = conn.cursor()
         
-        if results:
-            horario = {
-                'hora_inicio': results[0]['hora_inicio_operativo'],
-                'hora_fin': results[0]['hora_fin_operativo'],
-                'cruza_medianoche': bool(results[0]['cruza_medianoche'])
-            }
-            _horarios_cache[cache_key] = horario
-            return horario
+        # Query sin dependencia de columnas de tolerancia (pueden no existir)
+        cursor.execute("""
+            SELECT 
+                turno_codigo,
+                turno_nombre,
+                hora_inicio,
+                hora_fin,
+                cruza_medianoche,
+                aplica_ventas_dia,
+                es_turno_principal,
+                orden
+            FROM Sistema_TurnosOperativosUnidad
+            WHERE unidad_negocio_id = %s
+              AND activo = 1
+              AND aplica_ventas_dia = 1
+            ORDER BY orden
+        """, (unidad_negocio_id,))
         
-        return None
+        turnos = cursor.fetchall()
+        conn.close()
+        
+        # Convertir timedelta a time si es necesario y agregar tolerancias default
+        for t in turnos:
+            if isinstance(t['hora_inicio'], timedelta):
+                total_sec = int(t['hora_inicio'].total_seconds())
+                t['hora_inicio'] = time(total_sec // 3600, (total_sec % 3600) // 60)
+            if isinstance(t['hora_fin'], timedelta):
+                total_sec = int(t['hora_fin'].total_seconds())
+                t['hora_fin'] = time(total_sec // 3600, (total_sec % 3600) // 60)
+            # Tolerancias por defecto si no existen en BD
+            t['tolerancia_inicio_minutos'] = t.get('tolerancia_inicio_minutos', 5)
+            t['tolerancia_fin_minutos'] = t.get('tolerancia_fin_minutos', 30)
+        
+        _turnos_cache[unidad_negocio_id] = turnos
+        logger.debug(f"[OPERATIONAL_WINDOW] {unidad_negocio_id}: {len(turnos)} turnos cargados")
+        return turnos
         
     except Exception as e:
-        logger.error(f"[OPERATIONAL_WINDOW] Error consultando horario para {unidad_negocio_id}: {e}")
-        return None
+        logger.error(f"[OPERATIONAL_WINDOW] Error consultando turnos para {unidad_negocio_id}: {e}")
+        return []
+
+
+def _hora_en_rango(hora: time, inicio: time, fin: time, cruza_medianoche: bool, 
+                   tolerancia_inicio: int = 0) -> bool:
+    """
+    Verifica si una hora está dentro de un rango horario.
+    
+    NOTA: Solo se aplica tolerancia al INICIO para permitir que ventas
+    capturadas un poco antes del inicio oficial se clasifiquen correctamente.
+    La tolerancia de FIN NO se usa aquí para evitar que un turno "invada"
+    el siguiente turno.
+    
+    Args:
+        hora: Hora a verificar
+        inicio: Hora de inicio del turno
+        fin: Hora de fin del turno
+        cruza_medianoche: Si el turno cruza medianoche
+        tolerancia_inicio: Minutos de tolerancia antes del inicio
+    
+    Returns:
+        True si la hora está en el rango
+    """
+    # Aplicar tolerancia al inicio (restar minutos)
+    inicio_dt = datetime(2000, 1, 1, inicio.hour, inicio.minute)
+    inicio_con_tolerancia = (inicio_dt - timedelta(minutes=tolerancia_inicio)).time()
+    
+    if cruza_medianoche:
+        # Turno cruza medianoche (ej: 19:00-05:59)
+        # Está en rango si: hora >= inicio OR hora <= fin
+        return hora >= inicio_con_tolerancia or hora <= fin
+    else:
+        # Turno NO cruza medianoche (ej: 13:01-18:59)
+        return inicio_con_tolerancia <= hora <= fin
 
 
 def get_operational_window(
     unidad_negocio_id: str,
     timestamp: Optional[datetime] = None
-) -> Tuple[date, time, time, bool]:
+) -> ResultadoVentanaOperativa:
     """
-    Calcula la FechaOperacion y ventana operativa para una unidad.
+    Calcula la FechaOperacion y turno operativo para una unidad.
     
-    Esta es la función principal que DEBE usarse en lugar de datetime.now().date()
-    para determinar a qué día operativo pertenece un momento dado.
+    Esta es la función principal para determinar a qué día operativo
+    y turno pertenece un momento dado.
     
     Args:
         unidad_negocio_id: ID de la unidad (ej: '130QRO', 'ORIGEN')
         timestamp: Momento a evaluar (default: ahora en México)
     
     Returns:
-        Tuple con:
-        - fecha_operacion: La fecha operativa calculada
-        - hora_inicio: Hora de inicio de la jornada
-        - hora_fin: Hora de fin de la jornada
-        - cruza_medianoche: Si la jornada cruza la medianoche
+        ResultadoVentanaOperativa con todos los datos del cálculo
     
-    Ejemplo:
-        # A las 02:00 del 15-May con horario 13:00-03:00
-        fecha_op, inicio, fin, cruza = get_operational_window('130QRO')
-        # fecha_op = 2026-05-14 (todavía en jornada del 14)
+    REGLAS:
+    1. Si hay un turno activo que cubra la hora actual → usar ese turno
+    2. Si estamos antes del primer turno del día → pertenecer al último turno del día anterior
+    3. Si estamos entre turnos → usar el siguiente turno del día actual
     """
-    # Obtener timestamp en zona México
+    # Normalizar timestamp a México
     if timestamp is None:
         timestamp = datetime.now(MEXICO_TZ)
     elif timestamp.tzinfo is None:
-        timestamp = MEXICO_TZ.localize(timestamp)
+        timestamp = timestamp.replace(tzinfo=MEXICO_TZ)
     else:
         timestamp = timestamp.astimezone(MEXICO_TZ)
     
     fecha_calendario = timestamp.date()
     hora_actual = timestamp.time()
+    alertas = []
     
-    # Obtener día de la semana (Python: 0=Lunes)
-    dia_semana = fecha_calendario.weekday()
+    # Obtener turnos configurados
+    turnos = _get_turnos_unidad(unidad_negocio_id)
     
-    # Obtener horario configurado
-    horario = _get_horario_unidad(unidad_negocio_id, dia_semana)
-    
-    if horario is None:
-        # Sin configuración: usar horario por defecto (13:00 - 06:00)
-        # ACTUALIZACIÓN 16-May-2026: Corte operativo cambiado de 11:00 a 06:00
-        logger.warning(
-            f"[OPERATIONAL_WINDOW] {unidad_negocio_id}: Sin horario configurado, "
-            f"usando default 13:00-06:00"
-        )
-        horario = {
-            'hora_inicio': time(13, 0, 0),
-            'hora_fin': time(6, 0, 0),
-            'cruza_medianoche': True
-        }
-    
-    hora_inicio = horario['hora_inicio']
-    hora_fin = horario['hora_fin']
-    cruza_medianoche = horario['cruza_medianoche']
-    
-    # Convertir a time si viene como timedelta
-    if isinstance(hora_inicio, timedelta):
-        total_seconds = int(hora_inicio.total_seconds())
-        hora_inicio = time(total_seconds // 3600, (total_seconds % 3600) // 60)
-    if isinstance(hora_fin, timedelta):
-        total_seconds = int(hora_fin.total_seconds())
-        hora_fin = time(total_seconds // 3600, (total_seconds % 3600) // 60)
-    
-    # Calcular FechaOperacion
-    if cruza_medianoche:
-        # Jornada cruza medianoche (ej: 13:00 - 03:00)
-        # Si estamos entre 00:00 y hora_fin, pertenecemos al día ANTERIOR
+    if not turnos:
+        # Sin configuración: ALERTA y usar default 13:00-06:00
+        alertas.append("SIN_CONFIGURACION_TURNOS")
+        logger.warning(f"[OPERATIONAL_WINDOW] {unidad_negocio_id}: Sin turnos configurados")
+        
+        # Fallback: 13:00-06:00 cruza medianoche
+        hora_inicio = time(13, 0)
+        hora_fin = time(6, 0)
+        
         if hora_actual < hora_fin:
+            # Antes del cierre (madrugada): día anterior
             fecha_operacion = fecha_calendario - timedelta(days=1)
-            logger.debug(
-                f"[OPERATIONAL_WINDOW] {unidad_negocio_id} @ {timestamp.strftime('%H:%M')}: "
-                f"Antes de cierre ({hora_fin}), fecha_operacion = {fecha_operacion} (día anterior)"
-            )
+            metodo = "FALLBACK_CRUZA_MEDIANOCHE"
         elif hora_actual >= hora_inicio:
-            # Después de hora_inicio: día actual
+            # Después de apertura: día actual
             fecha_operacion = fecha_calendario
-            logger.debug(
-                f"[OPERATIONAL_WINDOW] {unidad_negocio_id} @ {timestamp.strftime('%H:%M')}: "
-                f"Después de apertura ({hora_inicio}), fecha_operacion = {fecha_operacion}"
-            )
+            metodo = "FALLBACK_DIA_ACTUAL"
         else:
-            # Entre hora_fin y hora_inicio (restaurante cerrado)
-            # Pertenece al día anterior (última jornada que cerró)
+            # Entre cierre y apertura: día anterior
             fecha_operacion = fecha_calendario - timedelta(days=1)
-            logger.debug(
-                f"[OPERATIONAL_WINDOW] {unidad_negocio_id} @ {timestamp.strftime('%H:%M')}: "
-                f"Cerrado (entre {hora_fin} y {hora_inicio}), fecha_operacion = {fecha_operacion}"
+            metodo = "FALLBACK_ENTRE_TURNOS"
+        
+        return ResultadoVentanaOperativa(
+            unidad_negocio_id=unidad_negocio_id,
+            fecha_operacion=fecha_operacion,
+            turno_operativo_codigo="FALLBACK",
+            turno_nombre="Sin Configuración",
+            window_start_mx=hora_inicio,
+            window_end_mx=hora_fin,
+            cruza_medianoche=True,
+            timezone="America/Mexico_City",
+            metodo_fecha_operacion=metodo,
+            alertas=alertas,
+            timestamp_consulta=timestamp
+        )
+    
+    # Buscar turno activo actual
+    for turno in turnos:
+        tolerancia_inicio = turno.get('tolerancia_inicio_minutos', 5)
+        
+        if _hora_en_rango(
+            hora_actual, 
+            turno['hora_inicio'], 
+            turno['hora_fin'],
+            turno['cruza_medianoche'],
+            tolerancia_inicio
+        ):
+            # Encontramos el turno activo
+            if turno['cruza_medianoche'] and hora_actual < turno['hora_fin']:
+                # Estamos en la madrugada (00:00 - hora_fin): pertenece al día ANTERIOR
+                fecha_operacion = fecha_calendario - timedelta(days=1)
+                metodo = "TURNO_CRUZA_MEDIANOCHE_MADRUGADA"
+            else:
+                # Estamos en horario normal del turno: día actual
+                fecha_operacion = fecha_calendario
+                metodo = "TURNO_ACTIVO"
+            
+            logger.info(
+                f"[OPERATIONAL_WINDOW] {unidad_negocio_id}: "
+                f"turno={turno['turno_codigo']}, hora={hora_actual.strftime('%H:%M')}, "
+                f"fecha_operacion={fecha_operacion}, metodo={metodo}"
             )
+            
+            return ResultadoVentanaOperativa(
+                unidad_negocio_id=unidad_negocio_id,
+                fecha_operacion=fecha_operacion,
+                turno_operativo_codigo=turno['turno_codigo'],
+                turno_nombre=turno['turno_nombre'],
+                window_start_mx=turno['hora_inicio'],
+                window_end_mx=turno['hora_fin'],
+                cruza_medianoche=turno['cruza_medianoche'],
+                timezone="America/Mexico_City",
+                metodo_fecha_operacion=metodo,
+                alertas=alertas,
+                timestamp_consulta=timestamp
+            )
+    
+    # No estamos en ningún turno activo
+    # Determinar si estamos ANTES del primer turno o DESPUÉS del último
+    primer_turno = turnos[0]
+    ultimo_turno = turnos[-1]
+    
+    if hora_actual < primer_turno['hora_inicio']:
+        # Antes del primer turno del día
+        if ultimo_turno['cruza_medianoche']:
+            # El último turno del día anterior aún podría estar activo
+            # (ya se manejó arriba), pero si llegamos aquí, estamos
+            # en el "gap" entre turnos
+            fecha_operacion = fecha_calendario - timedelta(days=1)
+            metodo = "ANTES_PRIMER_TURNO_CRUZA"
+        else:
+            # No hay turno que cruce medianoche
+            fecha_operacion = fecha_calendario - timedelta(days=1)
+            metodo = "ANTES_PRIMER_TURNO"
+        
+        alertas.append("FUERA_HORARIO_OPERATIVO")
+        
+        return ResultadoVentanaOperativa(
+            unidad_negocio_id=unidad_negocio_id,
+            fecha_operacion=fecha_operacion,
+            turno_operativo_codigo="FUERA_HORARIO",
+            turno_nombre="Fuera de Horario",
+            window_start_mx=primer_turno['hora_inicio'],
+            window_end_mx=ultimo_turno['hora_fin'],
+            cruza_medianoche=ultimo_turno['cruza_medianoche'],
+            timezone="America/Mexico_City",
+            metodo_fecha_operacion=metodo,
+            alertas=alertas,
+            timestamp_consulta=timestamp
+        )
+    
+    # Estamos ENTRE turnos o DESPUÉS del último turno del día
+    # (sin turno que cruce medianoche activo)
+    fecha_operacion = fecha_calendario
+    metodo = "ENTRE_TURNOS_DIA_ACTUAL"
+    alertas.append("ENTRE_TURNOS")
+    
+    # Buscar el siguiente turno para window_start
+    siguiente_turno = None
+    for turno in turnos:
+        if turno['hora_inicio'] > hora_actual:
+            siguiente_turno = turno
+            break
+    
+    if siguiente_turno:
+        return ResultadoVentanaOperativa(
+            unidad_negocio_id=unidad_negocio_id,
+            fecha_operacion=fecha_operacion,
+            turno_operativo_codigo=siguiente_turno['turno_codigo'],
+            turno_nombre=f"Esperando {siguiente_turno['turno_nombre']}",
+            window_start_mx=siguiente_turno['hora_inicio'],
+            window_end_mx=siguiente_turno['hora_fin'],
+            cruza_medianoche=siguiente_turno['cruza_medianoche'],
+            timezone="America/Mexico_City",
+            metodo_fecha_operacion=metodo,
+            alertas=alertas,
+            timestamp_consulta=timestamp
+        )
     else:
-        # Jornada NO cruza medianoche (ej: 13:00 - 23:00)
-        # Si estamos antes de hora_inicio, pertenecemos al día anterior
-        if hora_actual < hora_inicio:
-            fecha_operacion = fecha_calendario - timedelta(days=1)
-        else:
-            fecha_operacion = fecha_calendario
-    
-    logger.info(
-        f"[OPERATIONAL_WINDOW] {unidad_negocio_id}: "
-        f"timestamp={timestamp.strftime('%Y-%m-%d %H:%M')}, "
-        f"fecha_operacion={fecha_operacion}, "
-        f"horario={hora_inicio}-{hora_fin}, "
-        f"cruza_medianoche={cruza_medianoche}"
-    )
-    
-    return fecha_operacion, hora_inicio, hora_fin, cruza_medianoche
+        # Después del último turno del día
+        return ResultadoVentanaOperativa(
+            unidad_negocio_id=unidad_negocio_id,
+            fecha_operacion=fecha_operacion,
+            turno_operativo_codigo="DESPUES_CIERRE",
+            turno_nombre="Después del Cierre",
+            window_start_mx=ultimo_turno['hora_inicio'],
+            window_end_mx=ultimo_turno['hora_fin'],
+            cruza_medianoche=ultimo_turno['cruza_medianoche'],
+            timezone="America/Mexico_City",
+            metodo_fecha_operacion="DESPUES_ULTIMO_TURNO",
+            alertas=alertas + ["DESPUES_HORARIO_OPERATIVO"],
+            timestamp_consulta=timestamp
+        )
 
 
-def get_query_date_range(
+def get_fecha_operacion(
     unidad_negocio_id: str,
     timestamp: Optional[datetime] = None
-) -> Tuple[str, str]:
+) -> date:
     """
-    Obtiene el rango de fechas para usar en queries SQL a las APIs locales.
+    Obtiene solo la FechaOperacion para una unidad.
     
-    Para jornadas que cruzan medianoche, la query debe considerar registros
-    de la fecha_operacion Y la fecha_calendario (para capturas después de 00:00).
-    
-    Args:
-        unidad_negocio_id: ID de la unidad
-        timestamp: Momento a evaluar (default: ahora en México)
+    Función de conveniencia para casos donde solo se necesita la fecha.
+    """
+    resultado = get_operational_window(unidad_negocio_id, timestamp)
+    return resultado.fecha_operacion
+
+
+def get_turno_operativo(
+    unidad_negocio_id: str,
+    timestamp: Optional[datetime] = None
+) -> str:
+    """
+    Obtiene solo el código del turno operativo.
     
     Returns:
-        Tuple con (fecha_inicio, fecha_fin) en formato ISO para SQL
+        'DESAYUNO', 'COMIDA', 'CENA', 'FUERA_HORARIO', etc.
     """
-    fecha_operacion, hora_inicio, hora_fin, cruza_medianoche = get_operational_window(
-        unidad_negocio_id, timestamp
-    )
-    
-    if cruza_medianoche:
-        # La query debe cubrir fecha_operacion Y el día siguiente (hasta hora_fin)
-        fecha_inicio = fecha_operacion.isoformat()
-        fecha_fin = (fecha_operacion + timedelta(days=1)).isoformat()
-    else:
-        # La query solo necesita la fecha_operacion
-        fecha_inicio = fecha_operacion.isoformat()
-        fecha_fin = fecha_operacion.isoformat()
-    
-    return fecha_inicio, fecha_fin
+    resultado = get_operational_window(unidad_negocio_id, timestamp)
+    return resultado.turno_operativo_codigo
+
+
+def get_mexico_now() -> datetime:
+    """Obtiene el timestamp actual en zona horaria México."""
+    return datetime.now(MEXICO_TZ)
+
+
+def get_fecha_operacion_now(unidad_negocio_id: str) -> date:
+    """Calcula la fecha operativa para el momento actual."""
+    return get_fecha_operacion(unidad_negocio_id, get_mexico_now())
 
 
 def is_within_operational_hours(
@@ -266,115 +412,68 @@ def is_within_operational_hours(
 ) -> bool:
     """
     Verifica si un timestamp está dentro del horario operativo de la unidad.
-    
-    Útil para decidir si hacer sync o esperar.
-    
-    Args:
-        unidad_negocio_id: ID de la unidad
-        timestamp: Momento a evaluar (default: ahora en México)
-    
-    Returns:
-        True si está dentro del horario operativo
     """
-    if timestamp is None:
-        timestamp = datetime.now(MEXICO_TZ)
-    elif timestamp.tzinfo is None:
-        timestamp = MEXICO_TZ.localize(timestamp)
-    else:
-        timestamp = timestamp.astimezone(MEXICO_TZ)
-    
-    hora_actual = timestamp.time()
-    fecha_calendario = timestamp.date()
-    dia_semana = fecha_calendario.weekday()
-    
-    horario = _get_horario_unidad(unidad_negocio_id, dia_semana)
-    
-    if horario is None:
-        # Sin config, asumir siempre operativo
-        return True
-    
-    hora_inicio = horario['hora_inicio']
-    hora_fin = horario['hora_fin']
-    cruza_medianoche = horario['cruza_medianoche']
-    
-    # Convertir si es timedelta
-    if isinstance(hora_inicio, timedelta):
-        total_seconds = int(hora_inicio.total_seconds())
-        hora_inicio = time(total_seconds // 3600, (total_seconds % 3600) // 60)
-    if isinstance(hora_fin, timedelta):
-        total_seconds = int(hora_fin.total_seconds())
-        hora_fin = time(total_seconds // 3600, (total_seconds % 3600) // 60)
-    
-    if cruza_medianoche:
-        # Operativo si: hora >= inicio OR hora < fin
-        return hora_actual >= hora_inicio or hora_actual < hora_fin
-    else:
-        # Operativo si: inicio <= hora <= fin
-        return hora_inicio <= hora_actual <= hora_fin
+    resultado = get_operational_window(unidad_negocio_id, timestamp)
+    return "FUERA_HORARIO" not in resultado.turno_operativo_codigo
 
 
-# Función de conveniencia para testing
 def debug_operational_window(unidad_negocio_id: str):
     """Imprime información de debug sobre la ventana operativa actual."""
-    now = datetime.now(MEXICO_TZ)
-    fecha_op, inicio, fin, cruza = get_operational_window(unidad_negocio_id, now)
-    dentro = is_within_operational_hours(unidad_negocio_id, now)
+    resultado = get_operational_window(unidad_negocio_id)
     
     print(f"\n=== DEBUG VENTANA OPERATIVA: {unidad_negocio_id} ===")
-    print(f"  Timestamp actual (México): {now.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"  Fecha calendario: {now.date()}")
-    print(f"  FechaOperacion calculada: {fecha_op}")
-    print(f"  Horario: {inicio} - {fin}")
-    print(f"  Cruza medianoche: {cruza}")
-    print(f"  Dentro de horario operativo: {dentro}")
+    print(f"  Timestamp (México): {resultado.timestamp_consulta.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  Fecha calendario: {resultado.timestamp_consulta.date()}")
+    print(f"  FechaOperacion: {resultado.fecha_operacion}")
+    print(f"  Turno: {resultado.turno_operativo_codigo} ({resultado.turno_nombre})")
+    print(f"  Ventana: {resultado.window_start_mx} - {resultado.window_end_mx}")
+    print(f"  Cruza medianoche: {resultado.cruza_medianoche}")
+    print(f"  Método: {resultado.metodo_fecha_operacion}")
+    print(f"  Alertas: {resultado.alertas}")
     
-    return fecha_op
+    return resultado
 
 
-# ============================================================================
-# FASE SYNC-1: Funciones para sincronización histórica
-# ============================================================================
+# =============================================================================
+# FUNCIONES LEGACY PARA COMPATIBILIDAD
+# =============================================================================
 
-# Constantes de ventana operativa default
-# NOTA: Preparado para futuro módulo de Horarios de Operación por unidad
-DEFAULT_VENTANA_INICIO_HORA = 13  # 13:00
-DEFAULT_VENTANA_FIN_HORA = 11     # 11:00 del día siguiente
-DEFAULT_CRUZA_MEDIANOCHE = True
+def get_query_date_range(
+    unidad_negocio_id: str,
+    timestamp: Optional[datetime] = None
+) -> Tuple[str, str]:
+    """
+    Obtiene el rango de fechas para queries SQL.
+    
+    LEGACY: Mantener para compatibilidad con código existente.
+    """
+    resultado = get_operational_window(unidad_negocio_id, timestamp)
+    fecha_operacion = resultado.fecha_operacion
+    
+    if resultado.cruza_medianoche:
+        fecha_inicio = fecha_operacion.isoformat()
+        fecha_fin = (fecha_operacion + timedelta(days=1)).isoformat()
+    else:
+        fecha_inicio = fecha_operacion.isoformat()
+        fecha_fin = fecha_operacion.isoformat()
+    
+    return fecha_inicio, fecha_fin
 
 
 def get_sync_operational_window(
     timestamp: datetime,
-    ventana_inicio_hora: int = DEFAULT_VENTANA_INICIO_HORA,
-    ventana_fin_hora: int = DEFAULT_VENTANA_FIN_HORA,
-    cruza_medianoche: bool = DEFAULT_CRUZA_MEDIANOCHE
+    ventana_inicio_hora: int = 13,
+    ventana_fin_hora: int = 6,
+    cruza_medianoche: bool = True
 ) -> Tuple[date, time, time, bool]:
     """
-    Calcula la ventana operativa para sincronización histórica.
+    LEGACY: Función para procesos de sincronización sin unidad específica.
     
-    FASE SYNC-1: Función específica para procesos de sincronización.
-    Permite pasar parámetros explícitos de ventana para preparar
-    futuro módulo de Horarios de Operación por unidad.
-    
-    Args:
-        timestamp: Momento a evaluar (debe tener timezone México)
-        ventana_inicio_hora: Hora de inicio (default 13)
-        ventana_fin_hora: Hora de fin (default 11)
-        cruza_medianoche: Si la jornada cruza medianoche (default True)
-    
-    Returns:
-        Tuple con:
-        - fecha_operacion: La fecha operativa calculada
-        - hora_inicio: time de inicio de jornada
-        - hora_fin: time de fin de jornada
-        - cruza_medianoche: bool
-    
-    Ejemplo con ventana 13:00-11:00:
-        timestamp = 2026-05-15 02:00:00 México
-        → fecha_operacion = 2026-05-14 (jornada del 14 no ha cerrado a las 11:00)
+    NOTA: Preferir usar get_operational_window(unidad_id) para cálculos
+    correctos basados en configuración por unidad.
     """
-    # Asegurar timezone México
     if timestamp.tzinfo is None:
-        timestamp = MEXICO_TZ.localize(timestamp)
+        timestamp = timestamp.replace(tzinfo=MEXICO_TZ)
     else:
         timestamp = timestamp.astimezone(MEXICO_TZ)
     
@@ -384,21 +483,14 @@ def get_sync_operational_window(
     hora_inicio = time(ventana_inicio_hora, 0, 0)
     hora_fin = time(ventana_fin_hora, 0, 0)
     
-    # Calcular FechaOperacion
     if cruza_medianoche:
-        # Jornada cruza medianoche (ej: 13:00 - 11:00)
         if hora_actual < hora_fin:
-            # Antes del cierre: pertenece al día ANTERIOR
             fecha_operacion = fecha_calendario - timedelta(days=1)
         elif hora_actual >= hora_inicio:
-            # Después de apertura: día actual
             fecha_operacion = fecha_calendario
         else:
-            # Entre cierre (11:00) y apertura (13:00): cerrado
-            # Pertenece al día anterior (última jornada que cerró)
             fecha_operacion = fecha_calendario - timedelta(days=1)
     else:
-        # Jornada NO cruza medianoche
         if hora_actual < hora_inicio:
             fecha_operacion = fecha_calendario - timedelta(days=1)
         else:
@@ -407,27 +499,32 @@ def get_sync_operational_window(
     return fecha_operacion, hora_inicio, hora_fin, cruza_medianoche
 
 
-def get_mexico_now() -> datetime:
-    """
-    Obtiene el timestamp actual en zona horaria México.
-    
-    FASE SYNC-1: Usar en lugar de datetime.now() o datetime.utcnow().
-    """
-    return datetime.now(MEXICO_TZ)
+# Mantener constantes legacy para compatibilidad
+DEFAULT_VENTANA_INICIO_HORA = 13
+DEFAULT_VENTANA_FIN_HORA = 6
+DEFAULT_CRUZA_MEDIANOCHE = True
 
 
-def get_fecha_operacion_now(
-    ventana_inicio_hora: int = DEFAULT_VENTANA_INICIO_HORA,
-    ventana_fin_hora: int = DEFAULT_VENTANA_FIN_HORA
-) -> date:
+# =============================================================================
+# WRAPPER LEGACY PARA COMPATIBILIDAD CON sync_comercial_abiertas_v2_job
+# =============================================================================
+
+def get_operational_window_legacy(
+    unidad_negocio_id: str,
+    timestamp: Optional[datetime] = None
+) -> Tuple[date, time, time, bool]:
     """
-    Calcula la fecha operativa para el momento actual.
+    LEGACY WRAPPER: Retorna tupla (fecha_operacion, hora_inicio, hora_fin, cruza_medianoche)
     
-    FASE SYNC-1: Conveniencia para obtener fecha_operacion sin crear timestamp.
+    Esta función existe SOLO para compatibilidad con código existente.
+    Nuevas implementaciones deben usar get_operational_window() que retorna
+    ResultadoVentanaOperativa con toda la información.
     """
-    now = get_mexico_now()
-    fecha_op, _, _, _ = get_sync_operational_window(
-        now, ventana_inicio_hora, ventana_fin_hora
+    resultado = get_operational_window(unidad_negocio_id, timestamp)
+    return (
+        resultado.fecha_operacion,
+        resultado.window_start_mx,
+        resultado.window_end_mx,
+        resultado.cruza_medianoche
     )
-    return fecha_op
 
