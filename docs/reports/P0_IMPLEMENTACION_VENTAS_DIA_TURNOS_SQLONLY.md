@@ -77,6 +77,13 @@ ResultadoVentanaOperativa(
 - ✅ Eliminado circuit breaker para consultas EDARSAHUB (siempre disponible)
 - ✅ Import de `get_ventas_dia_abiertas` desde comercial_v2
 
+**Corrección MPRO (2026-05-20)**:
+- ✅ MPRO en modo `solo_ventas_dia` ahora lee de EDARSAHUB SQL
+- ✅ NO consulta API_LOCAL desde endpoint de tablero
+- ✅ Mapeo canónico: ORIGEN→'ORIGEN', QRO→'130QRO'
+- ✅ Una conexión API_LOCAL por unidad (NO multisucursal dinámico)
+- ✅ Sin undefined name `unidades_sr`
+
 **Antes**:
 ```python
 data_type = "LIVE-C"

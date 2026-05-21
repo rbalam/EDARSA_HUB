@@ -61,6 +61,9 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 - ✅ `live_status=LIVE_NOT_APPLICABLE`
 - ✅ `source_period="EDARSAHUB_SQL"`
 - ✅ Lee de `Comercial_Ventas_Dia_Abiertas_v2`
+- ✅ SoftRestaurant: EDARSAHUB SQL (no tempcheques live)
+- ✅ MPRO: EDARSAHUB SQL (no API_LOCAL)
+- ✅ Mapeo canónico: ORIGEN→'ORIGEN', QRO→'130QRO' (NO LIKE ni inferencias)
 
 ### P0.6: Validación Comparativa
 - ✅ Tablero Ejecutivo: EDARSAHUB_SQL ✅
