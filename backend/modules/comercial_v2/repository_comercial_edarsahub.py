@@ -329,6 +329,26 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
         f"caller={caller_file}::{caller_func}"
     )
     
+    # =================================================================
+    # GUARD RAIL P0.H (REPOSITORY): BLOQUEAR FECHA FUTURA
+    # Esta es la ÚLTIMA línea de defensa antes de escribir en SQL
+    # =================================================================
+    from datetime import datetime
+    import pytz
+    mexico_tz = pytz.timezone('America/Mexico_City')
+    fecha_hoy_mx = datetime.now(mexico_tz).date()
+    
+    if ventas.fecha_operacion > fecha_hoy_mx:
+        logger.error(
+            f"[UPSERT-GUARD-RAIL] ⛔ BLOQUEADO: fecha_operacion={ventas.fecha_operacion} > "
+            f"fecha_hoy={fecha_hoy_mx}. Unidad={ventas.unidad_negocio_id}, run_id={ventas.sync_run_id}"
+        )
+        return {
+            'action': 'BLOCKED_FUTURE_DATE',
+            'reason': f'fecha_operacion futura: {ventas.fecha_operacion} > {fecha_hoy_mx}',
+            'unidad': ventas.unidad_negocio_id
+        }
+    
     # Verificar si existe y obtener valores actuales
     check_query = f"""
     SELECT id, total_estimado_dia, fecha_operacion, sync_run_id
