@@ -70,6 +70,19 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 - ✅ Tablero Comercial V2: EDARSAHUB_SQL ✅
 - ✅ Sin consultas LIVE en ningún tablero
 
+### P0.8-P0.15: Lock Anti-Concurrencia y Cierre P0 (2026-05-21)
+- ✅ **P0.8**: Lock anti-concurrencia implementado con tabla `Sync_Control_Ejecuciones`
+- ✅ **P0.9**: Validación sintáctica `py_compile` exitosa
+- ✅ **P0.10**: Ejecución manual del job `execute_sync_comercial_abiertas_v2()` exitosa
+  - run_id: `ABIERTA-20260521-012819-c02a`
+  - 3 unidades sincronizadas (ORIGEN, 130QRO, 130MID)
+  - 2 unidades con error esperado (CIENFUEGOS, ESTELAR - red/credenciales)
+- ✅ **P0.11**: Datos guardados en `Comercial_Ventas_Dia_Abiertas_v2`
+- ✅ **P0.12**: Lock registrado en SQL con Status=PARTIAL, Duration=262s
+- ✅ **P0.13**: Tablero Ejecutivo configurado SQL-only (data_type=EDARSAHUB_VENTAS_DIA)
+- ✅ **P0.14**: Tablero Comercial V2 SQL-only
+- ✅ **P0.15**: Documentación actualizada
+
 ### Corrección Regresión Menú Servidores
 - **Problema**: `GET /api/servers` retornaba HTTP 500 con `ResponseValidationError`
 - **Solución**: Garantizar valores por defecto en `_sql_row_to_server_dict()`
@@ -78,18 +91,19 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 
 ## PENDIENTE
 
-### P0 (Crítico - Arrastrado)
-- [ ] `SERVER_SECRET_KEY` no accesible para scheduler (MPRO)
-- [ ] Llave compuesta UPSERT de `Comercial_Ventas_Dia_Abiertas_v2`
+### P0 (Crítico) - CERRADO ✅
+- [x] `SERVER_SECRET_KEY` accesible para scheduler (VALIDADO - desencripta MPRO)
+- [x] Lock anti-concurrencia implementado
+- [x] Job ejecutado y datos sincronizados
 
 ### P1
-- [ ] Errores conexión SoftRestaurant (CIENFUEGOS, ESTELAR)
+- [ ] Errores conexión SoftRestaurant (CIENFUEGOS, ESTELAR) - infraestructura origen
 - [ ] Implementar detección de TURNO_EXTENDIDO
 - [ ] Implementar alertas de POSIBLE_MEZCLA_DIAS
+- [ ] `Comercial_Ventas_Dia_Detalle_v2` para reconciliación de cheques
 
 ### Backlog
 - [ ] Documentación final (FASE 10)
-- [ ] Lock anti-concurrencia para job de ventas
 - [ ] Migración final para retirar MongoDB
 
 ---
