@@ -96,6 +96,61 @@ MPRO_API_LOCAL_CONFIG_LEGACY = {
 MPRO_API_LOCAL_CONFIG = MPRO_API_LOCAL_CONFIG_LEGACY
 
 
+# =============================================================================
+# FASE P0.8: LOCK ANTI-CONCURRENCIA
+# =============================================================================
+
+# Lock en memoria para ejecución única (simple, para proceso único)
+_RUNNING_LOCK = {"active": False, "run_id": None, "pid": None, "started_at": None}
+
+async def _acquire_sync_lock(job_name: str, run_id: str, pid: int) -> bool:
+    """
+    Adquiere lock para evitar ejecuciones concurrentes.
+    
+    FASE P0.8: Implementación mínima con lock en memoria.
+    Para múltiples instancias, usar sp_getapplock o tabla SQL.
+    
+    Returns:
+        True si se adquirió el lock, False si ya hay otra ejecución
+    """
+    global _RUNNING_LOCK
+    
+    # Verificar si hay ejecución activa
+    if _RUNNING_LOCK["active"]:
+        # Verificar si el proceso anterior sigue vivo (timeout de 30 min)
+        if _RUNNING_LOCK["started_at"]:
+            elapsed = (datetime.now(timezone.utc) - _RUNNING_LOCK["started_at"]).total_seconds()
+            if elapsed > 1800:  # 30 minutos
+                logger.warning(f"[LOCK] Lock expirado (elapsed={elapsed}s). Forzando liberación.")
+                _RUNNING_LOCK["active"] = False
+            else:
+                logger.warning(f"[LOCK] Ejecución activa: run_id={_RUNNING_LOCK['run_id']}, pid={_RUNNING_LOCK['pid']}, elapsed={elapsed:.0f}s")
+                return False
+    
+    # Adquirir lock
+    _RUNNING_LOCK["active"] = True
+    _RUNNING_LOCK["run_id"] = run_id
+    _RUNNING_LOCK["pid"] = pid
+    _RUNNING_LOCK["started_at"] = datetime.now(timezone.utc)
+    
+    logger.info(f"[LOCK] Lock adquirido: job={job_name}, run_id={run_id}, pid={pid}")
+    return True
+
+
+async def _release_sync_lock(job_name: str, run_id: str, status: str = "SUCCESS") -> None:
+    """Libera el lock después de la ejecución."""
+    global _RUNNING_LOCK
+    
+    if _RUNNING_LOCK["run_id"] == run_id:
+        _RUNNING_LOCK["active"] = False
+        _RUNNING_LOCK["run_id"] = None
+        _RUNNING_LOCK["pid"] = None
+        _RUNNING_LOCK["started_at"] = None
+        logger.info(f"[LOCK] Lock liberado: job={job_name}, run_id={run_id}, status={status}")
+    else:
+        logger.warning(f"[LOCK] No se puede liberar lock de otro run_id: expected={_RUNNING_LOCK['run_id']}, got={run_id}")
+
+
 def _get_api_local_config(unidad_codigo: str) -> Optional[Dict]:
     """
     Obtiene la configuración de API local para una unidad MPRO desde EDARSAHUB.
@@ -428,6 +483,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
     - Conservar último dato válido si falla sync
     - ORIGEN y QRO usan API local (NO SQL Server MPRO)
     - UPSERT idempotente (dato mutable durante el día)
+    - LOCK ANTI-CONCURRENCIA (FASE P0.8)
     """
     from modules.comercial_v2.sync_comercial_edarsahub import (
         get_server_connection_config,
@@ -453,20 +509,41 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
     run_id = f"ABIERTA-{start_time.strftime('%Y%m%d-%H%M%S')}-{str(uuid.uuid4())[:4]}"
     
     # CORRECCIÓN: Usar zona horaria de México para fecha operativa
-    # En México, la fecha operativa corresponde a la hora local, no UTC
     mexico_tz = pytz.timezone('America/Mexico_City')
     now_mexico = datetime.now(mexico_tz)
     fecha_hoy = now_mexico.date()
     
     # LOG DIAGNÓSTICO OBLIGATORIO
     import os
+    pid = os.getpid()
     logger.warning(
         f"[SYNC_ABIERTAS_V2] DIAG: run_id={run_id}, "
         f"UTC={start_time.strftime('%Y-%m-%d %H:%M:%S')}, "
         f"México={now_mexico.strftime('%Y-%m-%d %H:%M:%S')}, "
         f"fecha_hoy={fecha_hoy}, "
-        f"pid={os.getpid()}"
+        f"pid={pid}"
     )
+    
+    # =========================================================================
+    # FASE P0.8: LOCK ANTI-CONCURRENCIA
+    # =========================================================================
+    # Verificar si hay otra ejecución activa del mismo job
+    lock_acquired = False
+    try:
+        lock_acquired = await _acquire_sync_lock(JOB_NAME, run_id, pid)
+        if not lock_acquired:
+            logger.warning(f"[SYNC_ABIERTAS_V2] ⏸️ SKIPPED_LOCKED: Otra ejecución activa. run_id={run_id}")
+            return {
+                "job_name": JOB_NAME,
+                "run_id": run_id,
+                "status": "SKIPPED_LOCKED",
+                "reason": "Otra instancia del job está en ejecución",
+                "fecha": fecha_hoy.isoformat()
+            }
+        logger.info(f"[SYNC_ABIERTAS_V2] 🔒 Lock adquirido: run_id={run_id}, pid={pid}")
+    except Exception as lock_err:
+        logger.error(f"[SYNC_ABIERTAS_V2] Error adquiriendo lock: {lock_err}")
+        # Continuar sin lock (degradación graceful)
     
     results = {
         "job_name": JOB_NAME,
@@ -481,6 +558,8 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
         "detalles_unidades": [],
         "errores": []
     }
+    
+    try:
     
     # Cargar unidades desde EDARSAHUB
     unidades_sr, unidades_mpro = _get_unidades_from_edarsahub()
@@ -999,19 +1078,25 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
             insert_sync_log(log)
     
     # Resumen final
-    end_time = datetime.now(timezone.utc)
-    results["fin_ejecucion"] = end_time.isoformat()
-    results["duracion_segundos"] = (end_time - start_time).total_seconds()
+        end_time = datetime.now(timezone.utc)
+        results["fin_ejecucion"] = end_time.isoformat()
+        results["duracion_segundos"] = (end_time - start_time).total_seconds()
+        
+        logger.info(
+            f"[SYNC_ABIERTAS_V2] === FIN === "
+            f"Procesadas: {results['unidades_procesadas']}, "
+            f"Exitosas: {results['unidades_exitosas']}, "
+            f"Fallidas: {results['unidades_fallidas']}, "
+            f"Total día: ${results['total_estimado_dia']:,.2f}"
+        )
+        
+        return results
     
-    logger.info(
-        f"[SYNC_ABIERTAS_V2] === FIN === "
-        f"Procesadas: {results['unidades_procesadas']}, "
-        f"Exitosas: {results['unidades_exitosas']}, "
-        f"Fallidas: {results['unidades_fallidas']}, "
-        f"Total día: ${results['total_estimado_dia']:,.2f}"
-    )
-    
-    return results
+    finally:
+        # FASE P0.8: Siempre liberar lock
+        if lock_acquired:
+            status = "SUCCESS" if results.get("unidades_fallidas", 0) == 0 else "PARTIAL"
+            await _release_sync_lock(JOB_NAME, run_id, status)
 
 
 # =============================================================================
