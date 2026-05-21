@@ -648,10 +648,15 @@ def _get_ventas_abiertas_edarsahub(server_id: str, sucursal_id: str = 'DEFAULT',
     # fecha_operacion = fecha_calendario en lugar de fecha_operacion correcta
     # =================================================================
     # FIX P0 (15-May-2026): Buscar por unidad_negocio_id en lugar de server_id
-    # Los server_ids pueden variar, pero unidad_negocio_id es el código canónico
+    # FIX P0.H (20-May-2026): Si no hay datos para fecha exacta, buscar último
+    # snapshot disponible y marcarlo como STALE
     # =================================================================
+    is_stale = False
+    fecha_usada = None
+    
     if unidad_negocio_id:
         # Priorizar búsqueda por unidad_negocio_id (más confiable)
+        # Primero intentar con fechas exactas
         query = f"""
         SELECT TOP 1
             ventas_abiertas,
@@ -693,13 +698,42 @@ def _get_ventas_abiertas_edarsahub(server_id: str, sucursal_id: str = 'DEFAULT',
         """
     result = _query_edarsahub_tablero(query)
     
+    # FIX P0.H: Si no hay datos para fecha exacta, buscar último snapshot disponible
+    if (not result or len(result) == 0) and unidad_negocio_id:
+        logging.warning(
+            f"[TABLERO-EDARSAHUB] Sin datos para fecha exacta. Buscando último snapshot para {unidad_negocio_id}..."
+        )
+        # Buscar el registro más reciente de esta unidad (cualquier fecha)
+        fallback_query = f"""
+        SELECT TOP 1
+            ventas_abiertas,
+            tickets_abiertos,
+            pax_abiertos,
+            ventas_cerradas_dia,
+            tickets_cerrados_dia,
+            pax_cerrados_dia,
+            total_estimado_dia,
+            snapshot_timestamp,
+            fecha_operacion
+        FROM Comercial_Ventas_Dia_Abiertas_v2
+        WHERE unidad_negocio_id = '{unidad_negocio_id}'
+        ORDER BY fecha_ultima_actualizacion DESC, snapshot_timestamp DESC
+        """
+        result = _query_edarsahub_tablero(fallback_query)
+        if result and len(result) > 0:
+            is_stale = True
+            logging.warning(
+                f"[TABLERO-EDARSAHUB] Usando snapshot STALE para {unidad_negocio_id}: "
+                f"fecha_db={result[0].get('fecha_operacion')}, fecha_esperada={fecha_operacion}"
+            )
+    
     if result and len(result) > 0:
         row = result[0]
         ventas_total = float(row.get('ventas_abiertas') or 0) + float(row.get('ventas_cerradas_dia') or 0)
         fecha_op_usada = row.get('fecha_operacion')
         logging.info(
             f"[TABLERO-EDARSAHUB] _get_ventas_abiertas: server_id={server_id} "
-            f"fecha_op_calculada={fecha_operacion}, fecha_op_db={fecha_op_usada}, ventas=${ventas_total:,.2f}"
+            f"fecha_op_calculada={fecha_operacion}, fecha_op_db={fecha_op_usada}, ventas=${ventas_total:,.2f}, is_stale={is_stale}"
         )
         return {
             'existe': True,
@@ -708,7 +742,9 @@ def _get_ventas_abiertas_edarsahub(server_id: str, sucursal_id: str = 'DEFAULT',
             'cheques': int(row.get('tickets_abiertos') or 0) + int(row.get('tickets_cerrados_dia') or 0),
             'snapshot_timestamp': row.get('snapshot_timestamp'),
             'fecha_operacion': fecha_op_usada,
-            'fecha_operacion_usada': fecha_operacion  # Para debug
+            'fecha_operacion_usada': fecha_operacion,  # Para debug
+            'is_stale': is_stale,
+            'stale_reason': f'fecha_db={fecha_op_usada} != fecha_esperada={fecha_operacion}' if is_stale else None
         }
     
     logging.warning(
@@ -722,7 +758,8 @@ def _get_ventas_abiertas_edarsahub(server_id: str, sucursal_id: str = 'DEFAULT',
         'cheques': 0,
         'snapshot_timestamp': None,
         'fecha_operacion': None,
-        'fecha_operacion_usada': fecha_operacion
+        'fecha_operacion_usada': fecha_operacion,
+        'is_stale': False
     }
 
 

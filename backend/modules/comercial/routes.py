@@ -821,10 +821,25 @@ async def _tablero_ejecutivo_internal(
                             # Leer de Comercial_Ventas_Dia_Abiertas_v2
                             ventas_dia_snapshot = get_ventas_dia_abiertas(fecha_op, [unidad_codigo] if unidad_codigo else None)
                             
-                            # Buscar este servidor en los datos
+                            # Buscar este servidor en los datos usando múltiples criterios
                             servidor_data = None
+                            server_name_lower = server.get('name', '').lower().strip()
                             for vd in ventas_dia_snapshot:
-                                if vd.get('server_id') == server['id'] or vd.get('unidad_negocio_id') == unidad_codigo:
+                                # Criterio 1: Match por server_id exacto
+                                if vd.get('server_id') == server['id']:
+                                    servidor_data = vd
+                                    break
+                                # Criterio 2: Match por unidad_negocio_id
+                                if unidad_codigo and vd.get('unidad_negocio_id') == unidad_codigo:
+                                    servidor_data = vd
+                                    break
+                                # Criterio 3: Match por nombre de unidad (normalizado)
+                                vd_nombre = (vd.get('unidad_negocio_nombre') or '').lower().strip()
+                                if vd_nombre and server_name_lower and (
+                                    vd_nombre == server_name_lower or
+                                    vd_nombre in server_name_lower or
+                                    server_name_lower in vd_nombre
+                                ):
                                     servidor_data = vd
                                     break
                             
@@ -1297,9 +1312,24 @@ async def _tablero_ejecutivo_internal(
                         
                         ventas_dia_snapshot = get_ventas_dia_abiertas(fecha_op, [unidad_codigo_mpro])
                         
+                        # Buscar por múltiples criterios: ID, código o nombre
                         unidad_data = None
+                        server_name_lower = server.get('name', '').lower().strip()
                         for vd in ventas_dia_snapshot:
-                            if vd.get('unidad_negocio_id') == unidad_codigo_mpro:
+                            vd_id = vd.get('unidad_negocio_id', '')
+                            vd_nombre = (vd.get('unidad_negocio_nombre') or '').lower().strip()
+                            
+                            # Criterio 1: Match exacto por ID
+                            if vd_id == unidad_codigo_mpro:
+                                unidad_data = vd
+                                break
+                            # Criterio 2: Match por nombre normalizado
+                            if vd_nombre and server_name_lower and (
+                                vd_nombre == server_name_lower or
+                                vd_nombre in server_name_lower or
+                                server_name_lower in vd_nombre or
+                                vd_id.lower() in server_name_lower
+                            ):
                                 unidad_data = vd
                                 break
                         
@@ -1623,6 +1653,107 @@ async def _tablero_ejecutivo_internal(
     
     # =========================================================================
     # FIN P1 FIX DEDUPLICACIÓN
+    # =========================================================================
+    
+    # =========================================================================
+    # P0.H FIX: INCLUIR UNIDADES API_LOCAL DESDE EDARSAHUB SQL
+    # Los servidores con tipo_conexion=API_LOCAL no se incluyen en /api/servers
+    # pero sus datos SÍ existen en Comercial_Ventas_Dia_Abiertas_v2.
+    # Esta sección añade esas unidades al resultado si solo_ventas_dia=True.
+    # =========================================================================
+    if solo_ventas_dia:
+        try:
+            # Obtener todos los snapshots del día
+            import pytz
+            mexico_tz = pytz.timezone('America/Mexico_City')
+            fecha_hoy = datetime.now(mexico_tz).date()
+            
+            all_snapshots = get_ventas_dia_abiertas(fecha_hoy, None)
+            
+            # IDs de unidades ya incluidas
+            unidades_incluidas = set()
+            for r in resultados:
+                uid = r.get('unidad_negocio_id') or r.get('server_id')
+                if uid:
+                    unidades_incluidas.add(uid)
+                # También por nombre normalizado
+                nombre = (r.get('nombre') or '').upper().strip()
+                if nombre:
+                    unidades_incluidas.add(nombre)
+            
+            # Añadir unidades de SQL que no están incluidas
+            for snapshot in all_snapshots:
+                uid = snapshot.get('unidad_negocio_id', '')
+                sid = snapshot.get('server_id', '')
+                nombre_sql = (snapshot.get('unidad_negocio_nombre') or uid or '').upper().strip()
+                
+                # Verificar si ya está incluida
+                if uid in unidades_incluidas or sid in unidades_incluidas or nombre_sql in unidades_incluidas:
+                    continue
+                
+                # Verificar que tenga datos válidos (total > 0 o es sync reciente)
+                total = float(snapshot.get('total_estimado_dia') or 0)
+                
+                # Crear entrada para esta unidad desde SQL
+                logging.info(f"[P0.H] Añadiendo unidad API_LOCAL desde SQL: {uid} ({nombre_sql}) = ${total:,.2f}")
+                
+                unit_response = {
+                    'unidad_key': f"{uid}:SQL_SNAPSHOT",
+                    'unidad_negocio_id': uid,
+                    'unidad_negocio_codigo': uid,
+                    'unidad_negocio_nombre': snapshot.get('unidad_negocio_nombre', uid),
+                    'server_id': sid,
+                    'unidad': uid,
+                    'nombre': snapshot.get('unidad_negocio_nombre', uid),
+                    'system_type': snapshot.get('sistema_origen', 'MPRO'),
+                    'connection_type': 'API_LOCAL',
+                    'data_status': DataStatus.DATA_OK if total > 0 else DataStatus.NO_DATA_CONFIRMED,
+                    'live_status': LiveStatus.LIVE_NOT_APPLICABLE,
+                    'cache_status': CacheStatus.NOT_USED,
+                    'source_used': SourceUsed.REAL_SOURCE,
+                    'source_real_attempted': True,
+                    'source_real_status': SourceRealStatus.SUCCESS,
+                    'source_period': 'EDARSAHUB_SQL',
+                    'source_live': 'EDARSAHUB_SQL',
+                    'last_data_refresh_at': str(snapshot.get('fecha_ultima_actualizacion', '')),
+                    'last_live_check_at': None,
+                    'status_ttl_seconds': 120,
+                    'updated_at': str(snapshot.get('fecha_ultima_actualizacion', '')),
+                    'ventas': total,
+                    'ventas_ant': 0,
+                    'ventas_año': 0,
+                    'pax': int(snapshot.get('pax_abiertos') or 0) + int(snapshot.get('pax_cerrados_dia') or 0),
+                    'pax_ant': 0,
+                    'pax_año': 0,
+                    'cheques': int(snapshot.get('tickets_abiertos') or 0) + int(snapshot.get('tickets_cerrados_dia') or 0),
+                    'cheques_ant': 0,
+                    'cheques_año': 0,
+                    'ticket_prom': 0,
+                    'proyeccion': total,
+                    'var_vs_mes_ant': 0,
+                    'var_vs_año_ant': 0,
+                    'cache_warning': None,
+                    'error_code': None,
+                    'error_message': None,
+                    'status': 'ok' if total > 0 else 'no_data',
+                    'source_status': 'SQL_SNAPSHOT',
+                    'config_origin': 'EDARSAHUB_SQL',
+                    '_sql_snapshot': True,
+                    '_fecha_operacion': str(snapshot.get('fecha_operacion', '')),
+                }
+                
+                resultados.append(unit_response)
+                
+                # Añadir a totales
+                totales['ventas'] += total
+                totales['pax'] += unit_response['pax']
+                totales['cheques'] += unit_response['cheques']
+                totales['proyeccion'] += total
+                
+        except Exception as sql_err:
+            logging.error(f"[P0.H] Error añadiendo unidades API_LOCAL: {sql_err}")
+    # =========================================================================
+    # FIN P0.H FIX
     # =========================================================================
     
     # ================================================================

@@ -727,6 +727,22 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 # Determinar fuente original
                 fuente = FuenteOriginal.TEMPCHEQUES if ventas_abiertas > 0 else FuenteOriginal.CHEQUES
             
+                # =================================================================
+                # GUARD RAIL P0.H: VALIDAR FECHA_OPERACION ANTES DE ESCRIBIR
+                # =================================================================
+                # fecha_hoy viene de now_mexico.date() (línea 570)
+                # fecha_operacion viene de get_operational_window()
+                # La fecha_operacion NO puede ser futura respecto a fecha_hoy
+                if fecha_operacion > fecha_hoy:
+                    logger.error(
+                        f"[SYNC_ABIERTAS_V2] ⛔ GUARD RAIL BLOQUEÓ ESCRITURA: "
+                        f"fecha_operacion={fecha_operacion} > fecha_hoy={fecha_hoy}. "
+                        f"Unidad={unidad_id}, run_id={run_id}"
+                    )
+                    results["errores"].append(f"{unidad_id}: fecha_operacion futura bloqueada")
+                    results["unidades_fallidas"] += 1
+                    continue  # NO escribir este registro
+                
                 # Crear modelo y upsert
                 ventas_model = VentasDiaAbiertasV2(
                     unidad_negocio_id=unidad_id,
@@ -1030,6 +1046,19 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                     logger.info(f"  ventas_cerradas_dia: ${ventas_cerradas_dia:,.2f}")
                     logger.info(f"  total_estimado_dia: ${total_estimado_dia:,.2f}")
             
+                # =================================================================
+                # GUARD RAIL P0.H: VALIDAR FECHA_OPERACION ANTES DE ESCRIBIR
+                # =================================================================
+                if fecha_operacion > fecha_hoy:
+                    logger.error(
+                        f"[SYNC_ABIERTAS_V2] ⛔ GUARD RAIL BLOQUEÓ ESCRITURA MPRO: "
+                        f"fecha_operacion={fecha_operacion} > fecha_hoy={fecha_hoy}. "
+                        f"Unidad={unidad_id}, run_id={run_id}"
+                    )
+                    results["errores"].append(f"{unidad_id}: fecha_operacion futura bloqueada")
+                    results["unidades_fallidas"] += 1
+                    continue  # NO escribir este registro
+                
                 # Crear modelo y upsert
                 ventas_model = VentasDiaAbiertasV2(
                     unidad_negocio_id=unidad_id,
