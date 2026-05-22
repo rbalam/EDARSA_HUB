@@ -1527,13 +1527,16 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
   
   // Función para limpiar inventario capturado
   const limpiarInventarioCaptura = () => {
-    setInventarioManualCaptura(prev => prev.map(item => ({
-      ...item,
-      cantidadInsumos: 0,
-      cantidadPresentaciones: 0,
-      totalInsumos: 0
-    })));
-    localStorage.removeItem('inventarioManualCaptura_backup');
+    if (window.confirm('¿Está seguro de eliminar TODO el inventario manual capturado?')) {
+      setInventarioManualCaptura([]);
+      setInventarioManual([]);
+      localStorage.removeItem('inventarioManualCaptura_backup');
+    }
+  };
+  
+  // Eliminar un producto individual del inventario capturado
+  const eliminarProductoCaptura = (codigo) => {
+    setInventarioManualCaptura(prev => prev.filter(item => item.codigo !== codigo));
   };
   
   // Guardar inventario en localStorage cuando cambia
@@ -3329,9 +3332,7 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
                         <td className="py-2 px-3 text-right text-zinc-500">({formatNumber(totalPresentaciones)})</td>
                         <td className="py-1 px-1 text-center">
                           <button
-                            onClick={() => {
-                              setInventarioManualCaptura(prev => prev.filter(i => i.codigo !== item.codigo));
-                            }}
+                            onClick={() => eliminarProductoCaptura(item.codigo)}
                             className="p-1 text-red-500 hover:bg-red-100 rounded"
                             title="Eliminar producto"
                           >
