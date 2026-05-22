@@ -14,7 +14,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { loginWithData } = useAuth();
+  const { login } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -22,8 +22,8 @@ const Login = () => {
 
     try {
       const response = await api.post('/auth/login', { email, password });
-      // Usar AuthContext.loginWithData para setear token en memoria (CORS fallback)
-      loginWithData(response.data.token, response.data.user);
+      // login() del AuthContext ya mapea a loginWithData (setea token en memoria)
+      login(response.data.token, response.data.user);
       toast.success('Inicio de sesión exitoso');
       navigate('/dashboard');
     } catch (error) {

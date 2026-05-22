@@ -356,9 +356,23 @@ async def get_me(request: Request):
     Retorna los datos del usuario autenticado.
     
     FASE AUTH-SECURITY-01: Soporta autenticación dual (Header O Cookie).
+    FASE FILTRO-FIX: También retorna token para setear en memoria (CORS fallback).
     """
     current_user = await get_current_user_dual(request)
-    return current_user
+    
+    # Generar token fresco para que el frontend pueda usarlo en memoria
+    # Esto soluciona el problema donde al recargar la página el token no está en memoria
+    user_id = current_user.get("id", current_user.get("_id", ""))
+    email = current_user.get("email", "")
+    role = current_user.get("role", current_user.get("rol", ""))
+    
+    from core.security import create_access_token
+    fresh_token = create_access_token(str(user_id), email, role, token_type="internal")
+    
+    return {
+        **current_user,
+        "token": fresh_token  # Token para setear en memoria
+    }
 
 
 # ============================================================================

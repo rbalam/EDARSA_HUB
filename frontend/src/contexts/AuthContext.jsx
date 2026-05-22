@@ -32,6 +32,7 @@ export function AuthProvider({ children }) {
   /**
    * Verificar sesión al montar
    * FASE AUTH-SECURITY-01: Verificar con /api/auth/me (lee cookie httpOnly)
+   * FASE FILTRO-FIX: También setea token en memoria para CORS fallback
    */
   useEffect(() => {
     const verifySession = async () => {
@@ -43,6 +44,12 @@ export function AuthProvider({ children }) {
         // Actualizar cache y estado
         setSessionUser(serverUser);
         setUser(serverUser);
+        
+        // FASE FILTRO-FIX: Si el servidor retorna un token, setearlo en memoria
+        // Esto permite que las llamadas API funcionen sin cookies (CORS fallback)
+        if (serverUser.token) {
+          setMemoryToken(serverUser.token);
+        }
       } catch (error) {
         // Sin sesión válida o error de conexión
         // Limpiar cualquier cache local
