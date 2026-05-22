@@ -291,7 +291,8 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
     # VALIDACIÓN 2: FechaOperacion debe coincidir con get_operational_window()
     try:
         from core.utils.operational_window import get_operational_window
-        fecha_correcta, _, _, _ = get_operational_window(ventas.unidad_negocio_id)
+        resultado_ventana = get_operational_window(ventas.unidad_negocio_id)
+        fecha_correcta = resultado_ventana.fecha_operacion
         fecha_recibida = ventas.fecha_operacion
         
         # Convertir a date si es necesario
