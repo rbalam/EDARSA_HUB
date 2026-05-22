@@ -89,6 +89,24 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 
 ---
 
+## IMPLEMENTADO (2026-05-22)
+
+### Bug Fix: Captura de Inventario Físico en MPRO
+- **Problema**: "No se encontraron productos en las requisiciones seleccionadas" al intentar capturar inventario físico en Auditoría Operativa.
+- **Causa Raíz**: 
+  1. `validate_server_access_by_empresa` buscaba usuarios en MongoDB (`db.users`) en lugar de EDARSAHUB SQL
+  2. El endpoint `productos-para-captura` no soportaba el esquema MPRO donde los productos están directamente en `Orden_Compra` (no en tabla de detalles)
+  3. `SOFTRESTAURANT_PRO` no estaba en el mapa de normalización de system_type
+- **Solución**:
+  1. ✅ Actualizado `validate_server_access_by_empresa` para usar `get_current_user` (SQL-only)
+  2. ✅ Agregado soporte para consultar `Orden_Compra` directamente en MPRO
+  3. ✅ Agregado `SOFTRESTAURANT_PRO` y variantes al mapa de normalización
+- **Archivos modificados**:
+  - `/app/backend/server.py` (endpoint `productos-para-captura` y `validate_server_access_by_empresa`)
+  - `/app/backend/core/system_type_utils.py` (normalización de system_type)
+
+---
+
 ## PENDIENTE
 
 ### P0 (Crítico) - CERRADO ✅

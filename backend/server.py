@@ -6734,6 +6734,8 @@ async def validate_server_access_by_empresa(server_id: str, credentials: HTTPAut
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     para usar EDARSAHUB SQL como fuente primaria.
     
+    FASE 2-G FIX: Usar get_current_user que busca en SQL en lugar de db.users (MongoDB)
+    
     Returns:
         dict con usuario, servidor y contexto de acceso
     
@@ -6743,12 +6745,8 @@ async def validate_server_access_by_empresa(server_id: str, credentials: HTTPAut
     """
     from core.server_registry import get_server_connection_info
     
-    # Decodificar token y obtener usuario
-    payload = verify_token(credentials.credentials)
-    user = await db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "password": 0})
-    
-    if not user:
-        raise HTTPException(status_code=401, detail="Usuario no encontrado")
+    # FASE 2-G FIX: Usar get_current_user (SQL-only) en lugar de db.users (MongoDB)
+    user = await get_current_user(credentials)
     
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     # AHORA: Usar registry que prioriza EDARSAHUB SQL
@@ -7738,7 +7736,7 @@ WHERE OC.folio IN ({folios_sql})
                         }
         
         elif is_mpro_system(server.get('system_type')):
-            # Para MPRO
+            # Para MPRO - Obtener productos de inventarios iniciales
             if request.folios_inv_inicial:
                 for folio in request.folios_inv_inicial:
                     query = f"""
@@ -7762,6 +7760,91 @@ WHERE D.Fi_Folio = '{folio}'
                                 'producto': r['producto'] or f'SKU: {codigo}',
                                 'rendimiento': 1
                             }
+            
+            # MPRO - Obtener productos de requisiciones/órdenes de compra
+            if request.folios_requisiciones:
+                folios_sql = ", ".join([f"'{f}'" for f in request.folios_requisiciones])
+                
+                # En algunos esquemas MPRO, los productos están directamente en Orden_Compra
+                # (no en una tabla separada de detalle)
+                query_oc_direct = f"""
+SELECT DISTINCT
+    OC.Pr_Cve_Producto as codigo,
+    P.Pr_Descripcion as producto,
+    1 as rendimiento
+FROM Orden_Compra OC
+INNER JOIN Producto P ON P.Pr_Cve_Producto = OC.Pr_Cve_Producto
+WHERE OC.Oc_Folio IN ({folios_sql})
+"""
+                try:
+                    result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query_oc_direct
+                    )
+                    for r in result:
+                        codigo = str(r['codigo'] or '').strip()
+                        if codigo and codigo not in productos:
+                            productos[codigo] = {
+                                'codigo': codigo,
+                                'producto': r['producto'] or f'SKU: {codigo}',
+                                'rendimiento': 1
+                            }
+                except Exception as e:
+                    logging.warning(f"[MPRO] Error en Orden_Compra directa: {e}")
+                
+                # Si no encontró productos, intentar con Orden_Compra_Detalle (esquema alternativo)
+                if len(productos) == 0:
+                    query_oc_detail = f"""
+SELECT DISTINCT
+    OCD.Pr_Cve_Producto as codigo,
+    P.Pr_Descripcion as producto,
+    1 as rendimiento
+FROM Orden_Compra_Detalle OCD
+INNER JOIN Producto P ON P.Pr_Cve_Producto = OCD.Pr_Cve_Producto
+WHERE OCD.Oc_Folio IN ({folios_sql})
+"""
+                    try:
+                        result = execute_sql_query(
+                            server['host'], server['port'], server['database'],
+                            server['username'], server['password'], query_oc_detail
+                        )
+                        for r in result:
+                            codigo = str(r['codigo'] or '').strip()
+                            if codigo and codigo not in productos:
+                                productos[codigo] = {
+                                    'codigo': codigo,
+                                    'producto': r['producto'] or f'SKU: {codigo}',
+                                    'rendimiento': 1
+                                }
+                    except Exception as e:
+                        logging.warning(f"[MPRO] Error en Orden_Compra_Detalle (esperado si no existe): {e}")
+                
+                # Último intento: Requisicion_Compra_Detalle
+                if len(productos) == 0:
+                    query_requi = f"""
+SELECT DISTINCT
+    RCD.Pr_Cve_Producto as codigo,
+    P.Pr_Descripcion as producto,
+    1 as rendimiento
+FROM Requisicion_Compra_Detalle RCD
+INNER JOIN Producto P ON P.Pr_Cve_Producto = RCD.Pr_Cve_Producto
+WHERE RCD.Rc_Folio IN ({folios_sql})
+"""
+                    try:
+                        result = execute_sql_query(
+                            server['host'], server['port'], server['database'],
+                            server['username'], server['password'], query_requi
+                        )
+                        for r in result:
+                            codigo = str(r['codigo'] or '').strip()
+                            if codigo and codigo not in productos:
+                                productos[codigo] = {
+                                    'codigo': codigo,
+                                    'producto': r['producto'] or f'SKU: {codigo}',
+                                    'rendimiento': 1
+                                }
+                    except Exception as e:
+                        logging.warning(f"[MPRO] Error en Requisicion_Compra_Detalle (esperado si no existe): {e}")
         
         return {
             'productos': list(productos.values()),

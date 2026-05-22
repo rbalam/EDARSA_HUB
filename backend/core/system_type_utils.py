@@ -65,7 +65,10 @@ SYSTEM_TYPE_MAP = {
     
     # SoftRestaurant variantes
     "SOFTRESTAURANT": SystemType.SOFTRESTAURANT,
+    "SOFTRESTAURANT_PRO": SystemType.SOFTRESTAURANT,  # SR Pro variant
+    "SOFTRESTAURANTPRO": SystemType.SOFTRESTAURANT,   # SR Pro variant
     "SR": SystemType.SOFTRESTAURANT,
+    "SR_PRO": SystemType.SOFTRESTAURANT,
     "SOFT_RESTAURANT": SystemType.SOFTRESTAURANT,
     "SOFT RESTAURANT": SystemType.SOFTRESTAURANT,
     "SOFT": SystemType.SOFTRESTAURANT,
