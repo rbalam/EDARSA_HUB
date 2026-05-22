@@ -14,7 +14,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { loginWithData } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -22,8 +22,8 @@ const Login = () => {
 
     try {
       const response = await api.post('/auth/login', { email, password });
-      // Usar AuthContext en lugar de localStorage directo
-      login(response.data.token, response.data.user);
+      // Usar AuthContext.loginWithData para setear token en memoria (CORS fallback)
+      loginWithData(response.data.token, response.data.user);
       toast.success('Inicio de sesión exitoso');
       navigate('/dashboard');
     } catch (error) {
