@@ -5,8 +5,8 @@
  * 
  * FASE AUTH-SECURITY-01:
  * - withCredentials: true para enviar cookies httpOnly automáticamente
- * - Fallback: token en memoria + Authorization header (para CORS restrictivo)
- * - Token NUNCA en localStorage/sessionStorage (seguridad XSS)
+ * - Fallback: token en memoria/sessionStorage + Authorization header (para CORS restrictivo)
+ * - FASE TAB-FIX: Token en sessionStorage para persistir entre pestañas
  */
 
 import axios from 'axios';
@@ -15,22 +15,56 @@ import { clearSession } from '../services/authStorage';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API_URL = `${BACKEND_URL}/api`;
 
-// Token en memoria - Fallback cuando el proxy/CORS bloquea cookies
-// Se limpia al cerrar la página (no persiste)
+// Token key en sessionStorage
+const TOKEN_STORAGE_KEY = 'edarsa_memory_token';
+
+// Token en memoria como fallback adicional
 let memoryToken = null;
 
 /**
- * Setear token en memoria (usado por AuthContext después del login)
+ * Obtener token (sessionStorage primero, luego memoria)
  */
-export const setMemoryToken = (token) => {
-  memoryToken = token;
+const getToken = () => {
+  // Primero intentar sessionStorage (persiste entre pestañas)
+  try {
+    const storedToken = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+    if (storedToken) {
+      return storedToken;
+    }
+  } catch (e) {
+    // sessionStorage no disponible
+  }
+  // Fallback a memoria
+  return memoryToken;
 };
 
 /**
- * Limpiar token de memoria (usado por logout)
+ * Setear token en memoria Y sessionStorage (usado por AuthContext después del login)
+ * FASE TAB-FIX: Ahora también guarda en sessionStorage para nueva pestaña
+ */
+export const setMemoryToken = (token) => {
+  memoryToken = token;
+  try {
+    if (token) {
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+    } else {
+      sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    }
+  } catch (e) {
+    // sessionStorage no disponible
+  }
+};
+
+/**
+ * Limpiar token de memoria y sessionStorage (usado por logout)
  */
 export const clearMemoryToken = () => {
   memoryToken = null;
+  try {
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  } catch (e) {
+    // sessionStorage no disponible
+  }
 };
 
 const api = axios.create({
@@ -42,12 +76,13 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor - Agrega Authorization header si hay token en memoria
+// Request interceptor - Agrega Authorization header si hay token
 api.interceptors.request.use(
   (config) => {
-    // Si hay token en memoria, agregarlo como fallback para CORS
-    if (memoryToken) {
-      config.headers.Authorization = `Bearer ${memoryToken}`;
+    // Obtener token (sessionStorage o memoria)
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -61,7 +96,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // NO limpiar memoryToken aquí - puede causar race conditions
+      // NO limpiar token aquí - puede causar race conditions
       // La limpieza se hace en logout explícito
       // Solo limpiar cache de sesión y redirigir si no estamos en login
       clearSession();
