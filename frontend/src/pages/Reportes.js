@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import logger from '@/services/logger';
 import api from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { fetchUnidadesNegocio, getServerIdFromUnidad } from '@/services/unidadesNegocioService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +50,9 @@ const getAlmacenPlaceholder = (selectedAlmacenes, selectedServer, selectedUnidad
 };
 
 const Reportes = () => {
+  // FASE AUTH-FIX: Usar AuthContext para esperar a que el usuario esté autenticado
+  const { user, loading: authLoading } = useAuth();
+  
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'analisis';
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -498,8 +502,12 @@ const Reportes = () => {
   }, []);
 
   useEffect(() => {
+    // FASE AUTH-FIX: Esperar a que el usuario esté autenticado
+    if (authLoading || !user) {
+      return;
+    }
     loadUnidadesNegocio();
-  }, []);
+  }, [user, authLoading]);
 
   // Track previous server to detect changes
   const prevServerIdRef = useRef(filters.server_id);

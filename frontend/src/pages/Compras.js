@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import api from '../lib/api';
 import logger from '../services/logger';
 import { getSessionUser } from '../services/authStorage';
+import { useAuth } from '../contexts/AuthContext';
 import { fetchUnidadesNegocio, getServerIdFromUnidad, getSucursalOrigenIdFromUnidad } from '../services/unidadesNegocioService';
 import { 
   generateUnidadKey, 
@@ -3341,6 +3342,9 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
 }
 
 export default function Compras() {
+  // FASE 3.2: Usar AuthContext para esperar a que el usuario esté autenticado
+  const { user, loading: authLoading } = useAuth();
+  
   // FASE 3.2: Unidades de negocio reemplazan servidores como filtro visible
   const [unidadesNegocio, setUnidadesNegocio] = useState([]);
   const [selectedUnidad, setSelectedUnidad] = useState('');
@@ -3368,6 +3372,11 @@ export default function Compras() {
   }, [unidadesNegocio]);
 
   useEffect(() => {
+    // FASE 3.2: Esperar a que el usuario esté autenticado antes de cargar unidades
+    if (authLoading || !user) {
+      return; // No cargar hasta que el usuario esté listo
+    }
+    
     // FASE 3.2: Cargar unidades de negocio según RBAC
     const loadUnidades = async () => {
       setLoadingUnidades(true);
@@ -3423,7 +3432,7 @@ export default function Compras() {
       }
     };
     loadUnidades();
-  }, []);
+  }, [user, authLoading]);
 
   // Cargar sucursales cuando cambia la unidad seleccionada
   useEffect(() => {

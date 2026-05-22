@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import logger from '../services/logger';
 import { getSessionUser } from '../services/authStorage';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -32,6 +33,9 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 const COLORS = ['#10b981', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
 
 export default function Finanzas() {
+  // FASE AUTH-FIX: Usar AuthContext para esperar a que el usuario esté autenticado
+  const { user, loading: authLoading } = useAuth();
+  
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(false);
   const [dashboard, setDashboard] = useState(null);
@@ -252,6 +256,11 @@ export default function Finanzas() {
   
   // === FASE 3.2: CARGAR UNIDADES DE NEGOCIO ===
   useEffect(() => {
+    // FASE AUTH-FIX: Esperar a que el usuario esté autenticado
+    if (authLoading || !user) {
+      return;
+    }
+    
     const loadUnidadesNegocio = async () => {
       setLoadingUnidades(true);
       try {
@@ -276,7 +285,7 @@ export default function Finanzas() {
     };
     
     loadUnidadesNegocio();
-  }, []);
+  }, [user, authLoading]);
   
   // Unidad seleccionada (objeto completo)
   const unidadSeleccionada = useMemo(() => {
