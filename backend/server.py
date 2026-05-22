@@ -17355,6 +17355,16 @@ try:
 except Exception as e:
     logger.warning(f"Error registrando Configuración Operativa router: {e}")
 
+# =============================================================================
+# CRM VTiger Integration
+# =============================================================================
+try:
+    from modules.crm.routes import router as crm_router
+    app.include_router(crm_router, tags=["CRM - VTiger"])
+    logger.info("✓ CRM VTiger router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM VTiger router: {e}")
+
 # Startup: Iniciar scheduler
 @app.on_event("startup")
 async def startup_scheduler():

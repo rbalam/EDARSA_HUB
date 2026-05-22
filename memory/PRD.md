@@ -91,6 +91,17 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 
 ## IMPLEMENTADO (2026-05-22)
 
+### Integración VTiger CRM - Backend Completo ✅
+- **URL**: https://saligula.hostw3b.com
+- **Auth**: Challenge-Response via webservice.php (MD5 token)
+- **Módulos VTiger disponibles**: 39 (Contacts, Leads, Accounts, Products, Invoice, etc.)
+- **Archivos creados/modificados**:
+  - `/app/backend/modules/crm/vtiger_client.py` - Cliente con autenticación challenge-response
+  - `/app/backend/modules/crm/service.py` - Lógica de negocio con auto-asignación de user_id
+  - `/app/backend/modules/crm/routes.py` - Endpoints REST
+  - `/app/backend/server.py` - Registro del router CRM
+- **Testing**: Contacto y Lead creados exitosamente via API
+
 ### Bug Fix: Captura de Inventario Físico en MPRO
 - **Problema**: "No se encontraron productos en las requisiciones seleccionadas" al intentar capturar inventario físico en Auditoría Operativa.
 - **Causa Raíz**: 

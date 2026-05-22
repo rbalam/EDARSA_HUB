@@ -104,6 +104,14 @@ class CRMService:
             if field not in data:
                 return {"success": False, "error": f"Campo requerido: {field}"}
         
+        # Asegurar que el usuario esté autenticado y obtener user_id
+        if not client._ensure_authenticated():
+            return {"success": False, "error": "No autenticado en VTiger"}
+        
+        # Asignar al usuario actual si no se especificó
+        if "assigned_user_id" not in data:
+            data["assigned_user_id"] = client._user_id
+        
         return client.create_record("Contacts", data)
     
     @staticmethod
@@ -139,6 +147,13 @@ class CRMService:
         for field in required:
             if field not in data:
                 return {"success": False, "error": f"Campo requerido: {field}"}
+        
+        # Asegurar autenticación y asignar usuario
+        if not client._ensure_authenticated():
+            return {"success": False, "error": "No autenticado en VTiger"}
+        
+        if "assigned_user_id" not in data:
+            data["assigned_user_id"] = client._user_id
         
         return client.create_record("Leads", data)
     
