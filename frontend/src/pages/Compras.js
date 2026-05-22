@@ -1887,7 +1887,7 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
   };
   
   // Función para aplicar inventario manual a la auditoría
-  const aplicarInventarioManual = () => {
+  const aplicarInventarioManual = async () => {
     // Crear el array de inventario manual para enviar al backend
     const inventarioParaBackend = inventarioManualCaptura
       .filter(item => item.totalInsumos > 0)
@@ -1899,6 +1899,31 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
       }));
     
     setInventarioManual(inventarioParaBackend);
+    
+    // FASE PROVISIONAL: Guardar en EDARSAHUB para historial
+    if (inventarioParaBackend.length > 0 && selectedUnidad) {
+      try {
+        const unidadInfo = unidadesNegocio.find(u => u.id === selectedUnidad);
+        await api.post('/compras/inventarios-provisionales', {
+          unidad_negocio_id: selectedUnidad,
+          unidad_negocio_nombre: unidadInfo?.nombre || '',
+          server_id: selectedServer,
+          sucursal: parentSucursal,
+          fecha_auditoria: fechaAuditoria,
+          items: inventarioParaBackend.map(item => ({
+            codigo_producto: item.codigo,
+            nombre_producto: item.producto,
+            cantidad: item.cantidad,
+            costo_unitario: item.costo || 0
+          }))
+        });
+        logger.log(`[Compras] Inventario provisional guardado: ${inventarioParaBackend.length} productos`);
+      } catch (error) {
+        logger.error('[Compras] Error guardando inventario provisional:', error);
+        // No bloquear el flujo, el inventario local sigue disponible
+      }
+    }
+    
     setMostrarCapturaManual(false);
     
     // Mostrar mensaje de confirmación
@@ -3215,6 +3240,7 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
                     <th className="py-2 px-3 text-right">Presentaciones</th>
                     <th className="py-2 px-3 text-right font-bold">Total (Insumos)</th>
                     <th className="py-2 px-3 text-right text-zinc-500">(Presentaciones)</th>
+                    <th className="py-2 px-1 text-center w-10">X</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3301,6 +3327,17 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
                         </td>
                         <td className="py-2 px-3 text-right font-bold text-blue-600">{formatNumber(item.totalInsumos || 0)}</td>
                         <td className="py-2 px-3 text-right text-zinc-500">({formatNumber(totalPresentaciones)})</td>
+                        <td className="py-1 px-1 text-center">
+                          <button
+                            onClick={() => {
+                              setInventarioManualCaptura(prev => prev.filter(i => i.codigo !== item.codigo));
+                            }}
+                            className="p-1 text-red-500 hover:bg-red-100 rounded"
+                            title="Eliminar producto"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}

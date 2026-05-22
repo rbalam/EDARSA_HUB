@@ -8576,6 +8576,252 @@ class DetalleMovimientosRequest(BaseModel):
     fecha_fin: str
     almacenes: Optional[List[str]] = None
 
+
+# =============================================================================
+# INVENTARIOS PROVISIONALES - CAPTURA MANUAL
+# Tabla: EDARSAHUB.dbo.Auditoria_Inventario_Provisional
+# =============================================================================
+
+class InventarioProvisionalItem(BaseModel):
+    codigo_producto: str
+    nombre_producto: Optional[str] = None
+    cantidad: float
+    costo_unitario: Optional[float] = 0
+    almacen: Optional[str] = None
+    notas: Optional[str] = None
+
+class InventarioProvisionalRequest(BaseModel):
+    unidad_negocio_id: str
+    unidad_negocio_nombre: Optional[str] = None
+    server_id: str
+    sucursal: Optional[str] = None
+    fecha_auditoria: Optional[str] = None
+    items: List[InventarioProvisionalItem]
+
+
+@api_router.post("/compras/inventarios-provisionales")
+async def guardar_inventario_provisional(
+    request: InventarioProvisionalRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Guarda inventarios provisionales (captura manual) en EDARSAHUB.
+    Permite persistir la captura manual del inventario físico antes de ejecutar la auditoría.
+    """
+    from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
+    
+    try:
+        usuario_id = current_user.get('_sql_usuario_id', current_user.get('id'))
+        usuario_email = current_user.get('email', 'unknown')
+        
+        conn = pymssql.connect(
+            server=EDARSAHUB_TABLERO_CONFIG['host'],
+            user=EDARSAHUB_TABLERO_CONFIG['username'],
+            password=EDARSAHUB_TABLERO_CONFIG['password'],
+            database=EDARSAHUB_TABLERO_CONFIG['database'],
+            port=EDARSAHUB_TABLERO_CONFIG['port'],
+            timeout=30
+        )
+        cursor = conn.cursor()
+        
+        items_guardados = 0
+        for item in request.items:
+            total = item.cantidad * (item.costo_unitario or 0)
+            cursor.execute("""
+                INSERT INTO Auditoria_Inventario_Provisional 
+                (unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal, 
+                 fecha_auditoria, usuario_id, usuario_email,
+                 codigo_producto, nombre_producto, cantidad, costo_unitario, total,
+                 almacen, notas, estado)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'PROVISIONAL')
+            """, (
+                request.unidad_negocio_id,
+                request.unidad_negocio_nombre,
+                request.server_id,
+                request.sucursal,
+                request.fecha_auditoria,
+                usuario_id,
+                usuario_email,
+                item.codigo_producto,
+                item.nombre_producto,
+                item.cantidad,
+                item.costo_unitario or 0,
+                total,
+                item.almacen,
+                item.notas
+            ))
+            items_guardados += 1
+        
+        conn.commit()
+        conn.close()
+        
+        logging.info(f"[INV-PROVISIONAL] Guardados {items_guardados} items por {usuario_email}")
+        
+        return {
+            "success": True,
+            "message": f"Guardados {items_guardados} productos provisionales",
+            "items_guardados": items_guardados
+        }
+        
+    except Exception as e:
+        logging.error(f"[INV-PROVISIONAL] Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/compras/inventarios-provisionales/{unidad_negocio_id}")
+async def obtener_inventarios_provisionales(
+    unidad_negocio_id: str,
+    fecha_auditoria: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Obtiene inventarios provisionales guardados para una unidad de negocio.
+    """
+    from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_TABLERO_CONFIG['host'],
+            user=EDARSAHUB_TABLERO_CONFIG['username'],
+            password=EDARSAHUB_TABLERO_CONFIG['password'],
+            database=EDARSAHUB_TABLERO_CONFIG['database'],
+            port=EDARSAHUB_TABLERO_CONFIG['port'],
+            timeout=30
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        query = """
+            SELECT id, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal,
+                   fecha_captura, fecha_auditoria, usuario_email,
+                   codigo_producto, nombre_producto, cantidad, costo_unitario, total,
+                   almacen, notas, estado, auditoria_ejecutada
+            FROM Auditoria_Inventario_Provisional
+            WHERE unidad_negocio_id = %s AND estado = 'PROVISIONAL'
+        """
+        params = [unidad_negocio_id]
+        
+        if fecha_auditoria:
+            query += " AND fecha_auditoria = %s"
+            params.append(fecha_auditoria)
+        
+        query += " ORDER BY fecha_captura DESC"
+        
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        conn.close()
+        
+        # Convertir datetime a string
+        for row in rows:
+            if row.get('fecha_captura'):
+                row['fecha_captura'] = str(row['fecha_captura'])
+            if row.get('fecha_auditoria'):
+                row['fecha_auditoria'] = str(row['fecha_auditoria'])
+        
+        return {
+            "success": True,
+            "data": rows,
+            "total": len(rows)
+        }
+        
+    except Exception as e:
+        logging.error(f"[INV-PROVISIONAL] Error obteniendo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.delete("/compras/inventarios-provisionales/{item_id}")
+async def eliminar_inventario_provisional(
+    item_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Elimina un item del inventario provisional.
+    """
+    from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_TABLERO_CONFIG['host'],
+            user=EDARSAHUB_TABLERO_CONFIG['username'],
+            password=EDARSAHUB_TABLERO_CONFIG['password'],
+            database=EDARSAHUB_TABLERO_CONFIG['database'],
+            port=EDARSAHUB_TABLERO_CONFIG['port'],
+            timeout=30
+        )
+        cursor = conn.cursor()
+        
+        # Verificar que existe y está en estado PROVISIONAL
+        cursor.execute("""
+            DELETE FROM Auditoria_Inventario_Provisional 
+            WHERE id = %s AND estado = 'PROVISIONAL'
+        """, (item_id,))
+        
+        rows_affected = cursor.rowcount
+        conn.commit()
+        conn.close()
+        
+        if rows_affected > 0:
+            logging.info(f"[INV-PROVISIONAL] Eliminado item {item_id} por {current_user.get('email')}")
+            return {"success": True, "message": "Item eliminado correctamente"}
+        else:
+            raise HTTPException(status_code=404, detail="Item no encontrado o ya procesado")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"[INV-PROVISIONAL] Error eliminando: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.delete("/compras/inventarios-provisionales/limpiar/{unidad_negocio_id}")
+async def limpiar_inventarios_provisionales(
+    unidad_negocio_id: str,
+    fecha_auditoria: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Limpia todos los inventarios provisionales de una unidad (para una fecha específica o todos).
+    """
+    from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_TABLERO_CONFIG['host'],
+            user=EDARSAHUB_TABLERO_CONFIG['username'],
+            password=EDARSAHUB_TABLERO_CONFIG['password'],
+            database=EDARSAHUB_TABLERO_CONFIG['database'],
+            port=EDARSAHUB_TABLERO_CONFIG['port'],
+            timeout=30
+        )
+        cursor = conn.cursor()
+        
+        if fecha_auditoria:
+            cursor.execute("""
+                DELETE FROM Auditoria_Inventario_Provisional 
+                WHERE unidad_negocio_id = %s AND fecha_auditoria = %s AND estado = 'PROVISIONAL'
+            """, (unidad_negocio_id, fecha_auditoria))
+        else:
+            cursor.execute("""
+                DELETE FROM Auditoria_Inventario_Provisional 
+                WHERE unidad_negocio_id = %s AND estado = 'PROVISIONAL'
+            """, (unidad_negocio_id,))
+        
+        rows_affected = cursor.rowcount
+        conn.commit()
+        conn.close()
+        
+        logging.info(f"[INV-PROVISIONAL] Limpiados {rows_affected} items de {unidad_negocio_id} por {current_user.get('email')}")
+        
+        return {
+            "success": True,
+            "message": f"Se eliminaron {rows_affected} items provisionales",
+            "items_eliminados": rows_affected
+        }
+        
+    except Exception as e:
+        logging.error(f"[INV-PROVISIONAL] Error limpiando: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/compras/detalle-movimientos")
 async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, current_user: Dict = Depends(get_current_user)):
     """
