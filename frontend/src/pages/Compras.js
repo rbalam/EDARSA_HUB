@@ -3373,15 +3373,28 @@ export default function Compras() {
 
   useEffect(() => {
     // FASE 3.2: Esperar a que el usuario esté autenticado antes de cargar unidades
-    if (authLoading || !user) {
-      return; // No cargar hasta que el usuario esté listo
+    logger.log(`[Compras] useEffect triggered - authLoading: ${authLoading}, user: ${user?.email || 'null'}`);
+    
+    if (authLoading) {
+      logger.log('[Compras] Esperando autenticación...');
+      return; // Aún cargando auth
     }
+    
+    if (!user) {
+      logger.log('[Compras] No hay usuario autenticado');
+      return; // No autenticado
+    }
+    
+    logger.log(`[Compras] Usuario autenticado: ${user.email}, procediendo a cargar unidades`);
     
     // FASE 3.2: Cargar unidades de negocio según RBAC
     const loadUnidades = async () => {
+      logger.log('[Compras] Iniciando carga de unidades...');
       setLoadingUnidades(true);
       try {
+        logger.log('[Compras] Llamando a fetchUnidadesNegocio()...');
         const unidades = await fetchUnidadesNegocio();
+        logger.log(`[Compras] Unidades recibidas: ${unidades?.length || 0}`);
         setUnidadesNegocio(unidades);
         
         // Auto-seleccionar si el usuario tiene solo una unidad

@@ -39,12 +39,13 @@ import logger from './logger';
 export const fetchUnidadesNegocio = async () => {
   try {
     // FASE AUTH-SECURITY-01: Usa api.js centralizado (cookie httpOnly + token en memoria)
+    logger.log('[Unidades] Iniciando fetch de unidades de negocio...');
     const response = await api.get('/unidades-negocio');
     
-    logger.debug(`[Unidades] Cargadas ${response.data.length} unidades de negocio`);
+    logger.log(`[Unidades] Cargadas ${response.data?.length || 0} unidades de negocio`);
     return response.data || [];
   } catch (error) {
-    logger.error('Error cargando unidades de negocio:', error);
+    logger.error('[Unidades] Error cargando unidades de negocio:', error);
     return [];
   }
 };
