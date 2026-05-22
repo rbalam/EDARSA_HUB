@@ -6844,15 +6844,23 @@ GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, A.Al_Cve_Almacen, S.Sc_Descri
 ORDER BY F.Fi_Folio DESC
 """
         logging.info(f"[RBAC-INVENTARIOS] MPRO Query con filtro RBAC: {almacen_rbac_filter or 'SIN_FILTRO'}")
-        result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], query
-        )
-        logging.info(f"[RBAC-INVENTARIOS] MPRO - Encontrados: {len(result)} inventarios (filtrado RBAC)")
-        return [{"folio": r['folio'], "fecha": str(r['fecha']), "almacen": r['almacen'], 
-                 "almacen_id": r.get('almacen_id', ''),
-                 "sucursal": r.get('sucursal', ''), "sucursal_id": r.get('sucursal_id', ''),
-                 "comentario": r['comentario'], "productos": r['total_productos']} for r in result]
+        try:
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query,
+                timeout=30  # Timeout de 30 segundos para evitar 524
+            )
+            logging.info(f"[RBAC-INVENTARIOS] MPRO - Encontrados: {len(result)} inventarios (filtrado RBAC)")
+            return [{"folio": r['folio'], "fecha": str(r['fecha']), "almacen": r['almacen'], 
+                     "almacen_id": r.get('almacen_id', ''),
+                     "sucursal": r.get('sucursal', ''), "sucursal_id": r.get('sucursal_id', ''),
+                     "comentario": r['comentario'], "productos": r['total_productos']} for r in result]
+        except Exception as e:
+            error_msg = str(e)
+            log_compras_error("inventarios-fisicos", server_id, "CONNECTION_ERROR", error_msg[:200], server.get('system_type'))
+            if 'timeout' in error_msg.lower() or 'connection' in error_msg.lower() or 'refused' in error_msg.lower():
+                raise HTTPException(status_code=503, detail=f"Servidor SQL temporalmente inaccesible: {server['host']}")
+            raise HTTPException(status_code=500, detail=f"Error consultando inventarios: {error_msg[:200]}")
     
     elif is_softrestaurant_system(server.get('system_type')):
         # FASE 8: Filtro RBAC por almacenes permitidos
