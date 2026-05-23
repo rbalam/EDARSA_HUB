@@ -1,5 +1,18 @@
 # EDARSA HUB - Product Requirements Document
 
+## MÁXIMAS (Reglas Críticas Inquebrantables)
+
+1. **MONITOREO BACKEND OBLIGATORIO**: Antes de ejecutar cualquier tarea, verificar que el backend esté en línea. Si detecta HTTP 502 o backend caído:
+   - INFORMAR INMEDIATAMENTE al usuario
+   - NO ACEPTAR ningún prompt hasta que el backend esté restaurado
+   - Reiniciar backend automáticamente y esperar confirmación
+
+2. **PROHIBIDO testing_agent_v3_fork**: Testing exclusivamente vía cURL, bash o `python -c`
+
+3. **Autorización Controlada**: No asumir ni refactorizar fuera del alcance solicitado
+
+---
+
 ## Problema Original
 Sistema de gestión centralizado (EDARSAHUB) con múltiples fuentes de datos (SQL Server, SoftRestaurant, MPRO). El problema principal identificado fue la "sobrescritura incorrecta de FechaOperacion" que inicialmente se atribuía a un "Ejecutor B" externo.
 
