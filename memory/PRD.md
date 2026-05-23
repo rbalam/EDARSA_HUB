@@ -195,13 +195,19 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 - [x] Pipeline de Ventas Default configurado (7 etapas con probabilidades)
 - [x] Scripts idempotentes: `01_create_crm_tables.sql`, `02_seed_crm_catalogs.sql`
 
-### Fase 2: Backend CRM Nativo (PRÓXIMA)
-- [ ] `repository.py` - Operaciones SQL para Leads, Oportunidades, etc.
-- [ ] `schemas.py` - Modelos Pydantic para validación
-- [ ] `services.py` - Lógica de negocio CRM nativo
-- [ ] `routes.py` - Endpoints REST CRUD (/api/crm/native/*)
+### Fase 2: Backend CRM Nativo ✅ (2026-05-23)
+- [x] `repository.py` - CRUD Leads, Oportunidades, Pipeline, Catálogos, Dashboard
+- [x] `schemas.py` - 20+ modelos Pydantic para validación
+- [x] `native_service.py` - Lógica de negocio CRM
+- [x] `native_routes.py` - 13 endpoints REST validados:
+  - Leads: CRUD + descalificar + convertir
+  - Oportunidades: CRUD + cambiar etapa + cerrar
+  - Pipelines: listar + vista Kanban
+  - Catálogos: todos + por nombre
+  - Dashboard: KPIs y métricas
+- [x] Integración con tablas Usuario_Catalogo (via PublicUUID)
 
-### Fase 3: Menú y Rutas Frontend
+### Fase 3: Menú y Rutas Frontend (PRÓXIMA)
 - [ ] Agregar sección CRM a `Layout.js` (sin romper menús existentes)
 - [ ] Registrar rutas CRM en `App.js`
 

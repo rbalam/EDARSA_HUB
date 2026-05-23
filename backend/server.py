@@ -17832,6 +17832,16 @@ try:
 except Exception as e:
     logger.warning(f"Error registrando CRM VTiger router: {e}")
 
+# =============================================================================
+# CRM Enterprise Native (EDARSAHUB SQL)
+# =============================================================================
+try:
+    from modules.crm.native_routes import router as crm_native_router
+    app.include_router(crm_native_router, tags=["CRM - Native (EDARSAHUB SQL)"])
+    logger.info("✓ CRM Native router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM Native router: {e}")
+
 # Startup: Iniciar scheduler
 @app.on_event("startup")
 async def startup_scheduler():
