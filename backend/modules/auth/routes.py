@@ -123,21 +123,28 @@ async def login(credentials: UserLogin, request: Request, response: Response):
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
     
-    # Crear sesión en EDARSAHUB SQL Server
+    # Crear sesión en EDARSAHUB SQL Server (NO BLOQUEANTE)
+    # OPTIMIZACIÓN: Timeout de 3 segundos para no bloquear login
+    session_info = None
     try:
-        session_info = await create_session(
-            user_id=int(user_id) if str(user_id).isdigit() else hash(str(user_id)) % 2147483647,
-            refresh_token=refresh_token,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            user_type="interno"
+        import asyncio
+        session_info = await asyncio.wait_for(
+            create_session(
+                user_id=int(user_id) if str(user_id).isdigit() else hash(str(user_id)) % 2147483647,
+                refresh_token=refresh_token,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                user_type="interno"
+            ),
+            timeout=3.0  # Timeout de 3 segundos
         )
+    except asyncio.TimeoutError:
+        import logging
+        logging.warning(f"Timeout creando sesión en EDARSAHUB (continuando con login legacy)")
     except Exception as e:
         # Si falla la creación de sesión en SQL, continuar con login legacy
-        # Esto permite rollback gradual
         import logging
         logging.warning(f"No se pudo crear sesión en EDARSAHUB (continuando con login legacy): {e}")
-        session_info = None
     
     # Setear cookies httpOnly
     # Access token cookie (corta duración)

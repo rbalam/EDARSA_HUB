@@ -206,7 +206,7 @@ async def _execute_sql_async(query: str, params: tuple = None, fetch_one: bool =
                 password=config['password'],
                 query=query,
                 params=params,
-                timeout_seconds=30
+                timeout_seconds=5  # Reducido de 30 a 5 segundos
             )
             
             if fetch_one and results:
