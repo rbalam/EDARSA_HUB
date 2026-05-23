@@ -17852,6 +17852,16 @@ try:
 except Exception as e:
     logger.warning(f"Error registrando CRM Integration router: {e}")
 
+# =============================================================================
+# TABLAJERÍA (Operaciones - Producción/Transformación)
+# =============================================================================
+try:
+    from modules.tablajeria.routes import router as tablajeria_router
+    app.include_router(tablajeria_router, tags=["Tablajería"])
+    logger.info("✓ Tablajería router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Tablajería router: {e}")
+
 # Startup: Iniciar scheduler
 @app.on_event("startup")
 async def startup_scheduler():

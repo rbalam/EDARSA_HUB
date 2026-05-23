@@ -304,10 +304,28 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
   - `Operaciones_Tablaje_EventosContables` - Eventos contabilidad
 - [x] Script DDL: `/app/docs/modules/TABLAJERIA_DDL_FASE1.sql`
 
-### Fase 2: Catálogo SQL de Sincronización (PRÓXIMA)
-- [ ] Consultas SELECT para CIENFUEGOS TABLAJERIA
-- [ ] Consultas SELECT para MPRO TABLAJERIA
-- [ ] Registro en ConsultasSQL_Servidores
+### Fase 2: Catálogo SQL de Sincronización ✅ (2026-05-23)
+- [x] Exploración estructura MPRO TABLAJERIA (11 tablas: receta, subgrupo_insumos, sucursales, etc.)
+- [x] Mapeo de entidades: receta → Plantilla, subgrupo_insumos → Derivados
+- [x] CIENFUEGOS TABLAJERIA: Pendiente (servidor offline)
+
+### Fase 3: Sincronización Legacy → EDARSAHUB ✅ (2026-05-23)
+- [x] `TablajeriaSyncService` implementado
+- [x] Sincronización idempotente con detección de cambios via hash SHA256
+- [x] Versionamiento automático de plantillas PUBLICADAS
+- [x] **Endpoints API**:
+  - `GET /api/tablajeria/sync/servidores` - Lista servidores de tablajería
+  - `POST /api/tablajeria/sync/ejecutar` - Ejecuta sincronización
+  - `GET /api/tablajeria/sync/log` - Historial de sincronizaciones
+- [x] **Validación exitosa**:
+  - MPRO TABLAJERIA: 217 registros leídos → 36 plantillas creadas ✅
+  - Derivados sincronizados con tipos (PRINCIPAL, SUBPRODUCTO, MERMA) ✅
+  - Log de sincronización registrado ✅
+
+### Fase 4: Captura Directa en EDARSAHUB (PRÓXIMA)
+- [ ] Endpoint POST /api/tablajeria/plantillas
+- [ ] Validaciones de negocio
+- [ ] Workflow de autorización
 
 ### Fases Posteriores (3-10)
 - [ ] Fase 3: Sincronización legacy → EDARSAHUB
