@@ -507,7 +507,7 @@ class OportunidadesRepository:
             cursor.execute("""
                 SELECT 
                     o.*,
-                    NULL as CuentaNombre,
+                    c.RazonSocial as CuentaNombre,
                     NULL as ContactoNombre,
                     p.Nombre as PipelineNombre,
                     e.Nombre as EtapaNombre,
@@ -516,6 +516,7 @@ class OportunidadesRepository:
                     eo.ColorHex as EstatusColor,
                     CONCAT(u.Nombre, ' ', u.Apellidos) as EjecutivoNombre
                 FROM CRM_Oportunidades o
+                LEFT JOIN Cliente_Catalogo c ON o.CuentaID = c.PublicUUID
                 LEFT JOIN CRM_Config_Pipelines p ON o.PipelineID = p.PipelineID
                 LEFT JOIN CRM_Config_PipelineEtapas e ON o.EtapaActualID = e.EtapaID
                 LEFT JOIN CRM_Cat_EstatusOportunidad eo ON o.EstatusOportunidadID = eo.EstatusID
@@ -589,7 +590,7 @@ class OportunidadesRepository:
             cursor.execute(f"""
                 SELECT 
                     o.*,
-                    NULL as CuentaNombre,
+                    c.RazonSocial as CuentaNombre,
                     p.Nombre as PipelineNombre,
                     e.Nombre as EtapaNombre,
                     e.ColorHex as EtapaColor,
@@ -597,6 +598,7 @@ class OportunidadesRepository:
                     eo.ColorHex as EstatusColor,
                     CONCAT(u.Nombre, ' ', u.Apellidos) as EjecutivoNombre
                 FROM CRM_Oportunidades o
+                LEFT JOIN Cliente_Catalogo c ON o.CuentaID = c.PublicUUID
                 LEFT JOIN CRM_Config_Pipelines p ON o.PipelineID = p.PipelineID
                 LEFT JOIN CRM_Config_PipelineEtapas e ON o.EtapaActualID = e.EtapaID
                 LEFT JOIN CRM_Cat_EstatusOportunidad eo ON o.EstatusOportunidadID = eo.EstatusID
@@ -920,9 +922,10 @@ class PipelineRepository:
                 cursor.execute("""
                     SELECT 
                         o.*,
-                        NULL as CuentaNombre,
+                        c.RazonSocial as CuentaNombre,
                         CONCAT(u.Nombre, ' ', u.Apellidos) as EjecutivoNombre
                     FROM CRM_Oportunidades o
+                    LEFT JOIN Cliente_Catalogo c ON o.CuentaID = c.PublicUUID
                     LEFT JOIN Usuario_Catalogo u ON o.EjecutivoResponsableUserID = u.PublicUUID
                     WHERE o.EmpresaID = %s 
                     AND o.PipelineID = %s 

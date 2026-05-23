@@ -29,6 +29,13 @@ import CentroControl from '@/pages/CentroControl';
 import ConfigAsignaciones from '@/pages/ConfigAsignaciones';
 import DBACredentialManager from '@/pages/DBACredentialManager';
 import ConfiguracionOperativaUnidades from '@/pages/ConfiguracionOperativaUnidades';
+
+// CRM Enterprise
+import CRMDashboard from '@/pages/crm/CRMDashboard';
+import LeadsPage from '@/pages/crm/LeadsPage';
+import OportunidadesPage from '@/pages/crm/OportunidadesPage';
+import PipelinePage from '@/pages/crm/PipelinePage';
+
 import { isAuthenticated } from '@/lib/auth';
 
 // Portal de Proveedores (Subproyecto separado)
@@ -54,6 +61,12 @@ function App() {
             <Route path="reportes" element={<Reportes />} />
             <Route path="compras" element={<Compras />} />
             <Route path="comercial" element={<Comercial />} />
+            {/* CRM Enterprise */}
+            <Route path="crm" element={<Navigate to="/crm/dashboard" replace />} />
+            <Route path="crm/dashboard" element={<CRMDashboard />} />
+            <Route path="crm/leads" element={<LeadsPage />} />
+            <Route path="crm/oportunidades" element={<OportunidadesPage />} />
+            <Route path="crm/pipeline" element={<PipelinePage />} />
             <Route path="tablero-ejecutivo" element={<TableroEjecutivo />} />
             <Route path="catalogo-consultas" element={<CatalogoConsultas />} />
             <Route path="explorador-bd" element={<ExploradorBD />} />

@@ -207,11 +207,17 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
   - Dashboard: KPIs y métricas
 - [x] Integración con tablas Usuario_Catalogo (via PublicUUID)
 
-### Fase 3: Menú y Rutas Frontend (PRÓXIMA)
-- [ ] Agregar sección CRM a `Layout.js` (sin romper menús existentes)
-- [ ] Registrar rutas CRM en `App.js`
+### Fase 3: Menú y Rutas Frontend ✅ (2026-05-23)
+- [x] Sección CRM agregada a `Layout.js` con submenús
+- [x] Rutas CRM registradas en `App.js`
+- [x] Páginas implementadas:
+  - `CRMDashboard.jsx` - KPIs, gráficos, actividad reciente
+  - `LeadsPage.jsx` - Tabla con filtros y paginación
+  - `OportunidadesPage.jsx` - Lista con barras de probabilidad
+  - `PipelinePage.jsx` - Vista Kanban drag-and-drop
+- [x] Columna `PublicUUID` agregada a `Cliente_Catalogo` para relación Oportunidad-Cuenta
 
-### Fase 4: Páginas CRM
+### Fase 4: Formularios CRUD (PRÓXIMA)
 - [ ] Dashboard CRM
 - [ ] Leads CRUD
 - [ ] Oportunidades CRUD con Pipeline visual

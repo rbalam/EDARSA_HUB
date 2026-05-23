@@ -33,7 +33,11 @@ import {
   Shield,
   Settings,
   UserCog,
-  Key
+  Key,
+  Target,
+  Kanban,
+  UserPlus,
+  Briefcase
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
@@ -63,6 +67,7 @@ const Layout = () => {
           mis_tareas: true,
           tablero_ejecutivo: isAdmin || role === 'Supervisor',
           comercial: true,
+          crm: true,
           compras: true,
           operaciones: true,
           finanzas: isAdmin || role === 'Supervisor',
@@ -97,6 +102,11 @@ const Layout = () => {
       'Mis Tareas': 'mis_tareas',
       'Tablero Ejecutivo': 'tablero_ejecutivo',
       'Comercial': 'comercial',
+      'CRM': 'crm',
+      'Dashboard CRM': 'crm',
+      'Leads': 'crm',
+      'Oportunidades': 'crm',
+      'Pipeline': 'crm',
       'Compras': 'compras',
       'Operaciones': 'operaciones',
       'Finanzas': 'finanzas',
@@ -170,6 +180,38 @@ const Layout = () => {
       href: '/comercial', 
       icon: TrendingUp, 
       roles: ['Usuario', 'Supervisor', 'Administrador'],
+    },
+    { 
+      name: 'CRM', 
+      href: '/crm', 
+      icon: Target, 
+      roles: ['Usuario', 'Supervisor', 'Administrador'],
+      submenus: [
+        {
+          name: 'Dashboard CRM',
+          href: '/crm/dashboard',
+          icon: PieChart,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Leads',
+          href: '/crm/leads',
+          icon: UserPlus,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Oportunidades',
+          href: '/crm/oportunidades',
+          icon: Briefcase,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Pipeline',
+          href: '/crm/pipeline',
+          icon: Kanban,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        }
+      ]
     },
     { 
       name: 'Compras', 
