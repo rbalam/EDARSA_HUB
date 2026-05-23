@@ -322,20 +322,55 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
   - Derivados sincronizados con tipos (PRINCIPAL, SUBPRODUCTO, MERMA) ✅
   - Log de sincronización registrado ✅
 
-### Fase 4: Captura Directa en EDARSAHUB (PRÓXIMA)
-- [ ] Endpoint POST /api/tablajeria/plantillas
+### Fase 4: Captura Directa en EDARSAHUB (PENDIENTE)
+- [ ] Endpoint POST /api/tablajeria/plantillas (crear plantilla desde cero)
 - [ ] Validaciones de negocio
-- [ ] Workflow de autorización
+- [ ] Workflow de autorización para publicar
 
-### Fases Posteriores (3-10)
-- [ ] Fase 3: Sincronización legacy → EDARSAHUB
-- [ ] Fase 4: Captura directa en EDARSAHUB
-- [ ] Fase 5: Órdenes de tablaje
+### Fase 5: Órdenes de Tablaje ✅ (2026-05-23)
+- [x] **Backend `TablajeriaOrdenesService`** implementado:
+  - Generación de folio secuencial por empresa (TBJ-YYYYMMDD-XXXX)
+  - Creación de orden desde plantilla con copia de detalles
+  - Flujo completo: BORRADOR → EN_EJECUCION → CERRADA
+  - Registro de resultados reales por derivado
+  - Cálculo automático de rendimiento y merma real
+  - Detección de desviaciones vs tolerancia
+  - Autorización requerida si desviación excede tolerancia
+  - Registro histórico en `Operaciones_Tablaje_Rendimientos` y `Operaciones_Tablaje_Mermas`
+- [x] **Endpoints API** (`/api/tablajeria/ordenes`):
+  - `GET /ordenes` - Listar con filtros (estatus, fechas, plantilla)
+  - `GET /ordenes/{id}` - Detalle con derivados
+  - `POST /ordenes` - Crear orden desde plantilla
+  - `PUT /ordenes/{id}/iniciar` - Iniciar ejecución
+  - `PUT /ordenes/{id}/resultados` - Registrar resultados
+  - `PUT /ordenes/{id}/cerrar` - Cerrar orden
+  - `PUT /ordenes/{id}/cancelar` - Cancelar orden
+  - `PUT /ordenes/{id}/autorizar` - Autorizar/rechazar
+  - `GET /ordenes-stats` - Estadísticas de órdenes
+- [x] **Validación exitosa via cURL**:
+  - Orden creada: TBJ-20260523-0001 ✅
+  - Flujo completo ejecutado: crear → iniciar → registrar → cerrar ✅
+  - Rendimiento real calculado: 73.53% ✅
+  - Estadísticas funcionando ✅
+
+### Fase 10: Frontend UI ✅ (2026-05-23)
+- [x] **Menú actualizado** en Layout.js:
+  - Producción > Tablajería (Dashboard)
+  - Producción > Plantillas
+  - Producción > Órdenes
+- [x] **Rutas registradas** en App.js
+- [x] **Páginas implementadas**:
+  - `TablajeriaDashboard.jsx` - KPIs, accesos rápidos, órdenes recientes
+  - `PlantillasPage.jsx` - Lista, detalle, publicar plantillas
+  - `OrdenesPage.jsx` - CRUD completo, registro de resultados, cierre
+
+### Fases Pendientes
+- [ ] Fase 4: Captura Directa (crear plantillas sin sync)
 - [ ] Fase 6: Integración inventarios
 - [ ] Fase 7: Integración compras (lectura)
-- [ ] Fase 8: Autorizaciones
+- [ ] Fase 8: Autorizaciones avanzadas
 - [ ] Fase 9: Eventos contables
-- [ ] Fase 10: Frontend UI
+- [ ] Permisos RBAC TABLAJERIA_* en tabla SQL
 
 ---
 
@@ -379,6 +414,10 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 - `/app/frontend/src/pages/ConfiguracionOperativaUnidades.jsx`
 - `/app/backend/modules/crm/integration/` (✅ NUEVO Fase 5 - Framework Conectores)
 - `/app/backend/modules/crm/integration_routes.py` (✅ NUEVO Fase 5 - API Integración)
+- `/app/backend/modules/tablajeria/routes.py` (✅ NUEVO - API Tablajería)
+- `/app/backend/modules/tablajeria/ordenes_service.py` (✅ NUEVO - Servicio Órdenes)
+- `/app/backend/modules/tablajeria/sync_service.py` (✅ NUEVO - Sync Legacy)
+- `/app/frontend/src/pages/tablajeria/` (✅ NUEVO - UI Tablajería)
 
 ## Documentos Generados
 - `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTRESTAURANT_MPRO_TURNOS.md`

@@ -2,11 +2,17 @@
 EDARSA HUB - Tablajería Routes
 ==============================
 Endpoints API para el módulo de Tablajería.
+
+FASE 5: Órdenes de tablaje (crear, ejecutar, cerrar)
+- Autenticación requerida en todos los endpoints
+- RBAC con permisos TABLAJERIA_*
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import Optional, List
-from datetime import datetime
+from fastapi import APIRouter, HTTPException, Query, Depends
+from pydantic import BaseModel
+from typing import Optional, List, Dict
+from datetime import datetime, date
+from decimal import Decimal
 import logging
 import os
 import pymssql
@@ -16,9 +22,11 @@ from .schemas import (
     Plantilla, PlantillaCreate, PlantillaUpdate,
     Orden, OrdenCreate, OrdenUpdate,
     SyncRequest, SyncResult,
-    EstatusPlantilla, OrigenPlantilla
+    EstatusPlantilla, EstatusOrden, OrigenPlantilla
 )
 from .sync_service import TablajeriaSyncService
+from .ordenes_service import TablajeriaOrdenesService
+from core.security import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -367,6 +375,417 @@ async def obtener_estadisticas(empresa_id: Optional[str] = None):
         }
         
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+
+# ============================================================
+# ÓRDENES DE TABLAJE (FASE 5)
+# ============================================================
+
+def _get_ordenes_service():
+    """Obtiene instancia del servicio de órdenes"""
+    return TablajeriaOrdenesService(DB_CONFIG)
+
+
+@router.get("/ordenes")
+async def listar_ordenes(
+    empresa_id: Optional[str] = None,
+    estatus: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    plantilla_id: Optional[str] = None,
+    limit: int = Query(default=50, le=200),
+    offset: int = 0,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Lista órdenes de tablaje con filtros.
+    
+    Permisos requeridos: TABLAJERIA_VER
+    """
+    try:
+        service = _get_ordenes_service()
+        
+        # Parsear fechas si vienen
+        fecha_desde_date = None
+        fecha_hasta_date = None
+        if fecha_desde:
+            fecha_desde_date = date.fromisoformat(fecha_desde)
+        if fecha_hasta:
+            fecha_hasta_date = date.fromisoformat(fecha_hasta)
+        
+        result = service.listar_ordenes(
+            empresa_id=empresa_id,
+            estatus=estatus,
+            fecha_desde=fecha_desde_date,
+            fecha_hasta=fecha_hasta_date,
+            plantilla_id=plantilla_id,
+            limit=limit,
+            offset=offset
+        )
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"[Tablajeria] Error listando órdenes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/ordenes/{orden_id}")
+async def obtener_orden(
+    orden_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Obtiene una orden con sus detalles.
+    
+    Permisos requeridos: TABLAJERIA_VER
+    """
+    try:
+        service = _get_ordenes_service()
+        orden = service.obtener_orden(orden_id)
+        
+        if not orden:
+            raise HTTPException(status_code=404, detail="Orden no encontrada")
+        
+        return orden
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[Tablajeria] Error obteniendo orden: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ordenes")
+async def crear_orden(
+    data: OrdenCreate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Crea una nueva orden de tablaje basada en una plantilla.
+    
+    Permisos requeridos: TABLAJERIA_CREAR_ORDEN
+    
+    La orden se crea en estatus BORRADOR.
+    Los detalles se copian automáticamente de la plantilla.
+    """
+    try:
+        service = _get_ordenes_service()
+        
+        # Obtener UUID del usuario
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.crear_orden(data, usuario_id)
+        
+        return {
+            "success": True,
+            "mensaje": f"Orden {result['folio_orden']} creada exitosamente",
+            **result
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[Tablajeria] Error creando orden: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/ordenes/{orden_id}/iniciar")
+async def iniciar_ejecucion_orden(
+    orden_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Inicia la ejecución de una orden.
+    
+    Permisos requeridos: TABLAJERIA_EJECUTAR_ORDEN
+    
+    Cambia estatus de BORRADOR/PLANEADA a EN_EJECUCION.
+    """
+    try:
+        service = _get_ordenes_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.iniciar_ejecucion(orden_id, usuario_id)
+        
+        return {
+            "success": True,
+            "mensaje": f"Orden {result['folio']} iniciada",
+            **result
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[Tablajeria] Error iniciando orden: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ResultadosOrdenRequest(BaseModel):
+    """Request para registrar resultados de ejecución"""
+    cantidad_base_real: Decimal
+    peso_inicial_kg: Optional[Decimal] = None
+    peso_final_kg: Optional[Decimal] = None
+    detalles: List[Dict] = []  # [{orden_detalle_id, cantidad_real, peso_real_kg}]
+
+
+@router.put("/ordenes/{orden_id}/resultados")
+async def registrar_resultados_orden(
+    orden_id: str,
+    data: ResultadosOrdenRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Registra los resultados reales del tablaje.
+    
+    Permisos requeridos: TABLAJERIA_EJECUTAR_ORDEN
+    
+    Body:
+    - cantidad_base_real: Cantidad real de insumo procesado
+    - peso_inicial_kg: Peso inicial en kg (opcional)
+    - peso_final_kg: Peso final en kg (opcional)
+    - detalles: Lista de resultados por derivado
+    """
+    try:
+        service = _get_ordenes_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.registrar_resultados(
+            orden_id=orden_id,
+            cantidad_base_real=data.cantidad_base_real,
+            peso_inicial_kg=data.peso_inicial_kg,
+            peso_final_kg=data.peso_final_kg,
+            detalles=data.detalles,
+            usuario_id=usuario_id
+        )
+        
+        return {
+            "success": True,
+            "mensaje": "Resultados registrados exitosamente",
+            **result
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[Tablajeria] Error registrando resultados: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class CerrarOrdenRequest(BaseModel):
+    """Request para cerrar orden"""
+    observaciones: Optional[str] = None
+
+
+@router.put("/ordenes/{orden_id}/cerrar")
+async def cerrar_orden(
+    orden_id: str,
+    data: Optional[CerrarOrdenRequest] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Cierra una orden después de la ejecución.
+    
+    Permisos requeridos: TABLAJERIA_CERRAR_ORDEN
+    
+    Si hay desviaciones fuera de tolerancia, la orden quedará en PENDIENTE_AUTORIZACION.
+    """
+    try:
+        service = _get_ordenes_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.cerrar_orden(
+            orden_id=orden_id,
+            usuario_id=usuario_id,
+            observaciones=data.observaciones if data else None
+        )
+        
+        mensaje = f"Orden {result['folio']} cerrada exitosamente"
+        if result.get('requiere_autorizacion'):
+            mensaje = f"Orden {result['folio']} requiere autorización: {result.get('motivo_autorizacion')}"
+        
+        return {
+            "success": True,
+            "mensaje": mensaje,
+            **result
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[Tablajeria] Error cerrando orden: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class CancelarOrdenRequest(BaseModel):
+    """Request para cancelar orden"""
+    motivo: str
+
+
+@router.put("/ordenes/{orden_id}/cancelar")
+async def cancelar_orden(
+    orden_id: str,
+    data: CancelarOrdenRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Cancela una orden.
+    
+    Permisos requeridos: TABLAJERIA_CANCELAR_ORDEN
+    
+    Solo se pueden cancelar órdenes que no estén CERRADAS.
+    """
+    try:
+        service = _get_ordenes_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.cancelar_orden(
+            orden_id=orden_id,
+            usuario_id=usuario_id,
+            motivo=data.motivo
+        )
+        
+        return {
+            "success": True,
+            "mensaje": f"Orden {result['folio']} cancelada",
+            **result
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[Tablajeria] Error cancelando orden: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class AutorizarOrdenRequest(BaseModel):
+    """Request para autorizar orden"""
+    aprobado: bool
+    comentarios: Optional[str] = None
+
+
+@router.put("/ordenes/{orden_id}/autorizar")
+async def autorizar_orden(
+    orden_id: str,
+    data: AutorizarOrdenRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Autoriza o rechaza una orden pendiente.
+    
+    Permisos requeridos: TABLAJERIA_AUTORIZAR_MERMA
+    
+    Solo aplica a órdenes en estatus PENDIENTE_AUTORIZACION.
+    """
+    try:
+        service = _get_ordenes_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.autorizar_orden(
+            orden_id=orden_id,
+            usuario_id=usuario_id,
+            aprobado=data.aprobado,
+            comentarios=data.comentarios
+        )
+        
+        accion = "aprobada" if data.aprobado else "rechazada"
+        return {
+            "success": True,
+            "mensaje": f"Orden {result['folio']} {accion}",
+            **result
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[Tablajeria] Error autorizando orden: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# ESTADÍSTICAS DE ÓRDENES
+# ============================================================
+
+@router.get("/ordenes-stats")
+async def obtener_estadisticas_ordenes(
+    empresa_id: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Obtiene estadísticas de órdenes de tablaje.
+    
+    Permisos requeridos: TABLAJERIA_VER
+    """
+    conn = get_connection()
+    try:
+        cursor = conn.cursor(as_dict=True)
+        
+        # Filtro base
+        where_clause = "WHERE Activo = 1"
+        params = []
+        
+        if empresa_id:
+            where_clause += " AND EmpresaID = %s"
+            params.append(empresa_id)
+        if fecha_desde:
+            where_clause += " AND FechaOperacionMexico >= %s"
+            params.append(fecha_desde)
+        if fecha_hasta:
+            where_clause += " AND FechaOperacionMexico <= %s"
+            params.append(fecha_hasta)
+        
+        # Órdenes por estatus
+        cursor.execute(f"""
+            SELECT EstatusOrden, COUNT(*) as total
+            FROM Operaciones_Tablaje_Ordenes
+            {where_clause}
+            GROUP BY EstatusOrden
+        """, tuple(params) if params else None)
+        por_estatus = {row['EstatusOrden']: row['total'] for row in cursor.fetchall()}
+        
+        # Rendimiento promedio
+        cursor.execute(f"""
+            SELECT 
+                AVG(RendimientoRealPorcentaje) as rendimiento_promedio,
+                AVG(MermaRealPorcentaje) as merma_promedio,
+                AVG(ABS(DesviacionRendimiento)) as desviacion_promedio,
+                COUNT(*) as ordenes_cerradas
+            FROM Operaciones_Tablaje_Ordenes
+            {where_clause} AND EstatusOrden IN ('CERRADA', 'PENDIENTE_AUTORIZACION')
+        """, tuple(params) if params else None)
+        metricas = cursor.fetchone()
+        
+        # Órdenes recientes
+        cursor.execute(f"""
+            SELECT TOP 5 
+                FolioOrden, FechaOperacionMexico, EstatusOrden,
+                RendimientoRealPorcentaje, DesviacionRendimiento
+            FROM Operaciones_Tablaje_Ordenes
+            {where_clause}
+            ORDER BY FechaAltaUTC DESC
+        """, tuple(params) if params else None)
+        recientes = [dict(row) for row in cursor.fetchall()]
+        
+        return {
+            "ordenes_por_estatus": por_estatus,
+            "total_ordenes": sum(por_estatus.values()),
+            "metricas": {
+                "rendimiento_promedio": float(metricas['rendimiento_promedio']) if metricas['rendimiento_promedio'] else None,
+                "merma_promedio": float(metricas['merma_promedio']) if metricas['merma_promedio'] else None,
+                "desviacion_promedio": float(metricas['desviacion_promedio']) if metricas['desviacion_promedio'] else None,
+                "ordenes_analizadas": metricas['ordenes_cerradas']
+            },
+            "ordenes_recientes": recientes
+        }
+        
+    except Exception as e:
+        logger.error(f"[Tablajeria] Error obteniendo stats órdenes: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()

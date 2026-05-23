@@ -37,7 +37,11 @@ import {
   Target,
   Kanban,
   UserPlus,
-  Briefcase
+  Briefcase,
+  Beef,
+  Layers,
+  FileText,
+  Activity
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
@@ -111,6 +115,9 @@ const Layout = () => {
       'Operaciones': 'operaciones',
       'Finanzas': 'finanzas',
       'Producción': 'produccion',
+      'Tablajería': 'produccion',
+      'Plantillas': 'produccion',
+      'Órdenes': 'produccion',
       'Recursos Humanos': 'recursos_humanos',
       'Reportes BI': 'reportes_bi',
       'Catálogos': 'catalogos',
@@ -236,8 +243,27 @@ const Layout = () => {
       name: 'Producción', 
       href: '/produccion', 
       icon: Factory, 
-      roles: ['Supervisor', 'Administrador'],
-      badge: 'Próx.'
+      roles: ['Usuario', 'Supervisor', 'Administrador'],
+      submenus: [
+        {
+          name: 'Tablajería',
+          href: '/produccion/tablajeria',
+          icon: Beef,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Plantillas',
+          href: '/produccion/tablajeria/plantillas',
+          icon: Layers,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Órdenes',
+          href: '/produccion/tablajeria/ordenes',
+          icon: FileText,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        }
+      ]
     },
     { 
       name: 'Recursos Humanos', 

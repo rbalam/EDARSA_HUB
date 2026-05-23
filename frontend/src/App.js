@@ -36,6 +36,11 @@ import LeadsPage from '@/pages/crm/LeadsPage';
 import OportunidadesPage from '@/pages/crm/OportunidadesPage';
 import PipelinePage from '@/pages/crm/PipelinePage';
 
+// Tablajería
+import TablajeriaDashboard from '@/pages/tablajeria/TablajeriaDashboard';
+import PlantillasPage from '@/pages/tablajeria/PlantillasPage';
+import OrdenesPage from '@/pages/tablajeria/OrdenesPage';
+
 import { isAuthenticated } from '@/lib/auth';
 
 // Portal de Proveedores (Subproyecto separado)
@@ -76,6 +81,9 @@ function App() {
             {/* Nuevos módulos ERP */}
             <Route path="finanzas" element={<Finanzas />} />
             <Route path="produccion" element={<Produccion />} />
+            <Route path="produccion/tablajeria" element={<TablajeriaDashboard />} />
+            <Route path="produccion/tablajeria/plantillas" element={<PlantillasPage />} />
+            <Route path="produccion/tablajeria/ordenes" element={<OrdenesPage />} />
             <Route path="recursos-humanos" element={<RecursosHumanos />} />
             <Route path="importador-rh" element={<ImportadorRH />} />
             <Route path="reportes-bi" element={<ReportesBI />} />
