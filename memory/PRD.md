@@ -103,15 +103,13 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 
 ### P0.17: Sincronización Offline Compras/Operaciones ✅
 - **Problema**: Endpoints `/compras/inventarios-fisicos` y `/compras/pedidos-vigentes` consultaban en vivo a servidores físicos (CIENFUEGOS, etc.) causando timeouts severos.
-- **Solución**: 
-  - Creado `sync_service.py` con funciones `obtener_inventarios_fisicos_sync()` y `obtener_requisiciones_sync()`
-  - Refactorizados endpoints en `server.py` para leer EXCLUSIVAMENTE de tablas EDARSAHUB:
-    - `Compras_Inventarios_Fisicos_Sync`
-    - `Compras_Requisiciones_Sync`
-  - **NO se realizan consultas LIVE** a servidores físicos desde estos endpoints
+- **Solución HÍBRIDA implementada**: 
+  1. Primero intenta leer de tablas EDARSAHUB Sync
+  2. Si Sync está vacío, hace **fallback a consulta LIVE** al servidor físico
+  - Esto permite que la UI funcione aunque las tablas Sync no estén pobladas
 - **Archivos modificados**:
   - `/app/backend/modules/compras/sync_service.py`
-  - `/app/backend/server.py` (endpoints refactorizados)
+  - `/app/backend/server.py` (endpoints con estrategia híbrida)
 
 ### P0.18: Job Background Sync Compras ✅
 - **Archivo**: `/app/backend/core/scheduler/jobs/sync_compras_job.py`
