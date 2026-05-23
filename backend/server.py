@@ -17853,6 +17853,16 @@ except Exception as e:
     logger.warning(f"Error registrando CRM Integration router: {e}")
 
 # =============================================================================
+# CRM COMERCIAL (Enterprise-Grade - EDARSAHUB SQL)
+# =============================================================================
+try:
+    from modules.crm.comercial_routes import router as crm_comercial_router
+    app.include_router(crm_comercial_router, tags=["CRM Comercial"])
+    logger.info("✓ CRM Comercial router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM Comercial router: {e}")
+
+# =============================================================================
 # TABLAJERÍA (Operaciones - Producción/Transformación)
 # =============================================================================
 try:

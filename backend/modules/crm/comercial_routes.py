@@ -378,7 +378,7 @@ async def rechazar_solicitud(
         
         return {
             "success": True,
-            "mensaje": f"Solicitud rechazada",
+            "mensaje": "Solicitud rechazada",
             **result
         }
     except ValueError as e:
@@ -513,3 +513,387 @@ async def listar_estatus_remision(current_user: Dict = Depends(get_current_user)
         return {"estatus": [dict(r) for r in cursor.fetchall()]}
     finally:
         conn.close()
+
+
+# ============================================================
+# COTIZACIONES
+# ============================================================
+
+class CotizacionCreate(BaseModel):
+    cliente_id: int
+    serie: Optional[str] = "A"
+    fecha_vigencia: Optional[date] = None
+    cliente_direccion_id: Optional[int] = None
+    lista_precio_id: Optional[int] = None
+    condicion_pago_id: Optional[int] = None
+    moneda_id: Optional[int] = 1
+    tipo_cambio: Optional[float] = 1
+    subtotal: Optional[float] = 0
+    descuento_total: Optional[float] = 0
+    impuesto_total: Optional[float] = 0
+    total: Optional[float] = 0
+    atencion_a: Optional[str] = None
+    email_cliente: Optional[str] = None
+    telefono_cliente: Optional[str] = None
+    observaciones: Optional[str] = None
+    terminos_condiciones: Optional[str] = None
+    oportunidad_id: Optional[str] = None
+    cuenta_id: Optional[str] = None
+    lead_id: Optional[str] = None
+    detalle: Optional[List[Dict]] = []
+
+
+@router.get("/cotizaciones")
+async def listar_cotizaciones(
+    cliente_id: Optional[int] = None,
+    cuenta_id: Optional[str] = None,
+    estatus_id: Optional[int] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    limit: int = Query(default=50, le=200),
+    offset: int = 0,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista cotizaciones comerciales"""
+    try:
+        service = _get_service()
+        return service.listar_cotizaciones(
+            cliente_id=cliente_id,
+            cuenta_id=cuenta_id,
+            estatus_id=estatus_id,
+            fecha_desde=date.fromisoformat(fecha_desde) if fecha_desde else None,
+            fecha_hasta=date.fromisoformat(fecha_hasta) if fecha_hasta else None,
+            limit=limit,
+            offset=offset
+        )
+    except Exception as e:
+        logger.error(f"[CRM] Error listando cotizaciones: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/cotizaciones/{cotizacion_id}")
+async def obtener_cotizacion(
+    cotizacion_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Obtiene detalle de una cotización"""
+    try:
+        service = _get_service()
+        cot = service.obtener_cotizacion(cotizacion_id)
+        if not cot:
+            raise HTTPException(status_code=404, detail="Cotización no encontrada")
+        return cot
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CRM] Error obteniendo cotización: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/cotizaciones")
+async def crear_cotizacion(
+    data: CotizacionCreate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea una cotización comercial"""
+    try:
+        service = _get_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.crear_cotizacion(data.dict(), usuario_id)
+        
+        return {
+            "success": True,
+            "mensaje": f"Cotización {result['folio_cotizacion']} creada",
+            **result
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CRM] Error creando cotización: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/cotizaciones/{cotizacion_id}/enviar")
+async def enviar_cotizacion(
+    cotizacion_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Envía cotización al cliente"""
+    try:
+        service = _get_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.enviar_cotizacion(cotizacion_id, usuario_id)
+        
+        return {"success": True, "mensaje": "Cotización enviada", **result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CRM] Error enviando cotización: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/cotizaciones/{cotizacion_id}/aprobar")
+async def aprobar_cotizacion(
+    cotizacion_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Aprueba cotización (cliente acepta)"""
+    try:
+        service = _get_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.aprobar_cotizacion(cotizacion_id, usuario_id)
+        
+        return {"success": True, "mensaje": "Cotización aprobada", **result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CRM] Error aprobando cotización: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# PEDIDOS DE VENTA
+# ============================================================
+
+class PedidoCreate(BaseModel):
+    cliente_id: int
+    serie: Optional[str] = "A"
+    fecha_compromiso: Optional[date] = None
+    cliente_direccion_id: Optional[int] = None
+    lista_precio_id: Optional[int] = None
+    condicion_pago_id: Optional[int] = None
+    moneda_id: Optional[int] = 1
+    tipo_cambio: Optional[float] = 1
+    subtotal: Optional[float] = 0
+    descuento_total: Optional[float] = 0
+    impuesto_total: Optional[float] = 0
+    total: Optional[float] = 0
+    cotizacion_id: Optional[int] = None
+    atencion_a: Optional[str] = None
+    observaciones: Optional[str] = None
+    instrucciones_entrega: Optional[str] = None
+    oportunidad_id: Optional[str] = None
+    cuenta_id: Optional[str] = None
+    detalle: Optional[List[Dict]] = []
+
+
+@router.get("/pedidos-venta")
+async def listar_pedidos(
+    cliente_id: Optional[int] = None,
+    cuenta_id: Optional[str] = None,
+    estatus_id: Optional[int] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    limit: int = Query(default=50, le=200),
+    offset: int = 0,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista pedidos de venta"""
+    try:
+        service = _get_service()
+        return service.listar_pedidos(
+            cliente_id=cliente_id,
+            cuenta_id=cuenta_id,
+            estatus_id=estatus_id,
+            fecha_desde=date.fromisoformat(fecha_desde) if fecha_desde else None,
+            fecha_hasta=date.fromisoformat(fecha_hasta) if fecha_hasta else None,
+            limit=limit,
+            offset=offset
+        )
+    except Exception as e:
+        logger.error(f"[CRM] Error listando pedidos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pedidos-venta/{pedido_id}")
+async def obtener_pedido(
+    pedido_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Obtiene detalle de un pedido"""
+    try:
+        service = _get_service()
+        ped = service.obtener_pedido(pedido_id)
+        if not ped:
+            raise HTTPException(status_code=404, detail="Pedido no encontrado")
+        return ped
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CRM] Error obteniendo pedido: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/pedidos-venta")
+async def crear_pedido(
+    data: PedidoCreate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea un pedido de venta"""
+    try:
+        service = _get_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.crear_pedido(data.dict(), usuario_id)
+        
+        return {
+            "success": True,
+            "mensaje": f"Pedido {result['folio_pedido']} creado",
+            **result
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CRM] Error creando pedido: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/pedidos-venta/{pedido_id}/confirmar")
+async def confirmar_pedido(
+    pedido_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Confirma un pedido"""
+    try:
+        service = _get_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.confirmar_pedido(pedido_id, usuario_id)
+        
+        return {"success": True, "mensaje": "Pedido confirmado", **result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CRM] Error confirmando pedido: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# REMISIONES DE VENTA
+# ============================================================
+
+class RemisionCreate(BaseModel):
+    empresa_id: str
+    cliente_id: int
+    sucursal_id: Optional[str] = None
+    almacen_id: Optional[int] = None
+    pedido_id: Optional[int] = None
+    cotizacion_id: Optional[int] = None
+    oportunidad_id: Optional[str] = None
+    cuenta_id: Optional[str] = None
+    contacto_id: Optional[int] = None
+    fecha_compromiso_entrega: Optional[date] = None
+    direccion_entrega: Optional[str] = None
+    moneda_id: Optional[int] = 1
+    tipo_cambio: Optional[float] = 1
+    subtotal: Optional[float] = 0
+    descuento_total: Optional[float] = 0
+    impuestos_total: Optional[float] = 0
+    total: Optional[float] = 0
+    observaciones: Optional[str] = None
+    observaciones_internas: Optional[str] = None
+    detalle: Optional[List[Dict]] = []
+
+
+class RegistrarEntregaRequest(BaseModel):
+    entregado_a: str
+    recibido_por: str
+
+
+@router.get("/remisiones-venta")
+async def listar_remisiones(
+    empresa_id: Optional[str] = None,
+    cliente_id: Optional[int] = None,
+    cuenta_id: Optional[str] = None,
+    estatus_id: Optional[int] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    limit: int = Query(default=50, le=200),
+    offset: int = 0,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista remisiones de venta"""
+    try:
+        service = _get_service()
+        return service.listar_remisiones(
+            empresa_id=empresa_id,
+            cliente_id=cliente_id,
+            cuenta_id=cuenta_id,
+            estatus_id=estatus_id,
+            fecha_desde=date.fromisoformat(fecha_desde) if fecha_desde else None,
+            fecha_hasta=date.fromisoformat(fecha_hasta) if fecha_hasta else None,
+            limit=limit,
+            offset=offset
+        )
+    except Exception as e:
+        logger.error(f"[CRM] Error listando remisiones: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/remisiones-venta/{remision_id}")
+async def obtener_remision(
+    remision_id: int,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Obtiene detalle de una remisión"""
+    try:
+        service = _get_service()
+        rem = service.obtener_remision(remision_id)
+        if not rem:
+            raise HTTPException(status_code=404, detail="Remisión no encontrada")
+        return rem
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CRM] Error obteniendo remisión: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/remisiones-venta")
+async def crear_remision(
+    data: RemisionCreate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea una remisión de venta"""
+    try:
+        service = _get_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.crear_remision(data.dict(), usuario_id)
+        
+        return {
+            "success": True,
+            "mensaje": f"Remisión {result['folio_remision']} creada",
+            **result
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CRM] Error creando remisión: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/remisiones-venta/{remision_id}/entregar")
+async def registrar_entrega(
+    remision_id: int,
+    data: RegistrarEntregaRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Registra entrega de una remisión"""
+    try:
+        service = _get_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.registrar_entrega(
+            remision_id, usuario_id, data.entregado_a, data.recibido_por
+        )
+        
+        return {"success": True, "mensaje": "Entrega registrada", **result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CRM] Error registrando entrega: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

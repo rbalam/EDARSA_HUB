@@ -386,13 +386,86 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 - 🔴 R2: Contraseñas por defecto en `routes.py:41` (usar variables entorno en prod)
 - 🟡 R3: RBAC no registrado (siguiente tarea P0)
 
-### Fases Pendientes
+### Fases Pendientes Tablajería
 - [ ] **P0**: Registrar permisos RBAC TABLAJERIA_* en SQL
 - [ ] Fase 4: Captura Directa (crear plantillas sin sync)
-- [ ] Fase 6: Integración inventarios
+- [ ] Fase 6: Integración inventarios, costeo y eventos contables (Diagnóstico completado)
 - [ ] Fase 7: Integración compras (lectura)
 - [ ] Fase 8: Autorizaciones avanzadas
 - [ ] Fase 9: Eventos contables
+
+---
+
+## CRM COMERCIAL ENTERPRISE
+
+### Fase 0: Diagnóstico ✅ (2026-05-23)
+- [x] Mapeo completo de tablas comerciales SQL Server
+- [x] Identificación de tablas maestro: `Cliente_Catalogo`, `Venta_Cotizaciones`, `Venta_Pedidos`
+- [x] Reporte: `/app/docs/reports/CRM_COMERCIAL_DIAGNOSTICO.md`
+
+### Fase 1: DDL SQL ✅ (2026-05-23)
+- [x] Tablas creadas idempotentes:
+  - `CRM_Cuentas` (vinculación con maestro Cliente_Catalogo)
+  - `CRM_ClientesSolicitudesAlta` (workflow alta cliente)
+  - `CRM_ClientesSolicitudesAltaHistorial` (auditoría)
+  - `Venta_Remisiones` (nueva)
+  - `Venta_RemisionesDetalle` (nueva)
+  - `Venta_Cat_EstatusRemision` (catálogo)
+- [x] Extensiones CRM en `Venta_Cotizaciones` y `Venta_Pedidos`
+- [x] Permisos RBAC CRM registrados en Sistema_Permisos
+
+### Fase 4: Backend Endpoints ✅ (2026-05-23)
+- [x] **Archivos implementados**:
+  - `/app/backend/modules/crm/comercial_service.py` (Servicio completo)
+  - `/app/backend/modules/crm/comercial_routes.py` (Router registrado en server.py)
+- [x] **Endpoints API** (`/api/crm`):
+  - **Cuentas CRM**:
+    - `GET /cuentas` - Listar con filtros
+    - `GET /cuentas/{id}` - Detalle con oportunidades
+    - `POST /cuentas` - Crear cuenta
+    - `POST /cuentas/{id}/ligar-cliente` - Vincular a Cliente_Catalogo
+  - **Clientes (Maestro solo lectura)**:
+    - `GET /clientes` - Listar Cliente_Catalogo
+  - **Solicitudes Alta Cliente**:
+    - `GET /clientes/solicitudes` - Listar
+    - `POST /clientes/solicitudes` - Crear solicitud
+    - `POST /clientes/solicitudes/{id}/enviar` - Enviar para revisión
+    - `POST /clientes/solicitudes/{id}/autorizar` - Aprobar y crear cliente
+    - `POST /clientes/solicitudes/{id}/rechazar` - Rechazar
+  - **Cotizaciones (Wrapper Venta_Cotizaciones)**:
+    - `GET /cotizaciones` - Listar
+    - `GET /cotizaciones/{id}` - Detalle
+    - `POST /cotizaciones` - Crear
+    - `POST /cotizaciones/{id}/enviar` - Cambiar a ENVIADA
+    - `POST /cotizaciones/{id}/aprobar` - Cambiar a APROBADA
+  - **Pedidos Venta (Wrapper Venta_Pedidos)**:
+    - `GET /pedidos-venta` - Listar
+    - `GET /pedidos-venta/{id}` - Detalle
+    - `POST /pedidos-venta` - Crear
+    - `POST /pedidos-venta/{id}/confirmar` - Cambiar a CONFIRMADO
+  - **Remisiones Venta**:
+    - `GET /remisiones-venta` - Listar
+    - `GET /remisiones-venta/{id}` - Detalle
+    - `POST /remisiones-venta` - Crear
+    - `POST /remisiones-venta/{id}/entregar` - Registrar entrega
+  - **Actividades**:
+    - `GET /actividades` - Listar
+    - `POST /actividades` - Crear
+    - `POST /actividades/{id}/cerrar` - Cerrar actividad
+  - **Catálogos**:
+    - `GET /catalogos/tipos-actividad`
+    - `GET /catalogos/estatus-actividad`
+    - `GET /catalogos/estatus-remision`
+- [x] **Validación exitosa via cURL**:
+  - Cuenta creada: CTA-000001 ✅
+  - Solicitud Alta: SOL-000001 (BORRADOR→ENVIADA) ✅
+  - Cotización: COT-000001 (BORRADOR→ENVIADA) ✅
+  - Pedido: PED-000001 (BORRADOR→CONFIRMADO) ✅
+  - Remisión: REM-000001 (PENDIENTE→ENTREGADA) ✅
+
+### Fases Pendientes CRM
+- [ ] Fase 5: Frontend Operable (UI para flujo completo)
+- [ ] Fase 3: Tablas de Integraciones Externas / Staging
 
 ---
 
@@ -436,6 +509,8 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 - `/app/frontend/src/pages/ConfiguracionOperativaUnidades.jsx`
 - `/app/backend/modules/crm/integration/` (✅ NUEVO Fase 5 - Framework Conectores)
 - `/app/backend/modules/crm/integration_routes.py` (✅ NUEVO Fase 5 - API Integración)
+- `/app/backend/modules/crm/comercial_service.py` (✅ NUEVO CRM Fase 4 - Servicio Comercial)
+- `/app/backend/modules/crm/comercial_routes.py` (✅ NUEVO CRM Fase 4 - Router Comercial)
 - `/app/backend/modules/tablajeria/routes.py` (✅ NUEVO - API Tablajería)
 - `/app/backend/modules/tablajeria/ordenes_service.py` (✅ NUEVO - Servicio Órdenes)
 - `/app/backend/modules/tablajeria/sync_service.py` (✅ NUEVO - Sync Legacy)
@@ -444,3 +519,6 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 ## Documentos Generados
 - `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTRESTAURANT_MPRO_TURNOS.md`
 - `/app/docs/reports/P0_IMPLEMENTACION_VENTAS_DIA_TURNOS_SQLONLY.md`
+- `/app/docs/reports/TABLAJERIA_VALIDACION_BLINDAJE_REPORTE.md`
+- `/app/docs/reports/CRM_COMERCIAL_DIAGNOSTICO.md`
+- `/app/docs/reports/TABLAJERIA_FASE6_DIAGNOSTICO_INVENTARIOS_COSTEO.md`

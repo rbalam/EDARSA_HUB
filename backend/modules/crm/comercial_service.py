@@ -229,14 +229,17 @@ class CRMComercialService:
                 if result.get(field):
                     result[field] = str(result[field])
             
-            # Obtener oportunidades de esta cuenta
-            cursor.execute("""
-                SELECT OportunidadID, NombreOportunidad, MontoEstimado, EtapaActualID, EstatusOportunidad
-                FROM CRM_Oportunidades
-                WHERE CuentaID = %s AND Activo = 1
-                ORDER BY FechaCreacion DESC
-            """, (cuenta_id,))
-            result['oportunidades'] = [dict(r) for r in cursor.fetchall()]
+            # Obtener oportunidades de esta cuenta (si la tabla existe)
+            try:
+                cursor.execute("""
+                    SELECT OportunidadID, NombreOportunidad, MontoEstimado, EtapaActualID
+                    FROM CRM_Oportunidades
+                    WHERE CuentaID = %s AND Activo = 1
+                    ORDER BY CreatedAt DESC
+                """, (cuenta_id,))
+                result['oportunidades'] = [dict(r) for r in cursor.fetchall()]
+            except Exception:
+                result['oportunidades'] = []
             
             return result
             
@@ -285,7 +288,7 @@ class CRMComercialService:
                 "razon_social": cliente['RazonSocial']
             }
             
-        except Exception as e:
+        except Exception:
             conn.rollback()
             raise
         finally:
@@ -539,7 +542,7 @@ class CRMComercialService:
             
             return {"solicitud_id": solicitud_id, "folio": sol['FolioSolicitud'], "estatus": "ENVIADA"}
             
-        except Exception as e:
+        except Exception:
             conn.rollback()
             raise
         finally:
@@ -689,7 +692,7 @@ class CRMComercialService:
             
             return {"solicitud_id": solicitud_id, "folio": sol['FolioSolicitud'], "estatus": "RECHAZADA", "motivo": motivo}
             
-        except Exception as e:
+        except Exception:
             conn.rollback()
             raise
         finally:
@@ -741,7 +744,7 @@ class CRMComercialService:
             
             return {"actividad_id": actividad_id, "titulo": data['titulo'], "estatus": "Pendiente"}
             
-        except Exception as e:
+        except Exception:
             conn.rollback()
             raise
         finally:
@@ -836,7 +839,750 @@ class CRMComercialService:
             
             return {"actividad_id": actividad_id, "estatus": "Completada"}
             
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+    
+    # ============================================================
+    # COTIZACIONES (WRAPPER Venta_Cotizaciones)
+    # ============================================================
+    
+    def listar_cotizaciones(
+        self,
+        cliente_id: Optional[int] = None,
+        cuenta_id: Optional[str] = None,
+        estatus_id: Optional[int] = None,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
+        limit: int = 50,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """Lista cotizaciones comerciales"""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            query = """
+                SELECT 
+                    c.CotizacionID, c.Serie, c.FolioCotizacion, c.FechaCotizacion,
+                    c.FechaVigencia, c.ClienteID, cl.RazonSocial as ClienteRazonSocial,
+                    c.MonedaID, c.TipoCambio, c.EstatusCotizacionID,
+                    c.Subtotal, c.DescuentoTotal, c.ImpuestoTotal, c.Total,
+                    c.AtencionA, c.EmailCliente, c.Observaciones,
+                    c.PedidoID, c.Activo, c.CreatedAt,
+                    c.CRM_OportunidadID, c.CRM_CuentaID, c.EstatusComercial
+                FROM Venta_Cotizaciones c
+                LEFT JOIN Cliente_Catalogo cl ON c.ClienteID = cl.ClienteID
+                WHERE c.Activo = 1
+            """
+            params = []
+            
+            if cliente_id:
+                query += " AND c.ClienteID = %s"
+                params.append(cliente_id)
+            if cuenta_id:
+                query += " AND c.CRM_CuentaID = %s"
+                params.append(cuenta_id)
+            if estatus_id:
+                query += " AND c.EstatusCotizacionID = %s"
+                params.append(estatus_id)
+            if fecha_desde:
+                query += " AND c.FechaCotizacion >= %s"
+                params.append(fecha_desde)
+            if fecha_hasta:
+                query += " AND c.FechaCotizacion <= %s"
+                params.append(fecha_hasta)
+            
+            query += " ORDER BY c.FechaCotizacion DESC"
+            query += " OFFSET %s ROWS FETCH NEXT %s ROWS ONLY"
+            params.extend([offset, limit])
+            
+            cursor.execute(query, tuple(params))
+            cotizaciones = []
+            for row in cursor.fetchall():
+                cot = dict(row)
+                if cot.get('CRM_OportunidadID'):
+                    cot['CRM_OportunidadID'] = str(cot['CRM_OportunidadID'])
+                if cot.get('CRM_CuentaID'):
+                    cot['CRM_CuentaID'] = str(cot['CRM_CuentaID'])
+                cotizaciones.append(cot)
+            
+            # Contar total
+            count_query = "SELECT COUNT(*) as total FROM Venta_Cotizaciones WHERE Activo = 1"
+            cursor.execute(count_query)
+            total = cursor.fetchone()['total']
+            
+            return {
+                "cotizaciones": cotizaciones,
+                "total": total,
+                "limit": limit,
+                "offset": offset
+            }
+            
+        finally:
+            conn.close()
+    
+    def obtener_cotizacion(self, cotizacion_id: int) -> Optional[Dict[str, Any]]:
+        """Obtiene detalle de una cotización"""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            cursor.execute("""
+                SELECT c.*, cl.RazonSocial as ClienteRazonSocial, cl.RFC as ClienteRFC
+                FROM Venta_Cotizaciones c
+                LEFT JOIN Cliente_Catalogo cl ON c.ClienteID = cl.ClienteID
+                WHERE c.CotizacionID = %s
+            """, (cotizacion_id,))
+            
+            cot = cursor.fetchone()
+            if not cot:
+                return None
+            
+            result = dict(cot)
+            for field in ['CRM_OportunidadID', 'CRM_CuentaID', 'CRM_LeadID', 'CreatedByUserID', 'UpdatedByUserID']:
+                if result.get(field):
+                    result[field] = str(result[field])
+            
+            # Obtener detalle
+            cursor.execute("""
+                SELECT * FROM Venta_CotizacionesDetalle WHERE CotizacionID = %s ORDER BY Renglon
+            """, (cotizacion_id,))
+            result['detalle'] = [dict(r) for r in cursor.fetchall()]
+            
+            return result
+            
+        finally:
+            conn.close()
+    
+    def crear_cotizacion(self, data: Dict, usuario_id: str) -> Dict[str, Any]:
+        """Crea una cotización comercial"""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            now_utc = self._now_utc()
+            
+            # Generar folio
+            cursor.execute("""
+                SELECT COALESCE(MAX(CAST(SUBSTRING(FolioCotizacion, 5, 10) AS INT)), 0) + 1 as seq
+                FROM Venta_Cotizaciones
+                WHERE FolioCotizacion LIKE 'COT-%'
+            """)
+            seq = cursor.fetchone()['seq']
+            folio = f"COT-{seq:06d}"
+            
+            cursor.execute("""
+                INSERT INTO Venta_Cotizaciones (
+                    Serie, FolioCotizacion, FechaCotizacion, FechaVigencia,
+                    ClienteID, ClienteDireccionID, ListaPrecioID, CondicionPagoID,
+                    MonedaID, TipoCambio, EstatusCotizacionID,
+                    Subtotal, DescuentoTotal, ImpuestoTotal, Total,
+                    AtencionA, EmailCliente, TelefonoCliente, Observaciones, TerminosCondiciones,
+                    CRM_OportunidadID, CRM_CuentaID, CRM_LeadID,
+                    CreatedByUserID, EstatusComercial,
+                    Activo, CreatedAt, CreatedBy
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                )
+            """, (
+                data.get('serie', 'A'),
+                folio,
+                now_utc,
+                data.get('fecha_vigencia'),
+                data['cliente_id'],
+                data.get('cliente_direccion_id'),
+                data.get('lista_precio_id'),
+                data.get('condicion_pago_id'),
+                data.get('moneda_id', 1),
+                data.get('tipo_cambio', 1),
+                1,  # Borrador
+                data.get('subtotal', 0),
+                data.get('descuento_total', 0),
+                data.get('impuesto_total', 0),
+                data.get('total', 0),
+                data.get('atencion_a'),
+                data.get('email_cliente'),
+                data.get('telefono_cliente'),
+                data.get('observaciones'),
+                data.get('terminos_condiciones'),
+                data.get('oportunidad_id'),
+                data.get('cuenta_id'),
+                data.get('lead_id'),
+                usuario_id,
+                'BORRADOR',
+                True,
+                now_utc,
+                usuario_id
+            ))
+            
+            # Obtener ID generado
+            cursor.execute("SELECT SCOPE_IDENTITY() as cotizacion_id")
+            cotizacion_id = cursor.fetchone()['cotizacion_id']
+            
+            # Insertar detalle si viene
+            if data.get('detalle'):
+                for i, det in enumerate(data['detalle'], 1):
+                    cursor.execute("""
+                        INSERT INTO Venta_CotizacionesDetalle (
+                            CotizacionID, Renglon, ProductoID, Descripcion, Cantidad,
+                            PrecioUnitario, Descuento, Impuesto, Subtotal, Total
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        cotizacion_id, i, det['producto_id'], det.get('descripcion'),
+                        det['cantidad'], det['precio_unitario'],
+                        det.get('descuento', 0), det.get('impuesto', 0),
+                        det.get('subtotal', 0), det.get('total', 0)
+                    ))
+            
+            conn.commit()
+            
+            logger.info(f"[CRM] Cotización creada: {folio}")
+            
+            return {
+                "cotizacion_id": cotizacion_id,
+                "folio_cotizacion": folio,
+                "estatus": "BORRADOR"
+            }
+            
         except Exception as e:
+            conn.rollback()
+            logger.error(f"[CRM] Error creando cotización: {e}")
+            raise
+        finally:
+            conn.close()
+    
+    def enviar_cotizacion(self, cotizacion_id: int, usuario_id: str) -> Dict[str, Any]:
+        """Envía cotización al cliente"""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            cursor.execute("""
+                UPDATE Venta_Cotizaciones SET
+                    EstatusCotizacionID = 2,
+                    EstatusComercial = 'ENVIADA',
+                    ModifiedAt = %s,
+                    ModifiedBy = %s,
+                    UpdatedByUserID = %s
+                WHERE CotizacionID = %s AND EstatusCotizacionID = 1
+            """, (self._now_utc(), usuario_id, usuario_id, cotizacion_id))
+            
+            if cursor.rowcount == 0:
+                raise ValueError("Cotización no encontrada o no está en borrador")
+            
+            conn.commit()
+            
+            return {"cotizacion_id": cotizacion_id, "estatus": "ENVIADA"}
+            
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+    
+    def aprobar_cotizacion(self, cotizacion_id: int, usuario_id: str) -> Dict[str, Any]:
+        """Aprueba cotización (cliente acepta)"""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            cursor.execute("""
+                UPDATE Venta_Cotizaciones SET
+                    EstatusCotizacionID = 3,
+                    EstatusComercial = 'APROBADA',
+                    ModifiedAt = %s,
+                    ModifiedBy = %s,
+                    UpdatedByUserID = %s
+                WHERE CotizacionID = %s
+            """, (self._now_utc(), usuario_id, usuario_id, cotizacion_id))
+            
+            conn.commit()
+            
+            return {"cotizacion_id": cotizacion_id, "estatus": "APROBADA"}
+            
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+    
+    # ============================================================
+    # PEDIDOS (WRAPPER Venta_Pedidos)
+    # ============================================================
+    
+    def listar_pedidos(
+        self,
+        cliente_id: Optional[int] = None,
+        cuenta_id: Optional[str] = None,
+        estatus_id: Optional[int] = None,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
+        limit: int = 50,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """Lista pedidos de venta"""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            query = """
+                SELECT 
+                    p.PedidoID, p.Serie, p.FolioPedido, p.FechaPedido,
+                    p.FechaCompromiso, p.ClienteID, cl.RazonSocial as ClienteRazonSocial,
+                    p.MonedaID, p.TipoCambio, p.EstatusPedidoID,
+                    p.Subtotal, p.DescuentoTotal, p.ImpuestoTotal, p.Total,
+                    p.CotizacionID, p.VentaID, p.Observaciones,
+                    p.Activo, p.CreatedAt,
+                    p.CRM_OportunidadID, p.CRM_CuentaID, p.EstatusComercial
+                FROM Venta_Pedidos p
+                LEFT JOIN Cliente_Catalogo cl ON p.ClienteID = cl.ClienteID
+                WHERE p.Activo = 1
+            """
+            params = []
+            
+            if cliente_id:
+                query += " AND p.ClienteID = %s"
+                params.append(cliente_id)
+            if cuenta_id:
+                query += " AND p.CRM_CuentaID = %s"
+                params.append(cuenta_id)
+            if estatus_id:
+                query += " AND p.EstatusPedidoID = %s"
+                params.append(estatus_id)
+            if fecha_desde:
+                query += " AND p.FechaPedido >= %s"
+                params.append(fecha_desde)
+            if fecha_hasta:
+                query += " AND p.FechaPedido <= %s"
+                params.append(fecha_hasta)
+            
+            query += " ORDER BY p.FechaPedido DESC"
+            query += " OFFSET %s ROWS FETCH NEXT %s ROWS ONLY"
+            params.extend([offset, limit])
+            
+            cursor.execute(query, tuple(params))
+            pedidos = []
+            for row in cursor.fetchall():
+                ped = dict(row)
+                if ped.get('CRM_OportunidadID'):
+                    ped['CRM_OportunidadID'] = str(ped['CRM_OportunidadID'])
+                if ped.get('CRM_CuentaID'):
+                    ped['CRM_CuentaID'] = str(ped['CRM_CuentaID'])
+                pedidos.append(ped)
+            
+            # Contar total
+            count_query = "SELECT COUNT(*) as total FROM Venta_Pedidos WHERE Activo = 1"
+            cursor.execute(count_query)
+            total = cursor.fetchone()['total']
+            
+            return {
+                "pedidos": pedidos,
+                "total": total,
+                "limit": limit,
+                "offset": offset
+            }
+            
+        finally:
+            conn.close()
+    
+    def obtener_pedido(self, pedido_id: int) -> Optional[Dict[str, Any]]:
+        """Obtiene detalle de un pedido"""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            cursor.execute("""
+                SELECT p.*, cl.RazonSocial as ClienteRazonSocial, cl.RFC as ClienteRFC
+                FROM Venta_Pedidos p
+                LEFT JOIN Cliente_Catalogo cl ON p.ClienteID = cl.ClienteID
+                WHERE p.PedidoID = %s
+            """, (pedido_id,))
+            
+            ped = cursor.fetchone()
+            if not ped:
+                return None
+            
+            result = dict(ped)
+            for field in ['CRM_OportunidadID', 'CRM_CuentaID', 'CreatedByUserID', 'UpdatedByUserID']:
+                if result.get(field):
+                    result[field] = str(result[field])
+            
+            # Obtener detalle
+            cursor.execute("""
+                SELECT * FROM Venta_PedidosDetalle WHERE PedidoID = %s ORDER BY Renglon
+            """, (pedido_id,))
+            result['detalle'] = [dict(r) for r in cursor.fetchall()]
+            
+            return result
+            
+        finally:
+            conn.close()
+    
+    def crear_pedido(self, data: Dict, usuario_id: str) -> Dict[str, Any]:
+        """Crea un pedido de venta"""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            now_utc = self._now_utc()
+            
+            # Generar folio
+            cursor.execute("""
+                SELECT COALESCE(MAX(CAST(SUBSTRING(FolioPedido, 5, 10) AS INT)), 0) + 1 as seq
+                FROM Venta_Pedidos
+                WHERE FolioPedido LIKE 'PED-%'
+            """)
+            seq = cursor.fetchone()['seq']
+            folio = f"PED-{seq:06d}"
+            
+            cursor.execute("""
+                INSERT INTO Venta_Pedidos (
+                    Serie, FolioPedido, FechaPedido, FechaCompromiso,
+                    ClienteID, ClienteDireccionID, ListaPrecioID, CondicionPagoID,
+                    MonedaID, TipoCambio, EstatusPedidoID,
+                    Subtotal, DescuentoTotal, ImpuestoTotal, Total,
+                    CotizacionID, AtencionA, Observaciones, InstruccionesEntrega,
+                    CRM_OportunidadID, CRM_CuentaID,
+                    CreatedByUserID, EstatusComercial,
+                    Activo, CreatedAt, CreatedBy
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                )
+            """, (
+                data.get('serie', 'A'),
+                folio,
+                now_utc,
+                data.get('fecha_compromiso'),
+                data['cliente_id'],
+                data.get('cliente_direccion_id'),
+                data.get('lista_precio_id'),
+                data.get('condicion_pago_id'),
+                data.get('moneda_id', 1),
+                data.get('tipo_cambio', 1),
+                1,  # Borrador
+                data.get('subtotal', 0),
+                data.get('descuento_total', 0),
+                data.get('impuesto_total', 0),
+                data.get('total', 0),
+                data.get('cotizacion_id'),
+                data.get('atencion_a'),
+                data.get('observaciones'),
+                data.get('instrucciones_entrega'),
+                data.get('oportunidad_id'),
+                data.get('cuenta_id'),
+                usuario_id,
+                'BORRADOR',
+                True,
+                now_utc,
+                usuario_id
+            ))
+            
+            # Obtener ID generado
+            cursor.execute("SELECT SCOPE_IDENTITY() as pedido_id")
+            pedido_id = cursor.fetchone()['pedido_id']
+            
+            # Si viene de cotización, actualizar referencia
+            if data.get('cotizacion_id'):
+                cursor.execute("""
+                    UPDATE Venta_Cotizaciones SET PedidoID = %s WHERE CotizacionID = %s
+                """, (pedido_id, data['cotizacion_id']))
+            
+            # Insertar detalle
+            if data.get('detalle'):
+                for i, det in enumerate(data['detalle'], 1):
+                    cursor.execute("""
+                        INSERT INTO Venta_PedidosDetalle (
+                            PedidoID, Renglon, ProductoID, Descripcion, Cantidad,
+                            PrecioUnitario, Descuento, Impuesto, Subtotal, Total
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        pedido_id, i, det['producto_id'], det.get('descripcion'),
+                        det['cantidad'], det['precio_unitario'],
+                        det.get('descuento', 0), det.get('impuesto', 0),
+                        det.get('subtotal', 0), det.get('total', 0)
+                    ))
+            
+            conn.commit()
+            
+            logger.info(f"[CRM] Pedido creado: {folio}")
+            
+            return {
+                "pedido_id": pedido_id,
+                "folio_pedido": folio,
+                "estatus": "BORRADOR"
+            }
+            
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"[CRM] Error creando pedido: {e}")
+            raise
+        finally:
+            conn.close()
+    
+    def confirmar_pedido(self, pedido_id: int, usuario_id: str) -> Dict[str, Any]:
+        """Confirma un pedido"""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            cursor.execute("""
+                UPDATE Venta_Pedidos SET
+                    EstatusPedidoID = 2,
+                    EstatusComercial = 'CONFIRMADO',
+                    ModifiedAt = %s,
+                    ModifiedBy = %s,
+                    UpdatedByUserID = %s
+                WHERE PedidoID = %s AND EstatusPedidoID = 1
+            """, (self._now_utc(), usuario_id, usuario_id, pedido_id))
+            
+            if cursor.rowcount == 0:
+                raise ValueError("Pedido no encontrado o no está en borrador")
+            
+            conn.commit()
+            
+            return {"pedido_id": pedido_id, "estatus": "CONFIRMADO"}
+            
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+    
+    # ============================================================
+    # REMISIONES (Venta_Remisiones)
+    # ============================================================
+    
+    def listar_remisiones(
+        self,
+        empresa_id: Optional[str] = None,
+        cliente_id: Optional[int] = None,
+        cuenta_id: Optional[str] = None,
+        estatus_id: Optional[int] = None,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
+        limit: int = 50,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """Lista remisiones de venta"""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            query = """
+                SELECT 
+                    r.RemisionID, r.EmpresaID, r.FolioRemision, r.FechaRemision,
+                    r.FechaCompromisoEntrega, r.FechaEntregaReal,
+                    r.PedidoID, r.ClienteID, cl.RazonSocial as ClienteRazonSocial,
+                    r.DireccionEntrega, r.EntregadoA, r.RecibidoPor,
+                    r.Subtotal, r.DescuentoTotal, r.ImpuestosTotal, r.Total,
+                    r.EstatusRemisionID, r.FacturaID, r.Activo, r.CreatedAt,
+                    r.CuentaID, r.OportunidadID
+                FROM Venta_Remisiones r
+                LEFT JOIN Cliente_Catalogo cl ON r.ClienteID = cl.ClienteID
+                WHERE r.Activo = 1
+            """
+            params = []
+            
+            if empresa_id:
+                query += " AND r.EmpresaID = %s"
+                params.append(empresa_id)
+            if cliente_id:
+                query += " AND r.ClienteID = %s"
+                params.append(cliente_id)
+            if cuenta_id:
+                query += " AND r.CuentaID = %s"
+                params.append(cuenta_id)
+            if estatus_id:
+                query += " AND r.EstatusRemisionID = %s"
+                params.append(estatus_id)
+            if fecha_desde:
+                query += " AND r.FechaRemision >= %s"
+                params.append(fecha_desde)
+            if fecha_hasta:
+                query += " AND r.FechaRemision <= %s"
+                params.append(fecha_hasta)
+            
+            query += " ORDER BY r.FechaRemision DESC"
+            query += " OFFSET %s ROWS FETCH NEXT %s ROWS ONLY"
+            params.extend([offset, limit])
+            
+            cursor.execute(query, tuple(params))
+            remisiones = []
+            for row in cursor.fetchall():
+                rem = dict(row)
+                for field in ['EmpresaID', 'CuentaID', 'OportunidadID']:
+                    if rem.get(field):
+                        rem[field] = str(rem[field])
+                remisiones.append(rem)
+            
+            # Contar total
+            count_query = "SELECT COUNT(*) as total FROM Venta_Remisiones WHERE Activo = 1"
+            cursor.execute(count_query)
+            total = cursor.fetchone()['total']
+            
+            return {
+                "remisiones": remisiones,
+                "total": total,
+                "limit": limit,
+                "offset": offset
+            }
+            
+        finally:
+            conn.close()
+    
+    def obtener_remision(self, remision_id: int) -> Optional[Dict[str, Any]]:
+        """Obtiene detalle de una remisión"""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            cursor.execute("""
+                SELECT r.*, cl.RazonSocial as ClienteRazonSocial, cl.RFC as ClienteRFC
+                FROM Venta_Remisiones r
+                LEFT JOIN Cliente_Catalogo cl ON r.ClienteID = cl.ClienteID
+                WHERE r.RemisionID = %s
+            """, (remision_id,))
+            
+            rem = cursor.fetchone()
+            if not rem:
+                return None
+            
+            result = dict(rem)
+            for field in ['EmpresaID', 'SucursalID', 'CuentaID', 'OportunidadID', 'DocumentoID', 'CreatedBy', 'UpdatedBy']:
+                if result.get(field):
+                    result[field] = str(result[field])
+            
+            # Obtener detalle
+            cursor.execute("""
+                SELECT * FROM Venta_RemisionesDetalle WHERE RemisionID = %s ORDER BY Renglon
+            """, (remision_id,))
+            result['detalle'] = [dict(r) for r in cursor.fetchall()]
+            
+            return result
+            
+        finally:
+            conn.close()
+    
+    def crear_remision(self, data: Dict, usuario_id: str) -> Dict[str, Any]:
+        """Crea una remisión de venta"""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            now_utc = self._now_utc()
+            today = date.today()
+            
+            # Generar folio
+            cursor.execute("""
+                SELECT COALESCE(MAX(CAST(SUBSTRING(FolioRemision, 5, 10) AS INT)), 0) + 1 as seq
+                FROM Venta_Remisiones
+                WHERE FolioRemision LIKE 'REM-%'
+            """)
+            seq = cursor.fetchone()['seq']
+            folio = f"REM-{seq:06d}"
+            
+            cursor.execute("""
+                INSERT INTO Venta_Remisiones (
+                    EmpresaID, SucursalID, AlmacenID, FolioRemision,
+                    PedidoID, CotizacionID, OportunidadID, CuentaID,
+                    ClienteID, ContactoID, FechaRemision, FechaCompromisoEntrega,
+                    DireccionEntrega, MonedaID, TipoCambio,
+                    Subtotal, DescuentoTotal, ImpuestosTotal, Total,
+                    EstatusRemisionID, Observaciones, ObservacionesInternas,
+                    Activo, CreatedBy, CreatedAt
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                )
+            """, (
+                data['empresa_id'],
+                data.get('sucursal_id'),
+                data.get('almacen_id'),
+                folio,
+                data.get('pedido_id'),
+                data.get('cotizacion_id'),
+                data.get('oportunidad_id'),
+                data.get('cuenta_id'),
+                data['cliente_id'],
+                data.get('contacto_id'),
+                today,
+                data.get('fecha_compromiso_entrega'),
+                data.get('direccion_entrega'),
+                data.get('moneda_id', 1),
+                data.get('tipo_cambio', 1),
+                data.get('subtotal', 0),
+                data.get('descuento_total', 0),
+                data.get('impuestos_total', 0),
+                data.get('total', 0),
+                1,  # Pendiente
+                data.get('observaciones'),
+                data.get('observaciones_internas'),
+                True,
+                usuario_id,
+                now_utc
+            ))
+            
+            # Obtener ID generado
+            cursor.execute("SELECT SCOPE_IDENTITY() as remision_id")
+            remision_id = cursor.fetchone()['remision_id']
+            
+            # Insertar detalle
+            if data.get('detalle'):
+                for i, det in enumerate(data['detalle'], 1):
+                    cursor.execute("""
+                        INSERT INTO Venta_RemisionesDetalle (
+                            RemisionID, Renglon, ProductoID, Descripcion, Cantidad,
+                            PrecioUnitario, Descuento, Impuesto, Subtotal, Total
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        remision_id, i, det['producto_id'], det.get('descripcion'),
+                        det['cantidad'], det['precio_unitario'],
+                        det.get('descuento', 0), det.get('impuesto', 0),
+                        det.get('subtotal', 0), det.get('total', 0)
+                    ))
+            
+            conn.commit()
+            
+            logger.info(f"[CRM] Remisión creada: {folio}")
+            
+            return {
+                "remision_id": remision_id,
+                "folio_remision": folio,
+                "estatus": "PENDIENTE"
+            }
+            
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"[CRM] Error creando remisión: {e}")
+            raise
+        finally:
+            conn.close()
+    
+    def registrar_entrega(self, remision_id: int, usuario_id: str, entregado_a: str, recibido_por: str) -> Dict[str, Any]:
+        """Registra entrega de una remisión"""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            now_utc = self._now_utc()
+            cursor.execute("""
+                UPDATE Venta_Remisiones SET
+                    EstatusRemisionID = 2,
+                    FechaEntregaReal = %s,
+                    EntregadoA = %s,
+                    RecibidoPor = %s,
+                    UpdatedBy = %s,
+                    UpdatedAt = %s
+                WHERE RemisionID = %s
+            """, (now_utc, entregado_a, recibido_por, usuario_id, now_utc, remision_id))
+            
+            conn.commit()
+            
+            return {"remision_id": remision_id, "estatus": "ENTREGADA", "fecha_entrega": str(now_utc)}
+            
+        except Exception:
             conn.rollback()
             raise
         finally:
