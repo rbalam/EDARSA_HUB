@@ -186,24 +186,53 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 
 ---
 
-## PENDIENTE
+## CRM ENTERPRISE - PROGRESO
+
+### Fase 1: Infraestructura SQL ✅ (2026-05-23)
+- [x] 20 tablas CRM creadas en EDARSAHUB (transaccionales, catálogos, configuración)
+- [x] 13 columnas CRM agregadas a `Cliente_Catalogo` (extensión sin duplicar)
+- [x] 11 catálogos poblados con datos seed
+- [x] Pipeline de Ventas Default configurado (7 etapas con probabilidades)
+- [x] Scripts idempotentes: `01_create_crm_tables.sql`, `02_seed_crm_catalogs.sql`
+
+### Fase 2: Backend CRM Nativo (PRÓXIMA)
+- [ ] `repository.py` - Operaciones SQL para Leads, Oportunidades, etc.
+- [ ] `schemas.py` - Modelos Pydantic para validación
+- [ ] `services.py` - Lógica de negocio CRM nativo
+- [ ] `routes.py` - Endpoints REST CRUD (/api/crm/native/*)
+
+### Fase 3: Menú y Rutas Frontend
+- [ ] Agregar sección CRM a `Layout.js` (sin romper menús existentes)
+- [ ] Registrar rutas CRM en `App.js`
+
+### Fase 4: Páginas CRM
+- [ ] Dashboard CRM
+- [ ] Leads CRUD
+- [ ] Oportunidades CRUD con Pipeline visual
+- [ ] Cuentas/Contactos CRUD
+
+### Fase 5: Integración Universal (Futuro)
+- [ ] Refactorizar VTiger como conector
+- [ ] Staging tables para sync bidireccional
+- [ ] Conectores Salesforce, HubSpot, Zoho
+
+---
+
+## PENDIENTE (Otros módulos)
 
 ### P0 (Crítico) - CERRADO ✅
-- [x] `SERVER_SECRET_KEY` accesible para scheduler (VALIDADO - desencripta MPRO)
+- [x] `SERVER_SECRET_KEY` accesible para scheduler
 - [x] Lock anti-concurrencia implementado
-- [x] Job ejecutado y datos sincronizados
+- [x] Sincronización offline Compras (P0.17-P0.19)
 - [x] Campos auditoría en Tablero Ejecutivo (P0.16)
-- [x] Sincronización offline Compras (P0.17)
 
 ### P1
 - [ ] Conectar módulo VTiger CRM con Frontend (backend completado)
 - [ ] Errores conexión SoftRestaurant (CIENFUEGOS, ESTELAR) - infraestructura origen
 - [ ] Implementar detección de TURNO_EXTENDIDO
-- [ ] Implementar alertas de POSIBLE_MEZCLA_DIAS
-- [ ] `Comercial_Ventas_Dia_Detalle_v2` para reconciliación de cheques
 
 ### Backlog (P2)
-- [ ] Documentación final (FASE 10)
+- [ ] Documentación final
 - [ ] Migración final para retirar MongoDB
 
 ---
