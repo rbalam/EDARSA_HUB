@@ -17842,6 +17842,16 @@ try:
 except Exception as e:
     logger.warning(f"Error registrando CRM Native router: {e}")
 
+# =============================================================================
+# CRM Integration Framework (Conectores Externos)
+# =============================================================================
+try:
+    from modules.crm.integration_routes import router as crm_integration_router
+    app.include_router(crm_integration_router, tags=["CRM - Integration Framework"])
+    logger.info("✓ CRM Integration router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM Integration router: {e}")
+
 # Startup: Iniciar scheduler
 @app.on_event("startup")
 async def startup_scheduler():

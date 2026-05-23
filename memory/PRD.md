@@ -225,16 +225,36 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 - [x] Integración de formularios en `LeadsPage.jsx` y `OportunidadesPage.jsx`
 - [x] Menús contextuales con acciones (editar, convertir, descalificar, eliminar, cerrar)
 
-### Fase 5: Integración Universal (PRÓXIMA)
-- [ ] Dashboard CRM
-- [ ] Leads CRUD
-- [ ] Oportunidades CRUD con Pipeline visual
-- [ ] Cuentas/Contactos CRUD
+### Fase 5: Integración Universal Externa ✅ (2026-05-23)
+- [x] **Tablas de Staging SQL** creadas:
+  - `CRM_Staging_Leads` - Buffer para leads externos
+  - `CRM_Staging_Oportunidades` - Buffer para oportunidades externas
+  - `CRM_Staging_Cuentas` - Buffer para cuentas externas
+  - `CRM_Integracion_Conectores` - Configuración de conectores
+  - `CRM_Integracion_SyncLog` - Historial de sincronizaciones
+  - `CRM_Integracion_MapeoEtapas` - Mapeo de etapas entre sistemas
+- [x] **Framework de Conectores** implementado:
+  - `base_connector.py` - Clase abstracta para todos los conectores
+  - `vtiger_connector.py` - Conector VTiger completo (pull leads/opps/cuentas)
+  - `staging_service.py` - Servicio CRUD para tablas staging
+  - `sync_engine.py` - Motor de sincronización orquestador
+- [x] **API REST de Integración** (`/api/crm/integration/`):
+  - CRUD Conectores: `GET/POST/PUT/DELETE /conectores`
+  - Test conexión: `POST /conectores/{id}/test`
+  - Ejecutar sync: `POST /conectores/{id}/sync`
+  - Estadísticas staging: `GET /conectores/{id}/staging/stats`
+  - Listar staging: `GET /conectores/{id}/staging/leads|oportunidades|cuentas`
+  - Historial sync: `GET /conectores/{id}/sync-log`
+- [x] **Validación exitosa**:
+  - Conexión VTiger verificada ✅
+  - Sync ejecutado: 2 leads + 2 cuentas importadas a staging ✅
+  - Estado "PENDIENTE" para procesamiento posterior
 
-### Fase 5: Integración Universal (Futuro)
-- [ ] Refactorizar VTiger como conector
-- [ ] Staging tables para sync bidireccional
-- [ ] Conectores Salesforce, HubSpot, Zoho
+### Fase 6: Sync Staging → Producción (PRÓXIMA)
+- [ ] Job de procesamiento que mueva datos staging → tablas CRM nativas
+- [ ] Lógica de deduplicación y matching
+- [ ] Resolución de conflictos automática/manual
+- [ ] Conectores adicionales: Salesforce, HubSpot, Zoho
 
 ---
 
@@ -276,6 +296,8 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 - `/app/backend/core/server_registry.py` (✅ CORREGIDO)
 - `/app/backend/api/configuracion_operativa_unidades.py`
 - `/app/frontend/src/pages/ConfiguracionOperativaUnidades.jsx`
+- `/app/backend/modules/crm/integration/` (✅ NUEVO Fase 5 - Framework Conectores)
+- `/app/backend/modules/crm/integration_routes.py` (✅ NUEVO Fase 5 - API Integración)
 
 ## Documentos Generados
 - `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTRESTAURANT_MPRO_TURNOS.md`
