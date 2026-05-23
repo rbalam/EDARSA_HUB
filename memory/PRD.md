@@ -278,6 +278,49 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 
 ---
 
+## MÓDULO TABLAJERÍA
+
+### Fase 0: Diagnóstico Pasivo ✅ (2026-05-23)
+- [x] Diagnóstico de estructura frontend Operaciones
+- [x] Diagnóstico de servidores de tablajería registrados
+- [x] Diagnóstico de tablas RBAC existentes
+- [x] Reporte: `/app/docs/modules/TABLAJERIA_FASE0_DIAGNOSTICO.md`
+
+### Fase 1: DDL SQL Canónico ✅ (2026-05-23)
+- [x] **14 tablas creadas en EDARSAHUB SQL**:
+  - `Operaciones_Tablaje_Plantillas` - Plantillas maestras
+  - `Operaciones_Tablaje_PlantillasDetalle` - Derivados de plantillas
+  - `Operaciones_Tablaje_PlantillasVersiones` - Historial versiones
+  - `Operaciones_Tablaje_Ordenes` - Órdenes de producción
+  - `Operaciones_Tablaje_OrdenesDetalle` - Detalle de órdenes
+  - `Operaciones_Tablaje_Rendimientos` - Registro rendimientos
+  - `Operaciones_Tablaje_Mermas` - Registro mermas
+  - `Operaciones_Tablaje_Costos` - Costeo derivados
+  - `Operaciones_Tablaje_SyncLog` - Historial sincronización
+  - `Operaciones_Tablaje_SyncErrores` - Errores de sync
+  - `Operaciones_Tablaje_Autorizaciones` - Workflow autorizaciones
+  - `Operaciones_Tablaje_Auditoria` - Bitácora auditoría
+  - `Operaciones_Tablaje_Documentos` - Evidencias/documentos
+  - `Operaciones_Tablaje_EventosContables` - Eventos contabilidad
+- [x] Script DDL: `/app/docs/modules/TABLAJERIA_DDL_FASE1.sql`
+
+### Fase 2: Catálogo SQL de Sincronización (PRÓXIMA)
+- [ ] Consultas SELECT para CIENFUEGOS TABLAJERIA
+- [ ] Consultas SELECT para MPRO TABLAJERIA
+- [ ] Registro en ConsultasSQL_Servidores
+
+### Fases Posteriores (3-10)
+- [ ] Fase 3: Sincronización legacy → EDARSAHUB
+- [ ] Fase 4: Captura directa en EDARSAHUB
+- [ ] Fase 5: Órdenes de tablaje
+- [ ] Fase 6: Integración inventarios
+- [ ] Fase 7: Integración compras (lectura)
+- [ ] Fase 8: Autorizaciones
+- [ ] Fase 9: Eventos contables
+- [ ] Fase 10: Frontend UI
+
+---
+
 ## PENDIENTE (Otros módulos)
 
 ### P0 (Crítico) - CERRADO ✅
