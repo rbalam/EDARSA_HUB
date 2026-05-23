@@ -525,6 +525,108 @@ async def admin_sync_compras_manual(
     
     return result
 
+
+@api_router.post("/admin/detect/compras")
+async def admin_detect_nuevos_manual(
+    dry_run: bool = False,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Ejecuta manualmente la detección de nuevos inventarios/requisiciones.
+    
+    Este job usa polling incremental con checkpoints para detectar solo
+    registros NUEVOS y generar eventos para informes automáticos.
+    
+    Args:
+        dry_run: Si True, solo verifica servidores sin detectar ni generar eventos
+    
+    Returns:
+        Resultado con cantidad de nuevos detectados y eventos generados
+    """
+    user_role = current_user.get("role", "")
+    if user_role not in ["SuperAdministrador", "Administrador"]:
+        raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar detección")
+    
+    import asyncio
+    from core.scheduler.jobs.detect_nuevos_compras_job import execute_detect_nuevos
+    
+    logging.info(f"[ADMIN] Usuario {current_user.get('email')} ejecutando detección manual (dry_run={dry_run})")
+    
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, execute_detect_nuevos, dry_run)
+    
+    return result
+
+
+@api_router.get("/admin/compras/checkpoints")
+async def get_checkpoints_compras(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Obtiene el estado actual de los checkpoints de sincronización.
+    Muestra el último folio/fecha detectado por servidor.
+    """
+    user_role = current_user.get("role", "")
+    if user_role not in ["SuperAdministrador", "Administrador", "Supervisor"]:
+        raise HTTPException(status_code=403, detail="Acceso no autorizado")
+    
+    from modules.compras.eventos_compras import get_checkpoint_manager
+    
+    checkpoint_mgr = get_checkpoint_manager()
+    checkpoints = checkpoint_mgr.get_all_checkpoints()
+    
+    return {
+        "total": len(checkpoints),
+        "checkpoints": checkpoints
+    }
+
+
+@api_router.get("/admin/compras/eventos-pendientes")
+async def get_eventos_pendientes_compras(
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Obtiene los eventos de compras pendientes de procesar.
+    Útil para monitorear la cola de informes automáticos.
+    """
+    user_role = current_user.get("role", "")
+    if user_role not in ["SuperAdministrador", "Administrador", "Supervisor"]:
+        raise HTTPException(status_code=403, detail="Acceso no autorizado")
+    
+    from modules.compras.eventos_compras import get_event_dispatcher
+    
+    dispatcher = get_event_dispatcher()
+    eventos = dispatcher.get_pending_events(limit=limit)
+    
+    return {
+        "total": len(eventos),
+        "eventos": eventos
+    }
+
+
+@api_router.post("/admin/compras/procesar-eventos")
+async def procesar_eventos_pendientes(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Procesa manualmente todos los eventos pendientes.
+    Dispara los informes automáticos configurados.
+    """
+    user_role = current_user.get("role", "")
+    if user_role not in ["SuperAdministrador", "Administrador"]:
+        raise HTTPException(status_code=403, detail="Solo administradores pueden procesar eventos")
+    
+    from modules.compras.eventos_compras import get_event_dispatcher
+    
+    logging.info(f"[ADMIN] Usuario {current_user.get('email')} procesando eventos manualmente")
+    
+    dispatcher = get_event_dispatcher()
+    result = dispatcher.process_pending_events()
+    
+    return result
+
+
 import requests
 
 # ============= ENDPOINT: Test API Connection =============

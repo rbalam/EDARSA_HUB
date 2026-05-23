@@ -121,6 +121,23 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 - **Endpoint manual**: `POST /api/admin/sync/compras?dry_run=true|false`
 - **NOTA**: Solo funciona en producción donde hay acceso a servidores físicos
 
+### P0.19: Sistema de Detección en Tiempo Real ✅
+- **Arquitectura**: Polling Incremental con Checkpoints (Opción A), preparado para Service Broker (Opción C)
+- **Archivos**:
+  - `/app/backend/modules/compras/eventos_compras.py` (Sistema de eventos desacoplado)
+  - `/app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py` (Job de detección)
+- **Tablas creadas**:
+  - `Compras_Sync_Checkpoint` - Guarda último folio/fecha por servidor
+  - `Compras_Eventos_Pendientes` - Cola de eventos para informes
+  - `Compras_Informes_Config` - Configuración de informes automáticos
+- **Endpoints**:
+  - `POST /api/admin/detect/compras` - Ejecutar detección manual
+  - `GET /api/admin/compras/checkpoints` - Ver estado de checkpoints
+  - `GET /api/admin/compras/eventos-pendientes` - Ver cola de eventos
+  - `POST /api/admin/compras/procesar-eventos` - Procesar eventos manualmente
+- **Frecuencia**: Cada 2 minutos (configurable via `COMPRAS_POLLING_INTERVAL`)
+- **Latencia**: 2-3 minutos (migrable a milisegundos con Service Broker)
+
 ### P1.1: Reset Contraseña Usuario Ricardo ✅
 - **Usuario**: `ricardo@edarsa.com.mx`
 - **Tabla**: `Usuario_Catalogo` (EDARSAHUB)
@@ -190,10 +207,12 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 - `/app/backend/core/utils/operational_window.py` (✅ REFACTORIZADO P0.3)
 - `/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py` (✅ REFACTORIZADO P0.4)
 - `/app/backend/core/scheduler/jobs/sync_compras_job.py` (✅ NUEVO P0.18 - Job Sync Compras)
+- `/app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py` (✅ NUEVO P0.19 - Detección Tiempo Real)
+- `/app/backend/modules/compras/eventos_compras.py` (✅ NUEVO P0.19 - Sistema Eventos)
 - `/app/backend/modules/comercial/routes.py` (✅ MODIFICADO P0.5 - Sin LIVE-C)
 - `/app/backend/modules/comercial/service.py` (✅ MODIFICADO P0.16 - data_type)
 - `/app/backend/modules/compras/sync_service.py` (✅ NUEVO P0.17 - Sync Compras)
-- `/app/backend/server.py` (✅ MODIFICADO P0.17/P0.18 - Endpoints SQL-Only + Admin Sync)
+- `/app/backend/server.py` (✅ MODIFICADO P0.17/P0.18/P0.19 - Endpoints SQL-Only + Admin)
 - `/app/backend/core/server_registry.py` (✅ CORREGIDO)
 - `/app/backend/api/configuracion_operativa_unidades.py`
 - `/app/frontend/src/pages/ConfiguracionOperativaUnidades.jsx`
