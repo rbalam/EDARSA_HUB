@@ -41,7 +41,10 @@ import {
   Beef,
   Layers,
   FileText,
-  Activity
+  Activity,
+  Truck,
+  Receipt,
+  FileCheck
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
@@ -198,6 +201,36 @@ const Layout = () => {
           name: 'Dashboard CRM',
           href: '/crm/dashboard',
           icon: PieChart,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Cuentas',
+          href: '/crm/cuentas',
+          icon: Building2,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Solicitudes Alta',
+          href: '/crm/solicitudes-alta',
+          icon: FileCheck,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Cotizaciones',
+          href: '/crm/cotizaciones',
+          icon: Receipt,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Pedidos',
+          href: '/crm/pedidos',
+          icon: Package,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Remisiones',
+          href: '/crm/remisiones',
+          icon: Truck,
           roles: ['Usuario', 'Supervisor', 'Administrador']
         },
         {

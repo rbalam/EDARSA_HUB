@@ -35,6 +35,12 @@ import CRMDashboard from '@/pages/crm/CRMDashboard';
 import LeadsPage from '@/pages/crm/LeadsPage';
 import OportunidadesPage from '@/pages/crm/OportunidadesPage';
 import PipelinePage from '@/pages/crm/PipelinePage';
+// CRM Comercial (Enterprise-Grade)
+import CuentasPage from '@/pages/crm/CuentasPage';
+import SolicitudesAltaPage from '@/pages/crm/SolicitudesAltaPage';
+import CotizacionesPage from '@/pages/crm/CotizacionesPage';
+import PedidosPage from '@/pages/crm/PedidosPage';
+import RemisionesPage from '@/pages/crm/RemisionesPage';
 
 // Tablajería
 import TablajeriaDashboard from '@/pages/tablajeria/TablajeriaDashboard';
@@ -72,6 +78,12 @@ function App() {
             <Route path="crm/leads" element={<LeadsPage />} />
             <Route path="crm/oportunidades" element={<OportunidadesPage />} />
             <Route path="crm/pipeline" element={<PipelinePage />} />
+            {/* CRM Comercial (Enterprise-Grade) */}
+            <Route path="crm/cuentas" element={<CuentasPage />} />
+            <Route path="crm/solicitudes-alta" element={<SolicitudesAltaPage />} />
+            <Route path="crm/cotizaciones" element={<CotizacionesPage />} />
+            <Route path="crm/pedidos" element={<PedidosPage />} />
+            <Route path="crm/remisiones" element={<RemisionesPage />} />
             <Route path="tablero-ejecutivo" element={<TableroEjecutivo />} />
             <Route path="catalogo-consultas" element={<CatalogoConsultas />} />
             <Route path="explorador-bd" element={<ExploradorBD />} />
