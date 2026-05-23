@@ -690,29 +690,33 @@ class TablajeriaOrdenesService:
                 orden_id
             ))
             
-            # Registrar rendimiento histórico
-            cursor.execute("""
-                INSERT INTO Operaciones_Tablaje_Rendimientos (
-                    RendimientoID, OrdenID, EmpresaID, UnidadNegocioID,
-                    FechaOperacionMexico, PlantillaID, NombrePlantilla,
-                    InsumoBaseNombre, CantidadInsumoConsumido,
-                    RendimientoEsperadoPorcentaje, RendimientoRealPorcentaje,
-                    DesviacionPorcentaje, DentroTolerancia, FechaRegistroUTC
-                )
-                SELECT 
-                    NEWID(), OrdenID, EmpresaID, UnidadNegocioID,
-                    FechaOperacionMexico, PlantillaID, %s,
-                    InsumoBaseNombre, CantidadBaseReal,
-                    RendimientoEsperadoPorcentaje, RendimientoRealPorcentaje,
-                    DesviacionRendimiento, %s, %s
-                FROM Operaciones_Tablaje_Ordenes
-                WHERE OrdenID = %s
-            """, (
-                orden.get('NombrePlantilla'),
-                not requiere_autorizacion,
-                now_utc,
-                orden_id
-            ))
+            # Registrar rendimiento histórico (solo si hay rendimiento calculado)
+            # NOTA: La tabla Operaciones_Tablaje_Rendimientos no permite NULL en RendimientoRealPorcentaje
+            if orden.get('RendimientoRealPorcentaje') is not None:
+                cursor.execute("""
+                    INSERT INTO Operaciones_Tablaje_Rendimientos (
+                        RendimientoID, OrdenID, EmpresaID, UnidadNegocioID,
+                        FechaOperacionMexico, PlantillaID, NombrePlantilla,
+                        InsumoBaseNombre, CantidadInsumoConsumido,
+                        RendimientoEsperadoPorcentaje, RendimientoRealPorcentaje,
+                        DesviacionPorcentaje, DentroTolerancia, FechaRegistroUTC
+                    )
+                    SELECT 
+                        NEWID(), OrdenID, EmpresaID, UnidadNegocioID,
+                        FechaOperacionMexico, PlantillaID, %s,
+                        InsumoBaseNombre, CantidadBaseReal,
+                        RendimientoEsperadoPorcentaje, RendimientoRealPorcentaje,
+                        DesviacionRendimiento, %s, %s
+                    FROM Operaciones_Tablaje_Ordenes
+                    WHERE OrdenID = %s
+                """, (
+                    orden.get('NombrePlantilla'),
+                    not requiere_autorizacion,
+                    now_utc,
+                    orden_id
+                ))
+            else:
+                logger.warning(f"[TablajeriaOrdenes] Orden {orden['FolioOrden']} cerrada sin rendimiento calculado - no se registra en histórico")
             
             # Registrar mermas si hay
             if orden['MermaRealKg']:

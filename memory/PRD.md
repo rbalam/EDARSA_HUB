@@ -364,13 +364,35 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
   - `PlantillasPage.jsx` - Lista, detalle, publicar plantillas
   - `OrdenesPage.jsx` - CRUD completo, registro de resultados, cierre
 
+### Fase Validación y Blindaje ✅ (2026-05-23)
+- [x] **Validaciones Backend**:
+  - NO usa MongoDB ✅
+  - USA exclusivamente EDARSAHUB SQL ✅
+  - NO afecta tablas de Inventario ✅
+  - NO genera eventos contables ✅
+  - NO hay DELETE físico ✅
+  - Zona horaria México para FechaOperacion ✅
+  - Timestamps UTC para auditoría ✅
+- [x] **Validaciones Frontend**:
+  - Rutas correctas /produccion/tablajeria/* ✅
+  - No altera módulos blindados ✅
+  - Manejo loading/error/empty ✅
+  - NPM build exitoso ✅
+- [x] **Bug corregido**: INSERT condicional a Rendimientos cuando RendimientoRealPorcentaje es NULL
+- [x] **Reporte**: `/app/docs/reports/TABLAJERIA_VALIDACION_BLINDAJE_REPORTE.md`
+
+### Riesgos Documentados
+- 🔴 R1: Contraseña hardcodeada en `sync_service.py:583` (pendiente remover)
+- 🔴 R2: Contraseñas por defecto en `routes.py:41` (usar variables entorno en prod)
+- 🟡 R3: RBAC no registrado (siguiente tarea P0)
+
 ### Fases Pendientes
+- [ ] **P0**: Registrar permisos RBAC TABLAJERIA_* en SQL
 - [ ] Fase 4: Captura Directa (crear plantillas sin sync)
 - [ ] Fase 6: Integración inventarios
 - [ ] Fase 7: Integración compras (lectura)
 - [ ] Fase 8: Autorizaciones avanzadas
 - [ ] Fase 9: Eventos contables
-- [ ] Permisos RBAC TABLAJERIA_* en tabla SQL
 
 ---
 
