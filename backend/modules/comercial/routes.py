@@ -929,6 +929,7 @@ async def _tablero_ejecutivo_internal(
                         source_real_status=SourceRealStatus.SUCCESS,
                         source_period=source_period,
                         source_live=source_live,
+                        data_type=data_type,  # P0: Campo auditoría obligatorio
                     )
                     resultados.append(unit_response)
                     
@@ -964,6 +965,7 @@ async def _tablero_ejecutivo_internal(
                         source_real_status=SourceRealStatus.QUERY_ERROR,
                         source_period="NONE",
                         source_live="ERROR",
+                        data_type=data_type,  # P0: Campo auditoría obligatorio
                         error_code=error_code,
                         error_message=error_mensaje,
                     )
@@ -1028,6 +1030,7 @@ async def _tablero_ejecutivo_internal(
                                 source_real_status=source_real_status,
                                 source_period="EDARSAHUB_SNAPSHOT",
                                 source_live="NOT_AVAILABLE",
+                                data_type=data_type,  # P0: Campo auditoría obligatorio
                                 cache_warning=cache_warning,
                             )
                             resultados.append(unit_response)
@@ -1054,6 +1057,7 @@ async def _tablero_ejecutivo_internal(
                                 source_real_status=source_real_status,
                                 source_period="NONE",
                                 source_live="NOT_AVAILABLE",
+                                data_type=data_type,  # P0: Campo auditoría obligatorio
                                 error_code="NO_SNAPSHOT",
                                 error_message="Sin datos del día en EDARSAHUB",
                             )

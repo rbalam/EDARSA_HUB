@@ -228,6 +228,11 @@ def decrypt_server_secrets(server: Optional[Dict]) -> Optional[Dict]:
 # ===========================================
 
 from modules.compras import init_compras_module
+# FASE P0 SQL-Only: Importar servicio de sincronización para lectura desde EDARSAHUB
+from modules.compras.sync_service import (
+    obtener_inventarios_fisicos_sync,
+    obtener_requisiciones_sync,
+)
 # FASE 3A.1: Importar utilidades de normalización desde CORE (fuente de verdad)
 from core.system_type_utils import (
     normalize_system_type,
@@ -484,6 +489,40 @@ async def admin_cache_cleanup(
         raise HTTPException(status_code=403, detail="Solo administradores pueden limpiar cache")
     
     result = await cleanup_expired_cache(max_age_hours)
+    return result
+
+
+@api_router.post("/admin/sync/compras")
+async def admin_sync_compras_manual(
+    dry_run: bool = False,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Ejecuta manualmente la sincronización de Compras (Inventarios y Requisiciones).
+    
+    FASE P0 SQL-ONLY: Este job sincroniza datos desde servidores físicos hacia EDARSAHUB SQL.
+    Los endpoints de compras luego leen de las tablas sincronizadas.
+    
+    Args:
+        dry_run: Si True, solo lista servidores sin ejecutar sincronización
+    
+    Returns:
+        Resultado de la sincronización con detalles por servidor
+    """
+    # Verificar rol de administrador
+    user_role = current_user.get("role", "")
+    if user_role not in ["SuperAdministrador", "Administrador"]:
+        raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar sincronización")
+    
+    import asyncio
+    from core.scheduler.jobs.sync_compras_job import execute_sync_compras
+    
+    logging.info(f"[ADMIN] Usuario {current_user.get('email')} ejecutando sync compras manual (dry_run={dry_run})")
+    
+    # Ejecutar en thread separado para no bloquear
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, execute_sync_compras, dry_run)
+    
     return result
 
 import requests
@@ -6778,214 +6817,145 @@ async def validate_server_access_by_empresa(server_id: str, credentials: HTTPAut
 async def obtener_inventarios_fisicos(server_id: str, sucursal: str = None, sucursal_id: str = None, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Obtiene la lista de inventarios físicos disponibles para seleccionar.
+    
+    FASE P0 SQL-ONLY: Lee EXCLUSIVAMENTE de EDARSAHUB (tabla Compras_Inventarios_Fisicos_Sync).
+    NO se realizan consultas en vivo a servidores físicos para evitar timeouts.
+    
     FASE 8: Aplica filtro RBAC por almacenes permitidos.
-    SOLO devuelve inventarios de almacenes dentro del alcance del usuario.
     """
     # FASE 3.1: Validar acceso por empresa
     access = await validate_server_access_by_empresa(server_id, credentials)
-    server = access["server"]
+    _server = access["server"]  # P0: No se usa directamente, se lee de EDARSAHUB
     context = access["context"]  # FASE 8: Obtener contexto RBAC
     
-    # FASE 8: Obtener almacenes permitidos y filtro SQL
+    # FASE 8: Obtener almacenes permitidos
     almacenes_permitidos = get_almacenes_permitidos(context, server_id)
     
     logging.info(
-        f"[RBAC-INVENTARIOS] Usuario={access['user'].get('email')}, "
-        f"Server={server_id}, AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
+        f"[P0-SQL-ONLY] Inventarios físicos desde EDARSAHUB - "
+        f"Usuario={access['user'].get('email')}, Server={server_id}, "
+        f"AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
     )
     
-    if is_mpro_system(server.get('system_type')):
-        # FASE 8: Filtro RBAC por almacenes permitidos
-        almacen_rbac_filter = get_almacenes_sql_filter(context, server_id, "A.Al_Cve_Almacen")
-        
-        # FASE 1C: Sanitizar entradas LIKE
-        almacen_safe = _escape_like_pattern(almacen) if almacen else ""
-        sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
-        
-        # Filtro adicional por almacén del frontend
-        almacen_filtro = ""
-        if almacen and almacen != "TODOS" and almacen:
-            almacen_filtro = f"AND A.Al_Descripcion LIKE '%{almacen_safe}%'"
-        
-        # Filtro por sucursal - CRÍTICO: detectar si es clave numérica o nombre
-        sucursal_filtro = "1=1"
-        if sucursal_id:
-            sucursal_filtro = f"A.Sc_Cve_Sucursal = '{sucursal_id}'"
-        elif sucursal:
-            # FASE 9: Detectar si sucursal es una clave numérica (ej: "0021") o un nombre
-            if sucursal.isdigit() or (len(sucursal) == 4 and sucursal[0] == '0'):
-                # Es una clave de sucursal (ej: "0021", "0023")
-                sucursal_filtro = f"A.Sc_Cve_Sucursal = '{sucursal}'"
-                logging.info(f"[INVENTARIOS-FISICOS] Filtro por CLAVE de sucursal: {sucursal}")
-            else:
-                # Es un nombre de sucursal
-                sucursal_filtro = f"S.Sc_Descripcion LIKE '%{sucursal_safe}%'"
-                logging.info(f"[INVENTARIOS-FISICOS] Filtro por NOMBRE de sucursal: {sucursal}")
-        
-        query = f"""
-SELECT DISTINCT 
-    F.Fi_Folio as folio,
-    F.Fi_Fecha as fecha,
-    A.Al_Descripcion as almacen,
-    A.Al_Cve_Almacen as almacen_id,
-    S.Sc_Descripcion as sucursal,
-    A.Sc_Cve_Sucursal as sucursal_id,
-    ISNULL(F.Fi_Comentario, '') as comentario,
-    COUNT(DISTINCT F.Pr_Cve_Producto) as total_productos
-FROM Fisico F
-INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
-WHERE {sucursal_filtro}
-    {almacen_filtro}
-    {almacen_rbac_filter}
-GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, A.Al_Cve_Almacen, S.Sc_Descripcion, A.Sc_Cve_Sucursal, F.Fi_Comentario
-ORDER BY F.Fi_Folio DESC
-"""
-        logging.info(f"[RBAC-INVENTARIOS] MPRO Query con filtro RBAC: {almacen_rbac_filter or 'SIN_FILTRO'}")
+    # =========================================================================
+    # FASE P0 SQL-ONLY: Leer de EDARSAHUB en lugar de servidores físicos
+    # =========================================================================
+    try:
+        # Obtener unidad_negocio_id asociada al server
+        unidad_negocio_id = None
         try:
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query,
-                timeout=30  # Timeout de 30 segundos para evitar 524
-            )
-            logging.info(f"[RBAC-INVENTARIOS] MPRO - Encontrados: {len(result)} inventarios (filtrado RBAC)")
-            return [{"folio": r['folio'], "fecha": str(r['fecha']), "almacen": r['almacen'], 
-                     "almacen_id": r.get('almacen_id', ''),
-                     "sucursal": r.get('sucursal', ''), "sucursal_id": r.get('sucursal_id', ''),
-                     "comentario": r['comentario'], "productos": r['total_productos']} for r in result]
-        except Exception as e:
-            error_msg = str(e)
-            log_compras_error("inventarios-fisicos", server_id, "CONNECTION_ERROR", error_msg[:200], server.get('system_type'))
-            if 'timeout' in error_msg.lower() or 'connection' in error_msg.lower() or 'refused' in error_msg.lower():
-                raise HTTPException(status_code=503, detail=f"Servidor SQL temporalmente inaccesible: {server['host']}")
-            raise HTTPException(status_code=500, detail=f"Error consultando inventarios: {error_msg[:200]}")
-    
-    elif is_softrestaurant_system(server.get('system_type')):
-        # FASE 8: Filtro RBAC por almacenes permitidos
-        almacen_rbac_filter = get_almacenes_sql_filter(context, server_id, "A.idalmacen")
+            from core.unidades_registry import get_unidad_by_server_id
+            unidad_info = get_unidad_by_server_id(server_id)
+            if unidad_info:
+                unidad_negocio_id = unidad_info.id
+        except Exception:
+            pass
         
-        # FASE 1C: Sanitizar entradas LIKE
-        almacen_safe = _escape_like_pattern(almacen) if almacen else ""
+        # Leer desde tabla de sincronización en EDARSAHUB
+        inventarios = obtener_inventarios_fisicos_sync(
+            unidad_negocio_id=unidad_negocio_id,
+            server_id=server_id,
+            sucursal=sucursal or sucursal_id,
+            almacen=almacen,
+            limit=500
+        )
         
-        # Filtro adicional por almacén del frontend
-        almacen_filtro = ""
-        if almacen and almacen != "TODOS":
-            almacen_filtro = f"AND A.nombre LIKE '%{almacen_safe}%'"
+        # Aplicar filtro RBAC si hay restricción de almacenes
+        if almacenes_permitidos:
+            inventarios = [
+                inv for inv in inventarios 
+                if inv.get('almacen_id') in almacenes_permitidos 
+                or not almacenes_permitidos  # Sin restricción = todos permitidos
+            ]
         
-        query = f"""
-SELECT DISTINCT 
-    INV.folio as folio,
-    INV.fecha as fecha,
-    A.nombre as almacen,
-    A.idalmacen as almacen_id,
-    '' as comentario
-FROM invfisico INV
-LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
-WHERE 1=1
-    {almacen_filtro}
-    {almacen_rbac_filter}
-ORDER BY INV.folio DESC, INV.fecha DESC
-"""
-        try:
-            logging.info(f"[RBAC-INVENTARIOS] SR Query con filtro RBAC: {almacen_rbac_filter or 'SIN_FILTRO'}")
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            logging.info(f"[RBAC-INVENTARIOS] SoftRestaurant - Encontrados: {len(result)} inventarios (filtrado RBAC)")
-            return [{"folio": str(r['folio']), "fecha": str(r['fecha']), "almacen": r['almacen'] or 'Sin almacén',
-                     "almacen_id": str(r.get('almacen_id', '')),
-                     "comentario": '', "productos": 0} for r in result]
-        except Exception as e:
-            # FASE 3A: No ocultar errores como lista vacía
-            log_compras_error("inventarios-fisicos", server_id, "QUERY_ERROR", str(e), server.get('system_type'))
-            raise HTTPException(status_code=500, detail=f"Error consultando inventarios: {str(e)[:200]}")
-    
-    # FASE 3A: Blindaje - sistema no soportado no debe retornar lista vacía silenciosa
-    system_type = server.get('system_type', 'UNKNOWN')
-    normalized = normalize_system_type(system_type)
-    log_compras_error("inventarios-fisicos", server_id, "UNSUPPORTED_SYSTEM_TYPE", f"system_type={system_type}", system_type)
-    raise HTTPException(
-        status_code=400, 
-        detail=f"El tipo de sistema '{system_type}' (normalizado: {normalized}) no está soportado para inventarios físicos"
-    )
+        logging.info(f"[P0-SQL-ONLY] Inventarios desde EDARSAHUB: {len(inventarios)} registros")
+        
+        # Formatear respuesta compatible con frontend existente
+        return [{
+            "folio": str(inv.get('folio', '')),
+            "fecha": str(inv.get('fecha', '')),
+            "almacen": inv.get('almacen', 'Sin almacén'),
+            "almacen_id": str(inv.get('almacen_id', '')),
+            "sucursal": inv.get('sucursal', ''),
+            "sucursal_id": str(inv.get('sucursal_id', '')),
+            "comentario": '',
+            "productos": int(inv.get('total_productos', 0)),
+            "source": "EDARSAHUB_SYNC",  # P0: Indicador de fuente
+            "sync_status": inv.get('sync_status', 'UNKNOWN'),
+        } for inv in inventarios]
+        
+    except Exception as e:
+        error_msg = str(e)
+        log_compras_error("inventarios-fisicos", server_id, "EDARSAHUB_ERROR", error_msg[:200], "EDARSAHUB")
+        logging.error(f"[P0-SQL-ONLY] Error leyendo inventarios de EDARSAHUB: {e}")
+        raise HTTPException(
+            status_code=503, 
+            detail=f"Error consultando inventarios sincronizados: {error_msg[:200]}"
+        )
 
 @api_router.get("/compras/pedidos-vigentes/{server_id}")
 async def obtener_pedidos_vigentes(server_id: str, sucursal: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtiene la lista de REQUISICIONES de compra SIN AUTORIZAR (estado PXA) para comparar"""
+    """
+    Obtiene la lista de REQUISICIONES de compra SIN AUTORIZAR (estado PXA) para comparar.
+    
+    FASE P0 SQL-ONLY: Lee EXCLUSIVAMENTE de EDARSAHUB (tabla Compras_Requisiciones_Sync).
+    NO se realizan consultas en vivo a servidores físicos para evitar timeouts.
+    """
     # FASE 3.1: Validar acceso por empresa
     access = await validate_server_access_by_empresa(server_id, credentials)
-    server = access["server"]
+    _server = access["server"]  # P0: No se usa directamente, se lee de EDARSAHUB
     
-    if is_mpro_system(server.get('system_type')):
-        # MPRO: Usar ORDEN_COMPRA (órdenes con proveedor asignado) 
-        # Filtrar por estado: RCT=Recepción Total, PXA=Por Autorizar, AC=Activa
-        # El usuario quiere ver folio/proveedor, NO folio/comprador
-        
-        # FASE 1C: Sanitizar entradas LIKE
-        sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
-        
-        # Filtro de sucursal - solo aplicar si se especifica
-        sucursal_filtro = "1=1"
-        if sucursal:
-            sucursal_filtro = f"(S.Sc_Cve_Sucursal = '{sucursal}' OR S.Sc_Descripcion LIKE '%{sucursal_safe}%')"
-        
-        query = f"""
-SELECT 'OC' as tipo, OC.Oc_Folio as folio, OC.Oc_Fecha as fecha, 
-       OC.Oc_Comentario as comentario, OC.Es_Cve_Estado as estado,
-       P.Pv_Descripcion as proveedor,
-       COUNT(OC.Pr_Cve_Producto) as total_productos,
-       0 as importe_total
-FROM Orden_Compra OC
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = OC.Sc_Cve_Sucursal
-LEFT JOIN Proveedor P ON P.Pv_Cve_Proveedor = OC.Pv_Cve_Proveedor
-WHERE {sucursal_filtro}
-    AND OC.Es_Cve_Estado IN ('PXA', 'AC', 'RCT')
-    AND OC.Oc_Fecha >= DATEADD(day, -30, GETDATE())
-GROUP BY OC.Oc_Folio, OC.Oc_Fecha, OC.Oc_Comentario, OC.Es_Cve_Estado, P.Pv_Descripcion
-ORDER BY OC.Oc_Fecha DESC
-"""
-        result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], query
-        )
-        return [{"tipo": r['tipo'], "folio": r['folio'], "fecha": str(r['fecha']), 
-                 "comentario": r['comentario'] or '', "estado": r['estado'],
-                 "comprador": r['proveedor'] or '',  # Campo 'comprador' ahora muestra proveedor
-                 "productos": r['total_productos'], "importe": float(r['importe_total'] or 0)} for r in result]
+    logging.info(
+        f"[P0-SQL-ONLY] Requisiciones desde EDARSAHUB - "
+        f"Usuario={access['user'].get('email')}, Server={server_id}"
+    )
     
-    elif is_softrestaurant_system(server.get('system_type')):
-        # SoftRestaurant: Usar tabla ordenescompra (órdenes sin aplicar = sin autorizar)
+    # =========================================================================
+    # FASE P0 SQL-ONLY: Leer de EDARSAHUB en lugar de servidores físicos
+    # =========================================================================
+    try:
+        # Obtener unidad_negocio_id asociada al server
+        unidad_negocio_id = None
         try:
-            query = f"""
-SELECT 'ORDEN' as tipo, OC.folio as folio, OC.fechacaptura as fecha,
-       '' as comentario, 
-       CASE WHEN OC.aplicada = 0 THEN 'PXA' ELSE 'AUT' END as estado,
-       PR.nombre as proveedor,
-       COUNT(OCM.idinsumo) as total_productos,
-       ISNULL(OC.total, 0) as importe_total
-FROM ordenescompra OC
-LEFT JOIN proveedores PR ON PR.idproveedor = OC.idproveedor
-LEFT JOIN ordenescompramov OCM ON OCM.idordencompra = OC.idordencompra
-WHERE OC.aplicada = 0
-    AND OC.cancelado = 0
-    AND OC.fechacaptura >= DATEADD(day, -30, GETDATE())
-GROUP BY OC.folio, OC.fechacaptura, OC.aplicada, PR.nombre, OC.total
-ORDER BY OC.fechacaptura DESC
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            return [{"tipo": r['tipo'], "folio": str(r['folio']), "fecha": str(r['fecha']), 
-                     "comentario": r['comentario'] or '', "estado": r['estado'],
-                     "comprador": r['proveedor'] or '',
-                     "productos": r['total_productos'], "importe": float(r['importe_total'] or 0)} for r in result]
-        except Exception as e:
-            logging.warning(f"Error obteniendo pedidos SoftRestaurant: {e}")
-            return []
-    
-    return []
+            from core.unidades_registry import get_unidad_by_server_id
+            unidad_info = get_unidad_by_server_id(server_id)
+            if unidad_info:
+                unidad_negocio_id = unidad_info.id
+        except Exception:
+            pass
+        
+        # Leer desde tabla de sincronización en EDARSAHUB
+        requisiciones = obtener_requisiciones_sync(
+            unidad_negocio_id=unidad_negocio_id,
+            server_id=server_id,
+            sucursal=sucursal,
+            limit=500
+        )
+        
+        logging.info(f"[P0-SQL-ONLY] Requisiciones desde EDARSAHUB: {len(requisiciones)} registros")
+        
+        # Formatear respuesta compatible con frontend existente
+        return [{
+            "tipo": req.get('tipo', 'OC'),
+            "folio": str(req.get('folio', '')),
+            "fecha": str(req.get('fecha', '')),
+            "comentario": '',
+            "estado": req.get('estatus', 'PENDIENTE'),
+            "comprador": req.get('proveedor', ''),
+            "productos": int(req.get('total_productos', 0)),
+            "importe": float(req.get('importe', 0) or 0),
+            "source": "EDARSAHUB_SYNC",  # P0: Indicador de fuente
+            "sync_status": req.get('sync_status', 'UNKNOWN'),
+        } for req in requisiciones]
+        
+    except Exception as e:
+        error_msg = str(e)
+        log_compras_error("pedidos-vigentes", server_id, "EDARSAHUB_ERROR", error_msg[:200], "EDARSAHUB")
+        logging.error(f"[P0-SQL-ONLY] Error leyendo requisiciones de EDARSAHUB: {e}")
+        raise HTTPException(
+            status_code=503, 
+            detail=f"Error consultando requisiciones sincronizadas: {error_msg[:200]}"
+        )
 
 @api_router.get("/compras/detalle-pedido-manual/{server_id}")
 async def obtener_detalle_pedido_manual(server_id: str, folio: str, credentials: HTTPAuthorizationCredentials = Depends(security)):

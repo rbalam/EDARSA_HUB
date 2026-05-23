@@ -89,6 +89,46 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 
 ---
 
+## IMPLEMENTADO (2026-05-23)
+
+### P0.16: Campos Auditoría Obligatorios en Tablero Ejecutivo ✅
+- **Problema**: El JSON del Tablero Ejecutivo no incluía explícitamente los campos `data_type` requeridos para validación SQL-Only.
+- **Solución**: 
+  - Agregado parámetro `data_type` a `build_unit_response()` en `service.py`
+  - Actualizado todas las llamadas en `routes.py` con `data_type=data_type`
+- **Validación**: Endpoint `/comercial/tablero-ejecutivo?anio=-1` retorna:
+  - `source_period: EDARSAHUB_SQL` ✅
+  - `data_type: EDARSAHUB_VENTAS_DIA` ✅
+  - `live_status: LIVE_NOT_APPLICABLE` ✅
+
+### P0.17: Sincronización Offline Compras/Operaciones ✅
+- **Problema**: Endpoints `/compras/inventarios-fisicos` y `/compras/pedidos-vigentes` consultaban en vivo a servidores físicos (CIENFUEGOS, etc.) causando timeouts severos.
+- **Solución**: 
+  - Creado `sync_service.py` con funciones `obtener_inventarios_fisicos_sync()` y `obtener_requisiciones_sync()`
+  - Refactorizados endpoints en `server.py` para leer EXCLUSIVAMENTE de tablas EDARSAHUB:
+    - `Compras_Inventarios_Fisicos_Sync`
+    - `Compras_Requisiciones_Sync`
+  - **NO se realizan consultas LIVE** a servidores físicos desde estos endpoints
+- **Archivos modificados**:
+  - `/app/backend/modules/compras/sync_service.py`
+  - `/app/backend/server.py` (endpoints refactorizados)
+
+### P0.18: Job Background Sync Compras ✅
+- **Archivo**: `/app/backend/core/scheduler/jobs/sync_compras_job.py`
+- **Función**: Sincroniza inventarios y requisiciones desde servidores físicos hacia EDARSAHUB SQL
+- **Frecuencia**: Cada 30 minutos (configurable via `SCHEDULER_SYNC_COMPRAS_INTERVAL_SECONDS`)
+- **Lock**: Anti-concurrencia SQL en tabla `Sync_Control_Ejecuciones`
+- **Endpoint manual**: `POST /api/admin/sync/compras?dry_run=true|false`
+- **NOTA**: Solo funciona en producción donde hay acceso a servidores físicos
+
+### P1.1: Reset Contraseña Usuario Ricardo ✅
+- **Usuario**: `ricardo@edarsa.com.mx`
+- **Tabla**: `Usuario_Catalogo` (EDARSAHUB)
+- **Nueva contraseña**: `Asdf1478@@`
+- **Validación**: Login exitoso via API
+
+---
+
 ## IMPLEMENTADO (2026-05-22)
 
 ### Integración VTiger CRM - Backend Completo ✅
@@ -124,14 +164,17 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 - [x] `SERVER_SECRET_KEY` accesible para scheduler (VALIDADO - desencripta MPRO)
 - [x] Lock anti-concurrencia implementado
 - [x] Job ejecutado y datos sincronizados
+- [x] Campos auditoría en Tablero Ejecutivo (P0.16)
+- [x] Sincronización offline Compras (P0.17)
 
 ### P1
+- [ ] Conectar módulo VTiger CRM con Frontend (backend completado)
 - [ ] Errores conexión SoftRestaurant (CIENFUEGOS, ESTELAR) - infraestructura origen
 - [ ] Implementar detección de TURNO_EXTENDIDO
 - [ ] Implementar alertas de POSIBLE_MEZCLA_DIAS
 - [ ] `Comercial_Ventas_Dia_Detalle_v2` para reconciliación de cheques
 
-### Backlog
+### Backlog (P2)
 - [ ] Documentación final (FASE 10)
 - [ ] Migración final para retirar MongoDB
 
@@ -146,7 +189,11 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 ## Archivos de Referencia
 - `/app/backend/core/utils/operational_window.py` (✅ REFACTORIZADO P0.3)
 - `/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py` (✅ REFACTORIZADO P0.4)
+- `/app/backend/core/scheduler/jobs/sync_compras_job.py` (✅ NUEVO P0.18 - Job Sync Compras)
 - `/app/backend/modules/comercial/routes.py` (✅ MODIFICADO P0.5 - Sin LIVE-C)
+- `/app/backend/modules/comercial/service.py` (✅ MODIFICADO P0.16 - data_type)
+- `/app/backend/modules/compras/sync_service.py` (✅ NUEVO P0.17 - Sync Compras)
+- `/app/backend/server.py` (✅ MODIFICADO P0.17/P0.18 - Endpoints SQL-Only + Admin Sync)
 - `/app/backend/core/server_registry.py` (✅ CORREGIDO)
 - `/app/backend/api/configuracion_operativa_unidades.py`
 - `/app/frontend/src/pages/ConfiguracionOperativaUnidades.jsx`

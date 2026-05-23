@@ -1172,6 +1172,7 @@ def build_unit_response(
     source_real_status: str = SourceRealStatus.SUCCESS,
     source_period: str = "SQL",
     source_live: str = "TEMPCHEQUES",
+    data_type: str = "HUB",  # P0: Nuevo campo de auditoría obligatorio
     cache_warning: Optional[str] = None,
     error_code: Optional[str] = None,
     error_message: Optional[str] = None,
@@ -1246,12 +1247,13 @@ def build_unit_response(
         "live_status": live_status,
         "cache_status": cache_status,
         
-        # Información de fuente (P0 TAREA 5)
+        # Información de fuente (P0 TAREA 5) + Auditoría SQL-Only
         "source_used": source_used,
         "source_real_attempted": source_real_attempted,
         "source_real_status": source_real_status,
         "source_period": source_period,
         "source_live": source_live,
+        "data_type": data_type,  # P0: EDARSAHUB_VENTAS_DIA | HUB | LIVE-C
         
         # Timestamps
         "last_data_refresh_at": now,
