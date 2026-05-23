@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -7,10 +7,18 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { 
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
+  DropdownMenuTrigger, DropdownMenuSeparator 
+} from '@/components/ui/dropdown-menu';
+import { 
   Briefcase, Search, Plus, Edit, DollarSign, Building2, 
-  ChevronLeft, ChevronRight, Filter, TrendingUp 
+  ChevronLeft, ChevronRight, Filter, MoreHorizontal, 
+  Trophy, XCircle, ArrowRight
 } from 'lucide-react';
+import { toast } from 'sonner';
 import api from '@/lib/api';
+import OportunidadForm from './OportunidadForm';
+import CerrarOportunidadModal from './CerrarOportunidadModal';
 
 const EMPRESA_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -20,10 +28,12 @@ export default function OportunidadesPage() {
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 0 });
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [editingOportunidad, setEditingOportunidad] = useState(null);
+  const [closingOportunidad, setClosingOportunidad] = useState(null);
 
   useEffect(() => {
     loadOportunidades();
-  }, [pagination.page, search]);
+  }, [pagination.page]);
 
   const loadOportunidades = async () => {
     try {
@@ -44,6 +54,7 @@ export default function OportunidadesPage() {
       }));
     } catch (err) {
       console.error('Error loading oportunidades:', err);
+      toast.error('Error al cargar oportunidades');
     } finally {
       setLoading(false);
     }
@@ -58,6 +69,25 @@ export default function OportunidadesPage() {
     }).format(amount || 0);
   };
 
+  const handleFormClose = () => {
+    setShowForm(false);
+    setEditingOportunidad(null);
+  };
+
+  const handleFormSaved = () => {
+    handleFormClose();
+    loadOportunidades();
+  };
+
+  const handleCloseModal = () => {
+    setClosingOportunidad(null);
+  };
+
+  const handleClosed = () => {
+    handleCloseModal();
+    loadOportunidades();
+  };
+
   const getEtapaBadge = (opp) => {
     const color = opp.etapa_color || '#6B7280';
     return (
@@ -66,6 +96,21 @@ export default function OportunidadesPage() {
         style={{ borderColor: color, backgroundColor: `${color}15`, color: color }}
       >
         {opp.etapa_nombre || 'Sin etapa'}
+      </Badge>
+    );
+  };
+
+  const getStatusBadge = (opp) => {
+    const statusColors = {
+      'Abierta': 'bg-blue-100 text-blue-800',
+      'Ganada': 'bg-green-100 text-green-800',
+      'Perdida': 'bg-red-100 text-red-800',
+      'Pausada': 'bg-yellow-100 text-yellow-800',
+    };
+    const className = statusColors[opp.estatus_nombre] || 'bg-gray-100 text-gray-800';
+    return (
+      <Badge className={className}>
+        {opp.estatus_nombre || 'Sin estatus'}
       </Badge>
     );
   };
@@ -83,6 +128,10 @@ export default function OportunidadesPage() {
         <span className="text-xs font-medium" style={{ color }}>{prob}%</span>
       </div>
     );
+  };
+
+  const canClose = (opp) => {
+    return opp.estatus_nombre === 'Abierta';
   };
 
   return (
@@ -134,14 +183,15 @@ export default function OportunidadesPage() {
                 <TableHead>Monto</TableHead>
                 <TableHead>Etapa</TableHead>
                 <TableHead>Probabilidad</TableHead>
-                <TableHead>Fecha Est. Cierre</TableHead>
+                <TableHead>Estatus</TableHead>
+                <TableHead>Fecha Est.</TableHead>
                 <TableHead className="w-20"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={9} className="text-center py-8">
                     <div className="flex items-center justify-center">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
                     </div>
@@ -149,7 +199,7 @@ export default function OportunidadesPage() {
                 </TableRow>
               ) : oportunidades.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                     No se encontraron oportunidades
                   </TableCell>
                 </TableRow>
@@ -187,6 +237,7 @@ export default function OportunidadesPage() {
                     </TableCell>
                     <TableCell>{getEtapaBadge(opp)}</TableCell>
                     <TableCell>{getProbabilidadBar(opp.probabilidad_actual)}</TableCell>
+                    <TableCell>{getStatusBadge(opp)}</TableCell>
                     <TableCell className="text-sm">
                       {opp.fecha_estimada_cierre 
                         ? new Date(opp.fecha_estimada_cierre).toLocaleDateString('es-MX')
@@ -194,9 +245,42 @@ export default function OportunidadesPage() {
                       }
                     </TableCell>
                     <TableCell>
-                      <Button size="icon" variant="ghost" className="h-8 w-8">
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingOportunidad(opp)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => window.location.href = '/crm/pipeline'}>
+                            <ArrowRight className="h-4 w-4 mr-2" />
+                            Ver en Pipeline
+                          </DropdownMenuItem>
+                          {canClose(opp) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => setClosingOportunidad(opp)}
+                                className="text-green-600"
+                              >
+                                <Trophy className="h-4 w-4 mr-2" />
+                                Cerrar como Ganada
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => setClosingOportunidad(opp)}
+                                className="text-red-600"
+                              >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Cerrar como Perdida
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
@@ -236,25 +320,21 @@ export default function OportunidadesPage() {
         </CardContent>
       </Card>
 
-      {/* Modal placeholder */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-lg mx-4">
-            <CardHeader>
-              <CardTitle>Nueva Oportunidad</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-500 text-center py-8">
-                Formulario de Oportunidad en desarrollo...
-              </p>
-              <div className="flex justify-end gap-2 mt-4">
-                <Button variant="outline" onClick={() => setShowForm(false)}>
-                  Cerrar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Modales */}
+      {(showForm || editingOportunidad) && (
+        <OportunidadForm 
+          oportunidad={editingOportunidad} 
+          onClose={handleFormClose} 
+          onSaved={handleFormSaved} 
+        />
+      )}
+
+      {closingOportunidad && (
+        <CerrarOportunidadModal
+          oportunidad={closingOportunidad}
+          onClose={handleCloseModal}
+          onClosed={handleClosed}
+        />
       )}
     </div>
   );

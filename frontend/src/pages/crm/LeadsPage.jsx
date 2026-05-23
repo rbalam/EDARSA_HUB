@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -7,10 +7,17 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { 
-  UserPlus, Search, Plus, Edit, Trash2, Phone, Mail, Building2, 
-  ChevronLeft, ChevronRight, Filter 
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
+  DropdownMenuTrigger, DropdownMenuSeparator 
+} from '@/components/ui/dropdown-menu';
+import { 
+  UserPlus, Search, Plus, Edit, Phone, Mail, Building2, 
+  ChevronLeft, ChevronRight, Filter, MoreHorizontal, ArrowRight, Trash2, XCircle
 } from 'lucide-react';
+import { toast } from 'sonner';
 import api from '@/lib/api';
+import LeadForm from './LeadForm';
+import ConvertirLeadModal from './ConvertirLeadModal';
 
 const EMPRESA_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -21,10 +28,11 @@ export default function LeadsPage() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
+  const [convertingLead, setConvertingLead] = useState(null);
 
   useEffect(() => {
     loadLeads();
-  }, [pagination.page, search]);
+  }, [pagination.page]);
 
   const loadLeads = async () => {
     try {
@@ -45,6 +53,7 @@ export default function LeadsPage() {
       }));
     } catch (err) {
       console.error('Error loading leads:', err);
+      toast.error('Error al cargar leads');
     } finally {
       setLoading(false);
     }
@@ -54,6 +63,53 @@ export default function LeadsPage() {
     e.preventDefault();
     setPagination(prev => ({ ...prev, page: 1 }));
     loadLeads();
+  };
+
+  const handleDelete = async (lead) => {
+    if (!window.confirm(`¿Eliminar lead ${lead.folio_lead}?`)) return;
+    
+    try {
+      await api.delete(`/crm/native/leads/${lead.lead_id}`);
+      toast.success('Lead eliminado');
+      loadLeads();
+    } catch (err) {
+      toast.error('Error al eliminar');
+    }
+  };
+
+  const handleDescalificar = async (lead) => {
+    if (!window.confirm(`¿Descalificar lead ${lead.folio_lead}?`)) return;
+    
+    try {
+      await api.post(`/crm/native/leads/${lead.lead_id}/descalificar`, {
+        motivo_descalificacion_id: 1,
+        notas: 'Descalificado manualmente'
+      });
+      toast.success('Lead descalificado');
+      loadLeads();
+    } catch (err) {
+      toast.error('Error al descalificar');
+    }
+  };
+
+  const handleFormClose = () => {
+    setShowForm(false);
+    setEditingLead(null);
+  };
+
+  const handleFormSaved = () => {
+    handleFormClose();
+    loadLeads();
+  };
+
+  const handleConvertClose = () => {
+    setConvertingLead(null);
+  };
+
+  const handleConverted = () => {
+    handleConvertClose();
+    loadLeads();
+    toast.success('Lead convertido exitosamente');
   };
 
   const getStatusBadge = (lead) => {
@@ -79,6 +135,11 @@ export default function LeadsPage() {
     return lead.prioridad_nombre ? (
       <Badge className={className}>{lead.prioridad_nombre}</Badge>
     ) : null;
+  };
+
+  const canConvert = (lead) => {
+    return !lead.convertido_a_cuenta && !lead.descalificado && 
+           lead.estatus_nombre !== 'Convertido' && lead.estatus_nombre !== 'Descalificado';
   };
 
   return (
@@ -197,16 +258,42 @@ export default function LeadsPage() {
                       {new Date(lead.created_at).toLocaleDateString('es-MX')}
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-8 w-8"
-                          onClick={() => setEditingLead(lead)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingLead(lead)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          {canConvert(lead) && (
+                            <DropdownMenuItem onClick={() => setConvertingLead(lead)}>
+                              <ArrowRight className="h-4 w-4 mr-2" />
+                              Convertir
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          {canConvert(lead) && (
+                            <DropdownMenuItem 
+                              onClick={() => handleDescalificar(lead)}
+                              className="text-amber-600"
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Descalificar
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(lead)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Eliminar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
@@ -246,28 +333,21 @@ export default function LeadsPage() {
         </CardContent>
       </Card>
 
-      {/* Modal de nuevo/editar lead - placeholder */}
+      {/* Modales */}
       {(showForm || editingLead) && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-lg mx-4">
-            <CardHeader>
-              <CardTitle>{editingLead ? 'Editar Lead' : 'Nuevo Lead'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-500 text-center py-8">
-                Formulario de Lead en desarrollo...
-              </p>
-              <div className="flex justify-end gap-2 mt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => { setShowForm(false); setEditingLead(null); }}
-                >
-                  Cerrar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <LeadForm 
+          lead={editingLead} 
+          onClose={handleFormClose} 
+          onSaved={handleFormSaved} 
+        />
+      )}
+
+      {convertingLead && (
+        <ConvertirLeadModal
+          lead={convertingLead}
+          onClose={handleConvertClose}
+          onConverted={handleConverted}
+        />
       )}
     </div>
   );

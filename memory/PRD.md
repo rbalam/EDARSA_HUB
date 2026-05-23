@@ -217,7 +217,15 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
   - `PipelinePage.jsx` - Vista Kanban drag-and-drop
 - [x] Columna `PublicUUID` agregada a `Cliente_Catalogo` para relación Oportunidad-Cuenta
 
-### Fase 4: Formularios CRUD (PRÓXIMA)
+### Fase 4: Formularios CRUD ✅ (2026-05-23)
+- [x] `LeadForm.jsx` - Formulario completo de creación/edición de leads
+- [x] `OportunidadForm.jsx` - Formulario de oportunidades con selección de pipeline/etapa
+- [x] `CerrarOportunidadModal.jsx` - Modal para cerrar oportunidades (ganada/perdida)
+- [x] `ConvertirLeadModal.jsx` - Wizard de conversión de lead a cuenta/contacto/oportunidad
+- [x] Integración de formularios en `LeadsPage.jsx` y `OportunidadesPage.jsx`
+- [x] Menús contextuales con acciones (editar, convertir, descalificar, eliminar, cerrar)
+
+### Fase 5: Integración Universal (PRÓXIMA)
 - [ ] Dashboard CRM
 - [ ] Leads CRUD
 - [ ] Oportunidades CRUD con Pipeline visual
