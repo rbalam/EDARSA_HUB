@@ -17,6 +17,7 @@ from .base_connector import (
 from .vtiger_connector import VTigerConnector
 from .staging_service import StagingService
 from .sync_engine import SyncEngine, SyncJob
+from .staging_processor import StagingProcessor, MatchAction, ProcessResult
 
 __all__ = [
     'BaseCRMConnector',
@@ -30,5 +31,8 @@ __all__ = [
     'VTigerConnector',
     'StagingService',
     'SyncEngine',
-    'SyncJob'
+    'SyncJob',
+    'StagingProcessor',
+    'MatchAction',
+    'ProcessResult'
 ]

@@ -15,7 +15,7 @@ import pymssql
 
 from .integration import (
     SyncEngine, SyncJob, StagingService,
-    SyncDirection, SyncStatus
+    SyncDirection, SyncStatus, StagingProcessor, MatchAction
 )
 
 logger = logging.getLogger(__name__)
@@ -64,6 +64,17 @@ class TestConnectionRequest(BaseModel):
 class SyncRequest(BaseModel):
     entidades: List[str] = Field(default=['leads', 'oportunidades', 'cuentas'])
     desde_fecha: Optional[datetime] = None
+
+
+class ProcessStagingRequest(BaseModel):
+    entidades: List[str] = Field(default=['leads', 'cuentas', 'oportunidades'])
+    accion_duplicados: str = Field(default='MARCAR_CONFLICTO', 
+        description="CREAR_NUEVO, ACTUALIZAR_EXISTENTE, MARCAR_CONFLICTO, OMITIR")
+    limit: int = Field(default=100, le=500)
+
+
+class ResolveConflictRequest(BaseModel):
+    accion: str = Field(..., description="CREAR_NUEVO, ACTUALIZAR_EXISTENTE, OMITIR")
 
 
 # ============================================================
@@ -682,3 +693,242 @@ async def obtener_sync_log(
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
+
+
+# ============================================================
+# PROCESS STAGING -> PRODUCTION
+# ============================================================
+
+@router.post("/conectores/{conector_id}/process-staging")
+async def procesar_staging(conector_id: int, data: ProcessStagingRequest):
+    """
+    Procesa registros de staging y los mueve a tablas de producción.
+    Incluye lógica de deduplicación y matching.
+    """
+    conn = get_connection()
+    try:
+        cursor = conn.cursor(as_dict=True)
+        
+        # Obtener empresa del conector
+        cursor.execute("""
+            SELECT EmpresaID FROM CRM_Integracion_Conectores 
+            WHERE ConectorID = %s AND Activo = 1
+        """, (conector_id,))
+        
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Conector no encontrado o inactivo")
+        
+        empresa_id = str(row['EmpresaID'])
+        
+        # Mapear acción de duplicados
+        accion_map = {
+            'CREAR_NUEVO': MatchAction.CREAR_NUEVO,
+            'ACTUALIZAR_EXISTENTE': MatchAction.ACTUALIZAR_EXISTENTE,
+            'MARCAR_CONFLICTO': MatchAction.MARCAR_CONFLICTO,
+            'OMITIR': MatchAction.OMITIR
+        }
+        accion = accion_map.get(data.accion_duplicados, MatchAction.MARCAR_CONFLICTO)
+        
+        # Procesar staging
+        processor = StagingProcessor(DB_CONFIG)
+        result = processor.process_staging(
+            conector_id=conector_id,
+            empresa_id=empresa_id,
+            entidades=data.entidades,
+            accion_duplicados=accion,
+            limit=data.limit
+        )
+        
+        return {
+            "success": result.success,
+            "total_procesados": result.total_procesados,
+            "creados": result.creados,
+            "actualizados": result.actualizados,
+            "conflictos": result.conflictos,
+            "errores": result.errores,
+            "omitidos": result.omitidos,
+            "mensajes": result.mensajes[:10]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[Integration] Error procesando staging: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+# ============================================================
+# CONFLICTOS
+# ============================================================
+
+@router.get("/conectores/{conector_id}/conflictos")
+async def listar_conflictos(
+    conector_id: int,
+    entidad: str = Query(default='leads', description="leads, cuentas, oportunidades")
+):
+    """Lista registros en conflicto que requieren resolución manual"""
+    processor = StagingProcessor(DB_CONFIG)
+    conflicts = processor.get_conflicts(conector_id, entidad)
+    
+    # Formatear para respuesta
+    formatted = []
+    for c in conflicts:
+        item = {
+            "staging_id": c['StagingID'],
+            "external_id": c['ExternalID'],
+            "estado": c['EstadoSync'],
+            "created_at": str(c['CreatedAt']) if c.get('CreatedAt') else None,
+        }
+        
+        # Datos según entidad
+        if entidad == 'leads':
+            item.update({
+                "nombre": f"{c.get('NombreContacto', '')} {c.get('ApellidoPaterno', '')}".strip(),
+                "email": c.get('Email'),
+                "telefono": c.get('Telefono'),
+                "empresa": c.get('NombreEmpresa')
+            })
+        elif entidad == 'cuentas':
+            item.update({
+                "razon_social": c.get('RazonSocial'),
+                "rfc": c.get('RFC'),
+                "email": c.get('EmailPrincipal')
+            })
+        elif entidad == 'oportunidades':
+            item.update({
+                "nombre": c.get('NombreOportunidad'),
+                "monto": c.get('MontoEstimado')
+            })
+        
+        # Detalles del conflicto
+        if c.get('ConflictDetails'):
+            item['conflicto'] = c['ConflictDetails']
+        
+        formatted.append(item)
+    
+    return {"conflictos": formatted, "total": len(formatted), "entidad": entidad}
+
+
+@router.post("/conectores/{conector_id}/conflictos/{staging_id}/resolver")
+async def resolver_conflicto(
+    conector_id: int,
+    staging_id: int,
+    data: ResolveConflictRequest,
+    entidad: str = Query(default='leads')
+):
+    """
+    Resuelve un conflicto específico.
+    
+    Acciones disponibles:
+    - CREAR_NUEVO: Crea un nuevo registro ignorando el duplicado
+    - ACTUALIZAR_EXISTENTE: Actualiza el registro existente con los datos del staging
+    - OMITIR: Descarta el registro de staging
+    """
+    conn = get_connection()
+    try:
+        cursor = conn.cursor(as_dict=True)
+        
+        # Obtener empresa del conector
+        cursor.execute("""
+            SELECT EmpresaID FROM CRM_Integracion_Conectores 
+            WHERE ConectorID = %s
+        """, (conector_id,))
+        
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Conector no encontrado")
+        
+        empresa_id = str(row['EmpresaID'])
+        
+        # Mapear acción
+        accion_map = {
+            'CREAR_NUEVO': MatchAction.CREAR_NUEVO,
+            'ACTUALIZAR_EXISTENTE': MatchAction.ACTUALIZAR_EXISTENTE,
+            'OMITIR': MatchAction.OMITIR
+        }
+        accion = accion_map.get(data.accion)
+        
+        if not accion:
+            raise HTTPException(status_code=400, detail="Acción no válida")
+        
+        processor = StagingProcessor(DB_CONFIG)
+        result = processor.resolve_conflict(
+            staging_id=staging_id,
+            entidad=entidad,
+            accion=accion,
+            empresa_id=empresa_id
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result.get('error', 'Error desconocido'))
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[Integration] Error resolviendo conflicto: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+@router.post("/conectores/{conector_id}/conflictos/resolver-todos")
+async def resolver_todos_conflictos(
+    conector_id: int,
+    data: ResolveConflictRequest,
+    entidad: str = Query(default='leads')
+):
+    """Resuelve todos los conflictos de una entidad con la misma acción"""
+    processor = StagingProcessor(DB_CONFIG)
+    conflicts = processor.get_conflicts(conector_id, entidad)
+    
+    if not conflicts:
+        return {"mensaje": "No hay conflictos pendientes", "resueltos": 0}
+    
+    conn = get_connection()
+    try:
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute("""
+            SELECT EmpresaID FROM CRM_Integracion_Conectores WHERE ConectorID = %s
+        """, (conector_id,))
+        row = cursor.fetchone()
+        empresa_id = str(row['EmpresaID']) if row else None
+    finally:
+        conn.close()
+    
+    if not empresa_id:
+        raise HTTPException(status_code=404, detail="Conector no encontrado")
+    
+    accion_map = {
+        'CREAR_NUEVO': MatchAction.CREAR_NUEVO,
+        'ACTUALIZAR_EXISTENTE': MatchAction.ACTUALIZAR_EXISTENTE,
+        'OMITIR': MatchAction.OMITIR
+    }
+    accion = accion_map.get(data.accion)
+    
+    resueltos = 0
+    errores = 0
+    
+    for conflict in conflicts:
+        result = processor.resolve_conflict(
+            staging_id=conflict['StagingID'],
+            entidad=entidad,
+            accion=accion,
+            empresa_id=empresa_id
+        )
+        if result['success']:
+            resueltos += 1
+        else:
+            errores += 1
+    
+    return {
+        "mensaje": f"Conflictos procesados",
+        "resueltos": resueltos,
+        "errores": errores,
+        "total": len(conflicts)
+    }
+

@@ -248,13 +248,33 @@ Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTREST
 - [x] **Validación exitosa**:
   - Conexión VTiger verificada ✅
   - Sync ejecutado: 2 leads + 2 cuentas importadas a staging ✅
-  - Estado "PENDIENTE" para procesamiento posterior
 
-### Fase 6: Sync Staging → Producción (PRÓXIMA)
-- [ ] Job de procesamiento que mueva datos staging → tablas CRM nativas
-- [ ] Lógica de deduplicación y matching
-- [ ] Resolución de conflictos automática/manual
+### Fase 6: Sync Staging → Producción ✅ (2026-05-23)
+- [x] **StagingProcessor** implementado (`staging_processor.py`):
+  - Procesamiento batch de staging → producción
+  - Deduplicación inteligente por email/teléfono (leads) y RFC/razón social (cuentas)
+  - Scoring de confianza para matches (60-98%)
+- [x] **API REST de Procesamiento**:
+  - `POST /conectores/{id}/process-staging` - Procesa registros pendientes
+  - `GET /conectores/{id}/conflictos` - Lista registros con duplicados
+  - `POST /conectores/{id}/conflictos/{staging_id}/resolver` - Resolución manual
+  - `POST /conectores/{id}/conflictos/resolver-todos` - Resolución masiva
+- [x] **Acciones ante duplicados**:
+  - `CREAR_NUEVO` - Crea aunque exista duplicado
+  - `ACTUALIZAR_EXISTENTE` - Actualiza registro existente
+  - `MARCAR_CONFLICTO` - Marca para revisión manual
+  - `OMITIR` - Descarta el registro
+- [x] **Validación exitosa**:
+  - 2 leads sincronizados: Staging → `CRM_Leads` ✅
+  - 2 cuentas sincronizadas: Staging → `Cliente_Catalogo` ✅
+  - Todos los registros en estado SINCRONIZADO ✅
+- [x] **Documentación**: `/app/docs/CRM_INTEGRATION_GUIDE.md`
+
+### Fase 7: Extensiones Futuras (Backlog)
 - [ ] Conectores adicionales: Salesforce, HubSpot, Zoho
+- [ ] Sync bidireccional (EDARSA → CRM externo)
+- [ ] Jobs programados de sincronización automática
+- [ ] Dashboard de monitoreo de integraciones en Frontend
 
 ---
 
