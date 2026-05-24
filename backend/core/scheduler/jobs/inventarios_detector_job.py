@@ -210,6 +210,12 @@ class InventariosDetectorJob:
     """
     
     def __init__(self, db, config: Optional[dict] = None):
+        # Asegurar que db nunca sea None - usar StubDatabase
+        if db is None:
+            from core.mongo_stub import get_stub_database
+            db = get_stub_database()
+            logger.info("[INVENTARIOS_DETECTOR] Usando StubDatabase")
+        
         self.db = db
         self.config = config or {}
         self.job_logger = get_job_logger(db)
@@ -242,23 +248,35 @@ class InventariosDetectorJob:
         """
         Ejecuta detección de inventarios nuevos.
         
+        NOTA: Migrado a SQL Server (Mayo 2026).
+        Ya no depende de MongoDB para tracking de inventarios.
+        
         Args:
             manual: True si es ejecución manual
             server_id_filter: Filtrar por servidor específico (opcional)
         """
+        from ..sql_repository import (
+            get_active_servers,
+            inventario_existe,
+            registrar_inventario_procesando,
+            actualizar_inventario_completado,
+            actualizar_inventario_error,
+            registrar_bitacora_job
+        )
+        
         execution_type = "manual" if manual else "automatic"
         started_at = datetime.now(timezone.utc)
+        run_id = str(uuid.uuid4())[:8]
         
-        # MongoDB ELIMINADO - Si db es StubDatabase, saltar ejecución
-        if self._is_stub_db():
-            logger.info(f"[INVENTARIOS_DETECTOR] SKIPPED - MongoDB eliminado, usando StubDatabase")
-            await self.job_logger.log_skipped(
-                job_name="inventarios_detector",
-                reason="MongoDB ELIMINADO - Job deshabilitado (StubDatabase)"
-            )
-            return
+        logger.info(f"[INVENTARIOS_DETECTOR] Iniciando ejecución SQL Server - {started_at.isoformat()}")
         
-        logger.info(f"[INVENTARIOS_DETECTOR] Iniciando ejecución - {started_at.isoformat()}")
+        # Registrar inicio en bitácora SQL
+        await registrar_bitacora_job(
+            job_name="inventarios_detector",
+            run_id=run_id,
+            accion="INICIO",
+            detalles={"type": execution_type, "server_filter": server_id_filter}
+        )
         
         # Iniciar log de ejecución
         log_entry = await self.job_logger.start_execution(
@@ -342,46 +360,39 @@ class InventariosDetectorJob:
             }
     
     async def _ensure_index(self):
-        """Asegura que exista el índice único."""
-        try:
-            await self.db[COLLECTION_PROCESADOS].create_index(
-                [
-                    ("clave.sistema_origen", 1),
-                    ("clave.server_id", 1),
-                    ("clave.sucursal_id", 1),
-                    ("clave.almacen_id", 1),
-                    ("clave.folio_inventario", 1)
-                ],
-                unique=True,
-                name="idx_clave_idempotencia"
-            )
-        except Exception as e:
-            # El índice puede ya existir
-            logger.debug(f"Índice ya existe o error: {e}")
+        """Índice ya creado en SQL Server - No es necesario."""
+        # La tabla Scheduler_InventariosProcesados ya tiene el UNIQUE constraint
+        pass
     
     async def _obtener_servidores(self, server_id_filter: str = None) -> List[Dict]:
-        """Obtiene servidores activos."""
-        query = {"active": True}
-        if server_id_filter:
-            query["id"] = server_id_filter
+        """Obtiene servidores activos desde SQL Server."""
+        logger.info("[INVENTARIOS_DETECTOR] _obtener_servidores: Usando SQL Server")
+        from ..sql_repository import get_active_servers
         
-        servidores = await self.db.servers.find(
-            query,
-            {"_id": 0}
-        ).to_list(length=100)
+        servidores = await get_active_servers(server_id_filter)
+        logger.info(f"[INVENTARIOS_DETECTOR] Obtenidos {len(servidores)} servidores de SQL")
         
-        return servidores
+        # Filtrar solo servidores con system_type compatible
+        compatible = []
+        for s in servidores:
+            st = s.get('system_type', '').lower()
+            if st in ['softrestaurant', 'sr', 'mpro']:
+                compatible.append(s)
+        
+        return compatible
     
     async def _procesar_reintentos(self):
         """Procesa inventarios en ERROR que pueden reintentarse."""
+        from ..sql_repository import get_inventarios_pendientes_reintento
+        
         # Limitar reintentos por ejecución
         max_reintentos = 5
         
-        # Buscar inventarios en ERROR con intentos < MAX
-        pendientes = await self.db[COLLECTION_PROCESADOS].find({
-            "estado": ESTADOS["ERROR"],
-            "intentos": {"$lt": MAX_INTENTOS}
-        }).to_list(length=max_reintentos)
+        # Buscar inventarios en ERROR con intentos < MAX desde SQL
+        pendientes = await get_inventarios_pendientes_reintento(
+            max_intentos=MAX_INTENTOS,
+            limit=max_reintentos
+        )
         
         for registro in pendientes:
             # Verificar límite global
@@ -391,19 +402,21 @@ class InventariosDetectorJob:
                 break
             
             self.stats["inventarios_reintentados"] += 1
-            logger.info(f"[INVENTARIOS_DETECTOR] Reintentando folio={registro['clave']['folio_inventario']}")
+            logger.info(f"[INVENTARIOS_DETECTOR] Reintentando folio={registro.get('FolioInventario')}")
             
-            # Marcar como EN_PROCESO
-            await self.db[COLLECTION_PROCESADOS].update_one(
-                {"_id": registro["_id"]},
-                {
-                    "$set": {"estado": ESTADOS["EN_PROCESO"]},
-                    "$inc": {"intentos": 1}
+            # Construir registro compatible para procesamiento
+            registro_compat = {
+                'clave': {
+                    'sistema_origen': registro.get('SistemaOrigen'),
+                    'server_id': registro.get('ServerID'),
+                    'sucursal_id': registro.get('SucursalID'),
+                    'almacen_id': registro.get('AlmacenID'),
+                    'folio_inventario': registro.get('FolioInventario')
                 }
-            )
+            }
             
             # Intentar procesar
-            await self._procesar_inventario_desde_registro(registro)
+            await self._procesar_inventario_desde_registro(registro_compat)
     
     async def _escanear_servidor(self, servidor: Dict):
         """Escanea un servidor en busca de inventarios nuevos."""
@@ -639,10 +652,18 @@ class InventariosDetectorJob:
             logger.info(f"[INVENTARIOS_DETECTOR] Límite de {self.max_inventarios_por_ejecucion} alcanzado, saltando folio={clave.folio_inventario}")
             return
         
-        # Verificar si ya existe (anti-duplicado)
-        existente = await self.db[COLLECTION_PROCESADOS].find_one(clave.to_query())
+        # Verificar si ya existe (anti-duplicado) - usar SQL
+        from ..sql_repository import inventario_existe, registrar_inventario_procesando
         
-        if existente:
+        existe = await inventario_existe(
+            sistema_origen=clave.sistema_origen,
+            server_id=clave.server_id,
+            sucursal_id=clave.sucursal_id,
+            almacen_id=clave.almacen_id,
+            folio_inventario=clave.folio_inventario
+        )
+        
+        if existe:
             self.stats["inventarios_duplicados"] += 1
             logger.debug(f"[INVENTARIOS_DETECTOR] Duplicado: folio={clave.folio_inventario}")
             return
@@ -650,7 +671,7 @@ class InventariosDetectorJob:
         self.stats["inventarios_nuevos"] += 1
         logger.info(f"[INVENTARIOS_DETECTOR] Nuevo inventario: folio={clave.folio_inventario}, almacen={inv.almacen_nombre}")
         
-        # Pre-lock: Insertar registro con estado EN_PROCESO
+        # Pre-lock: Insertar registro con estado EN_PROCESO en SQL
         registro_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc).isoformat()
         
@@ -675,10 +696,27 @@ class InventariosDetectorJob:
         }
         
         try:
-            await self.db[COLLECTION_PROCESADOS].insert_one(registro)
+            # Registrar en SQL Server
+            success = await registrar_inventario_procesando(
+                sistema_origen=clave.sistema_origen,
+                server_id=clave.server_id,
+                sucursal_id=clave.sucursal_id,
+                almacen_id=clave.almacen_id,
+                folio_inventario=clave.folio_inventario,
+                detalles={
+                    "server_name": inv.server_name,
+                    "almacen_nombre": inv.almacen_nombre,
+                    "folio_inicial": inv.folio_inicial
+                }
+            )
+            if not success:
+                # Ya está siendo procesado o error de duplicado
+                self.stats["inventarios_duplicados"] += 1
+                logger.info(f"[INVENTARIOS_DETECTOR] Ya en proceso: folio={clave.folio_inventario}")
+                return
         except Exception as e:
             # DuplicateKeyError - ya está siendo procesado
-            if "duplicate key" in str(e).lower():
+            if "duplicate key" in str(e).lower() or "unique" in str(e).lower():
                 self.stats["inventarios_duplicados"] += 1
                 logger.info(f"[INVENTARIOS_DETECTOR] Ya en proceso: folio={clave.folio_inventario}")
                 return
@@ -689,11 +727,10 @@ class InventariosDetectorJob:
     
     async def _procesar_inventario_desde_registro(self, registro: Dict):
         """Procesa un inventario desde un registro existente (reintento)."""
-        # Reconstruir servidor
-        servidor = await self.db.servers.find_one(
-            {"id": registro["clave"]["server_id"]},
-            {"_id": 0}
-        )
+        from ..sql_repository import get_server_by_id
+        
+        # Obtener servidor desde SQL
+        servidor = await get_server_by_id(registro["clave"]["server_id"])
         
         if not servidor:
             await self._marcar_error(registro, "Servidor no encontrado")
@@ -703,9 +740,9 @@ class InventariosDetectorJob:
         clave = ClaveIdempotencia(**registro["clave"])
         inv = InventarioDetectado(
             clave=clave,
-            server_name=registro["server_name"],
-            almacen_nombre=registro["almacen_nombre"],
-            fecha_inventario=registro["fecha_inventario"],
+            server_name=registro.get("server_name", servidor.get('name', 'Unknown')),
+            almacen_nombre=registro.get("almacen_nombre", ""),
+            fecha_inventario=registro.get("fecha_inventario"),
             folio_inicial=registro.get("folio_inicial"),
             fecha_inicial=registro.get("fecha_inicial"),
             metadata=registro.get("metadata", {})
@@ -767,24 +804,16 @@ class InventariosDetectorJob:
             # Calcular métricas
             valor_total = sum(abs(float(p.get('Diferencia_Costo', 0) or 0)) for p in productos_con_diferencia)
             
-            # Actualizar registro como COMPLETADO
-            await self.db[COLLECTION_PROCESADOS].update_one(
-                {"id": registro["id"]},
-                {
-                    "$set": {
-                        "estado": ESTADOS["COMPLETADO"],
-                        "fecha_procesado": datetime.now(timezone.utc).isoformat(),
-                        "analisis_resultado": {
-                            "ejecutado": True,
-                            "productos_analizados": len(results),
-                            "productos_con_diferencia": len(productos_con_diferencia),
-                            "valor_diferencias": round(valor_total, 2)
-                        },
-                        "workflow_id": workflow_id,
-                        "workflow_creado": workflow_id is not None,
-                        "error": None
-                    }
-                }
+            # Actualizar registro como COMPLETADO en SQL
+            from ..sql_repository import actualizar_inventario_completado
+            
+            await actualizar_inventario_completado(
+                sistema_origen=clave.sistema_origen,
+                server_id=clave.server_id,
+                sucursal_id=clave.sucursal_id,
+                almacen_id=clave.almacen_id,
+                folio_inventario=clave.folio_inventario,
+                workflow_id=workflow_id
             )
             
             self.stats["inventarios_procesados"] += 1
@@ -838,18 +867,19 @@ class InventariosDetectorJob:
             raise
     
     async def _marcar_error(self, registro: Dict, error_msg: str):
-        """Marca un registro como ERROR."""
+        """Marca un registro como ERROR en SQL."""
+        from ..sql_repository import actualizar_inventario_error
+        
+        clave = registro.get("clave", {})
         intentos = registro.get("intentos", 1)
         
-        await self.db[COLLECTION_PROCESADOS].update_one(
-            {"id": registro["id"]},
-            {
-                "$set": {
-                    "estado": ESTADOS["ERROR"],
-                    "error": error_msg,
-                    "ultimo_intento": datetime.now(timezone.utc).isoformat()
-                }
-            }
+        await actualizar_inventario_error(
+            sistema_origen=clave.get("sistema_origen", ""),
+            server_id=clave.get("server_id", ""),
+            sucursal_id=clave.get("sucursal_id", ""),
+            almacen_id=clave.get("almacen_id", ""),
+            folio_inventario=clave.get("folio_inventario", ""),
+            error_mensaje=error_msg
         )
         
         self.stats["inventarios_error"] += 1

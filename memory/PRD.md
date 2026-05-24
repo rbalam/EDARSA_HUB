@@ -23,133 +23,121 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
-#### Migración MongoDB → SQL Server (100%)
+#### Migración MongoDB → SQL Server
 - [x] Auth/Login migrado a SQL (login < 1s)
-- [x] RBAC migrado a SQL Server (Usuario_Roles, Usuario_RolesAsignacion)
-- [x] **Tablas Sesiones/SesionesHistorico creadas en EDARSAHUB**
-- [x] Inicializaciones de módulos en server.py usando StubDatabase
-- [x] Scheduler, Notificaciones, Locks, JobLogger operan con StubDatabase
-- [x] 165 referencias a `await db.` ahora usan StubDatabase (sin errores fatales)
-- [x] Jobs detector (pedidos, inventarios) detectan StubDatabase y se saltan
+- [x] RBAC migrado a SQL Server (Usuario_Roles)
+- [x] **Tablas Sesiones/SesionesHistorico creadas**
+- [x] Scheduler usa StubDatabase para operaciones no críticas
+- [x] 165 referencias a `await db.` usan StubDatabase (sin errores fatales)
+- [x] **Tablas Scheduler_* creadas para tracking de jobs**
+- [x] `sql_repository.py` creado con funciones SQL
 
 #### CRM Comercial Enterprise (Fase 4)
 - [x] Backend endpoints creados (`/api/crm/*`)
-- [x] Tablas SQL: CRM_Cuentas, CRM_Leads, CRM_Oportunidades, etc.
-- [x] Datos iniciales cargados (18 cuentas, 2 cotizaciones)
+- [x] Datos: 18 cuentas, 2 cotizaciones
 - [x] Rutas frontend y submenús agregados
 
-#### Tablajería
-- [x] Diagnóstico Fase 6 (Inventarios/Costeo) documentado
+### 🔄 En Progreso
+
+#### Jobs del Scheduler
+- [x] `inventarios_detector` y `pedidos_detector` parcialmente migrados
+- [ ] **DESHABILITADOS TEMPORALMENTE** - Requieren migración completa
+- [x] 9 jobs funcionando (sync_comercial, notificaciones, etc.)
 
 ### ⏳ Pendiente
 
-#### P1 - Alta Prioridad
-1. **Tablajería Fase 6**: Implementar Inventarios, Costeo y Contabilidad
-2. **Seguridad**: Remover credenciales hardcodeadas en Tablajería
+#### P1 - Alta Prioridad (Habilitar Jobs)
+1. Migrar `InventoryAnalysisCore` a SQL
+2. Migrar `OrquestadorService` completamente a SQL
+3. Verificar métodos internos de jobs
+
+#### P1 - Otras Tareas
+4. **Tablajería Fase 6**: Inventarios, Costeo y Contabilidad
+5. **Seguridad**: Remover credenciales hardcodeadas en Tablajería
 
 #### P2 - Media Prioridad
-3. **CRM UI**: Completar vistas funcionales (Cuentas, Solicitudes, Cotizaciones)
-
-#### Backlog
-- Migrar jobs de scheduler a SQL Server (actualmente saltan ejecución)
-- Tablajería Fase 4 (Captura Directa)
-- Limpieza de módulos legacy mockeados
+6. **CRM UI**: Completar vistas funcionales
 
 ---
 
-## Archivos Clave
+## Archivos Clave - Scheduler
 
-### Backend - Core MongoDB Stub
-- `/app/backend/core/mongo_stub.py` - StubDatabase, StubCollection, StubCursor
-- `/app/backend/core/mongo_compat.py` - Funciones helper opcionales
+### SQL Repository (Nuevo)
+- `/app/backend/core/scheduler/sql_repository.py` - Funciones SQL para jobs
 
-### Backend - Principal
-- `/app/backend/server.py` - Router principal (usa StubDatabase)
-- `/app/backend/modules/crm/comercial_routes.py` - CRM Enterprise
-- `/app/backend/modules/crm/comercial_service.py` - Lógica CRM
-- `/app/backend/core/scheduler/scheduler_manager.py` - Scheduler
-- `/app/backend/core/db.py` - Funciones SQL
-- `/app/backend/core/refresh_tokens.py` - Sesiones SQL Server
+### Jobs Modificados
+- `/app/backend/core/scheduler/jobs/inventarios_detector_job.py`
+- `/app/backend/core/scheduler/jobs/pedidos_detector_job.py`
 
 ### Scripts
-- `/app/backend/scripts/create_sesiones_tables.py` - Crea tablas Sesiones en EDARSAHUB
-
-### Frontend
-- `/app/frontend/src/App.js` - Rutas principales
-- `/app/frontend/src/pages/Layout.js` - Menú lateral
-- `/app/frontend/src/pages/crm/` - Vistas CRM
-
-### Documentación
-- `/app/docs/reports/TABLAJERIA_FASE6_DIAGNOSTICO_INVENTARIOS_COSTEO.md`
+- `/app/backend/scripts/create_scheduler_tables.py`
 
 ---
 
 ## Tablas SQL Server (EDARSAHUB)
 
-### Sesiones
+### Scheduler_InventariosProcesados
 ```sql
-CREATE TABLE Sesiones (
-    SesionID VARCHAR(50) PRIMARY KEY,
-    UsuarioID VARCHAR(50) NOT NULL,
-    TipoUsuario VARCHAR(20) DEFAULT 'interno',
-    RefreshTokenHash VARCHAR(128) NOT NULL,
-    FamiliaTokenID VARCHAR(50) NOT NULL,
-    FechaCreacion DATETIME DEFAULT GETUTCDATE(),
-    FechaExpiracion DATETIME NOT NULL,
-    UltimaActividad DATETIME DEFAULT GETUTCDATE(),
-    EstaActiva BIT DEFAULT 1,
-    IPCliente VARCHAR(45),
-    UserAgent VARCHAR(500),
-    FechaModificacion DATETIME DEFAULT GETUTCDATE()
+CREATE TABLE Scheduler_InventariosProcesados (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    SistemaOrigen VARCHAR(50) NOT NULL,
+    ServerID VARCHAR(50) NOT NULL,
+    SucursalID VARCHAR(50) NOT NULL,
+    AlmacenID VARCHAR(50) NOT NULL,
+    FolioInventario VARCHAR(100) NOT NULL,
+    Estado VARCHAR(20) DEFAULT 'EN_PROCESO',
+    ...
 );
 ```
 
-### SesionesHistorico
+### Scheduler_PedidosProcesados
 ```sql
-CREATE TABLE SesionesHistorico (
-    HistoricoID INT IDENTITY(1,1) PRIMARY KEY,
-    SesionID VARCHAR(50) NOT NULL,
-    UsuarioID VARCHAR(50) NOT NULL,
-    TipoUsuario VARCHAR(20),
+CREATE TABLE Scheduler_PedidosProcesados (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    SistemaOrigen VARCHAR(50) NOT NULL,
+    ServerID VARCHAR(50) NOT NULL,
+    EmpresaID VARCHAR(50) NOT NULL,
+    FolioPedido VARCHAR(100) NOT NULL,
+    ...
+);
+```
+
+### Scheduler_BitacoraJobs
+```sql
+CREATE TABLE Scheduler_BitacoraJobs (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    JobName VARCHAR(100) NOT NULL,
+    RunID VARCHAR(50) NOT NULL,
     Accion VARCHAR(50) NOT NULL,
-    FechaAccion DATETIME DEFAULT GETUTCDATE(),
-    IPCliente VARCHAR(45),
-    UserAgent VARCHAR(500),
-    DetallesJSON NVARCHAR(MAX),
-    AccionRealizadaPor VARCHAR(50)
+    ...
 );
 ```
 
 ---
 
-## Integraciones Externas
-- **VTiger CRM**: Credenciales activas en `modules/crm/service.py`
+## Configuración Scheduler (.env)
+
+```bash
+# Jobs deshabilitados temporalmente
+SCHEDULER_INVENTARIOS_ENABLED=false
+SCHEDULER_PEDIDOS_ENABLED=false
+```
 
 ---
 
 ## Notas Técnicas
 
-### StubDatabase (MongoDB ELIMINADO)
-El sistema ahora usa `StubDatabase` que:
-- Simula la interfaz de MongoDB
-- Retorna valores vacíos (listas vacías, None, counts de 0)
-- NO persiste datos
-- Permite que el código legacy funcione sin errores fatales
+### Jobs Funcionando (9)
+- sync_comercial_abiertas_v2
+- sync_comercial_v2
+- sync_short_comercial
+- notifications_dispatcher
+- sla_processor
+- sync_propinas_tpv_incremental
+- sync_nomina_ciclos
+- sync_ingresos
+- cleanup_locks
 
-### Warnings Esperados (No son errores)
-```
-[COMERCIAL] Repository - MongoDB deprecado
-[COMERCIAL] KPIs repository - MongoDB deprecado
-[COMERCIAL] Cache service - MongoDB deprecado, funcionalidad limitada
-```
-
-### Jobs del Scheduler
-Los siguientes jobs detectan StubDatabase y se saltan:
-- `pedidos_detector` - SKIPPED
-- `inventarios_detector` - SKIPPED
-
-Otros jobs siguen funcionando normalmente con SQL Server:
-- `sync_comercial_abiertas_v2`
-- `sync_comercial_v2`
-- `sync_short_comercial`
-- etc.
+### Jobs Deshabilitados (2)
+- inventarios_detector - Requiere migración completa
+- pedidos_detector - Requiere migración completa

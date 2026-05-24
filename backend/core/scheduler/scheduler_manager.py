@@ -66,23 +66,31 @@ class SchedulerManager:
         Args:
             db: Conexión MongoDB o StubDatabase (MongoDB ELIMINADO)
         """
+        # Si no se pasa db, obtener StubDatabase
+        if db is None:
+            from core.mongo_stub import get_stub_database
+            db = get_stub_database()
+            logger.info("[SCHEDULER] __init__ Usando StubDatabase (auto)")
+        
+        logger.debug(f"[SCHEDULER] __init__ llamado con db tipo: {type(db).__name__}")
+        
         # Evitar re-inicialización completa pero actualizar db si es mejor
         if SchedulerManager._initialized and hasattr(self, '_scheduler') and self._scheduler is not None:
-            # Si se pasa un db nuevo y el actual es None, actualizarlo
-            if db is not None and (not hasattr(self, 'db') or self.db is None):
+            # Siempre actualizar db si self.db es None
+            if not hasattr(self, 'db') or self.db is None:
                 self.db = db
-                logger.info("[SCHEDULER] Actualizado db reference")
+                logger.info(f"[SCHEDULER] Actualizado db reference a: {type(db).__name__}")
             return
         
         # Detectar si es StubDatabase
-        is_stub = db is not None and hasattr(db, '_collections') and db.__class__.__name__ == 'StubDatabase'
+        is_stub = hasattr(db, '_collections') and db.__class__.__name__ == 'StubDatabase'
         
         # NOTA: MongoDB ELIMINADO - Scheduler opera con StubDatabase
-        if (db is None or is_stub) and not SchedulerManager._initialized:
+        if is_stub and not SchedulerManager._initialized:
             logger.info("[SCHEDULER] Inicializando con StubDatabase - MongoDB ELIMINADO")
         
         if not SchedulerManager._initialized:
-            self.db = db  # StubDatabase o None
+            self.db = db  # StubDatabase
             self.config = get_scheduler_config()
             self._scheduler: Optional[AsyncIOScheduler] = None
             self._jobs: Dict[str, Any] = {}
@@ -934,16 +942,19 @@ def get_scheduler_manager(db=None) -> SchedulerManager:
     """
     Obtiene instancia del scheduler manager.
     
-    NOTA: MongoDB ELIMINADO - Ahora acepta StubDatabase o None.
+    NOTA: MongoDB ELIMINADO - Siempre usa StubDatabase.
     """
     global _scheduler_manager
+    
+    # Si no se pasa db, obtener StubDatabase
+    if db is None:
+        from core.mongo_stub import get_stub_database
+        db = get_stub_database()
+    
     if _scheduler_manager is None:
-        # Detectar si es StubDatabase
-        is_stub = db is not None and hasattr(db, '_collections') and db.__class__.__name__ == 'StubDatabase'
-        if db is None or is_stub:
-            logger.info("[SCHEDULER] Creando SchedulerManager con StubDatabase")
+        logger.info("[SCHEDULER] Creando SchedulerManager")
         _scheduler_manager = SchedulerManager(db)
-    elif db is not None and (_scheduler_manager.db is None):
+    elif _scheduler_manager.db is None:
         # Si ya existe pero con db=None, actualizar
         _scheduler_manager.db = db
         logger.info("[SCHEDULER] Actualizado db reference en SchedulerManager existente")
