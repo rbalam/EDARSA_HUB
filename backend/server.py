@@ -314,6 +314,11 @@ init_comercial_module(None)  # MongoDB eliminado
 # FASE 5B-3: Registrar router de comercial (después de inicializar el módulo)
 api_router.include_router(get_comercial_router())
 
+# FASE 1C-3C: Módulo Costos y Márgenes (NO-LIVE, EDARSAHUB SQL exclusivo)
+# ===========================================
+from modules.costos_margenes import router as costos_margenes_router
+api_router.include_router(costos_margenes_router)
+
 # MÓDULO RECURSOS HUMANOS: Catálogos RH
 # - Fase 6B: Migración de catálogos (Puestos, Sucursales, Tipos Incidencias)
 # - 10 endpoints migrados con queries parametrizados

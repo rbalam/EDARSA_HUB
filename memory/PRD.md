@@ -23,6 +23,22 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
+#### FASE 1C-3C - Endpoints NO-LIVE Costos y Márgenes (24 Mayo 2026) ✅ COMPLETADO
+- [x] **5 Endpoints creados**: Módulo `/app/backend/modules/costos_margenes/`
+  - `GET /api/costos-margenes/resumen` - Resumen general
+  - `GET /api/costos-margenes/productos` - Lista paginada con filtros
+  - `GET /api/costos-margenes/productos/{id}/receta` - Receta expandida
+  - `GET /api/costos-margenes/productos/{id}/insumos` - Insumos consolidados
+  - `GET /api/costos-margenes/sync-status` - Estado de sincronización
+- [x] **Source Type**: EDARSAHUB_SQL en todas las respuestas
+- [x] **NO-LIVE confirmado**: Sin conexiones a sistemas externos
+- [x] **Sin MongoDB**: Confirmado
+- [x] **Validación SR**: QUESADILLA DE FLOR DE CALABAZA - 7 componentes, $30.15 costo
+- [x] **Validación MPRO**: AGUACHILE DE NEW YORK - 9 componentes
+- [x] **Permisos RBAC**: Definidos (comentados para SuperAdmin)
+- [x] **No regresión**: Login, Tablero Ejecutivo, Ventas Tiempo funcionan
+- [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3C_COSTOS_MARGENES_ENDPOINTS_NO_LIVE.md`
+
 #### FASE 1C-3B - Implementación Job Sync Recetas (24 Mayo 2026) ✅ COMPLETADO Y CERRADO
 - [x] **Job sync_recetas.py creado**: 1,084 líneas de código ETL
 - [x] **Tablas destino creadas**: 6 tablas `Sync_Productos*` en EDARSAHUB SQL
