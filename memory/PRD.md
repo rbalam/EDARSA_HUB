@@ -210,6 +210,10 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
   - `POST /api/cava-socios/socios/{id}/enviar-reporte` - Envío individual
   - `POST /api/cava-socios/socios/{id}/enviar-todos-reportes` - Envío masivo
 - **Canales soportados**: `email`, `whatsapp`, combinados
+- **Job Automático Mensual**:
+  - `cava_socios_monthly` - Envío de estados de cuenta a socios activos
+  - Cron: `0 9 1 * *` (9:00 AM, día 1 de cada mes)
+  - Archivo: `/app/backend/core/scheduler/jobs/cava_socios_monthly_job.py`
 
 ---
 

@@ -37,6 +37,8 @@ from .jobs.sync_propinas_tpv_job import execute_sync_propinas_tpv_incremental
 from .jobs.sync_comercial_v2_job import execute_sync_comercial_v2
 # P0: Job de sincronización Ventas Abiertas V2 (cada 5 minutos)
 from .jobs.sync_comercial_abiertas_v2_job import execute_sync_comercial_abiertas_v2
+# Cava de Socios: Job de envío mensual de estados de cuenta
+from .jobs.cava_socios_monthly_job import execute_cava_socios_monthly
 
 logger = logging.getLogger(__name__)
 
@@ -534,6 +536,62 @@ class SchedulerManager:
         finally:
             await lock.release()
     
+    async def _run_cava_socios_monthly_job(self):
+        """
+        Wrapper async para ejecutar envío mensual de estados de cuenta de Cava de Socios.
+        Programado: 9:00 AM del día 1 de cada mes.
+        """
+        job_config = self.config.jobs.get("cava_socios_monthly")
+        if not job_config or not job_config.enabled:
+            logger.debug("[CAVA_MONTHLY] Deshabilitado por configuración")
+            return
+        
+        # Obtener lock para evitar ejecución concurrente
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("cava_socios_monthly")
+        lock_acquired = await lock.acquire(timeout_seconds=1800)  # 30 min para envío masivo
+        
+        if not lock_acquired:
+            logger.warning("[CAVA_MONTHLY] No se pudo obtener lock - ya hay una ejecución en progreso")
+            return
+        
+        job_logger = get_job_logger(self.db)
+        log_entry = await job_logger.start_execution("cava_socios_monthly")
+        
+        try:
+            logger.info("[CAVA_MONTHLY] Iniciando envío mensual de estados de cuenta")
+            result = await execute_cava_socios_monthly(self.db)
+            
+            # Finalizar log con éxito
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status=result.get("estatus_general", "unknown").lower(),
+                processed_count=result.get("total_enviados", 0) + result.get("total_fallidos", 0),
+                success_count=result.get("total_enviados", 0),
+                failed_count=result.get("total_fallidos", 0),
+                skipped_count=result.get("total_sin_email", 0),
+                message=f"Enviados: {result.get('total_enviados', 0)}, "
+                        f"Fallidos: {result.get('total_fallidos', 0)}, "
+                        f"Sin email: {result.get('total_sin_email', 0)}",
+                extra_metadata={"result_summary": result}
+            )
+            
+            logger.info(
+                f"[CAVA_MONTHLY] Completado: {result.get('total_enviados', 0)} enviados, "
+                f"{result.get('total_fallidos', 0)} fallidos, "
+                f"{result.get('total_sin_email', 0)} sin email, "
+                f"{result.get('duracion_ms', 0)}ms"
+            )
+        except Exception as e:
+            logger.error(f"[CAVA_MONTHLY] Error: {e}")
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status="failed",
+                error_detail=str(e)
+            )
+        finally:
+            await lock.release()
+    
     def register_jobs(self):
         """Registra todos los jobs configurados."""
         if self._scheduler is None:
@@ -776,6 +834,29 @@ class SchedulerManager:
             )
             self._jobs["sync_comercial_abiertas_v2"] = sync_comercial_abiertas_v2_config
             logger.info(f"Job SYNC_ABIERTAS_V2 registrado: intervalo={sync_comercial_abiertas_v2_config.interval_seconds}s (misfire_grace_time=1s)")
+        
+        # ========================================
+        # Cava de Socios: Envío mensual de estados de cuenta
+        # ========================================
+        
+        cava_monthly_config = self.config.jobs.get("cava_socios_monthly")
+        if cava_monthly_config and cava_monthly_config.enabled:
+            if cava_monthly_config.cron_expression:
+                trigger = CronTrigger.from_crontab(cava_monthly_config.cron_expression)
+            else:
+                trigger = IntervalTrigger(seconds=cava_monthly_config.interval_seconds)
+            
+            self._scheduler.add_job(
+                self._run_cava_socios_monthly_job,
+                trigger=trigger,
+                id="cava_socios_monthly",
+                name="Cava Socios - Estado Cuenta Mensual",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True
+            )
+            self._jobs["cava_socios_monthly"] = cava_monthly_config
+            logger.info(f"Job CAVA_MONTHLY registrado: cron={cava_monthly_config.cron_expression}")
     
     async def start(self):
         """Inicia el scheduler."""
@@ -902,6 +983,9 @@ class SchedulerManager:
             return {"status": "executed", "job_id": job_id}
         elif job_id == "sync_comercial_abiertas_v2":
             await self._run_sync_comercial_abiertas_v2_job()
+            return {"status": "executed", "job_id": job_id}
+        elif job_id == "cava_socios_monthly":
+            await self._run_cava_socios_monthly_job()
             return {"status": "executed", "job_id": job_id}
         else:
             return {"status": "error", "message": f"Job desconocido: {job_id}"}

@@ -92,6 +92,10 @@ class SchedulerConfig(BaseModel):
         sync_comercial_abiertas_v2_interval = int(os.environ.get("SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_INTERVAL_SECONDS", "300"))  # 5 minutos
         sync_comercial_abiertas_v2_enabled = os.environ.get("SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_ENABLED", "true").lower() == "true"
         
+        # Cava de Socios Monthly (primer día del mes a las 9:00 AM)
+        cava_monthly_cron = os.environ.get("SCHEDULER_CAVA_MONTHLY_CRON", "0 9 1 * *")  # 9:00 AM día 1 de cada mes
+        cava_monthly_enabled = os.environ.get("SCHEDULER_CAVA_MONTHLY_ENABLED", "true").lower() == "true"
+        
         jobs = {
             "sla_processor": JobConfig(
                 job_id="sla_processor",
@@ -197,6 +201,17 @@ class SchedulerConfig(BaseModel):
                 interval_seconds=sync_comercial_abiertas_v2_interval,
                 batch_size=10,
                 timeout_seconds=300  # 5 minutos max
+            ),
+            # Cava de Socios: Envío mensual de estados de cuenta
+            "cava_socios_monthly": JobConfig(
+                job_id="cava_socios_monthly",
+                job_name="Cava Socios - Estado de Cuenta Mensual",
+                description="Envío automático mensual de estados de cuenta por email a socios activos (día 1 de cada mes a las 9:00 AM)",
+                enabled=cava_monthly_enabled,
+                cron_expression=cava_monthly_cron,
+                interval_seconds=86400,  # Fallback 24h si no hay cron
+                batch_size=100,
+                timeout_seconds=1800  # 30 minutos max (envío masivo)
             )
         }
         
