@@ -46,6 +46,7 @@ import RemisionesPage from '@/pages/crm/RemisionesPage';
 import TablajeriaDashboard from '@/pages/tablajeria/TablajeriaDashboard';
 import PlantillasPage from '@/pages/tablajeria/PlantillasPage';
 import OrdenesPage from '@/pages/tablajeria/OrdenesPage';
+import CapturaDirectaPage from '@/pages/tablajeria/CapturaDirectaPage';
 
 import { isAuthenticated } from '@/lib/auth';
 
@@ -96,6 +97,13 @@ function App() {
             <Route path="produccion/tablajeria" element={<TablajeriaDashboard />} />
             <Route path="produccion/tablajeria/plantillas" element={<PlantillasPage />} />
             <Route path="produccion/tablajeria/ordenes" element={<OrdenesPage />} />
+            <Route path="produccion/tablajeria/captura-directa" element={<CapturaDirectaPage />} />
+            {/* Rutas alternativas para tablajería */}
+            <Route path="tablajeria" element={<TablajeriaDashboard />} />
+            <Route path="tablajeria/dashboard" element={<TablajeriaDashboard />} />
+            <Route path="tablajeria/ordenes" element={<OrdenesPage />} />
+            <Route path="tablajeria/captura-directa" element={<CapturaDirectaPage />} />
+            <Route path="tablajeria/plantillas" element={<PlantillasPage />} />
             <Route path="recursos-humanos" element={<RecursosHumanos />} />
             <Route path="importador-rh" element={<ImportadorRH />} />
             <Route path="reportes-bi" element={<ReportesBI />} />

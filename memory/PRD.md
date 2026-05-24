@@ -42,6 +42,16 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 - [x] **Flujo completo verificado**: Crear → Iniciar → Registrar Resultados → Cerrar
 - [x] **Corrección de columnas SQL**: Alineación `PorcentajeEsperado` vs `PorcentajeRendimientoEsperado`
 - [x] **UUID especial para captura directa**: `00000000-0000-0000-0000-000000000001`
+- [x] **UI Frontend**: Página `/tablajeria/captura-directa` con formulario completo
+
+#### RBAC Tablajería (24 Mayo 2026) ✅ NUEVO
+- [x] **11 módulos creados** en `Usuario_Modulos`:
+  - tablajeria, tablajeria.dashboard, tablajeria.ordenes
+  - tablajeria.captura_directa, tablajeria.plantillas, tablajeria.rendimientos
+  - tablajeria.mermas, tablajeria.costeo, tablajeria.polizas
+  - tablajeria.sync, tablajeria.config
+- [x] **199 permisos asignados** a 8 roles (SUPERADMIN, ADMIN, GERENCIA, GERENTE_OPS, SUPERVISOR, OPERADOR, AUDITOR, VISOR)
+- [x] **Script RBAC**: `/app/backend/scripts/create_tablajeria_rbac.py`
 
 #### Tablajería Fase 6: Inventarios, Costeo, Contabilidad (24 Mayo 2026) ✅ INTEGRADO
 - [x] **Credenciales hardcodeadas removidas** - Ahora usa variables de entorno `EDARSAHUB_*`
@@ -96,12 +106,16 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 ### ⏳ Pendiente
 
 #### P1 - Alta Prioridad
-1. **Script RBAC para TABLAJERIA_*** - Permisos específicos de tablajería
-2. **UI Tablajería en Frontend** - Vista para crear órdenes de captura directa
+1. **Dashboard Rendimientos Tablajería** - Gráficos de rendimiento histórico por plantilla/insumo
 
 #### P2 - Media Prioridad
-1. **Fase 3 CRM** - Tablas de Integraciones Externas / Staging
-2. **Flujos avanzados pipeline CRM**
+1. **Flujos avanzados pipeline CRM** - Automatizaciones de etapas
+2. **Reportes de Tablajería** - Exportación de costeo y mermas
+
+#### CRM Fase 3 - Integraciones Externas ✅ YA EXISTENTE
+- [x] Tablas: `CRM_Integracion_Conectores`, `CRM_Staging_*`, `CRM_Integracion_SyncLog`
+- [x] VTiger Client implementado
+- [x] 17+ endpoints de integración en `integration_routes.py`
 
 ---
 

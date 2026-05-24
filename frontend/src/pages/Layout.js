@@ -41,6 +41,7 @@ import {
   Beef,
   Layers,
   FileText,
+  FilePlus,
   Activity,
   Truck,
   Receipt,
@@ -280,20 +281,26 @@ const Layout = () => {
       submenus: [
         {
           name: 'Tablajería',
-          href: '/produccion/tablajeria',
+          href: '/tablajeria/dashboard',
           icon: Beef,
           roles: ['Usuario', 'Supervisor', 'Administrador']
         },
         {
-          name: 'Plantillas',
-          href: '/produccion/tablajeria/plantillas',
-          icon: Layers,
+          name: 'Órdenes',
+          href: '/tablajeria/ordenes',
+          icon: FileText,
           roles: ['Usuario', 'Supervisor', 'Administrador']
         },
         {
-          name: 'Órdenes',
-          href: '/produccion/tablajeria/ordenes',
-          icon: FileText,
+          name: 'Captura Directa',
+          href: '/tablajeria/captura-directa',
+          icon: FilePlus,
+          roles: ['Operador', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Plantillas',
+          href: '/tablajeria/plantillas',
+          icon: Layers,
           roles: ['Usuario', 'Supervisor', 'Administrador']
         }
       ]
