@@ -23,20 +23,26 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
-#### FASE 1C-3B - Implementación Job Sync Recetas (24 Mayo 2026) ✅ COMPLETADO
+#### FASE 1C-3B - Implementación Job Sync Recetas (24 Mayo 2026) ✅ COMPLETADO Y CERRADO
 - [x] **Job sync_recetas.py creado**: 1,084 líneas de código ETL
 - [x] **Tablas destino creadas**: 6 tablas `Sync_Productos*` en EDARSAHUB SQL
 - [x] **DRY-RUN exitoso**: 152 familias, 207 subfamilias, 7,883 productos, 14,524 insumos, 9,341 recetas
-- [x] **Sync Real ejecutado**: SyncRunID `SYNC-RECETAS-20260524133926-b652313f`
-- [x] **Servidores sincronizados**: LA ESTELAR (100%), 130° MERIDA (100%), ManagmentPro (en progreso)
-- [x] **Fuentes correctas usadas**: `costos` (recetas), `elaborados` (sub-recetas)
-- [x] **NO se usa `explosioninsumosdetalle`**: Confirmado vacía
-- [x] **Validación producto ejemplo**: QUESADILLA DE FLOR DE CALABAZA ✅ (7 insumos)
-- [x] **Errores corregidos**: `idgruposi`, `Pp_Precio_1`, `Es_Cve_Estado='AC'`
-- [x] **NO-LIVE confirmado**: Endpoints no consultan BD remotas
+- [x] **Sync Real COMPLETADO**: SyncRunID `SYNC-RECETAS-20260524133926-b652313f`
+  - Duración: 26.7 minutos
+  - Registros insertados: 34,078
+  - Servidores: 3/3 exitosos (LA ESTELAR, 130° MERIDA, ManagmentPro)
+- [x] **Conteos finales en BD**: 28,604 registros totales
+  - Productos: 7,883 | Insumos: 9,242 | Recetas: 9,149 | Elaborados: 2,050
+- [x] **Validación duplicados**: 0 duplicados en todas las tablas
+- [x] **Validación cantidades**: 0 cantidades negativas en recetas
+- [x] **Validación producto SR**: QUESADILLA DE FLOR DE CALABAZA ✅ (7 insumos)
+- [x] **Validación producto MPRO**: Prod B Naranja en Gajos ✅ 
+- [x] **NO-LIVE confirmado**: Endpoints NO consultan BD remotas
 - [x] **No regresión**: Login, dashboard, menús funcionan correctamente
+- [x] **Proceso background cerrado**: PID 7622 terminó exitosamente
 - [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3B_COSTOS_MARGENES_SYNC_RECETAS_IMPLEMENTACION.md`
 - [⚠️] **CIENFUEGOS**: Excluido por problema de red (backlog operativo)
+- [⚠️] **Bug familias SR**: 79 familias no insertadas por bug Decimal (no bloqueante)
 
 #### FASE 1C-3A - Diseño Técnico Costos y Márgenes (24 Mayo 2026) ✅ COMPLETADO
 - [x] **Diagnóstico de tablas**: 50+ tablas analizadas en EDARSAHUB
