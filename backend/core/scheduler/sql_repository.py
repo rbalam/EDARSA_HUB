@@ -427,11 +427,11 @@ async def get_empresas_activas(empresa_id_filter: str = None) -> List[Dict]:
     except Exception as e:
         logger.debug(f"[SCHEDULER_SQL] Tabla Empresas no disponible: {e}")
     
-    # Fallback: obtener empresas de Servidores_Conexiones
+    # Fallback: obtener empresas de Servidores_Conexiones (usar columnas existentes)
     query_fallback = """
         SELECT DISTINCT
-            COALESCE(empresa_id, CAST(id AS VARCHAR(50))) as id,
-            COALESCE(empresa_nombre, nombre) as nombre
+            CAST(id AS VARCHAR(50)) as id,
+            nombre as nombre
         FROM Servidores_Conexiones
         WHERE activo = 1
     """
@@ -446,7 +446,8 @@ async def get_empresas_activas(empresa_id_filter: str = None) -> List[Dict]:
             }
             for row in rows
         ]
-    except Exception:
+    except Exception as e:
+        logger.debug(f"[SCHEDULER_SQL] Error en fallback empresas: {e}")
         return []
 
 

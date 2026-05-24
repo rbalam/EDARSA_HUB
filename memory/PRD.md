@@ -28,7 +28,6 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 - [x] RBAC migrado a SQL Server (Usuario_Roles)
 - [x] **Tablas Sesiones/SesionesHistorico creadas**
 - [x] Scheduler usa StubDatabase para operaciones no críticas
-- [x] 165 referencias a `await db.` usan StubDatabase (sin errores fatales)
 - [x] **Tablas Scheduler_* creadas para tracking de jobs**
 - [x] `sql_repository.py` creado con funciones SQL
 
@@ -43,10 +42,19 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 - [x] **SOLUCIÓN**: Purga completa de `__pycache__` + reinicio de backend
 - [x] **ESTADO**: Backend limpio, sin errores de traceback
 
-#### Auditoría MongoDB (24 Mayo 2026)
-- [x] 80 referencias `self.db.*` identificadas en 15 archivos de producción
-- [x] 30 colecciones MongoDB mapeadas a funcionalidades
-- [x] Reporte completo en `/app/memory/AUDITORIA_MONGO_DEPENDENCIAS.md`
+#### Migración P0 Workflows/SLA (24 Mayo 2026)
+- [x] **OrquestadorService migrado a SQL** (11 → 0 refs MongoDB)
+- [x] **SLA Service migrado a SQL** (17 → 0 refs MongoDB)
+- [x] **Tablas creadas en EDARSAHUB**:
+  - `Workflow_Inventarios`
+  - `Tareas_Inventario`
+  - `Workflow_DetalleDiferencias`
+  - `Inventarios_SinAsignar`
+  - `Alertas_Sistema`
+  - `Configuracion_Operativa`
+  - `Config_Asignaciones`
+- [x] **sql_repository.py creado** en `/app/backend/modules/fase2_operativo/`
+- [x] **Referencias MongoDB reducidas**: 80 → 52 (-28)
 
 ### 🔄 En Progreso
 
@@ -57,19 +65,15 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ⏳ Pendiente
 
-#### P0 - Migración SQL Completa
-1. Migrar `OrquestadorService` completamente a SQL (11 refs MongoDB)
-2. Migrar `SLA Service` a SQL (17 refs MongoDB)
-3. Crear tablas: `Workflow_Inventarios`, `Tareas_Inventario`, `Workflow_DetalleDiferencias`
-
 #### P1 - Alta Prioridad
-4. **Tablajería Fase 6**: Inventarios, Costeo y Contabilidad
-5. **Seguridad**: Remover credenciales hardcodeadas en Tablajería
+1. **Tablajería Fase 6**: Inventarios, Costeo y Contabilidad
+2. **Seguridad**: Remover credenciales hardcodeadas en Tablajería
 
 #### P2 - Media Prioridad
-6. **CRM UI**: Completar vistas funcionales
-7. Migrar `config_asignaciones_repository.py` (8 refs)
-8. Migrar `estructura_service.py` (6 refs)
+3. **CRM UI**: Completar vistas funcionales
+4. Migrar `config_asignaciones_repository.py` (8 refs)
+5. Migrar `estructura_service.py` (6 refs)
+6. Migrar `automatizacion_compras_service.py` (5 refs)
 
 ---
 

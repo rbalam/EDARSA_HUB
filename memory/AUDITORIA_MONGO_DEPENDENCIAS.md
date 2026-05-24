@@ -131,3 +131,54 @@
 
 3. **Traceback fantasma resuelto**: Después de purgar `__pycache__` y reiniciar, los logs están limpios.
 
+
+---
+
+## 🔄 ACTUALIZACIÓN POST-MIGRACIÓN (24 Mayo 2026 - 02:20)
+
+### Servicios Migrados a SQL Server
+
+| Servicio | Referencias Antes | Referencias Después | Reducción |
+|----------|------------------|--------------------| ----------|
+| OrquestadorService | 11 | 0 | ✅ -11 |
+| SLA Service | 17 | 0 | ✅ -17 |
+| **TOTAL** | **80** | **52** | **-28** |
+
+### Tablas SQL Creadas
+
+| Tabla | Estado |
+|-------|--------|
+| `Workflow_Inventarios` | ✅ Creada |
+| `Tareas_Inventario` | ✅ Creada |
+| `Workflow_DetalleDiferencias` | ✅ Creada |
+| `Inventarios_SinAsignar` | ✅ Creada |
+| `Alertas_Sistema` | ✅ Creada |
+| `Configuracion_Operativa` | ✅ Creada (con valores SLA por defecto) |
+| `Config_Asignaciones` | ✅ Creada |
+
+### Archivos Creados/Modificados
+
+1. `/app/backend/modules/fase2_operativo/sql_repository.py` - **NUEVO**
+   - Funciones SQL para workflows, tareas, alertas, configuración
+   
+2. `/app/backend/modules/fase2_operativo/services/orquestador_service.py` - **MIGRADO**
+   - Ya no usa MongoDB
+   - Usa sql_repository.py para todas las operaciones
+
+3. `/app/backend/modules/fase2_operativo/services/sla_service.py` - **MIGRADO**
+   - Ya no usa MongoDB
+   - Usa sql_repository.py para todas las operaciones
+
+4. `/app/backend/scripts/create_workflow_tables.sql` - **NUEVO**
+   - Script de creación de tablas en EDARSAHUB
+
+### Referencias MongoDB Restantes (52)
+
+| Archivo | Refs | Prioridad |
+|---------|------|-----------|
+| automatizacion_compras_service.py | 5 | P2 |
+| config_asignaciones_repository.py | 8 | P2 |
+| estructura_service.py | 6 | P2 |
+| scripts/carga_historica_fase23.py | 8 | P3 (scripts) |
+| tests/test_e2e_flujo_completo.py | 15 | P3 (tests) |
+| Otros (scheduler, communications) | 10 | P3 |
