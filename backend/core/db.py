@@ -230,42 +230,37 @@ def parse_sql_server_host(host: str, default_port: int = 1433) -> tuple:
 
 
 # ============================================================================
-# MAPEO DE HOSTNAMES DDNS A IPs DIRECTAS
+# RESOLUCIÓN DINÁMICA DE HOSTNAMES DDNS
 # ============================================================================
-# Algunos servidores DDNS no son accesibles desde ciertos entornos.
-# Este mapeo permite usar la IP directa cuando el DNS falla.
+# Los servidores con DDNS (como servercienfuegos.ddns.net) tienen IPs dinámicas.
+# Siempre resolver vía DNS para obtener la IP actual.
 
-_HOSTNAME_TO_IP_MAP = {
-    'servercienfuegos.ddns.net': '189.172.160.234',
-    # Agregar más mapeos según sea necesario
-}
+# NOTA: Ya no usamos mapeo estático porque las IPs cambian.
+# _HOSTNAME_TO_IP_MAP = {} # Eliminado - usar DNS dinámico
 
 def _resolve_hostname_to_ip(hostname: str) -> str:
     """
-    Resuelve un hostname a IP usando el mapeo predefinido.
-    Si el hostname no está en el mapeo, intenta resolver via DNS.
-    Si todo falla, devuelve el hostname original.
+    Resuelve un hostname a IP usando DNS dinámico.
+    IMPORTANTE: Para DDNS, siempre resolver la IP actual, no cachear.
+    
+    Args:
+        hostname: Nombre de host o dominio DDNS
+        
+    Returns:
+        IP resuelta o hostname original si falla
     """
+    import socket
+    
     hostname_lower = hostname.lower().strip()
     
-    # Primero verificar en el mapeo predefinido
-    if hostname_lower in _HOSTNAME_TO_IP_MAP:
-        ip = _HOSTNAME_TO_IP_MAP[hostname_lower]
-        logging.info(f"[DNS] Usando IP mapeada para {hostname}: {ip}")
-        return ip
-    
-    # Si ya es una IP, devolverla directamente
-    if re.match(r'^\d+\.\d+\.\d+\.\d+$', hostname):
-        return hostname
-    
-    # Intentar resolver via DNS
+    # Siempre intentar resolver vía DNS para obtener IP actual
     try:
-        import socket
-        ip = socket.gethostbyname(hostname)
-        logging.info(f"[DNS] Resuelto {hostname} -> {ip}")
+        ip = socket.gethostbyname(hostname_lower)
+        logging.debug(f"DNS resolved: {hostname} -> {ip}")
         return ip
-    except Exception as e:
-        logging.warning(f"[DNS] No se pudo resolver {hostname}: {e}")
+    except socket.gaierror as e:
+        logging.warning(f"DNS resolution failed for {hostname}: {e}")
+        # Si falla DNS, devolver hostname original para que lo intente el driver
         return hostname
 
 
