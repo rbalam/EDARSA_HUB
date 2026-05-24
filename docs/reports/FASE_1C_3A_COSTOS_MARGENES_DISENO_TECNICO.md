@@ -462,10 +462,16 @@ SELECT i.idinsumo, i.descripcion, i.unidad, i.elaborado, i.rendimientoelaborado,
 FROM insumos i
 JOIN insumosdetalle id ON i.idinsumo = id.idinsumo
 
--- Recetas (explosión)
-SELECT idproducto, idinsumo, cantidad, unidad, costo, costopromedio,
-       nivel, elaborado, idelaborado
-FROM explosioninsumosdetalle
+-- RECETAS DE PRODUCTOS (tabla costos)
+SELECT c.idproducto, c.idinsumo, c.cantidad,
+       i.unidad, id.costo, id.costopromedio
+FROM costos c
+JOIN insumos i ON c.idinsumo = i.idinsumo
+LEFT JOIN insumosdetalle id ON c.idinsumo = id.idinsumo
+
+-- RECETAS DE INSUMOS ELABORADOS (tabla elaborados)
+SELECT e.idelaborado, e.idinsumo, e.cantidad
+FROM elaborados e
 ```
 
 #### MPRO
@@ -516,14 +522,20 @@ WHERE fp.Es_Cve_Estado = 'A'
 | SubFamilias | `subgrupos` + `grupossubgrupos` | idsubgrupo, descripcion, idgrupo |
 | Productos | `productos` + `productosdetalle` | idproducto, descripcion, precio |
 | Insumos | `insumos` + `insumosdetalle` | idinsumo, descripcion, costo, costopromedio |
-| Recetas | `explosioninsumosdetalle` | idproducto, idinsumo, cantidad, costo |
+| **Recetas de PRODUCTOS** | `costos` | idproducto, idinsumo, cantidad |
+| **Recetas de INSUMOS ELABORADOS** | `elaborados` | idelaborado, idinsumo, cantidad |
 
 **Estado de datos (LA ESTELAR)**:
 - 46 grupos
 - 63 subgrupos
 - 611 productos
 - 1199 insumos
-- 0 recetas en explosioninsumosdetalle (⚠ vacía)
+- **1,583 líneas de receta** en tabla `costos`
+- **559 productos con receta** (91% del catálogo)
+- **615 líneas de elaborados** (recetas de insumos compuestos)
+
+**CORRECCIÓN IMPORTANTE**: Las recetas NO están en `explosioninsumosdetalle` (vacía).
+Las recetas están en la tabla `costos` que relaciona producto → insumos con cantidad.
 
 ### 8.2 MPRO (ManagmentPro)
 
@@ -1001,13 +1013,14 @@ class ProductoCostosMargenesResponse(BaseModel):
 
 | # | Riesgo | Severidad | Mitigación |
 |---|--------|-----------|------------|
-| 1 | explosioninsumosdetalle vacía en SoftRestaurant | ALTA | Verificar si datos existen pero en otra tabla, o si requiere generación |
-| 2 | Falta de recetas para productos de venta | ALTA | Los productos sin receta mostrarán costo=0 y margen=100%, marcar como "SIN_RECETA" |
+| 1 | ~~explosioninsumosdetalle vacía en SoftRestaurant~~ | ~~ALTA~~ | ✅ RESUELTO: Usar tabla `costos` que tiene 1,583 líneas de receta |
+| 2 | Falta de recetas para productos de venta | BAJA | 559 de 611 productos (91%) tienen receta. Los 52 restantes mostrarán "SIN_RECETA" |
 | 3 | Costos desactualizados | MEDIA | Incluir fecha de último costeo y alertar si > 30 días |
 | 4 | Diferencias de estructura entre sistemas | MEDIA | Mapeo flexible con CodigoFuente + SystemType |
 | 5 | Volumen de datos alto (8K+ productos MPRO) | MEDIA | Paginación, índices, carga incremental |
 | 6 | Enterprise sin analizar | BAJA | Tratar como SoftRestaurant, ajustar si necesario |
 | 7 | SubRecetas recursivas infinitas | BAJA | Limitar niveles de explosión (max 5) |
+| 8 | Insumos elaborados requieren sub-explosión | MEDIA | Usar tabla `elaborados` para expandir insumos compuestos |
 
 ---
 
@@ -1088,37 +1101,43 @@ Antes de autorizar FASE 1C-3B, confirmar:
 
 ---
 
-## 19. Hallazgo Crítico: explosioninsumosdetalle vacía
+## 19. Estructura Correcta de Recetas en SoftRestaurant
 
-### Problema Detectado
+### Hallazgo Corregido
 
-La tabla `explosioninsumosdetalle` en SoftRestaurant (LA ESTELAR) tiene **0 registros**, a pesar de tener:
-- 611 productos
-- 1199 insumos
+El usuario indicó que las recetas en SoftRestaurant están en `productosdetalle` con referencia a `insumospresentaciones`. Tras investigación:
 
-### Posibles Causas
+**Estructura REAL de recetas:**
 
-1. **Los productos no tienen recetas configuradas** en SoftRestaurant
-2. **La explosión no se ha generado** (requiere proceso manual en SR)
-3. **Las recetas están en otra tabla** (verificar `recetasalmacenes`)
+| Tabla | Contenido | Registros | Uso |
+|-------|-----------|-----------|-----|
+| `costos` | Recetas de PRODUCTOS (producto → insumos) | 1,583 | ⭐ PRINCIPAL |
+| `elaborados` | Recetas de INSUMOS ELABORADOS (sub-recetas) | 615 | Insumos compuestos |
+| `insumospresentaciones` | Tipos/formatos de insumo | 1,927 | NO es receta |
+| `explosioninsumosdetalle` | Vacía en LA ESTELAR | 0 | No usar |
 
-### Impacto
+### Ejemplo de Receta Real (tabla `costos`)
 
-Sin datos en `explosioninsumosdetalle`:
-- No se puede calcular costo de receta
-- Solo se tendrá precio de venta
-- Margen mostrará 100% (sin costo)
-- Productos aparecerán como "SIN_RECETA"
+```
+[46001] QUESADILLA DE FLOR DE CALABAZA - COSTO TOTAL: $30.15
+   ├─ A CREMA ENTERA/ACIDA GR     | 50gr  × $0.0682 = $3.41
+   ├─ A MASA AMARILLA GR          | 90gr  × $0.0220 = $1.98
+   ├─ A CILANTRO CRIOLLO GR       | 1gr   × $0.0900 = $0.09
+   ├─ A FLOR DE CALABAZA          | 20gr  × $0.1600 = $3.20
+   ├─ A QUESO COTIJA GR           | 20gr  × $0.2760 = $5.52
+   ├─ A QUESO OAXACA GR           | 100gr × $0.1520 = $15.20
+   └─ B CHAPULIN SECO GR          | 1gr   × $0.7500 = $0.75
+```
 
-### Mitigación Propuesta
+### Estadísticas Actualizadas
 
-1. **Mostrar claramente** qué productos tienen receta y cuáles no
-2. **Permitir** uso de CostoPromedio o UltimoCosto como fallback
-3. **Alertar** al usuario sobre productos sin receta
-4. **En MPRO** las fórmulas SÍ tienen datos (554 fórmulas, 3103 detalles)
+- **559 de 611 productos tienen receta** (91%)
+- **1,583 líneas de receta** en tabla `costos`
+- **615 líneas de elaborados** para insumos compuestos
 
 ---
 
 **Documento generado por**: Agente EDARSA HUB  
 **Fecha de generación**: 2026-05-24 14:30 (hora México)  
+**Actualizado**: 2026-05-24 15:00 - Corrección estructura recetas SoftRestaurant
 **Estado**: Pendiente de autorización para FASE 1C-3B

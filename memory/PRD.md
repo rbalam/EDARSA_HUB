@@ -35,9 +35,9 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 - [x] **Frontend diseñado**: Tabla jerárquica expandible con filtros y ordenamiento
 - [x] **RBAC diseñado**: 8 permisos propuestos
 - [x] **Reglas NO-LIVE**: Documentadas y validadas
-- [x] **Riesgos identificados**: 7 riesgos con mitigaciones
+- [x] **Riesgos identificados**: 8 riesgos con mitigaciones
 - [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3A_COSTOS_MARGENES_DISENO_TECNICO.md`
-- [⚠️] **Hallazgo**: `explosioninsumosdetalle` vacía en SoftRestaurant (sin recetas)
+- [✅] **Corrección usuario**: Recetas SoftRestaurant en tabla `costos` (1,583 líneas, 559 productos con receta = 91%)
 
 #### FASE 1C-0 - Diagnóstico Comercial/Ventas para Subfases (24 Mayo 2026) ✅ COMPLETADO
 - [x] **Rutas inventariadas**: 18 rutas revisadas (Comercial + CRM)
