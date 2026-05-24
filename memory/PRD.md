@@ -202,7 +202,18 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 - **Frontend**: Botones de descarga en `SocioDetail.jsx` (Ficha PDF, Consumos, Estado Cuenta)
 - **Tecnología**: ReportLab 4.4.10 para generación PDF profesional
 
-### ✅ Notificaciones Email/WhatsApp Cava Socios (24 Mayo 2026)
+### ✅ CRM Flujos Avanzados (24 Mayo 2026) - NUEVO
+- **Sistema de Triggers**:
+  - 9 tipos de evento: OPORTUNIDAD_CREADA/ACTUALIZADA, ETAPA_CAMBIADA, GANADA/PERDIDA, ACTIVIDAD_VENCIDA, SLA_VENCIDO, MONTO_ACTUALIZADO, RESPONSABLE_CAMBIADO
+  - 7 tipos de acción: CREAR_ACTIVIDAD, ENVIAR_EMAIL, ENVIAR_WHATSAPP, CREAR_NOTIFICACION, ACTUALIZAR_CAMPO, WEBHOOK, CREAR_TAREA_SEGUIMIENTO
+  - Condiciones JSON con operadores: `$gt`, `$lt`, `$in`, `$ne`, etc.
+- **Endpoints API**: `/api/crm/triggers/*`
+- **Jobs Scheduler**:
+  - `crm_sync` - Sincronización CRMs externos (cada 30 min)
+  - `crm_sla_check` - Verificación SLAs (cada hora)
+  - `crm_actividades_vencidas` - Recordatorios (cada 15 min)
+- **Tablas SQL**: `CRM_Triggers`, `CRM_Trigger_Log`, `CRM_Tareas`
+- **Triggers de ejemplo creados**: 3 (Seguimiento inicial, Alerta SLA, Celebración ganada)
 - **Configuración**:
   - Email SMTP: `mail.edarsa.com.mx:587` (notificaciones@edarsa.com.mx)
   - WhatsApp: Twilio `+14155238886`

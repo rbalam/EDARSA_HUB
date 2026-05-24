@@ -96,6 +96,18 @@ class SchedulerConfig(BaseModel):
         cava_monthly_cron = os.environ.get("SCHEDULER_CAVA_MONTHLY_CRON", "0 9 1 * *")  # 9:00 AM día 1 de cada mes
         cava_monthly_enabled = os.environ.get("SCHEDULER_CAVA_MONTHLY_ENABLED", "true").lower() == "true"
         
+        # CRM Sync (sincronización con CRMs externos cada 30 min)
+        crm_sync_interval = int(os.environ.get("SCHEDULER_CRM_SYNC_INTERVAL_SECONDS", "1800"))  # 30 minutos
+        crm_sync_enabled = os.environ.get("SCHEDULER_CRM_SYNC_ENABLED", "true").lower() == "true"
+        
+        # CRM SLA Check (verificación de SLAs cada hora)
+        crm_sla_interval = int(os.environ.get("SCHEDULER_CRM_SLA_INTERVAL_SECONDS", "3600"))  # 1 hora
+        crm_sla_enabled = os.environ.get("SCHEDULER_CRM_SLA_ENABLED", "true").lower() == "true"
+        
+        # CRM Actividades Vencidas (cada 15 min)
+        crm_actividades_interval = int(os.environ.get("SCHEDULER_CRM_ACTIVIDADES_INTERVAL_SECONDS", "900"))  # 15 min
+        crm_actividades_enabled = os.environ.get("SCHEDULER_CRM_ACTIVIDADES_ENABLED", "true").lower() == "true"
+        
         jobs = {
             "sla_processor": JobConfig(
                 job_id="sla_processor",
@@ -212,6 +224,36 @@ class SchedulerConfig(BaseModel):
                 interval_seconds=86400,  # Fallback 24h si no hay cron
                 batch_size=100,
                 timeout_seconds=1800  # 30 minutos max (envío masivo)
+            ),
+            # CRM: Sincronización con CRMs externos
+            "crm_sync": JobConfig(
+                job_id="crm_sync",
+                job_name="CRM - Sincronización Externa",
+                description="Sincronización automática con CRMs externos (VTiger, etc.) cada 30 minutos",
+                enabled=crm_sync_enabled,
+                interval_seconds=crm_sync_interval,
+                batch_size=100,
+                timeout_seconds=600  # 10 minutos max
+            ),
+            # CRM: Verificación de SLAs
+            "crm_sla_check": JobConfig(
+                job_id="crm_sla_check",
+                job_name="CRM - Verificación SLA",
+                description="Verificación de SLAs de oportunidades y generación de alertas (cada hora)",
+                enabled=crm_sla_enabled,
+                interval_seconds=crm_sla_interval,
+                batch_size=500,
+                timeout_seconds=300
+            ),
+            # CRM: Actividades vencidas
+            "crm_actividades_vencidas": JobConfig(
+                job_id="crm_actividades_vencidas",
+                job_name="CRM - Actividades Vencidas",
+                description="Verificación de actividades vencidas y envío de recordatorios (cada 15 min)",
+                enabled=crm_actividades_enabled,
+                interval_seconds=crm_actividades_interval,
+                batch_size=200,
+                timeout_seconds=180
             )
         }
         

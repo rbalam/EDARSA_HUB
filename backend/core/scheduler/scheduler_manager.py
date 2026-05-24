@@ -39,6 +39,8 @@ from .jobs.sync_comercial_v2_job import execute_sync_comercial_v2
 from .jobs.sync_comercial_abiertas_v2_job import execute_sync_comercial_abiertas_v2
 # Cava de Socios: Job de envío mensual de estados de cuenta
 from .jobs.cava_socios_monthly_job import execute_cava_socios_monthly
+# CRM: Jobs de sincronización y seguimiento
+from .jobs.crm_sync_job import execute_crm_sync, execute_crm_sla_check, execute_crm_actividades_vencidas
 
 logger = logging.getLogger(__name__)
 
@@ -592,6 +594,134 @@ class SchedulerManager:
         finally:
             await lock.release()
     
+    async def _run_crm_sync_job(self):
+        """
+        Wrapper async para sincronización con CRMs externos.
+        Programado: Cada 30 minutos.
+        """
+        job_config = self.config.jobs.get("crm_sync")
+        if not job_config or not job_config.enabled:
+            logger.debug("[CRM_SYNC] Deshabilitado por configuración")
+            return
+        
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("crm_sync")
+        lock_acquired = await lock.acquire(timeout_seconds=600)
+        
+        if not lock_acquired:
+            logger.warning("[CRM_SYNC] No se pudo obtener lock - ya hay una ejecución en progreso")
+            return
+        
+        job_logger = get_job_logger(self.db)
+        log_entry = await job_logger.start_execution("crm_sync")
+        
+        try:
+            logger.info("[CRM_SYNC] Iniciando sincronización con CRMs externos")
+            result = await execute_crm_sync(self.db)
+            
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status=result.get("estatus_general", "unknown").lower(),
+                processed_count=result.get("total_conectores", 0),
+                success_count=result.get("conectores_exitosos", 0),
+                message=f"Conectores: {result.get('conectores_exitosos', 0)}/{result.get('total_conectores', 0)}, "
+                        f"Creados: {result.get('registros_creados', 0)}, "
+                        f"Actualizados: {result.get('registros_actualizados', 0)}",
+                extra_metadata={"result_summary": result}
+            )
+            
+            logger.info(f"[CRM_SYNC] Completado en {result.get('duracion_ms', 0)}ms")
+        except Exception as e:
+            logger.error(f"[CRM_SYNC] Error: {e}")
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+        finally:
+            await lock.release()
+    
+    async def _run_crm_sla_check_job(self):
+        """
+        Wrapper async para verificación de SLAs de oportunidades.
+        Programado: Cada hora.
+        """
+        job_config = self.config.jobs.get("crm_sla_check")
+        if not job_config or not job_config.enabled:
+            logger.debug("[CRM_SLA] Deshabilitado por configuración")
+            return
+        
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("crm_sla_check")
+        lock_acquired = await lock.acquire(timeout_seconds=300)
+        
+        if not lock_acquired:
+            logger.warning("[CRM_SLA] No se pudo obtener lock")
+            return
+        
+        job_logger = get_job_logger(self.db)
+        log_entry = await job_logger.start_execution("crm_sla_check")
+        
+        try:
+            logger.info("[CRM_SLA] Verificando SLAs de oportunidades")
+            result = await execute_crm_sla_check(self.db)
+            
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status=result.get("estatus_general", "unknown").lower(),
+                processed_count=result.get("total_vencidas", 0) + result.get("total_proximas", 0),
+                success_count=result.get("triggers_ejecutados", 0),
+                message=f"Vencidas: {result.get('total_vencidas', 0)}, "
+                        f"Próximas: {result.get('total_proximas', 0)}, "
+                        f"Triggers: {result.get('triggers_ejecutados', 0)}",
+                extra_metadata={"result_summary": result}
+            )
+            
+            logger.info(f"[CRM_SLA] Completado en {result.get('duracion_ms', 0)}ms")
+        except Exception as e:
+            logger.error(f"[CRM_SLA] Error: {e}")
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+        finally:
+            await lock.release()
+    
+    async def _run_crm_actividades_vencidas_job(self):
+        """
+        Wrapper async para verificación de actividades vencidas.
+        Programado: Cada 15 minutos.
+        """
+        job_config = self.config.jobs.get("crm_actividades_vencidas")
+        if not job_config or not job_config.enabled:
+            logger.debug("[CRM_ACT] Deshabilitado por configuración")
+            return
+        
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("crm_actividades_vencidas")
+        lock_acquired = await lock.acquire(timeout_seconds=180)
+        
+        if not lock_acquired:
+            logger.warning("[CRM_ACT] No se pudo obtener lock")
+            return
+        
+        job_logger = get_job_logger(self.db)
+        log_entry = await job_logger.start_execution("crm_actividades_vencidas")
+        
+        try:
+            logger.info("[CRM_ACT] Verificando actividades vencidas")
+            result = await execute_crm_actividades_vencidas(self.db)
+            
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status=result.get("estatus_general", "unknown").lower(),
+                processed_count=result.get("total_vencidas", 0),
+                success_count=result.get("notificaciones_creadas", 0),
+                message=f"Vencidas: {result.get('total_vencidas', 0)}, "
+                        f"Notificaciones: {result.get('notificaciones_creadas', 0)}",
+                extra_metadata={"result_summary": result}
+            )
+            
+            logger.info(f"[CRM_ACT] Completado en {result.get('duracion_ms', 0)}ms")
+        except Exception as e:
+            logger.error(f"[CRM_ACT] Error: {e}")
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+        finally:
+            await lock.release()
+    
     def register_jobs(self):
         """Registra todos los jobs configurados."""
         if self._scheduler is None:
@@ -857,6 +987,66 @@ class SchedulerManager:
             )
             self._jobs["cava_socios_monthly"] = cava_monthly_config
             logger.info(f"Job CAVA_MONTHLY registrado: cron={cava_monthly_config.cron_expression}")
+        
+        # ========================================
+        # CRM: Sincronización con CRMs externos (cada 30 min)
+        # ========================================
+        
+        crm_sync_config = self.config.jobs.get("crm_sync")
+        if crm_sync_config and crm_sync_config.enabled:
+            trigger = IntervalTrigger(seconds=crm_sync_config.interval_seconds)
+            
+            self._scheduler.add_job(
+                self._run_crm_sync_job,
+                trigger=trigger,
+                id="crm_sync",
+                name="CRM - Sincronización Externa",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True
+            )
+            self._jobs["crm_sync"] = crm_sync_config
+            logger.info(f"Job CRM_SYNC registrado: intervalo={crm_sync_config.interval_seconds}s")
+        
+        # ========================================
+        # CRM: Verificación de SLAs (cada hora)
+        # ========================================
+        
+        crm_sla_config = self.config.jobs.get("crm_sla_check")
+        if crm_sla_config and crm_sla_config.enabled:
+            trigger = IntervalTrigger(seconds=crm_sla_config.interval_seconds)
+            
+            self._scheduler.add_job(
+                self._run_crm_sla_check_job,
+                trigger=trigger,
+                id="crm_sla_check",
+                name="CRM - Verificación SLA",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True
+            )
+            self._jobs["crm_sla_check"] = crm_sla_config
+            logger.info(f"Job CRM_SLA_CHECK registrado: intervalo={crm_sla_config.interval_seconds}s")
+        
+        # ========================================
+        # CRM: Actividades vencidas (cada 15 min)
+        # ========================================
+        
+        crm_act_config = self.config.jobs.get("crm_actividades_vencidas")
+        if crm_act_config and crm_act_config.enabled:
+            trigger = IntervalTrigger(seconds=crm_act_config.interval_seconds)
+            
+            self._scheduler.add_job(
+                self._run_crm_actividades_vencidas_job,
+                trigger=trigger,
+                id="crm_actividades_vencidas",
+                name="CRM - Actividades Vencidas",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True
+            )
+            self._jobs["crm_actividades_vencidas"] = crm_act_config
+            logger.info(f"Job CRM_ACTIVIDADES registrado: intervalo={crm_act_config.interval_seconds}s")
     
     async def start(self):
         """Inicia el scheduler."""
@@ -986,6 +1176,15 @@ class SchedulerManager:
             return {"status": "executed", "job_id": job_id}
         elif job_id == "cava_socios_monthly":
             await self._run_cava_socios_monthly_job()
+            return {"status": "executed", "job_id": job_id}
+        elif job_id == "crm_sync":
+            await self._run_crm_sync_job()
+            return {"status": "executed", "job_id": job_id}
+        elif job_id == "crm_sla_check":
+            await self._run_crm_sla_check_job()
+            return {"status": "executed", "job_id": job_id}
+        elif job_id == "crm_actividades_vencidas":
+            await self._run_crm_actividades_vencidas_job()
             return {"status": "executed", "job_id": job_id}
         else:
             return {"status": "error", "message": f"Job desconocido: {job_id}"}
