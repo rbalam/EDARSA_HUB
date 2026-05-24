@@ -45,16 +45,18 @@ def init_notifications_routes(database) -> None:
     """
     Inicializa las rutas con la conexión a MongoDB.
     
-    NOTA: MongoDB ELIMINADO del sistema. Este módulo ahora opera en modo degradado
-    cuando database es None, devolviendo respuestas stub sin persistencia MongoDB.
+    NOTA: MongoDB ELIMINADO del sistema. Este módulo ahora opera con StubDatabase
+    que retorna valores vacíos sin fallar.
     
     Args:
-        database: Instancia de AsyncIOMotorDatabase (puede ser None para SQL-only mode)
+        database: Instancia de AsyncIOMotorDatabase o StubDatabase
     """
     global _db
     _db = database
-    if _db is None:
-        logger.warning("[NOTIFICATIONS] Inicializado SIN MongoDB - Modo degradado SQL-only")
+    # Detectar si es StubDatabase
+    is_stub = hasattr(database, '_collections') and database.__class__.__name__ == 'StubDatabase'
+    if is_stub:
+        logger.info("[NOTIFICATIONS] Inicializado con StubDatabase - MongoDB ELIMINADO")
     else:
         logger.info("Notification routes initialized")
 
@@ -63,14 +65,21 @@ def get_db():
     """
     Obtiene la conexión a MongoDB inyectada.
     
-    NOTA: En modo SQL-only, retorna None y los endpoints deben manejar este caso.
+    NOTA: Puede retornar StubDatabase que opera sin persistencia.
     """
     return _db
 
 
 def is_mongo_available() -> bool:
-    """Verifica si MongoDB está disponible."""
-    return _db is not None
+    """
+    Verifica si MongoDB real está disponible.
+    
+    NOTA: StubDatabase se considera como NO disponible.
+    """
+    if _db is None:
+        return False
+    # Detectar StubDatabase
+    return not (hasattr(_db, '_collections') and _db.__class__.__name__ == 'StubDatabase')
 
 
 # =============================================================================

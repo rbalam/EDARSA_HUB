@@ -40,18 +40,25 @@ class JobLogger:
     
     Registra inicio, fin, métricas y errores de cada ejecución.
     
-    NOTA: En modo SQL-only (db=None), opera en modo dummy sin persistencia.
+    NOTA: Con StubDatabase, el collection será un StubCollection que retorna vacío.
     """
     
     COLLECTION_NAME = "scheduler_job_log"
     
     def __init__(self, db):
         self.db = db
+        # Detectar si es StubDatabase
+        self._is_stub = db is not None and hasattr(db, '_collections') and db.__class__.__name__ == 'StubDatabase'
+        
         if db is not None:
             self.collection = db[self.COLLECTION_NAME]
+            if self._is_stub:
+                logger.info("[JOB_LOGGER] Inicializado con StubDatabase - Logs no persistidos")
+            else:
+                logger.info("[JOB_LOGGER] Inicializado con MongoDB")
         else:
             self.collection = None
-            logger.warning("[JOB_LOGGER] Inicializado SIN MongoDB - Logs en memoria solamente")
+            logger.info("[JOB_LOGGER] Inicializado SIN base de datos")
     
     async def start_execution(
         self,

@@ -54,13 +54,15 @@ logger = logging.getLogger(__name__)
 # MÁXIMA EDARSAHUB: SQL Server es el cerebro. MongoDB ELIMINADO.
 # 
 # Todos los módulos funcionan exclusivamente con EDARSAHUB SQL Server.
-# Variable 'db' se mantiene como None para compatibilidad con código legacy.
+# Variable 'db' se mantiene como StubDatabase para compatibilidad con código legacy.
+# Los accesos a colecciones MongoDB retornan valores vacíos sin fallar.
 #
 # ============================================================================
 
-# MongoDB ELIMINADO - Variable mantenida solo para compatibilidad
-db = None
-logger.info("[DB] Sistema funcionando 100% SQL Server - MongoDB ELIMINADO")
+# MongoDB ELIMINADO - Usar StubDatabase para evitar errores en código legacy
+from core.mongo_stub import get_stub_database
+db = get_stub_database()
+logger.info("[DB] Sistema funcionando 100% SQL Server - MongoDB ELIMINADO (usando StubDatabase)")
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -179,7 +181,7 @@ async def validate_server_access_unified(current_user: Dict, server_id: str) -> 
 from modules.auth import get_router as get_auth_router, init_auth_module
 
 # Inicializar módulo auth (100% SQL Server)
-init_auth_module(None)  # MongoDB eliminado
+init_auth_module(db)  # Pasa StubDatabase para compatibilidad
 
 # Registrar router de auth
 api_router.include_router(get_auth_router())
@@ -4242,7 +4244,7 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                 # Determinar folio_inventario principal (el folio final más relevante)
                 folio_inventario_principal = lista_folios_fin[0] if lista_folios_fin else None
                 
-                orquestador = get_orquestador_service(None)  # MongoDB ELIMINADO
+                orquestador = get_orquestador_service(db)  # MongoDB ELIMINADO - StubDatabase
                 orq_resultado = await orquestador.procesar_analisis(
                     server_id=server_id,
                     server_name=server.get('name', ''),
@@ -4886,7 +4888,7 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
                 # Determinar folio_inventario principal para SR
                 folio_inventario_principal = lista_folios_fin[0] if lista_folios_fin else None
                 
-                orquestador = get_orquestador_service(None)  # MongoDB ELIMINADO
+                orquestador = get_orquestador_service(db)  # MongoDB ELIMINADO - StubDatabase
                 orq_resultado = await orquestador.procesar_analisis(
                     server_id=server_id,
                     server_name=server.get('name', ''),
@@ -16482,7 +16484,7 @@ async def get_estructura_organizacional(current_user: Dict = Depends(get_current
     Protegido por permiso granular SISTEMA_ESTRUCTURA_VER.
     Resolución: permisos directos → múltiples roles → rol único → fallback SuperAdmin.
     """
-    service = get_estructura_service(None)  # MongoDB ELIMINADO
+    service = get_estructura_service(db)  # MongoDB ELIMINADO - StubDatabase
     
     # FASE 6: Validación de permiso con múltiples roles
     tiene_permiso = await verificar_permiso_estructura_v6(current_user)
@@ -16524,7 +16526,7 @@ async def get_mapeo_servidores(current_user: Dict = Depends(get_current_user)):
     if current_user.get('role') not in ['SuperAdministrador', 'Administrador']:
         raise HTTPException(status_code=403, detail="No autorizado")
     
-    service = get_estructura_service(None)  # MongoDB ELIMINADO
+    service = get_estructura_service(db)  # MongoDB ELIMINADO - StubDatabase
     
     await service.escribir_bitacora(
         usuario_id=current_user.get('id', ''),
@@ -16545,7 +16547,7 @@ async def get_permisos_catalogo_v2(current_user: Dict = Depends(get_current_user
     if current_user.get('role') not in ['SuperAdministrador', 'Administrador']:
         raise HTTPException(status_code=403, detail="No autorizado")
     
-    service = get_estructura_service(None)  # MongoDB ELIMINADO
+    service = get_estructura_service(db)  # MongoDB ELIMINADO - StubDatabase
     
     await service.escribir_bitacora(
         usuario_id=current_user.get('id', ''),
@@ -17715,13 +17717,13 @@ app.include_router(router_fase2_operativo, prefix="/api/v2", tags=["Fase2-Operat
 # ============= SUBFASE 2B.5: SISTEMA DE NOTIFICACIONES WHATSAPP =============
 # Importar y registrar rutas de notificaciones (core transversal)
 from core.communications.routes import router as communications_router, init_notifications_routes
-init_notifications_routes(None)  # MongoDB ELIMINADO - Sistema opera en modo SQL-only
+init_notifications_routes(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
 app.include_router(communications_router, tags=["Notificaciones"])
 
 # ============= SUBFASE 2B.5.2: SCHEDULER AUTOMÁTICO =============
 # Sistema de jobs periódicos para SLA y notificaciones
 from core.scheduler.routes import router as scheduler_router, init_scheduler_routes
-init_scheduler_routes(None)  # MongoDB ELIMINADO - Sistema opera en modo SQL-only
+init_scheduler_routes(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
 app.include_router(scheduler_router, tags=["Scheduler"])
 
 # ============= CENTRO DE CONTROL EDARSA =============
@@ -17743,7 +17745,7 @@ from core.rbac.routes import router as rbac_router
 from core.rbac.service import RBACService
 # Inicializar RBAC (sembrar permisos y roles si no existen)
 try:
-    rbac_service = RBACService(None)  # MongoDB ELIMINADO - RBAC usa SQL Server
+    rbac_service = RBACService(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
     rbac_service.ensure_initialized()
     logger.info("RBAC Service inicializado (SQL Server)")
 except Exception as e:
@@ -17908,7 +17910,7 @@ async def startup_scheduler():
     """Inicia el scheduler de jobs automáticos."""
     try:
         from core.scheduler import start_scheduler
-        await start_scheduler(None)  # MongoDB ELIMINADO - Scheduler opera sin locks MongoDB
+        await start_scheduler(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
         logger.info("Scheduler iniciado correctamente (SQL-only mode)")
     except Exception as e:
         logger.error(f"Error iniciando scheduler: {e}")

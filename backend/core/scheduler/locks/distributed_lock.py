@@ -240,20 +240,24 @@ class LockManager:
     """
     Manager central de locks.
     
-    NOTA: En modo SQL-only (db=None), retorna NullLock que siempre permite ejecución.
+    NOTA: Con StubDatabase o db=None, retorna NullLock que siempre permite ejecución.
     """
     
     def __init__(self, db):
         self.db = db
-        if db is not None:
+        # Detectar si es StubDatabase
+        self._is_stub = db is not None and hasattr(db, '_collections') and db.__class__.__name__ == 'StubDatabase'
+        
+        if db is not None and not self._is_stub:
             self.collection = db[DistributedLock.COLLECTION_NAME]
+            logger.info("[LOCK_MANAGER] Inicializado con MongoDB")
         else:
             self.collection = None
-            logger.warning("[LOCK_MANAGER] Inicializado SIN MongoDB - Locks deshabilitados")
+            logger.info("[LOCK_MANAGER] Inicializado con StubDatabase - Usando NullLock")
     
     def get_lock(self, job_name: str) -> DistributedLock:
         """Crea una instancia de lock para un job."""
-        if self.db is None:
+        if self.db is None or self._is_stub:
             return NullLock(job_name)  # Retornar lock dummy
         return DistributedLock(self.db, job_name)
     

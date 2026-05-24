@@ -232,6 +232,12 @@ class InventariosDetectorJob:
         else:
             self.max_inventarios_por_ejecucion = 20
     
+    def _is_stub_db(self) -> bool:
+        """Detecta si self.db es StubDatabase."""
+        if self.db is None:
+            return True
+        return hasattr(self.db, '_collections') and self.db.__class__.__name__ == 'StubDatabase'
+    
     async def run(self, manual: bool = False, server_id_filter: str = None):
         """
         Ejecuta detección de inventarios nuevos.
@@ -242,6 +248,15 @@ class InventariosDetectorJob:
         """
         execution_type = "manual" if manual else "automatic"
         started_at = datetime.now(timezone.utc)
+        
+        # MongoDB ELIMINADO - Si db es StubDatabase, saltar ejecución
+        if self._is_stub_db():
+            logger.info(f"[INVENTARIOS_DETECTOR] SKIPPED - MongoDB eliminado, usando StubDatabase")
+            await self.job_logger.log_skipped(
+                job_name="inventarios_detector",
+                reason="MongoDB ELIMINADO - Job deshabilitado (StubDatabase)"
+            )
+            return
         
         logger.info(f"[INVENTARIOS_DETECTOR] Iniciando ejecución - {started_at.isoformat()}")
         

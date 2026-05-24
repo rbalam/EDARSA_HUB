@@ -64,24 +64,31 @@ class SchedulerManager:
     def __init__(self, db=None):
         """
         Args:
-            db: Conexión MongoDB (ELIMINADO - ahora acepta None para SQL-only mode)
+            db: Conexión MongoDB o StubDatabase (MongoDB ELIMINADO)
         """
-        # Evitar re-inicialización
+        # Evitar re-inicialización completa pero actualizar db si es mejor
         if SchedulerManager._initialized and hasattr(self, '_scheduler') and self._scheduler is not None:
+            # Si se pasa un db nuevo y el actual es None, actualizarlo
+            if db is not None and (not hasattr(self, 'db') or self.db is None):
+                self.db = db
+                logger.info("[SCHEDULER] Actualizado db reference")
             return
         
-        # NOTA: MongoDB ELIMINADO - Scheduler ahora opera sin locks distribuidos MongoDB
-        if db is None and not SchedulerManager._initialized:
-            logger.warning("[SCHEDULER] Inicializando SIN MongoDB - Locks distribuidos deshabilitados")
+        # Detectar si es StubDatabase
+        is_stub = db is not None and hasattr(db, '_collections') and db.__class__.__name__ == 'StubDatabase'
+        
+        # NOTA: MongoDB ELIMINADO - Scheduler opera con StubDatabase
+        if (db is None or is_stub) and not SchedulerManager._initialized:
+            logger.info("[SCHEDULER] Inicializando con StubDatabase - MongoDB ELIMINADO")
         
         if not SchedulerManager._initialized:
-            self.db = db  # Puede ser None
+            self.db = db  # StubDatabase o None
             self.config = get_scheduler_config()
             self._scheduler: Optional[AsyncIOScheduler] = None
             self._jobs: Dict[str, Any] = {}
             self._running = False
             SchedulerManager._initialized = True
-            logger.info("SchedulerManager inicializado (SQL-only mode)")
+            logger.info("SchedulerManager inicializado")
     
     def _create_scheduler(self) -> AsyncIOScheduler:
         """Crea instancia del scheduler APScheduler."""
@@ -927,14 +934,19 @@ def get_scheduler_manager(db=None) -> SchedulerManager:
     """
     Obtiene instancia del scheduler manager.
     
-    NOTA: MongoDB ELIMINADO - Ahora acepta db=None para modo SQL-only.
+    NOTA: MongoDB ELIMINADO - Ahora acepta StubDatabase o None.
     """
     global _scheduler_manager
     if _scheduler_manager is None:
-        # MongoDB ELIMINADO - Permitir inicialización sin db
-        if db is None:
-            logger.warning("[SCHEDULER] Inicializando sin MongoDB - Funcionalidad limitada")
+        # Detectar si es StubDatabase
+        is_stub = db is not None and hasattr(db, '_collections') and db.__class__.__name__ == 'StubDatabase'
+        if db is None or is_stub:
+            logger.info("[SCHEDULER] Creando SchedulerManager con StubDatabase")
         _scheduler_manager = SchedulerManager(db)
+    elif db is not None and (_scheduler_manager.db is None):
+        # Si ya existe pero con db=None, actualizar
+        _scheduler_manager.db = db
+        logger.info("[SCHEDULER] Actualizado db reference en SchedulerManager existente")
     return _scheduler_manager
 
 

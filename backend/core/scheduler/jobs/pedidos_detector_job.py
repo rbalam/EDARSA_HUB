@@ -74,6 +74,12 @@ class PedidosDetectorJob:
         self.config = config or {}
         self.job_logger = get_job_logger(db)
     
+    def _is_stub_db(self) -> bool:
+        """Detecta si self.db es StubDatabase."""
+        if self.db is None:
+            return True
+        return hasattr(self.db, '_collections') and self.db.__class__.__name__ == 'StubDatabase'
+    
     async def run(self, manual: bool = False, empresa_id_filter: str = None):
         """
         Ejecuta detección de pedidos nuevos.
@@ -91,6 +97,15 @@ class PedidosDetectorJob:
         """
         execution_type = "manual" if manual else "automatic"
         started_at = datetime.now(timezone.utc)
+        
+        # MongoDB ELIMINADO - Si db es StubDatabase, saltar ejecución
+        if self._is_stub_db():
+            logger.info(f"[PEDIDOS_DETECTOR] SKIPPED - MongoDB eliminado, usando StubDatabase")
+            await self.job_logger.log_skipped(
+                job_name="pedidos_detector",
+                reason="MongoDB ELIMINADO - Job deshabilitado (StubDatabase)"
+            )
+            return
         
         # Iniciar log de ejecución
         log_entry = await self.job_logger.start_execution(
