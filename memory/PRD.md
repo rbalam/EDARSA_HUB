@@ -99,6 +99,13 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
   - `POST /api/cava-socios/socios/{id}/botellas`
   - `POST /api/cava-socios/botellas/{id}/consumo`
 - [x] **Script SQL**: `/app/backend/scripts/create_cava_socios_tables.py`
+- [x] **Script RBAC**: `/app/backend/scripts/create_cava_socios_rbac.py` (9 módulos, 138 permisos)
+- [x] **Frontend completo** `/app/frontend/src/pages/cava-socios/`:
+  - `CavaSociosDashboard.jsx` - Dashboard con KPIs (Socios, Botellas, Valor, Pendientes)
+  - `SociosList.jsx` - Lista de socios con filtros y paginación
+  - `SocioForm.jsx` - Formulario crear/editar socio
+  - `SocioDetail.jsx` - Detalle socio con gestión de botellas y consumos
+- [x] **Menú lateral** integrado con submenús (Dashboard, Socios)
 
 #### Tablajería Fase 6: Inventarios, Costeo, Contabilidad (24 Mayo 2026) ✅ INTEGRADO
 - [x] **Credenciales hardcodeadas removidas** - Ahora usa variables de entorno `EDARSAHUB_*`
@@ -152,13 +159,10 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ⏳ Pendiente
 
-#### P1 - Alta Prioridad
-1. **Frontend Cava de Socios** - UI para gestión de socios y botellas
-2. **Script RBAC Cava de Socios** - Permisos para el módulo
-
 #### P2 - Media Prioridad
 1. **Flujos avanzados pipeline CRM** - Automatizaciones de etapas
 2. **Reportes exportables PDF** - Tablajería y Cava de Socios
+3. **Valor declarado de botellas** - Corregir respuesta del backend para incluir `valor_declarado` en la lista de botellas
 
 #### P3 - Backlog Técnico
 1. Optimizar pool de conexiones pymssql (timeouts 502 ocasionales)

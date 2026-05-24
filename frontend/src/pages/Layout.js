@@ -45,7 +45,8 @@ import {
   Activity,
   Truck,
   Receipt,
-  FileCheck
+  FileCheck,
+  Wine
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
@@ -122,6 +123,8 @@ const Layout = () => {
       'Tablajería': 'produccion',
       'Plantillas': 'produccion',
       'Órdenes': 'produccion',
+      'Cava de Socios': 'cava_socios',
+      'Socios': 'cava_socios',
       'Recursos Humanos': 'recursos_humanos',
       'Reportes BI': 'reportes_bi',
       'Catálogos': 'catalogos',
@@ -301,6 +304,26 @@ const Layout = () => {
           name: 'Plantillas',
           href: '/tablajeria/plantillas',
           icon: Layers,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        }
+      ]
+    },
+    { 
+      name: 'Cava de Socios', 
+      href: '/cava-socios', 
+      icon: Wine, 
+      roles: ['Usuario', 'Supervisor', 'Administrador'],
+      submenus: [
+        {
+          name: 'Dashboard',
+          href: '/cava-socios',
+          icon: PieChart,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Socios',
+          href: '/cava-socios/socios',
+          icon: Users,
           roles: ['Usuario', 'Supervisor', 'Administrador']
         }
       ]

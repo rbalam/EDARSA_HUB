@@ -48,6 +48,9 @@ import PlantillasPage from '@/pages/tablajeria/PlantillasPage';
 import OrdenesPage from '@/pages/tablajeria/OrdenesPage';
 import CapturaDirectaPage from '@/pages/tablajeria/CapturaDirectaPage';
 
+// Cava de Socios
+import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm } from '@/pages/cava-socios';
+
 import { isAuthenticated } from '@/lib/auth';
 
 // Portal de Proveedores (Subproyecto separado)
@@ -104,6 +107,12 @@ function App() {
             <Route path="tablajeria/ordenes" element={<OrdenesPage />} />
             <Route path="tablajeria/captura-directa" element={<CapturaDirectaPage />} />
             <Route path="tablajeria/plantillas" element={<PlantillasPage />} />
+            {/* Cava de Socios */}
+            <Route path="cava-socios" element={<CavaSociosDashboard />} />
+            <Route path="cava-socios/socios" element={<SociosList />} />
+            <Route path="cava-socios/socios/nuevo" element={<SocioForm />} />
+            <Route path="cava-socios/socios/:id" element={<SocioDetail />} />
+            <Route path="cava-socios/socios/:id/editar" element={<SocioForm />} />
             <Route path="recursos-humanos" element={<RecursosHumanos />} />
             <Route path="importador-rh" element={<ImportadorRH />} />
             <Route path="reportes-bi" element={<ReportesBI />} />
