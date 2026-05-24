@@ -76,6 +76,9 @@ function App() {
             <Route path="reportes" element={<Reportes />} />
             <Route path="compras" element={<Compras />} />
             <Route path="comercial" element={<Comercial />} />
+            {/* Rutas Comercial/Ventas - Integración Menú SQL (FASE 1A) */}
+            <Route path="comercial/clientes" element={<Navigate to="/crm/cuentas" replace />} />
+            <Route path="comercial/costos-margenes" element={<Navigate to="/comercial" replace />} />
             {/* CRM Enterprise */}
             <Route path="crm" element={<Navigate to="/crm/dashboard" replace />} />
             <Route path="crm/dashboard" element={<CRMDashboard />} />

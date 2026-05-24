@@ -23,6 +23,18 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
+#### FASE 1A - Comercial/Ventas Integración Menú SQL (24 Mayo 2026) ✅ COMPLETADO
+- [x] **Validación de rutas:**
+  - `/comercial` - Dashboard funciona (blindado)
+  - `/comercial/clientes` → Redirige a `/crm/cuentas`
+  - `/comercial/costos-margenes` → Redirige a `/comercial` (temporal)
+  - `/crm/cotizaciones`, `/crm/pedidos`, `/crm/remisiones` - Funcionan
+- [x] **Menú SQL validado:** 28 módulos, Comercial con 6 submenús
+- [x] **Pruebas no regresión:** 29/29 pasaron
+- [x] **Correcciones menores:** 2 rutas redirect en App.js
+- [x] **Reporte técnico:** `/app/docs/reports/FASE_1A_COMERCIAL_VENTAS_MENU_GOBERNADO.md`
+- [x] **Rutas canónicas faltantes documentadas** (para FASE 1B+)
+
 #### FASE 0.6 - Migración Layout.js a Menús SQL (24 Mayo 2026) ✅ COMPLETADO
 - [x] **Frontend Layout.js modificado**:
   - Carga dinámica de menús desde `/api/sistema/menus/usuario`
