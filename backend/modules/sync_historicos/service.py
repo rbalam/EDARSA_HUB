@@ -333,7 +333,7 @@ class SyncHistoricosService:
                     # Calcular ventana operativa para esta fecha
                     # Crear un timestamp ficticio para calcular
                     ts = datetime.combine(fecha_actual, time(14, 0))  # 14:00 está dentro de jornada
-                    ts = MEXICO_TZ.localize(ts)
+                    ts = ts.replace(tzinfo=MEXICO_TZ)  # zoneinfo no usa .localize()
                     
                     fecha_op, v_inicio, v_fin, cruza = get_sync_operational_window(
                         ts,
@@ -692,7 +692,7 @@ class SyncHistoricosService:
                 fecha_actual = fecha_inicio
                 while fecha_actual <= fecha_fin:
                     ts = datetime.combine(fecha_actual, time(14, 0))
-                    ts = MEXICO_TZ.localize(ts)
+                    ts = ts.replace(tzinfo=MEXICO_TZ)  # zoneinfo no usa .localize()
                     
                     fecha_op, v_inicio, v_fin, cruza = get_sync_operational_window(
                         ts,

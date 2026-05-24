@@ -21,6 +21,19 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (24 Mayo 2026)
 
+### ⏸️ Bloqueado - Requiere Acción del Usuario
+
+#### FASE 1B-R3 - Validación Job Sync_Ventas_PorHora (24 Mayo 2026) ⏸️ PARO CONTROLADO
+- [x] **Archivos revisados**: `sync_ventas.py`, `service.py`, `models.py`, `repository.py`
+- [x] **Bug corregido**: `zoneinfo.ZoneInfo` no tiene `.localize()` → usar `.replace(tzinfo=)`
+- [x] **Protecciones validadas**: Anti-$0 falso, no fechas futuras, fecha operativa 06:00
+- [x] **Endpoint validado**: `/api/comercial/ventas-tiempo` 100% NO-LIVE (solo EDARSAHUB SQL)
+- [x] **Diagnóstico completo**: 306 registros existentes, última fecha 2026-05-15 (9 días stale)
+- [x] **Reporte técnico**: `/app/docs/reports/FASE_1B_R3_SYNC_VENTAS_PORHORA_JOB_VALIDACION.md`
+- [⚠️] **BLOQUEADO**: Configuración de servidores en `Servidores_Conexiones` incorrecta
+  - Host/Database/Username apuntan a EDARSAHUB, no a servidores remotos reales
+  - **Acción requerida**: DBA debe corregir datos de conexión de servidores MPRO/SoftRestaurant
+
 ### ✅ Completado
 
 #### FASE 1B-R2 - Migración Ventas por Hora a EDARSAHUB SQL (24 Mayo 2026) ✅ COMPLETADO
