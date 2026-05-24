@@ -203,9 +203,20 @@ def get_stub_database() -> StubDatabase:
     return _stub_db
 
 
+def is_stub_database(db) -> bool:
+    """
+    Verifica si el objeto db es un StubDatabase.
+    Útil para que los servicios detecten si están en modo SQL-only.
+    """
+    if db is None:
+        return True
+    return isinstance(db, StubDatabase)
+
+
 __all__ = [
     'StubDatabase',
     'StubCollection',
     'StubCursor',
     'get_stub_database',
+    'is_stub_database',
 ]

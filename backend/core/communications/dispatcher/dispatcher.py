@@ -41,15 +41,29 @@ class NotificationDispatcher:
     2. Procesar cola
     3. Enviar via provider
     4. Registrar resultado
+    
+    MIGRACIÓN SQL SERVER (Mayo 2026):
+    - Operaciones de MongoDB pasan por StubDatabase
     """
     
     def __init__(self, db):
         self.db = db
+        self._is_stub = self._check_is_stub(db)
         self.repository = NotificationRepository(db)
         self.dedup_service = DeduplicationService(db)
         self.template_service = TemplateService(db)
         self._providers: Dict[str, BaseProvider] = {}
         self._worker_id = f"dispatcher_{uuid.uuid4().hex[:8]}"
+    
+    def _check_is_stub(self, db) -> bool:
+        """Verifica si estamos usando StubDatabase."""
+        if db is None:
+            return True
+        try:
+            from core.mongo_stub import StubDatabase
+            return isinstance(db, StubDatabase)
+        except ImportError:
+            return False
     
     async def initialize_providers(self):
         """
@@ -85,7 +99,11 @@ class NotificationDispatcher:
         except Exception as e:
             logger.warning(f"No se pudo inicializar Twilio provider: {e}")
         
-        # 3. Cargar providers adicionales de BD
+        # 3. Cargar providers adicionales de BD (omitir si en modo stub)
+        if self._is_stub:
+            logger.info("[DISPATCHER] Modo SQL-only: omitiendo carga de providers desde MongoDB")
+            return
+        
         try:
             providers = await self.db.notification_provider_config.find(
                 {"activo": True},

@@ -37,11 +37,28 @@ class ConfiguracionInvalidaError(AuditoriaProgramadaError):
 
 
 class AuditoriaProgramadaService:
-    """Servicio para gestión de auditorías programadas (sync)."""
+    """
+    Servicio para gestión de auditorías programadas (sync).
+    
+    MIGRACIÓN SQL SERVER (Mayo 2026):
+    - Operaciones críticas migradas a SQL
+    - MongoDB pasa por StubDatabase
+    """
     
     def __init__(self, db):
         self.db = db
+        self._is_stub = self._check_is_stub(db)
         self.repo = AuditoriaProgramadaRepository(db)
+    
+    def _check_is_stub(self, db) -> bool:
+        """Verifica si estamos usando StubDatabase."""
+        if db is None:
+            return True
+        try:
+            from core.mongo_stub import StubDatabase
+            return isinstance(db, StubDatabase)
+        except ImportError:
+            return False
     
     def crear(self, data: AuditoriaProgramadaCreate) -> Dict:
         """Crea una nueva auditoría programada."""
@@ -235,6 +252,11 @@ class AuditoriaProgramadaService:
             "created_by": auditoria.get("created_by", "SCHEDULER"),
             "observaciones": f"Generado automáticamente - {auditoria['nombre']}"
         }
+        
+        # En modo SQL-only, omitir inserción en MongoDB
+        if self._is_stub:
+            logger.info(f"[AUDITORIA_PROG] Modo SQL-only: workflow no insertado en MongoDB")
+            return workflow_data["id"]
         
         # Inserción directa con PyMongo (sync) para evitar conflicto async/sync
         self.db.workflow_inventarios.insert_one(workflow_data)

@@ -40,14 +40,28 @@ class NotificationOrchestratorService:
     - Configuración del evento
     - Estado del destinatario
     - Reglas de deduplicación
+    
+    MIGRACIÓN SQL SERVER (Mayo 2026):
+    - Operaciones de MongoDB pasan por StubDatabase
     """
     
     def __init__(self, db):
         self.db = db
+        self._is_stub = self._check_is_stub(db)
         self.repository = NotificationRepository(db)
         self.dedup_service = DeduplicationService(db)
         self.template_service = TemplateService(db)
         self._dispatcher: Optional[NotificationDispatcher] = None
+    
+    def _check_is_stub(self, db) -> bool:
+        """Verifica si estamos usando StubDatabase."""
+        if db is None:
+            return True
+        try:
+            from core.mongo_stub import StubDatabase
+            return isinstance(db, StubDatabase)
+        except ImportError:
+            return False
     
     async def _get_dispatcher(self) -> NotificationDispatcher:
         """Obtiene o crea instancia del dispatcher."""
@@ -221,6 +235,17 @@ class NotificationOrchestratorService:
         Returns:
             Dict con name, email, telefono o None
         """
+        # En modo stub, intentar obtener desde SQL
+        if self._is_stub:
+            try:
+                from modules.fase2_operativo.sql_repository import obtener_usuario_por_id
+                user = await obtener_usuario_por_id(user_id)
+                if user:
+                    return user
+            except Exception:
+                pass
+            return None
+        
         user = await self.db.users.find_one(
             {"id": user_id, "active": True},
             {"_id": 0, "id": 1, "name": 1, "email": 1, "telefono": 1}

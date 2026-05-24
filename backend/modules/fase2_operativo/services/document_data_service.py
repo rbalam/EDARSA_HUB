@@ -34,6 +34,9 @@ class DocumentDataService:
     necesarios para generar documentos de un workflow.
     
     Es la ÚNICA fuente de datos para Excel y PDF.
+    
+    MIGRACIÓN SQL SERVER (Mayo 2026):
+    - Operaciones de MongoDB pasan por StubDatabase sin fallar
     """
     
     def __init__(self, db):
@@ -44,22 +47,41 @@ class DocumentDataService:
             db: Instancia de la base de datos MongoDB
         """
         self.db = db
+        self._is_stub = self._check_is_stub(db)
         self.workflow_repo = WorkflowRepository(db)
         self.detalle_repo = DetalleDiferenciasRepository(db)
         self.justificacion_repo = JustificacionRepository(db)
         self.auditoria_repo = AuditoriaRepository(db)
         self.tarea_repo = TareaRepository(db)
     
+    def _check_is_stub(self, db) -> bool:
+        """Verifica si estamos usando StubDatabase."""
+        if db is None:
+            return True
+        try:
+            from core.mongo_stub import StubDatabase
+            return isinstance(db, StubDatabase)
+        except ImportError:
+            return False
+    
     async def _obtener_workflow_por_uuid(self, workflow_id: str) -> Optional[Dict]:
         """
         Obtiene un workflow buscando por el campo 'id' (UUID).
-        
-        Args:
-            workflow_id: UUID del workflow
-            
-        Returns:
-            Workflow o None
+        Migrado: intenta SQL primero, luego MongoDB legacy.
         """
+        # Intentar desde SQL Server primero
+        try:
+            from ..sql_repository import obtener_workflow
+            workflow = await obtener_workflow(workflow_id)
+            if workflow:
+                return workflow
+        except Exception as e:
+            logger.debug(f"Error buscando workflow en SQL: {e}")
+        
+        # Fallback a MongoDB (StubDatabase retornará None)
+        if self._is_stub:
+            return None
+        
         doc = self.db.workflow_inventarios.find_one({"id": workflow_id})
         if doc and "_id" in doc:
             doc["_id"] = str(doc["_id"])

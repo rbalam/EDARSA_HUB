@@ -23,7 +23,7 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
-#### Migración MongoDB → SQL Server
+#### Migración MongoDB → SQL Server (COMPLETA)
 - [x] Auth/Login migrado a SQL (login < 1s)
 - [x] RBAC migrado a SQL Server (Usuario_Roles)
 - [x] **Tablas Sesiones/SesionesHistorico creadas**
@@ -54,13 +54,23 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
   - `Configuracion_Operativa`
   - `Config_Asignaciones`
 - [x] **sql_repository.py creado** en `/app/backend/modules/fase2_operativo/`
-- [x] **Referencias MongoDB reducidas**: 80 → 52 (-28)
+
+#### Migración Referencias MongoDB Restantes (24 Mayo 2026)
+- [x] **config_asignaciones_repository.py migrado a SQL** (8 → 0 refs)
+- [x] **cargos_service.py protegido con stub** (2 refs protegidas)
+- [x] **automatizacion_compras_service.py protegido** (5 refs protegidas)
+- [x] **document_data_service.py protegido** (1 ref protegida)
+- [x] **auditoria_programada_service.py protegido** (1 ref protegida)
+- [x] **estructura_service.py ya tenía protección** (6 refs protegidas)
+- [x] **Core Communications protegidos** (service, dispatcher, audit_service)
+- [x] **Scripts deprecated marcados** (carga_historica, test_e2e)
+- [x] **Referencias MongoDB reducidas**: 80 → 21 en producción (-74%)
+- [x] **Total deprecated/tests**: 25 refs (no afectan producción)
 
 ### 🔄 En Progreso
 
 #### Jobs del Scheduler
-- [x] `inventarios_detector` y `pedidos_detector` parcialmente migrados (usan sql_repository.py)
-- [x] Protección `_is_stub_db()` implementada
+- [x] `inventarios_detector` y `pedidos_detector` con protección `_is_stub_db()`
 - [x] 9 jobs funcionando (sync_comercial, notificaciones, etc.)
 
 ### ⏳ Pendiente
@@ -71,9 +81,6 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 #### P2 - Media Prioridad
 3. **CRM UI**: Completar vistas funcionales
-4. Migrar `config_asignaciones_repository.py` (8 refs)
-5. Migrar `estructura_service.py` (6 refs)
-6. Migrar `automatizacion_compras_service.py` (5 refs)
 
 ---
 

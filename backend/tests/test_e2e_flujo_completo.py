@@ -2,6 +2,11 @@
 """
 EDARSA HUB - Script de Validación E2E Flujo Completo
 =====================================================
+
+⚠️ DEPRECATED (Mayo 2026): Este script usa MongoDB que ha sido reemplazado por SQL Server.
+Las referencias a self.db.* y conexiones directas a MongoDB ya no funcionan en producción.
+Este archivo se mantiene solo por referencia histórica.
+
 Valida la cadena completa:
 1. Auditoría programada → crea workflow
 2. Workflow → cierra correctamente  

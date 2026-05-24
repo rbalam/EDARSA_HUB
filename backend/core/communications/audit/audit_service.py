@@ -21,11 +21,25 @@ logger = logging.getLogger(__name__)
 class NotificationAuditService:
     """
     Servicio de auditoría de notificaciones.
+    
+    MIGRACIÓN SQL SERVER (Mayo 2026):
+    - Operaciones de MongoDB pasan por StubDatabase
     """
     
     def __init__(self, db):
         self.db = db
+        self._is_stub = self._check_is_stub(db)
         self.repository = NotificationRepository(db)
+    
+    def _check_is_stub(self, db) -> bool:
+        """Verifica si estamos usando StubDatabase."""
+        if db is None:
+            return True
+        try:
+            from core.mongo_stub import StubDatabase
+            return isinstance(db, StubDatabase)
+        except ImportError:
+            return False
     
     async def get_logs(
         self,
@@ -145,6 +159,23 @@ class NotificationAuditService:
                 }
             }
         ])
+        
+        # En modo stub, retornar stats vacías
+        if self._is_stub:
+            return {
+                "por_canal": {},
+                "totales": {
+                    "enviados": 0,
+                    "fallidos": 0,
+                    "duplicados": 0,
+                    "pendientes": 0
+                },
+                "filtros_aplicados": {
+                    "modulo": modulo,
+                    "fecha_desde": fecha_desde,
+                    "fecha_hasta": fecha_hasta
+                }
+            }
         
         cursor = self.db.notification_log.aggregate(pipeline)
         

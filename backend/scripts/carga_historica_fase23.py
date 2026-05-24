@@ -2,6 +2,10 @@
 FASE 2.3 - CARGA HISTÓRICA 24 MESES EN kpis_comercial
 =====================================================
 
+⚠️ DEPRECATED (Mayo 2026): Este script usa MongoDB que ha sido reemplazado por SQL Server.
+Las referencias a self.db.* ya no funcionan en producción. Este archivo se mantiene
+solo por referencia histórica.
+
 PROPÓSITO:
 Cargar datos históricos de los últimos 24 meses en la colección kpis_comercial
 usando las funciones de servicio existentes y el UPSERT idempotente.

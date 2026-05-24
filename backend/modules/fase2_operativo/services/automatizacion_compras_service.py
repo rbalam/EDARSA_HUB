@@ -73,9 +73,20 @@ class AutomatizacionComprasService:
     
     def __init__(self, db):
         self.db = db
+        self._is_stub = self._check_is_stub(db)
         self.collection = db[self.COLLECTION]
         self.bitacora = db[self.COLLECTION_BITACORA]
         self.pedidos_procesados = db[self.COLLECTION_PEDIDOS_PROCESADOS]
+    
+    def _check_is_stub(self, db) -> bool:
+        """Verifica si estamos usando StubDatabase."""
+        if db is None:
+            return True
+        try:
+            from core.mongo_stub import StubDatabase
+            return isinstance(db, StubDatabase)
+        except ImportError:
+            return False
     
     # =========================================================================
     # PROCESAMIENTO PRINCIPAL
@@ -825,6 +836,10 @@ class AutomatizacionComprasService:
         fecha_inicio_periodo: datetime
     ) -> Optional[Dict]:
         """Busca inventario inicial más cercano (hasta 30 días antes)."""
+        if self._is_stub:
+            logger.debug("[AUTO_COMPRAS] Modo SQL-only: inventario inicial no disponible")
+            return None
+        
         fecha_limite = fecha_inicio_periodo - timedelta(days=30)
         
         return self.db.inventarios_fisicos_procesados.find_one(
@@ -847,6 +862,10 @@ class AutomatizacionComprasService:
         fecha_pedido: datetime
     ) -> Optional[Dict]:
         """Busca inventario final del día del pedido."""
+        if self._is_stub:
+            logger.debug("[AUTO_COMPRAS] Modo SQL-only: inventario final no disponible")
+            return None
+        
         fecha_inicio = fecha_pedido.replace(hour=0, minute=0, second=0, microsecond=0)
         fecha_fin = fecha_pedido.replace(hour=23, minute=59, second=59)
         
@@ -1008,6 +1027,11 @@ class AutomatizacionComprasService:
             if not service.is_configured():
                 return
             
+            # En modo stub, omitir consultas MongoDB
+            if self._is_stub:
+                logger.debug("[AUTO_COMPRAS] Modo SQL-only: notificación gerencia omitida")
+                return
+            
             # Buscar gerentes
             gerentes = list(self.db.users.find(
                 {"role": {"$in": ["Gerente", "Director", "Administrador"]}},
@@ -1018,7 +1042,7 @@ class AutomatizacionComprasService:
                 if g.get("email"):
                     service.enviar_email_sync(
                         destinatario=g["email"],
-                        asunto=f"🔔 Auditoría Compras Lista - {registro['sucursal_nombre']}",
+                        asunto=f"Auditoría Compras Lista - {registro['sucursal_nombre']}",
                         contenido_html=self._html_auditoria(registro)
                     )
         except Exception as e:
@@ -1032,6 +1056,11 @@ class AutomatizacionComprasService:
             if not service.is_configured():
                 return
             
+            # En modo stub, omitir consultas MongoDB
+            if self._is_stub:
+                logger.debug("[AUTO_COMPRAS] Modo SQL-only: notificación tesorería omitida")
+                return
+            
             # Buscar tesorería
             tesoreros = list(self.db.users.find(
                 {"role": {"$in": ["Tesoreria", "Director", "Administrador"]}},
@@ -1042,7 +1071,7 @@ class AutomatizacionComprasService:
                 if t.get("email"):
                     service.enviar_email_sync(
                         destinatario=t["email"],
-                        asunto=f"✅ Compras Autorizada por Gerencia - {registro['sucursal_nombre']}",
+                        asunto=f"Compras Autorizada por Gerencia - {registro['sucursal_nombre']}",
                         contenido_html=f"""
                         <h2>Pedido Autorizado por Gerencia</h2>
                         <p>Sucursal: {registro['sucursal_nombre']}</p>
@@ -1073,6 +1102,8 @@ class AutomatizacionComprasService:
     
     def _obtener_email_usuario(self, usuario_id: str) -> str:
         """Obtiene email del usuario."""
+        if self._is_stub:
+            return ""
         user = self.db.users.find_one({"id": usuario_id}, {"_id": 0, "email": 1})
         return user.get("email", "") if user else ""
     

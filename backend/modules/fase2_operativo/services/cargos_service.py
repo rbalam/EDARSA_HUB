@@ -103,10 +103,21 @@ class CargosService:
     
     def __init__(self, db):
         self.db = db
+        self._is_stub = self._check_is_stub(db)
         self.cargos_repo = CargosEconomicosRepository(db)
         self.log_repo = CargosLogRepository(db)
         self.responsabilidad_repo = ResponsabilidadRepository(db)
         self.workflow_repo = WorkflowRepository(db)
+    
+    def _check_is_stub(self, db) -> bool:
+        """Verifica si estamos usando StubDatabase."""
+        if db is None:
+            return True
+        try:
+            from core.mongo_stub import StubDatabase
+            return isinstance(db, StubDatabase)
+        except ImportError:
+            return False
     
     # ==================== ELEGIBILIDAD ====================
     
@@ -774,6 +785,11 @@ class CargosService:
             responsable_id = cargo.get("responsable_id")
             if not responsable_id:
                 logger.debug("Cargo sin responsable_id, notificación omitida")
+                return
+            
+            # En modo stub, omitir consultas MongoDB
+            if self._is_stub:
+                logger.debug("[CARGOS] Modo SQL-only: notificación omitida")
                 return
             
             usuario = self.db.users.find_one(
