@@ -23,15 +23,36 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
-#### FASE 0 - Estabilización Arquitectónica (24 Mayo 2026) ✅ NUEVO
+#### FASE 0.6 - Migración Layout.js a Menús SQL (24 Mayo 2026) ✅ COMPLETADO
+- [x] **Frontend Layout.js modificado**:
+  - Carga dinámica de menús desde `/api/sistema/menus/usuario`
+  - Sistema de fallback a menús hardcodeados
+  - Renderizado separado: Módulos, Satélites (amber), Portales (azul), Sistema
+  - Indicador de fuente de menús en modo desarrollo
+- [x] **Validaciones ejecutadas** (29/29 pasaron):
+  - Login funciona ✅
+  - Auth SQL-first ✅
+  - Endpoint menus responde (28 módulos) ✅
+  - POS y Comandero como satélites separados ✅
+  - Portales contemplados ✅
+  - No errores 500 ✅
+  - No dependencia MongoDB ✅
+- [x] **Reporte técnico generado**: `/app/docs/reports/FASE_0_6_MIGRACION_LAYOUT_MENUS_SQL.md`
+
+#### FASE 0.5 - Validación Arquitectónica (24 Mayo 2026) ✅
+- [x] Validación de estructura de tablas Sistema_*
+- [x] Verificación de no regresión
+- [x] Reporte: `/app/docs/reports/FASE_0_5_VALIDACION_ARQUITECTURA_MENUS_Y_COMERCIAL.md`
+
+#### FASE 0 - Estabilización Arquitectónica (24 Mayo 2026) ✅
 - [x] **Sistema de Menús Gobernados**:
-  - Tabla `Sistema_Modulos`: 27 módulos según manifiesto arquitectónico
-  - Tabla `Sistema_ModulosMenus`: 23 menús con rutas y permisos
+  - Tabla `Sistema_Modulos`: 28 módulos según manifiesto arquitectónico
+  - Tabla `Sistema_ModulosMenus`: 52 menús con rutas y permisos
   - Tabla `Sistema_ModulosPermisos`: Estructura para permisos granulares
   - API: `/api/sistema/menus/usuario` - Menús filtrados por permisos
 - [x] **Módulos registrados**:
-  - 19 Principales (Dirección, Comercial, Compras, Inventarios, Finanzas, etc.)
-  - 4 Satélites (POS, EDARSA GO, Chef IA)
+  - 21 Principales (Dirección, Comercial, Compras, Inventarios, Finanzas, etc.)
+  - 4 Satélites (Comandero, POS, EDARSA GO, Chef IA)
   - 3 Portales (Proveedores, Comisionistas, Clientes)
 - [x] **Archivos creados**:
   - `/app/backend/modules/sistema/menu_service.py`

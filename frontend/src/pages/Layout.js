@@ -256,10 +256,6 @@ const Layout = () => {
     return false;
   };
 
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />;
-  }
-
   // Toggle submenu expansion
   const toggleSubmenu = (menuName) => {
     setExpandedMenus(prev => ({
@@ -475,6 +471,88 @@ const Layout = () => {
   const filteredModulos = modulos.filter(item => hasAccess(item));
   const filteredSistema = sistema.filter(item => hasAccess(item));
 
+  // ==================================================
+  // MENÚS DINÁMICOS DESDE SQL (FASE 0.6)
+  // ==================================================
+  
+  // Transformar menús SQL a estructura renderizable
+  const transformSqlMenus = useMemo(() => {
+    if (!sqlMenus || sqlMenus.length === 0) return null;
+    
+    const principales = [];
+    const satelites = [];
+    const portales = [];
+    const sistemaItems = [];
+    
+    sqlMenus.forEach(modulo => {
+      const tipo = modulo.tipo || 'principal';
+      const menus = modulo.menus || [];
+      
+      // Mapear a estructura del componente
+      const moduloTransformado = {
+        name: modulo.nombre || modulo.codigo,
+        href: menus[0]?.ruta || '#',
+        icon: ICON_MAP[modulo.icono] || LayoutDashboard,
+        codigo: modulo.codigo,
+        submenus: menus.length > 1 ? menus.map(m => ({
+          name: m.nombre,
+          href: m.ruta,
+          icon: ICON_MAP[m.icono] || ChevronRight
+        })) : [],
+        // Si solo tiene 1 menú, usar su ruta directamente
+        ...(menus.length === 1 && { href: menus[0].ruta })
+      };
+      
+      // Clasificar por tipo
+      if (tipo === 'satelite') {
+        satelites.push(moduloTransformado);
+      } else if (tipo === 'portal') {
+        portales.push(moduloTransformado);
+      } else if (modulo.codigo?.startsWith('SISTEMA_') || modulo.codigo === 'CENTRO_CONTROL') {
+        // Extraer ítems de sistema del módulo SISTEMA
+        if (menus.length > 0) {
+          menus.forEach(m => {
+            sistemaItems.push({
+              name: m.nombre,
+              href: m.ruta,
+              icon: ICON_MAP[m.icono] || Settings
+            });
+          });
+        }
+      } else {
+        principales.push(moduloTransformado);
+      }
+    });
+    
+    return { principales, satelites, portales, sistema: sistemaItems };
+  }, [sqlMenus]);
+  
+  // Determinar qué menús usar
+  const menusFinal = useMemo(() => {
+    if (useSqlMenus && transformSqlMenus) {
+      return {
+        modulos: transformSqlMenus.principales,
+        satelites: transformSqlMenus.satelites,
+        portales: transformSqlMenus.portales,
+        sistema: transformSqlMenus.sistema,
+        source: 'SQL'
+      };
+    }
+    // Fallback hardcodeado
+    return {
+      modulos: filteredModulos,
+      satelites: [],
+      portales: [],
+      sistema: filteredSistema,
+      source: 'FALLBACK'
+    };
+  }, [useSqlMenus, transformSqlMenus, filteredModulos, filteredSistema]);
+
+  // Verificar autenticación DESPUÉS de todos los hooks
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50" data-testid="layout">
       {/* Mobile sidebar toggle */}
@@ -508,10 +586,17 @@ const Layout = () => {
           </div>
 
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto" data-testid="sidebar-nav">
-            {/* Sección: Módulos */}
+            {/* Indicador de fuente de menús (solo dev) */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="px-4 py-1 text-[9px] text-zinc-600">
+                Menús: {menusFinal.source}
+              </div>
+            )}
+            
+            {/* Sección: Módulos Principales */}
             <div className="mb-4">
               <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider px-4 mb-2">Módulos</p>
-              {filteredModulos.map((item) => {
+              {menusFinal.modulos.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.href;
                 const hasSubmenus = item.submenus && item.submenus.length > 0;
@@ -615,11 +700,131 @@ const Layout = () => {
               })}
             </div>
 
+            {/* Sección: Satélites Operativos (Solo si hay) */}
+            {menusFinal.satelites && menusFinal.satelites.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-amber-500/80 uppercase tracking-wider px-4 mb-2">
+                  Satélites
+                </p>
+                {menusFinal.satelites.map((item) => {
+                  const Icon = item.icon || Smartphone;
+                  const isActive = location.pathname === item.href || location.pathname.startsWith(item.href?.split('/')[1] ? `/${item.href.split('/')[1]}` : '');
+                  const hasSubmenus = item.submenus && item.submenus.length > 0;
+                  const isExpanded = expandedMenus[item.name];
+                  
+                  return (
+                    <div key={item.name}>
+                      {hasSubmenus ? (
+                        <div className="flex items-center">
+                          <Link
+                            to={item.href}
+                            onClick={() => {
+                              setSidebarOpen(false);
+                              if (!isExpanded) setExpandedMenus(prev => ({ ...prev, [item.name]: true }));
+                            }}
+                            className={`flex-1 flex items-center gap-3 px-4 py-2.5 rounded-l-md transition-colors ${
+                              isActive
+                                ? 'bg-amber-900/30 text-amber-300 border-l-2 border-amber-500' 
+                                : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                            }`}
+                            data-testid={`nav-satelite-${item.name?.toLowerCase().replace(/\s+/g, '-')}`}
+                          >
+                            <Icon className="h-5 w-5" />
+                            <span className="font-medium flex-1 text-left text-sm">{item.name}</span>
+                          </Link>
+                          <button
+                            onClick={() => toggleSubmenu(item.name)}
+                            className={`px-2 py-2.5 rounded-r-md transition-colors ${
+                              isActive
+                                ? 'bg-amber-900/30 text-amber-300' 
+                                : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                            }`}
+                          >
+                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <Link
+                          to={item.href}
+                          onClick={() => setSidebarOpen(false)}
+                          className={`flex items-center gap-3 px-4 py-2.5 rounded-md transition-colors ${
+                            isActive 
+                              ? 'bg-amber-900/30 text-amber-300 border-l-2 border-amber-500' 
+                              : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                          }`}
+                          data-testid={`nav-satelite-${item.name?.toLowerCase().replace(/\s+/g, '-')}`}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span className="font-medium text-sm">{item.name}</span>
+                        </Link>
+                      )}
+                      
+                      {/* Submenús de satélite */}
+                      {hasSubmenus && isExpanded && (
+                        <div className="ml-4 mt-1 space-y-1 border-l border-amber-700/30 pl-3">
+                          {item.submenus.map((submenu) => {
+                            const SubIcon = submenu.icon || ChevronRight;
+                            const isSubActive = location.pathname === submenu.href;
+                            
+                            return (
+                              <Link
+                                key={submenu.name}
+                                to={submenu.href}
+                                onClick={() => setSidebarOpen(false)}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm ${
+                                  isSubActive 
+                                    ? 'bg-amber-900/20 text-amber-200' 
+                                    : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                                }`}
+                              >
+                                <SubIcon className="h-4 w-4" />
+                                <span className="font-medium">{submenu.name}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Sección: Portales Externos (Solo si hay) */}
+            {menusFinal.portales && menusFinal.portales.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-blue-500/80 uppercase tracking-wider px-4 mb-2">
+                  Portales
+                </p>
+                {menusFinal.portales.map((item) => {
+                  const Icon = item.icon || LinkIcon;
+                  const isActive = location.pathname === item.href;
+                  
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-2.5 rounded-md transition-colors ${
+                        isActive 
+                          ? 'bg-blue-900/30 text-blue-300 border-l-2 border-blue-500' 
+                          : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                      }`}
+                      data-testid={`nav-portal-${item.name?.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="font-medium text-sm">{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Sección: Sistema */}
             <div>
               <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider px-4 mb-2">Sistema</p>
-              {filteredSistema.map((item) => {
-                const Icon = item.icon;
+              {menusFinal.sistema.map((item) => {
+                const Icon = item.icon || Settings;
                 const isActive = location.pathname === item.href;
                 
                 return (
@@ -632,7 +837,7 @@ const Layout = () => {
                         ? 'bg-zinc-800 text-white' 
                         : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                     }`}
-                    data-testid={`nav-${item.name.toLowerCase()}`}
+                    data-testid={`nav-${item.name?.toLowerCase().replace(/\s+/g, '-')}`}
                   >
                     <Icon className="h-5 w-5" />
                     <span className="font-medium">{item.name}</span>
