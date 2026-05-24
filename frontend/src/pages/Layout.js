@@ -46,10 +46,68 @@ import {
   Truck,
   Receipt,
   FileCheck,
-  Wine
+  Wine,
+  Smartphone,
+  Link as LinkIcon,
+  ChefHat,
+  CreditCard,
+  LayoutGrid,
+  Calculator,
+  ShoppingBag,
+  Users2
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api';
+
+// Mapeo de nombres de iconos a componentes Lucide
+const ICON_MAP = {
+  'PieChart': PieChart,
+  'TrendingUp': TrendingUp,
+  'Target': Target,
+  'Building2': Building2,
+  'FileCheck': FileCheck,
+  'FileText': FileText,
+  'Package': Package,
+  'Truck': Truck,
+  'Calculator': Calculator,
+  'ShoppingCart': ShoppingCart,
+  'Warehouse': Warehouse,
+  'Boxes': Package,
+  'Beef': Beef,
+  'Layers': Layers,
+  'FilePlus': FilePlus,
+  'Wine': Wine,
+  'Users': Users,
+  'DollarSign': DollarSign,
+  'UserCircle': UserCircle,
+  'Upload': Upload,
+  'BarChart3': BarChart3,
+  'BookOpen': BookOpen,
+  'Shield': Shield,
+  'Server': Server,
+  'Clock': Clock,
+  'CalendarCheck': CalendarCheck,
+  'UserCog': UserCog,
+  'Database': Database,
+  'TableProperties': TableProperties,
+  'Bell': Bell,
+  'Settings': Settings,
+  'ClipboardList': ClipboardList,
+  'ShoppingBag': ShoppingBag,
+  'CreditCard': CreditCard,
+  'LayoutGrid': LayoutGrid,
+  'Receipt': Receipt,
+  'Smartphone': Smartphone,
+  'Link': LinkIcon,
+  'ChefHat': ChefHat,
+  'Users2': Users2,
+  'UserPlus': UserPlus,
+  'Briefcase': Briefcase,
+  'Kanban': Kanban,
+  'Factory': Factory,
+  'Key': Key,
+  'Activity': Activity,
+};
 
 const Layout = () => {
   const location = useLocation();
@@ -58,6 +116,36 @@ const Layout = () => {
   const [expandedMenus, setExpandedMenus] = useState({});
   const [menuPermissions, setMenuPermissions] = useState({});
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  
+  // NUEVO: Estado para menús desde SQL
+  const [sqlMenus, setSqlMenus] = useState(null);
+  const [sqlMenusLoaded, setSqlMenusLoaded] = useState(false);
+  const [useSqlMenus, setUseSqlMenus] = useState(false);
+
+  // NUEVO: Cargar menús desde SQL Server
+  useEffect(() => {
+    const loadSqlMenus = async () => {
+      try {
+        const response = await api.get('/sistema/menus/usuario');
+        const data = response.data || {};
+        
+        if (data.modulos && data.modulos.length > 0) {
+          setSqlMenus(data.modulos);
+          setUseSqlMenus(true);
+          logger.info('Menús SQL cargados:', data.total, 'módulos');
+        }
+      } catch (error) {
+        logger.warn('Menús SQL no disponibles, usando fallback hardcoded:', error.message);
+        setUseSqlMenus(false);
+      } finally {
+        setSqlMenusLoaded(true);
+      }
+    };
+    
+    if (user) {
+      loadSqlMenus();
+    }
+  }, [user]);
 
   // Cargar permisos de menú desde el backend (RBAC centralizado)
   useEffect(() => {
@@ -93,6 +181,14 @@ const Layout = () => {
           explorador_bd: isAdmin,
           alertas: isAdmin || role === 'Supervisor',
           usuarios: isAdmin,
+          cava_socios: true,
+          pos_generico: isAdmin || role === 'Supervisor',
+          comandero: isAdmin || role === 'Supervisor',
+          edarsa_go: isAdmin || role === 'Supervisor',
+          chef_ia: isAdmin || role === 'Supervisor',
+          portal_proveedores: isAdmin,
+          portal_comisionistas: isAdmin,
+          portal_clientes: isAdmin,
         });
         setPermissionsLoaded(true);
       }
