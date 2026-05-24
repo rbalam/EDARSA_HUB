@@ -23,6 +23,19 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
+#### FASE 1C-0 - Diagnóstico Comercial/Ventas para Subfases (24 Mayo 2026) ✅ COMPLETADO
+- [x] **Rutas inventariadas**: 18 rutas revisadas (Comercial + CRM)
+- [x] **Endpoints catalogados**: 30+ endpoints identificados
+- [x] **Tablas EDARSAHUB**: 50+ tablas relacionadas encontradas
+- [x] **Fuentes remotas analizadas**: SoftRestaurant (explosioninsumosdetalle, insumosdetalle, productos)
+- [x] **Duplicidades**: Ninguna crítica, solo alias de navegación
+- [x] **Dependencias MongoDB**: NINGUNA
+- [x] **Dependencias Live**: NINGUNA (arquitectura NO-LIVE confirmada)
+- [x] **Permisos RBAC**: 7 existentes, 14 faltantes identificados
+- [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_0_DIAGNOSTICO_COMERCIAL_VENTAS_SUBFASES.md`
+- [x] **Propuesta subfases**: 1C-1 a 1C-6 definidas
+- [x] **Recomendación**: Implementar FASE 1C-3 (Costos/Márgenes) primero
+
 #### FASE 1B-R3 - Ejecución Job Sync_Ventas_PorHora (24 Mayo 2026) ✅ COMPLETADO
 - [x] **Bug corregido**: `zoneinfo.ZoneInfo` no tiene `.localize()` → usar `.replace(tzinfo=)`
 - [x] **DRY-RUN exitoso**: 232 registros identificados, 2 servidores, 0 errores
