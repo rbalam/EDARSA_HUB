@@ -23,7 +23,21 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
-#### Notificaciones Cava de Socios (24 Mayo 2026) ✅ NUEVO
+#### FASE 0 - Estabilización Arquitectónica (24 Mayo 2026) ✅ NUEVO
+- [x] **Sistema de Menús Gobernados**:
+  - Tabla `Sistema_Modulos`: 27 módulos según manifiesto arquitectónico
+  - Tabla `Sistema_ModulosMenus`: 23 menús con rutas y permisos
+  - Tabla `Sistema_ModulosPermisos`: Estructura para permisos granulares
+  - API: `/api/sistema/menus/usuario` - Menús filtrados por permisos
+- [x] **Módulos registrados**:
+  - 19 Principales (Dirección, Comercial, Compras, Inventarios, Finanzas, etc.)
+  - 4 Satélites (POS, EDARSA GO, Chef IA)
+  - 3 Portales (Proveedores, Comisionistas, Clientes)
+- [x] **Archivos creados**:
+  - `/app/backend/modules/sistema/menu_service.py`
+  - `/app/backend/modules/sistema/menu_routes.py`
+
+#### Notificaciones Cava de Socios (24 Mayo 2026) ✅
 - [x] **Servicio de notificaciones** `/app/backend/modules/cava_socios/notification_service.py`:
   - Envío de reportes PDF por Email (SMTP interno)
   - Envío de notificaciones por WhatsApp (Twilio)

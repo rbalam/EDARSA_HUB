@@ -17919,6 +17919,16 @@ except Exception as e:
     logger.warning(f"Error registrando Tablajería router: {e}")
 
 # =============================================================================
+# SISTEMA - MENÚS GOBERNADOS
+# =============================================================================
+try:
+    from modules.sistema.menu_routes import router as menu_router
+    app.include_router(menu_router, tags=["Sistema - Menús"])
+    logger.info("✓ Sistema Menús router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Sistema Menús router: {e}")
+
+# =============================================================================
 # CAVA DE SOCIOS (Comercial - Experiencia Cliente)
 # =============================================================================
 try:
