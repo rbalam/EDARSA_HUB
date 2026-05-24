@@ -1,524 +1,102 @@
 # EDARSA HUB - Product Requirements Document
 
-## MÁXIMAS (Reglas Críticas Inquebrantables)
-
-1. **MONITOREO BACKEND OBLIGATORIO**: Antes de ejecutar cualquier tarea, verificar que el backend esté en línea. Si detecta HTTP 502 o backend caído:
-   - INFORMAR INMEDIATAMENTE al usuario
-   - NO ACEPTAR ningún prompt hasta que el backend esté restaurado
-   - Reiniciar backend automáticamente y esperar confirmación
-
-2. **PROHIBIDO testing_agent_v3_fork**: Testing exclusivamente vía cURL, bash o `python -c`
-
-3. **Autorización Controlada**: No asumir ni refactorizar fuera del alcance solicitado
-
----
-
 ## Problema Original
-Sistema de gestión centralizado (EDARSAHUB) con múltiples fuentes de datos (SQL Server, SoftRestaurant, MPRO). El problema principal identificado fue la "sobrescritura incorrecta de FechaOperacion" que inicialmente se atribuía a un "Ejecutor B" externo.
+Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múltiples fuentes de datos SQL Server (MPRO, SoftRestaurant, EDARSAHUB).
 
-## Diagnóstico Completado
-- **NO existe Ejecutor B externo**. El causante era el propio backend (`operational_window.py`) aplicando una regla global hardcodeada (13:00 a 06:00).
-- Se requiere configuración dinámica de turnos operativos por unidad de negocio.
+## Máximas del Proyecto
+1. **EDARSAHUB SQL Server es el cerebro absoluto** - CERO dependencias de MongoDB
+2. **Política de Autorización Controlada** - No asumir reglas; esperar autorización explícita
+3. **No Testing Agent** - Pruebas exclusivas vía cURL, bash, python -c
 
-## Matriz Definitiva de Ventas del Día
-Ver documento completo: `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTRESTAURANT_MPRO_TURNOS.md`
-
-**Resumen de la Matriz**:
-- Ventas del Día = ventas del periodo operativo real (NO 00:00-23:59 calendario)
-- FechaOperacion basada en turno/corte/apertura, NO en cierre/cobro
-- SoftRestaurant: método MIXTO_VALIDADO (turno + apertura/captura)
-- MPRO: método MIXTO_VALIDADO (turno + Co_Fecha)
-- Turnos: DESAYUNO (07:00-13:00), COMIDA (13:01-18:59), CENA (19:00-05:59)
-- Tableros DEBEN leer únicamente de EDARSAHUB SQL
-
-## Zona Horaria Oficial
-**OBLIGATORIA**: `America/Mexico_City` para todos los cálculos de `FechaOperacion`.
-
-## Arquitectura
+## Arquitectura Técnica
 - **Frontend**: React (`/app/frontend/src/`)
 - **Backend**: FastAPI (`/app/backend/`)
-- **Base de Datos Primaria**: EDARSAHUB (SQL Server)
-- **Legacy**: MongoDB (en proceso de migración)
+- **Base de Datos Principal**: EDARSAHUB SQL Server (54.39.104.176)
+- **Legacy (en deprecación)**: MongoDB
+
+## Credenciales de Prueba
+- Admin: `admin@edarsa.com` / `admin123`
 
 ---
 
-## IMPLEMENTADO P0 (2026-05-20)
+## Estado Actual (24 Mayo 2026)
 
-### P0.1: Diagnóstico
-- ✅ Archivos identificados para modificación
-- ✅ Estructura de BD verificada
+### ✅ Completado
 
-### P0.2: Configuración Turnos DESAYUNO/COMIDA/CENA
-- ✅ `Sistema_TurnosOperativosUnidad` actualizada via API
-- ✅ COMIDA_CENA legacy desactivado
-- ✅ Turnos separados: DESAYUNO, COMIDA, CENA
-- ✅ Configuración por unidad (ORIGEN con desayuno, demás sin)
+#### Migración MongoDB → SQL Server
+- [x] Auth/Login migrado a SQL (login < 1s)
+- [x] RBAC migrado a SQL Server (Usuario_Roles, Usuario_RolesAsignacion)
+- [x] Inicializaciones de módulos en server.py pasadas a `None`
+- [x] Scheduler, Notificaciones, Locks, JobLogger operan en modo SQL-only
 
-### P0.3: Refactor operational_window.py
-- ✅ Eliminado hardcode 13:00-06:00
-- ✅ Nueva estructura `ResultadoVentanaOperativa`
-- ✅ Consulta `Sistema_TurnosOperativosUnidad` por unidad
-- ✅ Soporte para `cruza_medianoche`
-- ✅ Tolerancia de inicio
-- ✅ Zona horaria `America/Mexico_City` obligatoria
+#### CRM Comercial Enterprise (Fase 4)
+- [x] Backend endpoints creados (`/api/crm/*`)
+- [x] Tablas SQL: CRM_Cuentas, CRM_Leads, CRM_Oportunidades, etc.
+- [x] Datos iniciales cargados (18 cuentas, 2 cotizaciones)
+- [x] Rutas frontend y submenús agregados
 
-### P0.4: Refactor sync_comercial_abiertas_v2_job.py
-- ✅ Import de `ResultadoVentanaOperativa`
-- ✅ Logs incluyen turno operativo detectado
-- ✅ Clasificación por turno
-- ✅ Mantiene anti-$0 y lock
+#### Tablajería
+- [x] Diagnóstico Fase 6 (Inventarios/Costeo) documentado
 
-### P0.5: Eliminar LIVE-C del Tablero Ejecutivo
-- ✅ **ELIMINADO** modo LIVE-C para Ventas del Día
-- ✅ Nuevo modo `EDARSAHUB_VENTAS_DIA`
-- ✅ `live_status=LIVE_NOT_APPLICABLE`
-- ✅ `source_period="EDARSAHUB_SQL"`
-- ✅ Lee de `Comercial_Ventas_Dia_Abiertas_v2`
-- ✅ SoftRestaurant: EDARSAHUB SQL (no tempcheques live)
-- ✅ MPRO: EDARSAHUB SQL (no API_LOCAL)
-- ✅ Mapeo canónico: ORIGEN→'ORIGEN', QRO→'130QRO' (NO LIKE ni inferencias)
+### 🔄 En Progreso
 
-### P0.6: Validación Comparativa
-- ✅ Tablero Ejecutivo: EDARSAHUB_SQL ✅
-- ✅ Tablero Comercial V2: EDARSAHUB_SQL ✅
-- ✅ Sin consultas LIVE en ningún tablero
+#### Limpieza MongoDB
+- [x] Inicializaciones en server.py (COMPLETADO)
+- [ ] Referencias `await db.` en endpoints (165 restantes)
+- [ ] Tabla `Sesiones` en EDARSAHUB para refresh tokens
 
-### P0.8-P0.15: Lock Anti-Concurrencia y Cierre P0 (2026-05-21)
-- ✅ **P0.8**: Lock anti-concurrencia implementado con tabla `Sync_Control_Ejecuciones`
-- ✅ **P0.9**: Validación sintáctica `py_compile` exitosa
-- ✅ **P0.10**: Ejecución manual del job `execute_sync_comercial_abiertas_v2()` exitosa
-  - run_id: `ABIERTA-20260521-012819-c02a`
-  - 3 unidades sincronizadas (ORIGEN, 130QRO, 130MID)
-  - 2 unidades con error esperado (CIENFUEGOS, ESTELAR - red/credenciales)
-- ✅ **P0.11**: Datos guardados en `Comercial_Ventas_Dia_Abiertas_v2`
-- ✅ **P0.12**: Lock registrado en SQL con Status=PARTIAL, Duration=262s
-- ✅ **P0.13**: Tablero Ejecutivo configurado SQL-only (data_type=EDARSAHUB_VENTAS_DIA)
-- ✅ **P0.14**: Tablero Comercial V2 SQL-only
-- ✅ **P0.15**: Documentación actualizada
+### ⏳ Pendiente
 
-### Corrección Regresión Menú Servidores
-- **Problema**: `GET /api/servers` retornaba HTTP 500 con `ResponseValidationError`
-- **Solución**: Garantizar valores por defecto en `_sql_row_to_server_dict()`
+#### P1 - Alta Prioridad
+1. **Tablajería Fase 6**: Implementar Inventarios, Costeo y Contabilidad
+2. **Seguridad**: Remover credenciales hardcodeadas en Tablajería
+
+#### P2 - Media Prioridad
+3. **CRM UI**: Completar vistas funcionales (Cuentas, Solicitudes, Cotizaciones)
+4. **CRM Fase 3**: Tablas de Integraciones Externas
+
+#### Backlog
+- Tablajería Fase 4 (Captura Directa)
+- Limpieza de módulos legacy mockeados
+- Migración completa de colecciones MongoDB a SQL
 
 ---
 
-## IMPLEMENTADO (2026-05-23)
+## Archivos Clave
 
-### P0.16: Campos Auditoría Obligatorios en Tablero Ejecutivo ✅
-- **Problema**: El JSON del Tablero Ejecutivo no incluía explícitamente los campos `data_type` requeridos para validación SQL-Only.
-- **Solución**: 
-  - Agregado parámetro `data_type` a `build_unit_response()` en `service.py`
-  - Actualizado todas las llamadas en `routes.py` con `data_type=data_type`
-- **Validación**: Endpoint `/comercial/tablero-ejecutivo?anio=-1` retorna:
-  - `source_period: EDARSAHUB_SQL` ✅
-  - `data_type: EDARSAHUB_VENTAS_DIA` ✅
-  - `live_status: LIVE_NOT_APPLICABLE` ✅
+### Backend
+- `/app/backend/server.py` - Router principal (17,926 líneas)
+- `/app/backend/modules/crm/comercial_routes.py` - CRM Enterprise
+- `/app/backend/modules/crm/comercial_service.py` - Lógica CRM
+- `/app/backend/core/scheduler/scheduler_manager.py` - Scheduler
+- `/app/backend/core/db.py` - Funciones SQL
 
-### P0.17: Sincronización Offline Compras/Operaciones ✅
-- **Problema**: Endpoints `/compras/inventarios-fisicos` y `/compras/pedidos-vigentes` consultaban en vivo a servidores físicos (CIENFUEGOS, etc.) causando timeouts severos.
-- **Solución HÍBRIDA implementada**: 
-  1. Primero intenta leer de tablas EDARSAHUB Sync
-  2. Si Sync está vacío, hace **fallback a consulta LIVE** al servidor físico
-  - Esto permite que la UI funcione aunque las tablas Sync no estén pobladas
-- **Archivos modificados**:
-  - `/app/backend/modules/compras/sync_service.py`
-  - `/app/backend/server.py` (endpoints con estrategia híbrida)
+### Frontend
+- `/app/frontend/src/App.js` - Rutas principales
+- `/app/frontend/src/pages/Layout.js` - Menú lateral
+- `/app/frontend/src/pages/crm/` - Vistas CRM
 
-### P0.18: Job Background Sync Compras ✅
-- **Archivo**: `/app/backend/core/scheduler/jobs/sync_compras_job.py`
-- **Función**: Sincroniza inventarios y requisiciones desde servidores físicos hacia EDARSAHUB SQL
-- **Frecuencia**: Cada 30 minutos (configurable via `SCHEDULER_SYNC_COMPRAS_INTERVAL_SECONDS`)
-- **Lock**: Anti-concurrencia SQL en tabla `Sync_Control_Ejecuciones`
-- **Endpoint manual**: `POST /api/admin/sync/compras?dry_run=true|false`
-- **NOTA**: Solo funciona en producción donde hay acceso a servidores físicos
-
-### P0.19: Sistema de Detección en Tiempo Real ✅
-- **Arquitectura**: Polling Incremental con Checkpoints (Opción A), preparado para Service Broker (Opción C)
-- **Archivos**:
-  - `/app/backend/modules/compras/eventos_compras.py` (Sistema de eventos desacoplado)
-  - `/app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py` (Job de detección)
-- **Tablas creadas**:
-  - `Compras_Sync_Checkpoint` - Guarda último folio/fecha por servidor
-  - `Compras_Eventos_Pendientes` - Cola de eventos para informes
-  - `Compras_Informes_Config` - Configuración de informes automáticos
-- **Endpoints**:
-  - `POST /api/admin/detect/compras` - Ejecutar detección manual
-  - `GET /api/admin/compras/checkpoints` - Ver estado de checkpoints
-  - `GET /api/admin/compras/eventos-pendientes` - Ver cola de eventos
-  - `POST /api/admin/compras/procesar-eventos` - Procesar eventos manualmente
-- **Frecuencia**: Cada 2 minutos (configurable via `COMPRAS_POLLING_INTERVAL`)
-- **Latencia**: 2-3 minutos (migrable a milisegundos con Service Broker)
-
-### P1.1: Reset Contraseña Usuario Ricardo ✅
-- **Usuario**: `ricardo@edarsa.com.mx`
-- **Tabla**: `Usuario_Catalogo` (EDARSAHUB)
-- **Nueva contraseña**: `Asdf1478@@`
-- **Validación**: Login exitoso via API
-
----
-
-## IMPLEMENTADO (2026-05-22)
-
-### Integración VTiger CRM - Backend Completo ✅
-- **URL**: https://saligula.hostw3b.com
-- **Auth**: Challenge-Response via webservice.php (MD5 token)
-- **Módulos VTiger disponibles**: 39 (Contacts, Leads, Accounts, Products, Invoice, etc.)
-- **Archivos creados/modificados**:
-  - `/app/backend/modules/crm/vtiger_client.py` - Cliente con autenticación challenge-response
-  - `/app/backend/modules/crm/service.py` - Lógica de negocio con auto-asignación de user_id
-  - `/app/backend/modules/crm/routes.py` - Endpoints REST
-  - `/app/backend/server.py` - Registro del router CRM
-- **Testing**: Contacto y Lead creados exitosamente via API
-
-### Bug Fix: Captura de Inventario Físico en MPRO
-- **Problema**: "No se encontraron productos en las requisiciones seleccionadas" al intentar capturar inventario físico en Auditoría Operativa.
-- **Causa Raíz**: 
-  1. `validate_server_access_by_empresa` buscaba usuarios en MongoDB (`db.users`) en lugar de EDARSAHUB SQL
-  2. El endpoint `productos-para-captura` no soportaba el esquema MPRO donde los productos están directamente en `Orden_Compra` (no en tabla de detalles)
-  3. `SOFTRESTAURANT_PRO` no estaba en el mapa de normalización de system_type
-- **Solución**:
-  1. ✅ Actualizado `validate_server_access_by_empresa` para usar `get_current_user` (SQL-only)
-  2. ✅ Agregado soporte para consultar `Orden_Compra` directamente en MPRO
-  3. ✅ Agregado `SOFTRESTAURANT_PRO` y variantes al mapa de normalización
-- **Archivos modificados**:
-  - `/app/backend/server.py` (endpoint `productos-para-captura` y `validate_server_access_by_empresa`)
-  - `/app/backend/core/system_type_utils.py` (normalización de system_type)
-
----
-
-## CRM ENTERPRISE - PROGRESO
-
-### Fase 1: Infraestructura SQL ✅ (2026-05-23)
-- [x] 20 tablas CRM creadas en EDARSAHUB (transaccionales, catálogos, configuración)
-- [x] 13 columnas CRM agregadas a `Cliente_Catalogo` (extensión sin duplicar)
-- [x] 11 catálogos poblados con datos seed
-- [x] Pipeline de Ventas Default configurado (7 etapas con probabilidades)
-- [x] Scripts idempotentes: `01_create_crm_tables.sql`, `02_seed_crm_catalogs.sql`
-
-### Fase 2: Backend CRM Nativo ✅ (2026-05-23)
-- [x] `repository.py` - CRUD Leads, Oportunidades, Pipeline, Catálogos, Dashboard
-- [x] `schemas.py` - 20+ modelos Pydantic para validación
-- [x] `native_service.py` - Lógica de negocio CRM
-- [x] `native_routes.py` - 13 endpoints REST validados:
-  - Leads: CRUD + descalificar + convertir
-  - Oportunidades: CRUD + cambiar etapa + cerrar
-  - Pipelines: listar + vista Kanban
-  - Catálogos: todos + por nombre
-  - Dashboard: KPIs y métricas
-- [x] Integración con tablas Usuario_Catalogo (via PublicUUID)
-
-### Fase 3: Menú y Rutas Frontend ✅ (2026-05-23)
-- [x] Sección CRM agregada a `Layout.js` con submenús
-- [x] Rutas CRM registradas en `App.js`
-- [x] Páginas implementadas:
-  - `CRMDashboard.jsx` - KPIs, gráficos, actividad reciente
-  - `LeadsPage.jsx` - Tabla con filtros y paginación
-  - `OportunidadesPage.jsx` - Lista con barras de probabilidad
-  - `PipelinePage.jsx` - Vista Kanban drag-and-drop
-- [x] Columna `PublicUUID` agregada a `Cliente_Catalogo` para relación Oportunidad-Cuenta
-
-### Fase 4: Formularios CRUD ✅ (2026-05-23)
-- [x] `LeadForm.jsx` - Formulario completo de creación/edición de leads
-- [x] `OportunidadForm.jsx` - Formulario de oportunidades con selección de pipeline/etapa
-- [x] `CerrarOportunidadModal.jsx` - Modal para cerrar oportunidades (ganada/perdida)
-- [x] `ConvertirLeadModal.jsx` - Wizard de conversión de lead a cuenta/contacto/oportunidad
-- [x] Integración de formularios en `LeadsPage.jsx` y `OportunidadesPage.jsx`
-- [x] Menús contextuales con acciones (editar, convertir, descalificar, eliminar, cerrar)
-
-### Fase 5: Integración Universal Externa ✅ (2026-05-23)
-- [x] **Tablas de Staging SQL** creadas:
-  - `CRM_Staging_Leads` - Buffer para leads externos
-  - `CRM_Staging_Oportunidades` - Buffer para oportunidades externas
-  - `CRM_Staging_Cuentas` - Buffer para cuentas externas
-  - `CRM_Integracion_Conectores` - Configuración de conectores
-  - `CRM_Integracion_SyncLog` - Historial de sincronizaciones
-  - `CRM_Integracion_MapeoEtapas` - Mapeo de etapas entre sistemas
-- [x] **Framework de Conectores** implementado:
-  - `base_connector.py` - Clase abstracta para todos los conectores
-  - `vtiger_connector.py` - Conector VTiger completo (pull leads/opps/cuentas)
-  - `staging_service.py` - Servicio CRUD para tablas staging
-  - `sync_engine.py` - Motor de sincronización orquestador
-- [x] **API REST de Integración** (`/api/crm/integration/`):
-  - CRUD Conectores: `GET/POST/PUT/DELETE /conectores`
-  - Test conexión: `POST /conectores/{id}/test`
-  - Ejecutar sync: `POST /conectores/{id}/sync`
-  - Estadísticas staging: `GET /conectores/{id}/staging/stats`
-  - Listar staging: `GET /conectores/{id}/staging/leads|oportunidades|cuentas`
-  - Historial sync: `GET /conectores/{id}/sync-log`
-- [x] **Validación exitosa**:
-  - Conexión VTiger verificada ✅
-  - Sync ejecutado: 2 leads + 2 cuentas importadas a staging ✅
-
-### Fase 6: Sync Staging → Producción ✅ (2026-05-23)
-- [x] **StagingProcessor** implementado (`staging_processor.py`):
-  - Procesamiento batch de staging → producción
-  - Deduplicación inteligente por email/teléfono (leads) y RFC/razón social (cuentas)
-  - Scoring de confianza para matches (60-98%)
-- [x] **API REST de Procesamiento**:
-  - `POST /conectores/{id}/process-staging` - Procesa registros pendientes
-  - `GET /conectores/{id}/conflictos` - Lista registros con duplicados
-  - `POST /conectores/{id}/conflictos/{staging_id}/resolver` - Resolución manual
-  - `POST /conectores/{id}/conflictos/resolver-todos` - Resolución masiva
-- [x] **Acciones ante duplicados**:
-  - `CREAR_NUEVO` - Crea aunque exista duplicado
-  - `ACTUALIZAR_EXISTENTE` - Actualiza registro existente
-  - `MARCAR_CONFLICTO` - Marca para revisión manual
-  - `OMITIR` - Descarta el registro
-- [x] **Validación exitosa**:
-  - 2 leads sincronizados: Staging → `CRM_Leads` ✅
-  - 2 cuentas sincronizadas: Staging → `Cliente_Catalogo` ✅
-  - Todos los registros en estado SINCRONIZADO ✅
-- [x] **Documentación**: `/app/docs/CRM_INTEGRATION_GUIDE.md`
-
-### Fase 7: Extensiones Futuras (Backlog)
-- [ ] Conectores adicionales: Salesforce, HubSpot, Zoho
-- [ ] Sync bidireccional (EDARSA → CRM externo)
-- [ ] Jobs programados de sincronización automática
-- [ ] Dashboard de monitoreo de integraciones en Frontend
-
----
-
-## MÓDULO TABLAJERÍA
-
-### Fase 0: Diagnóstico Pasivo ✅ (2026-05-23)
-- [x] Diagnóstico de estructura frontend Operaciones
-- [x] Diagnóstico de servidores de tablajería registrados
-- [x] Diagnóstico de tablas RBAC existentes
-- [x] Reporte: `/app/docs/modules/TABLAJERIA_FASE0_DIAGNOSTICO.md`
-
-### Fase 1: DDL SQL Canónico ✅ (2026-05-23)
-- [x] **14 tablas creadas en EDARSAHUB SQL**:
-  - `Operaciones_Tablaje_Plantillas` - Plantillas maestras
-  - `Operaciones_Tablaje_PlantillasDetalle` - Derivados de plantillas
-  - `Operaciones_Tablaje_PlantillasVersiones` - Historial versiones
-  - `Operaciones_Tablaje_Ordenes` - Órdenes de producción
-  - `Operaciones_Tablaje_OrdenesDetalle` - Detalle de órdenes
-  - `Operaciones_Tablaje_Rendimientos` - Registro rendimientos
-  - `Operaciones_Tablaje_Mermas` - Registro mermas
-  - `Operaciones_Tablaje_Costos` - Costeo derivados
-  - `Operaciones_Tablaje_SyncLog` - Historial sincronización
-  - `Operaciones_Tablaje_SyncErrores` - Errores de sync
-  - `Operaciones_Tablaje_Autorizaciones` - Workflow autorizaciones
-  - `Operaciones_Tablaje_Auditoria` - Bitácora auditoría
-  - `Operaciones_Tablaje_Documentos` - Evidencias/documentos
-  - `Operaciones_Tablaje_EventosContables` - Eventos contabilidad
-- [x] Script DDL: `/app/docs/modules/TABLAJERIA_DDL_FASE1.sql`
-
-### Fase 2: Catálogo SQL de Sincronización ✅ (2026-05-23)
-- [x] Exploración estructura MPRO TABLAJERIA (11 tablas: receta, subgrupo_insumos, sucursales, etc.)
-- [x] Mapeo de entidades: receta → Plantilla, subgrupo_insumos → Derivados
-- [x] CIENFUEGOS TABLAJERIA: Pendiente (servidor offline)
-
-### Fase 3: Sincronización Legacy → EDARSAHUB ✅ (2026-05-23)
-- [x] `TablajeriaSyncService` implementado
-- [x] Sincronización idempotente con detección de cambios via hash SHA256
-- [x] Versionamiento automático de plantillas PUBLICADAS
-- [x] **Endpoints API**:
-  - `GET /api/tablajeria/sync/servidores` - Lista servidores de tablajería
-  - `POST /api/tablajeria/sync/ejecutar` - Ejecuta sincronización
-  - `GET /api/tablajeria/sync/log` - Historial de sincronizaciones
-- [x] **Validación exitosa**:
-  - MPRO TABLAJERIA: 217 registros leídos → 36 plantillas creadas ✅
-  - Derivados sincronizados con tipos (PRINCIPAL, SUBPRODUCTO, MERMA) ✅
-  - Log de sincronización registrado ✅
-
-### Fase 4: Captura Directa en EDARSAHUB (PENDIENTE)
-- [ ] Endpoint POST /api/tablajeria/plantillas (crear plantilla desde cero)
-- [ ] Validaciones de negocio
-- [ ] Workflow de autorización para publicar
-
-### Fase 5: Órdenes de Tablaje ✅ (2026-05-23)
-- [x] **Backend `TablajeriaOrdenesService`** implementado:
-  - Generación de folio secuencial por empresa (TBJ-YYYYMMDD-XXXX)
-  - Creación de orden desde plantilla con copia de detalles
-  - Flujo completo: BORRADOR → EN_EJECUCION → CERRADA
-  - Registro de resultados reales por derivado
-  - Cálculo automático de rendimiento y merma real
-  - Detección de desviaciones vs tolerancia
-  - Autorización requerida si desviación excede tolerancia
-  - Registro histórico en `Operaciones_Tablaje_Rendimientos` y `Operaciones_Tablaje_Mermas`
-- [x] **Endpoints API** (`/api/tablajeria/ordenes`):
-  - `GET /ordenes` - Listar con filtros (estatus, fechas, plantilla)
-  - `GET /ordenes/{id}` - Detalle con derivados
-  - `POST /ordenes` - Crear orden desde plantilla
-  - `PUT /ordenes/{id}/iniciar` - Iniciar ejecución
-  - `PUT /ordenes/{id}/resultados` - Registrar resultados
-  - `PUT /ordenes/{id}/cerrar` - Cerrar orden
-  - `PUT /ordenes/{id}/cancelar` - Cancelar orden
-  - `PUT /ordenes/{id}/autorizar` - Autorizar/rechazar
-  - `GET /ordenes-stats` - Estadísticas de órdenes
-- [x] **Validación exitosa via cURL**:
-  - Orden creada: TBJ-20260523-0001 ✅
-  - Flujo completo ejecutado: crear → iniciar → registrar → cerrar ✅
-  - Rendimiento real calculado: 73.53% ✅
-  - Estadísticas funcionando ✅
-
-### Fase 10: Frontend UI ✅ (2026-05-23)
-- [x] **Menú actualizado** en Layout.js:
-  - Producción > Tablajería (Dashboard)
-  - Producción > Plantillas
-  - Producción > Órdenes
-- [x] **Rutas registradas** en App.js
-- [x] **Páginas implementadas**:
-  - `TablajeriaDashboard.jsx` - KPIs, accesos rápidos, órdenes recientes
-  - `PlantillasPage.jsx` - Lista, detalle, publicar plantillas
-  - `OrdenesPage.jsx` - CRUD completo, registro de resultados, cierre
-
-### Fase Validación y Blindaje ✅ (2026-05-23)
-- [x] **Validaciones Backend**:
-  - NO usa MongoDB ✅
-  - USA exclusivamente EDARSAHUB SQL ✅
-  - NO afecta tablas de Inventario ✅
-  - NO genera eventos contables ✅
-  - NO hay DELETE físico ✅
-  - Zona horaria México para FechaOperacion ✅
-  - Timestamps UTC para auditoría ✅
-- [x] **Validaciones Frontend**:
-  - Rutas correctas /produccion/tablajeria/* ✅
-  - No altera módulos blindados ✅
-  - Manejo loading/error/empty ✅
-  - NPM build exitoso ✅
-- [x] **Bug corregido**: INSERT condicional a Rendimientos cuando RendimientoRealPorcentaje es NULL
-- [x] **Reporte**: `/app/docs/reports/TABLAJERIA_VALIDACION_BLINDAJE_REPORTE.md`
-
-### Riesgos Documentados
-- 🔴 R1: Contraseña hardcodeada en `sync_service.py:583` (pendiente remover)
-- 🔴 R2: Contraseñas por defecto en `routes.py:41` (usar variables entorno en prod)
-- 🟡 R3: RBAC no registrado (siguiente tarea P0)
-
-### Fases Pendientes Tablajería
-- [ ] **P0**: Registrar permisos RBAC TABLAJERIA_* en SQL
-- [ ] Fase 4: Captura Directa (crear plantillas sin sync)
-- [ ] Fase 6: Integración inventarios, costeo y eventos contables (Diagnóstico completado)
-- [ ] Fase 7: Integración compras (lectura)
-- [ ] Fase 8: Autorizaciones avanzadas
-- [ ] Fase 9: Eventos contables
-
----
-
-## CRM COMERCIAL ENTERPRISE
-
-### Fase 0: Diagnóstico ✅ (2026-05-23)
-- [x] Mapeo completo de tablas comerciales SQL Server
-- [x] Identificación de tablas maestro: `Cliente_Catalogo`, `Venta_Cotizaciones`, `Venta_Pedidos`
-- [x] Reporte: `/app/docs/reports/CRM_COMERCIAL_DIAGNOSTICO.md`
-
-### Fase 1: DDL SQL ✅ (2026-05-23)
-- [x] Tablas creadas idempotentes:
-  - `CRM_Cuentas` (vinculación con maestro Cliente_Catalogo)
-  - `CRM_ClientesSolicitudesAlta` (workflow alta cliente)
-  - `CRM_ClientesSolicitudesAltaHistorial` (auditoría)
-  - `Venta_Remisiones` (nueva)
-  - `Venta_RemisionesDetalle` (nueva)
-  - `Venta_Cat_EstatusRemision` (catálogo)
-- [x] Extensiones CRM en `Venta_Cotizaciones` y `Venta_Pedidos`
-- [x] Permisos RBAC CRM registrados en Sistema_Permisos
-
-### Fase 4: Backend Endpoints ✅ (2026-05-23)
-- [x] **Archivos implementados**:
-  - `/app/backend/modules/crm/comercial_service.py` (Servicio completo)
-  - `/app/backend/modules/crm/comercial_routes.py` (Router registrado en server.py)
-- [x] **Endpoints API** (`/api/crm`):
-  - **Cuentas CRM**:
-    - `GET /cuentas` - Listar con filtros
-    - `GET /cuentas/{id}` - Detalle con oportunidades
-    - `POST /cuentas` - Crear cuenta
-    - `POST /cuentas/{id}/ligar-cliente` - Vincular a Cliente_Catalogo
-  - **Clientes (Maestro solo lectura)**:
-    - `GET /clientes` - Listar Cliente_Catalogo
-  - **Solicitudes Alta Cliente**:
-    - `GET /clientes/solicitudes` - Listar
-    - `POST /clientes/solicitudes` - Crear solicitud
-    - `POST /clientes/solicitudes/{id}/enviar` - Enviar para revisión
-    - `POST /clientes/solicitudes/{id}/autorizar` - Aprobar y crear cliente
-    - `POST /clientes/solicitudes/{id}/rechazar` - Rechazar
-  - **Cotizaciones (Wrapper Venta_Cotizaciones)**:
-    - `GET /cotizaciones` - Listar
-    - `GET /cotizaciones/{id}` - Detalle
-    - `POST /cotizaciones` - Crear
-    - `POST /cotizaciones/{id}/enviar` - Cambiar a ENVIADA
-    - `POST /cotizaciones/{id}/aprobar` - Cambiar a APROBADA
-  - **Pedidos Venta (Wrapper Venta_Pedidos)**:
-    - `GET /pedidos-venta` - Listar
-    - `GET /pedidos-venta/{id}` - Detalle
-    - `POST /pedidos-venta` - Crear
-    - `POST /pedidos-venta/{id}/confirmar` - Cambiar a CONFIRMADO
-  - **Remisiones Venta**:
-    - `GET /remisiones-venta` - Listar
-    - `GET /remisiones-venta/{id}` - Detalle
-    - `POST /remisiones-venta` - Crear
-    - `POST /remisiones-venta/{id}/entregar` - Registrar entrega
-  - **Actividades**:
-    - `GET /actividades` - Listar
-    - `POST /actividades` - Crear
-    - `POST /actividades/{id}/cerrar` - Cerrar actividad
-  - **Catálogos**:
-    - `GET /catalogos/tipos-actividad`
-    - `GET /catalogos/estatus-actividad`
-    - `GET /catalogos/estatus-remision`
-- [x] **Validación exitosa via cURL**:
-  - Cuenta creada: CTA-000001 ✅
-  - Solicitud Alta: SOL-000001 (BORRADOR→ENVIADA) ✅
-  - Cotización: COT-000001 (BORRADOR→ENVIADA) ✅
-  - Pedido: PED-000001 (BORRADOR→CONFIRMADO) ✅
-  - Remisión: REM-000001 (PENDIENTE→ENTREGADA) ✅
-
-### Fases Pendientes CRM
-- [ ] Fase 5: Frontend Operable (UI para flujo completo)
-- [ ] Fase 3: Tablas de Integraciones Externas / Staging
-
----
-
-## PENDIENTE (Otros módulos)
-
-### P0 (Crítico) - CERRADO ✅
-- [x] `SERVER_SECRET_KEY` accesible para scheduler
-- [x] Lock anti-concurrencia implementado
-- [x] Sincronización offline Compras (P0.17-P0.19)
-- [x] Campos auditoría en Tablero Ejecutivo (P0.16)
-
-### P1
-- [ ] Conectar módulo VTiger CRM con Frontend (backend completado)
-- [ ] Errores conexión SoftRestaurant (CIENFUEGOS, ESTELAR) - infraestructura origen
-- [ ] Implementar detección de TURNO_EXTENDIDO
-
-### Backlog (P2)
-- [ ] Documentación final
-- [ ] Migración final para retirar MongoDB
-
----
-
-## Restricciones Críticas
-1. **PROHIBIDO** usar `testing_agent_v3_fork` - solo bash/curl/python
-2. Toda fecha de negocio se calcula con `ZoneInfo("America/Mexico_City")`
-3. EDARSAHUB SQL es la fuente de verdad
-4. **NO LIVE** en tableros - solo EDARSAHUB SQL
-
-## Archivos de Referencia
-- `/app/backend/core/utils/operational_window.py` (✅ REFACTORIZADO P0.3)
-- `/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py` (✅ REFACTORIZADO P0.4)
-- `/app/backend/core/scheduler/jobs/sync_compras_job.py` (✅ NUEVO P0.18 - Job Sync Compras)
-- `/app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py` (✅ NUEVO P0.19 - Detección Tiempo Real)
-- `/app/backend/modules/compras/eventos_compras.py` (✅ NUEVO P0.19 - Sistema Eventos)
-- `/app/backend/modules/comercial/routes.py` (✅ MODIFICADO P0.5 - Sin LIVE-C)
-- `/app/backend/modules/comercial/service.py` (✅ MODIFICADO P0.16 - data_type)
-- `/app/backend/modules/compras/sync_service.py` (✅ NUEVO P0.17 - Sync Compras)
-- `/app/backend/server.py` (✅ MODIFICADO P0.17/P0.18/P0.19 - Endpoints SQL-Only + Admin)
-- `/app/backend/core/server_registry.py` (✅ CORREGIDO)
-- `/app/backend/api/configuracion_operativa_unidades.py`
-- `/app/frontend/src/pages/ConfiguracionOperativaUnidades.jsx`
-- `/app/backend/modules/crm/integration/` (✅ NUEVO Fase 5 - Framework Conectores)
-- `/app/backend/modules/crm/integration_routes.py` (✅ NUEVO Fase 5 - API Integración)
-- `/app/backend/modules/crm/comercial_service.py` (✅ NUEVO CRM Fase 4 - Servicio Comercial)
-- `/app/backend/modules/crm/comercial_routes.py` (✅ NUEVO CRM Fase 4 - Router Comercial)
-- `/app/backend/modules/tablajeria/routes.py` (✅ NUEVO - API Tablajería)
-- `/app/backend/modules/tablajeria/ordenes_service.py` (✅ NUEVO - Servicio Órdenes)
-- `/app/backend/modules/tablajeria/sync_service.py` (✅ NUEVO - Sync Legacy)
-- `/app/frontend/src/pages/tablajeria/` (✅ NUEVO - UI Tablajería)
-
-## Documentos Generados
-- `/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTRESTAURANT_MPRO_TURNOS.md`
-- `/app/docs/reports/P0_IMPLEMENTACION_VENTAS_DIA_TURNOS_SQLONLY.md`
-- `/app/docs/reports/TABLAJERIA_VALIDACION_BLINDAJE_REPORTE.md`
-- `/app/docs/reports/CRM_COMERCIAL_DIAGNOSTICO.md`
+### Documentación
 - `/app/docs/reports/TABLAJERIA_FASE6_DIAGNOSTICO_INVENTARIOS_COSTEO.md`
+
+---
+
+## Integraciones Externas
+- **VTiger CRM**: Credenciales activas en `modules/crm/service.py`
+
+---
+
+## Notas Técnicas
+
+### Warnings Esperados (No son errores)
+```
+[COMERCIAL] Repository - MongoDB deprecado
+[NOTIFICATIONS] Inicializado SIN MongoDB - Modo degradado SQL-only
+[SCHEDULER] Inicializando SIN MongoDB - Locks distribuidos deshabilitados
+Invalid object name 'Sesiones' - Tabla pendiente de crear
+```
+
+### Módulos en Modo Degradado
+- `core/communications/routes.py` - Sin persistencia de templates
+- `core/scheduler/` - Sin locks distribuidos MongoDB
+- `modules/fase2_operativo/` - Workflows mockeados

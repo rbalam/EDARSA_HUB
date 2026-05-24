@@ -45,19 +45,32 @@ def init_notifications_routes(database) -> None:
     """
     Inicializa las rutas con la conexión a MongoDB.
     
+    NOTA: MongoDB ELIMINADO del sistema. Este módulo ahora opera en modo degradado
+    cuando database es None, devolviendo respuestas stub sin persistencia MongoDB.
+    
     Args:
-        database: Instancia de AsyncIOMotorDatabase
+        database: Instancia de AsyncIOMotorDatabase (puede ser None para SQL-only mode)
     """
     global _db
     _db = database
-    logger.info("Notification routes initialized")
+    if _db is None:
+        logger.warning("[NOTIFICATIONS] Inicializado SIN MongoDB - Modo degradado SQL-only")
+    else:
+        logger.info("Notification routes initialized")
 
 
 def get_db():
-    """Obtiene la conexión a MongoDB inyectada."""
-    if _db is None:
-        raise RuntimeError("Notification routes not initialized. Call init_notifications_routes(db) first.")
+    """
+    Obtiene la conexión a MongoDB inyectada.
+    
+    NOTA: En modo SQL-only, retorna None y los endpoints deben manejar este caso.
+    """
     return _db
+
+
+def is_mongo_available() -> bool:
+    """Verifica si MongoDB está disponible."""
+    return _db is not None
 
 
 # =============================================================================

@@ -184,6 +184,22 @@ init_auth_module(None)  # MongoDB eliminado
 # Registrar router de auth
 api_router.include_router(get_auth_router())
 
+# ============================================================================
+# INICIALIZACIÓN REFRESH TOKENS (SQL Server)
+# ============================================================================
+from core.refresh_tokens import init_refresh_tokens_module
+
+# Configuración EDARSAHUB para refresh tokens
+EDARSAHUB_CONFIG = {
+    'host': '54.39.104.176',
+    'port': 1433,
+    'database': 'EDARSAHUB',
+    'username': 'HRLectura',
+    'password': 'National09$'
+}
+init_refresh_tokens_module(EDARSAHUB_CONFIG)
+logger.info("Módulo refresh_tokens inicializado con SQL Server")
+
 
 # ============================================================================
 # FASE 3C.1: HELPER DE DESCIFRADO DE SECRETOS PARA SERVIDORES
@@ -4226,7 +4242,7 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                 # Determinar folio_inventario principal (el folio final más relevante)
                 folio_inventario_principal = lista_folios_fin[0] if lista_folios_fin else None
                 
-                orquestador = get_orquestador_service(db)
+                orquestador = get_orquestador_service(None)  # MongoDB ELIMINADO
                 orq_resultado = await orquestador.procesar_analisis(
                     server_id=server_id,
                     server_name=server.get('name', ''),
@@ -4870,7 +4886,7 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
                 # Determinar folio_inventario principal para SR
                 folio_inventario_principal = lista_folios_fin[0] if lista_folios_fin else None
                 
-                orquestador = get_orquestador_service(db)
+                orquestador = get_orquestador_service(None)  # MongoDB ELIMINADO
                 orq_resultado = await orquestador.procesar_analisis(
                     server_id=server_id,
                     server_name=server.get('name', ''),
@@ -16466,7 +16482,7 @@ async def get_estructura_organizacional(current_user: Dict = Depends(get_current
     Protegido por permiso granular SISTEMA_ESTRUCTURA_VER.
     Resolución: permisos directos → múltiples roles → rol único → fallback SuperAdmin.
     """
-    service = get_estructura_service(db)
+    service = get_estructura_service(None)  # MongoDB ELIMINADO
     
     # FASE 6: Validación de permiso con múltiples roles
     tiene_permiso = await verificar_permiso_estructura_v6(current_user)
@@ -16508,7 +16524,7 @@ async def get_mapeo_servidores(current_user: Dict = Depends(get_current_user)):
     if current_user.get('role') not in ['SuperAdministrador', 'Administrador']:
         raise HTTPException(status_code=403, detail="No autorizado")
     
-    service = get_estructura_service(db)
+    service = get_estructura_service(None)  # MongoDB ELIMINADO
     
     await service.escribir_bitacora(
         usuario_id=current_user.get('id', ''),
@@ -16529,7 +16545,7 @@ async def get_permisos_catalogo_v2(current_user: Dict = Depends(get_current_user
     if current_user.get('role') not in ['SuperAdministrador', 'Administrador']:
         raise HTTPException(status_code=403, detail="No autorizado")
     
-    service = get_estructura_service(db)
+    service = get_estructura_service(None)  # MongoDB ELIMINADO
     
     await service.escribir_bitacora(
         usuario_id=current_user.get('id', ''),
@@ -17687,7 +17703,9 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    client.close()
+    # MongoDB ELIMINADO - Este handler ya no es necesario
+    # La variable 'client' ya no existe (era el cliente de MongoDB)
+    pass
 
 
 # === FASE 2 - MÓDULO OPERATIVO (CAB-003) ===
@@ -17697,13 +17715,13 @@ app.include_router(router_fase2_operativo, prefix="/api/v2", tags=["Fase2-Operat
 # ============= SUBFASE 2B.5: SISTEMA DE NOTIFICACIONES WHATSAPP =============
 # Importar y registrar rutas de notificaciones (core transversal)
 from core.communications.routes import router as communications_router, init_notifications_routes
-init_notifications_routes(db)  # Inicializar con conexión MongoDB
+init_notifications_routes(None)  # MongoDB ELIMINADO - Sistema opera en modo SQL-only
 app.include_router(communications_router, tags=["Notificaciones"])
 
 # ============= SUBFASE 2B.5.2: SCHEDULER AUTOMÁTICO =============
 # Sistema de jobs periódicos para SLA y notificaciones
 from core.scheduler.routes import router as scheduler_router, init_scheduler_routes
-init_scheduler_routes(db)  # Inicializar con conexión MongoDB
+init_scheduler_routes(None)  # MongoDB ELIMINADO - Sistema opera en modo SQL-only
 app.include_router(scheduler_router, tags=["Scheduler"])
 
 # ============= CENTRO DE CONTROL EDARSA =============
@@ -17725,9 +17743,9 @@ from core.rbac.routes import router as rbac_router
 from core.rbac.service import RBACService
 # Inicializar RBAC (sembrar permisos y roles si no existen)
 try:
-    rbac_service = RBACService(db)
+    rbac_service = RBACService(None)  # MongoDB ELIMINADO - RBAC usa SQL Server
     rbac_service.ensure_initialized()
-    logger.info("RBAC Service inicializado")
+    logger.info("RBAC Service inicializado (SQL Server)")
 except Exception as e:
     logger.warning(f"Error inicializando RBAC: {e}")
 app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
@@ -17890,8 +17908,8 @@ async def startup_scheduler():
     """Inicia el scheduler de jobs automáticos."""
     try:
         from core.scheduler import start_scheduler
-        await start_scheduler(db)
-        logger.info("Scheduler iniciado correctamente")
+        await start_scheduler(None)  # MongoDB ELIMINADO - Scheduler opera sin locks MongoDB
+        logger.info("Scheduler iniciado correctamente (SQL-only mode)")
     except Exception as e:
         logger.error(f"Error iniciando scheduler: {e}")
         # No fallar el startup por el scheduler

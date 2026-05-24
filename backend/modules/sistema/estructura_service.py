@@ -33,7 +33,20 @@ class EstructuraService:
         """
         Obtiene la estructura organizacional completa.
         Retorna empresas con sus unidades y sucursales.
+        
+        NOTA: Si db es None (SQL-only mode), retorna estructura vacía.
         """
+        # MongoDB ELIMINADO - Retornar estructura vacía si db es None
+        if self.db is None:
+            logger.warning("[ESTRUCTURA] get_estructura_organizacional: Sin MongoDB - Retornando vacío")
+            return {
+                "empresas": [],
+                "total_empresas": 0,
+                "total_unidades": 0,
+                "total_sucursales": 0,
+                "nota": "Modo SQL-only: Datos de estructura no disponibles sin MongoDB"
+            }
+        
         try:
             # Obtener empresas
             empresas = await self.db.sec_empresas.find(
@@ -212,7 +225,12 @@ class EstructuraService:
 
 # Factory function
 def get_estructura_service(db) -> EstructuraService:
-    """Obtiene instancia del servicio."""
+    """
+    Obtiene instancia del servicio.
+    
+    NOTA: MongoDB ELIMINADO - Este servicio puede recibir db=None.
+    En ese caso, retornará respuestas stub vacías.
+    """
     return EstructuraService(db)
 
 

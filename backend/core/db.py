@@ -930,7 +930,7 @@ def _execute_sql_query_params_direct(
         
     except Exception as pymssql_error:
         logging.error(f"[FALLBACK] pymssql params también falló: {str(pymssql_error)}")
-        mark_server_offline(host, str(pymssql_error))
+        mark_server_offline(host)  # Solo host, sin segundo argumento
         return []
 
 

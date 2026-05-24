@@ -44,6 +44,8 @@ class OrquestadorService:
         """
         Procesa los resultados del análisis de inventario y crea workflow si hay diferencias.
         
+        NOTA: Si db es None (SQL-only mode), retorna resultado vacío sin crear workflow.
+        
         Args:
             server_id: ID del servidor
             server_name: Nombre del servidor
@@ -75,6 +77,12 @@ class OrquestadorService:
             "mensaje": "",
             "error": None
         }
+        
+        # MongoDB ELIMINADO - Si db es None, retornar sin crear workflow
+        if self.db is None:
+            logger.warning("[ORQUESTADOR] procesar_analisis: Sin MongoDB - Workflows deshabilitados")
+            resumen["mensaje"] = "Modo SQL-only: Workflows deshabilitados sin MongoDB"
+            return resumen
         
         try:
             # 1. Filtrar productos con diferencia != 0

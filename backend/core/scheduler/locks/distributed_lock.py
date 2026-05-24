@@ -239,18 +239,28 @@ class LockAcquisitionError(Exception):
 class LockManager:
     """
     Manager central de locks.
+    
+    NOTA: En modo SQL-only (db=None), retorna NullLock que siempre permite ejecución.
     """
     
     def __init__(self, db):
         self.db = db
-        self.collection = db[DistributedLock.COLLECTION_NAME]
+        if db is not None:
+            self.collection = db[DistributedLock.COLLECTION_NAME]
+        else:
+            self.collection = None
+            logger.warning("[LOCK_MANAGER] Inicializado SIN MongoDB - Locks deshabilitados")
     
     def get_lock(self, job_name: str) -> DistributedLock:
         """Crea una instancia de lock para un job."""
+        if self.db is None:
+            return NullLock(job_name)  # Retornar lock dummy
         return DistributedLock(self.db, job_name)
     
     async def get_all_locks(self) -> list:
         """Obtiene todos los locks activos."""
+        if self.collection is None:
+            return []
         ahora = datetime.now(timezone.utc)
         cursor = self.collection.find(
             {"lock_until": {"$gt": ahora}},
@@ -260,6 +270,8 @@ class LockManager:
     
     async def cleanup_expired(self) -> int:
         """Limpia locks expirados."""
+        if self.collection is None:
+            return 0
         ahora = datetime.now(timezone.utc)
         result = await self.collection.delete_many({
             "lock_until": {"$lt": ahora}
@@ -270,9 +282,44 @@ class LockManager:
     
     async def ensure_indexes(self):
         """Crea índices necesarios."""
+        if self.collection is None:
+            return
         await self.collection.create_index("job_name", unique=True)
         await self.collection.create_index("lock_until")
         await self.collection.create_index("owner")
+
+
+class NullLock:
+    """
+    Lock dummy que siempre permite ejecución.
+    Se usa cuando MongoDB no está disponible (modo SQL-only).
+    """
+    
+    def __init__(self, job_name: str):
+        self.job_name = job_name
+        self._locked = False
+    
+    async def acquire(self, timeout_seconds: int = 600) -> bool:
+        """Siempre retorna True (permite ejecución)."""
+        self._locked = True
+        logger.debug(f"[NULL_LOCK] Adquirido (dummy) para: {self.job_name}")
+        return True
+    
+    async def release(self) -> bool:
+        """No hace nada."""
+        self._locked = False
+        return True
+    
+    async def is_locked(self) -> bool:
+        return self._locked
+    
+    async def __aenter__(self):
+        await self.acquire()
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.release()
+        return False
 
 
 # Singleton

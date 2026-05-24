@@ -26,17 +26,32 @@ _db = None
 
 
 def init_scheduler_routes(database) -> None:
-    """Inicializa las rutas con la conexión a MongoDB."""
+    """
+    Inicializa las rutas con la conexión a MongoDB.
+    
+    NOTA: MongoDB ELIMINADO del sistema. Este módulo ahora opera en modo degradado
+    cuando database es None, devolviendo respuestas stub sin persistencia MongoDB.
+    """
     global _db
     _db = database
-    logger.info("Scheduler routes initialized")
+    if _db is None:
+        logger.warning("[SCHEDULER_ROUTES] Inicializado SIN MongoDB - Modo SQL-only")
+    else:
+        logger.info("Scheduler routes initialized")
 
 
 def get_db():
-    """Obtiene la conexión a MongoDB."""
-    if _db is None:
-        raise RuntimeError("Scheduler routes not initialized")
+    """
+    Obtiene la conexión a MongoDB.
+    
+    NOTA: En modo SQL-only, retorna None y los endpoints deben manejar este caso.
+    """
     return _db
+
+
+def is_mongo_available() -> bool:
+    """Verifica si MongoDB está disponible."""
+    return _db is not None
 
 
 # =============================================================================

@@ -39,13 +39,19 @@ class JobLogger:
     Logger de ejecuciones de jobs.
     
     Registra inicio, fin, métricas y errores de cada ejecución.
+    
+    NOTA: En modo SQL-only (db=None), opera en modo dummy sin persistencia.
     """
     
     COLLECTION_NAME = "scheduler_job_log"
     
     def __init__(self, db):
         self.db = db
-        self.collection = db[self.COLLECTION_NAME]
+        if db is not None:
+            self.collection = db[self.COLLECTION_NAME]
+        else:
+            self.collection = None
+            logger.warning("[JOB_LOGGER] Inicializado SIN MongoDB - Logs en memoria solamente")
     
     async def start_execution(
         self,
@@ -65,7 +71,9 @@ class JobLogger:
             metadata=metadata or {}
         )
         
-        await self.collection.insert_one(log_entry.model_dump())
+        # MongoDB ELIMINADO - Solo persistir si db está disponible
+        if self.collection is not None:
+            await self.collection.insert_one(log_entry.model_dump())
         logger.info(f"Job iniciado: {job_name} (run_id={log_entry.run_id})")
         
         return log_entry
@@ -104,10 +112,12 @@ class JobLogger:
         if extra_metadata:
             updates["metadata"] = {**log_entry.metadata, **extra_metadata}
         
-        await self.collection.update_one(
-            {"id": log_entry.id},
-            {"$set": updates}
-        )
+        # MongoDB ELIMINADO - Solo persistir si db está disponible
+        if self.collection is not None:
+            await self.collection.update_one(
+                {"id": log_entry.id},
+                {"$set": updates}
+            )
         
         log_msg = f"Job finalizado: {log_entry.job_name} (run_id={log_entry.run_id}) - " \
                   f"status={status}, duration={duration_ms}ms, " \
@@ -137,7 +147,9 @@ class JobLogger:
             message=reason
         )
         
-        await self.collection.insert_one(log_entry.model_dump())
+        # MongoDB ELIMINADO - Solo persistir si db está disponible
+        if self.collection is not None:
+            await self.collection.insert_one(log_entry.model_dump())
         logger.info(f"Job omitido: {job_name} - {reason}")
         
         return log_entry
@@ -152,6 +164,10 @@ class JobLogger:
         """
         Obtiene historial de ejecuciones.
         """
+        # MongoDB ELIMINADO - Retornar lista vacía si no hay db
+        if self.collection is None:
+            return []
+            
         filtro = {}
         if job_name:
             filtro["job_name"] = job_name
@@ -168,6 +184,9 @@ class JobLogger:
     
     async def get_last_execution(self, job_name: str) -> Optional[Dict]:
         """Obtiene última ejecución de un job."""
+        # MongoDB ELIMINADO - Retornar None si no hay db
+        if self.collection is None:
+            return None
         return await self.collection.find_one(
             {"job_name": job_name},
             {"_id": 0},
@@ -178,6 +197,10 @@ class JobLogger:
         """
         Obtiene estadísticas de ejecuciones.
         """
+        # MongoDB ELIMINADO - Retornar stats vacío si no hay db
+        if self.collection is None:
+            return {}
+            
         since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
         
         match_stage = {"started_at": {"$gte": since}}
@@ -227,6 +250,10 @@ class JobLogger:
         """
         Limpia logs antiguos.
         """
+        # MongoDB ELIMINADO - Retornar 0 si no hay db
+        if self.collection is None:
+            return 0
+            
         cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         result = await self.collection.delete_many({
             "started_at": {"$lt": cutoff}
@@ -237,6 +264,10 @@ class JobLogger:
     
     async def ensure_indexes(self):
         """Crea índices necesarios."""
+        # MongoDB ELIMINADO - No hacer nada si no hay db
+        if self.collection is None:
+            return
+            
         try:
             await self.collection.create_index([("job_name", 1), ("started_at", -1)])
         except Exception:
