@@ -49,16 +49,26 @@ USE_SQL_FOR_SERVERS = os.environ.get('USE_SQL_FOR_SERVERS', 'true').lower() == '
 _db = None
 
 
-def init_comercial_repository(database) -> None:
-    """Inicializa el repositorio con la conexión a MongoDB."""
+def init_comercial_repository(database=None) -> None:
+    """
+    DEPRECADO: MongoDB ya no se usa.
+    El módulo comercial está en migración a SQL.
+    """
     global _db
     _db = database
+    import logging
+    logging.warning("[COMERCIAL] Repository - MongoDB deprecado")
 
 
 def get_db():
-    """Obtiene la conexión a MongoDB inyectada."""
+    """
+    DEPRECADO: MongoDB ya no se usa.
+    Retorna None - las funciones deben manejar gracefully.
+    """
     if _db is None:
-        raise RuntimeError("Comercial repository not initialized. Call init_comercial_repository(db) first.")
+        import logging
+        logging.debug("[COMERCIAL] get_db() - MongoDB deprecado")
+        return None
     return _db
 
 

@@ -33,18 +33,25 @@ from core.system_type_utils import normalize_system_type
 # Referencia global a MongoDB (evita circular import con server.py)
 _db = None
 
-def init_cache_service(database):
-    """Inicializa el servicio de cache con la conexión a MongoDB."""
+def init_cache_service(database=None):
+    """
+    DEPRECADO: MongoDB ya no se usa.
+    El módulo comercial está en proceso de migración a SQL.
+    """
     global _db
     _db = database
+    import logging
+    logging.warning("[COMERCIAL] Cache service - MongoDB deprecado, funcionalidad limitada")
 
 def get_db():
-    """Obtiene la conexión a MongoDB."""
+    """
+    DEPRECADO: MongoDB ya no se usa.
+    Retorna None - las funciones deben manejar este caso.
+    """
     global _db
     if _db is None:
-        # Fallback: import tardío solo si no se inicializó
-        from server import db
-        _db = db
+        import logging
+        logging.debug("[COMERCIAL] get_db() - MongoDB deprecado")
     return _db
 
 # TTLs configurables por endpoint (en segundos)

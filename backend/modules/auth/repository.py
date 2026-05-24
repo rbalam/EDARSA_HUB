@@ -17,34 +17,35 @@ from datetime import datetime, timezone
 
 
 # ============================================================================
-# INYECCIÓN DE DEPENDENCIA: MongoDB (Legacy - solo para roles)
+# INICIALIZACIÓN - YA NO REQUIERE MONGODB
 # ============================================================================
 
-_db = None
+_db = None  # Legacy - mantener para compatibilidad pero no se usa
 
 
-def init_auth_repository(database) -> None:
+def init_auth_repository(database=None) -> None:
     """
-    Inicializa el repositorio con la conexión a MongoDB.
+    Inicializa el repositorio.
     
-    RBAC-SCOPE-G: MongoDB solo se usa para roles (db.roles).
-    Usuarios se manejan 100% desde SQL.
-    
-    Args:
-        database: Instancia de AsyncIOMotorDatabase
+    MIGRACIÓN COMPLETA A SQL: MongoDB ya NO es requerido.
+    Esta función se mantiene por compatibilidad pero no hace nada.
+    Todos los datos (usuarios, roles, sesiones) están en EDARSAHUB SQL.
     """
     global _db
-    _db = database
+    _db = database  # Mantener referencia legacy por si algún código viejo la necesita
+    import logging
+    logging.info("[AUTH] Repository inicializado - 100% SQL Server (sin MongoDB)")
 
 
 def get_db():
     """
-    Obtiene la conexión a MongoDB inyectada.
-    
-    RBAC-SCOPE-G: Solo usada para operaciones de roles.
+    DEPRECADO: MongoDB ya no se usa.
+    Mantener para compatibilidad con código legacy que aún no se ha limpiado.
     """
     if _db is None:
-        raise RuntimeError("Auth repository not initialized. Call init_auth_repository(db) first.")
+        import logging
+        logging.warning("[AUTH] get_db() llamado pero MongoDB está deprecado. Auth usa 100% SQL.")
+        return None
     return _db
 
 
@@ -300,63 +301,177 @@ async def deactivate_user(user_id: str) -> None:
 
 
 # ============================================================================
-# ROLES
+# ROLES - MIGRADO A SQL (Usuario_Roles)
 # ============================================================================
 
+def _get_sql_connection():
+    """Conexión a EDARSAHUB SQL para roles"""
+    import pymssql
+    return pymssql.connect(
+        server='54.39.104.176',
+        port=1433,
+        database='EDARSAHUB',
+        user='HRLectura',
+        password='National09$',
+        login_timeout=10,
+        timeout=30
+    )
+
+
 async def get_all_roles() -> List[Dict]:
-    """Obtiene todos los roles."""
-    return await get_db().roles.find({}, {"_id": 0}).to_list(100)
+    """Obtiene todos los roles desde SQL."""
+    conn = _get_sql_connection()
+    try:
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute('''
+            SELECT RolID as id, CodigoRol as codigo, NombreRol as nombre, 
+                   Descripcion as descripcion, NivelAcceso as nivel_acceso, Activo as activo
+            FROM Usuario_Roles WHERE Activo = 1 ORDER BY RolID
+        ''')
+        roles = []
+        for row in cursor.fetchall():
+            roles.append({
+                'id': str(row['id']),
+                'nombre': row['nombre'],
+                'codigo': row['codigo'],
+                'descripcion': row['descripcion'],
+                'nivel_acceso': row['nivel_acceso'],
+                'activo': row['activo']
+            })
+        return roles
+    finally:
+        conn.close()
 
 
 async def find_role_by_id(role_id: str) -> Optional[Dict]:
-    """Busca un rol por ID."""
-    return await get_db().roles.find_one({"id": role_id}, {"_id": 0})
+    """Busca un rol por ID en SQL."""
+    conn = _get_sql_connection()
+    try:
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute('''
+            SELECT RolID as id, CodigoRol as codigo, NombreRol as nombre, 
+                   Descripcion as descripcion, NivelAcceso as nivel_acceso, Activo as activo
+            FROM Usuario_Roles WHERE RolID = %s
+        ''', (int(role_id) if role_id.isdigit() else 0,))
+        row = cursor.fetchone()
+        if row:
+            return {
+                'id': str(row['id']),
+                'nombre': row['nombre'],
+                'codigo': row['codigo'],
+                'descripcion': row['descripcion'],
+                'nivel_acceso': row['nivel_acceso'],
+                'activo': row['activo']
+            }
+        return None
+    finally:
+        conn.close()
 
 
 async def find_role_by_name(nombre: str) -> Optional[Dict]:
-    """Busca un rol por nombre."""
-    return await get_db().roles.find_one({"nombre": nombre}, {"_id": 0})
+    """Busca un rol por nombre en SQL."""
+    conn = _get_sql_connection()
+    try:
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute('''
+            SELECT RolID as id, CodigoRol as codigo, NombreRol as nombre, 
+                   Descripcion as descripcion, NivelAcceso as nivel_acceso, Activo as activo
+            FROM Usuario_Roles WHERE NombreRol = %s OR CodigoRol = %s
+        ''', (nombre, nombre))
+        row = cursor.fetchone()
+        if row:
+            return {
+                'id': str(row['id']),
+                'nombre': row['nombre'],
+                'codigo': row['codigo'],
+                'descripcion': row['descripcion'],
+                'nivel_acceso': row['nivel_acceso'],
+                'activo': row['activo']
+            }
+        return None
+    finally:
+        conn.close()
 
 
 async def create_role(role_doc: Dict) -> Dict:
-    """Crea un nuevo rol."""
-    await get_db().roles.insert_one(role_doc)
-    # Retornar sin _id
-    if "_id" in role_doc:
-        del role_doc["_id"]
-    return role_doc
+    """Crea un nuevo rol en SQL."""
+    conn = _get_sql_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO Usuario_Roles (CodigoRol, NombreRol, Descripcion, NivelAcceso, Activo, FechaCreacion)
+            VALUES (%s, %s, %s, %s, 1, GETDATE())
+        ''', (
+            role_doc.get('codigo', role_doc.get('nombre', '').upper()[:20]),
+            role_doc.get('nombre'),
+            role_doc.get('descripcion'),
+            role_doc.get('nivel_acceso', 1)
+        ))
+        conn.commit()
+        cursor.execute('SELECT SCOPE_IDENTITY() as id')
+        new_id = cursor.fetchone()[0]
+        role_doc['id'] = str(new_id)
+        return role_doc
+    finally:
+        conn.close()
 
 
 async def create_default_roles(default_roles: List[Dict]) -> List[Dict]:
-    """Crea los roles predeterminados del sistema."""
-    roles_to_insert = []
-    for role in default_roles:
-        role_doc = {
-            "id": str(uuid.uuid4()),
-            **role,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        roles_to_insert.append(role_doc)
-    
-    await get_db().roles.insert_many(roles_to_insert)
-    return roles_to_insert
+    """Los roles ya existen en SQL. Retorna los existentes."""
+    return await get_all_roles()
 
 
 async def update_role(role_id: str, update_data: Dict) -> Optional[Dict]:
-    """Actualiza un rol y retorna el rol actualizado."""
-    if update_data:
-        await get_db().roles.update_one({"id": role_id}, {"$set": update_data})
-    return await get_db().roles.find_one({"id": role_id}, {"_id": 0})
+    """Actualiza un rol en SQL."""
+    conn = _get_sql_connection()
+    try:
+        cursor = conn.cursor()
+        sets = []
+        params = []
+        if 'nombre' in update_data:
+            sets.append('NombreRol = %s')
+            params.append(update_data['nombre'])
+        if 'descripcion' in update_data:
+            sets.append('Descripcion = %s')
+            params.append(update_data['descripcion'])
+        if 'activo' in update_data:
+            sets.append('Activo = %s')
+            params.append(1 if update_data['activo'] else 0)
+        
+        if sets:
+            params.append(int(role_id) if role_id.isdigit() else 0)
+            cursor.execute(f'UPDATE Usuario_Roles SET {", ".join(sets)} WHERE RolID = %s', tuple(params))
+            conn.commit()
+        
+        return await find_role_by_id(role_id)
+    finally:
+        conn.close()
 
 
 async def delete_role(role_id: str) -> None:
-    """Elimina un rol por ID."""
-    await get_db().roles.delete_one({"id": role_id})
+    """Desactiva un rol en SQL (no elimina físicamente)."""
+    conn = _get_sql_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute('UPDATE Usuario_Roles SET Activo = 0 WHERE RolID = %s', (int(role_id) if role_id.isdigit() else 0,))
+        conn.commit()
+    finally:
+        conn.close()
 
 
 async def count_users_with_role(role_name: str) -> int:
-    """Cuenta usuarios que tienen un rol específico."""
-    return await get_db().users.count_documents({"role": role_name})
+    """Cuenta usuarios que tienen un rol específico en SQL."""
+    conn = _get_sql_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT COUNT(*) FROM Usuario_RolesAsignacion ra
+            INNER JOIN Usuario_Roles r ON ra.RolID = r.RolID
+            WHERE r.NombreRol = %s OR r.CodigoRol = %s
+        ''', (role_name, role_name))
+        return cursor.fetchone()[0]
+    finally:
+        conn.close()
 
 
 __all__ = [

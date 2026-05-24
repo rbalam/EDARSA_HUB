@@ -14,7 +14,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+# MongoDB import movido a bloque condicional más abajo
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
@@ -44,10 +44,36 @@ from catalogo.catalogo_consultas import CATALOGO_CONSULTAS, get_consultas_por_ca
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Logger temprano para mensajes de inicio
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# CONEXIÓN A BASE DE DATOS
+# ============================================================================
+# 
+# MÁXIMA EDARSAHUB: SQL Server es el cerebro. MongoDB DEPRECADO.
+# 
+# MongoDB se mantiene inicializado SOLO para compatibilidad con módulos legacy
+# que aún no han sido migrados. Los módulos principales (Auth, CRM, Tablajería)
+# funcionan 100% con SQL Server.
+#
+# ============================================================================
+
+# MongoDB connection (LEGACY - Solo para módulos no migrados)
+mongo_url = os.environ.get('MONGO_URL', '')
+db = None  # Default: sin MongoDB
+
+if mongo_url:
+    try:
+        from motor.motor_asyncio import AsyncIOMotorClient
+        client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=5000)
+        db = client[os.environ.get('DB_NAME', 'edarsa_hub')]
+        logger.info("[DB] MongoDB conectado (LEGACY - módulos no migrados)")
+    except Exception as e:
+        logger.warning(f"[DB] MongoDB no disponible (OK - sistema funciona con SQL): {e}")
+        db = None
+else:
+    logger.info("[DB] MongoDB no configurado - Sistema funcionando 100% SQL Server")
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")

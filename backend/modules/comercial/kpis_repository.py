@@ -28,16 +28,26 @@ import json
 _db = None
 
 
-def init_kpis_repository(database) -> None:
-    """Inicializa el repositorio con la conexión a MongoDB."""
+def init_kpis_repository(database=None) -> None:
+    """
+    DEPRECADO: MongoDB ya no se usa para KPIs.
+    Los KPIs se leen directamente de EDARSAHUB SQL.
+    """
     global _db
     _db = database
+    import logging
+    logging.warning("[COMERCIAL] KPIs repository - MongoDB deprecado")
 
 
 def get_db():
-    """Obtiene la conexión a MongoDB inyectada."""
+    """
+    DEPRECADO: MongoDB ya no se usa.
+    Retorna None - las funciones deben manejar este caso gracefully.
+    """
     if _db is None:
-        raise RuntimeError("KPIs repository not initialized. Call init_kpis_repository(db) first.")
+        import logging
+        logging.debug("[COMERCIAL] KPIs get_db() - MongoDB deprecado, retornando None")
+        return None
     return _db
 
 
