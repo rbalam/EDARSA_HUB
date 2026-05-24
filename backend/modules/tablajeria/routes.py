@@ -619,8 +619,16 @@ async def registrar_resultados_orden(
 
 
 class CerrarOrdenRequest(BaseModel):
-    """Request para cerrar orden"""
+    """Request para cerrar orden con parámetros opcionales de Fase 6."""
     observaciones: Optional[str] = None
+    # Fase 6 - Costeo (opcional, si se omite no se calcula costeo)
+    costo_unitario_insumo: Optional[float] = None
+    costo_mano_obra: Optional[float] = 0
+    costo_indirectos: Optional[float] = 0
+    costo_energia: Optional[float] = 0
+    otros_costos: Optional[float] = 0
+    # Flags de control
+    ejecutar_fase6: bool = True  # Si True, ejecuta Fase 6 automáticamente
 
 
 @router.put("/ordenes/{orden_id}/cerrar")
@@ -635,11 +643,18 @@ async def cerrar_orden(
     Permisos requeridos: TABLAJERIA_CERRAR_ORDEN
     
     Si hay desviaciones fuera de tolerancia, la orden quedará en PENDIENTE_AUTORIZACION.
+    
+    FASE 6 (Integración automática):
+    Si se proporciona costo_unitario_insumo y ejecutar_fase6=True, al cerrar la orden se ejecuta:
+    1. Afectación de inventarios
+    2. Cálculo de costeo
+    3. Generación de póliza contable
     """
     try:
         service = _get_ordenes_service()
         usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
         
+        # 1. Cerrar la orden primero
         result = service.cerrar_orden(
             orden_id=orden_id,
             usuario_id=usuario_id,
@@ -647,14 +662,52 @@ async def cerrar_orden(
         )
         
         mensaje = f"Orden {result['folio']} cerrada exitosamente"
+        fase6_result = None
+        
         if result.get('requiere_autorizacion'):
             mensaje = f"Orden {result['folio']} requiere autorización: {result.get('motivo_autorizacion')}"
+        else:
+            # 2. Si la orden está CERRADA (no pendiente), ejecutar Fase 6 si aplica
+            if data and data.ejecutar_fase6 and data.costo_unitario_insumo is not None:
+                try:
+                    fase6_service = get_tablajeria_fase6_service()
+                    
+                    costos_adicionales = {
+                        'mano_obra': Dec(str(data.costo_mano_obra or 0)),
+                        'indirectos': Dec(str(data.costo_indirectos or 0)),
+                        'energia': Dec(str(data.costo_energia or 0)),
+                        'otros': Dec(str(data.otros_costos or 0))
+                    }
+                    
+                    fase6_result = fase6_service.procesar_cierre_completo(
+                        orden_id=orden_id,
+                        costo_unitario_insumo=Dec(str(data.costo_unitario_insumo)),
+                        costos_adicionales=costos_adicionales,
+                        usuario_id=usuario_id
+                    )
+                    
+                    if fase6_result.get('exito'):
+                        mensaje += " | Fase 6 completada: Inventario, Costeo y Póliza procesados"
+                    else:
+                        mensaje += f" | Fase 6 con errores: {', '.join(fase6_result.get('errores', []))}"
+                    
+                    logger.info(f"[Tablajeria] Fase 6 ejecutada para orden {result['folio']}")
+                    
+                except Exception as e:
+                    logger.error(f"[Tablajeria] Error en Fase 6 para orden {orden_id}: {e}")
+                    fase6_result = {"exito": False, "errores": [str(e)]}
+                    mensaje += f" | Fase 6 falló: {str(e)}"
         
-        return {
+        response = {
             "success": True,
             "mensaje": mensaje,
             **result
         }
+        
+        if fase6_result:
+            response["fase6"] = fase6_result
+        
+        return response
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

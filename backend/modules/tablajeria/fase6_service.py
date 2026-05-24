@@ -290,12 +290,13 @@ class TablajeriaFase6Service:
                 })
             
             # 2. ENTRADA_DERIVADO - Productos producidos
+            # Nota: OrdenesDetalle no tiene EsInventariable, usamos GeneraMovimiento y TipoDerivado
             cursor.execute("""
                 SELECT 
                     OrdenDetalleID, ProductoDerivadoCodigo, ProductoDerivadoNombre,
-                    CantidadReal, EsInventariable
+                    CantidadReal, TipoDerivado, GeneraMovimiento
                 FROM Operaciones_Tablaje_OrdenesDetalle
-                WHERE OrdenID = %s AND CantidadReal > 0 AND EsInventariable = 1
+                WHERE OrdenID = %s AND CantidadReal > 0 AND GeneraMovimiento = 1
             """, (orden_id,))
             
             detalles = cursor.fetchall()
@@ -348,7 +349,8 @@ class TablajeriaFase6Service:
             cursor.execute("""
                 UPDATE Operaciones_Tablaje_Ordenes SET
                     AfectaInventario = 1,
-                    FechaAfectacionInventario = %s
+                    MovimientoInventarioGenerado = 1,
+                    FechaModificacionUTC = %s
                 WHERE OrdenID = %s
             """, (now, orden_id))
             
@@ -437,11 +439,12 @@ class TablajeriaFase6Service:
             )
             
             # Obtener detalles de producción
+            # Nota: OrdenesDetalle no tiene EsInventariable, se infiere de TipoDerivado
             cursor.execute("""
                 SELECT 
                     OrdenDetalleID, ProductoDerivadoCodigo, ProductoDerivadoNombre,
                     TipoDerivado, CantidadReal, PorcentajeCostoAsignado,
-                    EsInventariable
+                    GeneraMovimiento
                 FROM Operaciones_Tablaje_OrdenesDetalle
                 WHERE OrdenID = %s AND CantidadReal > 0
             """, (orden_id,))
@@ -518,6 +521,9 @@ class TablajeriaFase6Service:
                 
                 costo_unitario = costo_asignado / cantidad if cantidad > 0 else Decimal('0')
                 
+                # Inferir EsInventariable: si no es MERMA y genera movimiento
+                es_inventariable = det['TipoDerivado'] != 'MERMA' and det.get('GeneraMovimiento', True)
+                
                 detalle_id = str(uuid.uuid4())
                 cursor.execute("""
                     INSERT INTO Tablajeria_CosteoDetalle (
@@ -532,7 +538,7 @@ class TablajeriaFase6Service:
                     det['TipoDerivado'],
                     float(cantidad), float(porcentaje),
                     float(costo_asignado), float(costo_unitario),
-                    det['EsInventariable']
+                    es_inventariable
                 ))
                 
                 detalles_costeo.append({
