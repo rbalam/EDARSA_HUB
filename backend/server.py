@@ -17904,6 +17904,17 @@ try:
 except Exception as e:
     logger.warning(f"Error registrando Tablajería router: {e}")
 
+# =============================================================================
+# CAVA DE SOCIOS (Comercial - Experiencia Cliente)
+# =============================================================================
+try:
+    from modules.cava_socios.routes import router as cava_socios_router
+    app.include_router(cava_socios_router, tags=["Cava de Socios"])
+    logger.info("✓ Cava de Socios router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Cava de Socios router: {e}")
+
+
 # Startup: Iniciar scheduler
 @app.on_event("startup")
 async def startup_scheduler():

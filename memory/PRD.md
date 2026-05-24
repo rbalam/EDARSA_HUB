@@ -53,6 +53,53 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 - [x] **199 permisos asignados** a 8 roles (SUPERADMIN, ADMIN, GERENCIA, GERENTE_OPS, SUPERVISOR, OPERADOR, AUDITOR, VISOR)
 - [x] **Script RBAC**: `/app/backend/scripts/create_tablajeria_rbac.py`
 
+#### Dashboard y Reportes Tablajería (24 Mayo 2026) ✅ NUEVO
+- [x] **Servicio dashboard_service.py** con funcionalidades:
+  - KPIs generales (órdenes, rendimientos, mermas, costeo)
+  - Rendimientos por plantilla
+  - Tendencia histórica
+  - Top mermas
+  - Alertas de desviación
+  - Resumen de costeo
+- [x] **8 endpoints API de dashboard**:
+  - `/api/tablajeria/dashboard/kpis`
+  - `/api/tablajeria/dashboard/rendimientos-plantilla`
+  - `/api/tablajeria/dashboard/tendencia`
+  - `/api/tablajeria/dashboard/top-mermas`
+  - `/api/tablajeria/dashboard/alertas`
+  - `/api/tablajeria/dashboard/resumen-costeo`
+- [x] **3 endpoints de reportes exportables**:
+  - `/api/tablajeria/reportes/ordenes`
+  - `/api/tablajeria/reportes/mermas`
+  - `/api/tablajeria/reportes/costeo`
+- [x] **Frontend TablajeriaDashboard.jsx** actualizado con:
+  - Cards de KPIs
+  - Alertas de rendimiento
+  - Gráfico de rendimientos por plantilla
+  - Tabla de top mermas
+  - Resumen de costeo con desglose
+
+#### Módulo Cava de Socios (24 Mayo 2026) ✅ NUEVO
+- [x] **5 tablas SQL creadas** en EDARSAHUB:
+  - `CavaSocios_Socios` - Catálogo de socios
+  - `CavaSocios_Botellas` - Inventario en custodia
+  - `CavaSocios_Movimientos` - Entradas, consumos, retiros
+  - `CavaSocios_Cargos` - Cargos por servicios
+  - `CavaSocios_Configuracion` - Configuración por empresa
+- [x] **Servicio backend** `/app/backend/modules/cava_socios/`:
+  - CRUD de socios
+  - Registro de botellas
+  - Consumos parciales/totales
+  - Cargos automáticos con IVA
+  - Dashboard con KPIs
+- [x] **API Endpoints**:
+  - `GET /api/cava-socios/dashboard`
+  - `GET/POST /api/cava-socios/socios`
+  - `GET /api/cava-socios/socios/{id}`
+  - `POST /api/cava-socios/socios/{id}/botellas`
+  - `POST /api/cava-socios/botellas/{id}/consumo`
+- [x] **Script SQL**: `/app/backend/scripts/create_cava_socios_tables.py`
+
 #### Tablajería Fase 6: Inventarios, Costeo, Contabilidad (24 Mayo 2026) ✅ INTEGRADO
 - [x] **Credenciales hardcodeadas removidas** - Ahora usa variables de entorno `EDARSAHUB_*`
 - [x] **6 tablas SQL creadas**:
@@ -106,16 +153,17 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 ### ⏳ Pendiente
 
 #### P1 - Alta Prioridad
-1. **Dashboard Rendimientos Tablajería** - Gráficos de rendimiento histórico por plantilla/insumo
+1. **Frontend Cava de Socios** - UI para gestión de socios y botellas
+2. **Script RBAC Cava de Socios** - Permisos para el módulo
 
 #### P2 - Media Prioridad
 1. **Flujos avanzados pipeline CRM** - Automatizaciones de etapas
-2. **Reportes de Tablajería** - Exportación de costeo y mermas
+2. **Reportes exportables PDF** - Tablajería y Cava de Socios
 
-#### CRM Fase 3 - Integraciones Externas ✅ YA EXISTENTE
-- [x] Tablas: `CRM_Integracion_Conectores`, `CRM_Staging_*`, `CRM_Integracion_SyncLog`
-- [x] VTiger Client implementado
-- [x] 17+ endpoints de integración en `integration_routes.py`
+#### P3 - Backlog Técnico
+1. Optimizar pool de conexiones pymssql (timeouts 502 ocasionales)
+2. Modularización backend (separar server.py por módulos)
+3. Persistencia de token en frontend (mejorar auth flow)
 
 ---
 

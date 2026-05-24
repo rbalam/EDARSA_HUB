@@ -1076,3 +1076,379 @@ async def guardar_config_contable(
         logger.error(f"[FASE6] Error guardando config: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+
+# ============================================================================
+# DASHBOARD Y REPORTES DE TABLAJERÍA
+# ============================================================================
+
+from .dashboard_service import get_tablajeria_dashboard_service
+
+
+@router.get("/dashboard/kpis")
+async def get_dashboard_kpis(
+    empresa_id: Optional[str] = None,
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Obtiene KPIs generales de tablajería.
+    
+    Permisos requeridos: TABLAJERIA_VER
+    
+    Returns:
+        KPIs de órdenes, rendimientos, mermas y costeo
+    """
+    try:
+        service = get_tablajeria_dashboard_service()
+        return service.get_kpis_generales(empresa_id, fecha_inicio, fecha_fin)
+    except Exception as e:
+        logger.error(f"[Dashboard] Error obteniendo KPIs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/dashboard/rendimientos-plantilla")
+async def get_rendimientos_por_plantilla(
+    limit: int = Query(20, ge=1, le=100),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Obtiene análisis de rendimientos agrupados por plantilla.
+    
+    Permisos requeridos: TABLAJERIA_VER
+    
+    Returns:
+        Lista de plantillas con métricas de rendimiento
+    """
+    try:
+        service = get_tablajeria_dashboard_service()
+        return service.get_rendimientos_por_plantilla(limit)
+    except Exception as e:
+        logger.error(f"[Dashboard] Error obteniendo rendimientos por plantilla: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/dashboard/tendencia")
+async def get_tendencia_rendimientos(
+    dias: int = Query(30, ge=7, le=365),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Obtiene tendencia de rendimientos en los últimos N días.
+    
+    Permisos requeridos: TABLAJERIA_VER
+    
+    Returns:
+        Lista de puntos de datos para gráfico de tendencia
+    """
+    try:
+        service = get_tablajeria_dashboard_service()
+        return service.get_tendencia_rendimientos(dias)
+    except Exception as e:
+        logger.error(f"[Dashboard] Error obteniendo tendencia: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/dashboard/top-mermas")
+async def get_top_mermas(
+    limit: int = Query(10, ge=1, le=50),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Obtiene los productos derivados con mayor merma.
+    
+    Permisos requeridos: TABLAJERIA_VER
+    
+    Returns:
+        Lista de productos con análisis de mermas
+    """
+    try:
+        service = get_tablajeria_dashboard_service()
+        return service.get_top_mermas(limit)
+    except Exception as e:
+        logger.error(f"[Dashboard] Error obteniendo top mermas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/dashboard/alertas")
+async def get_alertas_rendimiento(
+    umbral: float = Query(5.0, ge=1.0, le=50.0, description="Umbral de desviación para generar alerta"),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Obtiene alertas de órdenes con desviaciones fuera de umbral.
+    
+    Permisos requeridos: TABLAJERIA_VER
+    
+    Returns:
+        Lista de alertas de rendimiento
+    """
+    try:
+        service = get_tablajeria_dashboard_service()
+        return service.get_alertas_rendimiento(umbral)
+    except Exception as e:
+        logger.error(f"[Dashboard] Error obteniendo alertas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/dashboard/resumen-costeo")
+async def get_resumen_costeo(
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Obtiene resumen de costeo de producción.
+    
+    Permisos requeridos: TABLAJERIA_VER
+    
+    Returns:
+        Métricas de costeo con desglose
+    """
+    try:
+        service = get_tablajeria_dashboard_service()
+        return service.get_resumen_costeo(fecha_inicio, fecha_fin)
+    except Exception as e:
+        logger.error(f"[Dashboard] Error obteniendo resumen costeo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# REPORTES EXPORTABLES
+# ============================================================================
+
+@router.get("/reportes/ordenes")
+async def exportar_ordenes(
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    estatus: Optional[str] = None,
+    formato: str = Query("json", enum=["json", "csv"]),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Exporta reporte de órdenes de tablajería.
+    
+    Permisos requeridos: TABLAJERIA_EXPORTAR
+    
+    Returns:
+        Datos de órdenes en formato especificado
+    """
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(as_dict=True)
+        
+        where_clauses = ["1=1"]
+        params = []
+        
+        if fecha_inicio:
+            where_clauses.append("FechaOperacionMexico >= %s")
+            params.append(fecha_inicio)
+        if fecha_fin:
+            where_clauses.append("FechaOperacionMexico <= %s")
+            params.append(fecha_fin)
+        if estatus:
+            where_clauses.append("EstatusOrden = %s")
+            params.append(estatus)
+        
+        query = f"""
+            SELECT 
+                FolioOrden, OrigenOrden, EstatusOrden,
+                InsumoBaseCodigo, InsumoBaseNombre,
+                CantidadBasePlaneada, CantidadBaseReal,
+                RendimientoEsperadoPorcentaje, RendimientoRealPorcentaje,
+                DesviacionRendimiento, FechaOperacionMexico,
+                FechaInicioEjecucion, FechaCierreOrden, Observaciones
+            FROM Operaciones_Tablaje_Ordenes
+            WHERE {' AND '.join(where_clauses)}
+            ORDER BY FechaOperacionMexico DESC
+        """
+        
+        cursor.execute(query, params)
+        ordenes = []
+        for row in cursor.fetchall():
+            ordenes.append({
+                "folio": row['FolioOrden'],
+                "origen": row['OrigenOrden'],
+                "estatus": row['EstatusOrden'],
+                "insumo_codigo": row['InsumoBaseCodigo'],
+                "insumo_nombre": row['InsumoBaseNombre'],
+                "cantidad_planeada": float(row['CantidadBasePlaneada'] or 0),
+                "cantidad_real": float(row['CantidadBaseReal'] or 0),
+                "rendimiento_esperado": float(row['RendimientoEsperadoPorcentaje'] or 0),
+                "rendimiento_real": float(row['RendimientoRealPorcentaje'] or 0),
+                "desviacion": float(row['DesviacionRendimiento'] or 0),
+                "fecha_operacion": row['FechaOperacionMexico'].strftime('%Y-%m-%d') if row['FechaOperacionMexico'] else None,
+                "fecha_inicio": row['FechaInicioEjecucion'].strftime('%Y-%m-%d %H:%M') if row['FechaInicioEjecucion'] else None,
+                "fecha_cierre": row['FechaCierreOrden'].strftime('%Y-%m-%d %H:%M') if row['FechaCierreOrden'] else None,
+                "observaciones": row['Observaciones']
+            })
+        
+        conn.close()
+        
+        if formato == "csv":
+            import csv
+            import io
+            from fastapi.responses import StreamingResponse
+            
+            output = io.StringIO()
+            if ordenes:
+                writer = csv.DictWriter(output, fieldnames=ordenes[0].keys())
+                writer.writeheader()
+                writer.writerows(ordenes)
+            
+            output.seek(0)
+            return StreamingResponse(
+                iter([output.getvalue()]),
+                media_type="text/csv",
+                headers={"Content-Disposition": "attachment; filename=ordenes_tablajeria.csv"}
+            )
+        
+        return {"ordenes": ordenes, "total": len(ordenes)}
+        
+    except Exception as e:
+        logger.error(f"[Reportes] Error exportando órdenes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reportes/mermas")
+async def exportar_mermas(
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Exporta reporte de mermas de producción.
+    
+    Permisos requeridos: TABLAJERIA_EXPORTAR
+    
+    Returns:
+        Datos de mermas agrupados
+    """
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(as_dict=True)
+        
+        where_fecha = ""
+        params = []
+        if fecha_inicio and fecha_fin:
+            where_fecha = "AND o.FechaOperacionMexico BETWEEN %s AND %s"
+            params = [fecha_inicio, fecha_fin]
+        
+        cursor.execute(f"""
+            SELECT 
+                d.ProductoDerivadoNombre,
+                d.ProductoDerivadoCodigo,
+                o.FolioOrden,
+                o.InsumoBaseNombre,
+                d.CantidadEsperada,
+                d.CantidadReal,
+                d.PorcentajeEsperado,
+                d.PorcentajeReal,
+                o.FechaOperacionMexico
+            FROM Operaciones_Tablaje_OrdenesDetalle d
+            INNER JOIN Operaciones_Tablaje_Ordenes o ON d.OrdenID = o.OrdenID
+            WHERE d.TipoDerivado = 'MERMA'
+            AND o.EstatusOrden = 'CERRADA'
+            {where_fecha}
+            ORDER BY o.FechaOperacionMexico DESC
+        """, params)
+        
+        mermas = []
+        for row in cursor.fetchall():
+            mermas.append({
+                "producto": row['ProductoDerivadoNombre'],
+                "codigo": row['ProductoDerivadoCodigo'],
+                "folio_orden": row['FolioOrden'],
+                "insumo_base": row['InsumoBaseNombre'],
+                "cantidad_esperada_kg": float(row['CantidadEsperada'] or 0),
+                "cantidad_real_kg": float(row['CantidadReal'] or 0),
+                "porcentaje_esperado": float(row['PorcentajeEsperado'] or 0),
+                "porcentaje_real": float(row['PorcentajeReal'] or 0),
+                "fecha": row['FechaOperacionMexico'].strftime('%Y-%m-%d') if row['FechaOperacionMexico'] else None
+            })
+        
+        conn.close()
+        
+        # Resumen
+        total_esperado = sum(m['cantidad_esperada_kg'] for m in mermas)
+        total_real = sum(m['cantidad_real_kg'] for m in mermas)
+        
+        return {
+            "mermas": mermas,
+            "total": len(mermas),
+            "resumen": {
+                "total_esperado_kg": total_esperado,
+                "total_real_kg": total_real,
+                "diferencia_kg": total_real - total_esperado
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"[Reportes] Error exportando mermas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reportes/costeo")
+async def exportar_costeo(
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Exporta reporte de costeo de producción.
+    
+    Permisos requeridos: TABLAJERIA_EXPORTAR
+    
+    Returns:
+        Datos de costeo con desglose por orden
+    """
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(as_dict=True)
+        
+        cursor.execute("""
+            SELECT 
+                c.CosteoID,
+                o.FolioOrden,
+                o.InsumoBaseNombre,
+                c.CostoTotalInsumo,
+                c.CostoManoObra,
+                c.CostoIndirectos,
+                c.CostoEnergia,
+                c.OtrosCostos,
+                c.CostoTotalProduccion,
+                c.CostoUnitarioPromedio,
+                c.CantidadInsumoConsumida,
+                c.ReglaCosteoAplicada,
+                c.FechaCosteo
+            FROM Tablajeria_CosteoProduccion c
+            INNER JOIN Operaciones_Tablaje_Ordenes o ON c.OrdenID = o.OrdenID
+            ORDER BY c.FechaCosteo DESC
+        """)
+        
+        costeos = []
+        for row in cursor.fetchall():
+            costeos.append({
+                "costeo_id": str(row['CosteoID']),
+                "folio_orden": row['FolioOrden'],
+                "insumo": row['InsumoBaseNombre'],
+                "costo_insumo": float(row['CostoTotalInsumo'] or 0),
+                "costo_mano_obra": float(row['CostoManoObra'] or 0),
+                "costo_indirectos": float(row['CostoIndirectos'] or 0),
+                "costo_energia": float(row['CostoEnergia'] or 0),
+                "otros_costos": float(row['OtrosCostos'] or 0),
+                "costo_total": float(row['CostoTotalProduccion'] or 0),
+                "costo_unitario": float(row['CostoUnitarioPromedio'] or 0),
+                "kg_producidos": float(row['CantidadInsumoConsumida'] or 0),
+                "regla": row['ReglaCosteoAplicada'],
+                "fecha": row['FechaCosteo'].strftime('%Y-%m-%d %H:%M') if row['FechaCosteo'] else None
+            })
+        
+        conn.close()
+        
+        return {"costeos": costeos, "total": len(costeos)}
+        
+    except Exception as e:
+        logger.error(f"[Reportes] Error exportando costeo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
