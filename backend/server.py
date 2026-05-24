@@ -48,32 +48,19 @@ load_dotenv(ROOT_DIR / '.env')
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# CONEXIÓN A BASE DE DATOS
+# CONEXIÓN A BASE DE DATOS - 100% SQL SERVER
 # ============================================================================
 # 
-# MÁXIMA EDARSAHUB: SQL Server es el cerebro. MongoDB DEPRECADO.
+# MÁXIMA EDARSAHUB: SQL Server es el cerebro. MongoDB ELIMINADO.
 # 
-# MongoDB se mantiene inicializado SOLO para compatibilidad con módulos legacy
-# que aún no han sido migrados. Los módulos principales (Auth, CRM, Tablajería)
-# funcionan 100% con SQL Server.
+# Todos los módulos funcionan exclusivamente con EDARSAHUB SQL Server.
+# Variable 'db' se mantiene como None para compatibilidad con código legacy.
 #
 # ============================================================================
 
-# MongoDB connection (LEGACY - Solo para módulos no migrados)
-mongo_url = os.environ.get('MONGO_URL', '')
-db = None  # Default: sin MongoDB
-
-if mongo_url:
-    try:
-        from motor.motor_asyncio import AsyncIOMotorClient
-        client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=5000)
-        db = client[os.environ.get('DB_NAME', 'edarsa_hub')]
-        logger.info("[DB] MongoDB conectado (LEGACY - módulos no migrados)")
-    except Exception as e:
-        logger.warning(f"[DB] MongoDB no disponible (OK - sistema funciona con SQL): {e}")
-        db = None
-else:
-    logger.info("[DB] MongoDB no configurado - Sistema funcionando 100% SQL Server")
+# MongoDB ELIMINADO - Variable mantenida solo para compatibilidad
+db = None
+logger.info("[DB] Sistema funcionando 100% SQL Server - MongoDB ELIMINADO")
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -141,8 +128,8 @@ from core.user_access_context import (
     filter_results_by_almacen,
 )
 
-# Inicializar módulo de seguridad con conexión a MongoDB
-init_security(db)
+# Inicializar módulo de seguridad (100% SQL)
+init_security(None)  # MongoDB eliminado
 
 # ============================================================================
 # FASE 6-8: HELPER DE VALIDACIÓN RBAC CENTRALIZADA
@@ -191,8 +178,8 @@ async def validate_server_access_unified(current_user: Dict, server_id: str) -> 
 
 from modules.auth import get_router as get_auth_router, init_auth_module
 
-# Inicializar módulo auth con conexión a MongoDB
-init_auth_module(db)
+# Inicializar módulo auth (100% SQL Server)
+init_auth_module(None)  # MongoDB eliminado
 
 # Registrar router de auth
 api_router.include_router(get_auth_router())
@@ -276,8 +263,8 @@ from modules.compras.system_type_utils import (
     log_compras_error,
 )
 
-# Inicializar módulo compras (para schemas y utils, no rutas aún)
-init_compras_module(db)
+# Inicializar módulo compras (100% SQL Server)
+init_compras_module(None)  # MongoDB eliminado
 
 # MÓDULO COMERCIAL: Dashboard comercial, tablero ejecutivo, metas
 # - Fase 5B: Migración en progreso
@@ -303,8 +290,8 @@ from modules.comercial.service import (
 # FASE 5B-3: Import del módulo comercial (lazy router)
 from modules.comercial import get_router as get_comercial_router
 
-# Inicializar módulo comercial
-init_comercial_module(db)
+# Inicializar módulo comercial (100% SQL Server)
+init_comercial_module(None)  # MongoDB eliminado
 
 # FASE 5B-3: Registrar router de comercial (después de inicializar el módulo)
 api_router.include_router(get_comercial_router())
@@ -357,28 +344,27 @@ from modules.finanzas.repository_softrestaurant import FinanzasRepositorySoftRes
 from modules.manuales_operativos import get_router as get_manuales_router, init_manuales_module
 from modules.manuales_operativos.triggers import trigger_generar_manual, ESTADOS_TRIGGER
 
-# Inicializar módulo de Manuales Operativos
-init_manuales_module(db)
+# Inicializar módulo de Manuales Operativos (100% SQL)
+init_manuales_module(None)  # MongoDB eliminado
 
-# Inicializar módulo RH con conexión a MongoDB
-init_rh_module(db)
+# Inicializar módulo RH (100% SQL)
+init_rh_module(None)  # MongoDB eliminado
 
-# Inicializar módulo de Catálogos
-init_catalogos_module(db)
-init_catalogos_service(db)
+# Inicializar módulo de Catálogos (100% SQL)
+init_catalogos_module(None)  # MongoDB eliminado
+init_catalogos_service(None)  # MongoDB eliminado
 
-# Inicializar repositorios de Finanzas
-# EDARSA HUB (legacy para ingresos/cortes de caja)
-_finanzas_repo = FinanzasRepositoryReal(db)
+# Inicializar repositorios de Finanzas (100% SQL)
+_finanzas_repo = FinanzasRepositoryReal(None)  # MongoDB eliminado
 finanzas_ingresos.set_finanzas_repository(_finanzas_repo)
 finanzas_cxp.set_finanzas_repository(_finanzas_repo)
 
 # MPRO (para cuentas por pagar - fallback)
-_mpro_repo = FinanzasRepositoryMPRO(db)
+_mpro_repo = FinanzasRepositoryMPRO(None)  # MongoDB eliminado
 finanzas_cxp.set_mpro_repository(_mpro_repo)
 
 # SOFTRESTAURANT (CF, Estelar, 130 Mid - principal para CxP)
-_softrest_repo = FinanzasRepositorySoftRestaurant(db)
+_softrest_repo = FinanzasRepositorySoftRestaurant(None)  # MongoDB eliminado
 finanzas_cxp.set_softrestaurant_repository(_softrest_repo)
 
 # FASE 6B: Registrar router de RH (catálogos)
@@ -441,8 +427,8 @@ api_router.include_router(get_manuales_router())
 # ============================================================================
 from api.sync_receiver import router as sync_receiver_router, init_sync_receiver
 from modules.comercial.kpis_repository import init_kpis_repository
-init_sync_receiver(db)
-init_kpis_repository(db)
+init_sync_receiver(None)  # MongoDB eliminado
+init_kpis_repository(None)  # MongoDB eliminado
 api_router.include_router(sync_receiver_router)
 
 # ============================================================================
@@ -451,7 +437,7 @@ api_router.include_router(sync_receiver_router)
 from modules.api_connections import api_connections_router
 from modules.api_connections.repository import init_api_connections_repository
 from modules.api_connections.routes import set_verify_token
-init_api_connections_repository(db)
+init_api_connections_repository(None)  # MongoDB eliminado
 set_verify_token(verify_token)
 api_router.include_router(api_connections_router)
 
@@ -485,8 +471,8 @@ api_router.include_router(get_consultas_sql_router())
 # ============================================================================
 from modules.comercial.cache_service import cleanup_expired_cache, get_cache_stats, init_cache_service
 
-# Inicializar cache_service con conexión a MongoDB
-init_cache_service(db)
+# Cache service (100% SQL - MongoDB eliminado)
+init_cache_service(None)
 
 @api_router.get("/admin/cache/stats")
 async def admin_cache_stats(current_user: dict = Depends(get_current_user)):
