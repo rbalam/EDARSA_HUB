@@ -26,9 +26,10 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 #### Migración MongoDB → SQL Server (100%)
 - [x] Auth/Login migrado a SQL (login < 1s)
 - [x] RBAC migrado a SQL Server (Usuario_Roles, Usuario_RolesAsignacion)
+- [x] **Tablas Sesiones/SesionesHistorico creadas en EDARSAHUB**
 - [x] Inicializaciones de módulos en server.py usando StubDatabase
 - [x] Scheduler, Notificaciones, Locks, JobLogger operan con StubDatabase
-- [x] **165 referencias a `await db.` ahora usan StubDatabase** (sin errores fatales)
+- [x] 165 referencias a `await db.` ahora usan StubDatabase (sin errores fatales)
 - [x] Jobs detector (pedidos, inventarios) detectan StubDatabase y se saltan
 
 #### CRM Comercial Enterprise (Fase 4)
@@ -40,11 +41,6 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 #### Tablajería
 - [x] Diagnóstico Fase 6 (Inventarios/Costeo) documentado
 
-### 🔄 En Progreso
-
-#### Warnings Conocidos (No Críticos)
-- [ ] `Invalid object name 'Sesiones'` - Tabla no existe en EDARSAHUB (login funciona con fallback)
-
 ### ⏳ Pendiente
 
 #### P1 - Alta Prioridad
@@ -53,7 +49,6 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 #### P2 - Media Prioridad
 3. **CRM UI**: Completar vistas funcionales (Cuentas, Solicitudes, Cotizaciones)
-4. **SQL Server**: Crear tabla `Sesiones` en EDARSAHUB
 
 #### Backlog
 - Migrar jobs de scheduler a SQL Server (actualmente saltan ejecución)
@@ -74,6 +69,10 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 - `/app/backend/modules/crm/comercial_service.py` - Lógica CRM
 - `/app/backend/core/scheduler/scheduler_manager.py` - Scheduler
 - `/app/backend/core/db.py` - Funciones SQL
+- `/app/backend/core/refresh_tokens.py` - Sesiones SQL Server
+
+### Scripts
+- `/app/backend/scripts/create_sesiones_tables.py` - Crea tablas Sesiones en EDARSAHUB
 
 ### Frontend
 - `/app/frontend/src/App.js` - Rutas principales
@@ -82,6 +81,44 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### Documentación
 - `/app/docs/reports/TABLAJERIA_FASE6_DIAGNOSTICO_INVENTARIOS_COSTEO.md`
+
+---
+
+## Tablas SQL Server (EDARSAHUB)
+
+### Sesiones
+```sql
+CREATE TABLE Sesiones (
+    SesionID VARCHAR(50) PRIMARY KEY,
+    UsuarioID VARCHAR(50) NOT NULL,
+    TipoUsuario VARCHAR(20) DEFAULT 'interno',
+    RefreshTokenHash VARCHAR(128) NOT NULL,
+    FamiliaTokenID VARCHAR(50) NOT NULL,
+    FechaCreacion DATETIME DEFAULT GETUTCDATE(),
+    FechaExpiracion DATETIME NOT NULL,
+    UltimaActividad DATETIME DEFAULT GETUTCDATE(),
+    EstaActiva BIT DEFAULT 1,
+    IPCliente VARCHAR(45),
+    UserAgent VARCHAR(500),
+    FechaModificacion DATETIME DEFAULT GETUTCDATE()
+);
+```
+
+### SesionesHistorico
+```sql
+CREATE TABLE SesionesHistorico (
+    HistoricoID INT IDENTITY(1,1) PRIMARY KEY,
+    SesionID VARCHAR(50) NOT NULL,
+    UsuarioID VARCHAR(50) NOT NULL,
+    TipoUsuario VARCHAR(20),
+    Accion VARCHAR(50) NOT NULL,
+    FechaAccion DATETIME DEFAULT GETUTCDATE(),
+    IPCliente VARCHAR(45),
+    UserAgent VARCHAR(500),
+    DetallesJSON NVARCHAR(MAX),
+    AccionRealizadaPor VARCHAR(50)
+);
+```
 
 ---
 
@@ -99,18 +136,11 @@ El sistema ahora usa `StubDatabase` que:
 - NO persiste datos
 - Permite que el código legacy funcione sin errores fatales
 
-```python
-# En server.py
-from core.mongo_stub import get_stub_database
-db = get_stub_database()
-```
-
 ### Warnings Esperados (No son errores)
 ```
 [COMERCIAL] Repository - MongoDB deprecado
 [COMERCIAL] KPIs repository - MongoDB deprecado
 [COMERCIAL] Cache service - MongoDB deprecado, funcionalidad limitada
-Invalid object name 'Sesiones' - Tabla pendiente de crear
 ```
 
 ### Jobs del Scheduler

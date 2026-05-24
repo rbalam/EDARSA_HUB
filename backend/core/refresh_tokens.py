@@ -257,8 +257,10 @@ async def create_session(
     # Calcular expiración
     expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_DAYS)
     
-    # Insertar sesión
-    query = """
+    # Primero intentar eliminar sesión existente con mismo ID (por si acaso)
+    # Luego insertar nueva
+    delete_query = "DELETE FROM Sesiones WHERE SesionID = %s"
+    insert_query = """
         INSERT INTO Sesiones (
             SesionID, UsuarioID, TipoUsuario, RefreshTokenHash, FamiliaTokenID,
             FechaCreacion, FechaExpiracion, UltimaActividad,
@@ -270,15 +272,22 @@ async def create_session(
         )
     """
     
-    params = (
+    insert_params = (
         session_id, user_id, user_type, token_hash, familia_id,
-        expires_at.strftime('%Y-%m-%d %H:%M:%S'),
+        expires_at,  # Pasar datetime directamente, el driver lo convertirá
         ip_address[:45] if ip_address else None,
         user_agent[:500] if user_agent else None
     )
     
     try:
-        await _execute_sql_async(query, params)
+        # Primero eliminar si existe (evitar error de clave duplicada)
+        try:
+            await _execute_sql_async(delete_query, (session_id,))
+        except Exception:
+            pass  # Ignorar si no existe
+        
+        # Insertar nueva sesión
+        await _execute_sql_async(insert_query, insert_params)
         
         # Registrar en histórico
         await _log_session_action(

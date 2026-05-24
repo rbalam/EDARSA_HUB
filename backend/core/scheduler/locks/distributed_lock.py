@@ -302,6 +302,7 @@ class NullLock:
     def __init__(self, job_name: str):
         self.job_name = job_name
         self._locked = False
+        self._heartbeat_task = None
     
     async def acquire(self, timeout_seconds: int = 600) -> bool:
         """Siempre retorna True (permite ejecución)."""
@@ -312,10 +313,28 @@ class NullLock:
     async def release(self) -> bool:
         """No hace nada."""
         self._locked = False
+        if self._heartbeat_task:
+            self._heartbeat_task.cancel()
+            self._heartbeat_task = None
         return True
     
     async def is_locked(self) -> bool:
         return self._locked
+    
+    async def start_heartbeat_loop(self, interval_seconds: int = 30, extend_seconds: int = 300):
+        """No hace nada - NullLock no necesita heartbeat."""
+        logger.debug(f"[NULL_LOCK] Heartbeat ignorado para: {self.job_name}")
+        pass
+    
+    async def stop_heartbeat_loop(self):
+        """No hace nada."""
+        if self._heartbeat_task:
+            self._heartbeat_task.cancel()
+            self._heartbeat_task = None
+    
+    async def extend(self, seconds: int = 300) -> bool:
+        """Siempre retorna True."""
+        return True
     
     async def __aenter__(self):
         await self.acquire()

@@ -810,7 +810,11 @@ def execute_sql_query_params(
                     cursor.execute(query, params)
                 else:
                     cursor.execute(query)
-                results = list(cursor.fetchall())
+                # Para INSERT/DELETE/UPDATE no hay resultados
+                try:
+                    results = list(cursor.fetchall())
+                except Exception:
+                    results = []  # No hay resultados (INSERT/DELETE/UPDATE)
             else:
                 # pytds
                 cursor = conn.cursor()
@@ -818,14 +822,19 @@ def execute_sql_query_params(
                     cursor.execute(query, params)
                 else:
                     cursor.execute(query)
-                columns = [desc[0] for desc in cursor.description] if cursor.description else []
-                rows = cursor.fetchall()
-                results = []
-                for row in rows:
-                    row_dict = {}
-                    for i, col in enumerate(columns):
-                        row_dict[col] = row[i]
-                    results.append(row_dict)
+                
+                # Para INSERT/DELETE/UPDATE no hay cursor.description
+                if cursor.description:
+                    columns = [desc[0] for desc in cursor.description]
+                    rows = cursor.fetchall()
+                    results = []
+                    for row in rows:
+                        row_dict = {}
+                        for i, col in enumerate(columns):
+                            row_dict[col] = row[i]
+                        results.append(row_dict)
+                else:
+                    results = []  # INSERT/DELETE/UPDATE sin resultados
             
             # Convertir datetime a string ISO
             for row in results:
@@ -880,18 +889,22 @@ def _execute_sql_query_params_direct(
         else:
             cursor.execute(query)
         
-        columns = [desc[0] for desc in cursor.description] if cursor.description else []
-        rows = cursor.fetchall()
-        
-        results = []
-        for row in rows:
-            row_dict = {}
-            for i, col in enumerate(columns):
-                value = row[i]
-                if isinstance(value, datetime):
-                    value = value.isoformat()
-                row_dict[col] = value
-            results.append(row_dict)
+        # Para INSERT/DELETE/UPDATE no hay cursor.description
+        if cursor.description:
+            columns = [desc[0] for desc in cursor.description]
+            rows = cursor.fetchall()
+            
+            results = []
+            for row in rows:
+                row_dict = {}
+                for i, col in enumerate(columns):
+                    value = row[i]
+                    if isinstance(value, datetime):
+                        value = value.isoformat()
+                    row_dict[col] = value
+                results.append(row_dict)
+        else:
+            results = []  # INSERT/DELETE/UPDATE sin resultados
         
         conn.close()
         mark_server_online(host)
@@ -917,7 +930,12 @@ def _execute_sql_query_params_direct(
             cursor.execute(query, params)
         else:
             cursor.execute(query)
-        results = list(cursor.fetchall())
+        
+        # Para INSERT/DELETE/UPDATE no hay resultados
+        try:
+            results = list(cursor.fetchall())
+        except Exception:
+            results = []
         
         for row in results:
             for key, value in row.items():
