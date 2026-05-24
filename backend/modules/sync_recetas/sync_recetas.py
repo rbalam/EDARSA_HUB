@@ -319,7 +319,9 @@ def _obtener_familias_sr(host, port, database, username, password) -> List[Famil
         FamiliaSync(
             codigo_fuente=str(r.get('idgrupo', '')),
             nombre=str(r.get('descripcion', '')),
-            descripcion=r.get('clasificacion'),
+            # Fix FASE 1C-3B-R3: Convertir explícitamente a str() para evitar error
+            # 'Decimal.replace()' cuando clasificacion viene como tipo numérico
+            descripcion=str(r.get('clasificacion')) if r.get('clasificacion') is not None else None,
             orden=int(r.get('prioridad') or 0)
         )
         for r in rows
@@ -393,9 +395,10 @@ def _obtener_productos_sr(host, port, database, username, password) -> List[Prod
         ProductoSync(
             codigo_fuente=str(r.get('idproducto', '')),
             nombre=str(r.get('descripcion', '')),
-            nombre_corto=r.get('nombrecorto'),
+            # Fix FASE 1C-3B-R3: Conversión explícita a str() para evitar bugs .replace()
+            nombre_corto=str(r.get('nombrecorto')) if r.get('nombrecorto') else None,
             familia_codigo_fuente=str(r.get('idgrupo', '')) if r.get('idgrupo') else None,
-            familia_nombre=r.get('grupo_nombre'),
+            familia_nombre=str(r.get('grupo_nombre')) if r.get('grupo_nombre') else None,
             precio_venta=Decimal(str(r.get('precio') or 0)),
             precio_sin_impuestos=Decimal(str(r.get('preciosinimpuestos') or 0)),
             tasa_impuesto=Decimal(str(r.get('impuesto1') or 0))
@@ -632,11 +635,12 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
         ProductoSync(
             codigo_fuente=str(r.get('Pr_Cve_Producto', '')),
             nombre=str(r.get('Pr_Descripcion', '')),
-            nombre_corto=r.get('Pr_Descripcion_Corta'),
+            # Fix FASE 1C-3B-R3: Conversión explícita a str() para evitar bugs .replace()
+            nombre_corto=str(r.get('Pr_Descripcion_Corta')) if r.get('Pr_Descripcion_Corta') else None,
             familia_codigo_fuente=str(r.get('Fm_Cve_Familia', '')) if r.get('Fm_Cve_Familia') else None,
             subfamilia_codigo_fuente=str(r.get('Sf_Cve_SubFamilia', '')) if r.get('Sf_Cve_SubFamilia') else None,
-            familia_nombre=r.get('Fm_Descripcion'),
-            subfamilia_nombre=r.get('Sf_Descripcion'),
+            familia_nombre=str(r.get('Fm_Descripcion')) if r.get('Fm_Descripcion') else None,
+            subfamilia_nombre=str(r.get('Sf_Descripcion')) if r.get('Sf_Descripcion') else None,
             precio_venta=Decimal(str(r.get('Precio') or 0))
         )
         for r in rows

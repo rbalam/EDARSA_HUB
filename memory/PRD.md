@@ -53,6 +53,24 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 - [x] **No regresión**: Login, Tablero Ejecutivo, Ventas Tiempo funcionan
 - [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3C_COSTOS_MARGENES_ENDPOINTS_NO_LIVE.md`
 
+#### FASE 1C-3B-R3 - Fix Bug Decimal en Familias SR (24 Mayo 2026) ✅ COMPLETADO
+- [x] **Bug corregido**: `Decimal.replace()` en `sync_recetas.py` líneas 318-328, 394-408, 634-648
+- [x] **Causa raíz**: Campo `clasificacion` de SoftRestaurant devolvía tipo `Decimal` en lugar de string
+- [x] **DRY-RUN exitoso**: 116 familias, 156 subfamilias (0 errores)
+- [x] **Sync Real COMPLETADO**: SyncRunID `SYNC-RECETAS-20260524151422-c1122c37`
+  - Duración: 28.71 segundos
+  - Registros insertados: 272 (116 familias + 156 subfamilias)
+  - Errores: 0
+- [x] **Familias recuperadas**:
+  - CIENFUEGOS: 37 familias
+  - 130° MÉRIDA: 33 familias
+  - LA ESTELAR: 46 familias
+- [x] **Conteos finales**: Familias 189, SubFamilias 264
+- [x] **Validación duplicados**: 0 duplicados
+- [x] **Integridad de datos**: Productos (9,905), Insumos (11,735), Recetas (13,313), Elaborados (3,893) intactos
+- [x] **Endpoints NO-LIVE funcionan**: Filtro por familia operativo
+- [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3B_R3_FIX_DECIMAL_FAMILIAS_SR.md`
+
 #### FASE 1C-3B-R2 - Sincronización CIENFUEGOS (24 Mayo 2026) ✅ COMPLETADO
 - [x] **Conexión DDNS resuelta**: `servercienfuegos.ddns.net` → IP `189.162.155.142`
 - [x] **DRY-RUN exitoso**: 37 familias, 57 subfamilias, 2,022 productos, 2,493 insumos, 4,164 recetas, 1,843 elaborados
