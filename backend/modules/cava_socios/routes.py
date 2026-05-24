@@ -9,6 +9,8 @@ Permisos RBAC: CAVA_SOCIOS_*
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Any
+from fastapi.responses import StreamingResponse
+import io
 import logging
 
 from .service import get_cava_socios_service
@@ -195,9 +197,7 @@ async def registrar_consumo(
 
 # ==================== REPORTES PDF ====================
 
-from fastapi.responses import StreamingResponse
 from .report_service import get_cava_report_service
-import io
 
 
 @router.get("/reportes/socio/{socio_id}/ficha", summary="Descargar Ficha de Socio PDF")
@@ -331,4 +331,155 @@ async def descargar_estado_cuenta(
         raise
     except Exception as e:
         logger.error(f"[CavaSocios] Error generando estado de cuenta PDF: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== ENVÍO DE REPORTES (EMAIL / WHATSAPP) ====================
+
+from .notification_service import get_notification_service
+
+
+class EnvioReporteRequest(BaseModel):
+    """Schema para solicitar envío de reporte."""
+    tipo_reporte: str = Field(..., description="Tipo: ficha, consumos, estado_cuenta")
+    canales: List[str] = Field(default=["email"], description="Canales: email, whatsapp")
+    email_alternativo: Optional[str] = None
+    telefono_alternativo: Optional[str] = None
+
+
+@router.post("/socios/{socio_id}/enviar-reporte", summary="Enviar Reporte por Email/WhatsApp")
+async def enviar_reporte_socio(
+    socio_id: str,
+    data: EnvioReporteRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Genera y envía un reporte PDF al socio por Email y/o WhatsApp.
+    
+    Tipos de reporte disponibles:
+    - ficha: Ficha completa del socio
+    - consumos: Historial de consumos
+    - estado_cuenta: Estado de cuenta con cargos
+    
+    Canales disponibles:
+    - email: Envía el PDF como adjunto
+    - whatsapp: Envía mensaje con información del reporte
+    
+    Permisos: CAVA_SOCIOS_VER
+    """
+    try:
+        cava_service = get_cava_socios_service()
+        socio = cava_service.obtener_socio(socio_id)
+        
+        if not socio:
+            raise HTTPException(status_code=404, detail="Socio no encontrado")
+        
+        # Sobrescribir email/teléfono si se proporcionan alternativos
+        if data.email_alternativo:
+            socio['email'] = data.email_alternativo
+        if data.telefono_alternativo:
+            socio['telefono'] = data.telefono_alternativo
+        
+        # Validar que tenga al menos un medio de contacto
+        if 'email' in data.canales and not socio.get('email'):
+            raise HTTPException(status_code=400, detail="El socio no tiene email registrado")
+        if 'whatsapp' in data.canales and not socio.get('telefono'):
+            raise HTTPException(status_code=400, detail="El socio no tiene teléfono registrado")
+        
+        # Generar PDF según tipo
+        report_service = get_cava_report_service()
+        
+        if data.tipo_reporte == 'ficha':
+            pdf_bytes = report_service.generar_ficha_socio(socio)
+        elif data.tipo_reporte == 'consumos':
+            movimientos = cava_service.obtener_movimientos_socio(socio_id)
+            pdf_bytes = report_service.generar_historial_consumos(socio, movimientos)
+        elif data.tipo_reporte == 'estado_cuenta':
+            cargos = cava_service.obtener_cargos_socio(socio_id)
+            pdf_bytes = report_service.generar_estado_cuenta(socio, cargos)
+        else:
+            raise HTTPException(status_code=400, detail=f"Tipo de reporte inválido: {data.tipo_reporte}")
+        
+        # Enviar por canales seleccionados
+        notification_service = get_notification_service()
+        resultado = notification_service.enviar_reporte_multicanal(
+            socio=socio,
+            tipo_reporte=data.tipo_reporte,
+            pdf_bytes=pdf_bytes,
+            canales=data.canales
+        )
+        
+        logger.info(f"[CavaSocios] Reporte {data.tipo_reporte} enviado al socio {socio_id} via {data.canales}")
+        
+        return resultado
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error enviando reporte: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/socios/{socio_id}/enviar-todos-reportes", summary="Enviar Todos los Reportes")
+async def enviar_todos_reportes_socio(
+    socio_id: str,
+    canales: List[str] = Query(default=["email"], description="Canales: email, whatsapp"),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Genera y envía los 3 reportes (Ficha, Consumos, Estado de Cuenta) al socio.
+    
+    Útil para envío mensual automático o solicitud completa del socio.
+    
+    Permisos: CAVA_SOCIOS_VER
+    """
+    try:
+        cava_service = get_cava_socios_service()
+        socio = cava_service.obtener_socio(socio_id)
+        
+        if not socio:
+            raise HTTPException(status_code=404, detail="Socio no encontrado")
+        
+        report_service = get_cava_report_service()
+        notification_service = get_notification_service()
+        
+        resultados = {
+            "socio_id": socio_id,
+            "numero_socio": socio.get('numero_socio'),
+            "reportes": {}
+        }
+        
+        # 1. Ficha de Socio
+        pdf_ficha = report_service.generar_ficha_socio(socio)
+        resultados["reportes"]["ficha"] = notification_service.enviar_reporte_multicanal(
+            socio=socio, tipo_reporte='ficha', pdf_bytes=pdf_ficha, canales=canales
+        )
+        
+        # 2. Historial de Consumos
+        movimientos = cava_service.obtener_movimientos_socio(socio_id)
+        pdf_consumos = report_service.generar_historial_consumos(socio, movimientos)
+        resultados["reportes"]["consumos"] = notification_service.enviar_reporte_multicanal(
+            socio=socio, tipo_reporte='consumos', pdf_bytes=pdf_consumos, canales=canales
+        )
+        
+        # 3. Estado de Cuenta
+        cargos = cava_service.obtener_cargos_socio(socio_id)
+        pdf_estado = report_service.generar_estado_cuenta(socio, cargos)
+        resultados["reportes"]["estado_cuenta"] = notification_service.enviar_reporte_multicanal(
+            socio=socio, tipo_reporte='estado_cuenta', pdf_bytes=pdf_estado, canales=canales
+        )
+        
+        # Resumen
+        exitos = sum(1 for r in resultados["reportes"].values() if r.get("success"))
+        resultados["exitos"] = exitos
+        resultados["total_reportes"] = 3
+        
+        logger.info(f"[CavaSocios] Todos los reportes enviados al socio {socio_id}: {exitos}/3 exitosos")
+        
+        return resultados
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error enviando todos los reportes: {e}")
         raise HTTPException(status_code=500, detail=str(e))

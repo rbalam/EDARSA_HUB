@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { 
   Users, Wine, ArrowLeft, Edit, Plus, RefreshCw, 
   AlertCircle, Mail, Phone, Calendar, Package, Trash2,
-  FileDown, FileText, Receipt
+  FileDown, FileText, Receipt, Send, MessageSquare, Loader2
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '@/lib/api';
@@ -41,6 +41,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const EMPRESA_ID = '19E076FB-C6DE-4EA5-84AB-1CAA9E86082C';
 
@@ -90,6 +97,8 @@ export default function SocioDetail() {
     monto_descorche: 350,
     observaciones: ''
   });
+
+  const [enviandoReporte, setEnviandoReporte] = useState(false);
 
   const fetchSocio = async () => {
     setLoading(true);
@@ -222,6 +231,92 @@ export default function SocioDetail() {
     }
   };
 
+  // Función para enviar reportes por Email o WhatsApp
+  const enviarReporte = async (tipoReporte, canales) => {
+    if (!socio) return;
+    
+    // Validaciones previas
+    if (canales.includes('email') && !socio.email) {
+      toast.error('El socio no tiene email registrado');
+      return;
+    }
+    if (canales.includes('whatsapp') && !socio.telefono) {
+      toast.error('El socio no tiene teléfono registrado');
+      return;
+    }
+    
+    setEnviandoReporte(true);
+    const canalTexto = canales.join(' y ');
+    
+    try {
+      toast.loading(`Enviando ${tipoReporte} por ${canalTexto}...`, { id: 'envio-reporte' });
+      
+      const response = await api.post(`/cava-socios/socios/${id}/enviar-reporte`, {
+        tipo_reporte: tipoReporte,
+        canales: canales
+      });
+      
+      if (response.data.success) {
+        const resultados = response.data.canales;
+        let mensaje = `Reporte enviado`;
+        
+        if (resultados.email?.success) {
+          mensaje += ` por Email`;
+        }
+        if (resultados.whatsapp?.success) {
+          mensaje += resultados.email?.success ? ` y WhatsApp` : ` por WhatsApp`;
+        }
+        
+        toast.success(mensaje, { id: 'envio-reporte' });
+      } else {
+        toast.error('Error parcial en el envío', { id: 'envio-reporte' });
+      }
+    } catch (err) {
+      console.error('Error enviando reporte:', err);
+      toast.error(err.response?.data?.detail || 'Error enviando reporte', { id: 'envio-reporte' });
+    } finally {
+      setEnviandoReporte(false);
+    }
+  };
+
+  // Enviar todos los reportes
+  const enviarTodosReportes = async (canales) => {
+    if (!socio) return;
+    
+    if (canales.includes('email') && !socio.email) {
+      toast.error('El socio no tiene email registrado');
+      return;
+    }
+    if (canales.includes('whatsapp') && !socio.telefono) {
+      toast.error('El socio no tiene teléfono registrado');
+      return;
+    }
+    
+    setEnviandoReporte(true);
+    
+    try {
+      toast.loading('Enviando todos los reportes...', { id: 'envio-todos' });
+      
+      const response = await api.post(
+        `/cava-socios/socios/${id}/enviar-todos-reportes?canales=${canales.join('&canales=')}`,
+        {}
+      );
+      
+      const { exitos, total_reportes } = response.data;
+      
+      if (exitos === total_reportes) {
+        toast.success(`${exitos} reportes enviados exitosamente`, { id: 'envio-todos' });
+      } else {
+        toast.warning(`${exitos}/${total_reportes} reportes enviados`, { id: 'envio-todos' });
+      }
+    } catch (err) {
+      console.error('Error enviando reportes:', err);
+      toast.error(err.response?.data?.detail || 'Error enviando reportes', { id: 'envio-todos' });
+    } finally {
+      setEnviandoReporte(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
@@ -267,34 +362,105 @@ export default function SocioDetail() {
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {/* Botones de reportes */}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => descargarReporte('ficha')}
-            data-testid="btn-descargar-ficha"
-          >
-            <FileDown className="h-4 w-4 mr-2" />
-            Ficha PDF
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => descargarReporte('consumos')}
-            data-testid="btn-descargar-consumos"
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Consumos
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => descargarReporte('estado-cuenta')}
-            data-testid="btn-descargar-cuenta"
-          >
-            <Receipt className="h-4 w-4 mr-2" />
-            Estado Cuenta
-          </Button>
+          {/* Dropdown de Reportes y Envío */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={enviandoReporte} data-testid="btn-reportes-menu">
+                {enviandoReporte ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4 mr-2" />
+                )}
+                Reportes
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {/* Descargar PDFs */}
+              <DropdownMenuItem onClick={() => descargarReporte('ficha')} data-testid="menu-descargar-ficha">
+                <FileText className="h-4 w-4 mr-2" />
+                Descargar Ficha PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => descargarReporte('consumos')} data-testid="menu-descargar-consumos">
+                <FileText className="h-4 w-4 mr-2" />
+                Descargar Consumos PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => descargarReporte('estado-cuenta')} data-testid="menu-descargar-cuenta">
+                <Receipt className="h-4 w-4 mr-2" />
+                Descargar Estado Cuenta
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              {/* Enviar por Email */}
+              <DropdownMenuItem 
+                onClick={() => enviarReporte('ficha', ['email'])} 
+                disabled={!socio?.email}
+                data-testid="menu-email-ficha"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Enviar Ficha por Email
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => enviarReporte('consumos', ['email'])} 
+                disabled={!socio?.email}
+                data-testid="menu-email-consumos"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Enviar Consumos por Email
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => enviarReporte('estado_cuenta', ['email'])} 
+                disabled={!socio?.email}
+                data-testid="menu-email-cuenta"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Enviar Edo. Cuenta por Email
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              {/* Enviar por WhatsApp */}
+              <DropdownMenuItem 
+                onClick={() => enviarReporte('ficha', ['whatsapp'])} 
+                disabled={!socio?.telefono}
+                data-testid="menu-wa-ficha"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Enviar Ficha por WhatsApp
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => enviarReporte('estado_cuenta', ['whatsapp'])} 
+                disabled={!socio?.telefono}
+                data-testid="menu-wa-cuenta"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Enviar Edo. Cuenta por WhatsApp
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              {/* Enviar Todos */}
+              <DropdownMenuItem 
+                onClick={() => enviarTodosReportes(['email'])} 
+                disabled={!socio?.email}
+                className="font-medium"
+                data-testid="menu-email-todos"
+              >
+                <Send className="h-4 w-4 mr-2 text-purple-600" />
+                Enviar TODO por Email
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => enviarTodosReportes(['email', 'whatsapp'])} 
+                disabled={!socio?.email || !socio?.telefono}
+                className="font-medium"
+                data-testid="menu-multicanal-todos"
+              >
+                <Send className="h-4 w-4 mr-2 text-blue-600" />
+                Enviar TODO (Email + WA)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button variant="outline" size="sm" onClick={fetchSocio}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar

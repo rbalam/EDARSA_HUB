@@ -23,6 +23,21 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
+#### Notificaciones Cava de Socios (24 Mayo 2026) ✅ NUEVO
+- [x] **Servicio de notificaciones** `/app/backend/modules/cava_socios/notification_service.py`:
+  - Envío de reportes PDF por Email (SMTP interno)
+  - Envío de notificaciones por WhatsApp (Twilio)
+  - Soporte multicanal (Email + WhatsApp simultáneo)
+- [x] **API Endpoints de notificaciones**:
+  - `POST /api/cava-socios/socios/{id}/enviar-reporte` - Envío individual
+  - `POST /api/cava-socios/socios/{id}/enviar-todos-reportes` - Envío masivo
+- [x] **Frontend** - Menú desplegable en `SocioDetail.jsx`:
+  - Descarga PDFs (Ficha, Consumos, Estado Cuenta)
+  - Envío por Email (3 tipos de reporte)
+  - Envío por WhatsApp (Ficha, Estado Cuenta)
+  - Envío masivo (Email o Email+WA)
+- [x] **Dependencias**: `twilio==9.10.9` instalado
+
 #### Migración MongoDB → SQL Server (COMPLETA)
 - [x] Auth/Login migrado a SQL (login < 1s)
 - [x] RBAC migrado a SQL Server (Usuario_Roles)
@@ -149,6 +164,8 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
+## Pendiente
+
 ### 🔄 En Progreso
 
 #### Jobs del Scheduler
@@ -159,17 +176,24 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ⏳ Pendiente
 
+#### P1 - Alta Prioridad
+1. **Triggers automáticos Cava Socios** - Envío mensual de estados de cuenta
+2. **Flujos avanzados CRM** - Sincronización y seguimiento de oportunidades
+
 #### P2 - Media Prioridad
 1. **Reportes PDF Tablajería** - Orden de Tablaje, Costeo, Rendimientos
+2. **Restructuración modular** - Alinear directorios con manifiesto ERP
 
 #### P3 - Backlog Técnico
 1. Modularización backend (separar server.py por módulos)
+2. Portales externos (Proveedores, Comisionistas, Clientes)
+3. Módulos satélite (Comandero, Chef IA, EDARSA GO)
 
 ---
 
 ## Actualizaciones Recientes (24 Mayo 2026)
 
-### ✅ Reportes PDF Cava de Socios (NUEVO)
+### ✅ Reportes PDF Cava de Socios (COMPLETO)
 - **Servicio** `/app/backend/modules/cava_socios/report_service.py`
 - **Endpoints API**:
   - `GET /api/cava-socios/reportes/socio/{id}/ficha` - Ficha completa del socio
@@ -177,6 +201,15 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
   - `GET /api/cava-socios/reportes/socio/{id}/estado-cuenta` - Estado de cuenta
 - **Frontend**: Botones de descarga en `SocioDetail.jsx` (Ficha PDF, Consumos, Estado Cuenta)
 - **Tecnología**: ReportLab 4.4.10 para generación PDF profesional
+
+### ✅ Notificaciones Email/WhatsApp Cava Socios (24 Mayo 2026)
+- **Configuración**:
+  - Email SMTP: `mail.edarsa.com.mx:587` (notificaciones@edarsa.com.mx)
+  - WhatsApp: Twilio `+14155238886`
+- **Endpoints**:
+  - `POST /api/cava-socios/socios/{id}/enviar-reporte` - Envío individual
+  - `POST /api/cava-socios/socios/{id}/enviar-todos-reportes` - Envío masivo
+- **Canales soportados**: `email`, `whatsapp`, combinados
 
 ---
 
