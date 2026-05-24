@@ -9,7 +9,8 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { 
   Users, Wine, ArrowLeft, Edit, Plus, RefreshCw, 
-  AlertCircle, Mail, Phone, Calendar, Package, Trash2
+  AlertCircle, Mail, Phone, Calendar, Package, Trash2,
+  FileDown, FileText, Receipt
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '@/lib/api';
@@ -194,6 +195,33 @@ export default function SocioDetail() {
     setShowConsumoDialog(true);
   };
 
+  // Funciones de descarga de reportes PDF
+  const descargarReporte = async (tipo) => {
+    try {
+      toast.loading(`Generando ${tipo}...`, { id: 'pdf-loading' });
+      
+      const response = await api.get(`/cava-socios/reportes/socio/${id}/${tipo}`, {
+        responseType: 'blob'
+      });
+      
+      // Crear URL del blob y descargar
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${tipo}_${socio?.numero_socio || id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Reporte descargado', { id: 'pdf-loading' });
+    } catch (err) {
+      console.error('Error descargando reporte:', err);
+      toast.error('Error descargando reporte', { id: 'pdf-loading' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
@@ -238,7 +266,35 @@ export default function SocioDetail() {
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {/* Botones de reportes */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => descargarReporte('ficha')}
+            data-testid="btn-descargar-ficha"
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            Ficha PDF
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => descargarReporte('consumos')}
+            data-testid="btn-descargar-consumos"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Consumos
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => descargarReporte('estado-cuenta')}
+            data-testid="btn-descargar-cuenta"
+          >
+            <Receipt className="h-4 w-4 mr-2" />
+            Estado Cuenta
+          </Button>
           <Button variant="outline" size="sm" onClick={fetchSocio}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar

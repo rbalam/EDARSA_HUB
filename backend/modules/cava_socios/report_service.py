@@ -1,0 +1,513 @@
+"""
+EDARSA HUB - Servicio de Reportes PDF para Cava de Socios
+==========================================================
+Genera reportes PDF profesionales para el módulo de Cava de Socios.
+
+Reportes disponibles:
+- Ficha de Socio (datos + botellas en resguardo)
+- Historial de Consumos
+- Estado de Cuenta (cargos pendientes)
+"""
+
+import io
+import logging
+from datetime import datetime
+from typing import Dict, Any, List, Optional
+
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch, cm
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+    Image, PageBreak, HRFlowable
+)
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+
+logger = logging.getLogger(__name__)
+
+
+class CavaSociosReportService:
+    """Servicio para generación de reportes PDF de Cava de Socios."""
+    
+    def __init__(self):
+        self.styles = getSampleStyleSheet()
+        self._setup_custom_styles()
+    
+    def _setup_custom_styles(self):
+        """Configura estilos personalizados para los reportes."""
+        # Título principal
+        self.styles.add(ParagraphStyle(
+            name='ReportTitle',
+            parent=self.styles['Heading1'],
+            fontSize=18,
+            spaceAfter=20,
+            alignment=TA_CENTER,
+            textColor=colors.HexColor('#1a1a2e')
+        ))
+        
+        # Subtítulo
+        self.styles.add(ParagraphStyle(
+            name='ReportSubtitle',
+            parent=self.styles['Heading2'],
+            fontSize=14,
+            spaceAfter=12,
+            textColor=colors.HexColor('#4a4a6a')
+        ))
+        
+        # Sección
+        self.styles.add(ParagraphStyle(
+            name='SectionTitle',
+            parent=self.styles['Heading3'],
+            fontSize=12,
+            spaceBefore=15,
+            spaceAfter=8,
+            textColor=colors.HexColor('#6b21a8'),
+            borderColor=colors.HexColor('#6b21a8'),
+            borderWidth=1,
+            borderPadding=5
+        ))
+        
+        # Texto normal
+        self.styles.add(ParagraphStyle(
+            name='ReportBody',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            spaceAfter=6
+        ))
+        
+        # Texto pequeño
+        self.styles.add(ParagraphStyle(
+            name='SmallText',
+            parent=self.styles['Normal'],
+            fontSize=8,
+            textColor=colors.HexColor('#666666')
+        ))
+        
+        # Texto destacado
+        self.styles.add(ParagraphStyle(
+            name='Highlight',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            textColor=colors.HexColor('#6b21a8'),
+            fontName='Helvetica-Bold'
+        ))
+    
+    def _get_header(self, title: str, subtitle: str = None) -> List:
+        """Genera el encabezado estándar del reporte."""
+        elements = []
+        
+        # Logo y título de empresa
+        elements.append(Paragraph("EDARSA HUB", self.styles['ReportTitle']))
+        elements.append(Paragraph(title, self.styles['ReportSubtitle']))
+        
+        if subtitle:
+            elements.append(Paragraph(subtitle, self.styles['SmallText']))
+        
+        # Fecha de generación
+        fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+        elements.append(Paragraph(f"Generado: {fecha}", self.styles['SmallText']))
+        
+        elements.append(Spacer(1, 20))
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#e0e0e0')))
+        elements.append(Spacer(1, 15))
+        
+        return elements
+    
+    def _get_footer_text(self) -> str:
+        """Texto para el pie de página."""
+        return f"EDARSA HUB - Cava de Socios | Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    
+    def _format_currency(self, amount: float) -> str:
+        """Formatea un monto como moneda."""
+        if amount is None:
+            return "$0.00"
+        return f"${amount:,.2f}"
+    
+    def _format_date(self, date_str: str) -> str:
+        """Formatea una fecha."""
+        if not date_str:
+            return "-"
+        try:
+            if 'T' in str(date_str):
+                dt = datetime.fromisoformat(str(date_str).replace('Z', '+00:00'))
+            else:
+                dt = datetime.strptime(str(date_str), '%Y-%m-%d')
+            return dt.strftime('%d/%m/%Y')
+        except:
+            return str(date_str)
+    
+    def _create_info_table(self, data: List[tuple], col_widths: List = None) -> Table:
+        """Crea una tabla de información clave-valor."""
+        table_data = [[Paragraph(f"<b>{k}</b>", self.styles['ReportBody']), 
+                       Paragraph(str(v), self.styles['ReportBody'])] for k, v in data]
+        
+        if not col_widths:
+            col_widths = [2*inch, 4*inch]
+        
+        table = Table(table_data, colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 5),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ]))
+        
+        return table
+    
+    # ==================== FICHA DE SOCIO ====================
+    
+    def generar_ficha_socio(self, socio: Dict[str, Any]) -> bytes:
+        """
+        Genera el PDF de ficha completa del socio.
+        
+        Incluye:
+        - Datos personales
+        - Información de membresía
+        - Botellas en resguardo
+        - Resumen financiero
+        """
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=letter,
+            rightMargin=50,
+            leftMargin=50,
+            topMargin=50,
+            bottomMargin=50
+        )
+        
+        elements = []
+        
+        # Header
+        elements.extend(self._get_header(
+            "FICHA DE SOCIO - CAVA",
+            f"#{socio.get('numero_socio', 'N/A')} - {socio.get('nombre_completo', 'Sin nombre')}"
+        ))
+        
+        # === DATOS DEL SOCIO ===
+        elements.append(Paragraph("INFORMACIÓN DEL SOCIO", self.styles['SectionTitle']))
+        
+        info_socio = [
+            ("Nombre Completo:", socio.get('nombre_completo', '-')),
+            ("Número de Socio:", socio.get('numero_socio', '-')),
+            ("Correo Electrónico:", socio.get('email', '-')),
+            ("Teléfono:", socio.get('telefono', '-')),
+            ("Tipo de Membresía:", socio.get('tipo_membresia', '-')),
+            ("Estatus:", socio.get('estatus', '-')),
+            ("Fecha de Alta:", self._format_date(socio.get('fecha_alta'))),
+            ("Fecha de Vencimiento:", self._format_date(socio.get('fecha_vencimiento'))),
+        ]
+        elements.append(self._create_info_table(info_socio))
+        
+        if socio.get('observaciones'):
+            elements.append(Spacer(1, 10))
+            elements.append(Paragraph(f"<b>Observaciones:</b> {socio.get('observaciones')}", 
+                                     self.styles['ReportBody']))
+        
+        elements.append(Spacer(1, 20))
+        
+        # === RESUMEN DE CAVA ===
+        elements.append(Paragraph("RESUMEN DE CAVA", self.styles['SectionTitle']))
+        
+        botellas = socio.get('botellas', [])
+        botellas_activas = [b for b in botellas if b.get('estatus') == 'EN_CAVA']
+        valor_total = sum(b.get('valor_declarado', 0) or 0 for b in botellas_activas)
+        
+        resumen_data = [
+            ["Botellas en Resguardo", str(len(botellas_activas))],
+            ["Capacidad Máxima", str(socio.get('maximo_botellas', 12))],
+            ["Valor Total Declarado", self._format_currency(valor_total)],
+            ["Saldo Pendiente", self._format_currency(socio.get('saldo_pendiente', 0))],
+        ]
+        
+        resumen_table = Table(resumen_data, colWidths=[3*inch, 2*inch])
+        resumen_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f3f4f6')),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#1a1a2e')),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e0e0e0')),
+        ]))
+        elements.append(resumen_table)
+        
+        elements.append(Spacer(1, 20))
+        
+        # === BOTELLAS EN RESGUARDO ===
+        elements.append(Paragraph("BOTELLAS EN RESGUARDO", self.styles['SectionTitle']))
+        
+        if botellas_activas:
+            # Encabezados
+            headers = ["Producto", "Tipo", "Añada", "Ubicación", "Valor"]
+            table_data = [headers]
+            
+            for b in botellas_activas:
+                row = [
+                    b.get('producto_nombre', '-'),
+                    b.get('tipo_bebida', '-').replace('_', ' ').title(),
+                    b.get('añada', '-') or '-',
+                    b.get('ubicacion', '-') or '-',
+                    self._format_currency(b.get('valor_declarado', 0))
+                ]
+                table_data.append(row)
+            
+            botellas_table = Table(table_data, colWidths=[2.2*inch, 1.2*inch, 0.7*inch, 1*inch, 1*inch])
+            botellas_table.setStyle(TableStyle([
+                # Header
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6b21a8')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                # Body
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ('ALIGN', (4, 1), (4, -1), 'RIGHT'),
+                # General
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e0e0e0')),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9fafb')]),
+            ]))
+            elements.append(botellas_table)
+        else:
+            elements.append(Paragraph("No hay botellas en resguardo actualmente.", 
+                                     self.styles['ReportBody']))
+        
+        # Footer
+        elements.append(Spacer(1, 30))
+        elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#e0e0e0')))
+        elements.append(Spacer(1, 5))
+        elements.append(Paragraph(self._get_footer_text(), self.styles['SmallText']))
+        
+        # Build PDF
+        doc.build(elements)
+        buffer.seek(0)
+        return buffer.getvalue()
+    
+    # ==================== HISTORIAL DE CONSUMOS ====================
+    
+    def generar_historial_consumos(self, socio: Dict[str, Any], movimientos: List[Dict]) -> bytes:
+        """
+        Genera el PDF del historial de consumos del socio.
+        """
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=letter,
+            rightMargin=50,
+            leftMargin=50,
+            topMargin=50,
+            bottomMargin=50
+        )
+        
+        elements = []
+        
+        # Header
+        elements.extend(self._get_header(
+            "HISTORIAL DE CONSUMOS",
+            f"Socio: {socio.get('nombre_completo', 'N/A')} (#{socio.get('numero_socio', '')})"
+        ))
+        
+        # Info del socio resumida
+        elements.append(Paragraph("DATOS DEL SOCIO", self.styles['SectionTitle']))
+        info_socio = [
+            ("Nombre:", socio.get('nombre_completo', '-')),
+            ("Membresía:", socio.get('tipo_membresia', '-')),
+            ("Estatus:", socio.get('estatus', '-')),
+        ]
+        elements.append(self._create_info_table(info_socio))
+        elements.append(Spacer(1, 20))
+        
+        # Tabla de consumos
+        elements.append(Paragraph("REGISTRO DE CONSUMOS", self.styles['SectionTitle']))
+        
+        consumos = [m for m in movimientos if m.get('tipo_movimiento') in ['CONSUMO', 'CONSUMO_PARCIAL']]
+        
+        if consumos:
+            headers = ["Fecha", "Producto", "% Consumido", "Motivo", "Descorche"]
+            table_data = [headers]
+            
+            total_descorche = 0
+            for c in consumos:
+                descorche = c.get('monto_descorche', 0) or 0
+                total_descorche += descorche
+                row = [
+                    self._format_date(c.get('fecha_movimiento')),
+                    c.get('producto_nombre', '-'),
+                    f"{c.get('porcentaje', 100)}%",
+                    c.get('motivo', '-') or '-',
+                    self._format_currency(descorche)
+                ]
+                table_data.append(row)
+            
+            # Fila de total
+            table_data.append(['', '', '', 'TOTAL:', self._format_currency(total_descorche)])
+            
+            consumos_table = Table(table_data, colWidths=[1*inch, 2.2*inch, 0.9*inch, 1.5*inch, 1*inch])
+            consumos_table.setStyle(TableStyle([
+                # Header
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6b21a8')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                # Body
+                ('FONTNAME', (0, 1), (-1, -2), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ('ALIGN', (2, 1), (2, -1), 'CENTER'),
+                ('ALIGN', (4, 1), (4, -1), 'RIGHT'),
+                # Total row
+                ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+                ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#f3f4f6')),
+                # General
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e0e0e0')),
+            ]))
+            elements.append(consumos_table)
+            
+            elements.append(Spacer(1, 15))
+            elements.append(Paragraph(f"<b>Total de consumos:</b> {len(consumos)}", 
+                                     self.styles['ReportBody']))
+        else:
+            elements.append(Paragraph("No hay consumos registrados para este socio.", 
+                                     self.styles['ReportBody']))
+        
+        # Footer
+        elements.append(Spacer(1, 30))
+        elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#e0e0e0')))
+        elements.append(Spacer(1, 5))
+        elements.append(Paragraph(self._get_footer_text(), self.styles['SmallText']))
+        
+        doc.build(elements)
+        buffer.seek(0)
+        return buffer.getvalue()
+    
+    # ==================== ESTADO DE CUENTA ====================
+    
+    def generar_estado_cuenta(self, socio: Dict[str, Any], cargos: List[Dict]) -> bytes:
+        """
+        Genera el PDF del estado de cuenta del socio.
+        """
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=letter,
+            rightMargin=50,
+            leftMargin=50,
+            topMargin=50,
+            bottomMargin=50
+        )
+        
+        elements = []
+        
+        # Header
+        elements.extend(self._get_header(
+            "ESTADO DE CUENTA",
+            f"Socio: {socio.get('nombre_completo', 'N/A')} (#{socio.get('numero_socio', '')})"
+        ))
+        
+        # Resumen
+        elements.append(Paragraph("RESUMEN DE CUENTA", self.styles['SectionTitle']))
+        
+        total_cargos = sum(c.get('monto_total', 0) or 0 for c in cargos)
+        total_pagado = sum(c.get('monto_pagado', 0) or 0 for c in cargos)
+        saldo_pendiente = total_cargos - total_pagado
+        
+        resumen_data = [
+            ["Total Cargos", self._format_currency(total_cargos)],
+            ["Total Pagado", self._format_currency(total_pagado)],
+            ["Saldo Pendiente", self._format_currency(saldo_pendiente)],
+        ]
+        
+        resumen_table = Table(resumen_data, colWidths=[3*inch, 2*inch])
+        resumen_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f3f4f6')),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#1a1a2e')),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e0e0e0')),
+            # Destacar saldo pendiente
+            ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#fef3c7') if saldo_pendiente > 0 else colors.HexColor('#d1fae5')),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ]))
+        elements.append(resumen_table)
+        elements.append(Spacer(1, 20))
+        
+        # Detalle de cargos
+        elements.append(Paragraph("DETALLE DE CARGOS", self.styles['SectionTitle']))
+        
+        if cargos:
+            headers = ["Fecha", "Concepto", "Monto", "Pagado", "Estatus"]
+            table_data = [headers]
+            
+            for c in cargos:
+                monto = c.get('monto_total', 0) or 0
+                pagado = c.get('monto_pagado', 0) or 0
+                estatus = "PAGADO" if pagado >= monto else ("PARCIAL" if pagado > 0 else "PENDIENTE")
+                
+                row = [
+                    self._format_date(c.get('fecha_cargo')),
+                    c.get('concepto', '-'),
+                    self._format_currency(monto),
+                    self._format_currency(pagado),
+                    estatus
+                ]
+                table_data.append(row)
+            
+            cargos_table = Table(table_data, colWidths=[1*inch, 2.5*inch, 1*inch, 1*inch, 1*inch])
+            cargos_table.setStyle(TableStyle([
+                # Header
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6b21a8')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                # Body
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ('ALIGN', (2, 1), (3, -1), 'RIGHT'),
+                ('ALIGN', (4, 1), (4, -1), 'CENTER'),
+                # General
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e0e0e0')),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9fafb')]),
+            ]))
+            elements.append(cargos_table)
+        else:
+            elements.append(Paragraph("No hay cargos registrados para este socio.", 
+                                     self.styles['ReportBody']))
+        
+        # Footer
+        elements.append(Spacer(1, 30))
+        elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#e0e0e0')))
+        elements.append(Spacer(1, 5))
+        elements.append(Paragraph(self._get_footer_text(), self.styles['SmallText']))
+        
+        doc.build(elements)
+        buffer.seek(0)
+        return buffer.getvalue()
+
+
+# Singleton
+_report_service = None
+
+def get_cava_report_service() -> CavaSociosReportService:
+    """Factory para obtener el servicio de reportes."""
+    global _report_service
+    if _report_service is None:
+        _report_service = CavaSociosReportService()
+    return _report_service

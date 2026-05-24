@@ -504,6 +504,64 @@ class CavaSociosService:
             
         finally:
             conn.close()
+    
+    # ==================== MÉTODOS PARA REPORTES ====================
+    
+    def obtener_movimientos_socio(self, socio_id: str) -> List[Dict]:
+        """Obtiene todos los movimientos (consumos) de un socio."""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            cursor.execute("""
+                SELECT 
+                    m.MovimientoID,
+                    m.BotellaID,
+                    m.TipoMovimiento as tipo_movimiento,
+                    m.CantidadConsumida as porcentaje,
+                    m.MotivoMovimiento as motivo,
+                    m.FechaMovimiento as fecha_movimiento,
+                    m.Observaciones,
+                    m.MontoCargo as monto_descorche,
+                    b.ProductoNombre as producto_nombre,
+                    b.Marca
+                FROM CavaSocios_Movimientos m
+                INNER JOIN CavaSocios_Botellas b ON m.BotellaID = b.BotellaID
+                WHERE m.SocioID = %s
+                ORDER BY m.FechaMovimiento DESC
+            """, (socio_id,))
+            
+            return cursor.fetchall() or []
+            
+        finally:
+            conn.close()
+    
+    def obtener_cargos_socio(self, socio_id: str) -> List[Dict]:
+        """Obtiene todos los cargos de un socio."""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            cursor.execute("""
+                SELECT 
+                    c.CargoID,
+                    c.ConceptoCargo as concepto,
+                    c.Monto as monto_base,
+                    c.Impuesto as iva,
+                    c.Total as monto_total,
+                    0 as monto_pagado,
+                    c.EstatusCargo as estatus,
+                    c.FechaCargo as fecha_cargo,
+                    c.FechaPago as fecha_pago
+                FROM CavaSocios_Cargos c
+                WHERE c.SocioID = %s
+                ORDER BY c.FechaCargo DESC
+            """, (socio_id,))
+            
+            return cursor.fetchall() or []
+            
+        finally:
+            conn.close()
 
 
 def get_cava_socios_service() -> CavaSociosService:

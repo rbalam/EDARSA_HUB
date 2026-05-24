@@ -160,10 +160,23 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 ### ⏳ Pendiente
 
 #### P2 - Media Prioridad
-1. **Reportes exportables PDF** - Tablajería y Cava de Socios
+1. **Reportes PDF Tablajería** - Orden de Tablaje, Costeo, Rendimientos
 
 #### P3 - Backlog Técnico
 1. Modularización backend (separar server.py por módulos)
+
+---
+
+## Actualizaciones Recientes (24 Mayo 2026)
+
+### ✅ Reportes PDF Cava de Socios (NUEVO)
+- **Servicio** `/app/backend/modules/cava_socios/report_service.py`
+- **Endpoints API**:
+  - `GET /api/cava-socios/reportes/socio/{id}/ficha` - Ficha completa del socio
+  - `GET /api/cava-socios/reportes/socio/{id}/consumos` - Historial de consumos
+  - `GET /api/cava-socios/reportes/socio/{id}/estado-cuenta` - Estado de cuenta
+- **Frontend**: Botones de descarga en `SocioDetail.jsx` (Ficha PDF, Consumos, Estado Cuenta)
+- **Tecnología**: ReportLab 4.4.10 para generación PDF profesional
 
 ---
 

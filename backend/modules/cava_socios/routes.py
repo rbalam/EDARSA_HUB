@@ -191,3 +191,144 @@ async def registrar_consumo(
     except Exception as e:
         logger.error(f"[CavaSocios] Error registrando consumo: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== REPORTES PDF ====================
+
+from fastapi.responses import StreamingResponse
+from .report_service import get_cava_report_service
+import io
+
+
+@router.get("/reportes/socio/{socio_id}/ficha", summary="Descargar Ficha de Socio PDF")
+async def descargar_ficha_socio(
+    socio_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Genera y descarga la ficha completa del socio en PDF.
+    
+    Incluye:
+    - Datos personales y membresía
+    - Resumen de cava
+    - Lista de botellas en resguardo
+    
+    Permisos: CAVA_SOCIOS_VER
+    """
+    try:
+        # Obtener datos del socio
+        cava_service = get_cava_socios_service()
+        socio = cava_service.obtener_socio(socio_id)
+        
+        if not socio:
+            raise HTTPException(status_code=404, detail="Socio no encontrado")
+        
+        # Generar PDF
+        report_service = get_cava_report_service()
+        pdf_bytes = report_service.generar_ficha_socio(socio)
+        
+        # Nombre del archivo
+        filename = f"ficha_socio_{socio.get('numero_socio', socio_id)}.pdf"
+        
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error generando ficha PDF: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reportes/socio/{socio_id}/consumos", summary="Descargar Historial de Consumos PDF")
+async def descargar_historial_consumos(
+    socio_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Genera y descarga el historial de consumos del socio en PDF.
+    
+    Incluye:
+    - Datos resumidos del socio
+    - Lista de todos los consumos
+    - Total de cargos por descorche
+    
+    Permisos: CAVA_SOCIOS_VER
+    """
+    try:
+        cava_service = get_cava_socios_service()
+        socio = cava_service.obtener_socio(socio_id)
+        
+        if not socio:
+            raise HTTPException(status_code=404, detail="Socio no encontrado")
+        
+        # Obtener movimientos del socio
+        movimientos = cava_service.obtener_movimientos_socio(socio_id)
+        
+        # Generar PDF
+        report_service = get_cava_report_service()
+        pdf_bytes = report_service.generar_historial_consumos(socio, movimientos)
+        
+        filename = f"consumos_socio_{socio.get('numero_socio', socio_id)}.pdf"
+        
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error generando historial consumos PDF: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reportes/socio/{socio_id}/estado-cuenta", summary="Descargar Estado de Cuenta PDF")
+async def descargar_estado_cuenta(
+    socio_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Genera y descarga el estado de cuenta del socio en PDF.
+    
+    Incluye:
+    - Resumen financiero
+    - Detalle de cargos (pagados y pendientes)
+    - Saldo total
+    
+    Permisos: CAVA_SOCIOS_VER
+    """
+    try:
+        cava_service = get_cava_socios_service()
+        socio = cava_service.obtener_socio(socio_id)
+        
+        if not socio:
+            raise HTTPException(status_code=404, detail="Socio no encontrado")
+        
+        # Obtener cargos del socio
+        cargos = cava_service.obtener_cargos_socio(socio_id)
+        
+        # Generar PDF
+        report_service = get_cava_report_service()
+        pdf_bytes = report_service.generar_estado_cuenta(socio, cargos)
+        
+        filename = f"estado_cuenta_{socio.get('numero_socio', socio_id)}.pdf"
+        
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error generando estado de cuenta PDF: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
