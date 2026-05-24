@@ -36,6 +36,7 @@ import uuid
 import time
 
 from ..job_logger import get_job_logger
+from ..sql_repository import get_active_servers, get_empresas_activas, registrar_bitacora_job
 from core.source_resolver import (
     QueryStatus,
     SourceQueryResult,
@@ -442,7 +443,6 @@ class PedidosDetectorJob:
         FASE 4.1: La empresa es el eje funcional, no el servidor.
         NOTA: Migrado a SQL Server (Mayo 2026).
         """
-        from ..sql_repository import get_empresas_activas
         return await get_empresas_activas(empresa_id_filter)
     
     async def _obtener_servidores_empresa(self, empresa_id: str) -> List[Dict]:
@@ -452,8 +452,6 @@ class PedidosDetectorJob:
         NOTA: Simplificado para usar SQL Server directamente.
         El mapeo empresa→sucursal→servidor ahora obtiene todos los servidores activos.
         """
-        from ..sql_repository import get_active_servers
-        
         servidores = await get_active_servers()
         
         # Filtrar solo servidores con system_type compatible

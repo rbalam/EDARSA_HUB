@@ -23,6 +23,14 @@ class OrquestadorService:
     
     def __init__(self, db):
         self.db = db
+        # Detectar si es StubDatabase
+        self._is_stub = self._detect_stub_db()
+    
+    def _detect_stub_db(self) -> bool:
+        """Detecta si self.db es StubDatabase o None."""
+        if self.db is None:
+            return True
+        return hasattr(self.db, '_collections') and self.db.__class__.__name__ == 'StubDatabase'
     
     async def procesar_analisis(
         self,
@@ -78,10 +86,11 @@ class OrquestadorService:
             "error": None
         }
         
-        # MongoDB ELIMINADO - Si db es None, retornar sin crear workflow
-        if self.db is None:
-            logger.warning("[ORQUESTADOR] procesar_analisis: Sin MongoDB - Workflows deshabilitados")
-            resumen["mensaje"] = "Modo SQL-only: Workflows deshabilitados sin MongoDB"
+        # MongoDB ELIMINADO - Si db es None o StubDatabase, retornar sin crear workflow
+        if self._is_stub:
+            logger.info("[ORQUESTADOR] procesar_analisis: StubDatabase - Workflows simulados")
+            resumen["procesado"] = True
+            resumen["mensaje"] = "Modo SQL-only: Workflows no persistidos (StubDatabase)"
             return resumen
         
         try:

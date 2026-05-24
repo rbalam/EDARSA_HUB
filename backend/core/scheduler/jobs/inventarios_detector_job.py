@@ -48,6 +48,16 @@ import uuid
 from dataclasses import dataclass, asdict
 
 from ..job_logger import get_job_logger
+from ..sql_repository import (
+    get_active_servers,
+    get_server_by_id,
+    inventario_existe,
+    registrar_inventario_procesando,
+    actualizar_inventario_completado,
+    actualizar_inventario_error,
+    get_inventarios_pendientes_reintento,
+    registrar_bitacora_job
+)
 
 logger = logging.getLogger(__name__)
 
@@ -255,15 +265,6 @@ class InventariosDetectorJob:
             manual: True si es ejecución manual
             server_id_filter: Filtrar por servidor específico (opcional)
         """
-        from ..sql_repository import (
-            get_active_servers,
-            inventario_existe,
-            registrar_inventario_procesando,
-            actualizar_inventario_completado,
-            actualizar_inventario_error,
-            registrar_bitacora_job
-        )
-        
         execution_type = "manual" if manual else "automatic"
         started_at = datetime.now(timezone.utc)
         run_id = str(uuid.uuid4())[:8]
@@ -367,7 +368,6 @@ class InventariosDetectorJob:
     async def _obtener_servidores(self, server_id_filter: str = None) -> List[Dict]:
         """Obtiene servidores activos desde SQL Server."""
         logger.info("[INVENTARIOS_DETECTOR] _obtener_servidores: Usando SQL Server")
-        from ..sql_repository import get_active_servers
         
         servidores = await get_active_servers(server_id_filter)
         logger.info(f"[INVENTARIOS_DETECTOR] Obtenidos {len(servidores)} servidores de SQL")
@@ -383,8 +383,6 @@ class InventariosDetectorJob:
     
     async def _procesar_reintentos(self):
         """Procesa inventarios en ERROR que pueden reintentarse."""
-        from ..sql_repository import get_inventarios_pendientes_reintento
-        
         # Limitar reintentos por ejecución
         max_reintentos = 5
         
@@ -653,8 +651,6 @@ class InventariosDetectorJob:
             return
         
         # Verificar si ya existe (anti-duplicado) - usar SQL
-        from ..sql_repository import inventario_existe, registrar_inventario_procesando
-        
         existe = await inventario_existe(
             sistema_origen=clave.sistema_origen,
             server_id=clave.server_id,
@@ -727,8 +723,6 @@ class InventariosDetectorJob:
     
     async def _procesar_inventario_desde_registro(self, registro: Dict):
         """Procesa un inventario desde un registro existente (reintento)."""
-        from ..sql_repository import get_server_by_id
-        
         # Obtener servidor desde SQL
         servidor = await get_server_by_id(registro["clave"]["server_id"])
         
@@ -805,8 +799,6 @@ class InventariosDetectorJob:
             valor_total = sum(abs(float(p.get('Diferencia_Costo', 0) or 0)) for p in productos_con_diferencia)
             
             # Actualizar registro como COMPLETADO en SQL
-            from ..sql_repository import actualizar_inventario_completado
-            
             await actualizar_inventario_completado(
                 sistema_origen=clave.sistema_origen,
                 server_id=clave.server_id,
@@ -868,8 +860,6 @@ class InventariosDetectorJob:
     
     async def _marcar_error(self, registro: Dict, error_msg: str):
         """Marca un registro como ERROR en SQL."""
-        from ..sql_repository import actualizar_inventario_error
-        
         clave = registro.get("clave", {})
         intentos = registro.get("intentos", 1)
         
