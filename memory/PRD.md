@@ -23,6 +23,22 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
+#### FASE 1C-3A - Diseño Técnico Costos y Márgenes (24 Mayo 2026) ✅ COMPLETADO
+- [x] **Diagnóstico de tablas**: 50+ tablas analizadas en EDARSAHUB
+- [x] **Tablas reutilizables**: `Sync_Control_Ejecuciones`, parcialmente `Operaciones_Tablaje_*`
+- [x] **Tablas faltantes identificadas**: 6 tablas Sync_Productos_* propuestas
+- [x] **Hallazgo crítico**: `Producto_Catalogo` y `Producto_Familias` VACÍAS en EDARSAHUB
+- [x] **DDL propuesto**: 6 tablas con índices (no ejecutado)
+- [x] **Diseño job sync_recetas.py**: Flujo y queries por sistema
+- [x] **Fuentes mapeadas**: SoftRestaurant (611 productos, 1199 insumos) + MPRO (7957 productos, 554 fórmulas)
+- [x] **Endpoints diseñados**: 7 endpoints propuestos
+- [x] **Frontend diseñado**: Tabla jerárquica expandible con filtros y ordenamiento
+- [x] **RBAC diseñado**: 8 permisos propuestos
+- [x] **Reglas NO-LIVE**: Documentadas y validadas
+- [x] **Riesgos identificados**: 7 riesgos con mitigaciones
+- [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3A_COSTOS_MARGENES_DISENO_TECNICO.md`
+- [⚠️] **Hallazgo**: `explosioninsumosdetalle` vacía en SoftRestaurant (sin recetas)
+
 #### FASE 1C-0 - Diagnóstico Comercial/Ventas para Subfases (24 Mayo 2026) ✅ COMPLETADO
 - [x] **Rutas inventariadas**: 18 rutas revisadas (Comercial + CRM)
 - [x] **Endpoints catalogados**: 30+ endpoints identificados
