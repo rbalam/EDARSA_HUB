@@ -53,6 +53,26 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 - [x] **No regresión**: Login, Tablero Ejecutivo, Ventas Tiempo funcionan
 - [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3C_COSTOS_MARGENES_ENDPOINTS_NO_LIVE.md`
 
+#### FASE 1C-3B-R2 - Sincronización CIENFUEGOS (24 Mayo 2026) ✅ COMPLETADO
+- [x] **Conexión DDNS resuelta**: `servercienfuegos.ddns.net` → IP `189.162.155.142`
+- [x] **DRY-RUN exitoso**: 37 familias, 57 subfamilias, 2,022 productos, 2,493 insumos, 4,164 recetas, 1,843 elaborados
+- [x] **Sync Real COMPLETADO**: SyncRunID `SYNC-RECETAS-20260524145132-968ad406`
+  - Duración: 8 min 53 seg (531.78s)
+  - Registros insertados: 10,579
+  - Servidor: CIENFUEGOS (SOFTRESTAURANT_PRO)
+- [x] **Conteos CIENFUEGOS en EDARSAHUB**:
+  - Productos: 2,022 | SubFamilias: 57 | Insumos: 2,493 | Recetas: 4,164 | Elaborados: 1,843
+- [x] **Conteos TOTALES en EDARSAHUB**:
+  - Productos: 9,905 | SubFamilias: 264 | Insumos: 11,735 | Recetas: 13,313 | Elaborados: 3,893 | Total: 39,183
+- [x] **Validación duplicados**: 0 duplicados
+- [x] **Validación cantidades negativas**: 0
+- [x] **Validación costos negativos**: 35 (provienen del origen - ajustes)
+- [x] **Integridad otras unidades**: LA ESTELAR (611), 130° MÉRIDA (1,858), MPRO (5,414) intactos
+- [x] **Endpoints NO-LIVE funcionan**: `/api/costos-margenes/*` retornan `source_type: EDARSAHUB_SQL`
+- [x] **CIENFUEGOS visible en endpoints**: Confirmado en sync-status y productos
+- [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3B_R2_SYNC_RECETAS_CIENFUEGOS.md`
+- [⚠️] **Bug familias SR**: 37 familias CIENFUEGOS no insertadas por bug Decimal (P2, bajo impacto)
+
 #### FASE 1C-3B - Implementación Job Sync Recetas (24 Mayo 2026) ✅ COMPLETADO Y CERRADO
 - [x] **Job sync_recetas.py creado**: 1,084 líneas de código ETL
 - [x] **Tablas destino creadas**: 6 tablas `Sync_Productos*` en EDARSAHUB SQL
@@ -71,8 +91,8 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 - [x] **No regresión**: Login, dashboard, menús funcionan correctamente
 - [x] **Proceso background cerrado**: PID 7622 terminó exitosamente
 - [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3B_COSTOS_MARGENES_SYNC_RECETAS_IMPLEMENTACION.md`
-- [⚠️] **CIENFUEGOS**: Excluido por problema de red (backlog operativo)
-- [⚠️] **Bug familias SR**: 79 familias no insertadas por bug Decimal (no bloqueante)
+- [✅] **CIENFUEGOS**: Sincronizado en FASE 1C-3B-R2
+- [⚠️] **Bug familias SR**: 79+37 familias no insertadas por bug Decimal (no bloqueante)
 
 #### FASE 1C-3A - Diseño Técnico Costos y Márgenes (24 Mayo 2026) ✅ COMPLETADO
 - [x] **Diagnóstico de tablas**: 50+ tablas analizadas en EDARSAHUB
