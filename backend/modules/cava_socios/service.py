@@ -116,13 +116,19 @@ class CavaSociosService:
             """, (socio_id,))
             
             botellas = []
+            valor_total = 0
             for b in cursor.fetchall():
+                valor = float(b['ValorDeclarado'] or 0)
+                valor_total += valor if b['EstatusBotella'] == 'EN_CAVA' else 0
                 botellas.append({
                     "botella_id": str(b['BotellaID']),
                     "producto_nombre": b['ProductoNombre'],
                     "marca": b['Marca'],
                     "tipo_bebida": b['TipoBebida'],
+                    "añada": b['Añada'],
+                    "capacidad": b['Capacidad'],
                     "ubicacion": b['UbicacionCava'],
+                    "valor_declarado": valor,
                     "nivel_actual": float(b['NivelActual'] or 100),
                     "estatus": b['EstatusBotella'],
                     "fecha_ingreso": b['FechaIngreso'].isoformat() if b['FechaIngreso'] else None
@@ -151,6 +157,7 @@ class CavaSociosService:
                 "estatus": socio['Estatus'],
                 "botellas": botellas,
                 "total_botellas_en_cava": len([b for b in botellas if b['estatus'] == 'EN_CAVA']),
+                "valor_total_declarado": valor_total,
                 "saldo_pendiente": float(cargos['total_pendiente'] or 0),
                 "observaciones": socio['Observaciones']
             }

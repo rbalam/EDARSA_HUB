@@ -42,20 +42,20 @@ import pytds
 class ResilientConfig:
     """Configuración para conexiones resilientes a SQL Server remoto"""
     
-    # Timeouts incrementados para servidor remoto
-    LOGIN_TIMEOUT = 30          # Timeout para establecer conexión (antes: 15s)
-    QUERY_TIMEOUT = 90          # Timeout para queries (antes: 45s)
-    CONNECT_TIMEOUT = 30        # Timeout general de conexión
+    # Timeouts incrementados para servidor remoto (optimizado Mayo 2026)
+    LOGIN_TIMEOUT = 45          # Timeout para establecer conexión (antes: 30s)
+    QUERY_TIMEOUT = 120         # Timeout para queries (antes: 90s)
+    CONNECT_TIMEOUT = 45        # Timeout general de conexión (antes: 30s)
     
-    # Reintentos
-    MAX_RETRIES = 3             # Número máximo de reintentos
+    # Reintentos (incrementado para alta latencia)
+    MAX_RETRIES = 4             # Número máximo de reintentos (antes: 3)
     RETRY_DELAY_BASE = 2        # Segundos base entre reintentos
-    RETRY_DELAY_MAX = 15        # Máximo delay entre reintentos
+    RETRY_DELAY_MAX = 20        # Máximo delay entre reintentos (antes: 15)
     RETRY_BACKOFF = 2           # Multiplicador de backoff exponencial
     
     # Health check
     HEALTH_CHECK_QUERY = "SELECT 1 AS health"
-    HEALTH_CHECK_TIMEOUT = 15
+    HEALTH_CHECK_TIMEOUT = 20   # Antes: 15
     
     # Errores recuperables (se puede reintentar)
     RECOVERABLE_ERRORS = [
@@ -68,7 +68,9 @@ class ResilientConfig:
         "temporarily unavailable",
         "connection refused",
         "login timeout",
-        "communication link failure"
+        "communication link failure",
+        "server is unavailable",    # Agregado
+        "operation timed out"       # Agregado
     ]
 
 

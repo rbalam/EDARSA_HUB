@@ -160,14 +160,44 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 ### ⏳ Pendiente
 
 #### P2 - Media Prioridad
-1. **Flujos avanzados pipeline CRM** - Automatizaciones de etapas
-2. **Reportes exportables PDF** - Tablajería y Cava de Socios
-3. **Valor declarado de botellas** - Corregir respuesta del backend para incluir `valor_declarado` en la lista de botellas
+1. **Reportes exportables PDF** - Tablajería y Cava de Socios
 
 #### P3 - Backlog Técnico
-1. Optimizar pool de conexiones pymssql (timeouts 502 ocasionales)
-2. Modularización backend (separar server.py por módulos)
-3. Persistencia de token en frontend (mejorar auth flow)
+1. Modularización backend (separar server.py por módulos)
+
+---
+
+## Actualizaciones Recientes (24 Mayo 2026)
+
+### ✅ Valor Declarado Botellas (CORREGIDO)
+- Campo `CapacidadML` → `Capacidad` corregido en servicio
+- `valor_declarado` y `añada` ahora se incluyen en respuesta de botellas
+- `valor_total_declarado` calculado correctamente en detalle de socio
+
+### ✅ CRM Pipeline Automation (NUEVO)
+- **Tablas SQL creadas**:
+  - `CRM_Automation_Reglas` - Reglas de automatización
+  - `CRM_Automation_Log` - Log de ejecuciones
+  - Columna `DiasSLAMaximo` agregada a `CRM_Config_PipelineEtapas`
+- **Servicio** `/app/backend/modules/crm/automation_service.py`
+- **Endpoints API** `/api/crm/automation/*`:
+  - `GET /reglas` - Listar reglas activas
+  - `POST /reglas` - Crear nueva regla
+  - `GET /sla/verificar` - Verificar SLA de oportunidades
+  - `GET /estadisticas` - Estadísticas de automatizaciones
+  - `POST /ejecutar/cambio-etapa` - Trigger manual
+- **3 reglas de ejemplo** insertadas:
+  1. Seguimiento en Propuesta (crear actividad)
+  2. Probabilidad en Negociación (actualizar campo)
+  3. Notificación Cierre Ganado (enviar notificación)
+
+### ✅ Pool pymssql Optimizado (MEJORADO)
+- `LOGIN_TIMEOUT`: 30s → 45s
+- `QUERY_TIMEOUT`: 90s → 120s  
+- `CONNECT_TIMEOUT`: 30s → 45s
+- `MAX_RETRIES`: 3 → 4
+- `HEALTH_CHECK_TIMEOUT`: 15s → 20s
+- Nuevos errores recuperables agregados
 
 ---
 

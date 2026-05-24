@@ -79,10 +79,10 @@ class PoolConfig:
     max_connections: int = 10     # Conexiones máximas permitidas
     max_shared: int = 3           # Cuántas veces se puede compartir una conexión
     
-    # Timeouts RESILIENTES (incrementados para servidor remoto)
-    connection_timeout: int = 30   # Timeout para establecer conexión (antes: 15s)
-    query_timeout: int = 90        # Timeout para queries (antes: 45s)
-    blocking_timeout: int = 45     # Tiempo de espera si pool está lleno (antes: 30s)
+    # Timeouts RESILIENTES (optimizados Mayo 2026)
+    connection_timeout: int = 45   # Timeout para establecer conexión (antes: 30s)
+    query_timeout: int = 120       # Timeout para queries (antes: 90s)
+    blocking_timeout: int = 60     # Tiempo de espera si pool está lleno (antes: 45s)
     
     # Mantenimiento
     max_usage: int = 0            # Máximo de usos por conexión (0 = ilimitado)

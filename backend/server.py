@@ -17894,6 +17894,13 @@ try:
 except Exception as e:
     logger.warning(f"Error registrando CRM Comercial router: {e}")
 
+try:
+    from modules.crm.automation_routes import router as crm_automation_router
+    app.include_router(crm_automation_router, tags=["CRM - Automatización"])
+    logger.info("✓ CRM Automation router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM Automation router: {e}")
+
 # =============================================================================
 # TABLAJERÍA (Operaciones - Producción/Transformación)
 # =============================================================================

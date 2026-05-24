@@ -308,7 +308,7 @@ export default function SocioDetail() {
               </div>
               <div className="text-center p-4 bg-emerald-50 rounded-lg">
                 <div className="text-3xl font-bold text-emerald-700">
-                  {formatCurrency(botellasActivas.reduce((sum, b) => sum + (b.valor_declarado || 0), 0))}
+                  {formatCurrency(socio.valor_total_declarado || botellasActivas.reduce((sum, b) => sum + (b.valor_declarado || 0), 0))}
                 </div>
                 <div className="text-xs text-emerald-600 mt-1">Valor Total Declarado</div>
               </div>
