@@ -197,6 +197,31 @@ class OrdenCreate(BaseModel):
     observaciones: Optional[str] = None
 
 
+class OrdenCapturaDirectaCreate(BaseModel):
+    """
+    Fase 4: Captura Directa
+    Permite crear una orden de tablaje sin plantilla predefinida.
+    """
+    empresa_id: str
+    unidad_negocio_id: Optional[str] = None
+    sucursal_id: Optional[int] = None
+    fecha_operacion_mexico: date
+    
+    # Insumo base (carne a procesar)
+    insumo_base_codigo: str
+    insumo_base_nombre: str
+    unidad_base_codigo: Optional[str] = "KG"
+    cantidad_base_planeada: Decimal
+    lote_insumo: Optional[str] = None
+    
+    # Productos derivados esperados
+    detalles: List[OrdenDetalleCreate]
+    
+    # Opcional
+    observaciones: Optional[str] = None
+    responsable_id: Optional[str] = None
+
+
 class OrdenUpdate(BaseModel):
     cantidad_base_real: Optional[Decimal] = None
     peso_inicial_kg: Optional[Decimal] = None

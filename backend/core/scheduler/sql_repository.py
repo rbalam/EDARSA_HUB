@@ -100,11 +100,11 @@ async def get_active_servers(server_id_filter: str = None) -> List[Dict]:
             CAST(id AS VARCHAR(50)) as id,
             nombre as name,
             host,
-            puerto as port,
-            usuario as username,
-            contrasena as password,
-            base_datos as database_name,
-            tipo_sistema as system_type,
+            port,
+            username,
+            password_encrypted as password,
+            database_name,
+            system_type,
             activo as active,
             sucursales
         FROM Servidores_Conexiones

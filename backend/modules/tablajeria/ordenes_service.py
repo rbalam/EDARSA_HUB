@@ -4,6 +4,7 @@ EDARSA HUB - Tablajería Órdenes Service
 Servicio para gestión de órdenes de tablaje.
 
 FASE 5: Crear, ejecutar, cerrar órdenes de producción.
+FASE 4: Captura Directa (Mayo 2026)
 """
 
 import logging
@@ -11,7 +12,7 @@ import pymssql
 import uuid
 import json
 from typing import Optional, Dict, List, Any, Tuple
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -234,6 +235,163 @@ class TablajeriaOrdenesService:
         except Exception as e:
             conn.rollback()
             logger.error(f"[TablajeriaOrdenes] Error creando orden: {e}")
+            raise
+        finally:
+            conn.close()
+    
+    # ============================================================
+    # FASE 4: CAPTURA DIRECTA (crear orden sin plantilla)
+    # ============================================================
+    
+    def crear_orden_captura_directa(
+        self, 
+        data: 'OrdenCapturaDirectaCreate', 
+        usuario_id: str
+    ) -> Dict[str, Any]:
+        """
+        Fase 4: Captura Directa.
+        Crea una orden de tablaje especificando manualmente el insumo y derivados.
+        No requiere plantilla predefinida.
+        
+        Args:
+            data: Datos de la orden con insumo base y detalles de derivados
+            usuario_id: ID del usuario que crea la orden
+        
+        Returns:
+            Dict con datos de la orden creada
+        """
+        from .schemas import EstatusOrden
+        
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            now = datetime.now(timezone.utc)
+            fecha_op = data.fecha_operacion_mexico or now.date()
+            
+            # Generar IDs
+            orden_id = str(uuid.uuid4())
+            
+            # Generar folio
+            folio = self._generar_folio(cursor, data.empresa_id)
+            
+            # Calcular rendimiento esperado
+            total_esperado = sum(
+                float(d.cantidad_esperada or 0) 
+                for d in data.detalles 
+                if d.tipo_derivado.value != 'MERMA'
+            )
+            rendimiento_esperado = (total_esperado / float(data.cantidad_base_planeada) * 100) if float(data.cantidad_base_planeada) > 0 else 0
+            
+            # Calcular merma esperada
+            merma_esperada = sum(
+                float(d.cantidad_esperada or 0) 
+                for d in data.detalles 
+                if d.tipo_derivado.value == 'MERMA'
+            )
+            merma_porcentaje = (merma_esperada / float(data.cantidad_base_planeada) * 100) if float(data.cantidad_base_planeada) > 0 else 0
+            
+            # Insertar orden (sin PlantillaID)
+            # Nota: EmpresaID y ResponsableID son uniqueidentifier en SQL Server
+            # Convertir a UUID si no es válido
+            def to_uuid_safe(val):
+                if not val:
+                    return None
+                val_str = str(val)
+                # Si ya es UUID válido (con guiones), usarlo tal cual
+                if len(val_str) == 36 and val_str.count('-') == 4:
+                    return val_str
+                # Generar UUID basado en el valor
+                return str(uuid.uuid5(uuid.NAMESPACE_DNS, val_str))
+            
+            empresa_uuid = to_uuid_safe(data.empresa_id)
+            unidad_uuid = to_uuid_safe(data.unidad_negocio_id)
+            resp_uuid = to_uuid_safe(data.responsable_id or usuario_id)
+            usuario_uuid = to_uuid_safe(usuario_id)
+            
+            # UUID especial para captura directa (sin plantilla)
+            PLANTILLA_CAPTURA_DIRECTA = '00000000-0000-0000-0000-000000000001'
+            
+            cursor.execute("""
+                INSERT INTO Operaciones_Tablaje_Ordenes (
+                    OrdenID, EmpresaID, UnidadNegocioID, SucursalID,
+                    PlantillaID, FolioOrden, EstatusOrden,
+                    InsumoBaseCodigo, InsumoBaseNombre,
+                    CantidadBasePlaneada, LoteInsumo,
+                    RendimientoEsperadoPorcentaje, MermaEsperadaPorcentaje,
+                    ResponsableID, Observaciones, OrigenOrden,
+                    FechaOperacionMexico, FechaAltaUTC, UsuarioAltaID
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                )
+            """, (
+                orden_id,
+                empresa_uuid,
+                unidad_uuid,
+                data.sucursal_id,
+                PLANTILLA_CAPTURA_DIRECTA,
+                folio,
+                EstatusOrden.BORRADOR.value,
+                data.insumo_base_codigo,
+                data.insumo_base_nombre,
+                float(data.cantidad_base_planeada),
+                data.lote_insumo,
+                round(rendimiento_esperado, 2),
+                round(merma_porcentaje, 2),
+                resp_uuid,
+                data.observaciones,
+                'CAPTURA_DIRECTA',  # Marcar origen
+                fecha_op, now, usuario_uuid
+            ))
+            
+            # Insertar detalles
+            for idx, det in enumerate(data.detalles):
+                detalle_id = str(uuid.uuid4())
+                
+                cursor.execute("""
+                    INSERT INTO Operaciones_Tablaje_OrdenesDetalle (
+                        OrdenDetalleID, OrdenID,
+                        ProductoDerivadoCodigo, ProductoDerivadoNombre,
+                        TipoDerivado, CantidadEsperada,
+                        PorcentajeEsperado, UnidadCodigo,
+                        GeneraMovimiento
+                    ) VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    )
+                """, (
+                    detalle_id,
+                    orden_id,
+                    det.producto_derivado_codigo or f"PROD-{idx+1:03d}",
+                    det.producto_derivado_nombre,
+                    det.tipo_derivado.value,
+                    float(det.cantidad_esperada or 0),
+                    float(det.porcentaje_esperado or 0) if det.porcentaje_esperado else None,
+                    'KG',
+                    det.tipo_derivado.value != 'MERMA'
+                ))
+            
+            conn.commit()
+            
+            logger.info(f"[TablajeriaOrdenes] Orden Captura Directa creada: {folio}")
+            
+            return {
+                "orden_id": orden_id,
+                "folio_orden": folio,
+                "plantilla_id": None,
+                "plantilla_nombre": "CAPTURA DIRECTA",
+                "insumo_base": {
+                    "codigo": data.insumo_base_codigo,
+                    "nombre": data.insumo_base_nombre
+                },
+                "estatus_orden": EstatusOrden.BORRADOR.value,
+                "cantidad_base_planeada": float(data.cantidad_base_planeada),
+                "fecha_operacion_mexico": str(fecha_op),
+                "detalles_count": len(data.detalles),
+                "origen": "CAPTURA_DIRECTA"
+            }
+            
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"[TablajeriaOrdenes] Error creando orden captura directa: {e}")
             raise
         finally:
             conn.close()

@@ -20,7 +20,7 @@ import json
 
 from .schemas import (
     Plantilla, PlantillaCreate, PlantillaUpdate,
-    Orden, OrdenCreate, OrdenUpdate,
+    Orden, OrdenCreate, OrdenUpdate, OrdenCapturaDirectaCreate,
     SyncRequest, SyncResult,
     EstatusPlantilla, EstatusOrden, OrigenPlantilla
 )
@@ -495,6 +495,44 @@ async def crear_orden(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"[Tablajeria] Error creando orden: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ordenes/captura-directa")
+async def crear_orden_captura_directa(
+    data: OrdenCapturaDirectaCreate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    FASE 4: Captura Directa.
+    
+    Crea una orden de tablaje especificando manualmente el insumo base
+    y los productos derivados esperados. No requiere plantilla predefinida.
+    
+    Útil para:
+    - Órdenes únicas o especiales
+    - Pruebas de nuevas recetas
+    - Productos no estandarizados
+    
+    Permisos requeridos: TABLAJERIA_CREAR_ORDEN
+    """
+    try:
+        service = _get_ordenes_service()
+        
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        
+        result = service.crear_orden_captura_directa(data, usuario_id)
+        
+        return {
+            "success": True,
+            "mensaje": f"Orden {result['folio_orden']} creada exitosamente (Captura Directa)",
+            **result
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[Tablajeria] Error creando orden captura directa: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
