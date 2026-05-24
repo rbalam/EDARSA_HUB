@@ -2383,6 +2383,9 @@ async def comercial_ventas_tiempo(
 ):
     """
     Ventas por hora y día de la semana.
+    
+    FASE 1B-R2: Migrado a EDARSAHUB SQL - NO conexiones remotas
+    Fuente: Sync_Ventas_PorHora
     """
     server = await get_server_by_id(server_id)
     if not server:
@@ -2392,304 +2395,204 @@ async def comercial_ventas_tiempo(
     await validate_server_access_rbac(current_user, server_id)
     
     try:
+        # ============================================================================
+        # FASE 1B-R2: EDARSAHUB-ONLY - NO CONEXIONES REMOTAS
+        # ============================================================================
+        # PROHIBIDO: Abrir conexión a SoftRestaurant/MPRO/Enterprise
+        # OBLIGATORIO: Leer desde Sync_Ventas_PorHora de EDARSAHUB SQL
+        # ============================================================================
+        
+        import pymssql
+        from datetime import datetime, timedelta
+        
         hoy = datetime.now()
         # Última semana
         fecha_ini = (hoy - timedelta(days=7)).strftime('%Y-%m-%d')
         fecha_fin = hoy.strftime('%Y-%m-%d')
         
-        # FASE 3A.2: Migrado a helper centralizado
-        if is_softrestaurant_system(server.get('system_type')):
-            # Formato YYYYMMDD universal para SQL Server
-            f_ini = fecha_ini.replace('-', '')
-            f_fin = fecha_fin.replace('-', '')
-            
-            # Verificar si la tabla cheques tiene columna 'propina'
-            has_propina = check_column_exists(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], 'cheques', 'propina'
+        logging.info(f"[NO-LIVE] ventas-tiempo {server.get('name')}: Consultando EDARSAHUB SQL, período {fecha_ini} a {fecha_fin}")
+        
+        try:
+            conn = pymssql.connect(
+                server='54.39.104.176',
+                user='HRLectura',
+                password='National09$',
+                database='EDARSAHUB',
+                port=1433,
+                timeout=15
             )
-            propina_expr = get_propina_safe_column(has_propina)
+            cursor = conn.cursor(as_dict=True)
             
-            # Ventas por hora (excluyendo propinas SI existe la columna)
-            # BUG-RUZ-002 FIX: Agrupa por hora del cheque, NO por apertura del turno
-            query_hora = f"""
-SELECT 
-    DATEPART(HOUR, cheques.fecha) as hora,
-    SUM(cheques.total{propina_expr}) as ventas,
-    SUM(cheques.nopersonas) as pax
-FROM cheques
-INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE CONVERT(varchar, turnos.apertura, 112) >= '{f_ini}'
-  AND CONVERT(varchar, turnos.apertura, 112) <= '{f_fin}'
-  AND cheques.cancelado = 0
-GROUP BY DATEPART(HOUR, cheques.fecha)
-ORDER BY SUM(cheques.total{propina_expr}) DESC
-"""
-            result_hora = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_hora
-            )
+            # Ventas por hora desde Sync_Ventas_PorHora
+            cursor.execute("""
+                SELECT 
+                    Hora,
+                    SUM(VentaHora) as ventas,
+                    SUM(NumTicketsHora) as tickets
+                FROM Sync_Ventas_PorHora
+                WHERE ServerID = %s
+                  AND FechaOperacion >= %s
+                  AND FechaOperacion <= %s
+                GROUP BY Hora
+                ORDER BY SUM(VentaHora) DESC
+            """, (server_id, fecha_ini, fecha_fin))
             
+            result_hora = cursor.fetchall()
+            
+            # Ventas por día de semana desde Sync_Ventas_PorHora
+            cursor.execute("""
+                SELECT 
+                    DATEPART(WEEKDAY, FechaOperacion) as dia_num,
+                    SUM(VentaHora) as ventas
+                FROM Sync_Ventas_PorHora
+                WHERE ServerID = %s
+                  AND FechaOperacion >= %s
+                  AND FechaOperacion <= %s
+                GROUP BY DATEPART(WEEKDAY, FechaOperacion)
+                ORDER BY DATEPART(WEEKDAY, FechaOperacion)
+            """, (server_id, fecha_ini, fecha_fin))
+            
+            result_dia = cursor.fetchall()
+            
+            # Obtener última sincronización
+            cursor.execute("""
+                SELECT TOP 1 SyncedAtMexico, FechaOperacion
+                FROM Sync_Ventas_PorHora
+                WHERE ServerID = %s
+                ORDER BY FechaOperacion DESC
+            """, (server_id,))
+            
+            ultima_sync = cursor.fetchone()
+            conn.close()
+            
+            # Verificar si hay datos
+            if not result_hora and not result_dia:
+                logging.warning(f"[NO-LIVE] ventas-tiempo {server.get('name')}: Sin datos en EDARSAHUB para el período")
+                return {
+                    "source_status": "SIN_DATOS_EDARSAHUB",
+                    "source_type": "SIN_DATOS_EDARSAHUB",
+                    "source_message": f"No hay datos de ventas por hora en EDARSAHUB para {server.get('name')} en el período {fecha_ini} a {fecha_fin}. Verifique sincronización.",
+                    "server_name": server.get('name'),
+                    "ventas_por_hora": [],
+                    "ventas_por_dia": [],
+                    "pax_hoy": 0,
+                    "ventas_hoy": 0,
+                    "cheques_hoy": 0
+                }
+            
+            # Verificar si datos son stale (más de 1 día de antigüedad)
+            is_stale = False
+            stale_message = ""
+            if ultima_sync:
+                ultima_fecha = ultima_sync['FechaOperacion']
+                if hasattr(ultima_fecha, 'date'):
+                    ultima_fecha = ultima_fecha
+                else:
+                    from datetime import datetime as dt
+                    ultima_fecha = dt.strptime(str(ultima_fecha), '%Y-%m-%d').date()
+                
+                dias_antiguedad = (hoy.date() - ultima_fecha).days if hasattr(hoy, 'date') else (hoy - ultima_fecha).days
+                if dias_antiguedad > 1:
+                    is_stale = True
+                    stale_message = f"Datos de hace {dias_antiguedad} días. Última sincronización: {ultima_sync['SyncedAtMexico']}"
+            
+            # Formatear ventas por hora
             ventas_por_hora = []
             for r in (result_hora or [])[:6]:  # Top 6 horas
-                hora_int = int(r['hora'] or 0)
+                hora_int = int(r['Hora'] or 0)
                 ventas_por_hora.append({
                     "hora": f"{hora_int:02d}:00",
                     "ventas": float(r['ventas'] or 0),
-                    "pax": int(r['pax'] or 0)
+                    "pax": int(r['tickets'] or 0)  # Usando tickets como aproximación de pax
                 })
             
-            # Ventas por día de la semana (excluyendo propinas SI existe la columna)
-            query_dia = f"""
-SELECT 
-    DATEPART(WEEKDAY, turnos.apertura) as dia_num,
-    SUM(cheques.total{propina_expr}) as ventas
-FROM cheques
-INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE CONVERT(varchar, turnos.apertura, 112) >= '{f_ini}'
-  AND CONVERT(varchar, turnos.apertura, 112) <= '{f_fin}'
-  AND cheques.cancelado = 0
-GROUP BY DATEPART(WEEKDAY, turnos.apertura)
-ORDER BY DATEPART(WEEKDAY, turnos.apertura)
-"""
-            result_dia = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_dia
-            )
-            
-            # Mapeo SQL Server DATEPART(WEEKDAY): 1=Domingo, 2=Lunes, ..., 7=Sábado
-            # Reordenamos para que sea Lunes a Domingo (2,3,4,5,6,7,1)
-            dias_semana = {1: 'Dom', 2: 'Lun', 3: 'Mar', 4: 'Mié', 5: 'Jue', 6: 'Vie', 7: 'Sáb'}
-            
-            # Crear diccionario con todos los días inicializados en 0
-            ventas_dict = {dia: 0 for dia in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']}
-            
+            # Formatear ventas por día
+            dias_semana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+            ventas_por_dia = []
             for r in (result_dia or []):
                 dia_num = int(r['dia_num'] or 1)
-                dia_nombre = dias_semana.get(dia_num, 'Otro')
-                if dia_nombre in ventas_dict:
-                    ventas_dict[dia_nombre] = float(r['ventas'] or 0)
-            
-            # Convertir a lista ordenada de Lunes a Domingo
-            ventas_por_dia = [{"dia": dia, "ventas": ventas_dict[dia]} for dia in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']]
-            
-            # NUEVO: PAX del día actual desde tempcheques (ventas sin corte)
-            pax_hoy = 0
-            ventas_hoy = 0
-            cheques_hoy = 0
-            try:
-                # Verificar si tempcheques tiene columna propina
-                has_propina_temp = check_column_exists(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], 'tempcheques', 'propina'
-                )
-                propina_expr_temp = get_propina_safe_column_tempcheques(has_propina_temp)
-                
-                query_pax_hoy = f"""
-SELECT 
-    ISNULL(SUM(nopersonas), 0) as pax,
-    ISNULL(SUM(total{propina_expr_temp}), 0) as ventas,
-    COUNT(*) as cheques
-FROM tempcheques
-WHERE total > 0
-"""
-                result_pax_hoy = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_pax_hoy
-                )
-                if result_pax_hoy and len(result_pax_hoy) > 0:
-                    row = result_pax_hoy[0]
-                    pax_hoy = int(row.get('pax', 0) or 0)
-                    ventas_hoy = float(row.get('ventas', 0) or 0)
-                    cheques_hoy = int(row.get('cheques', 0) or 0)
-                    logging.info(f"ventas-tiempo SoftRestaurant {server['name']}: PAX HOY (tempcheques) = {pax_hoy}, Ventas = ${ventas_hoy:,.2f}, Cheques = {cheques_hoy}")
-            except Exception as e:
-                logging.warning(f"ventas-tiempo SoftRestaurant {server['name']}: Error obteniendo PAX del día: {e}")
-            
-            return {
-                "por_hora": ventas_por_hora,
-                "por_dia": ventas_por_dia,
-                "pax_hoy": pax_hoy,
-                "ventas_hoy": ventas_hoy,
-                "cheques_hoy": cheques_hoy,
-                "fuente_pax_hoy": "tempcheques",
-                # METADATOS ARQUITECTURA
-                "connection_source": "EDARSAHUB",
-                "server_id": server_id,
-                "system_type": server['system_type'],
-                "sucursal_id": sucursal or "default",
-                "source_status": "SUCCESS"
-            }
-        
-        # FASE 3A.2: Migrado a helper centralizado
-        elif is_mpro_system(server.get('system_type')):
-            # BLINDAJE: Definir f_fin para MPRO (igual que en SoftRestaurant)
-            f_ini = fecha_ini.replace('-', '')
-            f_fin = fecha_fin.replace('-', '')
-            
-            # Filtro de sucursal para MPRO - no filtrar si es "default" o nombre del servidor
-            sucursal_filter = ""
-            nombre_servidor_1 = server.get('name', '').lower()
-            sucursal_lower_1 = (sucursal or '').lower()
-            skip_filter_1 = (not sucursal or sucursal_lower_1 == 'default' or sucursal_lower_1 == nombre_servidor_1)
-            if sucursal and not skip_filter_1:
-                # BLINDAJE: Detectar si es código o nombre de sucursal
-                es_codigo_1 = sucursal.isdigit() or (len(sucursal) == 4 and sucursal[0] == '0')
-                if es_codigo_1:
-                    sucursal_filter = f"AND VE.Sc_Cve_Sucursal = '{sucursal}'"
-                else:
-                    sucursal_filter = f"AND S.Sc_Descripcion LIKE '%{sucursal}%'"
-            
-            # Ventas por hora para MPRO
-            query_hora = f"""
-SELECT 
-    DATEPART(HOUR, VE.Vn_Fecha) as hora,
-    SUM(VE.Vn_Precio_Neto_Importe) as ventas,
-    ISNULL(SUM(C.Co_Personas), 0) as pax
-FROM Venta_Encabezado VE
-LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
-LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
-WHERE VE.Vn_Fecha >= CONVERT(datetime, '{fecha_ini} 00:00:00', 120)
-  AND VE.Vn_Fecha <= CONVERT(datetime, '{fecha_fin} 23:59:59', 120)
-  AND VE.Es_Cve_Estado <> 'CA'
-  {sucursal_filter}
-GROUP BY DATEPART(HOUR, VE.Vn_Fecha)
-ORDER BY SUM(VE.Vn_Precio_Neto_Importe) DESC
-"""
-            result_hora = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_hora
-            )
-            
-            ventas_por_hora = []
-            for r in (result_hora or [])[:6]:  # Top 6 horas
-                hora_int = int(r['hora'] or 0)
-                ventas_por_hora.append({
-                    "hora": f"{hora_int:02d}:00",
-                    "ventas": float(r['ventas'] or 0),
-                    "pax": int(r['pax'] or 0)
+                dia_idx = dia_num - 1 if 0 <= dia_num - 1 < 7 else 0
+                ventas_por_dia.append({
+                    "dia": dias_semana[dia_idx],
+                    "ventas": float(r['ventas'] or 0)
                 })
             
-            # Ventas por día de la semana para MPRO
-            query_dia = f"""
-SELECT 
-    DATEPART(WEEKDAY, VE.Vn_Fecha) as dia_num,
-    SUM(VE.Vn_Precio_Neto_Importe) as ventas
-FROM Venta_Encabezado VE
-LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
-WHERE VE.Vn_Fecha >= CONVERT(datetime, '{fecha_ini} 00:00:00', 120)
-  AND VE.Vn_Fecha <= CONVERT(datetime, '{fecha_fin} 23:59:59', 120)
-  AND VE.Es_Cve_Estado <> 'CA'
-  {sucursal_filter}
-GROUP BY DATEPART(WEEKDAY, VE.Vn_Fecha)
-ORDER BY DATEPART(WEEKDAY, VE.Vn_Fecha)
-"""
-            result_dia = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_dia
-            )
-            
-            # Mapeo SQL Server DATEPART(WEEKDAY): 1=Domingo, 2=Lunes, ..., 7=Sábado
-            # Reordenamos para que sea Lunes a Domingo
-            dias_semana = {1: 'Dom', 2: 'Lun', 3: 'Mar', 4: 'Mié', 5: 'Jue', 6: 'Vie', 7: 'Sáb'}
-            
-            # Crear diccionario con todos los días inicializados en 0
-            ventas_dict = {dia: 0 for dia in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']}
-            
-            for r in (result_dia or []):
-                dia_num = int(r['dia_num'] or 1)
-                dia_nombre = dias_semana.get(dia_num, 'Otro')
-                if dia_nombre in ventas_dict:
-                    ventas_dict[dia_nombre] = float(r['ventas'] or 0)
-            
-            # Convertir a lista ordenada de Lunes a Domingo
-            ventas_por_dia = [{"dia": dia, "ventas": ventas_dict[dia]} for dia in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']]
-            
-            # NUEVO: PAX del día actual desde API local MPRO
-            # ARQUITECTURA: EDARSAHUB-first, sin dependencia directa de MongoDB
-            pax_hoy = 0
-            ventas_hoy = 0
-            cheques_hoy = 0
-            fuente_pax = "EDARSAHUB"
-            pax_hoy_source = "sql_server"
-            
+            # Calcular totales del día actual (si hay datos de hoy)
+            hoy_str = hoy.strftime('%Y-%m-%d')
+            cursor_hoy = None
             try:
-                # FUENTE PRIMARIA: Configuración de API desde datos del servidor (EDARSAHUB)
-                api_config = get_api_config_from_server(server)
+                conn_hoy = pymssql.connect(
+                    server='54.39.104.176',
+                    user='HRLectura',
+                    password='National09$',
+                    database='EDARSAHUB',
+                    port=1433,
+                    timeout=10
+                )
+                cursor_hoy = conn_hoy.cursor(as_dict=True)
+                cursor_hoy.execute("""
+                    SELECT 
+                        SUM(VentaHora) as ventas,
+                        SUM(NumTicketsHora) as tickets
+                    FROM Sync_Ventas_PorHora
+                    WHERE ServerID = %s
+                      AND FechaOperacion = %s
+                """, (server_id, hoy_str))
                 
-                if api_config and api_config.get('activo'):
-                    # Usar la función de API local para obtener ventas del día
-                    resultado_api = obtener_ventas_dia_api_local(api_config, forzar_consulta=True)
-                    if not resultado_api.get("omitido", False):
-                        pax_hoy = resultado_api.get("pax", 0)
-                        ventas_hoy = resultado_api.get("ventas", 0)
-                        cheques_hoy = resultado_api.get("cheques", 0)
-                        pax_hoy_source = "api_local"
-                        logging.info(f"[EDARSAHUB] ventas-tiempo MPRO {server['name']}: PAX HOY (API) = {pax_hoy}")
-                    else:
-                        logging.info(f"[EDARSAHUB] ventas-tiempo MPRO {server['name']}: API omitida ({resultado_api.get('razon', 'desconocido')})")
-                else:
-                    # Sin configuración de API activa, usar query directa a SQL Server del día actual
-                    pax_hoy_source = "sql_server"
-                    hoy_str = hoy.strftime('%Y-%m-%d')
-                    query_pax_hoy = f"""
-SELECT 
-    ISNULL(SUM(C.Co_Personas), 0) as pax,
-    ISNULL(SUM(VE.Vn_Precio_Neto_Importe), 0) as ventas,
-    COUNT(DISTINCT VE.Vn_Folio) as cheques
-FROM Venta_Encabezado VE
-LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
-WHERE VE.Vn_Fecha >= CONVERT(datetime, '{hoy_str} 00:00:00', 120)
-  AND VE.Vn_Fecha <= CONVERT(datetime, '{hoy_str} 23:59:59', 120)
-  AND VE.Es_Cve_Estado <> 'CA'
-  {sucursal_filter}
-"""
-                    result_pax_hoy = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], query_pax_hoy
-                    )
-                    if result_pax_hoy and len(result_pax_hoy) > 0:
-                        row = result_pax_hoy[0]
-                        pax_hoy = int(row.get('pax', 0) or 0)
-                        ventas_hoy = float(row.get('ventas', 0) or 0)
-                        cheques_hoy = int(row.get('cheques', 0) or 0)
-                        logging.info(f"[EDARSAHUB] ventas-tiempo MPRO {server['name']}: PAX HOY (SQL) = {pax_hoy}")
-            except Exception as e:
-                logging.warning(f"[EDARSAHUB] ventas-tiempo MPRO {server['name']}: Error PAX del día: {e}")
+                hoy_data = cursor_hoy.fetchone()
+                conn_hoy.close()
+                
+                ventas_hoy = float(hoy_data['ventas'] or 0) if hoy_data else 0
+                cheques_hoy = int(hoy_data['tickets'] or 0) if hoy_data else 0
+                pax_hoy = cheques_hoy  # Aproximación
+            except:
+                ventas_hoy = 0
+                cheques_hoy = 0
+                pax_hoy = 0
+            
+            # Determinar source_type
+            if is_stale:
+                source_status = "STALE_EDARSAHUB_SQL"
+                source_type = "STALE_EDARSAHUB_SQL"
+                source_message = f"Datos históricos de EDARSAHUB. {stale_message}"
+            else:
+                source_status = "SUCCESS"
+                source_type = "EDARSAHUB_SQL"
+                source_message = f"Datos consolidados de EDARSAHUB SQL"
+            
+            logging.info(f"[NO-LIVE] ventas-tiempo {server.get('name')}: {source_status} - {len(ventas_por_hora)} horas, {len(ventas_por_dia)} días")
             
             return {
-                "por_hora": ventas_por_hora,
-                "por_dia": ventas_por_dia,
+                "source_status": source_status,
+                "source_type": source_type,
+                "source_message": source_message,
+                "server_name": server.get('name'),
+                "ventas_por_hora": ventas_por_hora,
+                "ventas_por_dia": ventas_por_dia,
                 "pax_hoy": pax_hoy,
                 "ventas_hoy": ventas_hoy,
-                "cheques_hoy": cheques_hoy,
-                "fuente_pax_hoy": pax_hoy_source,
-                # METADATOS ARQUITECTURA
-                "connection_source": fuente_pax,
-                "server_id": server_id,
-                "system_type": server['system_type'],
-                "sucursal_id": sucursal or "default",
-                "source_status": "SUCCESS"
+                "cheques_hoy": cheques_hoy
             }
-        
-        return {
-            "por_hora": [], 
-            "por_dia": [], 
-            "pax_hoy": 0, 
-            "ventas_hoy": 0, 
-            "cheques_hoy": 0,
-            "fuente_pax_hoy": "none",
-            # METADATOS ARQUITECTURA
-            "connection_source": "EDARSAHUB",
-            "server_id": server_id,
-            "system_type": server.get('system_type', 'unknown') if server else 'unknown',
-            "sucursal_id": sucursal or "default",
-            "source_status": "NO_DATA"
-        }
-        
+            
+        except Exception as e:
+            logging.error(f"[NO-LIVE] ventas-tiempo {server.get('name')}: Error EDARSAHUB: {e}")
+            return {
+                "source_status": "ERROR",
+                "source_type": "ERROR_EDARSAHUB",
+                "source_message": f"Error consultando EDARSAHUB: {str(e)[:100]}",
+                "server_name": server.get('name'),
+                "ventas_por_hora": [],
+                "ventas_por_dia": [],
+                "pax_hoy": 0,
+                "ventas_hoy": 0,
+                "cheques_hoy": 0
+            }
+    
     except Exception as e:
-        logging.error(f"Error en ventas tiempo: {e}")
+        logging.error(f"Error en ventas-tiempo: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
 
 
 # ============================================================================
@@ -4461,86 +4364,20 @@ async def comercial_dashboard(
             f_ini_ano_ant = sql_fecha(fecha_ini_ano_ant, con_hora=False)
             f_fin_ano_ant = sql_fecha(fecha_fin_ano_ant, con_hora=False)
             
-            if tipo_comparacion == "dias_equiv" and fecha_ini_ant == "PENDIENTE":
-                query_ultimo_dia = f"""
-SELECT MAX(CONVERT(DATE, turnos.apertura)) as ultimo_dia_venta
-FROM cheques
-INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE CONVERT(varchar, turnos.apertura, 112) >= '{f_ini}'
-  AND CONVERT(varchar, turnos.apertura, 112) <= '{f_fin}'
-  AND cheques.cancelado = 0
-"""
-                result_ultimo = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_ultimo_dia
-                )
-                
-                if result_ultimo and result_ultimo[0]['ultimo_dia_venta']:
-                    ultimo_dia_venta = result_ultimo[0]['ultimo_dia_venta']
-                    if isinstance(ultimo_dia_venta, str):
-                        dia_con_datos = int(ultimo_dia_venta.split('-')[2]) if '-' in ultimo_dia_venta else int(ultimo_dia_venta[-2:])
-                    else:
-                        dia_con_datos = ultimo_dia_venta.day
-                    
-                    logging.info(f"SoftRestaurant - Último día con ventas: {ultimo_dia_venta} (día {dia_con_datos})")
-                    
-                    f_fin = f"{year}{str(mes_max).zfill(2)}{str(dia_con_datos).zfill(2)}"
-                    
-                    mes_actual = mes_max
-                    anio_actual = year
-                    if mes_actual == 1:
-                        mes_ant = 12
-                        anio_ant = anio_actual - 1
-                    else:
-                        mes_ant = mes_actual - 1
-                        anio_ant = anio_actual
-                    
-                    if mes_ant == 12:
-                        max_dia_mes_ant = 31
-                    elif mes_ant in [4, 6, 9, 11]:
-                        max_dia_mes_ant = 30
-                    elif mes_ant == 2:
-                        max_dia_mes_ant = 29 if (anio_ant % 4 == 0 and (anio_ant % 100 != 0 or anio_ant % 400 == 0)) else 28
-                    else:
-                        max_dia_mes_ant = 31
-                    
-                    dia_comparar = min(dia_con_datos, max_dia_mes_ant)
-                    fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
-                    fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
-                    
-                    anio_pasado = year - 1
-                    fecha_ini_ano_ant = f"{anio_pasado}-{str(mes_min).zfill(2)}-01"
-                    
-                    if mes_max == 2:
-                        max_dia_ano_ant = 29 if (anio_pasado % 4 == 0 and (anio_pasado % 100 != 0 or anio_pasado % 400 == 0)) else 28
-                    elif mes_max in [4, 6, 9, 11]:
-                        max_dia_ano_ant = 30
-                    else:
-                        max_dia_ano_ant = 31
-                    
-                    dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
-                    fecha_fin_ano_ant = f"{anio_pasado}-{str(mes_max).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
-                    
-                    logging.info(f"Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant} (multiselección: {mes_min}-{mes_max})")
-                else:
-                    dia_con_datos = 1
-                    fecha_ini_ant = fecha_ini.replace(f"-{str(mes_max).zfill(2)}-", f"-{str(mes_max-1).zfill(2)}-") if mes_max > 1 else fecha_ini.replace(f"{year}-01-", f"{year-1}-12-")
-                    fecha_fin_ant = fecha_ini_ant
-                    fecha_ini_ano_ant = fecha_ini.replace(str(year), str(year-1))
-                    fecha_fin_ano_ant = fecha_ini_ano_ant
+            # ============================================================================
+            # FASE 1B-R1: ELIMINADO BLOQUE DE CONEXIÓN REMOTA PARA "ÚLTIMO DÍA CON VENTAS"
+            # ============================================================================
+            # PROHIBIDO: Abrir conexión remota a SoftRestaurant para obtener "último día"
+            # Los datos deben venir exclusivamente de EDARSAHUB SQL
+            # Si fecha_ini_ant == "PENDIENTE", se usa fecha_ini/fecha_fin sin ajustar
+            # ============================================================================
+            if fecha_ini_ant == "PENDIENTE":
+                fecha_ini_ant = fecha_ini
+                fecha_fin_ant = fecha_fin
+                f_ini_ant = f_ini
+                f_fin_ant = f_fin
             
-            # Las fechas ya están en formato YYYYMMDD desde sql_fecha()
-            # Solo convertir las que fueron recalculadas arriba (tienen guiones)
-            if '-' in str(f_ini_ant):
-                f_ini_ant = f_ini_ant.replace('-', '')
-            if '-' in str(f_fin_ant):
-                f_fin_ant = f_fin_ant.replace('-', '')
-            if '-' in str(f_ini_ano_ant):
-                f_ini_ano_ant = f_ini_ano_ant.replace('-', '')
-            if '-' in str(f_fin_ano_ant):
-                f_fin_ano_ant = f_fin_ano_ant.replace('-', '')
-            
-            logging.info(f"SoftRestaurant Query - Período: {f_ini} a {f_fin}, Mes ant: {f_ini_ant} a {f_fin_ant}, Año ant: {f_ini_ano_ant} a {f_fin_ano_ant}")
+            logging.info(f"[NO-LIVE] SoftRestaurant Query - Período: {f_ini} a {f_fin} (EDARSAHUB-ONLY)")
             
             # ============================================================================
             # FASE 7-FIX: EDARSAHUB COMO FUENTE PRINCIPAL
@@ -4601,208 +4438,59 @@ WHERE CONVERT(varchar, turnos.apertura, 112) >= '{f_ini}'
                     "alertas": []
                 }
             
-            # Si EDARSAHUB no tiene datos, verificar estado del servidor y luego intentar conexión remota
-            logging.info(f"[DASHBOARD-FIX] {server['name']}: EDARSAHUB sin datos, verificando servidor remoto")
-            
+            # Si EDARSAHUB no tiene datos, verificar si hay snapshot histórico (STALE)
             # ============================================================================
-            # VERIFICACIÓN DE ESTADO: Usar la misma fuente que el menú de Servidores
+            # FASE 1B-R1: CORRECCIÓN NO-LIVE DASHBOARD
             # ============================================================================
-            # Consultar el estado guardado por el endpoint /servers/{id}/ping
-            server_status_doc = await get_server_connection_status(server['id'])
+            # PROHIBIDO: Abrir conexión remota a SoftRestaurant/MPRO/Enterprise
+            # OBLIGATORIO: Retornar SIN_DATOS_EDARSAHUB o STALE_EDARSAHUB_SQL
+            # ============================================================================
+            logging.warning(f"[DASHBOARD-NO-LIVE] {server['name']}: EDARSAHUB sin datos vigentes, verificando snapshot histórico")
             
-            # Si el servidor está marcado como offline, usar caché directamente
-            # NO hacer consulta propia - confiar en el estado del menú de Servidores
-            if server_status_doc and not server_status_doc.get('is_online'):
-                logging.warning(f"Dashboard {server['name']}: Servidor marcado offline por menú Servidores - buscando caché")
-                
-                periodo_key = f"dashboard_{f_ini}_{f_fin}"
-                cached = await get_dashboard_cache(server['id'], periodo_key)
-                
-                if cached and cached.get('data'):
-                    cached_data = cached['data']
-                    cached_data['source_status'] = "FALLBACK"
-                    cached_data['source_message'] = f"Servidor offline. Mostrando última información conocida ({cached.get('updated_at', 'N/A')})"
-                    cached_data['alertas'] = [{"tipo": "warning", "mensaje": f"Servidor offline - Datos de caché: {cached.get('updated_at', 'N/A')}"}]
-                    return cached_data
+            # Buscar último snapshot válido en EDARSAHUB (aunque sea antiguo)
+            from .service import get_last_valid_snapshot_edarsahub
+            
+            stale_snapshot = get_last_valid_snapshot_edarsahub(server_id)
+            
+            if stale_snapshot:
+                # Hay datos históricos - retornar como STALE
+                logging.info(f"[DASHBOARD-NO-LIVE] {server['name']}: Retornando datos STALE de {stale_snapshot['fecha_snapshot']}")
                 
                 return {
-                    "source_status": "SOURCE_UNREACHABLE",
-                    "source_message": f"Servidor {server['name']} está offline. Verifique el estado en el menú Servidores.",
-                    "server_name": server['name'],
-                    "server_type": server['system_type'],
+                    "source_status": "STALE_EDARSAHUB_SQL",
+                    "source_message": f"Datos históricos de EDARSAHUB. Última sincronización: {stale_snapshot['fecha_snapshot']}. Datos pueden estar desactualizados.",
+                    "source_type": "STALE_EDARSAHUB_SQL",
+                    "server_name": server.get('name', 'Desconocido'),
+                    "server_type": server.get('system_type', 'Desconocido'),
                     "fecha_inicio": fecha_ini,
                     "fecha_fin": fecha_fin,
-                    "kpis": None,
-                    "comparativo": None,
-                    "alertas": [{"tipo": "error", "mensaje": "Servidor offline. Verifique el estado en el menú Servidores."}]
+                    "kpis": stale_snapshot.get('kpis'),
+                    "comparativo": stale_snapshot.get('comparativo'),
+                    "alertas": [{
+                        "tipo": "warning",
+                        "mensaje": f"Datos históricos. Última sincronización: {stale_snapshot['fecha_snapshot']}"
+                    }]
                 }
             
-            # Si el servidor está online o no hay registro de estado, intentar consulta al servidor remoto
+            # No hay datos en EDARSAHUB - retornar SIN_DATOS_EDARSAHUB
+            # PROHIBIDO: Intentar conexión remota como fallback
+            logging.warning(f"[DASHBOARD-NO-LIVE] {server['name']}: Sin datos en EDARSAHUB, retornando SIN_DATOS_EDARSAHUB")
             
-            # ============================================================================
-            # BLOQUE 5.1: MIGRACIÓN A QUERIES CENTRALIZADAS (SoftRestaurant)
-            # ============================================================================
-            # ORIGEN: SQL directo líneas 2877-2961 (ahora usa queries/softrestaurant.py)
-            # FECHA MIGRACIÓN: 2026-04-23
-            # MÉTRICAS: ventas, pax, cheques del período actual, mes anterior y año anterior
-            # MANTIENE: tempcheques (query específica), cálculos derivados
-            # ============================================================================
-            
-            # Verificar si la tabla tempcheques tiene columna 'propina'
-            has_propina_temp = check_column_exists(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], 'tempcheques', 'propina'
-            )
-            propina_expr_temp = get_propina_safe_column_tempcheques(has_propina_temp)
-            
-            # --- PERÍODO ACTUAL ---
-            result_actual = query_ventas_periodo_sr(server, fecha_ini, fecha_fin)
-            
-            if result_actual.success:
-                cheques_total = result_actual.cheques
-                ventas_periodo = result_actual.total_venta
-                pax_total = result_actual.pax
-                # Calcular promedios localmente (no están en query centralizada)
-                ticket_promedio = ventas_periodo / cheques_total if cheques_total > 0 else 0
-                pax_promedio = pax_total / cheques_total if cheques_total > 0 else 0
-            else:
-                cheques_total = 0
-                ventas_periodo = 0
-                ticket_promedio = 0
-                pax_total = 0
-                pax_promedio = 0
-            
-            mesas_atendidas = cheques_total
-            rotacion_mesas = round(cheques_total / mesas_atendidas, 2) if mesas_atendidas > 0 else 0
-            
-            # --- MES ANTERIOR ---
-            result_anterior = query_ventas_periodo_sr(server, fecha_ini_ant, fecha_fin_ant)
-            
-            if result_anterior.success:
-                ventas_anterior = result_anterior.total_venta
-                pax_anterior = result_anterior.pax
-            else:
-                ventas_anterior = 0
-                pax_anterior = 0
-            
-            vs_periodo_anterior = round(((ventas_periodo - ventas_anterior) / ventas_anterior * 100), 1) if ventas_anterior > 0 else 0
-            
-            # Cálculo de pax vs mes anterior (lógica original preservada)
-            ventas_pax_ant = ventas_anterior
-            pax_promedio_anterior = ventas_pax_ant / pax_anterior if pax_anterior > 0 else 0
-            pax_promedio_actual = ventas_periodo / pax_total if pax_total > 0 else 0
-            vs_pax_mes_anterior = round(((pax_promedio_actual - pax_promedio_anterior) / pax_promedio_anterior * 100), 1) if pax_promedio_anterior > 0 else 0
-            
-            # --- AÑO ANTERIOR ---
-            result_ano_ant = query_ventas_periodo_sr(server, fecha_ini_ano_ant, fecha_fin_ano_ant)
-            
-            if result_ano_ant.success:
-                ventas_ano_anterior = result_ano_ant.total_venta
-                pax_ano_anterior = result_ano_ant.pax
-                cheques_ano_anterior = result_ano_ant.cheques
-            else:
-                ventas_ano_anterior = 0
-                pax_ano_anterior = 0
-                cheques_ano_anterior = 0
-            
-            vs_ano_anterior = round(((ventas_periodo - ventas_ano_anterior) / ventas_ano_anterior * 100), 1) if ventas_ano_anterior > 0 else 0
-            pax_vs_ano_anterior = round(((pax_total - pax_ano_anterior) / pax_ano_anterior * 100), 1) if pax_ano_anterior > 0 else 0
-            
-            pax_total_vs_ano = round(((pax_total - pax_ano_anterior) / pax_ano_anterior * 100), 1) if pax_ano_anterior > 0 else 0
-            cheques_total_vs_ano = round(((cheques_total - cheques_ano_anterior) / cheques_ano_anterior * 100), 1) if cheques_ano_anterior > 0 else 0
-            ticket_ano_anterior = ventas_ano_anterior / cheques_ano_anterior if cheques_ano_anterior > 0 else 0
-            cheque_vs_ano_anterior = round(((ticket_promedio - ticket_ano_anterior) / ticket_ano_anterior * 100), 1) if ticket_ano_anterior > 0 else 0
-            rotacion_ano_anterior = pax_ano_anterior / cheques_ano_anterior if cheques_ano_anterior > 0 else 0
-            rotacion_vs_ano = round(((rotacion_mesas - rotacion_ano_anterior) / rotacion_ano_anterior * 100), 1) if rotacion_ano_anterior > 0 else 0
-            
-            # ============= HOMOLOGACIÓN: SUMAR TEMPCHEQUES (igual que Tablero Ejecutivo) =============
-            # NOTA: Esta query se mantiene sin migrar - es específica del dashboard
-            # NOTA: Se excluyen propinas de las ventas SI existe la columna
-            try:
-                query_temp = f"""
-SELECT 
-    COUNT(DISTINCT folio) as cheques,
-    ISNULL(SUM(total{propina_expr_temp}), 0) as ventas,
-    ISNULL(SUM(nopersonas), 0) as pax
-FROM tempcheques
-WHERE cancelado = 0
-"""
-                result_temp = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_temp
-                )
-                if result_temp and len(result_temp) > 0:
-                    ventas_temp = float(result_temp[0]['ventas'] or 0)
-                    pax_temp = int(result_temp[0]['pax'] or 0)
-                    cheques_temp = int(result_temp[0]['cheques'] or 0)
-                    ventas_periodo += ventas_temp
-                    pax_total += pax_temp
-                    cheques_total += cheques_temp
-                    logging.info(f"Dashboard Comercial SoftRestaurant {server['name']} - Tempcheques sumados: ventas=${ventas_temp:,.2f}, pax={pax_temp}, cheques={cheques_temp}")
-            except Exception as e:
-                logging.warning(f"Dashboard Comercial SoftRestaurant {server['name']} - Error consultando tempcheques: {e}")
-            # ============= FIN HOMOLOGACIÓN TEMPCHEQUES =============
-            
-            ticket_promedio = ventas_periodo / cheques_total if cheques_total > 0 else 0
-            mesas_atendidas = cheques_total
-            rotacion_mesas = round(cheques_total / mesas_atendidas, 2) if mesas_atendidas > 0 else 0
-            
-            kpis = {
-                "ventas_periodo": ventas_periodo,
-                "ticket_promedio": round(ticket_promedio, 2),
-                "cheques_total": cheques_total,
-                "pax_total": pax_total,
-                "pax_promedio": round(pax_promedio, 1),
-                "consumo_persona": round(ventas_periodo / pax_total, 2) if pax_total > 0 else 0,
-                "mesas_atendidas": mesas_atendidas,
-                "rotacion_mesas": rotacion_mesas,
-                "venta_por_hora": round(ventas_periodo / 12, 2) if ventas_periodo > 0 else 0
-            }
-            
-            comparativo = {
-                "vs_periodo_anterior": vs_periodo_anterior,
-                "vs_ano_anterior": vs_ano_anterior,
-                "vs_presupuesto": 0,
-                "pax_vs_mes_anterior": vs_pax_mes_anterior,
-                "pax_vs_ano_anterior": pax_vs_ano_anterior,
-                "pax_total_vs_ano": pax_total_vs_ano,
-                "cheques_total_vs_ano": cheques_total_vs_ano,
-                "cheque_vs_ano_anterior": cheque_vs_ano_anterior,
-                "rotacion_vs_ano": rotacion_vs_ano,
-                "tipo_comparacion": tipo_comparacion,
-                "periodo_anterior": f"{fecha_ini_ant} a {fecha_fin_ant}",
-                "periodo_ano_ant": f"{fecha_ini_ano_ant} a {fecha_fin_ano_ant}",
-                # Banderas para indicar si hay datos históricos (para tooltips en UI)
-                "sin_datos_periodo_anterior": ventas_anterior == 0,
-                "sin_datos_ano_anterior": ventas_ano_anterior == 0
-            }
-            
-            # Determinar estado de fuente
-            if ventas_periodo > 0 or cheques_total > 0:
-                source_status = "SUCCESS"
-                source_message = f"Datos obtenidos correctamente de {server['name']}"
-            else:
-                source_status = "NO_DATA"
-                source_message = f"Conexión exitosa a {server['name']} pero no hay datos en el período seleccionado ({fecha_ini} a {fecha_fin})"
-            
-            result_data = {
-                "source_status": source_status,
-                "source_message": source_message,
-                "server_name": server['name'],
-                "server_type": server['system_type'],
+            return {
+                "source_status": "SIN_DATOS_EDARSAHUB",
+                "source_message": f"No hay datos consolidados para {server['name']} en el período {fecha_ini} a {fecha_fin}. Verifique que la sincronización automática esté funcionando.",
+                "source_type": "SIN_DATOS_EDARSAHUB",
+                "server_name": server.get('name', 'Desconocido'),
+                "server_type": server.get('system_type', 'Desconocido'),
                 "fecha_inicio": fecha_ini,
                 "fecha_fin": fecha_fin,
-                "kpis": kpis,
-                "comparativo": comparativo,
-                "alertas": []
+                "kpis": None,
+                "comparativo": None,
+                "alertas": [{
+                    "tipo": "info",
+                    "mensaje": "No hay datos consolidados en EDARSAHUB para este período. Verifique el estado de sincronización."
+                }]
             }
-            
-            # Guardar en caché para fallback futuro
-            if source_status == "SUCCESS":
-                periodo_key = f"dashboard_{f_ini}_{f_fin}"
-                await save_dashboard_cache(server['id'], periodo_key, result_data)
-            
-            return result_data
         
         # FASE 3A.2: Migrado a helper centralizado
         elif is_mpro_system(server.get('system_type')):
@@ -4861,681 +4549,59 @@ WHERE cancelado = 0
                     "alertas": []
                 }
             
-            # Si EDARSAHUB no tiene datos, verificar estado del servidor e intentar conexión MPRO
-            logging.info(f"[DASHBOARD-FIX-MPRO] {server['name']}: EDARSAHUB sin datos, verificando servidor remoto")
-            
+            # Si EDARSAHUB no tiene datos, verificar si hay snapshot histórico (STALE)
             # ============================================================================
-            # VERIFICACIÓN DE ESTADO MPRO: Usar la misma fuente que el menú de Servidores
+            # FASE 1B-R1: CORRECCIÓN NO-LIVE DASHBOARD MPRO
             # ============================================================================
-            server_status_doc_mpro = await get_server_connection_status(server['id'])
+            # PROHIBIDO: Abrir conexión remota a MPRO/Enterprise
+            # OBLIGATORIO: Retornar SIN_DATOS_EDARSAHUB o STALE_EDARSAHUB_SQL
+            # ============================================================================
+            logging.warning(f"[DASHBOARD-NO-LIVE-MPRO] {server['name']}: EDARSAHUB sin datos vigentes, verificando snapshot histórico")
             
-            # Si el servidor está marcado como offline, usar caché directamente
-            if server_status_doc_mpro and not server_status_doc_mpro.get('is_online'):
-                logging.warning(f"Dashboard MPRO {server['name']}: Servidor marcado offline por menú Servidores - buscando caché")
-                
-                periodo_key = f"dashboard_mpro_{fecha_ini}_{fecha_fin}"
-                cached = await get_dashboard_cache(server['id'], periodo_key)
-                
-                if cached and cached.get('data'):
-                    cached_data = cached['data']
-                    cached_data['source_status'] = "FALLBACK"
-                    cached_data['source_message'] = f"Servidor offline. Mostrando última información conocida ({cached.get('updated_at', 'N/A')})"
-                    cached_data['alertas'] = [{"tipo": "warning", "mensaje": f"Servidor offline - Datos de caché: {cached.get('updated_at', 'N/A')}"}]
-                    return cached_data
+            # Buscar último snapshot válido en EDARSAHUB (aunque sea antiguo)
+            from .service import get_last_valid_snapshot_edarsahub
+            
+            stale_snapshot_mpro = get_last_valid_snapshot_edarsahub(server_id)
+            
+            if stale_snapshot_mpro:
+                # Hay datos históricos - retornar como STALE
+                logging.info(f"[DASHBOARD-NO-LIVE-MPRO] {server['name']}: Retornando datos STALE de {stale_snapshot_mpro['fecha_snapshot']}")
                 
                 return {
-                    "source_status": "SOURCE_UNREACHABLE",
-                    "source_message": f"Servidor {server['name']} está offline. Verifique el estado en el menú Servidores.",
-                    "server_name": server['name'],
-                    "server_type": server['system_type'],
+                    "source_status": "STALE_EDARSAHUB_SQL",
+                    "source_message": f"Datos históricos de EDARSAHUB. Última sincronización: {stale_snapshot_mpro['fecha_snapshot']}. Datos pueden estar desactualizados.",
+                    "source_type": "STALE_EDARSAHUB_SQL",
+                    "server_name": server.get('name', 'Desconocido'),
+                    "server_type": server.get('system_type', 'Desconocido'),
                     "fecha_inicio": fecha_ini,
                     "fecha_fin": fecha_fin,
-                    "kpis": None,
-                    "comparativo": None,
-                    "alertas": [{"tipo": "error", "mensaje": "Servidor offline. Verifique el estado en el menú Servidores."}]
-                }
-            
-            # MPRO usa formato YYYY-MM-DD directamente
-            # Ajustar períodos de comparación si es días equivalentes
-            if tipo_comparacion == "dias_equiv":
-                # BLINDAJE: Detectar si es código o nombre de sucursal
-                if sucursal:
-                    es_codigo = sucursal.isdigit() or (len(sucursal) == 4 and sucursal[0] == '0')
-                    if es_codigo:
-                        sucursal_filter_check = f" AND VE.Sc_Cve_Sucursal = '{sucursal}'"
-                    else:
-                        sucursal_filter_check = f" AND VE.Sc_Cve_Sucursal IN (SELECT Sc_Cve_Sucursal FROM Sucursal WHERE Sc_Descripcion LIKE '%{sucursal}%')"
-                else:
-                    sucursal_filter_check = ""
-                
-                # BLINDAJE: Usar formato de fecha explícito para evitar problemas de configuración regional
-                query_ultimo_dia_mpro = f"""
-SELECT MAX(CONVERT(DATE, VE.Vn_Fecha)) as ultimo_dia_venta
-FROM Venta_Encabezado VE
-WHERE VE.Vn_Fecha >= CONVERT(datetime, '{fecha_ini} 00:00:00', 120)
-  AND VE.Vn_Fecha <= CONVERT(datetime, '{fecha_fin} 23:59:59', 120)
-  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
-  {sucursal_filter_check}
-"""
-                result_ultimo = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_ultimo_dia_mpro
-                )
-                
-                if result_ultimo and result_ultimo[0]['ultimo_dia_venta']:
-                    ultimo_dia_venta = result_ultimo[0]['ultimo_dia_venta']
-                    if isinstance(ultimo_dia_venta, str):
-                        dia_con_datos = int(ultimo_dia_venta.split('-')[2]) if '-' in ultimo_dia_venta else int(ultimo_dia_venta[-2:])
-                    else:
-                        dia_con_datos = ultimo_dia_venta.day
-                    
-                    logging.info(f"MPRO - Último día con ventas: {ultimo_dia_venta} (día {dia_con_datos})")
-                    
-                    fecha_fin = f"{year}-{str(mes_max).zfill(2)}-{str(dia_con_datos).zfill(2)}"
-                    
-                    mes_actual = mes_max
-                    anio_actual = year
-                    if mes_actual == 1:
-                        mes_ant = 12
-                        anio_ant = anio_actual - 1
-                    else:
-                        mes_ant = mes_actual - 1
-                        anio_ant = anio_actual
-                    
-                    if mes_ant == 12:
-                        max_dia_mes_ant = 31
-                    elif mes_ant in [4, 6, 9, 11]:
-                        max_dia_mes_ant = 30
-                    elif mes_ant == 2:
-                        max_dia_mes_ant = 29 if (anio_ant % 4 == 0 and (anio_ant % 100 != 0 or anio_ant % 400 == 0)) else 28
-                    else:
-                        max_dia_mes_ant = 31
-                    
-                    dia_comparar = min(dia_con_datos, max_dia_mes_ant)
-                    fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
-                    fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
-                    
-                    anio_pasado = year - 1
-                    fecha_ini_ano_ant = f"{anio_pasado}-{str(mes_min).zfill(2)}-01"
-                    
-                    if mes_max == 2:
-                        max_dia_ano_ant = 29 if (anio_pasado % 4 == 0 and (anio_pasado % 100 != 0 or anio_pasado % 400 == 0)) else 28
-                    elif mes_max in [4, 6, 9, 11]:
-                        max_dia_ano_ant = 30
-                    else:
-                        max_dia_ano_ant = 31
-                    
-                    dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
-                    fecha_fin_ano_ant = f"{anio_pasado}-{str(mes_max).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
-                    
-                    logging.info(f"MPRO Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant} (multiselección: {mes_min}-{mes_max})")
-            
-            sucursal_join = ""
-            sucursal_filter = ""
-            nombre_servidor = server.get('name', '').lower()
-            sucursal_lower = (sucursal or '').lower()
-            skip_sucursal_filter = (
-                not sucursal or 
-                sucursal == 'all' or 
-                sucursal_lower == 'default' or 
-                sucursal_lower == nombre_servidor
-            )
-            
-            if not skip_sucursal_filter:
-                if sucursal.isdigit() or (len(sucursal) == 4 and sucursal[0] == '0'):
-                    sucursal_join = ""
-                    sucursal_filter = f" AND VE.Sc_Cve_Sucursal = '{sucursal}'"
-                else:
-                    sucursal_join = "INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal"
-                    sucursal_filter = f" AND S.Sc_Descripcion LIKE '%{sucursal}%'"
-            
-            query_ultimo_dia_suc = f"""
-SELECT MAX(CONVERT(DATE, VE.Vn_Fecha)) as ultimo_dia_venta
-FROM Venta_Encabezado VE
-{sucursal_join}
-WHERE VE.Vn_Fecha >= CONVERT(datetime, '{fecha_ini} 00:00:00', 120)
-  AND VE.Vn_Fecha <= CONVERT(datetime, '{fecha_fin} 23:59:59', 120)
-  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
-  {sucursal_filter}
-"""
-            try:
-                result_ultimo_suc = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_ultimo_dia_suc
-                )
-                if result_ultimo_suc and result_ultimo_suc[0]['ultimo_dia_venta']:
-                    ultimo_dia_suc = result_ultimo_suc[0]['ultimo_dia_venta']
-                    if isinstance(ultimo_dia_suc, str):
-                        dia_con_datos = int(ultimo_dia_suc.split('-')[2]) if '-' in ultimo_dia_suc else int(ultimo_dia_suc[-2:])
-                    else:
-                        dia_con_datos = ultimo_dia_suc.day
-                    
-                    print(f"*** MPRO Dashboard {sucursal} - Ultimo dia con ventas: dia {dia_con_datos} ***")
-                    
-                    fecha_fin = f"{year}-{str(mes_max).zfill(2)}-{str(dia_con_datos).zfill(2)}"
-                    
-                    mes_actual = mes_max
-                    anio_actual = year
-                    if mes_actual == 1:
-                        mes_ant = 12
-                        anio_ant = anio_actual - 1
-                    else:
-                        mes_ant = mes_actual - 1
-                        anio_ant = anio_actual
-                    
-                    max_dia_mes_ant = calendar.monthrange(anio_ant, mes_ant)[1]
-                    dia_comparar = min(dia_con_datos, max_dia_mes_ant)
-                    fecha_ini_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-01"
-                    fecha_fin_ant = f"{anio_ant}-{str(mes_ant).zfill(2)}-{str(dia_comparar).zfill(2)}"
-                    
-                    anio_pasado = year - 1
-                    max_dia_ano_ant = calendar.monthrange(anio_pasado, mes_max)[1]
-                    dia_ano_ant = min(dia_con_datos, max_dia_ano_ant)
-                    fecha_ini_ano_ant = f"{anio_pasado}-{str(mes_min).zfill(2)}-01"
-                    fecha_fin_ano_ant = f"{anio_pasado}-{str(mes_max).zfill(2)}-{str(dia_ano_ant).zfill(2)}"
-                    
-                    print(f"*** Fechas ajustadas: Actual hasta {fecha_fin}, MesAnt {fecha_ini_ant} a {fecha_fin_ant}, AnoAnt {fecha_ini_ano_ant} a {fecha_fin_ano_ant} ***")
-            except Exception as e:
-                print(f"Error detectando ultimo dia para sucursal {sucursal}: {e}")
-            
-            # =====================================================================
-            # SUB-BLOQUE 5.2: Query centralizada para métricas del período actual
-            # REEMPLAZA: query_kpis SQL directo (líneas 3205-3221 original)
-            # NOTA: Las variables fi_mpro, ff_mpro, etc. fueron eliminadas porque
-            #       la función centralizada hace la conversión de fechas internamente.
-            # =====================================================================
-            print(f"*** MPRO Dashboard: Llamando query_ventas_periodo_mpro_con_filtro_flexible sucursal={sucursal}, fi={fecha_ini}, ff={fecha_fin} ***")
-            result_kpis = query_ventas_periodo_mpro_con_filtro_flexible(
-                server=server,
-                fecha_ini=fecha_ini,
-                fecha_fin=fecha_fin,
-                sucursal=sucursal,
-                excluir_cancelados=False  # La query original no excluía cancelados en query_kpis
-            )
-            
-            print(f"*** MPRO Dashboard: result_kpis.success={result_kpis.success}, ventas={result_kpis.total_venta}, pax={result_kpis.pax}, cheques={result_kpis.cheques} ***")
-            
-            if result_kpis.success:
-                cheques = result_kpis.cheques
-                ventas = result_kpis.total_venta
-                pax = result_kpis.pax
-                
-                # NOTA: El fallback PAX ya está aplicado dentro de la función centralizada
-                # pero se mantiene el log por consistencia
-                if pax == cheques and pax > 0:
-                    logging.debug(f"Dashboard Comercial MPRO: PAX = cheques ({pax}) posible fallback aplicado por función centralizada")
-                
-                # ============= INTEGRACIÓN API LOCAL HOMOLOGADA =============
-                sucursal_para_api = sucursal if sucursal else server.get('name', '')
-                
-                if periodo == "dia":
-                    print(f"*** Dashboard Comercial MPRO HOY: Buscando API local para '{sucursal_para_api}' ***")
-                    ventas_api_local = sumar_ventas_api_local_a_sucursal(
-                        server_host=server['host'],
-                        sucursal_nombre=sucursal_para_api,
-                        fecha_fin=fecha_fin,
-                        mes_solicitado=hoy.month,
-                        anio_solicitado=hoy.year,
-                        solo_ventas_dia=True
-                    )
-                    
-                    if ventas_api_local.get("aplicado", False):
-                        ventas = ventas_api_local["ventas"]
-                        cheques = ventas_api_local["cheques"]
-                        pax = ventas_api_local["pax"]
-                        print(f"*** Dashboard Comercial MPRO HOY: API Local REEMPLAZÓ - ${ventas:,.2f}, {cheques} cheques, {pax} pax ***")
-                    elif ventas_api_local.get("reemplazar", False) and not ventas_api_local.get("aplicado", False):
-                        # BLINDAJE (Abril 2026): Si la API local falló (aplicado=False), NO reemplazar
-                        # los datos SQL válidos con $0.00 - mantener las ventas de la nube
-                        print(f"*** Dashboard Comercial MPRO HOY: API Local FALLÓ - MANTENIENDO datos SQL: ${ventas:,.2f}, {cheques} cheques, {pax} pax ***")
-                else:
-                    print(f"*** Dashboard Comercial MPRO MES: Buscando API local para '{sucursal_para_api}' ***")
-                    ventas_api_local = sumar_ventas_api_local_a_sucursal(
-                        server_host=server['host'],
-                        sucursal_nombre=sucursal_para_api,
-                        fecha_fin=fecha_fin,
-                        mes_solicitado=hoy.month,
-                        anio_solicitado=hoy.year,
-                        solo_ventas_dia=False
-                    )
-                    
-                    if ventas_api_local.get("aplicado", False):
-                        ventas += ventas_api_local["ventas"]
-                        cheques += ventas_api_local["cheques"]
-                        pax += ventas_api_local["pax"]
-                        print(f"*** Dashboard Comercial MPRO MES: API Local SUMÓ +${ventas_api_local['ventas']:,.2f}, +{ventas_api_local['cheques']} cheques, +{ventas_api_local['pax']} pax ***")
-                # ============= FIN INTEGRACIÓN API LOCAL =============
-                
-                ticket_promedio = ventas / cheques if cheques > 0 else 0
-                consumo_persona = ventas / pax if pax > 0 else 0
-                pax_promedio = pax / cheques if cheques > 0 else 0
-                
-                # =====================================================================
-                # SUB-BLOQUE 5.2: Query centralizada para métricas del MES ANTERIOR
-                # REEMPLAZA: query_pax_ant_mpro SQL directo (líneas 3277-3292 original)
-                # =====================================================================
-                result_mes_ant = query_ventas_periodo_mpro_con_filtro_flexible(
-                    server=server,
-                    fecha_ini=fecha_ini_ant,
-                    fecha_fin=fecha_fin_ant,
-                    sucursal=sucursal,
-                    excluir_cancelados=True  # La query original SÍ excluía cancelados
-                )
-                
-                pax_ant = result_mes_ant.pax if result_mes_ant.success else 0
-                ventas_ant = result_mes_ant.total_venta if result_mes_ant.success else 0
-                pax_promedio_anterior = ventas_ant / pax_ant if pax_ant > 0 else 0
-                pax_promedio_actual = ventas / pax if pax > 0 else 0
-                vs_pax_mes_anterior = round(((pax_promedio_actual - pax_promedio_anterior) / pax_promedio_anterior * 100), 1) if pax_promedio_anterior > 0 else 0
-                vs_periodo_anterior = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
-                
-                # =====================================================================
-                # SUB-BLOQUE 5.2: Query centralizada para métricas del AÑO ANTERIOR
-                # REEMPLAZA: query_ano_ant_mpro SQL directo (líneas 3301-3317 original)
-                # =====================================================================
-                result_ano_ant = query_ventas_periodo_mpro_con_filtro_flexible(
-                    server=server,
-                    fecha_ini=fecha_ini_ano_ant,
-                    fecha_fin=fecha_fin_ano_ant,
-                    sucursal=sucursal,
-                    excluir_cancelados=True  # La query original SÍ excluía cancelados
-                )
-                
-                pax_ano_ant = result_ano_ant.pax if result_ano_ant.success else 0
-                ventas_ano_ant = result_ano_ant.total_venta if result_ano_ant.success else 0
-                cheques_ano_ant = result_ano_ant.cheques if result_ano_ant.success else 0
-                vs_ano_anterior = round(((ventas - ventas_ano_ant) / ventas_ano_ant * 100), 1) if ventas_ano_ant > 0 else 0
-                pax_vs_ano_anterior = round(((pax - pax_ano_ant) / pax_ano_ant * 100), 1) if pax_ano_ant > 0 else 0
-                
-                pax_total_vs_ano = round(((pax - pax_ano_ant) / pax_ano_ant * 100), 1) if pax_ano_ant > 0 else 0
-                cheques_total_vs_ano = round(((cheques - cheques_ano_ant) / cheques_ano_ant * 100), 1) if cheques_ano_ant > 0 else 0
-                ticket_ano_ant = ventas_ano_ant / cheques_ano_ant if cheques_ano_ant > 0 else 0
-                cheque_vs_ano_anterior = round(((ticket_promedio - ticket_ano_ant) / ticket_ano_ant * 100), 1) if ticket_ano_ant > 0 else 0
-                
-                kpis = {
-                    "ventas_periodo": round(ventas, 2),
-                    "ticket_promedio": round(ticket_promedio, 2),
-                    "cheques_total": cheques,
-                    "pax_total": pax,
-                    "pax_promedio": round(pax_promedio, 2),
-                    "consumo_persona": round(consumo_persona, 2),
-                    "rotacion_mesas": 0,
-                    "mesas_atendidas": 0
-                }
-                
-                comparativo = {
-                    "vs_periodo_anterior": vs_periodo_anterior,
-                    "vs_ano_anterior": vs_ano_anterior,
-                    "vs_presupuesto": 0,
-                    "pax_vs_mes_anterior": vs_pax_mes_anterior,
-                    "pax_vs_ano_anterior": pax_vs_ano_anterior,
-                    "pax_total_vs_ano": pax_total_vs_ano,
-                    "cheques_total_vs_ano": cheques_total_vs_ano,
-                    "cheque_vs_ano_anterior": cheque_vs_ano_anterior,
-                    "rotacion_vs_ano": 0,
-                    "tipo_comparacion": tipo_comparacion,
-                    "periodo_anterior": f"{fecha_ini_ant} a {fecha_fin_ant}",
-                    "periodo_ano_ant": f"{fecha_ini_ano_ant} a {fecha_fin_ano_ant}",
-                    # Banderas para indicar si hay datos históricos (para tooltips en UI)
-                    "sin_datos_periodo_anterior": ventas_ant == 0,
-                    "sin_datos_ano_anterior": ventas_ano_ant == 0
-                }
-                
-                # Determinar estado de fuente MPRO
-                if ventas > 0 or cheques > 0:
-                    source_status = "SUCCESS"
-                    source_message = f"Datos obtenidos correctamente de {server['name']}"
-                    
-                    result_data_mpro = {
-                        "source_status": source_status,
-                        "source_message": source_message,
-                        "server_name": server['name'],
-                        "server_type": server['system_type'],
-                        "fecha_inicio": fecha_ini,
-                        "fecha_fin": fecha_fin,
-                        "kpis": kpis,
-                        "comparativo": comparativo,
-                        "alertas": []
-                    }
-                    
-                    # Guardar en caché para fallback futuro
-                    periodo_key = f"dashboard_mpro_{fecha_ini}_{fecha_fin}"
-                    await save_dashboard_cache(server['id'], periodo_key, result_data_mpro)
-                    
-                    return result_data_mpro
-                else:
-                    # =====================================================================
-                    # FASE DASHBOARD-COMERCIAL-FALLBACK-MPRO-02 (Diciembre 2025)
-                    # MPRO: result_kpis.success == True PERO ventas == 0
-                    # 
-                    # Esto puede ocurrir cuando:
-                    # 1. La query SQL retorna vacío (sin datos en el período)
-                    # 2. La query falla silenciosamente (retorna None que se convierte en 0)
-                    # 3. CONFIG-SECURITY-01 causa que la conexión no funcione correctamente
-                    #
-                    # ACCIÓN: Intentar fallback a caché antes de devolver NO_DATA
-                    # =====================================================================
-                    logging.warning(
-                        f"[DASHBOARD-COMERCIAL-FALLBACK-MPRO] SQL retornó ventas=0 para {server['name']}. "
-                        f"Verificando caché antes de devolver NO_DATA..."
-                    )
-                    
-                    # --- PASO 1: Buscar en caché de dashboard específico ---
-                    periodo_key_dashboard = f"dashboard_mpro_{fecha_ini}_{fecha_fin}"
-                    cached_dashboard = await get_dashboard_cache(server['id'], periodo_key_dashboard)
-                    
-                    if cached_dashboard and cached_dashboard.get('data'):
-                        cached_data = cached_dashboard['data']
-                        cached_kpis = cached_data.get('kpis', {})
-                        # Solo usar caché si tiene datos reales
-                        if cached_kpis.get('ventas_periodo', 0) > 0:
-                            cached_data['source_status'] = "CACHE"
-                            cached_data['source_message'] = (
-                                f"SQL retornó vacío para {server['name']}. "
-                                f"Usando caché de dashboard (última actualización: {cached_dashboard.get('updated_at', 'N/A')})"
-                            )
-                            cached_data['cache_used'] = True
-                            cached_data['fallback_reason'] = "SQL retornó ventas=0"
-                            cached_data['alertas'] = [{
-                                "tipo": "info", 
-                                "mensaje": f"Datos de caché - SQL retornó vacío ({cached_dashboard.get('updated_at', 'N/A')})"
-                            }]
-                            logging.info(
-                                f"[DASHBOARD-COMERCIAL-FALLBACK-MPRO] Usando caché de dashboard para {server['name']} "
-                                f"(ventas: ${cached_kpis.get('ventas_periodo', 0):,.2f})"
-                            )
-                            return cached_data
-                    
-                    # --- PASO 2: Buscar en caché de KPIs del Tablero Ejecutivo ---
-                    periodo_key_tablero = f"{year}-{mes_max:02d}"
-                    cached_kpis_list = await get_cached_kpis_by_prefix(server['id'], periodo_key_tablero)
-                    
-                    if cached_kpis_list and len(cached_kpis_list) > 0:
-                        # Buscar por sucursal si se especificó
-                        sucursal_lower = (sucursal or '').lower()
-                        cached_kpis_match = None
-                        
-                        # Estrategia de matching mejorada:
-                        # 1. Buscar match exacto primero
-                        # 2. Buscar match parcial (substring)
-                        # 3. Si hay múltiples matches, preferir el que tenga más ventas
-                        matches_found = []
-                        
-                        for cached_item in cached_kpis_list:
-                            kpis_data = cached_item.get('kpis', {})
-                            unidad_nombre = (kpis_data.get('unidad', '') or '').lower()
-                            sucursal_nombre = (kpis_data.get('sucursal', '') or '').lower()
-                            ventas_item = kpis_data.get('ventas', 0)
-                            
-                            if sucursal_lower:
-                                # Match exacto (prioridad máxima)
-                                if unidad_nombre == sucursal_lower or sucursal_nombre == sucursal_lower:
-                                    matches_found.append((cached_item, ventas_item, 'exact'))
-                                # Match parcial (prioridad media)
-                                elif (sucursal_lower in unidad_nombre or 
-                                      sucursal_lower in sucursal_nombre or
-                                      unidad_nombre in sucursal_lower or
-                                      sucursal_nombre in sucursal_lower):
-                                    matches_found.append((cached_item, ventas_item, 'partial'))
-                        
-                        # Seleccionar el mejor match
-                        if matches_found:
-                            # Priorizar matches exactos
-                            exact_matches = [m for m in matches_found if m[2] == 'exact']
-                            if exact_matches:
-                                # Si hay múltiples exactos, elegir el de mayor ventas
-                                cached_kpis_match = max(exact_matches, key=lambda x: x[1])[0]
-                            else:
-                                # Si solo hay parciales, elegir el de mayor ventas
-                                cached_kpis_match = max(matches_found, key=lambda x: x[1])[0]
-                        
-                        # Si no hubo match y no se especificó sucursal, usar el de mayor ventas
-                        if not cached_kpis_match and not sucursal_lower:
-                            cached_kpis_match = max(cached_kpis_list, key=lambda x: x.get('kpis', {}).get('ventas', 0))
-                        elif not cached_kpis_match:
-                            # Último recurso: usar el primero disponible
-                            cached_kpis_match = cached_kpis_list[0]
-                        
-                        kpis_cached = cached_kpis_match.get('kpis', {})
-                        cached_updated_at = cached_kpis_match.get('updated_at', 'N/A')
-                        
-                        # Solo usar si tiene datos reales
-                        if kpis_cached.get('ventas', 0) > 0:
-                            logging.info(
-                                f"[DASHBOARD-COMERCIAL-FALLBACK-MPRO] Usando KPIs de Tablero Ejecutivo para {server['name']} "
-                                f"(unidad: {kpis_cached.get('unidad', 'N/A')}, ventas: ${kpis_cached.get('ventas', 0):,.2f})"
-                            )
-                            
-                            fallback_kpis = {
-                                "ventas_periodo": kpis_cached.get('ventas', 0),
-                                "ticket_promedio": kpis_cached.get('ticket_prom', 0),
-                                "cheques_total": kpis_cached.get('cheques', 0),
-                                "pax_total": kpis_cached.get('pax', 0),
-                                "pax_promedio": round(kpis_cached.get('pax', 0) / kpis_cached.get('cheques', 1), 2) if kpis_cached.get('cheques', 0) > 0 else 0,
-                                "consumo_persona": round(kpis_cached.get('ventas', 0) / kpis_cached.get('pax', 1), 2) if kpis_cached.get('pax', 0) > 0 else 0,
-                                "rotacion_mesas": 0,
-                                "mesas_atendidas": 0
-                            }
-                            
-                            fallback_comparativo = {
-                                "vs_periodo_anterior": kpis_cached.get('var_vs_mes_ant', 0),
-                                "vs_ano_anterior": kpis_cached.get('var_vs_año_ant', 0),
-                                "vs_presupuesto": 0,
-                                "pax_vs_mes_anterior": kpis_cached.get('var_pax_mes', 0),
-                                "pax_vs_ano_anterior": kpis_cached.get('var_pax_año', 0),
-                                "pax_total_vs_ano": kpis_cached.get('var_pax_año', 0),
-                                "cheques_total_vs_ano": kpis_cached.get('var_cheques_año', 0),
-                                "cheque_vs_ano_anterior": 0,
-                                "rotacion_vs_ano": 0,
-                                "tipo_comparacion": tipo_comparacion,
-                                "periodo_anterior": f"{fecha_ini_ant} a {fecha_fin_ant}",
-                                "periodo_ano_ant": f"{fecha_ini_ano_ant} a {fecha_fin_ano_ant}",
-                                "sin_datos_periodo_anterior": kpis_cached.get('ventas_ant', 0) == 0,
-                                "sin_datos_ano_anterior": kpis_cached.get('ventas_año', 0) == 0
-                            }
-                            
-                            return {
-                                "source_status": "CACHE",
-                                "source_message": (
-                                    f"SQL retornó vacío para {server['name']}. "
-                                    f"Usando datos de caché del Tablero Ejecutivo (última actualización: {cached_updated_at})"
-                                ),
-                                "server_name": server['name'],
-                                "server_type": server['system_type'],
-                                "fecha_inicio": fecha_ini,
-                                "fecha_fin": fecha_fin,
-                                "cache_used": True,
-                                "fallback_reason": "SQL retornó ventas=0",
-                                "fallback_source": "TABLERO_EJECUTIVO_CACHE",
-                                "kpis": fallback_kpis,
-                                "comparativo": fallback_comparativo,
-                                "alertas": [{
-                                    "tipo": "info", 
-                                    "mensaje": f"Datos de caché (Tablero Ejecutivo) - SQL retornó vacío. Última actualización: {cached_updated_at}"
-                                }]
-                            }
-                    
-                    # --- PASO 3: Sin caché con datos válidos - devolver NO_DATA controlado ---
-                    logging.warning(
-                        f"[DASHBOARD-COMERCIAL-FALLBACK-MPRO] Sin caché válida para {server['name']}. "
-                        f"Devolviendo NO_DATA."
-                    )
-                    
-                    return {
-                        "source_status": "NO_DATA",
-                        "source_message": f"Conexión exitosa a {server['name']} pero no hay datos en el período seleccionado. Sin caché disponible.",
-                        "server_name": server['name'],
-                        "server_type": server['system_type'],
-                        "fecha_inicio": fecha_ini,
-                        "fecha_fin": fecha_fin,
-                        "cache_used": False,
-                        "fallback_attempted": True,
-                        "kpis": kpis,
-                        "comparativo": comparativo,
-                        "alertas": [{"tipo": "warning", "mensaje": "No hay datos disponibles para este período. SQL retornó vacío y no hay caché válida."}]
-                    }
-            else:
-                # =====================================================================
-                # FASE DASHBOARD-COMERCIAL-FALLBACK-MPRO-01 (Diciembre 2025)
-                # MPRO: result_kpis.success == False - IMPLEMENTAR FALLBACK A CACHÉ
-                # 
-                # CAUSA RAÍZ: CONFIG-SECURITY-01 - Sin SERVER_SECRET_KEY, el password
-                # SQL no se puede descifrar y la query falla. Sin embargo, el Tablero
-                # Ejecutivo YA tiene datos cacheados de MPRO sincronizados desde EDARSAHUB.
-                #
-                # FLUJO:
-                # 1. SQL directo falla (error de auth, timeout, conectividad)
-                # 2. Buscar en caché de dashboard (save_dashboard_cache/get_dashboard_cache)
-                # 3. Si hay caché válida, retornar con source="CACHE" o "FALLBACK"
-                # 4. Si no hay caché, buscar en kpis_cache (del Tablero Ejecutivo)
-                # 5. Si no hay nada, retornar NO_DATA_NO_CACHE (no $0 falso)
-                # =====================================================================
-                error_msg = result_kpis.error if result_kpis.error else "Error desconocido en query centralizada"
-                logging.warning(
-                    f"[DASHBOARD-COMERCIAL-FALLBACK-MPRO] SQL falló para {server['name']}: {error_msg}. "
-                    f"Intentando fallback a caché..."
-                )
-                
-                # --- PASO 1: Buscar en caché de dashboard específico ---
-                periodo_key_dashboard = f"dashboard_mpro_{fecha_ini}_{fecha_fin}"
-                cached_dashboard = await get_dashboard_cache(server['id'], periodo_key_dashboard)
-                
-                if cached_dashboard and cached_dashboard.get('data'):
-                    cached_data = cached_dashboard['data']
-                    # Enriquecer con información de fallback
-                    cached_data['source_status'] = "CACHE"
-                    cached_data['source_message'] = (
-                        f"SQL falló ({error_msg[:80]}). "
-                        f"Mostrando datos de caché (última actualización: {cached_dashboard.get('updated_at', 'N/A')})"
-                    )
-                    cached_data['cache_used'] = True
-                    cached_data['fallback_reason'] = error_msg[:100]
-                    cached_data['alertas'] = [{
-                        "tipo": "warning", 
-                        "mensaje": f"Datos de caché - SQL no disponible ({cached_dashboard.get('updated_at', 'N/A')})"
-                    }]
-                    logging.info(
-                        f"[DASHBOARD-COMERCIAL-FALLBACK-MPRO] Usando caché de dashboard para {server['name']} "
-                        f"(actualizado: {cached_dashboard.get('updated_at')})"
-                    )
-                    return cached_data
-                
-                # --- PASO 2: Buscar en caché de KPIs del Tablero Ejecutivo ---
-                # Construir periodo_key compatible con el formato del Tablero Ejecutivo
-                # El Tablero usa formato: "YYYY-MM" para el periodo_key base
-                periodo_key_tablero = f"{year}-{mes_max:02d}"
-                
-                # Para MPRO con sucursales, buscar por prefijo (puede haber múltiples)
-                cached_kpis_list = await get_cached_kpis_by_prefix(server['id'], periodo_key_tablero)
-                
-                if cached_kpis_list and len(cached_kpis_list) > 0:
-                    # Intentar encontrar la sucursal específica o usar la primera disponible
-                    sucursal_lower = (sucursal or '').lower()
-                    cached_kpis_match = None
-                    
-                    for cached_item in cached_kpis_list:
-                        kpis_data = cached_item.get('kpis', {})
-                        unidad_nombre = (kpis_data.get('unidad', '') or '').lower()
-                        sucursal_nombre = (kpis_data.get('sucursal', '') or '').lower()
-                        
-                        # Matching por nombre de sucursal (si se especificó)
-                        if sucursal_lower and (
-                            sucursal_lower in unidad_nombre or 
-                            sucursal_lower in sucursal_nombre or
-                            unidad_nombre in sucursal_lower or
-                            sucursal_nombre in sucursal_lower
-                        ):
-                            cached_kpis_match = cached_item
-                            break
-                    
-                    # Si no hubo match exacto, usar el primero disponible
-                    if not cached_kpis_match:
-                        cached_kpis_match = cached_kpis_list[0]
-                    
-                    kpis_cached = cached_kpis_match.get('kpis', {})
-                    cached_updated_at = cached_kpis_match.get('updated_at', 'N/A')
-                    
-                    logging.info(
-                        f"[DASHBOARD-COMERCIAL-FALLBACK-MPRO] Usando KPIs de Tablero Ejecutivo para {server['name']} "
-                        f"(unidad: {kpis_cached.get('unidad', 'N/A')}, actualizado: {cached_updated_at})"
-                    )
-                    
-                    # Construir respuesta compatible con formato de dashboard
-                    fallback_kpis = {
-                        "ventas_periodo": kpis_cached.get('ventas', 0),
-                        "ticket_promedio": kpis_cached.get('ticket_prom', 0),
-                        "cheques_total": kpis_cached.get('cheques', 0),
-                        "pax_total": kpis_cached.get('pax', 0),
-                        "pax_promedio": round(kpis_cached.get('pax', 0) / kpis_cached.get('cheques', 1), 2) if kpis_cached.get('cheques', 0) > 0 else 0,
-                        "consumo_persona": round(kpis_cached.get('ventas', 0) / kpis_cached.get('pax', 1), 2) if kpis_cached.get('pax', 0) > 0 else 0,
-                        "rotacion_mesas": 0,
-                        "mesas_atendidas": 0
-                    }
-                    
-                    fallback_comparativo = {
-                        "vs_periodo_anterior": kpis_cached.get('var_vs_mes_ant', 0),
-                        "vs_ano_anterior": kpis_cached.get('var_vs_año_ant', 0),
-                        "vs_presupuesto": 0,
-                        "pax_vs_mes_anterior": kpis_cached.get('var_pax_mes', 0),
-                        "pax_vs_ano_anterior": kpis_cached.get('var_pax_año', 0),
-                        "pax_total_vs_ano": kpis_cached.get('var_pax_año', 0),
-                        "cheques_total_vs_ano": kpis_cached.get('var_cheques_año', 0),
-                        "cheque_vs_ano_anterior": 0,
-                        "rotacion_vs_ano": 0,
-                        "tipo_comparacion": tipo_comparacion,
-                        "periodo_anterior": f"{fecha_ini_ant} a {fecha_fin_ant}",
-                        "periodo_ano_ant": f"{fecha_ini_ano_ant} a {fecha_fin_ano_ant}",
-                        "sin_datos_periodo_anterior": kpis_cached.get('ventas_ant', 0) == 0,
-                        "sin_datos_ano_anterior": kpis_cached.get('ventas_año', 0) == 0
-                    }
-                    
-                    return {
-                        "source_status": "CACHE",
-                        "source_message": (
-                            f"SQL falló ({error_msg[:60]}...). "
-                            f"Mostrando datos de caché del Tablero Ejecutivo (última actualización: {cached_updated_at})"
-                        ),
-                        "server_name": server['name'],
-                        "server_type": server['system_type'],
-                        "fecha_inicio": fecha_ini,
-                        "fecha_fin": fecha_fin,
-                        "cache_used": True,
-                        "fallback_reason": error_msg[:100],
-                        "fallback_source": "TABLERO_EJECUTIVO_CACHE",
-                        "kpis": fallback_kpis,
-                        "comparativo": fallback_comparativo,
-                        "alertas": [{
-                            "tipo": "warning", 
-                            "mensaje": f"Datos de caché (Tablero Ejecutivo) - SQL no disponible. Última actualización: {cached_updated_at}"
-                        }]
-                    }
-                
-                # --- PASO 3: Sin caché disponible - NO_DATA controlado ---
-                logging.warning(
-                    f"[DASHBOARD-COMERCIAL-FALLBACK-MPRO] Sin caché disponible para {server['name']}. "
-                    f"Error SQL original: {error_msg}"
-                )
-                
-                return {
-                    "source_status": "NO_DATA_NO_CACHE",
-                    "source_message": (
-                        f"SQL falló ({error_msg[:80]}) y no hay caché disponible. "
-                        f"Posible causa: CONFIG-SECURITY-01 (SERVER_SECRET_KEY faltante)"
-                    ),
-                    "server_name": server['name'],
-                    "server_type": server['system_type'],
-                    "fecha_inicio": fecha_ini,
-                    "fecha_fin": fecha_fin,
-                    "cache_used": False,
-                    "fallback_attempted": True,
-                    "fallback_reason": error_msg[:100],
-                    "kpis": None,
-                    "comparativo": None,
+                    "kpis": stale_snapshot_mpro.get('kpis'),
+                    "comparativo": stale_snapshot_mpro.get('comparativo'),
                     "alertas": [{
-                        "tipo": "error", 
-                        "mensaje": f"Sin datos disponibles. Error SQL: {error_msg[:100]}. Sin caché."
+                        "tipo": "warning",
+                        "mensaje": f"Datos históricos. Última sincronización: {stale_snapshot_mpro['fecha_snapshot']}"
                     }]
                 }
+            
+            # No hay datos en EDARSAHUB - retornar SIN_DATOS_EDARSAHUB
+            # PROHIBIDO: Intentar conexión remota como fallback
+            logging.warning(f"[DASHBOARD-NO-LIVE-MPRO] {server['name']}: Sin datos en EDARSAHUB, retornando SIN_DATOS_EDARSAHUB")
+            
+            return {
+                "source_status": "SIN_DATOS_EDARSAHUB",
+                "source_message": f"No hay datos consolidados para {server['name']} en el período {fecha_ini} a {fecha_fin}. Verifique que la sincronización automática esté funcionando.",
+                "source_type": "SIN_DATOS_EDARSAHUB",
+                "server_name": server.get('name', 'Desconocido'),
+                "server_type": server.get('system_type', 'Desconocido'),
+                "fecha_inicio": fecha_ini,
+                "fecha_fin": fecha_fin,
+                "kpis": None,
+                "comparativo": None,
+                "alertas": [{
+                    "tipo": "info",
+                    "mensaje": "No hay datos consolidados en EDARSAHUB para este período. Verifique el estado de sincronización."
+                }]
+            }
         
         # Si llegamos aquí, el sistema no está soportado
         return {
@@ -5560,3 +4626,4 @@ WHERE VE.Vn_Fecha >= CONVERT(datetime, '{fecha_ini} 00:00:00', 120)
 
 
 __all__ = ['router']
+            

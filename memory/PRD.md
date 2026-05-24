@@ -23,6 +23,40 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
+#### FASE 1B-R2 - Migración Ventas por Hora a EDARSAHUB SQL (24 Mayo 2026) ✅ COMPLETADO
+- [x] **Endpoint migrado**: `/api/comercial/ventas-tiempo/{server_id}` ahora lee de `Sync_Ventas_PorHora`
+- [x] **Eliminadas conexiones remotas**: SoftRestaurant y MPRO (~180 líneas)
+- [x] **source_type únicos**: EDARSAHUB_SQL, STALE_EDARSAHUB_SQL, SIN_DATOS_EDARSAHUB
+- [x] **Compatible frontend**: Mismos campos de respuesta
+- [x] **Reporte técnico**: `/app/docs/reports/FASE_1B_R2_NO_LIVE_VENTAS_TIEMPO_SYNC_VENTAS_PORHORA.md`
+- [⚠️] **Observación**: Datos en Sync_Ventas_PorHora tienen 9 días de antigüedad - Job sync debe ejecutarse
+
+#### Portal de Clientes - Arquitectura (24 Mayo 2026) 📋 DOCUMENTADO
+- [x] **Documento arquitectónico creado**: `/app/docs/reports/PORTAL_CLIENTES_AUTOFACTURACION_ARQUITECTURA.md`
+- [x] **Modelo de acceso externo**: Tablas `Cliente_UsuariosPortal`, `Cliente_RolUsuarioPortal` ya existen
+- [x] **Flujo de autofacturación**: Diseñado con validaciones SAT
+- [x] **20+ endpoints propuestos**: /api/portal-clientes/*
+- [x] **RBAC definido**: 22 permisos para clientes y administradores
+- [ ] **Implementación**: Requiere autorización para Fase PC-1
+
+#### FASE 1B-R1 - Corrección NO-LIVE Dashboard Comercial (24 Mayo 2026) ✅ COMPLETADO
+- [x] **Eliminados fallbacks remotos**: SoftRestaurant (~200 líneas) y MPRO (~400 líneas)
+- [x] **Eliminado query remoto** "último día con ventas" (~70 líneas)
+- [x] **Agregada función** `get_last_valid_snapshot_edarsahub()` para datos STALE
+- [x] **source_type únicos permitidos**: EDARSAHUB_SQL, STALE_EDARSAHUB_SQL, SIN_DATOS_EDARSAHUB
+- [x] **Reporte técnico**: `/app/docs/reports/FASE_1B_R1_NO_LIVE_DASHBOARD_COMERCIAL_CORRECCION.md`
+- [x] **Actualizado reporte FASE 1B** a v2.0
+- [⚠️] **Pendiente**: Migrar Ventas por Hora a EDARSAHUB (endpoint separado)
+
+#### FASE 1B - Dashboard Comercial EDARSAHUB SQL (24 Mayo 2026) ✅ COMPLETADO
+- [x] **Diagnóstico completado**: Dashboard YA usa EDARSAHUB SQL como fuente principal
+- [x] **Código clave validado**: `get_dashboard_kpis_from_edarsahub()` en service.py
+- [x] **NO se requirieron modificaciones** - Arquitectura correcta existente
+- [x] **Tablas utilizadas**: Comercial_KPIs_Diarios_v2, Sync_Ventas_PorHora
+- [x] **Endpoint validado**: /api/comercial/dashboard → source_type: EDARSAHUB_SQL
+- [x] **Pruebas no regresión**: 29/29 pasaron
+- [x] **Reporte técnico**: `/app/docs/reports/FASE_1B_DASHBOARD_COMERCIAL_EDARSAHUB_SQL.md`
+
 #### FASE 1A - Comercial/Ventas Integración Menú SQL (24 Mayo 2026) ✅ COMPLETADO
 - [x] **Validación de rutas:**
   - `/comercial` - Dashboard funciona (blindado)

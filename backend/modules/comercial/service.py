@@ -2615,3 +2615,88 @@ def _obtener_unidad_ids_desde_servidor(server_id: str) -> List[str]:
     }
     
     return mapeo_servidor_unidad.get(server_id, [])
+
+
+
+def get_last_valid_snapshot_edarsahub(server_id: str) -> Dict:
+    """
+    FASE 1B-R1: Obtener último snapshot válido de EDARSAHUB aunque sea antiguo (STALE)
+    
+    Busca en Comercial_KPIs_Diarios_v2 el registro más reciente para el servidor,
+    sin importar la fecha. Usado como fallback cuando no hay datos del período actual.
+    
+    Returns:
+        Dict con fecha_snapshot, kpis y comparativo, o None si no existe ningún dato.
+    """
+    import pymssql
+    import logging
+    
+    try:
+        conn = pymssql.connect(
+            server='54.39.104.176',
+            user='HRLectura',
+            password='National09$',
+            database='EDARSAHUB',
+            port=1433,
+            timeout=10
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        # Buscar el registro más reciente para este servidor
+        cursor.execute("""
+            SELECT TOP 1
+                server_id,
+                unidad_negocio_nombre,
+                fecha_operacion,
+                fecha_sincronizacion,
+                ventas_total,
+                ventas_sin_propina,
+                tickets_total,
+                pax_total,
+                ticket_promedio,
+                pax_promedio
+            FROM Comercial_KPIs_Diarios_v2
+            WHERE server_id = %s
+            ORDER BY fecha_operacion DESC
+        """, (server_id,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            logging.warning(f"[STALE-SNAPSHOT] Sin datos históricos para server_id={server_id[:8]}...")
+            return None
+        
+        # Construir respuesta como snapshot STALE
+        fecha_snapshot = row['fecha_sincronizacion'] or row['fecha_operacion']
+        if hasattr(fecha_snapshot, 'strftime'):
+            fecha_snapshot = fecha_snapshot.strftime('%Y-%m-%d %H:%M')
+        
+        logging.info(f"[STALE-SNAPSHOT] Encontrado snapshot de {fecha_snapshot} para server_id={server_id[:8]}...")
+        
+        return {
+            'fecha_snapshot': fecha_snapshot,
+            'kpis': {
+                'ventas_periodo': float(row['ventas_sin_propina'] or row['ventas_total'] or 0),
+                'ticket_promedio': float(row['ticket_promedio'] or 0),
+                'cheques_total': int(row['tickets_total'] or 0),
+                'pax_total': int(row['pax_total'] or 0),
+                'pax_promedio': float(row['pax_promedio'] or 0),
+                'consumo_persona': 0,
+                'mesas_atendidas': int(row['tickets_total'] or 0),
+                'rotacion_mesas': 0,
+                'venta_por_hora': 0
+            },
+            'comparativo': {
+                'vs_periodo_anterior': 0,
+                'vs_ano_anterior': 0,
+                'vs_presupuesto': 0,
+                'tipo_comparacion': 'N/A (snapshot histórico)',
+                'ventas_anterior': 0,
+                'ventas_ano_anterior': 0
+            }
+        }
+        
+    except Exception as e:
+        logging.error(f"[STALE-SNAPSHOT] Error obteniendo snapshot: {e}")
+        return None
