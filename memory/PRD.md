@@ -23,6 +23,31 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
+#### FASE 1C-3F - Simulación y Solicitudes de Precio (24 Mayo 2026) ✅ COMPLETADO
+- [x] **Backend completado** (sesión anterior):
+  - Tablas SQL: `Comercial_SolicitudesCambioPrecio`, `Comercial_SolicitudesCambioPrecioDetalle`, `Comercial_SolicitudesCambioPrecioHistorial`, `Comercial_SimulacionesPrecio`
+  - Endpoints de workflow: crear, enviar, aprobar, rechazar, aplicar, cancelar
+  - RBAC implementado en todos los endpoints
+  - Máquina de estados: BORRADOR → SOLICITADA → EN_REVISION → APROBADA → APLICADA
+- [x] **Frontend completado** (esta sesión):
+  - Componente refactorizado: `/app/frontend/src/pages/comercial/CostosMargenes.jsx`
+  - Sistema de Tabs: "Resumen/Productos" + "Solicitudes de Precio"
+  - Modal de Simulación: cálculo en tiempo real de márgenes y advertencias
+  - Vista de Solicitudes: tabla con filtros, estados y acciones
+  - Modal de Detalle: historial, comentarios, acciones según estado
+  - Migración de auth: de `localStorage.getItem('token')` a cliente API centralizado (`@/lib/api`)
+- [x] **Validaciones implementadas**:
+  - Motivo obligatorio (mín. 5 caracteres)
+  - Precio propuesto > 0
+  - Advertencias: margen negativo, margen bajo <20%, variación >15%
+  - Null mostrado como "Sin dato"
+  - Sin receta mostrado como advertencia
+- [x] **Endpoints consumidos**: 14 endpoints de `/api/costos-margenes/*`
+- [x] **NO-LIVE confirmado**: Solo consume EDARSAHUB SQL
+- [x] **Sin MongoDB**: Confirmado
+- [x] **Sin regresión**: Login, Dashboard, Costos funcionan
+- [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3F_FRONTEND_SIMULACION_SOLICITUDES_PRECIO.md`
+
 #### FASE 1C-3D - Frontend Costos y Márgenes (24 Mayo 2026) ✅ COMPLETADO
 - [x] **Ruta implementada**: `/comercial/costos-margenes`
 - [x] **Componente creado**: `/app/frontend/src/pages/comercial/CostosMargenes.jsx` (730 líneas)

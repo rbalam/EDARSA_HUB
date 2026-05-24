@@ -614,6 +614,65 @@ async def aplicar_solicitud(
         raise HTTPException(status_code=500, detail=f"Error aplicando solicitud: {str(e)}")
 
 
+@router.post("/solicitudes-precio/{solicitud_id}/cancelar", response_model=AccionSolicitudResponse)
+async def cancelar_solicitud(
+    solicitud_id: str,
+    request: Request,
+    data: AccionSolicitudRequest = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Cancela una solicitud de cambio de precio.
+    
+    **Transiciones válidas**: BORRADOR/SOLICITADA/APROBADA → CANCELADA
+    
+    **Permisos**: comercial.costos_margenes.solicitar_cambio_precio
+    """
+    _require_permission(current_user, 'solicitar_cambio_precio')
+    
+    try:
+        solicitud = obtener_solicitud(solicitud_id)
+        if not solicitud:
+            raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+        
+        estados_cancelables = ['BORRADOR', 'SOLICITADA', 'APROBADA']
+        if solicitud['estatus'] not in estados_cancelables:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"No se puede cancelar una solicitud en estado {solicitud['estatus']}"
+            )
+        
+        ip = request.client.host if request.client else None
+        comentario = data.comentario if data else "Solicitud cancelada por el usuario"
+        
+        resultado = cambiar_estatus_solicitud(
+            solicitud_id=solicitud_id,
+            nuevo_estatus='CANCELADA',
+            usuario_id=current_user.get('id', ''),
+            usuario_email=current_user.get('email', ''),
+            usuario_nombre=current_user.get('nombre'),
+            comentario=comentario,
+            ip=ip
+        )
+        
+        return AccionSolicitudResponse(
+            solicitud_id=solicitud_id,
+            accion=AccionSolicitud.CANCELAR,
+            estatus_anterior=EstatusSolicitud(resultado['estatus_anterior']),
+            estatus_nuevo=EstatusSolicitud.CANCELADA,
+            mensaje="Solicitud cancelada",
+            fecha_accion=__import__('datetime').datetime.now(),
+            source_type="EDARSAHUB_SQL"
+        )
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error cancelando solicitud: {str(e)}")
+
+
 # ==================== HISTORIAL ====================
 
 @router.get("/solicitudes-precio/{solicitud_id}/historial", response_model=HistorialSolicitudResponse)
