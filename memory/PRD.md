@@ -67,6 +67,27 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 - [x] **Referencias MongoDB reducidas**: 80 → 21 en producción (-74%)
 - [x] **Total deprecated/tests**: 25 refs (no afectan producción)
 
+#### P1 - Tablajería Fase 6: Inventarios, Costeo, Contabilidad (24 Mayo 2026)
+- [x] **Credenciales hardcodeadas removidas** - Ahora usa variables de entorno `EDARSAHUB_*`
+- [x] **6 tablas SQL creadas**:
+  - `Tablajeria_MovimientosInventario`
+  - `Tablajeria_CosteoProduccion`
+  - `Tablajeria_CosteoDetalle`
+  - `Tablajeria_PolizasContables`
+  - `Tablajeria_PolizasDetalle`
+  - `Tablajeria_ConfigContable`
+- [x] **Servicio fase6_service.py creado** con funcionalidades:
+  - Afectación de inventarios (SALIDA_INSUMO, ENTRADA_DERIVADO, SALIDA_MERMA)
+  - Costeo de producción (reglas PROPORCIONAL, FIJO, RESIDUAL)
+  - Generación de pólizas contables
+  - Proceso completo de cierre
+- [x] **Endpoints API creados**:
+  - `POST /api/tablajeria/ordenes/{id}/fase6/procesar-cierre`
+  - `POST /api/tablajeria/ordenes/{id}/fase6/afectar-inventario`
+  - `POST /api/tablajeria/ordenes/{id}/fase6/calcular-costeo`
+  - `POST /api/tablajeria/ordenes/{id}/fase6/generar-poliza`
+  - `GET/PUT /api/tablajeria/fase6/config-contable/{empresa_id}`
+
 ### 🔄 En Progreso
 
 #### Jobs del Scheduler
@@ -75,12 +96,9 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ⏳ Pendiente
 
-#### P1 - Alta Prioridad
-1. **Tablajería Fase 6**: Inventarios, Costeo y Contabilidad
-2. **Seguridad**: Remover credenciales hardcodeadas en Tablajería
-
 #### P2 - Media Prioridad
-3. **CRM UI**: Completar vistas funcionales
+1. **CRM UI**: Completar vistas funcionales
+2. Fase 4 Tablajería (Captura Directa)
 
 ---
 

@@ -2,12 +2,15 @@
 EDARSA HUB - Tablajería Sync Service
 ====================================
 Servicio de sincronización de plantillas desde servidores legacy.
+
+FASE 6 (Mayo 2026): Migrado a usar variables de entorno para credenciales.
 """
 
 import logging
 import pymssql
 import hashlib
 import json
+import os
 from typing import Optional, Dict, List, Any, Tuple
 from datetime import datetime, date
 from decimal import Decimal
@@ -21,6 +24,9 @@ from .schemas import (
 logger = logging.getLogger(__name__)
 
 MEXICO_TZ = ZoneInfo("America/Mexico_City")
+
+# Credenciales desde variables de entorno
+DEFAULT_DB_PASSWORD = os.environ.get('EDARSAHUB_PASSWORD', '')
 
 
 class TablajeriaSyncService:
@@ -145,12 +151,19 @@ class TablajeriaSyncService:
         
         # Conexión a MPRO
         try:
+            # Usar password desde config o variable de entorno
+            password = servidor_config.get('password_decrypted') or DEFAULT_DB_PASSWORD
+            if not password:
+                result.success = False
+                result.errores.append("Password no configurado para servidor MPRO")
+                return
+            
             conn_mpro = pymssql.connect(
                 server=servidor_config['host'],
                 port=servidor_config.get('port', 1433),
                 database=servidor_config['database_name'],
                 user=servidor_config['username'],
-                password='National09$',  # TODO: desencriptar desde password_encrypted
+                password=password,
                 login_timeout=30,
                 timeout=60
             )
@@ -580,7 +593,7 @@ class TablajeriaSyncService:
                 server=f"{server},{port}",
                 database=servidor_config['database_name'],
                 user=servidor_config['username'],
-                password='National09$',
+                password=servidor_config.get('password_decrypted') or DEFAULT_DB_PASSWORD,
                 login_timeout=15,
                 timeout=30
             )

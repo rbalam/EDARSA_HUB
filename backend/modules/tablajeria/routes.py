@@ -32,14 +32,18 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/tablajeria", tags=["Tablajería"])
 
-# Configuración DB
+# Configuración DB desde variables de entorno
 DB_CONFIG = {
     'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
     'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
     'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
     'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-    'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    'password': os.environ.get('EDARSAHUB_PASSWORD', '')
 }
+
+# Validar que el password esté configurado
+if not DB_CONFIG['password']:
+    logger.warning("[TABLAJERIA] EDARSAHUB_PASSWORD no configurado en variables de entorno")
 
 
 def get_connection():
@@ -789,3 +793,195 @@ async def obtener_estadisticas_ordenes(
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
+
+
+# =============================================================================
+# FASE 6: INVENTARIOS, COSTEO Y CONTABILIDAD
+# =============================================================================
+
+from .fase6_service import get_tablajeria_fase6_service, ConfigContable
+from decimal import Decimal as Dec
+
+
+@router.post("/ordenes/{orden_id}/fase6/procesar-cierre")
+async def procesar_cierre_fase6(
+    orden_id: str,
+    costo_unitario_insumo: float,
+    costo_mano_obra: float = 0,
+    costo_indirectos: float = 0,
+    costo_energia: float = 0,
+    otros_costos: float = 0,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Procesa el cierre completo de Fase 6: Inventarios, Costeo y Contabilidad.
+    
+    Args:
+        orden_id: ID de la orden cerrada
+        costo_unitario_insumo: Costo por unidad del insumo base
+        costo_mano_obra: Costo de mano de obra (opcional)
+        costo_indirectos: Costos indirectos (opcional)
+        costo_energia: Costo de energía (opcional)
+        otros_costos: Otros costos (opcional)
+    """
+    try:
+        service = get_tablajeria_fase6_service()
+        
+        costos_adicionales = {
+            'mano_obra': Dec(str(costo_mano_obra)),
+            'indirectos': Dec(str(costo_indirectos)),
+            'energia': Dec(str(costo_energia)),
+            'otros': Dec(str(otros_costos))
+        }
+        
+        resultado = service.procesar_cierre_completo(
+            orden_id=orden_id,
+            costo_unitario_insumo=Dec(str(costo_unitario_insumo)),
+            costos_adicionales=costos_adicionales,
+            usuario_id=current_user.get('id')
+        )
+        
+        return resultado
+        
+    except Exception as e:
+        logger.error(f"[FASE6] Error en proceso cierre: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ordenes/{orden_id}/fase6/afectar-inventario")
+async def afectar_inventario(
+    orden_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Afecta el inventario de una orden cerrada."""
+    try:
+        service = get_tablajeria_fase6_service()
+        resultado = service.afectar_inventario_orden(orden_id, current_user.get('id'))
+        return resultado
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[FASE6] Error afectando inventario: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ordenes/{orden_id}/fase6/calcular-costeo")
+async def calcular_costeo(
+    orden_id: str,
+    costo_unitario_insumo: float,
+    costo_mano_obra: float = 0,
+    costo_indirectos: float = 0,
+    costo_energia: float = 0,
+    otros_costos: float = 0,
+    current_user: dict = Depends(get_current_user)
+):
+    """Calcula el costeo de producción de una orden."""
+    try:
+        service = get_tablajeria_fase6_service()
+        
+        costos = {
+            'mano_obra': Dec(str(costo_mano_obra)),
+            'indirectos': Dec(str(costo_indirectos)),
+            'energia': Dec(str(costo_energia)),
+            'otros': Dec(str(otros_costos))
+        }
+        
+        resultado = service.calcular_costeo_orden(
+            orden_id=orden_id,
+            costo_unitario_insumo=Dec(str(costo_unitario_insumo)),
+            costos_adicionales=costos,
+            usuario_id=current_user.get('id')
+        )
+        
+        return resultado
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[FASE6] Error calculando costeo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ordenes/{orden_id}/fase6/generar-poliza")
+async def generar_poliza(
+    orden_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Genera la póliza contable de una orden."""
+    try:
+        service = get_tablajeria_fase6_service()
+        resultado = service.generar_poliza_produccion(orden_id, current_user.get('id'))
+        return resultado
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[FASE6] Error generando póliza: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/fase6/config-contable/{empresa_id}")
+async def obtener_config_contable(
+    empresa_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Obtiene la configuración contable de una empresa."""
+    try:
+        service = get_tablajeria_fase6_service()
+        config = service.obtener_config_contable(empresa_id)
+        return {
+            "empresa_id": config.empresa_id,
+            "cuentas": {
+                "almacen_insumos": config.cuenta_almacen_insumos,
+                "almacen_productos": config.cuenta_almacen_productos,
+                "produccion_proceso": config.cuenta_produccion_proceso,
+                "costo_ventas": config.cuenta_costo_ventas,
+                "merma_operativa": config.cuenta_merma_operativa,
+                "merma_extraordinaria": config.cuenta_merma_extraordinaria,
+                "variacion_costo": config.cuenta_variacion_costo
+            },
+            "opciones": {
+                "generar_poliza_automatica": config.generar_poliza_automatica,
+                "afectar_inventario_automatico": config.afectar_inventario_automatico,
+                "tolerancia_variacion": config.tolerancia_variacion
+            }
+        }
+    except Exception as e:
+        logger.error(f"[FASE6] Error obteniendo config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/fase6/config-contable/{empresa_id}")
+async def guardar_config_contable(
+    empresa_id: str,
+    config: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Guarda la configuración contable de una empresa."""
+    try:
+        service = get_tablajeria_fase6_service()
+        
+        config_obj = ConfigContable(
+            empresa_id=empresa_id,
+            cuenta_almacen_insumos=config.get('almacen_insumos', '1151-001'),
+            cuenta_almacen_productos=config.get('almacen_productos', '1152-001'),
+            cuenta_produccion_proceso=config.get('produccion_proceso', '1153-001'),
+            cuenta_costo_ventas=config.get('costo_ventas', '5101-001'),
+            cuenta_merma_operativa=config.get('merma_operativa', '5102-001'),
+            cuenta_merma_extraordinaria=config.get('merma_extraordinaria', '5103-001'),
+            cuenta_variacion_costo=config.get('variacion_costo', '5104-001'),
+            generar_poliza_automatica=config.get('generar_poliza_automatica', True),
+            afectar_inventario_automatico=config.get('afectar_inventario_automatico', True),
+            tolerancia_variacion=float(config.get('tolerancia_variacion', 5.0))
+        )
+        
+        exito = service.guardar_config_contable(config_obj, current_user.get('id'))
+        
+        if exito:
+            return {"mensaje": "Configuración guardada exitosamente"}
+        else:
+            raise HTTPException(status_code=500, detail="Error guardando configuración")
+            
+    except Exception as e:
+        logger.error(f"[FASE6] Error guardando config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
