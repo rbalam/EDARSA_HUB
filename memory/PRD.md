@@ -37,26 +37,39 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 - [x] Datos: 18 cuentas, 2 cotizaciones
 - [x] Rutas frontend y submenús agregados
 
+#### Traceback Fantasma Resuelto (24 Mayo 2026)
+- [x] **PROBLEMA**: Jobs del scheduler reportaban `AttributeError: 'NoneType' object has no attribute 'servers'`
+- [x] **CAUSA**: Bytecode cacheado (archivos `.pyc` y `__pycache__`) ejecutando código viejo
+- [x] **SOLUCIÓN**: Purga completa de `__pycache__` + reinicio de backend
+- [x] **ESTADO**: Backend limpio, sin errores de traceback
+
+#### Auditoría MongoDB (24 Mayo 2026)
+- [x] 80 referencias `self.db.*` identificadas en 15 archivos de producción
+- [x] 30 colecciones MongoDB mapeadas a funcionalidades
+- [x] Reporte completo en `/app/memory/AUDITORIA_MONGO_DEPENDENCIAS.md`
+
 ### 🔄 En Progreso
 
 #### Jobs del Scheduler
-- [x] `inventarios_detector` y `pedidos_detector` parcialmente migrados
-- [ ] **DESHABILITADOS TEMPORALMENTE** - Requieren migración completa
+- [x] `inventarios_detector` y `pedidos_detector` parcialmente migrados (usan sql_repository.py)
+- [x] Protección `_is_stub_db()` implementada
 - [x] 9 jobs funcionando (sync_comercial, notificaciones, etc.)
 
 ### ⏳ Pendiente
 
-#### P1 - Alta Prioridad (Habilitar Jobs)
-1. Migrar `InventoryAnalysisCore` a SQL
-2. Migrar `OrquestadorService` completamente a SQL
-3. Verificar métodos internos de jobs
+#### P0 - Migración SQL Completa
+1. Migrar `OrquestadorService` completamente a SQL (11 refs MongoDB)
+2. Migrar `SLA Service` a SQL (17 refs MongoDB)
+3. Crear tablas: `Workflow_Inventarios`, `Tareas_Inventario`, `Workflow_DetalleDiferencias`
 
-#### P1 - Otras Tareas
+#### P1 - Alta Prioridad
 4. **Tablajería Fase 6**: Inventarios, Costeo y Contabilidad
 5. **Seguridad**: Remover credenciales hardcodeadas en Tablajería
 
 #### P2 - Media Prioridad
 6. **CRM UI**: Completar vistas funcionales
+7. Migrar `config_asignaciones_repository.py` (8 refs)
+8. Migrar `estructura_service.py` (6 refs)
 
 ---
 
