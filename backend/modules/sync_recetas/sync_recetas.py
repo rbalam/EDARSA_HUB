@@ -120,7 +120,7 @@ def _ejecutar_sync(config: SyncRecetasConfig) -> SyncRecetasResult:
         for server in servers:
             server_id = server.get('id')
             system_type = server.get('system_type', '').upper()
-            server_name = server.get('nombre', 'Unknown')
+            server_name = server.get('name', server.get('nombre', 'Unknown'))
             
             try:
                 server_result = _sync_servidor(
@@ -182,7 +182,7 @@ def _sync_servidor(
     
     server_id = server.get('id')
     system_type = server.get('system_type', '').upper()
-    server_name = server.get('nombre', 'Unknown')
+    server_name = server.get('name', server.get('nombre', 'Unknown'))
     
     # Obtener credenciales descifradas
     creds = get_decrypted_credentials(server)
@@ -351,7 +351,7 @@ def _obtener_insumos_sr(host, port, database, username, password) -> List[Insumo
     """Obtiene insumos con sus costos de SoftRestaurant."""
     query = """
     SELECT i.idinsumo, i.descripcion, i.unidad, i.elaborado, i.rendimientoelaborado,
-           i.idgrupoinsumo,
+           i.idgruposi as idgrupoinsumo,
            id.costo, id.costopromedio, id.costoestandar, id.costoconimpuestos
     FROM insumos i
     LEFT JOIN insumosdetalle id ON i.idinsumo = id.idinsumo
@@ -552,7 +552,7 @@ def _obtener_familias_mpro(host, port, database, username, password) -> List[Fam
     query = """
     SELECT Fm_Cve_Familia, Fm_Descripcion
     FROM Familia
-    WHERE Es_Cve_Estado = 'A'
+    WHERE Es_Cve_Estado = 'AC'
     ORDER BY Fm_Descripcion
     """
     rows = execute_sql_query(host, port, database, username, password, query) or []
@@ -571,7 +571,7 @@ def _obtener_subfamilias_mpro(host, port, database, username, password) -> List[
     query = """
     SELECT Sf_Cve_SubFamilia, Sf_Descripcion, Fm_Cve_Familia
     FROM SubFamilia
-    WHERE Es_Cve_Estado = 'A'
+    WHERE Es_Cve_Estado = 'AC'
     ORDER BY Sf_Descripcion
     """
     rows = execute_sql_query(host, port, database, username, password, query) or []
@@ -593,7 +593,7 @@ def _obtener_insumos_mpro(host, port, database, username, password) -> List[Insu
            e.Ex_Ultimo_Costo, e.Ex_Costo_Promedio, e.Ex_Costo_Estandar
     FROM Producto p
     LEFT JOIN Existencia e ON p.Pr_Cve_Producto = e.Pr_Cve_Producto
-    WHERE p.Es_Cve_Estado = 'A'
+    WHERE p.Es_Cve_Estado = 'AC'
     AND p.Pr_Descripcion IS NOT NULL
     """
     rows = execute_sql_query(host, port, database, username, password, query) or []
@@ -618,12 +618,12 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
     SELECT p.Pr_Cve_Producto, p.Pr_Descripcion, p.Pr_Descripcion_Corta,
            p.Fm_Cve_Familia, p.Sf_Cve_SubFamilia,
            f.Fm_Descripcion, sf.Sf_Descripcion,
-           pp.Pp_Precio_Lista
+           pp.Pp_Precio_1 as Precio
     FROM Producto p
     LEFT JOIN Familia f ON p.Fm_Cve_Familia = f.Fm_Cve_Familia
     LEFT JOIN SubFamilia sf ON p.Sf_Cve_SubFamilia = sf.Sf_Cve_SubFamilia
     LEFT JOIN Producto_Precio pp ON p.Pr_Cve_Producto = pp.Pr_Cve_Producto
-    WHERE p.Es_Cve_Estado = 'A'
+    WHERE p.Es_Cve_Estado = 'AC'
     AND p.Pr_Descripcion IS NOT NULL
     """
     rows = execute_sql_query(host, port, database, username, password, query) or []
@@ -637,7 +637,7 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
             subfamilia_codigo_fuente=str(r.get('Sf_Cve_SubFamilia', '')) if r.get('Sf_Cve_SubFamilia') else None,
             familia_nombre=r.get('Fm_Descripcion'),
             subfamilia_nombre=r.get('Sf_Descripcion'),
-            precio_venta=Decimal(str(r.get('Pp_Precio_Lista') or 0))
+            precio_venta=Decimal(str(r.get('Precio') or 0))
         )
         for r in rows
     ]
@@ -645,7 +645,7 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
 
 def _contar_productos_con_receta_mpro(host, port, database, username, password) -> int:
     """Cuenta productos con fórmula de producción en MPRO."""
-    query = "SELECT COUNT(DISTINCT Pr_Cve_Producto) as cnt FROM Formula_Produccion WHERE Es_Cve_Estado = 'A'"
+    query = "SELECT COUNT(DISTINCT Pr_Cve_Producto) as cnt FROM Formula_Produccion WHERE Es_Cve_Estado = 'AC'"
     rows = execute_sql_query(host, port, database, username, password, query) or []
     return int(rows[0].get('cnt', 0)) if rows else 0
 
@@ -659,7 +659,7 @@ def _obtener_recetas_mpro(host, port, database, username, password) -> List[Rece
     FROM Formula_Produccion_Detalle fpd
     JOIN Formula_Produccion fp ON fpd.Pr_Cve_Producto = fp.Pr_Cve_Producto AND fpd.Fp_ID = fp.Fp_ID
     LEFT JOIN Producto p ON fpd.Fpd_Producto = p.Pr_Cve_Producto
-    WHERE fp.Es_Cve_Estado = 'A'
+    WHERE fp.Es_Cve_Estado = 'AC'
     AND fpd.Fpd_Cantidad > 0
     ORDER BY fpd.Pr_Cve_Producto, fpd.Fpd_Producto
     """

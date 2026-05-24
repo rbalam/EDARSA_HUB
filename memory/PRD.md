@@ -23,6 +23,21 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
+#### FASE 1C-3B - Implementación Job Sync Recetas (24 Mayo 2026) ✅ COMPLETADO
+- [x] **Job sync_recetas.py creado**: 1,084 líneas de código ETL
+- [x] **Tablas destino creadas**: 6 tablas `Sync_Productos*` en EDARSAHUB SQL
+- [x] **DRY-RUN exitoso**: 152 familias, 207 subfamilias, 7,883 productos, 14,524 insumos, 9,341 recetas
+- [x] **Sync Real ejecutado**: SyncRunID `SYNC-RECETAS-20260524133926-b652313f`
+- [x] **Servidores sincronizados**: LA ESTELAR (100%), 130° MERIDA (100%), ManagmentPro (en progreso)
+- [x] **Fuentes correctas usadas**: `costos` (recetas), `elaborados` (sub-recetas)
+- [x] **NO se usa `explosioninsumosdetalle`**: Confirmado vacía
+- [x] **Validación producto ejemplo**: QUESADILLA DE FLOR DE CALABAZA ✅ (7 insumos)
+- [x] **Errores corregidos**: `idgruposi`, `Pp_Precio_1`, `Es_Cve_Estado='AC'`
+- [x] **NO-LIVE confirmado**: Endpoints no consultan BD remotas
+- [x] **No regresión**: Login, dashboard, menús funcionan correctamente
+- [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3B_COSTOS_MARGENES_SYNC_RECETAS_IMPLEMENTACION.md`
+- [⚠️] **CIENFUEGOS**: Excluido por problema de red (backlog operativo)
+
 #### FASE 1C-3A - Diseño Técnico Costos y Márgenes (24 Mayo 2026) ✅ COMPLETADO
 - [x] **Diagnóstico de tablas**: 50+ tablas analizadas en EDARSAHUB
 - [x] **Tablas reutilizables**: `Sync_Control_Ejecuciones`, parcialmente `Operaciones_Tablaje_*`
