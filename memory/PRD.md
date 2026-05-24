@@ -23,6 +23,20 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
+#### FASE 1C-3D - Frontend Costos y Márgenes (24 Mayo 2026) ✅ COMPLETADO
+- [x] **Ruta implementada**: `/comercial/costos-margenes`
+- [x] **Componente creado**: `/app/frontend/src/pages/comercial/CostosMargenes.jsx` (730 líneas)
+- [x] **Tarjetas de resumen**: Total Productos, Con Receta, Total Recetas, Total Insumos
+- [x] **Tabla de productos**: Filtros, búsqueda, paginación
+- [x] **Modal de receta**: Componentes jerárquicos con costos y %
+- [x] **Modal de insumos**: Lista consolidada con % del costo
+- [x] **Sync status**: Indicador de estado de sincronización
+- [x] **Manejo NULL vs cero**: "Sin dato" para NULL, no $0 falso
+- [x] **NO-LIVE confirmado**: Solo consume endpoints EDARSAHUB SQL
+- [x] **Sin MongoDB**: Confirmado
+- [x] **No regresión**: Login, Tablero, Ventas funcionan
+- [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3D_COSTOS_MARGENES_FRONTEND.md`
+
 #### FASE 1C-3C - Endpoints NO-LIVE Costos y Márgenes (24 Mayo 2026) ✅ COMPLETADO
 - [x] **5 Endpoints creados**: Módulo `/app/backend/modules/costos_margenes/`
   - `GET /api/costos-margenes/resumen` - Resumen general

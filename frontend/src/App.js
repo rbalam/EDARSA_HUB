@@ -51,6 +51,9 @@ import CapturaDirectaPage from '@/pages/tablajeria/CapturaDirectaPage';
 // Cava de Socios
 import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm } from '@/pages/cava-socios';
 
+// Costos y Márgenes (FASE 1C-3D)
+import CostosMargenes from '@/pages/comercial/CostosMargenes';
+
 import { isAuthenticated } from '@/lib/auth';
 
 // Portal de Proveedores (Subproyecto separado)
@@ -78,7 +81,8 @@ function App() {
             <Route path="comercial" element={<Comercial />} />
             {/* Rutas Comercial/Ventas - Integración Menú SQL (FASE 1A) */}
             <Route path="comercial/clientes" element={<Navigate to="/crm/cuentas" replace />} />
-            <Route path="comercial/costos-margenes" element={<Navigate to="/comercial" replace />} />
+            {/* FASE 1C-3D: Costos y Márgenes */}
+            <Route path="comercial/costos-margenes" element={<CostosMargenes />} />
             {/* CRM Enterprise */}
             <Route path="crm" element={<Navigate to="/crm/dashboard" replace />} />
             <Route path="crm/dashboard" element={<CRMDashboard />} />
