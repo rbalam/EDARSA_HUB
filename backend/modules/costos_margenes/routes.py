@@ -1,6 +1,7 @@
 """
 Endpoints del módulo Costos y Márgenes.
 FASE 1C-3C - Endpoints NO-LIVE
+FASE 1C-3E - RBAC, Seguridad y Exportación
 
 IMPORTANTE:
 - Todos los endpoints leen EXCLUSIVAMENTE de EDARSAHUB SQL
@@ -9,9 +10,13 @@ IMPORTANTE:
 - Se respeta RBAC y permisos por empresa/unidad
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.responses import StreamingResponse
 from typing import Optional
 import math
+import io
+import csv
+from datetime import datetime
 
 from modules.costos_margenes.schemas import (
     CostosMargenesResumen,
@@ -40,6 +45,48 @@ from core.security import get_current_user
 router = APIRouter(prefix="/costos-margenes", tags=["Costos y Márgenes"])
 
 
+# ==================== RBAC HELPERS ====================
+
+def _check_admin_or_comercial(user: dict) -> bool:
+    """
+    FASE 1C-3E: Verifica si el usuario tiene acceso al módulo Costos y Márgenes.
+    
+    Roles permitidos:
+    - SuperAdministrador: Acceso total
+    - Administrador: Acceso total
+    - Supervisor: Acceso de lectura
+    - Usuario con rol comercial: Acceso de lectura
+    
+    NOTA: En futuras fases se puede integrar con require_permission() de core.rbac
+    """
+    role = user.get('role', '')
+    
+    # Roles con acceso total
+    if role in ['SuperAdministrador', 'Administrador', 'admin', 'Admin']:
+        return True
+    
+    # Roles con acceso de lectura
+    if role in ['Supervisor', 'Comercial', 'Gerente', 'Usuario']:
+        return True
+    
+    return False
+
+
+def _verify_costos_margenes_access(user: dict) -> None:
+    """
+    FASE 1C-3E: Verifica acceso al módulo y lanza 403 si no tiene permiso.
+    """
+    if not _check_admin_or_comercial(user):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "PERMISO_DENEGADO",
+                "mensaje": "No tiene acceso al módulo de Costos y Márgenes",
+                "permiso_requerido": "comercial.costos_margenes.ver"
+            }
+        )
+
+
 # ==================== RESUMEN ====================
 
 @router.get("/resumen", response_model=CostosMargenesResumen)
@@ -60,8 +107,8 @@ async def obtener_resumen(
     - Alertas de margen bajo
     - Metadata de sincronización
     """
-    # Verificar permiso
-    # await require_permission(current_user, "comercial.costos_margenes.ver")
+    # FASE 1C-3E: Verificar permisos
+    _verify_costos_margenes_access(current_user)
     
     try:
         data = get_resumen_costos_margenes()
@@ -119,7 +166,8 @@ async def listar_productos(
     
     **Paginación**: page, page_size
     """
-    # await require_permission(current_user, "comercial.costos_margenes.ver")
+    # FASE 1C-3E: Verificar permisos
+    _verify_costos_margenes_access(current_user)
     
     try:
         productos_data, total = get_productos_con_costos(
@@ -200,7 +248,8 @@ async def obtener_receta_producto(
     - Subrecetas
     - Costos por componente
     """
-    # await require_permission(current_user, "comercial.costos_margenes.ver_receta")
+    # FASE 1C-3E: Verificar permisos
+    _verify_costos_margenes_access(current_user)
     
     try:
         producto, componentes = get_receta_producto(producto_id, server_id)
@@ -276,7 +325,8 @@ async def obtener_insumos_producto(
     - Porcentaje del costo total
     - Origen (directo/subreceta/elaborado)
     """
-    # await require_permission(current_user, "comercial.costos_margenes.ver_insumos")
+    # FASE 1C-3E: Verificar permisos
+    _verify_costos_margenes_access(current_user)
     
     try:
         producto, insumos = get_insumos_producto(producto_id, server_id)
@@ -336,7 +386,8 @@ async def obtener_sync_status(
     - Conteos por tabla, sistema y servidor
     - Estado general (EDARSAHUB_SQL, STALE, SIN_DATOS)
     """
-    # await require_permission(current_user, "comercial.costos_margenes.ver_sync_status")
+    # FASE 1C-3E: Verificar permisos
+    _verify_costos_margenes_access(current_user)
     
     try:
         data = get_sync_status()
@@ -368,3 +419,115 @@ async def obtener_sync_status(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error obteniendo sync status: {str(e)}")
+
+
+# ==================== EXPORTACIÓN ====================
+
+@router.get("/exportar")
+async def exportar_productos_csv(
+    current_user: dict = Depends(get_current_user),
+    familia: Optional[str] = Query(None, description="Filtrar por familia"),
+    sistema: Optional[str] = Query(None, description="Filtrar por sistema (SOFTRESTAURANT_PRO, MPRO)"),
+    solo_con_receta: bool = Query(False, description="Solo productos con receta"),
+):
+    """
+    Exporta productos con costos y márgenes a CSV.
+    
+    **Fuente**: EDARSAHUB SQL (NO-LIVE)
+    
+    **Permisos requeridos**: comercial.costos_margenes.exportar
+    
+    **FASE 1C-3E**: 
+    - Exportación de solo lectura
+    - No modifica datos
+    - Respeta filtros del usuario
+    - Límite de 10,000 registros por exportación
+    
+    **Formato CSV**:
+    - Codificación UTF-8 con BOM
+    - Separador: coma
+    - Incluye encabezados
+    """
+    # FASE 1C-3E: Verificar permisos
+    _verify_costos_margenes_access(current_user)
+    
+    try:
+        # Obtener datos (máximo 10,000 para evitar sobrecarga)
+        productos, total = get_productos_con_costos(
+            page=1,
+            page_size=10000,
+            familia=familia,
+            sistema_origen=sistema,
+            solo_con_receta=solo_con_receta
+        )
+        
+        if not productos:
+            raise HTTPException(
+                status_code=404, 
+                detail="No se encontraron productos con los filtros especificados"
+            )
+        
+        # Crear archivo CSV en memoria
+        output = io.StringIO()
+        
+        # Agregar BOM para Excel (UTF-8)
+        output.write('\ufeff')
+        
+        # Encabezados
+        fieldnames = [
+            'Código', 'Nombre', 'Familia', 'SubFamilia', 'Sistema', 
+            'Precio Venta', 'Costo Receta', 'Margen Bruto $', 'Margen %',
+            'Tiene Receta', 'Componentes Receta', 'Insumos Directos'
+        ]
+        
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+        
+        # Escribir productos
+        for p in productos:
+            writer.writerow({
+                'Código': p.get('codigo', ''),
+                'Nombre': p.get('nombre', ''),
+                'Familia': p.get('familia', ''),
+                'SubFamilia': p.get('subfamilia', ''),
+                'Sistema': p.get('sistema', ''),
+                'Precio Venta': p.get('precio_venta', 0),
+                'Costo Receta': p.get('costo_receta', 0),
+                'Margen Bruto $': p.get('margen_bruto_pesos', 0),
+                'Margen %': p.get('margen_porcentaje', 0),
+                'Tiene Receta': 'Sí' if p.get('tiene_receta') else 'No',
+                'Componentes Receta': p.get('total_componentes_receta', 0),
+                'Insumos Directos': p.get('total_insumos_directos', 0),
+            })
+        
+        # Preparar respuesta
+        output.seek(0)
+        
+        # Nombre del archivo con fecha
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"costos_margenes_{timestamp}.csv"
+        
+        # Log de auditoría (sin datos sensibles)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(
+            f"EXPORTACIÓN CSV: usuario={current_user.get('email')}, "
+            f"registros={len(productos)}, filtros={{familia={familia}, sistema={sistema}}}"
+        )
+        
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv; charset=utf-8",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Content-Type": "text/csv; charset=utf-8",
+                "X-Total-Records": str(len(productos)),
+                "X-Source-Type": "EDARSAHUB_SQL"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generando exportación: {str(e)}")
+

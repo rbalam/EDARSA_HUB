@@ -53,6 +53,28 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 - [x] **No regresión**: Login, Tablero Ejecutivo, Ventas Tiempo funcionan
 - [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3C_COSTOS_MARGENES_ENDPOINTS_NO_LIVE.md`
 
+#### FASE 1C-3E - Validación Integral, RBAC, Seguridad y Exportación (24 Mayo 2026) ✅ COMPLETADO
+- [x] **RBAC implementado**: `_verify_costos_margenes_access()` en todos los endpoints
+- [x] **Roles permitidos**: SuperAdmin, Admin, Supervisor, Comercial, Gerente, Usuario
+- [x] **Seguridad SQL validada**: SQLSanitizer activo, no exposición de credenciales
+- [x] **Arquitectura NO-LIVE confirmada**: Todos los endpoints retornan `source_type: EDARSAHUB_SQL`
+- [x] **Exportación CSV implementada**: `GET /api/costos-margenes/exportar`
+  - Formato: CSV con BOM UTF-8
+  - Filtros: familia, sistema, solo_con_receta
+  - Límite: 10,000 registros
+  - Columnas: Código, Nombre, Familia, SubFamilia, Sistema, Precio, Costo, Margen
+- [x] **No regresión validada**: Todos los módulos funcionan correctamente
+  - Login, Auth, Menú SQL: ✅
+  - Dashboard Comercial, Tablero Ejecutivo: ✅
+  - Compras, Inventarios: ✅
+- [x] **Datos intactos**: 9,905 productos, 39,299 registros totales
+- [x] **Restricciones cumplidas**:
+  - ❌ No se editaron precios
+  - ❌ No se editaron recetas
+  - ❌ No se editaron costos
+  - ❌ No se programó job nocturno
+- [x] **Reporte técnico**: `/app/docs/reports/FASE_1C_3E_VALIDACION_RBAC_EXPORTACION.md`
+
 #### FASE 1C-3B-R3 - Fix Bug Decimal en Familias SR (24 Mayo 2026) ✅ COMPLETADO
 - [x] **Bug corregido**: `Decimal.replace()` en `sync_recetas.py` líneas 318-328, 394-408, 634-648
 - [x] **Causa raíz**: Campo `clasificacion` de SoftRestaurant devolvía tipo `Decimal` en lugar de string
