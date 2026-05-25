@@ -454,10 +454,14 @@ async def listar_unidades_negocio(
 
 @router.get("/familias")
 async def listar_familias(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    servidor_id: Optional[str] = Query(None, description="Filtrar por unidad de negocio (ServerID)")
 ):
     """
     Lista las familias de productos disponibles.
+    
+    **Parámetros**:
+    - servidor_id: Filtrar familias por unidad de negocio
     
     **Fuente**: EDARSAHUB SQL (NO-LIVE)
     
@@ -466,7 +470,7 @@ async def listar_familias(
     _verify_costos_margenes_access(current_user)
     
     try:
-        familias = get_familias_productos()
+        familias = get_familias_productos(servidor_id)
         return {
             "familias": familias,
             "total": len(familias),
@@ -479,10 +483,15 @@ async def listar_familias(
 @router.get("/subfamilias")
 async def listar_subfamilias(
     current_user: dict = Depends(get_current_user),
-    familia: Optional[str] = Query(None, description="Filtrar por familia")
+    familia: Optional[str] = Query(None, description="Filtrar por familia"),
+    servidor_id: Optional[str] = Query(None, description="Filtrar por unidad de negocio (ServerID)")
 ):
     """
     Lista las subfamilias de productos.
+    
+    **Parámetros**:
+    - familia: Filtrar subfamilias por familia padre
+    - servidor_id: Filtrar por unidad de negocio
     
     **Fuente**: EDARSAHUB SQL (NO-LIVE)
     
@@ -491,7 +500,7 @@ async def listar_subfamilias(
     _verify_costos_margenes_access(current_user)
     
     try:
-        subfamilias = get_subfamilias_productos(familia)
+        subfamilias = get_subfamilias_productos(familia, servidor_id)
         return {
             "subfamilias": subfamilias,
             "total": len(subfamilias),

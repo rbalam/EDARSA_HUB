@@ -1119,6 +1119,7 @@ const TabProductos = ({ onSimularPrecio }) => {
   const [syncStatus, setSyncStatus] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
+  const [pageSizeAgrupado] = useState(200); // Más productos para vista agrupada
   const [totalPages, setTotalPages] = useState(1);
   const [totalProductos, setTotalProductos] = useState(0);
   const [busqueda, setBusqueda] = useState('');
@@ -1136,39 +1137,53 @@ const TabProductos = ({ onSimularPrecio }) => {
   const [unidades, setUnidades] = useState([]);
   const [familias, setFamilias] = useState([]);
   const [subfamilias, setSubfamilias] = useState([]);
+  const [loadingFamilias, setLoadingFamilias] = useState(false);
   
   // Vista agrupada
   const [vistaAgrupada, setVistaAgrupada] = useState(false);
   const [familiasExpandidas, setFamiliasExpandidas] = useState(new Set());
   
-  // Cargar unidades de negocio y familias
+  // Cargar unidades de negocio (solo una vez)
   useEffect(() => {
-    const cargarFiltros = async () => {
-      try {
-        const [unidadesRes, familiasRes] = await Promise.all([
-          api.get('/costos-margenes/unidades-negocio'),
-          api.get('/costos-margenes/familias')
-        ]);
-        setUnidades(unidadesRes.data.unidades || []);
-        setFamilias(familiasRes.data.familias || []);
-      } catch (err) {
-        console.error('Error cargando filtros:', err);
-      }
-    };
-    cargarFiltros();
+    api.get('/costos-margenes/unidades-negocio')
+      .then(res => setUnidades(res.data.unidades || []))
+      .catch(err => console.error('Error cargando unidades:', err));
   }, []);
   
-  // Cargar subfamilias cuando cambia la familia
+  // Cargar familias cuando cambie la unidad de negocio
+  useEffect(() => {
+    const cargarFamilias = async () => {
+      setLoadingFamilias(true);
+      try {
+        const params = unidadNegocio ? `?servidor_id=${encodeURIComponent(unidadNegocio)}` : '';
+        const res = await api.get(`/costos-margenes/familias${params}`);
+        setFamilias(res.data.familias || []);
+        // Limpiar familia y subfamilia si la seleccionada ya no existe
+        setFamilia('');
+        setSubfamilia('');
+      } catch (err) {
+        console.error('Error cargando familias:', err);
+      } finally {
+        setLoadingFamilias(false);
+      }
+    };
+    cargarFamilias();
+  }, [unidadNegocio]);
+  
+  // Cargar subfamilias cuando cambie la familia
   useEffect(() => {
     if (familia) {
-      api.get(`/costos-margenes/subfamilias?familia=${encodeURIComponent(familia)}`)
+      const params = new URLSearchParams({ familia });
+      if (unidadNegocio) params.append('servidor_id', unidadNegocio);
+      
+      api.get(`/costos-margenes/subfamilias?${params}`)
         .then(res => setSubfamilias(res.data.subfamilias || []))
         .catch(err => console.error('Error cargando subfamilias:', err));
     } else {
       setSubfamilias([]);
       setSubfamilia('');
     }
-  }, [familia]);
+  }, [familia, unidadNegocio]);
   
   const loadResumen = useCallback(async () => {
     try {
@@ -1193,9 +1208,12 @@ const TabProductos = ({ onSimularPrecio }) => {
     setError(null);
     
     try {
+      // Usar más productos cuando está en vista agrupada
+      const currentPageSize = vistaAgrupada ? pageSizeAgrupado : pageSize;
+      
       const params = new URLSearchParams({
-        page: page.toString(),
-        page_size: pageSize.toString()
+        page: vistaAgrupada ? '1' : page.toString(),
+        page_size: currentPageSize.toString()
       });
       
       if (busqueda) params.append('busqueda', busqueda);
@@ -1209,13 +1227,13 @@ const TabProductos = ({ onSimularPrecio }) => {
       
       setProductos(res.data.productos || []);
       setTotalProductos(res.data.total || 0);
-      setTotalPages(res.data.total_pages || 1);
+      setTotalPages(vistaAgrupada ? 1 : (res.data.total_pages || 1));
     } catch (err) {
       setError(err.response?.data?.detail || err.message);
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, busqueda, unidadNegocio, familia, subfamilia, soloConReceta, margenBajo]);
+  }, [page, pageSize, pageSizeAgrupado, vistaAgrupada, busqueda, unidadNegocio, familia, subfamilia, soloConReceta, margenBajo]);
   
   useEffect(() => {
     loadResumen();
@@ -1225,6 +1243,11 @@ const TabProductos = ({ onSimularPrecio }) => {
   useEffect(() => {
     loadProductos();
   }, [loadProductos]);
+  
+  // Recargar cuando cambie vista agrupada
+  useEffect(() => {
+    loadProductos();
+  }, [vistaAgrupada]); // eslint-disable-line react-hooks/exhaustive-deps
   
   const handleSearch = (e) => {
     setBusqueda(e.target.value);

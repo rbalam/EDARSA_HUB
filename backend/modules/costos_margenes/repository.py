@@ -493,22 +493,29 @@ def get_unidades_negocio() -> List[Dict[str, Any]]:
 
 # ==================== FAMILIAS Y SUBFAMILIAS ====================
 
-def get_familias_productos() -> List[Dict[str, Any]]:
+def get_familias_productos(servidor_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Obtiene lista de familias únicas de productos desde EDARSAHUB.
+    
+    Args:
+        servidor_id: Filtrar por unidad de negocio (ServerID)
     
     Fuente: Tabla Sync_Productos en EDARSAHUB SQL
     NO-LIVE: No consulta sistemas externos.
     """
     conn = _get_edarsahub_connection()
     
-    # Usar FamiliaNombre directo de Sync_Productos
-    query = """
+    where_clause = "WHERE FamiliaNombre IS NOT NULL AND FamiliaNombre != ''"
+    if servidor_id:
+        servidor_safe = servidor_id.replace("'", "''")
+        where_clause += f" AND CAST(ServerID AS NVARCHAR(36)) = '{servidor_safe}'"
+    
+    query = f"""
     SELECT 
         FamiliaNombre as familia,
         COUNT(*) as total_productos
     FROM Sync_Productos
-    WHERE FamiliaNombre IS NOT NULL AND FamiliaNombre != ''
+    {where_clause}
     GROUP BY FamiliaNombre
     ORDER BY FamiliaNombre
     """
@@ -526,9 +533,13 @@ def get_familias_productos() -> List[Dict[str, Any]]:
     return familias
 
 
-def get_subfamilias_productos(familia: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_subfamilias_productos(familia: Optional[str] = None, servidor_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Obtiene lista de subfamilias de productos desde EDARSAHUB.
+    
+    Args:
+        familia: Filtrar por familia
+        servidor_id: Filtrar por unidad de negocio (ServerID)
     
     Fuente: Tabla Sync_Productos en EDARSAHUB SQL
     NO-LIVE: No consulta sistemas externos.
@@ -539,6 +550,9 @@ def get_subfamilias_productos(familia: Optional[str] = None) -> List[Dict[str, A
     if familia:
         familia_safe = familia.replace("'", "''")
         where_clause += f" AND FamiliaNombre = '{familia_safe}'"
+    if servidor_id:
+        servidor_safe = servidor_id.replace("'", "''")
+        where_clause += f" AND CAST(ServerID AS NVARCHAR(36)) = '{servidor_safe}'"
     
     query = f"""
     SELECT 
