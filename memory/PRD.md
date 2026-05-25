@@ -21,6 +21,66 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Diciembre 2025)
 
+### ✅ FASE 1C-3G-E: Reglas de Precio por Rango para Vinos - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Resumen
+Se crearon las reglas de precio por rango para productos clasificados como vino, usando la tabla de márgenes proporcionada.
+
+#### Tablas Creadas
+| Tabla | Propósito |
+|-------|-----------|
+| `Comercial_ReglasPrecio` | Reglas maestras con redondeo |
+| `Comercial_ReglasPrecioRangos` | 13 rangos con margen multiplicador |
+| `Comercial_PreciosSugeridos` | Resultados de cálculo |
+
+#### Regla VINOS_RANGOS_MX
+- **13 rangos** configurados ($0 a $20,000)
+- **Gap detectado**: $4,000.01 - $4,999.99 (pendiente definición usuario)
+- **Método redondeo**: MAS_CERCANO
+- **Múltiplo**: 5
+
+#### Fórmula de Cálculo
+```
+precio_base = costo_botella × margen
+importe_impuesto = precio_base × tasa_impuesto (desde modelo canónico)
+precio_sugerido = redondear(precio_base + importe_impuesto, 5)
+```
+
+#### Prueba Obligatoria (Costo $450)
+```
+450 × 2.50 = $1,125.00 (base)
+$1,125.00 × 0.16 = $180.00 (impuesto)
+$1,125.00 + $180.00 = $1,305.00 ✓
+```
+
+#### Resultados de Cálculo
+| Estado | Cantidad |
+|--------|----------|
+| CALCULADO | 195 (39%) |
+| COSTO_BOTELLA_NO_CONFIGURADO | 305 (61%) |
+| IMPUESTO_NO_CONFIGURADO | 0 |
+| RANGO_NO_CONFIGURADO | 0 |
+
+#### Validaciones Confirmadas
+- ✅ No se usa CostoReceta para vinos
+- ✅ No se hardcodeó 16%
+- ✅ Usa resolver_tasa_impuesto() del modelo canónico
+- ✅ Gap $4,000-$5,000 marca RANGO_NO_CONFIGURADO
+- ✅ No se modifican precios oficiales
+
+#### Archivos Creados
+- `/app/backend/modules/comercial/services/precios_vinos_service.py`
+- `/app/docs/reports/FASE_1C_3G_E_REGLAS_PRECIO_RANGO_VINOS.md`
+
+#### Pendiente (Requiere Autorización)
+1. FASE 1C-3G-F: Frontend de Precios Sugeridos
+2. Definir si cerrar gap $4,000.01 - $4,999.99
+3. Configurar costos para 305 vinos sin costo
+
+---
+
 ### ✅ FASE 1C-3G-D: Productos Clasificados como Vino - COMPLETADO (Diagnóstico)
 
 **Fecha:** 2026-05-25
