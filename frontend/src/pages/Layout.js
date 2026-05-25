@@ -286,6 +286,26 @@ const Layout = () => {
       href: '/comercial', 
       icon: TrendingUp, 
       roles: ['Usuario', 'Supervisor', 'Administrador'],
+      submenus: [
+        {
+          name: 'Dashboard Comercial',
+          href: '/comercial',
+          icon: TrendingUp,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Clientes',
+          href: '/comercial/clientes',
+          icon: Users,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Costos y Márgenes',
+          href: '/comercial/costos-margenes',
+          icon: Calculator,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        }
+      ]
     },
     { 
       name: 'CRM', 
