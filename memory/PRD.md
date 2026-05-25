@@ -21,6 +21,47 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Mayo 2026)
 
+### ✅ BUG-COSTOS-001: Filtrado de Productos Inactivos/Baja - RESUELTO
+
+**Fecha:** 2026-05-25
+
+#### Resumen
+Se corrigió el módulo Costos y Márgenes para filtrar por defecto los productos dados de baja o inactivos, con checkbox opcional para mostrarlos.
+
+#### Cambios Backend:
+- `repository.py`: Parámetro `incluir_inactivos` con filtro `p.Activo = 1` por defecto
+- `routes.py`: Query parameter en endpoints `/productos` y `/precios-sugeridos`
+- `precios_sugeridos_consolidado_service.py`: Mismo filtro aplicado
+
+#### Cambios Frontend:
+- `CostosMargenes.jsx`: Checkbox "Incluir inactivos/baja" en barra de filtros
+
+#### Archivo de Reporte:
+- `/app/docs/reports/BUG_COSTOS_001_FILTRADO_PRODUCTOS_INACTIVOS_BAJA.md`
+
+---
+
+### 🔵 FASE COSTOS-ALERTAS-001: Diagnóstico Completado - EN ESPERA DE AUTORIZACIÓN
+
+**Fecha:** 2026-05-25
+
+#### Diagnóstico Realizado:
+- **¿Existen tablas de snapshots/históricos de recetas?** NO
+- Email: Configurado (SMTP Neubox)
+- WhatsApp: Configurado (Twilio Sandbox) pero sin número destino
+- DDL propuesto para 6 tablas nuevas
+- Jerarquía de resolución: Producto > Subfamilia > Familia > Grupo
+
+#### Archivo de Diagnóstico:
+- `/app/docs/reports/COSTOS_ALERTAS_001_DIAGNOSTICO_PREVIO_IMPLEMENTACION.md`
+
+#### Pendiente:
+- Autorización para ejecutar DDL
+- Implementación de backend (repository, service, job)
+- Implementación de frontend (nueva pestaña "Alertas de Margen")
+
+---
+
 ### ✅ FASE 1C-3G-F: Precios Sugeridos en Costos y Márgenes + Rangos Vinos - COMPLETADO
 
 **Fecha:** 2026-05-25
