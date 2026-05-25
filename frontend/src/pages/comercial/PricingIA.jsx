@@ -171,12 +171,17 @@ const TabButton = ({ active, onClick, icon: Icon, label, badge }) => (
 const CompetidorModal = ({ isOpen, onClose, competidor, onSave, loading }) => {
   const [form, setForm] = useState({
     nombre_competidor: '',
-    tipo_negocio: 'RESTAURANTE',
+    tipo_restaurante: 'casual_dining',
+    segmento_precio: 'MEDIO',
+    zona_comercial: '',
+    sitio_web: '',
+    url_google_maps: '',
+    url_instagram: '',
+    url_facebook: '',
+    url_tripadvisor: '',
+    url_opentable: '',
     es_competencia_directa: true,
     es_benchmark_aspiracional: false,
-    ubicacion_referencia: '',
-    sitio_web: '',
-    nivel_precio_percibido: 'MEDIO',
     notas: ''
   });
   
@@ -184,23 +189,33 @@ const CompetidorModal = ({ isOpen, onClose, competidor, onSave, loading }) => {
     if (competidor) {
       setForm({
         nombre_competidor: competidor.nombre_competidor || '',
-        tipo_negocio: competidor.tipo_negocio || 'RESTAURANTE',
+        tipo_restaurante: competidor.tipo_restaurante || 'casual_dining',
+        segmento_precio: competidor.segmento_precio || 'MEDIO',
+        zona_comercial: competidor.zona_comercial || '',
+        sitio_web: competidor.sitio_web || '',
+        url_google_maps: competidor.url_google_maps || '',
+        url_instagram: competidor.url_instagram || '',
+        url_facebook: competidor.url_facebook || '',
+        url_tripadvisor: competidor.url_tripadvisor || '',
+        url_opentable: competidor.url_opentable || '',
         es_competencia_directa: competidor.es_competencia_directa ?? true,
         es_benchmark_aspiracional: competidor.es_benchmark_aspiracional ?? false,
-        ubicacion_referencia: competidor.ubicacion_referencia || '',
-        sitio_web: competidor.sitio_web || '',
-        nivel_precio_percibido: competidor.nivel_precio_percibido || 'MEDIO',
         notas: competidor.notas || ''
       });
     } else {
       setForm({
         nombre_competidor: '',
-        tipo_negocio: 'RESTAURANTE',
+        tipo_restaurante: 'casual_dining',
+        segmento_precio: 'MEDIO',
+        zona_comercial: '',
+        sitio_web: '',
+        url_google_maps: '',
+        url_instagram: '',
+        url_facebook: '',
+        url_tripadvisor: '',
+        url_opentable: '',
         es_competencia_directa: true,
         es_benchmark_aspiracional: false,
-        ubicacion_referencia: '',
-        sitio_web: '',
-        nivel_precio_percibido: 'MEDIO',
         notas: ''
       });
     }
@@ -215,7 +230,7 @@ const CompetidorModal = ({ isOpen, onClose, competidor, onSave, loading }) => {
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
         <div className="p-4 border-b flex justify-between items-center bg-gradient-to-r from-blue-600 to-blue-700">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <Store className="w-5 h-5" />
@@ -249,16 +264,21 @@ const CompetidorModal = ({ isOpen, onClose, competidor, onSave, loading }) => {
                 Tipo de Negocio
               </label>
               <select
-                value={form.tipo_negocio}
-                onChange={(e) => setForm({ ...form, tipo_negocio: e.target.value })}
+                value={form.tipo_restaurante}
+                onChange={(e) => setForm({ ...form, tipo_restaurante: e.target.value })}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="RESTAURANTE">Restaurante</option>
-                <option value="CARNICERIA">Carniceria</option>
-                <option value="SUPERMERCADO">Supermercado</option>
-                <option value="BOUTIQUE">Boutique</option>
-                <option value="CADENA_COMERCIAL">Cadena Comercial</option>
-                <option value="OTRO">Otro</option>
+                <option value="fine_dining">Fine Dining</option>
+                <option value="casual_dining">Casual Dining</option>
+                <option value="fast_casual">Fast Casual</option>
+                <option value="quick_service">Quick Service</option>
+                <option value="bar_restaurant">Bar Restaurant</option>
+                <option value="steakhouse">Steakhouse</option>
+                <option value="seafood">Seafood</option>
+                <option value="mexican">Mexicano</option>
+                <option value="international">Internacional</option>
+                <option value="fusion">Fusion</option>
+                <option value="otro">Otro</option>
               </select>
             </div>
             
@@ -267,12 +287,13 @@ const CompetidorModal = ({ isOpen, onClose, competidor, onSave, loading }) => {
                 Nivel de Precio
               </label>
               <select
-                value={form.nivel_precio_percibido}
-                onChange={(e) => setForm({ ...form, nivel_precio_percibido: e.target.value })}
+                value={form.segmento_precio}
+                onChange={(e) => setForm({ ...form, segmento_precio: e.target.value })}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="ECONOMICO">Economico</option>
                 <option value="MEDIO">Medio</option>
+                <option value="MEDIO_ALTO">Medio-Alto</option>
                 <option value="PREMIUM">Premium</option>
                 <option value="LUJO">Lujo</option>
               </select>
@@ -285,10 +306,10 @@ const CompetidorModal = ({ isOpen, onClose, competidor, onSave, loading }) => {
             </label>
             <input
               type="text"
-              value={form.ubicacion_referencia}
-              onChange={(e) => setForm({ ...form, ubicacion_referencia: e.target.value })}
+              value={form.zona_comercial}
+              onChange={(e) => setForm({ ...form, zona_comercial: e.target.value })}
               placeholder="Ej: Col. Polanco, CDMX"
-              maxLength={300}
+              maxLength={200}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -304,6 +325,70 @@ const CompetidorModal = ({ isOpen, onClose, competidor, onSave, loading }) => {
               placeholder="https://..."
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+          
+          {/* REDES SOCIALES Y MONITOREO */}
+          <div className="border-t pt-4 mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Redes Sociales y Monitoreo
+            </label>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Google Maps</label>
+                <input
+                  type="url"
+                  value={form.url_google_maps}
+                  onChange={(e) => setForm({ ...form, url_google_maps: e.target.value })}
+                  placeholder="https://goo.gl/maps/..."
+                  className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Instagram</label>
+                <input
+                  type="url"
+                  value={form.url_instagram}
+                  onChange={(e) => setForm({ ...form, url_instagram: e.target.value })}
+                  placeholder="https://instagram.com/..."
+                  className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Facebook</label>
+                <input
+                  type="url"
+                  value={form.url_facebook}
+                  onChange={(e) => setForm({ ...form, url_facebook: e.target.value })}
+                  placeholder="https://facebook.com/..."
+                  className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">TripAdvisor</label>
+                <input
+                  type="url"
+                  value={form.url_tripadvisor}
+                  onChange={(e) => setForm({ ...form, url_tripadvisor: e.target.value })}
+                  placeholder="https://tripadvisor.com/..."
+                  className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="col-span-2">
+                <label className="block text-xs text-gray-500 mb-1">OpenTable</label>
+                <input
+                  type="url"
+                  value={form.url_opentable}
+                  onChange={(e) => setForm({ ...form, url_opentable: e.target.value })}
+                  placeholder="https://opentable.com/..."
+                  className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
           </div>
           
           <div className="flex gap-6">
@@ -1182,7 +1267,7 @@ const TabCompetidores = ({ empresaId, unidadId }) => {
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h4 className="font-semibold text-gray-800">{comp.nombre_competidor}</h4>
-                  <p className="text-sm text-gray-500">{comp.tipo_negocio}</p>
+                  <p className="text-sm text-gray-500">{comp.tipo_restaurante || 'Sin tipo'}</p>
                 </div>
                 <div className="flex gap-1">
                   <button
@@ -1214,17 +1299,18 @@ const TabCompetidores = ({ empresaId, unidadId }) => {
                   </span>
                 )}
                 <span className={`px-2 py-0.5 text-xs rounded ${
-                  comp.nivel_precio_percibido === 'ECONOMICO' ? 'bg-green-100 text-green-700' :
-                  comp.nivel_precio_percibido === 'MEDIO' ? 'bg-yellow-100 text-yellow-700' :
-                  comp.nivel_precio_percibido === 'PREMIUM' ? 'bg-orange-100 text-orange-700' :
+                  comp.segmento_precio === 'ECONOMICO' ? 'bg-green-100 text-green-700' :
+                  comp.segmento_precio === 'MEDIO' ? 'bg-yellow-100 text-yellow-700' :
+                  comp.segmento_precio === 'MEDIO_ALTO' ? 'bg-amber-100 text-amber-700' :
+                  comp.segmento_precio === 'PREMIUM' ? 'bg-orange-100 text-orange-700' :
                   'bg-red-100 text-red-700'
                 }`}>
-                  {comp.nivel_precio_percibido}
+                  {comp.segmento_precio || 'Sin definir'}
                 </span>
               </div>
               
-              {comp.ubicacion_referencia && (
-                <p className="text-xs text-gray-400 truncate">{comp.ubicacion_referencia}</p>
+              {comp.zona_comercial && (
+                <p className="text-xs text-gray-400 truncate">{comp.zona_comercial}</p>
               )}
               
               <div className="mt-3 pt-3 border-t text-xs text-gray-400">
@@ -1421,7 +1507,7 @@ const TabPreciosCompetencia = ({ empresaId, unidadId }) => {
           <div>
             <h4 className="font-semibold text-blue-800">{selectedCompetidor.nombre_competidor}</h4>
             <p className="text-sm text-blue-600">
-              {selectedCompetidor.tipo_negocio} | {selectedCompetidor.nivel_precio_percibido}
+              {selectedCompetidor.tipo_restaurante || 'Sin tipo'} | {selectedCompetidor.segmento_precio || 'Sin precio'}
             </p>
           </div>
           <div className="text-right">

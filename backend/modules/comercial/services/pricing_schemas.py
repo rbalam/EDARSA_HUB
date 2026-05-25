@@ -215,8 +215,12 @@ class CompetidorBase(BaseModel):
     url_menu: Optional[str] = Field(None, max_length=500)
     url_google_maps: Optional[str] = Field(None, max_length=500)
     url_instagram: Optional[str] = Field(None, max_length=500)
+    url_facebook: Optional[str] = Field(None, max_length=500)
     url_tripadvisor: Optional[str] = Field(None, max_length=500)
     url_opentable: Optional[str] = Field(None, max_length=500)
+    
+    # Notas
+    notas: Optional[str] = Field(None, max_length=1000, description="Observaciones adicionales")
     
     # Clasificación
     es_competencia_directa: bool = Field(default=True, description="Es competencia directa")
@@ -245,8 +249,11 @@ class CompetidorUpdate(BaseModel):
     url_menu: Optional[str] = Field(None, max_length=500)
     url_google_maps: Optional[str] = Field(None, max_length=500)
     url_instagram: Optional[str] = Field(None, max_length=500)
+    url_facebook: Optional[str] = Field(None, max_length=500)
     url_tripadvisor: Optional[str] = Field(None, max_length=500)
     url_opentable: Optional[str] = Field(None, max_length=500)
+    
+    notas: Optional[str] = Field(None, max_length=1000)
     
     es_competencia_directa: Optional[bool] = None
     es_benchmark_aspiracional: Optional[bool] = None

@@ -65,8 +65,10 @@ def _row_to_competidor(row: Dict) -> CompetidorResponse:
         url_menu=row.get('UrlMenu'),
         url_google_maps=row.get('UrlGoogleMaps'),
         url_instagram=row.get('UrlInstagram'),
+        url_facebook=row.get('UrlFacebook'),
         url_tripadvisor=row.get('UrlTripAdvisor'),
         url_opentable=row.get('UrlOpenTable'),
+        notas=row.get('Notas'),
         es_competencia_directa=bool(row.get('EsCompetenciaDirecta', True)),
         es_benchmark_aspiracional=bool(row.get('EsBenchmarkAspiracional', False)),
         distancia_km=float(row['DistanciaKm']) if row.get('DistanciaKm') else None,
@@ -171,8 +173,10 @@ def listar_competidores(
         c.UrlMenu,
         c.UrlGoogleMaps,
         c.UrlInstagram,
+        c.UrlFacebook,
         c.UrlTripAdvisor,
         c.UrlOpenTable,
+        c.Notas,
         c.EsCompetenciaDirecta,
         c.EsBenchmarkAspiracional,
         c.DistanciaKm,
@@ -224,8 +228,10 @@ def obtener_competidor_por_id(competidor_id: str) -> Optional[CompetidorResponse
         c.UrlMenu,
         c.UrlGoogleMaps,
         c.UrlInstagram,
+        c.UrlFacebook,
         c.UrlTripAdvisor,
         c.UrlOpenTable,
+        c.Notas,
         c.EsCompetenciaDirecta,
         c.EsBenchmarkAspiracional,
         c.DistanciaKm,
@@ -273,8 +279,10 @@ def crear_competidor(data: CompetidorCreate, usuario: str) -> CompetidorResponse
     url_menu_sql = f"N'{data.url_menu}'" if data.url_menu else "NULL"
     url_maps_sql = f"N'{data.url_google_maps}'" if data.url_google_maps else "NULL"
     url_insta_sql = f"N'{data.url_instagram}'" if data.url_instagram else "NULL"
+    url_fb_sql = f"N'{data.url_facebook}'" if data.url_facebook else "NULL"
     url_trip_sql = f"N'{data.url_tripadvisor}'" if data.url_tripadvisor else "NULL"
     url_opentable_sql = f"N'{data.url_opentable}'" if data.url_opentable else "NULL"
+    notas_sql = f"N'{data.notas}'" if data.notas else "NULL"
     
     distancia_sql = f"{data.distancia_km}" if data.distancia_km is not None else "NULL"
     
@@ -294,8 +302,10 @@ def crear_competidor(data: CompetidorCreate, usuario: str) -> CompetidorResponse
         UrlMenu,
         UrlGoogleMaps,
         UrlInstagram,
+        UrlFacebook,
         UrlTripAdvisor,
         UrlOpenTable,
+        Notas,
         EsCompetenciaDirecta,
         EsBenchmarkAspiracional,
         DistanciaKm,
@@ -318,8 +328,10 @@ def crear_competidor(data: CompetidorCreate, usuario: str) -> CompetidorResponse
         {url_menu_sql},
         {url_maps_sql},
         {url_insta_sql},
+        {url_fb_sql},
         {url_trip_sql},
         {url_opentable_sql},
+        {notas_sql},
         {1 if data.es_competencia_directa else 0},
         {1 if data.es_benchmark_aspiracional else 0},
         {distancia_sql},
@@ -376,10 +388,14 @@ def actualizar_competidor(
         set_clauses.append(f"UrlGoogleMaps = N'{data.url_google_maps}'")
     if data.url_instagram is not None:
         set_clauses.append(f"UrlInstagram = N'{data.url_instagram}'")
+    if data.url_facebook is not None:
+        set_clauses.append(f"UrlFacebook = N'{data.url_facebook}'")
     if data.url_tripadvisor is not None:
         set_clauses.append(f"UrlTripAdvisor = N'{data.url_tripadvisor}'")
     if data.url_opentable is not None:
         set_clauses.append(f"UrlOpenTable = N'{data.url_opentable}'")
+    if data.notas is not None:
+        set_clauses.append(f"Notas = N'{data.notas}'")
     
     if data.es_competencia_directa is not None:
         set_clauses.append(f"EsCompetenciaDirecta = {1 if data.es_competencia_directa else 0}")

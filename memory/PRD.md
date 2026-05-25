@@ -19,6 +19,39 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
+
+### ✅ BUG-COMPETIDORES-001: Campos No Guardados + Redes Sociales - RESUELTO
+
+**Fecha:** 2026-05-25
+
+#### Problema Reportado:
+1. "Ubicación de Referencia" y "Nivel de Precio" no se guardaban al editar competidor
+2. Usuario solicitó agregar campos para monitoreo de redes sociales
+
+#### Causa Raíz:
+El frontend usaba nombres de campos incorrectos:
+- `tipo_negocio` → debía ser `tipo_restaurante`
+- `nivel_precio_percibido` → debía ser `segmento_precio`
+- `ubicacion_referencia` → debía ser `zona_comercial`
+
+#### Solución Implementada:
+1. **Backend:** Agregadas columnas `UrlFacebook` y `Notas` a `Comercial_Competidores`
+2. **Backend:** Actualizado schema y service para manejar nuevos campos
+3. **Frontend:** Corregido mapeo de campos en `CompetidorModal`
+4. **Frontend:** Agregada sección "Redes Sociales y Monitoreo" con:
+   - Google Maps, Instagram, Facebook, TripAdvisor, OpenTable
+
+#### Archivos Modificados:
+- `/app/backend/modules/comercial/services/pricing_schemas.py`
+- `/app/backend/modules/comercial/services/competidores_service.py`
+- `/app/frontend/src/pages/comercial/PricingIA.jsx`
+
+#### Archivos Creados:
+- `/app/backend/scripts/ddl_competidores_nuevos_campos.py`
+- `/app/docs/reports/BUG_COMPETIDORES_CAMPOS_NO_GUARDADOS_FIX.md`
+
+---
+
 ## Estado Actual (Mayo 2026)
 
 ### ✅ Mejoras UI Costos y Márgenes - COMPLETADO
