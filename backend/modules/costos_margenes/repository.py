@@ -116,11 +116,18 @@ def get_productos_con_costos(
     
     BUG-COSTOS-001: Por defecto solo muestra productos activos.
     Usar incluir_inactivos=True para ver también productos inactivos/dados de baja.
+    
+    BUG-COSTOS-001-FIX: Además de Activo=1, excluir productos con PrecioVenta=0
+    (indicador de producto suspendido/inactivo en SoftRestaurant).
     """
     conn = _get_edarsahub_connection()
     
-    # BUG-COSTOS-001: Filtrar solo productos activos por defecto
-    where_clauses = ["p.Activo = 1"] if not incluir_inactivos else ["1=1"]
+    # BUG-COSTOS-001-FIX: Filtrar productos activos Y con precio > 0 por defecto
+    # PrecioVenta = 0 indica producto suspendido/inactivo en SoftRestaurant
+    if not incluir_inactivos:
+        where_clauses = ["p.Activo = 1", "p.PrecioVenta > 0"]
+    else:
+        where_clauses = ["1=1"]
     
     if empresa_id:
         where_clauses.append(f"p.EmpresaID = {empresa_id}")

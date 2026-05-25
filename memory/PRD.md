@@ -21,20 +21,35 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Mayo 2026)
 
-### ✅ BUG-COSTOS-001: Filtrado de Productos Inactivos/Baja - RESUELTO
+### ✅ BUG-COSTOS-001: Filtrado de Productos Inactivos/Baja - RESUELTO (Fix Extendido)
 
 **Fecha:** 2026-05-25
 
-#### Resumen
-Se corrigió el módulo Costos y Márgenes para filtrar por defecto los productos dados de baja o inactivos, con checkbox opcional para mostrarlos.
+#### Problema Reportado:
+CLAM CHOWDER (producto suspendido con Precio $0 en SoftRestaurant) aparecía en Costos y Márgenes aunque el checkbox "Incluir inactivos/baja" NO estaba marcado.
 
-#### Cambios Backend:
-- `repository.py`: Parámetro `incluir_inactivos` con filtro `p.Activo = 1` por defecto
-- `routes.py`: Query parameter en endpoints `/productos` y `/precios-sugeridos`
-- `precios_sugeridos_consolidado_service.py`: Mismo filtro aplicado
+#### Causa Raíz:
+El job `sync_recetas.py` NO sincronizaba el campo `Suspendido` de SoftRestaurant → el campo `Activo` siempre era `1`.
 
-#### Cambios Frontend:
-- `CostosMargenes.jsx`: Checkbox "Incluir inactivos/baja" en barra de filtros
+#### Solución Implementada (Dos Niveles):
+
+**Nivel A (Workaround Inmediato):**
+- Filtro adicional `p.PrecioVenta > 0` (productos con precio $0 típicamente están suspendidos)
+- Aplicado en: `repository.py`, `precios_sugeridos_consolidado_service.py`
+
+**Nivel B (Fix Definitivo - Sync):**
+- Modificado `sync_recetas.py` para traer `productosdetalle.suspendido` de SoftRestaurant
+- MERGE ahora actualiza campo `Activo` basado en `Suspendido`
+- Modelo `ProductoSync` extendido con campo `activo: bool`
+
+#### Archivos Modificados:
+- `/app/backend/modules/costos_margenes/repository.py`
+- `/app/backend/modules/comercial/services/precios_sugeridos_consolidado_service.py`
+- `/app/backend/modules/sync_recetas/models.py`
+- `/app/backend/modules/sync_recetas/sync_recetas.py`
+
+#### Acción Requerida:
+⚠️ Ejecutar resincronización de productos para actualizar campo `Activo` en Sync_Productos.
 
 #### Archivo de Reporte:
 - `/app/docs/reports/BUG_COSTOS_001_FILTRADO_PRODUCTOS_INACTIVOS_BAJA.md`

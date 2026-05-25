@@ -89,6 +89,8 @@ class ProductoSync:
     tiene_receta: bool = False
     es_compuesto: bool = False
     unidad_venta: Optional[str] = None
+    # BUG-COSTOS-001-FIX: Campo para sincronizar estado Suspendido de SoftRestaurant
+    activo: bool = True
 
 
 @dataclass

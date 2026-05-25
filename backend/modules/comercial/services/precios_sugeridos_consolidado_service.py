@@ -131,6 +131,8 @@ def obtener_precios_sugeridos(
     Para otros: Usa COSTO_MARGEN o MARGEN_OBJETIVO
     
     BUG-COSTOS-001: Por defecto solo muestra productos activos.
+    BUG-COSTOS-001-FIX: Además de Activo=1, excluir productos con PrecioVenta=0
+    (indicador de producto suspendido/inactivo en SoftRestaurant).
     
     NO modifica precios oficiales.
     """
@@ -139,8 +141,12 @@ def obtener_precios_sugeridos(
     # Obtener rangos de vinos una vez
     rangos_vinos = _obtener_rangos_vinos()
     
-    # BUG-COSTOS-001: Filtrar solo productos activos por defecto
-    where_clauses = ["p.Activo = 1"] if not incluir_inactivos else ["1=1"]
+    # BUG-COSTOS-001-FIX: Filtrar productos activos Y con precio > 0 por defecto
+    # PrecioVenta = 0 indica producto suspendido/inactivo en SoftRestaurant
+    if not incluir_inactivos:
+        where_clauses = ["p.Activo = 1", "p.PrecioVenta > 0"]
+    else:
+        where_clauses = ["1=1"]
     
     if server_id:
         where_clauses.append(f"p.ServerID = '{server_id}'")

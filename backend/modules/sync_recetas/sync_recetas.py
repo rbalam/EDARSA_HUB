@@ -380,10 +380,12 @@ def _obtener_insumos_sr(host, port, database, username, password) -> List[Insumo
 
 def _obtener_productos_sr(host, port, database, username, password) -> List[ProductoSync]:
     """Obtiene productos con precios de SoftRestaurant."""
+    # BUG-COSTOS-001-FIX: Incluir campo Suspendido para sincronizar estado activo
     query = """
     SELECT p.idproducto, p.descripcion, p.nombrecorto, p.idgrupo,
            g.descripcion as grupo_nombre,
-           pd.precio, pd.preciosinimpuestos, pd.impuesto1
+           pd.precio, pd.preciosinimpuestos, pd.impuesto1,
+           ISNULL(pd.suspendido, 0) as suspendido
     FROM productos p
     LEFT JOIN productosdetalle pd ON p.idproducto = pd.idproducto
     LEFT JOIN grupos g ON p.idgrupo = g.idgrupo
@@ -401,7 +403,9 @@ def _obtener_productos_sr(host, port, database, username, password) -> List[Prod
             familia_nombre=str(r.get('grupo_nombre')) if r.get('grupo_nombre') else None,
             precio_venta=Decimal(str(r.get('precio') or 0)),
             precio_sin_impuestos=Decimal(str(r.get('preciosinimpuestos') or 0)),
-            tasa_impuesto=Decimal(str(r.get('impuesto1') or 0))
+            tasa_impuesto=Decimal(str(r.get('impuesto1') or 0)),
+            # BUG-COSTOS-001-FIX: Suspendido = 1 significa inactivo
+            activo=not bool(r.get('suspendido', 0))
         )
         for r in rows
     ]
@@ -933,6 +937,8 @@ def _guardar_productos(server_id: str, system_type: str, productos: List[Product
             nombre_escaped = prod.nombre.replace("'", "''")
             nombre_corto = prod.nombre_corto.replace("'", "''") if prod.nombre_corto else None
             fam_nombre = prod.familia_nombre.replace("'", "''") if prod.familia_nombre else None
+            # BUG-COSTOS-001-FIX: Convertir activo a bit para SQL
+            activo_bit = 1 if prod.activo else 0
             
             query = f"""
             MERGE Sync_Productos AS target
@@ -948,6 +954,7 @@ def _guardar_productos(server_id: str, system_type: str, productos: List[Product
                     PrecioVenta = {prod.precio_venta},
                     PrecioSinImpuestos = {prod.precio_sin_impuestos},
                     TasaImpuesto = {prod.tasa_impuesto},
+                    Activo = {activo_bit},
                     SystemType = '{system_type}',
                     SyncRunID = '{sync_run_id}',
                     SyncedAtMexico = SYSDATETIME(),
@@ -965,7 +972,7 @@ def _guardar_productos(server_id: str, system_type: str, productos: List[Product
                     {prod.precio_venta}, {prod.precio_sin_impuestos}, {prod.tasa_impuesto},
                     '{system_type}',
                     '{sync_run_id}',
-                    1
+                    {activo_bit}
                 );
             """
             execute_sql_query(
