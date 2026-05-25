@@ -44,6 +44,18 @@ def _safe_decimal(value, default=Decimal('0')) -> Decimal:
         return default
 
 
+def _safe_isoformat(value) -> Optional[str]:
+    """Convierte fecha a ISO format de forma segura."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    try:
+        return value.isoformat()
+    except:
+        return str(value)
+
+
 # =============================================================================
 # CRUD DE REGLAS DE MARGEN
 # =============================================================================
@@ -153,10 +165,10 @@ def listar_reglas(
             'severidad_base': row.get('severidad_base'),
             'descripcion': row.get('descripcion'),
             'activo': bool(row.get('activo')),
-            'fecha_inicio': row.get('fecha_inicio').isoformat() if row.get('fecha_inicio') else None,
-            'fecha_fin': row.get('fecha_fin').isoformat() if row.get('fecha_fin') else None,
-            'fecha_creacion': row.get('fecha_creacion').isoformat() if row.get('fecha_creacion') else None,
-            'fecha_modificacion': row.get('fecha_modificacion').isoformat() if row.get('fecha_modificacion') else None,
+            'fecha_inicio': _safe_isoformat(row.get('fecha_inicio')) if row.get('fecha_inicio') else None,
+            'fecha_fin': _safe_isoformat(row.get('fecha_fin')) if row.get('fecha_fin') else None,
+            'fecha_creacion': _safe_isoformat(row.get('fecha_creacion')) if row.get('fecha_creacion') else None,
+            'fecha_modificacion': _safe_isoformat(row.get('fecha_modificacion')) if row.get('fecha_modificacion') else None,
             'creado_por': row.get('creado_por'),
             'modificado_por': row.get('modificado_por'),
             # Entidad aplicable según nivel
@@ -231,10 +243,10 @@ def obtener_regla_por_id(regla_id: str) -> Optional[Dict]:
         'severidad_base': row.get('severidad_base'),
         'descripcion': row.get('descripcion'),
         'activo': bool(row.get('activo')),
-        'fecha_inicio': row.get('fecha_inicio').isoformat() if row.get('fecha_inicio') else None,
-        'fecha_fin': row.get('fecha_fin').isoformat() if row.get('fecha_fin') else None,
-        'fecha_creacion': row.get('fecha_creacion').isoformat() if row.get('fecha_creacion') else None,
-        'fecha_modificacion': row.get('fecha_modificacion').isoformat() if row.get('fecha_modificacion') else None,
+        'fecha_inicio': _safe_isoformat(row.get('fecha_inicio')) if row.get('fecha_inicio') else None,
+        'fecha_fin': _safe_isoformat(row.get('fecha_fin')) if row.get('fecha_fin') else None,
+        'fecha_creacion': _safe_isoformat(row.get('fecha_creacion')) if row.get('fecha_creacion') else None,
+        'fecha_modificacion': _safe_isoformat(row.get('fecha_modificacion')) if row.get('fecha_modificacion') else None,
         'creado_por': row.get('creado_por'),
         'modificado_por': row.get('modificado_por'),
         'entidad_codigo': (

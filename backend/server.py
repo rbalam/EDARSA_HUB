@@ -344,6 +344,11 @@ api_router.include_router(listas_competidores_router)
 from modules.comercial.routes_precios_sugeridos import router as precios_sugeridos_router
 api_router.include_router(precios_sugeridos_router)
 
+# COSTOS-ALERTAS-001-C: Reglas de Margen Esperado y Alertas
+# ===========================================
+from modules.comercial.routes_alertas_margen import router as alertas_margen_router
+api_router.include_router(alertas_margen_router)
+
 # MÓDULO RECURSOS HUMANOS: Catálogos RH
 # - Fase 6B: Migración de catálogos (Puestos, Sucursales, Tipos Incidencias)
 # - 10 endpoints migrados con queries parametrizados

@@ -50,6 +50,34 @@ El frontend usaba nombres de campos incorrectos:
 - `/app/backend/scripts/ddl_competidores_nuevos_campos.py`
 - `/app/docs/reports/BUG_COMPETIDORES_CAMPOS_NO_GUARDADOS_FIX.md`
 
+
+### ✅ COSTOS-ALERTAS-001-C: Servicios Backend Reglas de Margen - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Implementado:
+1. **Repository** (`alertas_margen_repository.py`): CRUD SQL + Lógica jerárquica
+2. **Service** (`alertas_margen_service.py`): Validaciones de negocio
+3. **Routes** (`routes_alertas_margen.py`): 9 endpoints REST
+4. **Router registrado** en `server.py`
+
+#### Endpoints:
+- `GET/POST /api/comercial/alertas-margen/reglas` - CRUD reglas
+- `GET /api/comercial/alertas-margen/resolver-regla` - Jerarquía Producto>Subfamilia>Familia>Grupo
+- `POST /api/comercial/alertas-margen/evaluar` - Evaluar margen vs esperado
+- `GET /api/comercial/alertas-margen/umbrales` - Umbrales de severidad
+- `GET /api/comercial/alertas-margen/estadisticas` - Stats de reglas
+
+#### Pruebas curl: ✅ EXITOSAS
+- Crear reglas GRUPO/FAMILIA/PRODUCTO
+- Resolución jerárquica correcta
+- Evaluación de margen con severidad
+
+#### Reporte:
+- `/app/docs/reports/COSTOS_ALERTAS_001C_SERVICIOS_REGLAS_MARGEN.md`
+
+---
+
 ---
 
 ## Estado Actual (Mayo 2026)

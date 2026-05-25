@@ -21,7 +21,7 @@ from fastapi import APIRouter, Query, Depends, HTTPException
 from pydantic import BaseModel, Field
 import logging
 
-from api.auth import get_current_user
+from core.security import get_current_user
 from modules.comercial.alertas_margen_service import (
     listar_reglas_margen,
     obtener_regla,
@@ -37,7 +37,7 @@ from modules.comercial.alertas_margen_service import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/alertas-margen", tags=["Alertas de Margen"])
+router = APIRouter(prefix="/comercial/alertas-margen", tags=["Alertas de Margen"])
 
 
 # =============================================================================
