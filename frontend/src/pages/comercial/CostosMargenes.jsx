@@ -20,7 +20,8 @@ import {
   ChevronLeft, ChevronRight, Eye, List, AlertCircle, CheckCircle,
   Clock, Database, Percent, TrendingUp, TrendingDown, X, Calculator,
   FileText, Send, Check, XCircle, Play, AlertTriangle, History, Info,
-  ChevronDown, ChevronUp, Building2, Layers
+  ChevronDown, ChevronUp, Building2, Layers, Wine, Settings, Sparkles,
+  Target, ArrowUpRight, ArrowDownRight, Minus, Edit, Trash2, Plus
 } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -2077,6 +2078,726 @@ const TabProductos = ({ onSimularPrecio }) => {
   );
 };
 
+// ==================== TAB PRECIOS SUGERIDOS (FASE 1C-3G-F) ====================
+
+const FuenteBadge = ({ fuente }) => {
+  const config = {
+    'VINOS_RANGOS': { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Vinos Rangos' },
+    'COSTO_MARGEN': { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Costo/Margen' },
+    'IA_COMPETENCIA': { bg: 'bg-purple-100', text: 'text-purple-700', label: 'IA Competencia' },
+    'MARGEN_OBJETIVO': { bg: 'bg-green-100', text: 'text-green-700', label: 'Margen Obj.' },
+    'SIN_DATOS': { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Sin datos' }
+  };
+  const c = config[fuente] || config['SIN_DATOS'];
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${c.bg} ${c.text}`}>
+      {c.label}
+    </span>
+  );
+};
+
+const EstadoBadge = ({ estado }) => {
+  const config = {
+    'DENTRO_RANGO': { bg: 'bg-green-100', text: 'text-green-700', icon: Check },
+    'FUERA_RANGO': { bg: 'bg-red-100', text: 'text-red-700', icon: AlertTriangle },
+    'REQUIERE_REVISION': { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: AlertCircle },
+    'SIN_DATOS': { bg: 'bg-gray-100', text: 'text-gray-500', icon: Minus },
+    'PRECIO_NEGATIVO': { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle }
+  };
+  const c = config[estado] || config['SIN_DATOS'];
+  const Icon = c.icon;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${c.bg} ${c.text}`}>
+      <Icon className="w-3 h-3" />
+      {estado?.replace(/_/g, ' ')}
+    </span>
+  );
+};
+
+const DiferenciaBadge = ({ diferencia }) => {
+  if (diferencia === null || diferencia === undefined) return <span className="text-gray-400">-</span>;
+  const isPositive = diferencia > 0;
+  const isNegative = diferencia < 0;
+  const Icon = isPositive ? ArrowUpRight : isNegative ? ArrowDownRight : Minus;
+  const color = isPositive ? 'text-green-600' : isNegative ? 'text-red-600' : 'text-gray-500';
+  return (
+    <span className={`inline-flex items-center gap-0.5 font-medium ${color}`}>
+      <Icon className="w-3 h-3" />
+      {Math.abs(diferencia).toFixed(1)}%
+    </span>
+  );
+};
+
+const TabPreciosSugeridos = () => {
+  const [productos, setProductos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(30);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState({
+    soloVinos: false,
+    soloFueraRango: false,
+    soloRequiereRevision: false,
+    fuente: '',
+    margenObjetivo: 0.35
+  });
+  const [detalleModal, setDetalleModal] = useState({ open: false, producto: null });
+
+  const fetchProductos = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        page_size: pageSize.toString(),
+        margen_objetivo: filters.margenObjetivo.toString()
+      });
+      if (search) params.append('search', search);
+      if (filters.soloVinos) params.append('solo_vinos', 'true');
+      if (filters.soloFueraRango) params.append('solo_fuera_rango', 'true');
+      if (filters.soloRequiereRevision) params.append('solo_requiere_revision', 'true');
+      if (filters.fuente) params.append('fuente', filters.fuente);
+      
+      const res = await api.get(`/comercial/pricing/precios-sugeridos?${params}`);
+      setProductos(res.data.productos || []);
+      setTotal(res.data.total || 0);
+      setTotalPages(res.data.total_pages || 1);
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, search, filters]);
+
+  useEffect(() => {
+    fetchProductos();
+  }, [fetchProductos]);
+
+  return (
+    <div className="space-y-4">
+      {/* Banner informativo */}
+      <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 flex items-start gap-3">
+        <Info className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-purple-700">
+          <p className="font-medium">Precios Sugeridos = Recomendaciones</p>
+          <p>Los precios mostrados son sugerencias basadas en costos, margenes y reglas configuradas. <strong>No modifican precios oficiales.</strong></p>
+        </div>
+      </div>
+      
+      {/* Filtros */}
+      <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-xs font-medium text-gray-500 mb-1">Buscar</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Nombre o codigo..."
+                className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Fuente</label>
+            <select
+              value={filters.fuente}
+              onChange={(e) => setFilters(f => ({ ...f, fuente: e.target.value }))}
+              className="px-3 py-2 border rounded-lg text-sm"
+            >
+              <option value="">Todas</option>
+              <option value="VINOS_RANGOS">Vinos Rangos</option>
+              <option value="COSTO_MARGEN">Costo/Margen</option>
+              <option value="IA_COMPETENCIA">IA Competencia</option>
+              <option value="SIN_DATOS">Sin datos</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Margen Obj.</label>
+            <select
+              value={filters.margenObjetivo}
+              onChange={(e) => setFilters(f => ({ ...f, margenObjetivo: parseFloat(e.target.value) }))}
+              className="px-3 py-2 border rounded-lg text-sm"
+            >
+              <option value="0.25">25%</option>
+              <option value="0.30">30%</option>
+              <option value="0.35">35%</option>
+              <option value="0.40">40%</option>
+              <option value="0.45">45%</option>
+            </select>
+          </div>
+          
+          <div className="flex gap-3">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={filters.soloVinos}
+                onChange={(e) => setFilters(f => ({ ...f, soloVinos: e.target.checked }))}
+                className="rounded"
+              />
+              <Wine className="w-4 h-4 text-amber-600" />
+              Solo vinos
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={filters.soloFueraRango}
+                onChange={(e) => setFilters(f => ({ ...f, soloFueraRango: e.target.checked }))}
+                className="rounded"
+              />
+              <AlertTriangle className="w-4 h-4 text-red-500" />
+              Fuera de rango
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={filters.soloRequiereRevision}
+                onChange={(e) => setFilters(f => ({ ...f, soloRequiereRevision: e.target.checked }))}
+                className="rounded"
+              />
+              <AlertCircle className="w-4 h-4 text-yellow-500" />
+              Requiere revision
+            </label>
+          </div>
+          
+          <button
+            onClick={fetchProductos}
+            disabled={loading}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 text-sm"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </button>
+        </div>
+      </div>
+      
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+      
+      {/* Tabla */}
+      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Producto</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">Precio Actual</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">Costo</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">Margen %</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">Precio Sugerido</th>
+                <th className="px-4 py-3 text-center font-medium text-gray-600">Fuente</th>
+                <th className="px-4 py-3 text-center font-medium text-gray-600">Diferencia</th>
+                <th className="px-4 py-3 text-center font-medium text-gray-600">Estado</th>
+                <th className="px-4 py-3 text-center font-medium text-gray-600">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                    Cargando precios sugeridos...
+                  </td>
+                </tr>
+              ) : productos.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                    No se encontraron productos con los filtros seleccionados
+                  </td>
+                </tr>
+              ) : (
+                productos.map((p, idx) => (
+                  <tr key={`${p.producto_id}-${idx}`} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="font-medium text-gray-900 truncate max-w-[250px]" title={p.nombre}>
+                          {p.nombre}
+                        </p>
+                        <p className="text-xs text-gray-500">{p.clave} | {p.familia}</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono">
+                      {p.precio_actual > 0 ? formatCurrency(p.precio_actual) : <span className="text-gray-400">-</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono">
+                      {p.costo_receta > 0 ? formatCurrency(p.costo_receta) : <span className="text-gray-400">-</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className={p.margen_porcentaje < 20 ? 'text-red-600 font-medium' : ''}>
+                        {p.margen_porcentaje ? `${p.margen_porcentaje.toFixed(1)}%` : '-'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono font-medium text-purple-700">
+                      {p.precio_sugerido ? formatCurrency(p.precio_sugerido) : <span className="text-gray-400">-</span>}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <FuenteBadge fuente={p.fuente_sugerencia} />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <DiferenciaBadge diferencia={p.diferencia_porcentaje} />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <EstadoBadge estado={p.estado_revision} />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => setDetalleModal({ open: true, producto: p })}
+                        className="p-1.5 hover:bg-gray-100 rounded text-gray-600"
+                        title="Ver detalle"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Paginacion */}
+        <div className="px-4 py-3 border-t bg-gray-50 flex items-center justify-between text-sm">
+          <span className="text-gray-600">
+            Mostrando {productos.length} de {total} productos
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-1.5 border rounded hover:bg-gray-100 disabled:opacity-50"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span>Pagina {page} de {totalPages}</span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="p-1.5 border rounded hover:bg-gray-100 disabled:opacity-50"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Modal de detalle */}
+      {detalleModal.open && detalleModal.producto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="font-semibold text-lg">Detalle de Precio Sugerido</h3>
+              <button onClick={() => setDetalleModal({ open: false, producto: null })} className="p-1 hover:bg-gray-100 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <p className="text-lg font-medium">{detalleModal.producto.nombre}</p>
+                <p className="text-sm text-gray-500">{detalleModal.producto.clave} | {detalleModal.producto.familia}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500">Precio Actual</p>
+                  <p className="text-xl font-bold">{formatCurrency(detalleModal.producto.precio_actual)}</p>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-3">
+                  <p className="text-xs text-purple-600">Precio Sugerido</p>
+                  <p className="text-xl font-bold text-purple-700">{formatCurrency(detalleModal.producto.precio_sugerido)}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Costo Receta</p>
+                  <p className="font-medium">{formatCurrency(detalleModal.producto.costo_receta)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Margen Actual</p>
+                  <p className="font-medium">{detalleModal.producto.margen_porcentaje?.toFixed(1)}%</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Fuente Sugerencia</p>
+                  <FuenteBadge fuente={detalleModal.producto.fuente_sugerencia} />
+                </div>
+                <div>
+                  <p className="text-gray-500">Estado</p>
+                  <EstadoBadge estado={detalleModal.producto.estado_revision} />
+                </div>
+              </div>
+              
+              {detalleModal.producto.rango_vinos_aplicado && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-xs text-amber-600 font-medium mb-1">Regla VINOS_RANGOS aplicada</p>
+                  <p className="text-sm">Rango: <strong>{detalleModal.producto.rango_vinos_aplicado}</strong></p>
+                  {detalleModal.producto.multiplicador && (
+                    <p className="text-sm">Multiplicador: <strong>x{detalleModal.producto.multiplicador}</strong></p>
+                  )}
+                </div>
+              )}
+              
+              {detalleModal.producto.diferencia_monto && (
+                <div className={`rounded-lg p-3 ${detalleModal.producto.diferencia_monto > 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+                  <p className="text-xs text-gray-600 mb-1">Diferencia vs precio actual</p>
+                  <p className="text-lg font-bold">
+                    {detalleModal.producto.diferencia_monto > 0 ? '+' : ''}{formatCurrency(detalleModal.producto.diferencia_monto)}
+                    <span className="text-sm ml-2">({detalleModal.producto.diferencia_porcentaje > 0 ? '+' : ''}{detalleModal.producto.diferencia_porcentaje?.toFixed(1)}%)</span>
+                  </p>
+                </div>
+              )}
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700">
+                <p><strong>Importante:</strong> Este precio es una <strong>recomendacion</strong>. No modifica el precio oficial del producto.</p>
+              </div>
+            </div>
+            <div className="p-4 border-t bg-gray-50 flex justify-end">
+              <button
+                onClick={() => setDetalleModal({ open: false, producto: null })}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== TAB RANGOS VINOS (FASE 1C-3G-F) ====================
+
+const TabRangosVinos = () => {
+  const [rangos, setRangos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [traslapes, setTraslapes] = useState([]);
+  const [editModal, setEditModal] = useState({ open: false, rango: null, isNew: false });
+  const [formData, setFormData] = useState({
+    limite_inferior: 0,
+    limite_superior: 0,
+    multiplicador: 1,
+    descripcion: '',
+    orden: 1
+  });
+
+  const fetchRangos = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get('/comercial/pricing/reglas/vinos/rangos');
+      setRangos(res.data.rangos || []);
+      setTraslapes(res.data.traslapes || []);
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRangos();
+  }, [fetchRangos]);
+
+  const handleSave = async () => {
+    try {
+      const usuario = 'admin@inventario.com';
+      if (editModal.isNew) {
+        await api.post(`/comercial/pricing/reglas/vinos/rangos?usuario=${encodeURIComponent(usuario)}`, formData);
+      } else {
+        await api.put(`/comercial/pricing/reglas/vinos/rangos/${editModal.rango.rango_id}?usuario=${encodeURIComponent(usuario)}`, formData);
+      }
+      setEditModal({ open: false, rango: null, isNew: false });
+      fetchRangos();
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message);
+    }
+  };
+
+  const handleDesactivar = async (rangoId) => {
+    if (!window.confirm('Desactivar este rango?')) return;
+    try {
+      await api.patch(`/comercial/pricing/reglas/vinos/rangos/${rangoId}/desactivar?usuario=admin@inventario.com`);
+      fetchRangos();
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message);
+    }
+  };
+
+  const handleActivar = async (rangoId) => {
+    try {
+      await api.patch(`/comercial/pricing/reglas/vinos/rangos/${rangoId}/activar?usuario=admin@inventario.com`);
+      fetchRangos();
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message);
+    }
+  };
+
+  const openEdit = (rango) => {
+    setFormData({
+      limite_inferior: rango.limite_inferior,
+      limite_superior: rango.limite_superior,
+      multiplicador: rango.multiplicador,
+      descripcion: rango.descripcion || '',
+      orden: rango.orden || 1
+    });
+    setEditModal({ open: true, rango, isNew: false });
+  };
+
+  const openNew = () => {
+    const maxOrden = rangos.reduce((max, r) => Math.max(max, r.orden || 0), 0);
+    setFormData({
+      limite_inferior: 0,
+      limite_superior: 0,
+      multiplicador: 1.5,
+      descripcion: '',
+      orden: maxOrden + 1
+    });
+    setEditModal({ open: true, rango: null, isNew: true });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Banner informativo */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-3">
+        <Wine className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-amber-700">
+          <p className="font-medium">Configuracion de Rangos de Precios para Vinos</p>
+          <p>Estos rangos definen el multiplicador a aplicar segun el costo de la botella. <strong>Regla: VINOS_RANGOS_MX</strong></p>
+        </div>
+      </div>
+      
+      {/* Alerta de traslapes */}
+      {traslapes.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+          <p className="font-medium flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            Se detectaron traslapes entre rangos activos:
+          </p>
+          <ul className="mt-2 list-disc list-inside">
+            {traslapes.map((t, i) => (
+              <li key={i}>{t.rango1} se traslapa con {t.rango2}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      
+      {/* Header con boton crear */}
+      <div className="flex justify-between items-center">
+        <h3 className="font-semibold text-lg">Rangos Configurados</h3>
+        <button
+          onClick={openNew}
+          className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 flex items-center gap-2 text-sm"
+        >
+          <Plus className="w-4 h-4" />
+          Nuevo Rango
+        </button>
+      </div>
+      
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+      
+      {/* Tabla de rangos */}
+      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-amber-50 border-b">
+            <tr>
+              <th className="px-4 py-3 text-left font-medium text-amber-700">Orden</th>
+              <th className="px-4 py-3 text-right font-medium text-amber-700">Limite Inferior</th>
+              <th className="px-4 py-3 text-right font-medium text-amber-700">Limite Superior</th>
+              <th className="px-4 py-3 text-center font-medium text-amber-700">Multiplicador</th>
+              <th className="px-4 py-3 text-left font-medium text-amber-700">Descripcion</th>
+              <th className="px-4 py-3 text-center font-medium text-amber-700">Estado</th>
+              <th className="px-4 py-3 text-center font-medium text-amber-700">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                  Cargando rangos...
+                </td>
+              </tr>
+            ) : rangos.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  No hay rangos configurados
+                </td>
+              </tr>
+            ) : (
+              rangos.map((r) => (
+                <tr key={r.rango_id} className={`hover:bg-gray-50 ${!r.activo ? 'opacity-50' : ''}`}>
+                  <td className="px-4 py-3 text-center font-medium">{r.orden}</td>
+                  <td className="px-4 py-3 text-right font-mono">{formatCurrency(r.limite_inferior)}</td>
+                  <td className="px-4 py-3 text-right font-mono">{formatCurrency(r.limite_superior)}</td>
+                  <td className="px-4 py-3 text-center">
+                    <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded font-bold">
+                      x{r.multiplicador}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">{r.descripcion}</td>
+                  <td className="px-4 py-3 text-center">
+                    {r.activo ? (
+                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">Activo</span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-xs">Inactivo</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => openEdit(r)}
+                        className="p-1.5 hover:bg-gray-100 rounded text-gray-600"
+                        title="Editar"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      {r.activo ? (
+                        <button
+                          onClick={() => handleDesactivar(r.rango_id)}
+                          className="p-1.5 hover:bg-red-100 rounded text-red-600"
+                          title="Desactivar"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleActivar(r.rango_id)}
+                          className="p-1.5 hover:bg-green-100 rounded text-green-600"
+                          title="Activar"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Modal editar/crear rango */}
+      {editModal.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-4 border-b flex justify-between items-center bg-amber-50">
+              <h3 className="font-semibold text-lg text-amber-800">
+                {editModal.isNew ? 'Crear Nuevo Rango' : 'Editar Rango'}
+              </h3>
+              <button onClick={() => setEditModal({ open: false, rango: null, isNew: false })} className="p-1 hover:bg-amber-100 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Limite Inferior ($)</label>
+                  <input
+                    type="number"
+                    value={formData.limite_inferior}
+                    onChange={(e) => setFormData(f => ({ ...f, limite_inferior: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Limite Superior ($)</label>
+                  <input
+                    type="number"
+                    value={formData.limite_superior}
+                    onChange={(e) => setFormData(f => ({ ...f, limite_superior: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Multiplicador</label>
+                  <input
+                    type="number"
+                    value={formData.multiplicador}
+                    onChange={(e) => setFormData(f => ({ ...f, multiplicador: parseFloat(e.target.value) || 1 }))}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    min="0.1"
+                    step="0.1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Orden</label>
+                  <input
+                    type="number"
+                    value={formData.orden}
+                    onChange={(e) => setFormData(f => ({ ...f, orden: parseInt(e.target.value) || 1 }))}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    min="1"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
+                <input
+                  type="text"
+                  value={formData.descripcion}
+                  onChange={(e) => setFormData(f => ({ ...f, descripcion: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="Ej: 0 a 500"
+                />
+              </div>
+              
+              {/* Preview */}
+              <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                <p className="text-gray-600">Vista previa del calculo:</p>
+                <p className="font-mono mt-1">
+                  Costo ${formData.limite_inferior.toFixed(2)} - ${formData.limite_superior.toFixed(2)}
+                  <br />
+                  Precio sugerido = Costo x {formData.multiplicador}
+                </p>
+              </div>
+            </div>
+            <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
+              <button
+                onClick={() => setEditModal({ open: false, rango: null, isNew: false })}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-100"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+              >
+                {editModal.isNew ? 'Crear' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ==================== TAB SOLICITUDES DE PRECIO (FASE 1C-3F) ====================
 
 const TabSolicitudesPrecio = () => {
@@ -2343,6 +3064,34 @@ const CostosMargenes = () => {
               </div>
             </button>
             <button
+              onClick={() => setActiveTab('precios-sugeridos')}
+              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'precios-sugeridos'
+                  ? 'border-purple-600 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              data-testid="tab-precios-sugeridos"
+            >
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                Precios Sugeridos
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('rangos-vinos')}
+              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'rangos-vinos'
+                  ? 'border-amber-600 text-amber-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              data-testid="tab-rangos-vinos"
+            >
+              <div className="flex items-center gap-2">
+                <Wine className="w-4 h-4" />
+                Rangos Vinos
+              </div>
+            </button>
+            <button
               onClick={() => setActiveTab('solicitudes')}
               className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'solicitudes'
@@ -2363,6 +3112,14 @@ const CostosMargenes = () => {
       {/* Contenido del Tab */}
       {activeTab === 'productos' && (
         <TabProductos onSimularPrecio={handleSimularPrecio} />
+      )}
+      
+      {activeTab === 'precios-sugeridos' && (
+        <TabPreciosSugeridos />
+      )}
+      
+      {activeTab === 'rangos-vinos' && (
+        <TabRangosVinos />
       )}
       
       {activeTab === 'solicitudes' && (

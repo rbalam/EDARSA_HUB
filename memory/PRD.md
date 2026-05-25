@@ -21,6 +21,37 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Mayo 2026)
 
+### ✅ FASE 1C-3G-F: Precios Sugeridos en Costos y Márgenes + Rangos Vinos - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Resumen
+Se integró el sistema de precios sugeridos directamente en la pantalla de Costos y Márgenes, permitiendo ver recomendaciones de precio basadas en reglas configuradas (VINOS_RANGOS para vinos, COSTO_MARGEN para otros productos).
+
+#### Backend Creado:
+- Endpoint `GET /api/comercial/pricing/precios-sugeridos` - Lista productos con precio sugerido calculado
+- CRUD completo para rangos de vinos:
+  - `GET /api/comercial/pricing/reglas/vinos/rangos`
+  - `POST/PUT/PATCH` para crear/editar/desactivar rangos
+- Validación de traslapes entre rangos
+- Detección automática de vinos por familia
+
+#### Frontend Modificado:
+- `CostosMargenes.jsx`: Nuevos tabs "Precios Sugeridos" y "Rangos Vinos"
+- Tabla de productos con columnas: Precio Sugerido, Fuente, Diferencia, Estado
+- Modal de detalle de cálculo
+- Mantenimiento de rangos de vinos (crear, editar, desactivar)
+
+#### Fuentes de Sugerencia:
+- `VINOS_RANGOS`: Multiplicadores según costo botella (13 rangos configurados)
+- `COSTO_MARGEN`: Fórmula: costo / (1 - margen_objetivo)
+- `SIN_DATOS`: Sin costo suficiente
+
+#### Archivo de Reporte:
+- `/app/docs/reports/FASE_1C_3G_F_PRECIOS_SUGERIDOS_COSTOS_MARGENES_RANGOS_VINOS.md`
+
+---
+
 ### ✅ FASE 1C-3I-H: Listas de Competidores como Filtro en IA - COMPLETADO
 
 **Fecha:** 2026-05-25

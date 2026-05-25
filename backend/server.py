@@ -339,6 +339,11 @@ api_router.include_router(pricing_ai_gpt_router)
 from modules.comercial.routes_listas_competidores import router as listas_competidores_router
 api_router.include_router(listas_competidores_router)
 
+# FASE 1C-3G-F: Precios Sugeridos y Rangos Vinos
+# ===========================================
+from modules.comercial.routes_precios_sugeridos import router as precios_sugeridos_router
+api_router.include_router(precios_sugeridos_router)
+
 # MÓDULO RECURSOS HUMANOS: Catálogos RH
 # - Fase 6B: Migración de catálogos (Puestos, Sucursales, Tipos Incidencias)
 # - 10 endpoints migrados con queries parametrizados
