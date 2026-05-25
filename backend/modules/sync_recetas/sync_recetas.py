@@ -616,23 +616,102 @@ def _obtener_insumos_mpro(host, port, database, username, password) -> List[Insu
 
 
 def _obtener_productos_mpro(host, port, database, username, password) -> List[ProductoSync]:
-    """Obtiene productos con precios de MPRO."""
+    """
+    Obtiene productos con precios e IMPUESTOS de MPRO.
+    
+    FASE 1C-3G-B: Corrección de homologación fiscal.
+    
+    LÓGICA DE IMPUESTOS:
+    - MPRO almacena impuestos en Impuesto_Grupo_Impuesto (relación N:M con Producto)
+    - Un producto puede tener múltiples impuestos (IVA + IEPS, IVA + Retención, etc.)
+    - Para VENTAS, priorizamos: IVA COBRADO > IVA positivo > IEPS > IVA 0%/Exento
+    - Retenciones (tasas negativas) se excluyen del cálculo de precio de venta
+    
+    ESTADOS DE IMPUESTO:
+    - Im_Tasa IS NOT NULL y >= 0: Impuesto válido (puede ser 0% tasa cero)
+    - Im_Tasa IS NULL: IMPUESTO_NO_CONFIGURADO (producto sin homologación fiscal)
+    - Im_Tipo_Factor = 'Exento': Producto fiscalmente exento
+    
+    REGLA CRÍTICA: NO hardcodear 16%. La tasa real viene de MPRO.
+    """
+    # Query con CTE para priorizar impuestos y evitar duplicados
     query = """
-    SELECT p.Pr_Cve_Producto, p.Pr_Descripcion, p.Pr_Descripcion_Corta,
-           p.Fm_Cve_Familia, p.Sf_Cve_SubFamilia,
-           f.Fm_Descripcion, sf.Sf_Descripcion,
-           pp.Pp_Precio_1 as Precio
+    WITH ImpuestosPriorizados AS (
+        SELECT 
+            p.Pr_Cve_Producto,
+            i.Im_Cve_Impuesto,
+            i.Im_Descripcion,
+            i.Im_Tasa,
+            i.Im_Tipo_Impuesto,
+            i.Im_Tipo_Factor,
+            ROW_NUMBER() OVER (PARTITION BY p.Pr_Cve_Producto ORDER BY 
+                CASE 
+                    WHEN i.Im_Cve_Impuesto = '0013' THEN 1  -- IVA COBRADO 16% (prioridad máxima para ventas)
+                    WHEN i.Im_Tipo_Impuesto = 'IVA' AND i.Im_Tasa > 0 THEN 2  -- Otro IVA positivo
+                    WHEN i.Im_Tipo_Impuesto = 'IEPS' AND i.Im_Tasa > 0 THEN 3  -- IEPS positivo
+                    WHEN i.Im_Tipo_Impuesto = 'IVA' AND i.Im_Tasa = 0 AND i.Im_Tipo_Factor = 'Exento' THEN 4  -- Exento
+                    WHEN i.Im_Tipo_Impuesto = 'IVA' AND i.Im_Tasa = 0 THEN 5  -- Tasa 0%
+                    ELSE 99  -- Otros
+                END
+            ) as rn
+        FROM Producto p
+        LEFT JOIN Impuesto_Grupo_Impuesto igi ON p.Pr_Cve_Producto = igi.Pr_Cve_Producto AND igi.Es_Cve_Estado = 'AC'
+        LEFT JOIN Impuesto i ON igi.Im_Cve_Impuesto = i.Im_Cve_Impuesto AND i.Es_Cve_Estado = 'AC'
+        WHERE p.Es_Cve_Estado = 'AC'
+          AND (i.Im_Tipo_Impuesto IS NULL OR i.Im_Tasa >= 0)  -- Excluir retenciones (tasas negativas)
+    )
+    SELECT 
+        p.Pr_Cve_Producto,
+        p.Pr_Descripcion,
+        p.Pr_Descripcion_Corta,
+        p.Fm_Cve_Familia,
+        p.Sf_Cve_SubFamilia,
+        f.Fm_Descripcion,
+        sf.Sf_Descripcion,
+        pp.Pp_Precio_1 as Precio,
+        ip.Im_Cve_Impuesto,
+        ip.Im_Descripcion as Impuesto_Descripcion,
+        ip.Im_Tasa,
+        ip.Im_Tipo_Factor,
+        CASE 
+            WHEN ip.Im_Cve_Impuesto IS NULL THEN 'NO_CONFIGURADO'
+            WHEN ip.Im_Tipo_Factor = 'Exento' THEN 'EXENTO'
+            ELSE 'OK'
+        END as Estado_Impuesto
     FROM Producto p
     LEFT JOIN Familia f ON p.Fm_Cve_Familia = f.Fm_Cve_Familia
     LEFT JOIN SubFamilia sf ON p.Sf_Cve_SubFamilia = sf.Sf_Cve_SubFamilia
     LEFT JOIN Producto_Precio pp ON p.Pr_Cve_Producto = pp.Pr_Cve_Producto
+    LEFT JOIN ImpuestosPriorizados ip ON p.Pr_Cve_Producto = ip.Pr_Cve_Producto AND ip.rn = 1
     WHERE p.Es_Cve_Estado = 'AC'
-    AND p.Pr_Descripcion IS NOT NULL
+      AND p.Pr_Descripcion IS NOT NULL
     """
     rows = execute_sql_query(host, port, database, username, password, query) or []
     
-    return [
-        ProductoSync(
+    productos = []
+    for r in rows:
+        # Obtener tasa de impuesto
+        tasa_raw = r.get('Im_Tasa')
+        # estado_impuesto disponible en r.get('Estado_Impuesto') para logging/debug si se requiere
+        
+        # Determinar tasa_impuesto:
+        # - Si tiene impuesto configurado: usar la tasa real (puede ser 0 si es tasa cero válida)
+        # - Si NO tiene impuesto: usar -1 como marcador de IMPUESTO_NO_CONFIGURADO
+        if tasa_raw is not None:
+            tasa_impuesto = Decimal(str(tasa_raw))
+        else:
+            # Producto sin configuración fiscal - marcador especial
+            tasa_impuesto = Decimal('-1')  # Indica IMPUESTO_NO_CONFIGURADO
+        
+        # Calcular precio sin impuestos (si el precio incluye IVA)
+        precio_venta = Decimal(str(r.get('Precio') or 0))
+        if tasa_impuesto > 0 and precio_venta > 0:
+            # Asumiendo precio con IVA incluido, calcular precio base
+            precio_sin_impuestos = precio_venta / (1 + tasa_impuesto / 100)
+        else:
+            precio_sin_impuestos = precio_venta
+        
+        productos.append(ProductoSync(
             codigo_fuente=str(r.get('Pr_Cve_Producto', '')),
             nombre=str(r.get('Pr_Descripcion', '')),
             # Fix FASE 1C-3B-R3: Conversión explícita a str() para evitar bugs .replace()
@@ -641,10 +720,12 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
             subfamilia_codigo_fuente=str(r.get('Sf_Cve_SubFamilia', '')) if r.get('Sf_Cve_SubFamilia') else None,
             familia_nombre=str(r.get('Fm_Descripcion')) if r.get('Fm_Descripcion') else None,
             subfamilia_nombre=str(r.get('Sf_Descripcion')) if r.get('Sf_Descripcion') else None,
-            precio_venta=Decimal(str(r.get('Precio') or 0))
-        )
-        for r in rows
-    ]
+            precio_venta=precio_venta,
+            precio_sin_impuestos=precio_sin_impuestos,
+            tasa_impuesto=tasa_impuesto
+        ))
+    
+    return productos
 
 
 def _contar_productos_con_receta_mpro(host, port, database, username, password) -> int:
