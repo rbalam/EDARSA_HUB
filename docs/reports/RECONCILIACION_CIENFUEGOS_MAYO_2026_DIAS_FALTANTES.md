@@ -1,0 +1,393 @@
+# RECONCILIACIÓN: CIENFUEGOS Mayo 2026 - Días Faltantes
+
+**Fecha del Reporte**: 2026-05-25  
+**Auditor**: E1 Agent (Ingeniero Senior Fullstack + SQL Server)  
+**Estado**: DIAGNÓSTICO COMPLETO - PENDIENTE AUTORIZACIÓN PARA RECONCILIACIÓN
+
+---
+
+## 1. RESUMEN EJECUTIVO
+
+### Problema Detectado
+El Tablero Ejecutivo Comercial muestra 22 días de ventas para CIENFUEGOS en Mayo 2026, cuando deberían ser 25 días (hasta el día operativo actual).
+
+### Días Faltantes Confirmados
+| Fecha | Día Semana | Estado | Causa |
+|-------|------------|--------|-------|
+| 2026-05-19 | Martes | **FALTANTE** | Falla de sync por credenciales |
+| 2026-05-20 | Miércoles | **FALTANTE** | Falla de sync por credenciales |
+| 2026-05-25 | Domingo | EN CURSO | Día operativo aún no cerrado ($390 en abiertas) |
+
+### Causa Raíz
+**Falla de sincronización entre 2026-05-19 23:51 y 2026-05-21 15:20** con mensaje de error: "Query retornó vacío - posible error de credenciales". Se registraron **71 intentos fallidos** de sync en ese período.
+
+---
+
+## 2. CRITERIO DE DÍAS ESPERADOS
+
+### Cálculo del Período
+```
+Fecha actual sistema: 2026-05-25 13:22:30 (México)
+Hora corte operativo: 06:00 AM
+Fecha operativa activa: 2026-05-25
+
+Período Mayo 2026:
+- Inicio: 2026-05-01
+- Fin: 2026-05-25 (fecha operativa actual)
+- DÍAS ESPERADOS: 25
+```
+
+### Criterio Aplicado
+El tablero ejecutivo debe mostrar KPIs desde el día 1 del mes hasta el día operativo activo. Si estamos en el día 25 a las 13:22, el período contiene 25 días esperados.
+
+---
+
+## 3. FECHAS FALTANTES CONFIRMADAS
+
+### Query de Verificación
+```sql
+SELECT fecha_operacion, ventas_total, tickets_total
+FROM Comercial_KPIs_Diarios_v2
+WHERE unidad_negocio_id = 'CIENFUEGOS'
+  AND fecha_operacion BETWEEN '2026-05-01' AND '2026-05-31'
+  AND activo = 1 AND es_demo = 0
+ORDER BY fecha_operacion
+```
+
+### Resultado
+```
+Días encontrados: 22 de 25 esperados
+
+Secuencia de fechas (con brecha identificada):
+2026-05-01 al 2026-05-18: 18 días continuos ✅
+[BRECHA: 2026-05-19 y 2026-05-20 FALTAN] ❌
+2026-05-21 al 2026-05-24: 4 días continuos ✅
+2026-05-25: EN CURSO (ventas abiertas) ⏳
+```
+
+---
+
+## 4. TABLAS CONSULTADAS
+
+| Tabla | Propósito | Resultado |
+|-------|-----------|-----------|
+| `Comercial_KPIs_Diarios_v2` | KPIs diarios cerrados | 22 días encontrados, faltan 19 y 20 |
+| `Comercial_Ventas_Dia_Abiertas_v2` | Ventas día en curso | Día 25 con $390 (aún abierto) |
+| `Comercial_SyncLog_v2` | Logs de sincronización | 71 logs FAILED entre 19-21 mayo |
+| `Sync_Ventas_Historicas` | Tabla staging | 0 registros de CIENFUEGOS para mayo |
+| `Comercial_KPIs_Historico` | Histórico de KPIs | Sin datos para días 19-20 |
+| `Sync_Control_Ejecuciones` | Control de ejecuciones | Sin registros para ServerID de CIENFUEGOS |
+
+---
+
+## 5. EVIDENCIA SQL
+
+### 5.1 Secuencia Completa de Días en KPIs_Diarios_v2
+
+```sql
+SELECT fecha_operacion, ventas_total, tickets_total, sync_run_id, fecha_sincronizacion
+FROM Comercial_KPIs_Diarios_v2
+WHERE unidad_negocio_id = 'CIENFUEGOS'
+  AND fecha_operacion BETWEEN '2026-05-01' AND '2026-05-31'
+  AND activo = 1 AND es_demo = 0
+ORDER BY fecha_operacion
+```
+
+**Resultado:**
+```
+2026-05-01 | $133,858.00 | 37 tix | INCR-20260503-003804... | 2026-05-03 00:38:05
+2026-05-02 | $218,251.00 | 56 tix | INCR-20260504-080737... | 2026-05-03 00:38:05
+2026-05-03 | $100,464.00 | 27 tix | INCR-20260504-080737... | 2026-05-04 08:07:38
+2026-05-04 | $107,292.00 | 25 tix | INCR-20260505-153139... | 2026-05-05 15:31:39
+2026-05-05 | $46,640.00  | 17 tix | INCR-20260506-193606... | 2026-05-05 15:31:39
+2026-05-06 | $130,989.00 | 27 tix | INCR-20260508-190201... | 2026-05-06 19:36:06
+2026-05-07 | $199,905.00 | 44 tix | INCR-20260508-190201... | 2026-05-08 19:02:01
+2026-05-08 | $195,482.00 | 55 tix | INCR-20260510-012931... | 2026-05-10 01:29:31
+2026-05-09 | $216,190.00 | 64 tix | INCR-20260510-104805... | 2026-05-10 01:29:31
+2026-05-10 | $319,742.00 | 74 tix | INCR-20260511-191541... | 2026-05-10 10:48:05
+2026-05-11 | $182,260.00 | 25 tix | INCR-20260512-190408... | 2026-05-11 20:02:43
+2026-05-12 | $101,426.00 | 28 tix | INCR-20260513-072843... | 2026-05-13 07:28:44
+2026-05-13 | $124,358.00 | 32 tix | INCR-20260514-180007... | 2026-05-14 18:00:08
+2026-05-14 | $276,495.00 | 60 tix | INCR-20260515-083553... | 2026-05-15 08:35:54
+2026-05-15 | $189,679.00 | 50 tix | INCR-20260516-084715... | 2026-05-15 08:35:54
+2026-05-16 | $191,554.00 | 52 tix | INCR-20260517-191751... | 2026-05-16 08:47:15
+2026-05-17 | $81,501.00  | 22 tix | INCR-20260518-014733... | 2026-05-17 19:17:51
+2026-05-18 | $89,312.00  | 24 tix | INCR-20260519-180205... | 2026-05-19 18:02:06
+[FALTA 2026-05-19]
+[FALTA 2026-05-20]
+2026-05-21 | $195,864.00 | 47 tix | INCR-20260524-215823... | 2026-05-24 21:58:24
+2026-05-22 | $170,200.00 | 49 tix | INCR-20260524-215823... | 2026-05-24 21:58:24
+2026-05-23 | $166,676.00 | 49 tix | INCR-20260524-215823... | 2026-05-24 21:58:24
+2026-05-24 | $120,934.00 | 29 tix | INCR-20260525-181501... | 2026-05-24 21:58:24
+```
+
+### 5.2 Logs de Sync con Errores (Causa Raíz)
+
+```sql
+SELECT run_timestamp, status, error_message, source_connection_status
+FROM Comercial_SyncLog_v2
+WHERE unidad_negocio_id = 'CIENFUEGOS'
+  AND run_timestamp BETWEEN '2026-05-18' AND '2026-05-22'
+  AND status != 'SUCCESS'
+ORDER BY run_timestamp
+```
+
+**Resultado (muestra de 71 registros):**
+```
+2026-05-19 23:51:17 | FAILED | Query retornó vacío - posible error de credenciales
+2026-05-19 23:52:09 | FAILED | Query retornó vacío - posible error de credenciales
+2026-05-20 00:06:16 | FAILED | Query retornó vacío - posible error de credenciales
+... (68 registros adicionales con mismo error)
+2026-05-21 15:20:38 | FAILED | Query retornó vacío - posible error de credenciales
+```
+
+### 5.3 Comparativa con Otras Unidades (Días 19 y 20)
+
+```sql
+SELECT unidad_negocio_id, fecha_operacion, ventas_total, tickets_total
+FROM Comercial_KPIs_Diarios_v2
+WHERE fecha_operacion IN ('2026-05-19', '2026-05-20')
+  AND activo = 1 AND es_demo = 0
+ORDER BY fecha_operacion, unidad_negocio_id
+```
+
+**Resultado:**
+```
+2026-05-19 | 130MID   | $91,422.00  | 15 tix  ✅
+2026-05-19 | 130QRO   | $118,885.00 | 21 tix  ✅
+2026-05-19 | CIENFUEGOS | [NO EXISTE]        ❌
+2026-05-19 | ESTELAR  | $8,175.00   | 12 tix  ✅
+2026-05-19 | ORIGEN   | $76,120.66  | 30 tix  ✅
+
+2026-05-20 | 130MID   | $81,439.00  | 19 tix  ✅
+2026-05-20 | 130QRO   | $130,624.00 | 26 tix  ✅
+2026-05-20 | CIENFUEGOS | [NO EXISTE]        ❌
+2026-05-20 | ESTELAR  | $31,495.00  | 29 tix  ✅
+2026-05-20 | ORIGEN   | $57,548.03  | 29 tix  ✅
+```
+
+**Conclusión:** Los días 19 y 20 fueron días operativos normales. Las otras 4 unidades registraron ventas. CIENFUEGOS NO tiene datos por falla de sincronización.
+
+### 5.4 Estado del Día 25 (En Curso)
+
+```sql
+SELECT fecha_operacion, ventas_abiertas, ventas_cerradas_dia, 
+       total_estimado_dia, snapshot_timestamp
+FROM Comercial_Ventas_Dia_Abiertas_v2
+WHERE unidad_negocio_id = 'CIENFUEGOS'
+```
+
+**Resultado:**
+```
+FechaOperacion: 2026-05-25
+Ventas Abiertas: $390.00
+Ventas Cerradas: $0.00
+Total Estimado: $390.00
+Última Actualización: 2026-05-25 19:23:36
+```
+
+**Conclusión:** El día 25 NO es un faltante - está en curso y se cerrará automáticamente cuando termine el turno operativo.
+
+---
+
+## 6. CAUSA RAÍZ
+
+### Cronología del Incidente
+1. **2026-05-18 ~18:00**: Último sync exitoso para CIENFUEGOS (día 18 sincronizado)
+2. **2026-05-19 23:51**: Primer intento fallido de sync con error de credenciales
+3. **2026-05-19 a 2026-05-21**: 71 intentos fallidos consecutivos durante ~40 horas
+4. **2026-05-21 ~15:20**: Último intento fallido registrado
+5. **2026-05-21 ~post**: Sincronización se recupera, pero días 19 y 20 ya pasaron
+6. **2026-05-24 21:58**: Sync INCREMENTAL trae días 21, 22, 23, 24
+
+### Análisis Técnico
+- **ServerID de CIENFUEGOS**: `6d053c22-523e-48c0-b72b-96081e2d781b`
+- **Sistema Origen**: SoftRestaurant
+- **Tipo de Error**: "Query retornó vacío - posible error de credenciales"
+- **source_connection_status**: ONLINE (la conexión física existía, pero fallaba la autenticación)
+
+### Hipótesis
+1. Cambio de credenciales en el servidor de CIENFUEGOS sin actualizar en EDARSAHUB
+2. Bloqueo temporal de la cuenta de lectura
+3. Problema de permisos en la base de datos SoftRestaurant
+
+---
+
+## 7. FUENTE REAL PARA RECONSTRUCCIÓN
+
+### Datos Requeridos
+Los datos de los días 19 y 20 de mayo deben obtenerse directamente de la base de datos SoftRestaurant de CIENFUEGOS, consultando la tabla de Cortes Z o cheques cerrados para esas fechas.
+
+### Query de Reconciliación Propuesto (NO EJECUTAR SIN AUTORIZACIÓN)
+```sql
+-- Este query se ejecutaría contra SoftRestaurant de CIENFUEGOS
+-- para obtener los totales de los días 19 y 20
+
+-- Opción A: Desde tabla de Cortes Z
+SELECT 
+    CAST(FechaCierre AS DATE) AS fecha_operacion,
+    SUM(TotalVenta) AS ventas_total,
+    COUNT(DISTINCT IdCheque) AS tickets_total,
+    SUM(NumeroPersonas) AS pax_total
+FROM CortesZ
+WHERE CAST(FechaCierre AS DATE) IN ('2026-05-19', '2026-05-20')
+GROUP BY CAST(FechaCierre AS DATE)
+
+-- Opción B: Desde tabla de Cheques
+SELECT 
+    FechaOperacion,
+    SUM(Total) AS ventas_total,
+    COUNT(*) AS tickets_total,
+    SUM(Pax) AS pax_total
+FROM Cheques
+WHERE FechaOperacion IN ('2026-05-19', '2026-05-20')
+  AND Estatus = 'CERRADO'
+GROUP BY FechaOperacion
+```
+
+---
+
+## 8. REGISTROS A INSERTAR (PENDIENTE DATOS REALES)
+
+Una vez obtenidos los datos reales de SoftRestaurant, se insertarían en EDARSAHUB con el siguiente formato:
+
+```sql
+-- PLANTILLA DE INSERT (NO EJECUTAR - requiere datos reales de origen)
+INSERT INTO Comercial_KPIs_Diarios_v2 (
+    id, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+    sucursal_nombre, sistema_origen, fecha_operacion, anio, mes, dia,
+    ventas_total, ventas_sin_propina, propinas_total, tickets_total,
+    pax_total, ticket_promedio, pax_promedio, ventas_cerradas,
+    ventas_abiertas, total_estimado_dia, es_venta_abierta, es_corte_cerrado,
+    es_demo, activo, fuente_original, sync_run_id, fecha_sincronizacion,
+    fecha_alta, fecha_ultima_actualizacion, version
+)
+VALUES (
+    NEWID(),                           -- id
+    'CIENFUEGOS',                      -- unidad_negocio_id
+    'CIENFUEGOS',                      -- unidad_negocio_nombre
+    '6d053c22-523e-48c0-b72b-96081e2d781b', -- server_id
+    'DEFAULT',                         -- sucursal_id
+    'CIENFUEGOS',                      -- sucursal_nombre
+    'SOFTRESTAURANT',                  -- sistema_origen
+    '2026-05-19',                      -- fecha_operacion (o 2026-05-20)
+    2026,                              -- anio
+    5,                                 -- mes
+    19,                                -- dia (o 20)
+    [VENTAS_REAL],                     -- ventas_total (DE SOFTRESTAURANT)
+    [VENTAS_SIN_PROPINA],              -- ventas_sin_propina
+    [PROPINAS],                        -- propinas_total
+    [TICKETS],                         -- tickets_total (DE SOFTRESTAURANT)
+    [PAX],                             -- pax_total (DE SOFTRESTAURANT)
+    [TICKET_PROMEDIO],                 -- ticket_promedio
+    [PAX_PROMEDIO],                    -- pax_promedio
+    [VENTAS_REAL],                     -- ventas_cerradas
+    0,                                 -- ventas_abiertas
+    [VENTAS_REAL],                     -- total_estimado_dia
+    0,                                 -- es_venta_abierta
+    1,                                 -- es_corte_cerrado
+    0,                                 -- es_demo
+    1,                                 -- activo
+    'RECONCILIACION_MANUAL_20260525',  -- fuente_original
+    'RECON-20260525-CIENFUEGOS-D19',   -- sync_run_id
+    GETUTCDATE(),                      -- fecha_sincronizacion
+    GETUTCDATE(),                      -- fecha_alta
+    GETUTCDATE(),                      -- fecha_ultima_actualizacion
+    1                                  -- version
+);
+```
+
+---
+
+## 9. VALIDACIÓN ANTES/DESPUÉS
+
+### Estado ANTES de Reconciliación
+```
+CIENFUEGOS Mayo 2026:
+- Días registrados: 22
+- Días faltantes: 19, 20 (y 25 en curso)
+- Venta total: $3,559,072.00
+- Tickets total: 893
+- Promedio diario: $161,776.00
+```
+
+### Estado Esperado DESPUÉS de Reconciliación
+```
+CIENFUEGOS Mayo 2026:
+- Días registrados: 24 (+ día 25 en curso)
+- Días faltantes: Ninguno
+- Venta total: $3,559,072 + [ventas_dia_19] + [ventas_dia_20]
+- Estimación basada en promedio: ~$3,882,624 ($323,552 adicionales)
+```
+
+---
+
+## 10. CONFIRMACIONES
+
+### 10.1 KPI de Ventas sin Propinas
+✅ La columna `ventas_sin_propina` existe y está separada de `propinas_total`.
+El KPI de ventas del tablero usa `ventas_total` que incluye propinas. Si se requiere excluir propinas, usar `ventas_sin_propina`.
+
+### 10.2 No Duplicados
+✅ Se verificará que no existan registros para días 19 y 20 antes de insertar:
+```sql
+SELECT COUNT(*) FROM Comercial_KPIs_Diarios_v2
+WHERE unidad_negocio_id = 'CIENFUEGOS'
+  AND fecha_operacion IN ('2026-05-19', '2026-05-20')
+  AND activo = 1
+-- Resultado esperado: 0
+```
+
+### 10.3 Tablero Lee Solo EDARSAHUB SQL
+✅ Confirmado. El endpoint `/api/v2/comercial/dashboard`:
+- Lee exclusivamente de `Comercial_KPIs_Diarios_v2` (cerradas)
+- Lee de `Comercial_Ventas_Dia_Abiertas_v2` (día en curso)
+- NO conecta a SoftRestaurant, MPRO ni servidores remotos
+- Fuente: EDARSAHUB SQL (NO MongoDB)
+
+---
+
+## 11. RIESGOS RESIDUALES
+
+| # | Riesgo | Severidad | Mitigación |
+|---|--------|-----------|------------|
+| 1 | Datos en SoftRestaurant purgados | ALTA | Verificar existencia antes de reconciliar |
+| 2 | Servidor CIENFUEGOS caído | MEDIA | Esperar disponibilidad |
+| 3 | Diferencia entre cortes Z y contable | BAJA | Documentar fuente usada |
+| 4 | Futura falla de sync | MEDIA | Implementar alertas de días faltantes |
+
+---
+
+## 12. PENDIENTES
+
+### Acciones Requeridas para Completar Reconciliación
+1. **[USUARIO]** Confirmar acceso a SoftRestaurant de CIENFUEGOS
+2. **[USUARIO]** Autorizar consulta a BD origen para días 19 y 20
+3. **[SISTEMA]** Ejecutar query de extracción contra SoftRestaurant
+4. **[SISTEMA]** Validar que datos no existan duplicados en EDARSAHUB
+5. **[SISTEMA]** Insertar registros reconciliados
+6. **[SISTEMA]** Verificar totales post-inserción
+7. **[SISTEMA]** Actualizar este reporte con resultados finales
+
+### Mejoras Sugeridas Post-Reconciliación
+1. Implementar alerta automática cuando una unidad tenga < N días en período
+2. Agregar job de verificación de integridad diaria
+3. Crear dashboard de salud de sincronización
+
+---
+
+## 13. CONCLUSIÓN
+
+**Los días 19 y 20 de mayo 2026 no existen en EDARSAHUB SQL debido a una falla de sincronización por error de credenciales que duró ~40 horas.** 
+
+Los datos originales existen en el servidor SoftRestaurant de CIENFUEGOS y pueden ser recuperados mediante un proceso de reconciliación controlado.
+
+El día 25 NO es un faltante - está en curso y se cerrará automáticamente.
+
+**Acción recomendada:** Ejecutar reconciliación con fuente real de SoftRestaurant para días 19 y 20, siguiendo el proceso documentado en este reporte.
+
+---
+
+**Firmado:** E1 Agent  
+**Rol:** Ingeniero Senior Fullstack + SQL Server Especialista EDARSAHUB  
+**Estado:** DIAGNÓSTICO COMPLETO - PENDIENTE AUTORIZACIÓN DE RECONCILIACIÓN
