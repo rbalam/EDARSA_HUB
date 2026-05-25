@@ -21,6 +21,61 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Diciembre 2025)
 
+### ✅ FASE 1C-3I-B: Servicios Backend Pricing IA y Benchmark - COMPLETADO
+
+**Fecha:** 2026-05-25  
+**Proveedor IA Autorizado:** GPT-5.2 (OpenAI) - NO ejecutado en esta fase
+
+#### Resumen
+Se implementaron los servicios backend y endpoints CRUD para el Motor de Precios Sugeridos con IA y Benchmark Competitivo, sin ejecutar IA real.
+
+#### Archivos Creados:
+| Archivo | Propósito |
+|---------|-----------|
+| `pricing_schemas.py` | 19 esquemas Pydantic |
+| `perfil_unidad_service.py` | CRUD Perfil Digital |
+| `competidores_service.py` | CRUD Competidores y Menu Items |
+| `benchmark_service.py` | CRUD Benchmark + Resumen + Estado IA |
+| `pricing_sugerido_service.py` | Cálculo precios base (sin IA) |
+| `routes_pricing_ia.py` | 21 endpoints FastAPI |
+
+#### Endpoints Creados:
+- **Perfil Digital**: GET/POST/PUT `/api/comercial/perfil-unidad/*`
+- **Competidores**: GET/POST/PUT/DELETE `/api/comercial/competidores/*`
+- **Menu Items**: GET/POST/PUT/DELETE `/api/comercial/competidores/{id}/menu-items/*`
+- **Benchmark**: GET/POST/PUT/DELETE `/api/comercial/benchmark/productos/*`
+- **Resumen**: GET `/api/comercial/benchmark/resumen/{unidad_id}`
+- **Estado IA**: GET `/api/comercial/benchmark/estado-preparacion/{unidad_id}`
+- **Cálculo Base**: POST `/api/comercial/precios-sugeridos/calcular-base`
+
+#### Motores de Precio:
+| Motor | Estado | Descripción |
+|-------|--------|-------------|
+| VINOS_RANGOS | ✅ Activo | Regla de rangos existente |
+| COSTO_MARGEN | ✅ Activo | precio = costo/(1-margen) |
+| BENCHMARK_COMPETENCIA | ✅ Activo | Promedio competidores |
+| MIXTO_COSTO_COMPETENCIA | ✅ Activo | Combina ambos |
+
+#### Subfases Actualizadas:
+| Subfase | Estado | Descripción |
+|---------|--------|-------------|
+| 1C-3I-A | ✅ Completado | Modelo de Datos DDL |
+| 1C-3I-B | ✅ Completado | Servicios Backend + Endpoints |
+| 1C-3I-C | ⏳ Pendiente | Integración GPT-5.2 Real |
+| 1C-3I-D | ⏳ Pendiente | Frontend |
+
+#### Confirmaciones:
+- ✅ NO se ejecutó IA
+- ✅ NO se usó MongoDB
+- ✅ RBAC aplicado en todos los endpoints
+- ✅ Baja lógica para DELETE
+- ✅ Costos y Márgenes funciona (no regresión)
+
+#### Archivos:
+- `/app/docs/reports/FASE_1C_3I_B_SERVICIOS_BACKEND_PRICING_BENCHMARK.md`
+
+---
+
 ### ✅ FASE 1C-3I-A: Modelo de Datos Pricing IA y Benchmark - COMPLETADO
 
 **Fecha:** 2026-05-25  
@@ -57,13 +112,6 @@ Se creó el modelo de datos base en EDARSAHUB SQL para soportar el motor de prec
 
 #### Regla Principal:
 > **GPT-5.2 sugiere, pero NO autoriza ni aplica precios.**
-
-#### Subfases Pendientes:
-| Subfase | Estado | Descripción |
-|---------|--------|-------------|
-| 1C-3I-B | ⏳ Pendiente | Servicios Backend + Endpoints |
-| 1C-3I-C | ⏳ Pendiente | Integración GPT-5.2 Real |
-| 1C-3I-D | ⏳ Pendiente | Frontend |
 
 #### Archivos:
 - `/app/docs/reports/FASE_1C_3I_A_MODELO_DATOS_PRICING_IA_BENCHMARK.md`

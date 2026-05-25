@@ -114,8 +114,8 @@ class RBACService:
         user_email = user.get("email")
         user_role_legacy = user.get("role", "")
         
-        # BYPASS: SuperAdministrador tiene acceso total
-        if user_role_legacy == "SuperAdministrador":
+        # BYPASS: SuperAdministrador y Administrador tienen acceso total
+        if user_role_legacy in ("SuperAdministrador", "Administrador"):
             if audit:
                 self.repo.log_verificacion(
                     user_id=user_id,
@@ -124,9 +124,9 @@ class RBACService:
                     user_email=user_email,
                     endpoint=endpoint,
                     ip_address=ip_address,
-                    detalles={"bypass": "SuperAdministrador", "rol_legacy": user_role_legacy}
+                    detalles={"bypass": user_role_legacy, "rol_legacy": user_role_legacy}
                 )
-            logger.debug(f"RBAC: SuperAdministrador {user_id} BYPASS para {permiso_requerido}")
+            logger.debug(f"RBAC: {user_role_legacy} {user_id} BYPASS para {permiso_requerido}")
             return True
         
         # 1. Obtener permisos del usuario desde RBAC

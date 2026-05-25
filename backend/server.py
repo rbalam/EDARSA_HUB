@@ -324,6 +324,11 @@ api_router.include_router(costos_margenes_router)
 from modules.costos_margenes.routes_precios import router as costos_margenes_precios_router
 api_router.include_router(costos_margenes_precios_router)
 
+# FASE 1C-3I-B: Motor de Precios Sugeridos y Benchmark Competitivo
+# ===========================================
+from modules.comercial.routes_pricing_ia import router as pricing_ia_router
+api_router.include_router(pricing_ia_router)
+
 # MÓDULO RECURSOS HUMANOS: Catálogos RH
 # - Fase 6B: Migración de catálogos (Puestos, Sucursales, Tipos Incidencias)
 # - 10 endpoints migrados con queries parametrizados
