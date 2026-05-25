@@ -24,6 +24,7 @@ import {
   Target, ArrowUpRight, ArrowDownRight, Minus, Edit, Trash2, Plus
 } from 'lucide-react';
 import api from '@/lib/api';
+import TabReglasMargen from './TabReglasMargen';
 
 // ==================== UTILIDADES ====================
 
@@ -3339,6 +3340,20 @@ const CostosMargenes = () => {
                 Solicitudes de Precio
               </div>
             </button>
+            <button
+              onClick={() => setActiveTab('reglas-margen')}
+              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'reglas-margen'
+                  ? 'border-orange-600 text-orange-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              data-testid="tab-reglas-margen"
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                Reglas de Margen
+              </div>
+            </button>
           </nav>
         </div>
       </div>
@@ -3358,6 +3373,10 @@ const CostosMargenes = () => {
       
       {activeTab === 'solicitudes' && (
         <TabSolicitudesPrecio />
+      )}
+      
+      {activeTab === 'reglas-margen' && (
+        <TabReglasMargen />
       )}
       
       {/* Modal de simulación */}

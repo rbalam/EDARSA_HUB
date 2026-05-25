@@ -110,6 +110,34 @@ EDARSAHUB es multiempresa/multiunidad. Los competidores NO deben ser globales - 
 
 ---
 
+### ✅ COSTOS-ALERTAS-001-D: UI Reglas de Margen - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Implementado:
+1. **Tab "Reglas de Margen"** en Costos y Márgenes (5to tab)
+2. **Vista principal** con estadísticas, umbrales, tabla de reglas y jerarquía visual
+3. **Modal Nueva/Editar Regla** con selector de nivel, margen, severidad
+4. **Modal Resolver Regla** para probar jerarquía
+5. **Modal Evaluar Margen** para evaluar margen vs esperado
+
+#### Funcionalidades:
+- Ver, crear, editar, desactivar reglas
+- Resolver regla por jerarquía (Producto > Subfamilia > Familia > Grupo)
+- Evaluar margen individual
+- Filtrar por nivel, buscar por código
+- Visualización de umbrales de severidad
+
+#### Archivos:
+- `/app/frontend/src/pages/comercial/TabReglasMargen.jsx` (NUEVO)
+- `/app/frontend/src/pages/comercial/CostosMargenes.jsx` (MODIFICADO)
+
+#### Reporte:
+- `/app/docs/reports/COSTOS_ALERTAS_001D_UI_REGLAS_MARGEN_DESTINATARIOS.md`
+
+---
+
+
 
 ---
 
