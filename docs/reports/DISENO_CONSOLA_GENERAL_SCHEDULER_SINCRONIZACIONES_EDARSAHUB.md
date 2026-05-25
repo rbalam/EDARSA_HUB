@@ -1014,6 +1014,259 @@ Si autoriza, comenzaré con **Fase 1: Modelo de Datos** - crear las tablas en ED
 
 ---
 
+---
+
+## 23. MÁXIMAS OBLIGATORIAS EDARSAHUB — SCHEDULER / SINCRONIZACIONES
+
+Estas máximas son de cumplimiento obligatorio para cualquier implementación de:
+- Scheduler
+- Jobs programados
+- Re-sincronización
+- Backfill
+- Ejecución manual
+- Administración de frecuencias
+- Administración de conexiones
+- Procesos de actualización de EDARSAHUB SQL
+
+---
+
+### ARQUITECTURA Y FUENTE DE VERDAD
+
+**1. EDARSAHUB SQL es el cerebro del sistema.**
+Toda información operativa, directiva, analítica, histórica y consolidada debe vivir finalmente en EDARSAHUB SQL.
+
+**2. Los dashboards, tableros, reportes y módulos operativos NO deben consultar fuentes externas en vivo.**
+SoftRestaurant, MPRO, API_LOCAL, Enterprise, servidores remotos, bases externas o sistemas origen solo pueden usarse como fuentes de sincronización controlada hacia EDARSAHUB SQL, no como fuente directa para pintar pantallas.
+
+**3. El scheduler oficial es el responsable de sincronizar información hacia EDARSAHUB SQL.**
+No deben existir scripts paralelos, procesos locales improvisados ni soluciones aisladas que dupliquen lógica oficial de sincronización.
+
+**4. La configuración operativa de jobs debe vivir en EDARSAHUB SQL.**
+Los jobs no deben quedar hardcodeados de forma rígida en código si requieren administración operativa. Deben poder consultarse, editarse, activarse, desactivarse y auditarse desde EDARSAHUB.
+
+**12. No usar MongoDB como fuente de verdad.**
+Para scheduler, jobs, logs, configuración, permisos, ejecución, sincronizaciones y tableros, la fuente oficial debe ser EDARSAHUB SQL.
+
+---
+
+### ADMINISTRACIÓN Y PERMISOS
+
+**5. Todo job programado debe ser administrable bajo permisos.**
+Debe poder modificarse frecuencia, horario, estado activo/inactivo, parámetros, unidades, empresas, rangos permitidos, timeout, reintentos y comportamiento de ejecución, siempre con control de permisos y auditoría.
+
+**45. Debe existir protección RBAC estricta.**
+Solo SUPERADMIN, SYNC_ADMIN, DATA_ADMIN o ADMIN técnico autorizado deben administrar scheduler. Usuarios normales no deben ver ni ejecutar esta consola.
+
+**46. Debe existir confirmación para acciones de alto impacto.**
+Activar/desactivar jobs críticos, cambiar frecuencia, ejecutar backfill histórico o reprocesar datos financieros debe exigir confirmación explícita.
+
+**47. Debe existir motivo obligatorio para cambios de configuración.**
+No se debe permitir cambiar frecuencia, apagar un job, cambiar parámetros o ejecutar reprocesos sin justificar el cambio.
+
+---
+
+### TRAZABILIDAD Y AUDITORÍA
+
+**6. Toda ejecución manual o re-sincronización debe tener trazabilidad completa.**
+Debe registrar usuario, fecha/hora, motivo, tipo de sincronización, unidad, empresa, servidor/conexión, rango de fechas, modo dry_run, resultado, registros detectados, insertados, actualizados, omitidos, error si existe y sync_run_id.
+
+**7. No se permite ejecutar re-sincronizaciones críticas sin motivo.**
+Todo reproceso de datos debe exigir motivo obligatorio, especialmente si afecta ventas, finanzas, inventarios, cortes, cuadres, costos, compras, tableros directivos o datos históricos.
+
+**19. Debe existir historial completo de ejecuciones.**
+Cada job debe mostrar última ejecución, última ejecución exitosa, última ejecución fallida, próxima ejecución, duración, estado, error y resultado.
+
+**20. Debe existir auditoría de cambios de configuración.**
+Cada cambio a un job debe registrar campo modificado, valor anterior, valor nuevo, usuario, fecha/hora, motivo, IP si aplica y resultado.
+
+**44. Debe existir separación entre configuración, ejecución y resultados.**
+La tabla de jobs configura; la tabla de ejecuciones registra corridas; la tabla de logs detalla eventos; la tabla de auditoría registra cambios.
+
+---
+
+### DRY RUN Y VALIDACIONES
+
+**8. Los procesos de riesgo alto o crítico deben exigir dry_run previo.**
+Backfills históricos, reprocesos financieros, correcciones de KPIs, reconstrucción de ventas, cortes, cuadres, inventarios o costos deben mostrar impacto esperado antes de modificar datos.
+
+**48. Debe existir vista de impacto antes de ejecutar.**
+Antes de una ejecución real, el dry_run debe mostrar qué detectó, qué insertaría, qué actualizaría, qué omitiría y qué tablas afectaría.
+
+**49. Debe existir validación posterior.**
+Después de ejecutar, validar conteos, totales, duplicados, errores, registros afectados y consistencia contra endpoint/módulo consumidor.
+
+---
+
+### INTEGRIDAD DE DATOS
+
+**9. No se deben inventar, estimar ni hardcodear datos.**
+Toda corrección debe provenir de fuente real, consulta trazable o proceso oficial. Prohibido cuadrar números manualmente, insertar importes sin fuente, crear registros estimados o resolver diferencias con valores artificiales.
+
+**10. No se deben hardcodear unidades, fechas, importes ni usuarios.**
+CIENFUEGOS, ORIGEN, 130MID, 130QRO, ESTELAR u otras unidades deben manejarse por UnidadNegocioID, EmpresaID, ServerID, ServidorConexionID o códigos canónicos, no por texto fijo.
+
+**11. No usar alias textuales, LIKE, contains o nombres visibles como regla de negocio.**
+La resolución de unidades, empresas, servidores y permisos debe usar claves canónicas. Los alias solo pueden servir para migración, diagnóstico o compatibilidad controlada.
+
+**15. Toda sincronización debe ser idempotente.**
+Debe poder reintentarse sin duplicar registros. Debe usar UPSERT, llaves naturales/canónicas, hash o validaciones equivalentes según aplique.
+
+**16. Debe existir protección contra duplicados.**
+Antes y después de cada reproceso se debe validar que no existan registros duplicados por unidad, fecha, documento, folio, corte, producto, proveedor o llave de negocio según el tipo de sincronización.
+
+---
+
+### SEGURIDAD Y CREDENCIALES
+
+**13. No exponer secretos, contraseñas, cadenas de conexión ni tokens al frontend.**
+Las credenciales deben permanecer protegidas en backend/entorno seguro. La consola solo debe mostrar metadatos no sensibles.
+
+**14. Las credenciales oficiales deben reutilizarse desde Servidores_Conexiones o mecanismo autorizado.**
+No pedir credenciales manuales si ya existen en EDARSAHUB. No guardar credenciales nuevas fuera del esquema seguro autorizado.
+
+---
+
+### CONTROL DE EJECUCIÓN
+
+**17. Debe existir control de concurrencia.**
+No se debe permitir que dos jobs conflictivos corran al mismo tiempo sobre la misma unidad, periodo, tabla destino o tipo de sincronización si pueden pisarse o duplicarse.
+
+**18. Debe existir control de rangos máximos.**
+No permitir reprocesos masivos sin límites. Cada tipo_sync debe definir su rango máximo permitido, nivel de riesgo y permisos requeridos.
+
+**21. El scheduler debe soportar ejecución manual controlada.**
+Un usuario autorizado debe poder ejecutar un job bajo demanda, con parámetros permitidos, dry_run si aplica y confirmación si el riesgo lo exige.
+
+**22. El scheduler debe soportar reintento de fallos.**
+Debe poder reintentar ejecuciones fallidas sin generar duplicados y conservando trazabilidad del intento original y del nuevo intento.
+
+**23. El scheduler debe soportar re-sincronización por unidad y periodo.**
+Debe poder seleccionar tipo_sync, unidad, empresa, servidor si aplica, fecha inicio, fecha fin, parámetros adicionales, dry_run y motivo.
+
+**34. Cada job debe tener estado visible.**
+Estados mínimos: activo, inactivo, pausado, en ejecución, completado, fallido, cancelado, pendiente, bloqueado por concurrencia.
+
+---
+
+### ALCANCE Y EXTENSIBILIDAD
+
+**24. La consola debe ser general para todas las sincronizaciones.**
+No debe ser solo para ventas. Debe contemplar ventas, compras, inventarios, cortes, cuadres, costos, productos, proveedores, catálogos, recetas, tablajería, finanzas, bancos y cualquier job oficial futuro.
+
+**25. Cada tipo de sincronización debe registrarse como tipo_sync oficial.**
+Cada tipo_sync debe definir módulo, descripción, handler oficial, parámetros requeridos, tablas destino, permisos, riesgo, rango máximo y si permite dry_run/reproceso.
+
+**26. No duplicar lógica de negocio del job.**
+La consola y el endpoint administrativo deben despachar al handler oficial del scheduler. No deben reimplementar consultas ni reglas del job en otra parte.
+
+**33. Cada job debe documentar sus tablas destino.**
+Debe quedar claro qué tablas lee, qué tablas actualiza, qué campos afecta y qué validaciones aplica.
+
+---
+
+### FRONTEND Y DASHBOARD
+
+**27. El frontend no debe conectarse directamente a fuentes origen.**
+El botón Re-sincronizar solo debe solicitar la ejecución al backend. El frontend nunca debe conectarse a SoftRestaurant, MPRO, API_LOCAL, Enterprise ni servidores externos.
+
+**28. El Tablero Ejecutivo debe seguir leyendo únicamente EDARSAHUB SQL.**
+La existencia de re-sincronización no autoriza fallback live ni consultas directas a sistemas origen para pintar KPIs.
+
+---
+
+### REGLAS DE NEGOCIO COMERCIAL
+
+**29. La FechaOperacion debe respetar zona horaria México.**
+Las sincronizaciones comerciales y operativas deben respetar FechaOperacion, no UTC ni fecha calendario simple cuando aplique.
+
+**30. El corte operativo oficial debe respetarse.**
+Para ventas y operación restaurantera, aplicar corte operativo autorizado, actualmente 06:00, salvo configuración explícita por unidad en EDARSAHUB SQL.
+
+**31. Las propinas no forman parte del KPI de ventas.**
+El KPI comercial de ventas debe excluir propinas. Si la fuente trae propinas, deben separarse en su campo correspondiente, pero no sumarse a venta KPI.
+
+**32. No usar campos ambiguos sin validación.**
+Si un campo como ventas_total incluye propinas, cargos de servicio u otros conceptos no venta, no debe usarse directamente como KPI directivo sin depuración.
+
+---
+
+### MANEJO DE ERRORES
+
+**35. Debe existir manejo claro de errores.**
+Los errores no deben ocultarse con mensajes genéricos engañosos. Si un error dice "posible credencial", debe distinguirse entre credencial, conectividad, timeout, query vacía, fuente sin datos o bloqueo.
+
+**36. No aceptar mensajes genéricos como causa raíz.**
+"Query retornó vacío", "posible error de credenciales" o "source unavailable" deben investigarse hasta identificar causa técnica real o documentar causa no confirmada.
+
+**37. Los procesos fallidos deben permitir backfill.**
+Si un job falla por conectividad y luego se recupera, debe existir mecanismo para re-sincronizar automáticamente o manualmente los días/rangos omitidos.
+
+---
+
+### INTEGRIDAD DE PERIODO
+
+**38. No se debe cerrar una brecha de datos como normal.**
+Si faltan días, documentos, cortes, cuadres, ventas, compras o inventarios dentro de un periodo esperado, debe documentarse, reconciliarse o escalarse.
+
+**39. Los datos incompletos no deben presentarse como definitivos.**
+Los tableros deben indicar estado incompleto, stale, parcial o con brecha si la información no está completa.
+
+**40. No avanzar a issues secundarios si hay P0 de integridad abierto.**
+Si un tablero directivo tiene datos incompletos o incorrectos, se debe cerrar primero ese P0 antes de continuar con mejoras secundarias.
+
+---
+
+### CONTROL DE CAMBIOS
+
+**41. Los módulos blindados no deben modificarse fuera de alcance.**
+Tablero Ejecutivo, Comercial, Compras, Finanzas u otros módulos protegidos solo pueden modificarse con autorización explícita y alcance documentado.
+
+**42. Toda implementación debe ser incremental y reversible.**
+Evitar cambios masivos. Preferir fases controladas, validación antes/después, rollback o mecanismo de reversión cuando sea viable.
+
+**43. No hacer cambios transversales sin autorización.**
+Si un cambio afecta autenticación, permisos, scheduler global, tablas compartidas, filtros, unidades, frontend común o datos históricos, debe solicitar autorización.
+
+---
+
+### DOCUMENTACIÓN
+
+**50. Toda solución debe quedar documentada.**
+Cada fase debe generar reporte en /app/docs/reports/ con causa raíz, archivos modificados, tablas afectadas, validaciones, riesgos y pendientes.
+
+---
+
+## 24. VERIFICACIÓN DE CUMPLIMIENTO DEL DISEÑO
+
+| Máxima | Cumplimiento en Diseño |
+|--------|------------------------|
+| 1. EDARSAHUB SQL es el cerebro | ✅ Config de jobs en SQL |
+| 2. No consultar fuentes en vivo | ✅ Solo sync controlado |
+| 3. Scheduler oficial | ✅ Usa handlers existentes |
+| 4. Config en SQL | ✅ Tabla Sistema_Scheduler_Jobs |
+| 5. Administrable bajo permisos | ✅ RBAC definido |
+| 6. Trazabilidad completa | ✅ Sistema_Scheduler_Ejecuciones |
+| 7. Motivo obligatorio | ✅ Campo requerido |
+| 8. Dry run para alto riesgo | ✅ Implementado |
+| 9-11. No inventar datos | ✅ Usa fuente real |
+| 12. No MongoDB | ✅ Solo EDARSAHUB SQL |
+| 13-14. Credenciales seguras | ✅ Servidores_Conexiones |
+| 15-16. Idempotente/No duplicados | ✅ UPSERT |
+| 17-18. Control concurrencia/rangos | ✅ Locks y límites |
+| 19-20. Historial y auditoría | ✅ Tablas dedicadas |
+| 21-23. Ejecución manual/retry/resync | ✅ Endpoints definidos |
+| 24-26. General, no duplicar lógica | ✅ Handlers oficiales |
+| 27-28. Frontend no live | ✅ Solo EDARSAHUB SQL |
+| 29-32. Propinas separadas | ✅ Campo ventas_sin_propina |
+| 33-34. Documentar tablas/estado | ✅ En diseño |
+| 35-37. Manejo errores/backfill | ✅ Códigos de error |
+| 38-40. No cerrar brechas | ✅ P0 primero |
+| 41-43. Control de cambios | ✅ Permisos y auditoría |
+| 44-49. Separación y validación | ✅ Tablas separadas |
+| 50. Documentación | ✅ /app/docs/reports/ |
+
+---
+
 **Firmado:** E1 Agent  
 **Rol:** Ingeniero Senior Fullstack + SQL Server Especialista EDARSAHUB  
-**Estado:** DISEÑO TÉCNICO COMPLETO - PENDIENTE AUTORIZACIÓN PARA IMPLEMENTAR
+**Estado:** DISEÑO TÉCNICO COMPLETO CON MÁXIMAS - PENDIENTE AUTORIZACIÓN PARA IMPLEMENTAR
