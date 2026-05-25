@@ -304,6 +304,12 @@ const Layout = () => {
           href: '/comercial/costos-margenes',
           icon: Calculator,
           roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Pricing IA',
+          href: '/comercial/pricing-ia',
+          icon: Target,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
         }
       ]
     },

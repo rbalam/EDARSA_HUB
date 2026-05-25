@@ -21,6 +21,51 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Diciembre 2025)
 
+### ✅ FASE 1C-3I-D: Frontend Motor de Precios Sugeridos IA - COMPLETADO
+
+**Fecha:** 2026-05-25  
+**Componente:** `/app/frontend/src/pages/comercial/PricingIA.jsx`  
+**Ruta:** `/comercial/pricing-ia`
+
+#### Resumen
+Se implementó el frontend completo para el Motor de Precios Sugeridos IA y Benchmark, con interfaz para gestionar competidores, capturar precios, solicitar análisis IA y visualizar resultados.
+
+#### Archivos Creados:
+| Archivo | Propósito |
+|---------|-----------|
+| `PricingIA.jsx` | Componente principal (~1,800 líneas) |
+| `FASE_1C_3I_D_FRONTEND_PRICING_IA_BENCHMARK.md` | Reporte de implementación |
+
+#### Archivos Modificados:
+| Archivo | Cambio |
+|---------|--------|
+| `App.js` | Nueva ruta `/comercial/pricing-ia` |
+| `Layout.js` | Enlace "Pricing IA" en menú Comercial |
+
+#### Funcionalidades UI:
+- **Tab Competidores**: CRUD de competidores, badges tipo/nivel precio
+- **Tab Precios Competencia**: Captura manual de precios de competidores
+- **Tab Análisis IA**: Botones "Analizar Producto" y "Analizar Benchmark"
+- **Tab Historial**: Consulta de análisis previos desde SQL
+
+#### Componentes Visuales:
+- `ConfianzaBadge`: ALTA (verde), MEDIA (amarillo), BAJA (rojo)
+- `RevisionHumanaBadge`: Indicador naranja obligatorio
+- Modales para crear/editar competidores, precios y análisis IA
+- Cards de resumen con métricas de benchmark
+
+#### Confirmaciones:
+- ✅ No usa MongoDB
+- ✅ No modifica precios oficiales
+- ✅ No expone claves/secretos
+- ✅ Alertas visuales de "RECOMENDACIONES"
+- ✅ Sin regresiones en módulos existentes
+
+#### Archivo de Reporte:
+- `/app/docs/reports/FASE_1C_3I_D_FRONTEND_PRICING_IA_BENCHMARK.md`
+
+---
+
 ### ✅ FASE 1C-3I-C: Integración GPT-5.2 para Pricing IA - COMPLETADO
 
 **Fecha:** 2026-05-25  
