@@ -21,6 +21,48 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Diciembre 2025)
 
+### ✅ FASE 1C-3I-A: Modelo de Datos Pricing IA y Benchmark - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Resumen
+Se creó el modelo de datos base en EDARSAHUB SQL para soportar el motor de precios sugeridos con IA, benchmark competitivo y perfil digital de unidad de negocio.
+
+#### Tablas Creadas:
+| Tabla | Columnas | Propósito |
+|-------|----------|-----------|
+| Sistema_UnidadesNegocioPerfilDigital | 31 | Perfil digital de unidad (URLs, concepto, segmento) |
+| Comercial_Competidores | 25 | Catálogo de competidores |
+| Comercial_CompetidoresMenuItems | 17 | Precios de menú de competidores |
+| Comercial_PricingBenchmarkProducto | 19 | Mapeo producto vs competencia |
+
+#### Tabla Extendida:
+- **Comercial_PreciosSugeridos**: +16 campos para IA/benchmark
+
+#### Permisos RBAC: 13 permisos en categoría "Pricing IA"
+
+#### Perfiles Digitales Creados (URLs reales del usuario):
+- Cienfuegos (https://www.cienfuegos.mx)
+- 130 Grados Querétaro/Mérida (https://130grados.mx)
+- La Estelar (https://laestelar.mx)
+- Origen (OpenTable Mérida)
+
+#### Modelo IA Agnóstico:
+- `ModeloIAUsado` preparado para GPT-5.2, Claude, Gemini
+- `JustificacionIA`, `ConfianzaIA`, `PayloadAnalisisJSON`
+- `RequiereRevisionHumana` = true por defecto
+
+#### No Ejecutado:
+- ❌ No se ejecutó IA
+- ❌ No se hizo scraping
+- ❌ No se creó frontend
+- ❌ No se modificaron precios oficiales
+
+#### Archivos:
+- `/app/docs/reports/FASE_1C_3I_A_MODELO_DATOS_PRICING_IA_BENCHMARK.md`
+
+---
+
 ### ✅ FASE 1C-3G-E3-R1: Clasificación Comercial de Vinos Sin Costo - COMPLETADO
 
 **Fecha:** 2026-05-25
