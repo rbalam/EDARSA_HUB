@@ -21,6 +21,44 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Diciembre 2025)
 
+### ✅ FASE 1C-3G-D: Productos Clasificados como Vino - COMPLETADO (Diagnóstico)
+
+**Fecha:** 2026-05-25
+
+#### Resumen
+Se completó el diagnóstico de productos clasificados como vino. Los vinos son productos normales en `Sync_Productos`, identificables por familia/subfamilia.
+
+#### Hallazgos Clave
+| Métrica | Valor |
+|---------|-------|
+| Productos vino identificados | 1,439 |
+| Con insumo asociado | 1,126 (78%) |
+| Con costo de botella disponible | 604 (42%) |
+| Sin costo (requiere configuración) | 835 (58%) |
+| Con impuesto CONFIGURADO | 100% |
+
+#### Familias de Vino Detectadas
+- VINOS TINTOS, VINOS BLANCOS, VINOS ROSADOS
+- CHAMPAGNES Y COGNACS
+- VINOS ESPUMOSOS/POSTRE
+- CAVAS, B VINOS, B VINOS DE POSTRE
+
+#### Decisiones Arquitectónicas
+1. **NO se creó catálogo separado** - Los vinos son productos en `Sync_Productos`
+2. **NO se reutiliza CavaSocios_Botellas** - Esa tabla es para gestión de socios
+3. **Fuente de costo**: `Sync_Productos_Insumos` (Costo, UltimoCosto, CostoPromedio)
+4. **Tabla extensión pendiente**: `Comercial_ProductosVinoDetalle` solo si se requieren atributos especializados
+
+#### Archivos Creados
+- `/app/docs/reports/FASE_1C_3G_D_PRODUCTOS_CLASIFICADOS_VINO_EXTENSION_ATRIBUTOS.md`
+
+#### Pendiente (Requiere Autorización)
+1. FASE 1C-3G-E: Reglas de Precio por Rango
+2. Crear tabla extensión si se requieren atributos de vino (bodega, añada, varietal)
+3. Configurar costos para los 835 vinos sin costo
+
+---
+
 ### ✅ FASE 1C-3G-C: Modelo Canónico de Impuestos EDARSAHUB - COMPLETADO
 
 **Fecha:** 2026-05-25
