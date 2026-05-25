@@ -77,6 +77,34 @@ El job `sync_recetas.py` NO sincronizaba el campo `Suspendido` de SoftRestaurant
 
 ---
 
+### ✅ FASE COSTOS-ALERTAS-001-B: DDL de Alertas de Margen y Snapshots - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Tablas Creadas (7):
+1. `Comercial_AlertasMargenReglas` - Reglas de margen esperado por nivel
+2. `Comercial_AlertasMargenEventos` - Eventos de alerta detectados
+3. `Comercial_AlertasMargenDestinatarios` - Destinatarios de alertas
+4. `Comercial_AlertasMargenEnvios` - Registro de envíos
+5. `Comercial_AlertasUmbralesSeveridad` - Configuración de severidades (4 umbrales insertados)
+6. `Comercial_RecetasSnapshot` - Fotografías históricas de recetas
+7. `Comercial_RecetasSnapshotDetalle` - Detalle de snapshots
+
+#### Validaciones:
+- ✅ DDL idempotente
+- ✅ CERO MongoDB
+- ✅ No se modificaron precios/recetas
+- ✅ Login funciona
+- ✅ Jerarquía soportada: Producto > Subfamilia > Familia > Grupo
+
+#### Archivo de Reporte:
+- `/app/docs/reports/COSTOS_ALERTAS_001B_DDL_ALERTAS_MARGEN_SNAPSHOTS.md`
+
+#### Próxima Fase:
+- **COSTOS-ALERTAS-001-C:** Servicios backend para reglas de margen (repository, service, routes)
+
+---
+
 ### ✅ FASE 1C-3G-F: Precios Sugeridos en Costos y Márgenes + Rangos Vinos - COMPLETADO
 
 **Fecha:** 2026-05-25
