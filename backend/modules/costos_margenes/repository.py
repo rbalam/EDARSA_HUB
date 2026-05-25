@@ -117,15 +117,15 @@ def get_productos_con_costos(
     BUG-COSTOS-001: Por defecto solo muestra productos activos.
     Usar incluir_inactivos=True para ver también productos inactivos/dados de baja.
     
-    BUG-COSTOS-001-FIX: Además de Activo=1, excluir productos con PrecioVenta=0
-    (indicador de producto suspendido/inactivo en SoftRestaurant).
+    BUG-COSTOS-001-R2: El filtro correcto es SOLO Activo = 1.
+    NO usar PrecioVenta > 0 como criterio de activo.
+    Productos con precio $0 pueden ser activos.
     """
     conn = _get_edarsahub_connection()
     
-    # BUG-COSTOS-001-FIX: Filtrar productos activos Y con precio > 0 por defecto
-    # PrecioVenta = 0 indica producto suspendido/inactivo en SoftRestaurant
+    # BUG-COSTOS-001-R2: Solo usar Activo = 1, NO PrecioVenta > 0
     if not incluir_inactivos:
-        where_clauses = ["p.Activo = 1", "p.PrecioVenta > 0"]
+        where_clauses = ["p.Activo = 1"]
     else:
         where_clauses = ["1=1"]
     
@@ -220,7 +220,8 @@ def get_productos_con_costos(
         CAST(p.TieneReceta AS BIT) as tiene_receta,
         CAST(p.TieneSubRecetas AS BIT) as tiene_subrecetas,
         COALESCE(p.CantidadComponentesReceta, 0) as numero_insumos,
-        p.SyncedAtMexico as ultima_sincronizacion
+        p.SyncedAtMexico as ultima_sincronizacion,
+        p.Activo as activo
     FROM Sync_Productos p
     WHERE {where_sql}
     ORDER BY p.Nombre
@@ -286,6 +287,8 @@ def get_productos_con_costos(
             'tiene_subrecetas': bool(row.get('tiene_subrecetas')),
             'numero_insumos': row.get('numero_insumos', 0) or 0,
             'ultima_sincronizacion': row.get('ultima_sincronizacion'),
+            # BUG-COSTOS-001-R2: Campo activo para badges en UI
+            'activo': bool(row.get('activo', 1)),
         })
     
     return productos, total

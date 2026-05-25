@@ -1805,8 +1805,23 @@ const TabProductos = ({ onSimularPrecio }) => {
                         {prods.map((prod) => (
                           <tr key={prod.producto_id} className="border-b hover:bg-gray-50">
                             <td className="p-3">
-                              <div className="font-medium text-gray-800">{prod.nombre}</div>
-                              <div className="text-xs text-gray-400">{prod.id_producto_origen}</div>
+                              <div className="flex items-center gap-2">
+                                <div>
+                                  <div className="font-medium text-gray-800">{prod.nombre}</div>
+                                  <div className="text-xs text-gray-400">{prod.id_producto_origen}</div>
+                                </div>
+                                {/* BUG-COSTOS-001-R2: Badges de estado */}
+                                {prod.activo === false && (
+                                  <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded" title="Producto suspendido/baja">
+                                    {prod.sistema_origen === 'SOFTRESTAURANT_PRO' ? 'SUSPENDIDO' : 'BAJA'}
+                                  </span>
+                                )}
+                                {prod.activo !== false && (prod.precio_venta === 0 || prod.precio_venta === null) && (
+                                  <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded" title="Producto activo sin precio configurado">
+                                    Precio $0
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="p-3">
                               <span className={`text-xs px-2 py-1 rounded ${
@@ -1940,8 +1955,23 @@ const TabProductos = ({ onSimularPrecio }) => {
                     sortedProductos.map((prod) => (
                       <tr key={prod.producto_id} className="border-b hover:bg-gray-50" data-testid={`producto-row-${prod.producto_id}`}>
                         <td className="p-3">
-                          <div className="font-medium text-gray-800">{prod.nombre}</div>
-                          <div className="text-xs text-gray-400">{prod.id_producto_origen}</div>
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <div className="font-medium text-gray-800">{prod.nombre}</div>
+                              <div className="text-xs text-gray-400">{prod.id_producto_origen}</div>
+                            </div>
+                            {/* BUG-COSTOS-001-R2: Badges de estado */}
+                            {prod.activo === false && (
+                              <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded" title="Producto suspendido/baja">
+                                {prod.sistema_origen === 'SOFTRESTAURANT_PRO' ? 'SUSPENDIDO' : 'BAJA'}
+                              </span>
+                            )}
+                            {prod.activo !== false && (prod.precio_venta === 0 || prod.precio_venta === null) && (
+                              <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded" title="Producto activo sin precio configurado">
+                                Precio $0
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="p-3">
                           <span className={`text-xs px-2 py-1 rounded ${
@@ -2335,11 +2365,24 @@ const TabPreciosSugeridos = () => {
                 productos.map((p, idx) => (
                   <tr key={`${p.producto_id}-${idx}`} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
-                      <div>
-                        <p className="font-medium text-gray-900 truncate max-w-[250px]" title={p.nombre}>
-                          {p.nombre}
-                        </p>
-                        <p className="text-xs text-gray-500">{p.clave} | {p.familia}</p>
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <p className="font-medium text-gray-900 truncate max-w-[220px]" title={p.nombre}>
+                            {p.nombre}
+                          </p>
+                          <p className="text-xs text-gray-500">{p.clave} | {p.familia}</p>
+                        </div>
+                        {/* BUG-COSTOS-001-R2: Badges de estado */}
+                        {p.activo === false && (
+                          <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded" title="Producto suspendido/baja">
+                            INACTIVO
+                          </span>
+                        )}
+                        {p.activo !== false && (p.precio_actual === 0 || p.precio_actual === null) && (
+                          <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded" title="Revisar precio">
+                            $0
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right font-mono">

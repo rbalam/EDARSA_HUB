@@ -624,6 +624,13 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
     Obtiene productos con precios e IMPUESTOS de MPRO.
     
     FASE 1C-3G-B: Corrección de homologación fiscal.
+    BUG-COSTOS-001-R2: Traer TODOS los productos y marcar su estado.
+    
+    ESTADOS MPRO:
+    - Es_Cve_Estado = 'AC' → Activo
+    - Es_Cve_Estado = 'BA' → Baja
+    - Es_Cve_Estado = 'IN' → Inactivo
+    - Cualquier otro → Inactivo
     
     LÓGICA DE IMPUESTOS:
     - MPRO almacena impuestos en Impuesto_Grupo_Impuesto (relación N:M con Producto)
@@ -639,6 +646,7 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
     REGLA CRÍTICA: NO hardcodear 16%. La tasa real viene de MPRO.
     """
     # Query con CTE para priorizar impuestos y evitar duplicados
+    # BUG-COSTOS-001-R2: Traer TODOS los productos, no solo AC
     query = """
     WITH ImpuestosPriorizados AS (
         SELECT 
@@ -661,8 +669,7 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
         FROM Producto p
         LEFT JOIN Impuesto_Grupo_Impuesto igi ON p.Pr_Cve_Producto = igi.Pr_Cve_Producto AND igi.Es_Cve_Estado = 'AC'
         LEFT JOIN Impuesto i ON igi.Im_Cve_Impuesto = i.Im_Cve_Impuesto AND i.Es_Cve_Estado = 'AC'
-        WHERE p.Es_Cve_Estado = 'AC'
-          AND (i.Im_Tipo_Impuesto IS NULL OR i.Im_Tasa >= 0)  -- Excluir retenciones (tasas negativas)
+        WHERE (i.Im_Tipo_Impuesto IS NULL OR i.Im_Tasa >= 0)  -- Excluir retenciones (tasas negativas)
     )
     SELECT 
         p.Pr_Cve_Producto,
@@ -677,6 +684,7 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
         ip.Im_Descripcion as Impuesto_Descripcion,
         ip.Im_Tasa,
         ip.Im_Tipo_Factor,
+        p.Es_Cve_Estado,
         CASE 
             WHEN ip.Im_Cve_Impuesto IS NULL THEN 'NO_CONFIGURADO'
             WHEN ip.Im_Tipo_Factor = 'Exento' THEN 'EXENTO'
@@ -687,8 +695,7 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
     LEFT JOIN SubFamilia sf ON p.Sf_Cve_SubFamilia = sf.Sf_Cve_SubFamilia
     LEFT JOIN Producto_Precio pp ON p.Pr_Cve_Producto = pp.Pr_Cve_Producto
     LEFT JOIN ImpuestosPriorizados ip ON p.Pr_Cve_Producto = ip.Pr_Cve_Producto AND ip.rn = 1
-    WHERE p.Es_Cve_Estado = 'AC'
-      AND p.Pr_Descripcion IS NOT NULL
+    WHERE p.Pr_Descripcion IS NOT NULL
     """
     rows = execute_sql_query(host, port, database, username, password, query) or []
     
@@ -715,6 +722,11 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
         else:
             precio_sin_impuestos = precio_venta
         
+        # BUG-COSTOS-001-R2: Determinar si producto está activo basado en Es_Cve_Estado
+        # AC = Activo, BA = Baja, IN = Inactivo
+        estado_producto = r.get('Es_Cve_Estado', 'AC')
+        activo = estado_producto == 'AC'
+        
         productos.append(ProductoSync(
             codigo_fuente=str(r.get('Pr_Cve_Producto', '')),
             nombre=str(r.get('Pr_Descripcion', '')),
@@ -726,7 +738,9 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
             subfamilia_nombre=str(r.get('Sf_Descripcion')) if r.get('Sf_Descripcion') else None,
             precio_venta=precio_venta,
             precio_sin_impuestos=precio_sin_impuestos,
-            tasa_impuesto=tasa_impuesto
+            tasa_impuesto=tasa_impuesto,
+            # BUG-COSTOS-001-R2: Sincronizar estado activo desde MPRO
+            activo=activo
         ))
     
     return productos

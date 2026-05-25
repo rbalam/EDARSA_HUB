@@ -21,6 +21,35 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Mayo 2026)
 
+### ✅ BUG-COSTOS-001-R2: Corrección Filtro Estado Producto - RESUELTO
+
+**Fecha:** 2026-05-25
+
+#### Problema:
+El filtro anterior usaba `PrecioVenta > 0` como criterio de activo, lo cual es INCORRECTO.
+Un producto puede tener precio $0 y estar ACTIVO (pendiente de configuración).
+
+#### Solución:
+- **Retirado:** Filtro `p.PrecioVenta > 0`
+- **Correcto:** Solo usar `p.Activo = 1`
+- **SoftRestaurant:** Campo `suspendido` → `Activo` (suspendido=1 → Activo=0)
+- **ManagementPro:** Campo `Es_Cve_Estado` → `Activo` (AC=1, BA/IN=0)
+- **UI:** Badges "SUSPENDIDO"/"BAJA" (rojo) y "Precio $0" (amarillo)
+
+#### Archivos Modificados:
+- `repository.py` - Filtro corregido, campo `activo` agregado
+- `precios_sugeridos_consolidado_service.py` - Filtro corregido, campo `activo` agregado
+- `sync_recetas.py` - MPRO trae todos los productos y mapea `Es_Cve_Estado`
+- `CostosMargenes.jsx` - Badges de estado
+
+#### Acción Requerida:
+⚠️ Ejecutar resincronización para actualizar campo `Activo` en Sync_Productos.
+
+#### Archivo de Reporte:
+- `/app/docs/reports/BUG_COSTOS_001_R2_ESTADO_PRODUCTO_SUSPENDIDO_BAJA_NO_PRECIO_CERO.md`
+
+---
+
 ### ✅ BUG-COSTOS-001: Filtrado de Productos Inactivos/Baja - RESUELTO (Fix Extendido)
 
 **Fecha:** 2026-05-25
