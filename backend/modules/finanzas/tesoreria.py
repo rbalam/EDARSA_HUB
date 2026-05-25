@@ -212,18 +212,37 @@ async def obtener_corte_z(
 async def listar_cuadres(
     estado: Optional[str] = Query(None, description="Estado: PENDIENTE, EN_PROCESO, CUADRADO, DESCUADRE"),
     sucursal_id: Optional[str] = None,
+    server_id: Optional[str] = Query(None, description="Filtrar por server_id (UUID de unidad de negocio)"),
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
     limit: int = Query(100, ge=1, le=500),
     skip: int = Query(0, ge=0),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Lista los cuadres registrados con filtros"""
+    """Lista los cuadres registrados con filtros.
+    
+    FIX BUG 2026-05-26: Agregado soporte para filtro server_id (UUID de unidad de negocio).
+    El server_id se resuelve al código/nombre del servidor para filtrar en los cuadres.
+    """
     try:
         repo = await get_cuadres_repository()
+        
+        # FIX: Si se proporciona server_id, resolver a sucursal_id (código/nombre)
+        sucursal_filtro = sucursal_id
+        if server_id and not sucursal_id:
+            try:
+                from core.server_registry import get_server_config
+                server_config = get_server_config(server_id)
+                if server_config:
+                    # Usar el nombre del servidor como filtro de sucursal
+                    sucursal_filtro = server_config.get('name') or server_config.get('nombre')
+                    logger.info(f"[CUADRES] server_id={server_id} resuelto a sucursal_filtro={sucursal_filtro}")
+            except Exception as e:
+                logger.warning(f"[CUADRES] No se pudo resolver server_id={server_id}: {e}")
+        
         cuadres = await repo.listar_cuadres(
             estado=estado,
-            sucursal_id=sucursal_id,
+            sucursal_id=sucursal_filtro,
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
             limit=limit,
@@ -234,7 +253,11 @@ async def listar_cuadres(
             "cuadres": cuadres,
             "total": len(cuadres),
             "limit": limit,
-            "skip": skip
+            "skip": skip,
+            "filtro_aplicado": {
+                "server_id": server_id,
+                "sucursal_id": sucursal_filtro
+            }
         }
     except Exception as e:
         logger.error(f"Error listando cuadres: {e}")
@@ -245,16 +268,37 @@ async def listar_cuadres(
 async def obtener_resumen_cuadres(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
+    server_id: Optional[str] = Query(None, description="Filtrar por server_id (UUID de unidad de negocio)"),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Obtiene resumen estadístico de cuadres"""
+    """Obtiene resumen estadístico de cuadres.
+    
+    FIX BUG 2026-05-26: Agregado soporte para filtro server_id.
+    """
     try:
         repo = await get_cuadres_repository()
-        resumen = await repo.obtener_resumen(fecha_inicio, fecha_fin)
+        
+        # FIX: Si se proporciona server_id, resolver a sucursal_id (código/nombre)
+        sucursal_filtro = None
+        if server_id:
+            try:
+                from core.server_registry import get_server_config
+                server_config = get_server_config(server_id)
+                if server_config:
+                    sucursal_filtro = server_config.get('name') or server_config.get('nombre')
+                    logger.info(f"[RESUMEN] server_id={server_id} resuelto a sucursal_filtro={sucursal_filtro}")
+            except Exception as e:
+                logger.warning(f"[RESUMEN] No se pudo resolver server_id={server_id}: {e}")
+        
+        resumen = await repo.obtener_resumen(fecha_inicio, fecha_fin, sucursal_id=sucursal_filtro)
         
         return {
             "resumen": resumen,
-            "fecha_consulta": datetime.utcnow().isoformat()
+            "fecha_consulta": datetime.utcnow().isoformat(),
+            "filtro_aplicado": {
+                "server_id": server_id,
+                "sucursal_id": sucursal_filtro
+            }
         }
     except Exception as e:
         logger.error(f"Error obteniendo resumen: {e}")

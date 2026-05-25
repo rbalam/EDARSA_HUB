@@ -3,12 +3,13 @@
  * Extrae toda la lógica de estado y fetching del componente principal.
  * 
  * ACTUALIZADO: Filtro de sucursal reemplazado por Unidad de Negocio (server_id)
+ * FIX BUG 2026-05-26: Usa fetchUnidadesNegocio centralizado en lugar de /api/servers
+ * FIX BUG 2026-05-26: Usa api.js centralizado para autenticación correcta
  */
 import { useState, useEffect, useCallback } from 'react';
-// FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly
 import logger from '../../services/logger';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { fetchUnidadesNegocio } from '../../services/unidadesNegocioService';
+import api from '../../lib/api';
 
 export function useTesoreriaCorteZData() {
   const [loading, setLoading] = useState(false);
@@ -32,24 +33,25 @@ export function useTesoreriaCorteZData() {
   const [loadingUnidades, setLoadingUnidades] = useState(false);
   
   // Cargar unidades de negocio
+  // FIX BUG 2026-05-26: Usa servicio centralizado que maneja auth correctamente
   const loadUnidadesNegocio = useCallback(async () => {
     setLoadingUnidades(true);
     try {
-      const response = await fetch(`${API_URL}/api/servers`, {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const unidades = (data || [])
-          .filter(s => s.active !== false)
-          .map(s => ({ id: s.id, nombre: s.name || s.nombre || s.id }));
-        setUnidadesNegocio(unidades);
-        
-        // Si solo hay 1 unidad, seleccionarla automáticamente
-        if (unidades.length === 1) {
-          setFiltros(prev => ({ ...prev, server_id: unidades[0].id }));
-        }
+      const unidadesData = await fetchUnidadesNegocio();
+      const unidades = (unidadesData || [])
+        .filter(s => s.active !== false)
+        .map(s => ({ 
+          id: s.server_id || s.id,  // Usar server_id para filtrar
+          nombre: s.nombre || s.name || s.id 
+        }));
+      setUnidadesNegocio(unidades);
+      
+      // Si solo hay 1 unidad, seleccionarla automáticamente
+      if (unidades.length === 1) {
+        setFiltros(prev => ({ ...prev, server_id: unidades[0].id }));
       }
+      
+      logger.info(`[Tesoreria] Cargadas ${unidades.length} unidades de negocio`);
     } catch (error) {
       logger.error('Error cargando unidades:', error);
     } finally {
@@ -66,16 +68,12 @@ export function useTesoreriaCorteZData() {
       if (filtros.fechaFin) params.append('fecha_fin', filtros.fechaFin);
       if (filtros.server_id) params.append('server_id', filtros.server_id);
       
-      const response = await fetch(`${API_URL}/api/finanzas/tesoreria/cortes-z?${params}`, {
-        credentials: 'include'
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setCortesZ(data.cortes || []);
-      }
+      // FIX BUG 2026-05-26: Usar api.js centralizado para auth correcta
+      const response = await api.get(`/finanzas/tesoreria/cortes-z?${params}`);
+      setCortesZ(response.data?.cortes || []);
     } catch (error) {
       logger.error('Error cargando cortes Z:', error);
+      setCortesZ([]);
     } finally {
       setLoading(false);
     }
@@ -88,35 +86,33 @@ export function useTesoreriaCorteZData() {
       if (filtros.estado) params.append('estado', filtros.estado);
       if (filtros.fechaInicio) params.append('fecha_inicio', filtros.fechaInicio);
       if (filtros.fechaFin) params.append('fecha_fin', filtros.fechaFin);
+      // FIX BUG: Agregar filtro de unidad de negocio
+      if (filtros.server_id) params.append('server_id', filtros.server_id);
       
-      const response = await fetch(`${API_URL}/api/finanzas/tesoreria/cuadres?${params}`, {
-        credentials: 'include'
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setCuadres(data.cuadres || []);
-      }
+      // FIX BUG 2026-05-26: Usar api.js centralizado para auth correcta
+      const response = await api.get(`/finanzas/tesoreria/cuadres?${params}`);
+      setCuadres(response.data?.cuadres || []);
     } catch (error) {
       logger.error('Error cargando cuadres:', error);
+      setCuadres([]);
     }
   }, [filtros]);
 
   // Cargar resumen
   const loadResumen = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/finanzas/tesoreria/cuadres/resumen`, {
-        credentials: 'include'
-      });
+      // FIX BUG: Agregar filtro de unidad de negocio al resumen
+      const params = new URLSearchParams();
+      if (filtros.server_id) params.append('server_id', filtros.server_id);
       
-      if (response.ok) {
-        const data = await response.json();
-        setResumen(data.resumen);
-      }
+      // FIX BUG 2026-05-26: Usar api.js centralizado para auth correcta
+      const response = await api.get(`/finanzas/tesoreria/cuadres/resumen?${params}`);
+      setResumen(response.data?.resumen);
     } catch (error) {
       logger.error('Error cargando resumen:', error);
+      setResumen(null);
     }
-  }, []);
+  }, [filtros.server_id]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -147,27 +143,16 @@ export function useTesoreriaCorteZData() {
         observaciones: ''
       };
       
-      const response = await fetch(`${API_URL}/api/finanzas/tesoreria/cuadres`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(cuadreData)
-      });
+      // FIX BUG 2026-05-26: Usar api.js centralizado para auth correcta
+      await api.post('/finanzas/tesoreria/cuadres', cuadreData);
       
-      if (response.ok) {
-        setModalOpen(false);
-        loadCortesZ();
-        loadCuadres();
-        loadResumen();
-      } else {
-        const error = await response.json();
-        alert(error.detail || 'Error al guardar cuadre');
-      }
+      setModalOpen(false);
+      loadCortesZ();
+      loadCuadres();
+      loadResumen();
     } catch (error) {
       logger.error('Error guardando cuadre:', error);
-      alert('Error al guardar cuadre');
+      alert(error.response?.data?.detail || 'Error al guardar cuadre');
     } finally {
       setLoading(false);
     }

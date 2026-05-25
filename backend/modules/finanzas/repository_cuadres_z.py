@@ -269,14 +269,21 @@ class RepositoryCuadresZ:
         limit: int = 100,
         skip: int = 0
     ) -> List[dict]:
-        """Lista cuadres con filtros"""
+        """Lista cuadres con filtros.
+        
+        FIX BUG 2026-05-26: Matching flexible (case-insensitive) para sucursal_id.
+        """
         try:
             query = {}
             
             if estado:
                 query['estado'] = estado
             if sucursal_id:
-                query['corte_z.sucursal_id'] = sucursal_id
+                # FIX: Hacer matching flexible (case-insensitive, parcial)
+                query['$or'] = [
+                    {'corte_z.sucursal_id': {'$regex': sucursal_id, '$options': 'i'}},
+                    {'corte_z.sucursal_nombre': {'$regex': sucursal_id, '$options': 'i'}}
+                ]
             if fecha_inicio:
                 query['corte_z.fecha_corte'] = {'$gte': fecha_inicio}
             if fecha_fin:
@@ -301,9 +308,13 @@ class RepositoryCuadresZ:
     async def obtener_resumen(
         self,
         fecha_inicio: Optional[str] = None,
-        fecha_fin: Optional[str] = None
+        fecha_fin: Optional[str] = None,
+        sucursal_id: Optional[str] = None
     ) -> dict:
-        """Obtiene resumen de cuadres"""
+        """Obtiene resumen de cuadres.
+        
+        FIX BUG 2026-05-26: Agregado filtro sucursal_id para resumen por unidad.
+        """
         try:
             query = {}
             if fecha_inicio:
@@ -313,6 +324,14 @@ class RepositoryCuadresZ:
                     query['corte_z.fecha_corte']['$lte'] = fecha_fin
                 else:
                     query['corte_z.fecha_corte'] = {'$lte': fecha_fin}
+            
+            # FIX: Agregar filtro por sucursal_id si se proporciona
+            if sucursal_id:
+                # Hacer matching flexible (case-insensitive, parcial)
+                query['$or'] = [
+                    {'corte_z.sucursal_id': {'$regex': sucursal_id, '$options': 'i'}},
+                    {'corte_z.sucursal_nombre': {'$regex': sucursal_id, '$options': 'i'}}
+                ]
             
             pipeline = [
                 {'$match': query},
