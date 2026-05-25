@@ -191,13 +191,13 @@ api_router.include_router(get_auth_router())
 # ============================================================================
 from core.refresh_tokens import init_refresh_tokens_module
 
-# Configuración EDARSAHUB para refresh tokens
+# Configuración EDARSAHUB para refresh tokens (lee desde .env)
 EDARSAHUB_CONFIG = {
-    'host': '54.39.104.176',
-    'port': 1433,
-    'database': 'EDARSAHUB',
-    'username': 'HRLectura',
-    'password': 'National09$'
+    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+    'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+    'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+    'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+    'password': os.environ.get('EDARSAHUB_PASSWORD', '')
 }
 init_refresh_tokens_module(EDARSAHUB_CONFIG)
 logger.info("Módulo refresh_tokens inicializado con SQL Server")
