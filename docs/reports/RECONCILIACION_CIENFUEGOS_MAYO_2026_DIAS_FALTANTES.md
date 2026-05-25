@@ -758,6 +758,109 @@ if __name__ == '__main__':
 
 ---
 
+## 17. DIAGNÓSTICO EXHAUSTIVO (2026-05-25 20:30 - Actualización Final)
+
+### 17.1 Verificaciones Completadas
+
+| # | Verificación | Resultado |
+|---|--------------|-----------|
+| 1 | Job que sincronizó otros días | `sync_comercial_v2_job.py` → `sync_softrestaurant_ventas_cerradas()` |
+| 2 | Credenciales usadas | ServerID `6d053c22...` en `Servidores_Conexiones` |
+| 3 | Diferencia días 19-20 | `source_connection_status = OFFLINE` durante 2 días |
+| 4 | "Error de credenciales" | Mensaje GENÉRICO, no causa raíz real |
+| 5 | Ventana de fechas | Correcta (3 días), pero no cubre backfill |
+| 6 | Fecha calendario vs FechaOperacion | Usa `fecha_operacion` correctamente |
+| 7 | Corte operativo 06:00 | No fue problema - sync funcionaba hasta 23:47 |
+| 8 | Timeout/Conectividad | **CAUSA REAL**: Servidor desconectado 23:51 mayo 19 |
+| 9 | Job fuera de horario | No, corría normalmente |
+| 10 | Retry backfill | **NO EXISTE** backfill automático para días > 3 |
+| 11 | Guard rail anti-$0 | No aplica, no hubo datos que bloquear |
+| 12 | Otro UnidadNegocioID | No, todos los CIENFUEGOS usan mismo ID |
+| 13 | Otra fecha (UTC) | No, usa timezone México consistentemente |
+| 14 | Datos en staging/audit | No existen para días 19-20 |
+| 15 | Resync para fechas históricas | **SÍ SOPORTA** con `sync_softrestaurant_ventas_cerradas()` |
+
+### 17.2 Cronología del Incidente
+
+```
+2026-05-19 23:47:06  Último sync EXITOSO - source_connection_status=ONLINE
+2026-05-19 23:51:17  Primer sync FALLIDO - source_connection_status=OFFLINE
+2026-05-19 a 21      71+ intentos fallidos con OFFLINE
+2026-05-21 ~15:00    Recuperación de conexión
+2026-05-24 21:58     Sync trae días 21-24 (rango 3 días)
+                     DÍAS 19 y 20 QUEDARON FUERA DEL RANGO
+```
+
+### 17.3 Estado Actual del Servidor CIENFUEGOS
+
+```
+Último sync exitoso: 2026-05-25 20:11:58 (HOY)
+Estado conexión: ONLINE
+Registros procesados: 1 (día 25 en curso)
+```
+
+**El servidor está ACTIVO y funcional.** La falla fue temporal (2 días).
+
+### 17.4 Mecanismo Oficial de Backfill
+
+**Archivo:** `/app/backend/modules/comercial_v2/sync_comercial_edarsahub.py`
+
+**Función:**
+```python
+sync_softrestaurant_ventas_cerradas(
+    config: UnidadNegocioConfig,
+    fecha_inicio: date,
+    fecha_fin: date,
+    run_id: str
+) -> SyncResult
+```
+
+**Características:**
+- ✅ Usa credenciales de `Servidores_Conexiones` (con descifrado SERVER_SECRET_KEY)
+- ✅ Escribe en `Comercial_KPIs_Diarios_v2`
+- ✅ Registra en `Comercial_SyncLog_v2`
+- ✅ Usa UPSERT (no duplica registros)
+- ✅ Separa propinas en campo aparte
+- ✅ Genera sync_run_id para trazabilidad
+
+---
+
+## 18. SCRIPT DE BACKFILL OFICIAL
+
+**Ubicación:** `/app/backend/scripts/backfill_cienfuegos_mayo_2026.py`
+
+**Comando de ejecución:**
+```bash
+cd /app/backend && python3 scripts/backfill_cienfuegos_mayo_2026.py
+```
+
+**Requisito:** Ejecutar desde entorno con acceso a red interna (donde servercienfuegos.ddns.net:6669 sea alcanzable).
+
+---
+
+## 19. LIMITACIÓN IDENTIFICADA
+
+El servidor SoftRestaurant de CIENFUEGOS (`189.162.155.142:6669`) **NO es accesible desde este entorno cloud**.
+
+**Motivo:** El servidor está en la red interna de EDARSA, no expuesto a internet público.
+
+**Solución:** El script debe ejecutarse desde:
+1. Un servidor dentro de la red de EDARSA, o
+2. Un servidor con VPN configurada, o
+3. El mismo servidor donde corre el scheduler de sync
+
+---
+
+## 20. PRÓXIMOS PASOS
+
+1. **USUARIO/ADMIN:** Ejecutar `/app/backend/scripts/backfill_cienfuegos_mayo_2026.py` desde infraestructura interna
+2. **SISTEMA:** El script verificará conectividad, mostrará datos disponibles y solicitará confirmación
+3. **SISTEMA:** Insertará 2 registros (días 19 y 20) en `Comercial_KPIs_Diarios_v2`
+4. **SISTEMA:** Validará automáticamente post-inserción
+5. **SISTEMA:** Generará log con sync_run_id=`BACKFILL-20260525-CIENFUEGOS-xxxx`
+
+---
+
 **Firmado:** E1 Agent  
 **Rol:** Ingeniero Senior Fullstack + SQL Server Especialista EDARSAHUB  
-**Estado:** DIAGNÓSTICO COMPLETO - SCRIPT DE RECONCILIACIÓN LISTO PARA EJECUCIÓN INTERNA
+**Estado:** SCRIPT DE BACKFILL LISTO - PENDIENTE EJECUCIÓN DESDE INFRAESTRUCTURA INTERNA
