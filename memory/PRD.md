@@ -23,6 +23,23 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
+#### Corrección de Bugs FASE 1C-3F (25 Mayo 2026) ✅ COMPLETADO
+- [x] **Bug 1 - Costo de Receta $0.00**: CORREGIDO
+  - Problema: El campo `CostoReceta` en `Sync_Productos` estaba vacío (0.00) para todos los productos
+  - Solución: Modificado `repository.py` para calcular costo sumando `CostoTotal` de `Sync_Productos_Recetas` vía subquery SQL
+  - Resultado: `(S) AJO ROSTIZADO KG` ahora muestra $87.35 correctamente
+- [x] **Bug 2 - Doble click en Elaborados fallaba**: CORREGIDO
+  - Problema: Al hacer doble click en insumo "Elaborado", error "Producto no encontrado" porque los elaborados no existen en `Sync_Productos`
+  - Solución: 
+    - Nueva función `get_receta_elaborado()` que busca en `Sync_Productos_Insumos` y `Sync_Productos_Elaborados`
+    - Endpoint `/api/costos-margenes/productos/{id}/receta` ahora acepta parámetro `es_elaborado` y hace auto-detección
+    - Frontend actualizado para pasar `codigo_fuente` y `server_id` al cargar sub-recetas
+  - Resultado: Elaborado `A300087` muestra 9 componentes con costo $2,087.22
+- [x] **Bug 3 - Modal de Receta fijo (no movible)**: CORREGIDO
+  - Problema: El modal de receta expandida estaba fijo en el centro de pantalla
+  - Solución: Implementado drag & drop con `onMouseDown/onMouseMove/onMouseUp` y transformaciones CSS
+  - Resultado: Modal ahora es arrastrable, con indicador "(Arrastre para mover)" en el header
+
 #### Mejoras en Costos y Márgenes (25 Mayo 2026) ✅ COMPLETADO
 - [x] **Vista agrupada por Familia**:
   - Botón "Agrupar" para alternar entre vista lista y vista agrupada

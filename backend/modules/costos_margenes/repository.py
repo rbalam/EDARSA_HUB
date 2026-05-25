@@ -145,6 +145,8 @@ def get_productos_con_costos(
     total = count_result[0].get('total', 0) if count_result else 0
     
     # Query de datos con paginación
+    # NOTA: CostoReceta en Sync_Productos puede estar en 0, así que calculamos
+    # el costo real sumando CostoTotal de Sync_Productos_Recetas
     offset = (page - 1) * page_size
     data_query = f"""
     SELECT 
@@ -159,7 +161,14 @@ def get_productos_con_costos(
         COALESCE(p.FamiliaNombre, 'Sin clasificar') as familia,
         p.SubFamiliaNombre as subfamilia,
         p.PrecioVenta as precio_venta,
-        p.CostoReceta as costo_receta,
+        COALESCE(
+            (SELECT SUM(r.CostoTotal) 
+             FROM Sync_Productos_Recetas r 
+             WHERE r.ProductoCodigoFuente = p.CodigoFuente 
+             AND r.ServerID = p.ServerID),
+            p.CostoReceta,
+            0
+        ) as costo_receta,
         p.CostoPromedio as costo_promedio,
         p.MargenBrutoPesos as margen_pesos,
         p.MargenBrutoPorcentaje as margen_porcentaje,
@@ -307,6 +316,135 @@ def get_receta_producto(producto_id: str, server_id: Optional[str] = None) -> Tu
     return producto, componentes
 
 
+# ==================== RECETA DE ELABORADO (SUB-RECETA) ====================
+
+def get_receta_elaborado(codigo_elaborado: str, server_id: Optional[str] = None) -> Tuple[Optional[Dict], List[Dict]]:
+    """
+    Obtiene la receta de un insumo elaborado desde Sync_Productos_Elaborados.
+    
+    Los elaborados NO existen en Sync_Productos, sus recetas están en 
+    Sync_Productos_Elaborados donde InsumoElaboradoCodigoFuente es el código del elaborado.
+    
+    Args:
+        codigo_elaborado: Código fuente del insumo elaborado
+        server_id: ServerID para filtrar
+    
+    Returns:
+        Tuple[producto_info, componentes]
+    """
+    conn = _get_edarsahub_connection()
+    
+    # Primero buscar info del elaborado en Sync_Productos_Insumos
+    where_srv = f"AND CAST(ServerID AS NVARCHAR(36)) = '{server_id}'" if server_id else ""
+    
+    insumo_query = f"""
+    SELECT TOP 1
+        CAST(InsumoID AS NVARCHAR(36)) as insumo_id,
+        CodigoFuente,
+        Nombre,
+        SystemType,
+        CAST(ServerID AS NVARCHAR(36)) as server_id,
+        Costo,
+        EsElaborado,
+        RendimientoElaborado,
+        SyncRunID,
+        SyncedAtMexico
+    FROM Sync_Productos_Insumos
+    WHERE LTRIM(RTRIM(CodigoFuente)) = LTRIM(RTRIM('{codigo_elaborado}'))
+    {where_srv}
+    """
+    insumo_result = execute_sql_query(*conn, insumo_query)
+    
+    if not insumo_result:
+        # Intentar buscar en Sync_Productos (algunos elaborados pueden estar ahí)
+        producto_query = f"""
+        SELECT TOP 1
+            CAST(ProductoID AS NVARCHAR(36)) as producto_id,
+            CodigoFuente,
+            Nombre,
+            SystemType,
+            CAST(ServerID AS NVARCHAR(36)) as server_id,
+            CostoReceta as Costo,
+            1 as EsElaborado,
+            SyncRunID,
+            SyncedAtMexico
+        FROM Sync_Productos
+        WHERE LTRIM(RTRIM(CodigoFuente)) = LTRIM(RTRIM('{codigo_elaborado}'))
+        {where_srv}
+        """
+        insumo_result = execute_sql_query(*conn, producto_query)
+        
+        if insumo_result:
+            # Si lo encontramos como producto, usar get_receta_producto
+            return get_receta_producto(codigo_elaborado, server_id)
+    
+    if not insumo_result:
+        return None, []
+    
+    insumo_info = insumo_result[0]
+    srv_id = insumo_info.get('server_id') or server_id
+    
+    # Buscar los componentes del elaborado en Sync_Productos_Elaborados
+    elaborado_query = f"""
+    SELECT 
+        CAST(e.ElaboradoDetalleID AS NVARCHAR(36)) as componente_id,
+        LTRIM(RTRIM(e.ComponenteCodigoFuente)) as codigo_fuente,
+        e.ComponenteNombre as nombre,
+        'INSUMO' as tipo_componente,
+        e.Cantidad as cantidad,
+        COALESCE(e.UnidadMedida, 'PZA') as unidad_medida,
+        e.CostoUnitario as costo_unitario,
+        e.CostoTotal as costo_total,
+        1 as nivel_jerarquico,
+        0 as es_elaborado,
+        NULL as rendimiento_elaborado
+    FROM Sync_Productos_Elaborados e
+    WHERE LTRIM(RTRIM(e.InsumoElaboradoCodigoFuente)) = LTRIM(RTRIM('{codigo_elaborado}'))
+    AND CAST(e.ServerID AS NVARCHAR(36)) = '{srv_id}'
+    ORDER BY e.ComponenteNombre
+    """
+    
+    elaborado_result = execute_sql_query(*conn, elaborado_query) or []
+    
+    # Calcular costo total y porcentajes
+    costo_total = sum(_safe_decimal(row.get('costo_total'), 0) for row in elaborado_result)
+    
+    componentes = []
+    for row in elaborado_result:
+        costo_comp = _safe_decimal(row.get('costo_total'), 0)
+        porcentaje = round((costo_comp / costo_total * 100), 2) if costo_total > 0 else 0
+        
+        componentes.append({
+            'componente_id': row.get('componente_id', ''),
+            'codigo_fuente': row.get('codigo_fuente', ''),
+            'nombre': row.get('nombre', ''),
+            'tipo_componente': row.get('tipo_componente', 'INSUMO'),
+            'cantidad': _safe_decimal(row.get('cantidad'), 0),
+            'unidad_medida': row.get('unidad_medida', 'PZA'),
+            'costo_unitario': _safe_decimal(row.get('costo_unitario')),
+            'costo_total': costo_comp,
+            'porcentaje_costo_total': porcentaje,
+            'nivel_jerarquico': 1,
+            'es_elaborado': False,
+            'rendimiento_elaborado': None,
+        })
+    
+    # Construir info del "producto" (elaborado)
+    elaborado_info = {
+        'producto_id': insumo_info.get('insumo_id', ''),
+        'CodigoFuente': insumo_info.get('CodigoFuente', ''),
+        'Nombre': insumo_info.get('Nombre', ''),
+        'SystemType': insumo_info.get('SystemType', ''),
+        'server_id': srv_id,
+        'CostoReceta': costo_total,
+        'SyncRunID': insumo_info.get('SyncRunID'),
+        'SyncedAtMexico': insumo_info.get('SyncedAtMexico'),
+    }
+    
+    return elaborado_info, componentes
+
+
+
 # ==================== INSUMOS CONSOLIDADOS ====================
 
 def get_insumos_producto(producto_id: str, server_id: Optional[str] = None) -> Tuple[Dict, List[Dict]]:
@@ -431,7 +569,7 @@ def get_sync_status() -> Dict[str, Any]:
                 if isinstance(ultima, datetime):
                     if (datetime.now() - ultima).days > 1:
                         estado = 'STALE_EDARSAHUB_SQL'
-            except:
+            except (TypeError, AttributeError):
                 pass
     
     return {

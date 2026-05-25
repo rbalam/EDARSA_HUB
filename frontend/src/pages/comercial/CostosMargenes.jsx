@@ -119,21 +119,32 @@ const EstatusBadge = ({ estatus }) => {
 
 // ==================== MODAL RECETA ====================
 
-const RecetaModal = ({ isOpen, onClose, productoId, onVerSubReceta }) => {
+const RecetaModal = ({ isOpen, onClose, productoId, serverId, onVerSubReceta }) => {
   const [receta, setReceta] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [historialProductos, setHistorialProductos] = useState([]);
-  const [productoActual, setProductoActual] = useState(productoId);
+  const [productoActual, setProductoActual] = useState({ id: productoId, serverId });
   
-  const cargarReceta = useCallback(async (id) => {
+  // Estado para drag del modal
+  const [isDragging, setIsDragging] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  const cargarReceta = useCallback(async (id, srvId, esElaborado = false) => {
     if (!id) return;
     
     setLoading(true);
     setError(null);
     
     try {
-      const res = await api.get(`/costos-margenes/productos/${id}/receta`);
+      let url = `/costos-margenes/productos/${encodeURIComponent(id)}/receta`;
+      const params = new URLSearchParams();
+      if (srvId) params.append('server_id', srvId);
+      if (esElaborado) params.append('es_elaborado', 'true');
+      if (params.toString()) url += `?${params.toString()}`;
+      
+      const res = await api.get(url);
       setReceta(res.data);
     } catch (err) {
       setError(err.response?.data?.detail || err.message);
@@ -144,22 +155,26 @@ const RecetaModal = ({ isOpen, onClose, productoId, onVerSubReceta }) => {
   
   useEffect(() => {
     if (isOpen && productoId) {
-      setProductoActual(productoId);
+      setProductoActual({ id: productoId, serverId });
       setHistorialProductos([]);
-      cargarReceta(productoId);
+      setPosition({ x: 0, y: 0 }); // Reset position on new open
+      cargarReceta(productoId, serverId);
     }
-  }, [isOpen, productoId, cargarReceta]);
+  }, [isOpen, productoId, serverId, cargarReceta]);
   
   // Manejar doble click en elaborado para ver su sub-receta
   const handleVerSubReceta = (componente) => {
-    if (componente.es_elaborado && componente.componente_id) {
+    if (componente.es_elaborado && componente.codigo_fuente) {
       // Guardar producto actual en historial para poder volver
       setHistorialProductos(prev => [...prev, { 
-        id: productoActual, 
+        id: productoActual.id, 
+        serverId: productoActual.serverId,
         nombre: receta?.producto_nombre 
       }]);
-      setProductoActual(componente.componente_id);
-      cargarReceta(componente.componente_id);
+      const nuevoId = componente.codigo_fuente;
+      const nuevoServerId = receta?.server_id || productoActual.serverId;
+      setProductoActual({ id: nuevoId, serverId: nuevoServerId });
+      cargarReceta(nuevoId, nuevoServerId, true);
     }
   };
   
@@ -168,17 +183,57 @@ const RecetaModal = ({ isOpen, onClose, productoId, onVerSubReceta }) => {
     if (historialProductos.length > 0) {
       const anterior = historialProductos[historialProductos.length - 1];
       setHistorialProductos(prev => prev.slice(0, -1));
-      setProductoActual(anterior.id);
-      cargarReceta(anterior.id);
+      setProductoActual({ id: anterior.id, serverId: anterior.serverId });
+      cargarReceta(anterior.id, anterior.serverId);
     }
   };
+  
+  // Handlers para drag
+  const handleMouseDown = (e) => {
+    if (e.target.closest('button')) return; // No drag si es un botón
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+  };
+  
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging) return;
+    setPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  }, [isDragging, dragStart]);
+  
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+  
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp]);
   
   if (!isOpen) return null;
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
-        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+      <div 
+        className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden"
+        style={{ 
+          transform: `translate(${position.x}px, ${position.y}px)`,
+          cursor: isDragging ? 'grabbing' : 'default'
+        }}
+      >
+        <div 
+          className="p-4 border-b flex justify-between items-center bg-gray-50 cursor-grab select-none"
+          onMouseDown={handleMouseDown}
+          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        >
           <div className="flex items-center gap-2">
             {historialProductos.length > 0 && (
               <button 
@@ -197,6 +252,7 @@ const RecetaModal = ({ isOpen, onClose, productoId, onVerSubReceta }) => {
                 </span>
               )}
             </h3>
+            <span className="text-xs text-gray-400 ml-2">(Arrastre para mover)</span>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded">
             <X className="w-5 h-5" />
@@ -212,8 +268,8 @@ const RecetaModal = ({ isOpen, onClose, productoId, onVerSubReceta }) => {
                   onClick={() => {
                     const nuevosHistorial = historialProductos.slice(0, idx);
                     setHistorialProductos(nuevosHistorial);
-                    setProductoActual(p.id);
-                    cargarReceta(p.id);
+                    setProductoActual({ id: p.id, serverId: p.serverId });
+                    cargarReceta(p.id, p.serverId);
                   }}
                   className="hover:underline truncate max-w-[150px]"
                   title={p.nombre}
@@ -1130,8 +1186,8 @@ const TabProductos = ({ onSimularPrecio }) => {
   const [margenBajo, setMargenBajo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [recetaModal, setRecetaModal] = useState({ open: false, productoId: null });
-  const [insumosModal, setInsumosModal] = useState({ open: false, productoId: null });
+  const [recetaModal, setRecetaModal] = useState({ open: false, productoId: null, serverId: null });
+  const [insumosModal, setInsumosModal] = useState({ open: false, productoId: null, serverId: null });
   
   // Datos para filtros
   const [unidades, setUnidades] = useState([]);
@@ -1519,7 +1575,7 @@ const TabProductos = ({ onSimularPrecio }) => {
                             <td className="p-3">
                               <div className="flex justify-center gap-1">
                                 <button
-                                  onClick={() => setRecetaModal({ open: true, productoId: prod.producto_id })}
+                                  onClick={() => setRecetaModal({ open: true, productoId: prod.producto_id, serverId: prod.server_id })}
                                   disabled={!prod.tiene_receta}
                                   className={`p-1 rounded ${prod.tiene_receta ? 'hover:bg-blue-100 text-blue-600' : 'text-gray-300 cursor-not-allowed'}`}
                                   title="Ver receta"
@@ -1632,7 +1688,7 @@ const TabProductos = ({ onSimularPrecio }) => {
                         <td className="p-3">
                           <div className="flex justify-center gap-1">
                             <button
-                              onClick={() => setRecetaModal({ open: true, productoId: prod.producto_id })}
+                              onClick={() => setRecetaModal({ open: true, productoId: prod.producto_id, serverId: prod.server_id })}
                               disabled={!prod.tiene_receta}
                               className={`p-1 rounded ${
                                 prod.tiene_receta 
@@ -1644,7 +1700,7 @@ const TabProductos = ({ onSimularPrecio }) => {
                               <Eye className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => setInsumosModal({ open: true, productoId: prod.producto_id })}
+                              onClick={() => setInsumosModal({ open: true, productoId: prod.producto_id, serverId: prod.server_id })}
                               disabled={!prod.tiene_receta}
                               className={`p-1 rounded ${
                                 prod.tiene_receta 
@@ -1710,13 +1766,14 @@ const TabProductos = ({ onSimularPrecio }) => {
       {/* Modales */}
       <RecetaModal
         isOpen={recetaModal.open}
-        onClose={() => setRecetaModal({ open: false, productoId: null })}
+        onClose={() => setRecetaModal({ open: false, productoId: null, serverId: null })}
         productoId={recetaModal.productoId}
+        serverId={recetaModal.serverId}
       />
       
       <InsumosModal
         isOpen={insumosModal.open}
-        onClose={() => setInsumosModal({ open: false, productoId: null })}
+        onClose={() => setInsumosModal({ open: false, productoId: null, serverId: null })}
         productoId={insumosModal.productoId}
       />
     </div>

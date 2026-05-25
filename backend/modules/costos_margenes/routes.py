@@ -36,6 +36,7 @@ from modules.costos_margenes.repository import (
     get_resumen_costos_margenes,
     get_productos_con_costos,
     get_receta_producto,
+    get_receta_elaborado,
     get_insumos_producto,
     get_sync_status,
     get_unidades_negocio,
@@ -234,14 +235,20 @@ async def listar_productos(
 async def obtener_receta_producto(
     producto_id: str,
     server_id: Optional[str] = Query(None, description="ServerID para búsqueda por código fuente"),
+    es_elaborado: bool = Query(False, description="Si es true, busca en tabla de elaborados"),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Obtiene la receta expandida de un producto.
+    Obtiene la receta expandida de un producto o elaborado.
     
     **Fuente**: EDARSAHUB SQL (NO-LIVE)
     
     **Permisos requeridos**: comercial.costos_margenes.ver_receta
+    
+    **Parámetros**:
+    - producto_id: ID o código fuente del producto/elaborado
+    - server_id: ServerID para filtrar (opcional pero recomendado para elaborados)
+    - es_elaborado: Si true, busca la receta del elaborado en Sync_Productos_Elaborados
     
     **Retorna**:
     - Producto
@@ -255,7 +262,16 @@ async def obtener_receta_producto(
     _verify_costos_margenes_access(current_user)
     
     try:
+        # Primero intentar como producto normal
         producto, componentes = get_receta_producto(producto_id, server_id)
+        
+        # Si no encuentra y es_elaborado=True, buscar en tabla de elaborados
+        if not producto and es_elaborado:
+            producto, componentes = get_receta_elaborado(producto_id, server_id)
+        
+        # Si aún no encuentra, intentar automáticamente como elaborado
+        if not producto:
+            producto, componentes = get_receta_elaborado(producto_id, server_id)
         
         if not producto:
             raise HTTPException(status_code=404, detail=f"Producto {producto_id} no encontrado")
