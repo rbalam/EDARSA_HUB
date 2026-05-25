@@ -587,22 +587,37 @@ const AnalisisIAProductoModal = ({ isOpen, onClose, onAnalizar, loading }) => {
     server_id: '',
     empresa_id: 1,
     unidad_negocio_id: 1,
-    margen_objetivo: 0.35
+    margen_objetivo: 0.35,
+    lista_id: ''
   });
   const [servidores, setServidores] = useState([]);
+  const [listasCompetidores, setListasCompetidores] = useState([]);
+  const [loadingListas, setLoadingListas] = useState(false);
   
   useEffect(() => {
     // Cargar servidores disponibles
     api.get('/servidores/list')
       .then(res => setServidores(res.data.servidores || res.data || []))
       .catch(() => setServidores([]));
+    
+    // Cargar listas de competidores
+    setLoadingListas(true);
+    api.get('/comercial/pricing/listas-competidores?activo=true')
+      .then(res => setListasCompetidores(res.data.listas || []))
+      .catch(() => setListasCompetidores([]))
+      .finally(() => setLoadingListas(false));
   }, []);
   
   if (!isOpen) return null;
   
   const handleSubmit = (e) => {
     e.preventDefault();
-    onAnalizar(form);
+    // Enviar lista_id solo si se seleccionó una
+    const payload = { ...form };
+    if (!payload.lista_id) {
+      delete payload.lista_id;
+    }
+    onAnalizar(payload);
   };
   
   return (
@@ -683,6 +698,35 @@ const AnalisisIAProductoModal = ({ isOpen, onClose, onAnalizar, loading }) => {
                 {(form.margen_objetivo * 100).toFixed(0)}%
               </span>
             </div>
+          </div>
+          
+          {/* Selector de Lista de Competidores */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              <span className="flex items-center gap-1">
+                <Folder className="w-4 h-4" />
+                Lista de Competidores (Opcional)
+              </span>
+            </label>
+            <select
+              value={form.lista_id}
+              onChange={(e) => setForm({ ...form, lista_id: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              data-testid="select-lista-competidores"
+              disabled={loadingListas}
+            >
+              <option value="">Sin filtro (Benchmark general)</option>
+              {listasCompetidores.map(lista => (
+                <option key={lista.lista_id} value={lista.lista_id}>
+                  {lista.nombre_lista} ({lista.total_competidores || 0} competidores)
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              {form.lista_id 
+                ? 'El analisis solo usara competidores de la lista seleccionada' 
+                : 'Se usaran todos los competidores configurados'}
+            </p>
           </div>
         </form>
         
@@ -848,6 +892,17 @@ const ResultadoAnalisisModal = ({ isOpen, onClose, resultado }) => {
                 </div>
               )}
               
+              {/* Lista de competidores usada */}
+              {data.lista_usada && (
+                <div className="text-sm bg-indigo-50 border border-indigo-200 rounded p-3 flex items-center gap-2">
+                  <Folder className="w-4 h-4 text-indigo-600" />
+                  <span className="text-indigo-700">
+                    <span className="font-medium">Filtrado por lista:</span> {data.lista_usada.nombre_lista} 
+                    ({data.lista_usada.total_competidores} competidores)
+                  </span>
+                </div>
+              )}
+              
               {/* ID del analisis */}
               {resultado.analisis_id && (
                 <div className="text-xs text-gray-400 flex items-center gap-1">
@@ -865,6 +920,119 @@ const ResultadoAnalisisModal = ({ isOpen, onClose, resultado }) => {
             className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
           >
             Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== MODAL ANALISIS BENCHMARK IA ====================
+
+const AnalisisBenchmarkModal = ({ isOpen, onClose, onAnalizar, loading }) => {
+  const [listaId, setListaId] = useState('');
+  const [listasCompetidores, setListasCompetidores] = useState([]);
+  const [loadingListas, setLoadingListas] = useState(false);
+  
+  useEffect(() => {
+    if (isOpen) {
+      // Cargar listas de competidores
+      setLoadingListas(true);
+      api.get('/comercial/pricing/listas-competidores?activo=true')
+        .then(res => setListasCompetidores(res.data.listas || []))
+        .catch(() => setListasCompetidores([]))
+        .finally(() => setLoadingListas(false));
+    }
+  }, [isOpen]);
+  
+  if (!isOpen) return null;
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onAnalizar(listaId || null);
+  };
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div className="p-4 border-b flex justify-between items-center bg-gradient-to-r from-indigo-600 to-indigo-700">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <BarChart2 className="w-5 h-5" />
+            Analisis Benchmark IA
+          </h3>
+          <button onClick={onClose} className="p-1 hover:bg-indigo-800 rounded text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="bg-indigo-50 rounded-lg p-3 text-sm text-indigo-700">
+            <div className="flex items-start gap-2">
+              <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <p>
+                El analisis de benchmark evalua el <strong>posicionamiento de precios</strong> de 
+                tu unidad vs la competencia. Genera insights sobre oportunidades y riesgos.
+              </p>
+            </div>
+          </div>
+          
+          {/* Selector de Lista de Competidores */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              <span className="flex items-center gap-1">
+                <Folder className="w-4 h-4" />
+                Lista de Competidores
+              </span>
+            </label>
+            <select
+              value={listaId}
+              onChange={(e) => setListaId(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              data-testid="select-lista-benchmark"
+              disabled={loadingListas}
+            >
+              <option value="">Benchmark General (todos los competidores)</option>
+              {listasCompetidores.map(lista => (
+                <option key={lista.lista_id} value={lista.lista_id}>
+                  {lista.nombre_lista} ({lista.total_competidores || 0} competidores)
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              {listaId 
+                ? 'Solo se analizaran los competidores de la lista seleccionada' 
+                : 'Se incluiran todos los competidores configurados en el benchmark'}
+            </p>
+          </div>
+          
+          {/* Info adicional */}
+          <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
+            <p className="font-medium mb-1">El benchmark incluye:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Evaluacion de posicionamiento vs competencia</li>
+              <li>Identificacion de oportunidades</li>
+              <li>Deteccion de riesgos</li>
+              <li>Recomendaciones estrategicas</li>
+            </ul>
+          </div>
+        </form>
+        
+        <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            data-testid="btn-ejecutar-benchmark"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart2 className="w-4 h-4" />}
+            Ejecutar Benchmark
           </button>
         </div>
       </div>
@@ -1347,6 +1515,7 @@ const TabPreciosCompetencia = ({ empresaId, unidadId }) => {
 
 const TabAnalisisIA = ({ empresaId, unidadId }) => {
   const [modalProductoOpen, setModalProductoOpen] = useState(false);
+  const [modalBenchmarkOpen, setModalBenchmarkOpen] = useState(false);
   const [analizando, setAnalizando] = useState(false);
   const [analizandoBenchmark, setAnalizandoBenchmark] = useState(false);
   const [resultado, setResultado] = useState(null);
@@ -1373,18 +1542,25 @@ const TabAnalisisIA = ({ empresaId, unidadId }) => {
     }
   };
   
-  const handleAnalizarBenchmark = async () => {
+  const handleAnalizarBenchmark = async (listaId = null) => {
     if (!empresaId || !unidadId) {
       alert('Seleccione una unidad de negocio primero');
       return;
     }
     
     setAnalizandoBenchmark(true);
+    setModalBenchmarkOpen(false);
     try {
-      const res = await api.post('/comercial/pricing-ai/analizar-benchmark', {
+      const payload = {
         empresa_id: empresaId,
         unidad_negocio_id: unidadId
-      });
+      };
+      // Incluir lista_id solo si se selecciono
+      if (listaId) {
+        payload.lista_id = listaId;
+      }
+      
+      const res = await api.post('/comercial/pricing-ai/analizar-benchmark', payload);
       
       setResultado(res.data);
       setResultadoModalOpen(true);
@@ -1421,7 +1597,7 @@ const TabAnalisisIA = ({ empresaId, unidadId }) => {
               Analizar Producto
             </button>
             <button
-              onClick={handleAnalizarBenchmark}
+              onClick={() => setModalBenchmarkOpen(true)}
               disabled={analizandoBenchmark}
               className="flex items-center gap-2 px-4 py-2 bg-purple-800 text-white rounded-lg hover:bg-purple-900 font-medium transition-colors"
               data-testid="btn-analizar-benchmark"
@@ -1525,6 +1701,13 @@ const TabAnalisisIA = ({ empresaId, unidadId }) => {
         onClose={() => setModalProductoOpen(false)}
         onAnalizar={handleAnalizarProducto}
         loading={analizando}
+      />
+      
+      <AnalisisBenchmarkModal
+        isOpen={modalBenchmarkOpen}
+        onClose={() => setModalBenchmarkOpen(false)}
+        onAnalizar={handleAnalizarBenchmark}
+        loading={analizandoBenchmark}
       />
       
       <ResultadoAnalisisModal

@@ -19,7 +19,38 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
-## Estado Actual (Diciembre 2025)
+## Estado Actual (Mayo 2026)
+
+### ✅ FASE 1C-3I-H: Listas de Competidores como Filtro en IA - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Resumen
+Se integró el sistema de listas de competidores como filtro opcional en los análisis de IA y Benchmark. Los usuarios pueden ahora seleccionar una lista específica para limitar el contexto de análisis.
+
+#### Cambios Backend:
+- `analizar_benchmark_con_ia`: Añadido parámetro `lista_id`
+- `_obtener_competidores_para_contexto`: Fix comparación case-insensitive de UUIDs
+- Validación de lista activa y con competidores
+- Persistencia de `ListaCompetidoresID` en SQL Server
+- Retorno de `lista_usada` en respuesta JSON
+
+#### Cambios Frontend:
+- `AnalisisIAProductoModal`: Añadido selector de lista de competidores
+- `AnalisisBenchmarkModal`: Nuevo modal dedicado con selector de lista
+- `ResultadoAnalisisModal`: Muestra lista usada si aplica
+
+#### Validaciones Realizadas:
+- ✅ Benchmark con lista funciona
+- ✅ Benchmark sin lista funciona (general)
+- ✅ Análisis producto con lista funciona
+- ✅ Validación de lista inactiva
+- ✅ Validación de lista vacía
+
+#### Archivo de Reporte:
+- `/app/docs/reports/FASE_1C_3I_H_LISTAS_COMPETIDORES_FILTRO_IA_BENCHMARK.md`
+
+---
 
 ### ✅ FASE 1C-3I-F: Visualización Avanzada y Exportación - COMPLETADO
 
