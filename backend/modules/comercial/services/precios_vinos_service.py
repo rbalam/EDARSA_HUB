@@ -161,7 +161,8 @@ def obtener_costo_base_vino(codigo_producto: str, server_id: str) -> Tuple[Optio
     2. Sync_Productos_Insumos.Costo (costo de botella)
     3. Sync_Productos_Insumos.UltimoCosto
     4. Sync_Productos_Insumos.CostoPromedio
-    5-9. Fuentes adicionales (futuro: compras, proveedor, override)
+    5. Sync_Productos_Insumos.CostoEstandar (añadido en FASE 1C-3G-E2)
+    6-9. Fuentes adicionales (futuro: compras, proveedor, override)
     
     NOTA: Para vinos (botellas compradas), CostoReceta = 0 generalmente
     porque no son recetas elaboradas. Esto NO significa costo cero.
@@ -188,12 +189,13 @@ def obtener_costo_base_vino(codigo_producto: str, server_id: str) -> Tuple[Optio
             # CostoReceta > 0 es costo consolidado confiable
             return float(costo_receta), 'COSTO_RECETA'
     
-    # PASO 2-4: Verificar costos en Sync_Productos_Insumos
+    # PASO 2-5: Verificar costos en Sync_Productos_Insumos
     query_insumos = f"""
     SELECT 
         i.Costo,
         i.UltimoCosto,
-        i.CostoPromedio
+        i.CostoPromedio,
+        i.CostoEstandar
     FROM Sync_Productos_Insumos i
     WHERE i.ServerID = '{server_id}'
       AND i.CodigoFuente = '{codigo_producto}'
@@ -215,8 +217,12 @@ def obtener_costo_base_vino(codigo_producto: str, server_id: str) -> Tuple[Optio
         # Jerarquía 4: Costo promedio
         if row.get('CostoPromedio') and float(row['CostoPromedio']) > 0:
             return float(row['CostoPromedio']), 'INSUMO_PROMEDIO'
+        
+        # Jerarquía 5: Costo estándar (añadido FASE 1C-3G-E2)
+        if row.get('CostoEstandar') and float(row['CostoEstandar']) > 0:
+            return float(row['CostoEstandar']), 'INSUMO_ESTANDAR'
     
-    # Jerarquías 5-9: Futuras fuentes (compras, proveedor, override)
+    # Jerarquías 6-9: Futuras fuentes (compras, proveedor, override)
     # Por ahora no implementadas, retornar None
     
     return None, None

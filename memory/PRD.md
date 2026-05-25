@@ -21,6 +21,45 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Diciembre 2025)
 
+### ✅ FASE 1C-3G-E2: Diagnóstico de Vinos Sin Costo - COMPLETADO (CRITERIO DE PARO)
+
+**Fecha:** 2026-05-25
+
+#### Resumen
+Se realizó diagnóstico exhaustivo de los 886 vinos sin CostoBaseVino. **CRITERIO DE PARO APLICADO**: No existen fuentes reales de costo disponibles en EDARSAHUB para 878 vinos.
+
+#### Hallazgos Clave:
+| Métrica | Valor |
+|---------|-------|
+| Vinos sin costo inicial | 886 |
+| Recuperables vía CostoEstandar | 8 (valores dudosos: $0.18-$0.53) |
+| Irrecuperables (sin fuente) | 878 |
+| Tablas Compras/Inventarios | **VACÍAS** |
+
+#### Clasificación de Vinos Sin Costo:
+- Sin registro en Sync_Productos_Insumos: 356 (40.2%)
+- Con insumo pero sin ningún costo: 530 (59.8%)
+
+#### Jerarquía Actualizada (5 niveles):
+| Prioridad | Fuente | Descripción |
+|-----------|--------|-------------|
+| 1 | `CostoReceta` | Si > 0 y confiable |
+| 2 | `Sync_Productos_Insumos.Costo` | Costo de botella |
+| 3 | `UltimoCosto` | Último costo |
+| 4 | `CostoPromedio` | Costo promedio |
+| 5 | `CostoEstandar` | **AÑADIDO en E2** |
+| 6-9 | (Futuro) | Compras, proveedor, override |
+
+#### Acciones Pendientes:
+1. Sincronización desde sistemas origen (MPRO/SoftRestaurant) para poblar costos
+2. O captura manual autorizada con trazabilidad
+
+#### Archivos:
+- `/app/docs/reports/FASE_1C_3G_E2_COSTO_BASE_VINOS_SIN_COSTO.md`
+- `/app/backend/modules/comercial/services/precios_vinos_service.py` (actualizado)
+
+---
+
 ### ✅ FASE 1C-3G-E: Reglas de Precio por Rango para Vinos - COMPLETADO CON CORRECCIÓN CONCEPTUAL
 
 **Fecha:** 2026-05-25  
@@ -29,18 +68,11 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 #### Resumen
 Se crearon las reglas de precio por rango para productos clasificados como vino. **CORRECCIÓN CONCEPTUAL**: La tabla de rangos determina el PRECIO DE VENTA SUGERIDO, no calcula el costo del vino.
 
-#### Corrección Conceptual Aplicada
-
-**Jerarquía de CostoBaseVino (corregida):**
-| Prioridad | Fuente | Descripción |
-|-----------|--------|-------------|
-| 1 | `CostoReceta` | Si > 0 y confiable |
-| 2 | `Sync_Productos_Insumos.Costo` | Costo de botella |
-| 3 | `UltimoCosto` | Último costo |
-| 4 | `CostoPromedio` | Costo promedio |
-| 5-9 | (Futuro) | Compras, proveedor, override |
-
-**Nota sobre Vinos**: Todos los vinos tienen `CostoReceta = 0` porque son botellas compradas (no recetas elaboradas). El costo proviene de `Sync_Productos_Insumos`.
+#### Resultados Actuales (post E2):
+| Estado | Cantidad | % |
+|--------|----------|---|
+| CALCULADO | ~634 | 41.9% |
+| COSTO_BASE_NO_CONFIGURADO | ~878 | 58.1% |
 
 #### Tablas Creadas
 | Tabla | Propósito |
