@@ -1343,6 +1343,7 @@ const TabProductos = ({ onSimularPrecio }) => {
   const [subfamilia, setSubfamilia] = useState('');
   const [soloConReceta, setSoloConReceta] = useState(false);
   const [margenBajo, setMargenBajo] = useState(false);
+  const [incluirInactivos, setIncluirInactivos] = useState(false); // BUG-COSTOS-001
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [recetaModal, setRecetaModal] = useState({ open: false, productoId: null, serverId: null });
@@ -1478,6 +1479,7 @@ const TabProductos = ({ onSimularPrecio }) => {
       if (subfamilia) params.append('subfamilia', subfamilia);
       if (soloConReceta) params.append('solo_con_receta', 'true');
       if (margenBajo) params.append('margen_bajo', 'true');
+      if (incluirInactivos) params.append('incluir_inactivos', 'true'); // BUG-COSTOS-001
       
       const res = await api.get(`/costos-margenes/productos?${params}`);
       
@@ -1489,7 +1491,7 @@ const TabProductos = ({ onSimularPrecio }) => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, pageSizeAgrupado, vistaAgrupada, busqueda, unidadNegocio, familia, subfamilia, soloConReceta, margenBajo]);
+  }, [page, pageSize, pageSizeAgrupado, vistaAgrupada, busqueda, unidadNegocio, familia, subfamilia, soloConReceta, margenBajo, incluirInactivos]);
   
   useEffect(() => {
     loadResumen();
@@ -1680,6 +1682,17 @@ const TabProductos = ({ onSimularPrecio }) => {
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span className="text-sm text-gray-600">Margen bajo (&lt;20%)</span>
+          </label>
+          
+          {/* BUG-COSTOS-001: Checkbox para mostrar inactivos */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={incluirInactivos}
+              onChange={(e) => { setIncluirInactivos(e.target.checked); setPage(1); }}
+              className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+            />
+            <span className="text-sm text-gray-500">Incluir inactivos/baja</span>
           </label>
           
           {/* Toggle vista agrupada */}
@@ -2142,7 +2155,8 @@ const TabPreciosSugeridos = () => {
     soloFueraRango: false,
     soloRequiereRevision: false,
     fuente: '',
-    margenObjetivo: 0.35
+    margenObjetivo: 0.35,
+    incluirInactivos: false // BUG-COSTOS-001
   });
   const [detalleModal, setDetalleModal] = useState({ open: false, producto: null });
 
@@ -2160,6 +2174,7 @@ const TabPreciosSugeridos = () => {
       if (filters.soloFueraRango) params.append('solo_fuera_rango', 'true');
       if (filters.soloRequiereRevision) params.append('solo_requiere_revision', 'true');
       if (filters.fuente) params.append('fuente', filters.fuente);
+      if (filters.incluirInactivos) params.append('incluir_inactivos', 'true'); // BUG-COSTOS-001
       
       const res = await api.get(`/comercial/pricing/precios-sugeridos?${params}`);
       setProductos(res.data.productos || []);

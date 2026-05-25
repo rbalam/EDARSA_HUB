@@ -118,6 +118,7 @@ def obtener_precios_sugeridos(
     fuente: str = None,
     margen_bajo: bool = False,
     solo_con_receta: bool = False,
+    incluir_inactivos: bool = False,  # BUG-COSTOS-001
     search: str = None,
     page: int = 1,
     page_size: int = 50,
@@ -129,6 +130,8 @@ def obtener_precios_sugeridos(
     Para vinos: Usa VINOS_RANGOS
     Para otros: Usa COSTO_MARGEN o MARGEN_OBJETIVO
     
+    BUG-COSTOS-001: Por defecto solo muestra productos activos.
+    
     NO modifica precios oficiales.
     """
     conn = _get_conn()
@@ -136,8 +139,8 @@ def obtener_precios_sugeridos(
     # Obtener rangos de vinos una vez
     rangos_vinos = _obtener_rangos_vinos()
     
-    # Construir query base
-    where_clauses = ["p.Activo = 1"]
+    # BUG-COSTOS-001: Filtrar solo productos activos por defecto
+    where_clauses = ["p.Activo = 1"] if not incluir_inactivos else ["1=1"]
     
     if server_id:
         where_clauses.append(f"p.ServerID = '{server_id}'")

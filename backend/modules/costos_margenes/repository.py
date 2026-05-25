@@ -103,6 +103,7 @@ def get_productos_con_costos(
     busqueda: Optional[str] = None,
     solo_con_receta: bool = False,
     margen_bajo: bool = False,
+    incluir_inactivos: bool = False,  # BUG-COSTOS-001: Por defecto excluir inactivos
     page: int = 1,
     page_size: int = 50
 ) -> Tuple[List[Dict], int]:
@@ -112,11 +113,14 @@ def get_productos_con_costos(
     
     FASE P2: Nuevo parámetro servidores_ids para RBAC por Unidad de Negocio.
     Si se proporciona, filtra productos que pertenezcan a cualquiera de esos servidores.
+    
+    BUG-COSTOS-001: Por defecto solo muestra productos activos.
+    Usar incluir_inactivos=True para ver también productos inactivos/dados de baja.
     """
     conn = _get_edarsahub_connection()
     
-    # Construir WHERE dinámico
-    where_clauses = ["1=1"]
+    # BUG-COSTOS-001: Filtrar solo productos activos por defecto
+    where_clauses = ["p.Activo = 1"] if not incluir_inactivos else ["1=1"]
     
     if empresa_id:
         where_clauses.append(f"p.EmpresaID = {empresa_id}")

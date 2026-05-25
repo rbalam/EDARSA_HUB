@@ -229,6 +229,7 @@ async def listar_productos(
     busqueda: Optional[str] = Query(None, description="Buscar por nombre o código"),
     solo_con_receta: bool = Query(False, description="Solo productos con receta"),
     margen_bajo: bool = Query(False, description="Solo productos con margen < 20%"),
+    incluir_inactivos: bool = Query(False, description="Incluir productos inactivos/dados de baja"),
     page: int = Query(1, ge=1, description="Página"),
     page_size: int = Query(50, ge=1, le=200, description="Tamaño de página"),
     current_user: dict = Depends(get_current_user)
@@ -237,6 +238,9 @@ async def listar_productos(
     Lista productos con información de costos y márgenes.
     
     **Fuente**: EDARSAHUB SQL (NO-LIVE)
+    
+    **BUG-COSTOS-001**: Por defecto solo muestra productos activos.
+    Usar incluir_inactivos=true para ver también productos inactivos/dados de baja.
     
     **RBAC**: Filtra automáticamente por las unidades de negocio del usuario.
     - Usuarios corporativos (ADMIN, SUPERADMIN, o sin asignaciones): ven todo
@@ -249,7 +253,7 @@ async def listar_productos(
     - sistema_origen (SOFTRESTAURANT_PRO, MPRO)
     - familia, subfamilia
     - busqueda (nombre o código)
-    - solo_con_receta, margen_bajo
+    - solo_con_receta, margen_bajo, incluir_inactivos
     
     **Paginación**: page, page_size
     """
@@ -288,6 +292,7 @@ async def listar_productos(
             busqueda=busqueda,
             solo_con_receta=solo_con_receta,
             margen_bajo=margen_bajo,
+            incluir_inactivos=incluir_inactivos,  # BUG-COSTOS-001
             page=page,
             page_size=page_size
         )

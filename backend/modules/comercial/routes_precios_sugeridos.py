@@ -64,6 +64,7 @@ async def get_precios_sugeridos(
     fuente: Optional[str] = Query(None, description="Filtrar por fuente sugerencia"),
     margen_bajo: bool = Query(False, description="Solo productos con margen < 20%"),
     solo_con_receta: bool = Query(False, description="Solo productos con receta"),
+    incluir_inactivos: bool = Query(False, description="Incluir productos inactivos/dados de baja"),
     search: Optional[str] = Query(None, description="Buscar por nombre o codigo"),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
@@ -71,6 +72,9 @@ async def get_precios_sugeridos(
 ):
     """
     Obtiene lista de productos con precios sugeridos calculados.
+    
+    BUG-COSTOS-001: Por defecto solo muestra productos activos.
+    Usar incluir_inactivos=true para ver también productos inactivos/dados de baja.
     
     Para vinos: Usa VINOS_RANGOS
     Para otros: Usa COSTO_MARGEN
@@ -87,6 +91,7 @@ async def get_precios_sugeridos(
         fuente=fuente,
         margen_bajo=margen_bajo,
         solo_con_receta=solo_con_receta,
+        incluir_inactivos=incluir_inactivos,
         search=search,
         page=page,
         page_size=page_size,
