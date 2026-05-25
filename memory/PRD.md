@@ -78,6 +78,39 @@ El frontend usaba nombres de campos incorrectos:
 
 ---
 
+### ✅ FASE 1C-3I-B v2: Corrección Arquitectónica Competidores Enterprise - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Problema Resuelto:
+EDARSAHUB es multiempresa/multiunidad. Los competidores NO deben ser globales - cada unidad tiene sus propios competidores según ciudad, zona, mercado local.
+
+#### Arquitectura Implementada:
+1. **`Comercial_CompetidoresCatalogo`**: Catálogo maestro (datos únicos del competidor)
+2. **`Comercial_CompetidoresUnidad`**: Relación competidor-unidad (prioridad, tipo relación)
+3. **`vw_CompetidoresPorUnidad`**: Vista consolidada
+
+#### Ventajas:
+- Un competidor puede estar en múltiples unidades con diferente configuración
+- Filtro OBLIGATORIO por `UnidadNegocioID` en todas las consultas
+- RBAC limita acceso por unidad
+
+#### Endpoints Enterprise:
+- `POST /api/comercial/competidores-catalogo` - Crear en catálogo maestro
+- `POST /api/comercial/competidores-unidad/relacionar` - Relacionar con unidad
+- `GET /api/comercial/competidores?unidad_negocio_id=X` - Listar por unidad
+
+#### Archivos:
+- `/app/backend/scripts/ddl_competidores_enterprise_unidad.py`
+- `/app/backend/modules/comercial/services/competidores_enterprise_service.py`
+- `/app/backend/modules/comercial/routes_competidores_enterprise.py`
+
+#### Reporte:
+- `/app/docs/reports/FASE_1C_3I_B_COMPETIDORES_ENTERPRISE_UNIDAD.md`
+
+---
+
+
 ---
 
 ## Estado Actual (Mayo 2026)

@@ -349,6 +349,11 @@ api_router.include_router(precios_sugeridos_router)
 from modules.comercial.routes_alertas_margen import router as alertas_margen_router
 api_router.include_router(alertas_margen_router)
 
+# FASE 1C-3I-B v2: Competidores Enterprise por Unidad de Negocio
+# ===========================================
+from modules.comercial.routes_competidores_enterprise import router as competidores_enterprise_router
+api_router.include_router(competidores_enterprise_router)
+
 # MÓDULO RECURSOS HUMANOS: Catálogos RH
 # - Fase 6B: Migración de catálogos (Puestos, Sucursales, Tipos Incidencias)
 # - 10 endpoints migrados con queries parametrizados
