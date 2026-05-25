@@ -103,6 +103,7 @@ def get_productos_con_costos(
     busqueda: Optional[str] = None,
     solo_con_receta: bool = False,
     margen_bajo: bool = False,
+    umbral_margen: int = 20,  # Umbral editable para margen bajo
     incluir_inactivos: bool = False,  # BUG-COSTOS-001: Por defecto excluir inactivos
     page: int = 1,
     page_size: int = 50
@@ -153,11 +154,11 @@ def get_productos_con_costos(
     if solo_con_receta:
         where_clauses.append("p.TieneReceta = 1")
     
-    # MARGEN BAJO: Filtrar productos con margen < 20%
+    # MARGEN BAJO: Filtrar productos con margen < umbral configurado
     # El costo real viene de Sync_Productos_Recetas (no de p.CostoReceta)
-    # Requiere: receta, precio > 0, costo calculado > 0, margen < 20%
+    # Requiere: receta, precio > 0, costo calculado > 0, margen < umbral
     if margen_bajo:
-        where_clauses.append("""(
+        where_clauses.append(f"""(
             p.TieneReceta = 1
             AND p.PrecioVenta > 0 
             AND COALESCE(
@@ -171,7 +172,7 @@ def get_productos_con_costos(
                      WHERE r.ProductoCodigoFuente = p.CodigoFuente AND r.ServerID = p.ServerID),
                     p.CostoReceta, 0
                 )) / p.PrecioVenta * 100
-            ) < 20
+            ) < {umbral_margen}
         )""")
     
     where_sql = " AND ".join(where_clauses)

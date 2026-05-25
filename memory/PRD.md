@@ -21,6 +21,22 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Mayo 2026)
 
+### ✅ Mejoras UI Costos y Márgenes - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Cambios Implementados:
+1. **% Margen bajo ahora es editable** - Input numérico junto al checkbox (default 20%)
+2. **Botón "Agrupar" en Precios Sugeridos** - Vista agrupada por familia igual que Resumen/Productos
+3. **Badges de estado** - SUSPENDIDO/BAJA (rojo), Precio $0 (amarillo)
+
+#### Archivos Modificados:
+- `CostosMargenes.jsx` - Estado `umbralMargenBajo`, input editable, vista agrupada en TabPreciosSugeridos
+- `routes.py` - Nuevo parámetro `umbral_margen`
+- `repository.py` - Query con umbral dinámico
+
+---
+
 ### ✅ BUG-COSTOS-001-R2: Corrección Filtro Estado Producto - RESUELTO
 
 **Fecha:** 2026-05-25

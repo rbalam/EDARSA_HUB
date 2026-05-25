@@ -228,7 +228,8 @@ async def listar_productos(
     subfamilia: Optional[str] = Query(None, description="Filtrar por subfamilia"),
     busqueda: Optional[str] = Query(None, description="Buscar por nombre o código"),
     solo_con_receta: bool = Query(False, description="Solo productos con receta"),
-    margen_bajo: bool = Query(False, description="Solo productos con margen < 20%"),
+    margen_bajo: bool = Query(False, description="Solo productos con margen bajo"),
+    umbral_margen: int = Query(20, ge=0, le=100, description="Umbral de margen bajo (%)"),
     incluir_inactivos: bool = Query(False, description="Incluir productos inactivos/dados de baja"),
     page: int = Query(1, ge=1, description="Página"),
     page_size: int = Query(50, ge=1, le=200, description="Tamaño de página"),
@@ -292,6 +293,7 @@ async def listar_productos(
             busqueda=busqueda,
             solo_con_receta=solo_con_receta,
             margen_bajo=margen_bajo,
+            umbral_margen=umbral_margen,  # Umbral editable
             incluir_inactivos=incluir_inactivos,  # BUG-COSTOS-001
             page=page,
             page_size=page_size

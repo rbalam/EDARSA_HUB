@@ -1343,6 +1343,7 @@ const TabProductos = ({ onSimularPrecio }) => {
   const [subfamilia, setSubfamilia] = useState('');
   const [soloConReceta, setSoloConReceta] = useState(false);
   const [margenBajo, setMargenBajo] = useState(false);
+  const [umbralMargenBajo, setUmbralMargenBajo] = useState(20); // Umbral editable
   const [incluirInactivos, setIncluirInactivos] = useState(false); // BUG-COSTOS-001
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1478,7 +1479,10 @@ const TabProductos = ({ onSimularPrecio }) => {
       if (familia) params.append('familia', familia);
       if (subfamilia) params.append('subfamilia', subfamilia);
       if (soloConReceta) params.append('solo_con_receta', 'true');
-      if (margenBajo) params.append('margen_bajo', 'true');
+      if (margenBajo) {
+        params.append('margen_bajo', 'true');
+        params.append('umbral_margen', umbralMargenBajo.toString()); // Umbral editable
+      }
       if (incluirInactivos) params.append('incluir_inactivos', 'true'); // BUG-COSTOS-001
       
       const res = await api.get(`/costos-margenes/productos?${params}`);
@@ -1491,7 +1495,7 @@ const TabProductos = ({ onSimularPrecio }) => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, pageSizeAgrupado, vistaAgrupada, busqueda, unidadNegocio, familia, subfamilia, soloConReceta, margenBajo, incluirInactivos]);
+  }, [page, pageSize, pageSizeAgrupado, vistaAgrupada, busqueda, unidadNegocio, familia, subfamilia, soloConReceta, margenBajo, umbralMargenBajo, incluirInactivos]);
   
   useEffect(() => {
     loadResumen();
@@ -1681,7 +1685,23 @@ const TabProductos = ({ onSimularPrecio }) => {
               onChange={(e) => { setMargenBajo(e.target.checked); setPage(1); }}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm text-gray-600">Margen bajo (&lt;20%)</span>
+            <span className="text-sm text-gray-600 flex items-center gap-1">
+              Margen bajo (&lt;
+              <input
+                type="number"
+                value={umbralMargenBajo}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 20;
+                  setUmbralMargenBajo(Math.min(100, Math.max(0, val)));
+                }}
+                onBlur={() => { if (margenBajo) setPage(1); }}
+                className="w-12 px-1 py-0.5 border rounded text-center text-sm"
+                min="0"
+                max="100"
+                disabled={!margenBajo}
+              />
+              %)
+            </span>
           </label>
           
           {/* BUG-COSTOS-001: Checkbox para mostrar inactivos */}
@@ -2189,14 +2209,18 @@ const TabPreciosSugeridos = () => {
     incluirInactivos: false // BUG-COSTOS-001
   });
   const [detalleModal, setDetalleModal] = useState({ open: false, producto: null });
+  
+  // Vista agrupada por familia
+  const [vistaAgrupada, setVistaAgrupada] = useState(false);
+  const [familiasExpandidas, setFamiliasExpandidas] = useState(new Set());
 
   const fetchProductos = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams({
-        page: page.toString(),
-        page_size: pageSize.toString(),
+        page: vistaAgrupada ? '1' : page.toString(),
+        page_size: vistaAgrupada ? '500' : pageSize.toString(),
         margen_objetivo: filters.margenObjetivo.toString()
       });
       if (search) params.append('search', search);
@@ -2209,17 +2233,56 @@ const TabPreciosSugeridos = () => {
       const res = await api.get(`/comercial/pricing/precios-sugeridos?${params}`);
       setProductos(res.data.productos || []);
       setTotal(res.data.total || 0);
-      setTotalPages(res.data.total_pages || 1);
+      setTotalPages(vistaAgrupada ? 1 : (res.data.total_pages || 1));
     } catch (err) {
       setError(err.response?.data?.detail || err.message);
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, filters]);
+  }, [page, pageSize, search, filters, vistaAgrupada]);
 
   useEffect(() => {
     fetchProductos();
   }, [fetchProductos]);
+  
+  // Agrupar productos por familia
+  const productosAgrupados = useMemo(() => {
+    if (!vistaAgrupada || !productos.length) return null;
+    
+    const grupos = {};
+    productos.forEach(p => {
+      const familia = p.familia || 'Sin clasificar';
+      if (!grupos[familia]) {
+        grupos[familia] = {
+          familia,
+          productos: [],
+          totalProductos: 0,
+          promedioMargen: 0,
+          productosConSugerencia: 0
+        };
+      }
+      grupos[familia].productos.push(p);
+      grupos[familia].totalProductos++;
+      if (p.precio_sugerido) grupos[familia].productosConSugerencia++;
+    });
+    
+    // Calcular promedios
+    Object.values(grupos).forEach(g => {
+      const margenes = g.productos.filter(p => p.margen_porcentaje != null).map(p => p.margen_porcentaje);
+      g.promedioMargen = margenes.length > 0 ? margenes.reduce((a, b) => a + b, 0) / margenes.length : 0;
+    });
+    
+    return Object.values(grupos).sort((a, b) => a.familia.localeCompare(b.familia));
+  }, [productos, vistaAgrupada]);
+  
+  const toggleFamilia = (familia) => {
+    setFamiliasExpandidas(prev => {
+      const next = new Set(prev);
+      if (next.has(familia)) next.delete(familia);
+      else next.add(familia);
+      return next;
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -2312,6 +2375,20 @@ const TabPreciosSugeridos = () => {
             </label>
           </div>
           
+          {/* Botón Agrupar por Familia */}
+          <button
+            onClick={() => setVistaAgrupada(!vistaAgrupada)}
+            className={`px-3 py-2 border rounded-lg flex items-center gap-2 transition-colors ${
+              vistaAgrupada ? 'bg-purple-100 border-purple-300 text-purple-700' : 'hover:bg-gray-100'
+            }`}
+            title={vistaAgrupada ? 'Vista lista' : 'Vista agrupada por familia'}
+          >
+            <Layers className="w-4 h-4" />
+            <span className="text-sm">
+              {vistaAgrupada ? 'Vista lista' : 'Agrupar'}
+            </span>
+          </button>
+          
           <button
             onClick={fetchProductos}
             disabled={loading}
@@ -2361,7 +2438,112 @@ const TabPreciosSugeridos = () => {
                     No se encontraron productos con los filtros seleccionados
                   </td>
                 </tr>
+              ) : vistaAgrupada && productosAgrupados ? (
+                /* Vista agrupada por familia */
+                productosAgrupados.map(grupo => (
+                  <React.Fragment key={grupo.familia}>
+                    {/* Fila de familia (header de grupo) */}
+                    <tr 
+                      className="bg-purple-50 hover:bg-purple-100 cursor-pointer"
+                      onClick={() => toggleFamilia(grupo.familia)}
+                    >
+                      <td colSpan={9} className="px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {familiasExpandidas.has(grupo.familia) ? (
+                              <ChevronDown className="w-5 h-5 text-purple-600" />
+                            ) : (
+                              <ChevronRight className="w-5 h-5 text-purple-600" />
+                            )}
+                            <span className="font-semibold text-purple-800">{grupo.familia}</span>
+                            <span className="text-sm text-purple-600">
+                              ({grupo.totalProductos} productos)
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-6 text-sm">
+                            <span className="text-gray-600">
+                              Margen prom: <span className={`font-medium ${grupo.promedioMargen < 20 ? 'text-red-600' : grupo.promedioMargen < 35 ? 'text-yellow-600' : 'text-green-600'}`}>
+                                {grupo.promedioMargen.toFixed(1)}%
+                              </span>
+                            </span>
+                            <span className="text-gray-600">
+                              Con sugerencia: <span className="font-medium text-purple-600">{grupo.productosConSugerencia}</span>
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Productos de la familia (si está expandida) */}
+                    {familiasExpandidas.has(grupo.familia) && grupo.productos.map((p, idx) => (
+                      <tr key={`${p.producto_id}-${idx}`} className="hover:bg-gray-50 bg-white">
+                        <td className="px-4 py-3 pl-12">
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <p className="font-medium text-gray-900 truncate max-w-[220px]" title={p.nombre}>
+                                {p.nombre}
+                              </p>
+                              <p className="text-xs text-gray-500">{p.clave} | {p.subfamilia || '-'}</p>
+                            </div>
+                            {p.activo === false && (
+                              <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded">INACTIVO</span>
+                            )}
+                            {p.activo !== false && (p.precio_actual === 0 || p.precio_actual === null) && (
+                              <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded">$0</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono">
+                          {p.precio_actual > 0 ? formatCurrency(p.precio_actual) : <span className="text-gray-400">-</span>}
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono">
+                          {p.costo_receta > 0 ? formatCurrency(p.costo_receta) : <span className="text-gray-400">-</span>}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className={`font-medium ${p.margen_porcentaje < 20 ? 'text-red-600' : p.margen_porcentaje < 35 ? 'text-yellow-600' : 'text-green-600'}`}>
+                            {p.margen_porcentaje != null ? `${p.margen_porcentaje.toFixed(1)}%` : '-'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono font-medium text-purple-700">
+                          {p.precio_sugerido ? formatCurrency(p.precio_sugerido) : <span className="text-gray-400">-</span>}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            p.fuente_sugerencia === 'VINOS_RANGOS' ? 'bg-amber-100 text-amber-700' :
+                            p.fuente_sugerencia === 'COSTO_MARGEN' ? 'bg-blue-100 text-blue-700' :
+                            p.fuente_sugerencia === 'IA_COMPETENCIA' ? 'bg-purple-100 text-purple-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {p.fuente_sugerencia || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {p.diferencia_porcentaje != null ? (
+                            <span className={`font-medium ${p.diferencia_porcentaje > 0 ? 'text-green-600' : p.diferencia_porcentaje < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                              {p.diferencia_porcentaje > 0 ? '+' : ''}{p.diferencia_porcentaje.toFixed(1)}%
+                            </span>
+                          ) : '-'}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {p.estado_revision === 'OK' && <CheckCircle className="w-5 h-5 text-green-500 mx-auto" />}
+                          {p.estado_revision === 'FUERA_RANGO' && <AlertTriangle className="w-5 h-5 text-red-500 mx-auto" />}
+                          {p.estado_revision === 'REQUIERE_REVISION' && <AlertCircle className="w-5 h-5 text-yellow-500 mx-auto" />}
+                          {!p.estado_revision && <span className="text-gray-400">-</span>}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => setDetalleModal({ open: true, producto: p })}
+                            className="p-1 hover:bg-gray-100 rounded"
+                            title="Ver detalle"
+                          >
+                            <Eye className="w-4 h-4 text-gray-500" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))
               ) : (
+                /* Vista lista normal */
                 productos.map((p, idx) => (
                   <tr key={`${p.producto_id}-${idx}`} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
@@ -2384,12 +2566,6 @@ const TabPreciosSugeridos = () => {
                           </span>
                         )}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono">
-                      {p.precio_actual > 0 ? formatCurrency(p.precio_actual) : <span className="text-gray-400">-</span>}
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono">
-                      {p.costo_receta > 0 ? formatCurrency(p.costo_receta) : <span className="text-gray-400">-</span>}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className={p.margen_porcentaje < 20 ? 'text-red-600 font-medium' : ''}>
