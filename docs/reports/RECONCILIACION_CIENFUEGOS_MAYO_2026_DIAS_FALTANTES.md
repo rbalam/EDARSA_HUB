@@ -18,8 +18,20 @@ El Tablero Ejecutivo Comercial muestra 22 días de ventas para CIENFUEGOS en May
 | 2026-05-20 | Miércoles | **FALTANTE** | Falla de sync por credenciales |
 | 2026-05-25 | Domingo | EN CURSO | Día operativo aún no cerrado ($390 en abiertas) |
 
-### Causa Raíz
-**Falla de sincronización entre 2026-05-19 23:51 y 2026-05-21 15:20** con mensaje de error: "Query retornó vacío - posible error de credenciales". Se registraron **71 intentos fallidos** de sync en ese período.
+### Causa Raíz REFINADA (2026-05-25 - Actualización)
+**Falla de CONECTIVIDAD** (NO de credenciales) al servidor SoftRestaurant de CIENFUEGOS durante el período 2026-05-19 23:51 a 2026-05-21.
+
+**Evidencia:**
+- Último sync exitoso: 2026-05-19 23:47:06 (`source_connection_status = ONLINE`)
+- Primer fallo: 2026-05-19 23:51:17 (`source_connection_status = OFFLINE`)
+- El mensaje "Query retornó vacío - posible error de credenciales" es **GENÉRICO y ENGAÑOSO**
+- Las credenciales SÍ funcionan porque otros 22 días de mayo se sincronizaron correctamente
+- Se registraron 71+ intentos fallidos de sync con conexión OFFLINE
+
+**Por qué no se recuperaron automáticamente:**
+- El job usa `SYNC_INCREMENTAL_DAYS = 3` (rango de 3 días)
+- Cuando el sync se recuperó el 24 de mayo, solo trajo días 21-24
+- Los días 19 y 20 quedaron fuera del rango de backfill automático
 
 ---
 
