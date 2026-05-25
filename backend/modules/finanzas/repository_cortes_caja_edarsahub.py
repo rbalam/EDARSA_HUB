@@ -184,42 +184,91 @@ class RepositoryCortesCajaEdarsahub:
         
         COMPATIBILIDAD: Reemplaza get_all_cortes_z_with_status que consultaba en vivo.
         
+        ARQUITECTURA SQL-FIRST + RESILIENCIA:
+        - Si EDARSAHUB SQL no responde, retorna estado EDARSAHUB_UNREACHABLE
+        - NUNCA retorna $0 falso por falla de conexión
+        - Incluye source_status: FRESH, STALE, o EDARSAHUB_UNREACHABLE
+        
         Returns:
             Dict con:
                 - cortes: Lista de cortes
-                - estado_general: SUCCESS_WITH_DATA o SUCCESS_EMPTY
+                - estado_general: SUCCESS_WITH_DATA, SUCCESS_EMPTY, o EDARSAHUB_UNREACHABLE
+                - source_status: FRESH, STALE, o ERROR
                 - fuentes_detalle: Info de la fuente (EDARSAHUB SQL)
         """
+        import time
+        start_time = time.time()
+        
         filtros = {'limit': limit}
         if fecha_inicio:
             filtros['fecha_inicio'] = fecha_inicio
         if fecha_fin:
             filtros['fecha_fin'] = fecha_fin
         
-        cortes = self.listar_cortes_caja(filtros)
-        
-        estado = 'SUCCESS_WITH_DATA' if cortes else 'SUCCESS_EMPTY'
-        
-        return {
-            'cortes': cortes,
-            'estado_general': estado,
-            'data_source': 'EDARSAHUB_SQL',
-            'fuentes_detalle': [{
-                'status': estado,
-                'query_executed': True,
-                'row_count': len(cortes),
-                'source_type': 'EDARSAHUB_SQL',
-                'source_id': 'Finanzas_CortesCaja',
-                'error_message': '',
-                'timestamp': datetime.utcnow().isoformat(),
-                'duration_ms': 0,
-                'is_retriable': False,
-                'metadata': {
-                    'tabla': 'Finanzas_CortesCaja',
-                    'arquitectura': 'SQL-FIRST (sin consultas en vivo)'
-                }
-            }]
-        }
+        try:
+            cortes = self.listar_cortes_caja(filtros)
+            duration_ms = int((time.time() - start_time) * 1000)
+            
+            if cortes:
+                estado = 'SUCCESS_WITH_DATA'
+                source_status = 'FRESH'
+            else:
+                estado = 'SUCCESS_EMPTY'
+                source_status = 'FRESH'
+            
+            return {
+                'cortes': cortes,
+                'estado_general': estado,
+                'data_source': 'EDARSAHUB_SQL',
+                'source_status': source_status,
+                'fuentes_detalle': [{
+                    'status': estado,
+                    'query_executed': True,
+                    'row_count': len(cortes),
+                    'source_type': 'EDARSAHUB_SQL',
+                    'source_id': 'Finanzas_CortesCaja',
+                    'source_status': source_status,
+                    'error_message': '',
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'duration_ms': duration_ms,
+                    'is_retriable': False,
+                    'metadata': {
+                        'tabla': 'Finanzas_CortesCaja',
+                        'arquitectura': 'SQL-FIRST (sin consultas en vivo)'
+                    }
+                }]
+            }
+        except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            error_msg = str(e)
+            self.logger.error(f"[CORTES_CAJA_SQL] Error conexión EDARSAHUB: {error_msg}")
+            
+            # RESILIENCIA: No lanzar excepción, retornar estado controlado
+            # NUNCA retornar $0 falso ni lista vacía silenciosa
+            return {
+                'cortes': [],
+                'estado_general': 'EDARSAHUB_UNREACHABLE',
+                'data_source': 'EDARSAHUB_SQL',
+                'source_status': 'ERROR',
+                'fuentes_detalle': [{
+                    'status': 'EDARSAHUB_UNREACHABLE',
+                    'query_executed': False,
+                    'row_count': 0,
+                    'source_type': 'EDARSAHUB_SQL',
+                    'source_id': 'Finanzas_CortesCaja',
+                    'source_status': 'ERROR',
+                    'error_message': f'EDARSAHUB SQL no disponible: {error_msg[:200]}',
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'duration_ms': duration_ms,
+                    'is_retriable': True,
+                    'metadata': {
+                        'tabla': 'Finanzas_CortesCaja',
+                        'arquitectura': 'SQL-FIRST (sin consultas en vivo)',
+                        'advertencia': 'Servidor EDARSAHUB no respondió. Datos no disponibles temporalmente.'
+                    }
+                }],
+                'advertencia': 'EDARSAHUB SQL no está respondiendo. Los datos de Cortes Z no están disponibles temporalmente. Esta NO es una falla del sistema, es una situación de infraestructura externa.'
+            }
     
     def contar_cortes(self, filtros: Dict = None) -> int:
         """Cuenta cortes con filtros."""

@@ -118,22 +118,42 @@ async def listar_cortes_z(
         repo_cortes = get_cortes_caja_repository_sql()
         repo_cuadres = get_cuadres_z_repository_sql()
         
+        # Inicializar variables de estado
+        source_status = 'FRESH'
+        advertencia = None
+        
         # Consultar cortes desde EDARSAHUB SQL (NO en vivo)
         if server_id:
             # Filtrar por servidor específico
-            cortes = repo_cortes.listar_cortes_por_server_id(
-                server_id=server_id,
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin,
-                limit=200
-            )
-            fuente = "EDARSAHUB_SQL"
-            fuentes_detalle = [{
-                'status': 'SUCCESS_WITH_DATA' if cortes else 'SUCCESS_EMPTY',
-                'source_type': 'EDARSAHUB_SQL',
-                'source_id': 'Finanzas_CortesCaja',
-                'row_count': len(cortes)
-            }]
+            try:
+                cortes = repo_cortes.listar_cortes_por_server_id(
+                    server_id=server_id,
+                    fecha_inicio=fecha_inicio,
+                    fecha_fin=fecha_fin,
+                    limit=200
+                )
+                fuente = "EDARSAHUB_SQL"
+                fuentes_detalle = [{
+                    'status': 'SUCCESS_WITH_DATA' if cortes else 'SUCCESS_EMPTY',
+                    'source_type': 'EDARSAHUB_SQL',
+                    'source_id': 'Finanzas_CortesCaja',
+                    'source_status': 'FRESH',
+                    'row_count': len(cortes)
+                }]
+            except Exception as e:
+                logger.error(f"[CORTES_Z_SQL] Error conexión EDARSAHUB (server_id={server_id}): {e}")
+                cortes = []
+                fuente = "EDARSAHUB_SQL"
+                source_status = 'ERROR'
+                fuentes_detalle = [{
+                    'status': 'EDARSAHUB_UNREACHABLE',
+                    'source_type': 'EDARSAHUB_SQL',
+                    'source_id': 'Finanzas_CortesCaja',
+                    'source_status': 'ERROR',
+                    'row_count': 0,
+                    'error_message': str(e)[:200]
+                }]
+                advertencia = f"EDARSAHUB SQL no disponible: {str(e)[:100]}"
         else:
             # Consultar todos (sin filtro de servidor)
             result = repo_cortes.obtener_cortes_todos_servidores(
@@ -144,6 +164,23 @@ async def listar_cortes_z(
             cortes = result.get('cortes', [])
             fuente = result.get('data_source', 'EDARSAHUB_SQL')
             fuentes_detalle = result.get('fuentes_detalle', [])
+            source_status = result.get('source_status', 'UNKNOWN')
+            advertencia = result.get('advertencia')
+        
+        # ARQUITECTURA SQL-FIRST: Si EDARSAHUB no respondió, retornar estado controlado
+        # NUNCA error 500 por falla de infraestructura externa
+        if source_status == 'ERROR':
+            logger.warning("[CORTES_Z_SQL] EDARSAHUB no disponible - retornando estado controlado")
+            return {
+                "cortes": [],
+                "total": 0,
+                "fecha_consulta": datetime.utcnow().isoformat(),
+                "fuente": fuente,
+                "source_type": "EDARSAHUB_SQL",
+                "source_status": "EDARSAHUB_UNREACHABLE",
+                "fuentes_detalle": fuentes_detalle,
+                "advertencia": advertencia or "EDARSAHUB SQL no está respondiendo temporalmente."
+            }
         
         # RBAC Fase 3.1: Filtrar por sucursales permitidas
         if sucursales_permitidas:
@@ -179,6 +216,8 @@ async def listar_cortes_z(
             "total": len(cortes),
             "fecha_consulta": datetime.utcnow().isoformat(),
             "fuente": fuente,
+            "source_type": "EDARSAHUB_SQL",
+            "source_status": source_status if source_status else "FRESH",
             "fuentes_detalle": fuentes_detalle
         }
         
@@ -186,8 +225,23 @@ async def listar_cortes_z(
         return response
         
     except Exception as e:
-        logger.error(f"[CORTES_Z_SQL] Error listando cortes: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"[CORTES_Z_SQL] Error inesperado listando cortes: {e}")
+        # Retornar estado controlado en lugar de error 500
+        return {
+            "cortes": [],
+            "total": 0,
+            "fecha_consulta": datetime.utcnow().isoformat(),
+            "fuente": "EDARSAHUB_SQL",
+            "source_type": "EDARSAHUB_SQL",
+            "source_status": "ERROR",
+            "fuentes_detalle": [{
+                'status': 'ERROR',
+                'source_type': 'EDARSAHUB_SQL',
+                'source_id': 'Finanzas_CortesCaja',
+                'error_message': str(e)[:200]
+            }],
+            "advertencia": f"Error interno consultando EDARSAHUB SQL: {str(e)[:100]}"
+        }
 
 
 @router.get("/cortes-z/{sucursal}/{folio}")

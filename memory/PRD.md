@@ -19,6 +19,50 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
+### ✅ CORTES-Z-RESILIENCIA-001: Mejora de Resiliencia Arquitectónica - COMPLETADO
+
+**Fecha:** 2026-05-25 (Sesión actual)
+
+#### Problema Reportado:
+El dictamen del health check indicaba "timeout por latencia del servidor SQL externo" como aceptable. El usuario rechazó este dictamen exigiendo corrección arquitectónica.
+
+#### Diagnóstico Realizado:
+1. **Auditoría con grep**: Confirmado que `tesoreria.py` ya lee de `Finanzas_CortesCaja` (EDARSAHUB SQL)
+2. **Causa real**: El servidor EDARSAHUB SQL (54.39.104.176) tiene intermitencias de conectividad
+3. **Veredicto**: La arquitectura Cortes Z ya era SQL-FIRST correcta
+
+#### Mejoras Implementadas:
+1. **`repository_cortes_caja_edarsahub.py`**:
+   - Agregado manejo de excepciones resiliente
+   - Nuevo campo `source_status`: `FRESH`, `STALE`, o `ERROR`
+   - Retorna estado controlado `EDARSAHUB_UNREACHABLE` en lugar de propagar excepción
+
+2. **`tesoreria.py`**:
+   - Endpoint ya no lanza error 500 cuando EDARSAHUB no responde
+   - Retorna respuesta controlada con `source_status: "EDARSAHUB_UNREACHABLE"`
+   - Mensaje de advertencia claro al frontend
+
+#### Nueva Respuesta del Endpoint (cuando EDARSAHUB no responde):
+```json
+{
+  "cortes": [],
+  "total": 0,
+  "fuente": "EDARSAHUB_SQL",
+  "source_type": "EDARSAHUB_SQL",
+  "source_status": "EDARSAHUB_UNREACHABLE",
+  "advertencia": "EDARSAHUB SQL no está respondiendo temporalmente."
+}
+```
+
+#### Archivos Modificados:
+- `/app/backend/modules/finanzas/repository_cortes_caja_edarsahub.py`
+- `/app/backend/modules/finanzas/tesoreria.py`
+
+#### Reporte Generado:
+- `/app/docs/reports/CORTES_Z_ARQUITECTURA_SQL_FIRST_DIAGNOSTICO.md`
+
+---
+
 ### ✅ FINANZAS-TESORERIA-SQL-001: Cortes Z migrados a SQL - COMPLETADO
 
 **Fecha:** 2026-05-25

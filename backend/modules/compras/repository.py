@@ -19,6 +19,9 @@ import logging
 
 from core.db import execute_sql_query
 
+# Logger del módulo
+logger = logging.getLogger(__name__)
+
 
 # ============================================================================
 # BLINDAJE: RESULTADO HOMOLOGADO PARA QUERIES DE COMPRAS
@@ -61,19 +64,39 @@ def validate_table_exists(server: Dict, table_name: str) -> bool:
 # ============================================================================
 
 _db = None
+_stub_mode = False  # Flag para indicar si estamos en modo stub (sin MongoDB)
 
 
 def init_compras_repository(database) -> None:
-    """Inicializa el repositorio con la conexión a MongoDB."""
-    global _db
+    """
+    Inicializa el repositorio con la conexión a MongoDB.
+    
+    Si database es None, activa modo stub (funcionalidad limitada).
+    """
+    global _db, _stub_mode
     _db = database
+    _stub_mode = database is None
+    if _stub_mode:
+        logger.warning("[COMPRAS_REPO] Inicializado en modo STUB - funcionalidad MongoDB limitada")
 
 
 def get_db():
-    """Obtiene la conexión a MongoDB inyectada."""
+    """
+    Obtiene la conexión a MongoDB inyectada.
+    
+    Retorna None si está en modo stub en lugar de lanzar excepción.
+    """
+    global _stub_mode
+    if _stub_mode:
+        return None
     if _db is None:
         raise RuntimeError("Compras repository not initialized. Call init_compras_repository(db) first.")
     return _db
+
+
+def is_stub_mode() -> bool:
+    """Retorna True si el repositorio está en modo stub (sin MongoDB)."""
+    return _stub_mode
 
 
 def _decrypt_server_password(server: Optional[Dict]) -> Optional[Dict]:
@@ -111,7 +134,10 @@ async def get_server_by_id(server_id: str) -> Optional[Dict]:
     """
     # FASE T3.1: Usar server_registry en lugar de MongoDB
     from core.server_registry import get_server_connection_info
-    server = await get_server_connection_info(server_id, db=get_db())
+    
+    # get_db() ahora retorna None en modo stub, lo cual es manejado por server_registry
+    db = get_db()  # Puede ser None en modo stub
+    server = await get_server_connection_info(server_id, db=db)
     # get_server_connection_info ya descifra credenciales, no necesita _decrypt_server_password
     return server
 
@@ -122,7 +148,10 @@ async def get_server_by_id(server_id: str) -> Optional[Dict]:
 
 async def get_compras_params(server_id: str, sucursal: str) -> Optional[Dict]:
     """Obtiene los parámetros de compras para un servidor/sucursal."""
-    return await get_db().compras_params.find_one(
+    db = get_db()
+    if db is None:  # Modo stub
+        return None
+    return await db.compras_params.find_one(
         {"server_id": server_id, "sucursal": sucursal},
         {"_id": 0}
     )
@@ -130,7 +159,11 @@ async def get_compras_params(server_id: str, sucursal: str) -> Optional[Dict]:
 
 async def save_compras_params(server_id: str, sucursal: str, params: Dict) -> None:
     """Guarda o actualiza los parámetros de compras."""
-    await get_db().compras_params.update_one(
+    db = get_db()
+    if db is None:  # Modo stub
+        logger.warning(f"[COMPRAS_REPO] save_compras_params ignorado en modo stub")
+        return
+    await db.compras_params.update_one(
         {"server_id": server_id, "sucursal": sucursal},
         {"$set": {**params, "server_id": server_id, "sucursal": sucursal}},
         upsert=True

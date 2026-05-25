@@ -399,10 +399,10 @@ async def get_empresas_activas(empresa_id_filter: str = None) -> List[Dict]:
     query = """
         SELECT 
             CAST(EmpresaID AS VARCHAR(50)) as id,
-            RazonSocial as nombre,
+            NombreEmpresa as nombre,
             RFC as rfc,
             Activo as active
-        FROM Empresas
+        FROM Sistema_Empresas
         WHERE Activo = 1
     """
     
