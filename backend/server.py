@@ -334,6 +334,11 @@ api_router.include_router(pricing_ia_router)
 from modules.comercial.routes_pricing_ai import router as pricing_ai_gpt_router
 api_router.include_router(pricing_ai_gpt_router)
 
+# FASE 1C-3I-G: Listas Manuales de Competidores para Pricing IA
+# ===========================================
+from modules.comercial.routes_listas_competidores import router as listas_competidores_router
+api_router.include_router(listas_competidores_router)
+
 # MÓDULO RECURSOS HUMANOS: Catálogos RH
 # - Fase 6B: Migración de catálogos (Puestos, Sucursales, Tipos Incidencias)
 # - 10 endpoints migrados con queries parametrizados

@@ -21,6 +21,58 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Diciembre 2025)
 
+### ✅ FASE 1C-3I-F: Visualización Avanzada y Exportación - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Resumen
+Se implementaron gráficas interactivas con Recharts y exportación a Excel para el Dashboard de Métricas IA.
+
+#### Gráficas Implementadas:
+- **LineChart**: Análisis por día (tendencia 30 días)
+- **PieChart**: Distribución de confianza (ALTA/MEDIA/BAJA)
+- **BarChart**: Top productos analizados
+
+#### Exportación:
+- Botón "Exportar Excel" genera archivo `.xlsx` con 5 hojas de métricas
+- PDF dejado como P2 (sin infraestructura estable)
+
+#### Archivo de Reporte:
+- `/app/docs/reports/FASE_1C_3I_F_VISUALIZACION_EXPORTACION_PRICING_IA.md`
+
+---
+
+### ✅ FASE 1C-3I-G: Listas Manuales de Competidores - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Resumen
+Se implementó el sistema de listas manuales para agrupar competidores por ciudad, segmento o estrategia comercial.
+
+#### Tablas SQL Creadas:
+- `Comercial_CompetidoresListas`: Tabla principal
+- `Comercial_CompetidoresListasDetalle`: Relación lista-competidor
+
+#### Endpoints Creados (9):
+- CRUD listas: GET/POST/PUT/DELETE `/api/comercial/pricing/listas-competidores`
+- Gestión competidores: GET/POST/DELETE `.../competidores`
+
+#### Componentes Frontend:
+- `TabListasCompetidores`: Nueva pestaña "Listas"
+- `ListaCompetidoresModal`: Crear/editar listas
+- `AgregarCompetidoresModal`: Gestionar miembros
+
+#### Funcionalidades:
+- Un competidor puede estar en múltiples listas
+- Constraint SQL evita duplicados dentro de una lista
+- Color identificador por lista
+- Contador de competidores
+
+#### Archivo de Reporte:
+- `/app/docs/reports/FASE_1C_3I_G_LISTAS_MANUALES_COMPETIDORES_PRICING_IA.md`
+
+---
+
 ### ✅ FASE 1C-3I-E: Dashboard de Métricas IA Pricing - COMPLETADO
 
 **Fecha:** 2026-05-25  

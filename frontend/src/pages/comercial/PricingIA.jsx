@@ -27,9 +27,18 @@ import {
   Plus, Edit2, Trash2, Eye, AlertCircle, CheckCircle, Clock, X,
   AlertTriangle, TrendingUp, TrendingDown, ChevronDown, ChevronUp,
   Target, Sparkles, History, FileText, Users, Tag, ExternalLink,
-  Zap, Info, ShieldAlert, ThumbsUp, ThumbsDown, Loader2, Store
+  Zap, Info, ShieldAlert, ThumbsUp, ThumbsDown, Loader2, Store, Folder
 } from 'lucide-react';
 import api from '@/lib/api';
+
+// Importar componentes de visualización y listas (FASE 1C-3I-F y 1C-3I-G)
+import {
+  ChartAnalisisPorDia,
+  ChartDistribucionConfianza,
+  ChartProductosMasAnalizados,
+  ExportButton,
+  TabListasCompetidores
+} from './PricingIACharts';
 
 // ==================== UTILIDADES ====================
 
@@ -1737,6 +1746,7 @@ const TabDashboardIA = ({ empresaId, unidadId }) => {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <ExportButton metricas={metricas} statsCompetidores={statsCompetidores} />
           <span className="text-xs text-gray-400">
             Actualizado: {formatDate(metricas.fecha_actualizacion)}
           </span>
@@ -1798,12 +1808,44 @@ const TabDashboardIA = ({ empresaId, unidadId }) => {
         </div>
       </div>
       
-      {/* Distribucion de Confianza */}
+      {/* Gráficas con Recharts (FASE 1C-3I-F) */}
+      <div className="grid sm:grid-cols-2 gap-6">
+        {/* Gráfica Análisis por Día */}
+        <div className="bg-white border rounded-lg p-6">
+          <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-purple-600" />
+            Análisis por Día (Últimos 30 días)
+          </h4>
+          <ChartAnalisisPorDia data={metricas.analisis_por_dia} />
+        </div>
+        
+        {/* Gráfica Distribución de Confianza */}
+        <div className="bg-white border rounded-lg p-6">
+          <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Target className="w-4 h-4 text-purple-600" />
+            Distribución de Confianza IA
+          </h4>
+          <ChartDistribucionConfianza data={metricas.distribucion_confianza} />
+        </div>
+      </div>
+      
+      {/* Gráfica Productos Más Analizados */}
+      {metricas.productos_mas_analizados && metricas.productos_mas_analizados.length > 0 && (
+        <div className="bg-white border rounded-lg p-6">
+          <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Tag className="w-4 h-4 text-indigo-600" />
+            Top Productos Analizados
+          </h4>
+          <ChartProductosMasAnalizados data={metricas.productos_mas_analizados} />
+        </div>
+      )}
+      
+      {/* Distribucion de Confianza (Barras originales) */}
       <div className="grid sm:grid-cols-2 gap-6">
         <div className="bg-white border rounded-lg p-6">
           <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <Target className="w-4 h-4 text-purple-600" />
-            Distribucion de Confianza IA
+            Detalle Distribución de Confianza
           </h4>
           
           {totalDistribucion > 0 ? (
@@ -2219,6 +2261,12 @@ const PricingIA = () => {
             icon={History}
             label="Historial"
           />
+          <TabButton
+            active={activeTab === 'listas'}
+            onClick={() => setActiveTab('listas')}
+            icon={Folder}
+            label="Listas"
+          />
         </div>
       </div>
       
@@ -2239,12 +2287,15 @@ const PricingIA = () => {
         {activeTab === 'historial' && (
           <TabHistorial empresaId={empresaId} unidadId={unidadId} />
         )}
+        {activeTab === 'listas' && (
+          <TabListasCompetidores empresaId={empresaId} unidadId={unidadId} />
+        )}
       </div>
       
       {/* Footer info */}
       <div className="text-xs text-gray-400 flex items-center justify-between">
         <span>Datos de EDARSAHUB SQL Server | CERO MongoDB</span>
-        <span>FASE 1C-3I-E: Dashboard Metricas IA Pricing</span>
+        <span>FASE 1C-3I-F/G: Visualización y Listas de Competidores</span>
       </div>
     </div>
   );
