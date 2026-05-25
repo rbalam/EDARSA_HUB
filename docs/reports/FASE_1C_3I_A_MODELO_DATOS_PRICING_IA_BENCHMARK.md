@@ -285,25 +285,139 @@ El modelo queda preparado para cualquier proveedor de IA:
 
 ---
 
-## 9. RIESGOS PENDIENTES
+## 10. PROVEEDOR IA AUTORIZADO
+
+### Decisión del Usuario (2026-05-25)
+
+**Proveedor IA Autorizado: GPT-5.2 (OpenAI)**
+
+### Uso Autorizado para Fases Posteriores
+
+GPT-5.2 podrá usarse para:
+
+1. Analizar el perfil digital de cada unidad de negocio
+2. Interpretar concepto, segmento, tipo de restaurante y posicionamiento
+3. Ayudar a comparar productos del menú contra competidores configurados
+4. Sugerir productos comparables
+5. Generar justificación del precio sugerido
+6. Explicar si conviene subir, mantener o revisar precio
+7. Clasificar confianza del análisis (ALTA/MEDIA/BAJA)
+8. Generar recomendaciones para Dirección
+9. Apoyar en la creación de solicitudes de cambio de precio
+
+### Regla Principal
+
+> **GPT-5.2 sugiere, pero NO autoriza ni aplica precios.**
+
+La decisión final debe pasar por:
+```
+solicitante → autorizador → modificador → auditoría
+```
+
+### Reglas de Evidencia
+
+Toda recomendación de GPT-5.2 debe guardar:
+
+| Campo | Obligatorio |
+|-------|-------------|
+| ProductoID | ✅ |
+| UnidadNegocioID | ✅ |
+| FechaAnalisis | ✅ |
+| ModeloIAUsado | ✅ (= GPT-5.2) |
+| FuentesConsultadas | ✅ |
+| CompetidoresConsiderados | ✅ |
+| ProductosComparables | ✅ |
+| PrecioActual | ✅ |
+| Costo | ✅ |
+| MargenActual | ✅ |
+| PrecioSugerido | ✅ |
+| MargenSugerido | ✅ |
+| JustificacionIA | ✅ |
+| ConfianzaIA | ✅ (ALTA/MEDIA/BAJA) |
+| RequiereRevisionHumana | ✅ |
+| PayloadAnalisisJSON | ✅ |
+| UsuarioEjecucion | ✅ |
+
+### Regla de Confianza
+
+| Nivel | Criterio |
+|-------|----------|
+| ALTA | Costo confiable + impuesto + precio actual + benchmark comparable + competencia validada |
+| MEDIA | Costo + impuesto, pero benchmark parcial o comparables no perfectos |
+| BAJA | Faltan datos de competencia, comparables débiles o inferencia parcial |
+
+**Si confianza = BAJA**: No generar solicitud automática. Solo mostrar como recomendación para revisión.
+
+### Regla para Vinos
+
+Los vinos siguen usando la **tabla de rangos** como regla principal:
+
+```
+CostoBaseVino → tabla de rangos → impuesto → redondeo → precio sugerido
+```
+
+GPT-5.2 puede dar contexto competitivo secundario, pero **NO debe reemplazar** la regla de rangos.
+
+### Regla para Productos Generales
+
+Para productos que no son vino, GPT-5.2 puede considerar:
+- Costo receta / costo producto
+- Margen objetivo
+- Precio actual
+- Histórico de ventas
+- Familia/subfamilia
+- Ticket promedio de unidad
+- Concepto del restaurante
+- Segmento
+- Ciudad/zona
+- Benchmark de competidores
+- Posicionamiento comercial
+
+### No Autorizado
+
+- ❌ Modificar precios oficiales automáticamente
+- ❌ Aplicar precios a POS/Comandero automáticamente
+- ❌ Crear solicitudes automáticas sin revisión humana
+- ❌ Inventar precios de competencia
+- ❌ Presentar inferencias como datos reales
+- ❌ Usar sitios privados o contenido no autorizado
+- ❌ Scraping agresivo
+- ❌ Guardar API keys en frontend
+- ❌ Consultar web desde frontend
+- ❌ Usar MongoDB como fuente de verdad
+
+### Estado de Implementación
+
+| Subfase | Estado |
+|---------|--------|
+| 1C-3I-A | ✅ Completada (modelo de datos) |
+| 1C-3I-B | ⏳ Pendiente (servicios backend, endpoints) |
+| 1C-3I-C | ⏳ Pendiente (integración GPT-5.2 real) |
+| 1C-3I-D | ⏳ Pendiente (frontend) |
+
+**Nota**: La ejecución real de GPT-5.2 será en SUBFASE 1C-3I-C con autorización explícita.
+
+---
+
+## 11. RIESGOS PENDIENTES
 
 1. **Sin competidores configurados**: Las tablas de competidores están vacías. Requiere configuración por el usuario o importación.
 
 2. **Sin precios de competencia**: Comercial_CompetidoresMenuItems vacía. Requiere captura manual o análisis IA.
 
-3. **Integración IA pendiente**: El modelo está preparado pero la integración con proveedor IA requiere subfase posterior.
+3. **Integración IA pendiente**: GPT-5.2 autorizado pero implementación en SUBFASE 1C-3I-C.
 
 4. **Frontend pendiente**: No se creó UI. Solo modelo de datos.
 
 ---
 
-## 10. RECOMENDACIÓN PARA SUBFASE 1C-3I-B
+## 12. RECOMENDACIÓN PARA SUBFASE 1C-3I-B
 
 ### Siguiente Paso Recomendado
 
 **SUBFASE 1C-3I-B: Servicios Backend**
 
-1. Crear `pricing_ai_service.py` con funciones base
+1. Crear `pricing_ai_service.py` con funciones base (sin ejecutar IA todavía)
 2. Crear `benchmark_service.py` para gestión de competidores
 3. Crear endpoints CRUD para:
    - Perfiles digitales de unidad
@@ -312,15 +426,13 @@ El modelo queda preparado para cualquier proveedor de IA:
    - Mapeo benchmark
 4. Integrar con servicio de precios sugeridos existente
 
-### Opciones de Integración IA
+### Proveedor IA Confirmado
 
-| Proveedor | Modelo | Caso de Uso |
-|-----------|--------|-------------|
-| OpenAI | GPT-5.2 | Análisis de menús, justificaciones |
-| Anthropic | Claude Sonnet 4.5 | Análisis detallado, comparables |
-| Google | Gemini 3 Flash | Velocidad, análisis de páginas |
+| Proveedor | Modelo | Estado |
+|-----------|--------|--------|
+| **OpenAI** | **GPT-5.2** | ✅ **AUTORIZADO** |
 
-**Elección pendiente de autorización del usuario.**
+**Nota**: La ejecución real de GPT-5.2 será en SUBFASE 1C-3I-C.
 
 ---
 
@@ -331,4 +443,5 @@ El modelo queda preparado para cualquier proveedor de IA:
 **Tabla Extendida**: 1  
 **Permisos RBAC**: 13  
 **Perfiles Digitales**: 5  
+**Proveedor IA**: GPT-5.2 (autorizado para fases posteriores)  
 **Siguiente Acción**: Esperar autorización para SUBFASE 1C-3I-B (Servicios Backend)

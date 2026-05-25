@@ -23,7 +23,8 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ FASE 1C-3I-A: Modelo de Datos Pricing IA y Benchmark - COMPLETADO
 
-**Fecha:** 2026-05-25
+**Fecha:** 2026-05-25  
+**Proveedor IA Autorizado:** GPT-5.2 (OpenAI)
 
 #### Resumen
 Se creó el modelo de datos base en EDARSAHUB SQL para soportar el motor de precios sugeridos con IA, benchmark competitivo y perfil digital de unidad de negocio.
@@ -47,16 +48,22 @@ Se creó el modelo de datos base en EDARSAHUB SQL para soportar el motor de prec
 - La Estelar (https://laestelar.mx)
 - Origen (OpenTable Mérida)
 
-#### Modelo IA Agnóstico:
-- `ModeloIAUsado` preparado para GPT-5.2, Claude, Gemini
-- `JustificacionIA`, `ConfianzaIA`, `PayloadAnalisisJSON`
-- `RequiereRevisionHumana` = true por defecto
+#### GPT-5.2 Autorizado Para:
+1. Analizar perfil digital de unidades
+2. Comparar productos vs competidores
+3. Sugerir productos comparables
+4. Generar justificación de precios
+5. Clasificar confianza (ALTA/MEDIA/BAJA)
 
-#### No Ejecutado:
-- ❌ No se ejecutó IA
-- ❌ No se hizo scraping
-- ❌ No se creó frontend
-- ❌ No se modificaron precios oficiales
+#### Regla Principal:
+> **GPT-5.2 sugiere, pero NO autoriza ni aplica precios.**
+
+#### Subfases Pendientes:
+| Subfase | Estado | Descripción |
+|---------|--------|-------------|
+| 1C-3I-B | ⏳ Pendiente | Servicios Backend + Endpoints |
+| 1C-3I-C | ⏳ Pendiente | Integración GPT-5.2 Real |
+| 1C-3I-D | ⏳ Pendiente | Frontend |
 
 #### Archivos:
 - `/app/docs/reports/FASE_1C_3I_A_MODELO_DATOS_PRICING_IA_BENCHMARK.md`
