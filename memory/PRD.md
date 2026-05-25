@@ -19,6 +19,37 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
+### ✅ COMPRAS-MONGO-001-F1: Migración Parámetros Compras a SQL - COMPLETADO
+
+**Fecha:** 2026-05-25 (Sesión actual)
+
+#### Problema Reportado:
+Los parámetros de compras usaban MongoDB (`compras_params`) pero la DB fue eliminada. El código tenía un stub silencioso que retornaba `None`/ignoraba guardados.
+
+#### Solución Implementada:
+1. **Tabla SQL creada**: `Compras_Parametros_Sucursal` en EDARSAHUB
+2. **Repositorio SQL**: `/app/backend/modules/compras/repository_compras_sql.py`
+3. **Endpoints migrados**: `GET/POST /api/compras/parametros` ahora usan SQL
+4. **MongoDB eliminado**: Ya no es fuente productiva para parámetros
+
+#### Campos de la tabla:
+- `ServerID`, `SucursalID` (identificadores)
+- `DiasInventario`, `ExcluirDomingos`, `DiasInhabiles`, `DiasTransitoProveedor`
+- `Activo`, `CreadoPor`, `ModificadoPor`, `FechaCreacion`, `FechaModificacion`
+
+#### Archivos Modificados:
+- `/app/backend/modules/compras/repository.py` - Delegación a SQL
+- `/app/backend/modules/compras/repository_compras_sql.py` - Nuevo
+- `/app/backend/server.py` (líneas 7889-7938) - Endpoints migrados
+
+#### Reporte Generado:
+- `/app/docs/reports/COMPRAS_MONGO_001_F1_PARAMETROS_SUCURSAL_SQL.md`
+
+#### Pendiente P1:
+- Tracking de pedidos (`pedidos_procesados_automatizacion`, etc.) aún usa StubDatabase
+
+---
+
 ### ✅ CORTES-Z-RESILIENCIA-001: Mejora de Resiliencia Arquitectónica - COMPLETADO
 
 **Fecha:** 2026-05-25 (Sesión actual)

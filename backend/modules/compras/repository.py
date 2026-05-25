@@ -5,12 +5,20 @@ Acceso a datos para el módulo de compras.
 
 FASE 4 DEL REFACTOR MODULAR (Diciembre 2025):
 - Queries SQL para MPRO y SoftRestaurant
-- Acceso a MongoDB para configuración de servidores
+
+FASE COMPRAS-MONGO-001-F1 (Mayo 2026):
+- Parámetros de compras migrados de MongoDB a EDARSAHUB SQL
+- Tabla: Compras_Parametros_Sucursal
+- CERO MongoDB productivo para parámetros
 
 BLINDAJE ABRIL 2026:
 - Validación de existencia de tablas antes de ejecutar queries
 - Retorno homologado cuando tabla no existe
 - Prevención de contaminación del pool SQL
+
+NOTA: Las funciones get_db(), init_compras_repository(), etc. permanecen
+por compatibilidad con otros módulos que aún usan StubDatabase (pedidos_detector_job).
+Los parámetros de compras YA NO usan estas funciones.
 """
 
 from typing import Dict, List, Optional, Any
@@ -143,31 +151,46 @@ async def get_server_by_id(server_id: str) -> Optional[Dict]:
 
 
 # ============================================================================
-# PARÁMETROS DE COMPRAS (MongoDB)
+# PARÁMETROS DE COMPRAS (MIGRADO A EDARSAHUB SQL - Mayo 2026)
 # ============================================================================
+# FASE: COMPRAS-MONGO-001-F1
+# Migrado de MongoDB a EDARSAHUB SQL Server
+# Tabla destino: Compras_Parametros_Sucursal
 
 async def get_compras_params(server_id: str, sucursal: str) -> Optional[Dict]:
-    """Obtiene los parámetros de compras para un servidor/sucursal."""
-    db = get_db()
-    if db is None:  # Modo stub
-        return None
-    return await db.compras_params.find_one(
-        {"server_id": server_id, "sucursal": sucursal},
-        {"_id": 0}
-    )
+    """
+    Obtiene los parámetros de compras para un servidor/sucursal.
+    
+    MIGRADO: Ahora lee desde EDARSAHUB SQL en lugar de MongoDB.
+    
+    Args:
+        server_id: ID del servidor
+        sucursal: ID de la sucursal
+        
+    Returns:
+        Dict con parámetros o None si no existe configuración
+    """
+    from modules.compras.repository_compras_sql import get_compras_params_sql
+    return get_compras_params_sql(server_id, sucursal)
 
 
 async def save_compras_params(server_id: str, sucursal: str, params: Dict) -> None:
-    """Guarda o actualiza los parámetros de compras."""
-    db = get_db()
-    if db is None:  # Modo stub
-        logger.warning(f"[COMPRAS_REPO] save_compras_params ignorado en modo stub")
-        return
-    await db.compras_params.update_one(
-        {"server_id": server_id, "sucursal": sucursal},
-        {"$set": {**params, "server_id": server_id, "sucursal": sucursal}},
-        upsert=True
-    )
+    """
+    Guarda o actualiza los parámetros de compras.
+    
+    MIGRADO: Ahora escribe a EDARSAHUB SQL en lugar de MongoDB.
+    
+    Args:
+        server_id: ID del servidor
+        sucursal: ID de la sucursal
+        params: Dict con parámetros a guardar
+    """
+    from modules.compras.repository_compras_sql import save_compras_params_sql
+    success = save_compras_params_sql(server_id, sucursal, params)
+    if not success:
+        logger.error(f"[COMPRAS_REPO] Error guardando parámetros en SQL para {server_id}/{sucursal}")
+    else:
+        logger.info(f"[COMPRAS_REPO] Parámetros guardados en EDARSAHUB SQL para {server_id}/{sucursal}")
 
 
 # ============================================================================

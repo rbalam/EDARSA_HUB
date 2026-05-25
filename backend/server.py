@@ -7887,42 +7887,52 @@ FROM Orden_Compra_Detalle OCD WHERE OCD.Oc_Folio = '{request.folio_pedido_compar
 
 
 @api_router.get("/compras/parametros/{server_id}")
-async def obtener_parametros_compra(server_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtiene los parámetros de compra configurados para un servidor"""
+async def obtener_parametros_compra(
+    server_id: str, 
+    sucursal: str = Query(None, description="ID de sucursal"),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Obtiene los parámetros de compra configurados para un servidor/sucursal.
+    
+    MIGRADO: Ahora lee desde EDARSAHUB SQL (Compras_Parametros_Sucursal).
+    """
     verify_token(credentials.credentials)
     
-    params = await db.parametros_compra.find_one({"server_id": server_id})
-    if not params:
-        # Retornar valores por defecto
-        return {
-            "server_id": server_id,
-            "dias_inventario": 10,
-            "excluir_domingos": True,
-            "dias_inhabiles": [],
-            "dias_transito_proveedor": 2
-        }
+    # Usar servicio del módulo compras que lee de SQL
+    from modules.compras.service import obtener_parametros
     
-    # Excluir _id de MongoDB
-    params.pop('_id', None)
+    # Si no se especifica sucursal, usar "DEFAULT"
+    sucursal_id = sucursal or "DEFAULT"
+    
+    params = await obtener_parametros(server_id, sucursal_id)
+    params['server_id'] = server_id  # Asegurar que siempre incluya server_id
+    
     return params
 
 
 @api_router.post("/compras/parametros")
 async def guardar_parametros_compra(params: dict, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Guarda los parámetros de compra para un servidor"""
+    """
+    Guarda los parámetros de compra para un servidor/sucursal.
+    
+    MIGRADO: Ahora escribe a EDARSAHUB SQL (Compras_Parametros_Sucursal).
+    """
     verify_token(credentials.credentials)
     
     server_id = params.get('server_id')
     if not server_id:
         raise HTTPException(status_code=400, detail="server_id es requerido")
     
-    await db.parametros_compra.update_one(
-        {"server_id": server_id},
-        {"$set": params},
-        upsert=True
-    )
+    # Usar servicio del módulo compras que escribe a SQL
+    from modules.compras.service import guardar_parametros
     
-    return {"message": "Parámetros guardados correctamente"}
+    # Si no se especifica sucursal, usar "DEFAULT"
+    sucursal_id = params.get('sucursal') or "DEFAULT"
+    
+    result = await guardar_parametros(server_id, sucursal_id, params)
+    
+    return result
 
 
 # ============= AUDITORÍA OPERATIVA DE COMPRAS =============
