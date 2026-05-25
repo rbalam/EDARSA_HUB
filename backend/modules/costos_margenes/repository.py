@@ -141,8 +141,27 @@ def get_productos_con_costos(
         where_clauses.append(f"(p.Nombre LIKE '%{busqueda}%' OR p.CodigoFuente LIKE '%{busqueda}%')")
     if solo_con_receta:
         where_clauses.append("p.TieneReceta = 1")
+    
+    # MARGEN BAJO: Filtrar productos con margen < 20%
+    # El costo real viene de Sync_Productos_Recetas (no de p.CostoReceta)
+    # Requiere: receta, precio > 0, costo calculado > 0, margen < 20%
     if margen_bajo:
-        where_clauses.append("p.MargenBrutoPorcentaje < 20 AND p.MargenBrutoPorcentaje IS NOT NULL")
+        where_clauses.append("""(
+            p.TieneReceta = 1
+            AND p.PrecioVenta > 0 
+            AND COALESCE(
+                (SELECT SUM(r.CostoTotal) FROM Sync_Productos_Recetas r 
+                 WHERE r.ProductoCodigoFuente = p.CodigoFuente AND r.ServerID = p.ServerID),
+                p.CostoReceta, 0
+            ) > 0
+            AND (
+                (p.PrecioVenta - COALESCE(
+                    (SELECT SUM(r.CostoTotal) FROM Sync_Productos_Recetas r 
+                     WHERE r.ProductoCodigoFuente = p.CodigoFuente AND r.ServerID = p.ServerID),
+                    p.CostoReceta, 0
+                )) / p.PrecioVenta * 100
+            ) < 20
+        )""")
     
     where_sql = " AND ".join(where_clauses)
     
