@@ -1,6 +1,12 @@
 """
 API Router para Tesorería - Cuadre de Cortes Z
 PROTEGIDO CON RBAC (Fase 3.1)
+
+FINANZAS-TESORERIA-MONGO-002: Migrado a EDARSAHUB SQL
+- Fecha: 2026-05-25
+- Ya NO usa MongoDB (tesoreria_cuadres_z) como fuente productiva
+- Usa repository_cuadres_z_edarsahub.py para operaciones de cuadres
+- ServerID se resuelve desde EDARSAHUB SQL
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from typing import Optional, List, Dict, Any
@@ -15,7 +21,11 @@ from .tesoreria_models import (
     EstadoCuadre, ConteoEfectivo, FichaDeposito
 )
 from .repository_cortes_z import get_cortes_z_repository
-from .repository_cuadres_z import get_cuadres_repository, calcular_fecha_deposito_esperada
+# FINANZAS-TESORERIA-MONGO-002: Migrado a repositorio SQL
+from .repository_cuadres_z_edarsahub import (
+    get_cuadres_z_repository_sql, 
+    RepositoryCuadresZEdarsahub
+)
 
 router = APIRouter(prefix="/finanzas/tesoreria", tags=["Tesorería"])
 logger = logging.getLogger(__name__)
@@ -93,7 +103,8 @@ async def listar_cortes_z(
         # RBAC Fase 3.1: Obtener sucursales permitidas
         sucursales_permitidas = await get_user_sucursales_permitidas(current_user)
         
-        repo_cuadres = await get_cuadres_repository()
+        # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
+        repo_cuadres = get_cuadres_z_repository_sql()
         repo_cortes = await get_cortes_z_repository()
         
         # Consultar cortes desde SQL usando el registry centralizado
@@ -142,14 +153,25 @@ async def listar_cortes_z(
             cortes = [c for c in cortes if sucursal.lower() in c.get('sucursal_id', '').lower()]
         
         # Verificar cuáles ya tienen cuadre
+        # FINANZAS-TESORERIA-MONGO-002: Buscar en SQL por folio/sucursal
         for corte in cortes:
-            cuadre = await repo_cuadres.obtener_cuadre_por_folio(
-                corte['folio_corte'],
-                corte['sucursal_id']
-            )
-            corte['tiene_cuadre'] = cuadre is not None
-            corte['cuadre_id'] = cuadre.get('id') if cuadre else None
-            corte['estado_cuadre'] = cuadre.get('estado') if cuadre else None
+            # Buscar si existe cuadre en SQL
+            filtros_busqueda = {
+                'unidad_negocio_id': corte.get('sucursal_id'),
+                'limit': 1
+            }
+            cuadres_existentes = repo_cuadres.listar_cuadres_z(filtros_busqueda)
+            cuadre_existente = None
+            for c in cuadres_existentes:
+                if c.get('folio_corte') == corte['folio_corte']:
+                    cuadre_existente = c
+                    break
+            
+            corte['tiene_cuadre'] = cuadre_existente is not None
+            corte['cuadre_id'] = cuadre_existente.get('cuadre_z_id') if cuadre_existente else None
+            corte['estado_cuadre'] = cuadre_existente.get('estatus', {}).get('cuadre', {}).get('codigo') if cuadre_existente else None
+            # Calcular fecha de depósito esperada
+            from .repository_cortes_z import calcular_fecha_deposito_esperada
             corte['fecha_deposito_esperada'] = calcular_fecha_deposito_esperada(corte['fecha_corte'])
         
         response = {
@@ -198,6 +220,7 @@ async def obtener_corte_z(
             raise HTTPException(status_code=404, detail="Corte Z no encontrado")
         
         corte = cortes[0]
+        from .repository_cortes_z import calcular_fecha_deposito_esperada
         corte['fecha_deposito_esperada'] = calcular_fecha_deposito_esperada(corte['fecha_corte'])
         
         return corte
@@ -219,48 +242,53 @@ async def listar_cuadres(
     skip: int = Query(0, ge=0),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Lista los cuadres registrados con filtros.
+    """
+    Lista los cuadres registrados con filtros.
     
-    FIX BUG 2026-05-26: Agregado soporte para filtro server_id (UUID de unidad de negocio).
-    El server_id se resuelve al código/nombre del servidor para filtrar en los cuadres.
+    FINANZAS-TESORERIA-MONGO-002: Migrado a EDARSAHUB SQL
+    - Ya NO usa MongoDB tesoreria_cuadres_z
+    - Usa repository_cuadres_z_edarsahub.py
+    - server_id se resuelve desde EDARSAHUB SQL
     """
     try:
-        repo = await get_cuadres_repository()
+        # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
+        repo = get_cuadres_z_repository_sql()
         
-        # FIX: Si se proporciona server_id, resolver a sucursal_id (código/nombre)
-        sucursal_filtro = sucursal_id
-        if server_id and not sucursal_id:
-            try:
-                from core.server_registry import get_server_config
-                server_config = get_server_config(server_id)
-                if server_config:
-                    # Usar el nombre del servidor como filtro de sucursal
-                    sucursal_filtro = server_config.get('name') or server_config.get('nombre')
-                    logger.info(f"[CUADRES] server_id={server_id} resuelto a sucursal_filtro={sucursal_filtro}")
-            except Exception as e:
-                logger.warning(f"[CUADRES] No se pudo resolver server_id={server_id}: {e}")
+        filtros = {
+            'limit': limit,
+            'offset': skip
+        }
         
-        cuadres = await repo.listar_cuadres(
-            estado=estado,
-            sucursal_id=sucursal_filtro,
-            fecha_inicio=fecha_inicio,
-            fecha_fin=fecha_fin,
-            limit=limit,
-            skip=skip
-        )
+        if fecha_inicio:
+            filtros['fecha_inicio'] = fecha_inicio
+        if fecha_fin:
+            filtros['fecha_fin'] = fecha_fin
+        if estado:
+            filtros['estatus_cuadre'] = estado
+        
+        # Filtrar por server_id o unidad_negocio_id (SQL directo, sin MongoDB)
+        if server_id:
+            logger.info(f"[CUADRES_SQL] Filtrando por server_id={server_id}")
+            cuadres = repo.listar_cuadres_z_por_server_id(server_id, filtros)
+        elif sucursal_id:
+            filtros['unidad_negocio_id'] = sucursal_id
+            cuadres = repo.listar_cuadres_z(filtros)
+        else:
+            cuadres = repo.listar_cuadres_z(filtros)
         
         return {
             "cuadres": cuadres,
             "total": len(cuadres),
             "limit": limit,
             "skip": skip,
+            "fuente": "EDARSAHUB_SQL",  # Indicador de fuente
             "filtro_aplicado": {
                 "server_id": server_id,
-                "sucursal_id": sucursal_filtro
+                "sucursal_id": sucursal_id
             }
         }
     except Exception as e:
-        logger.error(f"Error listando cuadres: {e}")
+        logger.error(f"[CUADRES_SQL] Error listando cuadres: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -271,37 +299,51 @@ async def obtener_resumen_cuadres(
     server_id: Optional[str] = Query(None, description="Filtrar por server_id (UUID de unidad de negocio)"),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Obtiene resumen estadístico de cuadres.
+    """
+    Obtiene resumen estadístico de cuadres.
     
-    FIX BUG 2026-05-26: Agregado soporte para filtro server_id.
+    FINANZAS-TESORERIA-MONGO-002: Migrado a EDARSAHUB SQL
+    - Ya NO usa MongoDB tesoreria_cuadres_z
+    - Usa repository_cuadres_z_edarsahub.py
     """
     try:
-        repo = await get_cuadres_repository()
+        # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
+        repo = get_cuadres_z_repository_sql()
         
-        # FIX: Si se proporciona server_id, resolver a sucursal_id (código/nombre)
-        sucursal_filtro = None
+        filtros = {}
+        if fecha_inicio:
+            filtros['fecha_inicio'] = fecha_inicio
+        if fecha_fin:
+            filtros['fecha_fin'] = fecha_fin
+        
         if server_id:
-            try:
-                from core.server_registry import get_server_config
-                server_config = get_server_config(server_id)
-                if server_config:
-                    sucursal_filtro = server_config.get('name') or server_config.get('nombre')
-                    logger.info(f"[RESUMEN] server_id={server_id} resuelto a sucursal_filtro={sucursal_filtro}")
-            except Exception as e:
-                logger.warning(f"[RESUMEN] No se pudo resolver server_id={server_id}: {e}")
-        
-        resumen = await repo.obtener_resumen(fecha_inicio, fecha_fin, sucursal_id=sucursal_filtro)
+            logger.info(f"[RESUMEN_SQL] Obteniendo resumen para server_id={server_id}")
+            resultado = repo.obtener_resumen_por_server_id(server_id, filtros)
+            resumen = resultado.get('resumen', {})
+        else:
+            resumen_data = repo.obtener_resumen_cuadres_z(filtros)
+            # Formatear para compatibilidad con contrato frontend
+            resumen = {
+                'PENDIENTE': {'count': 0, 'total_esperado': 0, 'total_depositado': 0},
+                'EN_PROCESO': {'count': 0, 'total_esperado': 0, 'total_depositado': 0},
+                'CUADRADO': {'count': 0, 'total_esperado': 0, 'total_depositado': 0},
+                'DESCUADRE': {'count': 0, 'total_esperado': 0, 'total_depositado': 0}
+            }
+            for r in resumen_data.get('por_estatus', []):
+                estatus = r.get('estatus', 'PENDIENTE')
+                if estatus in resumen:
+                    resumen[estatus]['count'] = r['cantidad']
         
         return {
             "resumen": resumen,
             "fecha_consulta": datetime.utcnow().isoformat(),
+            "fuente": "EDARSAHUB_SQL",
             "filtro_aplicado": {
-                "server_id": server_id,
-                "sucursal_id": sucursal_filtro
+                "server_id": server_id
             }
         }
     except Exception as e:
-        logger.error(f"Error obteniendo resumen: {e}")
+        logger.error(f"[RESUMEN_SQL] Error obteniendo resumen: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -310,19 +352,34 @@ async def obtener_cuadre(
     cuadre_id: str,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Obtiene un cuadre específico por ID"""
+    """
+    Obtiene un cuadre específico por ID.
+    
+    FINANZAS-TESORERIA-MONGO-002: Migrado a EDARSAHUB SQL
+    """
     try:
-        repo = await get_cuadres_repository()
-        cuadre = await repo.obtener_cuadre(cuadre_id)
+        # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
+        repo = get_cuadres_z_repository_sql()
+        
+        # Intentar convertir a int si es numérico
+        try:
+            cuadre_id_int = int(cuadre_id)
+            cuadre = repo.obtener_cuadre_z(cuadre_id_int)
+        except ValueError:
+            # Si no es numérico, no existe en SQL
+            cuadre = None
         
         if not cuadre:
             raise HTTPException(status_code=404, detail="Cuadre no encontrado")
         
-        return cuadre
+        return {
+            "cuadre": cuadre,
+            "fuente": "EDARSAHUB_SQL"
+        }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error obteniendo cuadre: {e}")
+        logger.error(f"[CUADRE_SQL] Error obteniendo cuadre: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -333,57 +390,82 @@ async def crear_cuadre(
 ):
     """
     Crea un nuevo cuadre para un Corte Z.
-    El corte_z debe incluir los datos del corte a cuadrar.
+    
+    FINANZAS-TESORERIA-MONGO-002: Migrado a EDARSAHUB SQL
+    - Ya NO usa MongoDB tesoreria_cuadres_z
+    - Usa repository_cuadres_z_edarsahub.py
     """
     from core.auditoria_helpers import registrar_auditoria_tesoreria
     
     try:
-        repo = await get_cuadres_repository()
+        # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
+        repo = get_cuadres_z_repository_sql()
         
-        # Verificar que no exista ya un cuadre para este corte
         corte_z = data.get('corte_z', {})
-        folio_corte = corte_z.get('folio_corte')
-        sucursal_id = corte_z.get('sucursal_id')
-        
-        if corte_z:
-            existente = await repo.obtener_cuadre_por_folio(folio_corte, sucursal_id)
-            if existente:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Ya existe un cuadre para este corte (ID: {existente['id']})"
-                )
-        
         user_id = current_user.get('sub') or current_user.get('email')
-        cuadre = await repo.crear_cuadre(data, user_id)
+        user_nombre = current_user.get('nombre') or current_user.get('email')
         
-        # Calcular si hay descuadre
-        diferencia = data.get('conteo_efectivo', {}).get('diferencia', 0) or 0
-        tiene_descuadre = abs(diferencia) > 0
+        # Preparar datos para repositorio SQL
+        cuadre_data = {
+            'unidad_negocio_id': corte_z.get('sucursal_id') or corte_z.get('server_id'),
+            'unidad_negocio_nombre': corte_z.get('sucursal_nombre') or corte_z.get('nombre_servidor'),
+            'empresa_id': corte_z.get('empresa_id'),
+            'server_id': corte_z.get('server_id') or corte_z.get('sucursal_id'),
+            'sistema_origen': corte_z.get('sistema_origen', 'MANUAL'),
+            'fecha_operacion': corte_z.get('fecha_corte'),
+            'fecha_corte': corte_z.get('fecha_corte'),
+            'folio_corte': corte_z.get('folio_corte'),
+            'folio_z': corte_z.get('folio_z'),
+            'caja_id': corte_z.get('caja_id'),
+            'caja_nombre': corte_z.get('caja_nombre'),
+            'cajero_id': corte_z.get('cajero_id'),
+            'cajero_nombre': corte_z.get('cajero_nombre'),
+            'turno_id': corte_z.get('turno_id'),
+            'total_venta': corte_z.get('total_venta', 0),
+            'total_efectivo': corte_z.get('total_efectivo', 0),
+            'total_tarjeta_debito': corte_z.get('total_tarjeta_debito', 0),
+            'total_tarjeta_credito': corte_z.get('total_tarjeta_credito', 0),
+            'total_tarjeta_total': corte_z.get('total_tarjeta', 0),
+            'total_depositar': corte_z.get('monto_a_depositar', 0),
+            'conteo_efectivo': data.get('conteo_efectivo', {}),
+            'ficha_deposito': data.get('ficha_deposito', {}),
+            'estatus_cuadre': 'PENDIENTE',
+            'estatus_tesoreria': 'PENDIENTE',
+            'observaciones': data.get('observaciones'),
+            'fuente_original': 'WEB_APP'
+        }
+        
+        resultado = repo.crear_cuadre_z(cuadre_data, user_id, user_nombre)
+        
+        if not resultado.get('success'):
+            raise HTTPException(
+                status_code=400,
+                detail=resultado.get('mensaje', 'Error al crear cuadre')
+            )
         
         # Registrar auditoría
         await registrar_auditoria_tesoreria(
             current_user=current_user,
             accion='CONFIRM',
-            corte_id=cuadre.get('id'),
-            folio_corte=folio_corte,
-            sucursal_id=sucursal_id,
+            corte_id=str(resultado.get('cuadre_z_id')),
+            folio_corte=corte_z.get('folio_corte'),
+            sucursal_id=cuadre_data['unidad_negocio_id'],
             valor_nuevo={
-                'efectivo_contado': data.get('conteo_efectivo', {}).get('total_contado'),
-                'diferencia': diferencia,
-                'estado': cuadre.get('estado')
+                'cuadre_z_id': resultado.get('cuadre_z_id'),
+                'fuente': 'EDARSAHUB_SQL'
             },
-            tiene_descuadre=tiene_descuadre,
-            motivo='Crear cuadre de Corte Z'
+            motivo='Crear cuadre de Corte Z (SQL)'
         )
         
         return {
             "message": "Cuadre creado exitosamente",
-            "cuadre": cuadre
+            "cuadre_z_id": resultado.get('cuadre_z_id'),
+            "fuente": "EDARSAHUB_SQL"
         }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creando cuadre: {e}")
+        logger.error(f"[CUADRE_SQL] Error creando cuadre: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -393,46 +475,51 @@ async def actualizar_cuadre(
     data: dict,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Actualiza un cuadre existente (conteo, ficha de depósito, observaciones)"""
+    """
+    Actualiza un cuadre existente (conteo, ficha de depósito, observaciones).
+    
+    FINANZAS-TESORERIA-MONGO-002: Migrado a EDARSAHUB SQL
+    """
     from core.auditoria_helpers import registrar_auditoria_tesoreria
     
     try:
-        repo = await get_cuadres_repository()
+        # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
+        repo = get_cuadres_z_repository_sql()
         
-        # Obtener cuadre anterior para auditoría
-        cuadre_anterior = await repo.obtener_cuadre(cuadre_id)
+        try:
+            cuadre_id_int = int(cuadre_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="ID de cuadre inválido")
         
-        cuadre = await repo.actualizar_cuadre(cuadre_id, data)
+        user_id = current_user.get('sub') or current_user.get('email')
+        user_nombre = current_user.get('nombre') or current_user.get('email')
         
-        if not cuadre:
-            raise HTTPException(status_code=404, detail="Cuadre no encontrado")
+        resultado = repo.actualizar_cuadre_z(cuadre_id_int, data, user_id, user_nombre)
         
-        # Registrar auditoría de ajuste
+        if not resultado.get('success'):
+            raise HTTPException(
+                status_code=404 if resultado.get('accion') == 'no_encontrado' else 400,
+                detail=resultado.get('mensaje', 'Error al actualizar cuadre')
+            )
+        
+        # Registrar auditoría
         await registrar_auditoria_tesoreria(
             current_user=current_user,
             accion='EDIT',
             corte_id=cuadre_id,
-            folio_corte=cuadre.get('corte_z', {}).get('folio_corte'),
-            sucursal_id=cuadre.get('corte_z', {}).get('sucursal_id'),
-            valor_anterior={
-                'estado': cuadre_anterior.get('estado') if cuadre_anterior else None,
-                'diferencia': cuadre_anterior.get('conteo_efectivo', {}).get('diferencia') if cuadre_anterior else None
-            } if cuadre_anterior else None,
-            valor_nuevo={
-                'estado': cuadre.get('estado'),
-                'diferencia': data.get('conteo_efectivo', {}).get('diferencia')
-            },
-            motivo='Ajustar cuadre existente'
+            valor_nuevo=data,
+            motivo='Actualizar cuadre (SQL)'
         )
         
         return {
             "message": "Cuadre actualizado exitosamente",
-            "cuadre": cuadre
+            "cuadre_z_id": cuadre_id_int,
+            "fuente": "EDARSAHUB_SQL"
         }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error actualizando cuadre: {e}")
+        logger.error(f"[CUADRE_SQL] Error actualizando cuadre: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -441,19 +528,34 @@ async def eliminar_cuadre(
     cuadre_id: str,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Elimina un cuadre"""
+    """
+    Elimina un cuadre (soft delete - marca Activo=0).
+    
+    FINANZAS-TESORERIA-MONGO-002: Migrado a EDARSAHUB SQL
+    """
     try:
-        repo = await get_cuadres_repository()
-        eliminado = await repo.eliminar_cuadre(cuadre_id)
+        # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
+        repo = get_cuadres_z_repository_sql()
         
-        if not eliminado:
+        try:
+            cuadre_id_int = int(cuadre_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="ID de cuadre inválido")
+        
+        # Soft delete: marcar como inactivo
+        resultado = repo.actualizar_cuadre_z(cuadre_id_int, {'activo': False})
+        
+        if not resultado.get('success'):
             raise HTTPException(status_code=404, detail="Cuadre no encontrado")
         
-        return {"message": "Cuadre eliminado exitosamente"}
+        return {
+            "message": "Cuadre eliminado exitosamente",
+            "fuente": "EDARSAHUB_SQL"
+        }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error eliminando cuadre: {e}")
+        logger.error(f"[CUADRE_SQL] Error eliminando cuadre: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -516,66 +618,72 @@ async def validar_ficha_deposito(
     """
     Valida los datos de la ficha de depósito contra el corte Z.
     Verifica: importe, fecha (día hábil siguiente).
+    
+    FINANZAS-TESORERIA-MONGO-002: Migrado a EDARSAHUB SQL
     """
     try:
-        repo = await get_cuadres_repository()
-        cuadre = await repo.obtener_cuadre(cuadre_id)
+        # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
+        repo = get_cuadres_z_repository_sql()
+        
+        try:
+            cuadre_id_int = int(cuadre_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="ID de cuadre inválido")
+        
+        cuadre = repo.obtener_cuadre_z(cuadre_id_int)
         
         if not cuadre:
             raise HTTPException(status_code=404, detail="Cuadre no encontrado")
         
-        fecha_venta = cuadre['corte_z']['fecha_corte']
+        fecha_venta = cuadre.get('fecha_corte')
         fecha_deposito = data.get('fecha_deposito')
         importe_deposito = float(data.get('importe', 0))
-        monto_esperado = cuadre['monto_esperado']
+        monto_esperado = cuadre.get('cuadre', {}).get('total_depositar', 0)
         
         # Validar fecha
-        from .repository_cuadres_z import validar_fecha_deposito
-        fecha_valida = validar_fecha_deposito(fecha_venta, fecha_deposito)
+        from .repository_cortes_z import calcular_fecha_deposito_esperada
+        fecha_esperada = calcular_fecha_deposito_esperada(fecha_venta)
+        fecha_valida = fecha_esperada == fecha_deposito
         
         # Validar importe (tolerancia de $5)
         diferencia = abs(importe_deposito - monto_esperado)
         importe_valido = diferencia <= 5
         
         # Actualizar ficha en el cuadre
-        ficha_data = {
-            'fecha_deposito': fecha_deposito,
-            'banco': data.get('banco'),
-            'referencia': data.get('referencia'),
-            'cuenta': data.get('cuenta'),
-            'sucursal_banco': data.get('sucursal_banco'),
-            'importe': importe_deposito,
-            'archivo_url': data.get('archivo_url'),
-            'ocr_validado': True,
-            'ocr_data': data
-        }
-        
         update_data = {
-            'ficha_deposito': ficha_data
+            'ficha_deposito_url': data.get('archivo_url'),
+            'ficha_deposito_fecha': fecha_deposito,
+            'ficha_deposito_monto': importe_deposito,
+            'ficha_deposito_validada': fecha_valida and importe_valido
         }
         
         # Determinar estado
         if fecha_valida and importe_valido:
-            update_data['estado'] = 'CUADRADO'
+            update_data['estatus_cuadre'] = 'CUADRADO'
         elif importe_deposito > 0:
-            update_data['estado'] = 'DESCUADRE'
+            update_data['estatus_cuadre'] = 'DESCUADRE'
         
-        cuadre_actualizado = await repo.actualizar_cuadre(cuadre_id, update_data)
+        user_id = current_user.get('sub') or current_user.get('email')
+        user_nombre = current_user.get('nombre') or current_user.get('email')
+        
+        resultado = repo.actualizar_cuadre_z(cuadre_id_int, update_data, user_id, user_nombre)
         
         return {
             "validacion": {
                 "fecha_valida": fecha_valida,
-                "fecha_esperada": calcular_fecha_deposito_esperada(fecha_venta),
+                "fecha_esperada": fecha_esperada,
                 "importe_valido": importe_valido,
                 "monto_esperado": monto_esperado,
                 "diferencia": diferencia
             },
-            "cuadre": cuadre_actualizado
+            "cuadre_z_id": cuadre_id_int,
+            "actualizado": resultado.get('success', False),
+            "fuente": "EDARSAHUB_SQL"
         }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error validando ficha: {e}")
+        logger.error(f"[CUADRE_SQL] Error validando ficha: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -596,7 +704,6 @@ async def get_tesoreria_sucursales_operativas() -> List[Dict]:
     EDARSAHUB es la fuente maestra operativa.
     """
     sucursales = []
-    fuente_usada = "EDARSAHUB"
     
     try:
         # FUENTE PRIMARIA: EDARSAHUB SQL
@@ -662,7 +769,6 @@ async def get_tesoreria_sucursales_operativas() -> List[Dict]:
             
     except Exception as e:
         logger.warning(f"[TESORERIA][EDARSAHUB_ERROR] Error consultando EDARSAHUB: {e}. Usando fallback server_registry.")
-        fuente_usada = "SERVER_REGISTRY_FALLBACK"
     
     # FALLBACK: server_registry.py (FASE T2.2: Reemplaza MongoDB)
     # Este fallback usa la capa centralizada que también lee de EDARSAHUB

@@ -889,6 +889,269 @@ class RepositoryCuadresZEdarsahub:
             conn.close()
 
 
+    # =========================================================================
+    # RESOLUCIÓN SERVER_ID → UNIDAD_NEGOCIO_ID
+    # FINANZAS-TESORERIA-MONGO-002: Agregado 2026-05-25
+    # =========================================================================
+    
+    def resolver_server_id_a_unidad(self, server_id: str) -> Optional[Dict]:
+        """
+        Resuelve server_id (UUID) a UnidadNegocioID usando EDARSAHUB SQL.
+        
+        Camino de resolución:
+        server_id → Servidores_Conexiones → Sistema_SucursalServidorMapeo → Sistema_Sucursales
+        
+        Args:
+            server_id: UUID del servidor (frontend)
+            
+        Returns:
+            Dict con unidad_negocio_id, nombre, empresa_id si se encuentra
+            None si no se encuentra
+        """
+        if not server_id:
+            return None
+            
+        conn = get_edarsahub_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            # Primero buscar si el server_id coincide directamente con UnidadNegocioID
+            # (en algunos casos server_id = unidad_negocio_id)
+            cursor.execute('''
+                SELECT DISTINCT TOP 1
+                    cz.UnidadNegocioID,
+                    cz.UnidadNegocioNombre,
+                    cz.EmpresaID
+                FROM Finanzas_CuadresZ cz
+                WHERE cz.ServerID = %s AND cz.Activo = 1
+            ''', (server_id,))
+            
+            row = cursor.fetchone()
+            if row:
+                logger.debug(f"[CUADRES_Z] server_id={server_id} resuelto desde Finanzas_CuadresZ")
+                return {
+                    'unidad_negocio_id': row['UnidadNegocioID'],
+                    'nombre': row['UnidadNegocioNombre'],
+                    'empresa_id': row.get('EmpresaID')
+                }
+            
+            # Si no hay cuadres, buscar en Servidores_Conexiones
+            cursor.execute('''
+                SELECT 
+                    sc.id as servidor_id,
+                    sc.name as nombre_servidor,
+                    ssm.SucursalId,
+                    suc.Nombre as nombre_sucursal,
+                    suc.EmpresaId
+                FROM Servidores_Conexiones sc
+                LEFT JOIN Sistema_SucursalServidorMapeo ssm ON sc.id = ssm.ServidorId
+                LEFT JOIN Sistema_Sucursales suc ON ssm.SucursalId = suc.Id
+                WHERE sc.id = %s
+            ''', (server_id,))
+            
+            row = cursor.fetchone()
+            if row:
+                unidad_id = row.get('SucursalId') or row.get('servidor_id')
+                nombre = row.get('nombre_sucursal') or row.get('nombre_servidor')
+                logger.debug(f"[CUADRES_Z] server_id={server_id} resuelto desde Servidores_Conexiones: {unidad_id}")
+                return {
+                    'unidad_negocio_id': unidad_id,
+                    'nombre': nombre,
+                    'empresa_id': row.get('EmpresaId')
+                }
+            
+            logger.warning(f"[CUADRES_Z] server_id={server_id} no encontrado en EDARSAHUB")
+            return None
+            
+        except Exception as e:
+            logger.error(f"[CUADRES_Z] Error resolviendo server_id={server_id}: {e}")
+            return None
+        finally:
+            conn.close()
+    
+    def listar_cuadres_z_por_server_id(self, server_id: str, filtros: Dict = None) -> List[Dict]:
+        """
+        Lista Cuadres Z filtrando por server_id.
+        
+        FINANZAS-TESORERIA-MONGO-002: Método agregado para compatibilidad con frontend
+        que envía server_id en lugar de unidad_negocio_id.
+        
+        Args:
+            server_id: UUID del servidor
+            filtros: Filtros adicionales (fecha_inicio, fecha_fin, estatus_cuadre, etc.)
+            
+        Returns:
+            Lista de cuadres formateados
+        """
+        filtros = filtros or {}
+        
+        conn = get_edarsahub_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            where_clauses = ['cz.Activo = 1', 'cz.ServerID = %s']
+            params = [server_id]
+            
+            # Filtro por fechas
+            if 'fecha_inicio' in filtros:
+                where_clauses.append('cz.FechaCorte >= %s')
+                params.append(filtros['fecha_inicio'])
+            if 'fecha_fin' in filtros:
+                where_clauses.append('cz.FechaCorte <= %s')
+                params.append(filtros['fecha_fin'])
+            
+            # Filtro por estatus
+            if 'estatus_cuadre' in filtros:
+                estatus_id = self._mapear_estatus_cuadre(filtros['estatus_cuadre'])
+                where_clauses.append('cz.EstatusCuadreID = %s')
+                params.append(estatus_id)
+            
+            where_sql = ' AND '.join(where_clauses)
+            
+            limit = filtros.get('limit', 100)
+            offset = filtros.get('offset', 0)
+            
+            sql = f'''
+                SELECT 
+                    cz.*,
+                    ec.Codigo as EstatusCuadreCodigo,
+                    ec.Descripcion as EstatusCuadreDescripcion,
+                    ec.ColorHex as EstatusCuadreColor,
+                    et.Codigo as EstatusTesoreriaCodigo,
+                    et.Descripcion as EstatusTesoreriaDescripcion,
+                    et.ColorHex as EstatusTesoreriaColor
+                FROM {self.tabla_principal} cz
+                LEFT JOIN {self.tabla_estatus_cuadre} ec ON cz.EstatusCuadreID = ec.EstatusCuadreID
+                LEFT JOIN {self.tabla_estatus_tesoreria} et ON cz.EstatusTesoreriaID = et.EstatusTesoreriaID
+                WHERE {where_sql}
+                ORDER BY cz.FechaCorte DESC, cz.CuadreZID DESC
+                OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+            '''
+            
+            cursor.execute(sql, tuple(params))
+            rows = cursor.fetchall()
+            
+            return [self._formatear_cuadre(row) for row in rows]
+        finally:
+            conn.close()
+    
+    def obtener_resumen_por_server_id(self, server_id: str, filtros: Dict = None) -> Dict:
+        """
+        Obtiene resumen de Cuadres Z para un server_id específico.
+        
+        FINANZAS-TESORERIA-MONGO-002: Método agregado para compatibilidad con frontend.
+        
+        Args:
+            server_id: UUID del servidor
+            filtros: Filtros adicionales
+            
+        Returns:
+            Dict con resumen de cuadres
+        """
+        filtros = filtros or {}
+        
+        conn = get_edarsahub_connection()
+        try:
+            cursor = conn.cursor(as_dict=True)
+            
+            where_clauses = ['cz.Activo = 1', 'cz.EsDemo = 0', 'cz.ServerID = %s']
+            params = [server_id]
+            
+            if 'fecha_inicio' in filtros:
+                where_clauses.append('cz.FechaCorte >= %s')
+                params.append(filtros['fecha_inicio'])
+            if 'fecha_fin' in filtros:
+                where_clauses.append('cz.FechaCorte <= %s')
+                params.append(filtros['fecha_fin'])
+            
+            where_sql = ' AND '.join(where_clauses)
+            
+            # Totales generales
+            sql_totales = f'''
+                SELECT 
+                    COUNT(*) as total_cuadres,
+                    ISNULL(SUM(cz.TotalVenta), 0) as total_venta,
+                    ISNULL(SUM(cz.TotalEfectivo), 0) as total_efectivo,
+                    ISNULL(SUM(cz.TotalTarjetaTotal), 0) as total_tarjeta,
+                    ISNULL(SUM(cz.TotalDepositar), 0) as total_depositar,
+                    ISNULL(SUM(cz.TotalDeclarado), 0) as total_declarado,
+                    ISNULL(SUM(cz.Diferencia), 0) as total_diferencia
+                FROM {self.tabla_principal} cz
+                WHERE {where_sql}
+            '''
+            cursor.execute(sql_totales, tuple(params))
+            totales = cursor.fetchone()
+            
+            # Por estatus
+            sql_por_estatus = f'''
+                SELECT 
+                    ec.Codigo as estatus,
+                    ec.ColorHex as color,
+                    COUNT(*) as cantidad
+                FROM {self.tabla_principal} cz
+                LEFT JOIN {self.tabla_estatus_cuadre} ec ON cz.EstatusCuadreID = ec.EstatusCuadreID
+                WHERE {where_sql}
+                GROUP BY ec.Codigo, ec.ColorHex, ec.Orden
+                ORDER BY ec.Orden
+            '''
+            cursor.execute(sql_por_estatus, tuple(params))
+            por_estatus = cursor.fetchall()
+            
+            # Formatear para compatibilidad con contrato anterior (MongoDB)
+            resumen_legacy = {
+                'PENDIENTE': {'count': 0, 'total_esperado': 0, 'total_depositado': 0},
+                'EN_PROCESO': {'count': 0, 'total_esperado': 0, 'total_depositado': 0},
+                'CUADRADO': {'count': 0, 'total_esperado': 0, 'total_depositado': 0},
+                'DESCUADRE': {'count': 0, 'total_esperado': 0, 'total_depositado': 0}
+            }
+            
+            for r in por_estatus:
+                estatus = r.get('estatus', 'PENDIENTE')
+                if estatus in resumen_legacy:
+                    resumen_legacy[estatus]['count'] = r['cantidad']
+            
+            return {
+                'resumen': resumen_legacy,  # Formato legacy para compatibilidad frontend
+                'totales': {
+                    'total_cuadres': totales['total_cuadres'],
+                    'total_venta': float(totales['total_venta']),
+                    'total_efectivo': float(totales['total_efectivo']),
+                    'total_tarjeta': float(totales['total_tarjeta']),
+                    'total_depositar': float(totales['total_depositar']),
+                    'total_declarado': float(totales['total_declarado']),
+                    'total_diferencia': float(totales['total_diferencia']),
+                },
+                'por_estatus': [
+                    {
+                        'estatus': r['estatus'],
+                        'color': r['color'],
+                        'cantidad': r['cantidad']
+                    }
+                    for r in por_estatus
+                ]
+            }
+        finally:
+            conn.close()
+
+
+# ============================================================================
+# SINGLETON PATTERN
+# ============================================================================
+
+_repo_instance = None
+
+def get_cuadres_z_repository_sql() -> RepositoryCuadresZEdarsahub:
+    """
+    Obtiene instancia singleton del repositorio SQL de Cuadres Z.
+    
+    FINANZAS-TESORERIA-MONGO-002: Factory method para tesoreria.py
+    """
+    global _repo_instance
+    if _repo_instance is None:
+        _repo_instance = RepositoryCuadresZEdarsahub()
+    return _repo_instance
+
+
 # ============================================================================
 # EXPORTS
 # ============================================================================
@@ -897,5 +1160,6 @@ __all__ = [
     'RepositoryCuadresZEdarsahub',
     'calcular_hash_origen',
     'validar_hash_origen',
-    'get_edarsahub_connection'
+    'get_edarsahub_connection',
+    'get_cuadres_z_repository_sql'
 ]

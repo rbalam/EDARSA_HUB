@@ -19,6 +19,37 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
+### ✅ FINANZAS-TESORERIA-MONGO-002: Migración Cuadres Z a SQL - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Problema:
+Tesorería/Cuadres Z usaba MongoDB (`tesoreria_cuadres_z`) como fuente productiva, violando la máxima de EDARSAHUB SQL.
+
+#### Solución Implementada:
+1. **Diagnóstico:** Identificado que ya existía tabla SQL `Finanzas_CuadresZ` y repositorio `repository_cuadres_z_edarsahub.py`
+2. **Migración:** Modificado `tesoreria.py` para usar repositorio SQL en lugar de MongoDB
+3. **server_id:** Resuelto directamente desde SQL (columna `ServerID` en `Finanzas_CuadresZ`)
+4. **Métodos agregados:** `listar_cuadres_z_por_server_id()`, `obtener_resumen_por_server_id()`, `get_cuadres_z_repository_sql()`
+
+#### Endpoints migrados a SQL:
+- `GET /api/finanzas/tesoreria/cuadres` → `fuente: "EDARSAHUB_SQL"`
+- `GET /api/finanzas/tesoreria/cuadres/resumen` → `fuente: "EDARSAHUB_SQL"`
+- `GET /api/finanzas/tesoreria/cuadres/{id}` → `fuente: "EDARSAHUB_SQL"`
+- `POST /api/finanzas/tesoreria/cuadres` → `fuente: "EDARSAHUB_SQL"`
+- `PUT /api/finanzas/tesoreria/cuadres/{id}` → `fuente: "EDARSAHUB_SQL"`
+- `DELETE /api/finanzas/tesoreria/cuadres/{id}` → `fuente: "EDARSAHUB_SQL"`
+- `POST /api/finanzas/tesoreria/cuadres/{id}/validar-ficha` → `fuente: "EDARSAHUB_SQL"`
+
+#### Archivos Modificados:
+- `/app/backend/modules/finanzas/tesoreria.py` (imports + endpoints)
+- `/app/backend/modules/finanzas/repository_cuadres_z_edarsahub.py` (nuevos métodos)
+
+#### Reportes:
+- `/app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md`
+- `/app/docs/reports/FINANZAS_TESORERIA_MONGO_002_MIGRACION_CUADRES_Z_SQL.md`
+
+---
 
 ### ✅ BUG-COMPETIDORES-001: Campos No Guardados + Redes Sociales - RESUELTO
 
