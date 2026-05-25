@@ -39,6 +39,21 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
   - Problema: El modal de receta expandida estaba fijo en el centro de pantalla
   - Solución: Implementado drag & drop con `onMouseDown/onMouseMove/onMouseUp` y transformaciones CSS
   - Resultado: Modal ahora es arrastrable, con indicador "(Arrastre para mover)" en el header
+- [x] **Bug 4 - % del Total en 0.0%**: CORREGIDO
+  - Problema: La columna "% del Total" mostraba 0.0% para todos los componentes
+  - Solución: Modificado backend para calcular porcentaje dinámicamente basado en `costo_comp / costo_total_receta * 100`
+  - Resultado: Componentes ahora muestran porcentajes reales (ej: CAMARÓN 45.6%, CALLO 40.8%)
+- [x] **Bug 5 - Margen $ y Margen % en ceros**: CORREGIDO
+  - Problema: La tabla principal mostraba $0.00 y 0.0% en las columnas de margen
+  - Solución: Modificado `get_productos_con_costos()` para calcular `precio_venta - costo_receta` y porcentaje dinámicamente
+  - Resultado: `(S) AJO ROSTIZADO KG` muestra Margen $62.65 (41.8%)
+- [x] **Mejora - Ordenamiento en tablas**: IMPLEMENTADO
+  - Todas las columnas de las 3 tablas (principal, modal receta, modal insumos) ahora son clickeables para ordenar
+  - Indicador visual con flecha (ChevronUp/Down) muestra la dirección del ordenamiento
+  - Soporta ordenamiento ascendente/descendente alternando con click
+- [x] **Mejora - Sub-elaborados anidados**: IMPLEMENTADO
+  - Los componentes de un elaborado que también son elaborados ahora muestran la etiqueta "Elaborado"
+  - Doble click recursivo permite navegar infinitos niveles de sub-recetas
 
 #### Mejoras en Costos y Márgenes (25 Mayo 2026) ✅ COMPLETADO
 - [x] **Vista agrupada por Familia**:

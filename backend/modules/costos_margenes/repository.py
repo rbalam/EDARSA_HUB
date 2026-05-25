@@ -185,9 +185,24 @@ def get_productos_con_costos(
     
     data_result = execute_sql_query(*conn, data_query) or []
     
-    # Procesar resultados
+    # Procesar resultados y calcular márgenes dinámicamente
     productos = []
     for row in data_result:
+        precio_venta = _safe_decimal(row.get('precio_venta'), 0) or 0
+        costo_receta = _safe_decimal(row.get('costo_receta'), 0) or 0
+        
+        # Calcular margen dinámicamente si no está en la BD
+        margen_pesos_bd = _safe_decimal(row.get('margen_pesos'))
+        margen_porcentaje_bd = _safe_decimal(row.get('margen_porcentaje'))
+        
+        # Si los márgenes de BD son 0 o None, calcularlos
+        if (margen_pesos_bd is None or margen_pesos_bd == 0) and precio_venta > 0 and costo_receta > 0:
+            margen_pesos = round(precio_venta - costo_receta, 2)
+            margen_porcentaje = round((margen_pesos / precio_venta) * 100, 2) if precio_venta > 0 else 0
+        else:
+            margen_pesos = margen_pesos_bd
+            margen_porcentaje = margen_porcentaje_bd
+        
         productos.append({
             'producto_id': row.get('producto_id', ''),
             'id_producto_origen': row.get('id_producto_origen', ''),
@@ -199,11 +214,11 @@ def get_productos_con_costos(
             'unidad_negocio_id': row.get('unidad_negocio_id'),
             'familia': row.get('familia'),
             'subfamilia': row.get('subfamilia'),
-            'precio_venta': _safe_decimal(row.get('precio_venta')),
-            'costo_receta': _safe_decimal(row.get('costo_receta')),
+            'precio_venta': precio_venta if precio_venta > 0 else _safe_decimal(row.get('precio_venta')),
+            'costo_receta': costo_receta if costo_receta > 0 else _safe_decimal(row.get('costo_receta')),
             'costo_promedio': _safe_decimal(row.get('costo_promedio')),
-            'margen_pesos': _safe_decimal(row.get('margen_pesos')),
-            'margen_porcentaje': _safe_decimal(row.get('margen_porcentaje')),
+            'margen_pesos': margen_pesos,
+            'margen_porcentaje': margen_porcentaje,
             'margen_objetivo': _safe_decimal(row.get('margen_objetivo')),
             'tiene_receta': bool(row.get('tiene_receta')),
             'tiene_subrecetas': bool(row.get('tiene_subrecetas')),
@@ -296,8 +311,15 @@ def get_receta_producto(producto_id: str, server_id: Optional[str] = None) -> Tu
     
     receta_result = execute_sql_query(*conn, receta_query) or []
     
+    # Primero calcular el costo total de todos los componentes para el %
+    costo_total_receta = sum(_safe_decimal(row.get('costo_total'), 0) for row in receta_result)
+    
     componentes = []
     for row in receta_result:
+        costo_comp = _safe_decimal(row.get('costo_total'), 0)
+        # Calcular porcentaje dinámicamente
+        porcentaje = round((costo_comp / costo_total_receta * 100), 2) if costo_total_receta > 0 else 0
+        
         componentes.append({
             'componente_id': row.get('componente_id', ''),
             'codigo_fuente': row.get('codigo_fuente', ''),
@@ -306,8 +328,8 @@ def get_receta_producto(producto_id: str, server_id: Optional[str] = None) -> Tu
             'cantidad': _safe_decimal(row.get('cantidad'), 0),
             'unidad_medida': row.get('unidad_medida', 'PZA'),
             'costo_unitario': _safe_decimal(row.get('costo_unitario')),
-            'costo_total': _safe_decimal(row.get('costo_total')),
-            'porcentaje_costo_total': _safe_decimal(row.get('porcentaje_costo_total')),
+            'costo_total': costo_comp,
+            'porcentaje_costo_total': porcentaje,
             'nivel_jerarquico': row.get('nivel_jerarquico', 1),
             'es_elaborado': bool(row.get('es_elaborado')),
             'rendimiento_elaborado': _safe_decimal(row.get('rendimiento_elaborado')),
@@ -385,6 +407,7 @@ def get_receta_elaborado(codigo_elaborado: str, server_id: Optional[str] = None)
     srv_id = insumo_info.get('server_id') or server_id
     
     # Buscar los componentes del elaborado en Sync_Productos_Elaborados
+    # También verificar si cada componente es a su vez un elaborado
     elaborado_query = f"""
     SELECT 
         CAST(e.ElaboradoDetalleID AS NVARCHAR(36)) as componente_id,
@@ -396,9 +419,12 @@ def get_receta_elaborado(codigo_elaborado: str, server_id: Optional[str] = None)
         e.CostoUnitario as costo_unitario,
         e.CostoTotal as costo_total,
         1 as nivel_jerarquico,
-        0 as es_elaborado,
-        NULL as rendimiento_elaborado
+        COALESCE(i.EsElaborado, 0) as es_elaborado,
+        i.RendimientoElaborado as rendimiento_elaborado
     FROM Sync_Productos_Elaborados e
+    LEFT JOIN Sync_Productos_Insumos i 
+        ON LTRIM(RTRIM(i.CodigoFuente)) = LTRIM(RTRIM(e.ComponenteCodigoFuente))
+        AND i.ServerID = e.ServerID
     WHERE LTRIM(RTRIM(e.InsumoElaboradoCodigoFuente)) = LTRIM(RTRIM('{codigo_elaborado}'))
     AND CAST(e.ServerID AS NVARCHAR(36)) = '{srv_id}'
     ORDER BY e.ComponenteNombre
@@ -425,8 +451,8 @@ def get_receta_elaborado(codigo_elaborado: str, server_id: Optional[str] = None)
             'costo_total': costo_comp,
             'porcentaje_costo_total': porcentaje,
             'nivel_jerarquico': 1,
-            'es_elaborado': False,
-            'rendimiento_elaborado': None,
+            'es_elaborado': bool(row.get('es_elaborado')),
+            'rendimiento_elaborado': _safe_decimal(row.get('rendimiento_elaborado')),
         })
     
     # Construir info del "producto" (elaborado)

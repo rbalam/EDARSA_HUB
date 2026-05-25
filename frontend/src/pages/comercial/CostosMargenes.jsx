@@ -131,6 +131,9 @@ const RecetaModal = ({ isOpen, onClose, productoId, serverId, onVerSubReceta }) 
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   
+  // Estado para ordenamiento
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  
   const cargarReceta = useCallback(async (id, srvId, esElaborado = false) => {
     if (!id) return;
     
@@ -146,6 +149,7 @@ const RecetaModal = ({ isOpen, onClose, productoId, serverId, onVerSubReceta }) 
       
       const res = await api.get(url);
       setReceta(res.data);
+      setSortConfig({ key: null, direction: 'asc' }); // Reset sort on new load
     } catch (err) {
       setError(err.response?.data?.detail || err.message);
     } finally {
@@ -217,6 +221,46 @@ const RecetaModal = ({ isOpen, onClose, productoId, serverId, onVerSubReceta }) 
       };
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
+  
+  // Función para ordenar
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+  
+  // Componentes ordenados
+  const sortedComponentes = useMemo(() => {
+    if (!receta?.componentes || !sortConfig.key) return receta?.componentes || [];
+    
+    return [...receta.componentes].sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+      
+      // Manejar strings
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = (bVal || '').toLowerCase();
+      }
+      
+      // Manejar números/null
+      if (aVal === null || aVal === undefined) aVal = 0;
+      if (bVal === null || bVal === undefined) bVal = 0;
+      
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [receta?.componentes, sortConfig]);
+  
+  // Icono de ordenamiento
+  const SortIcon = ({ columnKey }) => {
+    if (sortConfig.key !== columnKey) return <ChevronDown className="w-3 h-3 opacity-30" />;
+    return sortConfig.direction === 'asc' 
+      ? <ChevronUp className="w-3 h-3 text-blue-600" />
+      : <ChevronDown className="w-3 h-3 text-blue-600" />;
+  };
   
   if (!isOpen) return null;
   
@@ -319,17 +363,59 @@ const RecetaModal = ({ isOpen, onClose, productoId, serverId, onVerSubReceta }) 
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100">
                     <tr>
-                      <th className="p-2 text-left">Componente</th>
-                      <th className="p-2 text-left">Tipo</th>
-                      <th className="p-2 text-right">Cantidad</th>
+                      <th 
+                        className="p-2 text-left cursor-pointer hover:bg-gray-200 select-none"
+                        onClick={() => handleSort('nombre')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Componente <SortIcon columnKey="nombre" />
+                        </div>
+                      </th>
+                      <th 
+                        className="p-2 text-left cursor-pointer hover:bg-gray-200 select-none"
+                        onClick={() => handleSort('tipo_componente')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Tipo <SortIcon columnKey="tipo_componente" />
+                        </div>
+                      </th>
+                      <th 
+                        className="p-2 text-right cursor-pointer hover:bg-gray-200 select-none"
+                        onClick={() => handleSort('cantidad')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          Cantidad <SortIcon columnKey="cantidad" />
+                        </div>
+                      </th>
                       <th className="p-2 text-left">Unidad</th>
-                      <th className="p-2 text-right">Costo Unit.</th>
-                      <th className="p-2 text-right">Costo Total</th>
-                      <th className="p-2 text-right">% del Total</th>
+                      <th 
+                        className="p-2 text-right cursor-pointer hover:bg-gray-200 select-none"
+                        onClick={() => handleSort('costo_unitario')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          Costo Unit. <SortIcon columnKey="costo_unitario" />
+                        </div>
+                      </th>
+                      <th 
+                        className="p-2 text-right cursor-pointer hover:bg-gray-200 select-none"
+                        onClick={() => handleSort('costo_total')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          Costo Total <SortIcon columnKey="costo_total" />
+                        </div>
+                      </th>
+                      <th 
+                        className="p-2 text-right cursor-pointer hover:bg-gray-200 select-none"
+                        onClick={() => handleSort('porcentaje_costo_total')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          % del Total <SortIcon columnKey="porcentaje_costo_total" />
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {receta.componentes?.map((comp, idx) => (
+                    {sortedComponentes?.map((comp, idx) => (
                       <tr 
                         key={idx} 
                         className={`border-b hover:bg-gray-50 ${comp.es_elaborado ? 'cursor-pointer hover:bg-purple-50' : ''}`}
@@ -386,11 +472,13 @@ const InsumosModal = ({ isOpen, onClose, productoId }) => {
   const [insumos, setInsumos] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   
   useEffect(() => {
     if (isOpen && productoId) {
       setLoading(true);
       setError(null);
+      setSortConfig({ key: null, direction: 'asc' });
       
       api.get(`/costos-margenes/productos/${productoId}/insumos`)
         .then(res => {
@@ -400,6 +488,41 @@ const InsumosModal = ({ isOpen, onClose, productoId }) => {
         .finally(() => setLoading(false));
     }
   }, [isOpen, productoId]);
+  
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+  
+  const sortedInsumos = useMemo(() => {
+    if (!insumos?.insumos || !sortConfig.key) return insumos?.insumos || [];
+    
+    return [...insumos.insumos].sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+      
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = (bVal || '').toLowerCase();
+      }
+      
+      if (aVal === null || aVal === undefined) aVal = 0;
+      if (bVal === null || bVal === undefined) bVal = 0;
+      
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [insumos?.insumos, sortConfig]);
+  
+  const SortIcon = ({ columnKey }) => {
+    if (sortConfig.key !== columnKey) return <ChevronDown className="w-3 h-3 opacity-30" />;
+    return sortConfig.direction === 'asc' 
+      ? <ChevronUp className="w-3 h-3 text-green-600" />
+      : <ChevronDown className="w-3 h-3 text-green-600" />;
+  };
   
   if (!isOpen) return null;
   
@@ -442,17 +565,52 @@ const InsumosModal = ({ isOpen, onClose, productoId }) => {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100">
                     <tr>
-                      <th className="p-2 text-left">Insumo</th>
-                      <th className="p-2 text-right">Cantidad</th>
+                      <th 
+                        className="p-2 text-left cursor-pointer hover:bg-gray-200 select-none"
+                        onClick={() => handleSort('nombre')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Insumo <SortIcon columnKey="nombre" />
+                        </div>
+                      </th>
+                      <th 
+                        className="p-2 text-right cursor-pointer hover:bg-gray-200 select-none"
+                        onClick={() => handleSort('cantidad_total')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          Cantidad <SortIcon columnKey="cantidad_total" />
+                        </div>
+                      </th>
                       <th className="p-2 text-left">Unidad</th>
-                      <th className="p-2 text-right">Costo Unit.</th>
-                      <th className="p-2 text-right">Costo Total</th>
-                      <th className="p-2 text-right">% Costo</th>
+                      <th 
+                        className="p-2 text-right cursor-pointer hover:bg-gray-200 select-none"
+                        onClick={() => handleSort('costo_unitario')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          Costo Unit. <SortIcon columnKey="costo_unitario" />
+                        </div>
+                      </th>
+                      <th 
+                        className="p-2 text-right cursor-pointer hover:bg-gray-200 select-none"
+                        onClick={() => handleSort('costo_total')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          Costo Total <SortIcon columnKey="costo_total" />
+                        </div>
+                      </th>
+                      <th 
+                        className="p-2 text-right cursor-pointer hover:bg-gray-200 select-none"
+                        onClick={() => handleSort('porcentaje_costo_total')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          % Costo <SortIcon columnKey="porcentaje_costo_total" />
+                        </div>
+                      </th>
                       <th className="p-2 text-center">Origen</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {insumos.insumos?.map((ins, idx) => (
+                    {sortedInsumos?.map((ins, idx) => (
                       <tr key={idx} className="border-b hover:bg-gray-50">
                         <td className="p-2">{ins.nombre}</td>
                         <td className="p-2 text-right font-mono">{ins.cantidad_total?.toFixed(3)}</td>
@@ -1189,6 +1347,9 @@ const TabProductos = ({ onSimularPrecio }) => {
   const [recetaModal, setRecetaModal] = useState({ open: false, productoId: null, serverId: null });
   const [insumosModal, setInsumosModal] = useState({ open: false, productoId: null, serverId: null });
   
+  // Estado para ordenamiento de tabla principal
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  
   // Datos para filtros
   const [unidades, setUnidades] = useState([]);
   const [familias, setFamilias] = useState([]);
@@ -1198,6 +1359,44 @@ const TabProductos = ({ onSimularPrecio }) => {
   // Vista agrupada
   const [vistaAgrupada, setVistaAgrupada] = useState(false);
   const [familiasExpandidas, setFamiliasExpandidas] = useState(new Set());
+  
+  // Función para ordenar
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+  
+  // Productos ordenados
+  const sortedProductos = useMemo(() => {
+    if (!productos || !sortConfig.key) return productos;
+    
+    return [...productos].sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+      
+      if (typeof aVal === 'string') {
+        aVal = (aVal || '').toLowerCase();
+        bVal = (bVal || '').toLowerCase();
+      }
+      
+      if (aVal === null || aVal === undefined) aVal = sortConfig.key.includes('margen') || sortConfig.key.includes('costo') || sortConfig.key.includes('precio') ? -Infinity : '';
+      if (bVal === null || bVal === undefined) bVal = sortConfig.key.includes('margen') || sortConfig.key.includes('costo') || sortConfig.key.includes('precio') ? -Infinity : '';
+      
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [productos, sortConfig]);
+  
+  // Icono de ordenamiento
+  const SortIcon = ({ columnKey }) => {
+    if (sortConfig.key !== columnKey) return <ChevronDown className="w-3 h-3 opacity-30" />;
+    return sortConfig.direction === 'asc' 
+      ? <ChevronUp className="w-3 h-3 text-blue-600" />
+      : <ChevronDown className="w-3 h-3 text-blue-600" />;
+  };
   
   // Cargar unidades de negocio (solo una vez)
   useEffect(() => {
@@ -1607,26 +1806,68 @@ const TabProductos = ({ onSimularPrecio }) => {
               <table className="w-full text-sm">
                 <thead className="bg-gray-100 text-gray-700">
                   <tr>
-                    <th className="p-3 text-left">Producto</th>
+                    <th 
+                      className="p-3 text-left cursor-pointer hover:bg-gray-200 select-none"
+                      onClick={() => handleSort('nombre')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Producto <SortIcon columnKey="nombre" />
+                      </div>
+                    </th>
                     <th className="p-3 text-left">Unidad</th>
-                    <th className="p-3 text-left">Familia</th>
-                    <th className="p-3 text-right">Precio Venta</th>
-                    <th className="p-3 text-right">Costo Receta</th>
-                    <th className="p-3 text-right">Margen $</th>
-                    <th className="p-3 text-right">Margen %</th>
+                    <th 
+                      className="p-3 text-left cursor-pointer hover:bg-gray-200 select-none"
+                      onClick={() => handleSort('familia')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Familia <SortIcon columnKey="familia" />
+                      </div>
+                    </th>
+                    <th 
+                      className="p-3 text-right cursor-pointer hover:bg-gray-200 select-none"
+                      onClick={() => handleSort('precio_venta')}
+                    >
+                      <div className="flex items-center justify-end gap-1">
+                        Precio Venta <SortIcon columnKey="precio_venta" />
+                      </div>
+                    </th>
+                    <th 
+                      className="p-3 text-right cursor-pointer hover:bg-gray-200 select-none"
+                      onClick={() => handleSort('costo_receta')}
+                    >
+                      <div className="flex items-center justify-end gap-1">
+                        Costo Receta <SortIcon columnKey="costo_receta" />
+                      </div>
+                    </th>
+                    <th 
+                      className="p-3 text-right cursor-pointer hover:bg-gray-200 select-none"
+                      onClick={() => handleSort('margen_pesos')}
+                    >
+                      <div className="flex items-center justify-end gap-1">
+                        Margen $ <SortIcon columnKey="margen_pesos" />
+                      </div>
+                    </th>
+                    <th 
+                      className="p-3 text-right cursor-pointer hover:bg-gray-200 select-none"
+                      onClick={() => handleSort('margen_porcentaje')}
+                    >
+                      <div className="flex items-center justify-end gap-1">
+                        Margen % <SortIcon columnKey="margen_porcentaje" />
+                      </div>
+                    </th>
                     <th className="p-3 text-center">Receta</th>
                     <th className="p-3 text-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {productos.length === 0 ? (
+                  {sortedProductos.length === 0 ? (
                     <tr>
                       <td colSpan="9" className="p-8 text-center text-gray-500">
                         No se encontraron productos con los filtros actuales
                       </td>
                     </tr>
                   ) : (
-                    productos.map((prod) => (
+                    sortedProductos.map((prod) => (
                       <tr key={prod.producto_id} className="border-b hover:bg-gray-50" data-testid={`producto-row-${prod.producto_id}`}>
                         <td className="p-3">
                           <div className="font-medium text-gray-800">{prod.nombre}</div>
