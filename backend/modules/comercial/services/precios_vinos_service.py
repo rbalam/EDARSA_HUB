@@ -4,21 +4,36 @@ Servicio de Cálculo de Precio Sugerido para Vinos - FASE 1C-3G-E
 Este módulo calcula el precio sugerido para productos clasificados como vino
 usando la regla de precio por rango configurada en EDARSAHUB SQL.
 
+ACLARACIÓN CONCEPTUAL (Corrección FASE 1C-3G-E):
+    La tabla de rangos NO calcula el costo del vino.
+    La tabla de rangos determina el PRECIO DE VENTA SUGERIDO a partir del CostoBaseVino.
+
 FÓRMULA:
-    precio_base = costo_botella * margen_multiplicador
-    importe_impuesto = precio_base * tasa_impuesto
+    precio_base = CostoBaseVino * margen_multiplicador
+    importe_impuesto = precio_base * tasa_impuesto_resuelta
     precio_con_impuesto = precio_base + importe_impuesto
     precio_sugerido = redondear(precio_con_impuesto, multiplo, metodo)
 
-JERARQUÍA DE COSTO:
-    1. Sync_Productos_Insumos.Costo
-    2. Sync_Productos_Insumos.UltimoCosto
-    3. Sync_Productos_Insumos.CostoPromedio
-    4. Override manual (futuro)
+JERARQUÍA CORRECTA DE COSTOBASEVINO:
+    1. CostoReceta (si > 0 y confiable como costo consolidado del producto)
+    2. Sync_Productos_Insumos.Costo (costo de botella)
+    3. Sync_Productos_Insumos.UltimoCosto
+    4. Sync_Productos_Insumos.CostoPromedio
+    5. Último costo de compra validado (futuro)
+    6. Costo promedio de inventario (futuro)
+    7. Costo proveedor vigente (futuro)
+    8. Costo sincronizado del sistema origen (futuro)
+    9. Override manual autorizado (futuro)
+
+NOTA SOBRE CostoReceta:
+    - Para vinos (botellas compradas), CostoReceta = 0 generalmente porque
+      no son recetas elaboradas. Esto NO significa costo cero.
+    - Si CostoReceta > 0, representa un costo consolidado confiable y debe usarse.
+    - Si CostoReceta = 0 o NULL, se recurre a la jerarquía de insumos.
 
 ESTADOS:
     - CALCULADO: Precio calculado exitosamente
-    - COSTO_BOTELLA_NO_CONFIGURADO: Sin costo disponible
+    - COSTO_BASE_NO_CONFIGURADO: Sin costo confiable disponible
     - IMPUESTO_NO_CONFIGURADO: Sin tasa de impuesto válida
     - RANGO_NO_CONFIGURADO: Costo fuera de rangos configurados (ej. gap 4000-5000)
     - ERROR_CALCULO: Error en el proceso
@@ -37,7 +52,7 @@ from core.server_registry import EDARSAHUB_CONFIG
 class EstadoCalculo(str, Enum):
     """Estados posibles del cálculo de precio."""
     CALCULADO = "CALCULADO"
-    COSTO_BOTELLA_NO_CONFIGURADO = "COSTO_BOTELLA_NO_CONFIGURADO"
+    COSTO_BASE_NO_CONFIGURADO = "COSTO_BASE_NO_CONFIGURADO"  # Renombrado para claridad conceptual
     IMPUESTO_NO_CONFIGURADO = "IMPUESTO_NO_CONFIGURADO"
     RANGO_NO_CONFIGURADO = "RANGO_NO_CONFIGURADO"
     ERROR_CALCULO = "ERROR_CALCULO"
@@ -58,8 +73,8 @@ class ResultadoPrecioSugerido:
     server_id: str
     nombre_producto: Optional[str] = None
     
-    # Costo
-    costo_botella: Optional[float] = None
+    # Costo Base (corregido conceptualmente)
+    costo_base_vino: Optional[float] = None  # Renombrado de costo_botella
     fuente_costo: Optional[str] = None
     
     # Regla aplicada
@@ -88,7 +103,7 @@ class ResultadoPrecioSugerido:
             'codigo_producto': self.codigo_producto,
             'server_id': self.server_id,
             'nombre_producto': self.nombre_producto,
-            'costo_botella': self.costo_botella,
+            'costo_base_vino': self.costo_base_vino,  # Campo renombrado
             'fuente_costo': self.fuente_costo,
             'regla_precio_id': self.regla_precio_id,
             'rango_id': self.rango_id,
@@ -137,21 +152,44 @@ def _redondear(valor: float, multiplo: int, metodo: str) -> float:
         return round(valor / multiplo) * multiplo
 
 
-def obtener_costo_botella(codigo_producto: str, server_id: str) -> Tuple[Optional[float], Optional[str]]:
+def obtener_costo_base_vino(codigo_producto: str, server_id: str) -> Tuple[Optional[float], Optional[str]]:
     """
-    Obtiene el costo de botella desde Sync_Productos_Insumos.
+    Obtiene el CostoBaseVino aplicando la jerarquía correcta.
     
-    Jerarquía:
-    1. Costo (actual)
-    2. UltimoCosto
-    3. CostoPromedio
+    JERARQUÍA DE COSTO (Corrección conceptual FASE 1C-3G-E):
+    1. CostoReceta (si > 0, representa costo consolidado confiable)
+    2. Sync_Productos_Insumos.Costo (costo de botella)
+    3. Sync_Productos_Insumos.UltimoCosto
+    4. Sync_Productos_Insumos.CostoPromedio
+    5-9. Fuentes adicionales (futuro: compras, proveedor, override)
+    
+    NOTA: Para vinos (botellas compradas), CostoReceta = 0 generalmente
+    porque no son recetas elaboradas. Esto NO significa costo cero.
     
     Returns:
-        (costo, fuente) o (None, None) si no existe
+        (costo, fuente) o (None, None) si no existe costo confiable
     """
     conn = _get_conn_params()
     
-    query = f"""
+    # PASO 1: Verificar CostoReceta en Sync_Productos
+    query_costo_receta = f"""
+    SELECT 
+        sp.CostoReceta
+    FROM Sync_Productos sp
+    WHERE sp.ServerID = '{server_id}'
+      AND sp.CodigoFuente = '{codigo_producto}'
+    """
+    
+    result_cr = execute_sql_query(*conn, query_costo_receta)
+    
+    if result_cr and len(result_cr) > 0:
+        costo_receta = result_cr[0].get('CostoReceta')
+        if costo_receta is not None and float(costo_receta) > 0:
+            # CostoReceta > 0 es costo consolidado confiable
+            return float(costo_receta), 'COSTO_RECETA'
+    
+    # PASO 2-4: Verificar costos en Sync_Productos_Insumos
+    query_insumos = f"""
     SELECT 
         i.Costo,
         i.UltimoCosto,
@@ -161,20 +199,25 @@ def obtener_costo_botella(codigo_producto: str, server_id: str) -> Tuple[Optiona
       AND i.CodigoFuente = '{codigo_producto}'
     """
     
-    result = execute_sql_query(*conn, query)
+    result_insumos = execute_sql_query(*conn, query_insumos)
     
-    if not result or len(result) == 0:
-        return None, None
+    if result_insumos and len(result_insumos) > 0:
+        row = result_insumos[0]
+        
+        # Jerarquía 2: Costo de botella/insumo
+        if row.get('Costo') and float(row['Costo']) > 0:
+            return float(row['Costo']), 'INSUMO_COSTO'
+        
+        # Jerarquía 3: Último costo
+        if row.get('UltimoCosto') and float(row['UltimoCosto']) > 0:
+            return float(row['UltimoCosto']), 'INSUMO_ULTIMO'
+        
+        # Jerarquía 4: Costo promedio
+        if row.get('CostoPromedio') and float(row['CostoPromedio']) > 0:
+            return float(row['CostoPromedio']), 'INSUMO_PROMEDIO'
     
-    row = result[0]
-    
-    # Jerarquía de costo
-    if row.get('Costo') and float(row['Costo']) > 0:
-        return float(row['Costo']), 'INSUMO_COSTO'
-    elif row.get('UltimoCosto') and float(row['UltimoCosto']) > 0:
-        return float(row['UltimoCosto']), 'INSUMO_ULTIMO'
-    elif row.get('CostoPromedio') and float(row['CostoPromedio']) > 0:
-        return float(row['CostoPromedio']), 'INSUMO_PROMEDIO'
+    # Jerarquías 5-9: Futuras fuentes (compras, proveedor, override)
+    # Por ahora no implementadas, retornar None
     
     return None, None
 
@@ -279,9 +322,13 @@ def calcular_precio_sugerido_vino(
     """
     Calcula el precio sugerido para un producto de vino.
     
+    ACLARACIÓN CONCEPTUAL:
+        La tabla de rangos determina el PRECIO DE VENTA SUGERIDO,
+        NO calcula el costo del vino.
+    
     FÓRMULA:
-        precio_base = costo_botella * margen_multiplicador
-        importe_impuesto = precio_base * tasa_impuesto
+        precio_base = CostoBaseVino * margen_multiplicador
+        importe_impuesto = precio_base * tasa_impuesto_resuelta
         precio_con_impuesto = precio_base + importe_impuesto
         precio_sugerido = redondear(precio_con_impuesto, multiplo, metodo)
     
@@ -311,29 +358,29 @@ def calcular_precio_sugerido_vino(
         resultado.metodo_redondeo = regla['MetodoRedondeo']
         resultado.multiplo_redondeo = regla['MultiploRedondeo']
         
-        # 2. Obtener costo de botella
-        costo, fuente = obtener_costo_botella(codigo_producto, server_id)
+        # 2. Obtener CostoBaseVino con jerarquía corregida
+        costo, fuente = obtener_costo_base_vino(codigo_producto, server_id)
         
         if costo is None or costo <= 0:
-            resultado.estado = EstadoCalculo.COSTO_BOTELLA_NO_CONFIGURADO
-            resultado.mensaje = "Producto sin costo de botella configurado. Requiere sincronización o entrada manual."
+            resultado.estado = EstadoCalculo.COSTO_BASE_NO_CONFIGURADO
+            resultado.mensaje = "Producto sin costo base confiable. No se encontró CostoReceta > 0 ni costos en insumos."
             return resultado
         
-        resultado.costo_botella = costo
+        resultado.costo_base_vino = costo
         resultado.fuente_costo = fuente
         
-        # 3. Obtener rango y margen
+        # 3. Obtener rango y margen (la tabla determina PRECIO SUGERIDO, no costo)
         rango_id, margen = obtener_rango_margen(costo, regla['ReglaPrecioID'])
         
         if rango_id is None:
             resultado.estado = EstadoCalculo.RANGO_NO_CONFIGURADO
-            resultado.mensaje = f"Costo ${costo:,.2f} fuera de rangos configurados. Verificar gap $4,000.01-$4,999.99."
+            resultado.mensaje = f"CostoBaseVino ${costo:,.2f} fuera de rangos configurados. Verificar gap $4,000.01-$4,999.99."
             return resultado
         
         resultado.rango_id = rango_id
         resultado.margen_multiplicador = margen
         
-        # 4. Obtener tasa de impuesto
+        # 4. Obtener tasa de impuesto desde modelo canónico (NUNCA hardcodear 16%)
         tasa, mapeo_id = obtener_tasa_impuesto(codigo_producto, server_id)
         
         if tasa is None:
@@ -344,12 +391,12 @@ def calcular_precio_sugerido_vino(
         resultado.tasa_impuesto = tasa * 100  # Mostrar como porcentaje
         resultado.impuesto_mapeo_id = mapeo_id
         
-        # 5. CALCULAR PRECIO
-        # precio_base = costo_botella * margen_multiplicador
+        # 5. CALCULAR PRECIO SUGERIDO
+        # precio_base = CostoBaseVino * margen_multiplicador
         precio_base = costo * margen
         resultado.precio_base = round(precio_base, 4)
         
-        # importe_impuesto = precio_base * tasa_impuesto
+        # importe_impuesto = precio_base * tasa_impuesto_resuelta
         importe_impuesto = precio_base * tasa
         resultado.importe_impuesto = round(importe_impuesto, 4)
         
@@ -367,7 +414,7 @@ def calcular_precio_sugerido_vino(
         
         # 6. Estado exitoso
         resultado.estado = EstadoCalculo.CALCULADO
-        resultado.mensaje = f"Precio calculado: Costo ${costo:,.2f} × {margen} + IVA {tasa*100}% = ${precio_sugerido:,.2f}"
+        resultado.mensaje = f"Precio calculado: CostoBase ${costo:,.2f} ({fuente}) × {margen} + IVA {tasa*100}% = ${precio_sugerido:,.2f}"
         
         return resultado
         
@@ -440,7 +487,7 @@ def get_estadisticas_calculo(server_id: Optional[str] = None) -> Dict[str, int]:
     stats = {
         'total': len(resultados),
         'CALCULADO': 0,
-        'COSTO_BOTELLA_NO_CONFIGURADO': 0,
+        'COSTO_BASE_NO_CONFIGURADO': 0,
         'IMPUESTO_NO_CONFIGURADO': 0,
         'RANGO_NO_CONFIGURADO': 0,
         'ERROR_CALCULO': 0

@@ -21,12 +21,26 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Diciembre 2025)
 
-### ✅ FASE 1C-3G-E: Reglas de Precio por Rango para Vinos - COMPLETADO
+### ✅ FASE 1C-3G-E: Reglas de Precio por Rango para Vinos - COMPLETADO CON CORRECCIÓN CONCEPTUAL
 
-**Fecha:** 2026-05-25
+**Fecha:** 2026-05-25  
+**Actualizado:** 2026-05-25 (Corrección Conceptual CostoBaseVino)
 
 #### Resumen
-Se crearon las reglas de precio por rango para productos clasificados como vino, usando la tabla de márgenes proporcionada.
+Se crearon las reglas de precio por rango para productos clasificados como vino. **CORRECCIÓN CONCEPTUAL**: La tabla de rangos determina el PRECIO DE VENTA SUGERIDO, no calcula el costo del vino.
+
+#### Corrección Conceptual Aplicada
+
+**Jerarquía de CostoBaseVino (corregida):**
+| Prioridad | Fuente | Descripción |
+|-----------|--------|-------------|
+| 1 | `CostoReceta` | Si > 0 y confiable |
+| 2 | `Sync_Productos_Insumos.Costo` | Costo de botella |
+| 3 | `UltimoCosto` | Último costo |
+| 4 | `CostoPromedio` | Costo promedio |
+| 5-9 | (Futuro) | Compras, proveedor, override |
+
+**Nota sobre Vinos**: Todos los vinos tienen `CostoReceta = 0` porque son botellas compradas (no recetas elaboradas). El costo proviene de `Sync_Productos_Insumos`.
 
 #### Tablas Creadas
 | Tabla | Propósito |
@@ -40,44 +54,56 @@ Se crearon las reglas de precio por rango para productos clasificados como vino,
 - **Gap detectado**: $4,000.01 - $4,999.99 (pendiente definición usuario)
 - **Método redondeo**: MAS_CERCANO
 - **Múltiplo**: 5
+- **Usa CostoReceta**: SÍ, si > 0 y confiable (corregido)
 
 #### Fórmula de Cálculo
 ```
-precio_base = costo_botella × margen
-importe_impuesto = precio_base × tasa_impuesto (desde modelo canónico)
-precio_sugerido = redondear(precio_base + importe_impuesto, 5)
+CostoBaseVino (jerarquía: CostoReceta → Insumo.Costo → Último → Promedio)
+  × MargenMultiplicador (según rango)
+  + Impuesto (resolver_tasa_impuesto, NUNCA hardcodear 16%)
+  → Redondear a múltiplo de 5
+  = Precio Sugerido de Venta
 ```
 
 #### Prueba Obligatoria (Costo $450)
 ```
+CostoBaseVino = 450.00 (fuente: INSUMO_COSTO)
 450 × 2.50 = $1,125.00 (base)
-$1,125.00 × 0.16 = $180.00 (impuesto)
+$1,125.00 × 0.16 = $180.00 (impuesto resuelto)
 $1,125.00 + $180.00 = $1,305.00 ✓
 ```
 
-#### Resultados de Cálculo
-| Estado | Cantidad |
-|--------|----------|
-| CALCULADO | 195 (39%) |
-| COSTO_BOTELLA_NO_CONFIGURADO | 305 (61%) |
-| IMPUESTO_NO_CONFIGURADO | 0 |
-| RANGO_NO_CONFIGURADO | 0 |
+#### Resultados de Cálculo (1,512 vinos procesados)
+| Estado | Cantidad | % |
+|--------|----------|---|
+| CALCULADO | 626 | 41.4% |
+| COSTO_BASE_NO_CONFIGURADO | 886 | 58.6% |
+| IMPUESTO_NO_CONFIGURADO | 0 | 0% |
+| RANGO_NO_CONFIGURADO | 0 | 0% |
+
+#### Fuentes de Costo Utilizadas
+- INSUMO_COSTO: 618
+- INSUMO_PROMEDIO: 8
+- COSTO_RECETA: 0 (ningún vino tiene CostoReceta > 0)
 
 #### Validaciones Confirmadas
-- ✅ No se usa CostoReceta para vinos
+- ✅ CostoReceta: prioridad 1 si > 0 (corregido)
 - ✅ No se hardcodeó 16%
 - ✅ Usa resolver_tasa_impuesto() del modelo canónico
 - ✅ Gap $4,000-$5,000 marca RANGO_NO_CONFIGURADO
 - ✅ No se modifican precios oficiales
+- ✅ NO-LIVE confirmado
+- ✅ Sin MongoDB
+- ✅ No regresión Costos y Márgenes
 
-#### Archivos Creados
-- `/app/backend/modules/comercial/services/precios_vinos_service.py`
-- `/app/docs/reports/FASE_1C_3G_E_REGLAS_PRECIO_RANGO_VINOS.md`
+#### Archivos Actualizados
+- `/app/backend/modules/comercial/services/precios_vinos_service.py` (jerarquía corregida)
+- `/app/docs/reports/FASE_1C_3G_E_REGLAS_PRECIO_RANGO_VINOS.md` (sección corrección conceptual añadida)
 
 #### Pendiente (Requiere Autorización)
-1. FASE 1C-3G-F: Frontend de Precios Sugeridos
+1. FASE 1C-3G-F: Frontend de administración fiscal para productos NO_CONFIGURADO
 2. Definir si cerrar gap $4,000.01 - $4,999.99
-3. Configurar costos para 305 vinos sin costo
+3. Configurar costos para 886 vinos sin costo base
 
 ---
 
