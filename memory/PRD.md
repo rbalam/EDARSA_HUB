@@ -23,6 +23,23 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ### ✅ Completado
 
+#### FASE P2 - RBAC por Unidad de Negocio (25 Mayo 2026) ✅ COMPLETADO
+- [x] **Implementación de RBAC basado en servidores/unidades**:
+  - Utiliza tablas existentes: `Usuario_Catalogo`, `Usuario_ServidoresAsignacion`, `Usuario_Roles`
+  - Función `_get_user_allowed_servers()` que determina acceso del usuario
+  - Usuarios corporativos (ADMIN, SUPERADMIN, o sin asignaciones) ven todos los datos
+  - Usuarios con asignaciones solo ven datos de sus unidades
+- [x] **Endpoints modificados con RBAC**:
+  - `GET /api/costos-margenes/productos` - Filtra por servidores permitidos
+  - `GET /api/costos-margenes/unidades-negocio` - Retorna `es_corporativo` y filtra unidades
+  - `GET /api/costos-margenes/familias` - Filtra familias por unidades permitidas
+- [x] **Validación de acceso**:
+  - Si usuario selecciona unidad no permitida → Error 403 "ACCESO_DENEGADO_UNIDAD"
+  - Nuevo parámetro `servidores_ids` en `get_productos_con_costos()` para filtro múltiple
+- [x] **Resultados de prueba**:
+  - Admin corporativo: 9,905 productos, 5 unidades, 125 familias
+  - Usuario CIENFUEGOS (simulado): 2,022 productos, 1 unidad
+
 #### Corrección de Bugs FASE 1C-3F (25 Mayo 2026) ✅ COMPLETADO
 - [x] **Bug 1 - Costo de Receta $0.00**: CORREGIDO
   - Problema: El campo `CostoReceta` en `Sync_Productos` estaba vacío (0.00) para todos los productos

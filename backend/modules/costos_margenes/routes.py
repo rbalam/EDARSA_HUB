@@ -2,21 +2,24 @@
 Endpoints del módulo Costos y Márgenes.
 FASE 1C-3C - Endpoints NO-LIVE
 FASE 1C-3E - RBAC, Seguridad y Exportación
+FASE P2 - RBAC por Unidad de Negocio
 
 IMPORTANTE:
 - Todos los endpoints leen EXCLUSIVAMENTE de EDARSAHUB SQL
 - NO se realizan conexiones live a sistemas externos
 - NO se usa MongoDB
 - Se respeta RBAC y permisos por empresa/unidad
+- Los usuarios solo ven datos de sus unidades de negocio asignadas
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
-from typing import Optional
+from typing import Optional, List
 import math
 import io
 import csv
 from datetime import datetime
+import logging
 
 from modules.costos_margenes.schemas import (
     CostosMargenesResumen,
@@ -44,12 +47,88 @@ from modules.costos_margenes.repository import (
     get_subfamilias_productos,
 )
 from core.security import get_current_user
+from core.db import execute_sql_query
+from core.server_registry import EDARSAHUB_CONFIG
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/costos-margenes", tags=["Costos y Márgenes"])
 
 
 # ==================== RBAC HELPERS ====================
+
+def _get_edarsahub_connection():
+    """Obtiene conexión a EDARSAHUB SQL."""
+    return (
+        EDARSAHUB_CONFIG['host'],
+        EDARSAHUB_CONFIG['port'],
+        EDARSAHUB_CONFIG['database'],
+        EDARSAHUB_CONFIG['username'],
+        EDARSAHUB_CONFIG['password']
+    )
+
+
+def _get_user_allowed_servers(user: dict) -> tuple[List[str], bool]:
+    """
+    FASE P2 - RBAC por Unidad de Negocio
+    
+    Obtiene los server_id permitidos para el usuario desde Usuario_ServidoresAsignacion.
+    
+    Returns:
+        (lista_server_ids, es_corporativo)
+        - es_corporativo=True si tiene acceso global (rol admin, superadmin, o 0 asignaciones)
+    """
+    role = user.get('role', '')
+    user_id = user.get('id', '')
+    email = user.get('email', '')
+    
+    # SuperAdministrador y Administrador tienen acceso global
+    if role in ['SuperAdministrador', 'Administrador', 'admin', 'Admin']:
+        logger.info(f"[RBAC] Usuario {email} tiene acceso global por rol {role}")
+        return [], True
+    
+    # Buscar UsuarioID y sus servidores asignados
+    conn = _get_edarsahub_connection()
+    
+    try:
+        # Buscar el UsuarioID por email o PublicUUID
+        user_query = f"""
+        SELECT UsuarioID 
+        FROM Usuario_Catalogo 
+        WHERE (Email = '{email}' OR LOWER(CAST(PublicUUID AS VARCHAR(36))) = '{user_id.lower()}')
+        AND Activo = 1
+        """
+        user_result = execute_sql_query(*conn, user_query)
+        
+        if not user_result:
+            logger.warning(f"[RBAC] Usuario {email} no encontrado en Usuario_Catalogo")
+            return [], False  # Sin acceso si no está en catálogo
+        
+        usuario_id_sql = user_result[0].get('UsuarioID')
+        
+        # Obtener servidores asignados
+        servers_query = f"""
+        SELECT CAST(sa.ServidorID AS NVARCHAR(36)) as server_id
+        FROM Usuario_ServidoresAsignacion sa
+        WHERE sa.UsuarioID = {usuario_id_sql}
+        AND sa.Activo = 1
+        """
+        servers_result = execute_sql_query(*conn, servers_query) or []
+        
+        server_ids = [r.get('server_id') for r in servers_result if r.get('server_id')]
+        
+        # Si tiene 0 asignaciones, es corporativo (ve todo)
+        if len(server_ids) == 0:
+            logger.info(f"[RBAC] Usuario {email} tiene 0 asignaciones → acceso corporativo")
+            return [], True
+        
+        logger.info(f"[RBAC] Usuario {email} tiene acceso a {len(server_ids)} servidores: {server_ids[:3]}...")
+        return server_ids, False
+        
+    except Exception as e:
+        logger.error(f"[RBAC] Error obteniendo servidores para {email}: {e}")
+        return [], False
+
 
 def _check_admin_or_comercial(user: dict) -> bool:
     """
@@ -159,6 +238,10 @@ async def listar_productos(
     
     **Fuente**: EDARSAHUB SQL (NO-LIVE)
     
+    **RBAC**: Filtra automáticamente por las unidades de negocio del usuario.
+    - Usuarios corporativos (ADMIN, SUPERADMIN, o sin asignaciones): ven todo
+    - Usuarios con asignaciones: solo ven sus unidades
+    
     **Permisos requeridos**: comercial.costos_margenes.ver
     
     **Filtros disponibles**:
@@ -173,11 +256,32 @@ async def listar_productos(
     # FASE 1C-3E: Verificar permisos
     _verify_costos_margenes_access(current_user)
     
+    # FASE P2: RBAC por Unidad de Negocio
+    allowed_servers, es_corporativo = _get_user_allowed_servers(current_user)
+    
+    # Si el usuario selecciona un servidor específico, validar que tenga acceso
+    servidor_id_filtro = servidor_id
+    if servidor_id and not es_corporativo:
+        if servidor_id not in allowed_servers:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "ACCESO_DENEGADO_UNIDAD",
+                    "mensaje": "No tiene acceso a esta unidad de negocio"
+                }
+            )
+    
+    # Si no es corporativo y no seleccionó servidor, aplicar filtro RBAC
+    servidores_ids_filtro = None
+    if not es_corporativo and not servidor_id:
+        servidores_ids_filtro = allowed_servers
+    
     try:
         productos_data, total = get_productos_con_costos(
             empresa_id=empresa_id,
             unidad_negocio_id=unidad_negocio_id,
-            servidor_id=servidor_id,
+            servidor_id=servidor_id_filtro,
+            servidores_ids=servidores_ids_filtro,  # Nuevo parámetro para RBAC
             sistema_origen=sistema_origen,
             familia=familia,
             subfamilia=subfamilia,
@@ -451,16 +555,29 @@ async def listar_unidades_negocio(
     
     **Fuente**: EDARSAHUB SQL (NO-LIVE)
     
+    **RBAC**: Filtra según asignaciones del usuario.
+    - Usuarios corporativos: ven todas
+    - Usuarios con asignaciones: solo ven sus unidades
+    
     **Retorna**: Lista de unidades con código, nombre, server_id
     """
     _verify_costos_margenes_access(current_user)
     
+    # FASE P2: RBAC por Unidad de Negocio
+    allowed_servers, es_corporativo = _get_user_allowed_servers(current_user)
+    
     try:
         unidades = get_unidades_negocio()
+        
+        # Filtrar por servidores permitidos si no es corporativo
+        if not es_corporativo and allowed_servers:
+            unidades = [u for u in unidades if u.get('server_id') in allowed_servers]
+        
         return {
             "unidades": unidades,
             "total": len(unidades),
-            "source_type": "EDARSAHUB_SQL"
+            "source_type": "EDARSAHUB_SQL",
+            "es_corporativo": es_corporativo  # Indicador para el frontend
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error obteniendo unidades de negocio: {str(e)}")
@@ -481,12 +598,21 @@ async def listar_familias(
     
     **Fuente**: EDARSAHUB SQL (NO-LIVE)
     
+    **RBAC**: Filtra según asignaciones del usuario.
+    
     **Retorna**: Lista de familias con total de productos por familia
     """
     _verify_costos_margenes_access(current_user)
     
+    # FASE P2: RBAC por Unidad de Negocio
+    allowed_servers, es_corporativo = _get_user_allowed_servers(current_user)
+    
+    servidor_id_filtro = servidor_id
+    if servidor_id and not es_corporativo and servidor_id not in allowed_servers:
+        raise HTTPException(status_code=403, detail="No tiene acceso a esta unidad")
+    
     try:
-        familias = get_familias_productos(servidor_id)
+        familias = get_familias_productos(servidor_id_filtro, allowed_servers if not es_corporativo else None)
         return {
             "familias": familias,
             "total": len(familias),

@@ -1509,12 +1509,33 @@ const TabProductos = ({ onSimularPrecio }) => {
     setPage(1);
   };
   
-  // Agrupar productos por familia
+  // Agrupar productos por familia (con ordenamiento interno)
   const productosAgrupados = useMemo(() => {
     if (!vistaAgrupada) return null;
     
+    // Ordenar productos primero si hay sortConfig
+    let productosOrdenados = productos;
+    if (sortConfig.key) {
+      productosOrdenados = [...productos].sort((a, b) => {
+        let aVal = a[sortConfig.key];
+        let bVal = b[sortConfig.key];
+        
+        if (typeof aVal === 'string') {
+          aVal = (aVal || '').toLowerCase();
+          bVal = (bVal || '').toLowerCase();
+        }
+        
+        if (aVal === null || aVal === undefined) aVal = sortConfig.key.includes('margen') || sortConfig.key.includes('costo') || sortConfig.key.includes('precio') ? -Infinity : '';
+        if (bVal === null || bVal === undefined) bVal = sortConfig.key.includes('margen') || sortConfig.key.includes('costo') || sortConfig.key.includes('precio') ? -Infinity : '';
+        
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    
     const grupos = {};
-    productos.forEach(p => {
+    productosOrdenados.forEach(p => {
       const fam = p.familia || 'Sin clasificar';
       if (!grupos[fam]) {
         grupos[fam] = [];
@@ -1523,7 +1544,7 @@ const TabProductos = ({ onSimularPrecio }) => {
     });
     
     return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [productos, vistaAgrupada]);
+  }, [productos, vistaAgrupada, sortConfig]);
   
   const toggleFamilia = (fam) => {
     setFamiliasExpandidas(prev => {
@@ -1721,12 +1742,47 @@ const TabProductos = ({ onSimularPrecio }) => {
                     <table className="w-full text-sm">
                       <thead className="bg-gray-100 text-gray-700">
                         <tr>
-                          <th className="p-3 text-left">Producto</th>
+                          <th 
+                            className="p-3 text-left cursor-pointer hover:bg-gray-200 select-none"
+                            onClick={() => handleSort('nombre')}
+                          >
+                            <div className="flex items-center gap-1">
+                              Producto <SortIcon columnKey="nombre" />
+                            </div>
+                          </th>
                           <th className="p-3 text-left">Unidad</th>
-                          <th className="p-3 text-right">Precio Venta</th>
-                          <th className="p-3 text-right">Costo Receta</th>
-                          <th className="p-3 text-right">Margen $</th>
-                          <th className="p-3 text-right">Margen %</th>
+                          <th 
+                            className="p-3 text-right cursor-pointer hover:bg-gray-200 select-none"
+                            onClick={() => handleSort('precio_venta')}
+                          >
+                            <div className="flex items-center justify-end gap-1">
+                              Precio Venta <SortIcon columnKey="precio_venta" />
+                            </div>
+                          </th>
+                          <th 
+                            className="p-3 text-right cursor-pointer hover:bg-gray-200 select-none"
+                            onClick={() => handleSort('costo_receta')}
+                          >
+                            <div className="flex items-center justify-end gap-1">
+                              Costo Receta <SortIcon columnKey="costo_receta" />
+                            </div>
+                          </th>
+                          <th 
+                            className="p-3 text-right cursor-pointer hover:bg-gray-200 select-none"
+                            onClick={() => handleSort('margen_pesos')}
+                          >
+                            <div className="flex items-center justify-end gap-1">
+                              Margen $ <SortIcon columnKey="margen_pesos" />
+                            </div>
+                          </th>
+                          <th 
+                            className="p-3 text-right cursor-pointer hover:bg-gray-200 select-none"
+                            onClick={() => handleSort('margen_porcentaje')}
+                          >
+                            <div className="flex items-center justify-end gap-1">
+                              Margen % <SortIcon columnKey="margen_porcentaje" />
+                            </div>
+                          </th>
                           <th className="p-3 text-center">Receta</th>
                           <th className="p-3 text-center">Acciones</th>
                         </tr>

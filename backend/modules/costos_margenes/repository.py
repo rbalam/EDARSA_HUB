@@ -96,6 +96,7 @@ def get_productos_con_costos(
     empresa_id: Optional[int] = None,
     unidad_negocio_id: Optional[int] = None,
     servidor_id: Optional[str] = None,
+    servidores_ids: Optional[List[str]] = None,  # FASE P2: RBAC por Unidad
     sistema_origen: Optional[str] = None,
     familia: Optional[str] = None,
     subfamilia: Optional[str] = None,
@@ -108,6 +109,9 @@ def get_productos_con_costos(
     """
     Obtiene lista de productos con costos y márgenes.
     Fuente: EDARSAHUB SQL (NO-LIVE)
+    
+    FASE P2: Nuevo parámetro servidores_ids para RBAC por Unidad de Negocio.
+    Si se proporciona, filtra productos que pertenezcan a cualquiera de esos servidores.
     """
     conn = _get_edarsahub_connection()
     
@@ -120,6 +124,13 @@ def get_productos_con_costos(
         where_clauses.append(f"p.UnidadNegocioID = {unidad_negocio_id}")
     if servidor_id:
         where_clauses.append(f"p.ServerID = '{servidor_id}'")
+    
+    # FASE P2: RBAC - Filtrar por múltiples servidores permitidos
+    if servidores_ids and len(servidores_ids) > 0:
+        # Crear lista de UUIDs para el IN clause
+        servers_list = "', '".join(servidores_ids)
+        where_clauses.append(f"CAST(p.ServerID AS NVARCHAR(36)) IN ('{servers_list}')")
+    
     if sistema_origen:
         where_clauses.append(f"p.SystemType = '{sistema_origen}'")
     if familia:
@@ -657,12 +668,13 @@ def get_unidades_negocio() -> List[Dict[str, Any]]:
 
 # ==================== FAMILIAS Y SUBFAMILIAS ====================
 
-def get_familias_productos(servidor_id: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_familias_productos(servidor_id: Optional[str] = None, servidores_ids: Optional[List[str]] = None) -> List[Dict[str, Any]]:
     """
     Obtiene lista de familias únicas de productos desde EDARSAHUB.
     
     Args:
-        servidor_id: Filtrar por unidad de negocio (ServerID)
+        servidor_id: Filtrar por unidad de negocio específica (ServerID)
+        servidores_ids: FASE P2 RBAC - Lista de servidores permitidos
     
     Fuente: Tabla Sync_Productos en EDARSAHUB SQL
     NO-LIVE: No consulta sistemas externos.
@@ -673,6 +685,11 @@ def get_familias_productos(servidor_id: Optional[str] = None) -> List[Dict[str, 
     if servidor_id:
         servidor_safe = servidor_id.replace("'", "''")
         where_clause += f" AND CAST(ServerID AS NVARCHAR(36)) = '{servidor_safe}'"
+    
+    # FASE P2: RBAC - Filtrar por múltiples servidores permitidos
+    if servidores_ids and len(servidores_ids) > 0 and not servidor_id:
+        servers_list = "', '".join(servidores_ids)
+        where_clause += f" AND CAST(ServerID AS NVARCHAR(36)) IN ('{servers_list}')"
     
     query = f"""
     SELECT 
