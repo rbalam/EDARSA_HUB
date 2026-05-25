@@ -55,8 +55,10 @@ class PedidosDetectorJob:
     FASE 4.2: Validación de inventario + tareas operativas
     
     Control anti-duplicado:
-    - Colección `pedidos_procesados_automatizacion` en EDARSA HUB
-    - Índice único por (empresa_id, pedido_folio, origen)
+    - Tabla `Scheduler_PedidosProcesados` en EDARSAHUB SQL
+    - Índice único por (EmpresaID, FolioPedido, SistemaOrigen)
+    
+    COMPRAS-MONGO-001-F2: Migrado de MongoDB a SQL Server (Mayo 2026)
     
     ESTADOS DE CONSULTA:
     - SUCCESS_WITH_DATA: Consulta exitosa con pedidos encontrados
@@ -66,20 +68,23 @@ class PedidosDetectorJob:
     - PARTIAL_SUCCESS: Algunas fuentes respondieron, otras no
     """
     
-    COLLECTION_PROCESADOS = "pedidos_procesados_automatizacion"
-    COLLECTION_TAREAS = "tareas_operativas_compras"
-    COLLECTION_BITACORA = "auditoria_compras_bitacora"
+    # Colecciones MongoDB removidas - ahora usa SQL
+    # COLLECTION_PROCESADOS = "pedidos_procesados_automatizacion"  # -> Scheduler_PedidosProcesados
+    # COLLECTION_TAREAS = "tareas_operativas_compras"              # -> Compras_Eventos_Pendientes  
+    # COLLECTION_BITACORA = "auditoria_compras_bitacora"           # -> Scheduler_BitacoraJobs
     
     def __init__(self, db, config: Optional[dict] = None):
-        # Asegurar que db nunca sea None - usar StubDatabase
+        # db se mantiene para compatibilidad con job_logger (migrar después)
+        # Pero las operaciones de tracking ahora van a SQL
         if db is None:
             from core.mongo_stub import get_stub_database
             db = get_stub_database()
-            logger.info("[PEDIDOS_DETECTOR] Usando StubDatabase")
+            logger.info("[PEDIDOS_DETECTOR] Usando StubDatabase para job_logger (tracking en SQL)")
         
         self.db = db
         self.config = config or {}
         self.job_logger = get_job_logger(db)
+        self._use_sql = True  # Flag para usar SQL en lugar de MongoDB
     
     def _is_stub_db(self) -> bool:
         """Detecta si self.db es StubDatabase."""
@@ -101,7 +106,7 @@ class PedidosDetectorJob:
             manual: True si es ejecución manual (para pruebas)
             empresa_id_filter: Filtrar por empresa específica (opcional)
         """
-        from ..sql_repository import get_active_servers, registrar_bitacora_job
+        from ..sql_repository import get_active_servers
         
         execution_type = "manual" if manual else "automatic"
         started_at = datetime.now(timezone.utc)
@@ -567,7 +572,7 @@ class PedidosDetectorJob:
         return []
     
     # =========================================================================
-    # ANTI-DUPLICADOS POR UNIDAD DE NEGOCIO
+    # ANTI-DUPLICADOS POR UNIDAD DE NEGOCIO - MIGRADO A SQL
     # =========================================================================
     
     async def _ya_procesado(self, empresa_id: str, folio: str, origen: str) -> bool:
@@ -575,13 +580,10 @@ class PedidosDetectorJob:
         Verifica si el pedido ya fue procesado para esta empresa.
         
         FASE 4.1: Anti-duplicado por empresa_id (no server_id).
+        COMPRAS-MONGO-001-F2: Migrado a SQL Server.
         """
-        existe = await self.db[self.COLLECTION_PROCESADOS].find_one({
-            "empresa_id": empresa_id,
-            "pedido_folio": folio,
-            "origen": origen
-        })
-        return existe is not None
+        from modules.compras.repository_pedidos_sql import pedido_ya_procesado_sql
+        return await pedido_ya_procesado_sql(empresa_id, folio, origen)
     
     async def _marcar_procesado(
         self,
@@ -597,29 +599,18 @@ class PedidosDetectorJob:
         Marca pedido como procesado.
         
         FASE 4.1: Guarda empresa_id como clave principal.
+        COMPRAS-MONGO-001-F2: Migrado a SQL Server.
         """
-        now = datetime.now(timezone.utc).isoformat()
+        from modules.compras.repository_pedidos_sql import marcar_pedido_procesado_sql
         
-        await self.db[self.COLLECTION_PROCESADOS].update_one(
-            {
-                "empresa_id": empresa_id,
-                "pedido_folio": folio,
-                "origen": origen
-            },
-            {
-                "$set": {
-                    "automatizacion_id": automatizacion_id,
-                    "estado": estado,
-                    "server_id": server_id,  # Solo para trazabilidad interna
-                    "tarea_id": tarea_id,
-                    "fecha_procesado": now,
-                    "fecha_actualizacion": now
-                },
-                "$setOnInsert": {
-                    "fecha_creacion": now
-                }
-            },
-            upsert=True
+        await marcar_pedido_procesado_sql(
+            empresa_id=empresa_id,
+            folio=folio,
+            origen=origen,
+            automatizacion_id=automatizacion_id,
+            estado=estado,
+            server_id=server_id,
+            tarea_id=tarea_id
         )
     
     # =========================================================================
@@ -801,11 +792,11 @@ class PedidosDetectorJob:
         """
         # MongoDB ELIMINADO - Por ahora siempre retorna True
         # TODO: Implementar validación contra tabla SQL de inventarios
-        logger.debug(f"[PEDIDOS_DETECTOR] _inventario_valido: Retornando True (MongoDB eliminado)")
+        logger.debug("[PEDIDOS_DETECTOR] _inventario_valido: Retornando True (MongoDB eliminado)")
         return True
     
     # =========================================================================
-    # FASE 4.2: CREACIÓN DE TAREA OPERATIVA
+    # FASE 4.2: CREACIÓN DE TAREA OPERATIVA - MIGRADO A SQL
     # =========================================================================
     
     async def _crear_tarea_operativa(
@@ -825,59 +816,32 @@ class PedidosDetectorJob:
         Crea una tarea operativa cuando falta inventario.
         
         FASE 4.2: Estado PENDIENTE_INVENTARIO hasta que se capture inventario.
+        COMPRAS-MONGO-001-F2: Migrado a SQL Server.
         
         Returns:
             ID de la tarea creada
         """
-        tarea_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc)
+        from modules.compras.repository_pedidos_sql import crear_tarea_operativa_sql
         
-        tarea = {
-            "id": tarea_id,
-            "tipo": "CAPTURA_INVENTARIO",
-            "estado": "PENDIENTE",
-            "prioridad": "ALTA",
-            # Contexto de negocio (Unidad de Negocio)
-            "empresa_id": empresa_id,
-            "empresa_nombre": empresa_nombre,
-            # Detalle operativo
-            "automatizacion_id": automatizacion_id,
-            "pedido_folio": folio,
-            "sucursal_id": sucursal_id,
-            "sucursal_nombre": sucursal_nombre,
-            "almacen_id": almacen_id,
-            "almacen_nombre": almacen_nombre,
-            "origen_sistema": origen,
-            "productos_count": productos_count,
-            # Descripción para operador
-            "titulo": f"Capturar inventario físico - {almacen_nombre}",
-            "descripcion": (
-                f"Se requiere capturar el inventario físico del almacén {almacen_nombre} "
-                f"para continuar con la auditoría del pedido {folio}. "
-                f"Unidad de Negocio: {empresa_nombre}."
-            ),
-            "instrucciones": [
-                "1. Realizar conteo físico del inventario del almacén",
-                "2. Registrar el inventario en el sistema ERP",
-                f"3. Una vez capturado, el pedido {folio} continuará automáticamente"
-            ],
-            # Timestamps
-            "fecha_creacion": now.isoformat(),
-            "fecha_actualizacion": now.isoformat(),
-            "creado_por": "SISTEMA_AUTOMATICO",
-            # Asignación (pendiente)
-            "asignado_a": None,
-            "fecha_asignacion": None,
-            "fecha_vencimiento": None,
-            "fecha_completado": None,
-            "completado_por": None,
-            "notas": []
-        }
-        
-        await self.db[self.COLLECTION_TAREAS].insert_one(tarea)
+        tarea_id = await crear_tarea_operativa_sql(
+            empresa_id=empresa_id,
+            empresa_nombre=empresa_nombre,
+            automatizacion_id=automatizacion_id,
+            folio=folio,
+            sucursal_id=sucursal_id,
+            sucursal_nombre=sucursal_nombre,
+            almacen_id=almacen_id,
+            almacen_nombre=almacen_nombre,
+            origen=origen,
+            productos_count=productos_count
+        )
         
         # Notificar (si está configurado)
-        await self._notificar_tarea_creada(tarea)
+        await self._notificar_tarea_creada({
+            'id': tarea_id,
+            'titulo': f"Capturar inventario físico - {almacen_nombre}",
+            'empresa_nombre': empresa_nombre
+        })
         
         return tarea_id
     
@@ -944,7 +908,7 @@ class PedidosDetectorJob:
         return resultado
     
     # =========================================================================
-    # BITÁCORA DE EVENTOS
+    # BITÁCORA DE EVENTOS - MIGRADO A SQL
     # =========================================================================
     
     async def _registrar_bitacora_job(self, evento: str, datos: Dict):
@@ -952,14 +916,10 @@ class PedidosDetectorJob:
         Registra evento en bitácora del job.
         
         FASE 4.1: Evidencia clara de cada acción del detector.
+        COMPRAS-MONGO-001-F2: Migrado a SQL Server (Scheduler_BitacoraJobs).
         """
-        await self.db[self.COLLECTION_BITACORA].insert_one({
-            "id": str(uuid.uuid4()),
-            "job": "pedidos_detector",
-            "evento": evento,
-            "datos": datos,
-            "fecha": datetime.now(timezone.utc).isoformat()
-        })
+        from modules.compras.repository_pedidos_sql import registrar_bitacora_pedidos_sql
+        await registrar_bitacora_pedidos_sql("pedidos_detector", evento, datos)
 
 
 def create_pedidos_detector_job(db, config: Optional[dict] = None) -> PedidosDetectorJob:

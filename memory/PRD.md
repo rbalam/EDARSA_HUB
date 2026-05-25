@@ -97,6 +97,51 @@ NO usar scripts locales/manuales. Diseñar una "Consola General de Scheduler / S
 ---
 
 
+
+---
+
+### ✅ COMPRAS-MONGO-001-F2: Migración Tracking Pedidos de MongoDB a SQL - COMPLETADO
+
+**Fecha:** 2026-05-26 (Sesión actual)
+
+#### Problema:
+El job `pedidos_detector_job.py` usaba MongoDB (StubDatabase sin persistencia) para:
+- `pedidos_procesados_automatizacion` - Anti-duplicados
+- `tareas_operativas_compras` - Tareas operativas
+- `auditoria_compras_bitacora` - Bitácora de eventos
+
+#### Solución Implementada:
+
+**Nuevo archivo**: `/app/backend/modules/compras/repository_pedidos_sql.py`
+
+**Funciones migradas a SQL:**
+1. `pedido_ya_procesado_sql()` → Tabla `Scheduler_PedidosProcesados`
+2. `marcar_pedido_procesado_sql()` → INSERT/UPDATE idempotente
+3. `obtener_pedidos_procesados_sql()` → Lista con filtros
+4. `crear_tarea_operativa_sql()` → Tabla `Compras_Eventos_Pendientes`
+5. `obtener_tareas_pendientes_sql()` → Lista de tareas
+6. `registrar_bitacora_pedidos_sql()` → Tabla `Scheduler_BitacoraJobs`
+
+**Archivo actualizado**: `/app/backend/core/scheduler/jobs/pedidos_detector_job.py`
+- Funciones `_ya_procesado()`, `_marcar_procesado()`, `_crear_tarea_operativa()`, `_registrar_bitacora_job()` ahora usan SQL
+
+**Validación:**
+```python
+# Test exitoso:
+1. pedido_ya_procesado_sql() - OK
+2. marcar_pedido_procesado_sql() - OK  
+3. obtener_pedidos_procesados_sql() - OK
+4. registrar_bitacora_pedidos_sql() - OK
+```
+
+**MÁXIMAS CUMPLIDAS:**
+- #1: EDARSAHUB SQL es el cerebro absoluto
+- #2: CERO dependencias de MongoDB para tracking de pedidos
+- #11: Todo auditable (Scheduler_BitacoraJobs)
+- #32: Jobs idempotentes (UPSERT)
+
+---
+
 ### ✅ COMPRAS-MONGO-001-F1: Migración Parámetros Compras a SQL - COMPLETADO
 
 **Fecha:** 2026-05-25 (Sesión actual)
