@@ -8,6 +8,14 @@ ACLARACIÓN CONCEPTUAL (Corrección FASE 1C-3G-E):
     La tabla de rangos NO calcula el costo del vino.
     La tabla de rangos determina el PRECIO DE VENTA SUGERIDO a partir del CostoBaseVino.
 
+CLASIFICACIÓN COMERCIAL (FASE 1C-3G-E3-R1):
+    No todo producto en familia de vinos debe calcularse con regla de rango.
+    Se clasifican según:
+    - SERVICIO_CAVA: Suscripciones, membresías, descorche
+    - PRESENTACION_O_VARIANTE: Copas, medias botellas, servicio por onza
+    - CLAVE_OPERATIVA: Tasting, cortesías, productos ZZZ
+    - PRODUCTO_VENTA_ACTIVO: Botellas reales que SÍ aplican regla de rango
+
 FÓRMULA:
     precio_base = CostoBaseVino * margen_multiplicador
     importe_impuesto = precio_base * tasa_impuesto_resuelta
@@ -19,23 +27,17 @@ JERARQUÍA CORRECTA DE COSTOBASEVINO:
     2. Sync_Productos_Insumos.Costo (costo de botella)
     3. Sync_Productos_Insumos.UltimoCosto
     4. Sync_Productos_Insumos.CostoPromedio
-    5. Último costo de compra validado (futuro)
-    6. Costo promedio de inventario (futuro)
-    7. Costo proveedor vigente (futuro)
-    8. Costo sincronizado del sistema origen (futuro)
-    9. Override manual autorizado (futuro)
-
-NOTA SOBRE CostoReceta:
-    - Para vinos (botellas compradas), CostoReceta = 0 generalmente porque
-      no son recetas elaboradas. Esto NO significa costo cero.
-    - Si CostoReceta > 0, representa un costo consolidado confiable y debe usarse.
-    - Si CostoReceta = 0 o NULL, se recurre a la jerarquía de insumos.
+    5. Sync_Productos_Insumos.CostoEstandar
+    6-9. Fuentes adicionales (futuro: compras, proveedor, override)
 
 ESTADOS:
     - CALCULADO: Precio calculado exitosamente
-    - COSTO_BASE_NO_CONFIGURADO: Sin costo confiable disponible
+    - COSTO_BASE_NO_CONFIGURADO: Sin costo confiable disponible (producto elegible)
     - IMPUESTO_NO_CONFIGURADO: Sin tasa de impuesto válida
     - RANGO_NO_CONFIGURADO: Costo fuera de rangos configurados (ej. gap 4000-5000)
+    - NO_APLICA_RANGO_SERVICIO: Servicio CAVA, no es botella
+    - NO_APLICA_RANGO_PRESENTACION: Copa/variante, requiere relación con producto padre
+    - NO_APLICA_RANGO_OPERATIVO: Tasting, cortesía, clave operativa
     - ERROR_CALCULO: Error en el proceso
 """
 
@@ -52,9 +54,13 @@ from core.server_registry import EDARSAHUB_CONFIG
 class EstadoCalculo(str, Enum):
     """Estados posibles del cálculo de precio."""
     CALCULADO = "CALCULADO"
-    COSTO_BASE_NO_CONFIGURADO = "COSTO_BASE_NO_CONFIGURADO"  # Renombrado para claridad conceptual
+    COSTO_BASE_NO_CONFIGURADO = "COSTO_BASE_NO_CONFIGURADO"
     IMPUESTO_NO_CONFIGURADO = "IMPUESTO_NO_CONFIGURADO"
     RANGO_NO_CONFIGURADO = "RANGO_NO_CONFIGURADO"
+    # Estados de clasificación comercial (FASE 1C-3G-E3-R1)
+    NO_APLICA_RANGO_SERVICIO = "NO_APLICA_RANGO_SERVICIO"
+    NO_APLICA_RANGO_PRESENTACION = "NO_APLICA_RANGO_PRESENTACION"
+    NO_APLICA_RANGO_OPERATIVO = "NO_APLICA_RANGO_OPERATIVO"
     ERROR_CALCULO = "ERROR_CALCULO"
 
 
@@ -130,6 +136,74 @@ def _get_conn_params() -> Tuple:
         EDARSAHUB_CONFIG['username'],
         EDARSAHUB_CONFIG['password']
     )
+
+
+
+# ============================================================================
+# CLASIFICACIÓN COMERCIAL DE PRODUCTOS (FASE 1C-3G-E3-R1)
+# ============================================================================
+
+def clasificar_producto_comercial(nombre: str, familia: str = None, subfamilia: str = None) -> Optional[EstadoCalculo]:
+    """
+    Clasifica un producto para determinar si aplica regla de rango de vinos.
+    
+    Categorías de exclusión:
+    - SERVICIO_CAVA: Suscripciones, membresías, descorche
+    - PRESENTACION: Copas, medias botellas, servicio por onza
+    - OPERATIVO: Tasting, cortesías, productos ZZZ
+    
+    Args:
+        nombre: Nombre del producto
+        familia: Familia del producto
+        subfamilia: Subfamilia del producto
+    
+    Returns:
+        EstadoCalculo de exclusión o None si aplica regla de rango
+    """
+    if not nombre:
+        return None
+    
+    nombre_upper = nombre.upper()
+    
+    # Detectar SERVICIOS CAVA
+    patrones_servicio = [
+        'SUSCRIPCION', 'ANUALIDAD', 'MEMBRESIA', 'CUSTODIA', 'DESCORCHE', 
+        'CUOTA', 'CONTRATACION', 'CONTRATACIÓN', 'RENOVACION', 'PROPORCIONAL',
+        'AJUSTE CAVA', 'ANTICIPO CAVA', 'DESCUENTO CAVA'
+    ]
+    if any(p in nombre_upper for p in patrones_servicio):
+        return EstadoCalculo.NO_APLICA_RANGO_SERVICIO
+    
+    # Detectar PRESENTACIONES (copas, variantes)
+    patrones_presentacion = [
+        'COPA', '1/2', 'MEDIA', ' OZ', 'ONZA', '187 ML', '375 ML', 'SPLIT',
+        '187ML', '375ML', 'HALF', 'BY THE GLASS', ' OZ '
+    ]
+    if any(p in nombre_upper for p in patrones_presentacion):
+        return EstadoCalculo.NO_APLICA_RANGO_PRESENTACION
+    
+    # Detectar CLAVES OPERATIVAS
+    patrones_operativo = [
+        'ZZZ', 'PRUEBA', 'TEST', 'MUESTRA', 'CORTESIA', 'CORTESÍA', 
+        'REGALO', 'TASTING', 'DEGUSTACION', 'DEGUSTACIÓN'
+    ]
+    if any(p in nombre_upper for p in patrones_operativo):
+        return EstadoCalculo.NO_APLICA_RANGO_OPERATIVO
+    
+    # Detectar familia CAVA que no sea botella
+    if familia:
+        familia_upper = familia.upper()
+        if 'CAVA' in familia_upper:
+            # Solo excluir si no parece botella (sin indicador de volumen)
+            if '750' not in nombre and 'BOTELLA' not in nombre_upper and 'ML' not in nombre_upper:
+                # Verificar si es accesorio o servicio
+                accesorios = ['CUCHILLO', 'PLACA', 'SOCIO ADICIONAL', 'GADGET']
+                if any(a in nombre_upper for a in accesorios):
+                    return EstadoCalculo.NO_APLICA_RANGO_SERVICIO
+    
+    # Producto aplica regla de rango
+    return None
+
 
 
 def _redondear(valor: float, multiplo: int, metodo: str) -> float:
@@ -323,10 +397,16 @@ def obtener_regla_vinos() -> Optional[Dict[str, Any]]:
 def calcular_precio_sugerido_vino(
     codigo_producto: str,
     server_id: str,
-    nombre_producto: Optional[str] = None
+    nombre_producto: Optional[str] = None,
+    familia: Optional[str] = None,
+    subfamilia: Optional[str] = None
 ) -> ResultadoPrecioSugerido:
     """
     Calcula el precio sugerido para un producto de vino.
+    
+    CLASIFICACIÓN COMERCIAL (FASE 1C-3G-E3-R1):
+        Primero verifica si el producto aplica regla de rango.
+        Excluye: servicios CAVA, presentaciones/copas, claves operativas.
     
     ACLARACIÓN CONCEPTUAL:
         La tabla de rangos determina el PRECIO DE VENTA SUGERIDO,
@@ -342,9 +422,11 @@ def calcular_precio_sugerido_vino(
         codigo_producto: Código del producto
         server_id: UUID del servidor
         nombre_producto: Nombre del producto (opcional)
+        familia: Familia del producto (opcional)
+        subfamilia: Subfamilia del producto (opcional)
     
     Returns:
-        ResultadoPrecioSugerido con el cálculo o estado de error
+        ResultadoPrecioSugerido con el cálculo o estado de error/exclusión
     """
     resultado = ResultadoPrecioSugerido(
         codigo_producto=codigo_producto,
@@ -353,6 +435,19 @@ def calcular_precio_sugerido_vino(
     )
     
     try:
+        # 0. CLASIFICACIÓN COMERCIAL - Verificar si aplica regla de rango
+        if nombre_producto:
+            exclusion = clasificar_producto_comercial(nombre_producto, familia, subfamilia)
+            if exclusion:
+                resultado.estado = exclusion
+                if exclusion == EstadoCalculo.NO_APLICA_RANGO_SERVICIO:
+                    resultado.mensaje = "Servicio CAVA (suscripción, membresía, descorche). No aplica regla de rango de vinos."
+                elif exclusion == EstadoCalculo.NO_APLICA_RANGO_PRESENTACION:
+                    resultado.mensaje = "Presentación/copa/variante. Requiere relación con producto padre para cálculo."
+                elif exclusion == EstadoCalculo.NO_APLICA_RANGO_OPERATIVO:
+                    resultado.mensaje = "Clave operativa (tasting, cortesía, prueba). No aplica regla de precio sugerido."
+                return resultado
+        
         # 1. Obtener regla de vinos
         regla = obtener_regla_vinos()
         if not regla:
@@ -460,7 +555,9 @@ def calcular_precios_vinos_masivo(
     SELECT TOP {limit}
         sp.CodigoFuente,
         CAST(sp.ServerID AS NVARCHAR(36)) as ServerID,
-        sp.Nombre
+        sp.Nombre,
+        sp.FamiliaNombre,
+        sp.SubFamiliaNombre
     FROM Sync_Productos sp
     WHERE sp.FamiliaNombre IN ('{familias_str}')
       {where_server}
@@ -474,7 +571,9 @@ def calcular_precios_vinos_masivo(
         resultado = calcular_precio_sugerido_vino(
             row['CodigoFuente'],
             row['ServerID'],
-            row['Nombre']
+            row['Nombre'],
+            row.get('FamiliaNombre'),
+            row.get('SubFamiliaNombre')
         )
         resultados.append(resultado)
     
@@ -496,6 +595,9 @@ def get_estadisticas_calculo(server_id: Optional[str] = None) -> Dict[str, int]:
         'COSTO_BASE_NO_CONFIGURADO': 0,
         'IMPUESTO_NO_CONFIGURADO': 0,
         'RANGO_NO_CONFIGURADO': 0,
+        'NO_APLICA_RANGO_SERVICIO': 0,
+        'NO_APLICA_RANGO_PRESENTACION': 0,
+        'NO_APLICA_RANGO_OPERATIVO': 0,
         'ERROR_CALCULO': 0
     }
     

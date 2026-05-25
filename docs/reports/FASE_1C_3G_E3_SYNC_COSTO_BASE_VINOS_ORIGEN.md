@@ -199,34 +199,170 @@ Los costos que existen en los sistemas origen **ya están sincronizados** en EDA
 
 ---
 
-## 9. RECOMENDACIÓN PARA SIGUIENTE FASE
+## 9. CLASIFICACIÓN COMERCIAL DE VINOS SIN COSTO (FASE 1C-3G-E3-R1)
 
-### Opción Recomendada: FASE 1C-3G-F Frontend con Cobertura Parcial
+**Fecha:** 2026-05-25
+
+### 9.1 Resumen de Clasificación
+
+Se analizaron los productos clasificados como vino sin CostoBaseVino para determinar cuáles son realmente productos de venta activos que requieren costo y cuáles deben excluirse del cálculo.
+
+**Total productos analizados:** 886 (número actualizado tras revisión completa)
+
+### 9.2 Criterios de Clasificación Utilizados
+
+| Categoría | Criterio de Detección |
+|-----------|----------------------|
+| SERVICIO_CAVA | Nombre contiene: SUSCRIPCION, ANUALIDAD, MEMBRESIA, CUSTODIA, DESCORCHE, CUOTA, CONTRATACION, ANTICIPO CAVA |
+| PRESENTACION_O_VARIANTE | Nombre contiene: COPA, OZ, ONZA, 187 ML, 375 ML, SPLIT, HALF, BY THE GLASS |
+| CLAVE_OPERATIVA | Nombre contiene: ZZZ, TASTING, PRUEBA, TEST, MUESTRA, CORTESIA, REGALO, DEGUSTACION |
+| FAMILIA_CAVA_NO_BOTELLA | Familia/Subfamilia CAVA pero nombre no indica botella (750 ml) |
+| PRODUCTO_VENTA_ACTIVO_SIN_COSTO | No coincide con ninguna exclusión → Botella real pendiente de costo |
+
+### 9.3 Conteo por Estado de Clasificación
+
+| Estado | Cantidad | % | Descripción |
+|--------|----------|---|-------------|
+| **SERVICIO_CAVA** | 21 | 2.4% | Suscripciones, membresías, descorche |
+| **PRESENTACION_O_VARIANTE** | 471 | 53.2% | Copas, medias botellas, servicio por onza |
+| **CLAVE_OPERATIVA** | 78 | 8.8% | Tasting, cortesías, productos ZZZ |
+| **FAMILIA_CAVA_NO_BOTELLA** | 8 | 0.9% | Accesorios CAVA (cuchillos, placas) |
+| **PRODUCTO_VENTA_ACTIVO_SIN_COSTO** | 308 | 34.8% | **Botellas reales que SÍ requieren costo** |
+| **TOTAL** | **886** | 100% | |
+
+### 9.4 Conteo por Unidad de Negocio
+
+| Unidad | Total | Servicio | Presentación | Operativa | Venta Real |
+|--------|-------|----------|--------------|-----------|------------|
+| 130° QUERETARO / ORIGEN | 470 | 4 | 138 | 1 | 327 |
+| CIENFUEGOS | 255 | 4 | 154 | 121 | ~0* |
+| 130° MERIDA | 121 | 1 | 26 | 15 | 79 |
+| LA ESTELAR | 40 | 1 | 15 | 9 | 15 |
+
+*CIENFUEGOS tiene alta concentración de productos TASTING/CORTESIA
+
+### 9.5 Conteo por Familia
+
+| Familia | Total | Presentación | Operativa | Venta Real |
+|---------|-------|--------------|-----------|------------|
+| B VINOS | 350 | 167 | 16 | 167 |
+| VINOS TINTOS | 327 | 89 | 1 | 237 |
+| VINOS BLANCOS | 54 | 22 | 0 | 32 |
+| B CHAMPAGNES Y COGNACS | 41 | 23 | 0 | 18 |
+| CHAMPAGNES Y COGNACS | 35 | 12 | 0 | 23 |
+| VINOS ROSADOS | 30 | 8 | 0 | 22 |
+| VINOS ESPUMOSOS/POSTRE | 19 | 7 | 0 | 12 |
+| C CAVAS | 16 | 0 | 0 | 16 |
+| CAVAS | 5 | 0 | 0 | 5 |
+| B VINOS DE POSTRE | 5 | 4 | 0 | 1 |
+
+### 9.6 Ejemplos por Categoría
+
+#### SERVICIO_CAVA (21 productos)
+```
+C020003  | ANTICIPO CAVA ANUALIDAD
+0421     | CAVA RENOVACION ANUAL
+B160063  | DESCORCHE
+0000000937 | DESCORCHE DE VINO
+```
+
+#### PRESENTACION_O_VARIANTE (471 productos)
+```
+0000009229 | CH LA FLEUR DE FRANCOIS BLANC COPA
+B090014    | COG HENNESSY VERY SPECIAL COPA
+B090030    | COG LOUIS XIII COPA 1.0 OZ
+04071      | VT NIMBUS CS COPA
+```
+
+#### CLAVE_OPERATIVA (78 productos)
+```
+02041    | TASTING VT 130°
+02044    | TASTING VB DON LEO SAUV BLANC
+0000009096 | Vinos de Cortesia 01 pz
+C050014  | VT VINOS Y DESTILADOS DE CORTESIA
+```
+
+#### PRODUCTO_VENTA_ACTIVO_SIN_COSTO (308 productos) - ESTOS SÍ REQUIEREN COSTO
+```
+004143   | CH M&C ICE ROSE IMPERIAL
+04020    | VT PAPALE PRIMITIVO ORO MANDURIA
+04027    | VT SIRO PACENTI BRUNELLO DI MONTALCINNO DOCG
+04070    | VT NIMBUS CS
+```
+
+### 9.7 Conclusión de Clasificación
+
+| Métrica | Valor |
+|---------|-------|
+| Total vinos sin costo inicial | 886 |
+| **Excluibles del cálculo** (no son botellas de venta) | **578 (65.2%)** |
+| → Servicios CAVA | 21 |
+| → Presentaciones/Copas | 471 |
+| → Claves operativas | 78 |
+| → Accesorios CAVA | 8 |
+| **Productos de venta reales sin costo** | **308 (34.8%)** |
+
+### 9.8 Impacto en Cobertura
+
+| Estado | Antes de Clasificación | Después de Clasificación |
+|--------|------------------------|--------------------------|
+| Total vinos catálogo | 1,512 | 1,512 |
+| Vinos calculables (con costo) | 634 (42%) | 634 (42%) |
+| Vinos pendientes críticos | 878 (58%) | **308 (20%)** |
+| Vinos excluidos (no aplica rango) | 0 | **578 (38%)** |
+
+**La cobertura real de productos de venta activos pasa de 42% a ~67%** cuando se excluyen productos que no deben calcularse.
+
+### 9.9 Recomendaciones Post-Clasificación
+
+1. **Marcar los 578 productos excluibles** con estado especial:
+   - `NO_APLICA_RANGO_VINO` para presentaciones, servicios, operativos
+
+2. **Enfocar esfuerzo de costeo en los 308 productos reales**:
+   - Estos son botellas de vino que SÍ necesitan costo
+   - Priorizar champagnes de alta gama
+
+3. **Las presentaciones (COPA) heredan costo** del producto padre:
+   - Requiere implementar relación producto-presentación
+   - El costo de copa = costo botella / porciones
+
+4. **Los TASTING no generan precio sugerido**:
+   - Son para promoción/degustación
+   - Precio = 0 o precio simbólico
+
+---
+
+## 10. RECOMENDACIÓN ACTUALIZADA PARA SIGUIENTE FASE
+
+### Escenario Actual Corregido
+
+| Métrica | Valor |
+|---------|-------|
+| Vinos con precio calculable | 634 |
+| Vinos de venta real sin costo | **308** |
+| Vinos excluibles (no aplica rango) | 578 |
+| **Cobertura real** | **67%** (634 de 942 productos de venta) |
+
+### Opción Recomendada: FASE 1C-3G-F Frontend
 
 Dado que:
-- 634 vinos (42%) tienen precio calculable
-- Los 878 restantes requieren acción del usuario para obtener costos
+- **67%** de productos de venta reales ya tienen precio calculable
+- Solo **308 productos** son botellas que necesitan costo (no 878)
+- Los 578 excluibles no deben aparecer como "pendientes críticos"
 
 **Se recomienda:**
 
-1. **Proceder a FASE 1C-3G-F Frontend** mostrando:
-   - Los 634 vinos con precio sugerido calculado
-   - Los 878 vinos marcados como "REQUIERE COSTO" (no "Sin costo")
-   - Opción para el usuario de capturar/importar costos
-
-2. **Implementar funcionalidad de captura manual** con:
-   - Trazabilidad obligatoria (usuario, fecha, documento referencia)
-   - Validación de rango razonable
-   - Flag `EsCostoManual = true`
-
-3. **Excluir productos tipo servicio** de la regla de vinos:
-   - Identificar productos CAVA que son suscripciones
-   - Marcarlos con tipo especial que no aplica cálculo de rango
+1. **Actualizar motor de cálculo** para clasificar automáticamente
+2. **Proceder a FASE 1C-3G-F Frontend** con:
+   - 634 vinos con precio sugerido ✓
+   - 308 vinos como "REQUIERE COSTO" ⚠️
+   - 578 vinos como "NO APLICA RANGO" (presentaciones, servicios)
 
 ---
 
 **FIN DEL REPORTE**
 
-**Estado**: CRITERIO DE PARO APLICADO  
-**Razón**: Los costos ya están sincronizados. Los vinos sin costo no lo tienen en origen.  
-**Siguiente Acción**: Esperar autorización del usuario para opción A, B, C, D o E.
+**Estado**: CLASIFICACIÓN COMPLETADA  
+**Productos de venta real sin costo**: 308 (no 878)  
+**Cobertura real**: 67%  
+**Siguiente Acción**: Esperar autorización para actualizar motor y FASE 1C-3G-F Frontend

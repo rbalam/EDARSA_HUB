@@ -21,6 +21,39 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Diciembre 2025)
 
+### ✅ FASE 1C-3G-E3-R1: Clasificación Comercial de Vinos Sin Costo - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Resumen
+Se implementó clasificación comercial para los productos sin costo, separando botellas reales de servicios, presentaciones y claves operativas.
+
+#### Clasificación Implementada:
+| Categoría | Cantidad | % | Descripción |
+|-----------|----------|---|-------------|
+| SERVICIO_CAVA | 21 | 2.4% | Suscripciones, membresías, descorche |
+| PRESENTACION_O_VARIANTE | 471 | 53.2% | Copas, medias botellas |
+| CLAVE_OPERATIVA | 78 | 8.8% | Tasting, cortesías, ZZZ |
+| **PRODUCTO_VENTA_REAL** | **308** | **34.8%** | Botellas que SÍ requieren costo |
+
+#### Impacto en Cobertura:
+| Métrica | Antes | Después |
+|---------|-------|---------|
+| Vinos "pendientes críticos" | 878 | **308** |
+| Excluidos (no aplica rango) | 0 | 578 |
+| Cobertura de elegibles | 42% | **~55%** |
+
+#### Motor de Cálculo Actualizado:
+- Nuevos estados: `NO_APLICA_RANGO_SERVICIO`, `NO_APLICA_RANGO_PRESENTACION`, `NO_APLICA_RANGO_OPERATIVO`
+- Función `clasificar_producto_comercial()` añadida
+- Exclusión automática por patrones de nombre
+
+#### Archivos:
+- `/app/docs/reports/FASE_1C_3G_E3_SYNC_COSTO_BASE_VINOS_ORIGEN.md` (sección R1 añadida)
+- `/app/backend/modules/comercial/services/precios_vinos_service.py` (clasificación implementada)
+
+---
+
 ### ✅ FASE 1C-3G-E3: Sincronización Costos Origen - CRITERIO DE PARO
 
 **Fecha:** 2026-05-25
