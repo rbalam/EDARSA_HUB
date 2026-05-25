@@ -19,7 +19,8 @@ import {
   Package, DollarSign, BarChart2, RefreshCw, Search, Filter,
   ChevronLeft, ChevronRight, Eye, List, AlertCircle, CheckCircle,
   Clock, Database, Percent, TrendingUp, TrendingDown, X, Calculator,
-  FileText, Send, Check, XCircle, Play, AlertTriangle, History, Info
+  FileText, Send, Check, XCircle, Play, AlertTriangle, History, Info,
+  ChevronDown, ChevronUp, Building2, Layers
 } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -118,24 +119,59 @@ const EstatusBadge = ({ estatus }) => {
 
 // ==================== MODAL RECETA ====================
 
-const RecetaModal = ({ isOpen, onClose, productoId }) => {
+const RecetaModal = ({ isOpen, onClose, productoId, onVerSubReceta }) => {
   const [receta, setReceta] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [historialProductos, setHistorialProductos] = useState([]);
+  const [productoActual, setProductoActual] = useState(productoId);
+  
+  const cargarReceta = useCallback(async (id) => {
+    if (!id) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const res = await api.get(`/costos-margenes/productos/${id}/receta`);
+      setReceta(res.data);
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
   
   useEffect(() => {
     if (isOpen && productoId) {
-      setLoading(true);
-      setError(null);
-      
-      api.get(`/costos-margenes/productos/${productoId}/receta`)
-        .then(res => {
-          setReceta(res.data);
-        })
-        .catch(err => setError(err.response?.data?.detail || err.message))
-        .finally(() => setLoading(false));
+      setProductoActual(productoId);
+      setHistorialProductos([]);
+      cargarReceta(productoId);
     }
-  }, [isOpen, productoId]);
+  }, [isOpen, productoId, cargarReceta]);
+  
+  // Manejar doble click en elaborado para ver su sub-receta
+  const handleVerSubReceta = (componente) => {
+    if (componente.es_elaborado && componente.componente_id) {
+      // Guardar producto actual en historial para poder volver
+      setHistorialProductos(prev => [...prev, { 
+        id: productoActual, 
+        nombre: receta?.producto_nombre 
+      }]);
+      setProductoActual(componente.componente_id);
+      cargarReceta(componente.componente_id);
+    }
+  };
+  
+  // Volver al producto anterior
+  const handleVolver = () => {
+    if (historialProductos.length > 0) {
+      const anterior = historialProductos[historialProductos.length - 1];
+      setHistorialProductos(prev => prev.slice(0, -1));
+      setProductoActual(anterior.id);
+      cargarReceta(anterior.id);
+    }
+  };
   
   if (!isOpen) return null;
   
@@ -143,11 +179,53 @@ const RecetaModal = ({ isOpen, onClose, productoId }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
         <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-          <h3 className="text-lg font-semibold text-gray-800">Receta Expandida</h3>
+          <div className="flex items-center gap-2">
+            {historialProductos.length > 0 && (
+              <button 
+                onClick={handleVolver}
+                className="p-1 hover:bg-gray-200 rounded text-blue-600"
+                title="Volver a receta anterior"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
+            <h3 className="text-lg font-semibold text-gray-800">
+              Receta Expandida
+              {historialProductos.length > 0 && (
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  (Sub-receta nivel {historialProductos.length + 1})
+                </span>
+              )}
+            </h3>
+          </div>
           <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded">
             <X className="w-5 h-5" />
           </button>
         </div>
+        
+        {/* Breadcrumb de navegación */}
+        {historialProductos.length > 0 && (
+          <div className="px-4 py-2 bg-blue-50 border-b flex items-center gap-1 text-sm text-blue-600 overflow-x-auto">
+            {historialProductos.map((p, idx) => (
+              <span key={idx} className="flex items-center">
+                <button 
+                  onClick={() => {
+                    const nuevosHistorial = historialProductos.slice(0, idx);
+                    setHistorialProductos(nuevosHistorial);
+                    setProductoActual(p.id);
+                    cargarReceta(p.id);
+                  }}
+                  className="hover:underline truncate max-w-[150px]"
+                  title={p.nombre}
+                >
+                  {p.nombre}
+                </button>
+                <ChevronRight className="w-4 h-4 mx-1 flex-shrink-0" />
+              </span>
+            ))}
+            <span className="font-medium truncate">{receta?.producto_nombre}</span>
+          </div>
+        )}
         
         <div className="p-4 overflow-y-auto max-h-[calc(80vh-120px)]">
           {loading && (
@@ -176,6 +254,11 @@ const RecetaModal = ({ isOpen, onClose, productoId }) => {
                 </div>
               </div>
               
+              <div className="text-xs text-gray-500 bg-yellow-50 p-2 rounded flex items-center gap-1">
+                <Info className="w-4 h-4" />
+                Haga doble click en los insumos <span className="bg-purple-100 text-purple-700 px-1 rounded">Elaborado</span> para ver su receta
+              </div>
+              
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100">
@@ -191,13 +274,18 @@ const RecetaModal = ({ isOpen, onClose, productoId }) => {
                   </thead>
                   <tbody>
                     {receta.componentes?.map((comp, idx) => (
-                      <tr key={idx} className="border-b hover:bg-gray-50">
+                      <tr 
+                        key={idx} 
+                        className={`border-b hover:bg-gray-50 ${comp.es_elaborado ? 'cursor-pointer hover:bg-purple-50' : ''}`}
+                        onDoubleClick={() => comp.es_elaborado && handleVerSubReceta(comp)}
+                        title={comp.es_elaborado ? 'Doble click para ver receta' : ''}
+                      >
                         <td className="p-2">
                           <span className={comp.es_elaborado ? 'text-purple-600 font-medium' : ''}>
                             {comp.nombre}
                           </span>
                           {comp.es_elaborado && (
-                            <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-1 rounded">
+                            <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-1 rounded cursor-pointer">
                               Elaborado
                             </span>
                           )}
@@ -1023,7 +1111,7 @@ const DetalleSolicitudModal = ({ isOpen, onClose, solicitudId, onAccionRealizada
   );
 };
 
-// ==================== TAB PRODUCTOS (ORIGINAL) ====================
+// ==================== TAB PRODUCTOS (MEJORADO) ====================
 
 const TabProductos = ({ onSimularPrecio }) => {
   const [resumen, setResumen] = useState(null);
@@ -1034,13 +1122,53 @@ const TabProductos = ({ onSimularPrecio }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalProductos, setTotalProductos] = useState(0);
   const [busqueda, setBusqueda] = useState('');
-  const [sistemaOrigen, setSistemaOrigen] = useState('');
+  const [unidadNegocio, setUnidadNegocio] = useState('');
+  const [familia, setFamilia] = useState('');
+  const [subfamilia, setSubfamilia] = useState('');
   const [soloConReceta, setSoloConReceta] = useState(false);
   const [margenBajo, setMargenBajo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [recetaModal, setRecetaModal] = useState({ open: false, productoId: null });
   const [insumosModal, setInsumosModal] = useState({ open: false, productoId: null });
+  
+  // Datos para filtros
+  const [unidades, setUnidades] = useState([]);
+  const [familias, setFamilias] = useState([]);
+  const [subfamilias, setSubfamilias] = useState([]);
+  
+  // Vista agrupada
+  const [vistaAgrupada, setVistaAgrupada] = useState(false);
+  const [familiasExpandidas, setFamiliasExpandidas] = useState(new Set());
+  
+  // Cargar unidades de negocio y familias
+  useEffect(() => {
+    const cargarFiltros = async () => {
+      try {
+        const [unidadesRes, familiasRes] = await Promise.all([
+          api.get('/costos-margenes/unidades-negocio'),
+          api.get('/costos-margenes/familias')
+        ]);
+        setUnidades(unidadesRes.data.unidades || []);
+        setFamilias(familiasRes.data.familias || []);
+      } catch (err) {
+        console.error('Error cargando filtros:', err);
+      }
+    };
+    cargarFiltros();
+  }, []);
+  
+  // Cargar subfamilias cuando cambia la familia
+  useEffect(() => {
+    if (familia) {
+      api.get(`/costos-margenes/subfamilias?familia=${encodeURIComponent(familia)}`)
+        .then(res => setSubfamilias(res.data.subfamilias || []))
+        .catch(err => console.error('Error cargando subfamilias:', err));
+    } else {
+      setSubfamilias([]);
+      setSubfamilia('');
+    }
+  }, [familia]);
   
   const loadResumen = useCallback(async () => {
     try {
@@ -1071,7 +1199,9 @@ const TabProductos = ({ onSimularPrecio }) => {
       });
       
       if (busqueda) params.append('busqueda', busqueda);
-      if (sistemaOrigen) params.append('sistema_origen', sistemaOrigen);
+      if (unidadNegocio) params.append('servidor_id', unidadNegocio);
+      if (familia) params.append('familia', familia);
+      if (subfamilia) params.append('subfamilia', subfamilia);
       if (soloConReceta) params.append('solo_con_receta', 'true');
       if (margenBajo) params.append('margen_bajo', 'true');
       
@@ -1085,7 +1215,7 @@ const TabProductos = ({ onSimularPrecio }) => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, busqueda, sistemaOrigen, soloConReceta, margenBajo]);
+  }, [page, pageSize, busqueda, unidadNegocio, familia, subfamilia, soloConReceta, margenBajo]);
   
   useEffect(() => {
     loadResumen();
@@ -1099,6 +1229,34 @@ const TabProductos = ({ onSimularPrecio }) => {
   const handleSearch = (e) => {
     setBusqueda(e.target.value);
     setPage(1);
+  };
+  
+  // Agrupar productos por familia
+  const productosAgrupados = useMemo(() => {
+    if (!vistaAgrupada) return null;
+    
+    const grupos = {};
+    productos.forEach(p => {
+      const fam = p.familia || 'Sin clasificar';
+      if (!grupos[fam]) {
+        grupos[fam] = [];
+      }
+      grupos[fam].push(p);
+    });
+    
+    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [productos, vistaAgrupada]);
+  
+  const toggleFamilia = (fam) => {
+    setFamiliasExpandidas(prev => {
+      const next = new Set(prev);
+      if (next.has(fam)) {
+        next.delete(fam);
+      } else {
+        next.add(fam);
+      }
+      return next;
+    });
   };
   
   return (
@@ -1163,15 +1321,46 @@ const TabProductos = ({ onSimularPrecio }) => {
             />
           </div>
           
+          {/* Filtro por Unidad de Negocio */}
           <select
-            value={sistemaOrigen}
-            onChange={(e) => { setSistemaOrigen(e.target.value); setPage(1); }}
-            className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={unidadNegocio}
+            onChange={(e) => { setUnidadNegocio(e.target.value); setPage(1); }}
+            className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px]"
+            data-testid="filtro-unidad"
           >
-            <option value="">Todos los sistemas</option>
-            <option value="SOFTRESTAURANT_PRO">SoftRestaurant</option>
-            <option value="MPRO">MPRO</option>
+            <option value="">Todas las unidades</option>
+            {unidades.map(u => (
+              <option key={u.server_id} value={u.server_id}>{u.nombre}</option>
+            ))}
           </select>
+          
+          {/* Filtro por Familia */}
+          <select
+            value={familia}
+            onChange={(e) => { setFamilia(e.target.value); setSubfamilia(''); setPage(1); }}
+            className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px]"
+            data-testid="filtro-familia"
+          >
+            <option value="">Todas las familias</option>
+            {familias.map(f => (
+              <option key={f.familia} value={f.familia}>{f.familia} ({f.total_productos})</option>
+            ))}
+          </select>
+          
+          {/* Filtro por Subfamilia (solo si hay familia seleccionada) */}
+          {subfamilias.length > 0 && (
+            <select
+              value={subfamilia}
+              onChange={(e) => { setSubfamilia(e.target.value); setPage(1); }}
+              className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px]"
+              data-testid="filtro-subfamilia"
+            >
+              <option value="">Todas las subfamilias</option>
+              {subfamilias.map(sf => (
+                <option key={sf.subfamilia} value={sf.subfamilia}>{sf.subfamilia} ({sf.total_productos})</option>
+              ))}
+            </select>
+          )}
           
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -1192,6 +1381,20 @@ const TabProductos = ({ onSimularPrecio }) => {
             />
             <span className="text-sm text-gray-600">Margen bajo (&lt;20%)</span>
           </label>
+          
+          {/* Toggle vista agrupada */}
+          <button
+            onClick={() => setVistaAgrupada(!vistaAgrupada)}
+            className={`px-3 py-2 border rounded-lg flex items-center gap-2 transition-colors ${
+              vistaAgrupada ? 'bg-blue-100 border-blue-300 text-blue-700' : 'hover:bg-gray-100'
+            }`}
+            title={vistaAgrupada ? 'Vista lista' : 'Vista agrupada por familia'}
+          >
+            <Layers className="w-4 h-4" />
+            <span className="text-sm hidden sm:inline">
+              {vistaAgrupada ? 'Vista lista' : 'Agrupar'}
+            </span>
+          </button>
           
           <button
             onClick={() => { loadResumen(); loadSyncStatus(); loadProductos(); }}
@@ -1215,14 +1418,118 @@ const TabProductos = ({ onSimularPrecio }) => {
             <AlertCircle className="w-5 h-5 inline mr-2" />
             Error: {error}
           </div>
+        ) : vistaAgrupada && productosAgrupados ? (
+          /* Vista agrupada por familia */
+          <div className="divide-y">
+            {productosAgrupados.map(([fam, prods]) => (
+              <div key={fam}>
+                <button
+                  onClick={() => toggleFamilia(fam)}
+                  className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    {familiasExpandidas.has(fam) ? (
+                      <ChevronUp className="w-5 h-5 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-500" />
+                    )}
+                    <span className="font-semibold text-gray-800">{fam}</span>
+                    <span className="text-sm text-gray-500">({prods.length} productos)</span>
+                  </div>
+                </button>
+                
+                {familiasExpandidas.has(fam) && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-100 text-gray-700">
+                        <tr>
+                          <th className="p-3 text-left">Producto</th>
+                          <th className="p-3 text-left">Unidad</th>
+                          <th className="p-3 text-right">Precio Venta</th>
+                          <th className="p-3 text-right">Costo Receta</th>
+                          <th className="p-3 text-right">Margen $</th>
+                          <th className="p-3 text-right">Margen %</th>
+                          <th className="p-3 text-center">Receta</th>
+                          <th className="p-3 text-center">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {prods.map((prod) => (
+                          <tr key={prod.producto_id} className="border-b hover:bg-gray-50">
+                            <td className="p-3">
+                              <div className="font-medium text-gray-800">{prod.nombre}</div>
+                              <div className="text-xs text-gray-400">{prod.id_producto_origen}</div>
+                            </td>
+                            <td className="p-3">
+                              <span className={`text-xs px-2 py-1 rounded ${
+                                prod.sistema_origen === 'SOFTRESTAURANT_PRO'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-purple-100 text-purple-700'
+                              }`}>
+                                {prod.sistema_origen === 'SOFTRESTAURANT_PRO' ? 'SR' : 'MPRO'}
+                              </span>
+                            </td>
+                            <td className="p-3 text-right font-mono">{formatCurrency(prod.precio_venta)}</td>
+                            <td className="p-3 text-right font-mono">{formatCurrency(prod.costo_receta)}</td>
+                            <td className="p-3 text-right font-mono">
+                              {prod.margen_pesos != null ? (
+                                <span className={prod.margen_pesos < 0 ? 'text-red-600' : 'text-green-600'}>
+                                  {formatCurrency(prod.margen_pesos)}
+                                </span>
+                              ) : <span className="text-gray-400">Sin dato</span>}
+                            </td>
+                            <td className="p-3 text-right">
+                              {prod.margen_porcentaje != null ? (
+                                <span className={prod.margen_porcentaje < 20 ? 'text-red-600 font-medium' : 'text-green-600'}>
+                                  {formatPercent(prod.margen_porcentaje)}
+                                </span>
+                              ) : <span className="text-gray-400">Sin dato</span>}
+                            </td>
+                            <td className="p-3 text-center">
+                              {prod.tiene_receta ? (
+                                <span className="text-green-600">
+                                  <CheckCircle className="w-4 h-4 inline" />
+                                  <span className="ml-1 text-xs">{prod.numero_insumos}</span>
+                                </span>
+                              ) : <span className="text-gray-400">-</span>}
+                            </td>
+                            <td className="p-3">
+                              <div className="flex justify-center gap-1">
+                                <button
+                                  onClick={() => setRecetaModal({ open: true, productoId: prod.producto_id })}
+                                  disabled={!prod.tiene_receta}
+                                  className={`p-1 rounded ${prod.tiene_receta ? 'hover:bg-blue-100 text-blue-600' : 'text-gray-300 cursor-not-allowed'}`}
+                                  title="Ver receta"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => onSimularPrecio(prod)}
+                                  className="p-1 rounded hover:bg-yellow-100 text-yellow-600"
+                                  title="Simular precio"
+                                >
+                                  <Calculator className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         ) : (
+          /* Vista lista (original) */
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-100 text-gray-700">
                   <tr>
                     <th className="p-3 text-left">Producto</th>
-                    <th className="p-3 text-left">Sistema</th>
+                    <th className="p-3 text-left">Unidad</th>
                     <th className="p-3 text-left">Familia</th>
                     <th className="p-3 text-right">Precio Venta</th>
                     <th className="p-3 text-right">Costo Receta</th>

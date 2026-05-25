@@ -19,9 +19,28 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
-## Estado Actual (24 Mayo 2026)
+## Estado Actual (25 Mayo 2026)
 
 ### ✅ Completado
+
+#### Mejoras en Costos y Márgenes (25 Mayo 2026) ✅ COMPLETADO
+- [x] **Vista agrupada por Familia**:
+  - Botón "Agrupar" para alternar entre vista lista y vista agrupada
+  - Familias expandibles con click (chevron up/down)
+  - Contador de productos por familia
+- [x] **Filtros mejorados**:
+  - Dropdown "Unidades de Negocio" (reemplazó filtro por Sistema)
+  - Dropdown "Familias" con contador de productos
+  - Dropdown "Subfamilias" (aparece al seleccionar familia)
+- [x] **Doble click en Elaborados**:
+  - Modal de receta permite ver sub-recetas de insumos elaborados
+  - Navegación con breadcrumb entre recetas padre/hijo
+  - Botón "Volver" para regresar a receta anterior
+  - Mensaje informativo sobre la funcionalidad
+- [x] **Backend endpoints nuevos**:
+  - `GET /api/costos-margenes/unidades-negocio` - Lista unidades activas
+  - `GET /api/costos-margenes/familias` - Lista familias con totales
+  - `GET /api/costos-margenes/subfamilias` - Lista subfamilias filtradas
 
 #### FASE 1C-3F - Simulación y Solicitudes de Precio (24 Mayo 2026) ✅ COMPLETADO
 - [x] **Backend completado** (sesión anterior):

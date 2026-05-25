@@ -38,6 +38,9 @@ from modules.costos_margenes.repository import (
     get_receta_producto,
     get_insumos_producto,
     get_sync_status,
+    get_unidades_negocio,
+    get_familias_productos,
+    get_subfamilias_productos,
 )
 from core.security import get_current_user
 
@@ -419,6 +422,83 @@ async def obtener_sync_status(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error obteniendo sync status: {str(e)}")
+
+
+# ==================== UNIDADES DE NEGOCIO ====================
+
+@router.get("/unidades-negocio")
+async def listar_unidades_negocio(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Lista las unidades de negocio activas.
+    
+    **Fuente**: EDARSAHUB SQL (NO-LIVE)
+    
+    **Retorna**: Lista de unidades con código, nombre, server_id
+    """
+    _verify_costos_margenes_access(current_user)
+    
+    try:
+        unidades = get_unidades_negocio()
+        return {
+            "unidades": unidades,
+            "total": len(unidades),
+            "source_type": "EDARSAHUB_SQL"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo unidades de negocio: {str(e)}")
+
+
+# ==================== FAMILIAS Y SUBFAMILIAS ====================
+
+@router.get("/familias")
+async def listar_familias(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Lista las familias de productos disponibles.
+    
+    **Fuente**: EDARSAHUB SQL (NO-LIVE)
+    
+    **Retorna**: Lista de familias con total de productos por familia
+    """
+    _verify_costos_margenes_access(current_user)
+    
+    try:
+        familias = get_familias_productos()
+        return {
+            "familias": familias,
+            "total": len(familias),
+            "source_type": "EDARSAHUB_SQL"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo familias: {str(e)}")
+
+
+@router.get("/subfamilias")
+async def listar_subfamilias(
+    current_user: dict = Depends(get_current_user),
+    familia: Optional[str] = Query(None, description="Filtrar por familia")
+):
+    """
+    Lista las subfamilias de productos.
+    
+    **Fuente**: EDARSAHUB SQL (NO-LIVE)
+    
+    **Retorna**: Lista de subfamilias con total de productos
+    """
+    _verify_costos_margenes_access(current_user)
+    
+    try:
+        subfamilias = get_subfamilias_productos(familia)
+        return {
+            "subfamilias": subfamilias,
+            "total": len(subfamilias),
+            "source_type": "EDARSAHUB_SQL"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo subfamilias: {str(e)}")
 
 
 # ==================== EXPORTACIÓN ====================

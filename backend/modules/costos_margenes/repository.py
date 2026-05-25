@@ -445,3 +445,121 @@ def get_sync_status() -> Dict[str, Any]:
         'warnings': [],
         'estado': estado,
     }
+
+
+
+# ==================== UNIDADES DE NEGOCIO ====================
+
+def get_unidades_negocio() -> List[Dict[str, Any]]:
+    """
+    Obtiene lista de unidades de negocio activas desde EDARSAHUB.
+    
+    Fuente: Tabla Unidades_Negocio en EDARSAHUB SQL
+    NO-LIVE: No consulta sistemas externos.
+    """
+    conn = _get_edarsahub_connection()
+    
+    query = """
+    SELECT 
+        id,
+        codigo,
+        nombre,
+        CAST(server_id AS NVARCHAR(36)) as server_id,
+        sucursal_origen_id,
+        system_type,
+        activo,
+        orden
+    FROM Unidades_Negocio
+    WHERE activo = 1
+    ORDER BY orden, nombre
+    """
+    
+    result = execute_sql_query(*conn, query)
+    
+    unidades = []
+    for row in result or []:
+        unidades.append({
+            'id': row.get('id'),
+            'codigo': row.get('codigo', ''),
+            'nombre': row.get('nombre', ''),
+            'server_id': row.get('server_id', ''),
+            'sucursal_origen_id': row.get('sucursal_origen_id'),
+            'system_type': row.get('system_type', ''),
+            'orden': row.get('orden', 0)
+        })
+    
+    return unidades
+
+
+# ==================== FAMILIAS Y SUBFAMILIAS ====================
+
+def get_familias_productos() -> List[Dict[str, Any]]:
+    """
+    Obtiene lista de familias únicas de productos desde EDARSAHUB.
+    
+    Fuente: Tabla Sync_Productos en EDARSAHUB SQL
+    NO-LIVE: No consulta sistemas externos.
+    """
+    conn = _get_edarsahub_connection()
+    
+    # Usar FamiliaNombre directo de Sync_Productos
+    query = """
+    SELECT 
+        FamiliaNombre as familia,
+        COUNT(*) as total_productos
+    FROM Sync_Productos
+    WHERE FamiliaNombre IS NOT NULL AND FamiliaNombre != ''
+    GROUP BY FamiliaNombre
+    ORDER BY FamiliaNombre
+    """
+    
+    result = execute_sql_query(*conn, query)
+    
+    familias = []
+    for row in result or []:
+        familias.append({
+            'familia': row.get('familia', ''),
+            'codigo': '',
+            'total_productos': row.get('total_productos', 0)
+        })
+    
+    return familias
+
+
+def get_subfamilias_productos(familia: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    Obtiene lista de subfamilias de productos desde EDARSAHUB.
+    
+    Fuente: Tabla Sync_Productos en EDARSAHUB SQL
+    NO-LIVE: No consulta sistemas externos.
+    """
+    conn = _get_edarsahub_connection()
+    
+    where_clause = "WHERE SubFamiliaNombre IS NOT NULL AND SubFamiliaNombre != ''"
+    if familia:
+        familia_safe = familia.replace("'", "''")
+        where_clause += f" AND FamiliaNombre = '{familia_safe}'"
+    
+    query = f"""
+    SELECT 
+        FamiliaNombre as familia,
+        SubFamiliaNombre as subfamilia,
+        COUNT(*) as total_productos
+    FROM Sync_Productos
+    {where_clause}
+    GROUP BY FamiliaNombre, SubFamiliaNombre
+    ORDER BY FamiliaNombre, SubFamiliaNombre
+    """
+    
+    result = execute_sql_query(*conn, query)
+    
+    subfamilias = []
+    for row in result or []:
+        subfamilias.append({
+            'familia': row.get('familia', ''),
+            'subfamilia': row.get('subfamilia', ''),
+            'codigo': '',
+            'total_productos': row.get('total_productos', 0)
+        })
+    
+    return subfamilias
