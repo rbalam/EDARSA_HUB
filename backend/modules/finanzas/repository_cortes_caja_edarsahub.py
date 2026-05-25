@@ -56,7 +56,15 @@ class RepositoryCortesCajaEdarsahub:
         """
         filtros = filtros or {}
         
-        conn = get_edarsahub_connection()
+        try:
+            conn = get_edarsahub_connection()
+            if not conn:
+                self.logger.error("[CORTES_CAJA_SQL] No se pudo obtener conexión a EDARSAHUB")
+                return []
+        except Exception as conn_error:
+            self.logger.error(f"[CORTES_CAJA_SQL] Error de conexión a EDARSAHUB: {conn_error}")
+            return []
+        
         try:
             cursor = conn.cursor(as_dict=True)
             
@@ -136,7 +144,10 @@ class RepositoryCortesCajaEdarsahub:
             self.logger.error(f"[CORTES_CAJA_SQL] Error listando cortes: {e}")
             return []
         finally:
-            conn.close()
+            try:
+                conn.close()
+            except:
+                pass
     
     def listar_cortes_por_server_id(
         self,
