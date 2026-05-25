@@ -201,35 +201,72 @@ def _get_unidad_config(unidad_negocio_id: str) -> Optional[Dict[str, Any]]:
 # =============================================================================
 
 def _validar_conectividad(server_id: str) -> Dict[str, Any]:
-    """Valida conectividad al servidor origen."""
+    """
+    Valida conectividad al servidor origen usando el mismo método que el sync oficial.
+    
+    NOTA: Este pod de preview puede no tener la misma conectividad de red que
+    el entorno de producción. Si la validación falla aquí pero el scheduler
+    de producción sí sincroniza, es probable un issue de red del ambiente.
+    """
     try:
-        from modules.comercial_v2.sync_comercial_edarsahub import get_server_connection_config
-        import pymssql
+        from modules.comercial_v2.sync_comercial_edarsahub import (
+            get_server_connection_config,
+            execute_query_on_server,
+            ConnectionStatus
+        )
         
         config = get_server_connection_config(server_id)
         
         if not config:
             return {'conectado': False, 'error': 'Servidor no encontrado en Servidores_Conexiones'}
         
-        # Intentar conexión
-        conn = pymssql.connect(
-            server=config['host'],
-            port=config['port'],
-            database=config['database_name'],
-            user=config['username'],
-            password=config['password'],
-            login_timeout=30
-        )
-        conn.close()
+        if not config.get('activo'):
+            return {'conectado': False, 'error': 'Servidor marcado como inactivo'}
         
-        return {
-            'conectado': True,
-            'host': config['host'],
-            'database': config['database_name'],
-            'config_origin': 'Servidores_Conexiones'
-        }
+        # Usar el mismo método que el sync oficial para validar conectividad
+        test_query = "SELECT 1 AS test"
+        _, conn_status = execute_query_on_server(config, test_query)
+        
+        if conn_status == ConnectionStatus.ONLINE:
+            return {
+                'conectado': True,
+                'host': config.get('host'),
+                'host_raw': config.get('host_raw'),
+                'database': config.get('database_name'),
+                'config_origin': 'Servidores_Conexiones'
+            }
+        else:
+            # Verificar si hay syncs recientes exitosos (otro ambiente tiene conectividad)
+            recent_sync_ok = _verificar_syncs_recientes(server_id)
+            
+            return {
+                'conectado': False, 
+                'error': f'Conexión fallida desde este ambiente: {conn_status}',
+                'host': config.get('host'),
+                'host_raw': config.get('host_raw'),
+                'syncs_recientes_exitosos': recent_sync_ok,
+                'nota': 'Si hay syncs recientes exitosos, el servidor está UP pero este ambiente no tiene conectividad de red'
+            }
+            
     except Exception as e:
         return {'conectado': False, 'error': str(e)[:200]}
+
+
+def _verificar_syncs_recientes(server_id: str, minutos: int = 30) -> bool:
+    """Verifica si hubo syncs exitosos recientes para este servidor."""
+    try:
+        query = f"""
+        SELECT TOP 1 source_connection_status
+        FROM Comercial_SyncLog_v2
+        WHERE server_id = '{server_id}'
+          AND source_connection_status = 'ONLINE'
+          AND created_at > DATEADD(MINUTE, -{minutos}, GETUTCDATE())
+        ORDER BY created_at DESC
+        """
+        resultado = _execute_edarsahub_query(query)
+        return len(resultado) > 0
+    except Exception:
+        return False
 
 
 def _validar_dias_existentes(unidad_negocio_id: str, fecha_inicio: date, fecha_fin: date) -> Dict[str, Any]:
@@ -448,14 +485,28 @@ async def ejecutar_resync(
         )
     }
     
-    # Si no hay conectividad, abortar
-    if not validacion_previa['conectividad'].get('conectado'):
-        error_msg = f"Sin conectividad: {validacion_previa['conectividad'].get('error')}"
+    # Si no hay conectividad desde este ambiente
+    conectividad = validacion_previa['conectividad']
+    if not conectividad.get('conectado'):
+        # Verificar si hay syncs recientes exitosos (servidor está UP, solo este ambiente no conecta)
+        syncs_recientes = conectividad.get('syncs_recientes_exitosos', False)
+        
+        if syncs_recientes:
+            # El servidor está UP pero este ambiente no tiene red
+            error_msg = (
+                f"Este ambiente de preview no tiene conectividad de red hacia el servidor. "
+                f"PERO el servidor está ONLINE (hay syncs exitosos recientes). "
+                f"El resync debe ejecutarse desde el entorno de producción o un ambiente con conectividad adecuada."
+            )
+            accion = 'RESYNC_AMBIENTE_SIN_RED'
+        else:
+            error_msg = f"Sin conectividad: {conectividad.get('error')}"
+            accion = 'RESYNC_FAILED'
         
         _registrar_en_bitacora(
             job_name=f"RESYNC_{request.tipo_sync}",
             run_id=sync_run_id,
-            accion='RESYNC_FAILED',
+            accion=accion,
             server_id=unidad['server_id'],
             detalles={
                 'unidad': request.unidad_negocio_id,
@@ -463,7 +514,9 @@ async def ejecutar_resync(
                 'fecha_fin': str(request.fecha_fin),
                 'motivo': request.motivo,
                 'dry_run': request.dry_run,
-                'usuario': user_email
+                'usuario': user_email,
+                'syncs_recientes_exitosos': syncs_recientes,
+                'servidor_status': 'ONLINE_PERO_AMBIENTE_SIN_RED' if syncs_recientes else 'OFFLINE_O_INACCESIBLE'
             },
             exito=False,
             error_mensaje=error_msg

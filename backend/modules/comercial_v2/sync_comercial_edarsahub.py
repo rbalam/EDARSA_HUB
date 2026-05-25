@@ -142,6 +142,10 @@ def execute_query_on_server(
     """
     Ejecuta una query en un servidor de origen (SoftRestaurant/MPRO).
     Retorna los resultados y el estado de conexión.
+    
+    IMPORTANTE: execute_sql_query retorna [] tanto para errores como para 
+    consultas sin resultados. Por eso usamos un flag especial para detectar 
+    si la conexión realmente funcionó.
     """
     try:
         host = server_config.get('host', '')
@@ -149,6 +153,12 @@ def execute_query_on_server(
         database = server_config.get('database_name', '')
         username = server_config.get('username', '')
         password = server_config.get('password', '')
+        
+        # Verificar primero si el servidor está en cooldown
+        from core.db import is_server_offline_in_memory
+        if is_server_offline_in_memory(host):
+            logger.warning(f"Servidor {host} en cooldown - marcado como OFFLINE")
+            return [], ConnectionStatus.OFFLINE
         
         result = execute_sql_query(
             host,
@@ -159,7 +169,25 @@ def execute_query_on_server(
             query
         )
         
-        return result or [], ConnectionStatus.ONLINE
+        # execute_sql_query retorna [] tanto para error como para consulta vacía.
+        # Intentamos una query de prueba simple para confirmar conectividad si no hay resultados.
+        if result is None:
+            return [], ConnectionStatus.OFFLINE
+        
+        # Si obtuvimos resultados, claramente está ONLINE
+        if result:
+            return result, ConnectionStatus.ONLINE
+        
+        # Si no hay resultados, validamos con una query simple
+        # para diferenciar "sin datos" de "sin conexión"
+        test_query = "SELECT 1 AS test"
+        test_result = execute_sql_query(host, port, database, username, password, test_query)
+        
+        if test_result:
+            return [], ConnectionStatus.ONLINE  # Conexión OK, solo no hay datos
+        else:
+            logger.warning(f"Servidor {host} no respondió a query de prueba - marcado como OFFLINE")
+            return [], ConnectionStatus.OFFLINE
         
     except Exception as e:
         error_str = str(e).lower()

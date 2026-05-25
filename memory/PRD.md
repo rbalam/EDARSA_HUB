@@ -75,9 +75,15 @@ NO usar scripts locales/manuales. Diseñar una "Consola General de Scheduler / S
 **Estado de CIENFUEGOS:**
 - Confirmado: Días 19 y 20 de mayo 2026 SIN DATOS en `Comercial_KPIs_Diarios_v2`
 - Días 17, 18, 21, 22 SÍ tienen datos
-- Servidor origen (189.162.155.142) NO accesible desde cloud
-- El sistema abortó correctamente el DRY RUN por falta de conectividad
-- Se registró el intento en bitácora con estado `RESYNC_FAILED`
+- **Servidor CIENFUEGOS está ONLINE** (syncs recientes exitosos confirmados)
+- **El ambiente de preview de Emergent NO tiene conectividad de red** hacia los servidores DDNS de las sucursales
+- El resync DEBE ejecutarse desde el entorno de producción o un ambiente con conectividad adecuada
+- Se corrigió bug en `execute_query_on_server()` que reportaba ONLINE aunque la conexión fallaba
+
+#### Bug Corregido:
+- **Archivo**: `/app/backend/modules/comercial_v2/sync_comercial_edarsahub.py`
+- **Problema**: `execute_query_on_server()` retornaba `ConnectionStatus.ONLINE` cuando `execute_sql_query()` devolvía lista vacía (tanto por error como por consulta sin resultados)
+- **Solución**: Ahora hace query de prueba `SELECT 1` para confirmar conectividad real cuando no hay resultados
 
 #### Documentos de Diseño:
 - `/app/docs/reports/DISENO_CONSOLA_GENERAL_SCHEDULER_SINCRONIZACIONES_EDARSAHUB.md`
