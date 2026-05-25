@@ -329,6 +329,11 @@ api_router.include_router(costos_margenes_precios_router)
 from modules.comercial.routes_pricing_ia import router as pricing_ia_router
 api_router.include_router(pricing_ia_router)
 
+# FASE 1C-3I-C: Integración GPT-5.2 para Pricing IA
+# ===========================================
+from modules.comercial.routes_pricing_ai import router as pricing_ai_gpt_router
+api_router.include_router(pricing_ai_gpt_router)
+
 # MÓDULO RECURSOS HUMANOS: Catálogos RH
 # - Fase 6B: Migración de catálogos (Puestos, Sucursales, Tipos Incidencias)
 # - 10 endpoints migrados con queries parametrizados
