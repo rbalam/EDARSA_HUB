@@ -159,6 +159,7 @@ def get_productos_con_costos(
     # NOTA: CostoReceta en Sync_Productos puede estar en 0, así que calculamos
     # el costo real sumando CostoTotal de Sync_Productos_Recetas
     offset = (page - 1) * page_size
+    # FASE 1C-3G-B: Incluir TasaImpuesto para validación de pricing
     data_query = f"""
     SELECT 
         CAST(p.ProductoID AS NVARCHAR(36)) as producto_id,
@@ -172,6 +173,8 @@ def get_productos_con_costos(
         COALESCE(p.FamiliaNombre, 'Sin clasificar') as familia,
         p.SubFamiliaNombre as subfamilia,
         p.PrecioVenta as precio_venta,
+        p.PrecioSinImpuestos as precio_sin_impuestos,
+        p.TasaImpuesto as tasa_impuesto,
         COALESCE(
             (SELECT SUM(r.CostoTotal) 
              FROM Sync_Productos_Recetas r 
@@ -214,18 +217,36 @@ def get_productos_con_costos(
             margen_pesos = margen_pesos_bd
             margen_porcentaje = margen_porcentaje_bd
         
+        # FASE 1C-3G-B: Obtener tasa de impuesto
+        tasa_impuesto_raw = _safe_decimal(row.get('tasa_impuesto'))
+        
+        # Determinar estado de impuesto:
+        # -1 = IMPUESTO_NO_CONFIGURADO (no permite cálculo de precio)
+        # 0 = Tasa cero válida (alimentos)
+        # >0 = IVA/IEPS normal
+        estado_impuesto = 'OK'
+        if tasa_impuesto_raw == -1:
+            estado_impuesto = 'IMPUESTO_NO_CONFIGURADO'
+            tasa_impuesto = None  # No mostrar -1 en UI
+        else:
+            tasa_impuesto = tasa_impuesto_raw
+        
         productos.append({
             'producto_id': row.get('producto_id', ''),
             'id_producto_origen': row.get('id_producto_origen', ''),
             'nombre': row.get('nombre', ''),
             'nombre_corto': row.get('nombre_corto'),
             'sistema_origen': row.get('sistema_origen', ''),
+            'system_type': row.get('sistema_origen', ''),  # Alias para compatibilidad
             'server_id': row.get('server_id', ''),
             'empresa_id': row.get('empresa_id'),
             'unidad_negocio_id': row.get('unidad_negocio_id'),
             'familia': row.get('familia'),
             'subfamilia': row.get('subfamilia'),
             'precio_venta': precio_venta if precio_venta > 0 else _safe_decimal(row.get('precio_venta')),
+            'precio_sin_impuestos': _safe_decimal(row.get('precio_sin_impuestos')),
+            'tasa_impuesto': tasa_impuesto,
+            'estado_impuesto': estado_impuesto,
             'costo_receta': costo_receta if costo_receta > 0 else _safe_decimal(row.get('costo_receta')),
             'costo_promedio': _safe_decimal(row.get('costo_promedio')),
             'margen_pesos': margen_pesos,

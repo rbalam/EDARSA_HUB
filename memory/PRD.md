@@ -21,43 +21,42 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Diciembre 2025)
 
-### ✅ FASE 1C-3G-B: Diagnóstico y Corrección de Impuestos MPRO - COMPLETADO
+### ✅ FASE 1C-3G-B: SYNC REAL Impuestos MPRO - COMPLETADO
 
-#### Resumen Ejecutivo
-Se completó el diagnóstico profundo y corrección del sincronizador de productos MPRO para homologar correctamente las tasas de impuesto desde ManagementPro hacia EDARSAHUB SQL.
+**SyncRunID:** `SYNC-IMPUESTOS-20260525025423-ba8b9796`  
+**Fecha:** 2026-05-25
 
-#### Hallazgos Clave
-- **Estructura Fiscal MPRO**: Impuestos en relación N:M via `Producto` → `Impuesto_Grupo_Impuesto` → `Impuesto`
-- **Tablas Fiscales**: `Impuesto`, `Impuesto_Grupo_Impuesto`, `Grupo_Impuesto`
-- **Causa Raíz del 0%**: Función `_obtener_productos_mpro()` NO consultaba tablas de impuestos
-- **Base de Datos Principal MPRO**: `CENTRAL2020` (no `tablajeria_mpro`)
-
-#### Corrección Implementada
-- **Archivo**: `/app/backend/modules/sync_recetas/sync_recetas.py`
-- **Función**: `_obtener_productos_mpro()` - Query con CTE que prioriza impuestos
-- **Lógica de Prioridad**: IVA COBRADO > IVA positivo > IEPS > IVA 0%/Exento
-
-#### Resultado DRY-RUN
+#### Resultado SYNC REAL
 | Categoría | Cantidad | Porcentaje |
 |-----------|----------|------------|
-| Total productos | 5,414 | 100% |
+| Total productos MPRO | 5,414 | 100% |
 | Con tasa > 0 (IVA/IEPS) | 3,651 | 67.4% |
 | Con tasa = 0 (válida) | 1,701 | 31.4% |
-| Sin impuesto configurado | 62 | 1.1% |
+| IMPUESTO_NO_CONFIGURADO | 62 | 1.1% |
+| **Errores** | **0** | - |
 
-#### Archivos Actualizados
-- `/app/backend/modules/sync_recetas/sync_recetas.py` - Función corregida
-- `/app/docs/reports/FASE_1C_3G_B_DIAGNOSTICO_CORRECCION_IMPUESTOS_MPRO.md` - Reporte completo
+#### Cambios Realizados
+1. **Sync de productos MPRO** con impuestos corregidos desde `CENTRAL2020`
+2. **Endpoint Costos y Márgenes** actualizado para devolver `tasa_impuesto` y `estado_impuesto`
+3. **Schemas Pydantic** actualizados con campos de impuesto
+4. **No se hardcodeó 16%** - Tasas provienen de tabla `Impuesto` de MPRO
 
-#### Reglas de Cálculo Implementadas
-```
-SI TasaImpuesto >= 0: Cálculo normal (incluye tasa 0% válida)
-SI TasaImpuesto = -1: IMPUESTO_NO_CONFIGURADO → Bloquear precio
-NO se hardcodea 16% bajo ninguna circunstancia
-```
+#### Archivos Modificados
+- `/app/backend/modules/sync_recetas/sync_recetas.py` - Query fiscal corregida
+- `/app/backend/modules/costos_margenes/repository.py` - Campos de impuesto agregados
+- `/app/backend/modules/costos_margenes/schemas.py` - Enum EstadoImpuesto
+- `/app/backend/modules/costos_margenes/routes.py` - Endpoint actualizado
+
+#### Reportes Generados
+- `/app/docs/reports/FASE_1C_3G_B_DIAGNOSTICO_CORRECCION_IMPUESTOS_MPRO.md`
+- `/app/docs/reports/FASE_1C_3G_B_SYNC_REAL_IMPUESTOS_MPRO.md`
 
 #### Pendiente (Requiere Autorización)
-1. Ejecutar SYNC REAL de productos MPRO
+1. ~~Ejecutar SYNC REAL de productos MPRO~~ ✅ COMPLETADO
+2. Crear Modelo Canónico de Impuestos en EDARSAHUB SQL
+3. Catálogo de Vinos (`Comercial_VinosCatalogo`)
+4. Reglas de Precio por Rango
+5. UI para administrar los 62 productos sin impuesto configurado
 2. Crear Modelo Canónico de Impuestos en EDARSAHUB
 3. UI de administración para 62 productos sin impuesto
 

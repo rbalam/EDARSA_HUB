@@ -59,6 +59,12 @@ class CostosMargenesResumen(BaseModel):
 
 # ==================== PRODUCTOS ====================
 
+class EstadoImpuesto(str, Enum):
+    """Estados de impuesto para validación de pricing - FASE 1C-3G-B."""
+    OK = "OK"  # Tasa válida (incluye 0% tasa cero fiscal)
+    IMPUESTO_NO_CONFIGURADO = "IMPUESTO_NO_CONFIGURADO"  # Producto sin homologación fiscal
+
+
 class ProductoCostoMargen(BaseModel):
     """Producto con información de costo y margen."""
     
@@ -79,8 +85,14 @@ class ProductoCostoMargen(BaseModel):
     
     # Precios y costos (null si no hay dato, NO cero falso)
     precio_venta: Optional[float] = None
+    precio_sin_impuestos: Optional[float] = None
     costo_receta: Optional[float] = None
     costo_promedio: Optional[float] = None
+    
+    # FASE 1C-3G-B: Impuestos homologados
+    # tasa_impuesto: None = IMPUESTO_NO_CONFIGURADO, 0 = Tasa cero válida, >0 = IVA/IEPS
+    tasa_impuesto: Optional[float] = None
+    estado_impuesto: Optional[str] = None  # OK, IMPUESTO_NO_CONFIGURADO
     
     # Márgenes (null si no se puede calcular)
     margen_pesos: Optional[float] = None
