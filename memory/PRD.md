@@ -21,6 +21,32 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (25 Mayo 2026)
 
+### 🔴 DIAGNÓSTICO P0 - IMPUESTO MPRO 0% NO ACEPTABLE
+
+#### FASE 1C-3G-A: Diagnóstico Catálogo Vinos, Impuestos y Reglas de Precio (25 Mayo 2026)
+- **HALLAZGO CRÍTICO**: Todos los 5,414 productos MPRO tienen `TasaImpuesto = 0.00%`
+- **Causa Raíz Identificada**: Función `_obtener_productos_mpro()` en `/app/backend/modules/sync_recetas/sync_recetas.py` NO extrae campo de impuesto
+- **Comparación**: SoftRestaurant SÍ extrae `impuesto1` correctamente (4,491 productos con 16%)
+- **Riesgo Fiscal**: ALTO - Precios calculados serían 16% menores al correcto
+- **Reporte Completo**: `/app/docs/reports/FASE_1C_3G_A_DIAGNOSTICO_VINOS_IMPUESTOS_REGLAS_PRECIO.md`
+
+**Regla Crítica:**
+```
+SI TasaImpuesto = 0 Y Sistema = MPRO Y NO hay justificación fiscal:
+    precio_sugerido = NULL
+    status = 'IMPUESTO_NO_CONFIGURADO'
+    NO permitir cálculo de precio
+    NO permitir solicitud de cambio
+```
+
+**Siguiente Paso Requerido:**
+1. Conectar a MPRO y diagnosticar tablas fiscales reales
+2. Encontrar relación producto-impuesto en MPRO
+3. Actualizar `sync_recetas.py` para extraer tasa real
+4. Re-sincronizar productos MPRO
+
+---
+
 ### ✅ Completado
 
 #### FASE P2 - RBAC por Unidad de Negocio (25 Mayo 2026) ✅ COMPLETADO
