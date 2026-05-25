@@ -56,6 +56,7 @@ class AnalizarProductoRequest(BaseModel):
     empresa_id: int = Field(..., gt=0)
     unidad_negocio_id: int = Field(..., gt=0)
     margen_objetivo: float = Field(default=0.35, gt=0, lt=1, description="Margen objetivo (0.35 = 35%)")
+    lista_id: Optional[str] = Field(None, description="ID de lista de competidores para filtrar benchmark")
 
 
 class SugerirComparablesRequest(BaseModel):
@@ -64,6 +65,7 @@ class SugerirComparablesRequest(BaseModel):
     server_id: str = Field(..., description="UUID del servidor")
     empresa_id: int = Field(..., gt=0)
     unidad_negocio_id: int = Field(..., gt=0)
+    lista_id: Optional[str] = Field(None, description="ID de lista de competidores para filtrar")
 
 
 class GenerarJustificacionRequest(BaseModel):
@@ -79,6 +81,7 @@ class AnalizarBenchmarkRequest(BaseModel):
     """Request para analizar benchmark de unidad."""
     empresa_id: int = Field(..., gt=0)
     unidad_negocio_id: int = Field(..., gt=0)
+    lista_id: Optional[str] = Field(None, description="ID de lista de competidores para filtrar benchmark")
 
 
 class AnalisisIAResponse(BaseModel):
@@ -122,7 +125,8 @@ async def endpoint_analizar_producto(
     """
     usuario = current_user.get('email', 'sistema')
     
-    logger.info(f"[PRICING-IA] Análisis producto {request.codigo_producto} por {usuario}")
+    logger.info(f"[PRICING-IA] Análisis producto {request.codigo_producto} por {usuario}" + 
+                (f" (lista: {request.lista_id})" if request.lista_id else ""))
     
     resultado = await analizar_producto_con_ia(
         codigo_producto=request.codigo_producto,
@@ -130,7 +134,8 @@ async def endpoint_analizar_producto(
         empresa_id=request.empresa_id,
         unidad_negocio_id=request.unidad_negocio_id,
         usuario=usuario,
-        margen_objetivo=request.margen_objetivo
+        margen_objetivo=request.margen_objetivo,
+        lista_id=request.lista_id
     )
     
     return AnalisisIAResponse(
@@ -152,6 +157,7 @@ async def endpoint_analizar_producto(
             'observaciones': resultado.get('observaciones'),
             'confianza': resultado.get('confianza'),
             'requiere_revision': resultado.get('requiere_revision'),
+            'lista_usada': resultado.get('lista_usada'),
         } if resultado.get('success') else None
     )
 
@@ -290,12 +296,14 @@ async def endpoint_analizar_benchmark(
     """
     usuario = current_user.get('email', 'sistema')
     
-    logger.info(f"[PRICING-IA] Análisis benchmark unidad {request.unidad_negocio_id} por {usuario}")
+    logger.info(f"[PRICING-IA] Análisis benchmark unidad {request.unidad_negocio_id} por {usuario}" +
+                (f" (lista: {request.lista_id})" if request.lista_id else ""))
     
     resultado = await analizar_benchmark_con_ia(
         unidad_negocio_id=request.unidad_negocio_id,
         empresa_id=request.empresa_id,
-        usuario=usuario
+        usuario=usuario,
+        lista_id=request.lista_id
     )
     
     return AnalisisIAResponse(
@@ -314,6 +322,7 @@ async def endpoint_analizar_benchmark(
             'prioridad': resultado.get('prioridad'),
             'areas_revisar': resultado.get('areas_revisar', []),
             'estadisticas': resultado.get('estadisticas'),
+            'lista_usada': resultado.get('lista_usada'),
         } if resultado.get('success') else None
     )
 

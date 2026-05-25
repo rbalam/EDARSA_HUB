@@ -243,15 +243,51 @@ def _obtener_contexto_unidad(unidad_negocio_id: int) -> Dict[str, Any]:
     }
 
 
-def _obtener_competidores_para_contexto(unidad_negocio_id: int, limit: int = 5) -> List[Dict]:
+def _obtener_competidores_para_contexto(
+    unidad_negocio_id: int, 
+    limit: int = 5,
+    lista_id: str = None
+) -> List[Dict]:
     """
     Obtiene competidores y sus menu items para contexto IA.
+    
+    Si lista_id está definido, solo retorna competidores de esa lista.
     """
+    from modules.comercial.services.listas_competidores_service import (
+        obtener_ids_competidores_de_lista,
+        obtener_lista_competidores
+    )
+    
+    # Obtener competidores de la lista si se especifica
+    ids_filtrar = None
+    lista_info = None
+    
+    if lista_id:
+        lista_info = obtener_lista_competidores(lista_id)
+        if not lista_info or not lista_info.get('activo'):
+            logger.warning(f"[PRICING-IA] Lista {lista_id} no existe o inactiva")
+            return []
+        
+        ids_filtrar = obtener_ids_competidores_de_lista(lista_id)
+        if not ids_filtrar:
+            logger.warning(f"[PRICING-IA] Lista {lista_id} sin competidores activos")
+            return []
+        
+        logger.info(f"[PRICING-IA] Filtrando por lista '{lista_info.get('nombre_lista')}' ({len(ids_filtrar)} competidores)")
+    
+    # Obtener competidores
     competidores, _ = listar_competidores(
         unidad_negocio_id=unidad_negocio_id,
         page=1,
-        page_size=limit
+        page_size=100  # Obtener más para luego filtrar
     )
+    
+    # Filtrar por lista si aplica
+    if ids_filtrar:
+        competidores = [c for c in competidores if str(c.competidor_id) in ids_filtrar]
+    
+    # Limitar
+    competidores = competidores[:limit]
     
     resultado = []
     for comp in competidores:
@@ -344,10 +380,14 @@ def _guardar_analisis_ia(
     competidores_usados: List[str],
     fuentes_usadas: List[str],
     estado: EstadoAnalisisIA,
-    usuario: str
+    usuario: str,
+    lista_id: Optional[str] = None
 ) -> str:
     """
     Guarda el análisis IA en la tabla Comercial_PricingAnalisisIA.
+    
+    Args:
+        lista_id: ID de lista de competidores usada para filtrar (opcional)
     
     Returns:
         ID del análisis creado
@@ -365,6 +405,7 @@ def _guardar_analisis_ia(
     precio_sugerido_sql = f"{precio_sugerido}" if precio_sugerido else "NULL"
     margen_actual_sql = f"{margen_actual}" if margen_actual else "NULL"
     margen_sugerido_sql = f"{margen_sugerido}" if margen_sugerido else "NULL"
+    lista_id_sql = f"'{lista_id}'" if lista_id else "NULL"
     
     # Escapar JSON para SQL
     datos_entrada_str = json.dumps(datos_entrada_json, ensure_ascii=False).replace("'", "''")
@@ -399,6 +440,7 @@ def _guardar_analisis_ia(
         FuentesUsadasJSON,
         EstadoAnalisis,
         UsuarioEjecucion,
+        ListaCompetidoresID,
         FechaEjecucion,
         FechaCreacion
     ) VALUES (
@@ -425,6 +467,7 @@ def _guardar_analisis_ia(
         N'{fuentes_str}',
         '{estado.value}',
         N'{usuario}',
+        {lista_id_sql},
         GETDATE(),
         GETDATE()
     )
@@ -549,7 +592,8 @@ async def analizar_producto_con_ia(
     empresa_id: int,
     unidad_negocio_id: int,
     usuario: str,
-    margen_objetivo: float = 0.35
+    margen_objetivo: float = 0.35,
+    lista_id: str = None
 ) -> Dict[str, Any]:
     """
     Analiza un producto usando GPT-5.2 y genera justificación de precio.
@@ -557,10 +601,45 @@ async def analizar_producto_con_ia(
     NO modifica precios oficiales.
     NO crea solicitudes automáticas.
     
+    Args:
+        lista_id: ID de lista de competidores para filtrar benchmark (opcional)
+    
     Returns:
         Dict con análisis, justificación, precio sugerido y confianza
     """
     from emergentintegrations.llm.chat import LlmChat, UserMessage
+    from modules.comercial.services.listas_competidores_service import obtener_lista_competidores
+    
+    # Validar lista si se especifica
+    lista_usada = None
+    if lista_id:
+        lista_info = obtener_lista_competidores(lista_id)
+        if not lista_info:
+            return {
+                'success': False,
+                'estado': EstadoAnalisisIA.ERROR.value,
+                'mensaje': f'Lista de competidores {lista_id} no encontrada',
+                'analisis_id': None,
+            }
+        if not lista_info.get('activo'):
+            return {
+                'success': False,
+                'estado': EstadoAnalisisIA.ERROR.value,
+                'mensaje': f'Lista de competidores "{lista_info.get("nombre_lista")}" está inactiva',
+                'analisis_id': None,
+            }
+        if lista_info.get('total_competidores', 0) == 0:
+            return {
+                'success': False,
+                'estado': EstadoAnalisisIA.DATOS_INSUFICIENTES.value,
+                'mensaje': f'Lista "{lista_info.get("nombre_lista")}" no tiene competidores activos',
+                'analisis_id': None,
+            }
+        lista_usada = {
+            'lista_id': lista_id,
+            'nombre_lista': lista_info.get('nombre_lista'),
+            'total_competidores': lista_info.get('total_competidores')
+        }
     
     # 1. Obtener datos del producto
     datos_producto = _obtener_datos_producto(codigo_producto, server_id)
@@ -576,8 +655,8 @@ async def analizar_producto_con_ia(
     # 2. Obtener contexto de la unidad
     contexto_unidad = _obtener_contexto_unidad(unidad_negocio_id)
     
-    # 3. Obtener competidores y benchmark
-    competidores = _obtener_competidores_para_contexto(unidad_negocio_id, limit=5)
+    # 3. Obtener competidores y benchmark (filtrando por lista si aplica)
+    competidores = _obtener_competidores_para_contexto(unidad_negocio_id, limit=5, lista_id=lista_id)
     benchmark = obtener_precios_competencia_producto(codigo_producto, server_id)
     
     # 4. Calcular precio base matemático
@@ -610,6 +689,7 @@ async def analizar_producto_con_ia(
             'estado': precio_base.estado.value,
         },
         'confianza_calculada': confianza.value,
+        'lista_usada': lista_usada,
     }
     
     # 7. Construir prompt para GPT-5.2
@@ -626,12 +706,15 @@ async def analizar_producto_con_ia(
     benchmark_max_str = f"- Precio Máximo Competencia: ${benchmark.get('precio_maximo', 0):.2f}" if benchmark.get('tiene_datos') else ""
     benchmark_comp_str = f"- Comparables: {benchmark.get('total_comparables', 0)}" if benchmark.get('tiene_datos') else ""
     
+    # Lista filtro string
+    lista_str = f"(Filtrado por lista: {lista_usada.get('nombre_lista')} - {lista_usada.get('total_competidores')} competidores)" if lista_usada else "(Benchmark general)"
+    
     # Competidores string
     if competidores:
         comp_lines = [f"- {c['nombre']} ({c['tipo']}, {c['segmento']}): {len(c['items'])} productos capturados" for c in competidores[:3]]
-        competidores_str = chr(10).join(comp_lines)
+        competidores_str = chr(10).join(comp_lines) + chr(10) + lista_str
     else:
-        competidores_str = "- Sin competidores configurados"
+        competidores_str = "- Sin competidores configurados" + chr(10) + lista_str
     
     prompt = f"""Eres un analista de precios de restaurante experto. Analiza los siguientes datos y genera una justificación comercial para el precio sugerido.
 
@@ -751,7 +834,8 @@ Responde en formato JSON con esta estructura:
             competidores_usados=[c['nombre'] for c in competidores],
             fuentes_usadas=['EDARSAHUB_SQL', 'Sync_Productos', 'Comercial_Competidores'],
             estado=EstadoAnalisisIA.GENERADO if not requiere_revision else EstadoAnalisisIA.REQUIERE_REVISION,
-            usuario=usuario
+            usuario=usuario,
+            lista_id=lista_id
         )
         
         return {
@@ -776,6 +860,7 @@ Responde en formato JSON con esta estructura:
             'estado': EstadoAnalisisIA.GENERADO.value if not requiere_revision else EstadoAnalisisIA.REQUIERE_REVISION.value,
             'modelo_ia': 'gpt-5.2',
             'mensaje': 'Análisis completado. GPT-5.2 sugiere, NO autoriza ni aplica precios.',
+            'lista_usada': lista_usada,
         }
         
     except Exception as e:
@@ -804,7 +889,8 @@ Responde en formato JSON con esta estructura:
             competidores_usados=[],
             fuentes_usadas=['EDARSAHUB_SQL'],
             estado=EstadoAnalisisIA.ERROR,
-            usuario=usuario
+            usuario=usuario,
+            lista_id=lista_id
         )
         
         return {
