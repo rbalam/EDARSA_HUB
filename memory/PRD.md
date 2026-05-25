@@ -21,6 +21,59 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Diciembre 2025)
 
+### ✅ FASE 1C-3G-C: Modelo Canónico de Impuestos EDARSAHUB - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Resumen
+Se creó el Modelo Canónico de Impuestos en EDARSAHUB SQL para homologar tasas fiscales desde SoftRestaurant y MPRO.
+
+#### Tablas Creadas
+| Tabla | Propósito |
+|-------|-----------|
+| `Comercial_ImpuestosCatalogo` | Catálogo maestro de impuestos canónicos |
+| `Comercial_ImpuestosTasas` | Tasas vigentes por período |
+| `Sync_Impuestos_Origen` | Mapeo de impuestos desde sistemas origen |
+| `Comercial_ImpuestosMapeo` | Mapeo de productos a impuestos canónicos |
+| `Comercial_ImpuestosOverrides` | Sobreescrituras autorizadas |
+
+#### Impuestos Canónicos Registrados
+- IVA_16 (16%), IVA_0 (0%), IVA_EXENTO
+- IEPS_8 (8%), IEPS_26_5 (26.5%), IEPS_30 (30%), IEPS_53 (53%)
+- SIN_IMPUESTO (para NO_CONFIGURADO)
+
+#### Productos Mapeados
+| Estado Fiscal | MPRO | SoftRestaurant | Total |
+|---------------|------|----------------|-------|
+| CONFIGURADO | 3,651 | 4,489 | 8,140 |
+| TASA_CERO_VALIDADA | 1,701 | 2 | 1,703 |
+| NO_CONFIGURADO | 62 | 0 | 62 |
+| **TOTAL** | **5,414** | **4,491** | **9,905** |
+
+#### Servicio de Resolución
+Creado `/app/backend/modules/comercial/services/impuestos_service.py`:
+- `resolver_tasa_impuesto()` - Resuelve tasa por jerarquía
+- `get_estado_fiscal_producto()` - Estado fiscal completo
+- `get_productos_sin_impuesto()` - Lista productos NO_CONFIGURADO
+
+#### Validaciones Confirmadas
+- ✅ 62 productos MPRO como NO_CONFIGURADO (no 0% inválido)
+- ✅ resolver_tasa_impuesto funciona correctamente
+- ✅ NO_CONFIGURADO bloquea cálculo de precio
+- ✅ Costos y Márgenes sigue funcionando
+- ✅ No se hardcodeó 16%
+
+#### Archivos Creados
+- `/app/backend/modules/comercial/services/impuestos_service.py`
+- `/app/docs/reports/FASE_1C_3G_C_MODELO_CANONICO_IMPUESTOS_EDARSAHUB.md`
+
+#### Pendiente (Requiere Autorización)
+1. FASE 1C-3G-D: Catálogo Comercial de Vinos
+2. FASE 1C-3G-E: Reglas de Precio por Rango
+3. FASE 1C-3G-F: UI Administración Fiscal (62 productos)
+
+---
+
 ### ✅ FASE 1C-3G-B: SYNC REAL Impuestos MPRO - COMPLETADO
 
 **SyncRunID:** `SYNC-IMPUESTOS-20260525025423-ba8b9796`  
