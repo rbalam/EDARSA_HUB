@@ -7,6 +7,12 @@ FINANZAS-TESORERIA-MONGO-002: Migrado a EDARSAHUB SQL
 - Ya NO usa MongoDB (tesoreria_cuadres_z) como fuente productiva
 - Usa repository_cuadres_z_edarsahub.py para operaciones de cuadres
 - ServerID se resuelve desde EDARSAHUB SQL
+
+FINANZAS-TESORERIA-SQL-001: Cortes de Caja migrados a SQL
+- Fecha: 2026-05-25
+- Ya NO consulta servidores origen en vivo
+- Lee de Finanzas_CortesCaja (tabla sincronizada)
+- Cumple máxima: "EDARSAHUB SQL es el cerebro"
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from typing import Optional, List, Dict, Any
@@ -20,7 +26,11 @@ from .tesoreria_models import (
     CuadreCorteZCreate, CuadreCorteZUpdate, CuadreCorteZResponse,
     EstadoCuadre, ConteoEfectivo, FichaDeposito
 )
-from .repository_cortes_z import get_cortes_z_repository
+# FINANZAS-TESORERIA-SQL-001: Usar repositorio SQL de Cortes de Caja
+from .repository_cortes_caja_edarsahub import (
+    get_cortes_caja_repository_sql,
+    calcular_fecha_deposito_esperada
+)
 # FINANZAS-TESORERIA-MONGO-002: Migrado a repositorio SQL
 from .repository_cuadres_z_edarsahub import (
     get_cuadres_z_repository_sql, 
@@ -90,59 +100,50 @@ async def listar_cortes_z(
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    Lista los Cortes Z disponibles de todas las fuentes (SoftRestaurant + MPRO).
+    Lista los Cortes Z disponibles desde EDARSAHUB SQL (Finanzas_CortesCaja).
+    
+    FINANZAS-TESORERIA-SQL-001: Migrado a EDARSAHUB SQL
+    - Ya NO consulta servidores origen en vivo
+    - Lee de tabla Finanzas_CortesCaja (sincronizada)
+    - Cumple máxima: "EDARSAHUB SQL es el cerebro"
+    
     PROTEGIDO: Filtra por empresas_permitidas del usuario.
     Incluye indicador si ya tiene cuadre registrado.
-    
-    REFACTORIZADO 2025-12-27: 
-    - Eliminado fallback a datos DEMO
-    - Usa server_registry centralizado para conexiones
-    - Soporta filtro por server_id
     """
     try:
         # RBAC Fase 3.1: Obtener sucursales permitidas
         sucursales_permitidas = await get_user_sucursales_permitidas(current_user)
         
-        # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
+        # FINANZAS-TESORERIA-SQL-001: Usar repositorio SQL
+        repo_cortes = get_cortes_caja_repository_sql()
         repo_cuadres = get_cuadres_z_repository_sql()
-        repo_cortes = await get_cortes_z_repository()
         
-        # Consultar cortes desde SQL usando el registry centralizado
+        # Consultar cortes desde EDARSAHUB SQL (NO en vivo)
         if server_id:
             # Filtrar por servidor específico
-            result = await repo_cortes.get_cortes_z_by_server_id(server_id, fecha_inicio, fecha_fin)
-            if result.query_executed and result.status.is_success():
-                cortes = result.data
-                fuente = "SQL_REAL"
-                fuentes_detalle = [result.to_dict()]
-            else:
-                # Error de conexión - reportar claramente, NO usar datos falsos
-                return {
-                    "cortes": [],
-                    "total": 0,
-                    "fecha_consulta": datetime.utcnow().isoformat(),
-                    "fuente": "SQL_ERROR",
-                    "error": result.error_message if hasattr(result, 'error_message') else "Error consultando servidor",
-                    "fuentes_detalle": [result.to_dict()],
-                    "advertencia": f"No se pudo conectar al servidor {server_id}. Verifique la configuración en Servidores."
-                }
+            cortes = repo_cortes.listar_cortes_por_server_id(
+                server_id=server_id,
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin,
+                limit=200
+            )
+            fuente = "EDARSAHUB_SQL"
+            fuentes_detalle = [{
+                'status': 'SUCCESS_WITH_DATA' if cortes else 'SUCCESS_EMPTY',
+                'source_type': 'EDARSAHUB_SQL',
+                'source_id': 'Finanzas_CortesCaja',
+                'row_count': len(cortes)
+            }]
         else:
-            # Consultar todos los servidores activos
-            result = await repo_cortes.get_all_cortes_z_with_status(fecha_inicio, fecha_fin)
+            # Consultar todos (sin filtro de servidor)
+            result = repo_cortes.obtener_cortes_todos_servidores(
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin,
+                limit=200
+            )
             cortes = result.get('cortes', [])
-            fuente = result.get('data_source', 'SQL_REAL')
+            fuente = result.get('data_source', 'EDARSAHUB_SQL')
             fuentes_detalle = result.get('fuentes_detalle', [])
-            
-            # Si no hay servidores configurados o todos fallaron
-            if not cortes and result.get('estado_general') in ['NO_SERVERS', 'SOURCE_UNREACHABLE']:
-                return {
-                    "cortes": [],
-                    "total": 0,
-                    "fecha_consulta": datetime.utcnow().isoformat(),
-                    "fuente": "SQL_ERROR",
-                    "fuentes_detalle": fuentes_detalle,
-                    "advertencia": result.get('advertencia', 'No se pudieron consultar los servidores SQL. Verifique la configuración.')
-                }
         
         # RBAC Fase 3.1: Filtrar por sucursales permitidas
         if sucursales_permitidas:
@@ -150,20 +151,20 @@ async def listar_cortes_z(
         
         # Filtrar por sucursal si se especifica (filtro manual del usuario)
         if sucursal:
-            cortes = [c for c in cortes if sucursal.lower() in c.get('sucursal_id', '').lower()]
+            cortes = [c for c in cortes if sucursal.lower() in c.get('sucursal_nombre', '').lower()]
         
-        # Verificar cuáles ya tienen cuadre
-        # FINANZAS-TESORERIA-MONGO-002: Buscar en SQL por folio/sucursal
+        # Verificar cuáles ya tienen cuadre y calcular fecha depósito
         for corte in cortes:
             # Buscar si existe cuadre en SQL
             filtros_busqueda = {
                 'unidad_negocio_id': corte.get('sucursal_id'),
-                'limit': 1
+                'limit': 10
             }
             cuadres_existentes = repo_cuadres.listar_cuadres_z(filtros_busqueda)
             cuadre_existente = None
+            folio_corte = corte.get('folio_corte')
             for c in cuadres_existentes:
-                if c.get('folio_corte') == corte['folio_corte']:
+                if c.get('folio_corte') == folio_corte:
                     cuadre_existente = c
                     break
             
@@ -171,27 +172,21 @@ async def listar_cortes_z(
             corte['cuadre_id'] = cuadre_existente.get('cuadre_z_id') if cuadre_existente else None
             corte['estado_cuadre'] = cuadre_existente.get('estatus', {}).get('cuadre', {}).get('codigo') if cuadre_existente else None
             # Calcular fecha de depósito esperada
-            from .repository_cortes_z import calcular_fecha_deposito_esperada
-            corte['fecha_deposito_esperada'] = calcular_fecha_deposito_esperada(corte['fecha_corte'])
+            corte['fecha_deposito_esperada'] = calcular_fecha_deposito_esperada(corte.get('fecha_corte'))
         
         response = {
             "cortes": cortes,
             "total": len(cortes),
             "fecha_consulta": datetime.utcnow().isoformat(),
-            "fuente": fuente
+            "fuente": fuente,
+            "fuentes_detalle": fuentes_detalle
         }
         
-        # Incluir detalle de fuentes si hay advertencias
-        if fuentes_detalle:
-            errores = [f for f in fuentes_detalle if f.get('status') not in ['SUCCESS_WITH_DATA', 'SUCCESS_EMPTY']]
-            if errores:
-                response['fuentes_con_error'] = len(errores)
-                response['fuentes_detalle'] = fuentes_detalle
-        
+        logger.info(f"[CORTES_Z_SQL] Listados {len(cortes)} cortes desde EDARSAHUB SQL")
         return response
         
     except Exception as e:
-        logger.error(f"Error listando cortes Z: {e}")
+        logger.error(f"[CORTES_Z_SQL] Error listando cortes: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -201,27 +196,29 @@ async def obtener_corte_z(
     folio: str,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Obtiene un corte Z específico por sucursal y folio"""
+    """
+    Obtiene un corte Z específico por sucursal y folio.
+    
+    FINANZAS-TESORERIA-SQL-001: Migrado a EDARSAHUB SQL
+    """
     try:
-        repo_cortes = await get_cortes_z_repository()
+        repo_cortes = get_cortes_caja_repository_sql()
         
-        # Buscar en SoftRestaurant
-        if sucursal.upper() in ['CIENFUEGOS', 'LA_ESTELAR', '130_MERIDA']:
-            cortes = await repo_cortes.get_cortes_z_softrestaurant(
-                sucursal.upper(),
-                folio=folio
-            )
-        else:
-            # Buscar en MPRO
-            cortes = await repo_cortes.get_cortes_z_mpro(sucursal.upper())
-            cortes = [c for c in cortes if c['folio_corte'] == folio]
+        # Buscar en EDARSAHUB SQL
+        filtros = {
+            'unidad_negocio_nombre': sucursal,
+            'limit': 100
+        }
+        cortes = repo_cortes.listar_cortes_caja(filtros)
+        
+        # Filtrar por folio
+        cortes = [c for c in cortes if str(c.get('folio_corte', '')) == str(folio)]
         
         if not cortes:
             raise HTTPException(status_code=404, detail="Corte Z no encontrado")
         
         corte = cortes[0]
-        from .repository_cortes_z import calcular_fecha_deposito_esperada
-        corte['fecha_deposito_esperada'] = calcular_fecha_deposito_esperada(corte['fecha_corte'])
+        corte['fecha_deposito_esperada'] = calcular_fecha_deposito_esperada(corte.get('fecha_corte'))
         
         return corte
     except HTTPException:

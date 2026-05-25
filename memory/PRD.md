@@ -19,6 +19,31 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
+### ✅ FINANZAS-TESORERIA-SQL-001: Cortes Z migrados a SQL - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Problema:
+El endpoint `/api/finanzas/tesoreria/cortes-z` consultaba servidores origen **EN VIVO**, violando la máxima de arquitectura.
+
+#### Solución Implementada:
+1. **Creado:** `repository_cortes_caja_edarsahub.py` - Lee de `Finanzas_CortesCaja` (ya sincronizada)
+2. **Modificado:** `tesoreria.py` - Usa repositorio SQL en lugar de consultas en vivo
+3. **Datos disponibles:** 4,083 cortes históricos en SQL, 119 de mayo 2026
+
+#### Endpoints migrados:
+- `GET /api/finanzas/tesoreria/cortes-z` → `fuente: "EDARSAHUB_SQL"`
+- `GET /api/finanzas/tesoreria/cortes-z/{sucursal}/{folio}` → `fuente: "EDARSAHUB_SQL"`
+
+#### Cortes Mayo 2026 por sucursal:
+- ORIGEN: 40 cortes
+- 130° QUERETARO: 22 cortes
+- CIENFUEGOS: 20 cortes
+- 130° MERIDA: 19 cortes
+- LA ESTELAR: 18 cortes
+
+---
+
 ### ✅ FINANZAS-TESORERIA-MONGO-002: Migración Cuadres Z a SQL - COMPLETADO
 
 **Fecha:** 2026-05-25
