@@ -484,8 +484,10 @@ async def get_unidades_permitidas_v2(current_user: dict) -> List[str]:
     CODIGOS_CANONICOS_OFICIALES = ['CIENFUEGOS', 'ESTELAR', '130MID', '130QRO', 'ORIGEN']
     
     try:
+        user_role = current_user.get('role')
+        
         # Si es SuperAdmin o Director, dar acceso a todas las unidades
-        if current_user.get('role') in ['SuperAdministrador', 'Director']:
+        if user_role in ['SuperAdministrador', 'Director']:
             return CODIGOS_CANONICOS_OFICIALES
         
         # Obtener unidades asignadas al usuario desde el contexto
