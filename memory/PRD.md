@@ -21,6 +21,41 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Diciembre 2025)
 
+### ✅ FASE 1C-3G-E3: Sincronización Costos Origen - CRITERIO DE PARO
+
+**Fecha:** 2026-05-25
+
+#### Resumen
+Diagnóstico exhaustivo de fuentes de costo en sistemas origen. **CRITERIO DE PARO**: Los costos ya están sincronizados en `Sync_Productos_Insumos`. Los 878 vinos sin costo NO tienen datos en origen.
+
+#### Hallazgos Clave:
+| Fuente | Total Registros | Estado |
+|--------|-----------------|--------|
+| Sync_Productos_Insumos (MPRO) | 5,414 | ✅ Sincronizado |
+| Sync_Productos_Insumos (SR) | 6,321 | ✅ Sincronizado |
+| Compras_Detalle | 0 | ❌ VACÍA |
+| Inventario_Existencias | 0 | ❌ VACÍA |
+
+#### Por qué no se puede mejorar la cobertura:
+1. Los costos que existen en origen YA están en EDARSAHUB
+2. Los 878 vinos sin costo NO tienen costo en MPRO/SoftRestaurant
+3. Muchos son productos tipo servicio (CAVA suscripciones)
+4. Re-sincronizar no crearía costos que no existen
+
+#### Opciones para el Usuario:
+| Opción | Descripción |
+|--------|-------------|
+| A | Costear productos en sistemas origen (MPRO/SR) |
+| B | Captura manual en EDARSAHUB (UI con trazabilidad) |
+| C | Importar lista de costos (Excel/CSV) |
+| D | Excluir servicios CAVA del cálculo |
+| E | Continuar con cobertura actual (634 vinos) |
+
+#### Archivos:
+- `/app/docs/reports/FASE_1C_3G_E3_SYNC_COSTO_BASE_VINOS_ORIGEN.md`
+
+---
+
 ### ✅ FASE 1C-3G-E2: Diagnóstico de Vinos Sin Costo - COMPLETADO (CRITERIO DE PARO)
 
 **Fecha:** 2026-05-25
