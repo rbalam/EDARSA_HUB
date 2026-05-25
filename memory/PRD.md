@@ -21,6 +21,51 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ## Estado Actual (Diciembre 2025)
 
+### ✅ FASE 1C-3I-E: Dashboard de Métricas IA Pricing - COMPLETADO
+
+**Fecha:** 2026-05-25  
+**Componentes:** 
+- Backend: `/app/backend/modules/comercial/services/metricas_ia_service.py`
+- Frontend: `TabDashboardIA` en `PricingIA.jsx`
+
+#### Resumen
+Se implementó el dashboard ejecutivo de métricas IA dentro del módulo Pricing IA, mostrando estadísticas en tiempo real desde EDARSAHUB SQL.
+
+#### Endpoints Creados:
+- `GET /api/comercial/pricing-ai/dashboard/metricas`
+- `GET /api/comercial/pricing-ai/dashboard/estadisticas-competidores`
+
+#### Métricas Implementadas:
+1. Total de análisis IA realizados
+2. Análisis por día (últimos 30 días)
+3. Productos más analizados (top 10)
+4. Distribución de confianza (ALTA/MEDIA/BAJA con barras de progreso)
+5. Cantidad de análisis que requieren revisión humana
+6. Competidores más usados en benchmark
+7. Últimos análisis realizados (top 15)
+8. Promedio precio sugerido vs actual
+9. Porcentaje de recomendaciones con confianza alta
+
+#### Componentes UI:
+- 5 tarjetas KPI gradiente (Total, Confianza Alta, Revisión, Hoy, Mes)
+- Panel de distribución de confianza con barras
+- Panel de comparación precios sugerido vs actual
+- Estadísticas de benchmark (competidores, items, categorías)
+- Tablas de productos más analizados y últimos análisis
+- Badges de competidores más usados
+
+#### Confirmaciones:
+- ✅ Datos desde EDARSAHUB SQL (tabla Comercial_PricingAnalisisIA)
+- ✅ No usa MongoDB
+- ✅ No modifica precios oficiales
+- ✅ No expone secretos
+- ✅ Sin regresiones en tabs existentes
+
+#### Archivo de Reporte:
+- `/app/docs/reports/FASE_1C_3I_E_DASHBOARD_METRICAS_IA_PRICING.md`
+
+---
+
 ### ✅ FASE 1C-3I-D: Frontend Motor de Precios Sugeridos IA - COMPLETADO
 
 **Fecha:** 2026-05-25  

@@ -35,6 +35,11 @@ from modules.comercial.services.pricing_ai_service import (
     ConfianzaIA,
 )
 
+from modules.comercial.services.metricas_ia_service import (
+    obtener_metricas_dashboard_ia,
+    obtener_estadisticas_competidores_benchmark,
+)
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/comercial/pricing-ai", tags=["Comercial - Pricing IA GPT-5.2"])
@@ -371,7 +376,8 @@ async def health_check_ia():
             "sugerir_comparables": "activo",
             "generar_justificacion": "activo",
             "analizar_benchmark": "activo",
-            "obtener_analisis": "activo"
+            "obtener_analisis": "activo",
+            "dashboard_metricas": "activo"
         },
         "reglas": {
             "ia_sugiere": True,
@@ -381,3 +387,85 @@ async def health_check_ia():
             "mongodb": False,
         }
     }
+
+
+# =============================================================================
+# DASHBOARD DE MÉTRICAS IA (FASE 1C-3I-E)
+# =============================================================================
+
+@router.get(
+    "/dashboard/metricas",
+    summary="Obtener métricas del dashboard IA Pricing"
+)
+async def endpoint_dashboard_metricas(
+    empresa_id: Optional[int] = Query(None, description="Filtrar por empresa"),
+    unidad_negocio_id: Optional[int] = Query(None, description="Filtrar por unidad"),
+    dias_historial: int = Query(30, ge=7, le=90, description="Días de historial"),
+    current_user: dict = Depends(get_current_user),
+    _auth: dict = Depends(require_permission("comercial.precios_sugeridos.ver_ia"))
+):
+    """
+    Obtiene métricas agregadas para el dashboard de IA Pricing.
+    
+    **Métricas incluidas:**
+    - Total de análisis IA realizados
+    - Análisis por día (últimos N días)
+    - Productos más analizados
+    - Distribución de confianza (ALTA/MEDIA/BAJA)
+    - Análisis que requieren revisión humana
+    - Competidores más usados en benchmark
+    - Últimos análisis realizados
+    - Promedio precio sugerido vs actual
+    - Porcentaje de recomendaciones con confianza alta
+    
+    **IMPORTANTE:**
+    - Solo lectura desde EDARSAHUB SQL
+    - NO usa MongoDB
+    - NO modifica datos
+    """
+    logger.info(f"[DASHBOARD-IA] Consultando métricas por {current_user.get('email')}")
+    
+    metricas = obtener_metricas_dashboard_ia(
+        empresa_id=empresa_id,
+        unidad_negocio_id=unidad_negocio_id,
+        dias_historial=dias_historial
+    )
+    
+    return {
+        "success": True,
+        "metricas": metricas,
+        "fuente": "EDARSAHUB_SQL",
+        "mensaje": "Métricas obtenidas correctamente"
+    }
+
+
+@router.get(
+    "/dashboard/estadisticas-competidores",
+    summary="Obtener estadísticas de competidores para dashboard"
+)
+async def endpoint_estadisticas_competidores(
+    empresa_id: Optional[int] = Query(None),
+    unidad_negocio_id: Optional[int] = Query(None),
+    current_user: dict = Depends(get_current_user),
+    _auth: dict = Depends(require_permission("comercial.competidores.ver"))
+):
+    """
+    Obtiene estadísticas de competidores y benchmark para el dashboard.
+    
+    **Incluye:**
+    - Total de competidores configurados
+    - Items de competencia capturados
+    - Promedios de precios
+    - Categorías cubiertas
+    """
+    stats = obtener_estadisticas_competidores_benchmark(
+        empresa_id=empresa_id,
+        unidad_negocio_id=unidad_negocio_id
+    )
+    
+    return {
+        "success": True,
+        "estadisticas": stats,
+        "fuente": "EDARSAHUB_SQL"
+    }
+

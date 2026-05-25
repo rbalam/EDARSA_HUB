@@ -1639,10 +1639,455 @@ const TabHistorial = ({ empresaId, unidadId }) => {
   );
 };
 
+// ==================== TAB DASHBOARD IA (FASE 1C-3I-E) ====================
+
+const TabDashboardIA = ({ empresaId, unidadId }) => {
+  const [metricas, setMetricas] = useState(null);
+  const [statsCompetidores, setStatsCompetidores] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  const cargarMetricas = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const params = new URLSearchParams();
+      if (empresaId) params.append('empresa_id', empresaId);
+      if (unidadId) params.append('unidad_negocio_id', unidadId);
+      params.append('dias_historial', '30');
+      
+      const [metricasRes, statsRes] = await Promise.all([
+        api.get(`/comercial/pricing-ai/dashboard/metricas?${params}`),
+        api.get(`/comercial/pricing-ai/dashboard/estadisticas-competidores?${params}`)
+      ]);
+      
+      setMetricas(metricasRes.data.metricas);
+      setStatsCompetidores(statsRes.data.estadisticas);
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [empresaId, unidadId]);
+  
+  useEffect(() => {
+    cargarMetricas();
+  }, [cargarMetricas]);
+  
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <RefreshCw className="w-10 h-10 animate-spin text-purple-500 mb-4" />
+        <p className="text-gray-500">Cargando metricas del dashboard...</p>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+        <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
+        <p className="text-red-700 font-medium">Error cargando metricas</p>
+        <p className="text-red-600 text-sm mt-1">{error}</p>
+        <button
+          onClick={cargarMetricas}
+          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+        >
+          Reintentar
+        </button>
+      </div>
+    );
+  }
+  
+  if (!metricas || metricas.total_analisis === 0) {
+    return (
+      <div className="text-center py-16 bg-gray-50 rounded-lg">
+        <BarChart2 className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+        <h3 className="text-lg font-medium text-gray-600 mb-2">Sin datos de metricas</h3>
+        <p className="text-gray-500 text-sm max-w-md mx-auto">
+          Aun no se han realizado analisis IA. Las metricas se generaran automaticamente 
+          cuando ejecutes analisis de producto o benchmark desde la pestana "Analisis IA".
+        </p>
+        <div className="mt-6 p-4 bg-purple-50 rounded-lg inline-block">
+          <p className="text-purple-700 text-sm">
+            <Sparkles className="w-4 h-4 inline mr-1" />
+            Datos desde: <code className="bg-purple-100 px-1 rounded">Comercial_PricingAnalisisIA</code> (EDARSAHUB SQL)
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Preparar datos para graficas simples
+  const distribucion = metricas.distribucion_confianza || {};
+  const totalDistribucion = (distribucion.ALTA || 0) + (distribucion.MEDIA || 0) + (distribucion.BAJA || 0);
+  
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <BarChart2 className="w-5 h-5 text-purple-600" />
+            Dashboard de Metricas IA
+          </h3>
+          <p className="text-sm text-gray-500">
+            Estadisticas de uso y calidad de los analisis realizados con GPT-5.2
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-400">
+            Actualizado: {formatDate(metricas.fecha_actualizacion)}
+          </span>
+          <button
+            onClick={cargarMetricas}
+            className="p-2 border rounded-lg hover:bg-gray-50"
+            title="Actualizar metricas"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      
+      {/* KPIs Principales */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg p-4 text-white">
+          <div className="flex items-center justify-between mb-2">
+            <Brain className="w-6 h-6 opacity-80" />
+            <span className="text-xs opacity-75">Total</span>
+          </div>
+          <div className="text-3xl font-bold">{metricas.total_analisis}</div>
+          <div className="text-xs opacity-80 mt-1">Analisis IA realizados</div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-green-500 to-green-700 rounded-lg p-4 text-white">
+          <div className="flex items-center justify-between mb-2">
+            <CheckCircle className="w-6 h-6 opacity-80" />
+            <span className="text-xs opacity-75">Confianza Alta</span>
+          </div>
+          <div className="text-3xl font-bold">{metricas.porcentaje_confianza_alta || 0}%</div>
+          <div className="text-xs opacity-80 mt-1">{distribucion.ALTA || 0} analisis</div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-orange-500 to-orange-700 rounded-lg p-4 text-white">
+          <div className="flex items-center justify-between mb-2">
+            <ShieldAlert className="w-6 h-6 opacity-80" />
+            <span className="text-xs opacity-75">Revision</span>
+          </div>
+          <div className="text-3xl font-bold">{metricas.total_revision_humana || 0}</div>
+          <div className="text-xs opacity-80 mt-1">{metricas.porcentaje_revision_humana || 0}% requieren revision</div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg p-4 text-white">
+          <div className="flex items-center justify-between mb-2">
+            <Clock className="w-6 h-6 opacity-80" />
+            <span className="text-xs opacity-75">Hoy</span>
+          </div>
+          <div className="text-3xl font-bold">{metricas.analisis_hoy || 0}</div>
+          <div className="text-xs opacity-80 mt-1">Analisis del dia</div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-lg p-4 text-white">
+          <div className="flex items-center justify-between mb-2">
+            <TrendingUp className="w-6 h-6 opacity-80" />
+            <span className="text-xs opacity-75">Mes</span>
+          </div>
+          <div className="text-3xl font-bold">{metricas.analisis_mes || 0}</div>
+          <div className="text-xs opacity-80 mt-1">Ultimos 30 dias</div>
+        </div>
+      </div>
+      
+      {/* Distribucion de Confianza */}
+      <div className="grid sm:grid-cols-2 gap-6">
+        <div className="bg-white border rounded-lg p-6">
+          <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Target className="w-4 h-4 text-purple-600" />
+            Distribucion de Confianza IA
+          </h4>
+          
+          {totalDistribucion > 0 ? (
+            <div className="space-y-4">
+              {/* Barra ALTA */}
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-green-700 font-medium">ALTA</span>
+                  <span className="text-gray-600">{distribucion.ALTA || 0} ({totalDistribucion > 0 ? ((distribucion.ALTA / totalDistribucion) * 100).toFixed(1) : 0}%)</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div 
+                    className="bg-green-500 h-3 rounded-full transition-all duration-500"
+                    style={{ width: `${totalDistribucion > 0 ? (distribucion.ALTA / totalDistribucion) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+              
+              {/* Barra MEDIA */}
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-yellow-700 font-medium">MEDIA</span>
+                  <span className="text-gray-600">{distribucion.MEDIA || 0} ({totalDistribucion > 0 ? ((distribucion.MEDIA / totalDistribucion) * 100).toFixed(1) : 0}%)</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div 
+                    className="bg-yellow-500 h-3 rounded-full transition-all duration-500"
+                    style={{ width: `${totalDistribucion > 0 ? (distribucion.MEDIA / totalDistribucion) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+              
+              {/* Barra BAJA */}
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-red-700 font-medium">BAJA</span>
+                  <span className="text-gray-600">{distribucion.BAJA || 0} ({totalDistribucion > 0 ? ((distribucion.BAJA / totalDistribucion) * 100).toFixed(1) : 0}%)</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div 
+                    className="bg-red-500 h-3 rounded-full transition-all duration-500"
+                    style={{ width: `${totalDistribucion > 0 ? (distribucion.BAJA / totalDistribucion) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-4">Sin datos de distribucion</p>
+          )}
+        </div>
+        
+        {/* Comparacion de Precios */}
+        <div className="bg-white border rounded-lg p-6">
+          <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-green-600" />
+            Promedio Precio Sugerido vs Actual
+          </h4>
+          
+          {metricas.promedio_precio_actual ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <div className="text-xs text-gray-500 mb-1">Precio Actual Prom.</div>
+                  <div className="text-xl font-bold text-gray-800">
+                    {formatCurrency(metricas.promedio_precio_actual)}
+                  </div>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-4 text-center">
+                  <div className="text-xs text-purple-600 mb-1">Precio Sugerido Prom.</div>
+                  <div className="text-xl font-bold text-purple-700">
+                    {formatCurrency(metricas.promedio_precio_sugerido)}
+                  </div>
+                </div>
+              </div>
+              
+              <div className={`text-center p-3 rounded-lg ${
+                metricas.variacion_promedio_porcentaje > 0 
+                  ? 'bg-green-50 text-green-700'
+                  : metricas.variacion_promedio_porcentaje < 0
+                  ? 'bg-red-50 text-red-700'
+                  : 'bg-gray-50 text-gray-700'
+              }`}>
+                <div className="flex items-center justify-center gap-2">
+                  {metricas.variacion_promedio_porcentaje > 0 ? (
+                    <TrendingUp className="w-5 h-5" />
+                  ) : metricas.variacion_promedio_porcentaje < 0 ? (
+                    <TrendingDown className="w-5 h-5" />
+                  ) : null}
+                  <span className="font-semibold">
+                    {metricas.variacion_promedio_porcentaje > 0 ? '+' : ''}{metricas.variacion_promedio_porcentaje}%
+                  </span>
+                  <span className="text-sm opacity-80">variacion promedio</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-4">
+              Sin datos de precios suficientes para calcular promedios
+            </p>
+          )}
+        </div>
+      </div>
+      
+      {/* Estadisticas de Competidores */}
+      {statsCompetidores && (
+        <div className="bg-white border rounded-lg p-6">
+          <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Store className="w-4 h-4 text-blue-600" />
+            Estadisticas de Benchmark
+          </h4>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="text-center p-3 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-700">{statsCompetidores.total_competidores || 0}</div>
+              <div className="text-xs text-blue-600">Competidores</div>
+            </div>
+            <div className="text-center p-3 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-700">{statsCompetidores.total_items_capturados || 0}</div>
+              <div className="text-xs text-green-600">Items Capturados</div>
+            </div>
+            <div className="text-center p-3 bg-purple-50 rounded-lg">
+              <div className="text-2xl font-bold text-purple-700">{statsCompetidores.categorias_cubiertas || 0}</div>
+              <div className="text-xs text-purple-600">Categorias</div>
+            </div>
+            <div className="text-center p-3 bg-amber-50 rounded-lg">
+              <div className="text-2xl font-bold text-amber-700">
+                {statsCompetidores.promedio_precio_competencia 
+                  ? formatCurrency(statsCompetidores.promedio_precio_competencia)
+                  : 'N/A'}
+              </div>
+              <div className="text-xs text-amber-600">Precio Prom. Comp.</div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Productos Mas Analizados */}
+      {metricas.productos_mas_analizados && metricas.productos_mas_analizados.length > 0 && (
+        <div className="bg-white border rounded-lg p-6">
+          <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Tag className="w-4 h-4 text-indigo-600" />
+            Productos Mas Analizados
+          </h4>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="p-3 text-left">#</th>
+                  <th className="p-3 text-left">Codigo Producto</th>
+                  <th className="p-3 text-center">Analisis</th>
+                  <th className="p-3 text-center">Ult. Confianza</th>
+                  <th className="p-3 text-left">Ultimo Analisis</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metricas.productos_mas_analizados.slice(0, 5).map((p, idx) => (
+                  <tr key={p.codigo_producto} className="border-b">
+                    <td className="p-3 text-gray-400">{idx + 1}</td>
+                    <td className="p-3 font-medium text-gray-800">{p.codigo_producto}</td>
+                    <td className="p-3 text-center">
+                      <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                        {p.cantidad_analisis}x
+                      </span>
+                    </td>
+                    <td className="p-3 text-center">
+                      <ConfianzaBadge confianza={p.ultima_confianza} />
+                    </td>
+                    <td className="p-3 text-gray-500 text-xs">{formatDate(p.ultimo_analisis)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      
+      {/* Competidores Mas Usados */}
+      {metricas.competidores_mas_usados && metricas.competidores_mas_usados.length > 0 && (
+        <div className="bg-white border rounded-lg p-6">
+          <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Users className="w-4 h-4 text-blue-600" />
+            Competidores Mas Usados en Benchmark
+          </h4>
+          
+          <div className="flex flex-wrap gap-2">
+            {metricas.competidores_mas_usados.map((c) => (
+              <span 
+                key={c.nombre}
+                className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm flex items-center gap-2"
+              >
+                <Store className="w-3 h-3" />
+                {c.nombre}
+                <span className="bg-blue-200 px-1.5 rounded text-xs">{c.veces_usado}x</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Ultimos Analisis */}
+      {metricas.ultimos_analisis && metricas.ultimos_analisis.length > 0 && (
+        <div className="bg-white border rounded-lg p-6">
+          <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <History className="w-4 h-4 text-gray-600" />
+            Ultimos Analisis Realizados
+          </h4>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="p-3 text-left">Fecha</th>
+                  <th className="p-3 text-left">Producto</th>
+                  <th className="p-3 text-left">Tipo</th>
+                  <th className="p-3 text-center">Confianza</th>
+                  <th className="p-3 text-center">Revision</th>
+                  <th className="p-3 text-right">P. Actual</th>
+                  <th className="p-3 text-right">P. Sugerido</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metricas.ultimos_analisis.slice(0, 10).map((a) => (
+                  <tr key={a.analisis_id} className="border-b hover:bg-gray-50">
+                    <td className="p-3 text-gray-500 text-xs">{formatDate(a.fecha)}</td>
+                    <td className="p-3 font-medium text-gray-800">{a.codigo_producto}</td>
+                    <td className="p-3 text-gray-600 text-xs">{a.tipo_analisis}</td>
+                    <td className="p-3 text-center">
+                      <ConfianzaBadge confianza={a.confianza} />
+                    </td>
+                    <td className="p-3 text-center">
+                      {a.requiere_revision && <RevisionHumanaBadge requiere={true} />}
+                    </td>
+                    <td className="p-3 text-right text-gray-600">
+                      {a.precio_actual ? formatCurrency(a.precio_actual) : '-'}
+                    </td>
+                    <td className="p-3 text-right font-medium text-purple-600">
+                      {a.precio_sugerido ? formatCurrency(a.precio_sugerido) : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      
+      {/* Tipos de Analisis */}
+      {metricas.tipos_analisis && Object.keys(metricas.tipos_analisis).length > 0 && (
+        <div className="bg-white border rounded-lg p-6">
+          <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-gray-600" />
+            Distribucion por Tipo de Analisis
+          </h4>
+          
+          <div className="flex flex-wrap gap-3">
+            {Object.entries(metricas.tipos_analisis).map(([tipo, cantidad]) => (
+              <div key={tipo} className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
+                <span className="text-gray-600 text-sm">{tipo.replace(/_/g, ' ')}</span>
+                <span className="px-2 py-0.5 bg-gray-200 rounded text-xs font-medium">{cantidad}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Footer info */}
+      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-sm">
+        <div className="flex items-start gap-2">
+          <Info className="w-4 h-4 mt-0.5 text-purple-600 flex-shrink-0" />
+          <div className="text-purple-700">
+            <strong>Fuente de datos:</strong> Tabla <code className="bg-purple-100 px-1 rounded">Comercial_PricingAnalisisIA</code> 
+            de EDARSAHUB SQL Server. No se usa MongoDB. Las metricas se calculan en tiempo real desde la base de datos.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ==================== COMPONENTE PRINCIPAL ====================
 
 const PricingIA = () => {
-  const [activeTab, setActiveTab] = useState('competidores');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [empresaId, setEmpresaId] = useState(1);
   const [unidadId, setUnidadId] = useState(1);
   const [resumen, setResumen] = useState(null);
@@ -1743,6 +2188,12 @@ const PricingIA = () => {
       <div className="border-b border-gray-200">
         <div className="flex flex-wrap gap-1">
           <TabButton
+            active={activeTab === 'dashboard'}
+            onClick={() => setActiveTab('dashboard')}
+            icon={BarChart2}
+            label="Dashboard IA"
+          />
+          <TabButton
             active={activeTab === 'competidores'}
             onClick={() => setActiveTab('competidores')}
             icon={Store}
@@ -1773,6 +2224,9 @@ const PricingIA = () => {
       
       {/* Contenido de tabs */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
+        {activeTab === 'dashboard' && (
+          <TabDashboardIA empresaId={empresaId} unidadId={unidadId} />
+        )}
         {activeTab === 'competidores' && (
           <TabCompetidores empresaId={empresaId} unidadId={unidadId} />
         )}
@@ -1790,7 +2244,7 @@ const PricingIA = () => {
       {/* Footer info */}
       <div className="text-xs text-gray-400 flex items-center justify-between">
         <span>Datos de EDARSAHUB SQL Server | CERO MongoDB</span>
-        <span>FASE 1C-3I-D: Frontend Motor de Precios Sugeridos IA</span>
+        <span>FASE 1C-3I-E: Dashboard Metricas IA Pricing</span>
       </div>
     </div>
   );
