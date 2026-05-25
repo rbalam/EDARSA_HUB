@@ -19,6 +19,78 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
+---
+
+### ✅ FASE-0-SCHEDULER-RESYNC: Consola Administrativa de Re-sincronización - COMPLETADO
+
+**Fecha:** 2026-05-25 (Sesión actual)
+
+#### Problema Reportado:
+Datos faltantes de CIENFUEGOS (días 19 y 20 de mayo 2026) por falla de conectividad durante el job de sincronización incremental. La ventana de 3 días del job ya había pasado y no podía recuperar los datos automáticamente.
+
+#### Requerimiento del Usuario:
+NO usar scripts locales/manuales. Diseñar una "Consola General de Scheduler / Sincronizaciones" en EDARSAHUB con 50 Máximas Obligatorias.
+
+#### Solución Implementada - Fase 0 Mínima:
+
+**Backend:**
+1. **Nuevo archivo**: `/app/backend/api/admin_scheduler_resync.py`
+2. **Endpoints creados**:
+   - `GET /api/admin/scheduler/resync/options` - Lista tipos de sync y unidades disponibles
+   - `POST /api/admin/scheduler/resync/validate` - Valida parámetros antes de ejecutar
+   - `POST /api/admin/scheduler/resync/execute` - Ejecuta dry_run o real
+   - `GET /api/admin/scheduler/resync/history` - Historial de re-syncs
+3. **Registrado en server.py** (línea ~17780)
+
+**Frontend:**
+1. **Nuevo componente**: `/app/frontend/src/components/admin/ResyncPanel.jsx`
+2. **Integrado en**: `/app/frontend/src/pages/Scheduler.jsx` como nueva pestaña "Re-sync Manual"
+3. **Features UI**:
+   - Selección de tipo de sync y unidad
+   - Selección de rango de fechas
+   - Motivo obligatorio (mín. 10 caracteres)
+   - Validación previa con indicador de conectividad
+   - Ejecución DRY RUN (simulación sin modificar datos)
+   - Ejecución REAL con confirmación
+   - Historial de re-sincronizaciones
+
+**Máximas Cumplidas:**
+- #3: Usa handler oficial `sync_softrestaurant_ventas_cerradas()`
+- #6: Trazabilidad completa (RunID, usuario, motivo)
+- #7: Motivo obligatorio
+- #8: Dry run disponible para alto riesgo
+- #14: Credenciales desde `Servidores_Conexiones`
+- #15: UPSERT idempotente (sin duplicados)
+- #26: No duplicar lógica, reutiliza handler existente
+- #28: Dashboards siguen leyendo EDARSAHUB SQL
+- #31: Propinas separadas del KPI de ventas
+
+**Validación Confirmada (via cURL):**
+```
+✓ GET /api/admin/scheduler/resync/options - OK (5 unidades, 1 tipo sync)
+✓ POST /api/admin/scheduler/resync/validate - OK (detecta conectividad, días existentes)
+✓ POST /api/admin/scheduler/resync/execute - OK (registra en Scheduler_BitacoraJobs)
+```
+
+**Estado de CIENFUEGOS:**
+- Confirmado: Días 19 y 20 de mayo 2026 SIN DATOS en `Comercial_KPIs_Diarios_v2`
+- Días 17, 18, 21, 22 SÍ tienen datos
+- Servidor origen (189.162.155.142) NO accesible desde cloud
+- El sistema abortó correctamente el DRY RUN por falta de conectividad
+- Se registró el intento en bitácora con estado `RESYNC_FAILED`
+
+#### Documentos de Diseño:
+- `/app/docs/reports/DISENO_CONSOLA_GENERAL_SCHEDULER_SINCRONIZACIONES_EDARSAHUB.md`
+- `/app/docs/reports/PLAN_IMPLEMENTACION_FASE0_RESYNC_CIENFUEGOS.md`
+- `/app/docs/reports/DIAGNOSTICO_SCHEDULER_ESTADO_ACTUAL.md`
+
+#### Pendiente (Requiere Conectividad):
+- Ejecutar re-sync real de CIENFUEGOS cuando el servidor origen esté accesible
+- Fase 1: Tablas `Sistema_Scheduler_*` y frontend completo con pestañas
+
+---
+
+
 ### ✅ COMPRAS-MONGO-001-F1: Migración Parámetros Compras a SQL - COMPLETADO
 
 **Fecha:** 2026-05-25 (Sesión actual)

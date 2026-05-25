@@ -17776,6 +17776,13 @@ from core.scheduler.routes import router as scheduler_router, init_scheduler_rou
 init_scheduler_routes(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
 app.include_router(scheduler_router, tags=["Scheduler"])
 
+# ============= FASE 0: CONSOLA ADMIN SCHEDULER RESYNC =============
+# Re-sincronización controlada con dry_run y trazabilidad completa
+# Diseño: /app/docs/reports/DISENO_CONSOLA_GENERAL_SCHEDULER_SINCRONIZACIONES_EDARSAHUB.md
+from api.admin_scheduler_resync import router as admin_resync_router
+app.include_router(admin_resync_router, tags=["Admin - Scheduler Resync"])
+logger.info("Consola Admin Scheduler Resync registrada")
+
 # ============= CENTRO DE CONTROL EDARSA =============
 # Sistema proactivo de observabilidad y detección de regresiones
 # Documentación: /app/docs/CENTRO_CONTROL_EDARSA.md

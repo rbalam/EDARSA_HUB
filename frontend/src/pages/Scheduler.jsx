@@ -11,6 +11,7 @@ import logger from '../services/logger';
  * - KPIs de ejecuciones
  * - Auto-refresh controlado
  * - RBAC integrado
+ * - FASE 0: Panel de Re-sincronización Manual
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -45,6 +46,8 @@ import {
 } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ResyncPanel from '../components/admin/ResyncPanel';
 import {
   Clock,
   Play,
@@ -62,6 +65,7 @@ import {
   TrendingUp,
   AlertTriangle,
   Loader2,
+  Database,
 } from 'lucide-react';
 import { getUser } from '@/lib/auth';
 // FASE AUTH-SECURITY-01 / FASE 4: getToken eliminado, auth viaja en cookie httpOnly
@@ -407,8 +411,23 @@ export default function Scheduler() {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4" data-testid="scheduler-kpis">
+      {/* Tabs: Dashboard | Re-sync Manual */}
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2" data-testid="tab-dashboard">
+            <Activity className="w-4 h-4" />
+            Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="resync" className="flex items-center gap-2" data-testid="tab-resync">
+            <Database className="w-4 h-4" />
+            Re-sync Manual
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab: Dashboard */}
+        <TabsContent value="dashboard" className="space-y-6 mt-4">
+          {/* KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4" data-testid="scheduler-kpis">
         {/* Scheduler Status */}
         <Card className={kpis.schedulerActive ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}>
           <CardContent className="p-4">
@@ -784,6 +803,13 @@ export default function Scheduler() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </TabsContent>
+
+        {/* Tab: Re-sync Manual */}
+        <TabsContent value="resync" className="mt-4">
+          <ResyncPanel />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
