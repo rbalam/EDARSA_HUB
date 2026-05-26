@@ -17,6 +17,58 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 ## Credenciales de Prueba
 - Admin: `admin@edarsa.com` / `admin123`
 
+
+---
+
+### ✅ FASE B-P0-A: DIAGNÓSTICO MIGRACIÓN fase2_operativo MongoDB → SQL - COMPLETADO
+
+**Fecha:** 2026-05-26
+
+#### Objetivo:
+Análisis exhaustivo del módulo `/app/backend/modules/fase2_operativo/` para planificar migración completa de MongoDB a EDARSAHUB SQL.
+
+#### Hallazgos Clave:
+
+**Colecciones MongoDB detectadas: 18**
+| Colección | Usos | Tabla SQL | Estado |
+|-----------|------|-----------|--------|
+| workflow_inventarios | 6 | Workflow_Inventarios | ✅ EXISTE |
+| tareas_inventario | 7 | Tareas_Inventario | ✅ EXISTE |
+| notificaciones_log | 8 | Notificaciones_Log | ❌ FALTA |
+| users | 8 | Usuarios | ✅ EXISTE |
+| tareas_operativas_compras | 6 | Tareas_Operativas_Compras | ❌ FALTA |
+| +12 más... | - | - | Ver reporte |
+
+**Tablas SQL:**
+- ✅ Existentes: 6 (Workflow_Inventarios, Tareas_Inventario, etc.)
+- ❌ Faltantes: 13 (Notificaciones_Log, Justificaciones_Inventario, etc.)
+
+**Archivos afectados:**
+- `db_utils.py` → MongoClient activo (ELIMINAR)
+- `repositories/*.py` → 100% MongoDB (MIGRAR)
+- `services/*.py` → 80% MongoDB (MIGRAR)
+- `routes/*.py` → Llamadas directas MongoDB (MIGRAR)
+
+**Pantallas afectadas:**
+- `/reportes?tab=operativo` → Dashboard Operativo (Fase 2A)
+- Componentes: OperativoDashboard, KPICards, WorkflowList, TareaList, etc.
+
+#### DDL Propuesto:
+13 tablas con scripts CREATE TABLE completos en el reporte.
+
+#### Plan de Migración:
+| Fase | Prioridad | Descripción |
+|------|-----------|-------------|
+| B-P0-B | 🔴 P0 | Ejecutar DDL 13 tablas faltantes |
+| B-P0-C | 🔴 P0 | Migrar base_repository.py a SQL |
+| B-P1-A | 🔴 P0 | Migrar workflow_repository.py |
+| B-P2-A | 🟠 P1 | Migrar automatizacion_compras_service.py |
+| B-P4 | 🟢 P3 | Eliminar db_utils.py y scripts MongoDB |
+
+#### Documentación:
+- `/app/docs/reports/FASE_B_P0_FASE2_OPERATIVO_MONGO_A_SQL_DIAGNOSTICO.md`
+
+
 ---
 
 ### ✅ INCIDENTE P0: SERVER_SECRET_KEY PREVIEW - RESUELTO
