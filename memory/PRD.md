@@ -19,6 +19,44 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
+### ✅ DATA-QUALITY-130MID-001: Unificación Mérida (Duplicados por Acentos) - DIAGNOSTICADO
+
+**Fecha:** 2026-05-26 (Sesión actual)
+
+#### Problema Identificado:
+Los datos de la unidad "130MID" (Mérida) en `Comercial_KPIs_Diarios_v2` tienen dos variantes de nombre:
+- `130° MÉRIDA` (con acento) - **734 registros** (2024-05-01 a 2026-05-09) - $116.6M
+- `130° MERIDA` (sin acento) - **15 registros** (2026-05-10 a 2026-05-24) - $2.1M
+
+#### Causa Raíz:
+El nombre canónico oficial en `Unidades_Negocio` es "130° MERIDA" (sin acento). Las sincronizaciones históricas insertaron datos con el nombre con acento.
+
+#### Solución Implementada:
+
+**Backend - API de Auditoría:**
+- **Archivo creado**: `/app/backend/api/admin_data_quality.py`
+- **Endpoints**:
+  - `GET /api/admin/data-quality/audit/merida-duplicates` - Genera diagnóstico completo y script SQL
+  - `GET /api/admin/data-quality/verify/merida-consolidation` - Verifica estado post-fix
+  - `GET /api/admin/data-quality/audit/generic-duplicates` - Auditoría genérica de duplicados
+
+**Script SQL Generado:**
+- Incluye BACKUP automático
+- UPDATE idempotente
+- Verificación post-ejecución
+
+**Documentación:**
+- `/app/docs/reports/DATA_QUALITY_130MID_001_MERIDA_DUPLICADOS.md`
+
+#### Estado:
+- ✅ Diagnóstico completado
+- ✅ API de auditoría funcionando
+- ✅ Script SQL generado
+- ⏳ **PENDIENTE**: Ejecutar script con usuario de escritura (HRLectura es read-only)
+
+#### Nota Importante:
+El Tablero Ejecutivo ya muestra Mérida como una sola unidad porque agrupa por `unidad_negocio_id`. El problema afecta reportes detallados que filtren por nombre exacto.
+
 ---
 
 ### ✅ FASE-0-SCHEDULER-RESYNC: Consola Administrativa de Re-sincronización - COMPLETADO

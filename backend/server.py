@@ -17789,6 +17789,12 @@ from api.admin_cache import router as admin_cache_router
 app.include_router(admin_cache_router, tags=["Admin - Cache Management"])
 logger.info("Admin Cache Management registrado")
 
+# ============= CALIDAD DE DATOS =============
+# DATA-QUALITY: Auditoría y consolidación de datos duplicados
+from api.admin_data_quality import router as admin_data_quality_router
+app.include_router(admin_data_quality_router, tags=["Admin - Data Quality"])
+logger.info("Admin Data Quality registrado")
+
 # ============= CENTRO DE CONTROL EDARSA =============
 # Sistema proactivo de observabilidad y detección de regresiones
 # Documentación: /app/docs/CENTRO_CONTROL_EDARSA.md
