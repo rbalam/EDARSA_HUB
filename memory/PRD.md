@@ -71,6 +71,63 @@ Análisis exhaustivo del módulo `/app/backend/modules/fase2_operativo/` para pl
 
 ---
 
+### ✅ FASE B-P0-B: DDL TABLAS SQL fase2_operativo - COMPLETADO
+
+**Fecha:** 2026-05-26
+
+#### Objetivo:
+Crear las tablas SQL faltantes para migrar fase2_operativo de MongoDB a EDARSAHUB SQL.
+
+#### Decisiones de Nomenclatura:
+- Prefijo `Operativo_*` para tablas nuevas del módulo
+- Prefijo `Workflow_*` para extensiones de Workflow_Inventarios
+- Reutilización de `Scheduler_BitacoraJobs` existente
+
+#### Tablas Creadas (12):
+| Tabla | Columnas | Índices |
+|-------|----------|---------|
+| Operativo_Notificaciones_Log | 15 | 5 |
+| Workflow_Justificaciones | 17 | 3 |
+| Workflow_DecisionesAuditoria | 12 | 2 |
+| Operativo_HistorialAsignaciones | 13 | 3 |
+| Operativo_ResponsabilidadEconomica | 20 | 4 |
+| Operativo_CargosResponsabilidad | 23 | 4 |
+| Operativo_HistorialCargos | 10 | 2 |
+| Operativo_TareasCompras | 18 | 3 |
+| Operativo_BitacoraCompras | 11 | 2 |
+| Operativo_PedidosProcesados | 11 | 2 |
+| Operativo_AuditoriasProgramadas | 19 | 3 |
+| Operativo_DocumentosGenerados | 13 | 3 |
+
+#### Tabla Reutilizada (1):
+- `Scheduler_BitacoraJobs` (909 registros existentes)
+
+#### Validaciones:
+- ✅ DDL idempotente
+- ✅ 0 registros (sin migración de datos)
+- ✅ Login funcional
+- ✅ Health check /api/v2/health OK
+- ✅ CERO MongoDB modificado
+- ✅ CERO código productivo modificado
+
+#### Mapeo MongoDB → SQL:
+| Colección MongoDB | Tabla SQL |
+|-------------------|-----------|
+| notificaciones_log | Operativo_Notificaciones_Log |
+| justificaciones_inventario | Workflow_Justificaciones |
+| decisiones_auditoria | Workflow_DecisionesAuditoria |
+| cargos_responsabilidad | Operativo_CargosResponsabilidad |
+| tareas_operativas_compras | Operativo_TareasCompras |
+| scheduler_job_logs | Scheduler_BitacoraJobs (EXISTENTE) |
+
+#### Documentación:
+- `/app/docs/reports/FASE_B_P0_B_DDL_FASE2_OPERATIVO_SQL.md`
+- `/app/backend/scripts/ddl_fase2_operativo_tablas.sql`
+
+
+
+---
+
 ### ✅ INCIDENTE P0: SERVER_SECRET_KEY PREVIEW - RESUELTO
 
 **Fecha:** 2026-05-26 (Sesión actual)
