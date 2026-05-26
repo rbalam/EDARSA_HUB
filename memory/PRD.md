@@ -165,6 +165,46 @@ Migrar el repositorio base de fase2_operativo de MongoDB a EDARSAHUB SQL Server.
 - `/app/docs/reports/FASE_B_P0_C_BASE_REPOSITORY_SQL.md`
 
 
+---
+
+### ✅ FASE B-P1-A: MIGRACIÓN workflow_repository.py A SQL - COMPLETADO
+
+**Fecha:** 2026-05-26
+
+#### Objetivo:
+Migrar workflow_repository.py de MongoDB implícito a SQL explícito.
+
+#### Métodos Migrados (11):
+| Método | Antes | Después |
+|--------|-------|---------|
+| get_by_procesado_id | collection.find_one() | _sql_repo.find_one() |
+| get_by_estado | collection.find().skip().limit() | SQLCursor encadenable |
+| get_escalados | collection.find().limit() | get_by_estado() |
+| incrementar_ciclo | $inc de MongoDB | SELECT + UPDATE |
+| contar_por_estado | collection.aggregate() | _sql_repo.aggregate() |
+
+#### Métodos Nuevos:
+- `buscar_workflows()`: Búsqueda avanzada con múltiples filtros
+- `get_workflow_completo()`: Obtiene workflow con todos sus datos
+
+#### Métodos Deprecados (compatibilidad):
+- `_to_object_id()`: No se usa ObjectId en SQL
+- `_serialize_id()`: No se necesita en SQL
+
+#### Validaciones:
+- ✅ Backend arranca sin error
+- ✅ Login, Health OK
+- ✅ `/api/v2/workflows` OK
+- ✅ `/api/v2/dashboard/resumen` OK
+- ✅ `/api/v2/dashboard/kpis` OK
+- ✅ CERO MongoDB productivo
+- ✅ CERO referencias a `self.collection`
+
+#### Documentación:
+- `/app/docs/reports/FASE_B_P1_A_WORKFLOW_REPOSITORY_SQL.md`
+
+
+
 
 
 
