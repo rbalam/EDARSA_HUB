@@ -42,6 +42,41 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
+### ✅ FASE A-P0: COMERCIAL ROUTES LIVE → SQL - COMPLETADO
+
+**Fecha:** 2026-05-26 (Sesión actual)
+
+#### Objetivo:
+Eliminar conexiones LIVE legacy en `comercial/routes.py` que consultaban servidores remotos desde la UI.
+
+#### Implementación:
+- **GUARD RAIL** implementado con flag `ENABLE_LIVE_GUARD_RAIL = True`
+- 7 endpoints LIVE legacy bloqueados con error controlado `LEGACY_LIVE_DISABLED`
+- 2 endpoints confirmados como SQL-First (`/dashboard/{server_id}`, `/ventas-tiempo/{server_id}`)
+- Función `check_live_guard_rail()` intercepta peticiones y devuelve error informativo
+
+#### Endpoints Bloqueados:
+| Endpoint | Tabla Requerida |
+|----------|-----------------|
+| `/comercial/sucursales/{server_id}` | `Sistema_Sucursales` |
+| `/comercial/metas/{server_id}` | `Sync_Metas_Comerciales` |
+| `/comercial/ticket-perfecto/{server_id}` | `Sync_Ticket_Perfecto` |
+| `/comercial/mesas/{server_id}` | `Sync_Mesas` |
+| `/comercial/detalle-movimientos/{server_id}` | `Sync_Movimientos_Detalle` |
+| `/comercial/precios-constantes/{server_id}` | `Sync_Precios_Historicos` |
+| `/comercial/reporte-pax/{server_id}` | `Sync_PAX_Detalle` |
+
+#### Validaciones:
+- ✅ Comercial V2 funciona sin regresiones
+- ✅ Tablero Ejecutivo funciona
+- ✅ Auth/RBAC funciona
+- ✅ Endpoints bloqueados devuelven error controlado
+
+#### Documentación:
+- `/app/docs/reports/FASE_A_P0_COMERCIAL_ROUTES_LIVE_A_SQL.md`
+
+---
+
 ### ✅ AUDITORÍA COMPLETA EDARSAHUB - COMPLETADA
 
 **Fecha:** 2026-05-26 (Sesión actual)

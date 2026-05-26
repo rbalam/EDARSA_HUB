@@ -160,6 +160,123 @@ from core.system_type_utils import (
 # Router - los endpoints serán migrados incrementalmente
 router = APIRouter(tags=["comercial"])
 
+# ============================================================================
+# FASE A-P0: GUARD RAIL PARA ENDPOINTS LIVE LEGACY
+# ============================================================================
+# FECHA: 2026-05-26
+# AUTORIZADO: Usuario confirmó inicio de FASE A-P0
+# 
+# MÁXIMA: EDARSAHUB SQL es el cerebro del sistema. No se permiten conexiones
+# LIVE para responder pantallas, dashboards, KPIs o reportes.
+# 
+# Este guard rail bloquea endpoints que aún usan conexiones LIVE a servidores
+# remotos (SoftRestaurant/MPRO) desde la UI. Los endpoints afectados devolverán
+# un error controlado LEGACY_LIVE_DISABLED hasta que se migre a tabla SQL.
+#
+# ENDPOINTS BLOQUEADOS:
+# - /comercial/sucursales/{server_id} - Requiere: Sistema_Sucursales
+# - /comercial/metas/{server_id} - Requiere: Sync_Metas_Comerciales (no existe)
+# - /comercial/ticket-perfecto/{server_id} - Requiere: Sync_Ticket_Perfecto (no existe)
+# - /comercial/mesas/{server_id} - Requiere: Sync_Mesas (no existe)
+# - /comercial/detalle-movimientos/{server_id} - Requiere: tabla de detalle
+# - /comercial/precios-constantes/{server_id} - Requiere: tablas de precios
+# - /comercial/reporte-pax/{server_id} - Requiere: Sync_PAX (no existe)
+#
+# ENDPOINTS PERMITIDOS (ya migrados a SQL-First):
+# - /comercial/dashboard/{server_id} - Usa EDARSAHUB vía get_dashboard_kpis_from_edarsahub
+# - /comercial/ventas-tiempo/{server_id} - Usa Sync_Ventas_PorHora
+# - /comercial/tablero-ejecutivo - Usa Comercial_KPIs_Diarios_v2
+# ============================================================================
+
+# Flag para habilitar/deshabilitar el guard rail LIVE
+# En producción debe ser True para bloquear endpoints LIVE
+ENABLE_LIVE_GUARD_RAIL = True
+
+# Endpoints que ESTÁN migrados a SQL-First (permitidos)
+ENDPOINTS_SQL_FIRST_MIGRADOS = {
+    '/comercial/dashboard',
+    '/comercial/ventas-tiempo',
+    '/comercial/tablero-ejecutivo',
+}
+
+# Endpoints que requieren tabla SQL que NO EXISTE aún
+ENDPOINTS_LIVE_LEGACY = {
+    '/comercial/sucursales': {
+        'tabla_requerida': 'Sistema_Sucursales',
+        'job_requerido': 'sync_sucursales',
+        'estado': 'LEGACY_TABLA_PARCIAL',  # Existe tabla pero no tiene datos de todas las unidades
+    },
+    '/comercial/metas': {
+        'tabla_requerida': 'Sync_Metas_Comerciales',
+        'job_requerido': 'sync_metas',
+        'estado': 'LEGACY_NO_TABLA',
+    },
+    '/comercial/ticket-perfecto': {
+        'tabla_requerida': 'Sync_Ticket_Perfecto',
+        'job_requerido': 'sync_ticket_perfecto',
+        'estado': 'LEGACY_NO_TABLA',
+    },
+    '/comercial/mesas': {
+        'tabla_requerida': 'Sync_Mesas',
+        'job_requerido': 'sync_mesas',
+        'estado': 'LEGACY_NO_TABLA',
+    },
+    '/comercial/detalle-movimientos': {
+        'tabla_requerida': 'Sync_Movimientos_Detalle',
+        'job_requerido': 'sync_movimientos',
+        'estado': 'LEGACY_NO_TABLA',
+    },
+    '/comercial/precios-constantes': {
+        'tabla_requerida': 'Sync_Precios_Historicos',
+        'job_requerido': 'sync_precios_historicos',
+        'estado': 'LEGACY_NO_TABLA',
+    },
+    '/comercial/reporte-pax': {
+        'tabla_requerida': 'Sync_PAX_Detalle',
+        'job_requerido': 'sync_pax',
+        'estado': 'LEGACY_NO_TABLA',
+    },
+}
+
+
+def check_live_guard_rail(endpoint_base: str, server_id: str = None) -> dict:
+    """
+    Verifica si un endpoint LIVE legacy debe ser bloqueado.
+    
+    Args:
+        endpoint_base: Ruta base del endpoint (sin server_id)
+        server_id: ID del servidor solicitado
+        
+    Returns:
+        None si el endpoint está permitido, o dict con error si está bloqueado
+    """
+    if not ENABLE_LIVE_GUARD_RAIL:
+        return None
+    
+    # Verificar si el endpoint está en la lista de legacy bloqueados
+    for legacy_path, config in ENDPOINTS_LIVE_LEGACY.items():
+        if endpoint_base.startswith(legacy_path):
+            logging.warning(
+                f"[LIVE-GUARD-RAIL] Endpoint bloqueado: {endpoint_base}/{server_id} - "
+                f"Estado: {config['estado']}, Requiere: {config['tabla_requerida']}"
+            )
+            return {
+                "source_status": "LEGACY_LIVE_DISABLED",
+                "source_message": (
+                    f"Este endpoint requiere conexión LIVE a servidor remoto. "
+                    f"EDARSAHUB SQL es el cerebro del sistema. "
+                    f"Para habilitar, crear tabla '{config['tabla_requerida']}' y job '{config['job_requerido']}'."
+                ),
+                "endpoint": endpoint_base,
+                "server_id": server_id,
+                "tabla_requerida": config['tabla_requerida'],
+                "job_requerido": config['job_requerido'],
+                "estado_migracion": config['estado'],
+                "data": None
+            }
+    
+    return None
+
 
 # ============================================================================
 # HELPER: Formato de fecha universal para SQL Server
@@ -1819,7 +1936,14 @@ async def obtener_sucursales(
     include_hidden: bool = Query(default=False, description="Incluir sucursales ocultas (para admin)"),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Obtiene las sucursales/empresas de un servidor, filtradas por configuración de visibilidad"""
+    """
+    Obtiene las sucursales/empresas de un servidor.
+    
+    FASE A-P0 (2026-05-26): Este endpoint requiere conexión LIVE para MPRO.
+    Para SoftRestaurant, devuelve el servidor como única sucursal (sin LIVE).
+    
+    GUARD RAIL: Bloqueado para MPRO hasta migrar a Sistema_Sucursales SQL.
+    """
     server = await get_server_by_id(server_id)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
@@ -1827,6 +1951,31 @@ async def obtener_sucursales(
     # BLINDAJE RBAC: Validar acceso unificado
     await validate_server_access_rbac(current_user, server_id)
     
+    # FASE A-P0: SoftRestaurant NO requiere LIVE (devuelve servidor como sucursal)
+    # Solo MPRO necesita consultar tabla remota
+    if is_softrestaurant_system(server.get('system_type')):
+        return {
+            "servidor": server['name'],
+            "system_type": server['system_type'],
+            "sucursales": [{"id": "all", "nombre": server['name']}],
+            "source_status": "SUCCESS",
+            "source_type": "NO_LIVE_REQUIRED"
+        }
+    
+    # FASE A-P0: GUARD RAIL para MPRO (requiere LIVE)
+    guard_result = check_live_guard_rail('/comercial/sucursales', server_id)
+    if guard_result:
+        # Devolver respuesta degradada con opción "Todas"
+        return {
+            "servidor": server['name'],
+            "system_type": server.get('system_type'),
+            "sucursales": [{"id": "all", "nombre": "Todas las sucursales"}],
+            "source_status": guard_result['source_status'],
+            "source_message": guard_result['source_message'],
+            "migracion_pendiente": guard_result['tabla_requerida']
+        }
+    
+    # CÓDIGO LEGACY (solo se ejecuta si ENABLE_LIVE_GUARD_RAIL = False)
     try:
         # FASE 3A.2: Migrado a helper centralizado
         if is_mpro_system(server.get('system_type')):
@@ -1887,13 +2036,9 @@ async def comercial_metas(
 ):
     """
     Metas de ventas por producto y vendedor.
-    Nota: Las metas se configuran externamente, aquí mostramos ventas reales.
     
-    RESPUESTA HOMOLOGADA:
-    - source_status: SUCCESS | NO_DATA | DEGRADED_CACHE | SOURCE_UNREACHABLE | ERROR
-    - cache_used: true/false
-    - last_successful_sync: timestamp si se usó cache
-    - data: {por_producto, por_vendedor}
+    FASE A-P0 (2026-05-26): GUARD RAIL LIVE
+    Este endpoint requiere conexión LIVE. Bloqueado hasta migrar a Sync_Metas_Comerciales.
     """
     from modules.comercial.cache_service import (
         SourceStatus, build_cache_key, get_cached_response, 
@@ -1911,6 +2056,17 @@ async def comercial_metas(
     # BLINDAJE RBAC: Validar acceso unificado
     await validate_server_access_rbac(current_user, server_id)
     
+    # FASE A-P0: GUARD RAIL LIVE
+    guard_result = check_live_guard_rail('/comercial/metas', server_id)
+    if guard_result:
+        return build_envelope_response(
+            source_status=SourceStatus.ERROR,
+            data={"por_producto": [], "por_vendedor": []},
+            source_message=guard_result['source_message'],
+            cache_used=False
+        )
+    
+    # CÓDIGO LEGACY (solo se ejecuta si ENABLE_LIVE_GUARD_RAIL = False)
     # Construir clave de cache
     # FASE 3A.3: Incluir system_type para evitar colisiones MPRO/SoftRestaurant
     hoy = datetime.now()
@@ -2160,13 +2316,9 @@ async def comercial_ticket_perfecto(
 ):
     """
     Análisis de ticket perfecto y rentabilidad por producto.
-    Solo SoftRestaurant tiene los datos necesarios.
     
-    RESPUESTA HOMOLOGADA:
-    - source_status: SUCCESS | NO_DATA | DEGRADED_CACHE | SOURCE_UNREACHABLE | ERROR
-    - cache_used: true/false
-    - last_successful_sync: timestamp si se usó cache
-    - data: {ticket, rentabilidad}
+    FASE A-P0 (2026-05-26): GUARD RAIL LIVE
+    Este endpoint requiere conexión LIVE. Bloqueado hasta migrar a Sync_Ticket_Perfecto.
     """
     from modules.comercial.cache_service import (
         SourceStatus, build_cache_key, get_cached_response, 
@@ -2184,6 +2336,17 @@ async def comercial_ticket_perfecto(
     # FASE 6-8: Validación centralizada de acceso
     await validate_server_access_rbac(current_user, server_id)
     
+    # FASE A-P0: GUARD RAIL LIVE
+    guard_result = check_live_guard_rail('/comercial/ticket-perfecto', server_id)
+    if guard_result:
+        return build_envelope_response(
+            source_status=SourceStatus.ERROR,
+            data={"ticket": {}, "rentabilidad": []},
+            source_message=guard_result['source_message'],
+            cache_used=False
+        )
+    
+    # CÓDIGO LEGACY (solo se ejecuta si ENABLE_LIVE_GUARD_RAIL = False)
     # Construir clave de cache
     # FASE 3A.3: Incluir system_type para evitar colisiones MPRO/SoftRestaurant
     hoy = datetime.now()
@@ -2607,6 +2770,9 @@ async def comercial_mesas(
 ):
     """
     Análisis de mesas y comensales.
+    
+    FASE A-P0 (2026-05-26): GUARD RAIL LIVE
+    Este endpoint requiere conexión LIVE. Bloqueado hasta migrar a Sync_Mesas.
     """
     server = await get_server_by_id(server_id)
     if not server:
@@ -2615,6 +2781,21 @@ async def comercial_mesas(
     # FASE 6-8: Validación centralizada de acceso
     await validate_server_access_rbac(current_user, server_id)
     
+    # FASE A-P0: GUARD RAIL LIVE
+    guard_result = check_live_guard_rail('/comercial/mesas', server_id)
+    if guard_result:
+        return {
+            "source_status": guard_result['source_status'],
+            "source_message": guard_result['source_message'],
+            "servidor": server['name'],
+            "sucursal": sucursal or server['name'],
+            "mesas_mes": [],
+            "mesas_hoy": [],
+            "pax_mesas_hoy": 0,
+            "ventas_mesas_hoy": 0
+        }
+    
+    # CÓDIGO LEGACY (solo se ejecuta si ENABLE_LIVE_GUARD_RAIL = False)
     # ARQUITECTURA: Obtener nombre de unidad desde EDARSAHUB (primario) o MongoDB (LEGACY_FALLBACK)
     nombre_unidad_mostrar, nombre_source = await get_sucursal_nombre(server_id, sucursal, server['name'])
     if nombre_source == 'MONGO_LEGACY_FALLBACK':
@@ -2884,7 +3065,9 @@ async def comercial_detalle_movimientos(
 ):
     """
     Detalle de movimientos para drill-down en KPIs.
-    Devuelve cheques/facturas individuales con su detalle.
+    
+    FASE A-P0 (2026-05-26): GUARD RAIL LIVE
+    Este endpoint requiere conexión LIVE. Bloqueado hasta migrar a Sync_Movimientos_Detalle.
     """
     server = await get_server_by_id(server_id)
     if not server:
@@ -2893,6 +3076,19 @@ async def comercial_detalle_movimientos(
     # FASE 6-8: Validación centralizada de acceso
     await validate_server_access_rbac(current_user, server_id)
     
+    # FASE A-P0: GUARD RAIL LIVE
+    guard_result = check_live_guard_rail('/comercial/detalle-movimientos', server_id)
+    if guard_result:
+        return {
+            "source_status": guard_result['source_status'],
+            "source_message": guard_result['source_message'],
+            "items": [],
+            "total": 0,
+            "page": page,
+            "limit": limit
+        }
+    
+    # CÓDIGO LEGACY (solo se ejecuta si ENABLE_LIVE_GUARD_RAIL = False)
     try:
         hoy = datetime.now()
         
@@ -3127,16 +3323,9 @@ async def ventas_precios_constantes(
 ):
     """
     Análisis de ventas valuando a precios constantes de un período base.
-    Permite comparar ventas eliminando el efecto inflacionario.
     
-    - periodo_actual: Mes(es) de ventas a analizar (ej: "2025-03" o "2025-01,2025-02,2025-03")
-    - periodo_base: Período de donde tomar los precios de referencia (ej: "2024-03")
-    - granularidad: Nivel de detalle (categoria, familia, producto)
-    - sucursal: ID de la sucursal a filtrar o 'all' para todas
-    
-    Productos In/Out:
-    - Nuevos (no existían en período base): Usan precio actual
-    - Descontinuados (no existen en período actual): Usan último precio conocido
+    FASE A-P0 (2026-05-26): GUARD RAIL LIVE
+    Este endpoint requiere conexión LIVE. Bloqueado hasta migrar a Sync_Precios_Historicos.
     """
     server = await get_server_by_id(server_id)
     if not server:
@@ -3145,6 +3334,26 @@ async def ventas_precios_constantes(
     # FASE 6-8: Validación centralizada de acceso
     await validate_server_access_rbac(current_user, server_id)
     
+    # FASE A-P0: GUARD RAIL LIVE
+    guard_result = check_live_guard_rail('/comercial/precios-constantes', server_id)
+    if guard_result:
+        return {
+            "source_status": guard_result['source_status'],
+            "source_message": guard_result['source_message'],
+            "periodo_actual": periodo_actual,
+            "periodo_base": periodo_base,
+            "granularidad": granularidad,
+            "data": [],
+            "resumen": {
+                "ventas_reales": 0,
+                "ventas_constantes": 0,
+                "variacion_real": 0,
+                "variacion_volumen": 0,
+                "inflacion_implicita": 0
+            }
+        }
+    
+    # CÓDIGO LEGACY (solo se ejecuta si ENABLE_LIVE_GUARD_RAIL = False)
     try:
         # Parsear períodos (pueden ser múltiples meses separados por coma)
         def parse_periodos(periodo_str):
@@ -3710,13 +3919,9 @@ async def comercial_reporte_pax(
 ):
     """
     Reporte de PAX con drill-down por vendedor o ticket.
-    Incluye comparativas vs día/mes/año anterior.
     
-    RESPUESTA HOMOLOGADA:
-    - source_status: SUCCESS | NO_DATA | DEGRADED_CACHE | SOURCE_UNREACHABLE | ERROR
-    - cache_used: true/false
-    - last_successful_sync: timestamp si se usó cache
-    - data: {items, resumen, comparativo, fecha, servidor}
+    FASE A-P0 (2026-05-26): GUARD RAIL LIVE
+    Este endpoint requiere conexión LIVE. Bloqueado hasta migrar a Sync_PAX_Detalle.
     """
     from modules.comercial.cache_service import (
         SourceStatus, build_cache_key, get_cached_response, 
@@ -3734,6 +3939,21 @@ async def comercial_reporte_pax(
     # FASE 6-8: Validación centralizada de acceso
     await validate_server_access_rbac(current_user, server_id)
     
+    # FASE A-P0: GUARD RAIL LIVE
+    guard_result = check_live_guard_rail('/comercial/reporte-pax', server_id)
+    if guard_result:
+        return build_envelope_response(
+            source_status=SourceStatus.ERROR,
+            data={
+                "items": [],
+                "resumen": {"pax_total": 0, "ventas_total": 0, "total_cheques": 0},
+                "comparativo": {"vs_dia_anterior": 0, "vs_mes_anterior": 0}
+            },
+            source_message=guard_result['source_message'],
+            cache_used=False
+        )
+    
+    # CÓDIGO LEGACY (solo se ejecuta si ENABLE_LIVE_GUARD_RAIL = False)
     # Fecha seleccionada o hoy
     if fecha:
         fecha_sel = datetime.strptime(fecha, '%Y-%m-%d')
