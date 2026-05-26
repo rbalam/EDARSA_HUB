@@ -42,6 +42,42 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
+### ✅ FASE A-P1: DISEÑO SYNC ENDPOINTS COMERCIAL LEGACY - COMPLETADO
+
+**Fecha:** 2026-05-26 (Sesión actual)
+
+#### Diagnóstico Completado:
+- 7 endpoints bloqueados auditados
+- Tablas existentes: `Sistema_Sucursales`, `Sistema_SucursalServidorMapeo`
+- 6 tablas faltantes identificadas con DDL propuesto
+
+#### Endpoint Desbloqueado:
+| Endpoint | Fuente SQL | Estado |
+|----------|------------|--------|
+| `/comercial/sucursales/{server_id}` | `Sistema_Sucursales` + `Sistema_SucursalServidorMapeo` | ✅ SQL-FIRST |
+
+**Respuesta del endpoint:**
+```json
+{
+  "source_status": "SUCCESS",
+  "source_type": "EDARSAHUB_SQL",
+  "source_message": "Datos desde Sistema_Sucursales"
+}
+```
+
+#### Endpoints Aún Bloqueados (6):
+1. `/comercial/metas/{server_id}` → Requiere `Sync_Metas_Comerciales`
+2. `/comercial/ticket-perfecto/{server_id}` → Requiere `Sync_Ticket_Perfecto`
+3. `/comercial/mesas/{server_id}` → Requiere `Sync_Mesas`
+4. `/comercial/reporte-pax/{server_id}` → Requiere `Sync_PAX_Detalle`
+5. `/comercial/precios-constantes/{server_id}` → Requiere `Sync_Precios_Historicos`
+6. `/comercial/detalle-movimientos/{server_id}` → Requiere `Sync_Movimientos_Detalle`
+
+#### Documentación:
+- `/app/docs/reports/FASE_A_P1_DISENO_SYNC_ENDPOINTS_COMERCIAL_LEGACY.md`
+
+---
+
 ### ✅ FASE A-P0: COMERCIAL ROUTES LIVE → SQL - COMPLETADO
 
 **Fecha:** 2026-05-26 (Sesión actual)

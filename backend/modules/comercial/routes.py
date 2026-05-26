@@ -200,12 +200,8 @@ ENDPOINTS_SQL_FIRST_MIGRADOS = {
 }
 
 # Endpoints que requieren tabla SQL que NO EXISTE aún
+# FASE A-P1: /comercial/sucursales REMOVIDO (migrado a SQL-First)
 ENDPOINTS_LIVE_LEGACY = {
-    '/comercial/sucursales': {
-        'tabla_requerida': 'Sistema_Sucursales',
-        'job_requerido': 'sync_sucursales',
-        'estado': 'LEGACY_TABLA_PARCIAL',  # Existe tabla pero no tiene datos de todas las unidades
-    },
     '/comercial/metas': {
         'tabla_requerida': 'Sync_Metas_Comerciales',
         'job_requerido': 'sync_metas',
@@ -1939,10 +1935,10 @@ async def obtener_sucursales(
     """
     Obtiene las sucursales/empresas de un servidor.
     
-    FASE A-P0 (2026-05-26): Este endpoint requiere conexión LIVE para MPRO.
-    Para SoftRestaurant, devuelve el servidor como única sucursal (sin LIVE).
-    
-    GUARD RAIL: Bloqueado para MPRO hasta migrar a Sistema_Sucursales SQL.
+    FASE A-P1 (2026-05-26): MIGRADO A SQL-FIRST
+    - Lee de Sistema_Sucursales + Sistema_SucursalServidorMapeo en EDARSAHUB
+    - CERO conexiones LIVE a servidores remotos
+    - Guard rail removido para este endpoint
     """
     server = await get_server_by_id(server_id)
     if not server:
@@ -1951,80 +1947,83 @@ async def obtener_sucursales(
     # BLINDAJE RBAC: Validar acceso unificado
     await validate_server_access_rbac(current_user, server_id)
     
-    # FASE A-P0: SoftRestaurant NO requiere LIVE (devuelve servidor como sucursal)
-    # Solo MPRO necesita consultar tabla remota
-    if is_softrestaurant_system(server.get('system_type')):
-        return {
-            "servidor": server['name'],
-            "system_type": server['system_type'],
-            "sucursales": [{"id": "all", "nombre": server['name']}],
-            "source_status": "SUCCESS",
-            "source_type": "NO_LIVE_REQUIRED"
-        }
-    
-    # FASE A-P0: GUARD RAIL para MPRO (requiere LIVE)
-    guard_result = check_live_guard_rail('/comercial/sucursales', server_id)
-    if guard_result:
-        # Devolver respuesta degradada con opción "Todas"
+    # FASE A-P1: LEER DESDE EDARSAHUB SQL (Sistema_Sucursales + mapeo)
+    try:
+        # Configuración EDARSAHUB directa
+        import os
+        edarsahub_host = os.environ.get('EDARSAHUB_HOST', '54.39.104.176')
+        edarsahub_port = int(os.environ.get('EDARSAHUB_PORT', '1433'))
+        edarsahub_database = os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
+        edarsahub_username = os.environ.get('EDARSAHUB_USERNAME', 'HRLectura')
+        edarsahub_password = os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        
+        # Query para obtener sucursales mapeadas al servidor
+        query_sucursales = f'''
+        SELECT 
+            ss.SucursalID as id,
+            ss.CodigoSucursal as codigo,
+            ss.NombreSucursal as nombre,
+            ss.EmpresaID,
+            sm.ServidorID,
+            sm.SucursalOrigenID
+        FROM Sistema_Sucursales ss
+        JOIN Sistema_SucursalServidorMapeo sm ON ss.SucursalID = sm.SucursalID
+        WHERE CAST(sm.ServidorID AS VARCHAR(50)) = '{server_id}'
+          AND ss.Activo = 1
+          AND sm.Activo = 1
+        ORDER BY ss.NombreSucursal
+        '''
+        
+        result = execute_sql_query(
+            edarsahub_host,
+            edarsahub_port,
+            edarsahub_database,
+            edarsahub_username,
+            edarsahub_password,
+            query_sucursales
+        ) or []
+        
+        if result:
+            # Hay sucursales mapeadas en SQL
+            sucursales = [
+                {
+                    "id": str(r.get('SucursalOrigenID') or r.get('id') or 'all'),
+                    "nombre": r.get('nombre', 'Sin nombre'),
+                    "codigo": r.get('codigo'),
+                    "empresa_id": r.get('EmpresaID')
+                }
+                for r in result
+            ]
+            
+            return {
+                "servidor": server['name'],
+                "system_type": server.get('system_type'),
+                "sucursales": sucursales,
+                "source_status": "SUCCESS",
+                "source_type": "EDARSAHUB_SQL",
+                "source_message": f"Datos desde Sistema_Sucursales ({len(sucursales)} sucursales)"
+            }
+        else:
+            # No hay sucursales mapeadas, devolver el servidor como única opción
+            return {
+                "servidor": server['name'],
+                "system_type": server.get('system_type'),
+                "sucursales": [{"id": "all", "nombre": server['name']}],
+                "source_status": "SUCCESS",
+                "source_type": "DEFAULT_SERVER",
+                "source_message": "Sin sucursales mapeadas en EDARSAHUB, usando servidor como única opción"
+            }
+            
+    except Exception as e:
+        logging.error(f"[SUCURSALES-SQL] Error leyendo de EDARSAHUB: {e}")
+        # Fallback: devolver servidor como única opción (NO usar LIVE)
         return {
             "servidor": server['name'],
             "system_type": server.get('system_type'),
-            "sucursales": [{"id": "all", "nombre": "Todas las sucursales"}],
-            "source_status": guard_result['source_status'],
-            "source_message": guard_result['source_message'],
-            "migracion_pendiente": guard_result['tabla_requerida']
-        }
-    
-    # CÓDIGO LEGACY (solo se ejecuta si ENABLE_LIVE_GUARD_RAIL = False)
-    try:
-        # FASE 3A.2: Migrado a helper centralizado
-        if is_mpro_system(server.get('system_type')):
-            # MPRO: Tabla sucursal (relacionada con venta por Sc_Cve_Sucursal)
-            query = """
-            SELECT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre 
-            FROM sucursal 
-            WHERE Es_Cve_Estado = 'AC' 
-            ORDER BY Sc_Descripcion
-            """
-        else:
-            # SoftRestaurant: No tiene múltiples sucursales, devolver el servidor como única opción
-            return {
-                "servidor": server['name'],
-                "sucursales": [{
-                    "id": "all",
-                    "nombre": server['name']
-                }]
-            }
-        
-        result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], query
-        ) or []
-        
-        sucursales = [{"id": r['id'], "nombre": r['nombre']} for r in result]
-        
-        # FILTRAR por configuración de visibilidad (si no es include_hidden)
-        # FASE 3A.2: Migrado a helper centralizado
-        if not include_hidden and is_mpro_system(server.get('system_type')):
-            config = await get_sucursales_visibles_config(server_id)
-            if config:  # Solo filtrar si hay configuración
-                sucursales = [s for s in sucursales if config.get(s['nombre'], True)]
-                logging.info(f"Sucursales filtradas por visibilidad: {len(sucursales)} de {len(result)}")
-        
-        # Agregar opción "Todas" al inicio
-        sucursales.insert(0, {"id": "all", "nombre": "Todas las sucursales"})
-        
-        return {
-            "servidor": server['name'],
-            "system_type": server['system_type'],
-            "sucursales": sucursales
-        }
-    except Exception as e:
-        logging.error(f"Error obteniendo sucursales: {str(e)}")
-        return {
-            "servidor": server['name'],
             "sucursales": [{"id": "all", "nombre": server['name']}],
-            "error": str(e)
+            "source_status": "DEGRADED",
+            "source_type": "FALLBACK_DEFAULT",
+            "source_message": f"Error SQL: {str(e)[:100]}"
         }
 
 
