@@ -124,6 +124,48 @@ Crear las tablas SQL faltantes para migrar fase2_operativo de MongoDB a EDARSAHU
 - `/app/docs/reports/FASE_B_P0_B_DDL_FASE2_OPERATIVO_SQL.md`
 - `/app/backend/scripts/ddl_fase2_operativo_tablas.sql`
 
+---
+
+### ✅ FASE B-P0-C: MIGRACIÓN base_repository.py A SQL - COMPLETADO
+
+**Fecha:** 2026-05-26
+
+#### Objetivo:
+Migrar el repositorio base de fase2_operativo de MongoDB a EDARSAHUB SQL Server.
+
+#### Archivos Creados/Modificados:
+| Archivo | Acción | Líneas |
+|---------|--------|--------|
+| `sql_base_repository.py` | CREADO | ~1200 |
+| `base_repository.py` | REESCRITO | 35 |
+| `__init__.py` | MODIFICADO | +15 |
+
+#### Nueva Arquitectura:
+- `SQLBaseRepository`: Clase base que conecta a EDARSAHUB SQL
+- `SQLCursor`: Simulador de cursor MongoDB encadenable
+- `BaseRepository`: Wrapper que ignora MongoDB y delega a SQL
+- `COLLECTION_TO_TABLE_MAP`: Mapeo de 18 colecciones
+
+#### Métodos Migrados (14):
+- `create()`, `get_by_id()`, `get_all()`, `update()`, `delete()`
+- `count()`, `exists()`, `find()`, `find_one()`, `aggregate()`
+- `update_one()`, `update_many()`, `delete_one()`, `find_one_and_update()`
+
+#### Validaciones:
+- ✅ Backend arranca sin error
+- ✅ Login funcional
+- ✅ `/api/v2/health` OK
+- ✅ `/api/v2/dashboard/resumen` OK (retorna datos vacíos correctamente)
+- ✅ `/api/v2/workflows` OK
+- ✅ `/api/v2/configuracion` OK (lee de SQL)
+- ✅ CERO MongoDB productivo en BaseRepository
+- ✅ CERO conexiones LIVE
+
+#### Documentación:
+- `/app/docs/reports/FASE_B_P0_C_BASE_REPOSITORY_SQL.md`
+
+
+
 
 
 ---

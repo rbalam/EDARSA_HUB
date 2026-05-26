@@ -2,10 +2,21 @@
 Repositories para Fase 2A - Módulo Operativo
 CAB-003 | EDARSA HUB
 
+FASE B-P0-C: Migrado a EDARSAHUB SQL Server
+- BaseRepository ahora usa SQLBaseRepository internamente
+- CERO MongoDB productivo
+- CERO conexiones LIVE
+
 Exporta todos los repositories del módulo para facilitar imports.
 """
 
-from .base_repository import BaseRepository
+from .base_repository import (
+    BaseRepository,
+    SQLBaseRepository,
+    SQLRepositoryNotImplementedError,
+    COLLECTION_TO_TABLE_MAP,
+    get_sql_repository,
+)
 from .workflow_repository import WorkflowRepository
 from .detalle_diferencias_repository import DetalleDiferenciasRepository
 from .tarea_repository import TareaRepository
@@ -19,7 +30,13 @@ from .cargos_repository import CargosEconomicosRepository, CargosLogRepository
 
 
 __all__ = [
+    # SQL Base (FASE B-P0-C)
     "BaseRepository",
+    "SQLBaseRepository",
+    "SQLRepositoryNotImplementedError",
+    "COLLECTION_TO_TABLE_MAP",
+    "get_sql_repository",
+    # Repositories específicos
     "WorkflowRepository",
     "DetalleDiferenciasRepository",
     "TareaRepository",
