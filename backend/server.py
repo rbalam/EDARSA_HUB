@@ -9,14 +9,69 @@ if hasattr(sys.stdout, 'reconfigure'):
     except Exception:
         pass
 
+# ==============================================================================
+# CARGA DE VARIABLES DE ENTORNO - DEBE ESTAR ANTES DE CUALQUIER OTRO IMPORT
+# ==============================================================================
+# P0-INCIDENTE-SERVER_SECRET_KEY: load_dotenv() DEBE ejecutarse antes de que
+# cualquier módulo intente leer variables de entorno (especialmente secret_manager)
+from pathlib import Path
+from dotenv import load_dotenv
+
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+
+# ==============================================================================
+# VALIDACIÓN DE SERVER_SECRET_KEY - Entorno Preview/Staging/Production
+# ==============================================================================
+# MÁXIMA: SERVER_SECRET_KEY es obligatoria para cifrado de credenciales.
+# - No se permite fallback a llave insegura
+# - No se genera llave nueva en runtime si hay datos cifrados
+# - Solo se loggea fingerprint, NUNCA la llave real
+# ==============================================================================
+def _validate_server_secret_key():
+    """
+    Valida que SERVER_SECRET_KEY esté configurada correctamente.
+    Solo loggea fingerprint seguro, NUNCA la llave real.
+    """
+    import hashlib
+    key = os.environ.get('SERVER_SECRET_KEY')
+    
+    # Determinar ambiente
+    app_url = os.environ.get('APP_URL', '')
+    is_preview = 'preview' in app_url.lower()
+    is_production = 'production' in app_url.lower() or (app_url and 'preview' not in app_url.lower() and 'localhost' not in app_url.lower())
+    
+    if key:
+        # Calcular fingerprint seguro (primeros 6 chars del hash SHA256)
+        fingerprint = hashlib.sha256(key.encode()).hexdigest()[:6]
+        print(f"[ENCRYPTION] SERVER_SECRET_KEY loaded: true")
+        print(f"[ENCRYPTION] Key fingerprint: {fingerprint}")
+        return True
+    else:
+        # En preview/staging/production, la ausencia de SERVER_SECRET_KEY es CRÍTICA
+        if is_preview or is_production:
+            print("[ENCRYPTION] ⚠️  WARNING: SERVER_SECRET_KEY not configured")
+            print("[ENCRYPTION] Encrypted credentials will NOT be decryptable")
+            print("[ENCRYPTION] Jobs/syncs that require credentials may fail")
+            # No levantar error para no romper el servidor, pero advertir claramente
+            return False
+        else:
+            # En desarrollo local sin datos reales, permitir sin error
+            print("[ENCRYPTION] SERVER_SECRET_KEY not configured (development mode)")
+            return False
+
+# Ejecutar validación al inicio
+_ENCRYPTION_AVAILABLE = _validate_server_secret_key()
+
+# ==============================================================================
+# IMPORTS PRINCIPALES (después de cargar .env)
+# ==============================================================================
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, BackgroundTasks, UploadFile, File, Query, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
-from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 # MongoDB import movido a bloque condicional más abajo
 import logging
-from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Dict, Any
 import uuid
@@ -40,9 +95,6 @@ import base64
 from catalogo.consultas_mpro import CONSULTAS_MPRO, ESTRUCTURA_TABLAS_MPRO
 from catalogo.consultas_softrestaurant import CONSULTAS_SOFTRESTAURANT, ESTRUCTURA_TABLAS_SOFTRESTAURANT
 from catalogo.catalogo_consultas import CATALOGO_CONSULTAS, get_consultas_por_categoria as catalogo_get_consultas, get_categorias as catalogo_get_categorias, preparar_sql as catalogo_preparar_sql
-
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
 
 # Logger temprano para mensajes de inicio
 logger = logging.getLogger(__name__)

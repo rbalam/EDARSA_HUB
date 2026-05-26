@@ -19,6 +19,55 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
+### ✅ INCIDENTE P0: SERVER_SECRET_KEY PREVIEW - RESUELTO
+
+**Fecha:** 2026-05-26 (Sesión actual)
+
+#### Problema:
+`load_dotenv()` se ejecutaba después de los imports, causando que `SERVER_SECRET_KEY` no estuviera disponible cuando los módulos intentaban leerla.
+
+#### Solución:
+- Movido `load_dotenv()` al inicio absoluto de `server.py` (antes de cualquier import)
+- Agregada validación de startup con fingerprint seguro (no expone la llave)
+- Logs de confirmación: `[ENCRYPTION] SERVER_SECRET_KEY loaded: true`
+
+#### Validaciones:
+- ✅ `is_encryption_available() = True`
+- ✅ Cifrado/descifrado funcionando
+- ✅ Credenciales de servidores descifrables
+- ✅ No se expone la llave en logs ni frontend
+
+#### Documentación:
+- `/app/docs/reports/INCIDENTE_SERVER_SECRET_KEY_PREVIEW_CONFIGURACION.md`
+
+---
+
+### ✅ AUDITORÍA COMPLETA EDARSAHUB - COMPLETADA
+
+**Fecha:** 2026-05-26 (Sesión actual)
+
+#### Hallazgos:
+| Categoría | Cantidad | Estado |
+|-----------|----------|--------|
+| Menús con conexiones LIVE | 12+ | 🔴 Requiere migración |
+| Módulos con MongoDB activo | 5 | 🔴 Requiere migración |
+| Endpoints con server_id remoto | 10+ | 🟡 Deprecar progresivamente |
+| Módulos SQL-Only correctos | 8+ | ✅ OK |
+
+#### Documentación Generada:
+- `/app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md`
+- `/app/docs/reports/MATRIZ_MENU_ENDPOINT_TABLA_SYNC_EDARSAHUB.csv`
+
+#### Plan de Corrección Propuesto:
+- **FASE A**: Eliminar conexiones LIVE en dashboards (P0)
+- **FASE B**: Eliminar MongoDB en módulos críticos (P0-P1)
+- **FASE C**: Crear jobs de sincronización faltantes (P1)
+- **FASE D**: Normalizar filtros selectedServer (P2)
+- **FASE E**: Crear tablas scheduler SQL (P1)
+- **FASE F**: Implementar guard rails (P2)
+
+---
+
 ### ✅ REFACTOR: Eliminación Hardcodeo RBAC + Normalización de Texto - COMPLETADO
 
 **Fecha:** 2026-05-26 (Sesión actual)
