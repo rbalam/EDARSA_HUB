@@ -19,6 +19,53 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 
 ---
 
+### ✅ REFACTOR: Eliminación Hardcodeo RBAC + Normalización de Texto - COMPLETADO
+
+**Fecha:** 2026-05-26 (Sesión actual)
+
+#### Problema 1: Hardcodeo de Roles SuperAdmin
+La función `get_unidades_permitidas_v2` tenía roles hardcodeados: `['SuperAdministrador', 'Director']`.
+
+#### Solución:
+- **Nuevo módulo**: `/app/backend/core/rbac_helper_sql.py`
+- Carga roles desde `Usuario_Roles` en SQL
+- Determina acceso total por `NivelJerarquia >= 80`
+- Cache con TTL de 5 minutos
+- Funciones: `has_full_access()`, `get_roles_with_full_access()`, `get_role_names_with_full_access()`
+
+#### Problema 2: Duplicados por Acentos en Nombres
+Jobs de sincronización insertaban nombres con acentos inconsistentes (ej: "MÉRIDA" vs "MERIDA").
+
+#### Solución:
+- **Nuevo módulo**: `/app/backend/core/text_normalizer.py`
+- Funciones: `remove_accents()`, `normalize_unidad_nombre()`, `ensure_canonical_name()`
+- Catálogo de nombres canónicos oficiales sin acentos
+- Integración automática en `upsert_kpi_diario()` del repositorio de KPIs
+- Fix en fallback de jobs: nombres sin acentos
+
+#### Archivos Modificados:
+- `/app/backend/modules/comercial_v2/routes.py` (get_unidades_permitidas_v2)
+- `/app/backend/modules/comercial_v2/repository_comercial_edarsahub.py` (upsert_kpi_diario)
+- `/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py` (fallback sin acentos)
+
+#### Archivos Creados:
+- `/app/backend/core/rbac_helper_sql.py`
+- `/app/backend/core/text_normalizer.py`
+
+#### Validación:
+```bash
+# Test normalización
+remove_accents('130° MÉRIDA') = '130° MERIDA' ✓
+is_same_unidad('130° MÉRIDA', '130° MERIDA') = True ✓
+
+# Test RBAC dinámico
+Roles con acceso total: {'SUPERADMIN', 'DIRECCION'} ✓
+has_full_access(SuperAdministrador) = True ✓
+has_full_access(Operador) = False ✓
+```
+
+---
+
 ### ✅ DATA-QUALITY-130MID-001: Unificación Mérida (Duplicados por Acentos) - DIAGNOSTICADO
 
 **Fecha:** 2026-05-26 (Sesión actual)

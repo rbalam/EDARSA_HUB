@@ -111,11 +111,13 @@ def _get_fallback_unidades() -> tuple:
     """
     Fallback de última línea con códigos canónicos oficiales.
     Solo se usa si falla la conexión a EDARSAHUB.
+    
+    FIX 2026-05-26: Nombres sin acentos para evitar duplicados.
     """
     unidades_sr = [
         {
             "unidad_negocio_id": "130MID",  # Código canónico oficial
-            "nombre": "130° MÉRIDA",
+            "nombre": "130° MERIDA",  # Sin acento para consistencia
             "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
             "sucursal_id": "DEFAULT",
             "sistema": "SoftRestaurant"

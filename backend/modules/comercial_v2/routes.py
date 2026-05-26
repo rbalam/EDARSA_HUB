@@ -478,16 +478,20 @@ async def get_unidades_permitidas_v2(current_user: dict) -> List[str]:
     FUENTE: Unidades_Negocio.codigo
     CÓDIGOS: 130MID, 130QRO, CIENFUEGOS, ESTELAR, ORIGEN
     
+    FIX 2026-05-26: Eliminado hardcodeo de roles. Ahora usa RBAC dinámico SQL.
+    Los roles con acceso total se determinan por NivelJerarquia >= 80 en Usuario_Roles.
+    
     MÁXIMA: EDARSAHUB es el cerebro del sistema.
     """
+    # Import local para evitar dependencias circulares
+    from core.rbac_helper_sql import has_full_access
+    
     # Códigos canónicos oficiales (desde EDARSAHUB)
     CODIGOS_CANONICOS_OFICIALES = ['CIENFUEGOS', 'ESTELAR', '130MID', '130QRO', 'ORIGEN']
     
     try:
-        user_role = current_user.get('role')
-        
-        # Si es SuperAdmin o Director, dar acceso a todas las unidades
-        if user_role in ['SuperAdministrador', 'Director']:
+        # RBAC dinámico: Verificar si el usuario tiene acceso total (NivelJerarquia >= 80)
+        if has_full_access(current_user):
             return CODIGOS_CANONICOS_OFICIALES
         
         # Obtener unidades asignadas al usuario desde el contexto

@@ -9,6 +9,9 @@ IMPORTANTE:
 - Este repositorio SOLO escribe en tablas con sufijo _v2
 - NO toca las tablas existentes (Comercial_KPIs_Historico, etc.)
 - Usa upsert idempotente basado en hash_origen
+
+FIX 2026-05-26: Normalización automática de nombres (elimina acentos)
+para prevenir duplicados por variantes de caracteres especiales.
 """
 
 import uuid
@@ -18,6 +21,7 @@ from typing import Dict, Any, Optional, List
 import logging
 
 from core.db import execute_sql_query
+from core.text_normalizer import normalize_unidad_nombre, ensure_canonical_name
 from .schemas import (
     KPIsDiariosV2,
     VentasDiaAbiertasV2,
@@ -148,8 +152,15 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
     3. Si existe con diferente hash → UPDATE con version++
     4. Si no existe → INSERT
     
+    FIX 2026-05-26: Normaliza automáticamente unidad_negocio_nombre para
+    prevenir duplicados por acentos (ej: "MÉRIDA" -> "MERIDA").
+    
     Retorna: {'action': 'INSERT'|'UPDATE'|'SKIP', 'id': uuid}
     """
+    # NORMALIZACIÓN: Asegurar nombre canónico sin acentos
+    nombre_normalizado = ensure_canonical_name(kpi.unidad_negocio_id, kpi.unidad_negocio_nombre)
+    sucursal_normalizada = normalize_unidad_nombre(kpi.sucursal_nombre) if kpi.sucursal_nombre else None
+    
     # Verificar si existe
     check_query = f"""
     SELECT id, hash_origen, version 
@@ -205,10 +216,10 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
         ) VALUES (
             '{new_id}', 
             '{kpi.unidad_negocio_id}', 
-            '{kpi.unidad_negocio_nombre}',
+            '{nombre_normalizado}',
             '{kpi.server_id}', 
             '{kpi.sucursal_id}',
-            {f"'{kpi.sucursal_nombre}'" if kpi.sucursal_nombre else 'NULL'},
+            {f"'{sucursal_normalizada}'" if sucursal_normalizada else 'NULL'},
             '{kpi.sistema_origen}',
             '{kpi.fecha_operacion.isoformat()}',
             {kpi.anio}, {kpi.mes}, {kpi.dia},
