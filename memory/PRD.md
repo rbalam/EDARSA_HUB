@@ -405,6 +405,63 @@ Services: 16/17 LIMPIOS ✅ (94%)
 - `/app/docs/reports/FASE_B_P1_E_P2_REPOSITORIES_SERVICES_SQL.md`
 
 
+---
+
+### ✅ FASE B-P2-B: MIGRACIÓN automatizacion_compras_service.py - COMPLETADO
+
+**Fecha:** 2026-05-26
+
+#### Objetivo:
+Migrar el último servicio con dependencias MongoDB a SQL Server EDARSAHUB.
+
+#### Antes (MongoDB):
+- 5 referencias `self.db.*`
+- 13 referencias `.collection`
+- 3 colecciones directas
+
+#### Después (SQL):
+- 0 referencias MongoDB
+- Usa `SQLBaseRepository` para todas las operaciones
+- Tablas SQL: `Operativo_TareasCompras`, `Operativo_BitacoraCompras`, `Operativo_PedidosProcesados`
+
+#### Resultado:
+```
+Servicios fase2_operativo: 17/17 LIMPIOS ✅ (100%)
+```
+
+#### Documentación:
+- `/app/docs/reports/FASE_B_P2_B_DDL_COMERCIAL_SQL.md`
+
+
+---
+
+### ✅ DDL COMERCIAL: TABLAS SYNC FALTANTES - DISEÑADO
+
+**Fecha:** 2026-05-26
+
+#### Objetivo:
+Diseñar tablas SQL para migrar 6 endpoints comerciales LIVE a arquitectura NO-LIVE.
+
+#### Tablas Diseñadas:
+
+| Tabla | Endpoint | Estado |
+|-------|----------|--------|
+| `Sync_Metas_Comerciales` | `/comercial/metas` | DDL Listo |
+| `Sync_Ticket_Perfecto` | `/comercial/ticket-perfecto` | DDL Listo |
+| `Sync_Mesas` | `/comercial/mesas` | DDL Listo |
+| `Sync_Movimientos_Detalle` | `/comercial/detalle-movimientos` | DDL Listo |
+| `Sync_Precios_Historicos` | `/comercial/precios-constantes` | DDL Listo |
+| `Sync_PAX_Detalle` | `/comercial/reporte-pax` | DDL Listo |
+
+#### Script DDL:
+- `/app/backend/scripts/ddl_sync_comercial_tablas.sql`
+- Idempotente (usa `IF OBJECT_ID IS NULL`)
+- Incluye índices optimizados
+
+#### Próximos Pasos:
+1. Ejecutar DDL en EDARSAHUB (requiere DBA)
+2. Crear Jobs de sincronización
+3. Migrar endpoints a SQL-First
 
 
 ---

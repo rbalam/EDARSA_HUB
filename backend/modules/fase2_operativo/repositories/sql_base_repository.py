@@ -50,6 +50,11 @@ COLLECTION_TO_TABLE_MAP = {
     
     # FASE B-P1-E: Mapeos adicionales
     "server_sucursales_config": "Sistema_SucursalServidorMapeo",
+    # FASE B-P2-B: Automatización Compras
+    "automatizaciones_operativas_compras": "Operativo_TareasCompras",
+    "automatizaciones_bitacora": "Operativo_BitacoraCompras",
+    "pedidos_procesados_automatizacion": "Operativo_PedidosProcesados",
+    "inventarios_fisicos_procesados": "Compras_Inventarios_Fisicos_Sync",
 }
 
 # Mapeo de campos MongoDB → SQL para cada tabla
