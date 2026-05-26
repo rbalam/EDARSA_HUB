@@ -17783,6 +17783,12 @@ from api.admin_scheduler_resync import router as admin_resync_router
 app.include_router(admin_resync_router, tags=["Admin - Scheduler Resync"])
 logger.info("Consola Admin Scheduler Resync registrada")
 
+# ============= LIMPIEZA DE CACHÉ PREVIEW =============
+# P0-CACHE-PREVIEW: Limpieza automática de cachés en modo preview
+from api.admin_cache import router as admin_cache_router
+app.include_router(admin_cache_router, tags=["Admin - Cache Management"])
+logger.info("Admin Cache Management registrado")
+
 # ============= CENTRO DE CONTROL EDARSA =============
 # Sistema proactivo de observabilidad y detección de regresiones
 # Documentación: /app/docs/CENTRO_CONTROL_EDARSA.md

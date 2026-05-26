@@ -9,14 +9,19 @@
  * - El token NUNCA se guarda en localStorage/sessionStorage (seguridad XSS)
  * - Solo se cachea 'user' para UI mientras se verifica con servidor
  * 
+ * P0-CACHE-PREVIEW:
+ * - En modo preview, limpia cachés automáticamente al iniciar
+ * - Evita estados corruptos de filtros, unidades, servidores
+ * 
  * Uso:
  *   import { useAuth } from '@/contexts/AuthContext';
  *   const { user, login, logout, isAuthenticated } = useAuth();
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { getSessionUser, setSessionUser, clearSession } from '../services/authStorage';
 import api, { setMemoryToken, clearMemoryToken } from '../lib/api';
+import { isPreviewMode, clearPreviewFrontendCache, clearCacheOnLogout, clearPreviewBackendCache } from '../lib/previewCacheUtils';
 
 // Crear el contexto
 const AuthContext = createContext(null);
@@ -28,6 +33,23 @@ export function AuthProvider({ children }) {
   // Estado del usuario (cache para UI)
   const [user, setUser] = useState(() => getSessionUser());
   const [loading, setLoading] = useState(true);
+  const cacheResetDone = useRef(false);
+
+  /**
+   * P0-CACHE-PREVIEW: Limpiar cachés al montar en modo preview
+   */
+  useEffect(() => {
+    const initPreviewCache = async () => {
+      if (isPreviewMode() && !cacheResetDone.current) {
+        console.log('[PREVIEW_CACHE_RESET] Initializing cache cleanup on app mount...');
+        const result = await clearPreviewFrontendCache({ force: false });
+        console.log('[PREVIEW_CACHE_RESET] Initial cleanup result:', result);
+        cacheResetDone.current = true;
+      }
+    };
+    
+    initPreviewCache();
+  }, []);
 
   /**
    * Verificar sesión al montar
@@ -49,6 +71,16 @@ export function AuthProvider({ children }) {
         // Esto permite que las llamadas API funcionen sin cookies (CORS fallback)
         if (serverUser.token) {
           setMemoryToken(serverUser.token);
+        }
+        
+        // P0-CACHE-PREVIEW: Limpiar caché del backend si es admin en preview
+        if (isPreviewMode() && (serverUser.role === 'SuperAdministrador' || serverUser.role === 'Administrador')) {
+          try {
+            await clearPreviewBackendCache(api);
+          } catch (e) {
+            // No es crítico si falla
+            console.debug('[PREVIEW_CACHE_RESET] Backend cache clear skipped:', e.message);
+          }
         }
       } catch (error) {
         // Sin sesión válida o error de conexión
@@ -93,8 +125,14 @@ export function AuthProvider({ children }) {
   /**
    * Login legacy - Para compatibilidad con Login.js actual
    * Recibe token y user directamente
+   * P0-CACHE-PREVIEW: Limpia cachés antes de cargar datos frescos
    */
-  const loginWithData = useCallback((token, userData) => {
+  const loginWithData = useCallback(async (token, userData) => {
+    // P0-CACHE-PREVIEW: Limpiar cachés antes de login para estado limpio
+    if (isPreviewMode()) {
+      await clearPreviewFrontendCache({ force: true });
+    }
+    
     // Guardar token en memoria como fallback para CORS
     if (token) {
       setMemoryToken(token);
@@ -102,14 +140,29 @@ export function AuthProvider({ children }) {
     // Cachear user para UI
     setSessionUser(userData);
     setUser(userData);
+    
+    // P0-CACHE-PREVIEW: Intentar limpiar caché del backend
+    if (isPreviewMode() && (userData.role === 'SuperAdministrador' || userData.role === 'Administrador')) {
+      try {
+        await clearPreviewBackendCache(api);
+      } catch (e) {
+        console.debug('[PREVIEW_CACHE_RESET] Backend cache clear on login skipped:', e.message);
+      }
+    }
   }, []);
 
   /**
    * Logout - Limpia sesión llamando al backend
    * FASE AUTH-SECURITY-01: El backend elimina la cookie httpOnly
+   * P0-CACHE-PREVIEW: Limpia cachés en modo preview
    */
   const logout = useCallback(async () => {
     try {
+      // P0-CACHE-PREVIEW: Limpiar cachés antes de logout
+      if (isPreviewMode()) {
+        clearCacheOnLogout();
+      }
+      
       // Llamar al backend para eliminar la cookie httpOnly
       await api.post('/auth/logout');
     } catch (error) {
