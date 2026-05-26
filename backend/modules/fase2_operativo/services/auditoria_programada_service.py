@@ -253,13 +253,10 @@ class AuditoriaProgramadaService:
             "observaciones": f"Generado automáticamente - {auditoria['nombre']}"
         }
         
-        # En modo SQL-only, omitir inserción en MongoDB
-        if self._is_stub:
-            logger.info(f"[AUDITORIA_PROG] Modo SQL-only: workflow no insertado en MongoDB")
-            return workflow_data["id"]
-        
-        # Inserción directa con PyMongo (sync) para evitar conflicto async/sync
-        self.db.workflow_inventarios.insert_one(workflow_data)
+        # FASE B-P2: Usar repositorio SQL para crear workflow
+        from ..repositories.sql_base_repository import SQLBaseRepository
+        workflow_repo = SQLBaseRepository("workflow_inventarios")
+        workflow_repo.insert_one(workflow_data)
         logger.info(f"Workflow creado desde auditoría programada: {workflow_data['id']}")
         
         return workflow_data["id"]

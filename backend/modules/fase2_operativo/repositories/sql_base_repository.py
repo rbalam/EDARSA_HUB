@@ -44,8 +44,12 @@ COLLECTION_TO_TABLE_MAP = {
     "auditoria_compras_bitacora": "Operativo_BitacoraCompras",
     "pedidos_procesados_automatizacion": "Operativo_PedidosProcesados",
     "auditorias_programadas": "Operativo_AuditoriasProgramadas",
+    "auditorias_programadas_log": "Operativo_AuditoriasProgramadas",  # Log usa misma tabla
     "documentos_generados": "Operativo_DocumentosGenerados",
     "scheduler_job_logs": "Scheduler_BitacoraJobs",
+    
+    # FASE B-P1-E: Mapeos adicionales
+    "server_sucursales_config": "Sistema_SucursalServidorMapeo",
 }
 
 # Mapeo de campos MongoDB → SQL para cada tabla

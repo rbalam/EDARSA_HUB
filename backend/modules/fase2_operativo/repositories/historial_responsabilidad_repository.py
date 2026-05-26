@@ -1,30 +1,41 @@
 """
-Repositorio para responsabilidad_historial
+Repositorio para responsabilidad_historial - VERSIÓN SQL
 CAB-003 | EDARSA HUB - Fase 2C.2
 
-Gestiona el historial de transiciones de responsabilidad económica.
+FASE B-P1-E: Migrado a EDARSAHUB SQL Server
+- CERO MongoDB productivo
+- SQL explícito contra Operativo_HistorialCargos
 """
 from typing import Optional, List, Dict
 from datetime import datetime, timezone
-from .base_repository import BaseRepository
+import uuid
+import json
+import logging
+
+from .sql_base_repository import SQLBaseRepository
+
+logger = logging.getLogger(__name__)
 
 
-class HistorialResponsabilidadRepository(BaseRepository):
-    """Repository para la colección responsabilidad_historial."""
+class HistorialResponsabilidadRepository(SQLBaseRepository):
+    """
+    Repository para la tabla Operativo_HistorialCargos.
+    Gestiona el historial de transiciones de responsabilidad económica.
+    Migrado de MongoDB a SQL Server EDARSAHUB.
+    """
     
-    def __init__(self, db):
-        super().__init__(db, "responsabilidad_historial")
-        self._crear_indices()
+    def __init__(self, db=None):
+        """
+        Inicializa el repository SQL.
+        Args:
+            db: IGNORADO - Solo para compatibilidad. Todo va a SQL.
+        """
+        super().__init__("responsabilidad_historial")
+        logger.info(f"[HISTORIAL_RESP_REPO] Inicializado con SQL → {self.table_name}")
     
     def _crear_indices(self):
-        """Crea índices necesarios para la colección."""
-        try:
-            self.collection.create_index("responsabilidad_id", name="idx_responsabilidad_id")
-            self.collection.create_index("fecha", name="idx_fecha")
-            self.collection.create_index("usuario_id", name="idx_usuario_id")
-            self.collection.create_index("accion", name="idx_accion")
-        except Exception:
-            pass  # Índices ya existen
+        """DEPRECATED: Índices manejados por DDL de SQL Server."""
+        pass
     
     async def registrar_transicion(
         self,
@@ -41,41 +52,64 @@ class HistorialResponsabilidadRepository(BaseRepository):
     ) -> Dict:
         """
         Registra una transición de estado en el historial.
-        
-        Args:
-            transicion_id: ID único de la transición
-            responsabilidad_id: ID del registro de responsabilidad
-            accion: Acción ejecutada (PROPONER, APROBAR, etc.)
-            estado_anterior: Estado antes de la transición
-            estado_nuevo: Estado después de la transición
-            usuario_id: ID del usuario que ejecutó la acción
-            usuario_rol: Rol del usuario
-            comentario: Comentario obligatorio
-            monto_al_momento: Monto propuesto al momento de la transición
-            motivo_codigo: Código de motivo predefinido (opcional)
-            
-        Returns:
-            Registro de historial creado
         """
         now = datetime.now(timezone.utc)
+        historial_id = transicion_id or str(uuid.uuid4()).upper()
         
-        documento = {
-            "id": transicion_id,
+        # Construir detalle JSON
+        detalle_info = {
             "responsabilidad_id": responsabilidad_id,
-            "accion": accion,
-            "estado_anterior": estado_anterior,
-            "estado_nuevo": estado_nuevo,
-            "usuario_id": usuario_id,
-            "usuario_rol": usuario_rol,
-            "comentario": comentario,
-            "motivo_codigo": motivo_codigo,
             "monto_al_momento": monto_al_momento,
-            "fecha": now,
-            "fecha_creacion": now
+            "motivo_codigo": motivo_codigo,
+            "comentario": comentario,
         }
+        detalle_str = json.dumps(detalle_info, ensure_ascii=False)
         
-        self.collection.insert_one(documento)
-        return self._serialize_id(documento)
+        sql = f"""
+            INSERT INTO {self.table_name} 
+            (HistorialID, CargoID, Accion, UsuarioID, UsuarioNombre, Detalle, EstadoAnterior, EstadoNuevo, Fecha)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        
+        params = (
+            historial_id,
+            responsabilidad_id,  # Usamos CargoID para ResponsabilidadID
+            accion,
+            usuario_id,
+            usuario_rol or "",
+            detalle_str,
+            estado_anterior,
+            estado_nuevo,
+            now,
+        )
+        
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute(sql, params)
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"[HISTORIAL_RESP_REPO] Transición registrada: {accion} sobre {responsabilidad_id}")
+            
+            return {
+                "id": historial_id,
+                "responsabilidad_id": responsabilidad_id,
+                "accion": accion,
+                "estado_anterior": estado_anterior,
+                "estado_nuevo": estado_nuevo,
+                "usuario_id": usuario_id,
+                "usuario_rol": usuario_rol,
+                "comentario": comentario,
+                "motivo_codigo": motivo_codigo,
+                "monto_al_momento": monto_al_momento,
+                "fecha": now.isoformat(),
+            }
+            
+        except Exception as e:
+            logger.error(f"[HISTORIAL_RESP_REPO] Error registrar_transicion: {e}")
+            raise
     
     async def get_by_responsabilidad(
         self,
@@ -84,39 +118,54 @@ class HistorialResponsabilidadRepository(BaseRepository):
     ) -> List[Dict]:
         """
         Obtiene el historial de transiciones de una responsabilidad.
-        
-        Args:
-            responsabilidad_id: ID del registro de responsabilidad
-            limit: Límite de registros
-            
-        Returns:
-            Lista de transiciones ordenadas por fecha descendente
         """
-        cursor = self.collection.find(
-            {"responsabilidad_id": responsabilidad_id}
-        ).sort("fecha", -1).limit(limit)
+        sql = f"""
+            SELECT TOP {limit} * FROM {self.table_name}
+            WHERE CargoID = %s
+            ORDER BY Fecha DESC
+        """
         
-        return [self._serialize_id(doc) for doc in cursor]
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute(sql, (responsabilidad_id,))
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            return [self._row_to_historial_dict(row) for row in rows]
+            
+        except Exception as e:
+            logger.error(f"[HISTORIAL_RESP_REPO] Error get_by_responsabilidad: {e}")
+            return []
     
     async def get_ultima_transicion(self, responsabilidad_id: str) -> Optional[Dict]:
         """
         Obtiene la última transición de una responsabilidad.
-        
-        Args:
-            responsabilidad_id: ID del registro de responsabilidad
-            
-        Returns:
-            Última transición o None
         """
-        doc = self.collection.find_one(
-            {"responsabilidad_id": responsabilidad_id},
-            sort=[("fecha", -1)]
-        )
-        return self._serialize_id(doc) if doc else None
+        sql = f"""
+            SELECT TOP 1 * FROM {self.table_name}
+            WHERE CargoID = %s
+            ORDER BY Fecha DESC
+        """
+        
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute(sql, (responsabilidad_id,))
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            
+            return self._row_to_historial_dict(row) if row else None
+            
+        except Exception as e:
+            logger.error(f"[HISTORIAL_RESP_REPO] Error get_ultima_transicion: {e}")
+            return None
     
     async def contar_transiciones(self, responsabilidad_id: str) -> int:
         """Cuenta las transiciones de una responsabilidad."""
-        return self.collection.count_documents({"responsabilidad_id": responsabilidad_id})
+        return self.count_documents({"cargo_id": responsabilidad_id})
     
     async def get_transiciones_por_usuario(
         self,
@@ -127,43 +176,93 @@ class HistorialResponsabilidadRepository(BaseRepository):
     ) -> List[Dict]:
         """
         Obtiene transiciones realizadas por un usuario.
-        
-        Args:
-            usuario_id: ID del usuario
-            fecha_desde: Fecha inicial (opcional)
-            fecha_hasta: Fecha final (opcional)
-            limit: Límite de registros
-            
-        Returns:
-            Lista de transiciones
         """
-        filtro = {"usuario_id": usuario_id}
+        conditions = ["UsuarioID = %s"]
+        params = [usuario_id]
         
-        if fecha_desde or fecha_hasta:
-            filtro["fecha"] = {}
-            if fecha_desde:
-                filtro["fecha"]["$gte"] = fecha_desde
-            if fecha_hasta:
-                filtro["fecha"]["$lte"] = fecha_hasta
+        if fecha_desde:
+            conditions.append("Fecha >= %s")
+            params.append(fecha_desde)
+        if fecha_hasta:
+            conditions.append("Fecha <= %s")
+            params.append(fecha_hasta)
         
-        cursor = self.collection.find(filtro).sort("fecha", -1).limit(limit)
-        return [self._serialize_id(doc) for doc in cursor]
+        where_clause = " AND ".join(conditions)
+        
+        sql = f"""
+            SELECT TOP {limit} * FROM {self.table_name}
+            WHERE {where_clause}
+            ORDER BY Fecha DESC
+        """
+        
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            return [self._row_to_historial_dict(row) for row in rows]
+            
+        except Exception as e:
+            logger.error(f"[HISTORIAL_RESP_REPO] Error get_transiciones_por_usuario: {e}")
+            return []
     
     async def get_estadisticas_acciones(self) -> Dict:
         """
         Obtiene estadísticas de acciones realizadas.
-        
-        Returns:
-            Dict con conteos por acción
         """
-        pipeline = [
-            {
-                "$group": {
-                    "_id": "$accion",
-                    "count": {"$sum": 1}
-                }
-            }
-        ]
+        sql = f"""
+            SELECT Accion, COUNT(*) as count
+            FROM {self.table_name}
+            WHERE Accion IS NOT NULL
+            GROUP BY Accion
+        """
         
-        result = list(self.collection.aggregate(pipeline))
-        return {r["_id"]: r["count"] for r in result}
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            return {row["Accion"]: row["count"] for row in rows if row["Accion"]}
+            
+        except Exception as e:
+            logger.error(f"[HISTORIAL_RESP_REPO] Error get_estadisticas_acciones: {e}")
+            return {}
+    
+    def _row_to_historial_dict(self, row: Dict) -> Optional[Dict]:
+        """
+        Convierte una fila SQL a formato compatible con la API.
+        """
+        if not row:
+            return None
+        
+        # Parsear detalle JSON
+        detalle = row.get("Detalle", "{}")
+        try:
+            detalle_dict = json.loads(detalle) if detalle else {}
+        except:
+            detalle_dict = {"raw": detalle}
+        
+        return {
+            "id": row.get("HistorialID"),
+            "responsabilidad_id": detalle_dict.get("responsabilidad_id") or row.get("CargoID"),
+            "accion": row.get("Accion"),
+            "estado_anterior": row.get("EstadoAnterior"),
+            "estado_nuevo": row.get("EstadoNuevo"),
+            "usuario_id": row.get("UsuarioID"),
+            "usuario_rol": row.get("UsuarioNombre"),
+            "comentario": detalle_dict.get("comentario", ""),
+            "motivo_codigo": detalle_dict.get("motivo_codigo"),
+            "monto_al_momento": detalle_dict.get("monto_al_momento", 0),
+            "fecha": row.get("Fecha").isoformat() if row.get("Fecha") else None,
+        }
+    
+    # Métodos de compatibilidad
+    def _serialize_id(self, doc: Optional[Dict]) -> Optional[Dict]:
+        """Compatibilidad - No necesario en SQL."""
+        return doc

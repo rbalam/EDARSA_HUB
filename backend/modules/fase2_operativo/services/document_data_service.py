@@ -67,25 +67,17 @@ class DocumentDataService:
     async def _obtener_workflow_por_uuid(self, workflow_id: str) -> Optional[Dict]:
         """
         Obtiene un workflow buscando por el campo 'id' (UUID).
-        Migrado: intenta SQL primero, luego MongoDB legacy.
+        FASE B-P2: SQL-only, sin fallback a MongoDB.
         """
-        # Intentar desde SQL Server primero
+        # FASE B-P2: Usar repositorio SQL
         try:
-            from ..sql_repository import obtener_workflow
-            workflow = await obtener_workflow(workflow_id)
-            if workflow:
-                return workflow
+            from ..repositories.sql_base_repository import SQLBaseRepository
+            repo = SQLBaseRepository("workflow_inventarios")
+            workflow = repo.find_one({"id": workflow_id})
+            return workflow
         except Exception as e:
-            logger.debug(f"Error buscando workflow en SQL: {e}")
-        
-        # Fallback a MongoDB (StubDatabase retornará None)
-        if self._is_stub:
+            logger.error(f"Error buscando workflow en SQL: {e}")
             return None
-        
-        doc = self.db.workflow_inventarios.find_one({"id": workflow_id})
-        if doc and "_id" in doc:
-            doc["_id"] = str(doc["_id"])
-        return doc
     
     async def obtener_datos_completos_workflow(
         self, 

@@ -702,13 +702,11 @@ class CargosService:
     # ==================== MÉTODOS PRIVADOS ====================
     
     async def _obtener_responsabilidad(self, responsabilidad_id: str) -> Optional[Dict]:
-        """Obtiene un registro de responsabilidad."""
+        """Obtiene un registro de responsabilidad (FASE B-P2: SQL)."""
         registro = await self.responsabilidad_repo.get_by_id(responsabilidad_id)
         if not registro:
-            # Intentar buscar por campo 'id'
-            registro = self.responsabilidad_repo.collection.find_one({"id": responsabilidad_id})
-            if registro:
-                registro = self.responsabilidad_repo._serialize_id(registro)
+            # FASE B-P2: Usar método SQL de repositorio
+            registro = self.responsabilidad_repo.find_one({"id": responsabilidad_id})
         return registro
     
     async def _obtener_cargo(self, cargo_id: str) -> Dict:
@@ -752,10 +750,10 @@ class CargosService:
             )
     
     async def _cerrar_workflow_si_corresponde(self, workflow_id: str, cargo_id: str):
-        """Cierra el workflow si el cargo fue aplicado."""
+        """Cierra el workflow si el cargo fue aplicado (FASE B-P2: SQL)."""
         try:
-            # Buscar por campo 'id'
-            result = self.workflow_repo.collection.find_one_and_update(
+            # FASE B-P2: Usar método SQL de repositorio
+            result = self.workflow_repo.find_one_and_update(
                 {"id": workflow_id},
                 {"$set": {
                     "estado_workflow": "CERRADO",
@@ -787,35 +785,19 @@ class CargosService:
                 logger.debug("Cargo sin responsable_id, notificación omitida")
                 return
             
-            # En modo stub, omitir consultas MongoDB
-            if self._is_stub:
-                logger.debug("[CARGOS] Modo SQL-only: notificación omitida")
-                return
+            # FASE B-P2: En arquitectura SQL-only, notificaciones se basan en datos del cargo
+            # No consultamos MongoDB para usuarios/workflows - usamos datos ya disponibles
+            logger.debug("[CARGOS] Modo SQL-only: notificación simplificada")
             
-            usuario = self.db.users.find_one(
-                {"id": responsable_id},
-                {"_id": 0, "email": 1, "name": 1}
-            )
-            
-            if not usuario or not usuario.get("email"):
-                logger.debug(f"No se encontró email para responsable {responsable_id}")
-                return
-            
-            # Obtener nombre de sucursal
-            sucursal_nombre = "Sucursal"
-            workflow_id = cargo.get("workflow_id")
-            if workflow_id:
-                workflow = self.db.workflow_inventarios.find_one(
-                    {"id": workflow_id},
-                    {"_id": 0, "sucursal_nombre": 1}
-                )
-                if workflow:
-                    sucursal_nombre = workflow.get("sucursal_nombre", "Sucursal")
+            # Obtener nombre de sucursal del cargo si está disponible
+            sucursal_nombre = cargo.get("sucursal_nombre", "Sucursal")
+            responsable_nombre = cargo.get("responsable_nombre", "Usuario")
+            workflow_id = cargo.get("workflow_id", "")
             
             await notification_service.notificar_cargo_aplicado(
                 cargo_id=cargo.get("id", ""),
-                workflow_id=workflow_id or "",
-                responsable_nombre=usuario.get("name", "Usuario"),
+                workflow_id=workflow_id,
+                responsable_nombre=responsable_nombre,
                 monto_aplicado=monto,
                 sucursal_nombre=sucursal_nombre,
                 destinatario_email=usuario.get("email"),

@@ -1,42 +1,40 @@
 """
-Repositorio para configuracion_operativa
+Repositorio para configuracion_operativa - VERSIÓN SQL
 CAB-003 | EDARSA HUB - Fase 2A
 
-Gestiona el acceso a datos de configuración del módulo operativo.
+FASE B-P1-E: Migrado a EDARSAHUB SQL Server
+- CERO MongoDB productivo
+- SQL explícito contra Configuracion_Operativa
 """
 from typing import Optional, List, Dict
-from .base_repository import BaseRepository
+
+from .sql_base_repository import SQLBaseRepository
 
 
-class ConfiguracionRepository(BaseRepository):
-    """Repository para la colección configuracion_operativa."""
+class ConfiguracionRepository(SQLBaseRepository):
+    """
+    Repository para la tabla Configuracion_Operativa.
+    Migrado de MongoDB a SQL Server EDARSAHUB.
+    """
     
-    def __init__(self, db):
-        super().__init__(db, "configuracion_operativa")
+    def __init__(self, db=None):
+        """
+        Inicializa el repository SQL.
+        Args:
+            db: IGNORADO - Solo para compatibilidad. Todo va a SQL.
+        """
+        super().__init__("configuracion_operativa")
     
     async def get_by_clave(self, clave: str) -> Optional[Dict]:
         """
         Obtiene una configuración por su clave.
-        
-        Args:
-            clave: Clave de configuración
-            
-        Returns:
-            Configuración o None si no existe
         """
-        doc = self.collection.find_one({"clave": clave})
-        return self._serialize_id(doc)
+        doc = self.find_one({"clave": clave})
+        return doc
     
     async def get_valor(self, clave: str, default: str = None) -> Optional[str]:
         """
         Obtiene el valor de una configuración.
-        
-        Args:
-            clave: Clave de configuración
-            default: Valor por defecto si no existe
-            
-        Returns:
-            Valor de la configuración o default
         """
         doc = await self.get_by_clave(clave)
         return doc["valor"] if doc else default
@@ -44,13 +42,6 @@ class ConfiguracionRepository(BaseRepository):
     async def get_valor_int(self, clave: str, default: int = 0) -> int:
         """
         Obtiene el valor de una configuración como entero.
-        
-        Args:
-            clave: Clave de configuración
-            default: Valor por defecto
-            
-        Returns:
-            Valor como entero
         """
         valor = await self.get_valor(clave)
         try:
@@ -61,13 +52,6 @@ class ConfiguracionRepository(BaseRepository):
     async def get_valor_float(self, clave: str, default: float = 0.0) -> float:
         """
         Obtiene el valor de una configuración como flotante.
-        
-        Args:
-            clave: Clave de configuración
-            default: Valor por defecto
-            
-        Returns:
-            Valor como flotante
         """
         valor = await self.get_valor(clave)
         try:
@@ -78,7 +62,6 @@ class ConfiguracionRepository(BaseRepository):
     async def get_umbral_justificacion(self) -> float:
         """
         Obtiene el umbral para justificación simple.
-        
         Returns:
             Umbral en MXN (default: 500.0)
         """
@@ -87,7 +70,6 @@ class ConfiguracionRepository(BaseRepository):
     async def get_dias_limite_tarea(self) -> int:
         """
         Obtiene los días límite por defecto para tareas.
-        
         Returns:
             Días límite (default: 3)
         """
@@ -96,7 +78,6 @@ class ConfiguracionRepository(BaseRepository):
     async def get_max_ciclos_reasignacion(self) -> int:
         """
         Obtiene el máximo de ciclos de reasignación.
-        
         Returns:
             Máximo de ciclos (default: 3)
         """
@@ -105,14 +86,6 @@ class ConfiguracionRepository(BaseRepository):
     async def set_valor(self, clave: str, valor: str, descripcion: str = None) -> Dict:
         """
         Establece o actualiza un valor de configuración.
-        
-        Args:
-            clave: Clave de configuración
-            valor: Nuevo valor
-            descripcion: Descripción opcional
-            
-        Returns:
-            Configuración actualizada o creada
         """
         existente = await self.get_by_clave(clave)
         
@@ -120,7 +93,7 @@ class ConfiguracionRepository(BaseRepository):
             data = {"valor": valor}
             if descripcion:
                 data["descripcion"] = descripcion
-            return await self.update(existente["_id"], data)
+            return await self.update(existente.get("id") or existente.get("clave"), data)
         else:
             data = {
                 "clave": clave,
@@ -132,8 +105,10 @@ class ConfiguracionRepository(BaseRepository):
     async def get_todas(self) -> List[Dict]:
         """
         Obtiene todas las configuraciones.
-        
-        Returns:
-            Lista de configuraciones
         """
         return await self.get_all(sort=[("clave", 1)])
+    
+    # Métodos de compatibilidad
+    def _serialize_id(self, doc: Optional[Dict]) -> Optional[Dict]:
+        """Compatibilidad - No necesario en SQL."""
+        return doc

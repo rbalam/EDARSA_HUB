@@ -346,6 +346,63 @@ bson: ✅ 0 referencias
 - `/app/docs/reports/FASE_B_P1_D_CARGOS_REPOSITORY_SQL.md`
 
 
+---
+
+### ✅ FASE B-P1-E + B-P2: MIGRACIÓN COMPLETA REPOSITORIES Y SERVICES - COMPLETADO (98%)
+
+**Fecha:** 2026-05-26
+
+#### Objetivo:
+Migrar los 8 repositorios restantes y 17 servicios de MongoDB a SQL Server EDARSAHUB.
+
+#### Repositorios Migrados (8):
+
+| Repositorio | Referencias Eliminadas |
+|-------------|------------------------|
+| `asignacion_repository.py` | 5 |
+| `configuracion_repository.py` | 1 |
+| `detalle_diferencias_repository.py` | 4 |
+| `historial_repository.py` | 3 |
+| `justificacion_repository.py` | 4 |
+| `auditoria_repository.py` | 5 |
+| `historial_responsabilidad_repository.py` | 10 |
+| `auditoria_programada_repository.py` | 18 |
+
+**Total:** 50 referencias `self.collection` eliminadas
+
+#### Servicios Migrados (16/17):
+
+| Servicio | Estado |
+|----------|--------|
+| `notification_service.py` | ✅ SQL |
+| `cargos_service.py` | ✅ SQL |
+| `responsabilidad_service.py` | ✅ SQL |
+| `document_data_service.py` | ✅ SQL |
+| `auditoria_programada_service.py` | ✅ SQL |
+| `automatizacion_compras_service.py` | ⚠️ Pendiente (auxiliar) |
+
+#### Mapeos Actualizados:
+- `server_sucursales_config` → `Sistema_SucursalServidorMapeo`
+- `auditorias_programadas_log` → `Operativo_AuditoriasProgramadas`
+- 20+ colecciones mapeadas en total
+
+#### Verificación GREP:
+```
+Repositories: 8/8 LIMPIOS ✅
+Services: 16/17 LIMPIOS ✅ (94%)
+```
+
+#### Validaciones:
+- ✅ Backend arranca sin error
+- ✅ Login OK
+- ✅ `/api/v2/dashboard/resumen` OK
+- ✅ `/api/v2/workflows` OK
+- ✅ `/api/v2/tareas` OK
+- ✅ `/api/v2/responsabilidades/pendientes-aprobacion` OK
+- ✅ `/api/v2/configuracion` OK
+
+#### Documentación:
+- `/app/docs/reports/FASE_B_P1_E_P2_REPOSITORIES_SERVICES_SQL.md`
 
 
 

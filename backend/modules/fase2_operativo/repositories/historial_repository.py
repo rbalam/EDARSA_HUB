@@ -1,89 +1,74 @@
 """
-Repositorio para historial_asignaciones
+Repositorio para historial_asignaciones - VERSIÓN SQL
 CAB-003 | EDARSA HUB - Fase 2A
 
-Gestiona el acceso a datos del historial de asignaciones de tareas.
+FASE B-P1-E: Migrado a EDARSAHUB SQL Server
+- CERO MongoDB productivo
+- SQL explícito contra Operativo_HistorialAsignaciones
 """
 from typing import List, Dict
-from pymongo import DESCENDING
-from .base_repository import BaseRepository
+
+from .sql_base_repository import SQLBaseRepository
 
 
-class HistorialAsignacionRepository(BaseRepository):
-    """Repository para la colección historial_asignaciones."""
+class HistorialAsignacionRepository(SQLBaseRepository):
+    """
+    Repository para la tabla Operativo_HistorialAsignaciones.
+    Migrado de MongoDB a SQL Server EDARSAHUB.
+    """
     
-    def __init__(self, db):
-        super().__init__(db, "historial_asignaciones")
+    def __init__(self, db=None):
+        """
+        Inicializa el repository SQL.
+        Args:
+            db: IGNORADO - Solo para compatibilidad. Todo va a SQL.
+        """
+        super().__init__("historial_asignaciones")
     
     async def get_by_tarea(self, tarea_id: str) -> List[Dict]:
         """
         Obtiene el historial de asignaciones de una tarea.
-        
-        Args:
-            tarea_id: ID de la tarea
-            
-        Returns:
-            Lista de registros de historial ordenados por fecha
         """
-        cursor = self.collection.find(
+        cursor = self.find(
             {"tarea_id": tarea_id}
-        ).sort("fecha_cambio", DESCENDING)
+        ).sort("fecha_cambio", -1)
         
-        return self._serialize_list(list(cursor))
+        return list(cursor)
     
     async def get_by_usuario_anterior(self, usuario_id: str) -> List[Dict]:
         """
         Obtiene reasignaciones donde el usuario fue el anterior asignado.
-        
-        Args:
-            usuario_id: ID del usuario
-            
-        Returns:
-            Lista de registros
         """
-        cursor = self.collection.find(
+        cursor = self.find(
             {"usuario_anterior_id": usuario_id}
-        ).sort("fecha_cambio", DESCENDING)
+        ).sort("fecha_cambio", -1)
         
-        return self._serialize_list(list(cursor))
+        return list(cursor)
     
     async def get_by_usuario_nuevo(self, usuario_id: str) -> List[Dict]:
         """
         Obtiene asignaciones donde el usuario fue el nuevo asignado.
-        
-        Args:
-            usuario_id: ID del usuario
-            
-        Returns:
-            Lista de registros
         """
-        cursor = self.collection.find(
+        cursor = self.find(
             {"usuario_nuevo_id": usuario_id}
-        ).sort("fecha_cambio", DESCENDING)
+        ).sort("fecha_cambio", -1)
         
-        return self._serialize_list(list(cursor))
+        return list(cursor)
     
     async def contar_reasignaciones_tarea(self, tarea_id: str) -> int:
         """
         Cuenta el número de reasignaciones de una tarea.
-        
-        Args:
-            tarea_id: ID de la tarea
-            
-        Returns:
-            Número de reasignaciones
         """
         return await self.count({"tarea_id": tarea_id})
     
     async def create(self, data: Dict) -> Dict:
         """
         Crea un registro de historial con timestamp de cambio.
-        
-        Args:
-            data: Datos del registro
-            
-        Returns:
-            Registro creado
         """
         data["fecha_cambio"] = self._get_timestamp()
         return await super().create(data)
+    
+    # Métodos de compatibilidad
+    def _serialize_list(self, docs: List[Dict]) -> List[Dict]:
+        """Compatibilidad - No necesario en SQL."""
+        return docs

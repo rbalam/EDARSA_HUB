@@ -1,110 +1,86 @@
 """
-Repositorio para justificaciones_inventario
+Repositorio para justificaciones_inventario - VERSIÓN SQL
 CAB-003 | EDARSA HUB - Fase 2A
 
-Gestiona el acceso a datos de justificaciones de inventario.
+FASE B-P1-E: Migrado a EDARSAHUB SQL Server
+- CERO MongoDB productivo
+- SQL explícito contra Workflow_Justificaciones
 """
 from typing import List, Dict
-from pymongo import DESCENDING
-from .base_repository import BaseRepository
+
+from .sql_base_repository import SQLBaseRepository
 
 
-class JustificacionRepository(BaseRepository):
-    """Repository para la colección justificaciones_inventario."""
+class JustificacionRepository(SQLBaseRepository):
+    """
+    Repository para la tabla Workflow_Justificaciones.
+    Migrado de MongoDB a SQL Server EDARSAHUB.
+    """
     
-    def __init__(self, db):
-        super().__init__(db, "justificaciones_inventario")
+    def __init__(self, db=None):
+        """
+        Inicializa el repository SQL.
+        Args:
+            db: IGNORADO - Solo para compatibilidad. Todo va a SQL.
+        """
+        super().__init__("justificaciones_inventario")
     
     async def get_by_workflow(self, workflow_id: str) -> List[Dict]:
         """
         Obtiene todas las justificaciones de un workflow.
-        
-        Args:
-            workflow_id: ID del workflow
-            
-        Returns:
-            Lista de justificaciones
         """
-        cursor = self.collection.find(
+        cursor = self.find(
             {"workflow_id": workflow_id}
-        ).sort("fecha_justificacion", DESCENDING)
+        ).sort("fecha_justificacion", -1)
         
-        return self._serialize_list(list(cursor))
+        return list(cursor)
     
     async def get_by_diferencia(self, diferencia_id: str) -> List[Dict]:
         """
         Obtiene justificaciones de una diferencia específica.
-        
-        Args:
-            diferencia_id: ID del detalle de diferencia
-            
-        Returns:
-            Lista de justificaciones
         """
-        cursor = self.collection.find(
+        cursor = self.find(
             {"diferencia_id": diferencia_id}
-        ).sort("fecha_justificacion", DESCENDING)
+        ).sort("fecha_justificacion", -1)
         
-        return self._serialize_list(list(cursor))
+        return list(cursor)
     
     async def get_by_usuario(self, usuario_id: str, limit: int = 100) -> List[Dict]:
         """
         Obtiene justificaciones creadas por un usuario.
-        
-        Args:
-            usuario_id: ID del usuario
-            limit: Límite de resultados
-            
-        Returns:
-            Lista de justificaciones
         """
-        cursor = self.collection.find(
+        cursor = self.find(
             {"usuario_justificador_id": usuario_id}
-        ).sort("fecha_justificacion", DESCENDING).limit(limit)
+        ).sort("fecha_justificacion", -1).limit(limit)
         
-        return self._serialize_list(list(cursor))
+        return list(cursor)
     
     async def get_por_tipo(self, tipo: str, limit: int = 100) -> List[Dict]:
         """
         Obtiene justificaciones por tipo (SIMPLE o COMPLETA).
-        
-        Args:
-            tipo: Tipo de justificación
-            limit: Límite de resultados
-            
-        Returns:
-            Lista de justificaciones
         """
-        cursor = self.collection.find(
+        cursor = self.find(
             {"tipo_justificacion": tipo}
-        ).sort("fecha_justificacion", DESCENDING).limit(limit)
+        ).sort("fecha_justificacion", -1).limit(limit)
         
-        return self._serialize_list(list(cursor))
+        return list(cursor)
     
     async def contar_por_workflow(self, workflow_id: str) -> int:
         """
         Cuenta justificaciones de un workflow.
-        
-        Args:
-            workflow_id: ID del workflow
-            
-        Returns:
-            Número de justificaciones
         """
         return await self.count({"workflow_id": workflow_id})
     
     async def existe_justificacion(self, workflow_id: str, diferencia_id: str) -> bool:
         """
         Verifica si existe una justificación para una diferencia.
-        
-        Args:
-            workflow_id: ID del workflow
-            diferencia_id: ID de la diferencia
-            
-        Returns:
-            True si existe, False si no
         """
         return await self.exists({
             "workflow_id": workflow_id,
             "diferencia_id": diferencia_id
         })
+    
+    # Métodos de compatibilidad
+    def _serialize_list(self, docs: List[Dict]) -> List[Dict]:
+        """Compatibilidad - No necesario en SQL."""
+        return docs

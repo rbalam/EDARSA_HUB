@@ -28,12 +28,16 @@ class NotificationService:
     
     Recibe eventos y coordina el envío de notificaciones
     por los canales configurados (email, y en futuro WhatsApp).
+    
+    FASE B-P2: Migrado a SQL - usa repositorio SQL en lugar de MongoDB.
     """
     
-    def __init__(self, db):
-        self.db = db
+    def __init__(self, db=None):
+        self.db = db  # Mantenido para compatibilidad, no se usa
         self.email_service = get_email_service()
-        self.collection = db.notificaciones_log
+        # FASE B-P2: Usar SQLBaseRepository en lugar de MongoDB collection
+        from ..repositories.sql_base_repository import SQLBaseRepository
+        self._log_repo = SQLBaseRepository("notificaciones_log")
     
     async def notificar_workflow_creado(
         self,
@@ -398,10 +402,10 @@ class NotificationService:
         error: Optional[str],
         metadata: Dict
     ):
-        """Registra una notificación en el log (sync - PyMongo)."""
+        """Registra una notificación en el log (FASE B-P2: SQL)."""
         try:
             doc = {
-                "id": str(uuid.uuid4()),
+                "id": str(uuid.uuid4()).upper(),
                 "tipo_evento": tipo_evento,
                 "workflow_id": workflow_id,
                 "tarea_id": tarea_id,
@@ -413,8 +417,8 @@ class NotificationService:
                 "metadata": metadata,
                 "fecha_envio": datetime.now(timezone.utc).isoformat()
             }
-            # Operación síncrona con PyMongo
-            self.collection.insert_one(doc)
+            # FASE B-P2: Usar SQL repository en lugar de MongoDB
+            self._log_repo.insert_one(doc)
         except Exception as e:
             logger.error(f"Error registrando notificación en log: {e}")
     

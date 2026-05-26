@@ -458,20 +458,20 @@ class ResponsabilidadService:
         return "DESCONOCIDA"
     
     async def _buscar_workflow_por_uuid(self, workflow_id: str) -> Optional[Dict]:
-        """Busca un workflow por su campo 'id' (UUID)."""
-        doc = self.workflow_repo.collection.find_one({"id": workflow_id})
-        return self.workflow_repo._serialize_id(doc) if doc else None
+        """Busca un workflow por su campo 'id' (UUID) - FASE B-P2: SQL."""
+        doc = self.workflow_repo.find_one({"id": workflow_id})
+        return doc
     
     async def _actualizar_workflow_por_uuid(self, workflow_id: str, data: Dict) -> Optional[Dict]:
-        """Actualiza un workflow buscando por su campo 'id' (UUID)."""
+        """Actualiza un workflow buscando por su campo 'id' (UUID) - FASE B-P2: SQL."""
         from datetime import datetime, timezone
         data["fecha_ultima_actualizacion"] = datetime.now(timezone.utc)
-        result = self.workflow_repo.collection.find_one_and_update(
+        result = self.workflow_repo.find_one_and_update(
             {"id": workflow_id},
             {"$set": data},
             return_document=True
         )
-        return self.workflow_repo._serialize_id(result) if result else None
+        return result
     
     def _generar_mensaje_resumen(self, resultado: Dict, config: ConfiguracionResponsabilidadResponse) -> str:
         """Genera un mensaje descriptivo del resultado."""
@@ -565,8 +565,8 @@ class ResponsabilidadService:
         # Métricas globales
         metricas_globales = await self.responsabilidad_repo.obtener_metricas_globales()
         
-        # Contar workflows en EN_REVISION_FINANCIERA (PyMongo sync)
-        workflows_revision = self.workflow_repo.collection.count_documents({
+        # Contar workflows en EN_REVISION_FINANCIERA - FASE B-P2: SQL
+        workflows_revision = self.workflow_repo.count_documents({
             "estado_workflow": EstadoWorkflow.EN_REVISION_FINANCIERA.value
         })
         
@@ -617,7 +617,8 @@ class ResponsabilidadService:
             {"$limit": limit}
         ]
         
-        result = list(self.responsabilidad_repo.collection.aggregate(pipeline))
+        # FASE B-P2: Usar método aggregate de SQLBaseRepository
+        result = list(self.responsabilidad_repo.aggregate(pipeline))
         
         return [
             {
@@ -638,13 +639,11 @@ class ResponsabilidadService:
             raise AprobacionesDesactivadasError("El flujo de aprobaciones está desactivado")
     
     async def _obtener_responsabilidad(self, responsabilidad_id: str) -> Dict:
-        """Obtiene un registro de responsabilidad por ID."""
+        """Obtiene un registro de responsabilidad por ID - FASE B-P2: SQL."""
         registro = await self.responsabilidad_repo.get_by_id(responsabilidad_id)
         if not registro:
-            # Intentar buscar por campo 'id'
-            registro = self.responsabilidad_repo.collection.find_one({"id": responsabilidad_id})
-            if registro:
-                registro = self.responsabilidad_repo._serialize_id(registro)
+            # FASE B-P2: Usar método SQL de repositorio
+            registro = self.responsabilidad_repo.find_one({"id": responsabilidad_id})
         if not registro:
             raise ResponsabilidadNoEncontradaError(f"Responsabilidad no encontrada: {responsabilidad_id}")
         return registro
@@ -728,9 +727,9 @@ class ResponsabilidadService:
         responsabilidad_id: str,
         nuevo_estado: EstadoResponsabilidad
     ):
-        """Actualiza el estado de un registro de responsabilidad."""
+        """Actualiza el estado de un registro de responsabilidad - FASE B-P2: SQL."""
         now = datetime.now(timezone.utc)
-        self.responsabilidad_repo.collection.update_one(
+        self.responsabilidad_repo.update_one(
             {"id": responsabilidad_id},
             {"$set": {
                 "estado": nuevo_estado.value,
@@ -759,8 +758,8 @@ class ResponsabilidadService:
         
         # RECHAZADO o EXONERADO pueden cerrar el workflow
         if estado_responsabilidad in [EstadoResponsabilidad.RECHAZADO, EstadoResponsabilidad.EXONERADO]:
-            # Verificar si hay otros cálculos activos para este workflow
-            calculos_activos = self.responsabilidad_repo.collection.count_documents({
+            # Verificar si hay otros cálculos activos para este workflow - FASE B-P2: SQL
+            calculos_activos = self.responsabilidad_repo.count_documents({
                 "workflow_id": workflow_id,
                 "estado": {"$in": [
                     EstadoResponsabilidad.CALCULADO.value,
@@ -1098,15 +1097,17 @@ class ResponsabilidadService:
     # ==================== CONSULTAS 2C.2 ====================
     
     async def obtener_pendientes_aprobacion(self) -> PendientesAprobacionResponse:
-        """Obtiene responsabilidades pendientes de aprobación (CALCULADO o PROPUESTO)."""
+        """Obtiene responsabilidades pendientes de aprobación (CALCULADO o PROPUESTO) - FASE B-P2: SQL."""
         estados_pendientes = [
             EstadoResponsabilidad.CALCULADO.value,
             EstadoResponsabilidad.PROPUESTO.value
         ]
         
-        registros = list(self.responsabilidad_repo.collection.find({
+        # FASE B-P2: Usar método SQL del repositorio
+        cursor = self.responsabilidad_repo.find({
             "estado": {"$in": estados_pendientes}
-        }).sort("fecha_calculo", -1))
+        }).sort("fecha_calculo", -1)
+        registros = list(cursor)
         
         now = datetime.now(timezone.utc)
         items = []
@@ -1145,17 +1146,18 @@ class ResponsabilidadService:
         )
     
     async def obtener_en_disputa(self) -> EnDisputaResponse:
-        """Obtiene responsabilidades en disputa."""
-        registros = list(self.responsabilidad_repo.collection.find({
+        """Obtiene responsabilidades en disputa - FASE B-P2: SQL."""
+        # FASE B-P2: Usar método SQL del repositorio
+        cursor = self.responsabilidad_repo.find({
             "estado": EstadoResponsabilidad.EN_DISPUTA.value
-        }).sort("fecha_calculo", -1))
+        }).sort("fecha_calculo", -1)
+        registros = list(cursor)
         
         now = datetime.now(timezone.utc)
         items = []
         monto_total = 0.0
         
         for r in registros:
-            r = self.responsabilidad_repo._serialize_id(r)
             fecha_calculo = r.get("fecha_calculo")
             dias_pendiente = 0
             if fecha_calculo:
