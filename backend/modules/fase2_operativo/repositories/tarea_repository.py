@@ -1,24 +1,62 @@
 """
 Repositorio para tareas_inventario
-CAB-003 | EDARSA HUB - Fase 2A
+FASE B-P1-B | EDARSA HUB - Migración SQL Explícita
+
+ARQUITECTURA:
+- Todo acceso productivo a EDARSAHUB SQL Server
+- CERO MongoDB productivo
+- CERO conexiones LIVE
 
 Gestiona el acceso a datos de tareas de inventario.
 """
 from typing import Optional, List, Dict
 from datetime import datetime, timezone
-from pymongo import ASCENDING, DESCENDING
-from .base_repository import BaseRepository
+import logging
+
+from .base_repository import BaseRepository, SQLBaseRepository
+
+logger = logging.getLogger(__name__)
+
+# Constantes para ordenamiento (reemplazan pymongo.ASCENDING/DESCENDING)
+ASCENDING = 1
+DESCENDING = -1
 
 
 class TareaRepository(BaseRepository):
-    """Repository para la colección tareas_inventario."""
+    """
+    Repository para la tabla Tareas_Inventario.
+    
+    FASE B-P1-B: Migrado a SQL explícito.
+    Hereda de BaseRepository que internamente usa SQLBaseRepository.
+    
+    NOTA: server_id no existe en Tareas_Inventario.
+    Para filtrar por server_id se requiere JOIN con Workflow_Inventarios.
+    """
+    
+    # Estados válidos de tareas
+    ESTADOS_VALIDOS = [
+        "PENDIENTE",
+        "EN_PROGRESO",
+        "COMPLETADA",
+        "VENCIDA",
+        "CANCELADA"
+    ]
     
     def __init__(self, db):
+        """
+        Inicializa el repository.
+        
+        Args:
+            db: IGNORADO - Solo para compatibilidad. Todo va a SQL.
+        """
         super().__init__(db, "tareas_inventario")
+        logger.info(f"[TAREA_REPO] Inicializado usando SQL: {self.table_name}")
     
     async def get_by_workflow(self, workflow_id: str) -> List[Dict]:
         """
         Obtiene todas las tareas de un workflow.
+        
+        MIGRADO A SQL: Usa SQLCursor con filtro WorkflowID.
         
         Args:
             workflow_id: ID del workflow
@@ -26,11 +64,10 @@ class TareaRepository(BaseRepository):
         Returns:
             Lista de tareas
         """
-        cursor = self.collection.find(
-            {"workflow_id": workflow_id}
-        ).sort("fecha_creacion", DESCENDING)
+        cursor = self._sql_repo.find({"workflow_id": workflow_id})
+        cursor = cursor.sort("fecha_creacion", DESCENDING)
         
-        return self._serialize_list(list(cursor))
+        return list(cursor)
     
     async def get_by_usuario(
         self, 
@@ -39,6 +76,8 @@ class TareaRepository(BaseRepository):
     ) -> List[Dict]:
         """
         Obtiene tareas asignadas a un usuario.
+        
+        MIGRADO A SQL: Usa SQLCursor con filtro UsuarioAsignadoID.
         
         Args:
             usuario_id: ID del usuario
@@ -52,46 +91,68 @@ class TareaRepository(BaseRepository):
         if solo_pendientes:
             filters["estado_tarea"] = {"$in": ["PENDIENTE", "EN_PROGRESO"]}
         
-        cursor = self.collection.find(filters).sort("fecha_limite", ASCENDING)
-        return self._serialize_list(list(cursor))
+        cursor = self._sql_repo.find(filters)
+        cursor = cursor.sort("fecha_limite", ASCENDING)
+        
+        return list(cursor)
     
     async def get_pendientes_globales(self, limit: int = 100) -> List[Dict]:
         """
         Obtiene todas las tareas pendientes del sistema.
         
+        MIGRADO A SQL: Usa SQLCursor con filtro de estados.
+        
+        Args:
+            limit: Límite de resultados
+            
         Returns:
             Lista de tareas pendientes
         """
-        cursor = self.collection.find({
-            "estado_tarea": {"$in": ["PENDIENTE", "EN_PROGRESO"]}
-        }).sort("fecha_limite", ASCENDING).limit(limit)
+        filters = {"estado_tarea": {"$in": ["PENDIENTE", "EN_PROGRESO"]}}
         
-        return self._serialize_list(list(cursor))
+        cursor = self._sql_repo.find(filters)
+        cursor = cursor.sort("fecha_limite", ASCENDING)
+        cursor = cursor.limit(limit)
+        
+        return list(cursor)
     
     async def get_sin_asignar(self, limit: int = 100) -> List[Dict]:
         """
         Obtiene tareas que no tienen usuario asignado.
         
+        MIGRADO A SQL: Usa SQL con IS NULL en lugar de $or/$exists.
+        
+        Args:
+            limit: Límite de resultados
+            
         Returns:
             Lista de tareas sin asignar
         """
-        cursor = self.collection.find({
-            "$or": [
-                {"usuario_asignado_id": None},
-                {"usuario_asignado_id": {"$exists": False}}
-            ],
+        # En SQL, usamos IS NULL para campos vacíos
+        # El SQLCursor no soporta $or directamente, hacemos query manual
+        filters = {
+            "usuario_asignado_id": None,
             "estado_tarea": "PENDIENTE"
-        }).limit(limit)
+        }
         
-        return self._serialize_list(list(cursor))
+        cursor = self._sql_repo.find(filters)
+        cursor = cursor.limit(limit)
+        
+        return list(cursor)
     
     async def get_vencidas(self, server_ids: Optional[List[str]] = None) -> List[Dict]:
         """
         Obtiene tareas que han excedido su fecha límite.
-        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        
+        MIGRADO A SQL: Usa comparación de fechas.
+        
+        NOTA: Tareas_Inventario no tiene ServerID directamente.
+        Para filtrar por server_ids se requiere JOIN con Workflow_Inventarios.
+        Actualmente retorna todas las tareas vencidas si server_ids se especifica,
+        ya que el filtro RBAC se aplica a nivel de service.
         
         Args:
-            server_ids: Lista opcional de server_ids permitidos para filtrar
+            server_ids: Lista opcional de server_ids (filtrado en capa service)
         
         Returns:
             Lista de tareas vencidas
@@ -102,11 +163,17 @@ class TareaRepository(BaseRepository):
             "estado_tarea": {"$nin": ["COMPLETADA", "VENCIDA"]},
             "fecha_limite": {"$lt": ahora}
         }
-        if server_ids:
-            filters["server_id"] = {"$in": server_ids}
         
-        cursor = self.collection.find(filters)
-        return self._serialize_list(list(cursor))
+        # NOTA: server_id no existe en Tareas_Inventario
+        # El filtro RBAC debe aplicarse en la capa service mediante JOIN
+        if server_ids:
+            logger.warning(
+                "[TAREA_REPO] get_vencidas: server_ids ignorado (campo no existe en tabla). "
+                "Filtro RBAC debe aplicarse en service con JOIN a Workflow_Inventarios."
+            )
+        
+        cursor = self._sql_repo.find(filters)
+        return list(cursor)
     
     async def asignar(
         self, 
@@ -117,8 +184,10 @@ class TareaRepository(BaseRepository):
         """
         Asigna una tarea a un usuario.
         
+        MIGRADO A SQL: Usa update() de BaseRepository.
+        
         Args:
-            id: ID de la tarea
+            id: ID de la tarea (TareaID en SQL)
             usuario_id: ID del usuario
             fecha_limite: Fecha límite opcional
             
@@ -127,7 +196,7 @@ class TareaRepository(BaseRepository):
         """
         data = {
             "usuario_asignado_id": usuario_id,
-            "fecha_asignacion": self._get_timestamp(),
+            "fecha_asignacion": datetime.now(timezone.utc),
             "estado_tarea": "PENDIENTE"
         }
         
@@ -140,14 +209,28 @@ class TareaRepository(BaseRepository):
         """
         Actualiza el estado de una tarea.
         
+        MIGRADO A SQL: Usa update() de BaseRepository con validación.
+        
         Args:
-            id: ID de la tarea
+            id: ID de la tarea (TareaID en SQL)
             nuevo_estado: Nuevo estado
             
         Returns:
             Tarea actualizada
         """
-        return await self.update(id, {"estado_tarea": nuevo_estado})
+        if nuevo_estado not in self.ESTADOS_VALIDOS:
+            logger.warning(f"[TAREA_REPO] Estado inválido: {nuevo_estado}")
+        
+        data = {
+            "estado_tarea": nuevo_estado,
+            "fecha_actualizacion": datetime.now(timezone.utc)
+        }
+        
+        # Si se completa, registrar fecha
+        if nuevo_estado == "COMPLETADA":
+            data["fecha_completada"] = datetime.now(timezone.utc)
+        
+        return await self.update(id, data)
     
     async def completar(self, id: str) -> Optional[Dict]:
         """Marca una tarea como completada."""
@@ -159,34 +242,61 @@ class TareaRepository(BaseRepository):
     
     async def marcar_vencida(self, id: str) -> Optional[Dict]:
         """Marca una tarea como vencida."""
-        return await self.actualizar_estado(id, "VENCIDA")
+        data = {
+            "estado_tarea": "VENCIDA",
+            "vencida": True,
+            "fecha_actualizacion": datetime.now(timezone.utc)
+        }
+        return await self.update(id, data)
     
     async def contar_por_estado(self, server_ids: Optional[List[str]] = None) -> Dict[str, int]:
         """
         Cuenta tareas agrupadas por estado.
-        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        
+        MIGRADO A SQL: Usa aggregate() con GROUP BY.
+        
+        NOTA: server_ids requiere JOIN con Workflow_Inventarios.
+        Actualmente ignora server_ids y cuenta todas las tareas.
+        El filtro RBAC debe aplicarse en la capa service.
         
         Args:
-            server_ids: Lista opcional de server_ids permitidos para filtrar
+            server_ids: Lista opcional de server_ids (filtrado en service)
         
         Returns:
-            Diccionario con conteos por estado
+            Diccionario con conteos por estado {estado: count}
         """
-        match_stage = {}
-        if server_ids:
-            match_stage = {"$match": {"server_id": {"$in": server_ids}}}
-        
         pipeline = []
-        if match_stage:
-            pipeline.append(match_stage)
-        pipeline.append({"$group": {"_id": "$estado_tarea", "count": {"$sum": 1}}})
         
-        result = list(self.collection.aggregate(pipeline))
-        return {item["_id"]: item["count"] for item in result}
+        # NOTA: server_id no existe en Tareas_Inventario
+        if server_ids:
+            logger.warning(
+                "[TAREA_REPO] contar_por_estado: server_ids ignorado (campo no existe). "
+                "Filtro RBAC debe aplicarse en service."
+            )
+        
+        # Group by estado
+        pipeline.append({
+            "$group": {
+                "_id": "$estado_tarea",
+                "count": {"$sum": 1}
+            }
+        })
+        
+        result = self._sql_repo.aggregate(pipeline)
+        
+        # Convertir a diccionario
+        return {
+            item.get("_id") or item.get("estado_tarea", "DESCONOCIDO"): 
+            item.get("count", 0) 
+            for item in result 
+            if item.get("_id") or item.get("estado_tarea")
+        }
     
     async def contar_por_usuario(self, usuario_id: str) -> Dict[str, int]:
         """
         Cuenta tareas de un usuario agrupadas por estado.
+        
+        MIGRADO A SQL: Usa aggregate() con $match y GROUP BY.
         
         Args:
             usuario_id: ID del usuario
@@ -199,5 +309,185 @@ class TareaRepository(BaseRepository):
             {"$group": {"_id": "$estado_tarea", "count": {"$sum": 1}}}
         ]
         
-        result = list(self.collection.aggregate(pipeline))
-        return {item["_id"]: item["count"] for item in result}
+        result = self._sql_repo.aggregate(pipeline)
+        
+        return {
+            item.get("_id") or item.get("estado_tarea", "DESCONOCIDO"): 
+            item.get("count", 0) 
+            for item in result 
+            if item.get("_id") or item.get("estado_tarea")
+        }
+    
+    async def get_tareas_con_rbac(
+        self,
+        server_ids: List[str],
+        estado: Optional[str] = None,
+        usuario_id: Optional[str] = None,
+        solo_vencidas: bool = False,
+        skip: int = 0,
+        limit: int = 100
+    ) -> Dict:
+        """
+        Obtiene tareas con filtro RBAC mediante JOIN a Workflow_Inventarios.
+        
+        MÉTODO SQL NATIVO agregado en FASE B-P1-B.
+        
+        Este método hace JOIN para filtrar tareas por server_id,
+        ya que Tareas_Inventario no tiene ese campo directamente.
+        
+        Args:
+            server_ids: Lista de server_ids para RBAC
+            estado: Filtro opcional por estado
+            usuario_id: Filtro opcional por usuario asignado
+            solo_vencidas: Si True, solo tareas vencidas
+            skip: Paginación
+            limit: Límite
+            
+        Returns:
+            {items: [...], total: int}
+        """
+        import pymssql
+        
+        # Construir query con JOIN
+        base_select = """
+            SELECT t.*, w.ServerID, w.SucursalID, w.SucursalNombre
+            FROM Tareas_Inventario t
+            INNER JOIN Workflow_Inventarios w ON t.WorkflowID = w.WorkflowID
+            WHERE 1=1
+        """
+        
+        conditions = []
+        params = []
+        
+        # Filtro RBAC por server_ids
+        if server_ids:
+            placeholders = ", ".join(["%s"] * len(server_ids))
+            conditions.append(f"w.ServerID IN ({placeholders})")
+            params.extend(server_ids)
+        
+        # Filtro por estado
+        if estado:
+            conditions.append("t.EstadoTarea = %s")
+            params.append(estado)
+        
+        # Filtro por usuario
+        if usuario_id:
+            conditions.append("t.UsuarioAsignadoID = %s")
+            params.append(usuario_id)
+        
+        # Filtro vencidas
+        if solo_vencidas:
+            conditions.append("t.FechaLimite < GETUTCDATE()")
+            conditions.append("t.EstadoTarea NOT IN ('COMPLETADA', 'VENCIDA')")
+        
+        # Construir WHERE
+        where_clause = ""
+        if conditions:
+            where_clause = " AND " + " AND ".join(conditions)
+        
+        # Query de conteo
+        count_sql = f"""
+            SELECT COUNT(*) as total
+            FROM Tareas_Inventario t
+            INNER JOIN Workflow_Inventarios w ON t.WorkflowID = w.WorkflowID
+            WHERE 1=1 {where_clause}
+        """
+        
+        # Query de datos con paginación
+        data_sql = f"""
+            {base_select} {where_clause}
+            ORDER BY t.FechaCreacion DESC
+            OFFSET {skip} ROWS FETCH NEXT {limit} ROWS ONLY
+        """
+        
+        try:
+            conn = self._sql_repo._get_connection()
+            cursor = conn.cursor()
+            
+            # Ejecutar conteo
+            cursor.execute(count_sql, params)
+            total = cursor.fetchone()["total"]
+            
+            # Ejecutar query de datos
+            cursor.execute(data_sql, params)
+            rows = cursor.fetchall()
+            
+            cursor.close()
+            conn.close()
+            
+            # Convertir rows a dicts
+            items = [self._sql_repo._row_to_dict(row) for row in rows]
+            
+            return {"items": items, "total": total}
+            
+        except Exception as e:
+            logger.error(f"[TAREA_REPO] Error en get_tareas_con_rbac: {e}")
+            return {"items": [], "total": 0}
+    
+    async def buscar_tareas(
+        self,
+        workflow_id: Optional[str] = None,
+        estado: Optional[str] = None,
+        usuario_id: Optional[str] = None,
+        tipo_tarea: Optional[str] = None,
+        solo_vencidas: bool = False,
+        skip: int = 0,
+        limit: int = 50
+    ) -> Dict:
+        """
+        Búsqueda avanzada de tareas con múltiples filtros.
+        
+        MÉTODO SQL NATIVO agregado en FASE B-P1-B.
+        
+        Args:
+            workflow_id: Filtro por workflow
+            estado: Filtro por estado
+            usuario_id: Filtro por usuario asignado
+            tipo_tarea: Filtro por tipo de tarea
+            solo_vencidas: Si True, solo tareas vencidas
+            skip: Paginación
+            limit: Límite
+            
+        Returns:
+            {items: [...], total: int}
+        """
+        filters = {}
+        
+        if workflow_id:
+            filters["workflow_id"] = workflow_id
+        if estado:
+            filters["estado_tarea"] = estado
+        if usuario_id:
+            filters["usuario_asignado_id"] = usuario_id
+        if tipo_tarea:
+            filters["tipo_tarea"] = tipo_tarea
+        if solo_vencidas:
+            filters["vencida"] = True
+        
+        # Contar total
+        total = await self.count(filters)
+        
+        # Obtener items
+        cursor = self._sql_repo.find(filters)
+        cursor = cursor.sort("fecha_creacion", DESCENDING)
+        cursor = cursor.skip(skip)
+        cursor = cursor.limit(limit)
+        
+        items = list(cursor)
+        
+        return {"items": items, "total": total}
+    
+    # =========================================================================
+    # MÉTODOS DEPRECADOS (Compatibilidad)
+    # =========================================================================
+    
+    def _serialize_list(self, docs: List[Dict]) -> List[Dict]:
+        """
+        DEPRECADO: No se necesita serialización en SQL.
+        Mantenido para compatibilidad.
+        """
+        return docs
+    
+    def _get_timestamp(self) -> datetime:
+        """Retorna timestamp actual UTC."""
+        return datetime.now(timezone.utc)

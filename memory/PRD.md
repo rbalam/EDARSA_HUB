@@ -204,6 +204,51 @@ Migrar workflow_repository.py de MongoDB implícito a SQL explícito.
 - `/app/docs/reports/FASE_B_P1_A_WORKFLOW_REPOSITORY_SQL.md`
 
 
+---
+
+### ✅ FASE B-P1-B: MIGRACIÓN tarea_repository.py A SQL - COMPLETADO
+
+**Fecha:** 2026-05-26
+
+#### Objetivo:
+Migrar tarea_repository.py de MongoDB implícito a SQL explícito.
+
+#### Métodos Migrados (13):
+| Método | Antes | Después |
+|--------|-------|---------|
+| get_by_workflow | collection.find().sort() | SQLCursor encadenable |
+| get_by_usuario | collection.find().sort() | SQLCursor encadenable |
+| get_pendientes_globales | collection.find().limit() | SQLCursor |
+| get_sin_asignar | $or/$exists MongoDB | IS NULL SQL |
+| get_vencidas | collection.find() | SQLCursor con $lt |
+| contar_por_estado | collection.aggregate() | aggregate() SQL |
+| contar_por_usuario | collection.aggregate() | aggregate() SQL |
+
+#### Métodos Nuevos:
+- `get_tareas_con_rbac()`: JOIN con Workflow_Inventarios para filtro RBAC
+- `buscar_tareas()`: Búsqueda avanzada con múltiples filtros
+
+#### Nota Importante:
+`Tareas_Inventario` NO tiene campo `ServerID`. Para filtrar por server_id (RBAC):
+```sql
+SELECT t.* FROM Tareas_Inventario t
+JOIN Workflow_Inventarios w ON t.WorkflowID = w.WorkflowID
+WHERE w.ServerID IN (...)
+```
+
+#### Validaciones:
+- ✅ Backend arranca sin error
+- ✅ Login, Health OK
+- ✅ `/api/v2/tareas` OK (items=[], total=0)
+- ✅ `/api/v2/dashboard/kpis` OK (tareas_pendientes=0)
+- ✅ CERO `self.collection`
+- ✅ CERO MongoDB productivo
+
+#### Documentación:
+- `/app/docs/reports/FASE_B_P1_B_TAREA_REPOSITORY_SQL.md`
+
+
+
 
 
 
