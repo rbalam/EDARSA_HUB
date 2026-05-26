@@ -248,6 +248,45 @@ WHERE w.ServerID IN (...)
 - `/app/docs/reports/FASE_B_P1_B_TAREA_REPOSITORY_SQL.md`
 
 
+---
+
+### ✅ FASE B-P1-C: MIGRACIÓN responsabilidad_repository.py A SQL - COMPLETADO
+
+**Fecha:** 2026-05-26
+
+#### Objetivo:
+Migrar responsabilidad_repository.py de MongoDB a SQL explícito.
+
+#### Métodos Migrados (10):
+| Método | Antes | Después |
+|--------|-------|---------|
+| get_by_workflow | collection.find_one() | _sql_repo.find_one() |
+| existe_calculo | collection.count_documents() | count_documents() |
+| actualizar_calculo | collection.find_one_and_update() | find_one_and_update() |
+| obtener_metricas_globales | collection.aggregate() | aggregate() SQL |
+| eliminar_por_workflow | collection.delete_one() | delete_one() |
+
+#### Métodos Nuevos:
+- `aprobar()`: Aprueba un cálculo de responsabilidad
+- `rechazar()`: Rechaza un cálculo con motivo
+- `get_pendientes_revision()`: Cálculos pendientes con RBAC
+- `get_by_responsable()`: Cálculos por responsable
+
+#### Mapeo de Campos:
+Se agregó mapeo completo de 23 campos para `Operativo_ResponsabilidadEconomica`.
+
+#### Validaciones:
+- ✅ Backend arranca sin error
+- ✅ Login, Health OK
+- ✅ `/api/v2/responsabilidad` OK (total=0, items=[])
+- ✅ CERO `self.collection`
+- ✅ CERO MongoDB productivo
+
+#### Documentación:
+- `/app/docs/reports/FASE_B_P1_C_RESPONSABILIDAD_REPOSITORY_SQL.md`
+
+
+
 
 
 
