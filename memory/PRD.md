@@ -286,6 +286,64 @@ Se agregó mapeo completo de 23 campos para `Operativo_ResponsabilidadEconomica`
 - `/app/docs/reports/FASE_B_P1_C_RESPONSABILIDAD_REPOSITORY_SQL.md`
 
 
+---
+
+### ✅ FASE B-P1-D: MIGRACIÓN cargos_repository.py A SQL - COMPLETADO
+
+**Fecha:** 2026-05-26
+
+#### Objetivo:
+Migrar cargos_repository.py de MongoDB a SQL explícito.
+
+#### Clases Migradas:
+
+**CargosEconomicosRepository:**
+| Método | Antes | Después |
+|--------|-------|---------|
+| crear_cargo | collection.insert_one() | INSERT INTO SQL |
+| get_by_id | collection.find_one() | SELECT WHERE CargoID |
+| get_by_responsabilidad | collection.find_one(sort=) | SELECT TOP 1 ORDER BY |
+| get_cargo_activo_por_responsabilidad | collection.find_one($in) | SELECT WHERE IN (...) |
+| actualizar_cargo | collection.find_one_and_update() | UPDATE SET WHERE |
+| listar_con_filtros | collection.find().skip().limit() | SELECT OFFSET FETCH |
+| contar_por_estatus | collection.aggregate($group) | SELECT COUNT GROUP BY |
+| obtener_metricas | collection.aggregate($sum) | SELECT SUM, COUNT |
+| obtener_monto_autorizado_total | collection.aggregate($match,$sum) | SELECT SUM WHERE |
+
+**CargosLogRepository:**
+| Método | Antes | Después |
+|--------|-------|---------|
+| registrar_log | collection.insert_one() | INSERT INTO SQL |
+| get_by_cargo | collection.find().sort().limit() | SELECT TOP n ORDER BY |
+| get_ultimos_logs | collection.find().sort().limit() | SELECT TOP n ORDER BY |
+| contar_acciones_por_usuario | collection.aggregate($match,$group) | SELECT COUNT GROUP BY |
+
+#### Tablas SQL:
+- `Operativo_CargosResponsabilidad`: 23 columnas
+- `Operativo_HistorialCargos`: 10 columnas
+
+#### Mapeo de Campos Actualizado:
+Se expandieron los mapeos en `sql_base_repository.py` para 40+ campos.
+
+#### Verificación GREP:
+```
+self.collection: ✅ 0 referencias
+ObjectId: ✅ 0 referencias
+pymongo: ✅ 0 referencias
+bson: ✅ 0 referencias
+```
+
+#### Validaciones:
+- ✅ Backend arranca sin error
+- ✅ Login, Health OK
+- ✅ `/api/v2/dashboard/resumen` OK
+- ✅ `/api/v2/workflows` OK
+- ✅ `/api/v2/tareas` OK
+- ✅ CERO `self.collection`
+- ✅ CERO MongoDB productivo
+
+#### Documentación:
+- `/app/docs/reports/FASE_B_P1_D_CARGOS_REPOSITORY_SQL.md`
 
 
 
