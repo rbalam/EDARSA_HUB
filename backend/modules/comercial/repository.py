@@ -225,18 +225,27 @@ async def get_server_by_id(server_id: str) -> Optional[Dict]:
     """
     Obtiene un servidor activo por ID.
     
-    FASE 2/3 MIGRACIÓN: Lee primero de EDARSAHUB SQL, fallback a MongoDB.
+    FASE DDL COMERCIAL: SQL-FIRST, sin fallback MongoDB.
     """
-    # Intentar primero desde SQL (fuente primaria)
+    # SQL es la fuente primaria
     if USE_SQL_FOR_SERVERS:
         server = _get_server_by_id_sql(server_id)
         if server:
             return server
-        logging.info(f"[FALLBACK] Servidor {server_id} no encontrado en SQL, buscando en MongoDB")
+        # FASE DDL COMERCIAL: No hacer fallback a MongoDB
+        logging.debug(f"[SQL-FIRST] Servidor {server_id} no encontrado en SQL")
+        return None
     
-    # Fallback a MongoDB - FASE 3C.1: Descifrar password
-    mongo_server = await get_db().servers.find_one({"id": server_id, "active": True}, {"_id": 0})
-    return _decrypt_server_password(mongo_server)
+    # MongoDB solo si SQL está desactivado (legacy)
+    try:
+        db = get_db()
+        if db is None:
+            return None
+        mongo_server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
+        return _decrypt_server_password(mongo_server)
+    except Exception as e:
+        logging.error(f"[get_server_by_id] Error MongoDB: {e}")
+        return None
 
 
 async def get_servers_for_tablero() -> List[Dict]:
@@ -244,31 +253,37 @@ async def get_servers_for_tablero() -> List[Dict]:
     Obtiene servidores visibles para el tablero ejecutivo.
     Solo devuelve conexiones DATA_SOURCE (excluye CORE del sistema).
     
-    FASE 2/3 MIGRACIÓN: Lee primero de EDARSAHUB SQL, fallback a MongoDB.
+    FASE DDL COMERCIAL: SQL-FIRST, sin fallback MongoDB.
     """
-    # Intentar primero desde SQL (fuente primaria)
+    # SQL es la fuente primaria
     if USE_SQL_FOR_SERVERS:
         servers = _get_servers_for_tablero_sql()
         if servers:
             return servers
-        logging.info("[FALLBACK] No se obtuvieron servidores de SQL, usando MongoDB")
+        logging.debug("[SQL-FIRST] No se obtuvieron servidores de SQL")
+        return []
     
-    # Fallback a MongoDB (comportamiento original)
-    cursor = get_db().servers.find(
-        {
-            "active": True, 
-            "visible_en_operaciones": {"$ne": False},
-            # ============ CLASIFICACIÓN: Excluir CORE ============
-            "$or": [
-                {"tipo_conexion": {"$exists": False}},  # Backward compatible
-                {"tipo_conexion": "DATA_SOURCE"}
-            ]
-        },
-        {"_id": 0}
-    )
-    servers = await cursor.to_list(100)
-    # Filtro adicional + FASE 3C.1: Descifrar passwords
-    return [_decrypt_server_password(s) for s in servers if s.get("tipo_conexion") != "CORE"]
+    # MongoDB solo si SQL está desactivado (legacy)
+    try:
+        db = get_db()
+        if db is None:
+            return []
+        cursor = db.servers.find(
+            {
+                "active": True, 
+                "visible_en_operaciones": {"$ne": False},
+                "$or": [
+                    {"tipo_conexion": {"$exists": False}},
+                    {"tipo_conexion": "DATA_SOURCE"}
+                ]
+            },
+            {"_id": 0}
+        )
+        servers = await cursor.to_list(100)
+        return [_decrypt_server_password(s) for s in servers if s.get("tipo_conexion") != "CORE"]
+    except Exception as e:
+        logging.error(f"[get_servers_for_tablero] Error MongoDB: {e}")
+        return []
 
 
 async def get_sucursales_visibles_config(server_id: str) -> Dict[str, bool]:

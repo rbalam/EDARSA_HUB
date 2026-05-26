@@ -197,26 +197,16 @@ ENDPOINTS_SQL_FIRST_MIGRADOS = {
     '/comercial/dashboard',
     '/comercial/ventas-tiempo',
     '/comercial/tablero-ejecutivo',
+    # FASE DDL COMERCIAL: Nuevos endpoints migrados
+    '/comercial/metas',
+    '/comercial/ticket-perfecto',
+    '/comercial/mesas',
+    '/comercial/reporte-pax',
 }
 
 # Endpoints que requieren tabla SQL que NO EXISTE aún
-# FASE A-P1: /comercial/sucursales REMOVIDO (migrado a SQL-First)
+# FASE DDL COMERCIAL: Reducido a solo 2 endpoints pendientes
 ENDPOINTS_LIVE_LEGACY = {
-    '/comercial/metas': {
-        'tabla_requerida': 'Sync_Metas_Comerciales',
-        'job_requerido': 'sync_metas',
-        'estado': 'LEGACY_NO_TABLA',
-    },
-    '/comercial/ticket-perfecto': {
-        'tabla_requerida': 'Sync_Ticket_Perfecto',
-        'job_requerido': 'sync_ticket_perfecto',
-        'estado': 'LEGACY_NO_TABLA',
-    },
-    '/comercial/mesas': {
-        'tabla_requerida': 'Sync_Mesas',
-        'job_requerido': 'sync_mesas',
-        'estado': 'LEGACY_NO_TABLA',
-    },
     '/comercial/detalle-movimientos': {
         'tabla_requerida': 'Sync_Movimientos_Detalle',
         'job_requerido': 'sync_movimientos',
@@ -225,11 +215,6 @@ ENDPOINTS_LIVE_LEGACY = {
     '/comercial/precios-constantes': {
         'tabla_requerida': 'Sync_Precios_Historicos',
         'job_requerido': 'sync_precios_historicos',
-        'estado': 'LEGACY_NO_TABLA',
-    },
-    '/comercial/reporte-pax': {
-        'tabla_requerida': 'Sync_PAX_Detalle',
-        'job_requerido': 'sync_pax',
         'estado': 'LEGACY_NO_TABLA',
     },
 }
@@ -2034,35 +2019,90 @@ async def comercial_metas(
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    Metas de ventas por producto y vendedor.
+    Metas de ventas por sucursal/mes.
     
-    FASE A-P0 (2026-05-26): GUARD RAIL LIVE
-    Este endpoint requiere conexión LIVE. Bloqueado hasta migrar a Sync_Metas_Comerciales.
+    FASE DDL COMERCIAL: MIGRADO A SQL-FIRST
+    Consulta tabla Sync_Metas_Comerciales en EDARSAHUB.
     """
     from modules.comercial.cache_service import (
-        SourceStatus, build_cache_key, get_cached_response, 
-        save_to_cache, build_envelope_response
+        SourceStatus, build_envelope_response
     )
     
     server = await get_server_by_id(server_id)
     if not server:
         return build_envelope_response(
             source_status=SourceStatus.ERROR,
-            data={"por_producto": [], "por_vendedor": []},
+            data={"metas": []},
             source_message="Servidor no encontrado"
         )
     
     # BLINDAJE RBAC: Validar acceso unificado
     await validate_server_access_rbac(current_user, server_id)
     
-    # FASE A-P0: GUARD RAIL LIVE
-    guard_result = check_live_guard_rail('/comercial/metas', server_id)
-    if guard_result:
+    # SQL-FIRST: Consultar tabla sincronizada
+    try:
+        import pymssql
+        conn = pymssql.connect(
+            server='54.39.104.176', port=1433, database='EDARSAHUB',
+            user='HRLectura', password='National09$', timeout=30, as_dict=True
+        )
+        cursor = conn.cursor()
+        
+        now = datetime.now()
+        anio = now.year
+        mes = now.month
+        
+        if sucursal:
+            cursor.execute("""
+                SELECT * FROM Sync_Metas_Comerciales
+                WHERE ServerID = %s AND SucursalID = %s AND Anio = %s AND Mes = %s
+                ORDER BY SucursalNombre
+            """, (server_id, sucursal, anio, mes))
+        else:
+            cursor.execute("""
+                SELECT * FROM Sync_Metas_Comerciales
+                WHERE ServerID = %s AND Anio = %s AND Mes = %s
+                ORDER BY SucursalNombre
+            """, (server_id, anio, mes))
+        
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        metas = []
+        for row in rows:
+            metas.append({
+                "sucursal_id": row.get("SucursalID"),
+                "sucursal_nombre": row.get("SucursalNombre"),
+                "anio": row.get("Anio"),
+                "mes": row.get("Mes"),
+                "meta_venta_bruta": float(row.get("MetaVentaBruta") or 0),
+                "meta_venta_neta": float(row.get("MetaVentaNeta") or 0),
+                "venta_bruta_actual": float(row.get("VentaBrutaActual") or 0),
+                "venta_neta_actual": float(row.get("VentaNetaActual") or 0),
+                "ticket_promedio_actual": float(row.get("TicketPromedioActual") or 0),
+                "cuentas_actual": int(row.get("CuentasActual") or 0),
+                "comensales_actual": int(row.get("ComensalesActual") or 0),
+                "porcentaje_cumplimiento": float(row.get("PorcentajeCumplimiento") or 0),
+                "dias_transcurridos": int(row.get("DiasTranscurridos") or 0),
+                "dias_restantes": int(row.get("DiasRestantes") or 0),
+                "proyeccion_mes": float(row.get("ProyeccionMes") or 0),
+                "fecha_sync": row.get("FechaSync").isoformat() if row.get("FechaSync") else None,
+            })
+        
+        return build_envelope_response(
+            source_status=SourceStatus.SUCCESS if metas else SourceStatus.SUCCESS,
+            data={"metas": metas, "periodo": f"{anio}-{mes:02d}"},
+            source_message=f"SQL-First: {len(metas)} registros desde Sync_Metas_Comerciales",
+            cache_used=False
+        )
+        
+    except Exception as e:
+        logging.error(f"[METAS] Error SQL: {e}")
         return build_envelope_response(
             source_status=SourceStatus.ERROR,
-            data={"por_producto": [], "por_vendedor": []},
-            source_message=guard_result['source_message'],
-            cache_used=False
+            data={"metas": []},
+            source_message=f"Error consultando metas: {str(e)}"
         )
     
     # CÓDIGO LEGACY (solo se ejecuta si ENABLE_LIVE_GUARD_RAIL = False)
@@ -2311,38 +2351,104 @@ ORDER BY SUM(VE.Vn_Precio_Neto_Importe) DESC
 async def comercial_ticket_perfecto(
     server_id: str, 
     sucursal: str = Query(default=""),
+    fecha_inicio: str = Query(default=""),
+    fecha_fin: str = Query(default=""),
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    Análisis de ticket perfecto y rentabilidad por producto.
+    Análisis de ticket perfecto por sucursal.
     
-    FASE A-P0 (2026-05-26): GUARD RAIL LIVE
-    Este endpoint requiere conexión LIVE. Bloqueado hasta migrar a Sync_Ticket_Perfecto.
+    FASE DDL COMERCIAL: MIGRADO A SQL-FIRST
+    Consulta tabla Sync_Ticket_Perfecto en EDARSAHUB.
     """
     from modules.comercial.cache_service import (
-        SourceStatus, build_cache_key, get_cached_response, 
-        save_to_cache, build_envelope_response
+        SourceStatus, build_envelope_response
     )
     
     server = await get_server_by_id(server_id)
     if not server:
         return build_envelope_response(
             source_status=SourceStatus.ERROR,
-            data={"ticket": {}, "rentabilidad": []},
+            data={"tickets": []},
             source_message="Servidor no encontrado"
         )
     
     # FASE 6-8: Validación centralizada de acceso
     await validate_server_access_rbac(current_user, server_id)
     
-    # FASE A-P0: GUARD RAIL LIVE
-    guard_result = check_live_guard_rail('/comercial/ticket-perfecto', server_id)
-    if guard_result:
+    # SQL-FIRST: Consultar tabla sincronizada
+    try:
+        import pymssql
+        conn = pymssql.connect(
+            server='54.39.104.176', port=1433, database='EDARSAHUB',
+            user='HRLectura', password='National09$', timeout=30, as_dict=True
+        )
+        cursor = conn.cursor()
+        
+        # Determinar rango de fechas (default últimos 7 días)
+        hoy = datetime.now().date()
+        if fecha_inicio:
+            f_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+        else:
+            f_inicio = hoy - timedelta(days=7)
+        
+        if fecha_fin:
+            f_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+        else:
+            f_fin = hoy
+        
+        if sucursal:
+            cursor.execute("""
+                SELECT * FROM Sync_Ticket_Perfecto
+                WHERE ServerID = %s AND SucursalID = %s 
+                  AND FechaOperacion BETWEEN %s AND %s
+                ORDER BY FechaOperacion DESC
+            """, (server_id, sucursal, f_inicio, f_fin))
+        else:
+            cursor.execute("""
+                SELECT * FROM Sync_Ticket_Perfecto
+                WHERE ServerID = %s AND FechaOperacion BETWEEN %s AND %s
+                ORDER BY SucursalNombre, FechaOperacion DESC
+            """, (server_id, f_inicio, f_fin))
+        
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        tickets = []
+        for row in rows:
+            tickets.append({
+                "sucursal_id": row.get("SucursalID"),
+                "sucursal_nombre": row.get("SucursalNombre"),
+                "fecha": row.get("FechaOperacion").isoformat() if row.get("FechaOperacion") else None,
+                "total_cuentas": int(row.get("TotalCuentas") or 0),
+                "total_comensales": int(row.get("TotalComensales") or 0),
+                "venta_total": float(row.get("VentaTotal") or 0),
+                "ticket_promedio_real": float(row.get("TicketPromedioReal") or 0),
+                "ticket_perfecto_objetivo": float(row.get("TicketPerfectoObjetivo") or 0),
+                "porcentaje_cumplimiento": float(row.get("PorcentajeCumplimiento") or 0),
+                "cuentas_bajo_objetivo": int(row.get("CuentasBajoObjetivo") or 0),
+                "cuentas_sobre_objetivo": int(row.get("CuentasSobreObjetivo") or 0),
+                "cuentas_en_rango": int(row.get("CuentasEnRango") or 0),
+                "promedio_entradas": float(row.get("PromedioEntradas") or 0),
+                "promedio_fuertes": float(row.get("PromedioFuertes") or 0),
+                "promedio_bebidas": float(row.get("PromedioBebidas") or 0),
+                "promedio_postres": float(row.get("PromedioPostres") or 0),
+            })
+        
+        return build_envelope_response(
+            source_status=SourceStatus.SUCCESS if tickets else SourceStatus.SUCCESS,
+            data={"tickets": tickets, "periodo": f"{f_inicio} a {f_fin}"},
+            source_message=f"SQL-First: {len(tickets)} registros desde Sync_Ticket_Perfecto",
+            cache_used=False
+        )
+        
+    except Exception as e:
+        logging.error(f"[TICKET_PERFECTO] Error SQL: {e}")
         return build_envelope_response(
             source_status=SourceStatus.ERROR,
-            data={"ticket": {}, "rentabilidad": []},
-            source_message=guard_result['source_message'],
-            cache_used=False
+            data={"tickets": []},
+            source_message=f"Error consultando ticket perfecto: {str(e)}"
         )
     
     # CÓDIGO LEGACY (solo se ejecuta si ENABLE_LIVE_GUARD_RAIL = False)
@@ -2765,34 +2871,115 @@ async def comercial_ventas_tiempo(
 async def comercial_mesas(
     server_id: str, 
     sucursal: str = Query(default=""),
+    fecha: str = Query(default=""),
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    Análisis de mesas y comensales.
+    Análisis de mesas por sucursal.
     
-    FASE A-P0 (2026-05-26): GUARD RAIL LIVE
-    Este endpoint requiere conexión LIVE. Bloqueado hasta migrar a Sync_Mesas.
+    FASE DDL COMERCIAL: MIGRADO A SQL-FIRST
+    Consulta tabla Sync_Mesas en EDARSAHUB.
     """
+    from modules.comercial.cache_service import (
+        SourceStatus, build_envelope_response
+    )
+    
     server = await get_server_by_id(server_id)
     if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+        return build_envelope_response(
+            source_status=SourceStatus.ERROR,
+            data={"mesas": []},
+            source_message="Servidor no encontrado"
+        )
     
     # FASE 6-8: Validación centralizada de acceso
     await validate_server_access_rbac(current_user, server_id)
     
-    # FASE A-P0: GUARD RAIL LIVE
-    guard_result = check_live_guard_rail('/comercial/mesas', server_id)
-    if guard_result:
-        return {
-            "source_status": guard_result['source_status'],
-            "source_message": guard_result['source_message'],
-            "servidor": server['name'],
-            "sucursal": sucursal or server['name'],
-            "mesas_mes": [],
-            "mesas_hoy": [],
-            "pax_mesas_hoy": 0,
-            "ventas_mesas_hoy": 0
+    # SQL-FIRST: Consultar tabla sincronizada
+    try:
+        import pymssql
+        conn = pymssql.connect(
+            server='54.39.104.176', port=1433, database='EDARSAHUB',
+            user='HRLectura', password='National09$', timeout=30, as_dict=True
+        )
+        cursor = conn.cursor()
+        
+        # Determinar fecha (default hoy)
+        if fecha:
+            fecha_op = datetime.strptime(fecha, '%Y-%m-%d').date()
+        else:
+            fecha_op = datetime.now().date()
+        
+        if sucursal:
+            cursor.execute("""
+                SELECT * FROM Sync_Mesas
+                WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s
+                ORDER BY MesaNumero
+            """, (server_id, sucursal, fecha_op))
+        else:
+            cursor.execute("""
+                SELECT * FROM Sync_Mesas
+                WHERE ServerID = %s AND FechaOperacion = %s
+                ORDER BY SucursalNombre, MesaNumero
+            """, (server_id, fecha_op))
+        
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        mesas = []
+        total_cuentas = 0
+        total_comensales = 0
+        total_venta = 0
+        
+        for row in rows:
+            cuentas = int(row.get("TotalCuentas") or 0)
+            comensales = int(row.get("TotalComensales") or 0)
+            venta = float(row.get("VentaTotal") or 0)
+            
+            total_cuentas += cuentas
+            total_comensales += comensales
+            total_venta += venta
+            
+            mesas.append({
+                "mesa_numero": row.get("MesaNumero"),
+                "mesa_nombre": row.get("MesaNombre"),
+                "zona_id": row.get("ZonaID"),
+                "zona_nombre": row.get("ZonaNombre"),
+                "capacidad": int(row.get("Capacidad") or 4),
+                "total_cuentas": cuentas,
+                "total_comensales": comensales,
+                "venta_total": venta,
+                "ticket_promedio": float(row.get("TicketPromedio") or 0),
+                "tiempo_promedio_ocupacion": int(row.get("TiempoPromedioOcupacion") or 0),
+                "rotacion_dia": float(row.get("RotacionDia") or 0),
+                "estado_actual": row.get("EstadoActual") or "DESCONOCIDO",
+                "sucursal_id": row.get("SucursalID"),
+                "sucursal_nombre": row.get("SucursalNombre"),
+            })
+        
+        resumen = {
+            "total_mesas": len(mesas),
+            "total_cuentas": total_cuentas,
+            "total_comensales": total_comensales,
+            "venta_total": total_venta,
+            "ticket_promedio": total_venta / total_cuentas if total_cuentas > 0 else 0,
         }
+        
+        return build_envelope_response(
+            source_status=SourceStatus.SUCCESS if mesas else SourceStatus.SUCCESS,
+            data={"mesas": mesas, "resumen": resumen, "fecha": str(fecha_op)},
+            source_message=f"SQL-First: {len(mesas)} mesas desde Sync_Mesas",
+            cache_used=False
+        )
+        
+    except Exception as e:
+        logging.error(f"[MESAS] Error SQL: {e}")
+        return build_envelope_response(
+            source_status=SourceStatus.ERROR,
+            data={"mesas": []},
+            source_message=f"Error consultando mesas: {str(e)}"
+        )
     
     # CÓDIGO LEGACY (solo se ejecuta si ENABLE_LIVE_GUARD_RAIL = False)
     # ARQUITECTURA: Obtener nombre de unidad desde EDARSAHUB (primario) o MongoDB (LEGACY_FALLBACK)
@@ -3912,35 +4099,116 @@ GROUP BY V.Pr_Cve_Producto
 async def comercial_reporte_pax(
     server_id: str, 
     sucursal: str = Query(default=""),
-    fecha: str = Query(default=""),  # Formato YYYY-MM-DD
-    agrupacion: str = Query(default="vendedor"),  # vendedor o ticket
+    fecha_inicio: str = Query(default=""),
+    fecha_fin: str = Query(default=""),
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    Reporte de PAX con drill-down por vendedor o ticket.
+    Reporte de PAX (comensales) por sucursal.
     
-    FASE A-P0 (2026-05-26): GUARD RAIL LIVE
-    Este endpoint requiere conexión LIVE. Bloqueado hasta migrar a Sync_PAX_Detalle.
+    FASE DDL COMERCIAL: MIGRADO A SQL-FIRST
+    Consulta tabla Sync_PAX_Detalle en EDARSAHUB.
     """
     from modules.comercial.cache_service import (
-        SourceStatus, build_cache_key, get_cached_response, 
-        save_to_cache, build_envelope_response
+        SourceStatus, build_envelope_response
     )
     
     server = await get_server_by_id(server_id)
     if not server:
         return build_envelope_response(
             source_status=SourceStatus.ERROR,
-            data={"items": [], "resumen": {}, "comparativo": {}},
+            data={"pax_detalle": [], "resumen": {}},
             source_message="Servidor no encontrado"
         )
     
     # FASE 6-8: Validación centralizada de acceso
     await validate_server_access_rbac(current_user, server_id)
     
-    # FASE A-P0: GUARD RAIL LIVE
-    guard_result = check_live_guard_rail('/comercial/reporte-pax', server_id)
-    if guard_result:
+    # SQL-FIRST: Consultar tabla sincronizada
+    try:
+        import pymssql
+        conn = pymssql.connect(
+            server='54.39.104.176', port=1433, database='EDARSAHUB',
+            user='HRLectura', password='National09$', timeout=30, as_dict=True
+        )
+        cursor = conn.cursor()
+        
+        # Determinar rango de fechas (default últimos 7 días)
+        hoy = datetime.now().date()
+        if fecha_inicio:
+            f_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+        else:
+            f_inicio = hoy - timedelta(days=7)
+        
+        if fecha_fin:
+            f_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+        else:
+            f_fin = hoy
+        
+        if sucursal:
+            cursor.execute("""
+                SELECT * FROM Sync_PAX_Detalle
+                WHERE ServerID = %s AND SucursalID = %s 
+                  AND FechaOperacion BETWEEN %s AND %s
+                ORDER BY FechaOperacion DESC
+            """, (server_id, sucursal, f_inicio, f_fin))
+        else:
+            cursor.execute("""
+                SELECT * FROM Sync_PAX_Detalle
+                WHERE ServerID = %s AND FechaOperacion BETWEEN %s AND %s
+                ORDER BY SucursalNombre, FechaOperacion DESC
+            """, (server_id, f_inicio, f_fin))
+        
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        pax_detalle = []
+        total_comensales = 0
+        total_venta = 0
+        
+        for row in rows:
+            comensales = int(row.get("NumeroComensales") or 0)
+            venta = float(row.get("VentaCuenta") or 0)
+            
+            total_comensales += comensales
+            total_venta += venta
+            
+            pax_detalle.append({
+                "sucursal_id": row.get("SucursalID"),
+                "sucursal_nombre": row.get("SucursalNombre"),
+                "fecha": row.get("FechaOperacion").isoformat() if row.get("FechaOperacion") else None,
+                "numero_comensales": comensales,
+                "tipo_pax": row.get("TipoPAX") or "NORMAL",
+                "venta_cuenta": venta,
+                "consumo_promedio_pax": float(row.get("ConsumoPromedioPAX") or 0),
+                "tiempo_mesa": int(row.get("TiempoMesa") or 0),
+                "turno": row.get("Turno"),
+                "dia_semana": row.get("DiaSemana"),
+            })
+        
+        resumen = {
+            "total_registros": len(pax_detalle),
+            "total_comensales": total_comensales,
+            "venta_total": total_venta,
+            "consumo_promedio_global": total_venta / total_comensales if total_comensales > 0 else 0,
+            "periodo": f"{f_inicio} a {f_fin}",
+        }
+        
+        return build_envelope_response(
+            source_status=SourceStatus.SUCCESS if pax_detalle else SourceStatus.SUCCESS,
+            data={"pax_detalle": pax_detalle, "resumen": resumen},
+            source_message=f"SQL-First: {len(pax_detalle)} registros desde Sync_PAX_Detalle",
+            cache_used=False
+        )
+        
+    except Exception as e:
+        logging.error(f"[REPORTE_PAX] Error SQL: {e}")
+        return build_envelope_response(
+            source_status=SourceStatus.ERROR,
+            data={"pax_detalle": [], "resumen": {}},
+            source_message=f"Error consultando PAX: {str(e)}"
+        )
         return build_envelope_response(
             source_status=SourceStatus.ERROR,
             data={

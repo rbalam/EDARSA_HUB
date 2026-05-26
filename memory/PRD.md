@@ -512,12 +512,30 @@ Diseñar tablas SQL para migrar 6 endpoints comerciales LIVE a arquitectura NO-L
 }
 ```
 
-#### Endpoints Aún Bloqueados (6):
-1. `/comercial/metas/{server_id}` → Requiere `Sync_Metas_Comerciales`
-2. `/comercial/ticket-perfecto/{server_id}` → Requiere `Sync_Ticket_Perfecto`
-3. `/comercial/mesas/{server_id}` → Requiere `Sync_Mesas`
-4. `/comercial/reporte-pax/{server_id}` → Requiere `Sync_PAX_Detalle`
-5. `/comercial/precios-constantes/{server_id}` → Requiere `Sync_Precios_Historicos`
+#### Endpoints Aún Bloqueados (2):
+1. `/comercial/detalle-movimientos/{server_id}` → Requiere Job de sync
+2. `/comercial/precios-constantes/{server_id}` → Requiere Job de sync
+
+#### Endpoints MIGRADOS a SQL-First (4):
+| Endpoint | Estado |
+|----------|--------|
+| `/comercial/metas/{server_id}` | ✅ SQL-First |
+| `/comercial/ticket-perfecto/{server_id}` | ✅ SQL-First |
+| `/comercial/mesas/{server_id}` | ✅ SQL-First |
+| `/comercial/reporte-pax/{server_id}` | ✅ SQL-First |
+
+#### DDL Ejecutado (6 tablas):
+```
+✅ Sync_Metas_Comerciales
+✅ Sync_Ticket_Perfecto
+✅ Sync_Mesas
+✅ Sync_PAX_Detalle
+✅ Sync_Movimientos_Detalle
+✅ Sync_Precios_Historicos
+```
+
+#### Job de Sincronización:
+- `/app/backend/core/scheduler/jobs/sync_comercial_endpoints_job.py`
 6. `/comercial/detalle-movimientos/{server_id}` → Requiere `Sync_Movimientos_Detalle`
 
 #### Documentación:
