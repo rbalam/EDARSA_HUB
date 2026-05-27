@@ -61,8 +61,10 @@ class SyncComercialEndpointsJob:
         self.db = db
         self.config = config or JobConfig(
             job_id=self.JOB_ID,
+            job_name="Sync Comercial Endpoints",
+            description="Sincroniza datos comerciales de endpoints LIVE a tablas SQL",
             enabled=True,
-            interval_minutes=60,
+            interval_seconds=3600,  # 1 hora
             timeout_seconds=300
         )
         self.job_name = self.JOB_ID
@@ -167,9 +169,9 @@ class SyncComercialEndpointsJob:
             cursor = conn.cursor()
             
             cursor.execute("""
-                SELECT DISTINCT ServerID, Nombre as ServerNombre
-                FROM Sistema_Servidores
-                WHERE Activo = 1
+                SELECT DISTINCT id as ServerID, nombre as ServerNombre
+                FROM Servidores_Conexiones
+                WHERE activo = 1
             """)
             
             servers = list(cursor.fetchall())
@@ -188,11 +190,12 @@ class SyncComercialEndpointsJob:
             conn = self._get_edarsahub_connection()
             cursor = conn.cursor()
             
+            # Usar MongoServidorUUID para hacer match con el ID del servidor
             cursor.execute("""
-                SELECT SucursalID, SucursalOrigenID, Nombre as SucursalNombre
+                SELECT SucursalID, SucursalOrigenID, SucursalID as SucursalNombre
                 FROM Sistema_SucursalServidorMapeo
-                WHERE ServidorID = %s AND Activo = 1
-            """, (server_id,))
+                WHERE (ServidorID = %s OR MongoServidorUUID = %s) AND Activo = 1
+            """, (server_id, server_id))
             
             sucursales = list(cursor.fetchall())
             cursor.close()
@@ -228,20 +231,20 @@ class SyncComercialEndpointsJob:
             
             for suc in sucursales:
                 try:
-                    # Obtener ventas actuales del mes desde KPIs
+                    # Obtener ventas actuales del mes desde KPIs (columnas en minúsculas)
                     cursor.execute("""
                         SELECT 
-                            ISNULL(SUM(VentaBruta), 0) as VentaBrutaActual,
-                            ISNULL(SUM(VentaNeta), 0) as VentaNetaActual,
-                            ISNULL(AVG(TicketPromedio), 0) as TicketPromedioActual,
-                            ISNULL(SUM(Cuentas), 0) as CuentasActual,
-                            ISNULL(SUM(Comensales), 0) as ComensalesActual,
-                            COUNT(DISTINCT FechaOperacion) as DiasTranscurridos
+                            ISNULL(SUM(ventas_total), 0) as VentaBrutaActual,
+                            ISNULL(SUM(ventas_sin_propina), 0) as VentaNetaActual,
+                            ISNULL(AVG(ticket_promedio), 0) as TicketPromedioActual,
+                            ISNULL(SUM(tickets_total), 0) as CuentasActual,
+                            ISNULL(SUM(pax_total), 0) as ComensalesActual,
+                            COUNT(DISTINCT fecha_operacion) as DiasTranscurridos
                         FROM Comercial_KPIs_Diarios_v2
-                        WHERE ServerID = %s 
-                          AND SucursalID = %s
-                          AND YEAR(FechaOperacion) = %s
-                          AND MONTH(FechaOperacion) = %s
+                        WHERE server_id = %s 
+                          AND sucursal_id = %s
+                          AND anio = %s
+                          AND mes = %s
                     """, (server_id, suc["SucursalID"], anio, mes))
                     
                     row = cursor.fetchone()
@@ -259,10 +262,17 @@ class SyncComercialEndpointsJob:
                         proyeccion = promedio_diario * dias_mes
                         meta = proyeccion * 1.10  # Meta = proyección + 10%
                         
-                        # Upsert en tabla
+                        # Upsert en tabla - simplificado
                         cursor.execute("""
-                            IF EXISTS (SELECT 1 FROM Sync_Metas_Comerciales 
-                                       WHERE ServerID = %s AND SucursalID = %s AND Anio = %s AND Mes = %s)
+                            IF NOT EXISTS (SELECT 1 FROM Sync_Metas_Comerciales 
+                                           WHERE ServerID = %s AND SucursalID = %s AND Anio = %s AND Mes = %s)
+                                INSERT INTO Sync_Metas_Comerciales 
+                                (MetaID, ServerID, SucursalID, SucursalNombre, Anio, Mes,
+                                 MetaVentaBruta, VentaBrutaActual, VentaNetaActual, 
+                                 TicketPromedioActual, CuentasActual, ComensalesActual,
+                                 DiasTranscurridos, DiasRestantes, ProyeccionMes)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ELSE
                                 UPDATE Sync_Metas_Comerciales SET
                                     VentaBrutaActual = %s,
                                     VentaNetaActual = %s,
@@ -272,30 +282,21 @@ class SyncComercialEndpointsJob:
                                     DiasTranscurridos = %s,
                                     DiasRestantes = %s,
                                     ProyeccionMes = %s,
-                                    PorcentajeCumplimiento = CASE WHEN MetaVentaBruta > 0 
-                                        THEN (%s / MetaVentaBruta) * 100 ELSE 0 END,
                                     FechaSync = GETUTCDATE()
                                 WHERE ServerID = %s AND SucursalID = %s AND Anio = %s AND Mes = %s
-                            ELSE
-                                INSERT INTO Sync_Metas_Comerciales 
-                                (MetaID, ServerID, SucursalID, SucursalNombre, Anio, Mes,
-                                 MetaVentaBruta, VentaBrutaActual, VentaNetaActual, 
-                                 TicketPromedioActual, CuentasActual, ComensalesActual,
-                                 DiasTranscurridos, DiasRestantes, ProyeccionMes)
-                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """, (
-                            # UPDATE params
-                            server_id, suc["SucursalID"], anio, mes,
-                            row["VentaBrutaActual"], row["VentaNetaActual"],
-                            row["TicketPromedioActual"], row["CuentasActual"],
-                            row["ComensalesActual"], dias, dias_mes - dias,
-                            proyeccion, row["VentaBrutaActual"],
+                            # EXISTS check params
                             server_id, suc["SucursalID"], anio, mes,
                             # INSERT params
                             meta_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
                             anio, mes, meta, row["VentaBrutaActual"], row["VentaNetaActual"],
                             row["TicketPromedioActual"], row["CuentasActual"],
-                            row["ComensalesActual"], dias, dias_mes - dias, proyeccion
+                            row["ComensalesActual"], dias, dias_mes - dias, proyeccion,
+                            # UPDATE params
+                            row["VentaBrutaActual"], row["VentaNetaActual"],
+                            row["TicketPromedioActual"], row["CuentasActual"],
+                            row["ComensalesActual"], dias, dias_mes - dias, proyeccion,
+                            server_id, suc["SucursalID"], anio, mes
                         ))
                         conn.commit()
                         count += 1
@@ -332,15 +333,15 @@ class SyncComercialEndpointsJob:
                 try:
                     cursor.execute("""
                         SELECT 
-                            FechaOperacion,
-                            ISNULL(Cuentas, 0) as TotalCuentas,
-                            ISNULL(Comensales, 0) as TotalComensales,
-                            ISNULL(VentaBruta, 0) as VentaTotal,
-                            ISNULL(TicketPromedio, 0) as TicketPromedioReal
+                            fecha_operacion as FechaOperacion,
+                            ISNULL(tickets_total, 0) as TotalCuentas,
+                            ISNULL(pax_total, 0) as TotalComensales,
+                            ISNULL(ventas_total, 0) as VentaTotal,
+                            ISNULL(ticket_promedio, 0) as TicketPromedioReal
                         FROM Comercial_KPIs_Diarios_v2
-                        WHERE ServerID = %s 
-                          AND SucursalID = %s
-                          AND FechaOperacion >= %s
+                        WHERE server_id = %s 
+                          AND sucursal_id = %s
+                          AND fecha_operacion >= %s
                     """, (server_id, suc["SucursalID"], fecha_inicio))
                     
                     for row in cursor.fetchall():
@@ -397,21 +398,23 @@ class SyncComercialEndpointsJob:
             
             for suc in sucursales:
                 try:
-                    # Obtener mesas desde ventas abiertas
+                    # Obtener datos agregados de ventas (las columnas reales son minúsculas)
                     cursor.execute("""
                         SELECT 
-                            ISNULL(NumMesa, '0') as MesaNumero,
-                            COUNT(DISTINCT CuentaID) as TotalCuentas,
-                            ISNULL(SUM(Comensales), 0) as TotalComensales,
-                            ISNULL(SUM(Total), 0) as VentaTotal
+                            sucursal_id,
+                            sucursal_nombre,
+                            CAST(fecha_operacion as DATE) as FechaOp,
+                            ISNULL(SUM(tickets_cerrados_dia), 0) as TotalCuentas,
+                            ISNULL(SUM(pax_cerrados_dia), 0) as TotalComensales,
+                            ISNULL(SUM(ventas_cerradas_dia), 0) as VentaTotal
                         FROM Comercial_Ventas_Dia_Abiertas_v2
-                        WHERE ServerID = %s AND SucursalID = %s
-                          AND CAST(FechaOperacion AS DATE) = %s
-                        GROUP BY NumMesa
+                        WHERE server_id = %s AND sucursal_id = %s
+                          AND CAST(fecha_operacion AS DATE) = %s
+                        GROUP BY sucursal_id, sucursal_nombre, CAST(fecha_operacion as DATE)
                     """, (server_id, suc["SucursalID"], hoy))
                     
                     for row in cursor.fetchall():
-                        mesa_id = f"{server_id}-{suc['SucursalID']}-{hoy}-{row['MesaNumero']}"
+                        mesa_id = f"{server_id}-{suc['SucursalID']}-{hoy}-resumen"
                         
                         ticket_promedio = (float(row["VentaTotal"] or 0) / int(row["TotalCuentas"] or 1)) if row["TotalCuentas"] else 0
                         
@@ -424,9 +427,9 @@ class SyncComercialEndpointsJob:
                                  MesaNumero, TotalCuentas, TotalComensales, VentaTotal, TicketPromedio)
                                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """, (
-                            server_id, suc["SucursalID"], hoy, row["MesaNumero"],
-                            mesa_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
-                            hoy, row["MesaNumero"], row["TotalCuentas"], 
+                            server_id, suc["SucursalID"], hoy, 'TOTAL',
+                            mesa_id, server_id, suc["SucursalID"], row.get("sucursal_nombre", ""),
+                            hoy, 'TOTAL', row["TotalCuentas"], 
                             row["TotalComensales"], row["VentaTotal"], ticket_promedio
                         ))
                         conn.commit()
@@ -464,14 +467,14 @@ class SyncComercialEndpointsJob:
                 try:
                     cursor.execute("""
                         SELECT 
-                            FechaOperacion,
-                            ISNULL(SUM(Comensales), 0) as TotalComensales,
-                            ISNULL(SUM(Total), 0) as VentaTotal,
-                            COUNT(DISTINCT CuentaID) as TotalCuentas
+                            CAST(fecha_operacion AS DATE) as FechaOperacion,
+                            ISNULL(SUM(pax_cerrados_dia), 0) as TotalComensales,
+                            ISNULL(SUM(ventas_cerradas_dia), 0) as VentaTotal,
+                            ISNULL(SUM(tickets_cerrados_dia), 0) as TotalCuentas
                         FROM Comercial_Ventas_Dia_Abiertas_v2
-                        WHERE ServerID = %s AND SucursalID = %s
-                          AND FechaOperacion >= %s
-                        GROUP BY FechaOperacion
+                        WHERE server_id = %s AND sucursal_id = %s
+                          AND fecha_operacion >= %s
+                        GROUP BY CAST(fecha_operacion AS DATE)
                     """, (server_id, suc["SucursalID"], fecha_inicio))
                     
                     for row in cursor.fetchall():
