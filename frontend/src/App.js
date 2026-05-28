@@ -65,8 +65,8 @@ import PortalProveedoresApp from '@/portal/App';
 function App() {
   return (
     <AuthProvider>
-      <div className="App">
-        <BrowserRouter>
+      <BrowserRouter>
+        <div className="App">
           <Routes>
             {/* Portal de Proveedores - Ruta separada */}
             <Route path="/portal-proveedores/*" element={<PortalProveedoresApp />} />
@@ -143,10 +143,10 @@ function App() {
           
           <Route path="*" element={<Navigate to={isAuthenticated() ? "/reportes" : "/login"} replace />} />
           </Routes>
-        </BrowserRouter>
-        
-        <Toaster position="top-right" richColors />
-      </div>
+          
+          <Toaster position="top-right" richColors />
+        </div>
+      </BrowserRouter>
     </AuthProvider>
   );
 }

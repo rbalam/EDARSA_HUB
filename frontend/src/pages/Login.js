@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { flushSync } from 'react-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -23,9 +24,14 @@ const Login = () => {
     try {
       const response = await api.post('/auth/login', { email, password });
       // login() del AuthContext ya mapea a loginWithData (setea token en memoria)
-      login(response.data.token, response.data.user);
+      flushSync(() => {
+        login(response.data.token, response.data.user);
+      });
       toast.success('Inicio de sesión exitoso');
-      navigate('/dashboard');
+      // Pequeño delay para permitir que el toast se renderice antes de navegar
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 100);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error al iniciar sesión');
     } finally {
