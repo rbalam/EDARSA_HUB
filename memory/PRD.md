@@ -2531,3 +2531,92 @@ Creado `/app/backend/modules/comercial/services/impuestos_service.py`:
 - Default: 5%
 - Si desviación > tolerancia: Estado `PENDIENTE_AUTORIZACION`
 - Si desviación <= tolerancia: Estado `CERRADA` + Fase 6 ejecutada
+
+
+
+---
+
+### ✅ DIAGNÓSTICO PASIVO OBLIGATORIO: Costos, Precios e Impuestos - COMPLETADO
+
+**Fecha:** 2026-05-25
+
+#### Objetivo:
+Auditoría pasiva (solo lectura) de las estructuras de datos de EDARSAHUB SQL Server para determinar cómo se manejan costos, precios e impuestos, previo a implementar el motor de alertas de margen.
+
+#### Hallazgos Principales:
+
+**1. Estructura de Impuestos:**
+- `Comercial_ImpuestosCatalogo`: 8 tipos de impuestos (IVA 0%, 16%, IEPS 8%, 26.5%, 30%, 53%)
+- `Comercial_ImpuestosTasas`: 7 tasas vigentes con historial
+- `Comercial_ImpuestosMapeo`: 9,905 productos mapeados a su impuesto canónico
+
+**2. Costos de Insumos (`Sync_Productos_Insumos`):**
+- 11,735 insumos sincronizados
+- Campo `Costo` = **SIN IVA** (base)
+- Campo `CostoConImpuestos` = **CON IVA**
+- 1,156 insumos tienen exactamente 16% de diferencia (confirma separación IVA)
+
+**3. Costos de Recetas (`Sync_Productos_Recetas`):**
+- 13,313 componentes de receta
+- Campos `CostoUnitario` y `CostoTotal` = **SIN IVA**
+
+**4. Precios de Venta (`Sync_Productos`):**
+- 9,905 productos
+- Campo `PrecioVenta` = **CON IVA**
+- Campo `PrecioSinImpuestos` = **SIN IVA**
+- 82% productos tienen IVA 16%, 17% tienen IVA 0%
+
+**5. Reglas de Precio:**
+- Única regla activa: `VINOS_RANGOS_MX` con 13 rangos de multiplicador (2.5x a 1.3x)
+
+**6. Alertas de Margen:**
+- 3 reglas configuradas (ALIMENTOS 65%, CARNES 55%, RIBEYE-500 40%)
+
+#### Fórmula Correcta de Margen:
+```
+MargenBrutoPorcentaje = ((PrecioSinImpuestos - CostoReceta) / PrecioSinImpuestos) × 100
+```
+Donde ambos valores son SIN IVA.
+
+#### Alertas de Integridad:
+| Severidad | Hallazgo |
+|-----------|----------|
+| ALTA | 4,729 insumos con CostoConImpuestos < Costo (inconsistencia) |
+| ALTA | CostoReceta = 0 en todos los productos (no calculado) |
+| MEDIA | Tabla Comercial_RecetasSnapshot vacía |
+| MEDIA | CostoMerma siempre NULL en mermas |
+
+#### Tablas Vacías Detectadas:
+- Comercial_RecetasSnapshot
+- Comercial_PreciosSugeridos
+- Sync_Precios_Historicos
+- Sync_Impuestos_Origen
+- Operaciones_Tablaje_Costos
+
+#### Documentación:
+- `/app/docs/reports/DIAGNOSTICO_IMPUESTOS_COSTOS_MARGENES_EDARSAHUB.md` (496 líneas)
+
+#### Próximos Pasos Recomendados:
+1. **P0**: Poblar campo `CostoReceta` en `Sync_Productos` sumando recetas
+2. **P1**: Implementar job de snapshot para `Comercial_RecetasSnapshot`
+3. **P1**: Calcular `CostoMerma` en operaciones de tablaje
+4. **P2**: Motor de alertas de margen usando fórmula correcta
+
+---
+
+## Backlog Actualizado
+
+### P0 - Bloqueadores
+- [ ] Resync Cienfuegos desde producción (bloqueado por red)
+- [x] DIAGNÓSTICO PASIVO: Costos, Precios e Impuestos ✅
+
+### P1 - En Progreso
+- [ ] Corregir errores mapeo en `sync_comercial_endpoints_job.py`
+- [ ] Migrar endpoints `/detalle-movimientos` y `/precios-constantes`
+- [ ] Implementar lógica de Rentabilidad (post-diagnóstico)
+- [ ] COSTOS-ALERTAS-001-E: Motor de evaluación de margen
+- [ ] COSTOS-ALERTAS-001-F: Job/scheduler alertas
+
+### P2 - Futuro
+- [ ] Migración Frontend Competidores Enterprise
+- [ ] FASE 0-9 Arquitectura Integral Operativa
