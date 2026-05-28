@@ -13,7 +13,6 @@ import json
 
 from .base_connector import BaseCRMConnector, SyncResult, SyncDirection, SyncStatus
 from .staging_service import StagingService
-from .vtiger_connector import VTigerConnector
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +42,9 @@ class SyncEngine:
         """Obtiene o crea instancia de conector"""
         tipo = config.get('tipo_conector', '').upper()
         
-        if tipo == 'VTIGER':
-            return VTigerConnector(conector_id, config)
-        # Agregar más conectores aquí: SALESFORCE, HUBSPOT, etc.
-        
-        logger.error(f"[SyncEngine] Tipo de conector no soportado: {tipo}")
+        # NOTA: Conectores externos (vTiger, Salesforce, etc.) han sido eliminados.
+        # El CRM opera en modo SQL-First sin dependencias externas.
+        logger.warning(f"[SyncEngine] Conectores externos deshabilitados. Tipo solicitado: {tipo}")
         return None
     
     def run_sync(self, job: SyncJob, config: Dict[str, Any]) -> SyncResult:

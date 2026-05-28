@@ -1,7 +1,8 @@
 """
 EDARSA HUB - CRM Integration Framework
 ======================================
-Framework de integración para conectar CRMs externos con el CRM nativo.
+Framework de integración SQL-First (Sin conectores externos).
+vTiger y otros CRMs externos han sido eliminados.
 """
 
 from .base_connector import (
@@ -14,7 +15,6 @@ from .base_connector import (
     OportunidadExterna,
     CuentaExterna
 )
-from .vtiger_connector import VTigerConnector
 from .staging_service import StagingService
 from .sync_engine import SyncEngine, SyncJob
 from .staging_processor import StagingProcessor, MatchAction, ProcessResult
@@ -28,7 +28,6 @@ __all__ = [
     'LeadExterno',
     'OportunidadExterna',
     'CuentaExterna',
-    'VTigerConnector',
     'StagingService',
     'SyncEngine',
     'SyncJob',

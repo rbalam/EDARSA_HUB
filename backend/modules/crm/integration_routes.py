@@ -37,10 +37,10 @@ DB_CONFIG = {
 
 class ConectorCreate(BaseModel):
     empresa_id: str
-    codigo: str = Field(..., max_length=50, description="Código único: VTIGER, SALESFORCE, etc.")
+    codigo: str = Field(..., max_length=50, description="Código único del conector")
     nombre: str = Field(..., max_length=100)
     descripcion: Optional[str] = None
-    tipo_conector: str = Field(..., description="Tipo: VTIGER, SALESFORCE, HUBSPOT")
+    tipo_conector: str = Field(..., description="Tipo de conector externo (deprecado)")
     configuracion: dict = Field(default_factory=dict, description="Config JSON: url, username, access_key")
     activo: bool = True
     es_principal: bool = False
@@ -55,7 +55,7 @@ class ConectorUpdate(BaseModel):
 
 
 class TestConnectionRequest(BaseModel):
-    tipo: str = Field(..., description="VTIGER, SALESFORCE, etc.")
+    tipo: str = Field(..., description="Conector externo (deprecado)")
     base_url: str
     username: str
     access_key: str

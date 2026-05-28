@@ -4,7 +4,7 @@ EDARSA HUB - CRM Enterprise Native Routes
 Endpoints REST para CRM nativo (SQL Server EDARSAHUB).
 Prefijo: /api/crm/native
 
-NO MODIFICA los endpoints VTiger existentes en routes.py
+Opera con arquitectura SQL-First sin dependencias externas
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Query, Path

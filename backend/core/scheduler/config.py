@@ -229,7 +229,7 @@ class SchedulerConfig(BaseModel):
             "crm_sync": JobConfig(
                 job_id="crm_sync",
                 job_name="CRM - Sincronización Externa",
-                description="Sincronización automática con CRMs externos (VTiger, etc.) cada 30 minutos",
+                description="Tareas automáticas del CRM Enterprise (SQL-First) cada 30 minutos",
                 enabled=crm_sync_enabled,
                 interval_seconds=crm_sync_interval,
                 batch_size=100,

@@ -113,7 +113,7 @@ class CuentaExterna:
 class BaseCRMConnector(ABC):
     """
     Clase base abstracta para conectores CRM.
-    Todos los conectores (VTiger, Salesforce, HubSpot, etc.) deben heredar de esta.
+    Clase base abstracta para conectores externos (deprecada - CRM opera SQL-First).
     """
     
     def __init__(self, conector_id: int, config: Dict[str, Any]):

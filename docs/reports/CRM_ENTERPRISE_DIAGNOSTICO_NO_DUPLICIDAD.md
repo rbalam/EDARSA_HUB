@@ -1,3 +1,5 @@
+> **NOTA HISTÓRICA:** Las referencias a vTiger en este documento son obsoletas. El CRM opera en modo SQL-First sin dependencias externas.
+
 # CRM ENTERPRISE EDARSA HUB - DIAGNÓSTICO DE NO DUPLICIDAD
 
 **Fecha:** 2026-05-23

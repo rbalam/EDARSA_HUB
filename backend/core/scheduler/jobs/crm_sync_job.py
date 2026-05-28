@@ -1,10 +1,13 @@
 """
 EDARSA HUB - CRM Sync Job
 ==========================
-Job programado para sincronización automática con CRMs externos (VTiger, etc.)
+Job programado para tareas automáticas del CRM Enterprise (SQL-First).
+
+NOTA: Sincronización con CRMs externos (vTiger) ha sido eliminada.
+Este job ahora solo ejecuta tareas internas de SLA y actividades.
 
 Ejecución: Cada 30 minutos por defecto
-Acción: Sincroniza leads, oportunidades y cuentas desde CRMs externos
+Acción: Verifica SLAs y actividades vencidas
 """
 
 import logging
@@ -29,138 +32,31 @@ def _get_connection():
 
 async def execute_crm_sync(db) -> Dict[str, Any]:
     """
-    Ejecuta sincronización con CRMs externos configurados.
+    Job de sincronización CRM.
+    
+    NOTA: Sincronización con CRMs externos (vTiger) ha sido eliminada.
+    Este job retorna inmediatamente indicando que no hay conectores externos.
     
     Args:
         db: StubDatabase (no usado, SQL Server directo)
     
     Returns:
-        Dict con resultados de la sincronización
+        Dict con mensaje indicando que no hay sincronización externa
     """
-    from modules.crm.integration.sync_engine import SyncEngine, SyncJob
+    logger.info("[CRM-SYNC] Sincronización externa deshabilitada (vTiger eliminado)")
     
-    inicio = datetime.now()
-    
-    # Resultados globales
-    total_conectores = 0
-    conectores_exitosos = 0
-    registros_creados = 0
-    registros_actualizados = 0
-    registros_error = 0
-    errores = []
-    
-    conn = _get_connection()
-    try:
-        cursor = conn.cursor(as_dict=True)
-        
-        # Obtener conectores activos
-        cursor.execute("""
-            SELECT 
-                c.ConectorID, c.EmpresaID, c.TipoConector,
-                c.URLBase, c.Usuario, c.APIKey, c.SecretKey,
-                c.ConfigJSON, c.UltimaSincronizacion
-            FROM CRM_Integration_Conectores c
-            WHERE c.Activo = 1
-            AND c.SyncAutomatico = 1
-            ORDER BY c.UltimaSincronizacion ASC
-        """)
-        
-        conectores = cursor.fetchall() or []
-        total_conectores = len(conectores)
-        
-        if not conectores:
-            logger.info("[CRM-SYNC] No hay conectores activos para sincronizar")
-            return {
-                "estatus_general": "OK",
-                "mensaje": "Sin conectores activos",
-                "total_conectores": 0,
-                "duracion_ms": 0
-            }
-        
-        # Inicializar motor de sincronización
-        db_config = {
-            'host': os.environ.get('EDARSAHUB_HOST'),
-            'user': os.environ.get('EDARSAHUB_USERNAME'),
-            'password': os.environ.get('EDARSAHUB_PASSWORD'),
-            'database': os.environ.get('EDARSAHUB_DATABASE'),
-            'port': int(os.environ.get('EDARSAHUB_PORT', 1433))
-        }
-        sync_engine = SyncEngine(db_config)
-        
-        for conector in conectores:
-            try:
-                conector_id = conector['ConectorID']
-                empresa_id = conector['EmpresaID']
-                
-                logger.info(f"[CRM-SYNC] Sincronizando conector {conector_id} ({conector['TipoConector']})")
-                
-                # Configurar job
-                job = SyncJob(
-                    conector_id=conector_id,
-                    empresa_id=empresa_id,
-                    tipo_conector=conector['TipoConector'],
-                    entidades=['leads', 'oportunidades', 'cuentas'],
-                    desde_fecha=conector.get('UltimaSincronizacion')
-                )
-                
-                # Configurar conector
-                config = {
-                    'url_base': conector['URLBase'],
-                    'usuario': conector['Usuario'],
-                    'api_key': conector['APIKey'],
-                    'secret_key': conector['SecretKey']
-                }
-                
-                # Ejecutar sincronización
-                result = sync_engine.run_sync(job, config)
-                
-                if result.success:
-                    conectores_exitosos += 1
-                    registros_creados += result.registros_creados
-                    registros_actualizados += result.registros_actualizados
-                    
-                    # Actualizar timestamp de última sincronización
-                    cursor.execute("""
-                        UPDATE CRM_Integration_Conectores
-                        SET UltimaSincronizacion = GETDATE()
-                        WHERE ConectorID = %s
-                    """, (conector_id,))
-                    conn.commit()
-                else:
-                    registros_error += result.registros_error
-                    errores.extend(result.errores[:5])  # Max 5 errores por conector
-                
-            except Exception as e:
-                logger.error(f"[CRM-SYNC] Error con conector {conector.get('ConectorID')}: {e}")
-                errores.append(f"Conector {conector.get('ConectorID')}: {str(e)}")
-        
-    except Exception as e:
-        logger.error(f"[CRM-SYNC] Error general: {e}")
-        errores.append(str(e))
-    finally:
-        conn.close()
-    
-    duracion_ms = int((datetime.now() - inicio).total_seconds() * 1000)
-    
-    resultado = {
-        "estatus_general": "OK" if conectores_exitosos == total_conectores else "PARCIAL",
-        "total_conectores": total_conectores,
-        "conectores_exitosos": conectores_exitosos,
-        "registros_creados": registros_creados,
-        "registros_actualizados": registros_actualizados,
-        "registros_error": registros_error,
-        "duracion_ms": duracion_ms,
-        "fecha_ejecucion": inicio.isoformat(),
-        "errores": errores[:10]
+    return {
+        "estatus_general": "OK",
+        "mensaje": "Sincronización con CRMs externos deshabilitada. El CRM opera en modo SQL-First.",
+        "total_conectores": 0,
+        "conectores_exitosos": 0,
+        "registros_creados": 0,
+        "registros_actualizados": 0,
+        "registros_error": 0,
+        "duracion_ms": 0,
+        "fecha_ejecucion": datetime.now().isoformat(),
+        "errores": []
     }
-    
-    logger.info(
-        f"[CRM-SYNC] Completado: {conectores_exitosos}/{total_conectores} conectores, "
-        f"{registros_creados} creados, {registros_actualizados} actualizados, "
-        f"{registros_error} errores, {duracion_ms}ms"
-    )
-    
-    return resultado
 
 
 async def execute_crm_sla_check(db) -> Dict[str, Any]:
