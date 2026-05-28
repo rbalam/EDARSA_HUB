@@ -171,56 +171,67 @@ async def listar_cuentas(
 
 
 async def _get_vtiger_cuentas(search: Optional[str], limit: int, offset: int):
-    """Obtiene cuentas desde Vtiger sincronizado"""
-    from .vtiger_client import create_vtiger_client
+    """
+    Obtiene cuentas desde SQL Server (Sync_Vtiger_Cuentas) - Arquitectura NO-LIVE.
+    NUNCA hace llamadas HTTP directas a Vtiger API.
+    """
+    import pymssql
     import os
     
-    logger.info(f"[CRM] _get_vtiger_cuentas llamado con search={search}, limit={limit}, offset={offset}")
-    
-    base_url = os.environ.get('VTIGER_BASE_URL')
-    username = os.environ.get('VTIGER_USERNAME')
-    access_key = os.environ.get('VTIGER_ACCESS_KEY')
-    
-    logger.info(f"[CRM] Vtiger config: url={base_url}, user={username}, key={'***' if access_key else 'NONE'}")
-    
-    if not all([base_url, username, access_key]):
-        logger.warning("[CRM] Configuración Vtiger incompleta")
-        return {'items': [], 'total': 0}
-    
-    client = create_vtiger_client(base_url, username, access_key)
+    logger.info(f"[CRM] _get_vtiger_cuentas (SQL-First) llamado con search={search}, limit={limit}, offset={offset}")
     
     try:
-        result = await client.get_accounts(limit=100)
-        await client.close()
+        conn = pymssql.connect(
+            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+            port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
+            user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+            password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
+        )
+        cursor = conn.cursor(as_dict=True)
         
-        if not result.get('success'):
-            return {'items': [], 'total': 0}
+        # Construir query con filtro de búsqueda
+        base_query = """
+            SELECT VtigerID, CuentaNo, NombreCuenta, Website, Telefono, Fax, Email,
+                   Industria, TipoCuenta, IngresoAnual, NumEmpleados, Descripcion,
+                   Ciudad, Estado, Pais, FechaCreacionVtiger, FechaModificacionVtiger
+            FROM Sync_Vtiger_Cuentas
+        """
         
-        records = result.get('records', [])
-        
-        # Filtrar por búsqueda
+        params = []
         if search:
-            search_lower = search.lower()
-            records = [r for r in records if search_lower in r.get('accountname', '').lower()]
+            base_query += " WHERE NombreCuenta LIKE %s"
+            params = [f'%{search}%']
+        
+        base_query += " ORDER BY FechaCreacionVtiger DESC"
+        
+        cursor.execute(base_query, params)
+        records = cursor.fetchall()
         
         # Mapear a formato local
         items = []
-        for idx, r in enumerate(records):
+        for r in records:
+            ciudad = r.get('Ciudad') or ''
+            estado = r.get('Estado') or ''
+            pais = r.get('Pais') or ''
+            
             items.append({
-                'cuenta_id': r.get('id', f'vtiger-{idx}'),
-                'codigo_cuenta': r.get('account_no', f'VT-ACC-{idx+1:04d}'),
-                'nombre_cuenta': r.get('accountname', ''),
-                'tipo_cuenta': r.get('accounttype', 'Cliente'),
-                'industria': r.get('industry', ''),
-                'telefono': r.get('phone', ''),
-                'email': r.get('email1', ''),
-                'website': r.get('website', ''),
-                'direccion': f"{r.get('bill_city', '')} {r.get('bill_state', '')} {r.get('bill_country', '')}".strip(),
+                'cuenta_id': r.get('VtigerID', ''),
+                'codigo_cuenta': r.get('CuentaNo', ''),
+                'nombre_cuenta': r.get('NombreCuenta') or '',
+                'tipo_cuenta': r.get('TipoCuenta') or 'Cliente',
+                'industria': r.get('Industria') or '',
+                'telefono': r.get('Telefono') or '',
+                'email': r.get('Email') or '',
+                'website': r.get('Website') or '',
+                'direccion': f"{ciudad} {estado} {pais}".strip(),
                 'estatus': 'Activo',
-                'ejecutivo_nombre': r.get('assigned_user_id', ''),
-                'created_at': r.get('createdtime', ''),
-                'source': 'vtiger'
+                'ejecutivo_nombre': '',
+                'created_at': str(r.get('FechaCreacionVtiger') or ''),
+                'source': 'vtiger_sql'
             })
+        
+        conn.close()
         
         # Paginación
         total = len(items)
@@ -228,8 +239,7 @@ async def _get_vtiger_cuentas(search: Optional[str], limit: int, offset: int):
         
         return {'items': paginated, 'total': total}
     except Exception as e:
-        logger.error(f"[CRM] Error obteniendo cuentas de Vtiger: {e}")
-        await client.close()
+        logger.error(f"[CRM] Error obteniendo cuentas de SQL (Sync_Vtiger_Cuentas): {e}")
         return {'items': [], 'total': 0}
 
 

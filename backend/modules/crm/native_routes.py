@@ -70,70 +70,79 @@ async def listar_leads(
 
 
 async def _get_vtiger_leads_as_native(busqueda: Optional[str], page: int, page_size: int):
-    """Obtiene leads de Vtiger y los mapea al formato nativo"""
-    from .vtiger_client import create_vtiger_client
+    """
+    Obtiene leads desde SQL Server (Sync_Vtiger_Leads) - Arquitectura NO-LIVE.
+    NUNCA hace llamadas HTTP directas a Vtiger API.
+    """
+    import pymssql
     import os
     
-    base_url = os.environ.get('VTIGER_BASE_URL')
-    username = os.environ.get('VTIGER_USERNAME')
-    access_key = os.environ.get('VTIGER_ACCESS_KEY')
-    
-    if not all([base_url, username, access_key]):
-        return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
-    
-    client = create_vtiger_client(base_url, username, access_key)
-    
     try:
-        result = await client.get_leads(limit=100)
-        await client.close()
+        conn = pymssql.connect(
+            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+            port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
+            user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+            password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
+        )
+        cursor = conn.cursor(as_dict=True)
         
-        if not result.get('success'):
-            logger.error(f"[CRM] Error obteniendo leads de Vtiger: {result.get('error')}")
-            return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
+        # Construir query con filtro de búsqueda
+        base_query = """
+            SELECT VtigerID, LeadNo, Nombre, Apellido, Empresa, Email, Telefono, Celular,
+                   Website, Industria, FuenteLead, Estatus, IngresoAnual, NumEmpleados,
+                   Descripcion, Ciudad, Estado, Pais, FechaCreacionVtiger, FechaModificacionVtiger
+            FROM Sync_Vtiger_Leads
+        """
         
-        records = result.get('records', [])
-        
-        # Filtrar por búsqueda si aplica
+        params = []
         if busqueda:
-            busqueda_lower = busqueda.lower()
-            records = [
-                r for r in records 
-                if busqueda_lower in (r.get('firstname', '') + ' ' + r.get('lastname', '')).lower()
-                or busqueda_lower in r.get('company', '').lower()
-                or busqueda_lower in r.get('email', '').lower()
-            ]
+            base_query += """
+                WHERE (Nombre LIKE %s OR Apellido LIKE %s OR Empresa LIKE %s OR Email LIKE %s)
+            """
+            search_param = f'%{busqueda}%'
+            params = [search_param, search_param, search_param, search_param]
+        
+        base_query += " ORDER BY FechaCreacionVtiger DESC"
+        
+        cursor.execute(base_query, params)
+        records = cursor.fetchall()
         
         # Mapear a formato nativo
         items = []
-        for idx, r in enumerate(records):
+        for r in records:
+            nombre = r.get('Nombre') or ''
+            apellido = r.get('Apellido') or ''
             items.append({
-                'lead_id': r.get('id', f'vtiger-{idx}'),
-                'folio_lead': r.get('lead_no', f'VT-{idx+1:04d}'),
-                'nombre_contacto': f"{r.get('firstname', '')} {r.get('lastname', '')}".strip(),
-                'apellido_paterno': r.get('lastname', ''),
+                'lead_id': r.get('VtigerID', ''),
+                'folio_lead': r.get('LeadNo', ''),
+                'nombre_contacto': f"{nombre} {apellido}".strip(),
+                'apellido_paterno': apellido,
                 'apellido_materno': '',
-                'nombre_empresa': r.get('company', ''),
-                'puesto': r.get('designation', ''),
-                'email': r.get('email', ''),
-                'telefono': r.get('phone', ''),
-                'telefono_movil': r.get('mobile', ''),
-                'descripcion': r.get('description', ''),
-                'origen_nombre': r.get('leadsource', 'Vtiger'),
-                'estatus_nombre': r.get('leadstatus', 'Nuevo'),
-                'estatus_color': '#10b981' if r.get('leadstatus') == 'Hot' else '#6b7280',
+                'nombre_empresa': r.get('Empresa') or '',
+                'puesto': '',
+                'email': r.get('Email') or '',
+                'telefono': r.get('Telefono') or '',
+                'telefono_movil': r.get('Celular') or '',
+                'descripcion': r.get('Descripcion') or '',
+                'origen_nombre': r.get('FuenteLead') or 'Vtiger',
+                'estatus_nombre': r.get('Estatus') or 'Nuevo',
+                'estatus_color': '#10b981' if r.get('Estatus') == 'Hot' else '#6b7280',
                 'prioridad_nombre': 'Media',
-                'ejecutivo_nombre': r.get('assigned_user_id', ''),
-                'created_at': r.get('createdtime', ''),
-                'updated_at': r.get('modifiedtime', ''),
-                'source': 'vtiger'
+                'ejecutivo_nombre': '',
+                'created_at': str(r.get('FechaCreacionVtiger') or ''),
+                'updated_at': str(r.get('FechaModificacionVtiger') or ''),
+                'source': 'vtiger_sql'
             })
+        
+        conn.close()
         
         # Paginación
         total = len(items)
         start = (page - 1) * page_size
         end = start + page_size
         paginated_items = items[start:end]
-        total_pages = (total + page_size - 1) // page_size
+        total_pages = (total + page_size - 1) // page_size if total > 0 else 0
         
         return {
             'items': paginated_items,
@@ -144,8 +153,7 @@ async def _get_vtiger_leads_as_native(busqueda: Optional[str], page: int, page_s
         }
         
     except Exception as e:
-        logger.error(f"[CRM] Error obteniendo leads de Vtiger: {e}")
-        await client.close()
+        logger.error(f"[CRM] Error obteniendo leads de SQL (Sync_Vtiger_Leads): {e}")
         return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
 
 
@@ -292,62 +300,79 @@ async def listar_oportunidades(
 
 
 async def _get_vtiger_oportunidades(busqueda: Optional[str], page: int, page_size: int):
-    """Obtiene oportunidades desde Vtiger sincronizado"""
-    from .vtiger_client import create_vtiger_client
+    """
+    Obtiene oportunidades desde SQL Server (Sync_Vtiger_Oportunidades) - Arquitectura NO-LIVE.
+    NUNCA hace llamadas HTTP directas a Vtiger API.
+    """
+    import pymssql
     import os
     
-    base_url = os.environ.get('VTIGER_BASE_URL')
-    username = os.environ.get('VTIGER_USERNAME')
-    access_key = os.environ.get('VTIGER_ACCESS_KEY')
-    
-    if not all([base_url, username, access_key]):
-        return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
-    
-    client = create_vtiger_client(base_url, username, access_key)
-    
     try:
-        result = await client.get_opportunities(limit=100)
-        await client.close()
+        conn = pymssql.connect(
+            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+            port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
+            user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+            password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
+        )
+        cursor = conn.cursor(as_dict=True)
         
-        if not result.get('success'):
-            return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
+        # Construir query con filtro de búsqueda
+        base_query = """
+            SELECT VtigerID, OportunidadNo, NombreOportunidad, Monto, CuentaVtigerID,
+                   ContactoVtigerID, FechaCierre, EtapaVenta, Probabilidad, FuenteLead,
+                   SiguientePaso, Descripcion, FechaCreacionVtiger, FechaModificacionVtiger
+            FROM Sync_Vtiger_Oportunidades
+        """
         
-        records = result.get('records', [])
-        
+        params = []
         if busqueda:
-            busqueda_lower = busqueda.lower()
-            records = [r for r in records if busqueda_lower in r.get('potentialname', '').lower()]
+            base_query += " WHERE NombreOportunidad LIKE %s"
+            params = [f'%{busqueda}%']
+        
+        base_query += " ORDER BY FechaCreacionVtiger DESC"
+        
+        cursor.execute(base_query, params)
+        records = cursor.fetchall()
         
         items = []
-        for idx, r in enumerate(records):
+        for r in records:
             monto = 0
             try:
-                monto = float(r.get('amount', 0))
+                monto = float(r.get('Monto') or 0)
+            except:
+                pass
+            
+            prob = 0
+            try:
+                prob = int(r.get('Probabilidad') or 0)
             except:
                 pass
             
             items.append({
-                'oportunidad_id': r.get('id', f'vtiger-{idx}'),
-                'folio_oportunidad': r.get('potential_no', f'VT-OPP-{idx+1:04d}'),
-                'nombre_oportunidad': r.get('potentialname', ''),
-                'cuenta_nombre': r.get('related_to', ''),
-                'contacto_nombre': r.get('contact_id', ''),
+                'oportunidad_id': r.get('VtigerID', ''),
+                'folio_oportunidad': r.get('OportunidadNo', ''),
+                'nombre_oportunidad': r.get('NombreOportunidad') or '',
+                'cuenta_nombre': r.get('CuentaVtigerID') or '',
+                'contacto_nombre': r.get('ContactoVtigerID') or '',
                 'monto_estimado': monto,
-                'fecha_cierre_estimada': r.get('closingdate', ''),
-                'etapa_nombre': r.get('sales_stage', 'Nueva'),
-                'probabilidad': int(float(r.get('probability', 0))) if r.get('probability') else 0,
+                'fecha_cierre_estimada': str(r.get('FechaCierre') or ''),
+                'etapa_nombre': r.get('EtapaVenta') or 'Nueva',
+                'probabilidad': prob,
                 'pipeline_nombre': 'Vtiger Pipeline',
-                'ejecutivo_nombre': r.get('assigned_user_id', ''),
-                'descripcion': r.get('description', ''),
-                'created_at': r.get('createdtime', ''),
-                'source': 'vtiger'
+                'ejecutivo_nombre': '',
+                'descripcion': r.get('Descripcion') or '',
+                'created_at': str(r.get('FechaCreacionVtiger') or ''),
+                'source': 'vtiger_sql'
             })
+        
+        conn.close()
         
         total = len(items)
         start = (page - 1) * page_size
         end = start + page_size
         paginated = items[start:end]
-        total_pages = (total + page_size - 1) // page_size
+        total_pages = (total + page_size - 1) // page_size if total > 0 else 0
         
         return {
             'items': paginated,
@@ -357,8 +382,7 @@ async def _get_vtiger_oportunidades(busqueda: Optional[str], page: int, page_siz
             'total_pages': total_pages
         }
     except Exception as e:
-        logger.error(f"[CRM] Error obteniendo oportunidades de Vtiger: {e}")
-        await client.close()
+        logger.error(f"[CRM] Error obteniendo oportunidades de SQL (Sync_Vtiger_Oportunidades): {e}")
         return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
 
 
@@ -387,60 +411,76 @@ async def listar_contactos(
 
 
 async def _get_vtiger_contactos(busqueda: Optional[str], page: int, page_size: int):
-    """Obtiene contactos desde Vtiger sincronizado"""
-    from .vtiger_client import create_vtiger_client
+    """
+    Obtiene contactos desde SQL Server (Sync_Vtiger_Contactos) - Arquitectura NO-LIVE.
+    NUNCA hace llamadas HTTP directas a Vtiger API.
+    """
+    import pymssql
     import os
     
-    base_url = os.environ.get('VTIGER_BASE_URL')
-    username = os.environ.get('VTIGER_USERNAME')
-    access_key = os.environ.get('VTIGER_ACCESS_KEY')
-    
-    if not all([base_url, username, access_key]):
-        return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
-    
-    client = create_vtiger_client(base_url, username, access_key)
-    
     try:
-        result = await client.get_contacts(limit=100)
-        await client.close()
+        conn = pymssql.connect(
+            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+            port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
+            user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+            password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
+        )
+        cursor = conn.cursor(as_dict=True)
         
-        if not result.get('success'):
-            return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
+        # Construir query con filtro de búsqueda
+        base_query = """
+            SELECT VtigerID, ContactoNo, Nombre, Apellido, Email, Telefono, Celular,
+                   Titulo, Departamento, CuentaVtigerID, Descripcion, Ciudad, Estado, Pais,
+                   FechaCreacionVtiger, FechaModificacionVtiger
+            FROM Sync_Vtiger_Contactos
+        """
         
-        records = result.get('records', [])
-        
+        params = []
         if busqueda:
-            busqueda_lower = busqueda.lower()
-            records = [
-                r for r in records 
-                if busqueda_lower in f"{r.get('firstname', '')} {r.get('lastname', '')}".lower()
-                or busqueda_lower in r.get('email', '').lower()
-            ]
+            base_query += """
+                WHERE (Nombre LIKE %s OR Apellido LIKE %s OR Email LIKE %s)
+            """
+            search_param = f'%{busqueda}%'
+            params = [search_param, search_param, search_param]
+        
+        base_query += " ORDER BY FechaCreacionVtiger DESC"
+        
+        cursor.execute(base_query, params)
+        records = cursor.fetchall()
         
         items = []
-        for idx, r in enumerate(records):
+        for r in records:
+            nombre = r.get('Nombre') or ''
+            apellido = r.get('Apellido') or ''
+            ciudad = r.get('Ciudad') or ''
+            estado = r.get('Estado') or ''
+            pais = r.get('Pais') or ''
+            
             items.append({
-                'contacto_id': r.get('id', f'vtiger-{idx}'),
-                'folio_contacto': r.get('contact_no', f'VT-CON-{idx+1:04d}'),
-                'nombre_completo': f"{r.get('firstname', '')} {r.get('lastname', '')}".strip(),
-                'nombre': r.get('firstname', ''),
-                'apellido': r.get('lastname', ''),
-                'email': r.get('email', ''),
-                'telefono': r.get('phone', ''),
-                'celular': r.get('mobile', ''),
-                'titulo': r.get('title', ''),
-                'departamento': r.get('department', ''),
-                'cuenta_id': r.get('account_id', ''),
-                'direccion': f"{r.get('mailingcity', '')} {r.get('mailingstate', '')} {r.get('mailingcountry', '')}".strip(),
-                'created_at': r.get('createdtime', ''),
-                'source': 'vtiger'
+                'contacto_id': r.get('VtigerID', ''),
+                'folio_contacto': r.get('ContactoNo', ''),
+                'nombre_completo': f"{nombre} {apellido}".strip(),
+                'nombre': nombre,
+                'apellido': apellido,
+                'email': r.get('Email') or '',
+                'telefono': r.get('Telefono') or '',
+                'celular': r.get('Celular') or '',
+                'titulo': r.get('Titulo') or '',
+                'departamento': r.get('Departamento') or '',
+                'cuenta_id': r.get('CuentaVtigerID') or '',
+                'direccion': f"{ciudad} {estado} {pais}".strip(),
+                'created_at': str(r.get('FechaCreacionVtiger') or ''),
+                'source': 'vtiger_sql'
             })
+        
+        conn.close()
         
         total = len(items)
         start = (page - 1) * page_size
         end = start + page_size
         paginated = items[start:end]
-        total_pages = (total + page_size - 1) // page_size
+        total_pages = (total + page_size - 1) // page_size if total > 0 else 0
         
         return {
             'items': paginated,
@@ -450,8 +490,7 @@ async def _get_vtiger_contactos(busqueda: Optional[str], page: int, page_size: i
             'total_pages': total_pages
         }
     except Exception as e:
-        logger.error(f"[CRM] Error obteniendo contactos de Vtiger: {e}")
-        await client.close()
+        logger.error(f"[CRM] Error obteniendo contactos de SQL (Sync_Vtiger_Contactos): {e}")
         return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
 
 

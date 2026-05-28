@@ -7,16 +7,53 @@ Sistema ERP integrado para EDARSA con CRM Comercial Enterprise, conectado a múl
 1. **EDARSAHUB SQL Server es el cerebro absoluto** - CERO dependencias de MongoDB
 2. **Política de Autorización Controlada** - No asumir reglas; esperar autorización explícita
 3. **No Testing Agent** - Pruebas exclusivas vía cURL, bash, python -c
+4. **Arquitectura NO-LIVE** - Endpoints JAMÁS hacen peticiones directas a APIs externas; leen de tablas SQL sincronizadas
 
 ## Arquitectura Técnica
 - **Frontend**: React (`/app/frontend/src/`)
 - **Backend**: FastAPI (`/app/backend/`)
 - **Base de Datos Principal**: EDARSAHUB SQL Server (54.39.104.176)
 - **Legacy (ELIMINADO)**: MongoDB → Reemplazado por StubDatabase
+- **CRM Vtiger**: Sincronización asíncrona vía `Sync_Vtiger_*` tablas
 
 ## Credenciales de Prueba
-- Admin: `admin@edarsa.com` / `admin123`
+- Admin: `admin@inventario.com` / `admin123`
+- Ricardo: `ricardo@edarsa.com.mx` / `Asdf1478@@`
 
+---
+
+### ✅ VTIGER CRM: SINCRONIZACIÓN SQL-FIRST COMPLETADA - 2026-05-28
+
+**Objetivo:** Integración bidireccional Vtiger CRM con arquitectura NO-LIVE
+
+#### Trabajo Completado:
+
+**1. Job de Sincronización Validado:**
+- `/app/backend/core/scheduler/jobs/vtiger_sync_job.py` funcionando correctamente
+- Sync ejecutado: 2 Leads, 2 Cuentas, 1 Contacto, 1 Oportunidad insertados
+
+**2. Tablas SQL Pobladas:**
+- `Sync_Vtiger_Leads` - 2 registros
+- `Sync_Vtiger_Cuentas` - 2 registros
+- `Sync_Vtiger_Contactos` - 1 registro
+- `Sync_Vtiger_Oportunidades` - 1 registro
+
+**3. Endpoints CRM Refactorizados (NO-LIVE):**
+
+| Archivo | Función | Antes | Después |
+|---------|---------|-------|---------|
+| `native_routes.py` | `_get_vtiger_leads_as_native()` | HTTP a Vtiger API | SQL SELECT de `Sync_Vtiger_Leads` |
+| `native_routes.py` | `_get_vtiger_oportunidades()` | HTTP a Vtiger API | SQL SELECT de `Sync_Vtiger_Oportunidades` |
+| `native_routes.py` | `_get_vtiger_contactos()` | HTTP a Vtiger API | SQL SELECT de `Sync_Vtiger_Contactos` |
+| `comercial_routes.py` | `_get_vtiger_cuentas()` | HTTP a Vtiger API | SQL SELECT de `Sync_Vtiger_Cuentas` |
+
+**4. Verificación curl:**
+- Todos los endpoints devuelven `source=vtiger_sql`
+- CERO conexiones HTTP directas a Vtiger desde endpoints del Frontend
+
+#### Archivos Modificados:
+- `/app/backend/modules/crm/native_routes.py`
+- `/app/backend/modules/crm/comercial_routes.py`
 
 ---
 
