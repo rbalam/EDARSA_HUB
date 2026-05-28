@@ -1,29 +1,23 @@
 """
-EDARSA HUB - Vtiger Sync Job
-============================
-Job programado para sincronización automática con Vtiger CRM.
+EDARSA HUB - Vtiger Sync Job (SQL-First)
+=========================================
+Job de sincronización bidireccional con Vtiger CRM.
+Almacena datos en tablas Sync_Vtiger_* de EDARSAHUB SQL Server.
 
-Ejecución: Cada 15 minutos por defecto
-Acción: Sincroniza Leads, Contactos, Cuentas y Oportunidades
-Dirección: Bidireccional (configurable)
-
-Flujo:
-1. Obtener registros modificados desde última sincronización
-2. Mapear campos Vtiger → EDARSA HUB
-3. Insertar/Actualizar en tablas Sync_Vtiger_*
-4. (Opcional) Enviar cambios locales a Vtiger
+Ejecución: Cada 15 minutos
+Dirección: Bidireccional (Vtiger ↔ EDARSA SQL)
 """
 
 import os
 import logging
 import pymssql
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Any, Optional
 import json
 
 logger = logging.getLogger(__name__)
 
-# Configuración de conexión SQL Server
+
 def _get_sql_connection():
     """Obtiene conexión a EDARSAHUB SQL Server"""
     return pymssql.connect(
@@ -31,258 +25,302 @@ def _get_sql_connection():
         port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
         user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
         password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
-        database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        as_dict=True
+        database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
     )
 
 
-# ==================== MAPEO DE CAMPOS ====================
+# ==================== MAPEO VTIGER → SQL ====================
 
-VTIGER_TO_SQL_MAPPING = {
-    'Leads': {
-        'table': 'Sync_Vtiger_Leads',
-        'fields': {
-            'id': 'VtigerID',
-            'lead_no': 'LeadNo',
-            'firstname': 'Nombre',
-            'lastname': 'Apellido',
-            'company': 'Empresa',
-            'email': 'Email',
-            'phone': 'Telefono',
-            'mobile': 'Celular',
-            'website': 'Website',
-            'industry': 'Industria',
-            'leadsource': 'FuenteLead',
-            'leadstatus': 'Estatus',
-            'annualrevenue': 'IngresoAnual',
-            'noofemployees': 'NumEmpleados',
-            'description': 'Descripcion',
-            'city': 'Ciudad',
-            'state': 'Estado',
-            'country': 'Pais',
-            'assigned_user_id': 'UsuarioAsignadoVtiger',
-            'createdtime': 'FechaCreacionVtiger',
-            'modifiedtime': 'FechaModificacionVtiger'
-        }
-    },
-    'Contacts': {
-        'table': 'Sync_Vtiger_Contactos',
-        'fields': {
-            'id': 'VtigerID',
-            'contact_no': 'ContactoNo',
-            'firstname': 'Nombre',
-            'lastname': 'Apellido',
-            'email': 'Email',
-            'phone': 'Telefono',
-            'mobile': 'Celular',
-            'title': 'Titulo',
-            'department': 'Departamento',
-            'account_id': 'CuentaVtigerID',
-            'description': 'Descripcion',
-            'mailingcity': 'Ciudad',
-            'mailingstate': 'Estado',
-            'mailingcountry': 'Pais',
-            'assigned_user_id': 'UsuarioAsignadoVtiger',
-            'createdtime': 'FechaCreacionVtiger',
-            'modifiedtime': 'FechaModificacionVtiger'
-        }
-    },
-    'Accounts': {
-        'table': 'Sync_Vtiger_Cuentas',
-        'fields': {
-            'id': 'VtigerID',
-            'account_no': 'CuentaNo',
-            'accountname': 'NombreCuenta',
-            'website': 'Website',
-            'phone': 'Telefono',
-            'fax': 'Fax',
-            'email1': 'Email',
-            'industry': 'Industria',
-            'accounttype': 'TipoCuenta',
-            'annualrevenue': 'IngresoAnual',
-            'employees': 'NumEmpleados',
-            'description': 'Descripcion',
-            'bill_city': 'Ciudad',
-            'bill_state': 'Estado',
-            'bill_country': 'Pais',
-            'assigned_user_id': 'UsuarioAsignadoVtiger',
-            'createdtime': 'FechaCreacionVtiger',
-            'modifiedtime': 'FechaModificacionVtiger'
-        }
-    },
-    'Potentials': {
-        'table': 'Sync_Vtiger_Oportunidades',
-        'fields': {
-            'id': 'VtigerID',
-            'potential_no': 'OportunidadNo',
-            'potentialname': 'NombreOportunidad',
-            'amount': 'Monto',
-            'related_to': 'CuentaVtigerID',
-            'contact_id': 'ContactoVtigerID',
-            'closingdate': 'FechaCierre',
-            'sales_stage': 'EtapaVenta',
-            'probability': 'Probabilidad',
-            'leadsource': 'FuenteLead',
-            'nextstep': 'SiguientePaso',
-            'description': 'Descripcion',
-            'assigned_user_id': 'UsuarioAsignadoVtiger',
-            'createdtime': 'FechaCreacionVtiger',
-            'modifiedtime': 'FechaModificacionVtiger'
-        }
-    }
-}
+def _safe_str(value, max_len=500):
+    """Convierte valor a string seguro"""
+    if value is None:
+        return None
+    return str(value)[:max_len]
 
-
-# ==================== FUNCIONES DE SINCRONIZACIÓN ====================
-
-async def sync_module_from_vtiger(
-    client,
-    module: str,
-    conn,
-    last_sync: Optional[datetime] = None
-) -> Dict[str, Any]:
-    """
-    Sincroniza un módulo desde Vtiger a SQL Server.
-    
-    Args:
-        client: VtigerClient
-        module: Nombre del módulo (Leads, Contacts, etc.)
-        conn: Conexión SQL Server (puede ser None si no hay tablas)
-        last_sync: Fecha de última sincronización
-    
-    Returns:
-        Dict con estadísticas de sincronización
-    """
-    mapping = VTIGER_TO_SQL_MAPPING.get(module)
-    if not mapping:
-        return {"success": False, "error": f"Módulo {module} no soportado"}
-    
-    stats = {
-        "module": module,
-        "records_fetched": 0,
-        "records_inserted": 0,
-        "records_updated": 0,
-        "records": [],  # Almacenar registros si no hay SQL
-        "errors": []
-    }
-    
+def _safe_decimal(value):
+    """Convierte valor a decimal"""
     try:
-        # Obtener registros de Vtiger
-        if module == 'Leads':
-            result = await client.get_leads(limit=500)
-        elif module == 'Contacts':
-            result = await client.get_contacts(limit=500)
-        elif module == 'Accounts':
-            result = await client.get_accounts(limit=500)
-        elif module == 'Potentials':
-            result = await client.get_opportunities(limit=500)
-        else:
-            return {"success": False, "error": f"Módulo {module} no implementado"}
-        
-        if not result.get("success"):
-            return {"success": False, "error": result.get("error")}
-        
-        records = result.get("records", [])
-        stats["records_fetched"] = len(records)
-        
-        if not records:
-            stats["success"] = True
-            return stats
-        
-        # Si hay conexión SQL y las tablas existen, usar SQL
-        table_exists = False
-        if conn:
-            try:
-                cursor = conn.cursor()
-                table_name = mapping["table"]
-                cursor.execute(f"""
-                    SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
-                    WHERE TABLE_NAME = '{table_name}'
-                """)
-                table_exists = cursor.fetchone()[0] > 0
-            except:
-                table_exists = False
-        
-        if conn and table_exists:
-            # Sincronizar a SQL Server
-            cursor = conn.cursor()
-            table_name = mapping["table"]
-            field_map = mapping["fields"]
+        return float(value) if value else 0.0
+    except:
+        return 0.0
+
+def _safe_int(value):
+    """Convierte valor a entero"""
+    try:
+        return int(float(value)) if value else 0
+    except:
+        return 0
+
+
+async def sync_leads_to_sql(client, conn) -> Dict[str, Any]:
+    """Sincroniza leads de Vtiger a SQL"""
+    stats = {"records_fetched": 0, "records_inserted": 0, "records_updated": 0, "errors": []}
+    
+    result = await client.get_leads(limit=500)
+    if not result.get("success"):
+        return {"success": False, "error": result.get("error"), **stats}
+    
+    records = result.get("records", [])
+    stats["records_fetched"] = len(records)
+    
+    cursor = conn.cursor()
+    
+    for r in records:
+        try:
+            vtiger_id = r.get("id")
+            if not vtiger_id:
+                continue
             
-            for record in records:
-                try:
-                    vtiger_id = record.get("id")
-                    if not vtiger_id:
-                        continue
-                    
-                    # Verificar si ya existe
-                    cursor.execute(
-                        f"SELECT SyncID FROM {table_name} WHERE VtigerID = %s",
-                        (vtiger_id,)
-                    )
-                    existing = cursor.fetchone()
-                    
-                    # Mapear campos
-                    sql_data = {}
-                    for vtiger_field, sql_field in field_map.items():
-                        value = record.get(vtiger_field)
-                        if value is not None:
-                            if sql_field in ['IngresoAnual', 'Monto']:
-                                try:
-                                    sql_data[sql_field] = float(value) if value else 0.0
-                                except:
-                                    sql_data[sql_field] = 0.0
-                            elif sql_field in ['NumEmpleados', 'Probabilidad']:
-                                try:
-                                    sql_data[sql_field] = int(value) if value else 0
-                                except:
-                                    sql_data[sql_field] = 0
-                            else:
-                                sql_data[sql_field] = str(value)[:500] if value else None
-                    
-                    if existing:
-                        set_clause = ", ".join([f"{k} = %s" for k in sql_data.keys()])
-                        set_clause += ", FechaUltimaSync = GETDATE()"
-                        values = list(sql_data.values()) + [vtiger_id]
-                        
-                        cursor.execute(
-                            f"UPDATE {table_name} SET {set_clause} WHERE VtigerID = %s",
-                            tuple(values)
-                        )
-                        stats["records_updated"] += 1
-                    else:
-                        sql_data["FechaUltimaSync"] = datetime.utcnow()
-                        sql_data["FechaCreacionLocal"] = datetime.utcnow()
-                        
-                        columns = ", ".join(sql_data.keys())
-                        placeholders = ", ".join(["%s"] * len(sql_data))
-                        
-                        cursor.execute(
-                            f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})",
-                            tuple(sql_data.values())
-                        )
-                        stats["records_inserted"] += 1
-                    
-                except Exception as e:
-                    stats["errors"].append(f"Error procesando {vtiger_id}: {str(e)[:100]}")
-                    if len(stats["errors"]) > 10:
-                        break
+            # Verificar si existe
+            cursor.execute("SELECT SyncID FROM Sync_Vtiger_Leads WHERE VtigerID = %s", (vtiger_id,))
+            existing = cursor.fetchone()
+            
+            if existing:
+                # UPDATE
+                cursor.execute("""
+                    UPDATE Sync_Vtiger_Leads SET
+                        LeadNo = %s, Nombre = %s, Apellido = %s, Empresa = %s,
+                        Email = %s, Telefono = %s, Celular = %s, Website = %s,
+                        Industria = %s, FuenteLead = %s, Estatus = %s,
+                        IngresoAnual = %s, NumEmpleados = %s, Descripcion = %s,
+                        Ciudad = %s, Estado = %s, Pais = %s,
+                        FechaModificacionVtiger = %s, FechaUltimaSync = GETDATE()
+                    WHERE VtigerID = %s
+                """, (
+                    _safe_str(r.get("lead_no")), _safe_str(r.get("firstname")), _safe_str(r.get("lastname")),
+                    _safe_str(r.get("company")), _safe_str(r.get("email")), _safe_str(r.get("phone")),
+                    _safe_str(r.get("mobile")), _safe_str(r.get("website")), _safe_str(r.get("industry")),
+                    _safe_str(r.get("leadsource")), _safe_str(r.get("leadstatus")),
+                    _safe_decimal(r.get("annualrevenue")), _safe_int(r.get("noofemployees")),
+                    _safe_str(r.get("description"), 4000), _safe_str(r.get("city")),
+                    _safe_str(r.get("state")), _safe_str(r.get("country")),
+                    _safe_str(r.get("modifiedtime")), vtiger_id
+                ))
+                stats["records_updated"] += 1
+            else:
+                # INSERT
+                cursor.execute("""
+                    INSERT INTO Sync_Vtiger_Leads (
+                        VtigerID, LeadNo, Nombre, Apellido, Empresa, Email, Telefono, Celular,
+                        Website, Industria, FuenteLead, Estatus, IngresoAnual, NumEmpleados,
+                        Descripcion, Ciudad, Estado, Pais, FechaCreacionVtiger, FechaModificacionVtiger
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    vtiger_id, _safe_str(r.get("lead_no")), _safe_str(r.get("firstname")),
+                    _safe_str(r.get("lastname")), _safe_str(r.get("company")), _safe_str(r.get("email")),
+                    _safe_str(r.get("phone")), _safe_str(r.get("mobile")), _safe_str(r.get("website")),
+                    _safe_str(r.get("industry")), _safe_str(r.get("leadsource")), _safe_str(r.get("leadstatus")),
+                    _safe_decimal(r.get("annualrevenue")), _safe_int(r.get("noofemployees")),
+                    _safe_str(r.get("description"), 4000), _safe_str(r.get("city")),
+                    _safe_str(r.get("state")), _safe_str(r.get("country")),
+                    _safe_str(r.get("createdtime")), _safe_str(r.get("modifiedtime"))
+                ))
+                stats["records_inserted"] += 1
             
             conn.commit()
-        else:
-            # Sin SQL, solo almacenar en memoria/archivo
-            stats["records"] = records
-            stats["records_inserted"] = len(records)
-            stats["storage"] = "memory"
-            logger.info(f"[VTIGER-SYNC] {module}: Almacenado en memoria ({len(records)} registros)")
-        
-        stats["success"] = True
-        
-    except Exception as e:
-        logger.error(f"[VTIGER-SYNC] Error en módulo {module}: {e}")
-        stats["success"] = False
-        stats["error"] = str(e)
+        except Exception as e:
+            stats["errors"].append(f"Lead {vtiger_id}: {str(e)[:50]}")
     
+    stats["success"] = True
+    return stats
+
+
+async def sync_contacts_to_sql(client, conn) -> Dict[str, Any]:
+    """Sincroniza contactos de Vtiger a SQL"""
+    stats = {"records_fetched": 0, "records_inserted": 0, "records_updated": 0, "errors": []}
+    
+    result = await client.get_contacts(limit=500)
+    if not result.get("success"):
+        return {"success": False, "error": result.get("error"), **stats}
+    
+    records = result.get("records", [])
+    stats["records_fetched"] = len(records)
+    
+    cursor = conn.cursor()
+    
+    for r in records:
+        try:
+            vtiger_id = r.get("id")
+            if not vtiger_id:
+                continue
+            
+            cursor.execute("SELECT SyncID FROM Sync_Vtiger_Contactos WHERE VtigerID = %s", (vtiger_id,))
+            existing = cursor.fetchone()
+            
+            if existing:
+                cursor.execute("""
+                    UPDATE Sync_Vtiger_Contactos SET
+                        ContactoNo = %s, Nombre = %s, Apellido = %s, Email = %s,
+                        Telefono = %s, Celular = %s, Titulo = %s, Departamento = %s,
+                        CuentaVtigerID = %s, Descripcion = %s, Ciudad = %s, Estado = %s, Pais = %s,
+                        FechaModificacionVtiger = %s, FechaUltimaSync = GETDATE()
+                    WHERE VtigerID = %s
+                """, (
+                    _safe_str(r.get("contact_no")), _safe_str(r.get("firstname")), _safe_str(r.get("lastname")),
+                    _safe_str(r.get("email")), _safe_str(r.get("phone")), _safe_str(r.get("mobile")),
+                    _safe_str(r.get("title")), _safe_str(r.get("department")), _safe_str(r.get("account_id")),
+                    _safe_str(r.get("description"), 4000), _safe_str(r.get("mailingcity")),
+                    _safe_str(r.get("mailingstate")), _safe_str(r.get("mailingcountry")),
+                    _safe_str(r.get("modifiedtime")), vtiger_id
+                ))
+                stats["records_updated"] += 1
+            else:
+                cursor.execute("""
+                    INSERT INTO Sync_Vtiger_Contactos (
+                        VtigerID, ContactoNo, Nombre, Apellido, Email, Telefono, Celular,
+                        Titulo, Departamento, CuentaVtigerID, Descripcion, Ciudad, Estado, Pais,
+                        FechaCreacionVtiger, FechaModificacionVtiger
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    vtiger_id, _safe_str(r.get("contact_no")), _safe_str(r.get("firstname")),
+                    _safe_str(r.get("lastname")), _safe_str(r.get("email")), _safe_str(r.get("phone")),
+                    _safe_str(r.get("mobile")), _safe_str(r.get("title")), _safe_str(r.get("department")),
+                    _safe_str(r.get("account_id")), _safe_str(r.get("description"), 4000),
+                    _safe_str(r.get("mailingcity")), _safe_str(r.get("mailingstate")),
+                    _safe_str(r.get("mailingcountry")), _safe_str(r.get("createdtime")),
+                    _safe_str(r.get("modifiedtime"))
+                ))
+                stats["records_inserted"] += 1
+            
+            conn.commit()
+        except Exception as e:
+            stats["errors"].append(f"Contact {vtiger_id}: {str(e)[:50]}")
+    
+    stats["success"] = True
+    return stats
+
+
+async def sync_accounts_to_sql(client, conn) -> Dict[str, Any]:
+    """Sincroniza cuentas de Vtiger a SQL"""
+    stats = {"records_fetched": 0, "records_inserted": 0, "records_updated": 0, "errors": []}
+    
+    result = await client.get_accounts(limit=500)
+    if not result.get("success"):
+        return {"success": False, "error": result.get("error"), **stats}
+    
+    records = result.get("records", [])
+    stats["records_fetched"] = len(records)
+    
+    cursor = conn.cursor()
+    
+    for r in records:
+        try:
+            vtiger_id = r.get("id")
+            if not vtiger_id:
+                continue
+            
+            cursor.execute("SELECT SyncID FROM Sync_Vtiger_Cuentas WHERE VtigerID = %s", (vtiger_id,))
+            existing = cursor.fetchone()
+            
+            if existing:
+                cursor.execute("""
+                    UPDATE Sync_Vtiger_Cuentas SET
+                        CuentaNo = %s, NombreCuenta = %s, Website = %s, Telefono = %s,
+                        Fax = %s, Email = %s, Industria = %s, TipoCuenta = %s,
+                        IngresoAnual = %s, NumEmpleados = %s, Descripcion = %s,
+                        Ciudad = %s, Estado = %s, Pais = %s,
+                        FechaModificacionVtiger = %s, FechaUltimaSync = GETDATE()
+                    WHERE VtigerID = %s
+                """, (
+                    _safe_str(r.get("account_no")), _safe_str(r.get("accountname")), _safe_str(r.get("website")),
+                    _safe_str(r.get("phone")), _safe_str(r.get("fax")), _safe_str(r.get("email1")),
+                    _safe_str(r.get("industry")), _safe_str(r.get("accounttype")),
+                    _safe_decimal(r.get("annualrevenue")), _safe_int(r.get("employees")),
+                    _safe_str(r.get("description"), 4000), _safe_str(r.get("bill_city")),
+                    _safe_str(r.get("bill_state")), _safe_str(r.get("bill_country")),
+                    _safe_str(r.get("modifiedtime")), vtiger_id
+                ))
+                stats["records_updated"] += 1
+            else:
+                cursor.execute("""
+                    INSERT INTO Sync_Vtiger_Cuentas (
+                        VtigerID, CuentaNo, NombreCuenta, Website, Telefono, Fax, Email,
+                        Industria, TipoCuenta, IngresoAnual, NumEmpleados, Descripcion,
+                        Ciudad, Estado, Pais, FechaCreacionVtiger, FechaModificacionVtiger
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    vtiger_id, _safe_str(r.get("account_no")), _safe_str(r.get("accountname")),
+                    _safe_str(r.get("website")), _safe_str(r.get("phone")), _safe_str(r.get("fax")),
+                    _safe_str(r.get("email1")), _safe_str(r.get("industry")), _safe_str(r.get("accounttype")),
+                    _safe_decimal(r.get("annualrevenue")), _safe_int(r.get("employees")),
+                    _safe_str(r.get("description"), 4000), _safe_str(r.get("bill_city")),
+                    _safe_str(r.get("bill_state")), _safe_str(r.get("bill_country")),
+                    _safe_str(r.get("createdtime")), _safe_str(r.get("modifiedtime"))
+                ))
+                stats["records_inserted"] += 1
+            
+            conn.commit()
+        except Exception as e:
+            stats["errors"].append(f"Account {vtiger_id}: {str(e)[:50]}")
+    
+    stats["success"] = True
+    return stats
+
+
+async def sync_opportunities_to_sql(client, conn) -> Dict[str, Any]:
+    """Sincroniza oportunidades de Vtiger a SQL"""
+    stats = {"records_fetched": 0, "records_inserted": 0, "records_updated": 0, "errors": []}
+    
+    result = await client.get_opportunities(limit=500)
+    if not result.get("success"):
+        return {"success": False, "error": result.get("error"), **stats}
+    
+    records = result.get("records", [])
+    stats["records_fetched"] = len(records)
+    
+    cursor = conn.cursor()
+    
+    for r in records:
+        try:
+            vtiger_id = r.get("id")
+            if not vtiger_id:
+                continue
+            
+            cursor.execute("SELECT SyncID FROM Sync_Vtiger_Oportunidades WHERE VtigerID = %s", (vtiger_id,))
+            existing = cursor.fetchone()
+            
+            if existing:
+                cursor.execute("""
+                    UPDATE Sync_Vtiger_Oportunidades SET
+                        OportunidadNo = %s, NombreOportunidad = %s, Monto = %s,
+                        CuentaVtigerID = %s, ContactoVtigerID = %s, FechaCierre = %s,
+                        EtapaVenta = %s, Probabilidad = %s, FuenteLead = %s,
+                        SiguientePaso = %s, Descripcion = %s,
+                        FechaModificacionVtiger = %s, FechaUltimaSync = GETDATE()
+                    WHERE VtigerID = %s
+                """, (
+                    _safe_str(r.get("potential_no")), _safe_str(r.get("potentialname")),
+                    _safe_decimal(r.get("amount")), _safe_str(r.get("related_to")),
+                    _safe_str(r.get("contact_id")), _safe_str(r.get("closingdate")),
+                    _safe_str(r.get("sales_stage")), _safe_int(r.get("probability")),
+                    _safe_str(r.get("leadsource")), _safe_str(r.get("nextstep")),
+                    _safe_str(r.get("description"), 4000), _safe_str(r.get("modifiedtime")),
+                    vtiger_id
+                ))
+                stats["records_updated"] += 1
+            else:
+                cursor.execute("""
+                    INSERT INTO Sync_Vtiger_Oportunidades (
+                        VtigerID, OportunidadNo, NombreOportunidad, Monto, CuentaVtigerID,
+                        ContactoVtigerID, FechaCierre, EtapaVenta, Probabilidad, FuenteLead,
+                        SiguientePaso, Descripcion, FechaCreacionVtiger, FechaModificacionVtiger
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    vtiger_id, _safe_str(r.get("potential_no")), _safe_str(r.get("potentialname")),
+                    _safe_decimal(r.get("amount")), _safe_str(r.get("related_to")),
+                    _safe_str(r.get("contact_id")), _safe_str(r.get("closingdate")),
+                    _safe_str(r.get("sales_stage")), _safe_int(r.get("probability")),
+                    _safe_str(r.get("leadsource")), _safe_str(r.get("nextstep")),
+                    _safe_str(r.get("description"), 4000), _safe_str(r.get("createdtime")),
+                    _safe_str(r.get("modifiedtime"))
+                ))
+                stats["records_inserted"] += 1
+            
+            conn.commit()
+        except Exception as e:
+            stats["errors"].append(f"Potential {vtiger_id}: {str(e)[:50]}")
+    
+    stats["success"] = True
     return stats
 
 
@@ -290,13 +328,7 @@ async def sync_module_from_vtiger(
 
 async def execute_vtiger_sync(db) -> Dict[str, Any]:
     """
-    Job principal de sincronización con Vtiger.
-    
-    Args:
-        db: StubDatabase (no usado, SQL Server directo)
-    
-    Returns:
-        Dict con resultados de la sincronización
+    Job principal de sincronización Vtiger → SQL Server.
     """
     from modules.crm.vtiger_client import create_vtiger_client
     
@@ -305,7 +337,6 @@ async def execute_vtiger_sync(db) -> Dict[str, Any]:
     
     logger.info(f"[VTIGER-SYNC] Iniciando sincronización (run_id={run_id})")
     
-    # Resultados globales
     resultados = {
         "run_id": run_id,
         "inicio": inicio.isoformat(),
@@ -316,93 +347,61 @@ async def execute_vtiger_sync(db) -> Dict[str, Any]:
         "errores": []
     }
     
-    # Obtener configuración desde ENV
+    # Config Vtiger
     base_url = os.environ.get('VTIGER_BASE_URL')
     username = os.environ.get('VTIGER_USERNAME')
     access_key = os.environ.get('VTIGER_ACCESS_KEY')
     
     if not all([base_url, username, access_key]):
-        logger.warning("[VTIGER-SYNC] Configuración incompleta - saltando sincronización")
-        return {
-            "success": False,
-            "error": "Configuración de Vtiger incompleta",
-            "run_id": run_id
-        }
+        return {"success": False, "error": "Configuración Vtiger incompleta", "run_id": run_id}
     
-    # Crear cliente Vtiger
     client = create_vtiger_client(base_url, username, access_key)
     
     # Verificar conexión
     test_result = await client.test_connection()
     if not test_result.get("success"):
         await client.close()
-        logger.error(f"[VTIGER-SYNC] Error de conexión: {test_result.get('error')}")
-        return {
-            "success": False,
-            "error": f"Error de conexión: {test_result.get('error')}",
-            "run_id": run_id
-        }
+        return {"success": False, "error": test_result.get("error"), "run_id": run_id}
     
-    logger.info(f"[VTIGER-SYNC] Conexión exitosa - Usuario: {test_result.get('user', {}).get('username')}")
-    
-    # Obtener conexión SQL
     conn = None
     try:
         conn = _get_sql_connection()
         
         # Sincronizar cada módulo
-        modules_to_sync = ['Leads', 'Contacts', 'Accounts', 'Potentials']
+        sync_functions = [
+            ("Leads", sync_leads_to_sql),
+            ("Contacts", sync_contacts_to_sql),
+            ("Accounts", sync_accounts_to_sql),
+            ("Potentials", sync_opportunities_to_sql)
+        ]
         
-        for module in modules_to_sync:
+        for module_name, sync_func in sync_functions:
             try:
-                logger.info(f"[VTIGER-SYNC] Sincronizando módulo: {module}")
+                logger.info(f"[VTIGER-SYNC] Sincronizando {module_name}...")
+                stats = await sync_func(client, conn)
+                resultados["modulos"][module_name] = stats
                 
-                stats = await sync_module_from_vtiger(client, module, conn)
-                resultados["modulos"][module] = stats
+                resultados["total_fetched"] += stats.get("records_fetched", 0)
+                resultados["total_inserted"] += stats.get("records_inserted", 0)
+                resultados["total_updated"] += stats.get("records_updated", 0)
                 
-                if stats.get("success"):
-                    resultados["total_fetched"] += stats.get("records_fetched", 0)
-                    resultados["total_inserted"] += stats.get("records_inserted", 0)
-                    resultados["total_updated"] += stats.get("records_updated", 0)
-                    
-                    logger.info(
-                        f"[VTIGER-SYNC] {module}: {stats['records_fetched']} obtenidos, "
-                        f"{stats['records_inserted']} insertados, {stats['records_updated']} actualizados"
-                    )
-                else:
-                    resultados["errores"].append(f"{module}: {stats.get('error')}")
-                    
+                logger.info(f"[VTIGER-SYNC] {module_name}: {stats.get('records_fetched', 0)} obtenidos, "
+                           f"{stats.get('records_inserted', 0)} insertados, {stats.get('records_updated', 0)} actualizados")
             except Exception as e:
-                logger.error(f"[VTIGER-SYNC] Error en módulo {module}: {e}")
-                resultados["errores"].append(f"{module}: {str(e)}")
+                logger.error(f"[VTIGER-SYNC] Error en {module_name}: {e}")
+                resultados["errores"].append(f"{module_name}: {str(e)}")
         
-        # Registrar en log de sincronización (solo si la tabla existe)
+        # Registrar en log
         try:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
-                WHERE TABLE_NAME = 'Sync_Vtiger_Log'
-            """)
-            if cursor.fetchone()[0] > 0:
-                cursor.execute("""
-                    INSERT INTO Sync_Vtiger_Log 
-                    (RunID, FechaInicio, FechaFin, TotalObtenidos, TotalInsertados, TotalActualizados, Errores, ResultadoJSON)
-                    VALUES (%s, %s, GETDATE(), %s, %s, %s, %s, %s)
-                """, (
-                    run_id,
-                    inicio,
-                    resultados["total_fetched"],
-                    resultados["total_inserted"],
-                    resultados["total_updated"],
-                    len(resultados["errores"]),
-                    json.dumps(resultados, default=str)[:4000]
-                ))
-                conn.commit()
-                logger.info(f"[VTIGER-SYNC] Log registrado en SQL")
-            else:
-                logger.info(f"[VTIGER-SYNC] Tabla Sync_Vtiger_Log no existe - log solo en archivo")
+                INSERT INTO Sync_Vtiger_Log (RunID, Direccion, FechaInicio, FechaFin, TotalObtenidos, TotalInsertados, TotalActualizados, Errores, ResultadoJSON)
+                VALUES (%s, 'vtiger_to_sql', %s, GETDATE(), %s, %s, %s, %s, %s)
+            """, (run_id, inicio, resultados["total_fetched"], resultados["total_inserted"],
+                  resultados["total_updated"], len(resultados["errores"]), json.dumps(resultados, default=str)[:4000]))
+            conn.commit()
         except Exception as e:
-            logger.warning(f"[VTIGER-SYNC] Error registrando en log SQL: {e}")
+            logger.warning(f"[VTIGER-SYNC] Error registrando log: {e}")
         
     except Exception as e:
         logger.error(f"[VTIGER-SYNC] Error general: {e}")
@@ -412,59 +411,43 @@ async def execute_vtiger_sync(db) -> Dict[str, Any]:
             conn.close()
         await client.close()
     
-    # Calcular duración
     fin = datetime.now()
-    duracion_ms = int((fin - inicio).total_seconds() * 1000)
-    
     resultados["fin"] = fin.isoformat()
-    resultados["duracion_ms"] = duracion_ms
+    resultados["duracion_ms"] = int((fin - inicio).total_seconds() * 1000)
     resultados["success"] = len(resultados["errores"]) == 0
     
-    logger.info(
-        f"[VTIGER-SYNC] Completado (run_id={run_id}): "
-        f"{resultados['total_fetched']} obtenidos, "
-        f"{resultados['total_inserted']} insertados, "
-        f"{resultados['total_updated']} actualizados, "
-        f"{len(resultados['errores'])} errores, "
-        f"{duracion_ms}ms"
-    )
+    logger.info(f"[VTIGER-SYNC] Completado: {resultados['total_inserted']} insertados, "
+               f"{resultados['total_updated']} actualizados, {resultados['duracion_ms']}ms")
     
     return resultados
 
-
-# ==================== FUNCIONES AUXILIARES ====================
 
 async def get_vtiger_sync_status() -> Dict[str, Any]:
     """Obtiene el estado de la última sincronización"""
     try:
         conn = _get_sql_connection()
         cursor = conn.cursor()
-        
         cursor.execute("""
-            SELECT TOP 1 
-                RunID, FechaInicio, FechaFin, 
-                TotalObtenidos, TotalInsertados, TotalActualizados, Errores
-            FROM Sync_Vtiger_Log
-            ORDER BY FechaInicio DESC
+            SELECT TOP 1 RunID, Direccion, FechaInicio, FechaFin, 
+                   TotalObtenidos, TotalInsertados, TotalActualizados, Errores
+            FROM Sync_Vtiger_Log ORDER BY FechaInicio DESC
         """)
-        
         row = cursor.fetchone()
         conn.close()
         
         if row:
             return {
                 "last_sync": {
-                    "run_id": row["RunID"],
-                    "fecha_inicio": row["FechaInicio"].isoformat() if row["FechaInicio"] else None,
-                    "fecha_fin": row["FechaFin"].isoformat() if row["FechaFin"] else None,
-                    "total_obtenidos": row["TotalObtenidos"],
-                    "total_insertados": row["TotalInsertados"],
-                    "total_actualizados": row["TotalActualizados"],
-                    "errores": row["Errores"]
+                    "run_id": row[0],
+                    "direccion": row[1],
+                    "fecha_inicio": row[2].isoformat() if row[2] else None,
+                    "fecha_fin": row[3].isoformat() if row[3] else None,
+                    "total_obtenidos": row[4],
+                    "total_insertados": row[5],
+                    "total_actualizados": row[6],
+                    "errores": row[7]
                 }
             }
-        else:
-            return {"last_sync": None, "message": "Sin sincronizaciones previas"}
-            
+        return {"last_sync": None}
     except Exception as e:
         return {"error": str(e)}
