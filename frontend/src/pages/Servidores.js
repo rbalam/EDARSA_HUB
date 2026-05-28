@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap, Building2, Eye, EyeOff, RefreshCw, GripVertical, TestTube2, AlertTriangle, Play, Table2, LayoutGrid, List, Minus, Maximize2, X, Move } from 'lucide-react';
+import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap, Building2, Eye, EyeOff, RefreshCw, GripVertical, TestTube2, AlertTriangle, Play, Table2, LayoutGrid, List, Minus, Maximize2, X, Move, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import QueryConfigWizard from '@/components/QueryConfigWizard';
 import UniversalQueryTester from '@/components/UniversalQueryTester';
@@ -153,6 +153,24 @@ const Servidores = () => {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [apiModalMinimized, setApiModalMinimized] = useState(false);
   const [sqlModalMinimized, setSqlModalMinimized] = useState(false);
+  
+  // ========== ESTADO VTIGER CRM ==========
+  const [vtigerConnections, setVtigerConnections] = useState([]);
+  const [loadingVtiger, setLoadingVtiger] = useState(false);
+  const [vtigerDialogOpen, setVtigerDialogOpen] = useState(false);
+  const [editingVtiger, setEditingVtiger] = useState(null);
+  const [vtigerFormData, setVtigerFormData] = useState({
+    name: 'Vtiger CRM',
+    base_url: '',
+    username: '',
+    access_key: '',
+    sync_modules: ['Leads', 'Contacts', 'Accounts', 'Potentials'],
+    sync_direction: 'bidirectional',
+    active: true
+  });
+  const [testingVtiger, setTestingVtiger] = useState(false);
+  const [vtigerTestResult, setVtigerTestResult] = useState(null);
+  const [vtigerTestStatus, setVtigerTestStatus] = useState({}); // { connection_id: { status, message, loading } }
   
   // Estado para tipos de sistema (cargados desde catálogo)
   const [tiposSistema, setTiposSistema] = useState([]);
@@ -329,6 +347,168 @@ const Servidores = () => {
       ]);
     } finally {
       setLoadingApis(false);
+    }
+  };
+  
+  // ========== FUNCIONES VTIGER CRM ==========
+  
+  // Cargar conexiones Vtiger desde backend
+  const loadVtigerConnections = async () => {
+    setLoadingVtiger(true);
+    try {
+      const response = await api.get('/vtiger/connections');
+      if (response.data.connections) {
+        setVtigerConnections(response.data.connections);
+      }
+    } catch (error) {
+      console.error('Error cargando conexiones Vtiger:', error);
+      setVtigerConnections([]);
+    } finally {
+      setLoadingVtiger(false);
+    }
+  };
+  
+  // Probar conexión Vtiger
+  const testVtigerConnection = async (connectionId) => {
+    setVtigerTestStatus(prev => ({
+      ...prev,
+      [connectionId]: { loading: true, status: null, message: 'Probando conexión...' }
+    }));
+    
+    try {
+      const response = await api.post(`/vtiger/connections/${connectionId}/test`);
+      
+      if (response.data.success) {
+        setVtigerTestStatus(prev => ({
+          ...prev,
+          [connectionId]: {
+            loading: false,
+            status: 'success',
+            message: `✅ Conectado (${response.data.response_time_ms}ms)`,
+            user: response.data.user_info
+          }
+        }));
+        toast.success('Vtiger: Conexión exitosa');
+      } else {
+        setVtigerTestStatus(prev => ({
+          ...prev,
+          [connectionId]: {
+            loading: false,
+            status: 'error',
+            message: `❌ ${response.data.message || 'Error de conexión'}`
+          }
+        }));
+        toast.error(`Vtiger: ${response.data.message}`);
+      }
+    } catch (error) {
+      setVtigerTestStatus(prev => ({
+        ...prev,
+        [connectionId]: {
+          loading: false,
+          status: 'error',
+          message: `❌ Error: ${error.response?.data?.detail || error.message}`
+        }
+      }));
+      toast.error('Error probando conexión Vtiger');
+    }
+  };
+  
+  // Guardar conexión Vtiger (crear o actualizar)
+  const saveVtigerConnection = async () => {
+    setTestingVtiger(true);
+    try {
+      if (editingVtiger) {
+        // Actualizar
+        await api.put(`/vtiger/connections/${editingVtiger.id}`, vtigerFormData);
+        toast.success('Conexión Vtiger actualizada');
+      } else {
+        // Crear nueva
+        await api.post('/vtiger/connections', vtigerFormData);
+        toast.success('Conexión Vtiger creada');
+      }
+      
+      setVtigerDialogOpen(false);
+      setEditingVtiger(null);
+      loadVtigerConnections();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error guardando conexión');
+    } finally {
+      setTestingVtiger(false);
+    }
+  };
+  
+  // Eliminar conexión Vtiger
+  const deleteVtigerConnection = async (connectionId) => {
+    if (!window.confirm('¿Está seguro de eliminar esta conexión?')) return;
+    
+    try {
+      await api.delete(`/vtiger/connections/${connectionId}`);
+      toast.success('Conexión eliminada');
+      loadVtigerConnections();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error eliminando conexión');
+    }
+  };
+  
+  // Abrir modal para editar Vtiger
+  const openEditVtiger = (conn) => {
+    setEditingVtiger(conn);
+    setVtigerFormData({
+      name: conn.name || 'Vtiger CRM',
+      base_url: conn.base_url || '',
+      username: conn.username || '',
+      access_key: '', // No mostrar el key existente por seguridad
+      sync_modules: conn.sync_modules || ['Leads', 'Contacts', 'Accounts', 'Potentials'],
+      sync_direction: conn.sync_direction || 'bidirectional',
+      active: conn.active !== false
+    });
+    setVtigerDialogOpen(true);
+  };
+  
+  // Abrir modal para nueva conexión Vtiger
+  const openNewVtiger = () => {
+    setEditingVtiger(null);
+    setVtigerFormData({
+      name: 'Vtiger CRM',
+      base_url: '',
+      username: '',
+      access_key: '',
+      sync_modules: ['Leads', 'Contacts', 'Accounts', 'Potentials'],
+      sync_direction: 'bidirectional',
+      active: true
+    });
+    setVtigerTestResult(null);
+    setVtigerDialogOpen(true);
+  };
+  
+  // Probar conexión desde el formulario (antes de guardar)
+  const testVtigerFromForm = async () => {
+    setTestingVtiger(true);
+    setVtigerTestResult(null);
+    
+    try {
+      const response = await api.post('/vtiger/test', vtigerFormData);
+      
+      setVtigerTestResult({
+        success: response.data.success,
+        message: response.data.message,
+        user: response.data.user_info,
+        responseTime: response.data.response_time_ms
+      });
+      
+      if (response.data.success) {
+        toast.success('Conexión verificada correctamente');
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      setVtigerTestResult({
+        success: false,
+        message: error.response?.data?.detail || error.message
+      });
+      toast.error('Error de conexión');
+    } finally {
+      setTestingVtiger(false);
     }
   };
   
@@ -515,6 +695,7 @@ const Servidores = () => {
     loadServers();
     loadApiConnections();  // Cargar conexiones API desde backend
     loadTiposSistema();    // Cargar tipos de sistema desde catálogo
+    loadVtigerConnections(); // Cargar conexiones Vtiger
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1053,9 +1234,9 @@ const Servidores = () => {
         </div>
       </div>
 
-      {/* Tabs principales: SQL Servers | Conexiones API */}
+      {/* Tabs principales: SQL Servers | Conexiones API | Vtiger CRM */}
       <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+        <TabsList className="grid w-full max-w-xl grid-cols-3 mb-6">
           <TabsTrigger value="sql" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
             SQL Servers
@@ -1063,6 +1244,10 @@ const Servidores = () => {
           <TabsTrigger value="api" className="flex items-center gap-2">
             <Globe className="h-4 w-4" />
             Conexiones API
+          </TabsTrigger>
+          <TabsTrigger value="vtiger" className="flex items-center gap-2">
+            <Link2 className="h-4 w-4" />
+            Vtiger CRM
           </TabsTrigger>
         </TabsList>
 
@@ -2000,6 +2185,145 @@ const Servidores = () => {
             </div>
           )}
         </TabsContent>
+
+        {/* Tab: Vtiger CRM */}
+        <TabsContent value="vtiger">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-zinc-800">Conexiones Vtiger CRM</h3>
+              <p className="text-sm text-zinc-500">Integración bidireccional con Vtiger CRM</p>
+            </div>
+            <Button onClick={openNewVtiger} className="bg-purple-600 hover:bg-purple-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Conexión
+            </Button>
+          </div>
+
+          {loadingVtiger ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+            </div>
+          ) : vtigerConnections.length === 0 ? (
+            <div className="text-center py-12 text-zinc-500">
+              <Link2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No hay conexiones Vtiger configuradas</p>
+              <p className="text-sm mt-1">Conecta tu CRM para sincronizar Leads, Contactos y Oportunidades</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {vtigerConnections.map((conn) => (
+                <Card key={conn.id} className="border-purple-100 hover:border-purple-300 transition-colors">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <Link2 className="h-5 w-5 text-purple-600" />
+                          {vtigerTestStatus[conn.id]?.status === 'success' && (
+                            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-green-500" />
+                          )}
+                          {vtigerTestStatus[conn.id]?.status === 'error' && (
+                            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500" />
+                          )}
+                        </div>
+                        <CardTitle className="text-base">{conn.name}</CardTitle>
+                      </div>
+                      <div className="flex gap-1">
+                        {conn.source !== 'environment' && (
+                          <>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => openEditVtiger(conn)}
+                              className="h-7 w-7 p-0"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => deleteVtigerConnection(conn.id)}
+                              className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-3">
+                    <div className="text-xs text-zinc-500 space-y-1">
+                      <div className="flex items-center gap-1">
+                        <Globe className="h-3 w-3" />
+                        <span className="truncate">{conn.base_url}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Mail className="h-3 w-3" />
+                        <span>{conn.username}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1">
+                      {conn.sync_modules?.map((mod) => (
+                        <Badge key={mod} variant="secondary" className="text-xs bg-purple-50 text-purple-700">
+                          {mod}
+                        </Badge>
+                      ))}
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={conn.active ? 'default' : 'secondary'} className={conn.active ? 'bg-green-100 text-green-700' : ''}>
+                          {conn.active ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                        {conn.source === 'environment' && (
+                          <Badge variant="outline" className="text-xs">ENV</Badge>
+                        )}
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => testVtigerConnection(conn.id)}
+                        disabled={vtigerTestStatus[conn.id]?.loading}
+                        className="h-7 px-2 text-xs"
+                      >
+                        {vtigerTestStatus[conn.id]?.loading ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Probando...
+                          </>
+                        ) : vtigerTestStatus[conn.id]?.status === 'success' ? (
+                          <>
+                            <CheckCircle2 className="h-3 w-3 mr-1 text-green-600" />
+                            Online
+                          </>
+                        ) : vtigerTestStatus[conn.id]?.status === 'error' ? (
+                          <>
+                            <AlertCircle className="h-3 w-3 mr-1 text-red-600" />
+                            Reintentar
+                          </>
+                        ) : (
+                          <>
+                            <Wifi className="h-3 w-3 mr-1" />
+                            Probar
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
+                    {vtigerTestStatus[conn.id]?.user && (
+                      <div className="text-xs bg-green-50 p-2 rounded text-green-700">
+                        <p>✓ Usuario: {vtigerTestStatus[conn.id].user.username}</p>
+                        <p>✓ Vtiger v{vtigerTestStatus[conn.id].user.vtigerVersion}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Dialog para agregar/editar Conexión API */}
@@ -2418,6 +2742,165 @@ const Servidores = () => {
           </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para Vtiger CRM */}
+      <Dialog open={vtigerDialogOpen} onOpenChange={setVtigerDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-purple-600" />
+              {editingVtiger ? 'Editar Conexión Vtiger' : 'Nueva Conexión Vtiger'}
+            </DialogTitle>
+            <DialogDescription>
+              Configura la conexión con tu instancia de Vtiger CRM
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="vtiger-name">Nombre de la conexión</Label>
+              <Input
+                id="vtiger-name"
+                placeholder="Vtiger CRM - Mi Empresa"
+                value={vtigerFormData.name}
+                onChange={(e) => setVtigerFormData({...vtigerFormData, name: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="vtiger-url">URL de Vtiger</Label>
+              <Input
+                id="vtiger-url"
+                placeholder="https://miempresa.vtiger.com"
+                value={vtigerFormData.base_url}
+                onChange={(e) => setVtigerFormData({...vtigerFormData, base_url: e.target.value})}
+              />
+              <p className="text-xs text-zinc-500">URL completa de tu instancia Vtiger</p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="vtiger-user">Usuario</Label>
+                <Input
+                  id="vtiger-user"
+                  placeholder="admin"
+                  value={vtigerFormData.username}
+                  onChange={(e) => setVtigerFormData({...vtigerFormData, username: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="vtiger-key">Access Key</Label>
+                <Input
+                  id="vtiger-key"
+                  type="password"
+                  placeholder="v7Wex2c3Mf9jVlJB"
+                  value={vtigerFormData.access_key}
+                  onChange={(e) => setVtigerFormData({...vtigerFormData, access_key: e.target.value})}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-zinc-500">
+              Encuentra el Access Key en Vtiger: Mi Perfil → Mis Preferencias → Access Key
+            </p>
+            
+            <div className="space-y-2">
+              <Label>Módulos a sincronizar</Label>
+              <div className="flex flex-wrap gap-2">
+                {['Leads', 'Contacts', 'Accounts', 'Potentials'].map((mod) => (
+                  <Button
+                    key={mod}
+                    type="button"
+                    variant={vtigerFormData.sync_modules.includes(mod) ? 'default' : 'outline'}
+                    size="sm"
+                    className={vtigerFormData.sync_modules.includes(mod) ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                    onClick={() => {
+                      const modules = vtigerFormData.sync_modules.includes(mod)
+                        ? vtigerFormData.sync_modules.filter(m => m !== mod)
+                        : [...vtigerFormData.sync_modules, mod];
+                      setVtigerFormData({...vtigerFormData, sync_modules: modules});
+                    }}
+                  >
+                    {mod === 'Potentials' ? 'Oportunidades' : mod === 'Accounts' ? 'Cuentas' : mod === 'Contacts' ? 'Contactos' : mod}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Dirección de sincronización</Label>
+              <Select 
+                value={vtigerFormData.sync_direction} 
+                onValueChange={(v) => setVtigerFormData({...vtigerFormData, sync_direction: v})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="read_only">Solo lectura (Vtiger → EDARSA)</SelectItem>
+                  <SelectItem value="bidirectional">Bidireccional</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={vtigerFormData.active}
+                onCheckedChange={(checked) => setVtigerFormData({...vtigerFormData, active: checked})}
+              />
+              <Label>Conexión activa</Label>
+            </div>
+            
+            {/* Resultado del test */}
+            {vtigerTestResult && (
+              <div className={`p-3 rounded-lg text-sm ${
+                vtigerTestResult.success 
+                  ? 'bg-green-50 text-green-700 border border-green-200' 
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}>
+                {vtigerTestResult.success ? (
+                  <>
+                    <p className="font-medium">✓ Conexión exitosa ({vtigerTestResult.responseTime}ms)</p>
+                    {vtigerTestResult.user && (
+                      <p className="text-xs mt-1">
+                        Usuario: {vtigerTestResult.user.username} | Vtiger v{vtigerTestResult.user.vtigerVersion}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p>✗ {vtigerTestResult.message}</p>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={testVtigerFromForm}
+              disabled={testingVtiger || !vtigerFormData.base_url || !vtigerFormData.username || !vtigerFormData.access_key}
+            >
+              {testingVtiger ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Probando...
+                </>
+              ) : (
+                <>
+                  <Wifi className="h-4 w-4 mr-2" />
+                  Probar Conexión
+                </>
+              )}
+            </Button>
+            <Button 
+              onClick={saveVtigerConnection}
+              disabled={testingVtiger || !vtigerFormData.base_url || !vtigerFormData.username}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {editingVtiger ? 'Guardar Cambios' : 'Crear Conexión'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

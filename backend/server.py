@@ -17986,6 +17986,16 @@ except Exception as e:
     logger.warning(f"Error registrando CRM Estado router: {e}")
 
 # =============================================================================
+# CRM Vtiger Integration (REST API)
+# =============================================================================
+try:
+    from modules.crm.vtiger_routes import router as vtiger_router
+    app.include_router(vtiger_router, tags=["CRM - Vtiger"])
+    logger.info("✓ CRM Vtiger router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM Vtiger router: {e}")
+
+# =============================================================================
 # CRM Enterprise Native (EDARSAHUB SQL)
 # =============================================================================
 try:
