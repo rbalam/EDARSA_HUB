@@ -381,3 +381,48 @@ async def list_vtiger_modules(
             {"code": "Invoice", "name": "Facturas", "description": "Facturas"}
         ]
     }
+
+
+# ==================== SINCRONIZACIÓN ====================
+
+@router.post("/sync/execute")
+async def execute_vtiger_sync_manual(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Ejecuta sincronización manual con Vtiger CRM.
+    Sincroniza todos los módulos configurados (Leads, Contactos, Cuentas, Oportunidades).
+    """
+    from core.scheduler.jobs.vtiger_sync_job import execute_vtiger_sync
+    
+    try:
+        result = await execute_vtiger_sync(None)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/sync/status")
+async def get_vtiger_sync_status(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Obtiene el estado de la última sincronización"""
+    from core.scheduler.jobs.vtiger_sync_job import get_vtiger_sync_status
+    
+    try:
+        return await get_vtiger_sync_status()
+    except Exception as e:
+        return {"error": str(e), "last_sync": None}
+
+
+@router.get("/sync/config")
+async def get_vtiger_sync_config(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Obtiene la configuración de sincronización automática"""
+    return {
+        "interval_minutes": int(os.environ.get("SCHEDULER_VTIGER_SYNC_INTERVAL_SECONDS", "900")) // 60,
+        "enabled": os.environ.get("SCHEDULER_VTIGER_SYNC_ENABLED", "true").lower() == "true",
+        "modules": ["Leads", "Contacts", "Accounts", "Potentials"],
+        "direction": "bidirectional"
+    }

@@ -41,6 +41,8 @@ from .jobs.sync_comercial_abiertas_v2_job import execute_sync_comercial_abiertas
 from .jobs.cava_socios_monthly_job import execute_cava_socios_monthly
 # CRM: Jobs de sincronización y seguimiento
 from .jobs.crm_sync_job import execute_crm_sync, execute_crm_sla_check, execute_crm_actividades_vencidas
+# Vtiger: Job de sincronización bidireccional
+from .jobs.vtiger_sync_job import execute_vtiger_sync
 
 logger = logging.getLogger(__name__)
 
@@ -722,6 +724,51 @@ class SchedulerManager:
         finally:
             await lock.release()
     
+    async def _run_vtiger_sync_job(self):
+        """
+        Wrapper async para sincronización con Vtiger CRM.
+        Programado: Cada 15 minutos.
+        """
+        job_config = self.config.jobs.get("vtiger_sync")
+        if not job_config or not job_config.enabled:
+            logger.debug("[VTIGER_SYNC] Deshabilitado por configuración")
+            return
+        
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("vtiger_sync")
+        lock_acquired = await lock.acquire(timeout_seconds=300)
+        
+        if not lock_acquired:
+            logger.warning("[VTIGER_SYNC] No se pudo obtener lock - ya hay una ejecución en progreso")
+            return
+        
+        job_logger = get_job_logger(self.db)
+        log_entry = await job_logger.start_execution("vtiger_sync")
+        
+        try:
+            logger.info("[VTIGER_SYNC] Iniciando sincronización con Vtiger CRM")
+            result = await execute_vtiger_sync(self.db)
+            
+            status = "completed" if result.get("success") else "failed"
+            
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status=status,
+                processed_count=result.get("total_fetched", 0),
+                success_count=result.get("total_inserted", 0) + result.get("total_updated", 0),
+                message=f"Obtenidos: {result.get('total_fetched', 0)}, "
+                        f"Insertados: {result.get('total_inserted', 0)}, "
+                        f"Actualizados: {result.get('total_updated', 0)}",
+                extra_metadata={"result_summary": result}
+            )
+            
+            logger.info(f"[VTIGER_SYNC] Completado en {result.get('duracion_ms', 0)}ms")
+        except Exception as e:
+            logger.error(f"[VTIGER_SYNC] Error: {e}")
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+        finally:
+            await lock.release()
+    
     def register_jobs(self):
         """Registra todos los jobs configurados."""
         if self._scheduler is None:
@@ -1047,6 +1094,26 @@ class SchedulerManager:
             )
             self._jobs["crm_actividades_vencidas"] = crm_act_config
             logger.info(f"Job CRM_ACTIVIDADES registrado: intervalo={crm_act_config.interval_seconds}s")
+        
+        # ========================================
+        # Vtiger: Sincronización Bidireccional
+        # ========================================
+        
+        vtiger_sync_config = self.config.jobs.get("vtiger_sync")
+        if vtiger_sync_config and vtiger_sync_config.enabled:
+            trigger = IntervalTrigger(seconds=vtiger_sync_config.interval_seconds)
+            
+            self._scheduler.add_job(
+                self._run_vtiger_sync_job,
+                trigger=trigger,
+                id="vtiger_sync",
+                name="Vtiger CRM - Sincronización",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True
+            )
+            self._jobs["vtiger_sync"] = vtiger_sync_config
+            logger.info(f"Job VTIGER_SYNC registrado: intervalo={vtiger_sync_config.interval_seconds}s")
     
     async def start(self):
         """Inicia el scheduler."""
@@ -1185,6 +1252,9 @@ class SchedulerManager:
             return {"status": "executed", "job_id": job_id}
         elif job_id == "crm_actividades_vencidas":
             await self._run_crm_actividades_vencidas_job()
+            return {"status": "executed", "job_id": job_id}
+        elif job_id == "vtiger_sync":
+            await self._run_vtiger_sync_job()
             return {"status": "executed", "job_id": job_id}
         else:
             return {"status": "error", "message": f"Job desconocido: {job_id}"}

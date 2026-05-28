@@ -108,6 +108,10 @@ class SchedulerConfig(BaseModel):
         crm_actividades_interval = int(os.environ.get("SCHEDULER_CRM_ACTIVIDADES_INTERVAL_SECONDS", "900"))  # 15 min
         crm_actividades_enabled = os.environ.get("SCHEDULER_CRM_ACTIVIDADES_ENABLED", "true").lower() == "true"
         
+        # Vtiger Sync (sincronización con Vtiger CRM cada 15 min)
+        vtiger_sync_interval = int(os.environ.get("SCHEDULER_VTIGER_SYNC_INTERVAL_SECONDS", "900"))  # 15 minutos
+        vtiger_sync_enabled = os.environ.get("SCHEDULER_VTIGER_SYNC_ENABLED", "true").lower() == "true"
+        
         jobs = {
             "sla_processor": JobConfig(
                 job_id="sla_processor",
@@ -254,6 +258,16 @@ class SchedulerConfig(BaseModel):
                 interval_seconds=crm_actividades_interval,
                 batch_size=200,
                 timeout_seconds=180
+            ),
+            # Vtiger: Sincronización bidireccional
+            "vtiger_sync": JobConfig(
+                job_id="vtiger_sync",
+                job_name="Vtiger CRM - Sincronización",
+                description="Sincronización bidireccional con Vtiger CRM (Leads, Contactos, Cuentas, Oportunidades) cada 15 minutos",
+                enabled=vtiger_sync_enabled,
+                interval_seconds=vtiger_sync_interval,
+                batch_size=500,
+                timeout_seconds=300  # 5 minutos max
             )
         }
         
