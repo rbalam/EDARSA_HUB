@@ -41,19 +41,25 @@ async def crear_lead(data: LeadCreate, current_user: dict = Depends(get_current_
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/leads", response_model=LeadListResponse, summary="Listar Leads")
+@router.get("/leads", summary="Listar Leads")
 async def listar_leads(
     empresa_id: UUID = Query(..., description="ID de la empresa"),
     estatus_id: Optional[int] = Query(None, description="Filtrar por estatus"),
     ejecutivo_id: Optional[UUID] = Query(None, description="Filtrar por ejecutivo"),
     origen_id: Optional[int] = Query(None, description="Filtrar por origen"),
     busqueda: Optional[str] = Query(None, description="Buscar por nombre, email o folio"),
+    source: Optional[str] = Query("vtiger", description="Fuente de datos: vtiger o local"),
     page: int = Query(1, ge=1, description="Página"),
     page_size: int = Query(20, ge=1, le=100, description="Items por página"),
     current_user: dict = Depends(get_current_user)
 ):
-    """Lista Leads con filtros y paginación"""
+    """Lista Leads con filtros y paginación. Por defecto lee de Vtiger sincronizado."""
     try:
+        # Si source=vtiger, obtener leads desde Vtiger sincronizado
+        if source == "vtiger":
+            return await _get_vtiger_leads_as_native(busqueda, page, page_size)
+        
+        # Fallback a datos locales SQL
         result = CRMNativeService.listar_leads(
             empresa_id, estatus_id, ejecutivo_id, origen_id, busqueda, page, page_size
         )
@@ -61,6 +67,86 @@ async def listar_leads(
     except Exception as e:
         logger.error(f"[CRM] Error listando leads: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def _get_vtiger_leads_as_native(busqueda: Optional[str], page: int, page_size: int):
+    """Obtiene leads de Vtiger y los mapea al formato nativo"""
+    from .vtiger_client import create_vtiger_client
+    import os
+    
+    base_url = os.environ.get('VTIGER_BASE_URL')
+    username = os.environ.get('VTIGER_USERNAME')
+    access_key = os.environ.get('VTIGER_ACCESS_KEY')
+    
+    if not all([base_url, username, access_key]):
+        return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
+    
+    client = create_vtiger_client(base_url, username, access_key)
+    
+    try:
+        result = await client.get_leads(limit=100)
+        await client.close()
+        
+        if not result.get('success'):
+            logger.error(f"[CRM] Error obteniendo leads de Vtiger: {result.get('error')}")
+            return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
+        
+        records = result.get('records', [])
+        
+        # Filtrar por búsqueda si aplica
+        if busqueda:
+            busqueda_lower = busqueda.lower()
+            records = [
+                r for r in records 
+                if busqueda_lower in (r.get('firstname', '') + ' ' + r.get('lastname', '')).lower()
+                or busqueda_lower in r.get('company', '').lower()
+                or busqueda_lower in r.get('email', '').lower()
+            ]
+        
+        # Mapear a formato nativo
+        items = []
+        for idx, r in enumerate(records):
+            items.append({
+                'lead_id': r.get('id', f'vtiger-{idx}'),
+                'folio_lead': r.get('lead_no', f'VT-{idx+1:04d}'),
+                'nombre_contacto': f"{r.get('firstname', '')} {r.get('lastname', '')}".strip(),
+                'apellido_paterno': r.get('lastname', ''),
+                'apellido_materno': '',
+                'nombre_empresa': r.get('company', ''),
+                'puesto': r.get('designation', ''),
+                'email': r.get('email', ''),
+                'telefono': r.get('phone', ''),
+                'telefono_movil': r.get('mobile', ''),
+                'descripcion': r.get('description', ''),
+                'origen_nombre': r.get('leadsource', 'Vtiger'),
+                'estatus_nombre': r.get('leadstatus', 'Nuevo'),
+                'estatus_color': '#10b981' if r.get('leadstatus') == 'Hot' else '#6b7280',
+                'prioridad_nombre': 'Media',
+                'ejecutivo_nombre': r.get('assigned_user_id', ''),
+                'created_at': r.get('createdtime', ''),
+                'updated_at': r.get('modifiedtime', ''),
+                'source': 'vtiger'
+            })
+        
+        # Paginación
+        total = len(items)
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated_items = items[start:end]
+        total_pages = (total + page_size - 1) // page_size
+        
+        return {
+            'items': paginated_items,
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': total_pages
+        }
+        
+    except Exception as e:
+        logger.error(f"[CRM] Error obteniendo leads de Vtiger: {e}")
+        await client.close()
+        return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
 
 
 @router.get("/leads/{lead_id}", response_model=LeadResponse, summary="Obtener Lead")
@@ -176,7 +262,7 @@ async def crear_oportunidad(data: OportunidadCreate, current_user: dict = Depend
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/oportunidades", response_model=OportunidadListResponse, summary="Listar Oportunidades")
+@router.get("/oportunidades", summary="Listar Oportunidades")
 async def listar_oportunidades(
     empresa_id: UUID = Query(..., description="ID de la empresa"),
     pipeline_id: Optional[int] = Query(None, description="Filtrar por pipeline"),
@@ -187,10 +273,14 @@ async def listar_oportunidades(
     busqueda: Optional[str] = Query(None, description="Buscar por nombre o folio"),
     page: int = Query(1, ge=1, description="Página"),
     page_size: int = Query(20, ge=1, le=100, description="Items por página"),
+    source: str = Query("vtiger", description="Fuente: vtiger o local"),
     current_user: dict = Depends(get_current_user)
 ):
-    """Lista Oportunidades con filtros y paginación"""
+    """Lista Oportunidades con filtros y paginación. Por defecto lee de Vtiger."""
     try:
+        if source == "vtiger":
+            return await _get_vtiger_oportunidades(busqueda, page, page_size)
+        
         result = CRMNativeService.listar_oportunidades(
             empresa_id, pipeline_id, etapa_id, estatus_id,
             ejecutivo_id, cuenta_id, busqueda, page, page_size
@@ -199,6 +289,170 @@ async def listar_oportunidades(
     except Exception as e:
         logger.error(f"[CRM] Error listando oportunidades: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def _get_vtiger_oportunidades(busqueda: Optional[str], page: int, page_size: int):
+    """Obtiene oportunidades desde Vtiger sincronizado"""
+    from .vtiger_client import create_vtiger_client
+    import os
+    
+    base_url = os.environ.get('VTIGER_BASE_URL')
+    username = os.environ.get('VTIGER_USERNAME')
+    access_key = os.environ.get('VTIGER_ACCESS_KEY')
+    
+    if not all([base_url, username, access_key]):
+        return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
+    
+    client = create_vtiger_client(base_url, username, access_key)
+    
+    try:
+        result = await client.get_opportunities(limit=100)
+        await client.close()
+        
+        if not result.get('success'):
+            return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
+        
+        records = result.get('records', [])
+        
+        if busqueda:
+            busqueda_lower = busqueda.lower()
+            records = [r for r in records if busqueda_lower in r.get('potentialname', '').lower()]
+        
+        items = []
+        for idx, r in enumerate(records):
+            monto = 0
+            try:
+                monto = float(r.get('amount', 0))
+            except:
+                pass
+            
+            items.append({
+                'oportunidad_id': r.get('id', f'vtiger-{idx}'),
+                'folio_oportunidad': r.get('potential_no', f'VT-OPP-{idx+1:04d}'),
+                'nombre_oportunidad': r.get('potentialname', ''),
+                'cuenta_nombre': r.get('related_to', ''),
+                'contacto_nombre': r.get('contact_id', ''),
+                'monto_estimado': monto,
+                'fecha_cierre_estimada': r.get('closingdate', ''),
+                'etapa_nombre': r.get('sales_stage', 'Nueva'),
+                'probabilidad': int(float(r.get('probability', 0))) if r.get('probability') else 0,
+                'pipeline_nombre': 'Vtiger Pipeline',
+                'ejecutivo_nombre': r.get('assigned_user_id', ''),
+                'descripcion': r.get('description', ''),
+                'created_at': r.get('createdtime', ''),
+                'source': 'vtiger'
+            })
+        
+        total = len(items)
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated = items[start:end]
+        total_pages = (total + page_size - 1) // page_size
+        
+        return {
+            'items': paginated,
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': total_pages
+        }
+    except Exception as e:
+        logger.error(f"[CRM] Error obteniendo oportunidades de Vtiger: {e}")
+        await client.close()
+        return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
+
+
+# ==================== CONTACTOS ====================
+
+@router.get("/contactos", summary="Listar Contactos")
+async def listar_contactos(
+    empresa_id: UUID = Query(..., description="ID de la empresa"),
+    cuenta_id: Optional[UUID] = Query(None, description="Filtrar por cuenta"),
+    busqueda: Optional[str] = Query(None, description="Buscar por nombre o email"),
+    page: int = Query(1, ge=1, description="Página"),
+    page_size: int = Query(20, ge=1, le=100, description="Items por página"),
+    source: str = Query("vtiger", description="Fuente: vtiger o local"),
+    current_user: dict = Depends(get_current_user)
+):
+    """Lista Contactos. Por defecto lee de Vtiger sincronizado."""
+    try:
+        if source == "vtiger":
+            return await _get_vtiger_contactos(busqueda, page, page_size)
+        
+        # TODO: Implementar fuente local si es necesario
+        return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
+    except Exception as e:
+        logger.error(f"[CRM] Error listando contactos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def _get_vtiger_contactos(busqueda: Optional[str], page: int, page_size: int):
+    """Obtiene contactos desde Vtiger sincronizado"""
+    from .vtiger_client import create_vtiger_client
+    import os
+    
+    base_url = os.environ.get('VTIGER_BASE_URL')
+    username = os.environ.get('VTIGER_USERNAME')
+    access_key = os.environ.get('VTIGER_ACCESS_KEY')
+    
+    if not all([base_url, username, access_key]):
+        return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
+    
+    client = create_vtiger_client(base_url, username, access_key)
+    
+    try:
+        result = await client.get_contacts(limit=100)
+        await client.close()
+        
+        if not result.get('success'):
+            return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
+        
+        records = result.get('records', [])
+        
+        if busqueda:
+            busqueda_lower = busqueda.lower()
+            records = [
+                r for r in records 
+                if busqueda_lower in f"{r.get('firstname', '')} {r.get('lastname', '')}".lower()
+                or busqueda_lower in r.get('email', '').lower()
+            ]
+        
+        items = []
+        for idx, r in enumerate(records):
+            items.append({
+                'contacto_id': r.get('id', f'vtiger-{idx}'),
+                'folio_contacto': r.get('contact_no', f'VT-CON-{idx+1:04d}'),
+                'nombre_completo': f"{r.get('firstname', '')} {r.get('lastname', '')}".strip(),
+                'nombre': r.get('firstname', ''),
+                'apellido': r.get('lastname', ''),
+                'email': r.get('email', ''),
+                'telefono': r.get('phone', ''),
+                'celular': r.get('mobile', ''),
+                'titulo': r.get('title', ''),
+                'departamento': r.get('department', ''),
+                'cuenta_id': r.get('account_id', ''),
+                'direccion': f"{r.get('mailingcity', '')} {r.get('mailingstate', '')} {r.get('mailingcountry', '')}".strip(),
+                'created_at': r.get('createdtime', ''),
+                'source': 'vtiger'
+            })
+        
+        total = len(items)
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated = items[start:end]
+        total_pages = (total + page_size - 1) // page_size
+        
+        return {
+            'items': paginated,
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': total_pages
+        }
+    except Exception as e:
+        logger.error(f"[CRM] Error obteniendo contactos de Vtiger: {e}")
+        await client.close()
+        return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
 
 
 @router.get("/oportunidades/{oportunidad_id}", response_model=OportunidadResponse, summary="Obtener Oportunidad")

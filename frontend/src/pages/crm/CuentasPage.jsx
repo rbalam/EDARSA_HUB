@@ -31,8 +31,14 @@ const CuentasPage = () => {
   const loadCuentas = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/crm/cuentas', { params: { limit: 100, search: search || undefined } });
-      setCuentas(response.data.cuentas || []);
+      const response = await api.get('/crm/cuentas', { 
+        params: { 
+          limit: 100, 
+          search: search || undefined,
+          source: 'vtiger'  // Leer desde Vtiger sincronizado
+        } 
+      });
+      setCuentas(response.data.items || response.data.cuentas || []);
     } catch (error) {
       toast.error('Error cargando cuentas');
     } finally {

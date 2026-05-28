@@ -41,7 +41,8 @@ export default function OportunidadesPage() {
       const params = new URLSearchParams({
         empresa_id: EMPRESA_ID,
         page: pagination.page,
-        page_size: 10
+        page_size: 10,
+        source: 'vtiger'  // Leer desde Vtiger sincronizado
       });
       if (search) params.append('busqueda', search);
       
