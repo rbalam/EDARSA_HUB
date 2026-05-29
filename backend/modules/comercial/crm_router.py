@@ -556,3 +556,53 @@ def agente_seguimiento_salud_ventas(usuario_id: int, mes: int, anio: int):
         "EficienciaInteracciones": eficiencia,
         "RecomendacionAgente": recomendacion
     }
+
+# =======================================================================
+# MODELOS PYDANTIC: INTEGRACIÓN ERP / FINANCIALS (FASE 15 - PARTE 2)
+# =======================================================================
+class ERPSyncRequest(BaseModel):
+    PedidoID: int = Field(..., description="ID del Pedido Maestro Blindado")
+    SistemaERP: str = Field(..., description="SAP_B1, SAP_S4HANA, Odoo_ERP")
+    MetodoTransaccion: str = Field(..., description="Facturacion o Asiento_Contable")
+    PayloadRaw: str = Field(..., description="JSON serializado con la estructura financiera")
+
+# =======================================================================
+# ENDPOINTS: COLA DE TRANSMISIÓN ERP (FASE 15 - PARTE 2)
+# =======================================================================
+@router.post("/integraciones/erp/transmitir")
+def encolar_transaccion_erp_staging(payload: ERPSyncRequest):
+    """
+    Fase 15 - Parte 2: Capa de Staging ERP.
+    Encola solicitudes de facturación o contabilidad hacia sistemas ERP (SAP).
+    Cumple con la Máxima 15 y 18 (Desacoplamiento total sin llamadas en vivo).
+    """
+    query = """
+        INSERT INTO dbo.CRM_ERPSyncLog (PedidoID, SistemaERP, MetodoTransaccion, PayloadRaw, EstatusERP)
+        OUTPUT INSERTED.ERPSyncID
+        VALUES (%s, %s, %s, %s, 'Pendiente')
+    """
+    params = (payload.PedidoID, payload.SistemaERP, payload.MetodoTransaccion, payload.PayloadRaw)
+    result = execute_hub_query(query, params)
+    
+    if not result:
+        raise HTTPException(status_code=400, detail="Error de infraestructura al encolar la carga financiera en el Hub.")
+        
+    return {
+        "mensaje": "Transacción financiera encolada exitosamente en la capa de aislamiento ERP.",
+        "ERPSyncID": result[0]['ERPSyncID'],
+        "Estatus": "Pendiente"
+    }
+
+@router.get("/integraciones/erp/backlog")
+def obtener_backlog_erp_pendiente():
+    """
+    Fase 15 - Parte 2: Visor de Backlog ERP.
+    Consulta de forma local las transacciones pendientes de transmitir por el Scheduler.
+    """
+    query = """
+        SELECT ERPSyncID, PedidoID, SistemaERP, MetodoTransaccion, EstatusERP, FechaRegistro 
+        FROM dbo.CRM_ERPSyncLog 
+        WHERE EstatusERP = 'Pendiente'
+        ORDER BY FechaRegistro ASC
+    """
+    return execute_hub_query(query, ())
