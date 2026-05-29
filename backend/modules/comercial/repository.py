@@ -3,18 +3,16 @@ EDARSA HUB - Comercial Module Repository
 ========================================
 Acceso a datos para el módulo comercial.
 
-FASE 5 DEL REFACTOR MODULAR (Diciembre 2025):
-- Queries SQL para ventas por origen (MPRO, SoftRestaurant)
-- Acceso a MongoDB para configuración de servidores
-- Integración con APIs locales MPRO
+FASE 6 MIGRACIÓN SQL-FIRST (Mayo 2026):
+- ELIMINADA dependencia de MongoDB completamente
+- Todas las funciones usan EDARSAHUB SQL como única fuente
+- execute_hub_query como motor central
 
-FASE 2/3 MIGRACIÓN CONEXIONES (Abril 2026):
-- Lectura de servidores desde EDARSAHUB SQL (tabla Servidores_Conexiones)
-- Fallback a MongoDB si SQL falla (migración sin ruptura)
-- EDARSAHUB SQL como fuente primaria
-
-NOTA: Las funciones de APIs locales (query_api_mpro_local, obtener_ventas_dia_api_local,
-sumar_ventas_api_local_a_sucursal) permanecen en server.py por sus dependencias globales.
+ARQUITECTURA:
+- Servidores: Tabla Servidores_Conexiones
+- Metas: Tabla Comercial_Metas (nueva)
+- Cache KPIs: Tabla Comercial_KPIs_Cache (nueva)
+- Status: Tabla Servidores_Status (existente)
 """
 
 from typing import Dict, List, Optional, Any
@@ -24,60 +22,41 @@ import os
 from datetime import datetime, timezone
 
 from core.db import execute_sql_query
+from core.pool import execute_hub_query, execute_hub_query_single, execute_hub_insert
 
 
 # ============================================================================
-# CONFIGURACIÓN EDARSAHUB SQL - FUENTE PRIMARIA DE SERVIDORES
+# CONFIGURACIÓN EDARSAHUB SQL - ÚNICA FUENTE DE DATOS
 # ============================================================================
 
 EDARSAHUB_CONFIG = {
-    'host': '54.39.104.176',
-    'port': 1433,
-    'database': 'EDARSAHUB',
-    'username': 'HRLectura',
-    'password': 'National09$'
+    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+    'port': int(os.environ.get('EDARSAHUB_PORT', 1433)),
+    'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+    'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+    'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
 }
 
-# Flag para habilitar/deshabilitar lectura desde SQL (para rollback rápido)
-USE_SQL_FOR_SERVERS = os.environ.get('USE_SQL_FOR_SERVERS', 'true').lower() == 'true'
+# Flag siempre True - SQL es la única fuente
+USE_SQL_FOR_SERVERS = True
 
 
 # ============================================================================
-# INYECCIÓN DE DEPENDENCIA: MongoDB
+# DEPRECADO: MongoDB ya no se usa (Mayo 2026)
 # ============================================================================
-
-_db = None
-
 
 def init_comercial_repository(database=None) -> None:
-    """
-    DEPRECADO: MongoDB ya no se usa.
-    El módulo comercial está en migración a SQL.
-    """
-    global _db
-    _db = database
-    import logging
-    logging.warning("[COMERCIAL] Repository - MongoDB deprecado")
+    """DEPRECADO: MongoDB eliminado. No hace nada."""
+    logging.info("[COMERCIAL] Repository inicializado - SQL-ONLY mode")
 
 
 def get_db():
-    """
-    DEPRECADO: MongoDB ya no se usa.
-    Retorna None - las funciones deben manejar gracefully.
-    """
-    if _db is None:
-        import logging
-        logging.debug("[COMERCIAL] get_db() - MongoDB deprecado")
-        return None
-    return _db
+    """DEPRECADO: MongoDB eliminado. Retorna None siempre."""
+    return None
 
 
 def _decrypt_server_password(server: Optional[Dict]) -> Optional[Dict]:
-    """
-    Descifra el password de un servidor obtenido de MongoDB.
-    
-    FASE 3C.1: Helper para manejar passwords cifrados en fallback MongoDB.
-    """
+    """Descifra password de servidor (compatibilidad)."""
     if not server:
         return server
     
@@ -87,9 +66,8 @@ def _decrypt_server_password(server: Optional[Dict]) -> Optional[Dict]:
             from core.secret_manager import decrypt_secret, is_encrypted_secret
             if is_encrypted_secret(password):
                 server['password'] = decrypt_secret(password)
-            # Si no está cifrado, es legacy - dejar tal cual (ya está en texto plano)
         except Exception as e:
-            logging.error(f"[DECRYPT_ERROR] Error descifrando password MongoDB de servidor {server.get('id', 'N/A')}: {type(e).__name__}")
+            logging.error(f"[DECRYPT_ERROR] Error descifrando password: {e}")
     
     return server
 
@@ -223,93 +201,52 @@ def _get_servers_for_tablero_sql() -> List[Dict]:
 
 async def get_server_by_id(server_id: str) -> Optional[Dict]:
     """
-    Obtiene un servidor activo por ID.
-    
-    FASE DDL COMERCIAL: SQL-FIRST, sin fallback MongoDB.
+    Obtiene un servidor activo por ID desde SQL Server.
+    MIGRACIÓN SQL-ONLY (Mayo 2026): MongoDB eliminado.
     """
-    # SQL es la fuente primaria
-    if USE_SQL_FOR_SERVERS:
-        server = _get_server_by_id_sql(server_id)
-        if server:
-            return server
-        # FASE DDL COMERCIAL: No hacer fallback a MongoDB
-        logging.debug(f"[SQL-FIRST] Servidor {server_id} no encontrado en SQL")
-        return None
-    
-    # MongoDB solo si SQL está desactivado (legacy)
-    try:
-        db = get_db()
-        if db is None:
-            return None
-        mongo_server = await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0})
-        return _decrypt_server_password(mongo_server)
-    except Exception as e:
-        logging.error(f"[get_server_by_id] Error MongoDB: {e}")
-        return None
+    server = _get_server_by_id_sql(server_id)
+    if server:
+        return server
+    logging.debug(f"[SQL-ONLY] Servidor {server_id} no encontrado")
+    return None
 
 
 async def get_servers_for_tablero() -> List[Dict]:
     """
     Obtiene servidores visibles para el tablero ejecutivo.
     Solo devuelve conexiones DATA_SOURCE (excluye CORE del sistema).
-    
-    FASE DDL COMERCIAL: SQL-FIRST, sin fallback MongoDB.
+    MIGRACIÓN SQL-ONLY (Mayo 2026): MongoDB eliminado.
     """
-    # SQL es la fuente primaria
-    if USE_SQL_FOR_SERVERS:
-        servers = _get_servers_for_tablero_sql()
-        if servers:
-            return servers
-        logging.debug("[SQL-FIRST] No se obtuvieron servidores de SQL")
-        return []
-    
-    # MongoDB solo si SQL está desactivado (legacy)
-    try:
-        db = get_db()
-        if db is None:
-            return []
-        cursor = db.servers.find(
-            {
-                "active": True, 
-                "visible_en_operaciones": {"$ne": False},
-                "$or": [
-                    {"tipo_conexion": {"$exists": False}},
-                    {"tipo_conexion": "DATA_SOURCE"}
-                ]
-            },
-            {"_id": 0}
-        )
-        servers = await cursor.to_list(100)
-        return [_decrypt_server_password(s) for s in servers if s.get("tipo_conexion") != "CORE"]
-    except Exception as e:
-        logging.error(f"[get_servers_for_tablero] Error MongoDB: {e}")
-        return []
+    servers = _get_servers_for_tablero_sql()
+    return servers if servers else []
 
 
 async def get_sucursales_visibles_config(server_id: str) -> Dict[str, bool]:
     """
     Obtiene la configuración de visibilidad de sucursales para un servidor.
+    MIGRACIÓN SQL-ONLY (Mayo 2026): Lee de tabla Sistema_SucursalServidorConfig.
     
     Returns:
         Dict con {sucursal_nombre: visible_en_operaciones}
-        Si no hay configuración, devuelve dict vacío (todas visibles por default)
     """
     try:
-        configs = await get_db().server_sucursales_config.find(
-            {"server_id": server_id, "activa": True}
-        ).to_list(500)
+        query = """
+            SELECT SucursalNombre, VisibleEnOperaciones 
+            FROM Sistema_SucursalServidorConfig
+            WHERE LOWER(ServerID) = LOWER(%s) AND Activa = 1
+        """
+        configs = execute_hub_query(query, (server_id,))
         
         if not configs:
-            return {}  # Sin configuración = todas visibles (backward compatible)
+            return {}
         
-        # Crear mapa de nombre -> visible
         return {
-            c.get("sucursal_nombre", ""): c.get("visible_en_operaciones", True)
+            c.get("SucursalNombre", ""): c.get("VisibleEnOperaciones", True)
             for c in configs
         }
     except Exception as e:
         logging.warning(f"Error obteniendo config de sucursales para {server_id}: {e}")
-        return {}  # En caso de error, no filtrar nada
+        return {}
 
 
 async def filtrar_unidades_por_visibilidad(unidades: List[Dict], server_id: str) -> List[Dict]:
@@ -386,33 +323,18 @@ def _get_sucursal_nombre_sql(server_id: str, sucursal_origen_id: str) -> Optiona
 
 async def get_sucursal_nombre(server_id: str, sucursal_origen_id: str, server_name: str = "") -> tuple:
     """
-    Obtiene el nombre de una sucursal con arquitectura EDARSAHUB-first.
+    Obtiene el nombre de una sucursal desde SQL Server.
+    MIGRACIÓN SQL-ONLY (Mayo 2026): MongoDB eliminado.
     
     Returns:
         tuple: (nombre, connection_source)
-        - connection_source: 'EDARSAHUB' | 'MONGO_LEGACY_FALLBACK' | 'SERVER_DEFAULT'
     """
-    # 1. FUENTE PRIMARIA: EDARSAHUB SQL
-    if USE_SQL_FOR_SERVERS:
-        nombre = _get_sucursal_nombre_sql(server_id, sucursal_origen_id)
-        if nombre:
-            return nombre, 'EDARSAHUB'
+    # FUENTE ÚNICA: EDARSAHUB SQL
+    nombre = _get_sucursal_nombre_sql(server_id, sucursal_origen_id)
+    if nombre:
+        return nombre, 'EDARSAHUB'
     
-    # 2. FALLBACK LEGACY: MongoDB (solo si SQL falló)
-    try:
-        mapeo = await get_db().sucursal_servidor_map.find_one({
-            "server_id": server_id,
-            "sucursal_origen_id": sucursal_origen_id
-        })
-        if mapeo and mapeo.get("sucursal_id"):
-            sucursal_cat = await get_db().sucursales_catalogo.find_one({"id": mapeo["sucursal_id"]})
-            if sucursal_cat and sucursal_cat.get("nombre"):
-                logging.warning(f"[LEGACY_FALLBACK] Nombre sucursal {sucursal_origen_id} obtenido de MongoDB")
-                return sucursal_cat["nombre"], 'MONGO_LEGACY_FALLBACK'
-    except Exception as e:
-        logging.warning(f"[LEGACY_FALLBACK] Error MongoDB para sucursal {sucursal_origen_id}: {e}")
-    
-    # 3. DEFAULT: Usar nombre del servidor
+    # DEFAULT: Usar nombre del servidor
     return server_name, 'SERVER_DEFAULT'
 
 
@@ -530,88 +452,164 @@ def query_ticket_perfecto_mpro(server: Dict, mes: int, anio: int, sucursal_id: s
 
 
 # ============================================================================
-# QUERIES SQL - METAS
+# QUERIES SQL - METAS (MIGRADO A SQL - Mayo 2026)
 # ============================================================================
 
 async def get_metas_sucursal(server_id: str, sucursal: str, mes: int, anio: int) -> Optional[Dict]:
     """
-    Obtiene las metas de una sucursal desde MongoDB.
+    Obtiene las metas de una sucursal desde SQL Server.
+    MIGRACIÓN SQL-ONLY (Mayo 2026).
     """
-    return await get_db().metas.find_one(
-        {"server_id": server_id, "sucursal": sucursal, "mes": mes, "anio": anio},
-        {"_id": 0}
-    )
+    query = """
+        SELECT ServerID as server_id, Sucursal as sucursal, Mes as mes, Anio as anio,
+               MetaVentas as meta_ventas, MetaCheques as meta_cheques, MetaPax as meta_pax,
+               MetaTicketPromedio as meta_ticket_promedio
+        FROM Comercial_Metas
+        WHERE LOWER(ServerID) = LOWER(%s) AND Sucursal = %s AND Mes = %s AND Anio = %s
+    """
+    result = execute_hub_query_single(query, (server_id, sucursal, mes, anio))
+    return result
 
 
 async def save_metas_sucursal(server_id: str, sucursal: str, mes: int, anio: int, metas: Dict) -> None:
     """
-    Guarda las metas de una sucursal en MongoDB.
+    Guarda las metas de una sucursal en SQL Server.
+    MIGRACIÓN SQL-ONLY (Mayo 2026).
     """
-    await get_db().metas.update_one(
-        {"server_id": server_id, "sucursal": sucursal, "mes": mes, "anio": anio},
-        {"$set": {**metas, "server_id": server_id, "sucursal": sucursal, "mes": mes, "anio": anio}},
-        upsert=True
-    )
+    # Verificar si existe
+    check_query = """
+        SELECT 1 FROM Comercial_Metas
+        WHERE LOWER(ServerID) = LOWER(%s) AND Sucursal = %s AND Mes = %s AND Anio = %s
+    """
+    exists = execute_hub_query_single(check_query, (server_id, sucursal, mes, anio))
+    
+    if exists:
+        # UPDATE
+        update_query = """
+            UPDATE Comercial_Metas SET
+                MetaVentas = %s, MetaCheques = %s, MetaPax = %s, MetaTicketPromedio = %s,
+                FechaModificacion = GETDATE()
+            WHERE LOWER(ServerID) = LOWER(%s) AND Sucursal = %s AND Mes = %s AND Anio = %s
+        """
+        execute_hub_insert(update_query, (
+            metas.get('meta_ventas', 0), metas.get('meta_cheques', 0),
+            metas.get('meta_pax', 0), metas.get('meta_ticket_promedio', 0),
+            server_id, sucursal, mes, anio
+        ))
+    else:
+        # INSERT
+        insert_query = """
+            INSERT INTO Comercial_Metas (ServerID, Sucursal, Mes, Anio, MetaVentas, MetaCheques, MetaPax, MetaTicketPromedio)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        execute_hub_insert(insert_query, (
+            server_id, sucursal, mes, anio,
+            metas.get('meta_ventas', 0), metas.get('meta_cheques', 0),
+            metas.get('meta_pax', 0), metas.get('meta_ticket_promedio', 0)
+        ))
 
 
 # ============================================================================
-# FUNCIONES DE CACHÉ KPIs - MIGRADAS FASE 5B-3 (Abril 2026)
+# FUNCIONES DE CACHÉ KPIs - MIGRADO A SQL (Mayo 2026)
 # ============================================================================
 
 async def get_cached_kpis(server_id: str, periodo_key: str) -> Optional[Dict]:
-    """Obtiene los KPIs cacheados de un servidor."""
-    cache = await get_db().kpis_cache.find_one({
-        "server_id": server_id,
-        "periodo_key": periodo_key
-    })
-    return cache
+    """Obtiene los KPIs cacheados de un servidor desde SQL."""
+    query = """
+        SELECT ServerID as server_id, PeriodoKey as periodo_key, KPIsJSON as kpis,
+               UpdatedAt as updated_at, Status as status
+        FROM Comercial_KPIs_Cache
+        WHERE LOWER(ServerID) = LOWER(%s) AND PeriodoKey = %s
+    """
+    result = execute_hub_query_single(query, (server_id, periodo_key))
+    if result and result.get('kpis'):
+        try:
+            result['kpis'] = json.loads(result['kpis'])
+        except Exception:
+            pass
+    return result
 
 
 async def save_kpis_cache(server_id: str, periodo_key: str, kpis: dict) -> None:
-    """Guarda los KPIs en caché."""
-    await get_db().kpis_cache.update_one(
-        {"server_id": server_id, "periodo_key": periodo_key},
-        {
-            "$set": {
-                "server_id": server_id,
-                "periodo_key": periodo_key,
-                "kpis": kpis,
-                "updated_at": datetime.now().isoformat(),
-                "status": "online"
-            }
-        },
-        upsert=True
-    )
+    """Guarda los KPIs en caché SQL."""
+    kpis_json = json.dumps(kpis, default=str)
+    
+    # Verificar si existe
+    check_query = """
+        SELECT 1 FROM Comercial_KPIs_Cache
+        WHERE LOWER(ServerID) = LOWER(%s) AND PeriodoKey = %s
+    """
+    exists = execute_hub_query_single(check_query, (server_id, periodo_key))
+    
+    if exists:
+        update_query = """
+            UPDATE Comercial_KPIs_Cache SET
+                KPIsJSON = %s, UpdatedAt = GETDATE(), Status = 'online'
+            WHERE LOWER(ServerID) = LOWER(%s) AND PeriodoKey = %s
+        """
+        execute_hub_insert(update_query, (kpis_json, server_id, periodo_key))
+    else:
+        insert_query = """
+            INSERT INTO Comercial_KPIs_Cache (ServerID, PeriodoKey, KPIsJSON, UpdatedAt, Status)
+            VALUES (%s, %s, %s, GETDATE(), 'online')
+        """
+        execute_hub_insert(insert_query, (server_id, periodo_key, kpis_json))
 
 
 async def get_cached_kpis_by_prefix(server_id: str, periodo_prefix: str) -> List[Dict]:
-    """Obtiene KPIs cacheados por prefijo de período (para MPRO con múltiples sucursales)."""
-    cursor = get_db().kpis_cache.find({
-        "server_id": server_id,
-        "periodo_key": {"$regex": f"^{periodo_prefix}"}
-    })
-    return await cursor.to_list(100)
+    """Obtiene KPIs cacheados por prefijo de período."""
+    query = """
+        SELECT ServerID as server_id, PeriodoKey as periodo_key, KPIsJSON as kpis,
+               UpdatedAt as updated_at, Status as status
+        FROM Comercial_KPIs_Cache
+        WHERE LOWER(ServerID) = LOWER(%s) AND PeriodoKey LIKE %s
+    """
+    results = execute_hub_query(query, (server_id, f"{periodo_prefix}%"))
+    for r in results:
+        if r.get('kpis'):
+            try:
+                r['kpis'] = json.loads(r['kpis'])
+            except Exception:
+                pass
+    return results
 
 
 async def save_server_connection_status(server_id: str, is_online: bool, response_time_ms: int = None) -> None:
-    """Guarda el estado de conexión de un servidor."""
-    await get_db().server_status.update_one(
-        {"server_id": server_id},
-        {
-            "$set": {
-                "server_id": server_id,
-                "is_online": is_online,
-                "response_time_ms": response_time_ms,
-                "last_check": datetime.now().isoformat()
-            }
-        },
-        upsert=True
-    )
+    """Guarda el estado de conexión de un servidor en SQL."""
+    # Verificar si existe
+    check_query = """
+        SELECT 1 FROM Servidores_Status
+        WHERE LOWER(ServerID) = LOWER(%s)
+    """
+    exists = execute_hub_query_single(check_query, (server_id,))
+    
+    if exists:
+        update_query = """
+            UPDATE Servidores_Status SET
+                IsOnline = %s, ResponseTimeMs = %s, LastCheck = GETDATE()
+            WHERE LOWER(ServerID) = LOWER(%s)
+        """
+        execute_hub_insert(update_query, (1 if is_online else 0, response_time_ms, server_id))
+    else:
+        insert_query = """
+            INSERT INTO Servidores_Status (ServerID, IsOnline, ResponseTimeMs, LastCheck)
+            VALUES (%s, %s, %s, GETDATE())
+        """
+        execute_hub_insert(insert_query, (server_id, 1 if is_online else 0, response_time_ms))
 
 
 async def get_server_connection_status(server_id: str) -> Optional[Dict]:
-    """Obtiene el estado de conexión de un servidor."""
-    return await get_db().server_status.find_one({"server_id": server_id})
+    """Obtiene el estado de conexión de un servidor desde SQL."""
+    query = """
+        SELECT ServerID as server_id, IsOnline as is_online, ResponseTimeMs as response_time_ms,
+               LastCheck as last_check
+        FROM Servidores_Status
+        WHERE LOWER(ServerID) = LOWER(%s)
+    """
+    result = execute_hub_query_single(query, (server_id,))
+    if result:
+        result['is_online'] = bool(result.get('is_online', False))
+    return result
 
 
 # ============================================================================
@@ -690,40 +688,61 @@ async def should_attempt_live_query(server_id: str, data_type: str = "HUB") -> b
 
 
 # ============================================================================
-# CACHÉ PARA DASHBOARD COMERCIAL
+# CACHÉ PARA DASHBOARD COMERCIAL (MIGRADO SQL - Mayo 2026)
 # ============================================================================
 
 async def save_dashboard_cache(server_id: str, periodo_key: str, dashboard_data: Dict) -> None:
-    """Guarda el resultado del Dashboard en caché."""
-    await get_db().dashboard_cache.update_one(
-        {"server_id": server_id, "periodo_key": periodo_key},
-        {
-            "$set": {
-                "server_id": server_id,
-                "periodo_key": periodo_key,
-                "data": dashboard_data,
-                "updated_at": datetime.now().isoformat(),
-            }
-        },
-        upsert=True
-    )
+    """Guarda el resultado del Dashboard en caché SQL."""
+    data_json = json.dumps(dashboard_data, default=str)
+    
+    # Verificar si existe
+    check_query = """
+        SELECT 1 FROM Comercial_Dashboard_Cache
+        WHERE LOWER(ServerID) = LOWER(%s) AND PeriodoKey = %s
+    """
+    exists = execute_hub_query_single(check_query, (server_id, periodo_key))
+    
+    if exists:
+        update_query = """
+            UPDATE Comercial_Dashboard_Cache SET
+                DataJSON = %s, UpdatedAt = GETDATE()
+            WHERE LOWER(ServerID) = LOWER(%s) AND PeriodoKey = %s
+        """
+        execute_hub_insert(update_query, (data_json, server_id, periodo_key))
+    else:
+        insert_query = """
+            INSERT INTO Comercial_Dashboard_Cache (ServerID, PeriodoKey, DataJSON, UpdatedAt)
+            VALUES (%s, %s, %s, GETDATE())
+        """
+        execute_hub_insert(insert_query, (server_id, periodo_key, data_json))
 
 
 async def get_dashboard_cache(server_id: str, periodo_key: str) -> Optional[Dict]:
-    """Obtiene el resultado del Dashboard desde caché."""
-    cached = await get_db().dashboard_cache.find_one(
-        {"server_id": server_id, "periodo_key": periodo_key},
-        {"_id": 0}
-    )
-    return cached
+    """Obtiene el resultado del Dashboard desde caché SQL."""
+    query = """
+        SELECT ServerID as server_id, PeriodoKey as periodo_key, DataJSON as data, UpdatedAt as updated_at
+        FROM Comercial_Dashboard_Cache
+        WHERE LOWER(ServerID) = LOWER(%s) AND PeriodoKey = %s
+    """
+    result = execute_hub_query_single(query, (server_id, periodo_key))
+    if result and result.get('data'):
+        try:
+            result['data'] = json.loads(result['data'])
+        except Exception:
+            pass
+    return result
 
 
 __all__ = [
     'init_comercial_repository',
-    'get_db',
+    'get_db',  # DEPRECADO - retorna None siempre
     'get_server_by_id',
     'get_servers_for_tablero',
-    # FASE 2/3 MIGRACIÓN: Configuración SQL
+    # Funciones SQL-ONLY (Mayo 2026)
+    'execute_hub_query',
+    'execute_hub_query_single',
+    'execute_hub_insert',
+    # Configuración SQL
     'EDARSAHUB_CONFIG',
     'USE_SQL_FOR_SERVERS',
     # Sucursales - resolución de nombres
@@ -737,7 +756,7 @@ __all__ = [
     # Metas
     'get_metas_sucursal',
     'save_metas_sucursal',
-    # Caché KPIs (migrados Fase 5B-3)
+    # Caché KPIs
     'get_cached_kpis',
     'save_kpis_cache',
     'get_cached_kpis_by_prefix',

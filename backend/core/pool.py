@@ -602,6 +602,89 @@ def configure_pool(
 
 
 # =============================================================================
+# MOTOR CENTRAL SQL - execute_hub_query (Mayo 2026)
+# =============================================================================
+
+def execute_hub_query(query: str, params: tuple = None) -> List[Dict[str, Any]]:
+    """
+    Motor central: Lee de SQL Server (EDARSAHUB) y devuelve el formato que el frontend espera.
+    NO requiere lógica de MongoDB - reemplazo directo.
+    
+    Args:
+        query: Query SQL a ejecutar
+        params: Parámetros para la query (opcional)
+    
+    Returns:
+        Lista de diccionarios con los resultados
+    
+    Uso:
+        # Reemplaza: mongo_db.servers.find()
+        results = execute_hub_query("SELECT * FROM Servidores_Conexiones WHERE activo = 1")
+        
+        # Reemplaza: mongo_db.ventas.find({"sucursal_id": id})
+        results = execute_hub_query("SELECT * FROM Comercial_Ventas_Sync WHERE SucursalID = %s", (sucursal_id,))
+    """
+    # Configuración EDARSAHUB desde variables de entorno
+    server_config = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', 1433)),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+    }
+    
+    try:
+        with pooled_connection(server_config) as conn:
+            cursor = conn.cursor(as_dict=True)
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+            results = list(cursor.fetchall())
+            return results
+    except Exception as e:
+        logging.error(f"[EXECUTE_HUB_QUERY] Error en consulta SQL: {e}")
+        logging.error(f"[EXECUTE_HUB_QUERY] Query: {query[:200]}...")
+        return []
+
+
+def execute_hub_query_single(query: str, params: tuple = None) -> Optional[Dict[str, Any]]:
+    """
+    Ejecuta query y retorna un único resultado (o None).
+    Equivalente a mongo_db.collection.find_one()
+    """
+    results = execute_hub_query(query, params)
+    return results[0] if results else None
+
+
+def execute_hub_insert(query: str, params: tuple = None) -> bool:
+    """
+    Ejecuta INSERT/UPDATE/DELETE en EDARSAHUB.
+    Retorna True si fue exitoso.
+    """
+    server_config = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', 1433)),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+    }
+    
+    try:
+        with pooled_connection(server_config) as conn:
+            cursor = conn.cursor()
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+            conn.commit()
+            return True
+    except Exception as e:
+        logging.error(f"[EXECUTE_HUB_INSERT] Error en INSERT/UPDATE: {e}")
+        return False
+
+
+# =============================================================================
 # EXPORTS
 # =============================================================================
 
@@ -616,6 +699,11 @@ __all__ = [
     'get_pool_statistics',
     'close_all_pools',
     'configure_pool',
+    
+    # Motor central SQL (Mayo 2026)
+    'execute_hub_query',
+    'execute_hub_query_single',
+    'execute_hub_insert',
     
     # Singleton
     'get_pool_manager',
