@@ -32,6 +32,10 @@ import ConfiguracionOperativaUnidades from '@/pages/ConfiguracionOperativaUnidad
 
 // CRM Enterprise
 import CRMDashboard from '@/pages/crm/CRMDashboard';
+
+// Módulos Satélites
+import SuperCajaPage from '@/pages/satelites/SuperCajaPage';
+import ComederoPage from '@/pages/satelites/ComederoPage';
 import LeadsPage from '@/pages/crm/LeadsPage';
 import OportunidadesPage from '@/pages/crm/OportunidadesPage';
 import PipelinePage from '@/pages/crm/PipelinePage';
@@ -41,6 +45,12 @@ import SolicitudesAltaPage from '@/pages/crm/SolicitudesAltaPage';
 import CotizacionesPage from '@/pages/crm/CotizacionesPage';
 import PedidosPage from '@/pages/crm/PedidosPage';
 import RemisionesPage from '@/pages/crm/RemisionesPage';
+// CRM Fases 6-15
+import ActividadesPage from '@/pages/crm/ActividadesPage';
+import OperacionesPage from '@/pages/crm/OperacionesPage';
+import ImplementacionesPage from '@/pages/crm/ImplementacionesPage';
+import PostventaPage from '@/pages/crm/PostventaPage';
+import KPIsPage from '@/pages/crm/KPIsPage';
 
 // Tablajería
 import TablajeriaDashboard from '@/pages/tablajeria/TablajeriaDashboard';
@@ -103,6 +113,12 @@ function App() {
             <Route path="crm/cotizaciones" element={<CotizacionesPage />} />
             <Route path="crm/pedidos" element={<PedidosPage />} />
             <Route path="crm/remisiones" element={<RemisionesPage />} />
+            {/* CRM Fases 6-15 */}
+            <Route path="crm/actividades" element={<ActividadesPage />} />
+            <Route path="crm/operaciones" element={<OperacionesPage />} />
+            <Route path="crm/implementaciones" element={<ImplementacionesPage />} />
+            <Route path="crm/postventa" element={<PostventaPage />} />
+            <Route path="crm/kpis" element={<KPIsPage />} />
             <Route path="tablero-ejecutivo" element={<TableroEjecutivo />} />
             <Route path="catalogo-consultas" element={<CatalogoConsultas />} />
             <Route path="explorador-bd" element={<ExploradorBD />} />
@@ -140,6 +156,9 @@ function App() {
             <Route path="configuracion/asignaciones" element={<ConfigAsignaciones />} />
             <Route path="admin/dba-credential" element={<DBACredentialManager />} />
             <Route path="admin/configuracion-operativa" element={<ConfiguracionOperativaUnidades />} />
+            {/* Módulos Satélites */}
+            <Route path="super-caja" element={<SuperCajaPage />} />
+            <Route path="comedero" element={<ComederoPage />} />
             {/* Redirect /operativo → /reportes (Dashboard Operativo ahora es tab dentro de Operaciones) */}
             <Route path="operativo" element={<Navigate to="/reportes?tab=operativo" replace />} />
           </Route>

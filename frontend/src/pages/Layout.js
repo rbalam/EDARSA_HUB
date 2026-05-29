@@ -338,6 +338,30 @@ const Layout = () => {
           roles: ['Usuario', 'Supervisor', 'Administrador']
         },
         {
+          name: 'Leads',
+          href: '/crm/leads',
+          icon: UserPlus,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Oportunidades',
+          href: '/crm/oportunidades',
+          icon: Briefcase,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Pipeline',
+          href: '/crm/pipeline',
+          icon: Kanban,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Actividades',
+          href: '/crm/actividades',
+          icon: Activity,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
           name: 'Cotizaciones',
           href: '/crm/cotizaciones',
           icon: Receipt,
@@ -356,22 +380,28 @@ const Layout = () => {
           roles: ['Usuario', 'Supervisor', 'Administrador']
         },
         {
-          name: 'Leads',
-          href: '/crm/leads',
-          icon: UserPlus,
+          name: 'Operaciones',
+          href: '/crm/operaciones',
+          icon: Factory,
           roles: ['Usuario', 'Supervisor', 'Administrador']
         },
         {
-          name: 'Oportunidades',
-          href: '/crm/oportunidades',
-          icon: Briefcase,
+          name: 'Implementaciones',
+          href: '/crm/implementaciones',
+          icon: Settings,
           roles: ['Usuario', 'Supervisor', 'Administrador']
         },
         {
-          name: 'Pipeline',
-          href: '/crm/pipeline',
-          icon: Kanban,
+          name: 'Postventa',
+          href: '/crm/postventa',
+          icon: Shield,
           roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'KPIs IA',
+          href: '/crm/kpis',
+          icon: BarChart3,
+          roles: ['Supervisor', 'Administrador']
         }
       ]
     },
@@ -564,10 +594,25 @@ const Layout = () => {
         source: 'SQL'
       };
     }
-    // Fallback hardcodeado
+    // Fallback hardcodeado con satélites inyectados
+    const satelitesFallback = [
+      {
+        name: 'Super Caja',
+        href: '/super-caja',
+        icon: CreditCard,
+        codigo: 'SUPER_CAJA_SAT'
+      },
+      {
+        name: 'Comedero',
+        href: '/comedero',
+        icon: ChefHat,
+        codigo: 'COMEDERO_01'
+      }
+    ];
+    
     return {
       modulos: filteredModulos,
-      satelites: [],
+      satelites: satelitesFallback,
       portales: [],
       sistema: filteredSistema,
       source: 'FALLBACK'
