@@ -18025,6 +18025,14 @@ try:
 except Exception as e:
     logger.warning(f"Error registrando CRM Comercial router: {e}")
 
+# CRM Router SQL-First (Fase 2 - Mayo 2026)
+try:
+    from modules.comercial import crm_router
+    app.include_router(crm_router.router, tags=["CRM SQL-First"])
+    logger.info("✓ CRM SQL-First router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM SQL-First router: {e}")
+
 try:
     from modules.crm.automation_routes import router as crm_automation_router
     app.include_router(crm_automation_router, tags=["CRM - Automatización"])
