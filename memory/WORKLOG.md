@@ -29,3 +29,11 @@
 ### Estado de la Arquitectura
 - **Máxima 15**: Coplada al 100%. Integración totalmente desacoplada a través de Staging.
 - **NO-LIVE**: Respetado. Las colisiones se registran y resuelven localmente mediante el pool de conexiones centralizado.
+
+## [2026-05-29] - FASE 15: INTEGRACIÓN DE CAPA DE STAGING ERP (SAP)
+### Añadido
+- **Capa de Staging Financiero**: Creación de la tabla transaccional `dbo.CRM_ERPSyncLog` en EDARSAHUB SQL amarrada a Pedidos oficiales.
+- **Aislamiento de Facturación**: Endpoints `/api/crm/integraciones/erp/transmitir` y backlog operativo para retener payloads de asientos contables de forma local.
+### Estado de la Arquitectura
+- **Máxima 18**: Desacoplamiento total verificado. El HUB no depende de SAP ni de su disponibilidad de red para guardar pedidos del CRM.
+- **SQL-First**: Toda transacción financiera entrante/saliente es resguardada mediante parámetros sanitizados (%s).
