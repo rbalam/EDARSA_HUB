@@ -88,6 +88,9 @@ function App() {
             <Route path="comercial/costos-margenes" element={<CostosMargenes />} />
             {/* FASE 1C-3I-D: Motor de Precios IA y Benchmark */}
             <Route path="comercial/pricing-ia" element={<PricingIA />} />
+            {/* Rutas alternativas comercial/crm → crm principal */}
+            <Route path="comercial/crm/cuentas" element={<Navigate to="/crm/cuentas" replace />} />
+            <Route path="comercial/crm/solicitudes" element={<Navigate to="/crm/solicitudes-alta" replace />} />
             {/* CRM Enterprise */}
             <Route path="crm" element={<Navigate to="/crm/dashboard" replace />} />
             <Route path="crm/dashboard" element={<CRMDashboard />} />
