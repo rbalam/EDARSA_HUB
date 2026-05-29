@@ -377,3 +377,73 @@ def actualizar_estatus_entregable(entregable_id: int, payload: EntregableEstatus
     execute_hub_query(query_update, (payload.EstatusNuevo, payload.EstatusNuevo, payload.UsuarioAprobadorID, entregable_id))
     
     return {"mensaje": "Estatus del entregable del proyecto actualizado y auditado correctamente."}
+
+# ==========================================
+# MODELOS PYDANTIC: KPI COMERCIAL (FASE 12)
+# ==========================================
+class KPISummaryResponse(BaseModel):
+    PeriodoMes: int
+    PeriodoAnio: int
+    TotalOportunidadesMonto: float
+    TasaConversionLeads: float
+    TotalActividadesEjecutadas: int
+    IndiceSatisfaccionCSAT: float
+
+# ==========================================
+# ENDPOINTS: KPI COMERCIAL (EDARSAHUB LOCAL)
+# ==========================================
+@router.get("/kpis", response_model=KPISummaryResponse)
+def obtener_metricas_kpi_comercial(mes: int, anio: int):
+    """
+    Fase 12: KPI Comercial.
+    Calcula de manera local y determinista las métricas de rendimiento 
+    sin realizar conexiones remotas en tiempo real.
+    """
+    # 1. Pipeline & Forecast: Sumatoria de montos estimados en etapa Ganada
+    query_pipeline = """
+        SELECT COALESCE(SUM(MontoEstimado), 0.0) as TotalGanado
+        FROM dbo.CRM_Oportunidades
+        WHERE Etapa = 'Ganado' AND MONTH(FechaModificacion) = %s AND YEAR(FechaModificacion) = %s
+    """
+    res_pipeline = execute_hub_query(query_pipeline, (mes, anio))
+    monto_ganado = float(res_pipeline[0]["TotalGanado"]) if res_pipeline else 0.0
+
+    # 2. Tasa de Conversión de Leads (Nativos/Sincronizados)
+    query_conversion = """
+        SELECT 
+            COUNT(*) as TotalLeads,
+            SUM(CASE WHEN Estatus = 'Calificado' OR Estatus = 'Convertido' THEN 1 ELSE 0 END) as LeadsConvertidos
+        FROM dbo.CRM_Leads
+        WHERE MONTH(FechaCreacion) = %s AND YEAR(FechaCreacion) = %s
+    """
+    res_conversion = execute_hub_query(query_conversion, (mes, anio))
+    tasa_conversion = 0.0
+    if res_conversion and res_conversion[0]["TotalLeads"] > 0:
+        tasa_conversion = (res_conversion[0]["LeadsConvertidos"] / res_conversion[0]["TotalLeads"]) * 100.0
+
+    # 3. Métricas de Actividad: Volumen total de interacciones ejecutadas por el equipo
+    query_actividades = """
+        SELECT COUNT(*) as Total
+        FROM dbo.CRM_Actividades
+        WHERE Estatus = 'Completada' AND MONTH(FechaEjecucion) = %s AND YEAR(FechaEjecucion) = %s
+    """
+    res_actividades = execute_hub_query(query_actividades, (mes, anio))
+    total_actividades = res_actividades[0]["Total"] if res_actividades else 0
+
+    # 4. Índice de Satisfacción del Cliente (CSAT) de Postventa (Fase 11)
+    query_csat = """
+        SELECT COALESCE(AVG(CAST(PuntuacionCSAT AS DECIMAL(18,2))), 0.0) as PromedioCSAT
+        FROM dbo.CRM_PostventaEncuestas
+        WHERE MONTH(FechaRegistro) = %s AND YEAR(FechaRegistro) = %s
+    """
+    res_csat = execute_hub_query(query_csat, (mes, anio))
+    promedio_csat = float(res_csat[0]["PromedioCSAT"]) if res_csat else 0.0
+
+    return {
+        "PeriodoMes": mes,
+        "PeriodoAnio": anio,
+        "TotalOportunidadesMonto": round(monto_ganado, 2),
+        "TasaConversionLeads": round(tasa_conversion, 2),
+        "TotalActividadesEjecutadas": total_actividades,
+        "IndiceSatisfaccionCSAT": round(promedio_csat, 2)
+    }
