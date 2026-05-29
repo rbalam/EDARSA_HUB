@@ -27,7 +27,6 @@ class TestParseSqlServerHost:
         assert instance is None
     
     @pytest.mark.unit
-    @pytest.mark.skip(reason="DNS resolution differs in test environment")
     def test_hostname_with_port(self):
         """Test: Hostname con puerto (server.com,1434)"""
         from core.db import parse_sql_server_host
@@ -50,7 +49,6 @@ class TestParseSqlServerHost:
         assert instance == "SQLEXPRESS"
     
     @pytest.mark.unit
-    @pytest.mark.skip(reason="DNS resolution differs in test environment")
     def test_ddns_format(self):
         """Test: Formato DDNS (server.ddns.net,6669\\nationalsoft)"""
         from core.db import parse_sql_server_host
@@ -73,7 +71,6 @@ class TestParseSqlServerHost:
         assert instance == "instance"
     
     @pytest.mark.unit
-    @pytest.mark.skip(reason="DNS resolution differs in test environment")
     def test_with_spaces(self):
         """Test: Cadena con espacios se limpia"""
         from core.db import parse_sql_server_host
