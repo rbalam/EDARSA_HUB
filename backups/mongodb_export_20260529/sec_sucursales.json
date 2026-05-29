@@ -1,0 +1,114 @@
+[
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999ece9"
+    },
+    "id": "1d28fa3a-2bad-4e26-b116-213ca621ea8b",
+    "codigo": "SUC_MANAGMENTPRO",
+    "nombre": "ManagementPro",
+    "unidad_negocio_id": "c9d9696e-d1ee-438e-82fd-b3cd67fe523b",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.589090+00:00",
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  },
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999ecec"
+    },
+    "id": "a1e84e5a-8384-48b3-9de4-9b17628ff9de",
+    "codigo": "SUC_MPRO_TABLAJERIA",
+    "nombre": "MPRO TABLAJERIA",
+    "unidad_negocio_id": "c2c7f590-dbf7-45cd-89a0-bd4e6b9f3126",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.590099+00:00",
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  },
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999ecef"
+    },
+    "id": "340b4734-6a10-4000-b5ea-6fe7f28cd8d5",
+    "codigo": "SUC_HR2020_ESCRITURA",
+    "nombre": "HR2020 ESCRITURA",
+    "unidad_negocio_id": "65c80576-faa8-444e-99ad-2bc9f4ba5296",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.590925+00:00",
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  },
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999ecf2"
+    },
+    "id": "205f15b9-5840-4adf-9d52-9ff8091cb718",
+    "codigo": "SUC_CIENFUEGOS",
+    "nombre": "CIENFUEGOS",
+    "unidad_negocio_id": "1a1768a7-7ba7-4024-9fa4-f70b94810f87",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.591748+00:00",
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  },
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999ecf5"
+    },
+    "id": "b02156fc-b3ca-457b-9ee8-bd4af4c03008",
+    "codigo": "SUC_LA_ESTELAR",
+    "nombre": "LA ESTELAR",
+    "unidad_negocio_id": "78db8a9e-513a-42eb-90df-43dab5a4eb1f",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.592397+00:00",
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  },
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999ecf8"
+    },
+    "id": "d11bafc4-0051-40dd-b0da-07958ac20a6c",
+    "codigo": "SUC_130°_MERIDA",
+    "nombre": "130° MERIDA",
+    "unidad_negocio_id": "a2c363e8-5f43-4fa4-a1b8-e27cdfad814e",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.593049+00:00",
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  },
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999ecfb"
+    },
+    "id": "b879e14e-4817-4e99-b31c-5076070d69fc",
+    "codigo": "SUC_CIENFUEGOS_TABLAJERIA",
+    "nombre": "CIENFUEGOS TABLAJERIA",
+    "unidad_negocio_id": "8b1b95a4-ea83-4b70-9c31-5e1ad1e48a3c",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.593937+00:00",
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  }
+]

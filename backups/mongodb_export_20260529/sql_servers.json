@@ -1,0 +1,18 @@
+[
+  {
+    "_id": {
+      "$oid": "69ea81fa1f9add3afb7c365b"
+    },
+    "name": "PILOTO_SR_TEST",
+    "activo": true,
+    "database": "SR_PILOTO",
+    "empresa_id": "empresa-piloto",
+    "host": "localhost",
+    "id": "329d337f-bb4f-4f33-974a-47b916cc832f",
+    "is_pilot": true,
+    "password": "test",
+    "port": 1433,
+    "system_type": "SoftRestaurant",
+    "username": "test"
+  }
+]

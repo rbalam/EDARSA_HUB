@@ -1,0 +1,250 @@
+[
+  {
+    "_id": {
+      "$oid": "69e42eedfb75b19aabd0acdd"
+    },
+    "nombre": "ADMIN",
+    "descripcion": "Administrador del sistema con acceso total",
+    "permisos": [
+      "CARGOS_VER",
+      "CARGOS_CREAR",
+      "CARGOS_AUTORIZAR",
+      "CARGOS_APLICAR",
+      "CARGOS_RECHAZAR",
+      "CARGOS_REVERTIR",
+      "CARGOS_CANCELAR",
+      "RESPONSABILIDAD_VER",
+      "RESPONSABILIDAD_CALCULAR",
+      "RESPONSABILIDAD_PROPONER",
+      "RESPONSABILIDAD_APROBAR",
+      "RESPONSABILIDAD_RECHAZAR",
+      "RESPONSABILIDAD_EXONERAR",
+      "RESPONSABILIDAD_DISPUTAR",
+      "RESPONSABILIDAD_GESTIONAR",
+      "SLA_VER",
+      "SLA_CONFIGURAR",
+      "WORKFLOW_VER",
+      "WORKFLOW_CREAR",
+      "WORKFLOW_GESTIONAR",
+      "WORKFLOW_CERRAR",
+      "TAREAS_VER",
+      "TAREAS_CREAR",
+      "TAREAS_ASIGNAR",
+      "TAREAS_COMPLETAR",
+      "NOTIFICACIONES_VER",
+      "NOTIFICACIONES_ENVIAR",
+      "NOTIFICACIONES_CONFIGURAR",
+      "SCHEDULER_VER",
+      "SCHEDULER_GESTIONAR",
+      "SCHEDULER_ADMIN",
+      "AUDITORIA_VER",
+      "AUDITORIA_PROGRAMAR",
+      "AUDITORIA_GESTIONAR",
+      "REPORTES_VER",
+      "REPORTES_EXPORTAR",
+      "CONFIG_VER",
+      "CONFIG_EDITAR",
+      "USUARIOS_VER",
+      "USUARIOS_GESTIONAR",
+      "ROLES_VER",
+      "ROLES_GESTIONAR",
+      "RBAC_ADMIN"
+    ],
+    "nivel_jerarquia": 100,
+    "es_sistema": true,
+    "id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "created_at": {
+      "$date": "2026-04-19T01:25:01.173Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T01:25:01.173Z"
+    },
+    "activo": true
+  },
+  {
+    "_id": {
+      "$oid": "69e42eedfb75b19aabd0acde"
+    },
+    "nombre": "DIRECCION",
+    "descripcion": "Nivel dirección - autoriza montos altos y reversas",
+    "permisos": [
+      "CARGOS_VER",
+      "CARGOS_CREAR",
+      "CARGOS_AUTORIZAR",
+      "CARGOS_APLICAR",
+      "CARGOS_RECHAZAR",
+      "CARGOS_REVERTIR",
+      "CARGOS_CANCELAR",
+      "RESPONSABILIDAD_VER",
+      "RESPONSABILIDAD_APROBAR",
+      "RESPONSABILIDAD_RECHAZAR",
+      "RESPONSABILIDAD_EXONERAR",
+      "RESPONSABILIDAD_GESTIONAR",
+      "SLA_VER",
+      "SLA_CONFIGURAR",
+      "WORKFLOW_VER",
+      "WORKFLOW_GESTIONAR",
+      "WORKFLOW_CERRAR",
+      "TAREAS_VER",
+      "TAREAS_ASIGNAR",
+      "NOTIFICACIONES_VER",
+      "NOTIFICACIONES_CONFIGURAR",
+      "SCHEDULER_VER",
+      "SCHEDULER_ADMIN",
+      "AUDITORIA_VER",
+      "AUDITORIA_PROGRAMAR",
+      "AUDITORIA_GESTIONAR",
+      "REPORTES_VER",
+      "REPORTES_EXPORTAR",
+      "USUARIOS_VER",
+      "ROLES_VER"
+    ],
+    "nivel_jerarquia": 80,
+    "es_sistema": true,
+    "id": "47c7155d-5a6e-4f15-be75-169e55aab61a",
+    "created_at": {
+      "$date": "2026-04-19T01:25:01.173Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T01:25:01.173Z"
+    },
+    "activo": true
+  },
+  {
+    "_id": {
+      "$oid": "69e42eedfb75b19aabd0acdf"
+    },
+    "nombre": "GERENTE_OPS",
+    "descripcion": "Gerente de operaciones - autoriza y aplica cargos",
+    "permisos": [
+      "CARGOS_VER",
+      "CARGOS_CREAR",
+      "CARGOS_AUTORIZAR",
+      "CARGOS_APLICAR",
+      "CARGOS_RECHAZAR",
+      "CARGOS_REVERTIR",
+      "RESPONSABILIDAD_VER",
+      "RESPONSABILIDAD_APROBAR",
+      "RESPONSABILIDAD_RECHAZAR",
+      "RESPONSABILIDAD_GESTIONAR",
+      "SLA_VER",
+      "WORKFLOW_VER",
+      "WORKFLOW_GESTIONAR",
+      "TAREAS_VER",
+      "TAREAS_CREAR",
+      "TAREAS_ASIGNAR",
+      "TAREAS_COMPLETAR",
+      "NOTIFICACIONES_VER",
+      "SCHEDULER_VER",
+      "SCHEDULER_GESTIONAR",
+      "AUDITORIA_VER",
+      "AUDITORIA_PROGRAMAR",
+      "REPORTES_VER",
+      "REPORTES_EXPORTAR"
+    ],
+    "nivel_jerarquia": 60,
+    "es_sistema": true,
+    "id": "02e433d3-c43b-4299-bfe2-610808f08365",
+    "created_at": {
+      "$date": "2026-04-19T01:25:01.174Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T01:25:01.174Z"
+    },
+    "activo": true
+  },
+  {
+    "_id": {
+      "$oid": "69e42eedfb75b19aabd0ace0"
+    },
+    "nombre": "SUPERVISOR",
+    "descripcion": "Supervisor - crea propuestas y gestiona tareas",
+    "permisos": [
+      "CARGOS_VER",
+      "CARGOS_CREAR",
+      "CARGOS_AUTORIZAR",
+      "RESPONSABILIDAD_VER",
+      "RESPONSABILIDAD_CALCULAR",
+      "RESPONSABILIDAD_PROPONER",
+      "SLA_VER",
+      "WORKFLOW_VER",
+      "WORKFLOW_CREAR",
+      "TAREAS_VER",
+      "TAREAS_CREAR",
+      "TAREAS_ASIGNAR",
+      "TAREAS_COMPLETAR",
+      "NOTIFICACIONES_VER",
+      "SCHEDULER_VER",
+      "AUDITORIA_VER",
+      "REPORTES_VER"
+    ],
+    "nivel_jerarquia": 40,
+    "es_sistema": true,
+    "id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "created_at": {
+      "$date": "2026-04-19T01:25:01.174Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T01:25:01.174Z"
+    },
+    "activo": true
+  },
+  {
+    "_id": {
+      "$oid": "69e42eedfb75b19aabd0ace1"
+    },
+    "nombre": "OPERADOR",
+    "descripcion": "Operador - ejecuta tareas y registra información",
+    "permisos": [
+      "CARGOS_VER",
+      "RESPONSABILIDAD_VER",
+      "RESPONSABILIDAD_DISPUTAR",
+      "SLA_VER",
+      "WORKFLOW_VER",
+      "TAREAS_VER",
+      "TAREAS_COMPLETAR",
+      "REPORTES_VER"
+    ],
+    "nivel_jerarquia": 20,
+    "es_sistema": true,
+    "id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "created_at": {
+      "$date": "2026-04-19T01:25:01.174Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T01:25:01.174Z"
+    },
+    "activo": true
+  },
+  {
+    "_id": {
+      "$oid": "69e42eedfb75b19aabd0ace2"
+    },
+    "nombre": "AUDITOR",
+    "descripcion": "Auditor - solo lectura para fiscalización",
+    "permisos": [
+      "CARGOS_VER",
+      "RESPONSABILIDAD_VER",
+      "SLA_VER",
+      "WORKFLOW_VER",
+      "TAREAS_VER",
+      "NOTIFICACIONES_VER",
+      "SCHEDULER_VER",
+      "AUDITORIA_VER",
+      "REPORTES_VER",
+      "REPORTES_EXPORTAR",
+      "USUARIOS_VER",
+      "ROLES_VER"
+    ],
+    "nivel_jerarquia": 30,
+    "es_sistema": true,
+    "id": "a2c99e14-26f6-4486-8fe2-700c9b02f201",
+    "created_at": {
+      "$date": "2026-04-19T01:25:01.175Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T01:25:01.175Z"
+    },
+    "activo": true
+  }
+]

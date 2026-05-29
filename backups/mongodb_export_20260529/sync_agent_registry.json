@@ -1,0 +1,29 @@
+[
+  {
+    "_id": {
+      "$oid": "69ea82261f9add3afb7c3715"
+    },
+    "agent_id": "agent-piloto-sr-001",
+    "is_pilot": true,
+    "registered_at": {
+      "$date": "2026-04-23T20:33:42.412Z"
+    },
+    "server_id": "329d337f-bb4f-4f33-974a-47b916cc832f",
+    "status": "ONLINE",
+    "token_expires_at": {
+      "$date": "2027-04-23T20:33:42.412Z"
+    },
+    "token_generated_at": {
+      "$date": "2026-04-23T20:33:42.412Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-23T20:35:19.057Z"
+    },
+    "last_heartbeat": {
+      "$date": "2026-04-23T20:35:19.057Z"
+    },
+    "last_sync": "2026-04-23T20:35:00Z",
+    "queue_depth": 0,
+    "sql_local_status": "CONNECTED"
+  }
+]

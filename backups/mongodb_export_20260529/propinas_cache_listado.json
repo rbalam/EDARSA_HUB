@@ -1,0 +1,290 @@
+[
+  {
+    "_id": {
+      "$oid": "69e85f99813770af97e47a63"
+    },
+    "_key": "listado:27611fcfca856403f9dd42ae43ded3fe",
+    "cached_at": {
+      "$date": "2026-04-22T05:41:45.424Z"
+    },
+    "data": {
+      "propinas": [],
+      "total": 0,
+      "page": 1,
+      "limit": 50,
+      "pages": 0,
+      "totales": {
+        "total_propinas_tpv": 0,
+        "total_comision": 0,
+        "total_a_pagar": 0,
+        "total_pagado": 0
+      },
+      "fuente": "SQL Server EDARSA HUB"
+    },
+    "params": {
+      "fecha_inicio": "2026-04-15",
+      "fecha_fin": "2026-04-22",
+      "server_id": null,
+      "sucursal_id": null,
+      "estado": null,
+      "page": 1,
+      "limit": 50
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69ea80df1f9add3afb7c31c3"
+    },
+    "_key": "listado:5dd38a3052e50a51fa4b5a26c8fdb84f",
+    "cached_at": {
+      "$date": "2026-04-23T20:28:15.052Z"
+    },
+    "data": {
+      "propinas": [],
+      "total": 0,
+      "page": 1,
+      "limit": 50,
+      "pages": 0,
+      "totales": {
+        "total_propinas_tpv": 0,
+        "total_comision": 0,
+        "total_a_pagar": 0,
+        "total_pagado": 0
+      },
+      "fuente": "SQL Server EDARSA HUB"
+    },
+    "params": {
+      "fecha_inicio": "2026-04-16",
+      "fecha_fin": "2026-04-23",
+      "server_id": null,
+      "sucursal_id": null,
+      "estado": null,
+      "page": 1,
+      "limit": 50
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69ece52aed56676342abbaa5"
+    },
+    "_key": "listado:3b89775dea725b74a414bfeab9b9438a",
+    "cached_at": {
+      "$date": "2026-04-25T16:00:42.627Z"
+    },
+    "data": {
+      "propinas": [],
+      "total": 0,
+      "page": 1,
+      "limit": 50,
+      "pages": 0,
+      "totales": {
+        "total_propinas_tpv": 0,
+        "total_comision": 0,
+        "total_a_pagar": 0,
+        "total_pagado": 0
+      },
+      "fuente": "SQL Server EDARSA HUB"
+    },
+    "params": {
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-25",
+      "server_id": null,
+      "sucursal_id": null,
+      "estado": null,
+      "page": 1,
+      "limit": 50
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69edbd15f5c672d078f9928d"
+    },
+    "_key": "listado:bca3f210332e7f963dd2da0d7776b91d",
+    "cached_at": {
+      "$date": "2026-04-26T07:21:57.669Z"
+    },
+    "data": {
+      "propinas": [],
+      "total": 0,
+      "page": 1,
+      "limit": 50,
+      "pages": 0,
+      "totales": {
+        "total_propinas_tpv": 0,
+        "total_comision": 0,
+        "total_a_pagar": 0,
+        "total_pagado": 0
+      },
+      "fuente": "SQL Server EDARSA HUB"
+    },
+    "params": {
+      "fecha_inicio": "2026-04-19",
+      "fecha_fin": "2026-04-26",
+      "server_id": null,
+      "sucursal_id": null,
+      "estado": null,
+      "page": 1,
+      "limit": 50
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69edbd15f5c672d078f99290"
+    },
+    "_key": "listado:bca3f210332e7f963dd2da0d7776b91d",
+    "cached_at": {
+      "$date": "2026-04-26T07:21:57.671Z"
+    },
+    "data": {
+      "propinas": [],
+      "total": 0,
+      "page": 1,
+      "limit": 50,
+      "pages": 0,
+      "totales": {
+        "total_propinas_tpv": 0,
+        "total_comision": 0,
+        "total_a_pagar": 0,
+        "total_pagado": 0
+      },
+      "fuente": "SQL Server EDARSA HUB"
+    },
+    "params": {
+      "fecha_inicio": "2026-04-19",
+      "fecha_fin": "2026-04-26",
+      "server_id": null,
+      "sucursal_id": null,
+      "estado": null,
+      "page": 1,
+      "limit": 50
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69edbd1bf5c672d078f9940b"
+    },
+    "_key": "listado:e88b2dc4a6306b0085a50b1715fe2e3b",
+    "cached_at": {
+      "$date": "2026-04-26T07:22:03.423Z"
+    },
+    "data": {
+      "propinas": [],
+      "total": 0,
+      "page": 1,
+      "limit": 50,
+      "pages": 0,
+      "totales": {
+        "total_propinas_tpv": 0,
+        "total_comision": 0,
+        "total_a_pagar": 0,
+        "total_pagado": 0
+      },
+      "fuente": "SQL Server EDARSA HUB"
+    },
+    "params": {
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-26",
+      "server_id": null,
+      "sucursal_id": null,
+      "estado": null,
+      "page": 1,
+      "limit": 50
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69f05debe7026e9fc7ec539e"
+    },
+    "_key": "listado:9115f767b24c238c63b0949cecb6181e",
+    "cached_at": {
+      "$date": "2026-04-28T07:23:57.264Z"
+    },
+    "data": {
+      "propinas": [],
+      "total": 0,
+      "page": 1,
+      "limit": 50,
+      "pages": 0,
+      "totales": {
+        "total_propinas_tpv": 0,
+        "total_comision": 0,
+        "total_a_pagar": 0,
+        "total_pagado": 0
+      },
+      "fuente": "SQL Server EDARSA HUB"
+    },
+    "params": {
+      "fecha_inicio": null,
+      "fecha_fin": null,
+      "server_id": null,
+      "sucursal_id": null,
+      "estado": null,
+      "page": 1,
+      "limit": 50
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69f0608de7026e9fc7ec561a"
+    },
+    "_key": "listado:e3e25f79ee85a36dd91fc21009e86fb4",
+    "cached_at": {
+      "$date": "2026-04-28T07:23:57.377Z"
+    },
+    "data": {
+      "propinas": [],
+      "total": 0,
+      "page": 1,
+      "limit": 50,
+      "pages": 0,
+      "totales": {
+        "total_propinas_tpv": 0,
+        "total_comision": 0,
+        "total_a_pagar": 0,
+        "total_pagado": 0
+      },
+      "fuente": "SQL Server EDARSA HUB"
+    },
+    "params": {
+      "fecha_inicio": null,
+      "fecha_fin": null,
+      "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+      "sucursal_id": null,
+      "estado": null,
+      "page": 1,
+      "limit": 50
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69f2d2303ba09da3af22ea09"
+    },
+    "_key": "listado:6f8ba1468e27e462c402ec6ab8db42ff",
+    "cached_at": {
+      "$date": "2026-04-30T03:53:20.695Z"
+    },
+    "data": {
+      "propinas": [],
+      "total": 0,
+      "page": 1,
+      "limit": 50,
+      "pages": 0,
+      "totales": {
+        "total_propinas_tpv": 0,
+        "total_comision": 0,
+        "total_a_pagar": 0,
+        "total_pagado": 0
+      },
+      "fuente": "SQL Server EDARSA HUB"
+    },
+    "params": {
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-30",
+      "server_id": null,
+      "sucursal_id": null,
+      "estado": null,
+      "page": 1,
+      "limit": 50
+    }
+  }
+]

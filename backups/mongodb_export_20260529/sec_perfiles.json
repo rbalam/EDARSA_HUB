@@ -1,0 +1,74 @@
+[
+  {
+    "_id": {
+      "$oid": "69e7493ce288072c3af9938f"
+    },
+    "codigo": "PERFIL_VISOR_BASICO",
+    "activo": true,
+    "created_at": "2026-04-21T09:54:04.010913+00:00",
+    "descripcion": "Acceso de solo lectura a estructura organizacional",
+    "fase": "FASE_13",
+    "nombre": "Visor Básico",
+    "roles": [
+      "VISOR_ESTRUCTURA"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "69e7493ce288072c3af99391"
+    },
+    "codigo": "PERFIL_VISOR_SISTEMA",
+    "activo": true,
+    "created_at": "2026-04-21T09:54:04.010924+00:00",
+    "descripcion": "Acceso de solo lectura a estructura y lista de usuarios",
+    "fase": "FASE_13",
+    "nombre": "Visor Sistema",
+    "roles": [
+      "VISOR_ESTRUCTURA",
+      "VISOR_SISTEMA"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "69e7493ce288072c3af99393"
+    },
+    "codigo": "PERFIL_VISOR_COMPLETO",
+    "activo": true,
+    "created_at": "2026-04-21T09:54:04.010926+00:00",
+    "descripcion": "Acceso de solo lectura a todo el módulo Sistema",
+    "fase": "FASE_13",
+    "nombre": "Visor Completo",
+    "roles": [
+      "VISOR_ADMIN"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "69e7493ce288072c3af99395"
+    },
+    "codigo": "PERFIL_ADMIN_USUARIOS",
+    "activo": true,
+    "created_at": "2026-04-21T09:54:04.010928+00:00",
+    "descripcion": "Gestión de usuarios (ver, editar, eliminar) sin crear roles",
+    "fase": "FASE_13",
+    "nombre": "Admin Usuarios",
+    "roles": [
+      "VISOR_ADMIN",
+      "ADMIN_USUARIOS"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "69e7493ce288072c3af99397"
+    },
+    "codigo": "PERFIL_GESTOR_SISTEMA",
+    "activo": true,
+    "created_at": "2026-04-21T09:54:04.010930+00:00",
+    "descripcion": "Gestión completa del módulo Sistema (usuarios y roles)",
+    "fase": "FASE_13",
+    "nombre": "Gestor Sistema",
+    "roles": [
+      "GESTOR_SISTEMA"
+    ]
+  }
+]

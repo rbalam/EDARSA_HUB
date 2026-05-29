@@ -1,0 +1,124 @@
+[
+  {
+    "_id": {
+      "$oid": "6a07aa1e50fb022788293c7d"
+    },
+    "id": "CUSTOM_SOFRESATAURANT_ENTER_14F42D7D",
+    "nombre": "ALMACENCES",
+    "descripcion": "RELACION DE ALMACENCES",
+    "sistema": "SOFRESATAURANT_ENTER",
+    "categoria": "Inventarios",
+    "parametros": [
+      "EMPRESA",
+      "IDALMACEN"
+    ],
+    "sql": "SELECT \nCOMPANIES.LegalName AS EMPRESA,\nWarehouses.Code AS CODIGO,\nWarehouses.Name AS DESCRIPCION,\nCASE WHEN \n    Warehouses.IsConsumption = '1' \n    THEN 'CONSUMO' \n    ELSE 'BODEGA' \nEND TIPO,\nWarehouses.Id AS ID_ALMACEN\nFROM \n    Warehouses\nINNER JOIN Companies ON Companies.Id = Warehouses.IDCOMPANY\n",
+    "created_by": "carlosruz@edarsa.com.mx",
+    "created_at": "2026-05-15T23:19:58.947178+00:00",
+    "active": true,
+    "validated": true,
+    "validation_timestamp": "2026-05-15T23:19:58.946942+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "6a07aa6550fb022788293c7e"
+    },
+    "id": "CUSTOM_SOFRESATAURANT_ENTER_D6D7E925",
+    "nombre": "TIPOS DE MOVIMIENTO",
+    "descripcion": "RELACION DE TIPOS DE MOVIMIENTOS",
+    "sistema": "SOFRESATAURANT_ENTER",
+    "categoria": "Inventarios",
+    "parametros": [
+      "IDMOVIMIENTO"
+    ],
+    "sql": "SELECT \n[Code] AS ID,\n[Name] AS DESCRIPCION,\nCASE WHEN \n    [Type] = 1 \n    THEN 'ENTRADA' \n    ELSE 'SALIDA'\nEND AS TIPO,\n'' AS CONSIDERAR\nFROM \n    [NSBACKOFFICE].[dbo].[InventoryConcepts]\nWHERE \n    [IsEnabled] = 1\n",
+    "created_by": "carlosruz@edarsa.com.mx",
+    "created_at": "2026-05-15T23:21:09.927458+00:00",
+    "active": true,
+    "validated": true,
+    "validation_timestamp": "2026-05-15T23:21:09.927373+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "6a07ac7050fb022788293c91"
+    },
+    "id": "CUSTOM_SOFRESATAURANT_ENTER_4C7DD61F",
+    "nombre": "PRODUCTOS",
+    "descripcion": "PRODUCTOS FILTRADOS POR ALMACEN",
+    "sistema": "SOFRESATAURANT_ENTER",
+    "categoria": "Inventarios",
+    "parametros": [
+      "ID_ALMACEN"
+    ],
+    "sql": "Select \n'PRODUCTO' AS TABLA,\nct.Name CATEGORIA,\npg.Name GRUPO,\np.code ID,\np.Name DESCRIPCION,\nu.Code UM,\npuni.Items RENDIMIENTO,\npw.LastCost COSTO,\npw.IdWarehouse ID_ALMACEN\nfrom Products P\ninner join ProductGroups pg on pg.id = p.IdProductGroup\nINNER JOIN ProductWarehouses PW on pw.IdProduct = p.Id\nLEFT join ProductSubGroups psg on psg.Id = p.IdProductSubGroup\ninner join ProductUnits puni on puni.IdProduct = p.Id\ninner join Units u on u.Id = puni.IdUnit\nLEFT join Categories CT on CT.ID = pg.IdCategory\nWHERE \nPW.IdWarehouse = {ID_ALMACEN} AND\npuni.IsDefault = 1\nORDER BY \npg.Name,\npsg.Name,\np.code,\npuni.IsDefault DESC\n",
+    "created_by": "carlosruz@edarsa.com.mx",
+    "created_at": "2026-05-15T23:29:52.589814+00:00",
+    "active": true,
+    "validated": true,
+    "validation_timestamp": "2026-05-15T23:29:52.589667+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "6a07ae9650fb022788293c9f"
+    },
+    "id": "CUSTOM_SOFRESATAURANT_ENTER_EEB05068",
+    "nombre": "INVENTARIOS FISICOS",
+    "descripcion": "DEVUELVE LOS INVENTARIOS FISICOS EN UN RANGO DE FECHAS POR ALMACEN Y SUCURSAL",
+    "sistema": "SOFRESATAURANT_ENTER",
+    "categoria": "Inventarios",
+    "parametros": [
+      "FECHAINICIAL",
+      "FECHAFINAL",
+      "EMPRESA",
+      "ALMACEN"
+    ],
+    "sql": "\nSELECT \n'INVENTARIOS' AS CONSULTA,\nCASE WHEN\n    (SELECT TOP 1 PhysicalInventory.ID FROM PhysicalInventory WHERE PhysicalInventory.[Date] BETWEEN {FECHAINICIAL} AND {FECHAFINAL} AND PhysicalInventory.IdWareHouse = INV.IdWareHouse ORDER BY PhysicalInventory.ID ASC ) = INV.Id\n    THEN 'INICIAL'\n    ELSE \n        CASE WHEN \n            (SELECT TOP 1 PhysicalInventory.ID FROM PhysicalInventory WHERE PhysicalInventory.[Date] BETWEEN {FECHAINICIAL} AND {FECHAFINAL} AND PhysicalInventory.IdWareHouse = INV.IdWareHouse ORDER BY PhysicalInventory.ID DESC ) = INV.Id\n        THEN 'FINAL'\n        ELSE ''\n        END\n    END INVENTARIO,\nALMACEN.Name AS ALMACEN,\nINV.[Date] AS FECHA,\nINV.NUMBER AS FOLIO,\n'PRODUCTOS' AS TIPO,\nP.Code AS CODIGO,\nINVD.Cost AS COSTO,\nINVD.Quantity FISICOALMACEN1,\nPUNIT.Items AS RENDIMIENTO,\nUM.Name AS UNIDAD,\nINVD.STOCK AS [INVENTARIO.1],\nINVD.[Difference] AS [diferenciaalmacen1]\nFROM \nPhysicalInventory INV \nINNER JOIN PhysicalInventoryDetail INVD  ON INVD.IdPhysicalInventory = INV.Id\nINNER JOIN Warehouses ALMACEN ON ALMACEN.Id = INV.IdWareHouse\nINNER JOIN Products P ON P.Id = INVD.IdProduct\nINNER JOIN ProductUnits PUNIT ON PUNIT.IdProduct = INVD.IdProduct AND PUNIT.ID = INVD.IdProductUnit\nINNER JOIN Units UM on UM.Id = PUNIT.IdUnit\nINNER JOIN Companies EMPRESA ON EMPRESA.Id = INV.IdCompany\nWHERE \nINV.[Date] BETWEEN {FECHAINICIAL} AND {FECHAFINAL}\nAND EMPRESA.LegalName LIKE '%' + {EMPRESA} + '%'\nAND ALMACEN.Name LIKE '%' + {ALMACEN} + '%'\n\nORDER BY CONVERT(DATE,INV.[Date],301),INV.Id, P.Code\n",
+    "created_by": "carlosruz@edarsa.com.mx",
+    "created_at": "2026-05-15T23:39:02.432765+00:00",
+    "active": true,
+    "validated": true,
+    "validation_timestamp": "2026-05-15T23:39:02.432519+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "6a07af7450fb022788293caa"
+    },
+    "id": "CUSTOM_SOFRESATAURANT_ENTER_C8055659",
+    "nombre": "KARDEX ",
+    "descripcion": "DEVUELVE LOS MOVIMIENTOS EN UN RANGO DE FECHAS POR ALMACEN Y SUCURSAL",
+    "sistema": "SOFRESATAURANT_ENTER",
+    "categoria": "Inventarios",
+    "parametros": [
+      "FECHAINICIAL",
+      "FECHAFINAL",
+      "ALMACEN"
+    ],
+    "sql": "SELECT\n'INSUMOS' TABLA,\nCONCEPTOS.Code AS TIPO,\nCONCEPTOS.Name AS MOVIMIENTO,\nCONVERT(DATE,DATE,301) AS FECHA,\nInventory.ID AS DOCUMENTO,\nP.Code AS CODIGO,\np.Name AS PRODUCTO,\nInventory.Quantity as CANTIDAD,\nALMACEN.Name ALMACEN\nFROM [NSBACKOFFICE].[dbo].[Inventory]\nINNER JOIN PRODUCTS P ON P.ID = Inventory.IdProduct\nINNER JOIN Warehouses ALMACEN ON ALMACEN.Id = Inventory.IdWareHouse\nINNER JOIN Companies EMPRESA ON EMPRESA.Id = ALMACEN.IdCompany\nINNER JOIN InventoryConcepts CONCEPTOS ON CONCEPTOS.Id = Inventory.IdInventoryConcept\nwhere \nInventory.[Date] BETWEEN @FECHA_NICIAL AND {FECHAFINAL}\nAND\nALMACEN.Name LIKE '%' + {ALMACEN} + '%'\nORDER BY \nP.Code, Inventory.[Date], Inventory.Id\n",
+    "created_by": "carlosruz@edarsa.com.mx",
+    "created_at": "2026-05-15T23:42:44.973306+00:00",
+    "active": true,
+    "validated": true,
+    "validation_timestamp": "2026-05-15T23:42:44.973163+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "6a07b1e1ab02ae6d4eae925a"
+    },
+    "id": "CUSTOM_SOFRESATAURANT_ENTER_83AD97F8",
+    "nombre": "INSUMOS CONSUMIDOS",
+    "descripcion": "DEVUELVE LOS INSUMOS CONSUMIDOS EN UN RANGO DE FECHAS POR ALMACEN Y SUCURSAL",
+    "sistema": "SOFRESATAURANT_ENTER",
+    "categoria": "Inventarios",
+    "parametros": [
+      "FECHAINICIAL",
+      "FECHAFINAL",
+      "ALMACEN"
+    ],
+    "sql": "SELECT\n'CONSUMOS' CONSULTA,\nALMACEN.Name ALMACEN,\nCASE WHEN ct.POSCATEGORY = '2' THEN 'ALIMENTOS' WHEN CT.POSCATEGORY = '1' THEN 'BEBIDAS' ELSE 'OTROS' END  CLASIFICADOR,\nGp.NAME GRUPO, \nP.Code AS INSUMO,\nP.NAME DESCRIPCION,\nU.CODE UM,\nInventory.Quantity as CONSUMIDO,\nInventory.cost COSTO_PROM\n  FROM [NSBACKOFFICE].[dbo].[Inventory]\nINNER JOIN PRODUCTS P ON P.ID = Inventory.IdProduct\nINNER JOIN Warehouses ALMACEN ON ALMACEN.Id = Inventory.IdWareHouse\nINNER JOIN Companies EMPRESA ON EMPRESA.Id = ALMACEN.IdCompany\nINNER JOIN InventoryConcepts CONCEPTOS ON CONCEPTOS.Id = Inventory.IdInventoryConcept\nINNER JOIN Productgroups GP on GP.ID = P.IdProductGroup\nINNER JOIN Categories CT ON CT.ID = gp.IdCategory\nINNER JOIN ProductUnits puni on puni.IdProduct = p.Id AND PUNI.ISDEFAULT = 1\nINNER JOIN Units u on u.Id = puni.IdUnit\nwhere \nInventory.[Date] BETWEEN {FECHAINICIAL} AND {FECHAFINAL}\nAND\nCONCEPTOS.Code IN('SPV') AND\nALMACEN.Name LIKE '%' + {ALMACEN} + '%'\n\n\n",
+    "created_by": "carlosruz@edarsa.com.mx",
+    "created_at": "2026-05-15T23:53:05.385782+00:00",
+    "active": true,
+    "validated": true,
+    "validation_timestamp": "2026-05-15T23:53:05.385435+00:00"
+  }
+]

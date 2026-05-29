@@ -1,0 +1,145 @@
+[
+  {
+    "_id": {
+      "$oid": "69e88ce325cef78eff62f312"
+    },
+    "id": "0002",
+    "unidad_negocio_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "nombre": "ALMACEN FN",
+    "codigo": "0002",
+    "activo": true,
+    "fecha_creacion": "2026-04-22T08:54:59.511211+00:00",
+    "fecha_sync": "2026-04-22T08:54:59.511211+00:00",
+    "usuario_sync": "ricardo@edarsa.com.mx"
+  },
+  {
+    "_id": {
+      "$oid": "69e88ce325cef78eff62f313"
+    },
+    "id": "0001",
+    "unidad_negocio_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "nombre": "ALMACEN GENERAL",
+    "codigo": "0001",
+    "activo": true,
+    "fecha_creacion": "2026-04-22T08:54:59.511211+00:00",
+    "fecha_sync": "2026-04-22T08:54:59.511211+00:00",
+    "usuario_sync": "ricardo@edarsa.com.mx"
+  },
+  {
+    "_id": {
+      "$oid": "69e88ce325cef78eff62f314"
+    },
+    "id": "0004",
+    "unidad_negocio_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "nombre": "BODEGA",
+    "codigo": "0004",
+    "activo": true,
+    "fecha_creacion": "2026-04-22T08:54:59.511211+00:00",
+    "fecha_sync": "2026-04-22T08:54:59.511211+00:00",
+    "usuario_sync": "ricardo@edarsa.com.mx"
+  },
+  {
+    "_id": {
+      "$oid": "69e88ce325cef78eff62f315"
+    },
+    "id": "0005",
+    "unidad_negocio_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "nombre": "CONSIGNACION",
+    "codigo": "0005",
+    "activo": true,
+    "fecha_creacion": "2026-04-22T08:54:59.511211+00:00",
+    "fecha_sync": "2026-04-22T08:54:59.511211+00:00",
+    "usuario_sync": "ricardo@edarsa.com.mx"
+  },
+  {
+    "_id": {
+      "$oid": "69e88ce325cef78eff62f316"
+    },
+    "id": "TRAN",
+    "unidad_negocio_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "nombre": "EN TRANSITO",
+    "codigo": "TRAN",
+    "activo": true,
+    "fecha_creacion": "2026-04-22T08:54:59.511211+00:00",
+    "fecha_sync": "2026-04-22T08:54:59.511211+00:00",
+    "usuario_sync": "ricardo@edarsa.com.mx"
+  },
+  {
+    "_id": {
+      "$oid": "69e88d7025cef78eff62f31d"
+    },
+    "id": "0002",
+    "unidad_negocio_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "nombre": "ALMACEN FN",
+    "codigo": "0002",
+    "activo": true,
+    "fecha_creacion": "2026-04-22T08:57:20.483665+00:00",
+    "fecha_sync": "2026-04-22T08:57:20.483665+00:00",
+    "usuario_sync": "ricardo@edarsa.com.mx"
+  },
+  {
+    "_id": {
+      "$oid": "69e88d7025cef78eff62f31e"
+    },
+    "id": "0001",
+    "unidad_negocio_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "nombre": "ALMACEN GENERAL",
+    "codigo": "0001",
+    "activo": true,
+    "fecha_creacion": "2026-04-22T08:57:20.483665+00:00",
+    "fecha_sync": "2026-04-22T08:57:20.483665+00:00",
+    "usuario_sync": "ricardo@edarsa.com.mx"
+  },
+  {
+    "_id": {
+      "$oid": "69e88d7025cef78eff62f31f"
+    },
+    "id": "0004",
+    "unidad_negocio_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "nombre": "BODEGA",
+    "codigo": "0004",
+    "activo": true,
+    "fecha_creacion": "2026-04-22T08:57:20.483665+00:00",
+    "fecha_sync": "2026-04-22T08:57:20.483665+00:00",
+    "usuario_sync": "ricardo@edarsa.com.mx"
+  },
+  {
+    "_id": {
+      "$oid": "69e88d7025cef78eff62f320"
+    },
+    "id": "0005",
+    "unidad_negocio_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "nombre": "CONSIGNACION",
+    "codigo": "0005",
+    "activo": true,
+    "fecha_creacion": "2026-04-22T08:57:20.483665+00:00",
+    "fecha_sync": "2026-04-22T08:57:20.483665+00:00",
+    "usuario_sync": "ricardo@edarsa.com.mx"
+  },
+  {
+    "_id": {
+      "$oid": "69e88d7025cef78eff62f321"
+    },
+    "id": "0003",
+    "unidad_negocio_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "nombre": "DISPONIBLE",
+    "codigo": "0003",
+    "activo": true,
+    "fecha_creacion": "2026-04-22T08:57:20.483665+00:00",
+    "fecha_sync": "2026-04-22T08:57:20.483665+00:00",
+    "usuario_sync": "ricardo@edarsa.com.mx"
+  },
+  {
+    "_id": {
+      "$oid": "69e88d7025cef78eff62f322"
+    },
+    "id": "TRAN",
+    "unidad_negocio_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "nombre": "EN TRANSITO",
+    "codigo": "TRAN",
+    "activo": true,
+    "fecha_creacion": "2026-04-22T08:57:20.483665+00:00",
+    "fecha_sync": "2026-04-22T08:57:20.483665+00:00",
+    "usuario_sync": "ricardo@edarsa.com.mx"
+  }
+]

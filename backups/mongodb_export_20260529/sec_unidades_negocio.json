@@ -1,0 +1,142 @@
+[
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999ece8"
+    },
+    "id": "c9d9696e-d1ee-438e-82fd-b3cd67fe523b",
+    "codigo": "MANAGEMENTPRO",
+    "nombre": "ManagementPro",
+    "descripcion": "Unidad de negocio ManagmentPro",
+    "empresa_id": "62786c07-4475-4b06-860d-7af6e56bd867",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.588694+00:00",
+    "descripcion_tipo": "Fuente técnica de datos - no visible directamente",
+    "tipo_unidad": "TECNICA",
+    "visible_usuario": false,
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  },
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999eceb"
+    },
+    "id": "c2c7f590-dbf7-45cd-89a0-bd4e6b9f3126",
+    "codigo": "MPRO_TABLAJERIA",
+    "nombre": "MPRO TABLAJERIA",
+    "descripcion": "Unidad de negocio MPRO TABLAJERIA",
+    "empresa_id": "62786c07-4475-4b06-860d-7af6e56bd867",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.589823+00:00",
+    "descripcion_tipo": "Fuente técnica de datos - no visible directamente",
+    "tipo_unidad": "TECNICA",
+    "visible_usuario": false,
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  },
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999ecee"
+    },
+    "id": "65c80576-faa8-444e-99ad-2bc9f4ba5296",
+    "codigo": "HR2020_ESCRITURA",
+    "nombre": "HR2020 ESCRITURA",
+    "descripcion": "Unidad de negocio HR2020 ESCRITURA",
+    "empresa_id": "62786c07-4475-4b06-860d-7af6e56bd867",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.590651+00:00",
+    "descripcion_tipo": "Unidad administrativa interna (RH)",
+    "tipo_unidad": "ADMINISTRATIVA",
+    "visible_usuario": false,
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  },
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999ecf1"
+    },
+    "id": "1a1768a7-7ba7-4024-9fa4-f70b94810f87",
+    "codigo": "CIENFUEGOS",
+    "nombre": "CIENFUEGOS",
+    "descripcion": "Unidad de negocio CIENFUEGOS",
+    "empresa_id": "62786c07-4475-4b06-860d-7af6e56bd867",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.591500+00:00",
+    "descripcion_tipo": "Unidad operativa visible para usuario final",
+    "tipo_unidad": "OPERATIVA",
+    "visible_usuario": true,
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  },
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999ecf4"
+    },
+    "id": "78db8a9e-513a-42eb-90df-43dab5a4eb1f",
+    "codigo": "LA_ESTELAR",
+    "nombre": "LA ESTELAR",
+    "descripcion": "Unidad de negocio LA ESTELAR",
+    "empresa_id": "62786c07-4475-4b06-860d-7af6e56bd867",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.592193+00:00",
+    "descripcion_tipo": "Unidad operativa visible para usuario final",
+    "tipo_unidad": "OPERATIVA",
+    "visible_usuario": true,
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  },
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999ecf7"
+    },
+    "id": "a2c363e8-5f43-4fa4-a1b8-e27cdfad814e",
+    "codigo": "130°_MERIDA",
+    "nombre": "130° MERIDA",
+    "descripcion": "Unidad de negocio 130° MERIDA",
+    "empresa_id": "62786c07-4475-4b06-860d-7af6e56bd867",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.592848+00:00",
+    "descripcion_tipo": "Unidad operativa visible para usuario final",
+    "tipo_unidad": "OPERATIVA",
+    "visible_usuario": true,
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  },
+  {
+    "_id": {
+      "$oid": "69e7094e6ef856c1b999ecfa"
+    },
+    "id": "8b1b95a4-ea83-4b70-9c31-5e1ad1e48a3c",
+    "codigo": "CIENFUEGOS_TABLAJERIA",
+    "nombre": "CIENFUEGOS TABLAJERIA",
+    "descripcion": "Unidad de negocio CIENFUEGOS TABLAJERIA",
+    "empresa_id": "62786c07-4475-4b06-860d-7af6e56bd867",
+    "activo": true,
+    "created_at": "2026-04-21T05:21:18.593579+00:00",
+    "descripcion_tipo": "Unidad operativa visible para usuario final",
+    "tipo_unidad": "OPERATIVA",
+    "visible_usuario": true,
+    "activacion_funcional": false,
+    "estado_mapeo": "INICIAL",
+    "fase_creacion": "FASE_1",
+    "notas": "Mapeo base inicial - no implica activación funcional ni cierre definitivo de taxonomía",
+    "taxonomia_definitiva": false
+  }
+]

@@ -1,0 +1,476 @@
+[
+  {
+    "_id": {
+      "$oid": "69e42ea4fb75b19aabd0aca6"
+    },
+    "id": "b9c108a9-d81f-4552-9db7-2ed93fb116d7",
+    "automatizacion_id": "07295f0e-4adc-403c-a9a3-d1b2915cfe22",
+    "evento": "PENDIENTE_INVENTARIO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "mensaje": "Flujo detenido - sin inventario final"
+    },
+    "fecha": "2026-04-19T01:23:48.921007+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e42eb2fb75b19aabd0aca8"
+    },
+    "id": "9b5636b2-684b-4cb4-a81f-8bbf3ff47d96",
+    "automatizacion_id": "25954231-8786-4bb0-9be3-2095a71bcf0e",
+    "evento": "AUDITORIA_COMPLETADA",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "recomendacion": "URGENTE",
+      "criticos": 1,
+      "faltantes": 1
+    },
+    "fecha": "2026-04-19T01:24:02.619044+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e42eb8fb75b19aabd0aca9"
+    },
+    "id": "3197cbf0-e8d2-404e-aebf-450f49a5e998",
+    "automatizacion_id": "25954231-8786-4bb0-9be3-2095a71bcf0e",
+    "evento": "AUTORIZADO_GERENCIA",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "comentario": "Aprobado por Gerencia"
+    },
+    "fecha": "2026-04-19T01:24:08.571873+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e42ebefb75b19aabd0acaa"
+    },
+    "id": "2cd77138-acfa-4943-8fb2-bc500570d5b4",
+    "automatizacion_id": "25954231-8786-4bb0-9be3-2095a71bcf0e",
+    "evento": "APROBADO_FINAL",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "comentario": "Aprobación final Tesorería"
+    },
+    "fecha": "2026-04-19T01:24:14.066750+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e42ecffb75b19aabd0acac"
+    },
+    "id": "e935d9c4-0fff-4905-b3f8-f8569441c0a6",
+    "automatizacion_id": "20806cda-4654-403c-8e60-25074341d6a1",
+    "evento": "AUDITORIA_COMPLETADA",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "recomendacion": "NO_COMPRAR",
+      "criticos": 0,
+      "faltantes": 0
+    },
+    "fecha": "2026-04-19T01:24:31.256189+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e42ecffb75b19aabd0acad"
+    },
+    "id": "f98aebb9-a5dc-4a49-b895-c40f016a5ee5",
+    "automatizacion_id": "20806cda-4654-403c-8e60-25074341d6a1",
+    "evento": "RECHAZADO_GERENCIA",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "motivo": "Rechazado - presupuesto excedido"
+    },
+    "fecha": "2026-04-19T01:24:31.405160+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e42ed7fb75b19aabd0acaf"
+    },
+    "id": "7b756b81-b37c-4926-ac00-069fe383e7fa",
+    "automatizacion_id": "d8711bf2-cebc-4129-9ed1-b909676201a7",
+    "evento": "AUDITORIA_COMPLETADA",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "recomendacion": "NO_COMPRAR",
+      "criticos": 0,
+      "faltantes": 0
+    },
+    "fecha": "2026-04-19T01:24:39.281833+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e42ed7fb75b19aabd0acb0"
+    },
+    "id": "90612efc-325c-4a7b-9db7-87a5b18531e6",
+    "automatizacion_id": "d8711bf2-cebc-4129-9ed1-b909676201a7",
+    "evento": "CAMBIO_DIAS_OBJETIVO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "dias_anterior": 10,
+      "dias_nuevo": 15,
+      "motivo": "Ajuste según estacionalidad",
+      "recomendacion_anterior": "NO_COMPRAR",
+      "recomendacion_nueva": "COMPRAR"
+    },
+    "fecha": "2026-04-19T01:24:39.489599+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e434ae7dd73800bb69c2fd"
+    },
+    "id": "bd2fe4b6-10ed-4696-b9de-c53b9bade13e",
+    "automatizacion_id": "98a7135c-bb76-4e20-a210-4e5e1a8567fd",
+    "evento": "AUDITORIA_COMPLETADA",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "recomendacion": "NO_COMPRAR",
+      "criticos": 0,
+      "faltantes": 0
+    },
+    "fecha": "2026-04-19T01:49:34.624660+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e434ae7dd73800bb69c2ff"
+    },
+    "id": "b645fd21-daa5-441e-8c15-1878a758d8d4",
+    "automatizacion_id": "1299aa6f-4633-46c9-9a51-980ae36226ce",
+    "evento": "AUDITORIA_COMPLETADA",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "recomendacion": "NO_COMPRAR",
+      "criticos": 0,
+      "faltantes": 0
+    },
+    "fecha": "2026-04-19T01:49:34.788106+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e434f9e69f53cc0bd80c31"
+    },
+    "id": "7504b972-6574-4610-825d-2f3c2aa41a91",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "AUDITORIA_COMPLETADA",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "recomendacion": "NO_COMPRAR",
+      "criticos": 0,
+      "faltantes": 0
+    },
+    "fecha": "2026-04-19T01:50:49.250073+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57a872af97c712d3fbb78"
+    },
+    "id": "085685fc-cf52-4774-9fd7-6bad7c203ad7",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": {
+          "anterior": 0.0,
+          "nuevo": 15.0
+        },
+        "periodo_estadistico": null
+      },
+      "motivo": "Prueba: Más comensales este año",
+      "recomendacion_anterior": "NO_COMPRAR",
+      "recomendacion_nueva": "NO_COMPRAR"
+    },
+    "fecha": "2026-04-20T00:59:51.446087+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57a962af97c712d3fbb79"
+    },
+    "id": "4d96eb59-bfc2-4926-acab-927f120b25c5",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": {
+          "anterior": 15.0,
+          "nuevo": -10.0
+        },
+        "periodo_estadistico": null
+      },
+      "motivo": "Temporada baja",
+      "recomendacion_anterior": "NO_COMPRAR",
+      "recomendacion_nueva": "NO_COMPRAR"
+    },
+    "fecha": "2026-04-20T01:00:06.501206+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57b7d390fd96ccb228a43"
+    },
+    "id": "0644266d-f1ea-471a-a93b-c4f66047460b",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": {
+          "anterior": -10.0,
+          "nuevo": 15.0
+        },
+        "periodo_estadistico": null
+      },
+      "motivo": "Test: Ajuste positivo +15%",
+      "recomendacion_anterior": "NO_COMPRAR",
+      "recomendacion_nueva": "NO_COMPRAR"
+    },
+    "fecha": "2026-04-20T01:03:57.998137+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57b7e390fd96ccb228a44"
+    },
+    "id": "77474ea3-7de8-438d-916f-af88b83d2ee1",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": {
+          "anterior": 15.0,
+          "nuevo": -10.0
+        },
+        "periodo_estadistico": null
+      },
+      "motivo": "Test: Restaurar ajuste original",
+      "recomendacion_anterior": "NO_COMPRAR",
+      "recomendacion_nueva": "NO_COMPRAR"
+    },
+    "fecha": "2026-04-20T01:03:58.096218+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57b80390fd96ccb228a45"
+    },
+    "id": "40d45548-f601-4d3f-8ee2-81f9d57265b4",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": {
+          "anterior": -10.0,
+          "nuevo": -100.0
+        },
+        "periodo_estadistico": null
+      },
+      "motivo": "Test: Valor límite -100%",
+      "recomendacion_anterior": "NO_COMPRAR",
+      "recomendacion_nueva": "REVISAR"
+    },
+    "fecha": "2026-04-20T01:04:00.221914+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57b80390fd96ccb228a46"
+    },
+    "id": "c6518739-5917-4c45-a716-b8408733be4a",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": {
+          "anterior": -100.0,
+          "nuevo": 500.0
+        },
+        "periodo_estadistico": null
+      },
+      "motivo": "Test: Valor límite +500%",
+      "recomendacion_anterior": "REVISAR",
+      "recomendacion_nueva": "COMPRAR"
+    },
+    "fecha": "2026-04-20T01:04:00.276098+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57b80390fd96ccb228a47"
+    },
+    "id": "ad433000-4209-4123-b63d-4cbe2774d697",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": {
+          "anterior": 500.0,
+          "nuevo": -10.0
+        },
+        "periodo_estadistico": null
+      },
+      "motivo": "Test: Restaurar valor original",
+      "recomendacion_anterior": "COMPRAR",
+      "recomendacion_nueva": "NO_COMPRAR"
+    },
+    "fecha": "2026-04-20T01:04:00.331639+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57b80390fd96ccb228a48"
+    },
+    "id": "c78a0203-ac44-48cb-9b86-03e282fc415d",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": {
+          "anterior": -10.0,
+          "nuevo": 25.0
+        },
+        "periodo_estadistico": null
+      },
+      "motivo": "Test: Verificar bitácora",
+      "recomendacion_anterior": "NO_COMPRAR",
+      "recomendacion_nueva": "NO_COMPRAR"
+    },
+    "fecha": "2026-04-20T01:04:00.821989+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57b80390fd96ccb228a49"
+    },
+    "id": "a6ac640b-5ecc-4266-8385-624e39d773b2",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": {
+          "anterior": 25.0,
+          "nuevo": -10.0
+        },
+        "periodo_estadistico": null
+      },
+      "motivo": "Test: Restaurar valor original",
+      "recomendacion_anterior": "NO_COMPRAR",
+      "recomendacion_nueva": "NO_COMPRAR"
+    },
+    "fecha": "2026-04-20T01:04:00.913125+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57b81390fd96ccb228a4a"
+    },
+    "id": "66b03ef2-2160-46ca-bb81-4ad6a59225e3",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": null,
+        "periodo_estadistico": {
+          "fecha_inicio_anterior": null,
+          "fecha_fin_anterior": null,
+          "fecha_inicio_nuevo": "2025-01-01",
+          "fecha_fin_nuevo": "2025-01-15"
+        }
+      },
+      "motivo": "Test: Cambiar periodo estadístico",
+      "recomendacion_anterior": "NO_COMPRAR",
+      "recomendacion_nueva": "NO_COMPRAR"
+    },
+    "fecha": "2026-04-20T01:04:01.468607+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57b81390fd96ccb228a4b"
+    },
+    "id": "8ae473f4-8030-4035-93bc-955000808ad0",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": {
+          "anterior": -10.0,
+          "nuevo": 20.0
+        },
+        "periodo_estadistico": null
+      },
+      "motivo": "Test: Verificar fórmula de cálculo",
+      "recomendacion_anterior": "NO_COMPRAR",
+      "recomendacion_nueva": "NO_COMPRAR"
+    },
+    "fecha": "2026-04-20T01:04:01.979463+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57b82390fd96ccb228a4c"
+    },
+    "id": "307de058-27de-4c4c-a10a-3278d3e7fd8c",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": {
+          "anterior": 20.0,
+          "nuevo": -10.0
+        },
+        "periodo_estadistico": null
+      },
+      "motivo": "Test: Restaurar ajuste original",
+      "recomendacion_anterior": "NO_COMPRAR",
+      "recomendacion_nueva": "NO_COMPRAR"
+    },
+    "fecha": "2026-04-20T01:04:02.084663+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57b82390fd96ccb228a4d"
+    },
+    "id": "5fb20504-6227-49b8-9d80-e815df8442c7",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": {
+          "anterior": -10.0,
+          "nuevo": 50.0
+        },
+        "periodo_estadistico": {
+          "fecha_inicio_anterior": "2025-01-01",
+          "fecha_fin_anterior": "2025-01-15",
+          "fecha_inicio_nuevo": "2024-06-01",
+          "fecha_fin_nuevo": "2024-06-15"
+        }
+      },
+      "motivo": "Test: Verificar que periodo operativo no cambia",
+      "recomendacion_anterior": "NO_COMPRAR",
+      "recomendacion_nueva": "COMPRAR"
+    },
+    "fecha": "2026-04-20T01:04:02.621207+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69e57b82390fd96ccb228a4e"
+    },
+    "id": "e31a24b9-9963-4b36-9893-de20df682f6a",
+    "automatizacion_id": "c4295c76-6508-4c74-bcf1-11ccd75f4bb6",
+    "evento": "CAMBIO_PARAMETROS_CONSUMO",
+    "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "datos": {
+      "cambios": {
+        "ajuste": {
+          "anterior": 50.0,
+          "nuevo": -10.0
+        },
+        "periodo_estadistico": null
+      },
+      "motivo": "Test: Restaurar",
+      "recomendacion_anterior": "COMPRAR",
+      "recomendacion_nueva": "NO_COMPRAR"
+    },
+    "fecha": "2026-04-20T01:04:02.727223+00:00"
+  }
+]

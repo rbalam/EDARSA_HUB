@@ -1,0 +1,99 @@
+[
+  {
+    "_id": {
+      "$oid": "69e71d3a3e78a36a5f3d88b3"
+    },
+    "id": "���@��Oz�\b\u0012��_�k",
+    "codigo": "VISOR_ESTRUCTURA",
+    "nombre": "Visor de Estructura Organizacional",
+    "descripcion": "Rol piloto FASE 5 - permite ver tab Estructura y endpoint de estructura organizacional",
+    "permisos": [
+      "SISTEMA_ESTRUCTURA_VER"
+    ],
+    "activo": true,
+    "es_sistema": true,
+    "nivel_jerarquia": 10,
+    "fase": "FASE_5",
+    "created_at": "2026-04-21T06:46:18.643Z"
+  },
+  {
+    "_id": {
+      "$oid": "69e7205e5cbe2430273d88b3"
+    },
+    "id": "��5* �L��|\u0004� ڽ�",
+    "codigo": "VISOR_SISTEMA",
+    "nombre": "Visor del Sistema",
+    "descripcion": "Rol piloto FASE 6 - puede ver usuarios del sistema",
+    "permisos": [
+      "SISTEMA_USUARIOS_VER"
+    ],
+    "activo": true,
+    "es_sistema": true,
+    "nivel_jerarquia": 15,
+    "fase": "FASE_6",
+    "created_at": "2026-04-21T06:59:42.558Z"
+  },
+  {
+    "_id": {
+      "$oid": "69e72eadcf243934e266b781"
+    },
+    "id": "6f6bb612-9238-4ca9-a017-fb2eb4902c5a",
+    "codigo": "VISOR_ADMIN",
+    "nombre": "Visor de Administración",
+    "descripcion": "Rol piloto FASE 8 - acceso lectura a usuarios, roles y estructura",
+    "permisos": [
+      "SISTEMA_ESTRUCTURA_VER",
+      "SISTEMA_USUARIOS_VER",
+      "SISTEMA_ROLES_VER"
+    ],
+    "activo": true,
+    "es_sistema": true,
+    "nivel_jerarquia": 20,
+    "fase": "FASE_8",
+    "created_at": {
+      "$date": "2026-04-21T08:00:45.928Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69e738e90800eb46a1e1f038"
+    },
+    "id": "652a827d-3000-4043-b947-14e51ab8353c",
+    "codigo": "ADMIN_USUARIOS",
+    "nombre": "Administrador de Usuarios",
+    "descripcion": "Rol piloto FASE 10 - CRUD completo de usuarios (VER, EDITAR, ELIMINAR)",
+    "permisos": [
+      "SISTEMA_USUARIOS_VER",
+      "SISTEMA_USUARIOS_EDITAR",
+      "SISTEMA_USUARIOS_ELIMINAR"
+    ],
+    "activo": true,
+    "es_sistema": true,
+    "nivel_jerarquia": 25,
+    "fase": "FASE_10",
+    "created_at": {
+      "$date": "2026-04-21T08:44:25.938Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69e73fb47f894b56767c741b"
+    },
+    "codigo": "GESTOR_SISTEMA",
+    "nombre": "Gestor de Sistema",
+    "descripcion": "FASE 11: Rol con permisos completos para gestión de usuarios y roles del módulo Sistema",
+    "permisos": [
+      "SISTEMA_USUARIOS_VER",
+      "SISTEMA_USUARIOS_CREAR",
+      "SISTEMA_USUARIOS_EDITAR",
+      "SISTEMA_USUARIOS_ELIMINAR",
+      "SISTEMA_ROLES_VER",
+      "SISTEMA_ROLES_CREAR",
+      "SISTEMA_ROLES_EDITAR",
+      "SISTEMA_ROLES_ELIMINAR"
+    ],
+    "activo": true,
+    "fase": "FASE_11",
+    "created_at": "2026-04-21T09:13:24.844448+00:00"
+  }
+]

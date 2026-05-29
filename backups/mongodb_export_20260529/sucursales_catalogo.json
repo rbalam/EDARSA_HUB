@@ -1,0 +1,92 @@
+[
+  {
+    "_id": {
+      "$oid": "69e4532ddefa36374a4e7150"
+    },
+    "id": "0f04556d-ae9d-47a9-814a-104cc53f8050",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "codigo": "ORIGEN",
+    "nombre": "ORIGEN",
+    "activa": true,
+    "visible_en_operaciones": true,
+    "orden": 0,
+    "created_at": {
+      "$date": "2026-04-19T03:59:41.819Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T03:59:41.819Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69e4532ddefa36374a4e7151"
+    },
+    "id": "7a9a350c-8da1-496e-b06c-5f7233eccebe",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "codigo": "130QRO",
+    "nombre": "130° QUERETARO",
+    "activa": true,
+    "visible_en_operaciones": true,
+    "orden": 0,
+    "created_at": {
+      "$date": "2026-04-19T03:59:41.819Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T03:59:41.819Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69e4532ddefa36374a4e7152"
+    },
+    "id": "268cee46-41b9-4c55-8cd9-eb3b63bcd5c9",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "codigo": "CIENFUEGOS",
+    "nombre": "CIENFUEGOS",
+    "activa": true,
+    "visible_en_operaciones": true,
+    "orden": 0,
+    "created_at": {
+      "$date": "2026-04-19T03:59:41.819Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T03:59:41.819Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69e4532ddefa36374a4e7153"
+    },
+    "id": "aab5721a-c650-4715-9197-3c8f07c70dc7",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "codigo": "ESTELAR",
+    "nombre": "LA ESTELAR",
+    "activa": true,
+    "visible_en_operaciones": true,
+    "orden": 0,
+    "created_at": {
+      "$date": "2026-04-19T03:59:41.819Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T03:59:41.819Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69e4532ddefa36374a4e7154"
+    },
+    "id": "fdb7580f-ac8b-4f21-9444-bbd2604889ca",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "codigo": "130MID",
+    "nombre": "130° MERIDA",
+    "activa": true,
+    "visible_en_operaciones": true,
+    "orden": 0,
+    "created_at": {
+      "$date": "2026-04-19T03:59:41.819Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T03:59:41.819Z"
+    }
+  }
+]

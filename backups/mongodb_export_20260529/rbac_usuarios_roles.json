@@ -1,0 +1,1082 @@
+[
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c5c"
+    },
+    "id": "8a23bfd1-268b-4d60-afb7-d055fdb936b3",
+    "user_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c5d"
+    },
+    "id": "a8d00c69-2926-4a31-98b9-10420916c3ed",
+    "user_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c5e"
+    },
+    "id": "40d14798-dc5e-47fe-bf75-6fa13dedcc1d",
+    "user_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c5f"
+    },
+    "id": "ff188478-c945-4093-9b7b-3b3282ca2c53",
+    "user_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c60"
+    },
+    "id": "9e06c1ab-23b8-47ab-8e73-872b686512ea",
+    "user_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c61"
+    },
+    "id": "8e6a7c59-70d4-4fd5-9cf6-75a35c288ae7",
+    "user_id": "a94e398b-f50d-4e24-974d-6545e2add872",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c62"
+    },
+    "id": "a01d1590-a6e3-4cb6-bfbe-992ed6490583",
+    "user_id": "a94e398b-f50d-4e24-974d-6545e2add872",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c63"
+    },
+    "id": "0b48b798-f759-41e3-a817-f29a436d8ee2",
+    "user_id": "a94e398b-f50d-4e24-974d-6545e2add872",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c64"
+    },
+    "id": "433790fd-51a5-42ed-aafa-2ad88e56866b",
+    "user_id": "a94e398b-f50d-4e24-974d-6545e2add872",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c65"
+    },
+    "id": "b9f8a5a5-29bb-41c1-b70c-bac01c2e831c",
+    "user_id": "a94e398b-f50d-4e24-974d-6545e2add872",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c66"
+    },
+    "id": "2416dee2-65ea-457f-9302-95fac1b68704",
+    "user_id": "97d94418-a7ac-48b2-8683-6104d1bbd049",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c67"
+    },
+    "id": "ec3244a2-cba5-472c-b22c-6d98a89db006",
+    "user_id": "97d94418-a7ac-48b2-8683-6104d1bbd049",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c68"
+    },
+    "id": "462b43f1-46f1-4065-8b6a-9c67110e4c6b",
+    "user_id": "97d94418-a7ac-48b2-8683-6104d1bbd049",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c69"
+    },
+    "id": "fc502beb-cdb6-41e6-b72c-05ba407bf7f8",
+    "user_id": "97d94418-a7ac-48b2-8683-6104d1bbd049",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c6a"
+    },
+    "id": "3cec03e6-9977-43c1-b6dc-70bc78eea7d4",
+    "user_id": "97d94418-a7ac-48b2-8683-6104d1bbd049",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c6b"
+    },
+    "id": "dd6ea456-9286-4e6e-8aab-d49eef0a71a4",
+    "user_id": "0da77b7b-fe88-4e23-98bc-9cbf543d5ee3",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c6c"
+    },
+    "id": "6c2755f6-83de-4b24-b141-2da9710f065e",
+    "user_id": "0da77b7b-fe88-4e23-98bc-9cbf543d5ee3",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c6d"
+    },
+    "id": "661d1a46-12fd-4d38-babc-707cc098d161",
+    "user_id": "0da77b7b-fe88-4e23-98bc-9cbf543d5ee3",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c6e"
+    },
+    "id": "5ea73e15-d705-428c-9ae1-a8f4277d2fa4",
+    "user_id": "0da77b7b-fe88-4e23-98bc-9cbf543d5ee3",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c6f"
+    },
+    "id": "6eeb128a-aac1-4caa-8b15-6c2a3f88dcda",
+    "user_id": "0da77b7b-fe88-4e23-98bc-9cbf543d5ee3",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c70"
+    },
+    "id": "c0f4760d-c299-4d43-a53d-7962cc0cfb69",
+    "user_id": "a5e56ed0-89b2-4d50-92f4-568a2106ab50",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c71"
+    },
+    "id": "fe9348eb-efeb-4646-91ba-77ffaffe12f7",
+    "user_id": "a5e56ed0-89b2-4d50-92f4-568a2106ab50",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c72"
+    },
+    "id": "3c89e9e8-cb2d-4a3d-a7c7-c1e60c97e38f",
+    "user_id": "a5e56ed0-89b2-4d50-92f4-568a2106ab50",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c73"
+    },
+    "id": "9c8f05bc-ee8c-4439-9be6-8281e2ddd827",
+    "user_id": "a5e56ed0-89b2-4d50-92f4-568a2106ab50",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c74"
+    },
+    "id": "12276866-779b-4064-844b-90c27e5f7bc6",
+    "user_id": "a5e56ed0-89b2-4d50-92f4-568a2106ab50",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c75"
+    },
+    "id": "f3c7f258-1450-4426-a5d0-1057a459f286",
+    "user_id": "7b8bdedc-d74e-470c-9c04-81d757218174",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c76"
+    },
+    "id": "3f601408-cac9-4917-91fb-3751bfc2b230",
+    "user_id": "7b8bdedc-d74e-470c-9c04-81d757218174",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c77"
+    },
+    "id": "dae4bc4b-22d9-4e06-b63e-55d33a025836",
+    "user_id": "7b8bdedc-d74e-470c-9c04-81d757218174",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c78"
+    },
+    "id": "ab84bf66-68e0-4fda-aeba-9b285b6f4f38",
+    "user_id": "7b8bdedc-d74e-470c-9c04-81d757218174",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c79"
+    },
+    "id": "33cd67f6-bde0-4a7b-a1d9-4658b09a21f8",
+    "user_id": "7b8bdedc-d74e-470c-9c04-81d757218174",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c7a"
+    },
+    "id": "53662e1d-1580-451f-9798-1b9df6d06e94",
+    "user_id": "a72b325b-662f-4777-83ed-4dda6e8398a8",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c7b"
+    },
+    "id": "1ee4e7bb-175f-4fca-9e62-c6ecddba6503",
+    "user_id": "a72b325b-662f-4777-83ed-4dda6e8398a8",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c7c"
+    },
+    "id": "4a5d1158-280e-40d6-b6df-711648e692d2",
+    "user_id": "a72b325b-662f-4777-83ed-4dda6e8398a8",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c7d"
+    },
+    "id": "10c6d735-4ac9-48c1-b1dc-84ca156adcb7",
+    "user_id": "a72b325b-662f-4777-83ed-4dda6e8398a8",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c7e"
+    },
+    "id": "3d419146-9f67-48df-916e-2cbd2693a209",
+    "user_id": "a72b325b-662f-4777-83ed-4dda6e8398a8",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c7f"
+    },
+    "id": "38602351-de06-4def-8449-7914e7a012e9",
+    "user_id": "e200de9e-0f3e-43a7-a4ea-1b47a1e9bbaf",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c80"
+    },
+    "id": "117574de-d863-4205-b580-f2b477ed505c",
+    "user_id": "e200de9e-0f3e-43a7-a4ea-1b47a1e9bbaf",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c81"
+    },
+    "id": "5e65d9a5-1778-49f1-bb12-14242dab3882",
+    "user_id": "e200de9e-0f3e-43a7-a4ea-1b47a1e9bbaf",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c82"
+    },
+    "id": "bae77c03-374c-4299-9f03-ef1f63166932",
+    "user_id": "e200de9e-0f3e-43a7-a4ea-1b47a1e9bbaf",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c83"
+    },
+    "id": "cbc01323-156c-49e6-ad16-b0c33fc0e31f",
+    "user_id": "e200de9e-0f3e-43a7-a4ea-1b47a1e9bbaf",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c84"
+    },
+    "id": "8a8e324b-cdfa-4632-8888-07dcef60639e",
+    "user_id": "e91a6a3b-f503-4cb1-9fc8-bffa181450b5",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c85"
+    },
+    "id": "7daaac6a-18f8-4eb8-b677-f6381a5c23ad",
+    "user_id": "e91a6a3b-f503-4cb1-9fc8-bffa181450b5",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c86"
+    },
+    "id": "4919a060-37d9-4535-a988-0044be34714d",
+    "user_id": "e91a6a3b-f503-4cb1-9fc8-bffa181450b5",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c87"
+    },
+    "id": "131fdb37-b472-408c-a442-7fdd0a126cb6",
+    "user_id": "e91a6a3b-f503-4cb1-9fc8-bffa181450b5",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c88"
+    },
+    "id": "37f3b98d-4d4c-4a82-8355-fbe85082b0fe",
+    "user_id": "e91a6a3b-f503-4cb1-9fc8-bffa181450b5",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c89"
+    },
+    "id": "613295e7-c8ef-4f02-978c-be73ff7d9bfc",
+    "user_id": "c9ac3b6f-18a8-4f35-97a9-6c1169aa75e1",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c8a"
+    },
+    "id": "c6c5f87b-6a34-482c-b545-d70406044bf3",
+    "user_id": "c9ac3b6f-18a8-4f35-97a9-6c1169aa75e1",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c8b"
+    },
+    "id": "4d2650e8-5950-4945-9665-ade7fa2f90ba",
+    "user_id": "c9ac3b6f-18a8-4f35-97a9-6c1169aa75e1",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c8c"
+    },
+    "id": "0fb475ac-b80a-4975-80a9-d4f3b4406b54",
+    "user_id": "c9ac3b6f-18a8-4f35-97a9-6c1169aa75e1",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c8d"
+    },
+    "id": "1d1767ee-5c6d-49fb-b6be-87e258f2ffbd",
+    "user_id": "c9ac3b6f-18a8-4f35-97a9-6c1169aa75e1",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c8e"
+    },
+    "id": "2f3c044f-12a7-4e2b-a12c-59e96b8f5def",
+    "user_id": "75e35c52-2294-45c3-8944-b8a4b8bb453a",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c8f"
+    },
+    "id": "37e95798-3f9f-4c82-9e36-fb8bfda13a61",
+    "user_id": "75e35c52-2294-45c3-8944-b8a4b8bb453a",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c90"
+    },
+    "id": "919f7985-290d-4bf8-8301-b2e1b1d4ada5",
+    "user_id": "75e35c52-2294-45c3-8944-b8a4b8bb453a",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c91"
+    },
+    "id": "9ae8e7b5-9032-4182-b44c-fe51c688a54e",
+    "user_id": "75e35c52-2294-45c3-8944-b8a4b8bb453a",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c92"
+    },
+    "id": "3a48a41a-3e1e-482c-aeed-ea469b790287",
+    "user_id": "75e35c52-2294-45c3-8944-b8a4b8bb453a",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c93"
+    },
+    "id": "bf0a64c7-715c-48bd-8f8a-653821dce5d9",
+    "user_id": "30702651-10a5-4e3a-9f83-245e2a52feb7",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c94"
+    },
+    "id": "6542314e-cc71-4ff5-a424-60cffa6d83e4",
+    "user_id": "57dbb5ad-ed23-4ed6-8d60-f590a7622994",
+    "rol_id": "5bbe0356-ac41-4533-b989-249981dc7d56",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c95"
+    },
+    "id": "a1556009-ce19-4161-b7fd-c992532ffe5f",
+    "user_id": "a3fe9197-6e43-468c-ab35-4050b3058d17",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c96"
+    },
+    "id": "761819ea-b077-44df-87f6-d75d4b0d4102",
+    "user_id": "a3fe9197-6e43-468c-ab35-4050b3058d17",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c97"
+    },
+    "id": "771386ac-421a-450e-b065-29b46df7bb13",
+    "user_id": "a3fe9197-6e43-468c-ab35-4050b3058d17",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c98"
+    },
+    "id": "88e06169-22a7-4bbc-8772-7724aeaec34b",
+    "user_id": "a3fe9197-6e43-468c-ab35-4050b3058d17",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c99"
+    },
+    "id": "7dfa6a62-6b3f-409c-9151-c96611506bbf",
+    "user_id": "a3fe9197-6e43-468c-ab35-4050b3058d17",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c9a"
+    },
+    "id": "5b5e19f5-3ee6-44b6-910e-6e1d7a96f78e",
+    "user_id": "23e2ed81-a447-4682-a719-d393df38a0e0",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c9b"
+    },
+    "id": "c19641e1-df22-4e06-b2ed-4c9caf71d8d7",
+    "user_id": "23e2ed81-a447-4682-a719-d393df38a0e0",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c9c"
+    },
+    "id": "bc9c0124-fdba-4de6-91c2-94b451c0c547",
+    "user_id": "23e2ed81-a447-4682-a719-d393df38a0e0",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c9d"
+    },
+    "id": "0147a936-b7b3-4fc8-8a0f-55affa4bf9ad",
+    "user_id": "23e2ed81-a447-4682-a719-d393df38a0e0",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c9e"
+    },
+    "id": "ddfbf0e9-617f-4932-9ef5-17ade055db19",
+    "user_id": "23e2ed81-a447-4682-a719-d393df38a0e0",
+    "rol_id": "757bddd6-c631-4ddc-bd8f-0feb803c420f",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643c9f"
+    },
+    "id": "aa74b9a9-cb2c-4b04-bbdf-b435e4ccf734",
+    "user_id": "1c21a70a-6563-458f-a81b-d1f8d018827d",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643ca0"
+    },
+    "id": "e3770fbc-50b5-4f6e-8caa-7078e6137bf3",
+    "user_id": "1c21a70a-6563-458f-a81b-d1f8d018827d",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643ca1"
+    },
+    "id": "1352ccb4-b448-468f-b5ca-a39e53e690aa",
+    "user_id": "1c21a70a-6563-458f-a81b-d1f8d018827d",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643ca2"
+    },
+    "id": "67e27181-931a-4134-8ff6-d86d5055952e",
+    "user_id": "1c21a70a-6563-458f-a81b-d1f8d018827d",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  },
+  {
+    "_id": {
+      "$oid": "69e45f802af5afc9fb643ca3"
+    },
+    "id": "fbe544de-2711-409b-ad20-d6ceef17e84f",
+    "user_id": "1c21a70a-6563-458f-a81b-d1f8d018827d",
+    "rol_id": "da992126-55f7-4a7a-896d-ef2f5ec01ddc",
+    "empresa_id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "sucursales_ids": [],
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T04:52:16.957Z"
+    },
+    "created_by": "fase2_migration"
+  }
+]

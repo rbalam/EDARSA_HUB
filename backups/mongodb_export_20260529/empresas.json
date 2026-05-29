@@ -1,0 +1,87 @@
+[
+  {
+    "_id": {
+      "$oid": "69e4531f2bb150c941d48981"
+    },
+    "id": "31784356-6d0b-47ce-8fe8-c8a442e45a07",
+    "codigo": "ORIGEN",
+    "nombre": "ORIGEN",
+    "razon_social": "Restaurante Origen S.A. de C.V.",
+    "rfc": "",
+    "activa": true,
+    "created_at": {
+      "$date": "2026-04-19T03:59:27.592Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T03:59:27.592Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69e4531f2bb150c941d48982"
+    },
+    "id": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "codigo": "130QRO",
+    "nombre": "130 QRO",
+    "razon_social": "130 Grados Querétaro S.A. de C.V.",
+    "rfc": "",
+    "activa": true,
+    "created_at": {
+      "$date": "2026-04-19T03:59:27.592Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T03:59:27.592Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69e4531f2bb150c941d48983"
+    },
+    "id": "1d91f076-a28e-49a5-b445-84aa767737b6",
+    "codigo": "CIENFUEGOS",
+    "nombre": "CIENFUEGOS",
+    "razon_social": "Restaurante Cienfuegos S.A. de C.V.",
+    "rfc": "",
+    "activa": true,
+    "created_at": {
+      "$date": "2026-04-19T03:59:27.592Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T03:59:27.592Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69e4531f2bb150c941d48984"
+    },
+    "id": "e302e16f-2d97-4119-9ad9-bb5b00b71367",
+    "codigo": "ESTELAR",
+    "nombre": "LA ESTELAR",
+    "razon_social": "La Estelar S.A. de C.V.",
+    "rfc": "",
+    "activa": true,
+    "created_at": {
+      "$date": "2026-04-19T03:59:27.592Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T03:59:27.592Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "69e4531f2bb150c941d48985"
+    },
+    "id": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "codigo": "130MID",
+    "nombre": "130 MID",
+    "razon_social": "130 Grados Mérida S.A. de C.V.",
+    "rfc": "",
+    "activa": true,
+    "created_at": {
+      "$date": "2026-04-19T03:59:27.592Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T03:59:27.592Z"
+    }
+  }
+]

@@ -1,0 +1,181 @@
+[
+  {
+    "_id": {
+      "$oid": "69d65baf46001a30245c34e5"
+    },
+    "tipo": "ESTANDARIZACION_TECNICA",
+    "fase": "Centralización de consumo de servidores operativos",
+    "fecha_inicio": "2025-04-08",
+    "fecha_cierre": "2026-04-08T13:44:15.713978+00:00",
+    "estado": "COMPLETADA",
+    "objetivo": "Eliminar duplicación de código en el consumo del endpoint /api/servers y el filtro visible_en_operaciones en múltiples módulos del frontend, sin modificar backend ni recursos críticos compartidos.",
+    "patron_implementado": {
+      "nombre": "Service Layer Pattern",
+      "descripcion": "Encapsulación de lógica repetida (fetch + filtro) en un servicio reutilizable que actúa como capa intermedia entre los módulos y el endpoint.",
+      "principios": [
+        "DRY (Don't Repeat Yourself)",
+        "Single Responsibility",
+        "Separation of Concerns"
+      ]
+    },
+    "servicio_creado": {
+      "archivo": "/app/frontend/src/services/serversService.js",
+      "funciones_exportadas": [
+        {
+          "nombre": "fetchServersOperativos",
+          "descripcion": "Obtiene servidores desde /api/servers y aplica filtro visible_en_operaciones !== false",
+          "retorno": "Promise<Array> - Servidores operativos"
+        },
+        {
+          "nombre": "filterServersOperativos",
+          "descripcion": "Aplica filtro visible_en_operaciones a un array de servidores ya obtenido",
+          "retorno": "Array - Servidores filtrados"
+        },
+        {
+          "nombre": "fetchAllServers",
+          "descripcion": "Obtiene todos los servidores sin filtrar (para módulo admin)",
+          "retorno": "Promise<Array> - Todos los servidores"
+        }
+      ],
+      "lineas_de_codigo": 79
+    },
+    "modulos_migrados": [
+      {
+        "modulo": "Comercial.js",
+        "funcion_usada": "fetchServersOperativos()",
+        "lineas_eliminadas": 10,
+        "fecha_migracion": "2025-04-07"
+      },
+      {
+        "modulo": "Compras.js",
+        "funcion_usada": "fetchServersOperativos()",
+        "lineas_eliminadas": 10,
+        "fecha_migracion": "2025-04-07"
+      },
+      {
+        "modulo": "Reportes.js",
+        "funcion_usada": "fetchServersOperativos()",
+        "lineas_eliminadas": 12,
+        "fecha_migracion": "2025-04-08"
+      },
+      {
+        "modulo": "Dashboard.js",
+        "funcion_usada": "filterServersOperativos()",
+        "nota": "Mantiene endpoint específico /dashboard/servers-configured",
+        "lineas_eliminadas": 3,
+        "fecha_migracion": "2025-04-08"
+      },
+      {
+        "modulo": "CatalogoConsultas.js",
+        "funcion_usada": "fetchServersOperativos()",
+        "lineas_eliminadas": 10,
+        "fecha_migracion": "2025-04-08"
+      },
+      {
+        "modulo": "ExploradorBD.js",
+        "funcion_usada": "fetchServersOperativos()",
+        "lineas_eliminadas": 10,
+        "fecha_migracion": "2025-04-08"
+      }
+    ],
+    "modulos_no_tocados": [
+      "server.py (backend)",
+      "TableroEjecutivo.js (usa lógica diferente con caché)",
+      "MisTareas.js (no consume /api/servers directamente)",
+      "Servidores.js (módulo admin - requiere todos los servidores)",
+      "Layout.js",
+      "Login.js",
+      "Finanzas.js",
+      "Produccion.js",
+      "RecursosHumanos.js",
+      "ReportesBI.js",
+      "Proveedores.js",
+      "Usuarios.js",
+      "Alertas.js"
+    ],
+    "recursos_criticos_congelados": [
+      {
+        "recurso": "/api/servers",
+        "tipo": "Endpoint",
+        "razon": "Múltiples consumidores dependen de su estructura"
+      },
+      {
+        "recurso": "/api/servers/{id}/sucursales",
+        "tipo": "Endpoint",
+        "razon": "Usado por módulos operativos para drill-down"
+      },
+      {
+        "recurso": "visible_en_operaciones",
+        "tipo": "Campo de BD",
+        "razon": "Flag crítico para separar servidores operativos de tablajería"
+      },
+      {
+        "recurso": "execute_sql_query()",
+        "tipo": "Función backend",
+        "razon": "Motor central de consultas SQL externas"
+      },
+      {
+        "recurso": "get_current_user()",
+        "tipo": "Función backend",
+        "razon": "Autenticación y permisos"
+      }
+    ],
+    "riesgos_evitados": [
+      "Inconsistencia en filtrado de servidores entre módulos",
+      "Código duplicado propenso a errores de mantenimiento",
+      "Cambios en lógica de filtrado requiriendo modificar múltiples archivos",
+      "Exposición accidental de servidores no operativos en módulos operativos",
+      "Regresiones por cambios aislados en filtros"
+    ],
+    "beneficios_obtenidos": [
+      "~55 líneas de código duplicado eliminadas",
+      "Punto único de modificación para lógica de filtrado",
+      "Consistencia garantizada en todos los módulos",
+      "Facilidad para agregar nuevos criterios de filtrado",
+      "Testing simplificado (un solo servicio a probar)",
+      "Documentación centralizada del comportamiento"
+    ],
+    "pendientes_futuros_recomendados": [
+      {
+        "modulo": "TableroEjecutivo.js",
+        "accion": "Evaluar si puede usar filterServersOperativos() manteniendo su lógica de caché",
+        "prioridad": "BAJA"
+      },
+      {
+        "modulo": "AutorizacionCompras.js",
+        "accion": "Verificar si consume /api/servers y aplicar patrón",
+        "prioridad": "MEDIA"
+      },
+      {
+        "modulo": "Nominas.js",
+        "accion": "Verificar si consume /api/servers y aplicar patrón",
+        "prioridad": "MEDIA"
+      },
+      {
+        "tarea": "Crear serversService para sucursales",
+        "accion": "Evaluar si /api/servers/{id}/sucursales también tiene duplicación",
+        "prioridad": "BAJA"
+      }
+    ],
+    "criterio_aplicacion_modulos_nuevos": {
+      "cuando_usar_fetchServersOperativos": [
+        "El módulo necesita lista de servidores para selector/dropdown",
+        "Solo se requieren servidores operativos (visible_en_operaciones !== false)",
+        "No hay lógica especial de caché o endpoint específico"
+      ],
+      "cuando_usar_filterServersOperativos": [
+        "El módulo usa un endpoint específico (ej: /dashboard/servers-configured)",
+        "Se requiere aplicar el filtro a datos ya obtenidos",
+        "Hay lógica adicional pre/post filtrado"
+      ],
+      "cuando_NO_usar_el_servicio": [
+        "El módulo es de administración y necesita TODOS los servidores",
+        "El módulo tiene lógica de caché compleja propia",
+        "Se requiere un subset diferente de servidores"
+      ]
+    },
+    "autor": "E1 Agent",
+    "aprobado_por": "Usuario EDARSA",
+    "notas_adicionales": "Esta estandarización se realizó siguiendo las REGLAS CRÍTICAS del proyecto: cero refactorización global, aislamiento estricto de módulos, y confirmación explícita antes de cada cambio."
+  }
+]

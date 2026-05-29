@@ -1,0 +1,40 @@
+[
+  {
+    "_id": {
+      "$oid": "6a041f2582f8c27229763ffd"
+    },
+    "_key": "config:44136fa355b3678a1146ad16f7e8649e",
+    "cached_at": {
+      "$date": "2026-05-13T06:50:13.455Z"
+    },
+    "data": {
+      "id": "default",
+      "alcance": {
+        "tipo": "GLOBAL"
+      },
+      "vigencia": {
+        "activa": true,
+        "fecha_inicio": {
+          "$date": "2026-05-13T06:50:13.455Z"
+        }
+      },
+      "parametros": {
+        "porcentaje_comision": 0.02,
+        "tolerancia_descuadre": 5.0,
+        "dias_para_cuadrar": 1
+      },
+      "formas_pago_tpv_softrestaurant": {
+        "conceptos": [
+          10,
+          11,
+          12
+        ],
+        "nombres": [
+          "VISA",
+          "MASTERCARD",
+          "AMEX"
+        ]
+      }
+    }
+  }
+]

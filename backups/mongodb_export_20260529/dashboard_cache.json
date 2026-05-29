@@ -1,0 +1,2400 @@
+[
+  {
+    "_id": {
+      "$oid": "69e97dba3a9a8fa604766862"
+    },
+    "periodo_key": "dashboard_20260401_20260421",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-22",
+      "kpis": {
+        "ventas_periodo": 3143191.0,
+        "ticket_promedio": 4471.11,
+        "cheques_total": 703,
+        "pax_total": 2045,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1537.01,
+        "mesas_atendidas": 703,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 261932.58
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 0,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-21",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-21"
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-23T02:54:41.965953"
+  },
+  {
+    "_id": {
+      "$oid": "69e97de83a9a8fa6047671b7"
+    },
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "periodo_key": "dashboard_mpro_2026-04-01_2026-04-21",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de ManagmentPro",
+      "server_name": "ManagmentPro",
+      "server_type": "MPRO",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-21",
+      "kpis": {
+        "ventas_periodo": 2376789.0,
+        "ticket_promedio": 4850.59,
+        "cheques_total": 490,
+        "pax_total": 1276,
+        "pax_promedio": 2.6,
+        "consumo_persona": 1862.69,
+        "rotacion_mesas": 0,
+        "mesas_atendidas": 0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 2.8,
+        "vs_ano_anterior": 2.0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -15.9,
+        "pax_vs_ano_anterior": -7.1,
+        "pax_total_vs_ano": -7.1,
+        "cheques_total_vs_ano": -8.6,
+        "cheque_vs_ano_anterior": 11.5,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-21",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-21"
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-23T02:54:31.384101"
+  },
+  {
+    "_id": {
+      "$oid": "69e97e263a9a8fa604767474"
+    },
+    "periodo_key": "dashboard_20260401_20260421",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-22",
+      "kpis": {
+        "ventas_periodo": 2525661.0,
+        "ticket_promedio": 3634.04,
+        "cheques_total": 695,
+        "pax_total": 1976,
+        "pax_promedio": 2.8,
+        "consumo_persona": 1278.17,
+        "mesas_atendidas": 695,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 210471.75
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 0,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-21",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-21"
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-23T02:10:20.220877"
+  },
+  {
+    "_id": {
+      "$oid": "69e97e273a9a8fa6047674be"
+    },
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "periodo_key": "dashboard_20260401_20260421",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-22",
+      "kpis": {
+        "ventas_periodo": 1772558.0,
+        "ticket_promedio": 1455.3,
+        "cheques_total": 1218,
+        "pax_total": 3393,
+        "pax_promedio": 2.8,
+        "consumo_persona": 522.42,
+        "mesas_atendidas": 1218,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 147713.17
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 0,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-21",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-21"
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-23T02:04:23.621850"
+  },
+  {
+    "_id": {
+      "$oid": "69ea73f91f9add3afb7be768"
+    },
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "periodo_key": "dashboard_20260401_20260422",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-23",
+      "kpis": {
+        "ventas_periodo": 2607392.54,
+        "ticket_promedio": 3296.32,
+        "cheques_total": 791,
+        "pax_total": 2254,
+        "pax_promedio": 2.8,
+        "consumo_persona": 1156.78,
+        "mesas_atendidas": 791,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 217282.71
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -18.1,
+        "vs_ano_anterior": -20.0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 1.6,
+        "pax_vs_ano_anterior": -23.5,
+        "pax_total_vs_ano": -23.5,
+        "cheques_total_vs_ano": -24.6,
+        "cheque_vs_ano_anterior": 6.0,
+        "rotacion_vs_ano": -64.4,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-22",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-22",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-24T07:49:07.184954"
+  },
+  {
+    "_id": {
+      "$oid": "69eaa3958d130a0a83e6bae4"
+    },
+    "periodo_key": "dashboard_20260401_20260422",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-23",
+      "kpis": {
+        "ventas_periodo": 3317827.0,
+        "ticket_promedio": 4514.05,
+        "cheques_total": 735,
+        "pax_total": 2148,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1544.61,
+        "mesas_atendidas": 735,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 276485.58
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -7.1,
+        "vs_ano_anterior": -16.6,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -0.4,
+        "pax_vs_ano_anterior": -18.6,
+        "pax_total_vs_ano": -18.6,
+        "cheques_total_vs_ano": -21.0,
+        "cheque_vs_ano_anterior": 5.5,
+        "rotacion_vs_ano": -64.7,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-22",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-22"
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-24T05:45:18.575697"
+  },
+  {
+    "_id": {
+      "$oid": "69eaa39f8d130a0a83e6bcfc"
+    },
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "periodo_key": "dashboard_20260401_20260422",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-23",
+      "kpis": {
+        "ventas_periodo": 1776208.3,
+        "ticket_promedio": 1333.49,
+        "cheques_total": 1332,
+        "pax_total": 3714,
+        "pax_promedio": 2.8,
+        "consumo_persona": 478.25,
+        "mesas_atendidas": 1332,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 148017.36
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -8.5,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -1.3,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-22",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-22",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-24T07:37:18.178577"
+  },
+  {
+    "_id": {
+      "$oid": "69eaf83abfd967edc5f91d7d"
+    },
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "periodo_key": "dashboard_20260424_20260424",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-24",
+      "fecha_fin": "2026-04-24",
+      "kpis": {
+        "ventas_periodo": 572.0,
+        "ticket_promedio": 286.0,
+        "cheques_total": 2,
+        "pax_total": 2,
+        "pax_promedio": 0,
+        "consumo_persona": 286.0,
+        "mesas_atendidas": 2,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 47.67
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -100.0,
+        "vs_ano_anterior": -100.0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -100.0,
+        "pax_vs_ano_anterior": -100.0,
+        "pax_total_vs_ano": -100.0,
+        "cheques_total_vs_ano": -100.0,
+        "cheque_vs_ano_anterior": -100.0,
+        "rotacion_vs_ano": -100.0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-23 a 2026-04-23",
+        "periodo_ano_ant": "2025-04-24 a 2025-04-24",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-24T07:22:01.072954"
+  },
+  {
+    "_id": {
+      "$oid": "69eaf852bfd967edc5f920ee"
+    },
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "periodo_key": "dashboard_20260401_20260423",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-24",
+      "kpis": {
+        "ventas_periodo": 3053469.06,
+        "ticket_promedio": 4007.18,
+        "cheques_total": 762,
+        "pax_total": 2213,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1379.79,
+        "mesas_atendidas": 762,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 254455.76
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -5.2,
+        "vs_ano_anterior": -15.7,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0.9,
+        "pax_vs_ano_anterior": -17.8,
+        "pax_total_vs_ano": -17.8,
+        "cheques_total_vs_ano": -20.4,
+        "cheque_vs_ano_anterior": 5.9,
+        "rotacion_vs_ano": -64.7,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-23",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-23",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-25T01:38:18.262958"
+  },
+  {
+    "_id": {
+      "$oid": "69eafd3ebfd967edc5f9b10a"
+    },
+    "periodo_key": "dashboard_20260401_20260423",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-24",
+      "kpis": {
+        "ventas_periodo": 2694026.44,
+        "ticket_promedio": 3301.5,
+        "cheques_total": 816,
+        "pax_total": 2329,
+        "pax_promedio": 2.8,
+        "consumo_persona": 1156.73,
+        "mesas_atendidas": 816,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 224502.2
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -12.1,
+        "vs_ano_anterior": -17.8,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 1.8,
+        "pax_vs_ano_anterior": -20.5,
+        "pax_total_vs_ano": -20.5,
+        "cheques_total_vs_ano": -21.1,
+        "cheque_vs_ano_anterior": 4.3,
+        "rotacion_vs_ano": -64.6,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-23",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-23",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-25T01:42:49.988541"
+  },
+  {
+    "_id": {
+      "$oid": "69eafe8cbfd967edc5f9dbd2"
+    },
+    "periodo_key": "dashboard_20260401_20260423",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-24",
+      "kpis": {
+        "ventas_periodo": 1792584.7,
+        "ticket_promedio": 1330.8,
+        "cheques_total": 1347,
+        "pax_total": 3756,
+        "pax_promedio": 2.8,
+        "consumo_persona": 477.26,
+        "mesas_atendidas": 1347,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 149382.06
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -4.5,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -1.6,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-23",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-23",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-25T01:42:52.301153"
+  },
+  {
+    "_id": {
+      "$oid": "69eaff14bfd967edc5f9e9de"
+    },
+    "periodo_key": "dashboard_mpro_2026-04-01_2026-04-23",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de ManagmentPro",
+      "server_name": "ManagmentPro",
+      "server_type": "MPRO",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-23",
+      "kpis": {
+        "ventas_periodo": 2677625.0,
+        "ticket_promedio": 4940.27,
+        "cheques_total": 542,
+        "pax_total": 1427,
+        "pax_promedio": 2.63,
+        "consumo_persona": 1876.4,
+        "rotacion_mesas": 0,
+        "mesas_atendidas": 0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 8.7,
+        "vs_ano_anterior": 7.9,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -13.7,
+        "pax_vs_ano_anterior": -2.6,
+        "pax_total_vs_ano": -2.6,
+        "cheques_total_vs_ano": -6.1,
+        "cheque_vs_ano_anterior": 14.8,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-23",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-23",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-25T01:41:07.401701"
+  },
+  {
+    "_id": {
+      "$oid": "69eaff52bfd967edc5f9f4ae"
+    },
+    "periodo_key": "dashboard_mpro_2026-04-01_2026-04-22",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de ManagmentPro",
+      "server_name": "ManagmentPro",
+      "server_type": "MPRO",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-22",
+      "kpis": {
+        "ventas_periodo": 2481297.0,
+        "ticket_promedio": 4855.77,
+        "cheques_total": 511,
+        "pax_total": 1344,
+        "pax_promedio": 2.63,
+        "consumo_persona": 1846.2,
+        "rotacion_mesas": 0,
+        "mesas_atendidas": 0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 4.4,
+        "vs_ano_anterior": 2.9,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -15.4,
+        "pax_vs_ano_anterior": -5.0,
+        "pax_total_vs_ano": -5.0,
+        "cheques_total_vs_ano": -7.9,
+        "cheque_vs_ano_anterior": 11.7,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-22",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-22",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-24T14:34:35.688133"
+  },
+  {
+    "_id": {
+      "$oid": "69eb1a07bfd967edc5ff17a7"
+    },
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "periodo_key": "dashboard_20260424_20260424",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-24",
+      "fecha_fin": "2026-04-24",
+      "kpis": {
+        "ventas_periodo": 225309.45,
+        "ticket_promedio": 3413.78,
+        "cheques_total": 66,
+        "pax_total": 190,
+        "pax_promedio": 0,
+        "consumo_persona": 1185.84,
+        "mesas_atendidas": 66,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 18775.79
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 0,
+        "vs_ano_anterior": -100.0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0,
+        "pax_vs_ano_anterior": -100.0,
+        "pax_total_vs_ano": -100.0,
+        "cheques_total_vs_ano": -100.0,
+        "cheque_vs_ano_anterior": -100.0,
+        "rotacion_vs_ano": -100.0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-23 a 2026-04-23",
+        "periodo_ano_ant": "2025-04-24 a 2025-04-24",
+        "sin_datos_periodo_anterior": true,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-24T07:21:43.168903"
+  },
+  {
+    "_id": {
+      "$oid": "69eb1a10bfd967edc5ff19bb"
+    },
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "periodo_key": "dashboard_20260424_20260424",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-24",
+      "fecha_fin": "2026-04-24",
+      "kpis": {
+        "ventas_periodo": 90763.5,
+        "ticket_promedio": 1334.76,
+        "cheques_total": 68,
+        "pax_total": 201,
+        "pax_promedio": 0,
+        "consumo_persona": 451.56,
+        "mesas_atendidas": 68,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 7563.62
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 0,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-23 a 2026-04-23",
+        "periodo_ano_ant": "2025-04-24 a 2025-04-24",
+        "sin_datos_periodo_anterior": true,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-24T07:21:52.822822"
+  },
+  {
+    "_id": {
+      "$oid": "69ec12e7d85aafd0fa63cb57"
+    },
+    "periodo_key": "dashboard_20260401_20260424",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-24",
+      "kpis": {
+        "ventas_periodo": 3037329.06,
+        "ticket_promedio": 3991.23,
+        "cheques_total": 761,
+        "pax_total": 2208,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1375.6,
+        "mesas_atendidas": 761,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 253110.76
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -5.2,
+        "vs_ano_anterior": -15.7,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0.9,
+        "pax_vs_ano_anterior": -17.8,
+        "pax_total_vs_ano": -17.8,
+        "cheques_total_vs_ano": -20.4,
+        "cheque_vs_ano_anterior": 5.9,
+        "rotacion_vs_ano": -64.7,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-23",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-23",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-25T01:05:30.006294"
+  },
+  {
+    "_id": {
+      "$oid": "69ec135bd85aafd0fa63e69b"
+    },
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "periodo_key": "dashboard_20260401_20260424",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-24",
+      "kpis": {
+        "ventas_periodo": 2762331.54,
+        "ticket_promedio": 3312.15,
+        "cheques_total": 834,
+        "pax_total": 2378,
+        "pax_promedio": 2.8,
+        "consumo_persona": 1161.62,
+        "mesas_atendidas": 834,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 230194.3
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -12.1,
+        "vs_ano_anterior": -17.8,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 1.8,
+        "pax_vs_ano_anterior": -20.5,
+        "pax_total_vs_ano": -20.5,
+        "cheques_total_vs_ano": -21.1,
+        "cheque_vs_ano_anterior": 4.3,
+        "rotacion_vs_ano": -64.6,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-23",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-23",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-25T04:06:03.946147"
+  },
+  {
+    "_id": {
+      "$oid": "69ec135cd85aafd0fa63e6ad"
+    },
+    "periodo_key": "dashboard_20260401_20260424",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-24",
+      "kpis": {
+        "ventas_periodo": 1790949.7,
+        "ticket_promedio": 1330.57,
+        "cheques_total": 1346,
+        "pax_total": 3748,
+        "pax_promedio": 2.8,
+        "consumo_persona": 477.84,
+        "mesas_atendidas": 1346,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 149245.81
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -4.5,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -1.6,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-23",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-23",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-25T01:05:32.230134"
+  },
+  {
+    "_id": {
+      "$oid": "69ec5595eb379a88e2fa34b6"
+    },
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "periodo_key": "dashboard_20260425_20260425",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-25",
+      "fecha_fin": "2026-04-25",
+      "kpis": {
+        "ventas_periodo": 167106.0,
+        "ticket_promedio": 3713.47,
+        "cheques_total": 45,
+        "pax_total": 132,
+        "pax_promedio": 0,
+        "consumo_persona": 1265.95,
+        "mesas_atendidas": 45,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 13925.5
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 0,
+        "vs_ano_anterior": -100.0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0,
+        "pax_vs_ano_anterior": -100.0,
+        "pax_total_vs_ano": -100.0,
+        "cheques_total_vs_ano": -100.0,
+        "cheque_vs_ano_anterior": -100.0,
+        "rotacion_vs_ano": -100.0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-24 a 2026-04-24",
+        "periodo_ano_ant": "2025-04-25 a 2025-04-25",
+        "sin_datos_periodo_anterior": true,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-25T05:48:05.897485"
+  },
+  {
+    "_id": {
+      "$oid": "69ece4faed56676342abba6d"
+    },
+    "periodo_key": "dashboard_20260425_20260425",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-25",
+      "fecha_fin": "2026-04-25",
+      "kpis": {
+        "ventas_periodo": 1165.0,
+        "ticket_promedio": 233.0,
+        "cheques_total": 5,
+        "pax_total": 5,
+        "pax_promedio": 0,
+        "consumo_persona": 233.0,
+        "mesas_atendidas": 5,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 97.08
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -100.0,
+        "vs_ano_anterior": -100.0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -100.0,
+        "pax_vs_ano_anterior": -100.0,
+        "pax_total_vs_ano": -100.0,
+        "cheques_total_vs_ano": -100.0,
+        "cheque_vs_ano_anterior": -100.0,
+        "rotacion_vs_ano": -100.0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-24 a 2026-04-24",
+        "periodo_ano_ant": "2025-04-25 a 2025-04-25",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-25T15:59:54.694774"
+  },
+  {
+    "_id": {
+      "$oid": "69efa9f01dfe3e0a65ae651c"
+    },
+    "periodo_key": "dashboard_20260427_20260427",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-27",
+      "fecha_fin": "2026-04-27",
+      "kpis": {
+        "ventas_periodo": 4105.0,
+        "ticket_promedio": 2052.5,
+        "cheques_total": 2,
+        "pax_total": 11,
+        "pax_promedio": 0,
+        "consumo_persona": 373.18,
+        "mesas_atendidas": 2,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 342.08
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -100.0,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -100.0,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-26 a 2026-04-26",
+        "periodo_ano_ant": "2025-04-27 a 2025-04-27",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-27T20:12:54.663560"
+  },
+  {
+    "_id": {
+      "$oid": "69efaa021dfe3e0a65ae653f"
+    },
+    "periodo_key": "dashboard_20260401_20260426",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-26",
+      "kpis": {
+        "ventas_periodo": 2348284.0,
+        "ticket_promedio": 1450.45,
+        "cheques_total": 1619,
+        "pax_total": 4535,
+        "pax_promedio": 2.8,
+        "consumo_persona": 517.81,
+        "mesas_atendidas": 1619,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 195690.33
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 7.0,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -3.9,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-26",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-26",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-27T20:13:14.252044"
+  },
+  {
+    "_id": {
+      "$oid": "69efad8f1dfe3e0a65ae689c"
+    },
+    "periodo_key": "dashboard_mpro_2026-04-01_2026-04-26",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de ManagmentPro",
+      "server_name": "ManagmentPro",
+      "server_type": "MPRO",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-26",
+      "kpis": {
+        "ventas_periodo": 3042873.0,
+        "ticket_promedio": 4899.96,
+        "cheques_total": 621,
+        "pax_total": 1634,
+        "pax_promedio": 2.63,
+        "consumo_persona": 1862.22,
+        "rotacion_mesas": 0,
+        "mesas_atendidas": 0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -4.4,
+        "vs_ano_anterior": 4.8,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -20.5,
+        "pax_vs_ano_anterior": -6.9,
+        "pax_total_vs_ano": -6.9,
+        "cheques_total_vs_ano": -9.1,
+        "cheque_vs_ano_anterior": 15.3,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-26",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-26",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-28T16:36:45.252798"
+  },
+  {
+    "_id": {
+      "$oid": "69efadc11dfe3e0a65ae68ea"
+    },
+    "periodo_key": "dashboard_mpro_2026-03-01_2026-04-26",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de ManagmentPro",
+      "server_name": "ManagmentPro",
+      "server_type": "MPRO",
+      "fecha_inicio": "2026-03-01",
+      "fecha_fin": "2026-04-26",
+      "kpis": {
+        "ventas_periodo": 11110966.62,
+        "ticket_promedio": 3376.17,
+        "cheques_total": 3291,
+        "pax_total": 9260,
+        "pax_promedio": 2.81,
+        "consumo_persona": 1199.89,
+        "rotacion_mesas": 0,
+        "mesas_atendidas": 0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 113.8,
+        "vs_ano_anterior": 14.3,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -8.8,
+        "pax_vs_ano_anterior": 22.4,
+        "pax_total_vs_ano": 22.4,
+        "cheques_total_vs_ano": 14.5,
+        "cheque_vs_ano_anterior": -0.3,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-26",
+        "periodo_ano_ant": "2025-03-01 a 2025-04-26",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-27T18:41:05.725647"
+  },
+  {
+    "_id": {
+      "$oid": "69efadc91dfe3e0a65ae68fa"
+    },
+    "periodo_key": "dashboard_mpro_2026-01-01_2026-04-26",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de ManagmentPro",
+      "server_name": "ManagmentPro",
+      "server_type": "MPRO",
+      "fecha_inicio": "2026-01-01",
+      "fecha_fin": "2026-04-26",
+      "kpis": {
+        "ventas_periodo": 23437634.82,
+        "ticket_promedio": 3316.02,
+        "cheques_total": 7068,
+        "pax_total": 19388,
+        "pax_promedio": 2.74,
+        "consumo_persona": 1208.87,
+        "rotacion_mesas": 0,
+        "mesas_atendidas": 0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 351.0,
+        "vs_ano_anterior": 16.7,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -8.1,
+        "pax_vs_ano_anterior": 24.8,
+        "pax_total_vs_ano": 24.8,
+        "cheques_total_vs_ano": 18.3,
+        "cheque_vs_ano_anterior": -1.4,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-26",
+        "periodo_ano_ant": "2025-01-01 a 2025-04-26",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-27T18:41:13.884198"
+  },
+  {
+    "_id": {
+      "$oid": "69efc210e2c810574ae67db4"
+    },
+    "periodo_key": "dashboard_20260401_20260426",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-27",
+      "kpis": {
+        "ventas_periodo": 3524837.0,
+        "ticket_promedio": 3671.71,
+        "cheques_total": 960,
+        "pax_total": 2739,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1286.91,
+        "mesas_atendidas": 960,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 293736.42
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -8.4,
+        "vs_ano_anterior": -13.7,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 3.0,
+        "pax_vs_ano_anterior": -17.7,
+        "pax_total_vs_ano": -17.7,
+        "cheques_total_vs_ano": -18.4,
+        "cheque_vs_ano_anterior": 5.8,
+        "rotacion_vs_ano": -64.8,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-26",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-26",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-28T16:36:48.462342"
+  },
+  {
+    "_id": {
+      "$oid": "69efc218e2c810574ae67dbe"
+    },
+    "periodo_key": "dashboard_20260401_20260426",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-26",
+      "kpis": {
+        "ventas_periodo": 3853504.0,
+        "ticket_promedio": 4528.21,
+        "cheques_total": 851,
+        "pax_total": 2482,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1552.58,
+        "mesas_atendidas": 851,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 321125.33
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -1.4,
+        "vs_ano_anterior": -11.5,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0.5,
+        "pax_vs_ano_anterior": -15.7,
+        "pax_total_vs_ano": -15.7,
+        "cheques_total_vs_ano": -18.9,
+        "cheque_vs_ano_anterior": 9.1,
+        "rotacion_vs_ano": -64.4,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-26",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-26",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-27T20:13:16.131161"
+  },
+  {
+    "_id": {
+      "$oid": "69efc343e2c810574ae68107"
+    },
+    "periodo_key": "dashboard_20260301_20260331",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-03-01",
+      "fecha_fin": "2026-03-31",
+      "kpis": {
+        "ventas_periodo": 2761046.0,
+        "ticket_promedio": 1568.78,
+        "cheques_total": 1760,
+        "pax_total": 5144,
+        "pax_promedio": 2.9,
+        "consumo_persona": 536.75,
+        "mesas_atendidas": 1760,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 230087.17
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -5.8,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0.8,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-02-01 a 2026-02-28",
+        "periodo_ano_ant": "2025-03-01 a 2025-03-31",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-27T20:12:51.636320"
+  },
+  {
+    "_id": {
+      "$oid": "69efc344e2c810574ae68110"
+    },
+    "periodo_key": "dashboard_20260301_20260331",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-03-01",
+      "fecha_fin": "2026-03-31",
+      "kpis": {
+        "ventas_periodo": 4490599.0,
+        "ticket_promedio": 3714.31,
+        "cheques_total": 1209,
+        "pax_total": 3488,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1287.44,
+        "mesas_atendidas": 1209,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 374216.58
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -9.5,
+        "vs_ano_anterior": -18.7,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -1.2,
+        "pax_vs_ano_anterior": -19.2,
+        "pax_total_vs_ano": -19.2,
+        "cheques_total_vs_ano": -17.0,
+        "cheque_vs_ano_anterior": -2.1,
+        "rotacion_vs_ano": -66.3,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-02-01 a 2026-02-28",
+        "periodo_ano_ant": "2025-03-01 a 2025-03-31",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-27T20:12:52.472547"
+  },
+  {
+    "_id": {
+      "$oid": "69efc344e2c810574ae6811d"
+    },
+    "periodo_key": "dashboard_mpro_2026-03-01_2026-03-31",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de ManagmentPro",
+      "server_name": "ManagmentPro",
+      "server_type": "MPRO",
+      "fecha_inicio": "2026-03-01",
+      "fecha_fin": "2026-03-31",
+      "kpis": {
+        "ventas_periodo": 6258214.22,
+        "ticket_promedio": 3397.51,
+        "cheques_total": 1842,
+        "pax_total": 4826,
+        "pax_promedio": 2.62,
+        "consumo_persona": 1296.77,
+        "rotacion_mesas": 0,
+        "mesas_atendidas": 0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -0.2,
+        "vs_ano_anterior": 15.6,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 5.1,
+        "pax_vs_ano_anterior": 18.9,
+        "pax_total_vs_ano": 18.9,
+        "cheques_total_vs_ano": 19.8,
+        "cheque_vs_ano_anterior": -3.6,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-02-01 a 2026-02-28",
+        "periodo_ano_ant": "2025-03-01 a 2025-03-31",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-27T20:12:52.885340"
+  },
+  {
+    "_id": {
+      "$oid": "69efc345e2c810574ae68124"
+    },
+    "periodo_key": "dashboard_20250401_20250430",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2025-04-01",
+      "fecha_fin": "2025-04-30",
+      "kpis": {
+        "ventas_periodo": 4105.0,
+        "ticket_promedio": 2052.5,
+        "cheques_total": 2,
+        "pax_total": 11,
+        "pax_promedio": 0,
+        "consumo_persona": 373.18,
+        "mesas_atendidas": 2,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 342.08
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 0,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2025-03-01 a 2025-03-31",
+        "periodo_ano_ant": "2024-04-01 a 2024-04-30",
+        "sin_datos_periodo_anterior": true,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-27T20:12:53.354399"
+  },
+  {
+    "_id": {
+      "$oid": "69efc346e2c810574ae6812b"
+    },
+    "periodo_key": "dashboard_20250401_20250430",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2025-04-01",
+      "fecha_fin": "2025-04-30",
+      "kpis": {
+        "ventas_periodo": 4472211.0,
+        "ticket_promedio": 3496.65,
+        "cheques_total": 1279,
+        "pax_total": 3625,
+        "pax_promedio": 2.8,
+        "consumo_persona": 1233.71,
+        "mesas_atendidas": 1279,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 372684.25
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -19.0,
+        "vs_ano_anterior": -15.5,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -3.5,
+        "pax_vs_ano_anterior": -8.7,
+        "pax_total_vs_ano": -8.7,
+        "cheques_total_vs_ano": -8.8,
+        "cheque_vs_ano_anterior": -7.4,
+        "rotacion_vs_ano": -64.7,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2025-03-01 a 2025-03-31",
+        "periodo_ano_ant": "2024-04-01 a 2024-04-30",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-27T20:12:54.198783"
+  },
+  {
+    "_id": {
+      "$oid": "69f0e21918b1da6fcf2e07b1"
+    },
+    "periodo_key": "dashboard_20260401_20260427",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-27",
+      "kpis": {
+        "ventas_periodo": 3930351.0,
+        "ticket_promedio": 4512.46,
+        "cheques_total": 871,
+        "pax_total": 2533,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1551.66,
+        "mesas_atendidas": 871,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 327529.25
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -3.8,
+        "vs_ano_anterior": -11.7,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0.1,
+        "pax_vs_ano_anterior": -15.8,
+        "pax_total_vs_ano": -15.8,
+        "cheques_total_vs_ano": -18.9,
+        "cheque_vs_ano_anterior": 8.8,
+        "rotacion_vs_ano": -64.4,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-27",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-27",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-28T16:36:41.193089"
+  },
+  {
+    "_id": {
+      "$oid": "69f0e22318b1da6fcf2e07cf"
+    },
+    "periodo_key": "dashboard_20260401_20260427",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-27",
+      "kpis": {
+        "ventas_periodo": 2357189.0,
+        "ticket_promedio": 1447.02,
+        "cheques_total": 1629,
+        "pax_total": 4551,
+        "pax_promedio": 2.8,
+        "consumo_persona": 517.95,
+        "mesas_atendidas": 1629,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 196432.42
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -2.1,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -4.4,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-27",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-27",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-28T16:36:51.315897"
+  },
+  {
+    "_id": {
+      "$oid": "69f0e22518b1da6fcf2e07dd"
+    },
+    "periodo_key": "dashboard_mpro_2026-04-01_2026-04-27",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de ManagmentPro",
+      "server_name": "ManagmentPro",
+      "server_type": "MPRO",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-27",
+      "kpis": {
+        "ventas_periodo": 1708525.87,
+        "ticket_promedio": 2051.05,
+        "cheques_total": 833,
+        "pax_total": 2853,
+        "pax_promedio": 3.42,
+        "consumo_persona": 598.85,
+        "rotacion_mesas": 0,
+        "mesas_atendidas": 0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -14.8,
+        "vs_ano_anterior": 24.9,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -18.1,
+        "pax_vs_ano_anterior": 58.8,
+        "pax_total_vs_ano": 58.8,
+        "cheques_total_vs_ano": 27.6,
+        "cheque_vs_ano_anterior": -2.1,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-27",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-27",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-28T16:36:53.974838"
+  },
+  {
+    "_id": {
+      "$oid": "69f24041fa95a570959352de"
+    },
+    "periodo_key": "dashboard_20260401_20260428",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-29",
+      "kpis": {
+        "ventas_periodo": 4061943.0,
+        "ticket_promedio": 4483.38,
+        "cheques_total": 906,
+        "pax_total": 2615,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1553.32,
+        "mesas_atendidas": 906,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 338495.25
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -6.5,
+        "vs_ano_anterior": -12.5,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0.8,
+        "pax_vs_ano_anterior": -16.4,
+        "pax_total_vs_ano": -16.4,
+        "cheques_total_vs_ano": -19.6,
+        "cheque_vs_ano_anterior": 8.9,
+        "rotacion_vs_ano": -64.3,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-28",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-28",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-30T02:41:39.670288"
+  },
+  {
+    "_id": {
+      "$oid": "69f24046fa95a570959352eb"
+    },
+    "periodo_key": "dashboard_mpro_2026-04-01_2026-04-28",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de ManagmentPro",
+      "server_name": "ManagmentPro",
+      "server_type": "MPRO",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-28",
+      "kpis": {
+        "ventas_periodo": 1744226.87,
+        "ticket_promedio": 2049.62,
+        "cheques_total": 851,
+        "pax_total": 2929,
+        "pax_promedio": 3.44,
+        "consumo_persona": 595.5,
+        "rotacion_mesas": 0,
+        "mesas_atendidas": 0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -17.8,
+        "vs_ano_anterior": 24.8,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -18.8,
+        "pax_vs_ano_anterior": 55.5,
+        "pax_total_vs_ano": 55.5,
+        "cheques_total_vs_ano": 26.4,
+        "cheque_vs_ano_anterior": -1.3,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-28",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-28",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-29T17:59:25.072140"
+  },
+  {
+    "_id": {
+      "$oid": "69f2404dfa95a570959352f6"
+    },
+    "periodo_key": "dashboard_20260401_20260428",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-29",
+      "kpis": {
+        "ventas_periodo": 3723594.0,
+        "ticket_promedio": 3643.44,
+        "cheques_total": 1022,
+        "pax_total": 2935,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1268.69,
+        "mesas_atendidas": 1022,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 310299.5
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -13.1,
+        "vs_ano_anterior": -12.2,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0.6,
+        "pax_vs_ano_anterior": -16.2,
+        "pax_total_vs_ano": -16.2,
+        "cheques_total_vs_ano": -16.8,
+        "cheque_vs_ano_anterior": 5.4,
+        "rotacion_vs_ano": -64.8,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-28",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-28",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-30T02:43:05.939000"
+  },
+  {
+    "_id": {
+      "$oid": "69f24050fa95a570959352fd"
+    },
+    "periodo_key": "dashboard_20260401_20260428",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-28",
+      "kpis": {
+        "ventas_periodo": 2381289.0,
+        "ticket_promedio": 1437.11,
+        "cheques_total": 1657,
+        "pax_total": 4610,
+        "pax_promedio": 2.8,
+        "consumo_persona": 516.55,
+        "mesas_atendidas": 1657,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 198440.75
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -11.1,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -4.3,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-28",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-28",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-04-29T22:37:35.013457"
+  },
+  {
+    "_id": {
+      "$oid": "69f4ac1d1b4db9cc118e15d8"
+    },
+    "periodo_key": "dashboard_20260401_20260430",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-30",
+      "kpis": {
+        "ventas_periodo": 4179667.0,
+        "ticket_promedio": 4460.69,
+        "cheques_total": 937,
+        "pax_total": 2688,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1554.94,
+        "mesas_atendidas": 937,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 348305.58
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -10.6,
+        "vs_ano_anterior": -11.6,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 1.8,
+        "pax_vs_ano_anterior": -15.7,
+        "pax_total_vs_ano": -15.7,
+        "cheques_total_vs_ano": -18.5,
+        "cheque_vs_ano_anterior": 8.4,
+        "rotacion_vs_ano": -64.0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-31",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-30",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-01T15:29:12.512674"
+  },
+  {
+    "_id": {
+      "$oid": "69f4ac231b4db9cc118e15e6"
+    },
+    "periodo_key": "dashboard_20260401_20260430",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-30",
+      "kpis": {
+        "ventas_periodo": 2507484.0,
+        "ticket_promedio": 1432.85,
+        "cheques_total": 1750,
+        "pax_total": 4874,
+        "pax_promedio": 2.8,
+        "consumo_persona": 514.46,
+        "mesas_atendidas": 1750,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 208957.0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -9.2,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -4.2,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-31",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-30",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-01T16:19:32.236219"
+  },
+  {
+    "_id": {
+      "$oid": "69f4ac261b4db9cc118e15ef"
+    },
+    "periodo_key": "dashboard_mpro_2026-04-01_2026-04-29",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de ManagmentPro",
+      "server_name": "ManagmentPro",
+      "server_type": "MPRO",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-29",
+      "kpis": {
+        "ventas_periodo": 3315783.0,
+        "ticket_promedio": 4876.15,
+        "cheques_total": 680,
+        "pax_total": 1794,
+        "pax_promedio": 2.64,
+        "consumo_persona": 1848.26,
+        "rotacion_mesas": 0,
+        "mesas_atendidas": 0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -8.0,
+        "vs_ano_anterior": 4.2,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -19.5,
+        "pax_vs_ano_anterior": -5.4,
+        "pax_total_vs_ano": -5.4,
+        "cheques_total_vs_ano": -8.6,
+        "cheque_vs_ano_anterior": 14.0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-29",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-29",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-01T16:14:29.858197"
+  },
+  {
+    "_id": {
+      "$oid": "69f4aeaa1b4db9cc118e190a"
+    },
+    "periodo_key": "dashboard_20260401_20260430",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-30",
+      "kpis": {
+        "ventas_periodo": 3969404.0,
+        "ticket_promedio": 3678.78,
+        "cheques_total": 1079,
+        "pax_total": 3104,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1278.8,
+        "mesas_atendidas": 1079,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 330783.67
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -11.6,
+        "vs_ano_anterior": -11.2,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -0.7,
+        "pax_vs_ano_anterior": -14.4,
+        "pax_total_vs_ano": -14.4,
+        "cheques_total_vs_ano": -15.6,
+        "cheque_vs_ano_anterior": 5.2,
+        "rotacion_vs_ano": -64.7,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-03-01 a 2026-03-31",
+        "periodo_ano_ant": "2025-04-01 a 2025-04-30",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-01T16:14:34.772654"
+  },
+  {
+    "_id": {
+      "$oid": "69f4b13c1b4db9cc118e1b79"
+    },
+    "periodo_key": "dashboard_20260401_20260530",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-05-01",
+      "kpis": {
+        "ventas_periodo": 3969404.0,
+        "ticket_promedio": 3678.78,
+        "cheques_total": 1079,
+        "pax_total": 3104,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1278.8,
+        "mesas_atendidas": 1079,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 330783.67
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 0.0,
+        "vs_ano_anterior": -58.4,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0.0,
+        "pax_vs_ano_anterior": -59.5,
+        "pax_total_vs_ano": -59.5,
+        "cheques_total_vs_ano": -58.9,
+        "cheque_vs_ano_anterior": 1.2,
+        "rotacion_vs_ano": -65.8,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-01 a 2026-04-30",
+        "periodo_ano_ant": "2025-04-01 a 2025-05-30",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-01T14:00:14.105076"
+  },
+  {
+    "_id": {
+      "$oid": "69f4b4d21b4db9cc118e1f75"
+    },
+    "periodo_key": "dashboard_20260501_20260430",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-05-01",
+      "fecha_fin": "2026-04-30",
+      "kpis": {
+        "ventas_periodo": 835.0,
+        "ticket_promedio": 417.5,
+        "cheques_total": 2,
+        "pax_total": 2,
+        "pax_promedio": 0,
+        "consumo_persona": 417.5,
+        "mesas_atendidas": 2,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 69.58
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -100.0,
+        "vs_ano_anterior": -100.0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -100.0,
+        "pax_vs_ano_anterior": -100.0,
+        "pax_total_vs_ano": -100.0,
+        "cheques_total_vs_ano": -100.0,
+        "cheque_vs_ano_anterior": -100.0,
+        "rotacion_vs_ano": -100.0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-01 a 2026-04-01",
+        "periodo_ano_ant": "2025-05-01 a 2025-05-01",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-01T14:12:34.621584"
+  },
+  {
+    "_id": {
+      "$oid": "69f4b4d31b4db9cc118e1f7c"
+    },
+    "periodo_key": "dashboard_20260501_20260430",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-05-01",
+      "fecha_fin": "2026-04-30",
+      "kpis": {
+        "ventas_periodo": 4545.0,
+        "ticket_promedio": 4545.0,
+        "cheques_total": 1,
+        "pax_total": 8,
+        "pax_promedio": 0,
+        "consumo_persona": 568.12,
+        "mesas_atendidas": 1,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 378.75
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -100.0,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -100.0,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-01 a 2026-04-01",
+        "periodo_ano_ant": "2025-05-01 a 2025-05-01",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-01T14:12:35.166928"
+  },
+  {
+    "_id": {
+      "$oid": "69f4d1611b4db9cc118e3ecc"
+    },
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "periodo_key": "dashboard_mpro_2026-04-01_2026-05-29",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de ManagmentPro",
+      "server_name": "ManagmentPro",
+      "server_type": "MPRO",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-05-29",
+      "kpis": {
+        "ventas_periodo": 1794638.54,
+        "ticket_promedio": 2048.67,
+        "cheques_total": 876,
+        "pax_total": 3027,
+        "pax_promedio": 3.46,
+        "consumo_persona": 592.88,
+        "rotacion_mesas": 0,
+        "mesas_atendidas": 0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 1.2,
+        "vs_ano_anterior": -44.7,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0.3,
+        "pax_vs_ano_anterior": -31.3,
+        "pax_total_vs_ano": -31.3,
+        "cheques_total_vs_ano": -45.0,
+        "cheque_vs_ano_anterior": 0.6,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-01 a 2026-04-29",
+        "periodo_ano_ant": "2025-04-01 a 2025-05-29",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-01T16:14:25.270300"
+  },
+  {
+    "_id": {
+      "$oid": "69f4d2931b4db9cc118e40e5"
+    },
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "periodo_key": "dashboard_20260401_20260530",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-30",
+      "kpis": {
+        "ventas_periodo": 2507484.0,
+        "ticket_promedio": 1432.85,
+        "cheques_total": 1750,
+        "pax_total": 4874,
+        "pax_promedio": 2.8,
+        "consumo_persona": 514.46,
+        "mesas_atendidas": 1750,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 208957.0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 0.0,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0.0,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-01 a 2026-04-30",
+        "periodo_ano_ant": "2025-04-01 a 2025-05-30",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-01T16:19:31.936782"
+  },
+  {
+    "_id": {
+      "$oid": "69fa670dc7d79e12d74032a4"
+    },
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "periodo_key": "dashboard_20260501_20260504",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-05-01",
+      "fecha_fin": "2026-05-04",
+      "kpis": {
+        "ventas_periodo": 422044.0,
+        "ticket_promedio": 3836.76,
+        "cheques_total": 110,
+        "pax_total": 301,
+        "pax_promedio": 2.8,
+        "consumo_persona": 1402.14,
+        "mesas_atendidas": 110,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 35170.33
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -38.5,
+        "vs_ano_anterior": -36.4,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -1.8,
+        "pax_vs_ano_anterior": -38.0,
+        "pax_total_vs_ano": -38.0,
+        "cheques_total_vs_ano": -37.0,
+        "cheque_vs_ano_anterior": 1.0,
+        "rotacion_vs_ano": -64.9,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-01 a 2026-04-04",
+        "periodo_ano_ant": "2025-05-01 a 2025-05-04",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-05T21:54:21.915970"
+  },
+  {
+    "_id": {
+      "$oid": "6a022131962d0ababb2b511b"
+    },
+    "periodo_key": "dashboard_20260501_20260510",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-05-01",
+      "fecha_fin": "2026-05-10",
+      "kpis": {
+        "ventas_periodo": 1668813.0,
+        "ticket_promedio": 3908.23,
+        "cheques_total": 427,
+        "pax_total": 1349,
+        "pax_promedio": 2.9,
+        "consumo_persona": 1237.07,
+        "mesas_atendidas": 427,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 139067.75
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 31.2,
+        "vs_ano_anterior": -8.2,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 1.5,
+        "pax_vs_ano_anterior": -14.6,
+        "pax_total_vs_ano": -14.6,
+        "cheques_total_vs_ano": -11.5,
+        "cheque_vs_ano_anterior": 3.7,
+        "rotacion_vs_ano": -67.2,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-01 a 2026-04-09",
+        "periodo_ano_ant": "2025-05-01 a 2025-05-09",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-11T18:34:26.966693"
+  },
+  {
+    "_id": {
+      "$oid": "6a06974d37f81590b604c917"
+    },
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "periodo_key": "dashboard_20260501_20260514",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de LA ESTELAR",
+      "server_name": "LA ESTELAR",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-05-01",
+      "fecha_fin": "2026-05-14",
+      "kpis": {
+        "ventas_periodo": 1318041.0,
+        "ticket_promedio": 1580.38,
+        "cheques_total": 834,
+        "pax_total": 2346,
+        "pax_promedio": 2.8,
+        "consumo_persona": 561.82,
+        "mesas_atendidas": 834,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 109836.75
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 5.2,
+        "vs_ano_anterior": 0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 9.8,
+        "pax_vs_ano_anterior": 0,
+        "pax_total_vs_ano": 0,
+        "cheques_total_vs_ano": 0,
+        "cheque_vs_ano_anterior": 0,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-01 a 2026-04-13",
+        "periodo_ano_ant": "2025-05-01 a 2025-05-13",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": true
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-15T03:47:25.609438"
+  },
+  {
+    "_id": {
+      "$oid": "6a06985237f81590b604c9ad"
+    },
+    "periodo_key": "dashboard_20260501_20260514",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de CIENFUEGOS",
+      "server_name": "CIENFUEGOS",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-05-01",
+      "fecha_fin": "2026-05-14",
+      "kpis": {
+        "ventas_periodo": 2308201.0,
+        "ticket_promedio": 4078.09,
+        "cheques_total": 566,
+        "pax_total": 1788,
+        "pax_promedio": 3.1,
+        "consumo_persona": 1290.94,
+        "mesas_atendidas": 566,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 192350.08
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 42.6,
+        "vs_ano_anterior": -9.2,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -0.3,
+        "pax_vs_ano_anterior": -11.2,
+        "pax_total_vs_ano": -11.2,
+        "cheques_total_vs_ano": -11.9,
+        "cheque_vs_ano_anterior": 3.0,
+        "rotacion_vs_ano": -67.9,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-01 a 2026-04-13",
+        "periodo_ano_ant": "2025-05-01 a 2025-05-13",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-15T03:53:38.289793"
+  },
+  {
+    "_id": {
+      "$oid": "6a0698a737f81590b604c9c1"
+    },
+    "periodo_key": "dashboard_mpro_2026-05-01_2026-05-14",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de ManagmentPro",
+      "server_name": "ManagmentPro",
+      "server_type": "MPRO",
+      "fecha_inicio": "2026-05-01",
+      "fecha_fin": "2026-05-14",
+      "kpis": {
+        "ventas_periodo": 2637443.76,
+        "ticket_promedio": 3073.94,
+        "cheques_total": 858,
+        "pax_total": 2371,
+        "pax_promedio": 2.76,
+        "consumo_persona": 1112.38,
+        "rotacion_mesas": 0,
+        "mesas_atendidas": 0
+      },
+      "comparativo": {
+        "vs_periodo_anterior": 11.4,
+        "vs_ano_anterior": -1.7,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": 0.9,
+        "pax_vs_ano_anterior": 8.7,
+        "pax_total_vs_ano": 8.7,
+        "cheques_total_vs_ano": 3.0,
+        "cheque_vs_ano_anterior": -4.6,
+        "rotacion_vs_ano": 0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-01 a 2026-04-14",
+        "periodo_ano_ant": "2025-05-01 a 2025-05-14",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-15T03:53:11.191665"
+  },
+  {
+    "_id": {
+      "$oid": "6a087333a843c514302d8d6e"
+    },
+    "periodo_key": "dashboard_20260516_20260516",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SoftRestaurant",
+      "fecha_inicio": "2026-05-16",
+      "fecha_fin": "2026-05-16",
+      "kpis": {
+        "ventas_periodo": 1592.0,
+        "ticket_promedio": 530.67,
+        "cheques_total": 3,
+        "pax_total": 3,
+        "pax_promedio": 0,
+        "consumo_persona": 530.67,
+        "mesas_atendidas": 3,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 132.67
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -100.0,
+        "vs_ano_anterior": -100.0,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -100.0,
+        "pax_vs_ano_anterior": -100.0,
+        "pax_total_vs_ano": -100.0,
+        "cheques_total_vs_ano": -100.0,
+        "cheque_vs_ano_anterior": -100.0,
+        "rotacion_vs_ano": -100.0,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-05-15 a 2026-05-15",
+        "periodo_ano_ant": "2025-05-16 a 2025-05-16",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-16T13:38:03.619524"
+  },
+  {
+    "_id": {
+      "$oid": "6a10d3a8662f9bf82a25eaaa"
+    },
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "periodo_key": "dashboard_20260501_20260521",
+    "data": {
+      "source_status": "SUCCESS",
+      "source_message": "Datos obtenidos correctamente de 130° MERIDA",
+      "server_name": "130° MERIDA",
+      "server_type": "SOFTRESTAURANT_PRO",
+      "fecha_inicio": "2026-05-01",
+      "fecha_fin": "2026-05-22",
+      "kpis": {
+        "ventas_periodo": 2690084.0,
+        "ticket_promedio": 4352.89,
+        "cheques_total": 618,
+        "pax_total": 1814,
+        "pax_promedio": 3.0,
+        "consumo_persona": 1482.96,
+        "mesas_atendidas": 618,
+        "rotacion_mesas": 1.0,
+        "venta_por_hora": 224173.67
+      },
+      "comparativo": {
+        "vs_periodo_anterior": -11.9,
+        "vs_ano_anterior": -15.6,
+        "vs_presupuesto": 0,
+        "pax_vs_mes_anterior": -3.0,
+        "pax_vs_ano_anterior": -13.8,
+        "pax_total_vs_ano": -13.8,
+        "cheques_total_vs_ano": -17.8,
+        "cheque_vs_ano_anterior": 2.6,
+        "rotacion_vs_ano": -64.6,
+        "tipo_comparacion": "dias_equiv",
+        "periodo_anterior": "2026-04-01 a 2026-04-21",
+        "periodo_ano_ant": "2025-05-01 a 2025-05-21",
+        "sin_datos_periodo_anterior": false,
+        "sin_datos_ano_anterior": false
+      },
+      "alertas": []
+    },
+    "updated_at": "2026-05-23T00:51:26.710066"
+  }
+]

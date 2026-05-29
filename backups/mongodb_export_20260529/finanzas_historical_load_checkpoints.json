@@ -1,0 +1,818 @@
+[
+  {
+    "_id": {
+      "$oid": "69eda03a1d7bf65b43dc1c50"
+    },
+    "run_id": "2d3db596-5cc6-4ed0-b294-2b35f6071a9c",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "server_name": "ManagmentPro",
+    "kpi_tipo": "CORTE_Z",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T05:18:50.832393+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 7,
+    "total_updated": 709,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T05:24:03.770117+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69eda28c20bfa68bc836573a"
+    },
+    "run_id": "f5a0c8e7-be0a-4d42-b0c3-2e8f9f1070fa",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "server_name": "ManagmentPro",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T05:28:44.876325+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 707,
+    "total_updated": 0,
+    "total_errors": 1,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T05:57:37.223412+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69eda8058f148075043fc3d0"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "server_name": "ManagmentPro",
+    "kpi_tipo": "CORTE_Z",
+    "status": "PARTIAL",
+    "created_at": "2026-04-26T05:52:05.376495+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 714,
+    "total_errors": 2,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T05:57:37.220422+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69eda9518f148075043fc69d"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "kpi_tipo": "CORTE_Z",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T05:57:37.224052+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 716,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:02:54.410110+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edaa8e8f148075043fc96a"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:02:54.411535+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:03:54.518199+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edaaca8f148075043fc96b"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_name": "LA ESTELAR",
+    "kpi_tipo": "CORTE_Z",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:03:54.519766+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 311,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:06:34.615181+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edab6a8f148075043fcaa3"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_name": "LA ESTELAR",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:06:34.616588+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:07:34.380143+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edaba68f148075043fcaa4"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_name": "130° MERIDA",
+    "kpi_tipo": "CORTE_Z",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:07:34.381608+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 714,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:12:42.026957+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edacda8f148075043fcd6f"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_name": "130° MERIDA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:12:42.028380+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:13:42.065435+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edad168f148075043fcd70"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "d1d8c70f-c3d0-4407-ae50-f09e8e5992ee",
+    "server_name": "MPRO TABLAJERIA",
+    "kpi_tipo": "CORTE_Z",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:13:42.066943+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:14:36.209531+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edad4c8f148075043fcd71"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "d1d8c70f-c3d0-4407-ae50-f09e8e5992ee",
+    "server_name": "MPRO TABLAJERIA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:14:36.210949+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:15:30.377275+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edad828f148075043fcd72"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "6d859026-710a-4920-9a44-6da98fabc690",
+    "server_name": "CIENFUEGOS TABLAJERIA",
+    "kpi_tipo": "CORTE_Z",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:15:30.378722+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:16:30.368714+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edadbe8f148075043fcd73"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "6d859026-710a-4920-9a44-6da98fabc690",
+    "server_name": "CIENFUEGOS TABLAJERIA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:16:30.370156+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:17:30.214349+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edadfa8f148075043fcd74"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "b5175237-5e57-41f3-ab6d-b5ae2f5e780b",
+    "server_name": "HR2020 ESCRITURA",
+    "kpi_tipo": "CORTE_Z",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:17:30.216146+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 462,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:20:53.987787+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edaec58f148075043fcf43"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "b5175237-5e57-41f3-ab6d-b5ae2f5e780b",
+    "server_name": "HR2020 ESCRITURA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:20:53.989278+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 425,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:24:05.487152+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edaf858f148075043fd0ed"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "d8425038-5e57-42d9-8f3a-62e287888874",
+    "server_name": "PRUEBAS SOFTRESTAURANT",
+    "kpi_tipo": "CORTE_Z",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:24:05.488617+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:24:58.060275+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edafba8f148075043fd0ee"
+    },
+    "run_id": "b2dae3b9-55f2-4e22-b0a5-0acd65fe4d48",
+    "server_id": "d8425038-5e57-42d9-8f3a-62e287888874",
+    "server_name": "PRUEBAS SOFTRESTAURANT",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:24:58.061883+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:25:50.648054+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb340de57162d8832c772"
+    },
+    "run_id": "b3846398-16b8-40c8-be2a-38ae00d96eb7",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "server_name": "ManagmentPro",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:40:00.398555+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 708,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:40:04.666064+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb344de57162d8832c773"
+    },
+    "run_id": "b3846398-16b8-40c8-be2a-38ae00d96eb7",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:40:04.666879+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:40:14.413794+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb34ede57162d8832c774"
+    },
+    "run_id": "b3846398-16b8-40c8-be2a-38ae00d96eb7",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_name": "LA ESTELAR",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:40:14.414776+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:40:23.989993+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb357de57162d8832c775"
+    },
+    "run_id": "b3846398-16b8-40c8-be2a-38ae00d96eb7",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_name": "130° MERIDA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:40:23.990910+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:40:33.736871+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb361de57162d8832c776"
+    },
+    "run_id": "b3846398-16b8-40c8-be2a-38ae00d96eb7",
+    "server_id": "b5175237-5e57-41f3-ab6d-b5ae2f5e780b",
+    "server_name": "HR2020 ESCRITURA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:40:33.737752+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 425,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:40:37.870472+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb365de57162d8832c777"
+    },
+    "run_id": "b3846398-16b8-40c8-be2a-38ae00d96eb7",
+    "server_id": "d8425038-5e57-42d9-8f3a-62e287888874",
+    "server_name": "PRUEBAS SOFTRESTAURANT",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:40:37.871492+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:40:40.494878+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb371276b1891cc432aa6"
+    },
+    "run_id": "8b78e6f6-99b2-47b5-81b2-dd602c41bb14",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "server_name": "ManagmentPro",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:40:49.831137+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 708,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:40:54.098192+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb376276b1891cc432aa7"
+    },
+    "run_id": "8b78e6f6-99b2-47b5-81b2-dd602c41bb14",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:40:54.099017+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:41:03.748463+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb37f276b1891cc432aa8"
+    },
+    "run_id": "8b78e6f6-99b2-47b5-81b2-dd602c41bb14",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_name": "LA ESTELAR",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:41:03.749251+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:41:13.568783+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb389276b1891cc432aa9"
+    },
+    "run_id": "8b78e6f6-99b2-47b5-81b2-dd602c41bb14",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_name": "130° MERIDA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:41:13.569635+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:41:23.274232+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb393276b1891cc432aaa"
+    },
+    "run_id": "8b78e6f6-99b2-47b5-81b2-dd602c41bb14",
+    "server_id": "b5175237-5e57-41f3-ab6d-b5ae2f5e780b",
+    "server_name": "HR2020 ESCRITURA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:41:23.275037+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 425,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:41:27.363472+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb397276b1891cc432aab"
+    },
+    "run_id": "8b78e6f6-99b2-47b5-81b2-dd602c41bb14",
+    "server_id": "d8425038-5e57-42d9-8f3a-62e287888874",
+    "server_name": "PRUEBAS SOFTRESTAURANT",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:41:27.364266+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:41:29.853827+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb3ddf1185f55a734a75a"
+    },
+    "run_id": "86aec7ad-ef6c-43b1-b277-411214adafc5",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "server_name": "ManagmentPro",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:42:37.784638+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 708,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:42:42.035602+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb3e2f1185f55a734a75b"
+    },
+    "run_id": "86aec7ad-ef6c-43b1-b277-411214adafc5",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:42:42.036439+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 609,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:42:52.772590+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb3ecf1185f55a734a75c"
+    },
+    "run_id": "86aec7ad-ef6c-43b1-b277-411214adafc5",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_name": "LA ESTELAR",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:42:52.773419+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 326,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:43:02.369714+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb3f6f1185f55a734a75d"
+    },
+    "run_id": "86aec7ad-ef6c-43b1-b277-411214adafc5",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_name": "130° MERIDA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:43:02.370579+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 607,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:43:13.270156+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb401f1185f55a734a75e"
+    },
+    "run_id": "86aec7ad-ef6c-43b1-b277-411214adafc5",
+    "server_id": "b5175237-5e57-41f3-ab6d-b5ae2f5e780b",
+    "server_name": "HR2020 ESCRITURA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:43:13.270979+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 425,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:43:17.438002+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb405f1185f55a734a75f"
+    },
+    "run_id": "86aec7ad-ef6c-43b1-b277-411214adafc5",
+    "server_id": "d8425038-5e57-42d9-8f3a-62e287888874",
+    "server_name": "PRUEBAS SOFTRESTAURANT",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T06:43:17.438828+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T06:43:19.934418+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb90544e2e17d994d1aba"
+    },
+    "run_id": "c2dd24a6-feaa-4556-8f13-3ad5223d5b4f",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "server_name": "ManagmentPro",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T07:04:37.546621+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 708,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T07:04:41.808140+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb90944e2e17d994d1abb"
+    },
+    "run_id": "c2dd24a6-feaa-4556-8f13-3ad5223d5b4f",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T07:04:41.808998+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 609,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T07:04:52.416898+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb91444e2e17d994d1abc"
+    },
+    "run_id": "c2dd24a6-feaa-4556-8f13-3ad5223d5b4f",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_name": "LA ESTELAR",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T07:04:52.417768+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T07:04:58.279940+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb91a44e2e17d994d1abd"
+    },
+    "run_id": "c2dd24a6-feaa-4556-8f13-3ad5223d5b4f",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_name": "130° MERIDA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T07:04:58.280776+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 607,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 2,
+    "updated_at": "2026-04-26T07:05:34.076689+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb927f92a3f67c91afe94"
+    },
+    "run_id": "7fdda15c-5ad3-4f7d-b5a4-7975626693f4",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "server_name": "ManagmentPro",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T07:05:11.244508+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 708,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T07:05:15.554963+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb92bf92a3f67c91afe95"
+    },
+    "run_id": "7fdda15c-5ad3-4f7d-b5a4-7975626693f4",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T07:05:15.556008+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 609,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T07:05:26.187786+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb936f92a3f67c91afe96"
+    },
+    "run_id": "7fdda15c-5ad3-4f7d-b5a4-7975626693f4",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_name": "LA ESTELAR",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T07:05:26.188648+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T07:05:31.939438+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edb9442f29c0b60fd38297"
+    },
+    "run_id": "a2695fc5-dad2-46ed-be97-ffa539f141a4",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "server_name": "ManagmentPro",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T07:05:40.470652+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 1,
+    "total_updated": 706,
+    "total_errors": 1,
+    "batches_completed": 2,
+    "updated_at": "2026-04-26T07:15:06.017538+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edbaf42e91b02e00b06377"
+    },
+    "run_id": "05a8a0a7-1754-4cee-b0e4-ad13558dfd7f",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T07:12:52.090349+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 521,
+    "total_updated": 88,
+    "total_errors": 0,
+    "batches_completed": 2,
+    "updated_at": "2026-04-26T07:17:26.228420+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edbc062e91b02e00b065d9"
+    },
+    "run_id": "05a8a0a7-1754-4cee-b0e4-ad13558dfd7f",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_name": "LA ESTELAR",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T07:17:26.229910+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 326,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T07:20:11.369428+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edbcab2e91b02e00b06720"
+    },
+    "run_id": "05a8a0a7-1754-4cee-b0e4-ad13558dfd7f",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_name": "130° MERIDA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T07:20:11.370957+00:00",
+    "last_date_processed": "2024-08-03",
+    "total_inserted": 0,
+    "total_updated": 76,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T07:20:45.860217+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edbd403cf1f04185f8ebf4"
+    },
+    "run_id": "afd28d98-1c9f-4b8f-aadf-650a2e943436",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_name": "130° MERIDA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T07:22:40.408097+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 607,
+    "total_updated": 0,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T07:24:33.856256+00:00"
+  },
+  {
+    "_id": {
+      "$oid": "69edbdbc7217b79f315e60da"
+    },
+    "run_id": "9a13f1ce-dcf4-44ac-aa41-2146e06d6ddd",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_name": "130° MERIDA",
+    "kpi_tipo": "CXP",
+    "status": "SUCCESS",
+    "created_at": "2026-04-26T07:24:44.427197+00:00",
+    "last_date_processed": "2026-04-26",
+    "total_inserted": 0,
+    "total_updated": 607,
+    "total_errors": 0,
+    "batches_completed": 1,
+    "updated_at": "2026-04-26T07:28:59.904618+00:00"
+  }
+]
