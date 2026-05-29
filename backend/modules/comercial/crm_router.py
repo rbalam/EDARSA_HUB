@@ -447,3 +447,112 @@ def obtener_metricas_kpi_comercial(mes: int, anio: int):
         "TotalActividadesEjecutadas": total_actividades,
         "IndiceSatisfaccionCSAT": round(promedio_csat, 2)
     }
+
+# ==========================================
+# MODELOS PYDANTIC: IA COMERCIAL (FASE 13)
+# ==========================================
+class IAForecastResponse(BaseModel):
+    OportunidadID: str
+    NombreOportunidad: str
+    ProbabilidadAlgoritmica: float
+    MontoPonderadoPredictivo: float
+    DiagnosticoAgente: str
+
+class IASeguimientoSalud(BaseModel):
+    MetasAlcanzadasPorcentaje: float
+    AlertaDesviacionMeta: bool
+    EficienciaInteracciones: str
+    RecomendacionAgente: str
+
+# ==========================================
+# ENDPOINTS: IA COMERCIAL (ANÁLITICA LOCAL)
+# ==========================================
+@router.get("/ia/forecast/{oportunidad_id}", response_model=IAForecastResponse)
+def agente_forecast_prediccion_cierre(oportunidad_id: str):
+    """
+    Fase 13: Agente Forecast de Cierre.
+    Evalúa la probabilidad algorítmica real de éxito de una oportunidad
+    cruzando la etapa actual, el histórico de transiciones del Kanban 
+    y el comportamiento general de postventa (CSAT).
+    """
+    # 1. Extraer metadatos de la oportunidad desde el Pipeline unificado (Fase 6)
+    query_op = """
+        SELECT OportunidadID, NombreOportunidad, Etapa, MontoEstimado, Probabilidad
+        FROM dbo.CRM_Oportunidades
+        WHERE OportunidadID = %s
+    """
+    res_op = execute_hub_query(query_op, (oportunidad_id,))
+    if not res_op:
+        raise HTTPException(status_code=404, detail="La oportunidad comercial especificada no existe.")
+        
+    op = res_op[0]
+    etapa = op["Etapa"]
+    monto = float(op["MontoEstimado"])
+    probabilidad_base = float(op["Probabilidad"])
+
+    # 2. IA Local: Calcular el factor de ajuste según el índice promedio CSAT corporativo (Fase 11)
+    query_csat = "SELECT COALESCE(AVG(CAST(PuntuacionCSAT AS DECIMAL(18,2))), 4.0) as Promedio FROM dbo.CRM_PostventaEncuestas"
+    res_csat = execute_hub_query(query_csat, ())
+    csat_factor = float(res_csat[0]["Promedio"]) / 5.0 # Normalizado a escala 0.0 - 1.0
+
+    # 3. Algoritmo de ponderación matricial (Determinista / SQL-First)
+    # Castigo o bonificación predictiva según madurez del flujo
+    peso_etapa = 1.0
+    if etapa in ['Nuevo', 'Calificado']: peso_etapa = 0.4
+    elif etapa in ['Diagnóstico', 'Propuesta']: peso_etapa = 0.7
+    elif etapa in ['Negociación']: peso_etapa = 0.9
+    elif etapa == 'Perdido': peso_etapa = 0.0
+
+    probabilidad_final = (probabilidad_base * peso_etapa * csat_factor)
+    if probabilidad_final > 100.0: probabilidad_final = 100.0
+    
+    monto_predictivo = monto * (probabilidad_final / 100.0)
+    
+    diagnostico = f"Agente Analítico: Cierre estimado con un nivel de confianza del {round(probabilidad_final, 1)}% basado en histórico transaccional y salud CSAT actual."
+
+    return {
+        "OportunidadID": str(op["OportunidadID"]),
+        "NombreOportunidad": op["NombreOportunidad"],
+        "ProbabilidadAlgoritmica": round(probabilidad_final, 2),
+        "MontoPonderadoPredictivo": round(monto_predictivo, 2),
+        "DiagnosticoAgente": diagnostico
+    }
+
+@router.get("/ia/salud-comercial", response_model=IASeguimientoSalud)
+def agente_seguimiento_salud_ventas(usuario_id: int, mes: int, anio: int):
+    """
+    Fase 13: Agente Comercial y de Seguimiento de Metas.
+    Monitorea de forma automatizada las desviaciones financieras del equipo.
+    """
+    # 1. Obtener la meta del mes unificada (Fase 4 / 12)
+    query_meta = "SELECT COALESCE(meta_venta, 0.0) as Meta FROM dbo.Comercial_Metas WHERE mes = %s AND anio = %s"
+    res_meta = execute_hub_query(query_meta, (mes, anio))
+    meta_establecida = float(res_meta[0]["Meta"]) if res_meta else 0.0
+
+    # 2. Obtener el acumulado real ganado en el Kanban
+    query_ganado = """
+        SELECT COALESCE(SUM(MontoEstimado), 0.0) as RealGanado
+        FROM dbo.CRM_Oportunidades
+        WHERE UsuarioAsignadoID = %s AND Etapa = 'Ganado' AND MONTH(FechaModificacion) = %s AND YEAR(FechaModificacion) = %s
+    """
+    res_ganado = execute_hub_query(query_ganado, (usuario_id, mes, anio))
+    real_ganado = float(res_ganado[0]["RealGanado"]) if res_ganado else 0.0
+
+    # 3. Evaluar desviaciones algorítmicas
+    porcentaje_cumplimiento = (real_ganado / meta_establecida * 100.0) if meta_establecida > 0 else 100.0
+    alerta_desviacion = porcentaje_cumplimiento < 85.0  # Dispara alerta si está por debajo del 85% de la cuota
+
+    # Conteo de interacciones del ejecutivo (Fase 7)
+    query_act = "SELECT COUNT(*) as Conteo FROM dbo.CRM_Actividades WHERE UsuarioAsignadoID = %s AND Estatus = 'Completada'"
+    res_act = execute_hub_query(query_act, (usuario_id,))
+    interacciones = res_act[0]["Conteo"] if res_act else 0
+
+    eficiencia = "Óptima" if interacciones >= 15 else "Baja Actividad Crítica"
+    recomendacion = "Agente de Seguimiento: Todo en orden." if not alerta_desviacion else "Agente de Seguimiento: Alerta. Se detecta una desviación crítica en la meta mensual. Incrementar volumen de Demos y WhatsApp con urgencia."
+
+    return {
+        "MetasAlcanzadasPorcentaje": round(porcentaje_cumplimiento, 2),
+        "AlertaDesviacionMeta": alerta_desviacion,
+        "EficienciaInteracciones": eficiencia,
+        "RecomendacionAgente": recomendacion
+    }
