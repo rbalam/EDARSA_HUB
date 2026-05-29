@@ -308,3 +308,72 @@ def convertir_cotizacion_a_pedido(payload: ConvertirPedidoCreate):
         "FolioPedido": folio_pedido,
         "Estatus": "Pendiente_Aprobacion"
     }
+
+# ==========================================
+# MODELOS PYDANTIC: IMPLEMENTACIONES (FASE 10)
+# ==========================================
+class ProyectoCreate(BaseModel):
+    PedidoID: int
+    CuentaID: str  # UNIQUEIDENTIFIER como string
+    NombreProyecto: str
+    UsuarioLiderID: int
+    FechaEntregaEstimada: Optional[str] = None
+
+class EntregableEstatusUpdate(BaseModel):
+    EstatusNuevo: str  # Pendiente, En_Revision, Aprobado, Rechazado
+    UsuarioAprobadorID: int
+
+# ==========================================
+# ENDPOINTS: IMPLEMENTACIONES Y PROYECTOS
+# ==========================================
+@router.get("/implementaciones")
+def obtener_proyectos_activos():
+    """Fase 10: Consulta el listado de proyectos e implementaciones en ejecución local."""
+    query = """
+        SELECT ImplementacionID, PedidoID, CuentaID, NombreProyecto, Estatus, ProgresoPorcentaje, FechaEntregaEstimada
+        FROM dbo.CRM_Implementaciones
+        ORDER BY FechaCreacion DESC
+    """
+    return execute_hub_query(query, ())
+
+@router.post("/implementaciones")
+def aperturar_proyecto_implementacion(proyecto: ProyectoCreate):
+    """Fase 10: Da de alta un nuevo proyecto ligado a un Pedido Ganado en el CRM."""
+    query = """
+        INSERT INTO dbo.CRM_Implementaciones (PedidoID, CuentaID, NombreProyecto, Estatus, UsuarioLiderID, ProgresoPorcentaje, FechaKickoff)
+        OUTPUT INSERTED.ImplementacionID
+        VALUES (%s, %s, %s, 'Kickoff', %s, 0, GETDATE())
+    """
+    params = (proyecto.PedidoID, proyecto.CuentaID, proyecto.NombreProyecto, proyecto.UsuarioLiderID)
+    result = execute_hub_query(query, params)
+    
+    if not result:
+        raise HTTPException(status_code=400, detail="Error al aperturar el proyecto de implementación.")
+    
+    return {
+        "mensaje": "Proyecto de implementación aperturado con éxito",
+        "ImplementacionID": result[0]['ImplementacionID'],
+        "Estatus": "Kickoff"
+    }
+
+@router.get("/implementaciones/{implementacion_id}/entregables")
+def obtener_entregables_proyecto(implementacion_id: int):
+    """Fase 10: Obtiene la lista de hitos y entregables obligatorios de un proyecto específico."""
+    query = """
+        SELECT EntregableID, NombreEntregable, Descripcion, Obligatorio, Estatus, FechaLimite
+        FROM dbo.CRM_ImplementacionesEntregables
+        WHERE ImplementacionID = %s
+    """
+    return execute_hub_query(query, (implementacion_id,))
+
+@router.put("/implementaciones/entregables/{entregable_id}/estatus")
+def actualizar_estatus_entregable(entregable_id: int, payload: EntregableEstatusUpdate):
+    """Fase 10: Actualiza el estado de un entregable (Aprobación/Rechazo) con auditoría síncrona."""
+    query_update = """
+        UPDATE dbo.CRM_ImplementacionesEntregables
+        SET Estatus = %s, FechaAprobacion = CASE WHEN %s = 'Aprobado' THEN GETDATE() ELSE NULL END, UsuarioAprobadorID = %s
+        WHERE EntregableID = %s
+    """
+    execute_hub_query(query_update, (payload.EstatusNuevo, payload.EstatusNuevo, payload.UsuarioAprobadorID, entregable_id))
+    
+    return {"mensaje": "Estatus del entregable del proyecto actualizado y auditado correctamente."}
