@@ -20,3 +20,12 @@
 ### Estado de la Arquitectura
 - **SQL-First**: Confirmado al 100%. Los componentes operan de forma síncrona/local.
 - **NO-LIVE**: Blindado. Se eliminaron dependencias externas y llamadas a red en los flujos de auditoría financiera.
+
+## [2026-05-29] - FASE 14: MOTOR DE INTEGRACIÓN DESACOPLADO CRM (VTIGER)
+### Añadido
+- **Capa de Staging Físico**: Creación exitosa de las tablas `dbo.CRM_IntegracionesSyncLog` y `dbo.CRM_IntegracionesConflictos` con esquemas condicionales en EDARSAHUB SQL.
+- **Aislamiento de Ingesta**: Endpoints lógicos `/api/integraciones/ingesta` operativos para recibir JSONs remotos de VTiger Open-Source sin tocar el Modelo Canónico en tiempo real.
+- **Visor de Colisiones**: Endpoint `/api/integraciones/conflictos` listo para auditoría de datos basado en marcas de tiempo (timestamps).
+### Estado de la Arquitectura
+- **Máxima 15**: Coplada al 100%. Integración totalmente desacoplada a través de Staging.
+- **NO-LIVE**: Respetado. Las colisiones se registran y resuelven localmente mediante el pool de conexiones centralizado.
