@@ -3,10 +3,10 @@
 -- OBJETIVO: Habilitar permisos granulares por rol para menús del sistema
 -- =============================================================================
 
--- Extensión de la tabla Roles para control de acceso
+-- Extensión de la tabla Roles para control de acceso [cite: 270]
 ALTER TABLE [dbo].[Roles] ADD [ModuleAccess] BIT DEFAULT 0;
 
--- Habilitar acceso al Menú Comercial para el rol analista
+-- Habilitar acceso al Menú Comercial para el rol analista [cite: 236]
 UPDATE [dbo].[Roles] 
 SET [ModuleAccess] = 1 
 WHERE [NombreRol] = 'Analista Comercial';
