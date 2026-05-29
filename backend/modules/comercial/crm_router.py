@@ -236,3 +236,75 @@ def crear_cotizacion_enterprise(cotizacion: CotizacionCreate):
         "Folio": folio_temporal,
         "Total": round(total, 2)
     }
+
+# ==========================================
+# MODELOS PYDANTIC: PEDIDOS (FASE 9)
+# ==========================================
+class ConvertirPedidoCreate(BaseModel):
+    CotizacionID: int
+    UsuarioProcesadorID: int
+
+# ==========================================
+# ENDPOINTS: PEDIDOS Y REMISIONES (FASE 9)
+# ==========================================
+@router.get("/pedidos-venta")
+def obtener_pedidos_activos():
+    """
+    Fase 9: Consulta los pedidos oficiales del maestro transaccional Venta_Pedidos.
+    """
+    query = "SELECT * FROM dbo.Venta_Pedidos ORDER BY FechaCreacion DESC"
+    return execute_hub_query(query, ())
+
+@router.post("/pedidos-venta/convertir")
+def convertir_cotizacion_a_pedido(payload: ConvertirPedidoCreate):
+    """
+    Fase 9: Flujo transaccional. Convierte una Cotización Oficial en un Pedido Maestro.
+    Clona la cabecera y el detalle de líneas de forma local y síncrona en SQL Server.
+    """
+    # 1. Validar existencia y estatus de la cotización original
+    query_cot = "SELECT * FROM dbo.Venta_Cotizaciones WHERE CotizacionID = %s"
+    cot = execute_hub_query(query_cot, (payload.CotizacionID,))
+    if not cot:
+        raise HTTPException(status_code=404, detail="La cotización especificada no existe.")
+    
+    if cot[0]["Estatus"] == "Convertida":
+        raise HTTPException(status_code=400, detail="Esta cotización ya fue procesada previamente a pedido.")
+
+    # 2. Inyectar datos en la tabla blindada de Pedidos
+    folio_pedido = f"PED-{cot[0]['FolioCotizacion'].split('-')[-1]}"
+    query_ins_pedido = """
+        INSERT INTO dbo.Venta_Pedidos (CuentaID, FolioPedido, Subtotal, Impuesto, Total, Moneda, TipoCambio, UsuarioCreadorID, Estatus)
+        OUTPUT INSERTED.PedidoID
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'Pendiente_Aprobacion')
+    """
+    params_pedido = (
+        cot[0]["CuentaID"], folio_pedido, cot[0]["Subtotal"], cot[0]["Impuesto"], 
+        cot[0]["Total"], cot[0]["Moneda"], cot[0]["TipoCambio"], payload.UsuarioProcesadorID
+    )
+    res_pedido = execute_hub_query(query_ins_pedido, params_pedido)
+    if not res_pedido:
+        raise HTTPException(status_code=400, detail="Error en la generación del Pedido Maestro.")
+        
+    pedido_id = res_pedido[0]["PedidoID"]
+
+    # 3. Clonar las líneas de detalle hacia Venta_PedidosDetalle
+    query_lineas = "SELECT * FROM dbo.Venta_CotizacionesDetalle WHERE CotizacionID = %s"
+    lineas = execute_hub_query(query_lineas, (payload.CotizacionID,))
+    
+    query_ins_linea = """
+        INSERT INTO dbo.Venta_PedidosDetalle (PedidoID, ProductoID, Cantidad, PrecioUnitario, TotalLinea)
+        VALUES (%s, %s, %s, %s, %s)
+    """
+    for linea in lineas:
+        execute_hub_query(query_ins_linea, (pedido_id, linea["ProductoID"], linea["Cantidad"], linea["PrecioUnitario"], linea["TotalLinea"]))
+
+    # 4. Actualizar estatus de la cotización de origen para prevenir duplicaciones
+    query_up_cot = "UPDATE dbo.Venta_Cotizaciones SET Estatus = 'Convertida' WHERE CotizacionID = %s"
+    execute_hub_query(query_up_cot, (payload.CotizacionID,))
+
+    return {
+        "mensaje": "Conversión a Pedido Maestro completada de forma exitosa",
+        "PedidoID": pedido_id,
+        "FolioPedido": folio_pedido,
+        "Estatus": "Pendiente_Aprobacion"
+    }
