@@ -180,7 +180,8 @@ def _execute_sql_with_timeout(host, port, database, username, password, query, t
         signal.alarm(timeout_seconds)
     
     try:
-        result = _base_execute_sql_query(host, port, database, username, password, query, timeout=timeout_seconds)
+        # Usar timeout_seconds como nombre correcto del parámetro
+        result = _base_execute_sql_query(host, port, database, username, password, query, timeout_seconds=timeout_seconds, context="jobs")
         return result
     except TimeoutError as e:
         logger.warning(f"[SYNC-COMPRAS] Timeout conectando a {host}: {e}")

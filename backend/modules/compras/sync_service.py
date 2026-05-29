@@ -74,7 +74,7 @@ def obtener_inventarios_fisicos_sync(
             params.append(unidad_negocio_id)
         
         if server_id:
-            query += " AND server_id = %s"
+            query += " AND LOWER(server_id) = LOWER(%s)"
             params.append(server_id)
         
         if sucursal:
@@ -196,8 +196,9 @@ def sync_inventarios_fisicos_from_server(
     try:
         # Query según tipo de sistema
         if is_mpro_system(system_type):
+            # MPRO usa tabla "Fisico" (no Fisico_Inventario)
             query = """
-                SELECT DISTINCT 
+                SELECT 
                     F.Fi_Folio as folio,
                     F.Fi_Fecha as fecha,
                     A.Al_Descripcion as almacen,
@@ -205,30 +206,32 @@ def sync_inventarios_fisicos_from_server(
                     S.Sc_Descripcion as sucursal,
                     A.Sc_Cve_Sucursal as sucursal_id,
                     'FISICO' as tipo,
-                    CASE WHEN F.Fi_Status = 1 THEN 'CERRADO' ELSE 'ABIERTO' END as estatus,
-                    (SELECT COUNT(*) FROM Fi_Detalle WHERE Fi_Folio = F.Fi_Folio) as total_productos
-                FROM Fisico_Inventario F
-                INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen
+                    'CERRADO' as estatus,
+                    COUNT(F.Pr_Cve_Producto) as total_productos
+                FROM Fisico F
+                INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
                 LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
                 WHERE F.Fi_Fecha >= DATEADD(MONTH, -6, GETDATE())
+                GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, A.Al_Cve_Almacen, S.Sc_Descripcion, A.Sc_Cve_Sucursal
                 ORDER BY F.Fi_Fecha DESC
             """
         elif is_softrestaurant_system(system_type):
+            # SoftRestaurant usa tabla "invfisico"
             query = """
-                SELECT DISTINCT
-                    CAST(I.idInventario AS VARCHAR) as folio,
-                    I.fecha as fecha,
+                SELECT 
+                    CAST(INV.folio AS VARCHAR) as folio,
+                    INV.fecha as fecha,
                     A.nombre as almacen,
-                    CAST(A.idAlmacen AS VARCHAR) as almacen_id,
+                    CAST(A.idalmacen AS VARCHAR) as almacen_id,
                     '' as sucursal,
                     '' as sucursal_id,
                     'FISICO' as tipo,
-                    CASE WHEN I.cerrado = 1 THEN 'CERRADO' ELSE 'ABIERTO' END as estatus,
-                    (SELECT COUNT(*) FROM inventariomov WHERE idInventario = I.idInventario) as total_productos
-                FROM inventario I
-                INNER JOIN almacen A ON A.idAlmacen = I.idAlmacen
-                WHERE I.fecha >= DATEADD(MONTH, -6, GETDATE())
-                ORDER BY I.fecha DESC
+                    'CERRADO' as estatus,
+                    0 as total_productos
+                FROM invfisico INV
+                LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
+                WHERE INV.fecha >= DATEADD(MONTH, -6, GETDATE())
+                ORDER BY INV.fecha DESC
             """
         else:
             return {"status": "ERROR", "records_synced": 0, "error": f"Sistema no soportado: {system_type}"}
