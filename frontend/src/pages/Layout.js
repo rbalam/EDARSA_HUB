@@ -256,12 +256,37 @@ const Layout = () => {
     return false;
   };
 
-  // Toggle submenu expansion
-  const toggleSubmenu = (menuName) => {
-    setExpandedMenus(prev => ({
-      ...prev,
-      [menuName]: !prev[menuName]
-    }));
+  // Toggle submenu expansion con anti-atasco y re-hidratación forzada
+  const [submenuTimestamps, setSubmenuTimestamps] = useState({});
+  
+  const toggleSubmenu = (menuName, e) => {
+    // 1. Evitar propagación absoluta para no activar elementos padres
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    
+    // 2. Verificar si el menú está "atascado" (abierto por más de 5 segundos)
+    const now = Date.now();
+    const lastToggle = submenuTimestamps[menuName] || 0;
+    const isStuck = expandedMenus[menuName] && (now - lastToggle > 5000);
+    
+    // 3. Forzar actualización del estado con re-hidratación visual
+    setExpandedMenus(prev => {
+      const currentState = prev[menuName];
+      // Si está atascado, forzar cierre
+      if (isStuck) {
+        console.log(`[UI] Menú ${menuName} atascado - forzando cierre`);
+        return { ...prev, [menuName]: false };
+      }
+      // Toggle normal
+      const newState = !currentState;
+      console.log(`[UI] Toggle ${menuName}: ${currentState} → ${newState}`);
+      return { ...prev, [menuName]: newState };
+    });
+    
+    // 4. Registrar timestamp del toggle
+    setSubmenuTimestamps(prev => ({ ...prev, [menuName]: now }));
   };
 
   // ============================================
@@ -704,13 +729,15 @@ const Layout = () => {
                           )}
                         </Link>
                         <button
-                          onClick={() => toggleSubmenu(item.name)}
+                          onClick={(e) => toggleSubmenu(item.name, e)}
                           className={`px-2 py-3 rounded-r-md transition-colors ${
                             isActive || hasActiveSubmenu
                               ? 'bg-zinc-800 text-white' 
                               : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                           }`}
                           data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}-toggle`}
+                          role="button"
+                          aria-label={isExpanded ? "Cerrar submenú" : "Abrir submenú"}
                         >
                           {isExpanded ? (
                             <ChevronDown className="h-4 w-4" />
@@ -804,12 +831,14 @@ const Layout = () => {
                             <span className="font-medium flex-1 text-left text-sm">{item.name}</span>
                           </Link>
                           <button
-                            onClick={() => toggleSubmenu(item.name)}
+                            onClick={(e) => toggleSubmenu(item.name, e)}
                             className={`px-2 py-2.5 rounded-r-md transition-colors ${
                               isActive
                                 ? 'bg-amber-900/30 text-amber-300' 
                                 : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                             }`}
+                            role="button"
+                            aria-label={isExpanded ? "Cerrar submenú" : "Abrir submenú"}
                           >
                             {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                           </button>
