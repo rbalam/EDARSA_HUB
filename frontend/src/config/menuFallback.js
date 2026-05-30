@@ -1,7 +1,35 @@
-// /app/src/config/menuFallback.js
+// /app/frontend/src/config/menuFallback.js
+// Configuración de menús de respaldo para cuando la API no responde
+
 export const menuFallback = [
   { id: 'crm', label: 'CRM', path: '/crm', icon: 'users', isSatelite: false },
   { id: 'comercial', label: 'Comercial', path: '/comercial', icon: 'chart-bar', isSatelite: false },
   { id: 'comandero', label: 'Comandero', path: '/comandero', icon: 'utensils', isSatelite: true },
   { id: 'super-caja', label: 'Super Caja', path: '/super-caja', icon: 'cash-register', isSatelite: true }
 ];
+
+// Submenús expandidos para cada módulo principal
+export const subMenusFallback = {
+  crm: [
+    { id: 'crm-dashboard', label: 'Dashboard CRM', path: '/crm/dashboard' },
+    { id: 'crm-cuentas', label: 'Cuentas', path: '/crm/cuentas' },
+    { id: 'crm-leads', label: 'Leads', path: '/crm/leads' },
+    { id: 'crm-oportunidades', label: 'Oportunidades', path: '/crm/oportunidades' },
+    { id: 'crm-pipeline', label: 'Pipeline', path: '/crm/pipeline' },
+    { id: 'crm-actividades', label: 'Actividades', path: '/crm/actividades' },
+    { id: 'crm-cotizaciones', label: 'Cotizaciones', path: '/crm/cotizaciones' },
+    { id: 'crm-pedidos', label: 'Pedidos', path: '/crm/pedidos' },
+    { id: 'crm-operaciones', label: 'Operaciones', path: '/crm/operaciones' },
+    { id: 'crm-implementaciones', label: 'Implementaciones', path: '/crm/implementaciones' },
+    { id: 'crm-postventa', label: 'Postventa', path: '/crm/postventa' },
+    { id: 'crm-kpis', label: 'KPIs IA', path: '/crm/kpis' }
+  ],
+  comercial: [
+    { id: 'comercial-dashboard', label: 'Dashboard Comercial', path: '/comercial' },
+    { id: 'comercial-clientes', label: 'Clientes', path: '/comercial/clientes' },
+    { id: 'comercial-costos', label: 'Costos y Márgenes', path: '/comercial/costos-margenes' },
+    { id: 'comercial-pricing', label: 'Pricing IA', path: '/comercial/pricing-ia' }
+  ]
+};
+
+export default menuFallback;
