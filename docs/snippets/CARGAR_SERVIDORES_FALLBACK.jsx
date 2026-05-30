@@ -3,12 +3,12 @@
 // OBJETIVO: Garantizar que el modal de permisos nunca quede sin opciones
 // =============================================================================
 
-// Guardar/Reemplazar en el componente del Modal de Permisos de Usuarios
-
+// Reemplaza la función original de carga con esta versión blindada
 const cargarServidores = async () => {
     try {
         setIsLoadingServers(true);
-        const response = await api.get('/servidores'); // o la ruta que uses
+        // Ajusta la ruta según tu configuración actual (ej. /api/servidores o /api/unidades-negocio)
+        const response = await api.get('/api/servidores'); 
         
         // Si la API responde bien pero viene vacía (por el interceptor 502)
         if (!response.data || response.data.length === 0) {
@@ -20,7 +20,6 @@ const cargarServidores = async () => {
         console.warn("[FALLBACK] Error al cargar servidores, inyectando lista de respaldo:", error);
         
         // Fallback robusto: Si la API central falla, inyecta los servidores maestros localmente
-        // para que nunca te quedes sin opciones en el modal de permisos.
         const servidoresRespaldo = [
             { id: 130, nombre: "130° MÉRIDA" },
             { id: 131, nombre: "130° QUERÉTARO" },
