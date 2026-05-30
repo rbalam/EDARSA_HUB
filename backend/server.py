@@ -127,28 +127,32 @@ from fastapi.responses import JSONResponse
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Captura excepciones no manejadas para evitar que el contenedor muera."""
-    logging.error(f"[ALERTA CRÍTICA] Fallo no manejado en ruta {request.url.path}: {exc}")
+    """
+    Atrapa cualquier error no manejado en el código para evitar que el contenedor 
+    colapse y cierre las conexiones bruscamente (Error 502).
+    """
+    logging.error(f"[ALERTA CRÍTICA] Fallo no manejado en ruta {request.url.path}: {str(exc)}")
     
-    # Retornamos un 500 controlado con estructura que el Frontend blindado pueda digerir
+    # Retorna un 500 estructurado. El Frontend (ya blindado) leerá la lista vacía 
+    # y usará sus datos de respaldo en lugar de quedarse "pensando".
     return JSONResponse(
         status_code=500,
         content={
-            "detail": "Error interno del servidor. Conexión reciclada.",
-            "data": []  # Asegura que si piden listas (roles, menús), no rompa el frontend
+            "detail": "Error interno del servidor. Proceso recuperado automáticamente.",
+            "data": [] 
         }
     )
 
 # ==========================================
-# HEALTH CHECK GENERAL (Para auto-reinicio del contenedor)
+# HEALTH CHECK GENERAL (Monitoreo de Infraestructura)
 # ==========================================
 @app.get("/api/health")
 async def health_check():
     """
-    Endpoint que el balanceador de carga o Docker pingeará cada 10 segundos.
-    Si esto no responde, la infraestructura reiniciará el nodo automáticamente.
+    Endpoint de salud vital. La infraestructura (Docker/Kubernetes) hará ping aquí.
+    Si el servidor se bloquea, la infraestructura lo detectará y reiniciará el nodo.
     """
-    return {"status": "operativo", "sistema": "EDARSA HUB"}
+    return {"status": "operativo", "sistema": "EDARSA HUB", "version": "1.0"}
 
 # ============= SEGURIDAD Y AUTENTICACIÓN =============
 # 
