@@ -34,25 +34,16 @@ const BarraLateral = ({ onClose }) => {
       try {
         const response = await api.get('/sistema/menus/usuario');
         clearTimeout(timeoutId);
-        
-        if (response.data?.modulos && response.data.modulos.length > 0) {
-          setMenus(response.data.modulos);
-          setUseFallback(false);
-        } else {
-          // API respondió pero sin datos útiles
-          setMenus(menuFallback);
-          setUseFallback(true);
-        }
+        setMenus(response.data);
+        setIsLoading(false);
       } catch (error) {
         clearTimeout(timeoutId);
-        console.warn('[BarraLateral] Error API (502/Red) - Usando fallback:', error.message);
+        console.error("[FALLBACK] Error 502 detectado, cargando modo emergencia:", error);
         
-        // CRÍTICO: Renderizar inmediatamente el fallback y detener la carga
-        setMenus(menuFallback);
+        // Fuerza la renderización del respaldo inmediatamente
+        setMenus(menuFallback); 
         setUseFallback(true);
-      } finally {
-        // SIEMPRE detener el loading para evitar pantalla congelada
-        setIsLoading(false);
+        setIsLoading(false); // Rompe el bucle de "Consultando unidades..."
       }
     };
 
