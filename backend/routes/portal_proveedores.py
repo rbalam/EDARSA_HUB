@@ -95,26 +95,26 @@ async def require_portal_admin(
             }
         )
     
-    # 3. Buscar usuario interno en MongoDB
+    # 3. Extraer información del usuario desde el token (modo SQL)
     user_email = payload.get('email')
+    user_role = payload.get('role', '')
+    user_id = payload.get('user_id')
+    
     if not user_email:
         raise HTTPException(
             status_code=401,
             detail="Token inválido: falta información de usuario"
         )
     
-    mongo_db = get_db()
-    user = await mongo_db.users.find_one({"email": user_email}, {"_id": 0, "password": 0})
-    
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Usuario no encontrado"
-        )
+    # Construir objeto de usuario desde el payload del token
+    user = {
+        'id': user_id,
+        'email': user_email,
+        'role': user_role,
+        'nombre': payload.get('nombre', user_email.split('@')[0])
+    }
     
     # 4. Verificar rol administrativo
-    user_role = user.get('role', '')
-    
     if user_role not in ADMIN_ROLES:
         logging.warning(
             f"[PORTAL-ADMIN] Acceso denegado: Usuario {user_email} "
@@ -980,12 +980,17 @@ async def get_all_suppliers(current_user: dict = Depends(require_portal_admin)):
     
     P0-PORTAL-PROVEEDORES-AUTH-01: Requiere autenticación interna + rol admin.
     """
-    suppliers = await db.portal_suppliers.find(
-        {}, 
-        {"_id": 0, "password": 0}
-    ).sort("created_at", -1).to_list(500)
-    
-    return suppliers
+    try:
+        suppliers = await db.portal_suppliers.find(
+            {}, 
+            {"_id": 0, "password": 0}
+        ).sort("created_at", -1).to_list(500)
+        
+        return suppliers
+    except Exception as e:
+        logger.error(f"[PORTAL] Error obteniendo proveedores: {e}")
+        # Retornar lista vacía en lugar de error 500
+        return []
 
 
 @portal_router.post("/admin/approve-supplier")

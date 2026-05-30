@@ -72,11 +72,17 @@ def init_security(database) -> None:
     Debe llamarse desde server.py después de crear la conexión.
     
     Args:
-        database: Instancia de AsyncIOMotorDatabase
+        database: Instancia de AsyncIOMotorDatabase o None para usar stub
     """
     global _db
-    _db = database
-    logging.info("[SECURITY] Módulo de seguridad inicializado con conexión a MongoDB")
+    if database is None:
+        # Usar stub database cuando se pasa None (modo 100% SQL)
+        from core.mongo_stub import get_stub_database
+        _db = get_stub_database()
+        logging.info("[SECURITY] Módulo de seguridad inicializado con StubDatabase (modo SQL)")
+    else:
+        _db = database
+        logging.info("[SECURITY] Módulo de seguridad inicializado con conexión a MongoDB")
 
 
 def get_db():
