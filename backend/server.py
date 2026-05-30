@@ -154,6 +154,67 @@ async def health_check():
     """
     return {"status": "operativo", "sistema": "EDARSA HUB", "version": "1.0"}
 
+# ==========================================
+# ENDPOINTS FALLBACK TABLERO EJECUTIVO (EDARSA HUB)
+# Garantizan respuesta aunque SQL Server esté caído
+# ==========================================
+
+@app.get("/api/comercial/tablero-ejecutivo-fallback")
+async def tablero_ejecutivo_fallback():
+    """
+    Endpoint fallback con datos EDARSA mockeados.
+    Usado cuando SQL Server no responde.
+    """
+    return {
+        "success": True,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "periodo": {"mes": 5, "anio": 2026, "dias_transcurridos": 30, "dias_mes": 31},
+        "totales": {
+            "ventas": 15710000,
+            "pax": 15008,
+            "cheques": 5223,
+            "cheque_promedio": 3010,
+            "pax_prom": 1050,
+            "proyeccion": 16809700,
+            "var_vs_mes_ant": 1.9,
+            "var_vs_año_ant": 9.6
+        },
+        "unidades": [
+            {"id": "cienfuegos", "unidad": "CIENFUEGOS", "ventas": 4130000, "proyeccion": 4410000, "var_vs_mes_ant": 8.8, "var_vs_año_ant": -14.5, "pax": 3177, "cheques": 1052, "cheque_promedio": 3926, "pax_promedio": 1300, "data_status": "DATA_OK"},
+            {"id": "merida", "unidad": "130° MERIDA", "ventas": 3570000, "proyeccion": 3820000, "var_vs_mes_ant": -12.7, "var_vs_año_ant": -15.6, "pax": 2314, "cheques": 794, "cheque_promedio": 4496, "pax_promedio": 1543, "data_status": "DATA_OK"},
+            {"id": "queretaro", "unidad": "130° QUERETARO", "ventas": 3460000, "proyeccion": 3700000, "var_vs_mes_ant": 4.5, "var_vs_año_ant": -0.9, "pax": 2067, "cheques": 704, "cheque_promedio": 4915, "pax_promedio": 1674, "data_status": "DATA_OK"},
+            {"id": "estelar", "unidad": "LA ESTELAR", "ventas": 2470000, "proyeccion": 2640000, "var_vs_mes_ant": 2.3, "var_vs_año_ant": None, "pax": 4520, "cheques": 1658, "cheque_promedio": 1490, "pax_promedio": 546, "data_status": "DATA_OK"},
+            {"id": "origen", "unidad": "ORIGEN", "ventas": 2070000, "proyeccion": 2220000, "var_vs_mes_ant": 15.6, "var_vs_año_ant": 16.6, "pax": 2930, "cheques": 1015, "cheque_promedio": 2039, "pax_promedio": 706, "data_status": "DATA_OK"}
+        ],
+        "_fallback": True
+    }
+
+@app.get("/api/v2/comercial/dashboard-fallback")
+async def dashboard_comercial_v2_fallback():
+    """
+    Endpoint V2 fallback con datos EDARSA mockeados.
+    """
+    return {
+        "success": True,
+        "data": {
+            "consolidatedSales": 15710000,
+            "growthMonth": 1.9,
+            "growthYear": 9.6,
+            "paxTotal": 15008,
+            "paxAvg": 1050,
+            "tickets": 5223,
+            "ticketAvg": 3010,
+            "units": [
+                {"id": "cienfuegos", "name": "CIENFUEGOS", "sales": 4130000, "projection": 4410000, "growthMonth": 8.8, "growthYear": -14.5, "pax": 3177, "tickets": 1052},
+                {"id": "merida", "name": "130° MERIDA", "sales": 3570000, "projection": 3820000, "growthMonth": -12.7, "growthYear": -15.6, "pax": 2314, "tickets": 794},
+                {"id": "queretaro", "name": "130° QUERETARO", "sales": 3460000, "projection": 3700000, "growthMonth": 4.5, "growthYear": -0.9, "pax": 2067, "tickets": 704},
+                {"id": "estelar", "name": "LA ESTELAR", "sales": 2470000, "projection": 2640000, "growthMonth": 2.3, "growthYear": None, "pax": 4520, "tickets": 1658},
+                {"id": "origen", "name": "ORIGEN", "sales": 2070000, "projection": 2220000, "growthMonth": 15.6, "growthYear": 16.6, "pax": 2930, "tickets": 1015}
+            ]
+        },
+        "_fallback": True
+    }
+
 # ============= SEGURIDAD Y AUTENTICACIÓN =============
 # 
 # FASE 2 DEL REFACTOR MODULAR (Diciembre 2025):
