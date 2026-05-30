@@ -1,34 +1,36 @@
 // =============================================================================
-// SNIPPET: CARGAR SERVIDORES CON FALLBACK ROBUSTO
-// OBJETIVO: Garantizar que el modal de permisos nunca quede sin opciones
+// SNIPPET: CARGAR SERVIDORES CON CACHÉ DINÁMICO DE RESPALDO
+// OBJETIVO: Usar datos reales cacheados en lugar de lista hardcodeada
 // =============================================================================
 
-// Reemplaza la función original de carga con esta versión blindada
+// Código Limpio: Carga dinámica con Caché de Respaldo
 const cargarServidores = async () => {
     try {
         setIsLoadingServers(true);
-        // Ajusta la ruta según tu configuración actual (ej. /api/servidores o /api/unidades-negocio)
+        // Intenta la conexión normal
         const response = await api.get('/api/servidores'); 
         
-        // Si la API responde bien pero viene vacía (por el interceptor 502)
         if (!response.data || response.data.length === 0) {
             throw new Error("API retornó lista vacía (Posible Error 502)");
         }
         
+        // Si hay éxito, guardamos la información real y actualizada en la memoria oculta
+        localStorage.setItem('cache_servidores_dinamico', JSON.stringify(response.data));
         setServidores(response.data);
+
     } catch (error) {
-        console.warn("[FALLBACK] Error al cargar servidores, inyectando lista de respaldo:", error);
+        console.warn("[SISTEMA] Fallo de red. Cargando unidades desde el caché dinámico local.");
         
-        // Fallback robusto: Si la API central falla, inyecta los servidores maestros localmente
-        const servidoresRespaldo = [
-            { id: 130, nombre: "130° MÉRIDA" },
-            { id: 131, nombre: "130° QUERÉTARO" },
-            { id: 132, nombre: "CIENFUEGOS" },
-            { id: 133, nombre: "ORIGEN" },
-            { id: 134, nombre: "LA ESTELAR" }
-        ];
+        // Solución limpia: Leemos el caché dinámico en lugar de una lista hardcodeada
+        const cachéLocal = localStorage.getItem('cache_servidores_dinamico');
         
-        setServidores(servidoresRespaldo);
+        if (cachéLocal) {
+            setServidores(JSON.parse(cachéLocal));
+        } else {
+            // Solo si el usuario nunca ha cargado la página con éxito antes
+            setServidores([]);
+            console.error("No hay datos en caché para mostrar las unidades.");
+        }
     } finally {
         setIsLoadingServers(false);
     }
