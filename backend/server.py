@@ -116,8 +116,39 @@ from core.mongo_stub import get_stub_database
 db = get_stub_database()
 logger.info("[DB] Sistema funcionando 100% SQL Server - MongoDB ELIMINADO (usando StubDatabase)")
 
-app = FastAPI()
+app = FastAPI(title="EDARSA HUB API")
 api_router = APIRouter(prefix="/api")
+
+# ==========================================
+# ESCUDO GLOBAL CONTRA CRASHEOS (Evita Errores 502)
+# ==========================================
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Captura excepciones no manejadas para evitar que el contenedor muera."""
+    logging.error(f"[ALERTA CRÍTICA] Fallo no manejado en ruta {request.url.path}: {exc}")
+    
+    # Retornamos un 500 controlado con estructura que el Frontend blindado pueda digerir
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Error interno del servidor. Conexión reciclada.",
+            "data": []  # Asegura que si piden listas (roles, menús), no rompa el frontend
+        }
+    )
+
+# ==========================================
+# HEALTH CHECK GENERAL (Para auto-reinicio del contenedor)
+# ==========================================
+@app.get("/api/health")
+async def health_check():
+    """
+    Endpoint que el balanceador de carga o Docker pingeará cada 10 segundos.
+    Si esto no responde, la infraestructura reiniciará el nodo automáticamente.
+    """
+    return {"status": "operativo", "sistema": "EDARSA HUB"}
 
 # ============= SEGURIDAD Y AUTENTICACIÓN =============
 # 
