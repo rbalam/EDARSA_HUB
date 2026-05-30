@@ -1,13 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChefHat, RefreshCw, Utensils, Clock, Users } from 'lucide-react';
 
-const ComederoPage = () => {
+const ComanderoPage = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Comedero</h1>
-          <p className="text-zinc-500">Módulo Satélite - Gestión de Comedor Industrial</p>
+          <h1 className="text-2xl font-bold text-zinc-900">Comandero</h1>
+          <p className="text-zinc-500">Módulo Satélite - Sistema de Comandas y Gestión de Piso</p>
         </div>
       </div>
 
@@ -64,9 +64,9 @@ const ComederoPage = () => {
       <Card>
         <CardContent className="py-16 text-center">
           <ChefHat className="h-16 w-16 mx-auto text-zinc-300 mb-4" />
-          <h3 className="text-xl font-semibold text-zinc-700 mb-2">Módulo Comedero</h3>
+          <h3 className="text-xl font-semibold text-zinc-700 mb-2">Módulo Comandero</h3>
           <p className="text-zinc-500 max-w-md mx-auto">
-            Sistema de gestión de comedor industrial. Integración con control de asistencia y nómina de EDARSA HUB.
+            Sistema de comandas y gestión de piso de ventas. Integración con KDS y control de mesas de EDARSA HUB.
           </p>
         </CardContent>
       </Card>
@@ -74,4 +74,4 @@ const ComederoPage = () => {
   );
 };
 
-export default ComederoPage;
+export default ComanderoPage;

@@ -35,7 +35,7 @@ import CRMDashboard from '@/pages/crm/CRMDashboard';
 
 // Módulos Satélites
 import SuperCajaPage from '@/pages/satelites/SuperCajaPage';
-import ComederoPage from '@/pages/satelites/ComederoPage';
+import ComanderoPage from '@/pages/satelites/ComanderoPage';
 import LeadsPage from '@/pages/crm/LeadsPage';
 import OportunidadesPage from '@/pages/crm/OportunidadesPage';
 import PipelinePage from '@/pages/crm/PipelinePage';
@@ -158,7 +158,7 @@ function App() {
             <Route path="admin/configuracion-operativa" element={<ConfiguracionOperativaUnidades />} />
             {/* Módulos Satélites */}
             <Route path="super-caja" element={<SuperCajaPage />} />
-            <Route path="comedero" element={<ComederoPage />} />
+            <Route path="comandero" element={<ComanderoPage />} />
             {/* Redirect /operativo → /reportes (Dashboard Operativo ahora es tab dentro de Operaciones) */}
             <Route path="operativo" element={<Navigate to="/reportes?tab=operativo" replace />} />
           </Route>

@@ -603,10 +603,10 @@ const Layout = () => {
         codigo: 'SUPER_CAJA_SAT'
       },
       {
-        name: 'Comedero',
-        href: '/comedero',
+        name: 'Comandero',
+        href: '/comandero',
         icon: ChefHat,
-        codigo: 'COMEDERO_01'
+        codigo: 'COMANDERO_01'
       }
     ];
     
