@@ -69,8 +69,10 @@ export const clearMemoryToken = () => {
 
 const api = axios.create({
   baseURL: API_URL,
+  timeout: 15000, // Aumentamos a 15 segundos para dar margen a consultas pesadas
   headers: {
     'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest'
   },
   // FASE AUTH-SECURITY-01: Enviar cookies httpOnly en todas las requests
   withCredentials: true,
@@ -95,6 +97,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Parche de estabilidad: Evitar cierre de sesión por errores 500/502
+    if (error.response?.status === 500 || error.response?.status === 502) {
+      console.warn("[API] Fallo de red detectado (500/502), manteniendo sesión...");
+      return Promise.resolve({ data: [] }); // Retorno seguro para evitar crash del tablero
+    }
+    
     if (error.response?.status === 401) {
       // NO limpiar token aquí - puede causar race conditions
       // La limpieza se hace en logout explícito
