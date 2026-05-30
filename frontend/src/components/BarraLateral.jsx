@@ -18,32 +18,34 @@ const BarraLateral = ({ onClose }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [useFallback, setUseFallback] = useState(false);
 
-  // 2. CARGA DE MENÚS CON FALLBACK AUTOMÁTICO
+  // 2. CARGA DE MENÚS CON FALLBACK AUTOMÁTICO Y TIMEOUT
   useEffect(() => {
     const cargarMenus = async () => {
-      // Timeout de seguridad: Si no responde en 5 segundos, usar fallback
-      const timeoutId = setTimeout(() => {
-        if (isLoading) {
-          console.warn('[BarraLateral] Timeout - Cargando fallback');
-          setMenus(menuFallback);
-          setUseFallback(true);
-          setIsLoading(false);
-        }
-      }, 5000);
+      setIsLoading(true);
+      
+      // Definimos un timeout de seguridad para forzar el fallback si la API se cuelga
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout de API')), 5000)
+      );
 
       try {
-        const response = await api.get('/sistema/menus/usuario');
-        clearTimeout(timeoutId);
-        setMenus(response.data);
-        setIsLoading(false);
-      } catch (error) {
-        clearTimeout(timeoutId);
-        console.error("[FALLBACK] Error 502 detectado, cargando modo emergencia:", error);
+        // Intentamos la petición con race para asegurar que no se quede pensando
+        const response = await Promise.race([
+          api.get('/sistema/menus/usuario'),
+          timeoutPromise
+        ]);
         
-        // Fuerza la renderización del respaldo inmediatamente
-        setMenus(menuFallback); 
+        setMenus(response.data);
+        setUseFallback(false);
+      } catch (error) {
+        console.error("Fallo en API (502/Timeout). Ejecutando fallback de emergencia:", error);
+        
+        // FORZADO: Aplicamos el menuFallback inmediatamente
+        setMenus(menuFallback);
         setUseFallback(true);
-        setIsLoading(false); // Rompe el bucle de "Consultando unidades..."
+      } finally {
+        // Garantizamos que el loader se desactive SIEMPRE
+        setIsLoading(false);
       }
     };
 
