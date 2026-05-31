@@ -1,5 +1,5 @@
 -- ======================================================================================
--- SCRIPT DE BASE DE DATOS: CORRECCION_SISTEMA_MENUS_Y_FALLBACKS.sql
+-- SCRIPT DE MIGRACIÓN: CORRECCION_SISTEMA_MENUS_Y_FALLBACKS.sql
 -- PROYECTO: EDARSA HUB ERP - CONFIGURACIÓN DE MENÚS DINÁMICOS SQL-FIRST
 -- MOTOR: Microsoft SQL Server 2012+ / Azure SQL (Base de datos: EDARSAHUB)
 -- OBJETIVO: Prevención de errores HTTP 403 y recuperación del flujo de menús en el ERP
@@ -8,7 +8,23 @@
 USE [EDARSAHUB];
 GO
 
--- 1. VERIFICAR EXISTENCIA Y CREAR LA TABLA DE CONFIGURACIÓN DE MENÚS SISTEMA
+-- 1. VERIFICAR EXISTENCIA Y CREAR LA TABLA DE LOGS DE AUDITORÍA SI NO EXISTE
+IF OBJECT_ID('dbo.Sync_Logs', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Sync_Logs (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        service NVARCHAR(100) NOT NULL, 
+        type NVARCHAR(20) NOT NULL,    
+        message NVARCHAR(MAX) NOT NULL,
+        timestamp DATETIME DEFAULT GETDATE(),
+        operador NVARCHAR(100) DEFAULT 'SISTEMA_AUTOGESTIVO_FALLBACK'
+    );
+    CREATE NONCLUSTERED INDEX IX_Sync_Logs_Timestamp_Service ON dbo.Sync_Logs (timestamp DESC, service);
+    PRINT 'Tabla de auditoría [Sync_Logs] creada exitosamente.';
+END
+GO
+
+-- 2. VERIFICAR EXISTENCIA Y CREAR LA TABLA DE CONFIGURACIÓN DE MENÚS SISTEMA
 IF OBJECT_ID('dbo.Sync_Menus', 'U') IS NULL
 BEGIN
     CREATE TABLE dbo.Sync_Menus (
@@ -24,13 +40,9 @@ BEGIN
     );
     PRINT 'Tabla de configuración de menús [Sync_Menus] creada exitosamente.';
 END
-ELSE
-BEGIN
-    PRINT 'La tabla [Sync_Menus] ya existe en el esquema.';
-END
 GO
 
--- 2. LIMPIAR E INSERTAR MENÚS PREPARADOS DE ALTA COHERENCIA OPERACIONAL
+-- 3. INSERTAR MENÚS PREPARADOS DE ALTA COHERENCIA OPERACIONAL
 TRUNCATE TABLE dbo.Sync_Menus;
 GO
 
@@ -45,30 +57,25 @@ VALUES
 PRINT 'Menús del ERP cargados exitosamente de forma SQL-First.';
 GO
 
--- 3. INTEGRAR REGISTRO DE AUDITORÍA EN LA BITÁCORA CENTRAL (Sync_Logs)
-IF OBJECT_ID('dbo.Sync_Logs', 'U') IS NOT NULL
-BEGIN
-    INSERT INTO dbo.Sync_Logs (service, type, message, timestamp, operador)
-    VALUES (
-        'SISTEMA_MENUS_DEPLOY',
-        'SUCCESS',
-        N'Implantación segura de menús en de base de datos Sync_Menus y mapeo de endpoints de la API /api/sistema/menus/usuario.',
-        GETDATE(),
-        N'SISTEMA_ADMINISTRATIVO_PRIME'
-    );
-    PRINT 'Suceso registrado en la bitácora Sync_Logs.';
-END
+-- 4. INTEGRAR REGISTRO DE AUDITORÍA EN LA BITÁCORA CENTRAL (Sync_Logs)
+INSERT INTO dbo.Sync_Logs (service, type, message, timestamp, operador)
+VALUES (
+    'SISTEMA_MENUS_DEPLOY',
+    'SUCCESS',
+    N'Implantación segura de menús en de base de datos Sync_Menus y mapeo de endpoints de la API /api/sistema/menus/usuario.',
+    GETDATE(),
+    N'SISTEMA_ADMINISTRATIVO_PRIME'
+);
 GO
 
--- 4. CONSULTA DE VERIFICACIÓN / CONTROL DE CALIDAD
+-- 5. CONSULTA DE VERIFICACIÓN / CONTROL DE CALIDAD
 SELECT 
     id,
     titulo AS [Módulo],
     icon AS [Ícono Lucide],
-    route AS [Ruta React],
+    route AS [Ruta ERP],
     active AS [Estado Activo],
-    orden AS [Orden de Despliegue],
-    rol_permitido AS [Permisos Requeridos]
+    orden AS [Orden de Despliegue]
 FROM 
     dbo.Sync_Menus
 ORDER BY 
