@@ -1,90 +1,112 @@
--- ==================================================================================
--- SCRIPT DE OPTIMIZACIÓN: INFRAESTRUCTURA DE RESPALDO Y CACHÉ EDARSAHUB
--- OBJETIVO: Reducir consumo de créditos en Emergent.sh evitando consultas duplicadas.
--- PUERTO DE RED: 1433 (Seguro por TLS 1.3)
--- ==================================================================================
+-- ======================================================================================
+-- SCRIPT DE BASE DE DATOS: SYNC_RESPONSE_CACHE_FINOPS.sql
+-- PROYECTO: EDARSA HUB ERP - ESCUDO DE MITIGACIÓN Y OPTIMIZACIÓN DE COSTOS FINOPS (SHIELD)
+-- MOTOR: Microsoft SQL Server 2019+ (Directo Puerto 1433 - Base de datos EDARSAHUB)
+-- ======================================================================================
 
-IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Sync_Response_Cache]') AND type in (N'U'))
+USE [EDARSAHUB];
+GO
+
+IF OBJECT_ID('dbo.Sync_Response_Cache', 'U') IS NULL
 BEGIN
-    CREATE TABLE [dbo].[Sync_Response_Cache] (
-        [cache_id] UNIQUEIDENTIFIER DEFAULT NEWID() PRIMARY KEY,
-        [request_hash] VARCHAR(64) NOT NULL UNIQUE, -- SHA256 del query / petición
-        [endpoint_source] VARCHAR(150) NOT NULL,    -- Ruta o API invocadora
-        [cached_data] NVARCHAR(MAX) NOT NULL,      -- Respuesta serializada en JSON
-        [tokens_saved] INT DEFAULT 0,               -- Mapeo estimado de créditos FinOps ahorrados
-        [expires_at] DATETIME NOT NULL,             -- Límite de tiempo de vigencia
-        [last_checked] DATETIME DEFAULT GETDATE()
+    CREATE TABLE dbo.Sync_Response_Cache (
+        RequestHash VARCHAR(64) NOT NULL PRIMARY KEY, -- Hash único (SHA-256) del request/prompt/query
+        ServiceSource VARCHAR(64) NOT NULL,            -- GEMINI_API, VTIGER_CRM_QUERY, GPT_4O
+        RequestPayload NVARCHAR(MAX) NOT NULL,
+        ResponsePayload NVARCHAR(MAX) NOT NULL,
+        TokenCostFraction NUMERIC(10, 6) DEFAULT 0.00,  -- Costo monetario real evitado
+        HitCount INT DEFAULT 1,
+        ExpiresAt DATETIME NOT NULL,                   -- Control de expiración (TTL)
+        CreatedAt DATETIME DEFAULT GETDATE(),
+        LastHitAt DATETIME DEFAULT GETDATE()
     );
-    
-    PRINT '✅ Tabla [Sync_Response_Cache] creada exitosamente en EDARSAHUB.';
-END
-ELSE
-BEGIN
-    PRINT 'ℹ️ La infraestructura de caché ya existe en este servidor.';
+    CREATE NONCLUSTERED INDEX IX_ResponseCache_Expires ON dbo.Sync_Response_Cache (ExpiresAt);
 END
 GO
 
--- Índice de aceleración por Hash de Petición
-IF NOT EXISTS (SELECT name FROM sys.indexes WHERE name = N'IX_Sync_Cache_RequestHash')
+IF OBJECT_ID('dbo.Sync_Token_Ledger', 'U') IS NULL
 BEGIN
-    CREATE NONCLUSTERED INDEX [IX_Sync_Cache_RequestHash] 
-    ON [dbo].[Sync_Response_Cache] ([request_hash]) 
-    INCLUDE ([cached_data], [expires_at]);
-    
-    PRINT '✅ Índice [IX_Sync_Cache_RequestHash] configurado.';
+    CREATE TABLE dbo.Sync_Token_Ledger (
+        LedgerID INT IDENTITY(1,1) PRIMARY KEY,
+        OperadorID VARCHAR(64) DEFAULT 'sk-emergent-universal-gate',
+        ConsuDate DATE DEFAULT CAST(GETDATE() AS DATE),
+        TokensInput INT DEFAULT 0,
+        TokensOutput INT DEFAULT 0,
+        EstimatedCostUSD NUMERIC(12, 4) DEFAULT 0.0000,
+        AhorroAcumuladoUSD NUMERIC(12, 4) DEFAULT 0.0000,
+        HitRatioPercent NUMERIC(5, 2) DEFAULT 0.00
+    );
+    CREATE UNIQUE NONCLUSTERED INDEX UX_TokenLedger_Date ON dbo.Sync_Token_Ledger (OperadorID, ConsuDate);
 END
 GO
 
--- Procedimiento Almacenado para verificar y limpiar caché de manera rápida
-CREATE OR ALTER PROCEDURE [dbo].[GetOrSetCacheData]
-    @RequestQuery NVARCHAR(MAX),
-    @EndpointSource VARCHAR(150),
-    @PayloadJSON NVARCHAR(MAX),
-    @TTLMinutes INT = 15,
-    @ResultJSON NVARCHAR(MAX) OUTPUT,
-    @IsHit BIT OUTPUT
+-- COMPROBAR CACHÉ (Evita la ejecución e insolvencia si ya está guardado)
+IF OBJECT_ID('dbo.sp_CheckAndRetrieveCache', 'P') IS NOT NULL
+BEGIN
+    DROP PROCEDURE dbo.sp_CheckAndRetrieveCache;
+END
+GO
+
+CREATE PROCEDURE dbo.sp_CheckAndRetrieveCache
+    @RequestHash VARCHAR(64),
+    @ServiceSource VARCHAR(64)
 AS
 BEGIN
     SET NOCOUNT ON;
+    DECLARE @Now DATETIME = GETDATE();
     
-    -- Generar Hash único SHA256 de forma segura sobre el query de entrada
-    DECLARE @HashHex VARCHAR(64);
-    SET @HashHex = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @RequestQuery), 2);
-    
-    DECLARE @CurrentTime DATETIME = GETDATE();
-    
-    -- 1. Intentar recuperar del caché si sigue vigente
-    IF EXISTS (SELECT 1 FROM [dbo].[Sync_Response_Cache] WHERE [request_hash] = @HashHex AND [expires_at] > @CurrentTime)
+    IF EXISTS (
+        SELECT 1 FROM dbo.Sync_Response_Cache WITH (UPDLOCK) 
+        WHERE RequestHash = @RequestHash AND ExpiresAt > @Now
+    )
     BEGIN
-        SELECT @ResultJSON = [cached_data] 
-        FROM [dbo].[Sync_Response_Cache] 
-        WHERE [request_hash] = @HashHex;
+        UPDATE dbo.Sync_Response_Cache
+        SET HitCount = HitCount + 1, LastHitAt = @Now
+        WHERE RequestHash = @RequestHash;
         
-        SET @IsHit = 1;
+        DECLARE @SavedCost NUMERIC(12, 4);
+        SELECT @SavedCost = CAST(TokenCostFraction AS NUMERIC(12, 4)) FROM dbo.Sync_Response_Cache WHERE RequestHash = @RequestHash;
         
-        -- Sumar ahorro de tokens simulado
-        UPDATE [dbo].[Sync_Response_Cache]
-        SET [tokens_saved] = [tokens_saved] + 2500, -- Promedio de tokens por consulta reducida
-            [last_checked] = @CurrentTime
-        WHERE [request_hash] = @HashHex;
+        UPDATE dbo.Sync_Token_Ledger
+        SET AhorroAcumuladoUSD = AhorroAcumuladoUSD + @SavedCost
+        WHERE ConsuDate = CAST(@Now AS DATE);
+        
+        -- Obtener Payload sin generar costo
+        SELECT 1 AS CacheStatus, ResponsePayload FROM dbo.Sync_Response_Cache WHERE RequestHash = @RequestHash;
     END
     ELSE
     BEGIN
-        -- 2. Guardar o refrescar caché con el nuevo payload
-        SET @IsHit = 0;
-        SET @ResultJSON = @PayloadJSON;
-        
-        -- Registrar nueva vida de expiración
-        DECLARE @ExpireTime DATETIME = DATEADD(MINUTE, @TTLMinutes, @CurrentTime);
-        
-        MERGE [dbo].[Sync_Response_Cache] AS Target
-        USING (SELECT @HashHex AS [request_hash]) AS Source
-        ON (Target.[request_hash] = Source.[request_hash])
-        WHEN MATCHED THEN
-            UPDATE SET [cached_data] = @PayloadJSON, [expires_at] = @ExpireTime, [last_checked] = @CurrentTime
-        WHEN NOT MATCHED THEN
-            INSERT ([request_hash], [endpoint_source], [cached_data], [expires_at])
-            VALUES (@HashHex, @EndpointSource, @PayloadJSON, @ExpireTime);
+        SELECT 0 AS CacheStatus, NULL AS ResponsePayload;
     END
+END
+GO
+
+-- GUARDAR NUEVA RESPUESTA EN CACHÉ
+IF OBJECT_ID('dbo.sp_RegisterResponseAndCache', 'P') IS NOT NULL
+BEGIN
+    DROP PROCEDURE dbo.sp_RegisterResponseAndCache;
+END
+GO
+
+CREATE PROCEDURE dbo.sp_RegisterResponseAndCache
+    @RequestHash VARCHAR(64),
+    @ServiceSource VARCHAR(64),
+    @RequestPayload NVARCHAR(MAX),
+    @ResponsePayload NVARCHAR(MAX),
+    @TokenCostFraction NUMERIC(10, 6),
+    @CacheDurationMinutes INT = 120
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @ExpiresAt DATETIME = DATEADD(MINUTE, @CacheDurationMinutes, GETDATE());
+    
+    MERGE dbo.Sync_Response_Cache AS Target
+    USING (SELECT @RequestHash AS RequestHash) AS Source
+    ON (Target.RequestHash = Source.RequestHash)
+    WHEN MATCHED THEN
+        UPDATE SET ResponsePayload = @ResponsePayload, ExpiresAt = @ExpiresAt, TokenCostFraction = @TokenCostFraction, LastHitAt = GETDATE()
+    WHEN NOT MATCHED THEN
+        INSERT (RequestHash, ServiceSource, RequestPayload, ResponsePayload, TokenCostFraction, HitCount, ExpiresAt, CreatedAt, LastHitAt)
+        VALUES (@RequestHash, @ServiceSource, @RequestPayload, @ResponsePayload, @TokenCostFraction, 1, @ExpiresAt, GETDATE(), GETDATE());
 END
 GO
