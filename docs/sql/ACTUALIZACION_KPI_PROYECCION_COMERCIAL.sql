@@ -2,17 +2,8 @@
 -- SCRIPT DE BASE DE DATOS: ACTUALIZACION_KPI_PROYECCION_COMERCIAL.sql
 -- PROYECTO: EDARSA HUB ERP - SISTEMA DE ALTA DISPONIBILIDAD COMERCIAL
 -- MOTOR: Microsoft SQL Server 2019+ / Azure SQL (Base de datos: EDARSAHUB)
--- SOLICITADO POR: Directivo Comercial EDARSA Hub
--- DESTINATARIO: Ingenieros de Integración / emergent.sh (soporte@emergent.sh)
--- FECHA: 31 de Mayo, 2026
--- ======================================================================================
--- DESCRIPCIÓN:
--- Corrige el cálculo de la proyección de ventas, implementando una fórmula lineal activa
--- en lugar de una igualdad estática 1:1.
---
--- FÓRMULA SOLICITADA POR EL DIRECTIVO:
--- Proyección = (Ventas Reales / Días del Mes con Ventas) * Días Totales del Mes
--- Para Mayo 2026: (Ventas Reales / 30) * 31
+-- DESCRIPCIÓN: Actualiza el cálculo de proyección de ventas con la fórmula lineal
+--              corregida: (Ventas Reales / Días con Ventas) * Días Totales del Mes.
 -- ======================================================================================
 
 USE [EDARSAHUB];
@@ -23,21 +14,43 @@ BEGIN TRANSACTION;
 
 BEGIN TRY
 
-    -- 1. Declaración de Variables Auxiliares con Precisión Decimal
-    DECLARE @DiasConVentas_Mayo DECIMAL(18, 4) = 30.0000;
-    DECLARE @DiasTotales_Mayo DECIMAL(18, 4) = 31.0000;
+    -- 1. Declaración de Variables Auxiliares Ajustables (Parámetros)
+    DECLARE @MesSeleccionado NVARCHAR(20) = N'Mayo';
+    DECLARE @AnioSeleccionado INT = 2026;
+    DECLARE @DiasConVentas DECIMAL(18, 4) = 30.0000; -- Días transcurridos con actividad real
 
-    -- 2. Verificación de existencia de las tablas y actualización de registros
+    -- 2. Traducción de nombre de mes a número índice (1-12)
+    DECLARE @NumeroMes INT = 
+        CASE LOWER(LTRIM(RTRIM(@MesSeleccionado)))
+            WHEN 'enero'      THEN 1
+            WHEN 'febrero'    THEN 2
+            WHEN 'marzo'      THEN 3
+            WHEN 'abril'      THEN 4
+            WHEN 'mayo'       THEN 5
+            WHEN 'junio'      THEN 6
+            WHEN 'julio'      THEN 7
+            WHEN 'agosto'     THEN 8
+            WHEN 'septiembre' THEN 9
+            WHEN 'oktubre'    THEN 10
+            WHEN 'noviembre'  THEN 11
+            WHEN 'diciembre'  THEN 12
+            ELSE MONTH(GETDATE()) -- fallback al mes en curso
+        END;
+
+    -- 3. Cálculo Dinámico de Días Calendario de ese Mes y Año (Soporta Años Bisiestos)
+    DECLARE @DiasTotales DECIMAL(18, 4) = CAST(DAY(EOMONTH(DATEFROMPARTS(@AnioSeleccionado, @NumeroMes, 1))) AS DECIMAL(18, 4));
+
+    -- 4. Verificación de existencia de las tablas y actualización de registros
     IF OBJECT_ID('dbo.Sync_KPI_Ventas_Unidades', 'U') IS NOT NULL
     BEGIN
-        -- Actualización del KPI en la tabla directa de reporte
+        -- Actualización del KPI en la tabla directa de reporte de EDARSA HUB
         UPDATE [dbo].[Sync_KPI_Ventas_Unidades]
         SET 
-            -- Aplicación formal de la fórmula lineal corregida
-            Proyeccion_Ventas = CAST((Ventas_Reales_M / @DiasConVentas_Mayo) * @DiasTotales_Mayo AS DECIMAL(18, 4)),
+            -- Aplicación formal de la fórmula lineal corregida con días dinámicos
+            Proyeccion_Ventas = CAST((Ventas_Reales_M / NULLIF(@DiasConVentas, 0)) * @DiasTotales AS DECIMAL(18, 4)),
             UltimaActualizacion = GETDATE()
         WHERE 
-            Mes = 'Mayo' AND Anio = 2026;
+            Mes = @MesSeleccionado AND Anio = @AnioSeleccionado;
 
         -- Registrar éxito en la bitácora central de auditoría de EDARSA HUB
         IF OBJECT_ID('dbo.Sync_Logs', 'U') IS NOT NULL
@@ -46,7 +59,7 @@ BEGIN TRY
             VALUES (
                 'CORRECCION_KPI_PROYECCION', 
                 'SUCCESS', 
-                'SQL Script de Corrección de KPI aplicado con éxito: Proyección = (Ventas / 30) * 31 para Mayo 2026.', 
+                CONCAT('SQL Script de Corrección de KPI aplicado con éxito para ', @MesSeleccionado, ' ', CAST(@AnioSeleccionado AS VARCHAR(4)), ' (Días con ventas: ', CAST(CAST(@DiasConVentas AS INT) AS VARCHAR(2)), ', Días Totales del Mes: ', CAST(CAST(@DiasTotales AS INT) AS VARCHAR(2)), ').'), 
                 GETDATE()
             );
         END
@@ -55,18 +68,12 @@ BEGIN TRY
     END
     ELSE
     BEGIN
-        -- Alternativa en caso de que las unidades dependan directamente de la caché centralizada
-        IF OBJECT_ID('Comercial.TableroEjecutivoCache', 'U') IS NOT NULL
-        BEGIN
-            PRINT 'No se encontró la tabla de directivas dbo.Sync_KPI_Ventas_Unidades. Procediendo a calibrar Comercial.TableroEjecutivoCache...';
-        END
-        
-        PRINT 'Advertencia: Tabla dbo.Sync_KPI_Ventas_Unidades no encontrada. El script sigue pre-estructurado adecuadamente para su ejecución.';
+        PRINT 'Advertencia: Tabla [Sync_KPI_Ventas_Unidades] no encontrada en esta instancia. Asegúrese de estar en el contexto de EDARSAHUB.';
     END
 
     -- Confirmación segura de la transacción si todo se ejecuta correctamente
     COMMIT TRANSACTION;
-    PRINT 'Transacción confirmada exitosamente. Todos los cambios persistidos.';
+    PRINT 'Transacción confirmada exitosamente. Todos los cambios se han guardado.';
 
 END TRY
 BEGIN CATCH
@@ -79,7 +86,7 @@ BEGIN CATCH
     
     PRINT 'ERROR DETECTADO: ' + @ErrorMsg;
     
-    -- Registrar fallo en la bitácora
+    -- Registrar fallo en la bitácora si existe la tabla
     IF OBJECT_ID('dbo.Sync_Logs', 'U') IS NOT NULL
     BEGIN
         INSERT INTO dbo.Sync_Logs (service, type, message, timestamp)
