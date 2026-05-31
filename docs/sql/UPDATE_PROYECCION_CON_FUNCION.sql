@@ -1,12 +1,12 @@
--- ======================================================================================
--- SCRIPT: UPDATE_PROYECCION_CON_FUNCION.sql
--- Actualiza proyección usando función escalar fn_CalcularProyeccionMensual
--- ======================================================================================
+USE [EDARSAHUB];
+GO
 
--- Actualiza la proyección dinámicamente según el mes y año registrado en cada fila de EDARSA HUB
+-- Actualización dinámica de todos los KPIs del año 2026
 UPDATE [dbo].[Sync_KPI_Ventas_Unidades]
 SET 
+    -- Suponiendo que el periodo evaluado tiene 30 días con ventas registrados (ej. Mayo 2026)
     Proyeccion_Ventas = dbo.fn_CalcularProyeccionMensual(Ventas_Reales_M, 30.00, Mes, Anio),
     UltimaActualizacion = GETDATE()
 WHERE 
     Anio = 2026;
+GO
