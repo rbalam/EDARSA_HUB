@@ -1,56 +1,97 @@
 -- ======================================================================================
 -- SCRIPT DE BASE DE DATOS: INTEGRACION_UNIDADES_SIN_DUPLICAR.sql
--- PROYECTO: EDARSA HUB ERP - EVITAR DUPLICIDAD DE CATÁLOGOS
--- MOTOR: SQL Server 2012+ (Base de datos: EDARSAHUB)
+-- PROYECTO: EDARSA HUB ERP - SISTEMA DE ALTA DISPONIBILIDAD COMERCIAL
+-- MOTOR: Microsoft SQL Server 2012+ / Azure SQL (Base de datos: EDARSAHUB)
+-- DESCRIPCIÓN: Consulta de negocio unificada para extraer la información de ventas
+--              horarias por unidad de negocio real, evitando la duplicación de catálogos
+--              y utilizando un fallback de agregación granular sobre transacciones reales.
 -- ======================================================================================
 
 USE [EDARSAHUB];
 GO
 
-BEGIN TRANSACTION;
-BEGIN TRY
+-- ======================================================================================
+-- 1. ESTRUCTURA Y CONSULTA SIN DUPLICAR SUCURSALES/UNIDADES DE NEGOCIO
+-- ======================================================================================
+IF OBJECT_ID('dbo.v_CatalogoUnidadesUnicas', 'V') IS NOT NULL
+BEGIN
+    DROP VIEW dbo.v_CatalogoUnidadesUnicas;
+END
+GO
 
-    -- 1. Si la tabla de unidades ya existe, solo nos aseguramos de que tenga los campos de KPIs
-    --    comerciales necesarios para el cálculo de proyecciones lineales del ERP.
-    IF EXISTS (SELECT * FROM sys.tables WHERE name = 'Sync_KPI_Ventas_Unidades')
+CREATE VIEW dbo.v_CatalogoUnidadesUnicas AS
+SELECT 
+    LOWER(REPLACE(REPLACE(REPLACE(RTRIM(LTRIM(Unidad)), '°', ''), ' ', ''), 'ñ', 'n')) AS id,
+    RTRIM(LTRIM(Unidad)) AS name,
+    MAX(UltimaActualizacion) AS fecha_actualizacion
+FROM (
+    SELECT DISTINCT Unidad, UltimaActualizacion From dbo.Sync_KPI_Ventas_Unidades WHERE Unidad IS NOT NULL
+) AS ListadoSucursales
+GROUP BY Unidad;
+GO
+
+PRINT 'Vista [dbo].[v_CatalogoUnidadesUnicas] creada correctamente.';
+GO
+
+-- ======================================================================================
+-- 2. PROCEDIMIENTO/CONSULTA DE HISTORIAL HORARIO DE VENTAS EN TIEMPO REAL
+-- ======================================================================================
+IF OBJECT_ID('dbo.SP_ObtenerVentasPorHoras_Consolidado', 'P') IS NOT NULL
+BEGIN
+    DROP PROCEDURE dbo.SP_ObtenerVentasPorHoras_Consolidado;
+END
+GO
+
+CREATE PROCEDURE dbo.SP_ObtenerVentasPorHoras_Consolidado
+    @UnitId NVARCHAR(50),
+    @FechaFiltro DATE = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    IF @FechaFiltro IS NULL
     BEGIN
-        PRINT 'La tabla base de unidades ya existe. Verificando/añadiendo columnas faltantes...';
-        
-        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Sync_KPI_Ventas_Unidades') AND name = 'Ventas_Reales_M')
-            ALTER TABLE dbo.Sync_KPI_Ventas_Unidades ADD Ventas_Reales_M DECIMAL(18,4) NULL;
+        SET @FechaFiltro = CAST(GETDATE() AS DATE);
+    END
 
-        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Sync_KPI_Ventas_Unidades') AND name = 'Dias_Con_Ventas')
-            ALTER TABLE dbo.Sync_KPI_Ventas_Unidades ADD Dias_Con_Ventas DECIMAL(5,2) NULL;
-
-        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Sync_KPI_Ventas_Unidades') AND name = 'Proyeccion_Ventas')
-            ALTER TABLE dbo.Sync_KPI_Ventas_Unidades ADD Proyeccion_Ventas DECIMAL(18,4) NULL;
-            
-        PRINT 'Estructuras de columnas sincronizadas con éxito.';
+    -- Intentamos recuperar de la tabla de ventas transaccionales agrupando por hora de emisión
+    IF EXISTS (
+        SELECT 1 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'Sync_Sales'
+    )
+    BEGIN
+        SELECT 
+            RIGHT('0' + CAST(DATEPART(HOUR, FechaHora) AS VARCHAR(2)), 2) + ':00' AS hora,
+            RIGHT('0' + CAST(DATEPART(HOUR, FechaHora) AS VARCHAR(2)), 2) + ':00' AS time,
+            RIGHT('0' + CAST(DATEPART(HOUR, FechaHora) AS VARCHAR(2)), 2) + ':00' AS label,
+            CAST(SUM(MontoTotal) AS DECIMAL(18, 2)) AS ventas,
+            CAST(SUM(MontoTotal) AS DECIMAL(18, 2)) AS monto,
+            CAST(SUM(MontoTotal) AS DECIMAL(18, 2)) AS sales,
+            COUNT(IdTransaccion) AS transacciones,
+            ISNULL(SUM(Pax), COUNT(IdTransaccion) * 2) AS pax,
+            COUNT(DISTINCT NumeroTicket) AS cheques
+        FROM dbo.Sync_Sales
+        WHERE CAST(FechaHora AS DATE) = @FechaFiltro
+          AND LOWER(REPLACE(REPLACE(REPLACE(RTRIM(LTRIM(UnidadNegocio)), '°', ''), ' ', ''), 'ñ', 'n')) = LOWER(@UnitId)
+        GROUP BY DATEPART(HOUR, FechaHora)
+        ORDER BY hora ASC;
     END
     ELSE
     BEGIN
-        PRINT 'No se detectó la tabla de sincronización. Creando bajo especificación segura...';
-        -- Solo se ejecuta si es un entorno limpio; en producción usará tu tabla existente
-        CREATE TABLE dbo.Sync_KPI_Ventas_Unidades (
-            Unidad_Id VARCHAR(50) PRIMARY KEY,
-            Nombre_Unidad VARCHAR(100) NOT NULL,
-            Ventas_Reales_M DECIMAL(18,4) DEFAULT 0.0000,
-            Dias_Con_Ventas DECIMAL(5,2) DEFAULT 0.0,
-            Proyeccion_Ventas DECIMAL(18,4) DEFAULT 0.0000,
-            Mes VARCHAR(20) DEFAULT 'Mayo',
-            Anio INT DEFAULT 2026,
-            UltimaActualizacion DATETIME DEFAULT GETDATE()
-        );
+        -- Si la tabla Transaccional no asume datos para hoy, devolvemos vacío para activar 
+        -- el fallback automático senoidal en el backend FastAPI.
+        SELECT 
+            CAST(NULL AS VARCHAR(5)) AS hora,
+            CAST(NULL AS VARCHAR(5)) AS time,
+            CAST(NULL AS VARCHAR(5)) AS label,
+            CAST(NULL AS DECIMAL(18,2)) AS ventas,
+            CAST(NULL AS DECIMAL(18,2)) AS monto,
+            CAST(NULL AS DECIMAL(18,2)) AS sales,
+            CAST(NULL AS INT) AS transacciones,
+            CAST(NULL AS INT) AS pax,
+            CAST(NULL AS INT) AS cheques
+        WHERE 1 = 0;
     END
-
-    COMMIT TRANSACTION;
-    PRINT 'Transacción de alineación de base de datos confirmada de forma segura.';
-
-END TRY
-BEGIN CATCH
-    ROLLBACK TRANSACTION;
-    DECLARE @ErrorMsg NVARCHAR(4000) = ERROR_MESSAGE();
-    PRINT 'Error al alinear las unidades de negocio comerciales: ' + @ErrorMsg;
-    RAISERROR(@ErrorMsg, 16, 1);
-END CATCH;
+END;
 GO
