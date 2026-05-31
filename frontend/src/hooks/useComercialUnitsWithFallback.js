@@ -28,7 +28,6 @@ export function useComercialUnitsWithFallback() {
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Prevent caching invalid zeroed states
           const hasRealData = parsed.some((u) => u.ventas > 0 || u.pax > 0);
           if (hasRealData) {
             return parsed;
@@ -58,9 +57,8 @@ export function useComercialUnitsWithFallback() {
   const fetchUnits = async () => {
     setIsLoading(true);
     try {
-      // Fetch with an explicit timeout or default network call
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second strict SLA threshold
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8-second SLA threshold
 
       const res = await fetch("/api/comercial/units", { signal: controller.signal });
       clearTimeout(timeoutId);
@@ -68,7 +66,6 @@ export function useComercialUnitsWithFallback() {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          // Detect if the server returned raw zeroed records (e.g. uninitialized API environment)
           const isZeroed = data.every((u) => (u.ventas === 0 || !u.ventas) && (u.pax === 0 || !u.pax));
           
           if (isZeroed) {
@@ -84,7 +81,7 @@ export function useComercialUnitsWithFallback() {
               }
             }
           } else {
-            // Success: API yielded live, healthy, non-zero results
+            // Live, healthy dataset found!
             setUnits(data);
             setIsUsingCache(false);
             localStorage.setItem("edarsa_comercial_units", JSON.stringify(data));
@@ -98,10 +95,9 @@ export function useComercialUnitsWithFallback() {
           }
         }
       }
-      throw new Error(`Unsuccessful API status or malformed format: ${res.status}`);
+      throw new Error(`Unsuccessful API status or format: ${res.status}`);
     } catch (err) {
-      console.error("[useComercialUnitsWithFallback] Connection failed or timed out. Activating local cache fallback:", err);
-      
+      console.error("[useComercialUnitsWithFallback] Fallback active:", err);
       const cached = localStorage.getItem("edarsa_comercial_units");
       if (cached) {
         try {
@@ -109,10 +105,9 @@ export function useComercialUnitsWithFallback() {
           if (Array.isArray(parsed) && parsed.length > 0) {
             setUnits(parsed);
             setIsUsingCache(true);
-            console.log("[useComercialUnitsWithFallback] Local cache fallback rendered correctly.");
           }
         } catch (parseErr) {
-          console.error("[useComercialUnitsWithFallback] Critical error parsing LocalStorage JSON cache:", parseErr);
+          console.error("JSON parse failed", parseErr);
         }
       }
     } finally {
