@@ -1,51 +1,97 @@
--- ====================================================================
--- SCRIPT DE INFRAESTRUCTURA DE RESPALDO Y CACHÉ: EDARSAHUB SQL SERVER
--- OBJETIVO: Minimizar consumo del agente automatizando la redundancia SQL
--- ====================================================================
+-- ======================================================================================
+-- SCRIPT DE BASE DE DATOS: INFRAESTRUCTURA_RESPALDO_CACHE_EDARSAHUB.sql
+-- PROYECTO: EDARSA HUB ERP - MOTOR RESILIENTE Y ALTA DISPONIBILIDAD (EDGE OFFLINE CACHE)
+-- MOTOR: Microsoft SQL Server 2019+ (Directo Puerto 1433 - Base de datos EDARSAHUB)
+-- ======================================================================================
 
--- 1. Asegurar la existencia de la tabla intermedia de Clientes Sincronizados
-IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Sync_Customers]') AND type in (N'U'))
-BEGIN
-    CREATE TABLE [dbo].[Sync_Customers] (
-        [CustomerID] INT IDENTITY(1,1) PRIMARY KEY,
-        [NombreComercial] VARCHAR(150) NOT NULL,
-        [RFC] VARCHAR(13) NULL,
-        [EstadoConexion] VARCHAR(50) DEFAULT 'ACTIVE',
-        [UltimaSincronizacion] DATETIME DEFAULT GETDATE(),
-        [UnidadOrigen] VARCHAR(50) NOT NULL
-    );
-    
-    -- Insertar información optimizada de las 5 unidades clave de EDARSA
-    INSERT INTO [dbo].[Sync_Customers] (NombreComercial, RFC, EstadoConexion, UnidadOrigen)
-    VALUES 
-    ('EDARSA Cienfuegos', 'EDA160101AA1', 'ACTIVE', 'Cienfuegos'),
-    ('EDARSA Mérida 130', 'EDA160101AA2', 'ACTIVE', 'Mérida'),
-    ('EDARSA Querétaro 130', 'EDA160101AA3', 'ACTIVE', 'Querétaro'),
-    ('La Estelar San Ángel', 'EDA160101AA4', 'ACTIVE', 'La Estelar'),
-    ('Origen Gastrobar', 'EDA160101AA5', 'ACTIVE', 'Origen');
-END;
+USE [EDARSAHUB];
 GO
 
--- 2. Asegurar la existencia de la tabla de control del Tablero Ejecutivo (FinOps Cache)
-IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Sync_Tablero_Ejecutivo_Cache]') AND type in (N'U'))
+-- 1. TABLA INTERMEDIA: Sync_Sales
+IF OBJECT_ID('dbo.Sync_Sales', 'U') IS NULL
 BEGIN
-    CREATE TABLE [dbo].[Sync_Tablero_Ejecutivo_Cache] (
-        [Unidad] VARCHAR(50) PRIMARY KEY,
-        [VentasConsolidadas] DECIMAL(18,2) NOT NULL,
-        [PaxTotal] INT NOT NULL,
-        [Cheques] INT NOT NULL,
-        [MargenPorcentaje] DECIMAL(5,2) NOT NULL,
-        [VariacionMensual] DECIMAL(5,2) DEFAULT 0.00,
-        [UltimaActualizacion] DATETIME DEFAULT GETDATE()
+    CREATE TABLE dbo.Sync_Sales (
+        id VARCHAR(64) NOT NULL PRIMARY KEY,
+        branch NVARCHAR(100) NOT NULL,
+        customer_id VARCHAR(64) NULL,
+        items NVARCHAR(MAX) NULL,
+        total NUMERIC(18, 2) NOT NULL DEFAULT 0.00,
+        currency VARCHAR(3) DEFAULT 'USD',
+        status VARCHAR(32) DEFAULT 'PENDIENTE',
+        created_at DATETIME DEFAULT GETDATE(),
+        last_modified DATETIME DEFAULT GETDATE(),
+        sync_hash VARCHAR(64) NULL
     );
+    CREATE NONCLUSTERED INDEX IX_SyncIndex_Sales_Branch ON dbo.Sync_Sales (branch);
+    CREATE NONCLUSTERED INDEX IX_SyncIndex_Sales_CreatedAt ON dbo.Sync_Sales (created_at DESC);
+END
+GO
 
-    -- Poblado inicial con la matriz de $15.71M consolidada
-    INSERT INTO [dbo].[Sync_Tablero_Ejecutivo_Cache] (Unidad, VentasConsolidadas, PaxTotal, Cheques, MargenPorcentaje, VariacionMensual)
-    VALUES
-    ('Cienfuegos', 4850000.00, 4820, 1610, 68.50, 1.90),
-    ('Mérida', 3920000.00, 3680, 1150, 71.20, 2.50),
-    ('Querétaro', 2840000.00, 2910, 920, 65.80, -0.80),
-    ('La Estelar', 2150000.00, 1850, 560, 74.10, 4.20),
-    ('Origen', 1950000.00, 1748, 510, 69.90, -1.10);
-END;
+-- 2. TABLA INTERMEDIA: Sync_Customers
+IF OBJECT_ID('dbo.Sync_Customers', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Sync_Customers (
+        customer_id VARCHAR(64) NOT NULL PRIMARY KEY,
+        full_name NVARCHAR(200) NOT NULL,
+        commercial_name NVARCHAR(200) NULL,
+        email VARCHAR(150) NULL,
+        phone VARCHAR(32) NULL,
+        affiliate_tier VARCHAR(16) DEFAULT 'BRONZE',
+        sync_status VARCHAR(16) DEFAULT 'SYNCHRONIZED',
+        last_sync DATETIME DEFAULT GETDATE()
+    );
+    CREATE NONCLUSTERED INDEX IX_SyncIndex_Customers_Email ON dbo.Sync_Customers (email);
+END
+GO
+
+-- 3. TABLA INTERMEDIA: Sync_Inventory
+IF OBJECT_ID('dbo.Sync_Inventory', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Sync_Inventory (
+        sku VARCHAR(64) NOT NULL PRIMARY KEY,
+        item_name NVARCHAR(200) NOT NULL,
+        stock_qty INT DEFAULT 0,
+        min_qty_warning INT DEFAULT 10,
+        warehouse NVARCHAR(100) NOT NULL,
+        last_audit DATETIME DEFAULT GETDATE(),
+        sync_status VARCHAR(16) DEFAULT 'ONLINE'
+    );
+END
+GO
+
+-- 4. TABLA INTERMEDIA: Sync_Purchases
+IF OBJECT_ID('dbo.Sync_Purchases', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Sync_Purchases (
+        id VARCHAR(64) NOT NULL PRIMARY KEY,
+        provider_name NVARCHAR(200) NOT NULL,
+        branch NVARCHAR(100) NOT NULL,
+        items_detail NVARCHAR(MAX) NULL,
+        total_amount NUMERIC(12, 2) NOT NULL,
+        status VARCHAR(32) DEFAULT 'PENDIENTE',
+        created_at DATETIME DEFAULT GETDATE(),
+        sync_status VARCHAR(16) DEFAULT 'ONLINE'
+    );
+END
+GO
+
+-- 5. PROCEDIMIENTO EXTRA DE CONTEO Y AUDITORÍA DE BROKER
+IF OBJECT_ID('dbo.sp_GetSyncTableSummary', 'P') IS NOT NULL
+BEGIN
+    DROP PROCEDURE dbo.sp_GetSyncTableSummary;
+END
+GO
+
+CREATE PROCEDURE dbo.sp_GetSyncTableSummary
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT 'Sync_Sales' AS TableName, COUNT(1) AS RecordCount, MAX(created_at) AS LastSyncTime, 'EDARSAHUB (SQL 1433)' AS DatabaseTarget FROM dbo.Sync_Sales WITH (NOLOCK)
+    UNION ALL
+    SELECT 'Sync_Customers' AS TableName, COUNT(1) AS RecordCount, MAX(last_sync) AS LastSyncTime, 'EDARSAHUB (SQL 1433)' AS DatabaseTarget FROM dbo.Sync_Customers WITH (NOLOCK)
+    UNION ALL
+    SELECT 'Sync_Inventory' AS TableName, COUNT(1) AS RecordCount, MAX(last_audit) AS LastSyncTime, 'EDARSAHUB (SQL 1433)' AS DatabaseTarget FROM dbo.Sync_Inventory WITH (NOLOCK)
+    UNION ALL
+    SELECT 'Sync_Purchases' AS TableName, COUNT(1) AS RecordCount, MAX(created_at) AS LastSyncTime, 'EDARSAHUB (SQL 1433)' AS DatabaseTarget FROM dbo.Sync_Purchases WITH (NOLOCK);
+END
 GO
