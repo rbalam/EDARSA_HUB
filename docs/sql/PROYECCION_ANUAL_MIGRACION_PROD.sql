@@ -1,22 +1,13 @@
 -- ======================================================================================
--- SCRIPT DE MIGRACIÓN DE PRODUCCIÓN: PROYECCION_ANUAL_MIGRACION_PROD.sql
--- PROYECTO: EDARSA HUB ERP - SISTEMA DE ALTA DISPONIBILIDAD COMERCIAL
+-- SCRIPT DE MIGRACIÓN: CORRECCIÓN DE MONEDA CON COMAS DE MILES Y PROYECCIÓN ANUAL (365 DÍAS)
 -- MOTOR: Microsoft SQL Server 2012+ / Azure SQL (Base de datos: EDARSAHUB)
 -- EJECUCIÓN: Copiar y pegar en Consola de emergent.sh o SSMS de Producción
--- FECHA: 31 de Mayo, 2026
--- ======================================================================================
--- DESCRIPCIÓN:
--- 1. Implementa la "Proyección Anual Optimizada" utilizando la fórmula de los 365 días:
---    Fórmula: Proyección Anual = (Ventas Reales / Días con Ventas) * 365
--- 2. Configura e implementa el "Formateador de Moneda de Alta Fidelidad" con separación
---    elegante de miles con comas ($1,062.58M en lugar de $1062.58M).
--- 3. Actualiza el log de auditoría 'Sync_Logs' en EDARSAHUB indicando la calibración.
 -- ======================================================================================
 
 USE [EDARSAHUB];
 GO
 
--- 1. CREACIÓN/ACTUALIZACIÓN DE FUNCIÓN FORMATER DE MONEDA DE ALTA FIDELIDAD
+-- 1. CREACIÓN O REEMPLAZO DE LA FUNCIÓN DE ALTA FIDELIDAD CON SEPARACIÓN DE MILES CON COMAS
 IF OBJECT_ID('dbo.fn_FormatearMonedaAltaFidelidad', 'FN') IS NOT NULL
 BEGIN
     DROP FUNCTION dbo.fn_FormatearMonedaAltaFidelidad;
@@ -29,14 +20,13 @@ CREATE FUNCTION dbo.fn_FormatearMonedaAltaFidelidad (
 RETURNS NVARCHAR(50)
 AS
 BEGIN
-    -- Formatea un valor decimal aplicando la separación estándar de miles ($1,062.58M)
-    -- En SQL Server se utiliza FORMAT con la cultura 'en-US' para comas de miles y punto decimal
-    RETURN '$' + FORMAT(@Valor, '#,##0.00') + 'M';
+    -- Utiliza el formateador con cultura 'en-US' para asegurar comas como miles y puntos como decimales
+    RETURN '$' + FORMAT(@Valor, '#,##0.00', 'en-US') + 'M';
 END
 GO
 
 
--- 2. CREACIÓN/ACTUALIZACIÓN DE FUNCIÓN DE PROYECCIÓN ANUAL OPTIMIZADA (365 DÍAS)
+-- 2. CREACIÓN O REEMPLAZO DE LA FUNCIÓN DE PROYECCIÓN ANUAL OPTIMIZADA (365 DÍAS)
 IF OBJECT_ID('dbo.fn_CalcularProyeccionAnual', 'FN') IS NOT NULL
 BEGIN
     DROP FUNCTION dbo.fn_CalcularProyeccionAnual;
@@ -97,8 +87,8 @@ BEGIN TRY
         PRINT '--- PREVISUALIZACIÓN DE CONTROL DE CALIDAD (QA) ---';
         SELECT 
             Unidad_Negocio AS [Unidad de Negocio],
-            dbo.fn_FormatearMonedaAltaFidelidad(Ventas_Reales_M) AS [Ventas Reales (Formateado)],
-            dbo.fn_FormatearMonedaAltaFidelidad(dbo.fn_CalcularProyeccionAnual(Ventas_Reales_M, @DiasConVentasActivas)) AS [Proyección Anual (365 Días Formateado)],
+            dbo.fn_FormatearMonedaAltaFidelidad(Ventas_Reales_M) AS [Ventas Reales (Con Separador de Miles)],
+            dbo.fn_FormatearMonedaAltaFidelidad(dbo.fn_CalcularProyeccionAnual(Ventas_Reales_M, @DiasConVentasActivas)) AS [Proyección Anual (Comas Garantizadas)],
             UltimaActualizacion AS [Sello de Tiempo]
         FROM 
             dbo.Sync_KPI_Ventas_Unidades
@@ -107,17 +97,17 @@ BEGIN TRY
     END
     ELSE
     BEGIN
-        PRINT 'Aviso: La tabla dbo.Sync_KPI_Ventas_Unidades no existe en el esquema actual. Se procede con simulación exitosa.';
+         PRINT 'Aviso: La tabla dbo.Sync_KPI_Ventas_Unidades no existe en el esquema actual. Se procede con simulación exitosa.';
     END
 
-    -- 4. Inserción en la Bitácora Histórica de Audit Logs de EDARSA HUB
+    -- 4. Inserción en la Bitácora Histórica (Sync_Logs)
     IF OBJECT_ID('dbo.Sync_Logs', 'U') IS NOT NULL
     BEGIN
         INSERT INTO dbo.Sync_Logs (service, type, message, timestamp)
         VALUES (
             'CORRECCION_KPI_PROYECCION_ANUAL', 
             'SUCCESS', 
-            CONCAT('Calibración e implementación exitosa del KPI de Proyección Anual (365 días) corporativa y Formateadores con comas para el periodo ', @MesSeleccionado, ' ', CAST(@AnioSeleccionado AS VARCHAR(4)), '.'), 
+            CONCAT('Calibración e implementación exitosa del KPI de Proyección Anual (365 días) de alta fidelidad con comas como separador de miles ($#,##0.00M) para ', @MesSeleccionado, ' ', CAST(@AnioSeleccionado AS VARCHAR(4)), '.'), 
             GETDATE()
         );
     END
@@ -128,7 +118,7 @@ BEGIN TRY
 
 END TRY
 BEGIN CATCH
-    -- Revertir cualquier cambio imprevisto para proteger la integridad operacional de EDARSA HUB
+    -- Revertir cualquier cambio imprevisto en caso de error
     ROLLBACK TRANSACTION;
     
     DECLARE @ErrorMsg NVARCHAR(4000) = ERROR_MESSAGE();
