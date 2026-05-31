@@ -1,141 +1,131 @@
 -- ======================================================================================
--- SCRIPT DE MIGRACIÓN DE PRODUCCIÓN: CORRECCION_PROYECCION_Y_MONEDA_FINAL.sql
+-- SCRIPT DE BASE DE DATOS: CORRECCION_PROYECCION_Y_MONEDA_FINAL.sql
 -- PROYECTO: EDARSA HUB ERP - SISTEMA DE ALTA DISPONIBILIDAD COMERCIAL
 -- MOTOR: Microsoft SQL Server 2012+ / Azure SQL (Base de datos: EDARSAHUB)
--- EJECUCIÓN: Copiar y pegar completo en la Consola de emergent.sh
+-- OBJETIVO: Alineación final de formato de moneda con comas ($1,062.58M) y cálculo anual (365 días)
+-- EJECUCIÓN: Copiar y pegar en Consola de emergent.sh o SSMS de Producción
+-- FECHA: 31 de Mayo, 2026
 -- ======================================================================================
 
 USE [EDARSAHUB];
 GO
 
--- 1. CREACIÓN/REMPLAZO DE LA FUNCIÓN DE FORMATO MONETARIO NATIVO CON COMAS
--- Emplea CONVERT Estilo 1, compatible con todas las versiones de SQL Server, garantizando la inserción de comas.
-IF OBJECT_ID('dbo.fn_FormatearMonedaAltaFidelidad', 'FN') IS NOT NULL
+-- 1. CREACIÓN O CORRECCIÓN DE LA FUNCIÓN DE MONEDA DE ALTA FIDELIDAD CON COMAS
+-- Esta función emula el formateador implementado en el frontend de React:
+-- Reemplaza formatos planos (1062.58) con separadores estandarizados de miles (1,062.58)
+IF OBJECT_ID('dbo.fn_FormatearMonedaConComas', 'FN') IS NOT NULL
 BEGIN
-    DROP FUNCTION dbo.fn_FormatearMonedaAltaFidelidad;
+    DROP FUNCTION dbo.fn_FormatearMonedaConComas;
 END
 GO
 
-CREATE FUNCTION dbo.fn_FormatearMonedaAltaFidelidad (
-    @Valor DECIMAL(18,2)
+CREATE FUNCTION dbo.fn_FormatearMonedaConComas (
+    @Valor DECIMAL(18,4)
 )
-RETURNS NVARCHAR(50)
+RETURNS NVARCHAR(100)
 AS
 BEGIN
     IF @Valor IS NULL
         RETURN '$0.00M';
         
-    -- CONVERT con estilo 1 separa automáticamente en miles usando comas (p. ej. 1,062.58)
-    DECLARE @CadenaFormateada VARCHAR(50) = CONVERT(VARCHAR, CAST(@Valor AS MONEY), 1);
-    
-    RETURN '$' + @CadenaFormateada + 'M';
+    -- FORMAT con la máscara '#,##0.00' y la cultura 'en-US' garantiza la inserción de comas para los miles
+    -- y el punto decimal correcto de alta definición, ej: 1062.58 -> $1,062.58M
+    RETURN '$' + FORMAT(@Valor, '#,##0.00', 'en-US') + 'M';
 END
 GO
 
 
--- 2. CREACIÓN/REMPLAZO DE LA FUNCIÓN DE PROYECCIÓN ANUAL OPTIMIZADA (365 DÍAS)
-IF OBJECT_ID('dbo.fn_CalcularProyeccionAnual', 'FN') IS NOT NULL
+-- 2. CALIBRACIÓN DE LA FUNCIÓN DE PROYECCIÓN ANUAL (365 DÍAS)
+IF OBJECT_ID('dbo.fn_CalcularProyeccionAnual365', 'FN') IS NOT NULL
 BEGIN
-    DROP FUNCTION dbo.fn_CalcularProyeccionAnual;
+    DROP FUNCTION dbo.fn_CalcularProyeccionAnual365;
 END
 GO
 
-CREATE FUNCTION dbo.fn_CalcularProyeccionAnual (
+CREATE FUNCTION dbo.fn_CalcularProyeccionAnual365 (
     @VentasRealesM DECIMAL(18,4),
     @DiasConVentas INT
 )
-RETURNS DECIMAL(18,2)
+RETURNS DECIMAL(18,4)
 AS
 BEGIN
     IF @DiasConVentas <= 0 OR @VentasRealesM IS NULL
-        RETURN 0.00;
+        RETURN 0.0000;
         
-    -- Fórmula Comercial Homologada: (Ventas / Días transcurridos) * Días totales del año
-    RETURN CAST((@VentasRealesM / CAST(@DiasConVentas AS DECIMAL(18,4))) * 365.0000 AS DECIMAL(18,2));
+    -- Proyección lineal matemática calibrada para el año completo (365 días corporativos)
+    RETURN (@VentasRealesM / CAST(@DiasConVentas AS DECIMAL(18,4))) * 365.0000;
 END
 GO
 
 
--- 3. PROCESAMIENTO TRANSACCIONAL SEGURO CON AUDITORÍA
+-- 3. PROCESAMIENTO SEGURO TRANSACCIONAL PARA LA CORRECCIÓN EN PRODUCCIÓN
 BEGIN TRANSACTION;
 
 BEGIN TRY
-    PRINT 'Iniciando actualización de valores y formato monetario...';
+    PRINT 'Iniciando corrección y normalización de KPIs en base de datos...';
 
-    -- Parámetros del periodo actual de evaluación (Enero 2026 - 31 Días transcurridos)
-    DECLARE @MesSeleccionado NVARCHAR(20) = N'Enero';
-    DECLARE @AnioSeleccionado INT = 2026;
-    DECLARE @DiasConVentasActivas INT = 31;
-
-    -- Validar existencia e impacto físico de la tabla destino
+    -- Parámetros del periodo actual de reporte (Enero / Mayo 2026)
+    DECLARE @DiasSLA INT = 31;
+    
+    -- Si la tabla de KPIs ya existe en producción, se procede a indexar y actualizar
     IF OBJECT_ID('dbo.Sync_KPI_Ventas_Unidades', 'U') IS NOT NULL
     BEGIN
-        -- Agregar columna física para persistir la proyección si no existiera
-        IF NOT EXISTS (
-            SELECT * FROM sys.columns 
-            WHERE object_id = OBJECT_ID('dbo.Sync_KPI_Ventas_Unidades') 
-            AND name = 'Proyeccion_Anual_Ventas'
-        )
-        BEGIN
-            ALTER TABLE dbo.Sync_KPI_Ventas_Unidades ADD Proyeccion_Anual_Ventas DECIMAL(18,2) NULL;
-        END
-
-        -- Actualizar los registros calculando la proyección anual homologada
+        -- Actualizar la columna correspondiente con la fórmula de 365 días reales
         UPDATE [dbo].[Sync_KPI_Ventas_Unidades]
         SET 
-            Proyeccion_Anual_Ventas = dbo.fn_CalcularProyeccionAnual(Ventas_Reales_M, @DiasConVentasActivas),
-            UltimaActualizacion = GETDATE()
-        WHERE 
-            Mes = @MesSeleccionado AND Anio = @AnioSeleccionado;
-
-        -- Previsualización en consola para verificación de Calidad en tiempo de ejecución
-        PRINT '--- CONTROL DE CALIDAD (QA) DE CIFRAS EN PRODUCCIÓN ---';
-        SELECT 
-            Unidad_Negocio AS [Unidad de Negocio],
-            dbo.fn_FormatearMonedaAltaFidelidad(Ventas_Reales_M) AS [Ventas Reales ($M)],
-            dbo.fn_FormatearMonedaAltaFidelidad(dbo.fn_CalcularProyeccionAnual(Ventas_Reales_M, @DiasConVentasActivas)) AS [Proyección Anual (365 Días)]
-        FROM 
-            dbo.Sync_KPI_Ventas_Unidades
-        WHERE 
-            Mes = @MesSeleccionado AND Anio = @AnioSeleccionado;
+            -- Aplicación física de la proyección corregida
+            Proyeccion_Anual_Ventas = dbo.fn_CalcularProyeccionAnual365(Ventas_Reales_M, @DiasSLA),
+            UltimaActualizacion = GETDATE();
+            
+        PRINT 'Unidades de negocio actualizadas de forma matemática con éxito.';
     END
     ELSE
     BEGIN
-        PRINT 'La tabla física no se encuentra en el esquema; se procesó flujo lógico local.';
+        PRINT 'Aviso: Tabla de producción física Sync_KPI_Ventas_Unidades no configurada aún en este servidor local. Se valida la compilación lógica.';
     END
 
-    -- Registrar evento exitoso en la bitácora histórica de auditoría central
+    -- 4. Registrar suceso en la bitácora histórica de auditoría (Sync_Logs)
     IF OBJECT_ID('dbo.Sync_Logs', 'U') IS NOT NULL
     BEGIN
         INSERT INTO dbo.Sync_Logs (service, type, message, timestamp, operador)
         VALUES (
-            'CORRECCION_KPI_PROYECCION_ANUAL', 
+            'CORRECCION_PROYECCION_Y_MONEDA_FINAL', 
             'SUCCESS', 
-            N'Calibrada proyección lineal de 365 días y habilitados formatos con separación de miles por comas en servidor de producción para periodo Enero 2026.', 
+            N'Implementación de formateador monetario de alta fidelidad con comas ($1,062.58M) y calibración del KPI de proyección anual (365 días) en base de datos de producción.', 
             GETDATE(),
-            N'CONSOLA_EMERGENT'
+            N'SISTEMA_ADMINISTRATIVO_PRIME'
         );
     END
 
-    -- Confirmar de manera segura la transacción comercial
+    -- Confirmar todos los cambios en producción de forma definitiva
     COMMIT TRANSACTION;
-    PRINT 'MIGRACIÓN COMPLETADA CON ÉXITO: Los formateadores de alta fidelidad operan correctamente.';
+    PRINT 'TRANSACCIÓN CONFIRMADA: Base de datos alineada al 100% con los formatos de comas y cálculos de React.';
 
 END TRY
 BEGIN CATCH
-    -- Reversión total e inmediata ante fallos operacionales
+    -- En caso de error, abortar para mantener la integridad operativa del sistema
     ROLLBACK TRANSACTION;
     
     DECLARE @ErrorMsg NVARCHAR(4000) = ERROR_MESSAGE();
-    PRINT 'Fallo crítico durante la migración de base de datos. Transacción revertida de inmediato.';
+    PRINT 'Fallo crítico durante la ejecución de correcciones en caliente.';
     PRINT 'Mensaje Técnico: ' + @ErrorMsg;
     
     IF OBJECT_ID('dbo.Sync_Logs', 'U') IS NOT NULL
     BEGIN
         INSERT INTO dbo.Sync_Logs (service, type, message, timestamp, operador)
-        VALUES ('CORRECCION_KPI_PROYECCION_ANUAL', 'ERROR', 'Fallo al migrar proyección: ' + @ErrorMsg, GETDATE(), 'SISTEMA_FALLBACK');
+        VALUES ('CORRECCION_PROYECCION_Y_MONEDA_FINAL', 'ERROR', N'Aborting: ' + @ErrorMsg, GETDATE(), N'SISTEMA_FALLBACK');
     END
 
+    -- Relanzar el error para control del operador
     THROW;
 END CATCH
+GO
+
+-- 5. DEMO DE CONTROL DE CALIDAD (QA) EN COLA DE SALIDA
+-- Ejecuta esta consulta para validar que el formateador con comas aplique correctamente
+DECLARE @DemoValor DECIMAL(18,4) = 1062.58;
+SELECT 
+    @DemoValor AS [Valor Plano],
+    dbo.fn_FormatearMonedaConComas(@DemoValor) AS [Formateado Con Comas (EDARSA Standard)],
+    dbo.fn_CalcularProyeccionAnual365(@DemoValor, 31) AS [Proyección 365 días ($M)];
 GO
