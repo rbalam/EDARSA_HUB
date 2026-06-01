@@ -97,24 +97,27 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const currentPath = window.location.pathname;
+    
+    // Fix: Excluir las rutas del portal de Inteligencia de la redirección forzada al CRM
+    const isInteligenciaPortal = currentPath.startsWith('/inteligencia-comercial');
+    const isPortalProveedores = currentPath.startsWith('/portal');
+    const isLoginPage = currentPath.startsWith('/login');
+    
     // Parche de estabilidad: Evitar cierre de sesión por errores 500/502
     if (error.response?.status === 500 || error.response?.status === 502) {
       console.warn("[API] Fallo de red detectado (500/502), manteniendo sesión...");
-      return Promise.resolve({ data: [] }); // Retorno seguro para evitar crash del tablero
+      return Promise.resolve({ data: [] });
     }
     
     if (error.response?.status === 401) {
-      // NO limpiar token aquí - puede causar race conditions
-      // La limpieza se hace en logout explícito
-      // Solo limpiar cache de sesión y redirigir si no estamos en login o portales externos
       clearSession();
-      const isExternalPortal = window.location.pathname.includes('/login') || 
-                               window.location.pathname.includes('/portal') ||
-                               window.location.pathname.includes('/inteligencia-comercial');
-      if (!isExternalPortal) {
+      // Solo redirigir si NO estamos en una de las zonas públicas/app-independientes
+      if (!isInteligenciaPortal && !isPortalProveedores && !isLoginPage) {
         window.location.href = '/login';
       }
     }
+    
     return Promise.reject(error);
   }
 );
