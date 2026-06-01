@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 # actualizacion_kpi_proyeccion_comercial.py
-# Convertido de Node.js a Python para ejecución en Emergent
+import calendar
+from datetime import datetime
 import pymssql
 import os
-from datetime import datetime
-import calendar
 
 DATABASE_CONFIG = {
     "server": os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
@@ -14,18 +13,14 @@ DATABASE_CONFIG = {
     "password": os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
 }
 
-def get_days_in_month(month_name, year):
-    """Retorna la cantidad exacta de días en el mes"""
-    months = {
-        'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6,
-        'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12
+def recalibrar_kpi_mes(mes_nombre="Mayo", anio=2026, dias_con_ventas=30.0):
+    meses_map = {
+        "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6,
+        "julio": 7, "agosto": 8, "septiembre": 9, "octubre": 10, "noviembre": 11, "diciembre": 12
     }
-    month_index = months.get(month_name.lower(), datetime.now().month)
-    return calendar.monthrange(year, month_index)[1]
-
-def recalibrate_kpi_month(month_name='Mayo', year=2026, dias_con_ventas=30.0):
-    """Recalibra las proyecciones KPI para un mes específico"""
-    days_in_month = get_days_in_month(month_name, year)
+    mes_clean = mes_nombre.strip().lower()
+    mes_num = meses_map.get(mes_clean, datetime.now().month)
+    _, dias_totales = calendar.monthrange(anio, mes_num)
     
     conn = pymssql.connect(
         server=DATABASE_CONFIG['server'],
@@ -38,9 +33,9 @@ def recalibrate_kpi_month(month_name='Mayo', year=2026, dias_con_ventas=30.0):
     cursor = conn.cursor()
     
     try:
-        print(f"[KPI PYTHON] % Mes: {month_name.upper()} | Días Calculados: {days_in_month}")
+        print(f"[RECALIBRACION KPI] Aplicando tendencia para mes de {dias_totales} días totales...")
         
-        # Primero verificar si existe la tabla
+        # Asegurar tabla existe
         cursor.execute("""
             IF OBJECT_ID('dbo.Sync_KPI_Ventas_Unidades', 'U') IS NULL
             BEGIN
@@ -56,38 +51,28 @@ def recalibrate_kpi_month(month_name='Mayo', year=2026, dias_con_ventas=30.0):
                     PorcentajeCumplimiento DECIMAL(5,2) DEFAULT 0,
                     UltimaActualizacion DATETIME DEFAULT GETDATE()
                 );
-                CREATE INDEX IX_KPI_Mes_Anio ON dbo.Sync_KPI_Ventas_Unidades (Mes, Anio);
             END
         """)
         conn.commit()
         
-        # Ejecutar la actualización
-        query = """
+        cursor.execute("""
             UPDATE dbo.Sync_KPI_Ventas_Unidades
             SET 
                 Proyeccion_Ventas = CAST((Ventas_Reales_M / %s) * %s AS DECIMAL(18, 4)),
                 UltimaActualizacion = GETDATE()
             WHERE LOWER(Mes) = LOWER(%s) AND Anio = %s;
-        """
+        """, (dias_con_ventas, dias_totales, mes_nombre, anio))
         
-        cursor.execute(query, (dias_con_ventas, days_in_month, month_name, year))
-        rows_affected = cursor.rowcount
+        filas = cursor.rowcount
         conn.commit()
-        
-        print(f"[ÉXITO] Recalibradas {rows_affected} filas.")
-        
-        # Verificar datos
-        cursor.execute("SELECT COUNT(*) FROM dbo.Sync_KPI_Ventas_Unidades")
-        total = cursor.fetchone()[0]
-        print(f"[VERIFICACIÓN] Total registros KPI: {total}")
-        
+        print(f"[KPI ÉXITO] Recalibradas {filas} registros en SQL Server.")
         return True
     except Exception as e:
         conn.rollback()
-        print(f"[ERROR]: {str(e)}")
+        print(f"[KPI ERROR] Falló el KPI dinámico: {str(e)}")
         return False
     finally:
         conn.close()
 
 if __name__ == "__main__":
-    recalibrate_kpi_month('Mayo', 2026, 30.0)
+    recalibrar_kpi_mes("Mayo", 2026, 30.0)
