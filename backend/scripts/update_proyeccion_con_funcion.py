@@ -11,7 +11,7 @@ DATABASE_CONFIG = {
     "password": os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
 }
 
-def execute_projection_update(anio=2026):
+def ejecutar_proyeccion_masiva(anio=2026):
     conn = pymssql.connect(
         server=DATABASE_CONFIG['server'],
         port=DATABASE_CONFIG['port'],
@@ -23,41 +23,7 @@ def execute_projection_update(anio=2026):
     cursor = conn.cursor()
     
     try:
-        print(f"[PROYECCIÓN PYTHON] Actualizando base transaccional para {anio}...")
-        
-        # Primero crear la función si no existe
-        cursor.execute("""
-            IF OBJECT_ID('dbo.fn_CalcularProyeccionMensual', 'FN') IS NULL
-            BEGIN
-                EXEC('
-                CREATE FUNCTION dbo.fn_CalcularProyeccionMensual (
-                    @VentasRealesM DECIMAL(18,4),
-                    @DiasConVentas DECIMAL(10,2),
-                    @Mes VARCHAR(50),
-                    @Anio INT
-                )
-                RETURNS DECIMAL(18,4)
-                AS
-                BEGIN
-                    DECLARE @DiasTotales INT;
-                    DECLARE @MesNum INT = CASE LOWER(@Mes)
-                        WHEN ''enero'' THEN 1 WHEN ''febrero'' THEN 2 WHEN ''marzo'' THEN 3
-                        WHEN ''abril'' THEN 4 WHEN ''mayo'' THEN 5 WHEN ''junio'' THEN 6
-                        WHEN ''julio'' THEN 7 WHEN ''agosto'' THEN 8 WHEN ''septiembre'' THEN 9
-                        WHEN ''octubre'' THEN 10 WHEN ''noviembre'' THEN 11 WHEN ''diciembre'' THEN 12
-                        ELSE 1
-                    END;
-                    SET @DiasTotales = DAY(EOMONTH(DATEFROMPARTS(@Anio, @MesNum, 1)));
-                    IF @DiasConVentas <= 0 OR @VentasRealesM IS NULL
-                        RETURN 0.0000;
-                    RETURN CAST((@VentasRealesM / @DiasConVentas) * @DiasTotales AS DECIMAL(18,4));
-                END
-                ')
-            END
-        """)
-        conn.commit()
-        
-        # Ejecutar actualización
+        print("[PROYECCION DAEMON] Ejecutando calculador síncrono en SQL...")
         cursor.execute("""
             UPDATE dbo.Sync_KPI_Ventas_Unidades
             SET 
@@ -71,23 +37,22 @@ def execute_projection_update(anio=2026):
             WHERE Anio = %s;
         """, (anio,))
         
-        rows_affected = cursor.rowcount
+        filas_actualizadas = cursor.rowcount
         
-        # Log de auditoría
         cursor.execute("""
             INSERT INTO dbo.Sync_Logs (service, type, message, timestamp, operador)
-            VALUES ('PYTHON_PROY_DAEMON', 'SUCCESS', %s, GETDATE(), 'EMERGENT_PY_WORKER');
-        """, (f'Actualizadas {rows_affected} filas aplicando función escalar para el {anio}.',))
+            VALUES (%s, %s, %s, GETDATE(), %s);
+        """, ("UPDATE_PROY_DAEMON", "SUCCESS", f"Actualizadas {filas_actualizadas} unidades para el {anio}.", "EMERGENT_PYTHON"))
         
         conn.commit()
-        print(f"[ÉXITO] Actualización de proyecciones completada: {rows_affected} registros.")
+        print(f" -> ¡Transacción Exitosa! {filas_actualizadas} períodos actualizados.")
         return True
     except Exception as e:
         conn.rollback()
-        print(f"[ERROR] Descartando transacción: {str(e)}")
+        print(f" -> [ERROR] Error en actualización: {str(e)}")
         return False
     finally:
         conn.close()
 
 if __name__ == "__main__":
-    execute_projection_update(2026)
+    ejecutar_proyeccion_masiva(2026)
