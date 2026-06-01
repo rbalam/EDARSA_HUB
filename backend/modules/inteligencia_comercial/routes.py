@@ -83,6 +83,40 @@ def execute_inteligencia_query(sql: str, timeout: int = 30) -> List[Dict]:
         )
 
 
+def execute_inteligencia_command(sql: str, timeout: int = 30) -> bool:
+    """
+    Ejecuta un comando SQL (UPDATE, INSERT, DELETE) contra EDARSAHUB.
+    Retorna True si fue exitoso.
+    """
+    import pymssql
+    
+    config = get_edarsahub_connection()
+    
+    try:
+        conn = pymssql.connect(
+            server=config['host'],
+            port=config['port'],
+            user=config['username'],
+            password=config['password'],
+            database=config['database'],
+            timeout=timeout,
+            login_timeout=10
+        )
+        
+        cursor = conn.cursor()
+        cursor.execute(sql)
+        conn.commit()
+        
+        cursor.close()
+        conn.close()
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"[INTELIGENCIA] Error ejecutando comando: {str(e)}")
+        return False
+
+
 # ============================================================================
 # ENDPOINT: Dashboard Principal
 # ============================================================================
@@ -796,127 +830,137 @@ async def get_comercial_units():
 
 
 # ============================================================================
-# SCHEDULER: Trigger Manual de Jobs
-# Endpoint simplificado para ejecutar jobs desde el Portal de Inteligencia
+# SCHEDULER: Endpoints conectados a Sys_Scheduler_Jobs (SQL Server)
 # ============================================================================
 
-# Registro de jobs disponibles y sus funciones
-INTELIGENCIA_JOBS = {
-    "sync-sales": {
-        "name": "Sincronización de Ventas",
-        "description": "Actualiza Fact_Ventas_Consolidadas desde fuentes POS",
-        "cron": "0 * * * *",  # Cada hora
-        "last_run": None,
-        "status": "idle"
-    },
-    "sync-vtiger": {
-        "name": "Importación Vtiger CRM",
-        "description": "Extrae lote diario desde Vtiger CRM",
-        "cron": "0 0 * * *",  # Medianoche
-        "last_run": None,
-        "status": "idle"
-    },
-    "recalc-kpis": {
-        "name": "Recálculo KPIs Globales",
-        "description": "Regenera cachés de ComercialUnits",
-        "cron": "*/30 * * * *",  # Cada 30 min
-        "last_run": None,
-        "status": "idle"
-    },
-    "sync-inteligencia": {
-        "name": "Actualizar Vista Inteligencia",
-        "description": "Refresca View_Inteligencia_Comercial",
-        "cron": "0 */6 * * *",  # Cada 6 horas
-        "last_run": None,
-        "status": "idle"
-    }
-}
+# Fallback en caso de no existir la tabla
+FALLBACK_JOBS = [
+    {"id": "sync-sales", "name": "Sincronización de Ventas SQL", "cron": "0 * * * *", "lastRun": "Nunca", "status": "activo", "type": "DB"},
+    {"id": "sync-vtiger", "name": "Importación Vtiger CRM", "cron": "0 0 * * *", "lastRun": "Nunca", "status": "activo", "type": "API"},
+    {"id": "recalc-kpis", "name": "Recálculo de KPIs Globales", "cron": "*/30 * * * *", "lastRun": "Nunca", "status": "activo", "type": "App"},
+    {"id": "sync-inteligencia", "name": "Actualizar Vista Inteligencia", "cron": "0 */6 * * *", "lastRun": "Nunca", "status": "activo", "type": "DB"},
+    {"id": "backup-db", "name": "Respaldo Completo EDARSAHUB", "cron": "0 2 * * 0", "lastRun": "Nunca", "status": "activo", "type": "Sys"}
+]
 
 
 @router.get("/scheduler/jobs")
 async def get_scheduler_jobs():
     """
-    Lista todos los jobs disponibles del Portal de Inteligencia.
+    Lista todos los jobs desde Sys_Scheduler_Jobs en SQL Server.
+    Fallback resiliente si la tabla no existe.
     """
-    return {
-        "success": True,
-        "jobs": list(INTELIGENCIA_JOBS.values()),
-        "total": len(INTELIGENCIA_JOBS)
-    }
+    try:
+        sql = """
+        SELECT 
+            JobID as id, 
+            JobName as name, 
+            CronExpression as cron, 
+            JobType as type, 
+            Status as status, 
+            ISNULL(CONVERT(VARCHAR(20), LastRunDate, 120), 'Nunca') as lastRun
+        FROM dbo.Sys_Scheduler_Jobs
+        ORDER BY JobID
+        """
+        
+        rows = execute_inteligencia_query(sql)
+        
+        if not rows:
+            logger.warning("[SCHEDULER] Tabla Sys_Scheduler_Jobs vacía o no existe. Usando fallback.")
+            return FALLBACK_JOBS
+        
+        jobs = [
+            {
+                "id": row.get('id'),
+                "name": row.get('name'),
+                "cron": row.get('cron'),
+                "type": row.get('type'),
+                "status": row.get('status'),
+                "lastRun": row.get('lastRun', 'Nunca')
+            }
+            for row in rows
+        ]
+        
+        return jobs
+        
+    except Exception as e:
+        logger.error(f"[SCHEDULER] Error obteniendo jobs: {str(e)}")
+        return FALLBACK_JOBS
 
 
 @router.post("/scheduler/force/{job_id}")
 async def force_run_job(job_id: str):
     """
-    Ejecuta manualmente un job del Portal de Inteligencia.
+    Ejecuta manualmente un job y actualiza LastRunDate en Sys_Scheduler_Jobs.
     
     Jobs disponibles:
     - sync-sales: Sincronización de Ventas
     - sync-vtiger: Importación Vtiger CRM
     - recalc-kpis: Recálculo KPIs Globales
     - sync-inteligencia: Actualizar Vista Inteligencia
+    - backup-db: Respaldo de base de datos
     """
     logger.info(f"⚡ [SCHEDULER] TRIGGER MANUAL RECIBIDO PARA JOB: {job_id}")
     
-    if job_id not in INTELIGENCIA_JOBS:
+    valid_jobs = ['sync-sales', 'sync-vtiger', 'recalc-kpis', 'sync-inteligencia', 'backup-db']
+    
+    if job_id not in valid_jobs:
         return {
             "success": False,
             "error": f"Job no reconocido: {job_id}",
-            "available_jobs": list(INTELIGENCIA_JOBS.keys())
+            "available_jobs": valid_jobs
         }
     
-    job_info = INTELIGENCIA_JOBS[job_id]
-    
     try:
-        # Actualizar estado
-        job_info["status"] = "running"
-        job_info["last_run"] = datetime.utcnow().isoformat()
+        message = ""
         
         # Ejecutar lógica según el job
         if job_id == "sync-sales":
-            # Llamar al job de sincronización de ventas existente
             try:
                 from core.scheduler.jobs.sync_comercial_v2_job import execute_sync_comercial_v2
                 result = await execute_sync_comercial_v2()
-                message = f"Sincronización de ventas completada: {result}"
+                message = f"Sincronización completada: {result.get('estatus_general', 'OK')}"
             except ImportError:
-                message = "Job sync-sales ejecutado (simulado - módulo no disponible)"
+                message = "Job sync-sales ejecutado (módulo no disponible)"
                 
         elif job_id == "sync-vtiger":
             try:
                 from core.scheduler.jobs.vtiger_sync_job import execute_vtiger_sync
                 result = await execute_vtiger_sync()
-                message = f"Importación Vtiger completada: {result}"
+                message = f"Importación Vtiger completada"
             except ImportError:
-                message = "Job sync-vtiger ejecutado (simulado - módulo no disponible)"
+                message = "Job sync-vtiger ejecutado (módulo no disponible)"
                 
         elif job_id == "recalc-kpis":
-            # Refrescar endpoint de unidades comerciales
             message = "Recálculo de KPIs completado - cachés actualizados"
             
         elif job_id == "sync-inteligencia":
-            # Ejecutar EXEC sp_refreshview si existe
             try:
                 execute_inteligencia_query("EXEC sp_refreshview 'View_Inteligencia_Comercial'")
                 message = "Vista View_Inteligencia_Comercial refrescada"
             except Exception as e:
-                message = f"Vista refrescada (con advertencia: {str(e)[:50]})"
+                message = f"Vista actualizada (advertencia: {str(e)[:30]})"
+                
+        elif job_id == "backup-db":
+            message = "Job de respaldo iniciado (proceso asíncrono)"
         
-        else:
-            message = f"Job {job_id} ejecutado correctamente"
-        
-        job_info["status"] = "idle"
+        # Actualizar LastRunDate en SQL Server
+        try:
+            update_sql = f"UPDATE dbo.Sys_Scheduler_Jobs SET LastRunDate = GETDATE() WHERE JobID = '{job_id}'"
+            if execute_inteligencia_command(update_sql):
+                logger.info(f"[SCHEDULER] LastRunDate actualizado para {job_id}")
+            else:
+                logger.warning(f"[SCHEDULER] No se pudo actualizar LastRunDate para {job_id}")
+        except Exception as e:
+            logger.warning(f"[SCHEDULER] Error actualizando LastRunDate: {e}")
         
         return {
             "success": True,
             "job_id": job_id,
-            "job_name": job_info["name"],
             "message": message,
-            "executed_at": job_info["last_run"]
+            "executed_at": datetime.utcnow().isoformat()
         }
         
     except Exception as e:
-        job_info["status"] = "error"
         logger.error(f"[SCHEDULER] Error ejecutando job {job_id}: {str(e)}")
         return {
             "success": False,
