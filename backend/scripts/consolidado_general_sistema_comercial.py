@@ -376,7 +376,7 @@ SQL_PROCEDURES = [
                 INSERT INTO dbo.Sync_Logs (service, type, message, timestamp, operador)
                 VALUES ('PYTHON_SQL_AUTOHEAL', 'ERROR', 'Fallo al recalibrar cache: ' + @ErrorMsg, GETDATE(), 'EMERGENT_SQL_DAEMON');
             END
-            THROW;
+            RAISERROR(@ErrorMsg, 16, 1);
         END CATCH
     END;
     """
