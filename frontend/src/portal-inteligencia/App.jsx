@@ -36,16 +36,23 @@ export default function PortalInteligenciaApp() {
   }, []);
 
   const checkSession = async () => {
+    // Timeout de 3 segundos para la verificación de sesión
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    
     try {
       const response = await fetch(`${API_URL}/api/auth/me`, {
-        credentials: 'include'
+        credentials: 'include',
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         const data = await response.json();
         setUser(data);
       } else {
-        // Modo demo para externos
+        // Modo demo para externos (respuesta 401, etc.)
         setUser({ 
           nombre: 'Usuario Externo', 
           rol: 'CONSULTOR_EXTERNO',
@@ -53,7 +60,8 @@ export default function PortalInteligenciaApp() {
         });
       }
     } catch (error) {
-      // Fallback a modo demo
+      clearTimeout(timeoutId);
+      // Fallback a modo demo (timeout o error de red)
       setUser({ 
         nombre: 'Usuario Demo', 
         rol: 'DEMO',

@@ -1,6 +1,5 @@
-import { Outlet, Navigate, useLocation, Link } from 'react-router-dom';
+import { Outlet, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { isAuthenticated } from '@/lib/auth';
 import logger from '@/services/logger';
 import { Button } from '@/components/ui/button';
 import { 
@@ -644,10 +643,8 @@ const Layout = () => {
     };
   }, [useSqlMenus, transformSqlMenus, filteredModulos, filteredSistema]);
 
-  // Verificar autenticación DESPUÉS de todos los hooks
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />;
-  }
+  // Nota: La verificación de autenticación se hace en ProtectedRoute, no aquí
+  // Esto evita conflictos con los portales externos
 
   return (
     <div className="min-h-screen bg-zinc-50" data-testid="layout">
