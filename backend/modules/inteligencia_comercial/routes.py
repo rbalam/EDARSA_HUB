@@ -694,19 +694,23 @@ async def get_comercial_units():
     ]
     
     try:
-        # Query de Oro - Agrupación por mes desde Sync_Sales
+        # Query de Oro - Extracción analítica con columnas alternativas (ISNULL fallbacks)
         monthly_sql = """
         SELECT 
-            LOWER(REPLACE(branch, ' ', '_')) AS UnidadBase,
-            branch AS UnidadNombre,
-            DATENAME(month, created_at) AS MesNombre,
-            MONTH(created_at) AS MesNum,
-            SUM(total) / 1000000.0 AS VentasM,
-            ISNULL(SUM(Pax), COUNT(id) * 3) AS PaxIntegrados,
-            COUNT(id) AS ChequesTotales
+            ISNULL(UnidadNegocio, LOWER(REPLACE(branch, ' ', '_'))) AS UnidadBase,
+            ISNULL(UnidadNegocio, branch) AS UnidadNombre,
+            DATENAME(month, ISNULL(FechaHora, created_at)) AS MesNombre,
+            MONTH(ISNULL(FechaHora, created_at)) AS MesNum,
+            SUM(ISNULL(MontoTotal, total)) / 1000000.0 AS VentasM,
+            SUM(ISNULL(Pax, 0)) AS PaxIntegrados,
+            COUNT(ISNULL(NumeroTicket, id)) AS ChequesTotales
         FROM dbo.Sync_Sales WITH(NOLOCK)
-        GROUP BY branch, DATENAME(month, created_at), MONTH(created_at)
-        ORDER BY MONTH(created_at)
+        GROUP BY 
+            ISNULL(UnidadNegocio, LOWER(REPLACE(branch, ' ', '_'))),
+            ISNULL(UnidadNegocio, branch),
+            DATENAME(month, ISNULL(FechaHora, created_at)), 
+            MONTH(ISNULL(FechaHora, created_at))
+        ORDER BY MONTH(ISNULL(FechaHora, created_at))
         """
         
         rows = execute_inteligencia_query(monthly_sql)
@@ -714,6 +718,14 @@ async def get_comercial_units():
         if not rows:
             logger.warning("[COMERCIAL/UNITS] Sin datos en Sync_Sales. Usando fallback.")
             return FALLBACK_UNITS
+        
+        # Mapeo de meses inglés → español
+        MONTH_MAP = {
+            "January": "Enero", "February": "Febrero", "March": "Marzo",
+            "April": "Abril", "May": "Mayo", "June": "Junio",
+            "July": "Julio", "August": "Agosto", "September": "Septiembre",
+            "October": "Octubre", "November": "Noviembre", "December": "Diciembre"
+        }
         
         # Inicializar diccionario de unidades
         unidades_dict = {}
@@ -731,21 +743,21 @@ async def get_comercial_units():
         
         # Procesar filas
         for row in rows:
-            uid = row.get('UnidadBase', '').lower()
+            uid = str(row.get('UnidadBase', '') or '').lower()
             
-            # Matchear con unit_map
+            # Matchear con unit_map (identificador heurístico)
             matched_key = None
             for k, v in UNIT_MAP.items():
-                if k in uid or uid in k:
+                if k in uid or uid in k or v["id"] in uid:
                     matched_key = v["id"]
                     break
             
             if not matched_key:
                 matched_key = "cienfuegos"  # Default
             
-            mes = row.get('MesNombre', 'Unknown')
-            if mes:
-                mes = mes.capitalize()
+            # Traducir mes a español
+            mes_raw = row.get('MesNombre', 'Unknown') or 'Unknown'
+            mes = MONTH_MAP.get(mes_raw, mes_raw.capitalize() if mes_raw else 'Unknown')
             
             ventas_m = float(row.get('VentasM', 0) or 0)
             pax = int(row.get('PaxIntegrados', 0) or 0)
@@ -754,7 +766,7 @@ async def get_comercial_units():
             # Desglose mensual
             if matched_key in unidades_dict:
                 unidades_dict[matched_key]["monthlyData"][mes] = {
-                    "ventas": ventas_m,
+                    "ventas": round(ventas_m, 2),
                     "pax": pax,
                     "cheques": cheques
                 }
@@ -764,17 +776,17 @@ async def get_comercial_units():
                 unidades_dict[matched_key]["pax"] += pax
                 unidades_dict[matched_key]["cheques"] += cheques
         
-        # Calcular promedios
+        # Calcular promedios y redondear
         for k in unidades_dict:
             unidades_dict[k]["ventas"] = round(unidades_dict[k]["ventas"], 2)
             
             if unidades_dict[k]["pax"] > 0:
                 pax_prom = (unidades_dict[k]["ventas"] * 1000000) / unidades_dict[k]["pax"]
-                unidades_dict[k]["paxProm"] = f"${round(pax_prom, 2):,.2f} MXN"
+                unidades_dict[k]["paxProm"] = f"${pax_prom:,.2f} MXN"
             
             if unidades_dict[k]["cheques"] > 0:
                 cheque_prom = (unidades_dict[k]["ventas"] * 1000000) / unidades_dict[k]["cheques"]
-                unidades_dict[k]["chequeProm"] = f"${round(cheque_prom, 2):,.2f} MXN"
+                unidades_dict[k]["chequeProm"] = f"${cheque_prom:,.2f} MXN"
         
         return list(unidades_dict.values())
         
