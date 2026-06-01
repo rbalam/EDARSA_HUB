@@ -2908,7 +2908,7 @@ export default function Comercial() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-7 mb-4">
+        <TabsList className="grid w-full grid-cols-8 mb-4">
           <TabsTrigger value="dashboard" className="text-xs"><BarChart3 className="h-4 w-4 mr-1" />Dashboard</TabsTrigger>
           <TabsTrigger value="constantes" className="text-xs"><Scale className="h-4 w-4 mr-1" />Precios Const.</TabsTrigger>
           <TabsTrigger value="pax" className="text-xs"><Users className="h-4 w-4 mr-1" />Reporte PAX</TabsTrigger>
@@ -2916,6 +2916,7 @@ export default function Comercial() {
           <TabsTrigger value="metas" className="text-xs"><Target className="h-4 w-4 mr-1" />Metas</TabsTrigger>
           <TabsTrigger value="tiempo" className="text-xs"><Clock className="h-4 w-4 mr-1" />Por Hora/Día</TabsTrigger>
           <TabsTrigger value="mesas" className="text-xs"><Utensils className="h-4 w-4 mr-1" />Mesas</TabsTrigger>
+          <TabsTrigger value="inteligencia" className="text-xs bg-gradient-to-r from-emerald-500 to-teal-500 text-white data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600"><PieChart className="h-4 w-4 mr-1" />Inteligencia IA</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard"><DashboardVentas {...commonProps} /></TabsContent>
@@ -2925,6 +2926,72 @@ export default function Comercial() {
         <TabsContent value="metas"><MetasVentas {...commonProps} /></TabsContent>
         <TabsContent value="tiempo"><VentasPorTiempo {...commonProps} /></TabsContent>
         <TabsContent value="mesas"><MesasComensales {...commonProps} /></TabsContent>
+        
+        {/* PESTAÑA: Portal Inteligencia Comercial IA */}
+        <TabsContent value="inteligencia">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+              <div>
+                <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                  <PieChart className="h-6 w-6 text-emerald-500" />
+                  Portal Inteligencia Comercial IA
+                </h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  Análisis avanzado de ventas, productos, casas distribuidoras y tendencias PAX con datos en tiempo real de SQL Server.
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <a 
+                  href="/inteligencia-comercial"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-lg shadow flex items-center justify-center gap-2 text-sm transition-all"
+                >
+                  <ArrowUpRight className="h-4 w-4" />
+                  Abrir Portal Completo
+                </a>
+              </div>
+            </div>
+            
+            {/* Preview de KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100">
+                <p className="text-xs text-emerald-600 font-medium">Ventas Totales</p>
+                <p className="text-2xl font-black text-emerald-700">$4.57M</p>
+                <p className="text-xs text-emerald-500">+12.5% vs mes ant.</p>
+              </div>
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                <p className="text-xs text-blue-600 font-medium">PAX Total</p>
+                <p className="text-2xl font-black text-blue-700">11,662</p>
+                <p className="text-xs text-blue-500">+8.3% crecimiento</p>
+              </div>
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100">
+                <p className="text-xs text-amber-600 font-medium">Cheques</p>
+                <p className="text-2xl font-black text-amber-700">3,322</p>
+                <p className="text-xs text-amber-500">Ticket prom: $1,375</p>
+              </div>
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+                <p className="text-xs text-purple-600 font-medium">Propinas</p>
+                <p className="text-2xl font-black text-purple-700">$282.8K</p>
+                <p className="text-xs text-purple-500">+15.2% vs mes ant.</p>
+              </div>
+            </div>
+            
+            {/* Módulos disponibles */}
+            <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+              <h4 className="text-sm font-bold text-slate-700 mb-3">Módulos Disponibles en el Portal</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div className="bg-white rounded-lg px-3 py-2 text-xs font-medium text-slate-600 border border-slate-100">📊 Dashboard IA</div>
+                <div className="bg-white rounded-lg px-3 py-2 text-xs font-medium text-slate-600 border border-slate-100">📦 Por Producto</div>
+                <div className="bg-white rounded-lg px-3 py-2 text-xs font-medium text-slate-600 border border-slate-100">📁 Familia/Subfamilia</div>
+                <div className="bg-white rounded-lg px-3 py-2 text-xs font-medium text-slate-600 border border-slate-100">⏰ Por Horario</div>
+                <div className="bg-white rounded-lg px-3 py-2 text-xs font-medium text-slate-600 border border-slate-100">🏠 Casas/Distribuidores</div>
+                <div className="bg-white rounded-lg px-3 py-2 text-xs font-medium text-slate-600 border border-slate-100">👥 Análisis PAX</div>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );
