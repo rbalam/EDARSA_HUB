@@ -2,7 +2,7 @@
 -- SCRIPT DE MIGRACIÓN: PROYECCION_ANUAL_MIGRACION_PEGA.sql
 -- PROYECTO: EDARSA HUB ERP - SISTEMA DE CONTROL COMERCIAL Y DE PROYECCIONES
 -- MOTOR: Microsoft SQL Server 2012+ / Azure SQL (Base de datos: EDARSAHUB)
--- OBJETIVO: Alineación de proyecciones anuales (365 días) y formato de comas ($1,062.58M)
+-- OBJETIVO: Alineación inmediata de proyecciones anuales (365 días) y formato de comas ($1,062.58M)
 -- EJECUCIÓN: Copiar y pegar directamente en emergent.sh o terminal SSMS de Producción
 -- ======================================================================================
 
@@ -41,8 +41,8 @@ BEGIN
     IF @Valor IS NULL
         RETURN '$0.00M';
         
-    -- 'en-US' garantiza el estándar de comas para miles y punto para decimales (#,##0.00)
-    RETURN '$' + FORMAT(@Valor, '#,##0.00', 'en-US') + 'M';
+    -- CONVERT con estilo 1 formatea el valor MONEY con comas separatorias de miles y punto decimal de forma regional-agnóstica y sin dependencia CLR.
+    RETURN '$' + CONVERT(NVARCHAR(100), CAST(@Valor AS MONEY), 1) + 'M';
 END
 GO
 
