@@ -72,6 +72,9 @@ import { isAuthenticated } from '@/lib/auth';
 // Portal de Proveedores (Subproyecto separado)
 import PortalProveedoresApp from '@/portal/App';
 
+// Portal de Inteligencia Comercial IA (Subproyecto separado)
+import PortalInteligenciaApp from '@/portal-inteligencia/App';
+
 function App() {
   return (
     <AuthProvider>
@@ -80,6 +83,9 @@ function App() {
           <Routes>
             {/* Portal de Proveedores - Ruta separada */}
             <Route path="/portal-proveedores/*" element={<PortalProveedoresApp />} />
+            
+            {/* Portal de Inteligencia Comercial IA - Ruta separada */}
+            <Route path="/inteligencia-comercial/*" element={<PortalInteligenciaApp />} />
           
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
