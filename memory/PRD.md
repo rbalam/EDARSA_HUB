@@ -38,22 +38,22 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 
 ## Últimos Cambios (01 Jun 2026)
 
-### Corrección de Enrutamiento Portal Inteligencia Comercial
-**Problema**: La ruta `/inteligencia-comercial` redirigía incorrectamente a `/login`
+### Conexión Datos Reales al Portal Inteligencia Comercial IA
 
-**Causa raíz**: El catch-all `path="*"` dentro del `<Route path="/">` en React Router 6 interfería con rutas de portales externos definidas antes.
+**Backend implementado:**
+- `GET /api/inteligencia/dashboard` - KPIs consolidados desde `View_Inteligencia_Comercial`
+- `GET /api/inteligencia/ventas/producto|familia|horario|casas`
+- `GET /api/inteligencia/analisis/pax`
+- Módulo: `/app/backend/modules/inteligencia_comercial/`
 
-**Solución aplicada**:
-1. Movido catch-all FUERA del Layout a nivel global de `<Routes>`
-2. Creado componente `ProtectedRoute` para manejar auth de forma independiente
-3. Eliminada verificación de auth redundante en `Layout.js`
-4. Añadido timeout de 3s en `checkSession()` del portal para evitar bloqueos
+**Frontend conectado:**
+- `DashboardIA.jsx` mapea respuesta del backend al formato UI
+- Fallback automático si backend falla o no hay datos
 
-**Archivos modificados**:
-- `/app/frontend/src/App.js` - Reestructuración de rutas
-- `/app/frontend/src/pages/Layout.js` - Removida verificación auth
-- `/app/frontend/src/portal-inteligencia/App.jsx` - Timeout en checkSession
-- `/app/frontend/src/components/ProtectedRoute.jsx` - Nuevo componente
+**Fix crítico:**
+- Interceptor Axios (`/app/frontend/src/lib/api.js`): Excluir `/inteligencia-comercial` de redirección 401
+
+**Estado actual:** Portal funcional con datos FALLBACK (tabla `Fact_Ventas_Consolidadas` vacía)
 
 ---
 

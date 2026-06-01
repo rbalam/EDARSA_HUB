@@ -502,6 +502,16 @@ api_router.include_router(alertas_margen_router)
 from modules.comercial.routes_competidores_enterprise import router as competidores_enterprise_router
 api_router.include_router(competidores_enterprise_router)
 
+# ============================================================================
+# PORTAL INTELIGENCIA COMERCIAL IA - Junio 2026
+# Endpoints: /api/inteligencia/*
+# Fuente: EDARSAHUB (View_Inteligencia_Comercial, Fact_Ventas_Consolidadas)
+# NOTA: Portal EXTERNO sin autenticación del CRM principal
+# ============================================================================
+from modules.inteligencia_comercial.routes import router as inteligencia_router, init_inteligencia_module
+init_inteligencia_module(EDARSAHUB_CONFIG)
+api_router.include_router(inteligencia_router)
+
 # MÓDULO RECURSOS HUMANOS: Catálogos RH
 # - Fase 6B: Migración de catálogos (Puestos, Sucursales, Tipos Incidencias)
 # - 10 endpoints migrados con queries parametrizados

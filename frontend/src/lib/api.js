@@ -106,9 +106,12 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // NO limpiar token aquí - puede causar race conditions
       // La limpieza se hace en logout explícito
-      // Solo limpiar cache de sesión y redirigir si no estamos en login
+      // Solo limpiar cache de sesión y redirigir si no estamos en login o portales externos
       clearSession();
-      if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/portal')) {
+      const isExternalPortal = window.location.pathname.includes('/login') || 
+                               window.location.pathname.includes('/portal') ||
+                               window.location.pathname.includes('/inteligencia-comercial');
+      if (!isExternalPortal) {
         window.location.href = '/login';
       }
     }

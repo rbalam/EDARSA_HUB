@@ -42,24 +42,58 @@ export default function DashboardIA({ user, unidadSeleccionada, onNavigate }) {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [unidadSeleccionada, periodo]);
+  }, [unidadSeleccionada]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `${API_URL}/api/inteligencia/dashboard?unidad=${unidadSeleccionada}&periodo=${periodo}`,
-        { credentials: 'include', timeout: 8000 }
+        `${API_URL}/api/inteligencia/dashboard?unidad=${unidadSeleccionada}`,
+        { credentials: 'include' }
       );
       
       if (response.ok) {
         const result = await response.json();
-        if (result.ventasTotales > 0) {
-          setData(result);
+        
+        // Mapear respuesta del backend al formato esperado por el frontend
+        if (result.success && result.kpis) {
+          const kpis = result.kpis;
+          
+          // Si hay datos reales, usarlos
+          if (kpis.ventas_totales > 0) {
+            // Calcular ventas por horario
+            const ventasHorario = result.ventas_horario || [];
+            const desayuno = ventasHorario.find(h => h.horario === 'Desayuno')?.ventas || 0;
+            const comida = ventasHorario.find(h => h.horario === 'Comida')?.ventas || 0;
+            const cena = ventasHorario.find(h => h.horario === 'Cena')?.ventas || 0;
+            
+            setData({
+              ventasTotales: kpis.ventas_totales / 1000000, // Convertir a millones
+              paxTotal: kpis.pax_total,
+              chequesTotal: kpis.cheques_total,
+              propinaTotal: kpis.propinas_total,
+              ticketPromedio: kpis.cheque_promedio,
+              ventasDesayuno: desayuno / 1000000,
+              ventasComida: comida / 1000000,
+              ventasCena: cena / 1000000,
+              topProductos: (result.top_productos || []).map(p => ({
+                nombre: p.producto,
+                ventas: p.ventas,
+                cantidad: p.cantidad
+              })),
+              topCasas: (result.casas_distribuidoras || []).map(c => ({
+                casa: c.casa,
+                ventas: c.ventas,
+                porcentaje: c.participacion || ((c.ventas / kpis.ventas_totales) * 100)
+              })),
+              _source: result._source || 'LIVE'
+            });
+          }
+          // Si no hay datos reales, mantener fallback
         }
       }
     } catch (error) {
-      console.log('[IA Dashboard] Usando datos de fallback');
+      console.log('[IA Dashboard] Usando datos de fallback:', error.message);
     } finally {
       setLoading(false);
     }
