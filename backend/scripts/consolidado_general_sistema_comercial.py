@@ -382,5 +382,145 @@ SQL_PROCEDURES = [
     """
 ]
 
-# (Los arrays de MENUS_SEED, CACHE_SEED, transacciones, clientes, inventario están embebidos en el archivo)
-# ... ver código completo en el archivo ...
+# ======================================================================================
+# DATOS SEMILLA (SEED) - 5 Unidades de Negocio EDARSA
+# ======================================================================================
+CACHE_SEED = [
+    ("tortas_don_polo", "Tortas Don Polo", 3250000.00, 12500, 8200, 78.50),
+    ("la_cascada", "La Cascada", 2890000.00, 11200, 7100, 72.30),
+    ("el_farolito", "El Farolito", 2150000.00, 8900, 5600, 65.80),
+    ("taqueria_mexico", "Taquería México", 1980000.00, 7800, 4900, 61.20),
+    ("mariscos_nayarit", "Mariscos Nayarit", 2450000.00, 9600, 6200, 68.90),
+]
+
+MENUS_SEED = [
+    ("Dashboard", "dashboard", "LayoutDashboard", "/comercial/dashboard", 1, "OPERADOR_EDARSA"),
+    ("Ventas", "ventas", "DollarSign", "/comercial/ventas", 2, "OPERADOR_EDARSA"),
+    ("Inventario", "inventario", "Package", "/inventario", 3, "OPERADOR_EDARSA"),
+    ("Clientes", "clientes", "Users", "/crm/clientes", 4, "OPERADOR_EDARSA"),
+    ("Compras", "compras", "ShoppingCart", "/compras", 5, "OPERADOR_EDARSA"),
+    ("Reportes", "reportes", "FileText", "/reportes", 6, "ADMIN_EDARSA"),
+    ("Configuración", "configuracion", "Settings", "/configuracion", 7, "ADMIN_EDARSA"),
+]
+
+# ======================================================================================
+# FUNCIÓN PRINCIPAL DE EJECUCIÓN
+# ======================================================================================
+import pymssql
+import os
+
+def get_connection():
+    """Obtiene conexión usando credenciales del .env o por defecto"""
+    return pymssql.connect(
+        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
+        user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+        database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        timeout=30
+    )
+
+def execute_sql_batch(cursor, sql_list, description):
+    """Ejecuta una lista de sentencias SQL"""
+    logger.info(f"▶ Ejecutando: {description}")
+    success = 0
+    errors = 0
+    for i, sql in enumerate(sql_list):
+        try:
+            cursor.execute(sql)
+            success += 1
+        except Exception as e:
+            errors += 1
+            logger.warning(f"  ⚠ Sentencia {i+1}: {str(e)[:80]}")
+    logger.info(f"  ✓ Completado: {success} OK, {errors} errores")
+    return success, errors
+
+def seed_cache_data(cursor):
+    """Inserta datos semilla en TableroEjecutivoCache"""
+    logger.info("▶ Insertando datos SEED en Comercial.TableroEjecutivoCache")
+    for unit_id, unit_name, ventas, pax, cheques, meta in CACHE_SEED:
+        try:
+            cursor.execute("""
+                IF NOT EXISTS (SELECT 1 FROM Comercial.TableroEjecutivoCache WHERE UnidadID = %s)
+                    INSERT INTO Comercial.TableroEjecutivoCache 
+                    (UnidadID, UnidadNombre, VentasConsolidadas, PaxTotal, ChequesEmitidos, PorcentajeMeta)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                ELSE
+                    UPDATE Comercial.TableroEjecutivoCache 
+                    SET VentasConsolidadas = %s, PaxTotal = %s, ChequesEmitidos = %s, PorcentajeMeta = %s, UltimaSincronizacion = GETDATE()
+                    WHERE UnidadID = %s
+            """, (unit_id, unit_id, unit_name, ventas, pax, cheques, meta, ventas, pax, cheques, meta, unit_id))
+        except Exception as e:
+            logger.warning(f"  ⚠ SEED {unit_name}: {str(e)[:60]}")
+    logger.info("  ✓ SEED de caché completado")
+
+def seed_menus_data(cursor):
+    """Inserta datos semilla en Sync_Menus"""
+    logger.info("▶ Insertando datos SEED en dbo.Sync_Menus")
+    for titulo, label, icon, route, orden, rol in MENUS_SEED:
+        try:
+            cursor.execute("""
+                IF NOT EXISTS (SELECT 1 FROM dbo.Sync_Menus WHERE route = %s)
+                    INSERT INTO dbo.Sync_Menus (titulo, label, icon, route, orden, rol_permitido)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+            """, (route, titulo, label, icon, route, orden, rol))
+        except Exception as e:
+            logger.warning(f"  ⚠ SEED Menú {titulo}: {str(e)[:60]}")
+    logger.info("  ✓ SEED de menús completado")
+
+def main():
+    """Función principal - Ejecuta todo el consolidado"""
+    logger.info("=" * 70)
+    logger.info("INICIANDO CONSOLIDADO GENERAL SISTEMA COMERCIAL - EDARSAHUB")
+    logger.info("=" * 70)
+    
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        logger.info("✅ Conexión establecida con SQL Server")
+        
+        # 1. Crear esquemas y tablas
+        execute_sql_batch(cursor, SQL_SCHEMA_AND_TABLES, "ESQUEMAS Y TABLAS")
+        conn.commit()
+        
+        # 2. Crear funciones
+        execute_sql_batch(cursor, SQL_FUNCTIONS, "FUNCIONES MATEMÁTICAS")
+        conn.commit()
+        
+        # 3. Crear vistas
+        execute_sql_batch(cursor, SQL_VIEWS, "VISTAS ANALÍTICAS")
+        conn.commit()
+        
+        # 4. Crear procedimientos almacenados
+        execute_sql_batch(cursor, SQL_PROCEDURES, "PROCEDIMIENTOS ALMACENADOS")
+        conn.commit()
+        
+        # 5. Insertar datos SEED
+        seed_cache_data(cursor)
+        conn.commit()
+        
+        seed_menus_data(cursor)
+        conn.commit()
+        
+        # 6. Verificación final
+        cursor.execute("SELECT COUNT(*) FROM Comercial.TableroEjecutivoCache")
+        cache_count = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM dbo.Sync_Menus")
+        menus_count = cursor.fetchone()[0]
+        
+        logger.info("=" * 70)
+        logger.info(f"✅ CONSOLIDADO COMPLETADO EXITOSAMENTE")
+        logger.info(f"   - Unidades en caché: {cache_count}")
+        logger.info(f"   - Menús registrados: {menus_count}")
+        logger.info("=" * 70)
+        
+        conn.close()
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ ERROR FATAL: {e}")
+        return False
+
+if __name__ == "__main__":
+    main()
