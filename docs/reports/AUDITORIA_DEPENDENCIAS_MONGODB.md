@@ -1,6 +1,6 @@
 # Auditoría de Dependencias MongoDB
 
-Generado: 2026-06-02T09:30:23+00:00
+Generado: 2026-06-02T09:33:47+00:00
 
 ## Coincidencias en backend/frontend/docs
 
