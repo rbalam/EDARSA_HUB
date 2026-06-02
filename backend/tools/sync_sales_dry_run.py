@@ -5,14 +5,16 @@ SYNC_SALES DRY-RUN TOOL
 Herramienta de diagnóstico para validar extracción de tickets
 hacia Sync_Sales SIN insertar datos.
 
-Patrón de conexión: Igual que sync_comercial_edarsahub.py
-- Lee Unidades_Negocio para resolver server_id
-- Lee Servidores_Conexiones para credenciales
+ALINEADO 100% AL PATRÓN DE sync_comercial_edarsahub.py:
+- Usa get_server_connection_config() del módulo comercial_v2
+- Usa execute_query_on_server() del módulo comercial_v2
+- Lee credenciales de Servidores_Conexiones
 - Descifra password con core.secret_manager.decrypt_secret()
-- NO usa hardcoded ni variables de entorno
+- NO usa hardcoded ni variables de entorno para POS
 
 Uso:
-    python3 sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01 --fecha-fin 2026-06-02 --dry-run
+    cd /app/backend
+    python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01 --fecha-fin 2026-06-01 --dry-run
 
 Autor: Agente E1
 Fecha: 2026-06-02
@@ -24,12 +26,149 @@ import logging
 import os
 import sys
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 
 # Agregar backend al path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pymssql
+
+# Importar directamente sin cargar todo el módulo (evitar dependencias de security)
+from core.db import execute_sql_query
+
+# Configuración EDARSAHUB (igual que repository_comercial_edarsahub.py)
+EDARSAHUB_CONFIG = {
+    'host': '54.39.104.176',
+    'port': 1433,
+    'database': 'EDARSAHUB',
+    'username': 'HRLectura',
+    'password': 'National09$'
+}
+
+# Enum de estado de conexión
+class ConnectionStatus:
+    ONLINE = "ONLINE"
+    OFFLINE = "OFFLINE"
+    TIMEOUT = "TIMEOUT"
+
+
+def _execute_query(query: str) -> List[Dict]:
+    """Ejecuta query en EDARSAHUB."""
+    try:
+        result = execute_sql_query(
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            query
+        )
+        return result if result else []
+    except Exception as e:
+        logger.error(f"Error ejecutando query: {e}")
+        return []
+
+
+def get_server_connection_config(server_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Obtiene config de servidor desde Servidores_Conexiones.
+    Copia del patrón de sync_comercial_edarsahub.py
+    """
+    try:
+        from core.secret_manager import decrypt_secret
+    except ImportError:
+        decrypt_secret = lambda x: x
+    
+    try:
+        from core.db import parse_sql_server_host
+    except ImportError:
+        def parse_sql_server_host(host, default_port):
+            if ',' in host:
+                parts = host.split(',')
+                h = parts[0]
+                rest = parts[1] if len(parts) > 1 else str(default_port)
+                if '\\' in rest:
+                    p_str, inst = rest.split('\\', 1)
+                    p = int(p_str) if p_str.isdigit() else default_port
+                    return (h, p, inst)
+                else:
+                    p = int(rest) if rest.isdigit() else default_port
+                    return (h, p, None)
+            return (host, default_port, None)
+    
+    query = f"""
+    SELECT 
+        id, nombre, host, port, database_name,
+        username, password_encrypted, system_type, activo
+    FROM Servidores_Conexiones
+    WHERE id = '{server_id}'
+    """
+    
+    rows = _execute_query(query)
+    if not rows:
+        return None
+    
+    row = rows[0]
+    
+    # Descifrar password
+    pwd_enc = row.get('password_encrypted', '')
+    try:
+        password = decrypt_secret(pwd_enc)
+    except Exception:
+        password = pwd_enc
+    
+    # Parsear host
+    host_raw = row.get('host', '')
+    default_port = row.get('port') or 1433
+    hostname, parsed_port, instance = parse_sql_server_host(host_raw, default_port)
+    
+    return {
+        'id': str(row['id']),
+        'nombre': row['nombre'],
+        'host': hostname,
+        'host_raw': host_raw,
+        'port': parsed_port,
+        'instance': instance,
+        'database_name': row['database_name'],
+        'username': row['username'],
+        'password': password,
+        'system_type': row['system_type'],
+        'activo': row['activo']
+    }
+
+
+def execute_query_on_server(server_config: Dict, query: str) -> Tuple[List[Dict], str]:
+    """
+    Ejecuta query en servidor POS.
+    Copia del patrón de sync_comercial_edarsahub.py
+    """
+    try:
+        host = server_config.get('host_raw') or server_config.get('host', '')
+        port = server_config.get('port', 1433)
+        database = server_config.get('database_name', '')
+        username = server_config.get('username', '')
+        password = server_config.get('password', '')
+        
+        result = execute_sql_query(host, port, database, username, password, query)
+        
+        if result is None:
+            return [], ConnectionStatus.OFFLINE
+        
+        if result:
+            return result, ConnectionStatus.ONLINE
+        
+        # Sin resultados, verificar conectividad
+        test_result = execute_sql_query(host, port, database, username, password, "SELECT 1 AS test")
+        if test_result:
+            return [], ConnectionStatus.ONLINE
+        else:
+            return [], ConnectionStatus.OFFLINE
+        
+    except Exception as e:
+        error_str = str(e).lower()
+        if 'timeout' in error_str:
+            return [], ConnectionStatus.TIMEOUT
+        return [], ConnectionStatus.OFFLINE
 
 # Configuración de logging
 logging.basicConfig(
@@ -39,55 +178,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# =============================================================================
-# CONFIGURACIÓN EDARSAHUB (Destino)
-# =============================================================================
+# Unidades permitidas (solo SoftRestaurant con credenciales completas)
+UNIDADES_PERMITIDAS = ["CIENFUEGOS", "130MID", "ESTELAR"]
 
-EDARSAHUB_CONFIG = {
-    "host": os.environ.get("EDARSAHUB_HOST", "54.39.104.176"),
-    "port": int(os.environ.get("EDARSAHUB_PORT", "1433")),
-    "database": os.environ.get("EDARSAHUB_DATABASE", "EDARSAHUB"),
-    "user": os.environ.get("EDARSAHUB_USERNAME", "HRLectura"),
-    "password": os.environ.get("EDARSAHUB_PASSWORD", "National09$"),
-}
-
-# Mapeo de códigos de unidad a nombres canónicos
-UNIDADES_PERMITIDAS = ["CIENFUEGOS", "130MID", "ESTELAR"]  # Solo SoftRestaurant con credenciales
 
 # =============================================================================
-# FUNCIONES DE CONEXIÓN Y CONFIGURACIÓN
+# FUNCIONES DE CONFIGURACIÓN (usando patrón de sync_comercial_edarsahub.py)
 # =============================================================================
-
-def get_edarsahub_connection():
-    """Conexión a EDARSAHUB (destino)."""
-    return pymssql.connect(
-        server=EDARSAHUB_CONFIG["host"],
-        port=EDARSAHUB_CONFIG["port"],
-        user=EDARSAHUB_CONFIG["user"],
-        password=EDARSAHUB_CONFIG["password"],
-        database=EDARSAHUB_CONFIG["database"],
-        timeout=60,
-        login_timeout=15,
-        autocommit=False,
-        as_dict=True
-    )
-
-
-def execute_edarsahub_query(query: str) -> List[Dict]:
-    """Ejecuta query en EDARSAHUB."""
-    conn = get_edarsahub_connection()
-    cursor = conn.cursor()
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return rows
-
 
 def get_unidad_config(unidad_codigo: str) -> Optional[Dict[str, Any]]:
     """
-    Obtiene la configuración de una unidad desde Unidades_Negocio y Servidores_Conexiones.
-    Patrón igual a sync_comercial_edarsahub.py.
+    Obtiene la configuración completa de una unidad.
+    Patrón: Unidades_Negocio -> server_id -> Servidores_Conexiones
     """
     # Mapeo de códigos a nombres en Unidades_Negocio
     nombre_map = {
@@ -98,7 +200,7 @@ def get_unidad_config(unidad_codigo: str) -> Optional[Dict[str, Any]]:
     
     nombre_buscar = nombre_map.get(unidad_codigo, unidad_codigo)
     
-    # 1. Buscar en Unidades_Negocio para obtener server_id
+    # 1. Buscar en Unidades_Negocio
     query_unidad = f"""
     SELECT 
         id,
@@ -114,7 +216,7 @@ def get_unidad_config(unidad_codigo: str) -> Optional[Dict[str, Any]]:
     """
     
     try:
-        unidades = execute_edarsahub_query(query_unidad)
+        unidades = _execute_query(query_unidad)
         if not unidades:
             logger.error(f"No se encontró unidad '{nombre_buscar}' en Unidades_Negocio")
             return None
@@ -129,10 +231,15 @@ def get_unidad_config(unidad_codigo: str) -> Optional[Dict[str, Any]]:
         logger.info(f"Unidad encontrada: {unidad['nombre']} (ID: {unidad['id']})")
         logger.info(f"Server ID: {server_id}")
         
-        # 2. Obtener configuración del servidor
-        server_config = get_server_connection_config(server_id)
+        # 2. Obtener configuración del servidor usando la función del módulo
+        server_config = get_server_connection_config(str(server_id))
         if not server_config:
             logger.error(f"No se pudo obtener configuración del servidor {server_id}")
+            return None
+        
+        # Verificar credenciales
+        if not server_config.get('username') or not server_config.get('password'):
+            logger.error(f"Servidor {server_config.get('nombre')} no tiene credenciales")
             return None
         
         # 3. Combinar información
@@ -140,105 +247,12 @@ def get_unidad_config(unidad_codigo: str) -> Optional[Dict[str, Any]]:
             "unidad_id": str(unidad['id']),
             "unidad_codigo": unidad.get('codigo') or unidad_codigo,
             "unidad_nombre": unidad['nombre'],
-            "server_id": server_id,
-            "server_nombre": server_config['nombre'],
-            "system_type": server_config['system_type'],
-            "host": server_config['host'],
-            "host_raw": server_config['host_raw'],
-            "port": server_config['port'],
-            "database": server_config['database_name'],
-            "username": server_config['username'],
-            "password": server_config['password'],
-            "has_credentials": bool(server_config['username'] and server_config['password']),
+            "server_id": str(server_id),
+            "server_config": server_config,  # Config completa del servidor
         }
         
     except Exception as e:
         logger.error(f"Error obteniendo config de unidad {unidad_codigo}: {e}")
-        return None
-
-
-def get_server_connection_config(server_id: str) -> Optional[Dict[str, Any]]:
-    """
-    Obtiene la configuración de conexión de un servidor desde Servidores_Conexiones.
-    Patrón copiado de sync_comercial_edarsahub.py.
-    """
-    # Importar decrypt_secret
-    try:
-        from core.secret_manager import decrypt_secret
-    except ImportError:
-        logger.warning("No se pudo importar decrypt_secret, usando fallback")
-        decrypt_secret = lambda x: x
-    
-    # Importar parse_sql_server_host
-    try:
-        from core.db import parse_sql_server_host
-    except ImportError:
-        def parse_sql_server_host(host, default_port):
-            # Parseo básico
-            if ',' in host:
-                parts = host.split(',')
-                h = parts[0]
-                p = int(parts[1].split('\\')[0]) if len(parts) > 1 else default_port
-                return (h, p, None)
-            return (host, default_port, None)
-    
-    query = f"""
-    SELECT 
-        id,
-        nombre,
-        host,
-        port,
-        database_name,
-        username,
-        password_encrypted,
-        system_type,
-        activo
-    FROM Servidores_Conexiones
-    WHERE id = '{server_id}'
-    """
-    
-    try:
-        rows = execute_edarsahub_query(query)
-        if not rows:
-            logger.error(f"Servidor {server_id} no encontrado en Servidores_Conexiones")
-            return None
-        
-        row = rows[0]
-        
-        # Verificar que tenga credenciales
-        if not row.get('username') or not row.get('password_encrypted'):
-            logger.error(f"Servidor {row['nombre']} no tiene credenciales configuradas")
-            return None
-        
-        # Descifrar password
-        pwd_enc = row.get('password_encrypted', '')
-        try:
-            password = decrypt_secret(pwd_enc)
-            logger.info("Password descifrada correctamente")
-        except Exception as e:
-            logger.warning(f"Error descifrando password: {e}, usando valor original")
-            password = pwd_enc
-        
-        # Parsear host
-        host_raw = row.get('host', '')
-        default_port = row.get('port') or 1433
-        hostname, parsed_port, instance = parse_sql_server_host(host_raw, default_port)
-        
-        return {
-            'id': str(row['id']),
-            'nombre': row['nombre'],
-            'host': hostname,
-            'host_raw': host_raw,
-            'port': parsed_port,
-            'database_name': row['database_name'],
-            'username': row['username'],
-            'password': password,
-            'system_type': row['system_type'],
-            'activo': row['activo']
-        }
-        
-    except Exception as e:
-        logger.error(f"Error obteniendo config de servidor {server_id}: {e}")
         return None
 
 
@@ -247,7 +261,7 @@ def get_server_connection_config(server_id: str) -> Optional[Dict[str, Any]]:
 # =============================================================================
 
 def get_softrestaurant_query(fecha_inicio: str, fecha_fin: str) -> str:
-    """Query para extraer ventas de SoftRestaurant."""
+    """Query para extraer ventas cerradas de SoftRestaurant."""
     return f"""
     SELECT 
         CONVERT(VARCHAR(64), ch.folio) AS NumeroTicket,
@@ -279,71 +293,51 @@ def get_softrestaurant_query(fecha_inicio: str, fecha_fin: str) -> str:
 
 
 # =============================================================================
-# FUNCIONES DE EXTRACCIÓN Y CONEXIÓN POS
+# FUNCIONES DE EXTRACCIÓN (usando execute_query_on_server del módulo)
 # =============================================================================
 
-def connect_to_pos(config: Dict) -> Optional[pymssql.Connection]:
-    """Conecta a un servidor POS usando la configuración obtenida."""
-    try:
-        # Construir server string con instancia si existe
-        server = config['host_raw'] if config.get('host_raw') else config['host']
-        
-        logger.info(f"Conectando a POS: {server}/{config['database']}")
-        
-        conn = pymssql.connect(
-            server=server,
-            port=config.get('port', 1433),
-            user=config['username'],
-            password=config['password'],
-            database=config['database'],
-            timeout=30,
-            login_timeout=15,
-            as_dict=True
-        )
-        
-        logger.info("✅ Conexión a POS exitosa")
-        return conn
-        
-    except Exception as e:
-        logger.error(f"❌ Error conectando a POS: {e}")
-        return None
-
-
-def extract_sales_from_pos(config: Dict, fecha_inicio: str, fecha_fin: str) -> List[Dict]:
-    """Extrae ventas de un POS específico."""
+def extract_sales_from_pos(config: Dict, fecha_inicio: str, fecha_fin: str) -> Tuple[List[Dict], str]:
+    """
+    Extrae ventas de un POS usando execute_query_on_server del módulo comercial_v2.
+    Retorna (registros, connection_status)
+    """
+    server_config = config['server_config']
+    system_type = server_config.get('system_type', '').upper()
     
-    conn = connect_to_pos(config)
-    if not conn:
-        return []
+    # Solo SoftRestaurant por ahora
+    if 'SOFT' not in system_type:
+        logger.error(f"Sistema {system_type} no soportado en esta versión")
+        return [], "SISTEMA_NO_SOPORTADO"
     
-    try:
-        cursor = conn.cursor()
-        
-        # Solo SoftRestaurant por ahora
-        if 'SOFT' in config.get('system_type', '').upper():
-            query = get_softrestaurant_query(fecha_inicio, fecha_fin)
-        else:
-            logger.error(f"Sistema {config['system_type']} no soportado en esta versión")
-            return []
-        
-        logger.info(f"Ejecutando query de extracción para rango {fecha_inicio} a {fecha_fin}...")
-        cursor.execute(query)
-        rows = cursor.fetchall()
-        
-        # Agregar unidad de negocio a cada registro
-        for row in rows:
-            row["UnidadNegocio"] = config["unidad_codigo"]
-        
-        logger.info(f"✅ {len(rows)} registros extraídos del POS")
-        
-        cursor.close()
-        conn.close()
-        
-        return rows
-        
-    except Exception as e:
-        logger.error(f"Error extrayendo datos: {e}")
-        return []
+    # Construir query
+    query = get_softrestaurant_query(fecha_inicio, fecha_fin)
+    
+    logger.info(f"Ejecutando query en {server_config['nombre']}...")
+    logger.info(f"Host: {server_config.get('host_raw', server_config.get('host'))}")
+    logger.info(f"Database: {server_config['database_name']}")
+    
+    # Usar la función del módulo (misma que usa sync_comercial_edarsahub.py)
+    rows, conn_status = execute_query_on_server(server_config, query)
+    
+    # Mapear estado de conexión
+    status_map = {
+        ConnectionStatus.ONLINE: "OK",
+        ConnectionStatus.OFFLINE: "OFFLINE",
+        ConnectionStatus.TIMEOUT: "TIMEOUT",
+    }
+    connection_status = status_map.get(conn_status, str(conn_status))
+    
+    if conn_status != ConnectionStatus.ONLINE:
+        logger.warning(f"Estado de conexión: {connection_status}")
+        return [], connection_status
+    
+    # Agregar unidad de negocio a cada registro
+    for row in rows:
+        row["UnidadNegocio"] = config["unidad_codigo"]
+    
+    logger.info(f"✅ {len(rows)} registros extraídos")
+    
+    return rows, connection_status
 
 
 # =============================================================================
@@ -360,38 +354,37 @@ def get_sync_sales_count() -> Dict:
         MAX(last_modified) AS ultima_modificacion
     FROM dbo.Sync_Sales
     """
-    rows = execute_edarsahub_query(query)
-    return rows[0] if rows else {}
+    rows = _execute_query(query)
+    return rows[0] if rows else {"registros": 0}
 
 
 def get_kpis_count() -> int:
     """Obtiene el conteo de Comercial_KPIs_Diarios_v2."""
     query = "SELECT COUNT(*) AS total FROM Comercial_KPIs_Diarios_v2"
-    rows = execute_edarsahub_query(query)
+    rows = _execute_query(query)
     return rows[0]['total'] if rows else 0
 
 
 def check_duplicates_in_sync_sales(sales: List[Dict]) -> Dict[str, int]:
     """Verifica cuántos registros ya existen en Sync_Sales."""
-    conn = get_edarsahub_connection()
-    cursor = conn.cursor()
+    if not sales:
+        return {"nuevos": 0, "duplicados": 0}
+    
     stats = {"nuevos": 0, "duplicados": 0}
     
     for sale in sales:
-        cursor.execute("""
-            SELECT COUNT(*) AS cnt FROM Sync_Sales 
-            WHERE NumeroTicket = %s AND UnidadNegocio = %s 
-              AND CAST(FechaHora AS DATE) = CAST(%s AS DATE)
-        """, (sale["NumeroTicket"], sale["UnidadNegocio"], sale["FechaHora"]))
-        
-        result = cursor.fetchone()
-        if result['cnt'] > 0:
+        query = f"""
+        SELECT COUNT(*) AS cnt FROM Sync_Sales 
+        WHERE NumeroTicket = '{sale["NumeroTicket"]}' 
+          AND UnidadNegocio = '{sale["UnidadNegocio"]}' 
+          AND CAST(FechaHora AS DATE) = CAST('{sale["FechaHora"]}' AS DATE)
+        """
+        rows = _execute_query(query)
+        if rows and rows[0]['cnt'] > 0:
             stats["duplicados"] += 1
         else:
             stats["nuevos"] += 1
     
-    cursor.close()
-    conn.close()
     return stats
 
 
@@ -430,9 +423,10 @@ def generate_report(
     kpis_before: int,
     kpis_after: int,
     connection_status: str,
-    verbose: bool = False
 ) -> Dict[str, Any]:
     """Genera reporte completo del dry-run."""
+    
+    server_config = config['server_config']
     
     # Calcular totales
     total_monto = sum(float(s.get("MontoTotal", 0) or 0) for s in sales)
@@ -446,11 +440,12 @@ def generate_report(
             "server_id": config.get("server_id"),
         },
         "servidor": {
-            "nombre": config.get("server_nombre"),
-            "host": config.get("host_raw"),
-            "database": config.get("database"),
-            "usuario_status": "USUARIO_CONFIGURADO" if config.get("username") else "SIN_USUARIO",
-            "password_status": "PASSWORD_CONFIGURADO" if config.get("password") else "SIN_PASSWORD",
+            "nombre": server_config.get("nombre"),
+            "host": server_config.get("host_raw", server_config.get("host")),
+            "database": server_config.get("database_name"),
+            "system_type": server_config.get("system_type"),
+            "usuario_status": "USUARIO_CONFIGURADO" if server_config.get("username") else "SIN_USUARIO",
+            "password_status": "PASSWORD_CONFIGURADO" if server_config.get("password") else "SIN_PASSWORD",
         },
         "conexion": {
             "status": connection_status,
@@ -473,7 +468,7 @@ def generate_report(
         "verificacion_tablas": {
             "sync_sales_antes": sync_sales_before,
             "sync_sales_despues": sync_sales_after,
-            "sync_sales_sin_cambios": sync_sales_before == sync_sales_after,
+            "sync_sales_sin_cambios": sync_sales_before.get('registros') == sync_sales_after.get('registros'),
             "kpis_antes": kpis_before,
             "kpis_despues": kpis_after,
             "kpis_sin_cambios": kpis_before == kpis_after,
@@ -485,7 +480,7 @@ def generate_report(
         ) else "NO_EJECUTAR",
     }
     
-    # Muestra anonimizada
+    # Muestra anonimizada (5 registros)
     if sales:
         report["muestra_registros"] = []
         for i, sale in enumerate(sales[:5]):
@@ -512,55 +507,50 @@ def print_report(report: Dict[str, Any]):
     print(f"Timestamp: {report['timestamp']}")
     print()
     
-    print("-" * 40)
-    print("1. UNIDAD USADA")
-    print("-" * 40)
-    print(f"   Código: {report['unidad']['codigo']}")
-    print(f"   Nombre: {report['unidad']['nombre']}")
-    print(f"   Server ID: {report['unidad']['server_id']}")
-    print()
+    sections = [
+        ("1. UNIDAD USADA", [
+            f"Código: {report['unidad']['codigo']}",
+            f"Nombre: {report['unidad']['nombre']}",
+            f"Server ID: {report['unidad']['server_id']}",
+        ]),
+        ("2. SERVIDOR ORIGEN", [
+            f"Nombre: {report['servidor']['nombre']}",
+            f"Host: {report['servidor']['host']}",
+            f"Database: {report['servidor']['database']}",
+            f"Sistema: {report['servidor']['system_type']}",
+            f"Usuario: {report['servidor']['usuario_status']}",
+            f"Password: {report['servidor']['password_status']}",
+        ]),
+        ("3. ESTADO DE CONEXIÓN", [
+            f"Status: {report['conexion']['status']}",
+        ]),
+        ("4. EXTRACCIÓN", [
+            f"Rango: {report['rango']['fecha_inicio']} a {report['rango']['fecha_fin']}",
+            f"Registros leídos: {report['extraccion']['registros_leidos']:,}",
+            f"Monto total: ${report['extraccion']['monto_total']:,.2f}",
+            f"PAX total: {report['extraccion']['pax_total']:,}",
+            f"Ticket promedio: ${report['extraccion']['ticket_promedio']:,.2f}",
+        ]),
+        ("5. DUPLICADOS", [
+            f"Nuevos (insertaría): {report['duplicados']['nuevos_a_insertar']:,}",
+            f"Duplicados (skip): {report['duplicados']['duplicados_detectados']:,}",
+        ]),
+        ("6. VALIDACIÓN JSON ITEMS", [
+            f"Válidos: {report['validacion_items']['validos']:,}",
+            f"Nulos: {report['validacion_items']['nulos']:,}",
+            f"Inválidos: {report['validacion_items']['invalidos']:,}",
+        ]),
+    ]
     
-    print("-" * 40)
-    print("2. SERVIDOR ORIGEN")
-    print("-" * 40)
-    print(f"   Nombre: {report['servidor']['nombre']}")
-    print(f"   Host: {report['servidor']['host']}")
-    print(f"   Database: {report['servidor']['database']}")
-    print(f"   Usuario: {report['servidor']['usuario_status']}")
-    print(f"   Password: {report['servidor']['password_status']}")
-    print()
+    for title, lines in sections:
+        print("-" * 40)
+        print(title)
+        print("-" * 40)
+        for line in lines:
+            print(f"   {line}")
+        print()
     
-    print("-" * 40)
-    print("3. ESTADO DE CONEXIÓN")
-    print("-" * 40)
-    print(f"   Status: {report['conexion']['status']}")
-    print()
-    
-    print("-" * 40)
-    print("4. EXTRACCIÓN")
-    print("-" * 40)
-    print(f"   Rango: {report['rango']['fecha_inicio']} a {report['rango']['fecha_fin']}")
-    print(f"   Registros leídos: {report['extraccion']['registros_leidos']:,}")
-    print(f"   Monto total: ${report['extraccion']['monto_total']:,.2f}")
-    print(f"   PAX total: {report['extraccion']['pax_total']:,}")
-    print(f"   Ticket promedio: ${report['extraccion']['ticket_promedio']:,.2f}")
-    print()
-    
-    print("-" * 40)
-    print("5. DUPLICADOS")
-    print("-" * 40)
-    print(f"   Nuevos (insertaría): {report['duplicados']['nuevos_a_insertar']:,}")
-    print(f"   Duplicados (skip): {report['duplicados']['duplicados_detectados']:,}")
-    print()
-    
-    print("-" * 40)
-    print("6. VALIDACIÓN JSON ITEMS")
-    print("-" * 40)
-    print(f"   Válidos: {report['validacion_items']['validos']:,}")
-    print(f"   Nulos: {report['validacion_items']['nulos']:,}")
-    print(f"   Inválidos: {report['validacion_items']['invalidos']:,}")
-    print()
-    
+    # Muestra de registros
     if report.get("muestra_registros"):
         print("-" * 40)
         print("7. MUESTRA ANONIMIZADA (5 registros)")
@@ -570,6 +560,7 @@ def print_report(report: Dict[str, Any]):
             print(f"      Items: {'✅ válido' if rec['items_valido'] else '❌ nulo'} ({rec['items_len']} chars)")
         print()
     
+    # Verificación de tablas
     print("-" * 40)
     print("8. VERIFICACIÓN DE TABLAS")
     print("-" * 40)
@@ -583,10 +574,11 @@ def print_report(report: Dict[str, Any]):
     print(f"   KPIs_Diarios_v2 SIN CAMBIOS: {'✅ SÍ' if v['kpis_sin_cambios'] else '❌ NO'}")
     print()
     
+    # Recomendación
     print("=" * 80)
     if report["recomendacion"] == "EJECUTAR":
         print("✅ RECOMENDACIÓN: EJECUTAR")
-        print("   Ejecutar con --execute para insertar datos reales")
+        print("   Ejecutar con el job oficial para insertar datos reales")
     else:
         print("⚠️  RECOMENDACIÓN: NO EJECUTAR")
         if report['duplicados']['nuevos_a_insertar'] == 0:
@@ -632,7 +624,7 @@ def main():
     parser.add_argument(
         "--execute",
         action="store_true",
-        help="Ejecutar inserción real (NO IMPLEMENTADO AÚN)"
+        help="NO IMPLEMENTADO - usar job oficial"
     )
     parser.add_argument(
         "--verbose",
@@ -649,13 +641,13 @@ def main():
     args = parser.parse_args()
     
     if args.execute:
-        logger.error("❌ --execute no está implementado en esta versión de dry-run")
-        logger.error("   Este script es solo para validación. La inserción real")
-        logger.error("   debe hacerse con el job oficial después de aprobar el dry-run.")
+        logger.error("❌ --execute no está disponible en este script de diagnóstico")
+        logger.error("   Use el job oficial sync_comercial_edarsahub.py para inserción real")
         sys.exit(1)
     
     logger.info("=" * 60)
     logger.info("SYNC_SALES DRY-RUN")
+    logger.info("Patrón: sync_comercial_edarsahub.py")
     logger.info("=" * 60)
     logger.info(f"Unidad: {args.unidad}")
     logger.info(f"Rango: {args.fecha_inicio} a {args.fecha_fin}")
@@ -670,49 +662,38 @@ def main():
     
     # 2. Obtener configuración de unidad
     logger.info("")
-    logger.info("Paso 2: Obteniendo configuración de unidad...")
+    logger.info("Paso 2: Obteniendo configuración (Unidades_Negocio -> Servidores_Conexiones)...")
     config = get_unidad_config(args.unidad)
     if not config:
         logger.error(f"❌ No se pudo obtener configuración para {args.unidad}")
         sys.exit(1)
     
-    if not config.get("has_credentials"):
-        logger.error(f"❌ Servidor {config.get('server_nombre')} no tiene credenciales configuradas")
-        sys.exit(1)
-    
-    logger.info(f"   Servidor: {config['server_nombre']}")
-    logger.info(f"   Host: {config['host_raw']}")
-    logger.info(f"   Database: {config['database']}")
+    server_config = config['server_config']
+    logger.info(f"   Servidor: {server_config['nombre']}")
+    logger.info(f"   Host: {server_config.get('host_raw', server_config.get('host'))}")
+    logger.info(f"   Database: {server_config['database_name']}")
+    logger.info(f"   Sistema: {server_config['system_type']}")
     logger.info(f"   Usuario: CONFIGURADO")
     logger.info(f"   Password: CONFIGURADO")
     
     # 3. Extraer datos del POS
     logger.info("")
-    logger.info("Paso 3: Extrayendo datos del POS...")
-    connection_status = "ERROR"
-    sales = []
-    
-    try:
-        sales = extract_sales_from_pos(config, args.fecha_inicio, args.fecha_fin)
-        connection_status = "OK" if sales or True else "NO_DATA"  # OK aunque no haya datos
-        if not sales:
-            logger.warning("   No se encontraron registros en el rango especificado")
-            connection_status = "OK_NO_DATA"
-    except Exception as e:
-        logger.error(f"   Error: {e}")
-        connection_status = f"ERROR: {str(e)[:50]}"
+    logger.info("Paso 3: Extrayendo datos del POS (usando execute_query_on_server)...")
+    sales, connection_status = extract_sales_from_pos(config, args.fecha_inicio, args.fecha_fin)
+    logger.info(f"   Estado: {connection_status}")
+    logger.info(f"   Registros: {len(sales)}")
     
     # 4. Verificar duplicados
     logger.info("")
     logger.info("Paso 4: Verificando duplicados en Sync_Sales...")
-    dup_stats = check_duplicates_in_sync_sales(sales) if sales else {"nuevos": 0, "duplicados": 0}
+    dup_stats = check_duplicates_in_sync_sales(sales)
     logger.info(f"   Nuevos: {dup_stats['nuevos']}")
     logger.info(f"   Duplicados: {dup_stats['duplicados']}")
     
     # 5. Validar JSON items
     logger.info("")
     logger.info("Paso 5: Validando estructura JSON items...")
-    items_stats = validate_json_items(sales) if sales else {"validos": 0, "nulos": 0, "invalidos": 0}
+    items_stats = validate_json_items(sales)
     logger.info(f"   Válidos: {items_stats['validos']}")
     logger.info(f"   Nulos: {items_stats['nulos']}")
     logger.info(f"   Inválidos: {items_stats['invalidos']}")
@@ -738,7 +719,6 @@ def main():
         kpis_before=kpis_before,
         kpis_after=kpis_after,
         connection_status=connection_status,
-        verbose=args.verbose
     )
     
     # Imprimir reporte

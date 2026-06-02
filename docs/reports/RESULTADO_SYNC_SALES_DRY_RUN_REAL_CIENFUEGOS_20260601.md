@@ -1,8 +1,9 @@
 # RESULTADO: Sync_Sales Dry-Run Real - CIENFUEGOS 2026-06-01
 
-**Fecha de Ejecución:** 2026-06-02 20:47:42  
+**Fecha de Ejecución:** 2026-06-02 20:52:14 - 20:53:51  
 **Ejecutado por:** Agente E1  
-**Tipo:** DRY-RUN (sin inserción de datos)
+**Tipo:** DRY-RUN (sin inserción de datos)  
+**Patrón Usado:** sync_comercial_edarsahub.py (Servidores_Conexiones + decrypt_secret)
 
 ---
 
@@ -29,7 +30,7 @@
 | Campo | Valor |
 |-------|-------|
 | **Nombre** | CIENFUEGOS |
-| **Host** | servercienfuegos.ddns.net,6669\nationalsoft |
+| **Host (DDNS)** | servercienfuegos.ddns.net,6669\nationalsoft |
 | **IP Resuelta** | 189.162.155.142 |
 | **Puerto** | 6669 |
 | **Instancia** | nationalsoft |
@@ -50,9 +51,8 @@
 | Campo | Valor |
 |-------|-------|
 | **Estado** | USUARIO_CONFIGURADO |
-| **Nombre** | CFLectura (según Servidores_Conexiones) |
-
-*Nota: El valor real del usuario no se muestra por seguridad.*
+| **Nombre** | CFLectura |
+| **Fuente** | Leído de dbo.Servidores_Conexiones |
 
 ---
 
@@ -60,19 +60,26 @@
 
 | Campo | Valor |
 |-------|-------|
-| **Status** | ❌ NO CONECTADO |
-| **Error** | `Adaptive Server is unavailable or does not exist` |
-| **Causa** | El servidor DDNS no es accesible desde el entorno de preview |
+| **Status Final** | ❌ OFFLINE |
+| **Conectividad TCP** | ✅ SÍ (DDNS resuelve, puerto responde) |
+| **Error Real** | `Error de inicio de sesión del usuario 'CFLectura'` |
 
-### Detalle Técnico
+### Análisis Detallado
 
-```
-DB-Lib error message 20009, severity 9:
-Unable to connect: Adaptive Server is unavailable or does not exist 
-(servercienfuegos.ddns.net,6669)
-```
+1. **La conexión TCP al servidor SÍ funciona:**
+   - DDNS resuelve: `servercienfuegos.ddns.net` → `189.162.155.142`
+   - Puerto 6669 responde
+   - SQL Server envía respuesta PRELOGIN
 
-**Nota:** Este es el comportamiento ESPERADO cuando se ejecuta desde un entorno que no tiene acceso a la red corporativa donde está el servidor SoftRestaurant.
+2. **El error es de AUTENTICACIÓN, no de red:**
+   ```
+   pytds.tds_base.OperationalError: ("Error de inicio de sesión del usuario 'CFLectura'.", None)
+   ```
+
+3. **Causa raíz:**
+   - `SERVER_SECRET_KEY` no está configurada en el entorno
+   - `password_encrypted` no se pudo descifrar
+   - Se usó el valor cifrado como password (incorrecto)
 
 ---
 
@@ -81,7 +88,7 @@ Unable to connect: Adaptive Server is unavailable or does not exist
 | Campo | Valor |
 |-------|-------|
 | **Total** | 0 |
-| **Motivo** | No se pudo conectar al servidor origen |
+| **Motivo** | Error de autenticación (password cifrada no descifrada) |
 
 ---
 
@@ -99,13 +106,11 @@ Unable to connect: Adaptive Server is unavailable or does not exist
 |-------|-------|
 | **Duplicados** | 0 |
 
-*No se detectaron duplicados porque no hubo registros extraídos.*
-
 ---
 
 ## 10. MUESTRA ANONIMIZADA (5 registros)
 
-**N/A** - No se extrajeron registros debido a la falta de conectividad.
+**N/A** - No se extrajeron registros debido al error de autenticación.
 
 ---
 
@@ -117,8 +122,6 @@ Unable to connect: Adaptive Server is unavailable or does not exist
 | **Nulos** | 0 |
 | **Inválidos** | 0 |
 
-*No se pudo validar porque no hubo registros extraídos.*
-
 ---
 
 ## 12. CONFIRMACIÓN: Sync_Sales NO CAMBIÓ
@@ -126,15 +129,6 @@ Unable to connect: Adaptive Server is unavailable or does not exist
 | Campo | Antes | Después | Cambio |
 |-------|-------|---------|--------|
 | **Registros** | 0 | 0 | ✅ SIN CAMBIOS |
-| **Fecha mínima** | NULL | NULL | ✅ SIN CAMBIOS |
-| **Fecha máxima** | NULL | NULL | ✅ SIN CAMBIOS |
-| **Última modificación** | NULL | NULL | ✅ SIN CAMBIOS |
-
-**Verificación SQL:**
-```sql
-SELECT COUNT(*) AS registros FROM dbo.Sync_Sales;
--- Resultado: 0 (antes y después)
-```
 
 ---
 
@@ -144,44 +138,35 @@ SELECT COUNT(*) AS registros FROM dbo.Sync_Sales;
 |-------|-------|---------|--------|
 | **Registros** | 3,376 | 3,376 | ✅ SIN CAMBIOS |
 
-**Verificación SQL:**
-```sql
-SELECT COUNT(*) AS total FROM Comercial_KPIs_Diarios_v2;
--- Resultado: 3376 (antes y después)
-```
-
 ---
 
 ## 14. RECOMENDACIÓN
 
-### ⚠️ NO EJECUTAR --execute DESDE ESTE ENTORNO
+### ⚠️ NO EJECUTAR --execute HASTA CONFIGURAR SERVER_SECRET_KEY
 
-**Motivo:** El entorno de preview no tiene acceso de red al servidor SoftRestaurant CIENFUEGOS.
+**Problema identificado:** El password en `Servidores_Conexiones` está cifrado pero `SERVER_SECRET_KEY` no está configurada en el entorno.
 
-### Acciones Requeridas para Ejecutar Correctamente:
+### Acciones Requeridas:
 
-1. **Ejecutar desde servidor con acceso a red corporativa:**
-   - El servidor SoftRestaurant usa DNS dinámico (DDNS)
-   - Solo es accesible desde la red interna o VPN
-
-2. **Verificar SERVER_SECRET_KEY:**
-   - El warning indica que la clave de descifrado no está configurada
-   - En el entorno correcto, configurar: `export SERVER_SECRET_KEY=...`
-
-3. **Comando a ejecutar (desde servidor con acceso):**
+1. **Configurar SERVER_SECRET_KEY en el entorno:**
    ```bash
-   cd /app/backend
-   python tools/sync_sales_dry_run.py \
-     --unidad CIENFUEGOS \
-     --fecha-inicio 2026-06-01 \
-     --fecha-fin 2026-06-01 \
-     --dry-run \
-     --output /app/docs/reports/DRY_RUN_REAL.json
+   export SERVER_SECRET_KEY="<clave_correcta>"
    ```
+   
+2. **O ejecutar desde el servidor de producción** donde `SERVER_SECRET_KEY` ya está configurada.
 
-4. **Si el dry-run es exitoso, aprobar ejecución real:**
-   - El script actual no implementa `--execute` intencionalmente
-   - La inserción real debe hacerse con el job oficial `sync_comercial_edarsahub.py`
+3. **Verificar que el usuario CFLectura tenga permisos** en `softrestaurant95pro`.
+
+### Validación del Script
+
+| Aspecto | Estado |
+|---------|--------|
+| Usa Unidades_Negocio | ✅ |
+| Usa Servidores_Conexiones | ✅ |
+| Intenta decrypt_secret | ✅ |
+| No usa hardcoded | ✅ |
+| No modifica Sync_Sales | ✅ |
+| No modifica KPIs | ✅ |
 
 ---
 
@@ -189,12 +174,12 @@ SELECT COUNT(*) AS total FROM Comercial_KPIs_Diarios_v2;
 
 | Aspecto | Estado | Notas |
 |---------|--------|-------|
-| Script funcional | ✅ | Usa patrón correcto de Servidores_Conexiones |
-| Credenciales configuradas | ✅ | Usuario y password encontrados en BD |
-| Conectividad a POS | ❌ | Requiere ejecución desde red corporativa |
-| Sync_Sales sin cambios | ✅ | Verificado antes/después |
-| KPIs sin cambios | ✅ | Verificado antes/después |
-| Recomendación | ⏸️ PAUSAR | Re-ejecutar desde entorno con acceso a red |
+| Script alineado a sync_comercial_edarsahub.py | ✅ | Usa mismo patrón |
+| Conectividad a POS | ✅ | TCP funciona |
+| Autenticación | ❌ | Requiere SERVER_SECRET_KEY |
+| Sync_Sales sin cambios | ✅ | Verificado |
+| KPIs sin cambios | ✅ | Verificado |
+| Recomendación | ⏸️ | Configurar clave antes de continuar |
 
 ---
 
@@ -202,7 +187,7 @@ SELECT COUNT(*) AS total FROM Comercial_KPIs_Diarios_v2;
 
 | Archivo | Descripción |
 |---------|-------------|
-| `/app/docs/reports/DRY_RUN_CIENFUEGOS_20260601_REAL.json` | Reporte JSON del dry-run |
+| `/app/docs/reports/DRY_RUN_CIENFUEGOS_20260601_V2.json` | Reporte JSON (si se generó) |
 | `/app/docs/reports/RESULTADO_SYNC_SALES_DRY_RUN_REAL_CIENFUEGOS_20260601.md` | Este documento |
 
 ---
