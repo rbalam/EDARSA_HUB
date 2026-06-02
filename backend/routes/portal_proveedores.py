@@ -29,6 +29,8 @@ import os
 import xml.etree.ElementTree as ET
 import base64
 
+logger = logging.getLogger(__name__)
+
 # P0-PORTAL-PROVEEDORES-AUTH-01: Importar autenticación interna EDARSA HUB
 from core.security import get_current_user
 

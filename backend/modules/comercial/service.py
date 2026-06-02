@@ -469,9 +469,6 @@ def _obtener_sucursales_mpro_desde_resolver() -> List[Dict[str, Any]]:
     ]
 
 
-    return fallback_map.get(codigo_empresa, codigo_empresa)
-
-
 
 def _query_edarsahub_tablero(query: str) -> List[Dict]:
     """

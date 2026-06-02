@@ -13,7 +13,10 @@ FASE 3 DEL REFACTOR MODULAR (Diciembre 2025):
 
 from typing import Dict, List, Optional, Any
 import uuid
+import logging
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================================

@@ -17,7 +17,8 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from .schemas import (
-    OrdenCreate, OrdenUpdate, EstatusOrden, TipoDerivado, TipoMerma
+    OrdenCreate, OrdenUpdate, EstatusOrden, TipoDerivado, TipoMerma,
+    OrdenCapturaDirectaCreate
 )
 
 logger = logging.getLogger(__name__)

@@ -4231,6 +4231,395 @@ async def comercial_dashboard(
     tipo_comparacion: str = Query(default="dias_equiv"),  # dias_equiv o mes_completo
     current_user: Dict = Depends(get_current_user)
 ):
+    
+    try:
+        # Fechas para comparativos
+        fecha_dia_ant = (fecha_sel - timedelta(days=1)).strftime('%Y-%m-%d')
+        fecha_mes_ant = (fecha_sel.replace(day=1) - timedelta(days=1)).replace(day=min(fecha_sel.day, 28)).strftime('%Y-%m-%d')
+        fecha_ano_ant = fecha_sel.replace(year=fecha_sel.year - 1).strftime('%Y-%m-%d')
+        
+        items = []
+        resumen = {"pax_total": 0, "ventas_total": 0, "total_cheques": 0, "pax_promedio": 0, "cheque_promedio": 0}
+        comparativo = {"vs_dia_anterior": 0, "vs_mes_anterior": 0, "vs_ano_anterior": 0}
+        query_success = False
+        
+        # FASE 3A.2: Migrado a helper centralizado
+        if is_softrestaurant_system(server.get('system_type')):
+            f_fmt = fecha_str.replace('-', '')
+            
+            if agrupacion == 'vendedor':
+                # Agrupar por vendedor con detalle de cheques
+                query = f"""
+SELECT 
+    ISNULL(m.nombre, 'Sin Vendedor') as vendedor,
+    COUNT(DISTINCT ch.folio) as num_cheques,
+    ISNULL(SUM(ch.nopersonas), 0) as pax,
+    ISNULL(SUM(ch.total), 0) as total
+FROM cheques ch
+INNER JOIN turnos t ON t.idturno = ch.idturno
+LEFT JOIN meseros m ON m.idmesero = ch.idmesero
+WHERE CONVERT(varchar, t.apertura, 112) >= '{f_fmt}'
+  AND CONVERT(varchar, t.apertura, 112) <= '{f_fmt}'
+  AND ch.cancelado = 0
+  AND ch.total > 0
+GROUP BY m.nombre
+ORDER BY SUM(ch.total) DESC
+"""
+                result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query
+                )
+                
+                if result is not None:
+                    query_success = True
+                
+                for idx, row in enumerate(result or []):
+                    vendedor = row.get('vendedor', 'Sin Vendedor')
+                    pax = int(row.get('pax') or 0)
+                    total = float(row.get('total') or 0)
+                    num_cheques = int(row.get('num_cheques') or 0)
+                    
+                    # Obtener detalle de cheques por vendedor
+                    query_detalle = f"""
+SELECT 
+    ch.folio,
+    ISNULL(ch.nopersonas, 0) as pax,
+    ch.total
+FROM cheques ch
+INNER JOIN turnos t ON t.idturno = ch.idturno
+LEFT JOIN meseros m ON m.idmesero = ch.idmesero
+WHERE CONVERT(varchar, t.apertura, 112) >= '{f_fmt}'
+  AND CONVERT(varchar, t.apertura, 112) <= '{f_fmt}'
+  AND ch.cancelado = 0
+  AND ch.total > 0
+  AND ISNULL(m.nombre, 'Sin Vendedor') = '{vendedor.replace("'", "''")}'
+ORDER BY ch.total DESC
+"""
+                    detalle_result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query_detalle
+                    )
+                    
+                    detalle = []
+                    for det in detalle_result or []:
+                        det_pax = int(det.get('pax') or 0)
+                        det_total = float(det.get('total') or 0)
+                        detalle.append({
+                            "folio": str(det.get('folio', '')),
+                            "pax": det_pax,
+                            "total": det_total,
+                            "pax_promedio": det_total / det_pax if det_pax > 0 else det_total
+                        })
+                    
+                    items.append({
+                        "id": f"v_{idx}",
+                        "nombre": vendedor,
+                        "pax": pax,
+                        "total": total,
+                        "num_cheques": num_cheques,
+                        "pax_promedio": total / pax if pax > 0 else total,
+                        "detalle": detalle
+                    })
+            else:
+                # Agrupar por ticket/cheque con detalle de vendedor
+                query = f"""
+SELECT 
+    ch.folio,
+    ISNULL(m.nombre, 'Sin Vendedor') as vendedor,
+    ISNULL(ch.nopersonas, 0) as pax,
+    ch.total
+FROM cheques ch
+INNER JOIN turnos t ON t.idturno = ch.idturno
+LEFT JOIN meseros m ON m.idmesero = ch.idmesero
+WHERE CONVERT(varchar, t.apertura, 112) >= '{f_fmt}'
+  AND CONVERT(varchar, t.apertura, 112) <= '{f_fmt}'
+  AND ch.cancelado = 0
+  AND ch.total > 0
+ORDER BY ch.total DESC
+"""
+                result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query
+                )
+                
+                if result is not None:
+                    query_success = True
+                
+                for idx, row in enumerate(result or []):
+                    pax = int(row.get('pax') or 0)
+                    total = float(row.get('total') or 0)
+                    items.append({
+                        "id": f"t_{idx}",
+                        "folio": str(row.get('folio', '')),
+                        "nombre": str(row.get('folio', '')),
+                        "vendedor": row.get('vendedor', 'Sin Vendedor'),
+                        "pax": pax,
+                        "total": total,
+                        "pax_promedio": total / pax if pax > 0 else total,
+                        "detalle": [{
+                            "vendedor": row.get('vendedor', 'Sin Vendedor'),
+                            "pax": pax,
+                            "total": total,
+                            "pax_promedio": total / pax if pax > 0 else total
+                        }]
+                    })
+            
+            # Calcular totales
+            resumen["pax_total"] = sum(i['pax'] for i in items)
+            resumen["ventas_total"] = sum(i['total'] for i in items)
+            resumen["total_cheques"] = len(items) if agrupacion == 'ticket' else sum(i.get('num_cheques', 1) for i in items)
+            resumen["pax_promedio"] = resumen["ventas_total"] / resumen["pax_total"] if resumen["pax_total"] > 0 else 0
+            resumen["cheque_promedio"] = resumen["ventas_total"] / resumen["total_cheques"] if resumen["total_cheques"] > 0 else 0
+            
+            # Comparativos - helper interno
+            def get_pax_fecha(f):
+                f_q = f.replace('-', '')
+                q = f"""
+SELECT ISNULL(SUM(ch.nopersonas), 0) as pax, ISNULL(SUM(ch.total), 0) as total
+FROM cheques ch
+INNER JOIN turnos t ON t.idturno = ch.idturno
+WHERE CONVERT(varchar, t.apertura, 112) = '{f_q}'
+  AND ch.cancelado = 0 AND ch.total > 0
+"""
+                r = execute_sql_query(server['host'], server['port'], server['database'], 
+                                      server['username'], server['password'], q)
+                return int(r[0]['pax'] or 0) if r else 0, float(r[0]['total'] or 0) if r else 0
+            
+            pax_ant, total_ant = get_pax_fecha(fecha_dia_ant)
+            pax_mes, total_mes = get_pax_fecha(fecha_mes_ant)
+            pax_ano, total_ano = get_pax_fecha(fecha_ano_ant)
+            
+            pax_prom_actual = resumen["pax_promedio"]
+            pax_prom_ant = total_ant / pax_ant if pax_ant > 0 else 0
+            pax_prom_mes = total_mes / pax_mes if pax_mes > 0 else 0
+            pax_prom_ano = total_ano / pax_ano if pax_ano > 0 else 0
+            
+            comparativo["vs_dia_anterior"] = ((pax_prom_actual - pax_prom_ant) / pax_prom_ant * 100) if pax_prom_ant > 0 else 0
+            comparativo["vs_mes_anterior"] = ((pax_prom_actual - pax_prom_mes) / pax_prom_mes * 100) if pax_prom_mes > 0 else 0
+            comparativo["vs_ano_anterior"] = ((pax_prom_actual - pax_prom_ano) / pax_prom_ano * 100) if pax_prom_ano > 0 else 0
+        
+        # FASE 3A.2: Migrado a helper centralizado
+        elif is_mpro_system(server.get('system_type')):
+            # Implementación para MPRO
+            # IMPORTANTE: Usar formato seguro de fecha con CONVERT para evitar errores regionales
+            fecha_filter = build_sql_date_equals_safe('V.Vn_Fecha', fecha_str)
+            # BLINDAJE (Abril 2026): Campo de cancelación en MPRO es Es_Cve_Estado, NO Vn_Cancelacion
+            cancelacion_filter = "ISNULL(V.Es_Cve_Estado, '') <> 'CA'"
+            
+            if agrupacion == 'vendedor':
+                # CORRECCIÓN (Abril 2026): En MPRO, el nombre del vendedor está en tabla Vendedor, NO en Empleado
+                # El campo Vn_Cve_Vendedor en Venta_Encabezado se relaciona con Vendedor.Vn_Cve_Vendedor
+                query = f"""
+SELECT 
+    ISNULL(VND.Vn_Descripcion, 'Sin Vendedor') as vendedor,
+    COUNT(DISTINCT V.Vn_Folio) as num_cheques,
+    ISNULL(SUM(C.Co_Personas), 0) as pax,
+    SUM(V.Vn_Precio_Neto_Importe) as total
+FROM Venta_Encabezado V
+LEFT JOIN Comanda C ON C.Co_Folio = V.Vn_Folio AND C.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
+LEFT JOIN Vendedor VND ON VND.Vn_Cve_Vendedor = V.Vn_Cve_Vendedor
+WHERE {fecha_filter}
+  AND {cancelacion_filter}
+  AND V.Vn_Precio_Neto_Importe > 0
+GROUP BY VND.Vn_Descripcion
+ORDER BY SUM(V.Vn_Precio_Neto_Importe) DESC
+"""
+                result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query
+                )
+                
+                if result is not None:
+                    query_success = True
+                
+                for idx, row in enumerate(result or []):
+                    vendedor = row.get('vendedor', 'Sin Vendedor')
+                    pax = int(row.get('pax') or 0)
+                    total = float(row.get('total') or 0)
+                    num_cheques = int(row.get('num_cheques') or 0)
+                    
+                    # Detalle por vendedor
+                    # CORRECCIÓN (Abril 2026): Usar tabla Vendedor en lugar de Empleado
+                    query_det = f"""
+SELECT V.Vn_Folio as folio, ISNULL(C.Co_Personas, 0) as pax, V.Vn_Precio_Neto_Importe as total
+FROM Venta_Encabezado V
+LEFT JOIN Comanda C ON C.Co_Folio = V.Vn_Folio AND C.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
+LEFT JOIN Vendedor VND ON VND.Vn_Cve_Vendedor = V.Vn_Cve_Vendedor
+WHERE {fecha_filter} AND {cancelacion_filter} AND V.Vn_Precio_Neto_Importe > 0
+  AND ISNULL(VND.Vn_Descripcion, 'Sin Vendedor') = '{vendedor.replace("'", "''")}'
+ORDER BY V.Vn_Precio_Neto_Importe DESC
+"""
+                    det_result = execute_sql_query(
+                        server['host'], server['port'], server['database'],
+                        server['username'], server['password'], query_det
+                    )
+                    
+                    detalle = []
+                    for det in det_result or []:
+                        det_pax = int(det.get('pax') or 0)
+                        det_total = float(det.get('total') or 0)
+                        detalle.append({
+                            "folio": str(det.get('folio', '')),
+                            "pax": det_pax,
+                            "total": det_total,
+                            "pax_promedio": det_total / det_pax if det_pax > 0 else det_total
+                        })
+                    
+                    items.append({
+                        "id": f"v_{idx}",
+                        "nombre": vendedor,
+                        "pax": pax,
+                        "total": total,
+                        "num_cheques": num_cheques,
+                        "pax_promedio": total / pax if pax > 0 else total,
+                        "detalle": detalle
+                    })
+            else:
+                # Por ticket
+                # CORRECCIÓN (Abril 2026): Usar tabla Vendedor en lugar de Empleado
+                query = f"""
+SELECT 
+    V.Vn_Folio as folio,
+    ISNULL(VND.Vn_Descripcion, 'Sin Vendedor') as vendedor,
+    ISNULL(C.Co_Personas, 0) as pax,
+    V.Vn_Precio_Neto_Importe as total
+FROM Venta_Encabezado V
+LEFT JOIN Comanda C ON C.Co_Folio = V.Vn_Folio AND C.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
+LEFT JOIN Vendedor VND ON VND.Vn_Cve_Vendedor = V.Vn_Cve_Vendedor
+WHERE {fecha_filter}
+  AND {cancelacion_filter}
+  AND V.Vn_Precio_Neto_Importe > 0
+ORDER BY V.Vn_Precio_Neto_Importe DESC
+"""
+                result = execute_sql_query(
+                    server['host'], server['port'], server['database'],
+                    server['username'], server['password'], query
+                )
+                
+                if result is not None:
+                    query_success = True
+                
+                for idx, row in enumerate(result or []):
+                    pax = int(row.get('pax') or 0)
+                    total = float(row.get('total') or 0)
+                    items.append({
+                        "id": f"t_{idx}",
+                        "folio": str(row.get('folio', '')),
+                        "nombre": str(row.get('folio', '')),
+                        "vendedor": row.get('vendedor', 'Sin Vendedor'),
+                        "pax": pax,
+                        "total": total,
+                        "pax_promedio": total / pax if pax > 0 else total,
+                        "detalle": [{
+                            "vendedor": row.get('vendedor', 'Sin Vendedor'),
+                            "pax": pax,
+                            "total": total,
+                            "pax_promedio": total / pax if pax > 0 else total
+                        }]
+                    })
+            
+            # Calcular resumen
+            resumen["pax_total"] = sum(i['pax'] for i in items)
+            resumen["ventas_total"] = sum(i['total'] for i in items)
+            resumen["total_cheques"] = len(items) if agrupacion == 'ticket' else sum(i.get('num_cheques', 1) for i in items)
+            resumen["pax_promedio"] = resumen["ventas_total"] / resumen["pax_total"] if resumen["pax_total"] > 0 else 0
+            resumen["cheque_promedio"] = resumen["ventas_total"] / resumen["total_cheques"] if resumen["total_cheques"] > 0 else 0
+            
+            # Comparativos para MPRO - helper interno
+            # BLINDAJE (Abril 2026): Usar filtro correcto de cancelación y formato de fecha seguro
+            def get_pax_mpro(f):
+                fecha_f = build_sql_date_equals_safe('V.Vn_Fecha', f)
+                q = f"""
+SELECT ISNULL(SUM(C.Co_Personas), 0) as pax, SUM(V.Vn_Precio_Neto_Importe) as total
+FROM Venta_Encabezado V
+LEFT JOIN Comanda C ON C.Co_Folio = V.Vn_Folio AND C.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
+WHERE {fecha_f} AND ISNULL(V.Es_Cve_Estado, '') <> 'CA' AND V.Vn_Precio_Neto_Importe > 0
+"""
+                r = execute_sql_query(server['host'], server['port'], server['database'],
+                                      server['username'], server['password'], q)
+                return int(r[0]['pax'] or 0) if r else 0, float(r[0]['total'] or 0) if r else 0
+            
+            pax_ant, total_ant = get_pax_mpro(fecha_dia_ant)
+            pax_mes, total_mes = get_pax_mpro(fecha_mes_ant)
+            pax_ano, total_ano = get_pax_mpro(fecha_ano_ant)
+            
+            pax_prom_actual = resumen["pax_promedio"]
+            pax_prom_ant = total_ant / pax_ant if pax_ant > 0 else 0
+            pax_prom_mes = total_mes / pax_mes if pax_mes > 0 else 0
+            pax_prom_ano = total_ano / pax_ano if pax_ano > 0 else 0
+            
+            comparativo["vs_dia_anterior"] = ((pax_prom_actual - pax_prom_ant) / pax_prom_ant * 100) if pax_prom_ant > 0 else 0
+            comparativo["vs_mes_anterior"] = ((pax_prom_actual - pax_prom_mes) / pax_prom_mes * 100) if pax_prom_mes > 0 else 0
+            comparativo["vs_ano_anterior"] = ((pax_prom_actual - pax_prom_ano) / pax_prom_ano * 100) if pax_prom_ano > 0 else 0
+        
+        # Construir respuesta
+        data = {
+            "items": items,
+            "resumen": resumen,
+            "comparativo": comparativo,
+            "fecha": fecha_str,
+            "servidor": server['name']
+        }
+        
+        if query_success:
+            # Query exitosa - guardar en cache
+            await save_to_cache(cache_key, data, "reporte_pax", server['name'], server['system_type'])
+            
+            has_data = len(items) > 0 or resumen.get("pax_total", 0) > 0
+            return build_envelope_response(
+                source_status=SourceStatus.SUCCESS if has_data else SourceStatus.NO_DATA,
+                data=data,
+                server_name=server['name'],
+                server_type=server['system_type'],
+                cache_used=False,
+                fecha=fecha_str
+            )
+        else:
+            raise Exception("Query no retornó datos válidos")
+        
+    except Exception as e:
+        logging.warning(f"Error en reporte PAX para {server['name']}: {e}")
+        
+        # Intentar cache como fallback
+        cached = await get_cached_response(cache_key)
+        
+        if cached and cached.get("data"):
+            return build_envelope_response(
+                source_status=SourceStatus.DEGRADED_CACHE,
+                data=cached["data"],
+                server_name=server['name'],
+                server_type=server['system_type'],
+                cache_used=True,
+                last_successful_sync=cached.get("cached_at"),
+                source_message=f"Datos de cache (última actualización: {cached.get('cached_at', 'desconocido')})"
+            )
+        
+        # Sin cache - devolver estructura vacía controlada
+        return build_envelope_response(
+            source_status=SourceStatus.SOURCE_UNREACHABLE,
+            data=empty_response(),
+            server_name=server['name'],
+            server_type=server['system_type'],
+            cache_used=False,
+            source_message=f"No se pudo conectar a {server['name']} y no hay cache disponible"
+        )
+
+
+# ============================================================================
+# ENDPOINTS MIGRADOS FASE 5B-5B (Abril 2026)
+# ============================================================================
+
+@router.get("/comercial/dashboard/{server_id}")
+async def comercial_dashboard(
+    server_id: str, 
+    sucursal: str = Query(default=""), 
+    periodo: str = Query(default="dia"),  # dia, semana, mes
+    meses: str = Query(default=""),  # "01,02,03" - Lista de meses separados por coma
+    anio: str = Query(default=""),  # "2025" - Año específico (compatibilidad)
+    anios: str = Query(default=""),  # "2025,2024" - Múltiples años separados por coma
+    tipo_comparacion: str = Query(default="dias_equiv"),  # dias_equiv o mes_completo
+    current_user: Dict = Depends(get_current_user)
+):
     """
     Dashboard principal de ventas con KPIs y comparativos.
     Soporta SoftRestaurant y MPRO.

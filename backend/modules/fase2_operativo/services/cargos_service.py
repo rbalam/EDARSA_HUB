@@ -800,11 +800,11 @@ class CargosService:
                 responsable_nombre=responsable_nombre,
                 monto_aplicado=monto,
                 sucursal_nombre=sucursal_nombre,
-                destinatario_email=usuario.get("email"),
-                destinatario_nombre=usuario.get("name", "Usuario")
+                destinatario_email=cargo.get("responsable_email", ""),
+                destinatario_nombre=responsable_nombre
             )
             
-            logger.info(f"Notificación de cargo aplicado enviada a {usuario.get('email')}")
+            logger.info(f"Notificación de cargo aplicado enviada a {cargo.get('responsable_email', 'sin email')}")
             
         except Exception as e:
             # NO romper el flujo si falla la notificación
