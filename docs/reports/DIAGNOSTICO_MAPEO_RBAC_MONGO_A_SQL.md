@@ -1,6 +1,6 @@
 # DIAGNÓSTICO MAPEO RBAC MongoDB → Usuario_* SQL
 
-Generado: 2026-06-02T19:57:14+00:00
+Generado: 2026-06-02T19:58:24+00:00
 
 ## Objetivo
 
