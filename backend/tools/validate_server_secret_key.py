@@ -1,171 +1,144 @@
-#!/usr/bin/env python3
-"""
-VALIDATE SERVER_SECRET_KEY
-==========================
-Valida que SERVER_SECRET_KEY esté configurada correctamente
-sin exponer el valor.
-
-Uso:
-    python tools/validate_server_secret_key.py
-
-Autor: Agente E1
-Fecha: 2026-06-02
-"""
-
 import os
 import sys
 
-# Agregar backend al path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from core.secret_manager import decrypt_secret
+except Exception as exc:
+    print("IMPORT_ERROR=core.secret_manager.decrypt_secret")
+    print(f"ERROR_TYPE={type(exc).__name__}")
+    print(f"ERROR={exc}")
+    sys.exit(1)
+
+try:
+    from core.guards.server_secret_guard import require_server_secret_key
+except Exception as exc:
+    print("IMPORT_ERROR=core.guards.server_secret_guard")
+    print(f"ERROR_TYPE={type(exc).__name__}")
+    print(f"ERROR={exc}")
+    sys.exit(1)
+
+from core.db import execute_sql_query
+
+EDARSAHUB = {
+    "host": "54.39.104.176",
+    "port": 1433,
+    "database": "EDARSAHUB",
+    "user": "HRLectura",
+    "password": "National09$"
+}
 
 
 def main():
-    print("=" * 60)
-    print("VALIDACIÓN SERVER_SECRET_KEY")
-    print("=" * 60)
-    print()
-    
-    # 1. Verificar variable de entorno
     key = os.getenv("SERVER_SECRET_KEY")
-    
-    print("1. VARIABLE DE ENTORNO")
-    print("-" * 40)
-    
-    if not key:
-        print("   STATUS: NO_CONFIGURADA")
-        print("   LENGTH: 0")
-        print()
-        print("=" * 60)
-        print("RESULT=FAIL")
-        print("REASON=SERVER_SECRET_KEY no está en variables de entorno")
-        print("=" * 60)
-        return 1
-    
-    print("   STATUS: CONFIGURADA")
-    print(f"   LENGTH: {len(key)}")
-    
-    # 2. Verificar formato básico (sin exponer valor)
-    print()
-    print("2. FORMATO")
-    print("-" * 40)
-    
-    if len(key) < 32:
-        print("   STATUS: FORMATO_INVALIDO")
-        print("   REASON: Longitud menor a 32 caracteres")
-        print()
-        print("=" * 60)
-        print("RESULT=FAIL")
-        print("REASON=SERVER_SECRET_KEY tiene formato inválido")
-        print("=" * 60)
-        return 1
-    
-    print("   STATUS: FORMATO_OK")
-    print(f"   LENGTH_OK: {len(key)} >= 32")
-    
-    # 3. Verificar que decrypt_secret funcione
-    print()
-    print("3. DECRYPT_SECRET")
-    print("-" * 40)
-    
+
+    print("SERVER_SECRET_KEY_STATUS=", "CONFIGURADA" if key else "NO_CONFIGURADA")
+    print("SERVER_SECRET_KEY_LENGTH=", len(key) if key else 0)
+
     try:
-        from core.secret_manager import decrypt_secret
-        print("   IMPORT: OK")
-        
-        # Probar con un valor cifrado de prueba (no real)
-        # Solo verificamos que la función existe y no lanza error al importar
-        print("   FUNCTION: DISPONIBLE")
-        
-    except ImportError as e:
-        print(f"   IMPORT: FAIL - {e}")
-        print()
-        print("=" * 60)
+        require_server_secret_key()
+    except Exception as exc:
         print("RESULT=FAIL")
-        print("REASON=No se pudo importar decrypt_secret")
-        print("=" * 60)
-        return 1
-    except Exception as e:
-        print(f"   ERROR: {type(e).__name__}: {e}")
-        print()
-        print("=" * 60)
-        print("RESULT=FAIL")
-        print(f"REASON=Error en decrypt_secret: {e}")
-        print("=" * 60)
-        return 1
-    
-    # 4. Probar descifrado real con un servidor de prueba
-    print()
-    print("4. DESCIFRADO REAL")
-    print("-" * 40)
-    
-    try:
-        from core.db import execute_sql_query
-        
-        # Obtener un password_encrypted de Servidores_Conexiones
-        result = execute_sql_query(
-            "54.39.104.176", 1433, "EDARSAHUB", "HRLectura", "National09$",
-            """
-            SELECT TOP 1 nombre, password_encrypted 
-            FROM Servidores_Conexiones 
-            WHERE password_encrypted IS NOT NULL 
-              AND LEN(password_encrypted) > 10
-              AND activo = 1
-            """
-        )
-        
-        if not result:
-            print("   STATUS: NO_HAY_DATOS_PRUEBA")
-            print("   REASON: No se encontró servidor con password cifrado")
-        else:
-            servidor = result[0]['nombre']
-            pwd_enc = result[0]['password_encrypted']
-            
-            print(f"   SERVIDOR_PRUEBA: {servidor}")
-            print(f"   PASSWORD_ENCRYPTED_LENGTH: {len(pwd_enc)}")
-            
-            # Intentar descifrar
+        print("REASON=", str(exc))
+        sys.exit(1)
+
+    rows = execute_sql_query(
+        EDARSAHUB["host"], EDARSAHUB["port"], EDARSAHUB["database"],
+        EDARSAHUB["user"], EDARSAHUB["password"],
+        """
+        SELECT
+            nombre,
+            system_type,
+            tipo_conexion,
+            CASE
+                WHEN password_encrypted IS NULL OR LTRIM(RTRIM(password_encrypted)) = '' THEN 0
+                ELSE 1
+            END AS tiene_password,
+            CASE
+                WHEN api_key_encrypted IS NULL OR LTRIM(RTRIM(api_key_encrypted)) = '' THEN 0
+                ELSE 1
+            END AS tiene_api_key,
+            password_encrypted,
+            api_key_encrypted
+        FROM dbo.Servidores_Conexiones
+        WHERE activo = 1
+          AND (
+                password_encrypted IS NOT NULL
+                OR api_key_encrypted IS NOT NULL
+              )
+        ORDER BY nombre
+        """
+    )
+
+    total = 0
+    ok = 0
+    fail = 0
+
+    print("=== DECRYPT VALIDATION ===")
+
+    for row in rows:
+        nombre = row["nombre"]
+        system_type = row["system_type"]
+        tipo_conexion = row["tipo_conexion"]
+
+        if row["tiene_password"]:
+            total += 1
             try:
-                pwd_dec = decrypt_secret(pwd_enc)
-                if pwd_dec and len(pwd_dec) > 0:
-                    print(f"   DECRYPT_STATUS: OK")
-                    print(f"   DECRYPTED_LENGTH: {len(pwd_dec)}")
+                value = decrypt_secret(row["password_encrypted"])
+                if value:
+                    ok += 1
+                    print(
+                        f"{nombre} | {system_type} | {tipo_conexion} | "
+                        f"PASSWORD_DECRYPT=OK | LENGTH={len(value)}"
+                    )
                 else:
-                    print("   DECRYPT_STATUS: FAIL")
-                    print("   REASON: Resultado vacío")
-                    print()
-                    print("=" * 60)
-                    print("RESULT=FAIL")
-                    print("REASON=decrypt_secret retornó valor vacío")
-                    print("=" * 60)
-                    return 1
-            except Exception as e:
-                print(f"   DECRYPT_STATUS: FAIL")
-                print(f"   ERROR: {type(e).__name__}: {str(e)[:50]}")
-                print()
-                print("=" * 60)
-                print("RESULT=FAIL")
-                print(f"REASON=Error al descifrar: {type(e).__name__}")
-                print("=" * 60)
-                return 1
-                
-    except Exception as e:
-        print(f"   ERROR: {type(e).__name__}: {e}")
-        print()
-        print("=" * 60)
+                    fail += 1
+                    print(
+                        f"{nombre} | {system_type} | {tipo_conexion} | "
+                        "PASSWORD_DECRYPT=EMPTY"
+                    )
+            except Exception as exc:
+                fail += 1
+                print(
+                    f"{nombre} | {system_type} | {tipo_conexion} | "
+                    f"PASSWORD_DECRYPT=FAIL | {type(exc).__name__}: {exc}"
+                )
+
+        if row["tiene_api_key"]:
+            total += 1
+            try:
+                value = decrypt_secret(row["api_key_encrypted"])
+                if value:
+                    ok += 1
+                    print(
+                        f"{nombre} | {system_type} | {tipo_conexion} | "
+                        f"API_KEY_DECRYPT=OK | LENGTH={len(value)}"
+                    )
+                else:
+                    fail += 1
+                    print(
+                        f"{nombre} | {system_type} | {tipo_conexion} | "
+                        "API_KEY_DECRYPT=EMPTY"
+                    )
+            except Exception as exc:
+                fail += 1
+                print(
+                    f"{nombre} | {system_type} | {tipo_conexion} | "
+                    f"API_KEY_DECRYPT=FAIL | {type(exc).__name__}: {exc}"
+                )
+
+    print("=== SUMMARY ===")
+    print(f"TOTAL_SECRETS={total}")
+    print(f"DECRYPT_OK={ok}")
+    print(f"DECRYPT_FAIL={fail}")
+
+    if fail > 0:
         print("RESULT=FAIL")
-        print(f"REASON=Error al probar descifrado: {e}")
-        print("=" * 60)
-        return 1
-    
-    # Todo OK
-    print()
-    print("=" * 60)
+        sys.exit(1)
+
     print("RESULT=OK")
-    print("SERVER_SECRET_KEY está configurada y funcional")
-    print("Puede proceder con dry-run real")
-    print("=" * 60)
-    
-    return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
