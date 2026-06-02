@@ -33,6 +33,45 @@ const FALLBACK_PAX_DATA = {
 
 export default function AnalisisPAXPage({ unidadSeleccionada }) {
   const [data, setData] = useState(FALLBACK_PAX_DATA);
+  const [loading, setLoading] = useState(false);
+
+  const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+
+  useEffect(() => {
+    fetchPAXData();
+  }, [unidadSeleccionada]);
+
+  const fetchPAXData = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${API_URL}/api/inteligencia/dashboard?unidad=${unidadSeleccionada}`,
+        { credentials: 'include' }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.kpis) {
+          const kpis = result.kpis;
+          // Actualizar solo el resumen con datos reales
+          setData(prev => ({
+            ...prev,
+            resumen: {
+              paxTotal: kpis.pax_total || prev.resumen.paxTotal,
+              propinaTotal: kpis.propinas_total || prev.resumen.propinaTotal,
+              ticketPromedio: kpis.cheque_promedio || prev.resumen.ticketPromedio,
+              chequesTotal: kpis.cheques_total || prev.resumen.chequesTotal,
+              propinaPorPax: kpis.pax_total > 0 ? (kpis.propinas_total / kpis.pax_total) : prev.resumen.propinaPorPax,
+              paxPorCheque: kpis.cheques_total > 0 ? (kpis.pax_total / kpis.cheques_total) : prev.resumen.paxPorCheque
+            }
+          }));
+        }
+      }
+    } catch (error) {
+      console.log('[PAX] Usando fallback:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatMoney = (val) => {
     if (val >= 1000000) return `$${(val / 1000000).toFixed(2)}M`;

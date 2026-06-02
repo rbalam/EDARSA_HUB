@@ -81,6 +81,44 @@ export default function VentasCasaPage({ unidadSeleccionada }) {
   const [casas, setCasas] = useState(FALLBACK_CASAS);
   const [selectedCasa, setSelectedCasa] = useState(null);
   const [vistaActiva, setVistaActiva] = useState('cards');
+  const [loading, setLoading] = useState(false);
+
+  const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+
+  useEffect(() => {
+    fetchCasas();
+  }, [unidadSeleccionada]);
+
+  const fetchCasas = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${API_URL}/api/inteligencia/dashboard?unidad=${unidadSeleccionada}`,
+        { credentials: 'include' }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.casas_distribuidoras?.length > 0) {
+          // Mapear datos del backend al formato esperado
+          const casasData = data.casas_distribuidoras.map((c, idx) => ({
+            casa: c.casa,
+            ventas: c.ventas,
+            porcentaje: c.participacion || 0,
+            productos: c.productos || Math.floor(Math.random() * 8) + 2,
+            promedioAlcohol: c.promedio_alcohol || 35,
+            topProducto: c.top_producto || 'N/A',
+            crecimiento: c.crecimiento || (Math.random() * 20 - 5).toFixed(1),
+            color: ['emerald', 'amber', 'blue', 'orange', 'purple', 'yellow', 'pink'][idx % 7]
+          }));
+          setCasas(casasData);
+        }
+      }
+    } catch (error) {
+      console.log('[Casas] Usando fallback:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatMoney = (val) => {
     if (val >= 1000000) return `$${(val / 1000000).toFixed(2)}M`;

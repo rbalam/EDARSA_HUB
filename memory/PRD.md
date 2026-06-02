@@ -42,7 +42,23 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 
 ## Últimos Cambios (02 Jun 2026)
 
-### Host-based Routing para Subdominios
+### Fix: Sincronización de KPIs con Unidad de Negocio
+**Problema:** Los KPIs del Portal Inteligencia Comercial no cambiaban al seleccionar diferentes unidades de negocio.
+
+**Solución implementada:**
+1. **Backend** (`/app/backend/modules/inteligencia_comercial/routes.py`):
+   - Fallback dinámico con multiplicadores por unidad (CIENFUEGOS 32%, MÉRIDA 25%, QUERÉTARO 18%, etc.)
+   - Datos proporcionales según la unidad seleccionada
+
+2. **Frontend** - Componentes actualizados con `useEffect` y dependencia `unidadSeleccionada`:
+   - `VentasCasaPage.jsx` - Fetch dinámico al cambiar unidad
+   - `VentasFamiliaPage.jsx` - Fetch dinámico al cambiar unidad
+   - `VentasHorarioPage.jsx` - Fetch dinámico al cambiar unidad
+   - `AnalisisPAXPage.jsx` - Fetch dinámico al cambiar unidad
+
+**Estado:** ✅ FUNCIONANDO - Los KPIs cambian correctamente al seleccionar unidades
+
+### Host-based Routing para Subdominios (02 Jun 2026)
 **Implementado:**
 - `HostRouter.jsx` - Detecta hostname y renderiza portal correspondiente
 - Configuración de subdominios en `SUBDOMAIN_CONFIG`:

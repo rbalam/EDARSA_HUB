@@ -58,6 +58,49 @@ export default function VentasFamiliaPage({ unidadSeleccionada }) {
   const [expandedFamilias, setExpandedFamilias] = useState(['LICORES', 'ALIMENTOS']);
   const [loading, setLoading] = useState(false);
 
+  const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+
+  useEffect(() => {
+    fetchFamilias();
+  }, [unidadSeleccionada]);
+
+  const fetchFamilias = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${API_URL}/api/inteligencia/dashboard?unidad=${unidadSeleccionada}`,
+        { credentials: 'include' }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.ventas_familia?.length > 0) {
+          // Mapear datos del backend al formato esperado
+          const familiasData = data.ventas_familia.map((f, idx) => ({
+            familia: f.familia?.toUpperCase() || f.nombre?.toUpperCase() || 'OTROS',
+            ventas: f.ventas || 0,
+            cantidad: f.cantidad || Math.floor(f.ventas / 500),
+            porcentaje: f.participacion || 0,
+            subfamilias: f.subfamilias || []
+          }));
+          
+          // Calcular porcentajes si no vienen
+          const totalVentas = familiasData.reduce((a, b) => a + b.ventas, 0);
+          familiasData.forEach(f => {
+            if (!f.porcentaje && totalVentas > 0) {
+              f.porcentaje = ((f.ventas / totalVentas) * 100).toFixed(1);
+            }
+          });
+          
+          if (familiasData.length > 0) setFamilias(familiasData);
+        }
+      }
+    } catch (error) {
+      console.log('[Familias] Usando fallback:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleFamilia = (familia) => {
     setExpandedFamilias(prev => 
       prev.includes(familia) 

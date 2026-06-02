@@ -55,6 +55,64 @@ const FALLBACK_HORARIOS = {
 export default function VentasHorarioPage({ unidadSeleccionada }) {
   const [data, setData] = useState(FALLBACK_HORARIOS);
   const [selectedPeriodo, setSelectedPeriodo] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+
+  useEffect(() => {
+    fetchHorarios();
+  }, [unidadSeleccionada]);
+
+  const fetchHorarios = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${API_URL}/api/inteligencia/dashboard?unidad=${unidadSeleccionada}`,
+        { credentials: 'include' }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.ventas_horario?.length > 0) {
+          const horarios = result.ventas_horario;
+          const desayunoData = horarios.find(h => h.horario === 'Desayuno') || {};
+          const comidaData = horarios.find(h => h.horario === 'Comida') || {};
+          const cenaData = horarios.find(h => h.horario === 'Cena') || {};
+          
+          // Mapear datos del backend
+          setData({
+            desayuno: {
+              ...FALLBACK_HORARIOS.desayuno,
+              ventas: desayunoData.ventas || FALLBACK_HORARIOS.desayuno.ventas,
+              pax: desayunoData.pax || FALLBACK_HORARIOS.desayuno.pax,
+              cheques: desayunoData.cheques || FALLBACK_HORARIOS.desayuno.cheques,
+              propinas: desayunoData.propinas || FALLBACK_HORARIOS.desayuno.propinas,
+              ticketPromedio: desayunoData.ticket_promedio || FALLBACK_HORARIOS.desayuno.ticketPromedio,
+            },
+            comida: {
+              ...FALLBACK_HORARIOS.comida,
+              ventas: comidaData.ventas || FALLBACK_HORARIOS.comida.ventas,
+              pax: comidaData.pax || FALLBACK_HORARIOS.comida.pax,
+              cheques: comidaData.cheques || FALLBACK_HORARIOS.comida.cheques,
+              propinas: comidaData.propinas || FALLBACK_HORARIOS.comida.propinas,
+              ticketPromedio: comidaData.ticket_promedio || FALLBACK_HORARIOS.comida.ticketPromedio,
+            },
+            cena: {
+              ...FALLBACK_HORARIOS.cena,
+              ventas: cenaData.ventas || FALLBACK_HORARIOS.cena.ventas,
+              pax: cenaData.pax || FALLBACK_HORARIOS.cena.pax,
+              cheques: cenaData.cheques || FALLBACK_HORARIOS.cena.cheques,
+              propinas: cenaData.propinas || FALLBACK_HORARIOS.cena.propinas,
+              ticketPromedio: cenaData.ticket_promedio || FALLBACK_HORARIOS.cena.ticketPromedio,
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.log('[Horarios] Usando fallback:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatMoney = (val) => {
     if (val >= 1000000) return `$${(val / 1000000).toFixed(2)}M`;
