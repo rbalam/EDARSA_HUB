@@ -1,0 +1,56 @@
+{
+  "timestamp": "2026-06-02T20:47:42.475043",
+  "unidad": {
+    "codigo": "CIENFUEGOS",
+    "nombre": "CIENFUEGOS",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b"
+  },
+  "servidor": {
+    "nombre": "CIENFUEGOS",
+    "host": "servercienfuegos.ddns.net,6669\\nationalsoft",
+    "database": "softrestaurant95pro",
+    "usuario_status": "USUARIO_CONFIGURADO",
+    "password_status": "PASSWORD_CONFIGURADO"
+  },
+  "conexion": {
+    "status": "OK_NO_DATA"
+  },
+  "rango": {
+    "fecha_inicio": "2026-06-01",
+    "fecha_fin": "2026-06-01"
+  },
+  "extraccion": {
+    "registros_leidos": 0,
+    "monto_total": 0,
+    "pax_total": 0,
+    "ticket_promedio": 0
+  },
+  "duplicados": {
+    "nuevos_a_insertar": 0,
+    "duplicados_detectados": 0
+  },
+  "validacion_items": {
+    "validos": 0,
+    "nulos": 0,
+    "invalidos": 0
+  },
+  "verificacion_tablas": {
+    "sync_sales_antes": {
+      "registros": 0,
+      "fecha_minima": null,
+      "fecha_maxima": null,
+      "ultima_modificacion": null
+    },
+    "sync_sales_despues": {
+      "registros": 0,
+      "fecha_minima": null,
+      "fecha_maxima": null,
+      "ultima_modificacion": null
+    },
+    "sync_sales_sin_cambios": true,
+    "kpis_antes": 3376,
+    "kpis_despues": 3376,
+    "kpis_sin_cambios": true
+  },
+  "recomendacion": "NO_EJECUTAR"
+}
