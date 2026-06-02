@@ -18213,3 +18213,32 @@ async def shutdown_scheduler():
     except Exception as e:
         logger.error(f"Error deteniendo scheduler: {e}")
 
+
+# ==========================================
+# ENDPOINT DESCARGA SCHEMA SQL
+# ==========================================
+@app.get("/api/download/schema")
+async def download_schema_zip():
+    """Descarga directa del schema EDARSAHUB en ZIP."""
+    import os
+    zip_path = "/app/backend/static/EDARSAHUB_SCHEMA_COMPLETO.zip"
+    if os.path.exists(zip_path):
+        return FileResponse(
+            path=zip_path,
+            filename="EDARSAHUB_SCHEMA_COMPLETO.zip",
+            media_type="application/zip"
+        )
+    raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+@app.get("/api/download/schema-sql")
+async def download_schema_sql():
+    """Descarga directa del schema EDARSAHUB en SQL."""
+    import os
+    sql_path = "/app/backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql"
+    if os.path.exists(sql_path):
+        return FileResponse(
+            path=sql_path,
+            filename="EDARSAHUB_SCHEMA_COMPLETO.sql",
+            media_type="application/sql"
+        )
+    raise HTTPException(status_code=404, detail="Archivo no encontrado")
