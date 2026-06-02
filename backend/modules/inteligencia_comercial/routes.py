@@ -117,6 +117,57 @@ def execute_inteligencia_command(sql: str, timeout: int = 30) -> bool:
         return False
 
 
+def execute_stored_procedure(sp_name: str, params: dict = None, timeout: int = 30):
+    """
+    Ejecuta un Stored Procedure y retorna múltiples result sets.
+    """
+    import pymssql
+    
+    config = get_edarsahub_connection()
+    
+    try:
+        conn = pymssql.connect(
+            server=config['host'],
+            port=config['port'],
+            user=config['username'],
+            password=config['password'],
+            database=config['database'],
+            timeout=timeout,
+            login_timeout=10
+        )
+        
+        cursor = conn.cursor(as_dict=True)
+        
+        # Construir llamada al SP con parámetros
+        if params:
+            param_str = ', '.join([f"@{k}={v}" if isinstance(v, (int, float)) else f"@{k}='{v}'" for k, v in params.items()])
+            sql = f"EXEC {sp_name} {param_str}"
+        else:
+            sql = f"EXEC {sp_name}"
+        
+        cursor.execute(sql)
+        
+        # Recolectar todos los result sets
+        result_sets = []
+        while True:
+            try:
+                rows = cursor.fetchall()
+                result_sets.append(rows)
+                if not cursor.nextset():
+                    break
+            except:
+                break
+        
+        cursor.close()
+        conn.close()
+        
+        return result_sets
+        
+    except Exception as e:
+        logger.error(f"[INTELIGENCIA] Error ejecutando SP {sp_name}: {str(e)}")
+        return None
+
+
 # ============================================================================
 # ENDPOINT: Dashboard Principal
 # ============================================================================
@@ -967,3 +1018,107 @@ async def force_run_job(job_id: str):
             "job_id": job_id,
             "error": str(e)
         }
+
+
+# ============================================================================
+# ENDPOINT: Dashboard via Stored Procedure (Optimizado)
+# ============================================================================
+@router.get("/dashboard/sp")
+async def get_dashboard_via_sp(
+    tenant_id: Optional[int] = Query(None, description="Filtrar por TenantID")
+):
+    """
+    Dashboard de Inteligencia Comercial usando Stored Procedure optimizado.
+    
+    Ejecuta: EXEC Sp_GetDashboardInteligencia @TenantID
+    
+    Retorna 5 result sets:
+    1. KPIs Generales
+    2. Top 10 Productos
+    3. Por Familia
+    4. Por Casa/Distribuidora
+    5. Propinas por Tenant
+    """
+    
+    FALLBACK = {
+        "success": False,
+        "_source": "FALLBACK",
+        "message": "Error ejecutando SP"
+    }
+    
+    try:
+        params = {"TenantID": tenant_id} if tenant_id else {}
+        result_sets = execute_stored_procedure("Sp_GetDashboardInteligencia", params)
+        
+        if not result_sets or len(result_sets) < 5:
+            logger.warning("[INTELIGENCIA] SP retornó menos de 5 result sets")
+            return FALLBACK
+        
+        # Result Set 1: KPIs
+        kpis_row = result_sets[0][0] if result_sets[0] else {}
+        
+        # Result Set 2: Top Productos
+        productos = result_sets[1] if len(result_sets) > 1 else []
+        
+        # Result Set 3: Familias
+        familias = result_sets[2] if len(result_sets) > 2 else []
+        
+        # Result Set 4: Casas
+        casas = result_sets[3] if len(result_sets) > 3 else []
+        
+        # Result Set 5: Propinas
+        propinas = result_sets[4] if len(result_sets) > 4 else []
+        
+        total_ventas = float(kpis_row.get('VentasTotales', 0))
+        
+        return {
+            "success": True,
+            "_source": "EDARSAHUB.Sp_GetDashboardInteligencia",
+            "timestamp": datetime.utcnow().isoformat(),
+            "filtros": {"tenant_id": tenant_id},
+            "kpis": {
+                "ventas_totales": total_ventas,
+                "pax_total": int(kpis_row.get('PaxTotal', 0)),
+                "cheques_total": int(kpis_row.get('ChequesTotal', 0)),
+                "propinas_total": float(kpis_row.get('PropinasTotal', 0)),
+                "cheque_promedio": float(kpis_row.get('ChequePromedio', 0))
+            },
+            "top_productos": [
+                {
+                    "producto": r.get('Producto'),
+                    "cantidad": int(r.get('Cantidad', 0)),
+                    "ventas": float(r.get('Ingresos', 0))
+                }
+                for r in productos
+            ],
+            "ventas_familia": [
+                {
+                    "familia": r.get('Familia'),
+                    "ventas": float(r.get('Ingresos', 0)),
+                    "cantidad": int(r.get('Cantidad', 0))
+                }
+                for r in familias
+            ],
+            "casas_distribuidoras": [
+                {
+                    "casa": r.get('Casa'),
+                    "ventas": float(r.get('Ingresos', 0)),
+                    "productos_unicos": int(r.get('ProductosUnicos', 0)),
+                    "participacion": round(float(r.get('Ingresos', 0)) / total_ventas * 100, 2) if total_ventas > 0 else 0
+                }
+                for r in casas
+            ],
+            "propinas_por_tenant": [
+                {
+                    "tenant_id": r.get('TenantID'),
+                    "propina_total": float(r.get('PropinaTotal', 0)),
+                    "pax_total": int(r.get('PaxTotal', 0)),
+                    "propina_por_pax": float(r.get('PropinaPorPax', 0))
+                }
+                for r in propinas
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"[INTELIGENCIA] Error en dashboard/sp: {str(e)}")
+        return {**FALLBACK, "error": str(e)}
