@@ -6,9 +6,12 @@
  * - Token JWT ya NO se guarda en sessionStorage
  * - La autenticación viaja en cookie httpOnly
  * - Solo se guarda 'supplier' como cache para UI
+ * 
+ * NOTA: Este componente puede ser renderizado:
+ * 1. Como ruta dentro del CRM principal (/portal-proveedores/*)
+ * 2. Como aplicación standalone vía subdominio (proveedores.edarsa.com.mx)
  */
 import React, { useState, useEffect } from 'react';
-import { Toaster } from 'sonner';
 import logger from '../services/logger';
 import { 
   LayoutDashboard, FileText, Upload, FolderUp, CreditCard, 
@@ -112,17 +115,11 @@ export default function PortalProveedoresApp() {
   if (!supplier) {
     if (currentPage === 'register') {
       return (
-        <>
-          <Toaster position="top-right" richColors />
-          <RegisterPage onBack={() => setCurrentPage('login')} onSuccess={() => setCurrentPage('login')} />
-        </>
+        <RegisterPage onBack={() => setCurrentPage('login')} onSuccess={() => setCurrentPage('login')} />
       );
     }
     return (
-      <>
-        <Toaster position="top-right" richColors />
-        <LoginPage onLogin={handleLogin} onRegister={() => setCurrentPage('register')} />
-      </>
+      <LoginPage onLogin={handleLogin} onRegister={() => setCurrentPage('register')} />
     );
   }
 
@@ -155,8 +152,6 @@ export default function PortalProveedoresApp() {
 
   return (
     <div className="min-h-screen flex" style={{backgroundColor: '#F8FAFF'}}>
-      <Toaster position="top-right" richColors />
-      
       {/* Sidebar - BLANCO con texto oscuro */}
       <aside className="w-[180px] bg-white border-r border-gray-200 flex flex-col fixed h-full">
         {/* Logo */}

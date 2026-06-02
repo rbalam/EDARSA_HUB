@@ -8,6 +8,7 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
   - CRM Principal: `/app/frontend/src/pages/`
   - Portal Proveedores: `/app/frontend/src/portal/`
   - Portal Inteligencia Comercial IA: `/app/frontend/src/portal-inteligencia/`
+  - **Host Router**: `/app/frontend/src/HostRouter.jsx` (Enrutamiento por subdominio)
 - **Backend**: FastAPI (`/app/backend/`)
 - **Base de datos**: MS SQL Server EDARSAHUB (Única fuente de verdad)
 - **Patrón**: NO-LIVE (Jobs de sincronización, sin conexiones directas a Vtiger)
@@ -28,17 +29,31 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 | Fase 3 | Roles RBAC (Administrador, Ejecutivo, Auditor) | Dic 2025 |
 | Fase 5 | Componentes Frontend (`CuentasPanel.jsx`, `SolicitudesAltaPanel.jsx`) | Dic 2025 |
 | Fase 6 | Pipeline Enterprise (`CRM_Oportunidades`, `CRM_OportunidadesHistorial`) | Dic 2025 |
-| Portal Inteligencia Comercial | Estructura base, tablas DB, enrutamiento corregido | 01 Jun 2026 |
+| Portal Inteligencia Comercial | Dashboard completo con datos reales SQL Server | 01 Jun 2026 |
+| Portal Inteligencia Comercial | Scheduler Jobs con tabla `Sys_Scheduler_Jobs` | 01 Jun 2026 |
+| Portal Inteligencia Comercial | SP `Sp_GetDashboardInteligencia` ejecutado y validado | 02 Jun 2026 |
+| **Host-based Routing** | Subdominios para portales independientes | 02 Jun 2026 |
 
 ### 🔄 EN PROGRESO
-- Portal Inteligencia Comercial IA - Desarrollo de páginas internas (VentasProducto, VentasFamilia, etc.)
-- Integración de componentes Frontend a rutas principales React
+- Configuración DNS de subdominios (Esperando acción del usuario)
+- Acoplamiento Scripts Edge Offline (Esperando instrucciones)
 
 ---
 
-## Últimos Cambios (01 Jun 2026)
+## Últimos Cambios (02 Jun 2026)
 
-### Conexión Datos Reales al Portal Inteligencia Comercial IA
+### Host-based Routing para Subdominios
+**Implementado:**
+- `HostRouter.jsx` - Detecta hostname y renderiza portal correspondiente
+- Configuración de subdominios en `SUBDOMAIN_CONFIG`:
+  - `inteligencia.edarsa.com.mx` → Portal Inteligencia Comercial
+  - `proveedores.edarsa.com.mx` → Portal de Proveedores
+  - Cualquier otro → CRM Principal
+- Documentación: `/app/docs/SUBDOMINIOS_CONFIG.md`
+
+**Beneficio:** Una sola aplicación React sirve múltiples portales según el subdominio de acceso.
+
+### Conexión Datos Reales al Portal Inteligencia Comercial IA (01 Jun 2026)
 
 **Backend implementado:**
 - `GET /api/inteligencia/dashboard` - KPIs consolidados desde `View_Inteligencia_Comercial`
@@ -87,15 +102,28 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 - (ninguno pendiente)
 
 ### P1 - Alta Prioridad
-1. **Portal Inteligencia Comercial** - Crear endpoint backend `/api/inteligencia/dashboard`
-2. **Portal Inteligencia Comercial** - Conectar dashboard con `View_Inteligencia_Comercial`
-3. Motor de Rentabilidad (Costos y Márgenes)
-4. COSTOS-ALERTAS-001-E — Motor evaluación margen
+1. **Configuración DNS Subdominios** - Usuario debe configurar CNAME en su panel DNS
+2. Motor de Rentabilidad (Costos y Márgenes)
+3. COSTOS-ALERTAS-001-E — Motor evaluación margen
 
 ### P2 - Media Prioridad
-- MIGRACION-FRONTEND-COMPETIDORES-ENTERPRISE
+- MIGRACION-FRONTEND-COMPETIDORES-ENTERPRISE (Pricing IA interno)
 - COSTOS-ALERTAS-001-F — Job/scheduler envío controlado
+- Scripts Edge Offline (acoplamiento al flujo principal)
 
 ### P3 - Backlog
-- Scripts Edge Offline (acoplamiento al flujo principal)
+- Selector de unidades dinámico con TenantID real
+- FASE 0-9 Arquitectura Integral Operativa (Desmockización)
+
+---
+
+## Configuración Subdominios (PENDIENTE USUARIO)
+
+Ver documentación completa: `/app/docs/SUBDOMINIOS_CONFIG.md`
+
+**Registros DNS a crear:**
+```
+inteligencia.edarsa.com.mx → CNAME → stock-tracker-990.preview.emergentagent.com
+proveedores.edarsa.com.mx  → CNAME → stock-tracker-990.preview.emergentagent.com
+```
 - FASE 0-9 Arquitectura Integral Operativa (Desmockización total)

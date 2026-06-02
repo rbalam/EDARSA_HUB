@@ -4,9 +4,12 @@
  * - Producto, Categoría, Familia, Subfamilia
  * - PAX, Propinas, Horarios (Desayuno/Comida/Cena)
  * - Casas/Distribuidores (Diageo, Casa Cuervo, Pernod, etc.)
+ * 
+ * NOTA: Este componente puede ser renderizado:
+ * 1. Como ruta dentro del CRM principal (/inteligencia-comercial/*)
+ * 2. Como aplicación standalone vía subdominio (inteligencia.edarsa.com.mx)
  */
 import React, { useState, useEffect } from 'react';
-import { Toaster } from 'sonner';
 import { 
   LayoutDashboard, BarChart3, Wine, Clock, Users, 
   DollarSign, TrendingUp, LogOut, ChevronDown, User,
@@ -125,8 +128,6 @@ export default function PortalInteligenciaApp() {
 
   return (
     <div className="min-h-screen flex bg-slate-900">
-      <Toaster position="top-right" richColors />
-      
       {/* Sidebar - Estilo oscuro premium */}
       <aside className="w-[200px] bg-slate-800 border-r border-slate-700 flex flex-col fixed h-full">
         {/* Logo */}
