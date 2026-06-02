@@ -268,6 +268,17 @@ class SchedulerConfig(BaseModel):
                 interval_seconds=vtiger_sync_interval,
                 batch_size=500,
                 timeout_seconds=300  # 5 minutos max
+            ),
+            # Inteligencia Comercial: Sincronización de ventas desde POS
+            "inteligencia_comercial_sync": JobConfig(
+                job_id="inteligencia_comercial_sync",
+                job_name="Inteligencia Comercial - Sync Sales",
+                description="Extrae ventas de SoftRestaurant/MPRO y las consolida en Sync_Sales y KPIs diarios (cada hora)",
+                enabled=os.environ.get("SCHEDULER_INTELIGENCIA_SYNC_ENABLED", "true").lower() == "true",
+                cron_expression="0 * * * *",  # Cada hora en el minuto 0
+                interval_seconds=3600,  # Fallback: 1 hora
+                batch_size=500,
+                timeout_seconds=600  # 10 minutos max
             )
         }
         

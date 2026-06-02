@@ -43,6 +43,8 @@ from .jobs.cava_socios_monthly_job import execute_cava_socios_monthly
 from .jobs.crm_sync_job import execute_crm_sync, execute_crm_sla_check, execute_crm_actividades_vencidas
 # Vtiger: Job de sincronización bidireccional
 from .jobs.vtiger_sync_job import execute_vtiger_sync
+# Inteligencia Comercial: Sincronización de ventas desde POS
+from .jobs.inteligencia_comercial_sync_job import job_inteligencia_comercial_sync
 
 logger = logging.getLogger(__name__)
 
@@ -769,6 +771,55 @@ class SchedulerManager:
         finally:
             await lock.release()
     
+    async def _run_inteligencia_comercial_sync_job(self):
+        """
+        Wrapper async para sincronización de Inteligencia Comercial.
+        Extrae ventas de SoftRestaurant/MPRO y las consolida en EDARSAHUB.
+        Programado: Cada hora (cron: 0 * * * *)
+        """
+        job_config = self.config.jobs.get("inteligencia_comercial_sync")
+        if not job_config or not job_config.enabled:
+            logger.debug("[INTELIGENCIA_SYNC] Deshabilitado por configuración")
+            return
+        
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("inteligencia_comercial_sync")
+        lock_acquired = await lock.acquire(timeout_seconds=600)
+        
+        if not lock_acquired:
+            logger.warning("[INTELIGENCIA_SYNC] No se pudo obtener lock - ya hay una ejecución en progreso")
+            return
+        
+        job_logger = get_job_logger(self.db)
+        log_entry = await job_logger.start_execution("inteligencia_comercial_sync")
+        
+        try:
+            logger.info("[INTELIGENCIA_SYNC] Iniciando sincronización de ventas desde POS")
+            
+            # Ejecutar el job de sincronización
+            result = job_inteligencia_comercial_sync(dias_atras=1)
+            
+            status = "completed" if not result.get("errores") else "partial"
+            
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status=status,
+                processed_count=result.get("registros_extraidos", 0),
+                success_count=result.get("registros_insertados", 0),
+                message=f"Unidades: {result.get('unidades_procesadas', 0)}, "
+                        f"Extraídos: {result.get('registros_extraidos', 0)}, "
+                        f"Insertados: {result.get('registros_insertados', 0)}, "
+                        f"KPIs: {result.get('kpis_actualizados', 0)}",
+                extra_metadata={"result_summary": result}
+            )
+            
+            logger.info(f"[INTELIGENCIA_SYNC] Completado - {result.get('registros_insertados', 0)} registros insertados")
+        except Exception as e:
+            logger.error(f"[INTELIGENCIA_SYNC] Error: {e}")
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+        finally:
+            await lock.release()
+    
     def register_jobs(self):
         """Registra todos los jobs configurados."""
         if self._scheduler is None:
@@ -1114,6 +1165,30 @@ class SchedulerManager:
             )
             self._jobs["vtiger_sync"] = vtiger_sync_config
             logger.info(f"Job VTIGER_SYNC registrado: intervalo={vtiger_sync_config.interval_seconds}s")
+        
+        # ========================================
+        # Inteligencia Comercial: Sincronización POS
+        # ========================================
+        
+        inteligencia_sync_config = self.config.jobs.get("inteligencia_comercial_sync")
+        if inteligencia_sync_config and inteligencia_sync_config.enabled:
+            # Usar CronTrigger si está definido, sino IntervalTrigger
+            if inteligencia_sync_config.cron_expression:
+                trigger = CronTrigger.from_crontab(inteligencia_sync_config.cron_expression)
+            else:
+                trigger = IntervalTrigger(seconds=inteligencia_sync_config.interval_seconds)
+            
+            self._scheduler.add_job(
+                self._run_inteligencia_comercial_sync_job,
+                trigger=trigger,
+                id="inteligencia_comercial_sync",
+                name="Inteligencia Comercial - Sync Sales",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True
+            )
+            self._jobs["inteligencia_comercial_sync"] = inteligencia_sync_config
+            logger.info(f"Job INTELIGENCIA_COMERCIAL_SYNC registrado: cron={inteligencia_sync_config.cron_expression or 'interval'}")
     
     async def start(self):
         """Inicia el scheduler."""
