@@ -68,7 +68,8 @@ _ENCRYPTION_AVAILABLE = _validate_server_secret_key()
 # ==============================================================================
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, BackgroundTasks, UploadFile, File, Query, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 # MongoDB import movido a bloque condicional más abajo
 import logging
@@ -118,6 +119,11 @@ logger.info("[DB] Sistema funcionando 100% SQL Server - MongoDB ELIMINADO (usand
 
 app = FastAPI(title="EDARSA HUB API")
 api_router = APIRouter(prefix="/api")
+
+# Montar archivos estáticos para descargas
+STATIC_DIR = ROOT_DIR / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # ==========================================
 # ESCUDO GLOBAL CONTRA CRASHEOS (Evita Errores 502)
