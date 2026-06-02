@@ -169,115 +169,163 @@ def execute_stored_procedure(sp_name: str, params: dict = None, timeout: int = 3
 
 
 # ============================================================================
-# ENDPOINT: Dashboard Principal
+# ENDPOINT: Dashboard Principal - USANDO Comercial_KPIs_Diarios_v2
 # ============================================================================
 @router.get("/dashboard")
 async def get_dashboard_data(
-    unidad: Optional[str] = Query(None, description="Filtrar por unidad/TenantID"),
-    periodo: Optional[str] = Query(None, description="Filtrar por periodo (YYYY-MM)")
+    unidad: Optional[str] = Query(None, description="Filtrar por unidad de negocio"),
+    periodo: Optional[str] = Query(None, description="Filtrar por periodo (YYYY-MM)"),
+    fecha_inicio: Optional[str] = Query(None, description="Fecha inicio (YYYY-MM-DD)"),
+    fecha_fin: Optional[str] = Query(None, description="Fecha fin (YYYY-MM-DD)")
 ):
     """
-    Dashboard de Inteligencia Comercial con Fallback automático.
+    Dashboard de Inteligencia Comercial con datos REALES de Comercial_KPIs_Diarios_v2.
     
-    1. Intenta conectar a View_Inteligencia_Comercial (SQL Server)
-    2. Si falla o está vacío → retorna datos de fallback DINÁMICOS por unidad
+    Fuente de datos: EDARSAHUB.Comercial_KPIs_Diarios_v2
     """
     
-    # ========== MULTIPLICADORES POR UNIDAD (para fallback dinámico) ==========
-    UNIDAD_MULTIPLIERS = {
-        'todas': 1.0,
-        'cienfuegos': 0.32,      # 32% del total
-        'merida': 0.25,          # 25% del total  
-        'queretaro': 0.18,       # 18% del total
-        'estelar': 0.15,         # 15% del total
-        'origen': 0.10,          # 10% del total
+    # Mapeo de nombres de unidad normalizados -> nombres en BD
+    UNIDAD_MAP = {
+        'todas': None,
+        'cienfuegos': 'CIENFUEGOS',
+        'merida': '130° MERIDA',
+        '130merida': '130° MERIDA',
+        'queretaro': '130° QUERETARO',
+        '130queretaro': '130° QUERETARO',
+        'estelar': 'LA ESTELAR',
+        'laestelar': 'LA ESTELAR',
+        'origen': 'ORIGEN',
     }
     
     # Normalizar unidad
-    unidad_key = (unidad or 'todas').lower().replace('130°', '').replace(' ', '')
-    if unidad_key not in UNIDAD_MULTIPLIERS:
-        unidad_key = 'todas'
-    
-    multiplier = UNIDAD_MULTIPLIERS.get(unidad_key, 1.0)
-    
-    # ========== BASE FALLBACK DATA ==========
-    base_ventas = 4568069.69
-    base_pax = 11662
-    base_cheques = 3322
-    base_propinas = 282761.92
-    
-    FALLBACK_RESPONSE = {
-        "success": True,
-        "_source": "FALLBACK",
-        "_unidad": unidad_key.upper(),
-        "timestamp": datetime.utcnow().isoformat(),
-        "kpis": {
-            "ventas_totales": round(base_ventas * multiplier, 2),
-            "pax_total": int(base_pax * multiplier),
-            "cheques_total": int(base_cheques * multiplier),
-            "propinas_total": round(base_propinas * multiplier, 2),
-            "cheque_promedio": round((base_ventas * multiplier) / max(1, int(base_cheques * multiplier)), 2)
-        },
-        "ventas_horario": [
-            {"horario": "Desayuno", "ventas": round(913613.94 * multiplier, 2)},
-            {"horario": "Comida", "ventas": round(2284034.85 * multiplier, 2)},
-            {"horario": "Cena", "ventas": round(1370420.91 * multiplier, 2)}
-        ],
-        "top_productos": [
-            {"producto": "Heineken", "cantidad": int(320 * multiplier), "ventas": round(154500 * multiplier, 0)},
-            {"producto": "Patron Silver", "cantidad": int(326 * multiplier), "ventas": round(152600 * multiplier, 0)},
-            {"producto": "1800 Cristalino", "cantidad": int(319 * multiplier), "ventas": round(142300 * multiplier, 0)},
-            {"producto": "Bacardi Blanco", "cantidad": int(303 * multiplier), "ventas": round(139900 * multiplier, 0)},
-            {"producto": "Jose Cuervo Tradicional", "cantidad": int(287 * multiplier), "ventas": round(139100 * multiplier, 0)},
-            {"producto": "Bombay Sapphire", "cantidad": int(331 * multiplier), "ventas": round(136900 * multiplier, 0)},
-            {"producto": "Buchanan's 12 Años", "cantidad": int(290 * multiplier), "ventas": round(136200 * multiplier, 0)}
-        ],
-        "casas_distribuidoras": [
-            {"casa": "DIAGEO", "ventas": round(1010000 * multiplier, 0), "participacion": 22.09},
-            {"casa": "PERNOD RICARD", "ventas": round(763600 * multiplier, 0), "participacion": 16.72},
-            {"casa": "BACARDI", "ventas": round(668700 * multiplier, 0), "participacion": 14.64},
-            {"casa": "CASA CUERVO", "ventas": round(645000 * multiplier, 0), "participacion": 14.12},
-            {"casa": "COCINA", "ventas": round(454400 * multiplier, 0), "participacion": 9.95},
-            {"casa": "GRUPO MODELO", "ventas": round(255400 * multiplier, 0), "participacion": 5.59}
-        ],
-        "ventas_familia": [
-            {"familia": "Tequilas", "ventas": round(1250000 * multiplier, 0)},
-            {"familia": "Whisky", "ventas": round(980000 * multiplier, 0)},
-            {"familia": "Vodka", "ventas": round(720000 * multiplier, 0)},
-            {"familia": "Cerveza", "ventas": round(650000 * multiplier, 0)},
-            {"familia": "Ron", "ventas": round(480000 * multiplier, 0)}
-        ]
-    }
+    unidad_key = (unidad or 'todas').lower().replace('130°', '130').replace(' ', '').replace('°', '')
+    unidad_db = UNIDAD_MAP.get(unidad_key)
     
     try:
-        # ========== INTENTO DE CONEXIÓN REAL ==========
-        where_clauses = ["1=1"]
-        if unidad and unidad != 'todas':
-            where_clauses.append(f"TenantID = '{unidad}'")
-        if periodo:
-            where_clauses.append(f"Periodo = '{periodo}'")
+        # ========== CONSTRUIR QUERY DINÁMICO ==========
+        where_clauses = ["activo = 1"]
+        
+        if unidad_db:
+            where_clauses.append(f"unidad_negocio_nombre = '{unidad_db}'")
+        
+        if fecha_inicio and fecha_fin:
+            where_clauses.append(f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'")
+        elif periodo:
+            # Formato YYYY-MM
+            where_clauses.append(f"FORMAT(fecha_operacion, 'yyyy-MM') = '{periodo}'")
+        else:
+            # Por defecto: últimos 30 días
+            where_clauses.append("fecha_operacion >= DATEADD(DAY, -30, GETDATE())")
+        
         where_sql = " AND ".join(where_clauses)
         
-        # Query KPIs
-        kpis_result = execute_inteligencia_query(f"""
+        # ========== QUERY KPIs PRINCIPALES ==========
+        kpis_query = f"""
             SELECT 
-                COALESCE(SUM(ImporteNeto), 0) as ventas_totales,
-                COALESCE(SUM(Pax), 0) as pax_total,
-                COUNT(*) as cheques_total,
-                COALESCE(SUM(Propina), 0) as propinas_total,
-                COALESCE(AVG(ImporteNeto), 0) as cheque_promedio
-            FROM View_Inteligencia_Comercial
+                COALESCE(SUM(ventas_total), 0) as ventas_totales,
+                COALESCE(SUM(pax_total), 0) as pax_total,
+                COALESCE(SUM(tickets_total), 0) as cheques_total,
+                COALESCE(SUM(propinas_total), 0) as propinas_total,
+                CASE WHEN SUM(tickets_total) > 0 
+                    THEN SUM(ventas_total) / SUM(tickets_total) 
+                    ELSE 0 END as cheque_promedio
+            FROM Comercial_KPIs_Diarios_v2
             WHERE {where_sql}
-        """)
+        """
         
+        kpis_result = execute_inteligencia_query(kpis_query)
         kpis = kpis_result[0] if kpis_result else {}
         
-        # Si no hay datos reales, usar fallback
-        if not kpis or float(kpis.get('ventas_totales', 0)) == 0:
-            logger.warning("[INTELIGENCIA] Sin datos en BD. Usando fallback.")
-            return FALLBACK_RESPONSE
+        # ========== QUERY POR UNIDAD (si es consolidado) ==========
+        ventas_por_unidad = []
+        if not unidad_db:
+            unidad_query = f"""
+                SELECT 
+                    unidad_negocio_nombre as unidad,
+                    SUM(ventas_total) as ventas,
+                    SUM(pax_total) as pax,
+                    SUM(tickets_total) as tickets,
+                    SUM(propinas_total) as propinas
+                FROM Comercial_KPIs_Diarios_v2
+                WHERE {where_sql}
+                GROUP BY unidad_negocio_nombre
+                ORDER BY ventas DESC
+            """
+            ventas_por_unidad = execute_inteligencia_query(unidad_query)
         
-        # Query Horarios (distribución estimada)
+        # ========== CALCULAR PARTICIPACIÓN ==========
+        total_ventas = float(kpis.get('ventas_totales', 0)) or 1
+        
+        # Formatear respuesta
+        response = {
+            "success": True,
+            "_source": "SQL_COMERCIAL_KPIS_DIARIOS_V2",
+            "_unidad": unidad_db or "TODAS",
+            "timestamp": datetime.utcnow().isoformat(),
+            "kpis": {
+                "ventas_totales": round(float(kpis.get('ventas_totales', 0)), 2),
+                "pax_total": int(kpis.get('pax_total', 0)),
+                "cheques_total": int(kpis.get('cheques_total', 0)),
+                "propinas_total": round(float(kpis.get('propinas_total', 0)), 2),
+                "cheque_promedio": round(float(kpis.get('cheque_promedio', 0)), 2)
+            },
+            "ventas_por_unidad": [
+                {
+                    "unidad": u['unidad'],
+                    "ventas": round(float(u['ventas'] or 0), 2),
+                    "pax": int(u['pax'] or 0),
+                    "tickets": int(u['tickets'] or 0),
+                    "propinas": round(float(u['propinas'] or 0), 2),
+                    "participacion": round((float(u['ventas'] or 0) / total_ventas) * 100, 2)
+                }
+                for u in ventas_por_unidad
+            ] if ventas_por_unidad else [],
+            # Datos para gráficos (por ahora simulados basados en proporción)
+            "ventas_horario": [
+                {"horario": "Desayuno", "ventas": round(total_ventas * 0.20, 2)},
+                {"horario": "Comida", "ventas": round(total_ventas * 0.50, 2)},
+                {"horario": "Cena", "ventas": round(total_ventas * 0.30, 2)}
+            ],
+            "casas_distribuidoras": [
+                {"casa": "DIAGEO", "ventas": round(total_ventas * 0.22, 0), "participacion": 22.0},
+                {"casa": "PERNOD RICARD", "ventas": round(total_ventas * 0.17, 0), "participacion": 17.0},
+                {"casa": "BACARDI", "ventas": round(total_ventas * 0.15, 0), "participacion": 15.0},
+                {"casa": "CASA CUERVO", "ventas": round(total_ventas * 0.14, 0), "participacion": 14.0},
+                {"casa": "COCINA", "ventas": round(total_ventas * 0.10, 0), "participacion": 10.0},
+                {"casa": "GRUPO MODELO", "ventas": round(total_ventas * 0.06, 0), "participacion": 6.0}
+            ],
+            "ventas_familia": [
+                {"familia": "Tequilas", "ventas": round(total_ventas * 0.28, 0)},
+                {"familia": "Whisky", "ventas": round(total_ventas * 0.22, 0)},
+                {"familia": "Vodka", "ventas": round(total_ventas * 0.16, 0)},
+                {"familia": "Cerveza", "ventas": round(total_ventas * 0.14, 0)},
+                {"familia": "Ron", "ventas": round(total_ventas * 0.10, 0)}
+            ]
+        }
+        
+        logger.info(f"[INTELIGENCIA] Dashboard OK - Unidad: {unidad_db or 'TODAS'}, Ventas: ${total_ventas:,.2f}")
+        return response
+        
+    except Exception as e:
+        logger.error(f"[INTELIGENCIA] Error en dashboard: {str(e)}")
+        # Fallback con datos base
+        return {
+            "success": False,
+            "_source": "ERROR_FALLBACK",
+            "_error": str(e),
+            "timestamp": datetime.utcnow().isoformat(),
+            "kpis": {
+                "ventas_totales": 0,
+                "pax_total": 0,
+                "cheques_total": 0,
+                "propinas_total": 0,
+                "cheque_promedio": 0
+            },
+            "ventas_por_unidad": [],
+            "ventas_horario": [],
+            "casas_distribuidoras": [],
+            "ventas_familia": []
+        }
         total_ventas = float(kpis.get('ventas_totales', 0))
         ventas_horario = [
             {"horario": "Desayuno", "ventas": round(total_ventas * 0.20, 2)},
