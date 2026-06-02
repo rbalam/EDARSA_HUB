@@ -46,11 +46,19 @@ Para obtener el listado actualizado:
 | fuente_verdad | S/N - Si esta tabla es la fuente autoritativa |
 | tabla_reemplazo | Nombre de tabla canonica si esta es legado |
 
+## Acciones por Estado
+
+| Estado | Accion |
+|--------|--------|
+| SIN_CLASIFICAR | Revisar manualmente por modulo |
+| REVISION | Validar canonicidad antes de uso nuevo |
+| NO_USAR_NUEVO | No usar en desarrollo nuevo |
+| LEGADO_REVISION | Mantener compatibilidad, no crecer |
+
 ## Pendientes (actualizar manualmente)
 
 > Ejecutar consulta SQL y pegar resultados aqui
 
 MD
 
-echo "Plantilla de reporte generada: $OUT"
-echo "Ejecutar la consulta SQL manualmente para poblar los datos."
+echo "Plantilla generada: $OUT"
