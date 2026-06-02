@@ -137,6 +137,32 @@ Tabla de mapeo: `Sistema_Migracion_MongoSQL_Mapeo`
 - Fallbacks proporcionales para gráficos
 - Indicadores de "última sincronización"
 
+### MÁXIMA 11: GOBIERNO PREVIO A CREACIÓN
+> **Cualquier tabla nueva debe validarse contra `Sistema_Gobierno_Tablas` antes de crearse.**
+
+```sql
+-- OBLIGATORIO antes de CREATE TABLE:
+SELECT * FROM Sistema_Gobierno_Tablas
+WHERE nombre_tabla LIKE '%<nombre_similar>%'
+   OR modulo = '<modulo_destino>';
+
+-- Si no existe conflicto, registrar PRIMERO:
+INSERT INTO Sistema_Gobierno_Tablas 
+    (nombre_tabla, modulo, categoria, estado)
+VALUES 
+    ('<nueva_tabla>', '<modulo>', '<categoria>', 'ACTIVA');
+
+-- DESPUÉS crear la tabla
+CREATE TABLE ...
+```
+
+Checklist obligatorio:
+1. ✅ Verificar que no existe tabla similar
+2. ✅ Verificar que no existe tabla LEGADO con mismo propósito
+3. ✅ Definir clasificación: CANONICA, SINCRONIZADA, DERIVADA
+4. ✅ Registrar en gobierno ANTES de CREATE
+5. ✅ Documentar fuente de verdad
+
 ---
 
 ## 🔧 LAS TRES PIEZAS FUNDAMENTALES
