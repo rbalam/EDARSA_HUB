@@ -272,18 +272,26 @@ def get_softrestaurant_query(fecha_inicio: str, fecha_fin: str) -> str:
     Query para extraer ventas cerradas de SoftRestaurant.
     COMPATIBLE CON SQL SERVER LEGACY - NO USA FOR JSON PATH.
     Devuelve filas planas ticket+detalle para agrupar en Python.
+    
+    Incluye múltiples columnas candidatas de importe para fallback:
+    - cheques: total, subtotal, totalsindescuento
+    - cheqdet: totalsrx, subtotalsrx, precio, cantidad
     """
     return f"""
     SELECT 
         CONVERT(VARCHAR(64), ch.folio) AS NumeroTicket,
         ch.nopersonas AS Pax,
         ch.total AS MontoTotal,
+        ch.subtotal AS SubtotalCheque,
+        ch.totalsindescuento AS TotalSinDescuento,
         t.apertura AS FechaHora,
-        p.idproducto AS item_id,
+        dc.idproducto AS item_id,
         p.descripcion AS item_name,
         dc.cantidad AS item_quantity,
         dc.precio AS item_price,
-        (dc.cantidad * dc.precio) AS item_total
+        dc.totalsrx AS item_totalsrx,
+        dc.subtotalsrx AS item_subtotalsrx,
+        dc.preciosinimpuestos AS item_preciosinimpuestos
     FROM cheques ch
     INNER JOIN turnos t ON t.idturno = ch.idturno
     LEFT JOIN cheqdet dc ON dc.foliodet = ch.folio
@@ -292,16 +300,18 @@ def get_softrestaurant_query(fecha_inicio: str, fecha_fin: str) -> str:
       AND CAST(t.apertura AS DATE) <= '{fecha_fin}'
       AND ch.cancelado = 0
       AND ch.total > 0
-    ORDER BY ch.folio, p.idproducto
+    ORDER BY ch.folio, dc.idproducto
     """
 
 
 def _safe_float(value):
-    """Convierte a float de forma segura."""
+    """Convierte a float de forma segura. Ignora valores negativos (centinelas)."""
     if value is None:
         return 0.0
     try:
-        return float(value)
+        f = float(value)
+        # Ignorar valores negativos (centinelas como -1)
+        return f if f >= 0 else 0.0
     except:
         return 0.0
 
@@ -316,10 +326,46 @@ def _safe_int(value):
         return 0
 
 
+def _calcular_importe_item(row: Dict) -> float:
+    """
+    Calcula el importe del item con fallback:
+    1. totalsrx si > 0
+    2. subtotalsrx si > 0
+    3. cantidad * precio si ambos > 0
+    4. 0.0 si ninguno funciona
+    """
+    # Candidatos directos de importe
+    candidatos = [
+        row.get("item_totalsrx"),
+        row.get("item_subtotalsrx"),
+        row.get("item_total"),
+        row.get("Importe"),
+        row.get("TotalDetalle"),
+    ]
+    
+    for valor in candidatos:
+        importe = _safe_float(valor)
+        if importe > 0:
+            return importe
+    
+    # Fallback: cantidad * precio
+    cantidad = _safe_float(row.get("item_quantity"))
+    precio = _safe_float(row.get("item_price"))
+    
+    if cantidad > 0 and precio > 0:
+        return round(cantidad * precio, 2)
+    
+    return 0.0
+
+
 def build_sales_from_flat_rows(rows: List[Dict], unidad_codigo: str) -> List[Dict]:
     """
     Agrupa filas planas de ticket+detalle en registros de venta con items JSON.
     Compatible con SQL Server legacy (NO depende de FOR JSON PATH).
+    
+    Incluye:
+    - Cálculo de importe de item con fallback
+    - Recálculo de MontoTotal si el encabezado viene en 0
     """
     from collections import defaultdict
     
@@ -328,6 +374,8 @@ def build_sales_from_flat_rows(rows: List[Dict], unidad_codigo: str) -> List[Dic
         "NumeroTicket": None,
         "Pax": 0,
         "MontoTotal": 0.0,
+        "SubtotalCheque": 0.0,
+        "TotalSinDescuento": 0.0,
         "FechaHora": None,
         "items": []
     })
@@ -344,27 +392,47 @@ def build_sales_from_flat_rows(rows: List[Dict], unidad_codigo: str) -> List[Dic
             ticket["NumeroTicket"] = numero_ticket
             ticket["Pax"] = _safe_int(row.get("Pax"))
             ticket["MontoTotal"] = _safe_float(row.get("MontoTotal"))
+            ticket["SubtotalCheque"] = _safe_float(row.get("SubtotalCheque"))
+            ticket["TotalSinDescuento"] = _safe_float(row.get("TotalSinDescuento"))
             ticket["FechaHora"] = row.get("FechaHora")
         
         # Agregar item si existe
         item_id = row.get("item_id")
         if item_id is not None:
+            # Calcular importe con fallback
+            importe = _calcular_importe_item(row)
+            
             ticket["items"].append({
                 "id": str(item_id),
                 "name": str(row.get("item_name", "") or ""),
                 "quantity": _safe_float(row.get("item_quantity")),
                 "price": _safe_float(row.get("item_price")),
-                "total": _safe_float(row.get("item_total"))
+                "total": importe
             })
     
     # Convertir a lista de registros con items como JSON string
     sales = []
     for numero_ticket, ticket in tickets.items():
+        # Calcular suma de items
+        monto_items = sum(item["total"] for item in ticket["items"])
+        
+        # Determinar MontoTotal con fallback
+        monto_total = ticket["MontoTotal"]
+        if monto_total <= 0:
+            # Intentar otros campos del encabezado
+            if ticket["TotalSinDescuento"] > 0:
+                monto_total = ticket["TotalSinDescuento"]
+            elif ticket["SubtotalCheque"] > 0:
+                monto_total = ticket["SubtotalCheque"]
+            elif monto_items > 0:
+                monto_total = monto_items
+        
         sales.append({
             "NumeroTicket": ticket["NumeroTicket"],
-            "IdTransaccion": ticket["NumeroTicket"],  # Usar folio como ID
+            "IdTransaccion": ticket["NumeroTicket"],
             "Pax": ticket["Pax"],
-            "MontoTotal": ticket["MontoTotal"],
+            "MontoTotal": round(monto_total, 2),
+            "MontoItems": round(monto_items, 2),  # Para diagnóstico
             "FechaHora": ticket["FechaHora"],
             "status": "COMPLETED",
             "items": json.dumps(ticket["items"], ensure_ascii=False) if ticket["items"] else "[]",
@@ -537,6 +605,85 @@ def validate_json_items(sales: List[Dict]) -> Dict[str, int]:
     return stats
 
 
+def validate_importes(sales: List[Dict]) -> Dict[str, Any]:
+    """
+    Valida integridad de importes.
+    Rechaza dry-run si:
+    - tickets > 0 y monto_total_global <= 0
+    - items tienen importe <= 0 de forma masiva (>50%)
+    """
+    if not sales:
+        return {
+            "valido": True,
+            "tickets_total": 0,
+            "tickets_con_monto": 0,
+            "tickets_sin_monto": 0,
+            "monto_total_global": 0.0,
+            "items_con_importe": 0,
+            "items_sin_importe": 0,
+            "porcentaje_items_sin_importe": 0.0,
+            "errores": []
+        }
+    
+    tickets_con_monto = 0
+    tickets_sin_monto = 0
+    monto_total_global = 0.0
+    items_con_importe = 0
+    items_sin_importe = 0
+    errores = []
+    
+    for sale in sales:
+        monto = float(sale.get("MontoTotal", 0) or 0)
+        monto_total_global += monto
+        
+        if monto > 0:
+            tickets_con_monto += 1
+        else:
+            tickets_sin_monto += 1
+        
+        # Contar items con/sin importe
+        items_str = sale.get("items", "[]")
+        try:
+            items = json.loads(items_str) if isinstance(items_str, str) else items_str
+            for item in items:
+                if float(item.get("total", 0) or 0) > 0:
+                    items_con_importe += 1
+                else:
+                    items_sin_importe += 1
+        except:
+            pass
+    
+    total_items = items_con_importe + items_sin_importe
+    porcentaje_sin_importe = (items_sin_importe / total_items * 100) if total_items > 0 else 0
+    
+    # Validaciones
+    valido = True
+    
+    if len(sales) > 0 and monto_total_global <= 0:
+        errores.append(f"ERROR CRÍTICO: {len(sales)} tickets pero monto_total_global = ${monto_total_global:.2f}")
+        valido = False
+    
+    if porcentaje_sin_importe > 50:
+        errores.append(f"WARNING: {porcentaje_sin_importe:.1f}% de items sin importe ({items_sin_importe}/{total_items})")
+        # No marca como inválido, solo warning
+    
+    if tickets_sin_monto > 0 and tickets_sin_monto == len(sales):
+        errores.append(f"ERROR CRÍTICO: TODOS los tickets ({tickets_sin_monto}) tienen MontoTotal = 0")
+        valido = False
+    
+    return {
+        "valido": valido,
+        "tickets_total": len(sales),
+        "tickets_con_monto": tickets_con_monto,
+        "tickets_sin_monto": tickets_sin_monto,
+        "monto_total_global": round(monto_total_global, 2),
+        "items_con_importe": items_con_importe,
+        "items_sin_importe": items_sin_importe,
+        "porcentaje_items_sin_importe": round(porcentaje_sin_importe, 2),
+        "errores": errores
+    }
+
+
 # =============================================================================
 # GENERACIÓN DE REPORTE
 # =============================================================================
@@ -553,6 +700,7 @@ def generate_report(
     kpis_before: int,
     kpis_after: int,
     connection_status: str,
+    importes_stats: Dict = None,
 ) -> Dict[str, Any]:
     """Genera reporte completo del dry-run."""
     
@@ -560,7 +708,32 @@ def generate_report(
     
     # Calcular totales
     total_monto = sum(float(s.get("MontoTotal", 0) or 0) for s in sales)
+    total_monto_items = sum(float(s.get("MontoItems", 0) or 0) for s in sales)
     total_pax = sum(int(s.get("Pax", 0) or 0) for s in sales)
+    
+    # Validación de importes si no se proporcionó
+    if importes_stats is None:
+        importes_stats = validate_importes(sales)
+    
+    # Determinar recomendación
+    recomendacion = "EJECUTAR"
+    razones_rechazo = []
+    
+    if dup_stats["nuevos"] == 0:
+        recomendacion = "NO_EJECUTAR"
+        razones_rechazo.append("No hay registros nuevos para insertar")
+    
+    if items_stats["invalidos"] > 0:
+        recomendacion = "NO_EJECUTAR"
+        razones_rechazo.append(f"{items_stats['invalidos']} items JSON inválidos")
+    
+    if connection_status != "OK":
+        recomendacion = "NO_EJECUTAR"
+        razones_rechazo.append(f"Problema de conexión: {connection_status}")
+    
+    if not importes_stats["valido"]:
+        recomendacion = "RECHAZADO_IMPORTES"
+        razones_rechazo.extend(importes_stats["errores"])
     
     report = {
         "timestamp": datetime.now().isoformat(),
@@ -587,6 +760,7 @@ def generate_report(
         "extraccion": {
             "registros_leidos": len(sales),
             "monto_total": round(total_monto, 2),
+            "monto_items_calculado": round(total_monto_items, 2),
             "pax_total": total_pax,
             "ticket_promedio": round(total_monto / len(sales), 2) if sales else 0,
         },
@@ -595,6 +769,7 @@ def generate_report(
             "duplicados_detectados": dup_stats["duplicados"],
         },
         "validacion_items": items_stats,
+        "validacion_importes": importes_stats,
         "verificacion_tablas": {
             "sync_sales_antes": sync_sales_before,
             "sync_sales_despues": sync_sales_after,
@@ -603,11 +778,8 @@ def generate_report(
             "kpis_despues": kpis_after,
             "kpis_sin_cambios": kpis_before == kpis_after,
         },
-        "recomendacion": "EJECUTAR" if (
-            dup_stats["nuevos"] > 0 and 
-            items_stats["invalidos"] == 0 and
-            connection_status == "OK"
-        ) else "NO_EJECUTAR",
+        "recomendacion": recomendacion,
+        "razones_rechazo": razones_rechazo,
     }
     
     # Muestra anonimizada (5 registros)
@@ -618,6 +790,7 @@ def generate_report(
                 "idx": i + 1,
                 "NumeroTicket": sale.get("NumeroTicket"),
                 "MontoTotal": round(float(sale.get("MontoTotal", 0) or 0), 2),
+                "MontoItems": round(float(sale.get("MontoItems", 0) or 0), 2),
                 "Pax": int(sale.get("Pax", 0) or 0),
                 "FechaHora": str(sale.get("FechaHora"))[:19],
                 "items_valido": bool(sale.get("items")),
@@ -657,7 +830,8 @@ def print_report(report: Dict[str, Any]):
         ("4. EXTRACCIÓN", [
             f"Rango: {report['rango']['fecha_inicio']} a {report['rango']['fecha_fin']}",
             f"Registros leídos: {report['extraccion']['registros_leidos']:,}",
-            f"Monto total: ${report['extraccion']['monto_total']:,.2f}",
+            f"Monto total (encabezado): ${report['extraccion']['monto_total']:,.2f}",
+            f"Monto items (calculado): ${report['extraccion'].get('monto_items_calculado', 0):,.2f}",
             f"PAX total: {report['extraccion']['pax_total']:,}",
             f"Ticket promedio: ${report['extraccion']['ticket_promedio']:,.2f}",
         ]),
@@ -680,13 +854,31 @@ def print_report(report: Dict[str, Any]):
             print(f"   {line}")
         print()
     
+    # Validación de importes
+    if report.get("validacion_importes"):
+        vi = report["validacion_importes"]
+        print("-" * 40)
+        print("6b. VALIDACIÓN DE IMPORTES")
+        print("-" * 40)
+        print(f"   Válido: {'✅ SÍ' if vi['valido'] else '❌ NO'}")
+        print(f"   Tickets con monto: {vi['tickets_con_monto']}")
+        print(f"   Tickets sin monto: {vi['tickets_sin_monto']}")
+        print(f"   Monto total global: ${vi['monto_total_global']:,.2f}")
+        print(f"   Items con importe: {vi['items_con_importe']}")
+        print(f"   Items sin importe: {vi['items_sin_importe']} ({vi['porcentaje_items_sin_importe']:.1f}%)")
+        if vi.get("errores"):
+            for err in vi["errores"]:
+                print(f"   ⚠️  {err}")
+        print()
+    
     # Muestra de registros
     if report.get("muestra_registros"):
         print("-" * 40)
         print("7. MUESTRA ANONIMIZADA (5 registros)")
         print("-" * 40)
         for rec in report["muestra_registros"]:
-            print(f"   {rec['idx']}. Ticket #{rec['NumeroTicket']} | ${rec['MontoTotal']:,.2f} | PAX:{rec['Pax']} | {rec['FechaHora']}")
+            monto_items = rec.get('MontoItems', 0)
+            print(f"   {rec['idx']}. Ticket #{rec['NumeroTicket']} | ${rec['MontoTotal']:,.2f} (items: ${monto_items:,.2f}) | PAX:{rec['Pax']} | {rec['FechaHora']}")
             print(f"      Items: {'✅ válido' if rec['items_valido'] else '❌ nulo'} ({rec['items_len']} chars)")
         print()
     
@@ -706,17 +898,18 @@ def print_report(report: Dict[str, Any]):
     
     # Recomendación
     print("=" * 80)
-    if report["recomendacion"] == "EJECUTAR":
+    recomendacion = report["recomendacion"]
+    if recomendacion == "EJECUTAR":
         print("✅ RECOMENDACIÓN: EJECUTAR")
         print("   Ejecutar con el job oficial para insertar datos reales")
+    elif recomendacion == "RECHAZADO_IMPORTES":
+        print("❌ RECHAZADO: ERROR DE IMPORTES")
+        for razon in report.get("razones_rechazo", []):
+            print(f"   - {razon}")
     else:
         print("⚠️  RECOMENDACIÓN: NO EJECUTAR")
-        if report['duplicados']['nuevos_a_insertar'] == 0:
-            print("   - No hay registros nuevos para insertar")
-        if report['validacion_items']['invalidos'] > 0:
-            print("   - Hay items JSON inválidos")
-        if report['conexion']['status'] != "OK":
-            print(f"   - Problema de conexión: {report['conexion']['status']}")
+        for razon in report.get("razones_rechazo", []):
+            print(f"   - {razon}")
     print("=" * 80)
     print()
 
@@ -827,6 +1020,20 @@ def main():
     logger.info(f"   Nulos: {items_stats['nulos']}")
     logger.info(f"   Inválidos: {items_stats['invalidos']}")
     
+    # 5b. Validar importes
+    logger.info("")
+    logger.info("Paso 5b: Validando integridad de importes...")
+    importes_stats = validate_importes(sales)
+    logger.info(f"   Válido: {'✅ SÍ' if importes_stats['valido'] else '❌ NO'}")
+    logger.info(f"   Tickets con monto: {importes_stats['tickets_con_monto']}")
+    logger.info(f"   Tickets sin monto: {importes_stats['tickets_sin_monto']}")
+    logger.info(f"   Monto total: ${importes_stats['monto_total_global']:,.2f}")
+    logger.info(f"   Items con importe: {importes_stats['items_con_importe']}")
+    logger.info(f"   Items sin importe: {importes_stats['items_sin_importe']}")
+    if importes_stats.get("errores"):
+        for err in importes_stats["errores"]:
+            logger.warning(f"   ⚠️ {err}")
+    
     # 6. Estado DESPUÉS (debe ser igual)
     logger.info("")
     logger.info("Paso 6: Verificando que las tablas NO cambiaron...")
@@ -848,6 +1055,7 @@ def main():
         kpis_before=kpis_before,
         kpis_after=kpis_after,
         connection_status=connection_status,
+        importes_stats=importes_stats,
     )
     
     # Imprimir reporte
