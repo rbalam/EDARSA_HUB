@@ -178,8 +178,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Unidades permitidas (solo SoftRestaurant con credenciales completas)
-UNIDADES_PERMITIDAS = ["CIENFUEGOS", "130MID", "ESTELAR"]
+# Unidades permitidas - TODAS las unidades activas
+# (Se eliminó la restricción de choices para permitir MPRO y otras)
+UNIDADES_PERMITIDAS = None  # Ya no se restringe por lista fija
 
 
 # =============================================================================
@@ -190,17 +191,20 @@ def get_unidad_config(unidad_codigo: str) -> Optional[Dict[str, Any]]:
     """
     Obtiene la configuración completa de una unidad.
     Patrón: Unidades_Negocio -> server_id -> Servidores_Conexiones
+    Soporta: SoftRestaurant, MPRO (ManagmentPro)
     """
     # Mapeo de códigos a nombres en Unidades_Negocio
     nombre_map = {
         "CIENFUEGOS": "CIENFUEGOS",
         "130MID": "130° MERIDA",
+        "130QRO": "130° QUERETARO",
         "ESTELAR": "LA ESTELAR",
+        "ORIGEN": "ORIGEN",
     }
     
     nombre_buscar = nombre_map.get(unidad_codigo, unidad_codigo)
     
-    # 1. Buscar en Unidades_Negocio
+    # 1. Buscar en Unidades_Negocio - ahora también por código
     query_unidad = f"""
     SELECT 
         id,
@@ -211,7 +215,7 @@ def get_unidad_config(unidad_codigo: str) -> Optional[Dict[str, Any]]:
         system_type,
         activo
     FROM Unidades_Negocio
-    WHERE nombre LIKE '%{nombre_buscar}%'
+    WHERE (nombre LIKE '%{nombre_buscar}%' OR codigo = '{unidad_codigo}')
       AND ISNULL(activo, 1) = 1
     """
     
@@ -230,6 +234,7 @@ def get_unidad_config(unidad_codigo: str) -> Optional[Dict[str, Any]]:
         
         logger.info(f"Unidad encontrada: {unidad['nombre']} (ID: {unidad['id']})")
         logger.info(f"Server ID: {server_id}")
+        logger.info(f"Sistema: {unidad.get('system_type')}")
         
         # 2. Obtener configuración del servidor usando la función del módulo
         server_config = get_server_connection_config(str(server_id))
@@ -242,12 +247,14 @@ def get_unidad_config(unidad_codigo: str) -> Optional[Dict[str, Any]]:
             logger.error(f"Servidor {server_config.get('nombre')} no tiene credenciales")
             return None
         
-        # 3. Combinar información
+        # 3. Combinar información - incluir sucursal_origen_id para MPRO
         return {
             "unidad_id": str(unidad['id']),
             "unidad_codigo": unidad.get('codigo') or unidad_codigo,
             "unidad_nombre": unidad['nombre'],
             "server_id": str(server_id),
+            "system_type": unidad.get('system_type', '').upper(),
+            "sucursal_origen_id": unidad.get('sucursal_origen_id'),  # IMPORTANTE para MPRO
             "server_config": server_config,  # Config completa del servidor
         }
         
@@ -261,34 +268,145 @@ def get_unidad_config(unidad_codigo: str) -> Optional[Dict[str, Any]]:
 # =============================================================================
 
 def get_softrestaurant_query(fecha_inicio: str, fecha_fin: str) -> str:
-    """Query para extraer ventas cerradas de SoftRestaurant."""
+    """
+    Query para extraer ventas cerradas de SoftRestaurant.
+    COMPATIBLE CON SQL SERVER LEGACY - NO USA FOR JSON PATH.
+    Devuelve filas planas ticket+detalle para agrupar en Python.
+    """
     return f"""
     SELECT 
         CONVERT(VARCHAR(64), ch.folio) AS NumeroTicket,
-        CONVERT(VARCHAR(64), NEWID()) AS IdTransaccion,
         ch.nopersonas AS Pax,
         ch.total AS MontoTotal,
         t.apertura AS FechaHora,
-        'COMPLETED' AS status,
-        (
-            SELECT 
-                p.idproducto AS id,
-                p.descripcion AS name,
-                dc.cantidad AS quantity,
-                dc.precio AS price,
-                (dc.cantidad * dc.precio) AS total
-            FROM cheqdet dc
-            INNER JOIN productos p ON dc.idproducto = p.idproducto
-            WHERE dc.foliodet = ch.folio
-            FOR JSON PATH
-        ) AS items
+        p.idproducto AS item_id,
+        p.descripcion AS item_name,
+        dc.cantidad AS item_quantity,
+        dc.precio AS item_price,
+        (dc.cantidad * dc.precio) AS item_total
     FROM cheques ch
     INNER JOIN turnos t ON t.idturno = ch.idturno
+    LEFT JOIN cheqdet dc ON dc.foliodet = ch.folio
+    LEFT JOIN productos p ON dc.idproducto = p.idproducto
     WHERE CAST(t.apertura AS DATE) >= '{fecha_inicio}'
       AND CAST(t.apertura AS DATE) <= '{fecha_fin}'
       AND ch.cancelado = 0
       AND ch.total > 0
-    ORDER BY t.apertura DESC
+    ORDER BY ch.folio, p.idproducto
+    """
+
+
+def _safe_float(value):
+    """Convierte a float de forma segura."""
+    if value is None:
+        return 0.0
+    try:
+        return float(value)
+    except:
+        return 0.0
+
+
+def _safe_int(value):
+    """Convierte a int de forma segura."""
+    if value is None:
+        return 0
+    try:
+        return int(value)
+    except:
+        return 0
+
+
+def build_sales_from_flat_rows(rows: List[Dict], unidad_codigo: str) -> List[Dict]:
+    """
+    Agrupa filas planas de ticket+detalle en registros de venta con items JSON.
+    Compatible con SQL Server legacy (NO depende de FOR JSON PATH).
+    """
+    from collections import defaultdict
+    
+    # Agrupar por ticket
+    tickets = defaultdict(lambda: {
+        "NumeroTicket": None,
+        "Pax": 0,
+        "MontoTotal": 0.0,
+        "FechaHora": None,
+        "items": []
+    })
+    
+    for row in rows:
+        numero_ticket = str(row.get("NumeroTicket", "") or "").strip()
+        if not numero_ticket:
+            continue
+        
+        ticket = tickets[numero_ticket]
+        
+        # Solo llenar datos del ticket una vez
+        if ticket["NumeroTicket"] is None:
+            ticket["NumeroTicket"] = numero_ticket
+            ticket["Pax"] = _safe_int(row.get("Pax"))
+            ticket["MontoTotal"] = _safe_float(row.get("MontoTotal"))
+            ticket["FechaHora"] = row.get("FechaHora")
+        
+        # Agregar item si existe
+        item_id = row.get("item_id")
+        if item_id is not None:
+            ticket["items"].append({
+                "id": str(item_id),
+                "name": str(row.get("item_name", "") or ""),
+                "quantity": _safe_float(row.get("item_quantity")),
+                "price": _safe_float(row.get("item_price")),
+                "total": _safe_float(row.get("item_total"))
+            })
+    
+    # Convertir a lista de registros con items como JSON string
+    sales = []
+    for numero_ticket, ticket in tickets.items():
+        sales.append({
+            "NumeroTicket": ticket["NumeroTicket"],
+            "IdTransaccion": ticket["NumeroTicket"],  # Usar folio como ID
+            "Pax": ticket["Pax"],
+            "MontoTotal": ticket["MontoTotal"],
+            "FechaHora": ticket["FechaHora"],
+            "status": "COMPLETED",
+            "items": json.dumps(ticket["items"], ensure_ascii=False) if ticket["items"] else "[]",
+            "UnidadNegocio": unidad_codigo
+        })
+    
+    return sales
+
+
+def get_mpro_query(fecha_inicio: str, fecha_fin: str, sucursal_id: str) -> str:
+    """
+    Query para extraer ventas cerradas de MPRO (ManagmentPro).
+    COMPATIBLE CON SQL SERVER LEGACY - NO USA FOR JSON PATH.
+    Devuelve filas planas ticket+detalle para agrupar en Python.
+    
+    NOTA: MPRO usa la tabla 'Venta' que contiene tanto encabezado como detalle.
+    La tabla 'Venta_Encabezado' es solo el resumen (totales por folio).
+    Vn_Tabla = 'Comanda' indica ventas cerradas desde el módulo de restaurante.
+    """
+    return f"""
+    SELECT 
+        CONVERT(VARCHAR(64), v.Vn_Folio) AS NumeroTicket,
+        ISNULL(c.Co_Personas, 1) AS Pax,
+        ve.Vn_Precio_Neto_Importe AS MontoTotal,
+        v.Vn_Fecha AS FechaHora,
+        v.Pr_Cve_Producto AS item_id,
+        v.Vn_Concepto AS item_name,
+        v.Vn_Cantidad_1 AS item_quantity,
+        v.Vn_Precio_Neto AS item_price,
+        v.Vn_Precio_Neto_Importe AS item_total
+    FROM Venta v
+    INNER JOIN Venta_Encabezado ve 
+        ON v.Vn_Folio = ve.Vn_Folio 
+        AND v.Sc_Cve_Sucursal = ve.Sc_Cve_Sucursal
+    LEFT JOIN Comanda c 
+        ON ve.Vn_Documento = c.Co_Folio 
+        AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal
+    WHERE CAST(v.Vn_Fecha AS DATE) >= '{fecha_inicio}'
+      AND CAST(v.Vn_Fecha AS DATE) <= '{fecha_fin}'
+      AND v.Sc_Cve_Sucursal = '{sucursal_id}'
+      AND ve.Vn_Tabla = 'Comanda'
+    ORDER BY v.Vn_Folio, v.Pr_Cve_Producto
     """
 
 
@@ -299,18 +417,30 @@ def get_softrestaurant_query(fecha_inicio: str, fecha_fin: str) -> str:
 def extract_sales_from_pos(config: Dict, fecha_inicio: str, fecha_fin: str) -> Tuple[List[Dict], str]:
     """
     Extrae ventas de un POS usando execute_query_on_server del módulo comercial_v2.
+    Compatible con SQL Server legacy - NO usa FOR JSON PATH.
+    Soporta: SoftRestaurant, MPRO (ManagmentPro)
     Retorna (registros, connection_status)
     """
     server_config = config['server_config']
-    system_type = server_config.get('system_type', '').upper()
+    # Usar system_type de la unidad (más preciso) o del servidor
+    system_type = config.get('system_type', '').upper() or server_config.get('system_type', '').upper()
     
-    # Solo SoftRestaurant por ahora
-    if 'SOFT' not in system_type:
-        logger.error(f"Sistema {system_type} no soportado en esta versión")
+    # Determinar qué query usar según el sistema
+    if 'SOFT' in system_type:
+        # SoftRestaurant
+        query = get_softrestaurant_query(fecha_inicio, fecha_fin)
+        logger.info(f"Sistema: SoftRestaurant")
+    elif 'MPRO' in system_type:
+        # ManagmentPro - requiere sucursal_origen_id
+        sucursal_id = config.get('sucursal_origen_id')
+        if not sucursal_id:
+            logger.error(f"MPRO requiere sucursal_origen_id pero no está configurado")
+            return [], "CONFIG_INCOMPLETA"
+        query = get_mpro_query(fecha_inicio, fecha_fin, sucursal_id)
+        logger.info(f"Sistema: MPRO (Sucursal: {sucursal_id})")
+    else:
+        logger.error(f"Sistema {system_type} no soportado")
         return [], "SISTEMA_NO_SOPORTADO"
-    
-    # Construir query
-    query = get_softrestaurant_query(fecha_inicio, fecha_fin)
     
     logger.info(f"Ejecutando query en {server_config['nombre']}...")
     logger.info(f"Host: {server_config.get('host_raw', server_config.get('host'))}")
@@ -331,13 +461,13 @@ def extract_sales_from_pos(config: Dict, fecha_inicio: str, fecha_fin: str) -> T
         logger.warning(f"Estado de conexión: {connection_status}")
         return [], connection_status
     
-    # Agregar unidad de negocio a cada registro
-    for row in rows:
-        row["UnidadNegocio"] = config["unidad_codigo"]
+    # NUEVO: Agrupar filas planas en tickets con items JSON (Python-side)
+    logger.info(f"Filas planas recibidas: {len(rows)}")
+    sales = build_sales_from_flat_rows(rows, config["unidad_codigo"])
     
-    logger.info(f"✅ {len(rows)} registros extraídos")
+    logger.info(f"✅ {len(sales)} tickets agrupados con items JSON")
     
-    return rows, connection_status
+    return sales, connection_status
 
 
 # =============================================================================
@@ -602,8 +732,7 @@ def main():
     parser.add_argument(
         "--unidad",
         required=True,
-        choices=UNIDADES_PERMITIDAS,
-        help="Unidad de negocio (solo SoftRestaurant con credenciales)"
+        help="Código de unidad de negocio (ej: CIENFUEGOS, 130QRO, ORIGEN)"
     )
     parser.add_argument(
         "--fecha-inicio",

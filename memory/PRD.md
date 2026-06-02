@@ -1,8 +1,8 @@
 # EDARSAHUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-02 (Sesión 3)
-**Estado:** En desarrollo activo - Diagnóstico de origen de datos completado
+**Última actualización:** 2026-06-02 (Sesión 4 - Dry-Run Sync_Sales Exitoso)
+**Estado:** En desarrollo activo - Dry-run Sync_Sales completado ✅
 
 ---
 
@@ -91,8 +91,8 @@ Vistas/Agregados EDARSAHUB SQL
 |--------|-----------|--------|-------|
 | Comercial_KPIs_Diarios_v2 | **3,376** | ✅ OK | Poblada vía SQL_LIVE (SOFTRESTAURANT+MPRO) |
 | Comercial_Ventas_Dia_Abiertas_v2 | 8 | ✅ OK | |
-| Sync_PAX_Detalle | 0 | ⚠️ VACÍA | Diseño intencional Fase 1 - No requerida |
-| Sync_Sales | 0 | ⚠️ VACÍA | Diseño intencional Fase 1 - No requerida |
+| Sync_PAX_Detalle | 0 | ⚠️ VACÍA | Fase 2 - Dry-run pendiente |
+| Sync_Sales | 0 | ✅ DRY-RUN OK | **Listo para activación** (ver sección 4.2) |
 
 ### 4.1 Flujo de Datos Identificado (Diagnóstico 2026-06-02)
 
@@ -104,6 +104,26 @@ SOFTRESTAURANT/MPRO → SQL_LIVE → sync_comercial_edarsahub.py → Comercial_K
 
 **Conclusión:** Las tablas `Sync_Sales` y `Sync_PAX_Detalle` están vacías **por diseño**. El Dashboard Ejecutivo Fase 1 opera correctamente con KPIs agregados diarios que se escriben directamente a `Comercial_KPIs_Diarios_v2` sin pasar por tablas intermedias de tickets.
 
+### 4.2 Dry-Run Sync_Sales EXITOSO (2026-06-02 Sesión 4)
+
+| Unidad | Sistema | Tickets | Monto | Items JSON | Estado |
+|--------|---------|---------|-------|------------|--------|
+| **CIENFUEGOS** | SoftRestaurant | 19 | N/D | ✅ 19 válidos | ✅ EJECUTAR |
+| **130QRO** | MPRO | 11 | $69,731 | ✅ 11 válidos | ✅ EJECUTAR |
+| **ORIGEN** | MPRO | 20 | $56,232 | ✅ 20 válidos | ✅ EJECUTAR |
+
+**Issues Resueltos:**
+1. ✅ Incompatibilidad `FOR JSON PATH` en SQL Server legacy → Construcción JSON en Python
+2. ✅ CLI con `choices` hardcodeados → Aceptación dinámica de unidades
+3. ✅ Query MPRO incorrecta → Corregido JOIN Venta+Venta_Encabezado con Vn_Tabla='Comanda'
+
+**Comando de Ejecución:**
+```bash
+export SERVER_SECRET_KEY="4HGEDzNpIv3pMoHXFtlXXYiTSt1SxU8dXHiTR5GOtd8="
+cd /app/backend
+python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01 --fecha-fin 2026-06-01 --dry-run
+```
+
 ---
 
 ## 5. Backlog Priorizado
@@ -114,15 +134,16 @@ SOFTRESTAURANT/MPRO → SQL_LIVE → sync_comercial_edarsahub.py → Comercial_K
 - [x] ~~Marcar Sistema_RBAC_* como TRANSICIONAL en Gobierno~~ ✅ COMPLETADO
 - [x] ~~Diagnóstico origen Comercial_KPIs_Diarios_v2~~ ✅ COMPLETADO 2026-06-02 (S3)
 - [x] ~~Verificar relación Sync_Sales/PAX_Detalle~~ ✅ Vacías por diseño Fase 1
+- [x] ~~Dry-run Sync_Sales (CIENFUEGOS, 130QRO, ORIGEN)~~ ✅ COMPLETADO 2026-06-02 (S4)
 
-### P1 (Alto)
-- [ ] Migrar usuarios MongoDB → SQL (`Usuario_Catalogo`) - **Dry-run pendiente**
+### P1 (Alto) - AWAITING USER APPROVAL
+- [ ] **Ejecutar inserción real Sync_Sales** - Dry-run exitoso, pendiente aprobación
+- [ ] Activar poblado de `Sync_PAX_Detalle` - Siguiente tabla de granularidad
+- [ ] Migrar usuarios MongoDB → SQL (`Usuario_Catalogo`) - Dry-run pendiente
 - [ ] Módulo Pricing IA / Competidores Enterprise
 - [ ] Motor de Rentabilidad (Costos y Márgenes)
 
 ### P2 (Medio) - Fase 2+
-- [ ] Activar poblado de `Sync_Sales` para análisis granular de tickets
-- [ ] Activar poblado de `Sync_PAX_Detalle` para métricas detalladas de comensales
 - [ ] Desmockización total frontend restante
 - [ ] Scripts Edge Offline
 - [ ] Control RBAC por empresa/unidad/sucursal
@@ -145,6 +166,7 @@ SOFTRESTAURANT/MPRO → SQL_LIVE → sync_comercial_edarsahub.py → Comercial_K
 | `/app/backend/modules/comercial/inteligencia_repository.py` | Repository SQL |
 | `/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py` | Job sincronización |
 | `/app/backend/tools/edarsahub_sql_runner.py` | Runner SQL |
+| `/app/backend/tools/sync_sales_dry_run.py` | **Dry-run Sync_Sales** ✅ |
 | `/app/backend/core/policies/no_live_dashboard_policy.py` | Política NO-LIVE |
 | `/app/docs/EDARSAHUB_MAXIMAS_INQUEBRANTABLES.md` | Máximas arquitectura |
 | `/app/backend/modules/comercial/LEGACY_NO_LIVE_MIGRATION.md` | Marca legacy NO-LIVE |
@@ -157,6 +179,10 @@ SOFTRESTAURANT/MPRO → SQL_LIVE → sync_comercial_edarsahub.py → Comercial_K
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06-02 (S4) | **✅ DRY-RUN SYNC_SALES EXITOSO** - CIENFUEGOS, 130QRO, ORIGEN |
+| 2026-06-02 (S4) | Corregido: FOR JSON PATH → JSON en Python (compatibilidad legacy) |
+| 2026-06-02 (S4) | Corregido: CLI choices hardcodeados |
+| 2026-06-02 (S4) | Corregido: Query MPRO (Vn_Tabla='Comanda') |
 | 2026-06-02 (S3) | **Diagnóstico completo origen Comercial_KPIs_Diarios_v2** |
 | 2026-06-02 (S3) | Confirmado: Sync_Sales/PAX_Detalle vacías por diseño Fase 1 |
 | 2026-06-02 (S3) | Generado reporte: DIAGNOSTICO_ORIGEN_KPIS_V2_20260602.md |
@@ -173,6 +199,7 @@ SOFTRESTAURANT/MPRO → SQL_LIVE → sync_comercial_edarsahub.py → Comercial_K
 
 | Reporte | Fecha | Contenido |
 |---------|-------|-----------|
+| `/app/docs/reports/DRY_RUN_SYNC_SALES_EXITOSO_20260602.md` | 2026-06-02 | **Dry-run exitoso CIENFUEGOS, 130QRO, ORIGEN** |
 | `/app/docs/reports/DIAGNOSTICO_ORIGEN_KPIS_Y_SYNC_DETALLE.md` | 2026-06-02 | **Diagnóstico completo de 10 preguntas** sobre origen de KPIs y Sync |
 | `/app/docs/reports/DIAGNOSTICO_ORIGEN_KPIS_V2_20260602.md` | 2026-06-02 | Origen de KPIs y relación con tablas Sync |
 | `/app/docs/reports/VALIDACION_PORTAL_INTELIGENCIA_COMERCIAL_FASE1.md` | 2026-06-02 | Validación cierre Fase 1 |
