@@ -1,6 +1,6 @@
 # DIAGNÓSTICO MAPEO RBAC MongoDB → Usuario_* SQL
 
-Generado: 2026-06-02T19:58:24+00:00
+Generado: 2026-06-02T20:07:06+00:00
 
 ## Objetivo
 
@@ -10128,6 +10128,10 @@ Diagnosticar dependencias de RBAC MongoDB antes de migrar usuarios hacia Usuario
 /app/backend/database/migrations/021_permisos_inteligencia_comercial.sql:115:FROM Usuario_PermisosRolModulo p
 /app/backend/database/migrations/021_permisos_inteligencia_comercial.sql:116:JOIN Usuario_Roles r ON p.RolID = r.RolID
 /app/backend/database/migrations/021_permisos_inteligencia_comercial.sql:117:JOIN Usuario_Modulos m ON p.ModuloID = m.ModuloID
+/app/backend/database/migrations/032_validacion_inteligencia_comercial_fase1.sql:137:FROM dbo.Usuario_Modulos
+/app/backend/database/migrations/032_validacion_inteligencia_comercial_fase1.sql:146:FROM dbo.Usuario_Modulos
+/app/backend/database/migrations/032_validacion_inteligencia_comercial_fase1.sql:153:FROM dbo.Usuario_PermisosRolModulo prm
+/app/backend/database/migrations/032_validacion_inteligencia_comercial_fase1.sql:154:INNER JOIN dbo.Usuario_Roles r
 /app/backend/database/migrations/017_registrar_inteligencia_comercial_y_transicionales.sql:13:    SELECT 1 FROM Usuario_Modulos 
 /app/backend/database/migrations/017_registrar_inteligencia_comercial_y_transicionales.sql:17:    INSERT INTO Usuario_Modulos (
 /app/backend/database/migrations/017_registrar_inteligencia_comercial_y_transicionales.sql:70:        'N', 'Usuario_Acciones + Usuario_PermisosRolModulo',
