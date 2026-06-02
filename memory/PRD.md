@@ -1,8 +1,8 @@
 # EDARSAHUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-02
-**Estado:** En desarrollo activo
+**Última actualización:** 2026-06-02 (Sesión 2)
+**Estado:** En desarrollo activo - Gobierno RBAC consolidado
 
 ---
 
@@ -50,12 +50,18 @@ Vistas/Agregados EDARSAHUB SQL
 - [x] `Sp_Validar_Inteligencia_Comercial_Status` - Validar frescura de fuentes
 
 ### 3.3 Tablas de Gobierno
-- [x] `Sistema_Gobierno_Tablas` - Gobierno de datos (21 registros)
+- [x] `Sistema_Gobierno_Tablas` - Gobierno de datos (**27 registros** - actualizado)
 - [x] `Sistema_Migracion_MongoSQL_Mapeo` - Plan migración MongoDB→SQL (8 registros)
-- [x] `Sistema_RBAC_Permisos` - Permisos canónicos (5 permisos IC)
-- [x] `Sistema_RBAC_Roles` - Roles canónicos (6 roles)
-- [x] `Sistema_RBAC_RolesPermisos` - Asignaciones (18 registros)
+- [x] ~~`Sistema_RBAC_Permisos`~~ - **TRANSICIONAL/DEPRECADA** → Usar `Usuario_Acciones`
+- [x] ~~`Sistema_RBAC_Roles`~~ - **TRANSICIONAL/DEPRECADA** → Usar `Usuario_Roles`
+- [x] ~~`Sistema_RBAC_RolesPermisos`~~ - **TRANSICIONAL/DEPRECADA** → Usar `Usuario_PermisosRolModulo`
 - [x] `Comercial_Inteligencia_VentasDetalleProducto` - Detalle ventas (vacía)
+
+### 3.3b RBAC Canónico (Usuario_*)
+- [x] `Usuario_Modulos` - **55 módulos** (incluye INTELIGENCIA_COMERCIAL, ModuloID=59)
+- [x] `Usuario_Roles` - **16 roles** (incluye CRM_ADMIN, CRM_EJEC, CRM_AUDIT)
+- [x] `Usuario_Acciones` - **16 acciones** (VER, CREAR, EDITAR, ELIMINAR, etc.)
+- [x] `Usuario_PermisosRolModulo` - Matriz de permisos
 
 ### 3.4 Endpoints FastAPI
 - [x] `GET /api/comercial/inteligencia/kpis`
@@ -93,20 +99,24 @@ Vistas/Agregados EDARSAHUB SQL
 ## 5. Backlog Priorizado
 
 ### P0 (Crítico)
+- [x] ~~Ejecutar scripts de clasificación y transición RBAC~~ ✅ COMPLETADO 2026-06-02
+- [x] ~~Registrar módulo INTELIGENCIA_COMERCIAL en Usuario_Modulos~~ ✅ ModuloID=59
+- [x] ~~Marcar Sistema_RBAC_* como TRANSICIONAL en Gobierno~~ ✅ COMPLETADO
 - [ ] Ejecutar job `inteligencia_comercial_sync` para poblar `Sync_Sales`
 - [ ] Ejecutar job para poblar `Sync_PAX_Detalle`
 
 ### P1 (Alto)
-- [ ] Crear tablas RBAC usuarios (`Sistema_RBAC_Usuarios`, `Sistema_RBAC_UsuariosRoles`)
-- [ ] Migrar usuarios MongoDB → SQL
+- [ ] ~~Crear tablas RBAC usuarios (`Sistema_RBAC_Usuarios`, `Sistema_RBAC_UsuariosRoles`)~~ → Usar `Usuario_Catalogo` canónico
+- [ ] Migrar usuarios MongoDB → SQL (`Usuario_Catalogo`)
 - [ ] Módulo Pricing IA / Competidores Enterprise
 - [ ] Motor de Rentabilidad (Costos y Márgenes)
 
 ### P2 (Medio)
-- [ ] Deprecar RBAC MongoDB
+- [x] ~~Deprecar RBAC MongoDB~~ → Tablas `Sistema_RBAC_*` marcadas como TRANSICIONAL
 - [ ] Desmockización total frontend restante
 - [ ] Scripts Edge Offline
 - [ ] Control RBAC por empresa/unidad/sucursal
+- [ ] Eliminación física de colecciones MongoDB legado
 
 ---
 
@@ -127,6 +137,22 @@ Vistas/Agregados EDARSAHUB SQL
 | `/app/backend/tools/edarsahub_sql_runner.py` | Runner SQL |
 | `/app/backend/core/policies/no_live_dashboard_policy.py` | Política NO-LIVE |
 | `/app/docs/EDARSAHUB_MAXIMAS_INQUEBRANTABLES.md` | Máximas arquitectura |
+| `/app/backend/modules/comercial/LEGACY_NO_LIVE_MIGRATION.md` | Marca legacy NO-LIVE |
+| `/app/scripts/classify_no_live_violations.sh` | Scanner violaciones NO-LIVE |
+| `/app/docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md` | Matriz NO-LIVE |
+
+---
+
+## 8. Historial de Cambios Recientes
+
+| Fecha | Cambio |
+|-------|--------|
+| 2026-06-02 (S2) | Registrado módulo INTELIGENCIA_COMERCIAL (ID=59) |
+| 2026-06-02 (S2) | Sistema_RBAC_* marcadas como TRANSICIONAL en Gobierno |
+| 2026-06-02 (S2) | Vistas y tablas de Inteligencia registradas en Gobierno |
+| 2026-06-02 (S2) | Generada MATRIZ_NO_LIVE_DASHBOARD |
+| 2026-06-02 (S1) | Herramienta edarsahub_sql_runner.py creada |
+| 2026-06-02 (S1) | Fase 1 Inteligencia Comercial completada |
 
 ---
 
