@@ -1,145 +1,133 @@
-# CRM COMERCIAL ENTERPRISE - EDARSA HUB
+# EDARSAHUB - PRD (Product Requirements Document)
+## CRM Comercial Enterprise + Módulos Satélite
 
-## Problema Original
-Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosistema EDARSA HUB con MS SQL Server como cerebro absoluto. CERO dependencias de MongoDB.
-
-## Arquitectura
-- **Frontend**: React (`/app/frontend/src/`)
-  - CRM Principal: `/app/frontend/src/pages/`
-  - Portal Proveedores: `/app/frontend/src/portal/`
-  - Portal Inteligencia Comercial IA: `/app/frontend/src/portal-inteligencia/`
-  - **Host Router**: `/app/frontend/src/HostRouter.jsx` (Enrutamiento por subdominio)
-- **Backend**: FastAPI (`/app/backend/`)
-- **Base de datos**: MS SQL Server EDARSAHUB (Única fuente de verdad)
-- **Patrón**: NO-LIVE (Jobs de sincronización, sin conexiones directas a Vtiger)
-
-## Restricciones Técnicas
-- ❌ MongoDB DEPRECADO Y REMOVIDO
-- ❌ `testing_agent_v3_fork` PROHIBIDO
-- ✅ Pruebas vía cURL, bash, python -c, screenshots
+**Última actualización:** 2026-06-02
+**Estado:** En desarrollo activo
 
 ---
 
-## Estado de Fases
+## 1. Problema Original
 
-### ✅ COMPLETADAS
-| Fase | Descripción | Fecha |
-|------|-------------|-------|
-| Fase 2 | Esquemas Base CRM (Cuentas, Remisiones, Workflow) | Dic 2025 |
-| Fase 3 | Roles RBAC (Administrador, Ejecutivo, Auditor) | Dic 2025 |
-| Fase 5 | Componentes Frontend (`CuentasPanel.jsx`, `SolicitudesAltaPanel.jsx`) | Dic 2025 |
-| Fase 6 | Pipeline Enterprise (`CRM_Oportunidades`, `CRM_OportunidadesHistorial`) | Dic 2025 |
-| Portal Inteligencia Comercial | Dashboard completo con datos reales SQL Server | 01 Jun 2026 |
-| Portal Inteligencia Comercial | Scheduler Jobs con tabla `Sys_Scheduler_Jobs` | 01 Jun 2026 |
-| Portal Inteligencia Comercial | SP `Sp_GetDashboardInteligencia` ejecutado y validado | 02 Jun 2026 |
-| **Host-based Routing** | Subdominios para portales independientes | 02 Jun 2026 |
+Construir el **CRM COMERCIAL ENTERPRISE** y módulos satélite (Comandero, Super Caja, Portal Inteligencia Comercial IA) integrados al ecosistema EDARSA HUB.
 
-### 🔄 EN PROGRESO
-- Configuración DNS de subdominios (Esperando acción del usuario)
-- Acoplamiento Scripts Edge Offline (Esperando instrucciones)
+### Restricciones Fundamentales:
+- **CERO dependencias de MongoDB** para datos comerciales
+- **Arquitectura NO-LIVE**: Sincronización vía jobs y cachés locales
+- **Inyección directa de scripts a SQL Server** de producción mediante `pyodbc`/`pymssql`
+- **PROHIBIDO** usar `testing_agent_v3_fork` - Pruebas vía cURL, bash, python -c y screenshots
 
 ---
 
-## Últimos Cambios (02 Jun 2026)
+## 2. Arquitectura Canónica
 
-### Fix: Sincronización de KPIs con Unidad de Negocio
-**Problema:** Los KPIs del Portal Inteligencia Comercial no cambiaban al seleccionar diferentes unidades de negocio.
-
-**Solución implementada:**
-1. **Backend** (`/app/backend/modules/inteligencia_comercial/routes.py`):
-   - Fallback dinámico con multiplicadores por unidad (CIENFUEGOS 32%, MÉRIDA 25%, QUERÉTARO 18%, etc.)
-   - Datos proporcionales según la unidad seleccionada
-
-2. **Frontend** - Componentes actualizados con `useEffect` y dependencia `unidadSeleccionada`:
-   - `VentasCasaPage.jsx` - Fetch dinámico al cambiar unidad
-   - `VentasFamiliaPage.jsx` - Fetch dinámico al cambiar unidad
-   - `VentasHorarioPage.jsx` - Fetch dinámico al cambiar unidad
-   - `AnalisisPAXPage.jsx` - Fetch dinámico al cambiar unidad
-
-**Estado:** ✅ FUNCIONANDO - Los KPIs cambian correctamente al seleccionar unidades
-
-### Host-based Routing para Subdominios (02 Jun 2026)
-**Implementado:**
-- `HostRouter.jsx` - Detecta hostname y renderiza portal correspondiente
-- Configuración de subdominios en `SUBDOMAIN_CONFIG`:
-  - `inteligencia.edarsa.com.mx` → Portal Inteligencia Comercial
-  - `proveedores.edarsa.com.mx` → Portal de Proveedores
-  - Cualquier otro → CRM Principal
-- Documentación: `/app/docs/SUBDOMINIOS_CONFIG.md`
-
-**Beneficio:** Una sola aplicación React sirve múltiples portales según el subdominio de acceso.
-
-### Conexión Datos Reales al Portal Inteligencia Comercial IA (01 Jun 2026)
-
-**Backend implementado:**
-- `GET /api/inteligencia/dashboard` - KPIs consolidados desde `View_Inteligencia_Comercial`
-- `GET /api/inteligencia/ventas/producto|familia|horario|casas`
-- `GET /api/inteligencia/analisis/pax`
-- Módulo: `/app/backend/modules/inteligencia_comercial/`
-
-**Frontend conectado:**
-- `DashboardIA.jsx` mapea respuesta del backend al formato UI
-- Fallback automático si backend falla o no hay datos
-
-**Fix crítico:**
-- Interceptor Axios (`/app/frontend/src/lib/api.js`): Excluir `/inteligencia-comercial` de redirección 401
-
-**Estado actual:** Portal funcional con datos FALLBACK (tabla `Fact_Ventas_Consolidadas` vacía)
-
----
-
-## Tablas CRM en EDARSAHUB
-- `CRM_Cuentas`
-- `CRM_ClientesSolicitudesAlta`
-- `CRM_Oportunidades` (47 columnas, Enterprise)
-- `CRM_OportunidadesHistorial` ✅ NEW
-- `Venta_Remisiones`
-- `Usuario_Roles`
-- `Fact_Ventas_Consolidadas` ✅ Portal Inteligencia
-- `Config_Horarios` ✅ Portal Inteligencia  
-- `Products` (actualizado con alcohol/casa) ✅ Portal Inteligencia
-- `View_Inteligencia_Comercial` ✅ Portal Inteligencia
-
-## Endpoints Activos
-- `GET /api/crm/cuentas`
-- `POST /api/crm/cuentas`
-- `GET /api/crm/clientes/solicitudes`
-- `GET /api/inteligencia/dashboard` (pendiente backend)
-
-## Credenciales Test
-- `admin@inventario.com` / `admin123`
-- `ricardo@edarsa.com.mx` / `Asdf1478@@`
-
----
-
-## Backlog Priorizado
-
-### P0 - Crítico
-- (ninguno pendiente)
-
-### P1 - Alta Prioridad
-1. **Configuración DNS Subdominios** - Usuario debe configurar CNAME en su panel DNS
-2. Motor de Rentabilidad (Costos y Márgenes)
-3. COSTOS-ALERTAS-001-E — Motor evaluación margen
-
-### P2 - Media Prioridad
-- MIGRACION-FRONTEND-COMPETIDORES-ENTERPRISE (Pricing IA interno)
-- COSTOS-ALERTAS-001-F — Job/scheduler envío controlado
-- Scripts Edge Offline (acoplamiento al flujo principal)
-
-### P3 - Backlog
-- Selector de unidades dinámico con TenantID real
-- FASE 0-9 Arquitectura Integral Operativa (Desmockización)
-
----
-
-## Configuración Subdominios (PENDIENTE USUARIO)
-
-Ver documentación completa: `/app/docs/SUBDOMINIOS_CONFIG.md`
-
-**Registros DNS a crear:**
 ```
-inteligencia.edarsa.com.mx → CNAME → stock-tracker-990.preview.emergentagent.com
-proveedores.edarsa.com.mx  → CNAME → stock-tracker-990.preview.emergentagent.com
+Fuentes Externas (SoftRestaurant/MPRO/NetPay)
+        ↓
+   [Scheduler / Jobs]
+        ↓
+Tablas Sync_* y Comerciales en SQL Server
+        ↓
+Vistas/Agregados EDARSAHUB SQL
+        ↓
+   FastAPI Endpoints
+        ↓
+   React Dashboard
 ```
-- FASE 0-9 Arquitectura Integral Operativa (Desmockización total)
+
+**PROHIBIDO:** Dashboard consultando MongoDB o sistemas externos en tiempo real.
+
+---
+
+## 3. Lo Implementado (Fase 1 Inteligencia Comercial)
+
+### 3.1 Vistas SQL Canónicas
+- [x] `Comercial_Inteligencia_VW_KPIsEjecutivos` - KPIs consolidados
+- [x] `Comercial_Inteligencia_VW_SyncStatus` - Estado de sincronización
+- [x] `Sistema_VW_Servidores_Conexiones_Publico` - Servidores sin credenciales
+- [x] `Sistema_VW_PosiblesDuplicidadesTablas` - Auditoría duplicidades
+
+### 3.2 Stored Procedures
+- [x] `Sp_Validar_Inteligencia_Comercial_Status` - Validar frescura de fuentes
+
+### 3.3 Tablas de Gobierno
+- [x] `Sistema_Gobierno_Tablas` - Gobierno de datos (21 registros)
+- [x] `Sistema_Migracion_MongoSQL_Mapeo` - Plan migración MongoDB→SQL (8 registros)
+- [x] `Sistema_RBAC_Permisos` - Permisos canónicos (5 permisos IC)
+- [x] `Sistema_RBAC_Roles` - Roles canónicos (6 roles)
+- [x] `Sistema_RBAC_RolesPermisos` - Asignaciones (18 registros)
+- [x] `Comercial_Inteligencia_VentasDetalleProducto` - Detalle ventas (vacía)
+
+### 3.4 Endpoints FastAPI
+- [x] `GET /api/comercial/inteligencia/kpis`
+- [x] `GET /api/comercial/inteligencia/ventas-comparativo`
+- [x] `GET /api/comercial/inteligencia/tendencia`
+- [x] `GET /api/comercial/inteligencia/kpis-por-unidad`
+- [x] `GET /api/comercial/inteligencia/unidades`
+- [x] `GET /api/comercial/inteligencia/sync-status`
+- [x] `GET /api/comercial/inteligencia/pax`
+
+### 3.5 Herramientas
+- [x] `edarsahub_sql_runner.py` - Runner SQL controlado
+- [x] `audit_mongodb_dependencies.sh` - Auditoría MongoDB
+- [x] `audit_live_connections.sh` - Auditoría conexiones LIVE
+- [x] `no_live_dashboard_policy.py` - Política NO-LIVE
+
+### 3.6 Documentación
+- [x] `EDARSAHUB_MAXIMAS_INQUEBRANTABLES.md` - 11 máximas de arquitectura
+- [x] `MATRIZ_CANONICIDAD_TABLAS_EDARSAHUB.md` - Clasificación de tablas
+- [x] `VALIDACION_PORTAL_INTELIGENCIA_COMERCIAL_FASE1.md` - Cierre Fase 1
+
+---
+
+## 4. Estado de Fuentes de Datos
+
+| Fuente | Registros | Estado |
+|--------|-----------|--------|
+| Comercial_KPIs_Diarios_v2 | 3,373 | ✅ OK |
+| Comercial_Ventas_Dia_Abiertas_v2 | 8 | ✅ OK |
+| Sync_PAX_Detalle | 0 | 🔴 SIN_DATOS |
+| Sync_Sales | 0 | 🔴 SIN_DATOS |
+
+---
+
+## 5. Backlog Priorizado
+
+### P0 (Crítico)
+- [ ] Ejecutar job `inteligencia_comercial_sync` para poblar `Sync_Sales`
+- [ ] Ejecutar job para poblar `Sync_PAX_Detalle`
+
+### P1 (Alto)
+- [ ] Crear tablas RBAC usuarios (`Sistema_RBAC_Usuarios`, `Sistema_RBAC_UsuariosRoles`)
+- [ ] Migrar usuarios MongoDB → SQL
+- [ ] Módulo Pricing IA / Competidores Enterprise
+- [ ] Motor de Rentabilidad (Costos y Márgenes)
+
+### P2 (Medio)
+- [ ] Deprecar RBAC MongoDB
+- [ ] Desmockización total frontend restante
+- [ ] Scripts Edge Offline
+- [ ] Control RBAC por empresa/unidad/sucursal
+
+---
+
+## 6. Credenciales de Prueba
+
+- **Usuario:** `admin@inventario.com`
+- **Password:** `admin123`
+
+---
+
+## 7. Archivos Clave
+
+| Archivo | Propósito |
+|---------|-----------|
+| `/app/backend/modules/comercial/inteligencia_comercial_routes.py` | Endpoints Fase 1 |
+| `/app/backend/modules/comercial/inteligencia_repository.py` | Repository SQL |
+| `/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py` | Job sincronización |
+| `/app/backend/tools/edarsahub_sql_runner.py` | Runner SQL |
+| `/app/backend/core/policies/no_live_dashboard_policy.py` | Política NO-LIVE |
+| `/app/docs/EDARSAHUB_MAXIMAS_INQUEBRANTABLES.md` | Máximas arquitectura |
+
+---
+
+*Documento actualizado automáticamente - E1 Agent*
