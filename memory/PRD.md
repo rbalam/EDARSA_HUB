@@ -1,8 +1,8 @@
 # EDARSAHUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-02 (Sesión 2)
-**Estado:** En desarrollo activo - Gobierno RBAC consolidado
+**Última actualización:** 2026-06-02 (Sesión 3)
+**Estado:** En desarrollo activo - Diagnóstico de origen de datos completado
 
 ---
 
@@ -87,12 +87,22 @@ Vistas/Agregados EDARSAHUB SQL
 
 ## 4. Estado de Fuentes de Datos
 
-| Fuente | Registros | Estado |
-|--------|-----------|--------|
-| Comercial_KPIs_Diarios_v2 | 3,373 | ✅ OK |
-| Comercial_Ventas_Dia_Abiertas_v2 | 8 | ✅ OK |
-| Sync_PAX_Detalle | 0 | 🔴 SIN_DATOS |
-| Sync_Sales | 0 | 🔴 SIN_DATOS |
+| Fuente | Registros | Estado | Notas |
+|--------|-----------|--------|-------|
+| Comercial_KPIs_Diarios_v2 | **3,376** | ✅ OK | Poblada vía SQL_LIVE (SOFTRESTAURANT+MPRO) |
+| Comercial_Ventas_Dia_Abiertas_v2 | 8 | ✅ OK | |
+| Sync_PAX_Detalle | 0 | ⚠️ VACÍA | Diseño intencional Fase 1 - No requerida |
+| Sync_Sales | 0 | ⚠️ VACÍA | Diseño intencional Fase 1 - No requerida |
+
+### 4.1 Flujo de Datos Identificado (Diagnóstico 2026-06-02)
+
+```
+SOFTRESTAURANT/MPRO → SQL_LIVE → sync_comercial_edarsahub.py → Comercial_KPIs_Diarios_v2
+                                                            ↓
+                                                    (Sync_Sales/PAX_Detalle NO usadas en Fase 1)
+```
+
+**Conclusión:** Las tablas `Sync_Sales` y `Sync_PAX_Detalle` están vacías **por diseño**. El Dashboard Ejecutivo Fase 1 opera correctamente con KPIs agregados diarios que se escriben directamente a `Comercial_KPIs_Diarios_v2` sin pasar por tablas intermedias de tickets.
 
 ---
 
@@ -102,17 +112,17 @@ Vistas/Agregados EDARSAHUB SQL
 - [x] ~~Ejecutar scripts de clasificación y transición RBAC~~ ✅ COMPLETADO 2026-06-02
 - [x] ~~Registrar módulo INTELIGENCIA_COMERCIAL en Usuario_Modulos~~ ✅ ModuloID=59
 - [x] ~~Marcar Sistema_RBAC_* como TRANSICIONAL en Gobierno~~ ✅ COMPLETADO
-- [ ] Ejecutar job `inteligencia_comercial_sync` para poblar `Sync_Sales`
-- [ ] Ejecutar job para poblar `Sync_PAX_Detalle`
+- [x] ~~Diagnóstico origen Comercial_KPIs_Diarios_v2~~ ✅ COMPLETADO 2026-06-02 (S3)
+- [x] ~~Verificar relación Sync_Sales/PAX_Detalle~~ ✅ Vacías por diseño Fase 1
 
 ### P1 (Alto)
-- [ ] ~~Crear tablas RBAC usuarios (`Sistema_RBAC_Usuarios`, `Sistema_RBAC_UsuariosRoles`)~~ → Usar `Usuario_Catalogo` canónico
-- [ ] Migrar usuarios MongoDB → SQL (`Usuario_Catalogo`)
+- [ ] Migrar usuarios MongoDB → SQL (`Usuario_Catalogo`) - **Dry-run pendiente**
 - [ ] Módulo Pricing IA / Competidores Enterprise
 - [ ] Motor de Rentabilidad (Costos y Márgenes)
 
-### P2 (Medio)
-- [x] ~~Deprecar RBAC MongoDB~~ → Tablas `Sistema_RBAC_*` marcadas como TRANSICIONAL
+### P2 (Medio) - Fase 2+
+- [ ] Activar poblado de `Sync_Sales` para análisis granular de tickets
+- [ ] Activar poblado de `Sync_PAX_Detalle` para métricas detalladas de comensales
 - [ ] Desmockización total frontend restante
 - [ ] Scripts Edge Offline
 - [ ] Control RBAC por empresa/unidad/sucursal
@@ -147,12 +157,27 @@ Vistas/Agregados EDARSAHUB SQL
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06-02 (S3) | **Diagnóstico completo origen Comercial_KPIs_Diarios_v2** |
+| 2026-06-02 (S3) | Confirmado: Sync_Sales/PAX_Detalle vacías por diseño Fase 1 |
+| 2026-06-02 (S3) | Generado reporte: DIAGNOSTICO_ORIGEN_KPIS_V2_20260602.md |
 | 2026-06-02 (S2) | Registrado módulo INTELIGENCIA_COMERCIAL (ID=59) |
 | 2026-06-02 (S2) | Sistema_RBAC_* marcadas como TRANSICIONAL en Gobierno |
 | 2026-06-02 (S2) | Vistas y tablas de Inteligencia registradas en Gobierno |
 | 2026-06-02 (S2) | Generada MATRIZ_NO_LIVE_DASHBOARD |
 | 2026-06-02 (S1) | Herramienta edarsahub_sql_runner.py creada |
 | 2026-06-02 (S1) | Fase 1 Inteligencia Comercial completada |
+
+---
+
+## 9. Reportes Generados (Diagnósticos)
+
+| Reporte | Fecha | Contenido |
+|---------|-------|-----------|
+| `/app/docs/reports/DIAGNOSTICO_ORIGEN_KPIS_V2_20260602.md` | 2026-06-02 | Origen de KPIs y relación con tablas Sync |
+| `/app/docs/reports/VALIDACION_PORTAL_INTELIGENCIA_COMERCIAL_FASE1.md` | 2026-06-02 | Validación cierre Fase 1 |
+| `/app/docs/reports/DIAGNOSTICO_MAPEO_RBAC_MONGO_A_SQL.md` | 2026-06-02 | Auditoría migración MongoDB→SQL |
+| `/app/docs/reports/DECISION_EJECUTIVA_RBAC_20260602.md` | 2026-06-02 | Decisión arquitectónica RBAC |
+| `/app/docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md` | 2026-06-02 | Matriz NO-LIVE |
 
 ---
 
