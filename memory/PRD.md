@@ -173,6 +173,7 @@ SOFTRESTAURANT/MPRO → SQL_LIVE → sync_comercial_edarsahub.py → Comercial_K
 
 | Reporte | Fecha | Contenido |
 |---------|-------|-----------|
+| `/app/docs/reports/DIAGNOSTICO_ORIGEN_KPIS_Y_SYNC_DETALLE.md` | 2026-06-02 | **Diagnóstico completo de 10 preguntas** sobre origen de KPIs y Sync |
 | `/app/docs/reports/DIAGNOSTICO_ORIGEN_KPIS_V2_20260602.md` | 2026-06-02 | Origen de KPIs y relación con tablas Sync |
 | `/app/docs/reports/VALIDACION_PORTAL_INTELIGENCIA_COMERCIAL_FASE1.md` | 2026-06-02 | Validación cierre Fase 1 |
 | `/app/docs/reports/DIAGNOSTICO_MAPEO_RBAC_MONGO_A_SQL.md` | 2026-06-02 | Auditoría migración MongoDB→SQL |
