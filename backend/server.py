@@ -508,8 +508,8 @@ api_router.include_router(competidores_enterprise_router)
 # Fuente: EDARSAHUB (View_Inteligencia_Comercial, Fact_Ventas_Consolidadas)
 # NOTA: Portal EXTERNO sin autenticación del CRM principal
 # ============================================================================
-from modules.inteligencia_comercial.routes import router as inteligencia_router, init_inteligencia_module
-init_inteligencia_module(EDARSAHUB_CONFIG)
+from modules.inteligencia_comercial.routes import router as inteligencia_router
+# Módulo de inteligencia comercial ya incluye su propia configuración
 api_router.include_router(inteligencia_router)
 
 # MÓDULO RECURSOS HUMANOS: Catálogos RH
