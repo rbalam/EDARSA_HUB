@@ -518,6 +518,14 @@ from modules.inteligencia_comercial.routes import router as inteligencia_router
 # Módulo de inteligencia comercial ya incluye su propia configuración
 api_router.include_router(inteligencia_router)
 
+# ============================================================================
+# INTELIGENCIA COMERCIAL FASE 1 - Endpoints SQL-First
+# Endpoints: /api/comercial/inteligencia/*
+# Fuente: EDARSAHUB (Comercial_KPIs_Diarios_v2, Sync_PAX_Detalle, Sync_Sales)
+# ============================================================================
+from modules.comercial.inteligencia_comercial_routes import router as inteligencia_comercial_fase1_router
+api_router.include_router(inteligencia_comercial_fase1_router)
+
 # MÓDULO RECURSOS HUMANOS: Catálogos RH
 # - Fase 6B: Migración de catálogos (Puestos, Sucursales, Tipos Incidencias)
 # - 10 endpoints migrados con queries parametrizados
