@@ -570,7 +570,6 @@ from modules.finanzas import cuentas_por_pagar as finanzas_cxp
 from modules.finanzas.repository_mpro import FinanzasRepositoryMPRO
 from modules.finanzas.repository_softrestaurant import FinanzasRepositorySoftRestaurant
 
-from modules.corporate_filters.router import router as corporate_filters_router
 # Módulo de Manuales Operativos (Modelo Cienfuegos)
 from modules.manuales_operativos import get_router as get_manuales_router, init_manuales_module
 from modules.manuales_operativos.triggers import trigger_generar_manual, ESTADOS_TRIGGER
@@ -649,9 +648,6 @@ api_router.include_router(get_propinas_tpv_router())
 # Fuente de verdad: EDARSAHUB.propinas_tpv_control
 from modules.finanzas.propinas_tpv import get_router_edarsahub as get_propinas_tpv_edarsahub_router
 api_router.include_router(get_propinas_tpv_edarsahub_router())
-
-# FILTROS CORPORATIVOS EDARSAHUB
-api_router.include_router(corporate_filters_router)
 
 # Manuales Operativos (Modelo Cienfuegos) - Generación automática de documentación
 api_router.include_router(get_manuales_router())
