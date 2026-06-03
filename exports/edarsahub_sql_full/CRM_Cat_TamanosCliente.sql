@@ -1,0 +1,6 @@
+-- CRM_Cat_TamanosCliente - 5 registros
+INSERT INTO [CRM_Cat_TamanosCliente] ([TamanoID], [Codigo], [Nombre], [Descripcion], [RangoEmpleadosMin], [RangoEmpleadosMax], [Orden], [Activo], [CreatedAt]) VALUES (1, N'MICRO', N'Micro (1-10)', NULL, 1, 10, 1, 1, N'2026-05-22T19:40:28.927000');
+INSERT INTO [CRM_Cat_TamanosCliente] ([TamanoID], [Codigo], [Nombre], [Descripcion], [RangoEmpleadosMin], [RangoEmpleadosMax], [Orden], [Activo], [CreatedAt]) VALUES (2, N'PEQUENA', N'Pequeña (11-50)', NULL, 11, 50, 2, 1, N'2026-05-22T19:40:28.927000');
+INSERT INTO [CRM_Cat_TamanosCliente] ([TamanoID], [Codigo], [Nombre], [Descripcion], [RangoEmpleadosMin], [RangoEmpleadosMax], [Orden], [Activo], [CreatedAt]) VALUES (3, N'MEDIANA', N'Mediana (51-250)', NULL, 51, 250, 3, 1, N'2026-05-22T19:40:28.927000');
+INSERT INTO [CRM_Cat_TamanosCliente] ([TamanoID], [Codigo], [Nombre], [Descripcion], [RangoEmpleadosMin], [RangoEmpleadosMax], [Orden], [Activo], [CreatedAt]) VALUES (4, N'GRANDE', N'Grande (251-1000)', NULL, 251, 1000, 4, 1, N'2026-05-22T19:40:28.927000');
+INSERT INTO [CRM_Cat_TamanosCliente] ([TamanoID], [Codigo], [Nombre], [Descripcion], [RangoEmpleadosMin], [RangoEmpleadosMax], [Orden], [Activo], [CreatedAt]) VALUES (5, N'ENTERPRISE', N'Enterprise (1000+)', NULL, 1001, NULL, 5, 1, N'2026-05-22T19:40:28.927000');

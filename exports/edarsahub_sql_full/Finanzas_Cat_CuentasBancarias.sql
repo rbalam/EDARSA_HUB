@@ -1,0 +1,2 @@
+-- Finanzas_Cat_CuentasBancarias - 1 registros
+INSERT INTO [Finanzas_Cat_CuentasBancarias] ([CuentaBancariaID], [EmpresaID], [BancoID], [NumeroCuenta], [CLABE], [Alias], [Moneda], [EsCuentaPrincipal], [Activo], [FechaAlta], [UsuarioCreacionID], [FechaModificacion], [UsuarioModificacionID]) VALUES (9, NULL, 1, N'1234567890', N'123456789012345678', N'Cuenta Prueba E1', N'MXN', 0, 1, N'2026-05-05T19:29:31.840000', NULL, NULL, NULL);

@@ -1,0 +1,10 @@
+-- Configuracion_Operativa - 9 registros
+INSERT INTO [Configuracion_Operativa] ([ID], [Clave], [Valor], [Tipo], [Descripcion], [FechaActualizacion]) VALUES (1, N'SLA_JUSTIFICACION_SIMPLE_HORAS', N'24', N'number', N'Horas límite para justificación simple', N'2026-05-24T02:12:07.930000');
+INSERT INTO [Configuracion_Operativa] ([ID], [Clave], [Valor], [Tipo], [Descripcion], [FechaActualizacion]) VALUES (2, N'SLA_JUSTIFICACION_COMPLETA_HORAS', N'48', N'number', N'Horas límite para justificación completa', N'2026-05-24T02:12:07.930000');
+INSERT INTO [Configuracion_Operativa] ([ID], [Clave], [Valor], [Tipo], [Descripcion], [FechaActualizacion]) VALUES (3, N'SLA_REVISION_OPERATIVO_HORAS', N'24', N'number', N'Horas límite para revisión operativa', N'2026-05-24T02:12:07.930000');
+INSERT INTO [Configuracion_Operativa] ([ID], [Clave], [Valor], [Tipo], [Descripcion], [FechaActualizacion]) VALUES (4, N'SLA_AUDITORIA_HORAS', N'72', N'number', N'Horas límite para auditoría', N'2026-05-24T02:12:07.930000');
+INSERT INTO [Configuracion_Operativa] ([ID], [Clave], [Valor], [Tipo], [Descripcion], [FechaActualizacion]) VALUES (5, N'SLA_UMBRAL_ADVERTENCIA_PORCENTAJE', N'50', N'number', N'Umbral advertencia %', N'2026-05-24T02:12:07.930000');
+INSERT INTO [Configuracion_Operativa] ([ID], [Clave], [Valor], [Tipo], [Descripcion], [FechaActualizacion]) VALUES (6, N'SLA_UMBRAL_URGENTE_PORCENTAJE', N'80', N'number', N'Umbral urgente %', N'2026-05-24T02:12:07.930000');
+INSERT INTO [Configuracion_Operativa] ([ID], [Clave], [Valor], [Tipo], [Descripcion], [FechaActualizacion]) VALUES (7, N'SLA_UMBRAL_VENCIDO_PORCENTAJE', N'100', N'number', N'Umbral vencido %', N'2026-05-24T02:12:07.930000');
+INSERT INTO [Configuracion_Operativa] ([ID], [Clave], [Valor], [Tipo], [Descripcion], [FechaActualizacion]) VALUES (8, N'SLA_UMBRAL_ESCALAMIENTO_PORCENTAJE', N'150', N'number', N'Umbral escalamiento %', N'2026-05-24T02:12:07.930000');
+INSERT INTO [Configuracion_Operativa] ([ID], [Clave], [Valor], [Tipo], [Descripcion], [FechaActualizacion]) VALUES (9, N'DIAS_LIMITE_TAREA_DEFAULT', N'3', N'number', N'Días límite por defecto para tareas', N'2026-05-24T02:12:07.930000');

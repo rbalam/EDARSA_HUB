@@ -1,0 +1,2 @@
+-- Comercial_CompetidoresListas - 1 registros
+INSERT INTO [Comercial_CompetidoresListas] ([ListaCompetidoresID], [NombreLista], [Descripcion], [EmpresaID], [UnidadNegocioID], [Segmento], [Categoria], [ColorIdentificador], [Activo], [FechaCreacion], [FechaModificacion], [CreadoPor], [ModificadoPor]) VALUES ('ec66cb9a-9fea-4b61-9593-e27bd5bf7413', N'Competidores Merida Premium', N'Lista de competidores premium en Merida', 1, 1, N'Premium', N'Restaurantes', N'#8B5CF6', 1, N'2026-05-25T00:22:42.680000', NULL, N'admin@inventario.com', NULL);

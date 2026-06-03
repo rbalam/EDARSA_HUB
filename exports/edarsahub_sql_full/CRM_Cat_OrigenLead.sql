@@ -1,0 +1,12 @@
+-- CRM_Cat_OrigenLead - 11 registros
+INSERT INTO [CRM_Cat_OrigenLead] ([OrigenID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (1, N'REFERIDO', N'Referido', NULL, 1, N'#6B7280', 1, N'2026-05-22T19:40:28.370000');
+INSERT INTO [CRM_Cat_OrigenLead] ([OrigenID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (2, N'LLAMADA', N'Llamada entrante', NULL, 2, N'#6B7280', 1, N'2026-05-22T19:40:28.370000');
+INSERT INTO [CRM_Cat_OrigenLead] ([OrigenID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (3, N'VISITA', N'Visita comercial', NULL, 3, N'#6B7280', 1, N'2026-05-22T19:40:28.370000');
+INSERT INTO [CRM_Cat_OrigenLead] ([OrigenID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (4, N'WEB', N'Formulario web', NULL, 4, N'#6B7280', 1, N'2026-05-22T19:40:28.370000');
+INSERT INTO [CRM_Cat_OrigenLead] ([OrigenID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (5, N'CAMPANA', N'Campaña marketing', NULL, 5, N'#6B7280', 1, N'2026-05-22T19:40:28.370000');
+INSERT INTO [CRM_Cat_OrigenLead] ([OrigenID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (6, N'CLIENTE', N'Cliente actual', NULL, 6, N'#6B7280', 1, N'2026-05-22T19:40:28.370000');
+INSERT INTO [CRM_Cat_OrigenLead] ([OrigenID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (7, N'WHATSAPP', N'WhatsApp', NULL, 7, N'#6B7280', 1, N'2026-05-22T19:40:28.370000');
+INSERT INTO [CRM_Cat_OrigenLead] ([OrigenID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (8, N'EVENTO', N'Evento/Feria', NULL, 8, N'#6B7280', 1, N'2026-05-22T19:40:28.370000');
+INSERT INTO [CRM_Cat_OrigenLead] ([OrigenID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (9, N'LINKEDIN', N'LinkedIn', NULL, 9, N'#6B7280', 1, N'2026-05-22T19:40:28.370000');
+INSERT INTO [CRM_Cat_OrigenLead] ([OrigenID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (10, N'CRM_EXTERNO', N'CRM Externo', NULL, 10, N'#6B7280', 1, N'2026-05-22T19:40:28.370000');
+INSERT INTO [CRM_Cat_OrigenLead] ([OrigenID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (11, N'OTRO', N'Otro', NULL, 99, N'#6B7280', 1, N'2026-05-22T19:40:28.370000');

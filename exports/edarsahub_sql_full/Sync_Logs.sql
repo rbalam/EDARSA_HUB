@@ -1,0 +1,4 @@
+-- Sync_Logs - 3 registros
+INSERT INTO [Sync_Logs] ([id], [service], [type], [message], [timestamp], [operador]) VALUES (1, N'PYTHON_PROY_DAEMON', N'SUCCESS', N'Actualizadas 0 filas aplicando función escalar para el 2026.', N'2026-05-31T21:04:42.600000', N'EMERGENT_PY_WORKER');
+INSERT INTO [Sync_Logs] ([id], [service], [type], [message], [timestamp], [operador]) VALUES (2, N'UPDATE_PROY_DAEMON', N'SUCCESS', N'Actualizadas 0 unidades para el 2026.', N'2026-05-31T21:05:20.203000', N'EMERGENT_PYTHON');
+INSERT INTO [Sync_Logs] ([id], [service], [type], [message], [timestamp], [operador]) VALUES (3, N'CORRECCION_PROYECCION_Y_MONEDA_FINAL', N'SUCCESS', N'Normalización monetaria con comas ($X,XXX.XXM) y calibración del esquema de proyección de ventas anualizado de 365 días finalizado.', N'2026-05-31T21:30:51.283000', N'PYTHON_CORRECTOR_DAEMON');

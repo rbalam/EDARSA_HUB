@@ -1,0 +1,2 @@
+-- Compras_Parametros_Sucursal - 1 registros
+INSERT INTO [Compras_Parametros_Sucursal] ([ParametroID], [ServerID], [SucursalID], [DiasInventario], [ExcluirDomingos], [DiasInhabiles], [DiasTransitoProveedor], [Activo], [CreadoPor], [ModificadoPor], [FechaCreacion], [FechaModificacion]) VALUES (2, N'TEST-SQL-MIGRADO', N'SUC-SQL-01', 25, 0, N'["2026-12-25", "2026-01-01"]', 4, 1, NULL, NULL, N'2026-05-25T12:51:59.447000', N'2026-05-25T12:51:59.447000');

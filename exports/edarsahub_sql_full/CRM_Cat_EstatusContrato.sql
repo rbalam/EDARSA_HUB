@@ -1,0 +1,8 @@
+-- CRM_Cat_EstatusContrato - 7 registros
+INSERT INTO [CRM_Cat_EstatusContrato] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (1, N'BORRADOR', N'Borrador', NULL, 1, N'#6B7280', 1, N'2026-05-22T19:40:28.943000');
+INSERT INTO [CRM_Cat_EstatusContrato] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (2, N'REVISION', N'En revisión legal', NULL, 2, N'#F59E0B', 1, N'2026-05-22T19:40:28.943000');
+INSERT INTO [CRM_Cat_EstatusContrato] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (3, N'FIRMADO', N'Firmado', NULL, 3, N'#10B981', 1, N'2026-05-22T19:40:28.943000');
+INSERT INTO [CRM_Cat_EstatusContrato] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (4, N'VIGENTE', N'Vigente', NULL, 4, N'#059669', 1, N'2026-05-22T19:40:28.943000');
+INSERT INTO [CRM_Cat_EstatusContrato] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (5, N'POR_RENOVAR', N'Por renovar', NULL, 5, N'#3B82F6', 1, N'2026-05-22T19:40:28.943000');
+INSERT INTO [CRM_Cat_EstatusContrato] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (6, N'VENCIDO', N'Vencido', NULL, 6, N'#EF4444', 1, N'2026-05-22T19:40:28.943000');
+INSERT INTO [CRM_Cat_EstatusContrato] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [Activo], [CreatedAt]) VALUES (7, N'CANCELADO', N'Cancelado', NULL, 7, N'#9CA3AF', 1, N'2026-05-22T19:40:28.943000');

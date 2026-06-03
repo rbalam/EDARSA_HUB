@@ -1,0 +1,2 @@
+-- CRM_Integracion_SyncLog - 1 registros
+INSERT INTO [CRM_Integracion_SyncLog] ([LogID], [ConectorID], [TipoEntidad], [Operacion], [FechaInicio], [FechaFin], [Duracion], [RegistrosProcesados], [RegistrosCreados], [RegistrosActualizados], [RegistrosError], [RegistrosConflicto], [Estado], [MensajeError], [DetallesJSON], [EjecutadoPor]) VALUES (1, 1, N'leads,oportunidades,cuentas', N'SYNC_ENTRANTE', N'2026-05-23T02:47:46.433000', N'2026-05-23T02:47:46.433000', 2, 4, 0, 4, 0, 0, N'COMPLETADO', NULL, N'{"entidades": ["leads", "oportunidades", "cuentas"], "errores": []}', NULL);

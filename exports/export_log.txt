@@ -1,0 +1,429 @@
+Obteniendo lista de tablas...
+Total tablas: 422
+[1/422] ActivoFijo_ActivoMedidores... vacia
+[2/422] ActivoFijo_Activos... vacia
+[3/422] ActivoFijo_ActivosLibros... vacia
+[4/422] ActivoFijo_Alertas... vacia
+[5/422] ActivoFijo_Archivos... vacia
+[6/422] ActivoFijo_Autorizaciones... vacia
+[7/422] ActivoFijo_BajasActivos... vacia
+[8/422] ActivoFijo_ClaseActivo... 8 registros
+[9/422] ActivoFijo_Cotizaciones... vacia
+[10/422] ActivoFijo_DepreciacionMovimientos... vacia
+[11/422] ActivoFijo_EstadoUsoActivo... 5 registros
+[12/422] ActivoFijo_EstatusActivo... 6 registros
+[13/422] ActivoFijo_EstatusOT... 5 registros
+[14/422] ActivoFijo_HistorialAsignaciones... vacia
+[15/422] ActivoFijo_LecturasMedidor... vacia
+[16/422] ActivoFijo_LibrosDepreciacion... 3 registros
+[17/422] ActivoFijo_Medidores... vacia
+[18/422] ActivoFijo_MetodosDepreciacion... 3 registros
+[19/422] ActivoFijo_MovimientosActivo... vacia
+[20/422] ActivoFijo_OrdenesTrabajo... vacia
+[21/422] ActivoFijo_OrdenTrabajoCostos... vacia
+[22/422] ActivoFijo_PlanesMantenimiento... vacia
+[23/422] ActivoFijo_PrioridadOT... 4 registros
+[24/422] ActivoFijo_ReemplazosActivos... vacia
+[25/422] ActivoFijo_ReglasClaseLibro... 9 registros
+[26/422] ActivoFijo_TipoActivo... 9 registros
+[27/422] ActivoFijo_TipoBaja... 7 registros
+[28/422] ActivoFijo_TipoMedidor... 3 registros
+[29/422] ActivoFijo_TipoOT... 3 registros
+[30/422] ActivoFijo_TipoUbicacion... 9 registros
+[31/422] ActivoFijo_Ubicaciones... vacia
+[32/422] Alertas_Sistema... 14 registros
+[33/422] Auditoria_Inventario_Provisional... 7 registros
+[34/422] automatizacion_inventarios_config... vacia
+[35/422] automatizacion_inventarios_destinatarios... vacia
+[36/422] automatizacion_inventarios_ejecuciones... vacia
+[37/422] automatizacion_inventarios_envios... vacia
+[38/422] automatizacion_inventarios_folios_procesados... 1 registros
+[39/422] automatizacion_inventarios_ultimo_folio_conocido... vacia
+[40/422] CavaSocios_Botellas... 2 registros
+[41/422] CavaSocios_Cargos... 1 registros
+[42/422] CavaSocios_Configuracion... vacia
+[43/422] CavaSocios_Movimientos... 3 registros
+[44/422] CavaSocios_Socios... 2 registros
+[45/422] Cliente_Catalogo... 2 registros
+[46/422] Cliente_Contactos... vacia
+[47/422] Cliente_Direcciones... vacia
+[48/422] Cliente_Grupos... vacia
+[49/422] Cliente_RolUsuarioPortal... 3 registros
+[50/422] Cliente_UsuariosPortal... vacia
+[51/422] Comercial_AlertasMargenDestinatarios... vacia
+[52/422] Comercial_AlertasMargenEnvios... vacia
+[53/422] Comercial_AlertasMargenEventos... vacia
+[54/422] Comercial_AlertasMargenReglas... 3 registros
+[55/422] Comercial_AlertasUmbralesSeveridad... 4 registros
+[56/422] Comercial_Competidores... 3 registros
+[57/422] Comercial_CompetidoresCatalogo... 4 registros
+[58/422] Comercial_CompetidoresListas... 1 registros
+[59/422] Comercial_CompetidoresListasDetalle... 1 registros
+[60/422] Comercial_CompetidoresMenuItems... 6 registros
+[61/422] Comercial_CompetidoresUnidad... 5 registros
+[62/422] Comercial_Dashboard_Cache... vacia
+[63/422] Comercial_ImpuestosCatalogo... 8 registros
+[64/422] Comercial_ImpuestosMapeo... 9905 registros
+[65/422] Comercial_ImpuestosOverrides... vacia
+[66/422] Comercial_ImpuestosTasas... 7 registros
+[67/422] Comercial_Inteligencia_VentasDetalleProducto... vacia
+[68/422] Comercial_KPIs_Cache... vacia
+[69/422] Comercial_KPIs_Diarios_v2... 3376 registros
+[70/422] Comercial_KPIs_Diarios_v2_backup_migracion_codigos_20260513_0558... 1801 registros
+[71/422] Comercial_KPIs_Historico... 3647 registros
+[72/422] Comercial_KPIs_Mensuales_v2... vacia
+[73/422] Comercial_Metas... vacia
+[74/422] Comercial_PreciosSugeridos... vacia
+[75/422] Comercial_PricingAnalisisIA... 2 registros
+[76/422] Comercial_PricingBenchmarkProducto... 1 registros
+[77/422] Comercial_RecetasSnapshot... vacia
+[78/422] Comercial_RecetasSnapshotDetalle... vacia
+[79/422] Comercial_ReglasPrecio... 1 registros
+[80/422] Comercial_ReglasPrecioRangos... 13 registros
+[81/422] Comercial_SimulacionesPrecios... vacia
+[82/422] Comercial_SolicitudesCambioPrecio... 3 registros
+[83/422] Comercial_SolicitudesCambioPrecioHistorial... 11 registros
+[84/422] Comercial_SyncLog_v2... 43578 registros
+[85/422] Comercial_SyncLog_v2_backup_migracion_codigos_20260513_0558... 2647 registros
+[86/422] Comercial_Ventas_Dia_Abiertas_v2... 8 registros
+[87/422] Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521... 5 registros
+[88/422] Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558... 3 registros
+[89/422] Compras... vacia
+[90/422] Compras_ConciliacionSAT... vacia
+[91/422] Compras_ConciliacionSATDetalle... vacia
+[92/422] Compras_ConciliacionSATEstatus... 11 registros
+[93/422] Compras_Detalle... vacia
+[94/422] Compras_DocumentosFiscales... vacia
+[95/422] Compras_DocumentosFiscalesDetalle... vacia
+[96/422] Compras_DocumentosFiscalesEstatus... 7 registros
+[97/422] Compras_Estatus... 8 registros
+[98/422] Compras_Eventos_Pendientes... vacia
+[99/422] Compras_Informes_Config... vacia
+[100/422] Compras_Inventarios_Fisicos_Sync... 599 registros
+[101/422] Compras_KPIs_Historico... 7035 registros
+[102/422] Compras_Ordenes... vacia
+[103/422] Compras_OrdenesDetalle... vacia
+[104/422] Compras_OrdenesEstatus... 8 registros
+[105/422] Compras_Parametros_Sucursal... 1 registros
+[106/422] Compras_Pedidos... vacia
+[107/422] Compras_PedidosDetalle... vacia
+[108/422] Compras_PedidosEstatus... 8 registros
+[109/422] Compras_Recepciones... vacia
+[110/422] Compras_RecepcionesDetalle... vacia
+[111/422] Compras_RecepcionesEstatus... 6 registros
+[112/422] Compras_Requisiciones_Sync... vacia
+[113/422] Compras_Sync_Checkpoint... vacia
+[114/422] Compras_Sync_Log... 53 registros
+[115/422] Config_Asignaciones... vacia
+[116/422] Config_Horarios... 3 registros
+[117/422] Configuracion_Operativa... 9 registros
+[118/422] ConsultasSQL_Catalogo... 20 registros
+[119/422] ConsultasSQL_EjecucionesLog... vacia
+[120/422] ConsultasSQL_Parametros... 38 registros
+[121/422] ConsultasSQL_Permisos... vacia
+[122/422] ConsultasSQL_Servidores... vacia
+[123/422] ConsultasSQL_Versiones... vacia
+[124/422] CRM_Actividades... vacia
+[125/422] CRM_ActividadesHistorial... vacia
+[126/422] CRM_Automation_Log... vacia
+[127/422] CRM_Automation_Reglas... 3 registros
+[128/422] CRM_Cat_EstatusActividad... 5 registros
+[129/422] CRM_Cat_EstatusContrato... 7 registros
+[130/422] CRM_Cat_EstatusLead... 5 registros
+[131/422] CRM_Cat_EstatusOportunidad... 5 registros
+[132/422] CRM_Cat_EstatusPropuesta... 7 registros
+[133/422] CRM_Cat_MotivosGanada... 8 registros
+[134/422] CRM_Cat_MotivosPerdida... 9 registros
+[135/422] CRM_Cat_OrigenLead... 11 registros
+[136/422] CRM_Cat_Prioridades... 4 registros
+[137/422] CRM_Cat_Sectores... 9 registros
+[138/422] CRM_Cat_TamanosCliente... 5 registros
+[139/422] CRM_Cat_TiposActividad... 6 registros
+[140/422] CRM_Cat_TiposPipeline... 4 registros
+[141/422] CRM_ClientesSolicitudesAlta... vacia
+[142/422] CRM_ClientesSolicitudesAltaHistorial... vacia
+[143/422] CRM_Config_PipelineEtapas... 7 registros
+[144/422] CRM_Config_Pipelines... 1 registros
+[145/422] CRM_Contratos... vacia
+[146/422] CRM_Cuentas... vacia
+[147/422] CRM_ERPSyncLog... vacia
+[148/422] CRM_Implementaciones... vacia
+[149/422] CRM_ImplementacionesEntregables... vacia
+[150/422] CRM_Integracion_Conectores... 1 registros
+[151/422] CRM_Integracion_MapeoEtapas... vacia
+[152/422] CRM_Integracion_SyncLog... 1 registros
+[153/422] CRM_IntegracionesConflictos... vacia
+[154/422] CRM_IntegracionesSyncLog... vacia
+[155/422] CRM_Leads... vacia
+[156/422] CRM_Oportunidad_Contactos... vacia
+[157/422] CRM_Oportunidad_Documentos... vacia
+[158/422] CRM_Oportunidades... vacia
+[159/422] CRM_Oportunidades_HistorialEtapas... 4 registros
+[160/422] CRM_OportunidadesHistorial... vacia
+[161/422] CRM_PostventaEncuestas... vacia
+[162/422] CRM_PostventaTickets... vacia
+[163/422] CRM_Propuestas... vacia
+[164/422] CRM_Staging_Cuentas... 2 registros
+[165/422] CRM_Staging_Leads... 2 registros
+[166/422] CRM_Staging_Oportunidades... vacia
+[167/422] CRM_Tareas... vacia
+[168/422] CRM_Trigger_Log... vacia
+[169/422] CRM_Triggers... 3 registros
+[170/422] Fact_Ventas_Consolidadas... 3322 registros
+[171/422] Finanzas_Cat_CuentasBancarias... 1 registros
+[172/422] Finanzas_Cat_EstatusCuadreZ... 6 registros
+[173/422] Finanzas_Cat_EstatusTesoreria... 4 registros
+[174/422] Finanzas_ConfiguracionTPV_Sucursal... 8 registros
+[175/422] Finanzas_CortesCaja... 4109 registros
+[176/422] Finanzas_CortesCaja_Backup_Demo_20260501... 70 registros
+[177/422] Finanzas_CortesCaja_DetallePagos... vacia
+[178/422] Finanzas_CortesCaja_SyncLog... 8180 registros
+[179/422] Finanzas_CuadresZ... vacia
+[180/422] Finanzas_CuadresZ_SyncLog... vacia
+[181/422] Finanzas_CuentasPorPagar... 25 registros
+[182/422] Finanzas_Depositos... vacia
+[183/422] Finanzas_EstatusCierre... 3 registros
+[184/422] Finanzas_EstatusPago... 5 registros
+[185/422] Finanzas_KPIs_Historico... 4707 registros
+[186/422] Finanzas_Pagos... vacia
+[187/422] Finanzas_Presupuestos... vacia
+[188/422] Finanzas_PropinasTPV_SyncLog... 8436 registros
+[189/422] Finanzas_SaldosBancarios... vacia
+[190/422] Global_Cat_Bancos... 5 registros
+[191/422] Global_Cat_FormaPagoSAT... 6 registros
+[192/422] Inventario_Almacenes... vacia
+[193/422] Inventario_Existencias... vacia
+[194/422] Inventario_Movimientos... vacia
+[195/422] Inventario_MovimientosDetalle... vacia
+[196/422] Inventario_TipoMovimiento... 6 registros
+[197/422] Inventarios_SinAsignar... 14 registros
+[198/422] Operaciones_Tablaje_Auditoria... vacia
+[199/422] Operaciones_Tablaje_Autorizaciones... vacia
+[200/422] Operaciones_Tablaje_Costos... vacia
+[201/422] Operaciones_Tablaje_Documentos... vacia
+[202/422] Operaciones_Tablaje_EventosContables... vacia
+[203/422] Operaciones_Tablaje_Mermas... 7 registros
+[204/422] Operaciones_Tablaje_Ordenes... 8 registros
+[205/422] Operaciones_Tablaje_OrdenesDetalle... 22 registros
+[206/422] Operaciones_Tablaje_Plantillas... 37 registros
+[207/422] Operaciones_Tablaje_PlantillasDetalle... 151 registros
+[208/422] Operaciones_Tablaje_PlantillasVersiones... vacia
+[209/422] Operaciones_Tablaje_Rendimientos... 6 registros
+[210/422] Operaciones_Tablaje_SyncErrores... vacia
+[211/422] Operaciones_Tablaje_SyncLog... 1 registros
+[212/422] Operativo_AuditoriasProgramadas... vacia
+[213/422] Operativo_BitacoraCompras... vacia
+[214/422] Operativo_CargosResponsabilidad... vacia
+[215/422] Operativo_DocumentosGenerados... vacia
+[216/422] Operativo_HistorialAsignaciones... vacia
+[217/422] Operativo_HistorialCargos... vacia
+[218/422] Operativo_Notificaciones_Log... vacia
+[219/422] Operativo_PedidosProcesados... vacia
+[220/422] Operativo_ResponsabilidadEconomica... vacia
+[221/422] Operativo_TareasCompras... vacia
+[222/422] Producto_Catalogo... vacia
+[223/422] Producto_Equivalentes... vacia
+[224/422] Producto_Familias... vacia
+[225/422] Producto_Lineas... vacia
+[226/422] Producto_Marcas... vacia
+[227/422] Producto_Presentaciones... vacia
+[228/422] Producto_SubFamilias... vacia
+[229/422] Producto_Sustitutos... vacia
+[230/422] Products... 37 registros
+[231/422] propinas_tpv_config... vacia
+[232/422] propinas_tpv_control... 73737 registros
+[233/422] propinas_tpv_historial... vacia
+[234/422] Proveedor_Bancos... vacia
+[235/422] Proveedor_Catalogo... 5 registros
+[236/422] Proveedor_Categorias... vacia
+[237/422] Proveedor_CategoriasCatalogo... vacia
+[238/422] Proveedor_Contactos... vacia
+[239/422] Proveedor_CuentasBancarias... vacia
+[240/422] Proveedor_Documentos... vacia
+[241/422] Proveedor_EstatusProveedor... 4 registros
+[242/422] Proveedor_EstatusSAT... 4 registros
+[243/422] Proveedor_EstatusSincronizacion... 3 registros
+[244/422] Proveedor_Evaluaciones... vacia
+[245/422] Proveedor_Integracion... vacia
+[246/422] Proveedor_Monedas... 3 registros
+[247/422] Proveedor_RegimenFiscal... vacia
+[248/422] Proveedor_RiesgoProveedor... 4 registros
+[249/422] Proveedor_RolUsuarioPortal... 4 registros
+[250/422] Proveedor_SistemasIntegracion... 4 registros
+[251/422] Proveedor_TipoContacto... 5 registros
+[252/422] Proveedor_TipoDocumento... 8 registros
+[253/422] Proveedor_TipoProveedor... 7 registros
+[254/422] Proveedor_UsuariosPortal... vacia
+[255/422] RH_Auditoria_Fiscal... vacia
+[256/422] RH_Ausencias... vacia
+[257/422] RH_Calendario_Laboral... vacia
+[258/422] RH_Cat_Areas... vacia
+[259/422] RH_Cat_Beneficios... vacia
+[260/422] RH_Cat_ConceptosNomina... 10 registros
+[261/422] RH_Cat_Departamentos... 11 registros
+[262/422] RH_Cat_EstatusPeriodoNomina... 6 registros
+[263/422] RH_Cat_Jornadas... vacia
+[264/422] RH_Cat_MotivosBaja... 3 registros
+[265/422] RH_Cat_Puestos... 37 registros
+[266/422] RH_Cat_RegimenContratacion... vacia
+[267/422] RH_Cat_Sucursales... 8 registros
+[268/422] RH_Cat_SucursalesFiscal... vacia
+[269/422] RH_Cat_TiposAusencia... 5 registros
+[270/422] RH_Cat_TiposConceptoNomina... 4 registros
+[271/422] RH_Cat_TiposContrato... 3 registros
+[272/422] RH_Cat_TiposPeriodoNomina... 4 registros
+[273/422] RH_Cat_Turnos... vacia
+[274/422] RH_Colaboradores_Beneficios... vacia
+[275/422] RH_Colaboradores_ContactosEmergencia... vacia
+[276/422] RH_Colaboradores_Dependientes... vacia
+[277/422] RH_Colaboradores_Documentos... vacia
+[278/422] RH_Colaboradores_Domicilios... vacia
+[279/422] RH_Colaboradores_Expediente... 510 registros
+[280/422] RH_Contratos... vacia
+[281/422] RH_Finiquitos... vacia
+[282/422] RH_Finiquitos_Detalle... vacia
+[283/422] RH_Flujo_Nomina_Sucursal... vacia
+[284/422] RH_GruposNomina... vacia
+[285/422] RH_Historial_Puestos... vacia
+[286/422] RH_Historial_Salarios... vacia
+[287/422] RH_Homologacion_Equivalencias... 56 registros
+[288/422] RH_Importacion_Bitacora... 7 registros
+[289/422] RH_Importacion_Staging... 571 registros
+[290/422] RH_IMSS_Movimientos... vacia
+[291/422] RH_Incidencias_Nomina... vacia
+[292/422] RH_Nomina... vacia
+[293/422] RH_Nomina_Detalle... vacia
+[294/422] RH_Nomina_Dispersion... vacia
+[295/422] RH_Nomina_Recibos... vacia
+[296/422] RH_Periodos_Nomina... vacia
+[297/422] RH_Prestamos... vacia
+[298/422] RH_Prestamos_Detalle... vacia
+[299/422] RH_Reloj_Checador... vacia
+[300/422] RH_Vacaciones_Movimientos... vacia
+[301/422] RH_Vacaciones_Saldos... vacia
+[302/422] Scheduler_BitacoraJobs... 71972 registros
+[303/422] Scheduler_InventariosProcesados... vacia
+[304/422] Scheduler_PedidosProcesados... vacia
+[305/422] Servidores_Conexiones... 23 registros
+[306/422] Servidores_Conexiones_backup_tipos_enriq_20260513_0840... 3 registros
+[307/422] Servidores_Conexiones_backup_tipos_mov_20260513_0729... 4 registros
+[308/422] Servidores_Conexiones_Log... 40 registros
+[309/422] Servidores_Status... vacia
+[310/422] Sesiones... 765 registros
+[311/422] SesionesHistorico... 762 registros
+[312/422] Sistema_Capacidades... 40 registros
+[313/422] Sistema_Catalogo... 5 registros
+[314/422] Sistema_Empresas... 5 registros
+[315/422] Sistema_EmpresasAlias... 12 registros
+[316/422] Sistema_EmpresasMongoMap... 5 registros
+[317/422] Sistema_EmpresasServidores... 7 registros
+[318/422] Sistema_Gobierno_Tablas... 428 registros
+[319/422] Sistema_HorariosServicioUnidad... 35 registros
+[320/422] Sistema_Migracion_MongoSQL_Mapeo... 8 registros
+[321/422] Sistema_Modulos... 28 registros
+[322/422] Sistema_ModulosMenus... 52 registros
+[323/422] Sistema_ModulosPermisos... 13 registros
+[324/422] Sistema_ModulosVisibilidad... 16 registros
+[325/422] Sistema_RBAC_Permisos... 5 registros
+[326/422] Sistema_RBAC_Roles... 6 registros
+[327/422] Sistema_RBAC_RolesPermisos... 18 registros
+[328/422] Sistema_ServidorSucursalesConfig... 7 registros
+[329/422] Sistema_Sucursales... 5 registros
+[330/422] Sistema_SucursalServidorConfig... vacia
+[331/422] Sistema_SucursalServidorMapeo... 5 registros
+[332/422] Sistema_Tipos... 6 registros
+[333/422] Sistema_TiposVariantes... 19 registros
+[334/422] Sistema_TurnosOperativosUnidad... 20 registros
+[335/422] Sistema_UnidadesNegocioPerfilDigital... 5 registros
+[336/422] Sync_Control_Ejecuciones... 2443 registros
+[337/422] Sync_Customers... vacia
+[338/422] Sync_Impuestos_Origen... vacia
+[339/422] Sync_Inventory... vacia
+[340/422] Sync_KPI_Ventas_Unidades... vacia
+[341/422] Sync_Logs... 3 registros
+[342/422] Sync_Menus... 6 registros
+[343/422] Sync_Mesas... vacia
+[344/422] Sync_Metas_Comerciales... vacia
+[345/422] Sync_Movimientos_Detalle... vacia
+[346/422] Sync_PAX_Detalle... vacia
+[347/422] Sync_Precios_Historicos... vacia
+[348/422] Sync_Productos... 9905 registros
+[349/422] Sync_Productos_Elaborados... 3893 registros
+[350/422] Sync_Productos_Familias... 189 registros
+[351/422] Sync_Productos_Insumos... 11735 registros
+[352/422] Sync_Productos_Recetas... 13313 registros
+[353/422] Sync_Productos_SubFamilias... 264 registros
+[354/422] Sync_Purchases... vacia
+[355/422] Sync_Response_Cache... 2 registros
+[356/422] Sync_Sales... vacia
+[357/422] Sync_Ticket_Perfecto... vacia
+[358/422] Sync_Token_Ledger... vacia
+[359/422] Sync_Ventas_Historicas... 33 registros
+[360/422] Sync_Ventas_PorDiaSemana... 28 registros
+[361/422] Sync_Ventas_PorHora... 605 registros
+[362/422] Sync_Vtiger_Contactos... 1 registros
+[363/422] Sync_Vtiger_Cuentas... 2 registros
+[364/422] Sync_Vtiger_Leads... 3 registros
+[365/422] Sync_Vtiger_Log... 681 registros
+[366/422] Sync_Vtiger_Oportunidades... 1 registros
+[367/422] Sys_Roles... 4 registros
+[368/422] Sys_Scheduler_Jobs... 6 registros
+[369/422] Sys_Usuarios... vacia
+[370/422] Tablajeria_ConfigContable... vacia
+[371/422] Tablajeria_CosteoDetalle... 5 registros
+[372/422] Tablajeria_CosteoProduccion... 2 registros
+[373/422] Tablajeria_MovimientosInventario... 3 registros
+[374/422] Tablajeria_PolizasContables... 2 registros
+[375/422] Tablajeria_PolizasDetalle... 6 registros
+[376/422] Tareas_Inventario... vacia
+[377/422] Unidades_Negocio... 5 registros
+[378/422] Usuario_Acciones... 16 registros
+[379/422] Usuario_AlmacenesAsignacion... 129 registros
+[380/422] Usuario_Autorizaciones... 2 registros
+[381/422] Usuario_AutorizacionesDetalle... vacia
+[382/422] Usuario_Catalogo... 12 registros
+[383/422] Usuario_EmpresasAsignacion... 38 registros
+[384/422] Usuario_LogAccesos... vacia
+[385/422] Usuario_LogActividades... 10 registros
+[386/422] Usuario_LogRBACVerificacion... 1441 registros
+[387/422] Usuario_LogRecuperacion... 4 registros
+[388/422] Usuario_MatrizAutorizacion... vacia
+[389/422] Usuario_MigracionMongoTrace... 11 registros
+[390/422] Usuario_Modulos... 56 registros
+[391/422] Usuario_PermisosRolModulo... 459 registros
+[392/422] Usuario_PortalConfiguracion... vacia
+[393/422] Usuario_RateLimitRecuperacion... 6 registros
+[394/422] Usuario_Roles... 21 registros
+[395/422] Usuario_RolesAsignacion... 27 registros
+[396/422] Usuario_ServidoresAsignacion... 194 registros
+[397/422] Usuario_Sesiones... vacia
+[398/422] Usuario_SucursalesAsignacion... 216 registros
+[399/422] Usuario_TiposAutorizacion... 7 registros
+[400/422] Usuario_TokensRecuperacion... 2 registros
+[401/422] Venta_Cat_EstatusRemision... 7 registros
+[402/422] Venta_CondicionesPago... 2 registros
+[403/422] Venta_Cotizaciones... vacia
+[404/422] Venta_CotizacionesDetalle... vacia
+[405/422] Venta_CotizacionesEstatus... 6 registros
+[406/422] Venta_Detalle... vacia
+[407/422] Venta_Encabezado... vacia
+[408/422] Venta_Estatus... 6 registros
+[409/422] Venta_FormaPago... 4 registros
+[410/422] Venta_ListasPrecios... 1 registros
+[411/422] Venta_ListasPreciosDetalle... vacia
+[412/422] Venta_Pagos... vacia
+[413/422] Venta_Pedidos... vacia
+[414/422] Venta_PedidosDetalle... vacia
+[415/422] Venta_PedidosEstatus... 6 registros
+[416/422] Venta_Remisiones... vacia
+[417/422] Venta_RemisionesDetalle... vacia
+[418/422] Venta_RemisionesHistorial... vacia
+[419/422] Workflow_DecisionesAuditoria... vacia
+[420/422] Workflow_DetalleDiferencias... vacia
+[421/422] Workflow_Inventarios... vacia
+[422/422] Workflow_Justificaciones... vacia
+
+=== RESUMEN ===
+Exportadas: 215
+Vacias: 207
+Errores: 0

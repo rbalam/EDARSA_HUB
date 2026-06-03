@@ -1,0 +1,6 @@
+-- CRM_Cat_EstatusLead - 5 registros
+INSERT INTO [CRM_Cat_EstatusLead] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [EsFinal], [Activo], [CreatedAt]) VALUES (1, N'NUEVO', N'Nuevo', NULL, 1, N'#3B82F6', 0, 1, N'2026-05-22T19:40:28.653000');
+INSERT INTO [CRM_Cat_EstatusLead] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [EsFinal], [Activo], [CreatedAt]) VALUES (2, N'CONTACTADO', N'Contactado', NULL, 2, N'#8B5CF6', 0, 1, N'2026-05-22T19:40:28.653000');
+INSERT INTO [CRM_Cat_EstatusLead] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [EsFinal], [Activo], [CreatedAt]) VALUES (3, N'CALIFICADO', N'Calificado', NULL, 3, N'#10B981', 0, 1, N'2026-05-22T19:40:28.653000');
+INSERT INTO [CRM_Cat_EstatusLead] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [EsFinal], [Activo], [CreatedAt]) VALUES (4, N'DESCALIFICADO', N'Descalificado', NULL, 4, N'#EF4444', 1, 1, N'2026-05-22T19:40:28.653000');
+INSERT INTO [CRM_Cat_EstatusLead] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [EsFinal], [Activo], [CreatedAt]) VALUES (5, N'CONVERTIDO', N'Convertido', NULL, 5, N'#059669', 1, 1, N'2026-05-22T19:40:28.653000');

@@ -1,0 +1,20 @@
+-- Sistema_TiposVariantes - 19 registros
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (1, 1, N'SOFTRESTAURANT', 1, 1, N'2026-05-15T21:59:49.183000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (2, 1, N'soft_restaurant', 0, 1, N'2026-05-15T21:59:49.393000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (3, 1, N'SR', 0, 1, N'2026-05-15T21:59:49.490000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (4, 1, N'SOFT', 0, 1, N'2026-05-15T21:59:49.587000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (5, 2, N'MPRO', 1, 1, N'2026-05-15T21:59:49.683000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (6, 2, N'ManagementPro', 0, 1, N'2026-05-15T21:59:49.777000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (7, 2, N'ManagmentPro', 0, 1, N'2026-05-15T21:59:49.873000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (8, 3, N'API_LOCAL', 1, 1, N'2026-05-15T21:59:50.160000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (9, 6, N'SOFRESATAURANT_ENTER', 0, 1, N'2026-05-15T21:59:50.260000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (10, 6, N'SOFTRESTAURANT_ENTERPRISE', 0, 1, N'2026-05-15T21:59:50.357000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (11, 6, N'SoftRestaurant Enterprise', 0, 1, N'2026-05-15T21:59:50.453000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (12, 6, N'Enterprise', 1, 1, N'2026-05-15T21:59:50.550000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (13, 3, N'API Local', 0, 1, N'2026-05-15T21:59:50.710000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (14, 4, N'EDARSAHUB_SQL', 1, 1, N'2026-05-15T21:59:50.807000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (15, 4, N'EDARSAHUB', 0, 1, N'2026-05-15T21:59:50.900000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (16, 4, N'EDARSA_HUB', 0, 1, N'2026-05-15T21:59:50.997000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (17, 5, N'OTRO', 1, 1, N'2026-05-15T21:59:51.157000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (18, 5, N'OTHER', 0, 1, N'2026-05-15T21:59:51.383000');
+INSERT INTO [Sistema_TiposVariantes] ([VarianteID], [SistemaTipoID], [VarianteNombre], [EsCanonico], [Activo], [CreatedAt]) VALUES (19, 1, N'SOFTRESTAURANT_PRO', 1, 1, N'2026-05-18T20:18:34.237000');
