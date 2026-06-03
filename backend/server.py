@@ -18250,3 +18250,16 @@ async def download_schema_sql():
             media_type="application/sql"
         )
     raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+@app.get("/api/download/backup-full")
+async def download_backup_full():
+    """Descarga directa del backup completo EDARSAHUB (DDL + Data) en ZIP."""
+    import os
+    zip_path = "/app/backend/static/EDARSAHUB_BACKUP_FULL_20260603.zip"
+    if os.path.exists(zip_path):
+        return FileResponse(
+            path=zip_path,
+            filename="EDARSAHUB_BACKUP_FULL_20260603.zip",
+            media_type="application/zip"
+        )
+    raise HTTPException(status_code=404, detail="Archivo no encontrado")
