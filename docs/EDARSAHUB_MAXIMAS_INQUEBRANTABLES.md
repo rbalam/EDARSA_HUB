@@ -228,3 +228,36 @@ Antes de cada release, verificar:
 
 **Firmado:** Arquitectura EDARSAHUB  
 **Vigencia:** Permanente
+
+---
+
+## MÁXIMA — SYNC_SALES SOFTRESTAURANT LEGACY
+
+**Fecha establecida:** 2026-06-02  
+**Prioridad:** CRÍTICA - NO NEGOCIABLE
+
+Para SoftRestaurant legacy queda **PROHIBIDO**:
+1. Usar `FOR JSON PATH` en queries
+2. Usar `cheqdet.totalsrx` como importe confiable
+3. Usar `cheqdet.subtotalsrx` como importe confiable
+
+El flujo correcto es:
+
+1. SQL origen entrega **filas planas** (NO JSON)
+2. Python calcula importe de item como `cantidad * precio`
+3. Python construye items JSON con `json.dumps()`
+4. `MontoTotal` usa `cheques.total` si es > 0; si no, se recalcula como suma de items
+5. El dry-run **debe fallar** si hay tickets con monto cero sin justificación
+
+### Unidades afectadas
+- CIENFUEGOS
+- 130MID  
+- ESTELAR
+
+### Documento rector
+`/app/docs/rules/RULE_SYNC_SALES_SOFTRESTAURANT_LEGACY_AMOUNTS.md`
+
+### Validador
+```bash
+bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
+```

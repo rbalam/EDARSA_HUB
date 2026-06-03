@@ -326,36 +326,40 @@ def _safe_int(value):
         return 0
 
 
-def _calcular_importe_item(row: Dict) -> float:
+# =============================================================================
+# REGLA PERMANENTE: SOFTRESTAURANT LEGACY
+# =============================================================================
+# Documento rector: /app/docs/rules/RULE_SYNC_SALES_SOFTRESTAURANT_LEGACY_AMOUNTS.md
+#
+# PROHIBIDO:
+# - Usar FOR JSON PATH contra SoftRestaurant legacy
+# - Usar cheqdet.totalsrx como importe (puede ser -1)
+# - Usar cheqdet.subtotalsrx como importe (puede ser -1)
+#
+# OBLIGATORIO:
+# - Calcular item_total como cantidad * precio
+# - Usar json.dumps() para construir items JSON en Python
+# =============================================================================
+
+def calculate_softrestaurant_item_total(row: Dict) -> float:
     """
-    Calcula el importe del item con fallback:
-    1. totalsrx si > 0
-    2. subtotalsrx si > 0
-    3. cantidad * precio si ambos > 0
-    4. 0.0 si ninguno funciona
+    REGLA PERMANENTE - SoftRestaurant Legacy:
+    
+    NO usar totalsrx/subtotalsrx como importe porque pueden venir en -1.
+    SoftRestaurant legacy DEBE calcular item_total como cantidad * precio.
+    
+    Args:
+        row: Fila con campos item_quantity e item_price
+        
+    Returns:
+        float: El importe calculado como quantity * price
     """
-    # Candidatos directos de importe
-    candidatos = [
-        row.get("item_totalsrx"),
-        row.get("item_subtotalsrx"),
-        row.get("item_total"),
-        row.get("Importe"),
-        row.get("TotalDetalle"),
-    ]
+    quantity = _safe_float(row.get("item_quantity"))
+    price = _safe_float(row.get("item_price"))
     
-    for valor in candidatos:
-        importe = _safe_float(valor)
-        if importe > 0:
-            return importe
-    
-    # Fallback: cantidad * precio
-    cantidad = _safe_float(row.get("item_quantity"))
-    precio = _safe_float(row.get("item_price"))
-    
-    if cantidad > 0 and precio > 0:
-        return round(cantidad * precio, 2)
-    
-    return 0.0
+    # Regla permanente: item_total = cantidad * precio
+    # NO usar totalsrx ni subtotalsrx
+    return round(quantity * price, 2)
 
 
 def build_sales_from_flat_rows(rows: List[Dict], unidad_codigo: str) -> List[Dict]:
@@ -363,9 +367,12 @@ def build_sales_from_flat_rows(rows: List[Dict], unidad_codigo: str) -> List[Dic
     Agrupa filas planas de ticket+detalle en registros de venta con items JSON.
     Compatible con SQL Server legacy (NO depende de FOR JSON PATH).
     
-    Incluye:
-    - Cálculo de importe de item con fallback
-    - Recálculo de MontoTotal si el encabezado viene en 0
+    REGLA PERMANENTE APLICADA:
+    - El importe de cada item se calcula con calculate_softrestaurant_item_total()
+    - NO se usa totalsrx ni subtotalsrx como fuente de importe
+    - El JSON items se construye con json.dumps() en Python
+    - Si MontoTotal <= 0, se recalcula como suma de items
+    - Si hay items pero total calculado es 0, se genera error
     """
     from collections import defaultdict
     
@@ -399,40 +406,44 @@ def build_sales_from_flat_rows(rows: List[Dict], unidad_codigo: str) -> List[Dic
         # Agregar item si existe
         item_id = row.get("item_id")
         if item_id is not None:
-            # Calcular importe con fallback
-            importe = _calcular_importe_item(row)
+            # REGLA PERMANENTE: Calcular importe con calculate_softrestaurant_item_total
+            # NO usar totalsrx/subtotalsrx
+            quantity = _safe_float(row.get("item_quantity"))
+            price = _safe_float(row.get("item_price"))
+            item_total = calculate_softrestaurant_item_total(row)
             
             ticket["items"].append({
                 "id": str(item_id),
                 "name": str(row.get("item_name", "") or ""),
-                "quantity": _safe_float(row.get("item_quantity")),
-                "price": _safe_float(row.get("item_price")),
-                "total": importe
+                "quantity": quantity,
+                "price": price,
+                "total": item_total
             })
     
     # Convertir a lista de registros con items como JSON string
     sales = []
     for numero_ticket, ticket in tickets.items():
         # Calcular suma de items
-        monto_items = sum(item["total"] for item in ticket["items"])
+        items_total = sum(_safe_float(item.get("total")) for item in ticket["items"])
         
-        # Determinar MontoTotal con fallback
-        monto_total = ticket["MontoTotal"]
+        # REGLA PERMANENTE: Si MontoTotal <= 0, recalcular como suma de items
+        monto_total = _safe_float(ticket["MontoTotal"])
         if monto_total <= 0:
-            # Intentar otros campos del encabezado
-            if ticket["TotalSinDescuento"] > 0:
-                monto_total = ticket["TotalSinDescuento"]
-            elif ticket["SubtotalCheque"] > 0:
-                monto_total = ticket["SubtotalCheque"]
-            elif monto_items > 0:
-                monto_total = monto_items
+            monto_total = items_total
+        
+        # REGLA PERMANENTE: Validar que si hay items, el total no sea cero
+        if ticket["items"] and items_total <= 0:
+            logger.warning(
+                f"⚠️ Ticket {numero_ticket} tiene {len(ticket['items'])} items pero total calculado = 0. "
+                "Revisar cantidad/precio SoftRestaurant legacy."
+            )
         
         sales.append({
             "NumeroTicket": ticket["NumeroTicket"],
             "IdTransaccion": ticket["NumeroTicket"],
             "Pax": ticket["Pax"],
             "MontoTotal": round(monto_total, 2),
-            "MontoItems": round(monto_items, 2),  # Para diagnóstico
+            "MontoItems": round(items_total, 2),  # Para diagnóstico
             "FechaHora": ticket["FechaHora"],
             "status": "COMPLETED",
             "items": json.dumps(ticket["items"], ensure_ascii=False) if ticket["items"] else "[]",

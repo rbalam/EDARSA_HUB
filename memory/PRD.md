@@ -135,6 +135,8 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 - [x] ~~Diagnóstico origen Comercial_KPIs_Diarios_v2~~ ✅ COMPLETADO 2026-06-02 (S3)
 - [x] ~~Verificar relación Sync_Sales/PAX_Detalle~~ ✅ Vacías por diseño Fase 1
 - [x] ~~Dry-run Sync_Sales (CIENFUEGOS, 130QRO, ORIGEN)~~ ✅ COMPLETADO 2026-06-02 (S4)
+- [x] ~~Corregir mapeo importes SoftRestaurant legacy~~ ✅ COMPLETADO 2026-06-03 (S5)
+- [x] ~~Establecer REGLA PERMANENTE Sync_Sales SoftRestaurant Legacy~~ ✅ COMPLETADO 2026-06-03
 
 ### P1 (Alto) - AWAITING USER APPROVAL
 - [ ] **Ejecutar inserción real Sync_Sales** - Dry-run exitoso, pendiente aprobación
@@ -169,6 +171,8 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 | `/app/backend/tools/sync_sales_dry_run.py` | **Dry-run Sync_Sales** ✅ |
 | `/app/backend/core/policies/no_live_dashboard_policy.py` | Política NO-LIVE |
 | `/app/docs/EDARSAHUB_MAXIMAS_INQUEBRANTABLES.md` | Máximas arquitectura |
+| `/app/docs/rules/RULE_SYNC_SALES_SOFTRESTAURANT_LEGACY_AMOUNTS.md` | **REGLA PERMANENTE** ⚠️ |
+| `/app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh` | Validador regla |
 | `/app/backend/modules/comercial/LEGACY_NO_LIVE_MIGRATION.md` | Marca legacy NO-LIVE |
 | `/app/scripts/classify_no_live_violations.sh` | Scanner violaciones NO-LIVE |
 | `/app/docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md` | Matriz NO-LIVE |
@@ -179,6 +183,10 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06-03 (S5) | **REGLA PERMANENTE: Sync_Sales SoftRestaurant Legacy** establecida |
+| 2026-06-03 (S5) | Función `calculate_softrestaurant_item_total()` implementada |
+| 2026-06-03 (S5) | Validador `/app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh` creado |
+| 2026-06-03 (S5) | Dry-run CIENFUEGOS validado: 19 tickets, $43,224.00 ✅ |
 | 2026-06-02 (S4) | **✅ DRY-RUN SYNC_SALES EXITOSO** - CIENFUEGOS, 130QRO, ORIGEN |
 | 2026-06-02 (S4) | Corregido: FOR JSON PATH → JSON en Python (compatibilidad legacy) |
 | 2026-06-02 (S4) | Corregido: CLI choices hardcodeados |
@@ -199,6 +207,8 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 
 | Reporte | Fecha | Contenido |
 |---------|-------|-----------|
+| `/app/docs/reports/VALIDACION_REGLA_SYNC_SALES_SOFTRESTAURANT_LEGACY.md` | 2026-06-03 | **Validación regla permanente - OK** |
+| `/app/docs/reports/DIAGNOSTICO_COLUMNAS_SOFTRESTAURANT_CIENFUEGOS.md` | 2026-06-02 | Diagnóstico columnas cheques/cheqdet |
 | `/app/docs/reports/DRY_RUN_SYNC_SALES_EXITOSO_20260602.md` | 2026-06-02 | **Dry-run exitoso CIENFUEGOS, 130QRO, ORIGEN** |
 | `/app/docs/reports/DIAGNOSTICO_ORIGEN_KPIS_Y_SYNC_DETALLE.md` | 2026-06-02 | **Diagnóstico completo de 10 preguntas** sobre origen de KPIs y Sync |
 | `/app/docs/reports/DIAGNOSTICO_ORIGEN_KPIS_V2_20260602.md` | 2026-06-02 | Origen de KPIs y relación con tablas Sync |
@@ -206,6 +216,29 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 | `/app/docs/reports/DIAGNOSTICO_MAPEO_RBAC_MONGO_A_SQL.md` | 2026-06-02 | Auditoría migración MongoDB→SQL |
 | `/app/docs/reports/DECISION_EJECUTIVA_RBAC_20260602.md` | 2026-06-02 | Decisión arquitectónica RBAC |
 | `/app/docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md` | 2026-06-02 | Matriz NO-LIVE |
+
+---
+
+## 10. REGLAS PERMANENTES
+
+### SYNC_SALES SOFTRESTAURANT LEGACY
+
+**Documento rector:** `/app/docs/rules/RULE_SYNC_SALES_SOFTRESTAURANT_LEGACY_AMOUNTS.md`
+
+**PROHIBIDO:**
+- Usar `FOR JSON PATH` contra SoftRestaurant legacy
+- Usar `cheqdet.totalsrx` como importe (puede ser -1)
+- Usar `cheqdet.subtotalsrx` como importe (puede ser -1)
+
+**OBLIGATORIO:**
+- Calcular `item_total = cantidad * precio` con `calculate_softrestaurant_item_total()`
+- Construir items JSON en Python con `json.dumps()`
+- Validar monto > 0 antes de autorizar `--execute`
+
+**Validador:**
+```bash
+bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
+```
 
 ---
 
