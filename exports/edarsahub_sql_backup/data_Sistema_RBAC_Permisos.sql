@@ -1,0 +1,9 @@
+-- Data export for Sistema_RBAC_Permisos
+-- Generated: 2026-06-03T00:43:18.851948
+-- Total records: 5, Exported: 5
+
+INSERT INTO [Sistema_RBAC_Permisos] ([permiso_id], [codigo], [nombre], [modulo], [descripcion], [activo], [fecha_alta], [fecha_ultima_actualizacion]) VALUES ('88355c9b-3203-4bc5-aae0-3984daea9dfb', N'INTELIGENCIA_COMERCIAL_EXPORTAR', N'Exportar Inteligencia Comercial', N'Comercial', NULL, 1, N'2026-06-02T03:48:41.475444', N'2026-06-02T03:48:41.475444');
+INSERT INTO [Sistema_RBAC_Permisos] ([permiso_id], [codigo], [nombre], [modulo], [descripcion], [activo], [fecha_alta], [fecha_ultima_actualizacion]) VALUES ('65f44317-377c-492b-83ea-6362b254c07f', N'INTELIGENCIA_COMERCIAL_VER', N'Ver Inteligencia Comercial', N'Comercial', NULL, 1, N'2026-06-02T03:48:41.475444', N'2026-06-02T03:48:41.475444');
+INSERT INTO [Sistema_RBAC_Permisos] ([permiso_id], [codigo], [nombre], [modulo], [descripcion], [activo], [fecha_alta], [fecha_ultima_actualizacion]) VALUES ('ca22146b-a741-4f3a-b3a6-7c61d852a04a', N'INTELIGENCIA_COMERCIAL_ADMIN', N'Administrar Inteligencia Comercial', N'Comercial', NULL, 1, N'2026-06-02T03:48:41.475444', N'2026-06-02T03:48:41.475444');
+INSERT INTO [Sistema_RBAC_Permisos] ([permiso_id], [codigo], [nombre], [modulo], [descripcion], [activo], [fecha_alta], [fecha_ultima_actualizacion]) VALUES ('733f2780-5515-448c-bf74-96aa9264cd17', N'INTELIGENCIA_COMERCIAL_SYNC', N'Ejecutar Sincronización Inteligencia Comercial', N'Comercial', NULL, 1, N'2026-06-02T03:48:41.475444', N'2026-06-02T03:48:41.475444');
+INSERT INTO [Sistema_RBAC_Permisos] ([permiso_id], [codigo], [nombre], [modulo], [descripcion], [activo], [fecha_alta], [fecha_ultima_actualizacion]) VALUES ('01d997a1-45c1-41ab-8455-9f9e1d54473d', N'INTELIGENCIA_COMERCIAL_CONFIGURAR', N'Configurar Inteligencia Comercial', N'Comercial', NULL, 1, N'2026-06-02T03:48:41.475444', N'2026-06-02T03:48:41.475444');

@@ -1,0 +1,9 @@
+-- Data export for Unidades_Negocio
+-- Generated: 2026-06-03T00:43:18.237966
+-- Total records: 5, Exported: 5
+
+INSERT INTO [Unidades_Negocio] ([id], [nombre], [codigo], [server_id], [sucursal_origen_id], [system_type], [activo], [orden], [created_at], [updated_at]) VALUES ('19e076fb-c6de-4ea5-84ab-1caa9e86082c', N'130° MERIDA', N'130MID', N'a5547321-1139-4d2b-9d53-182ca737b6b6', NULL, N'SoftRestaurant', 1, 1, N'2026-04-24T19:25:42.753000', N'2026-04-24T19:46:18.740000');
+INSERT INTO [Unidades_Negocio] ([id], [nombre], [codigo], [server_id], [sucursal_origen_id], [system_type], [activo], [orden], [created_at], [updated_at]) VALUES ('23ca0b76-6580-4874-ba9b-672b122ca197', N'ORIGEN', N'ORIGEN', N'1b230a06-ffaf-4c70-bd27-b1be3579dea6', N'0023', N'MPRO', 1, 5, N'2026-04-24T19:25:43.070000', N'2026-04-24T19:25:43.070000');
+INSERT INTO [Unidades_Negocio] ([id], [nombre], [codigo], [server_id], [sucursal_origen_id], [system_type], [activo], [orden], [created_at], [updated_at]) VALUES ('dfb86008-1b81-472a-9e50-8a0821dec4b2', N'LA ESTELAR', N'ESTELAR', N'a5ff0e25-f029-43db-b634-d4ac814c904f', NULL, N'SoftRestaurant', 1, 3, N'2026-04-24T19:25:42.937000', N'2026-04-24T19:25:42.937000');
+INSERT INTO [Unidades_Negocio] ([id], [nombre], [codigo], [server_id], [sucursal_origen_id], [system_type], [activo], [orden], [created_at], [updated_at]) VALUES ('9bc05ced-6b2b-4a0a-aa90-ce649b78e12c', N'130° QUERETARO', N'130QRO', N'1b230a06-ffaf-4c70-bd27-b1be3579dea6', N'0021', N'MPRO', 1, 4, N'2026-04-24T19:25:43.003000', N'2026-04-24T19:25:43.003000');
+INSERT INTO [Unidades_Negocio] ([id], [nombre], [codigo], [server_id], [sucursal_origen_id], [system_type], [activo], [orden], [created_at], [updated_at]) VALUES ('b06ee652-0370-4267-b0a8-da6fc39b590a', N'CIENFUEGOS', N'CIENFUEGOS', N'6d053c22-523e-48c0-b72b-96081e2d781b', NULL, N'SoftRestaurant', 1, 2, N'2026-04-24T19:25:42.820000', N'2026-04-24T19:25:42.820000');
