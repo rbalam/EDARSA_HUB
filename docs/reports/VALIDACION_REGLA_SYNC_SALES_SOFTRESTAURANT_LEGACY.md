@@ -1,6 +1,6 @@
 # VALIDACIÓN REGLA SYNC_SALES SOFTRESTAURANT LEGACY
 
-**Generado:** 2026-06-03T00:37:19+00:00
+**Generado:** 2026-06-03T06:39:05+00:00
 **Archivo validado:** /app/backend/tools/sync_sales_dry_run.py
 
 ---
