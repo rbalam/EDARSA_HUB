@@ -137,6 +137,11 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 - [x] ~~Dry-run Sync_Sales (CIENFUEGOS, 130QRO, ORIGEN)~~ ✅ COMPLETADO 2026-06-02 (S4)
 - [x] ~~Corregir mapeo importes SoftRestaurant legacy~~ ✅ COMPLETADO 2026-06-03 (S5)
 - [x] ~~Establecer REGLA PERMANENTE Sync_Sales SoftRestaurant Legacy~~ ✅ COMPLETADO 2026-06-03
+- [x] ~~**SYNC_SALES PILOTO 2026-06-01**~~ ✅ **COMPLETADO Y VALIDADO 2026-06-03**
+  - 79 tickets insertados (5 unidades)
+  - $309,092.31 MXN
+  - 0 duplicados, 100% JSON válido
+  - Validación cruzada vs KPIs aprobada
 
 ### P1 (Alto) - AWAITING USER APPROVAL
 - [ ] **Ejecutar inserción real Sync_Sales** - Dry-run exitoso, pendiente aprobación
@@ -183,22 +188,16 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06-03 (S5) | **✅ SYNC_SALES PILOTO 2026-06-01 COMPLETADO Y VALIDADO** |
+| 2026-06-03 (S5) | Insertados 79 tickets en 5 unidades ($309,092.31 MXN) |
+| 2026-06-03 (S5) | Validación post-insert aprobada (0 duplicados, 100% JSON válido) |
 | 2026-06-03 (S5) | **REGLA PERMANENTE: Sync_Sales SoftRestaurant Legacy** establecida |
 | 2026-06-03 (S5) | Función `calculate_softrestaurant_item_total()` implementada |
 | 2026-06-03 (S5) | Validador `/app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh` creado |
-| 2026-06-03 (S5) | Dry-run CIENFUEGOS validado: 19 tickets, $43,224.00 ✅ |
-| 2026-06-02 (S4) | **✅ DRY-RUN SYNC_SALES EXITOSO** - CIENFUEGOS, 130QRO, ORIGEN |
+| 2026-06-02 (S4) | Dry-run Sync_Sales exitoso - CIENFUEGOS, 130QRO, ORIGEN |
 | 2026-06-02 (S4) | Corregido: FOR JSON PATH → JSON en Python (compatibilidad legacy) |
-| 2026-06-02 (S4) | Corregido: CLI choices hardcodeados |
-| 2026-06-02 (S4) | Corregido: Query MPRO (Vn_Tabla='Comanda') |
-| 2026-06-02 (S3) | **Diagnóstico completo origen Comercial_KPIs_Diarios_v2** |
-| 2026-06-02 (S3) | Confirmado: Sync_Sales/PAX_Detalle vacías por diseño Fase 1 |
-| 2026-06-02 (S3) | Generado reporte: DIAGNOSTICO_ORIGEN_KPIS_V2_20260602.md |
+| 2026-06-02 (S3) | Diagnóstico completo origen Comercial_KPIs_Diarios_v2 |
 | 2026-06-02 (S2) | Registrado módulo INTELIGENCIA_COMERCIAL (ID=59) |
-| 2026-06-02 (S2) | Sistema_RBAC_* marcadas como TRANSICIONAL en Gobierno |
-| 2026-06-02 (S2) | Vistas y tablas de Inteligencia registradas en Gobierno |
-| 2026-06-02 (S2) | Generada MATRIZ_NO_LIVE_DASHBOARD |
-| 2026-06-02 (S1) | Herramienta edarsahub_sql_runner.py creada |
 | 2026-06-02 (S1) | Fase 1 Inteligencia Comercial completada |
 
 ---
