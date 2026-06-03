@@ -1,6 +1,6 @@
 # Diagnóstico de filtros actuales EDARSAHUB
 
-Fecha: Wed Jun  3 06:59:19 UTC 2026
+Fecha: Wed Jun  3 07:03:00 UTC 2026
 
 ## 1. Endpoints backend relacionados con filtros
 ```text
