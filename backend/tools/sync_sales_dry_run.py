@@ -696,6 +696,142 @@ def validate_importes(sales: List[Dict]) -> Dict[str, Any]:
 
 
 # =============================================================================
+# FUNCIÓN DE INSERCIÓN (--execute)
+# =============================================================================
+
+def insert_sales_to_sync_sales(sales: List[Dict], unidad_codigo: str) -> Dict[str, Any]:
+    """
+    Inserta los registros de venta en la tabla Sync_Sales.
+    
+    IMPORTANTE:
+    - Solo se ejecuta con --execute explícito
+    - No modifica Comercial_KPIs_Diarios_v2
+    - Verifica duplicados antes de insertar
+    
+    Estructura de Sync_Sales:
+    - id: varchar NOT NULL (generado como unidad-ticket-fecha)
+    - branch: nvarchar NOT NULL (UnidadNegocio)
+    - total: numeric NOT NULL
+    - items: nvarchar (JSON)
+    - NumeroTicket, FechaHora, Pax, MontoTotal, UnidadNegocio, etc.
+    
+    Returns:
+        Dict con estadísticas de inserción
+    """
+    from datetime import datetime
+    import uuid
+    
+    if not sales:
+        return {
+            "success": True,
+            "inserted": 0,
+            "skipped": 0,
+            "errors": 0,
+            "error_messages": []
+        }
+    
+    inserted = 0
+    skipped = 0
+    errors = 0
+    error_messages = []
+    
+    for sale in sales:
+        try:
+            # Verificar si ya existe (por NumeroTicket + UnidadNegocio + Fecha)
+            numero_ticket = sale.get("NumeroTicket", "")
+            fecha_hora = sale.get("FechaHora")
+            
+            # Formatear fecha para SQL
+            if fecha_hora:
+                if isinstance(fecha_hora, str):
+                    fecha_str = fecha_hora[:19]
+                else:
+                    fecha_str = fecha_hora.isoformat()[:19] if hasattr(fecha_hora, 'isoformat') else str(fecha_hora)[:19]
+            else:
+                fecha_str = datetime.now().isoformat()[:19]
+            
+            fecha_date = fecha_str[:10]  # Solo la fecha YYYY-MM-DD
+            
+            # Generar ID único: UNIDAD-TICKET-FECHA
+            sale_id = f"{unidad_codigo}-{numero_ticket}-{fecha_date}"
+            
+            # Check duplicado por id
+            check_query = f"""
+            SELECT COUNT(*) as cnt 
+            FROM Sync_Sales 
+            WHERE id = '{sale_id}'
+            """
+            result = _execute_query(check_query)
+            if result and result[0].get('cnt', 0) > 0:
+                skipped += 1
+                continue
+            
+            # Preparar valores para INSERT
+            monto_total = float(sale.get("MontoTotal", 0) or 0)
+            pax = int(sale.get("Pax", 0) or 0)
+            items_json = sale.get("items", "[]")
+            status = sale.get("status", "COMPLETED")
+            
+            # Escapar comillas en JSON
+            items_json_escaped = items_json.replace("'", "''") if items_json else "[]"
+            
+            # INSERT con todos los campos requeridos
+            insert_query = f"""
+            INSERT INTO Sync_Sales (
+                id,
+                branch,
+                customer_id,
+                items,
+                total,
+                currency,
+                status,
+                created_at,
+                last_modified,
+                IdTransaccion,
+                UnidadNegocio,
+                MontoTotal,
+                Pax,
+                NumeroTicket,
+                FechaHora
+            ) VALUES (
+                '{sale_id}',
+                N'{unidad_codigo}',
+                NULL,
+                N'{items_json_escaped}',
+                {monto_total},
+                'MXN',
+                '{status}',
+                GETDATE(),
+                GETDATE(),
+                '{numero_ticket}',
+                N'{unidad_codigo}',
+                {monto_total},
+                {pax},
+                '{numero_ticket}',
+                '{fecha_str}'
+            )
+            """
+            
+            _execute_query(insert_query)
+            inserted += 1
+            
+        except Exception as e:
+            errors += 1
+            error_messages.append(f"Ticket {sale.get('NumeroTicket', 'N/A')}: {str(e)[:100]}")
+            if errors >= 5:
+                error_messages.append("Demasiados errores, deteniendo inserción")
+                break
+    
+    return {
+        "success": errors == 0,
+        "inserted": inserted,
+        "skipped": skipped,
+        "errors": errors,
+        "error_messages": error_messages
+    }
+
+
+# =============================================================================
 # GENERACIÓN DE REPORTE
 # =============================================================================
 
@@ -973,17 +1109,18 @@ def main():
     
     args = parser.parse_args()
     
-    if args.execute:
-        logger.error("❌ --execute no está disponible en este script de diagnóstico")
-        logger.error("   Use el job oficial sync_comercial_edarsahub.py para inserción real")
-        sys.exit(1)
+    # Modo de ejecución
+    execute_mode = args.execute
+    mode_str = "EXECUTE (INSERCIÓN REAL)" if execute_mode else "DRY-RUN (SOLO LECTURA)"
     
     logger.info("=" * 60)
-    logger.info("SYNC_SALES DRY-RUN")
+    logger.info(f"SYNC_SALES - {mode_str}")
     logger.info("Patrón: sync_comercial_edarsahub.py")
     logger.info("=" * 60)
     logger.info(f"Unidad: {args.unidad}")
     logger.info(f"Rango: {args.fecha_inicio} a {args.fecha_fin}")
+    if execute_mode:
+        logger.info("⚠️  MODO EXECUTE: Se insertarán datos reales en Sync_Sales")
     logger.info("")
     
     # 1. Estado ANTES
@@ -1045,15 +1182,60 @@ def main():
         for err in importes_stats["errores"]:
             logger.warning(f"   ⚠️ {err}")
     
-    # 6. Estado DESPUÉS (debe ser igual)
+    # 6. EXECUTE: Insertar datos si está habilitado
+    insert_stats = None
+    if execute_mode:
+        logger.info("")
+        logger.info("=" * 60)
+        logger.info("PASO 6: EJECUTANDO INSERCIÓN EN Sync_Sales")
+        logger.info("=" * 60)
+        
+        # Validaciones previas a inserción
+        if not importes_stats['valido']:
+            logger.error("❌ ABORTADO: Validación de importes falló")
+            logger.error("   No se puede insertar con monto total = 0")
+            sys.exit(1)
+        
+        if items_stats['invalidos'] > 0:
+            logger.error("❌ ABORTADO: Hay items JSON inválidos")
+            sys.exit(1)
+        
+        if dup_stats['nuevos'] == 0:
+            logger.warning("⚠️ No hay registros nuevos para insertar (todos duplicados)")
+        else:
+            logger.info(f"   Insertando {dup_stats['nuevos']} registros nuevos...")
+            insert_stats = insert_sales_to_sync_sales(sales, config['unidad_codigo'])
+            
+            logger.info(f"   ✅ Insertados: {insert_stats['inserted']}")
+            logger.info(f"   ⏭️  Skipped (duplicados): {insert_stats['skipped']}")
+            logger.info(f"   ❌ Errores: {insert_stats['errors']}")
+            
+            if insert_stats['error_messages']:
+                for msg in insert_stats['error_messages']:
+                    logger.error(f"      {msg}")
+            
+            if not insert_stats['success']:
+                logger.error("❌ INSERCIÓN FALLÓ - Revisar errores arriba")
+                sys.exit(1)
+    
+    # 7. Estado DESPUÉS
     logger.info("")
-    logger.info("Paso 6: Verificando que las tablas NO cambiaron...")
+    logger.info("Paso 7: Verificando estado de tablas...")
     sync_sales_after = get_sync_sales_count()
     kpis_after = get_kpis_count()
     
-    # 7. Generar reporte
+    if execute_mode:
+        logger.info(f"   Sync_Sales ANTES: {sync_sales_before.get('registros', 0)} registros")
+        logger.info(f"   Sync_Sales DESPUÉS: {sync_sales_after.get('registros', 0)} registros")
+        logger.info(f"   Diferencia: +{sync_sales_after.get('registros', 0) - sync_sales_before.get('registros', 0)}")
+    
+    logger.info(f"   KPIs_Diarios_v2 ANTES: {kpis_before} registros")
+    logger.info(f"   KPIs_Diarios_v2 DESPUÉS: {kpis_after} registros")
+    logger.info(f"   KPIs SIN CAMBIOS: {'✅ SÍ' if kpis_before == kpis_after else '❌ NO'}")
+    
+    # 8. Generar reporte
     logger.info("")
-    logger.info("Paso 7: Generando reporte...")
+    logger.info("Paso 8: Generando reporte...")
     report = generate_report(
         config=config,
         fecha_inicio=args.fecha_inicio,
@@ -1069,8 +1251,24 @@ def main():
         importes_stats=importes_stats,
     )
     
+    # Agregar stats de inserción al reporte si aplica
+    if insert_stats:
+        report["insercion"] = insert_stats
+        report["modo"] = "EXECUTE"
+    else:
+        report["modo"] = "DRY-RUN"
+    
     # Imprimir reporte
     print_report(report)
+    
+    # Resumen final para execute
+    if execute_mode and insert_stats:
+        print()
+        print("=" * 80)
+        print(f"✅ INSERCIÓN COMPLETADA: {args.unidad}")
+        print(f"   Registros insertados: {insert_stats['inserted']}")
+        print(f"   Sync_Sales ahora tiene: {sync_sales_after.get('registros', 0)} registros")
+        print("=" * 80)
     
     # Guardar JSON si se especificó
     if args.output:
