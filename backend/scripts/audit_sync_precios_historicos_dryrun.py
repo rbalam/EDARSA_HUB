@@ -5,7 +5,7 @@ Verifica estructura de tabla destino y servidores candidatos
 import os
 import sys
 
-# Usar pymssql en lugar de pyodbc (más estable en este entorno)
+# Usar pymssql (pyodbc tiene issues con libodbc en este entorno)
 import pymssql
 from datetime import datetime, timedelta
 
@@ -47,35 +47,21 @@ def main():
     rows = cur.fetchall()
     print(f"Total servidores activos: {len(rows)}")
     for r in rows:
-        print(f"  ID={r[0][:20]}... | {r[1]:20} | {r[2]:20} | Activo={r[3]}")
+        print(f"  ID={str(r[0]):36} | {r[1]:25} | {r[2]:20} | Activo={r[3]}")
 
-    print("\n=== TABLAS FUENTE POTENCIALES ===")
-    cur.execute("""
-    SELECT TABLE_NAME, 
-           (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS c WHERE c.TABLE_NAME = t.TABLE_NAME) as num_cols
-    FROM INFORMATION_SCHEMA.TABLES t
-    WHERE TABLE_NAME LIKE '%Producto%' OR TABLE_NAME LIKE '%Precio%'
-    ORDER BY TABLE_NAME
-    """)
-    for r in cur.fetchall():
-        print(f"  {r[0]:40} ({r[1]} columnas)")
-
-    print("\n=== MUESTRA DE Sync_Productos (fuente de precios) ===")
-    cur.execute("""
-    SELECT TOP 5 
-        ProductoID, Codigo, Descripcion, PrecioVenta, CostoReceta, 
-        ServerID, SucursalID, SyncedAtMexico
-    FROM Sync_Productos
-    WHERE PrecioVenta > 0
-    ORDER BY SyncedAtMexico DESC
-    """)
-    cols = [d[0] for d in cur.description]
-    print(f"  Columnas: {cols}")
-    for r in cur.fetchall():
-        print(f"  {r[2][:30] if r[2] else 'N/A':30} | Precio={r[3]} | Costo={r[4]} | Server={str(r[5])[:15]}...")
-
+    print("\n=== PRODUCTOS EN Sync_Productos (fuente) ===")
     cur.execute("SELECT COUNT(*) FROM Sync_Productos WHERE PrecioVenta > 0")
-    print(f"\n  Total productos con precio en Sync_Productos: {cur.fetchone()[0]}")
+    print(f"  Total productos con precio: {cur.fetchone()[0]}")
+    
+    cur.execute("""
+    SELECT ServerID, COUNT(*) as productos, 
+           SUM(CASE WHEN PrecioVenta > 0 THEN 1 ELSE 0 END) as con_precio
+    FROM Sync_Productos
+    GROUP BY ServerID
+    """)
+    print("\n  Por servidor:")
+    for r in cur.fetchall():
+        print(f"    ServerID={str(r[0]):36} | {r[1]:5} productos | {r[2]:5} con precio")
 
     print("\nDRY-RUN OK: no se insertó ningún dato.")
     cn.close()
