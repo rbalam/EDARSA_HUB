@@ -13,7 +13,7 @@ Tablas EDARSAHUB:
 import pymssql
 import logging
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
 
 logger = logging.getLogger(__name__)
 
