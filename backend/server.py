@@ -18267,3 +18267,16 @@ async def download_backup_full():
             media_type="application/zip"
         )
     raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+@app.get("/api/download/manual-desarrollo")
+async def download_manual_desarrollo():
+    """Descarga del Manual de Flujo Desarrollo-Producción en Word."""
+    import os
+    docx_path = "/app/backend/static/MANUAL_FLUJO_DESARROLLO_PRODUCCION_EDARSAHUB.docx"
+    if os.path.exists(docx_path):
+        return FileResponse(
+            path=docx_path,
+            filename="MANUAL_FLUJO_DESARROLLO_PRODUCCION_EDARSAHUB.docx",
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+    raise HTTPException(status_code=404, detail="Archivo no encontrado")
