@@ -1,0 +1,2497 @@
+{
+  "Reportes": {
+    "total": 52,
+    "frontend": {
+      "/app/frontend/src/pages/Reportes.js": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "38",
+          "code": "if (selectedServer?.system_type === 'SoftRestaurant') {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "42",
+          "code": "// MPRO"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "97",
+          "code": "const [erroresCaptura, setErroresCaptura] = useState([]); // Errores de captura de inventario (MPRO)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "225",
+          "code": "// Estado para agrupar insumos de múltiples inventarios (MPRO)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "534",
+          "code": "// Si es SoftRestaurant, cargar almacenes directamente (no tiene sucursales)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "535",
+          "code": "if (server?.system_type === 'SoftRestaurant') {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "536",
+          "code": "loadAlmacenesSoftRestaurant();"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "538",
+          "code": "// Si es MPRO con sucursal_origen_id ya establecida, cargar almacenes"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "539",
+          "code": "else if (server?.system_type === 'MPRO' && filters.sucursal_id) {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "546",
+          "code": "// Cargar almacenes para SoftRestaurant (no requiere sucursal)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "550",
+          "code": "? `/servers/${filters.server_id}/almacenes-softrestaurant?solo_consumo=true`"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "551",
+          "code": ": `/servers/${filters.server_id}/almacenes-softrestaurant`;"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "558",
+          "code": "sucursal: 'SoftRestaurant'"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "561",
+          "code": "logger.error('Error al cargar almacenes SoftRestaurant:', error);"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "590",
+          "code": "// Solo cargar almacenes si NO es SoftRestaurant (que ya los carga directamente)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "591",
+          "code": "if (currentServer?.system_type !== 'SoftRestaurant') {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "601",
+          "code": "if (filters.query_type === 'pendientes' && filters.server_id && selectedServer?.system_type === 'SoftRestaurant') {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "603",
+          "code": "loadAlmacenesSoftRestaurant(true);"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "604",
+          "code": "} else if (filters.server_id && selectedServer?.system_type === 'SoftRestaurant' && filters.query_type !== 'pendientes') {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "606",
+          "code": "loadAlmacenesSoftRestaurant(false);"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "613",
+          "code": "if (filters.query_type === 'pendientes' && filters.server_id && selectedServer?.system_type === 'SoftRestaurant') {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "631",
+          "code": "// Para MPRO usar sucursal_id, para SoftRestaurant usar 'SoftRestaurant'"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "636",
+          "code": "if (selectedServer?.system_type === 'SoftRestaurant') {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "637",
+          "code": "params.sucursal = 'SoftRestaurant';"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "639",
+          "code": "// MPRO: usar sucursal_id para filtro correcto"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "674",
+          "code": "if (selectedServer?.system_type === 'SoftRestaurant' || filters.sucursal_id) {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "745",
+          "code": "// Si tiene sucursal_origen_id (MPRO con sucursal auto-definida), también auto-seleccionar sucursal"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "746",
+          "code": "if (unidad.sucursal_origen_id && unidad.system_type === 'MPRO') {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "927",
+          "code": "// Preparar info de inventarios para MPRO (folio + comentario + almacen_id para el cache)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "953",
+          "code": "// Info completa de inventarios para MPRO"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "981",
+          "code": "// Manejar errores de captura de inventario (MPRO)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "1073",
+          "code": "if (systemType === 'MPRO') {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "1074",
+          "code": "// Para MPRO: usar las fechas exactas de los inventarios (solo fecha)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "1077",
+          "code": "} else if (systemType === 'SoftRestaurant') {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "1078",
+          "code": "// Para SoftRestaurant: fecha inicial + 1 segundo, fecha final - 1 segundo"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "1320",
+          "code": "// Para MPRO: cada almacén puede tener un comentario específico del inventario seleccionado"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "1595",
+          "code": "// Si tiene sucursal_origen_id (MPRO con sucursal auto-definida), auto-seleccionar"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "1596",
+          "code": "if (unidad.sucursal_origen_id && unidad.system_type === 'MPRO') {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "1649",
+          "code": "{selectedServer?.system_type === 'SoftRestaurant' && ("
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "1655",
+          "code": "{/* Sucursal - Solo mostrar si NO es SoftRestaurant y NO tiene sucursal_origen_id (auto-resolución) y hay múltiples */}"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "1656",
+          "code": "{selectedServer?.system_type !== 'SoftRestaurant' &&"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "1974",
+          "code": "({selectedServer.system_type === 'MPRO' ? 'Fecha inv. inicial' : 'Fecha inv. inicial + 1 seg'})"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "1993",
+          "code": "({selectedServer.system_type === 'MPRO' ? 'Fecha inv. final' : 'Fecha inv. final - 1 seg'})"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "2007",
+          "code": "{/* Opción de agrupar insumos - debajo de las fechas, solo visible con multi-inventario en MPRO */}"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "2008",
+          "code": "{selectedServer?.system_type === 'MPRO' && (selectedInventariosIni.length > 1 || selectedInventariosFin.length > 1) && ("
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "2024",
+          "code": "{/* Filtros adicionales (Categoría, Familia, SubFamilia) - Para MPRO y SoftRestaurant */}"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "2025",
+          "code": "{filters.query_type === 'analisis' && (selectedServer?.system_type === 'MPRO' || selectedServer?.system_type === 'SoftRestaurant') && ("
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "2035",
+          "code": "<Label>{selectedServer?.system_type === 'SoftRestaurant' ? 'Clasificación' : 'Categorías'}</Label>"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "2099",
+          "code": "<Label>{selectedServer?.system_type === 'SoftRestaurant' ? 'Grupos' : 'Familias'}</Label>"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "2163",
+          "code": "<Label>{selectedServer?.system_type === 'SoftRestaurant' ? 'SubGrupos' : 'SubFamilias'}</Label>"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "2393",
+          "code": "{/* Errores de captura de inventario (MPRO) */}"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Reportes",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Reportes.js",
+          "line": "2506",
+          "code": "{filters.query_type === 'pendientes' && selectedServer?.system_type === 'SoftRestaurant' && ("
+        }
+      ]
+    },
+    "backend": {},
+    "test": {}
+  },
+  "ExploradorBD": {
+    "total": 5,
+    "frontend": {
+      "/app/frontend/src/pages/ExploradorBD.js": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "ExploradorBD",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/ExploradorBD.js",
+          "line": "807",
+          "code": "// El primer combo usa códigos canónicos (SOFTRESTAURANT) pero las conexiones"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "ExploradorBD",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/ExploradorBD.js",
+          "line": "808",
+          "code": "// pueden tener variantes (SoftRestaurant, SOFRESATAURANT_ENTER)"
+        }
+      ],
+      "/app/frontend/src/services/exploradorService.js": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "ExploradorBD",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/services/exploradorService.js",
+          "line": "15",
+          "code": "* - Elimina hardcoding de SOFTRESTAURANT/MPRO/API_LOCAL"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "ExploradorBD",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/services/exploradorService.js",
+          "line": "31",
+          "code": "*   - sistema_codigo: MPRO, SOFTRESTAURANT, API_LOCAL, etc."
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "ExploradorBD",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/services/exploradorService.js",
+          "line": "140",
+          "code": "* Útil para validar variantes como \"ManagmentPro\" -> \"MPRO\""
+        }
+      ]
+    },
+    "backend": {},
+    "test": {}
+  },
+  "Compras": {
+    "total": 32,
+    "frontend": {
+      "/app/frontend/src/components/compras/operativas/AutomatizacionesTable.jsx": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/components/compras/operativas/AutomatizacionesTable.jsx",
+          "line": "49",
+          "code": "<Badge variant=\"outline\" className=\"text-xs\">{item.origen_sistema || 'MPRO'}</Badge>"
+        }
+      ],
+      "/app/frontend/src/pages/Compras.js": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Compras.js",
+          "line": "906",
+          "code": "const [kpis, setKpis] = useState({ totalCompras: 0, numProveedores: 0, numFacturas: 0, promedioFactura: 0 });"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Compras.js",
+          "line": "939",
+          "code": "numProveedores: proveedores.length,"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Compras.js",
+          "line": "947",
+          "code": "setKpis({ totalCompras: 0, numProveedores: 0, numFacturas: 0, promedioFactura: 0 });"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Compras.js",
+          "line": "1127",
+          "code": "<p className=\"text-xl font-bold text-blue-600\">{kpis.numProveedores}</p>"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Compras.js",
+          "line": "3497",
+          "code": "// Para unidades con sucursal_origen_id definida (MPRO), preseleccionar"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Compras.js",
+          "line": "3501",
+          "code": "// Para MPRO, usar el código de sucursal (id) directamente, no el nombre."
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Compras.js",
+          "line": "3508",
+          "code": "// Usar el ID/código exacto para MPRO"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Compras.js",
+          "line": "3514",
+          "code": "// SoftRestaurant: usar nombre ya que es single-tenant"
+        }
+      ]
+    },
+    "backend": {
+      "/app/backend/modules/compras/historical_kpis_repository.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "pytds.connect",
+          "file": "/app/backend/modules/compras/historical_kpis_repository.py",
+          "line": "50",
+          "code": "return pytds.connect("
+        }
+      ]
+    },
+    "test": {
+      "/app/backend/tests/test_compras_analisis.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Compras",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_compras_analisis.py",
+          "line": "30",
+          "code": "servers_response = requests.get(f\"{BASE_URL}/api/servers\", headers=self.headers)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_compras_analisis.py",
+          "line": "188",
+          "code": "f\"{BASE_URL}/api/compras/facturas-proveedor/{self.softrestaurant_server['id']}\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_compras_analisis.py",
+          "line": "205",
+          "code": "f\"{BASE_URL}/api/compras/facturas-proveedor/{self.softrestaurant_server['id']}\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_compras_analisis.py",
+          "line": "238",
+          "code": "f\"{BASE_URL}/api/compras/detalle-factura/{self.softrestaurant_server['id']}/TEST-001\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_compras_analisis.py",
+          "line": "250",
+          "code": "f\"{BASE_URL}/api/compras/detalle-factura/{self.softrestaurant_server['id']}/TEST-001\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Compras",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_compras_analisis.py",
+          "line": "280",
+          "code": "servers_response = requests.get(f\"{BASE_URL}/api/servers\", headers=self.headers)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_compras_analisis.py",
+          "line": "289",
+          "code": "def test_mpro_analisis_endpoint(self):"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_compras_analisis.py",
+          "line": "290",
+          "code": "\"\"\"Test analisis endpoint for MPRO server\"\"\""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_compras_analisis.py",
+          "line": "296",
+          "code": "f\"{BASE_URL}/api/servers/{self.mpro_server['id']}/sucursales\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Compras",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_compras_analisis.py",
+          "line": "296",
+          "code": "f\"{BASE_URL}/api/servers/{self.mpro_server['id']}/sucursales\","
+        }
+      ],
+      "/app/backend/tests/test_compras_module.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Compras",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_compras_module.py",
+          "line": "72",
+          "code": "f\"{BASE_URL}/api/servers\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_compras_module.py",
+          "line": "88",
+          "code": "f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/sucursales\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Compras",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_compras_module.py",
+          "line": "88",
+          "code": "f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/sucursales\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_compras_module.py",
+          "line": "111",
+          "code": "f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/sucursales\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Compras",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_compras_module.py",
+          "line": "111",
+          "code": "f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/sucursales\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_compras_module.py",
+          "line": "121",
+          "code": "f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/almacenes?sucursal={sucursal_nombre}\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Compras",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_compras_module.py",
+          "line": "121",
+          "code": "f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/almacenes?sucursal={sucursal_nombre}\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_compras_module.py",
+          "line": "158",
+          "code": "f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/sucursales\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Compras",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_compras_module.py",
+          "line": "158",
+          "code": "f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/sucursales\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_compras_module.py",
+          "line": "169",
+          "code": "f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/almacenes?sucursal={sucursal_nombre}\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Compras",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_compras_module.py",
+          "line": "169",
+          "code": "f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/almacenes?sucursal={sucursal_nombre}\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Compras",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_compras_module.py",
+          "line": "361",
+          "code": "f\"{BASE_URL}/api/compras/parametros/{MPRO_SERVER_ID}\","
+        }
+      ]
+    }
+  },
+  "Comercial": {
+    "total": 117,
+    "frontend": {
+      "/app/frontend/src/pages/Comercial.js": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Comercial.js",
+          "line": "14",
+          "code": "* ║ - Integración con servidores MPRO y SoftRestaurant                         ║"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/Comercial.js",
+          "line": "1392",
+          "code": "Fuente: {fuentePaxHoy === 'tempcheques' ? 'Ventas sin corte (tempcheques)' : fuentePaxHoy === 'api_local' ? 'API Local MPRO' : fuentePaxHoy}"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Comercial",
+          "pattern": "frontend api servers",
+          "file": "/app/frontend/src/pages/Comercial.js",
+          "line": "2807",
+          "code": "// NO hacer llamada adicional a /api/servers/.../sucursales que no respeta RBAC"
+        }
+      ],
+      "/app/frontend/src/pages/comercial/CostosMargenes.jsx": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/comercial/CostosMargenes.jsx",
+          "line": "790",
+          "code": "producto.sistema_origen === 'SOFTRESTAURANT_PRO'"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/comercial/CostosMargenes.jsx",
+          "line": "794",
+          "code": "{producto.sistema_origen === 'SOFTRESTAURANT_PRO' ? 'SoftRestaurant' : 'MPRO'}"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/comercial/CostosMargenes.jsx",
+          "line": "1103",
+          "code": "solicitud.system_type === 'SOFTRESTAURANT_PRO'"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/comercial/CostosMargenes.jsx",
+          "line": "1107",
+          "code": "{solicitud.system_type === 'SOFTRESTAURANT_PRO' ? 'SoftRestaurant' : 'MPRO'}"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/comercial/CostosMargenes.jsx",
+          "line": "1837",
+          "code": "{prod.sistema_origen === 'SOFTRESTAURANT_PRO' ? 'SUSPENDIDO' : 'BAJA'}"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/comercial/CostosMargenes.jsx",
+          "line": "1849",
+          "code": "prod.sistema_origen === 'SOFTRESTAURANT_PRO'"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/comercial/CostosMargenes.jsx",
+          "line": "1853",
+          "code": "{prod.sistema_origen === 'SOFTRESTAURANT_PRO' ? 'SR' : 'MPRO'}"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/comercial/CostosMargenes.jsx",
+          "line": "1987",
+          "code": "{prod.sistema_origen === 'SOFTRESTAURANT_PRO' ? 'SUSPENDIDO' : 'BAJA'}"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/comercial/CostosMargenes.jsx",
+          "line": "1999",
+          "code": "prod.sistema_origen === 'SOFTRESTAURANT_PRO'"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/comercial/CostosMargenes.jsx",
+          "line": "2003",
+          "code": "{prod.sistema_origen === 'SOFTRESTAURANT_PRO' ? 'SR' : 'MPRO'}"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/comercial/CostosMargenes.jsx",
+          "line": "3177",
+          "code": "sol.system_type === 'SOFTRESTAURANT_PRO'"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/pages/comercial/CostosMargenes.jsx",
+          "line": "3181",
+          "code": "{sol.system_type === 'SOFTRESTAURANT_PRO' ? 'SR' : 'MPRO'}"
+        }
+      ]
+    },
+    "backend": {
+      "/app/backend/modules/comercial/adapters.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/adapters.py",
+          "line": "170",
+          "code": "Consulta una API MPRO local y retorna los resultados."
+        }
+      ],
+      "/app/backend/modules/comercial/cache_service.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/cache_service.py",
+          "line": "94",
+          "code": "Ejemplo: comercial:dashboard:server123:suc001:MANAGEMENTPRO:2026-04-20:periodo=mes"
+        }
+      ],
+      "/app/backend/modules/comercial/crm_router.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/crm_router.py",
+          "line": "191",
+          "code": "def crear_cotizacion_enterprise(cotizacion: CotizacionCreate):"
+        }
+      ],
+      "/app/backend/modules/comercial/historical_kpis_repository.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "execute_sql_query",
+          "file": "/app/backend/modules/comercial/historical_kpis_repository.py",
+          "line": "95",
+          "code": "return execute_sql_query("
+        }
+      ],
+      "/app/backend/modules/comercial/inteligencia_comercial_routes.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/inteligencia_comercial_routes.py",
+          "line": "10",
+          "code": "- No consulta SoftRestaurant/MPRO en vivo desde dashboard."
+        }
+      ],
+      "/app/backend/modules/comercial/queries/mpro.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/queries/mpro.py",
+          "line": "37",
+          "code": "- get_kpis_mpro() en service.py"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/queries/mpro.py",
+          "line": "126",
+          "code": "ORIGEN: Extraída de service.py líneas 871-884 (get_kpis_mpro_por_sucursal)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/queries/mpro.py",
+          "line": "145",
+          "code": "- get_kpis_mpro_por_sucursal() en service.py (migración Bloque 4)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/queries/mpro.py",
+          "line": "146",
+          "code": "- /comercial/tablero-ejecutivo para servidores MPRO"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/queries/mpro.py",
+          "line": "245",
+          "code": "# FUNCIÓN PARA DASHBOARD MPRO CON FILTRO FLEXIBLE"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/queries/mpro.py",
+          "line": "265",
+          "code": "- Usa la misma lógica que el endpoint dashboard MPRO"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/queries/mpro.py",
+          "line": "278",
+          "code": "- /comercial/dashboard/{server_id} (sección MPRO)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/queries/mpro.py",
+          "line": "362",
+          "code": "# QUERY SQL - Basada en routes.py dashboard MPRO"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/queries/mpro.py",
+          "line": "617",
+          "code": "ORIGEN: Extraída de service.py líneas 862-884 (get_kpis_mpro_por_sucursal)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/queries/mpro.py",
+          "line": "638",
+          "code": "- get_kpis_mpro_por_sucursal() en service.py (migración Bloque 4)"
+        }
+      ],
+      "/app/backend/modules/comercial/queries/softrestaurant.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/queries/softrestaurant.py",
+          "line": "33",
+          "code": "- get_kpis_softrestaurant() en service.py"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/queries/softrestaurant.py",
+          "line": "106",
+          "code": "ORIGEN: Extraída de service.py líneas 341-363 (get_kpis_softrestaurant)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/queries/softrestaurant.py",
+          "line": "121",
+          "code": "- get_kpis_softrestaurant() en service.py (migración Bloque 4)"
+        }
+      ],
+      "/app/backend/modules/comercial/routes.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "46",
+          "code": "- get_kpis_softrestaurant()"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "47",
+          "code": "- get_kpis_mpro()"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "48",
+          "code": "- get_kpis_mpro_por_sucursal()"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "100",
+          "code": "get_kpis_softrestaurant,"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "101",
+          "code": "get_kpis_mpro,"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "102",
+          "code": "get_kpis_mpro_por_sucursal,"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "179",
+          "code": "# remotos (SoftRestaurant/MPRO) desde la UI. Los endpoints afectados devolverán"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "991",
+          "code": "kpis = get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "1443",
+          "code": "kpis_mpro = {"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "1454",
+          "code": "server=server, kpis=kpis_mpro,"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "1469",
+          "code": "totales[k] += kpis_mpro.get(k, 0)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "1470",
+          "code": "totales[\"pendiente_cerrar\"] += kpis_mpro.get(\"pendiente_cerrar\", 0)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "1506",
+          "code": "unidades_mpro = get_kpis_mpro_por_sucursal("
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Comercial",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "1761",
+          "code": "# Los servidores con tipo_conexion=API_LOCAL no se incluyen en /api/servers"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "3120",
+          "code": "# KPIs generales de mesas para MPRO"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "3856",
+          "code": "# El frontend envía nombres (ORIGEN, QUERETARO) pero MPRO usa códigos (0023, 0021)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4587",
+          "code": "edarsahub_kpis_mpro = get_dashboard_kpis_from_edarsahub("
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4598",
+          "code": "if edarsahub_kpis_mpro:"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4600",
+          "code": "logging.info(f\"[DASHBOARD-FIX-MPRO] {server['name']}: Usando datos de EDARSAHUB (ventas=${edarsahub_kpis_mpro['ventas_periodo']:,.2f})\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4604",
+          "code": "\"source_message\": f\"Datos consolidados de EDARSAHUB ({edarsahub_kpis_mpro['registros_consultados']} días)\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4605",
+          "code": "\"source_type\": edarsahub_kpis_mpro['source'],"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4611",
+          "code": "\"ventas_periodo\": edarsahub_kpis_mpro['ventas_periodo'],"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4612",
+          "code": "\"ticket_promedio\": edarsahub_kpis_mpro['ticket_promedio'],"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4613",
+          "code": "\"cheques_total\": edarsahub_kpis_mpro['cheques_total'],"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4614",
+          "code": "\"pax_total\": edarsahub_kpis_mpro['pax_total'],"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4615",
+          "code": "\"pax_promedio\": edarsahub_kpis_mpro['pax_promedio'],"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4616",
+          "code": "\"consumo_persona\": edarsahub_kpis_mpro['consumo_persona'],"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4617",
+          "code": "\"mesas_atendidas\": edarsahub_kpis_mpro['mesas_atendidas'],"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4618",
+          "code": "\"rotacion_mesas\": edarsahub_kpis_mpro['rotacion_mesas'],"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4619",
+          "code": "\"venta_por_hora\": edarsahub_kpis_mpro['venta_por_hora']"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4622",
+          "code": "\"vs_periodo_anterior\": edarsahub_kpis_mpro['vs_periodo_anterior'],"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4623",
+          "code": "\"vs_ano_anterior\": edarsahub_kpis_mpro['vs_ano_anterior'],"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4624",
+          "code": "\"vs_presupuesto\": edarsahub_kpis_mpro['vs_presupuesto'],"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4626",
+          "code": "\"ventas_anterior\": edarsahub_kpis_mpro['ventas_anterior'],"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4627",
+          "code": "\"ventas_ano_anterior\": edarsahub_kpis_mpro['ventas_ano_anterior']"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4634",
+          "code": "# FASE 1B-R1: CORRECCIÓN NO-LIVE DASHBOARD MPRO"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4639",
+          "code": "logging.warning(f\"[DASHBOARD-NO-LIVE-MPRO] {server['name']}: EDARSAHUB sin datos vigentes, verificando snapshot histórico\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4648",
+          "code": "logging.info(f\"[DASHBOARD-NO-LIVE-MPRO] {server['name']}: Retornando datos STALE de {stale_snapshot_mpro['fecha_snapshot']}\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4658",
+          "code": "\"kpis\": stale_snapshot_mpro.get('kpis'),"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes.py",
+          "line": "4668",
+          "code": "logging.warning(f\"[DASHBOARD-NO-LIVE-MPRO] {server['name']}: Sin datos en EDARSAHUB, retornando SIN_DATOS_EDARSAHUB\")"
+        }
+      ],
+      "/app/backend/modules/comercial/routes_competidores_enterprise.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes_competidores_enterprise.py",
+          "line": "2",
+          "code": "FASE 1C-3I-B v2: Endpoints Enterprise de Competidores por Unidad de Negocio"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/routes_competidores_enterprise.py",
+          "line": "32",
+          "code": "router = APIRouter(prefix=\"/comercial\", tags=[\"Competidores Enterprise\"])"
+        }
+      ],
+      "/app/backend/modules/comercial/service.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "11",
+          "code": "- Migrado: get_kpis_softrestaurant() desde server.py"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "12",
+          "code": "- Migrado: get_kpis_mpro() desde server.py"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "13",
+          "code": "- Migrado: get_kpis_mpro_por_sucursal() desde server.py"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "527",
+          "code": "RAZÓN: Para MPRO, los datos en Comercial_KPIs_Diarios_v2 tienen un server_id"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1369",
+          "code": "def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia=False):"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1371",
+          "code": "TABLERO EJECUTIVO - KPIs SoftRestaurant desde EDARSAHUB"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1499",
+          "code": "def get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes):"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1501",
+          "code": "TABLERO EJECUTIVO - KPIs MPRO desde EDARSAHUB"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1511",
+          "code": "Para KPIs por sucursal individual, usar get_kpis_mpro_por_sucursal."
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1522",
+          "code": "logging.warning(f\"[TABLERO-EDARSAHUB] {nombre}: server_id {server_id} no tiene mapeo de unidad MPRO\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1534",
+          "code": "# Agregar KPIs de todas las sucursales MPRO"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1674",
+          "code": "def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia=False):"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1676",
+          "code": "Query para MPRO que devuelve KPIs DIVIDIDOS POR SUCURSAL (como en Inventarios)."
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1815",
+          "code": "# - Para modo HUB (Tablero Ejecutivo), MPRO debe leer de EDARSAHUB SQL"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1816",
+          "code": "# - NO consultar servidores MPRO directamente (bases QUERETARO, ORIGEN)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1817",
+          "code": "# - Usar la misma fuente que SoftRestaurant: Comercial_KPIs_Diarios_v2"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1861",
+          "code": "kpis['system_type'] = \"MPRO\""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "1923",
+          "code": "logging.info(f\"[TABLERO] MPRO {server['name']}: Conexión OK - Fechas: {fecha_ini} a {fecha_fin}\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2005",
+          "code": "logging.info(f\"MPRO {server['name']}: Consultando ventas del {fi} al {ff}\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2015",
+          "code": "f\"Error consultando MPRO por sucursal {server['name']}: {result_principal.error} \""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2261",
+          "code": "def get_kpis_mpro_con_estado("
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2268",
+          "code": "FASE 4.4: Obtiene KPIs de MPRO con envelope de estado."
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2287",
+          "code": "unidades = get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, solo_ventas_dia)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2335",
+          "code": "'get_kpis_softrestaurant',"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2336",
+          "code": "'get_kpis_mpro',"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2337",
+          "code": "'get_kpis_mpro_por_sucursal',"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2339",
+          "code": "'get_kpis_mpro_con_estado',"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2378",
+          "code": "NO consulta: Servidores remotos SoftRestaurant"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2538",
+          "code": "# Este fallback maneja el caso donde los datos MPRO en Comercial_KPIs_Diarios_v2"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2546",
+          "code": "logging.info(f\"[DASHBOARD-EDARSAHUB-MPRO-FIX] Intentando búsqueda por unidad_negocio_id: {unidad_ids}\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2564",
+          "code": "result_mpro = _query_edarsahub_tablero(query_mpro)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial/service.py",
+          "line": "2575",
+          "code": "f\"[DASHBOARD-EDARSAHUB-MPRO-FIX] Datos MPRO encontrados por unidad_negocio_id: \""
+        }
+      ],
+      "/app/backend/modules/comercial_v2/carga_historica_24_meses.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial_v2/carga_historica_24_meses.py",
+          "line": "19",
+          "code": "- SoftRestaurant: ventas cerradas en KPIs, temporales en tabla separada"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial_v2/carga_historica_24_meses.py",
+          "line": "629",
+          "code": "reporte_mes = cargar_mes_softrestaurant(unidad, run_id, mes, anio)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial_v2/carga_historica_24_meses.py",
+          "line": "631",
+          "code": "reporte_mes = cargar_mes_mpro(unidad, run_id, mes, anio)"
+        }
+      ],
+      "/app/backend/modules/comercial_v2/carga_historica_abril_2026.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial_v2/carga_historica_abril_2026.py",
+          "line": "774",
+          "code": "reporte_unidad = cargar_unidad_softrestaurant("
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial_v2/carga_historica_abril_2026.py",
+          "line": "778",
+          "code": "reporte_unidad = cargar_unidad_mpro("
+        }
+      ],
+      "/app/backend/modules/comercial_v2/mappers.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial_v2/mappers.py",
+          "line": "75",
+          "code": "Mapea un registro de SoftRestaurant (cheques + turnos) a KPIs Diarios v2."
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial_v2/mappers.py",
+          "line": "207",
+          "code": "Mapea un registro de MPRO (Venta_Encabezado) a KPIs Diarios v2."
+        }
+      ],
+      "/app/backend/modules/comercial_v2/schemas.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/modules/comercial_v2/schemas.py",
+          "line": "59",
+          "code": "\"\"\"Datos de KPIs diarios desde el origen (SoftRestaurant/MPRO)\"\"\""
+        }
+      ]
+    },
+    "test": {
+      "/app/backend/tests/test_comercial.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Comercial",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_comercial.py",
+          "line": "120",
+          "code": "f\"{api_base_url}/api/servers\","
+        }
+      ],
+      "/app/backend/tests/test_dashboard_comercial.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Comercial",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_comercial.py",
+          "line": "69",
+          "code": "valid_types = [\"MPRO\", \"SoftRestaurant\", \"Otro\"]"
+        }
+      ]
+    }
+  },
+  "Inventarios": {
+    "total": 5,
+    "frontend": {},
+    "backend": {},
+    "test": {
+      "/app/backend/tests/test_comparativo_inventarios.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Inventarios",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_comparativo_inventarios.py",
+          "line": "74",
+          "code": "response = self.session.get(f\"{BASE_URL}/api/servers\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Inventarios",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_comparativo_inventarios.py",
+          "line": "88",
+          "code": "response = self.session.get(f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/sucursales\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Inventarios",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_comparativo_inventarios.py",
+          "line": "88",
+          "code": "response = self.session.get(f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/sucursales\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Inventarios",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_comparativo_inventarios.py",
+          "line": "104",
+          "code": "f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/almacenes\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Inventarios",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_comparativo_inventarios.py",
+          "line": "104",
+          "code": "f\"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/almacenes\","
+        }
+      ]
+    }
+  },
+  "Dashboard": {
+    "total": 54,
+    "frontend": {
+      "/app/frontend/src/portal/pages/DashboardPage.jsx": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/portal/pages/DashboardPage.jsx",
+          "line": "276",
+          "code": "// AZUL sutil para MPRO, VIOLETA sutil para SoftRestaurant"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/portal/pages/DashboardPage.jsx",
+          "line": "277",
+          "code": "const isMPRO = s.system_type === 'MPRO';"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/portal/pages/DashboardPage.jsx",
+          "line": "283",
+          "code": "backgroundColor: isMPRO ? '#F5F9FF' : '#FAF8FF',"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/portal/pages/DashboardPage.jsx",
+          "line": "284",
+          "code": "border: isMPRO ? '1px solid #E1EDFB' : '1px solid #EDE9F5'"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/portal/pages/DashboardPage.jsx",
+          "line": "336",
+          "code": "style={s.system_type === 'MPRO'"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/portal/pages/DashboardPage.jsx",
+          "line": "344",
+          "code": "style={s.system_type === 'MPRO'"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/portal/pages/DashboardPage.jsx",
+          "line": "349",
+          "code": "{s.system_type === 'MPRO' ? 'Management Pro' : 'Soft Restaurant'}"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/portal/pages/DashboardPage.jsx",
+          "line": "418",
+          "code": "style={suc.system_type === 'MPRO'"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/frontend/src/portal/pages/DashboardPage.jsx",
+          "line": "423",
+          "code": "{suc.system_type === 'MPRO' ? 'MPro' : 'SR'}"
+        }
+      ]
+    },
+    "backend": {
+      "/app/backend/core/policies/no_live_dashboard_policy.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/core/policies/no_live_dashboard_policy.py",
+          "line": "3",
+          "code": "Los dashboards y reportes ejecutivos no deben consultar SoftRestaurant, MPRO,"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "pyodbc.connect",
+          "file": "/app/backend/core/policies/no_live_dashboard_policy.py",
+          "line": "13",
+          "code": "\"pyodbc.connect(\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "pymssql.connect",
+          "file": "/app/backend/core/policies/no_live_dashboard_policy.py",
+          "line": "14",
+          "code": "\"pymssql.connect(\","
+        }
+      ],
+      "/app/backend/modules/tablajeria/dashboard_service.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "pymssql.connect",
+          "file": "/app/backend/modules/tablajeria/dashboard_service.py",
+          "line": "27",
+          "code": "return pymssql.connect("
+        }
+      ]
+    },
+    "test": {
+      "/app/backend/tests/test_dashboard_servers.py": [
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "4",
+          "code": "- MPRO (ManagmentPro)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "5",
+          "code": "- Cienfuegos SoftRestaurant"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "6",
+          "code": "- LA ESTELAR (SoftRestaurant)"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "23",
+          "code": "\"MPRO\": \"1b230a06-ffaf-4c70-bd27-b1be3579dea6\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "109",
+          "code": "class TestDashboardMPRO:"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "110",
+          "code": "\"\"\"Test dashboard functionality with MPRO server\"\"\""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "112",
+          "code": "def test_dashboard_mpro_loads(self, auth_headers):"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "113",
+          "code": "\"\"\"Test dashboard loads data for MPRO server\"\"\""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "114",
+          "code": "server_id = SERVER_IDS[\"MPRO\"]"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "120",
+          "code": "assert response.status_code == 200, f\"MPRO dashboard failed: {response.text}\""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "124",
+          "code": "assert data[\"success\"], f\"MPRO dashboard returned error: {data.get('message')}\""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "131",
+          "code": "print(f\"MPRO Dashboard - Server: {dashboard_data.get('server_name')}\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "132",
+          "code": "print(f\"MPRO KPIs: {dashboard_data.get('kpis')}\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "134",
+          "code": "def test_mpro_kpis_calculated(self, auth_headers):"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "135",
+          "code": "\"\"\"Verify KPIs are calculated for MPRO\"\"\""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "136",
+          "code": "server_id = SERVER_IDS[\"MPRO\"]"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "158",
+          "code": "print(f\"MPRO KPIs validated: {len(expected_kpi_fields)} fields present\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "162",
+          "code": "\"\"\"Test dashboard functionality with Cienfuegos SoftRestaurant server\"\"\""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "236",
+          "code": "class TestMPROFilters:"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "237",
+          "code": "\"\"\"Test filter endpoints for MPRO server\"\"\""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "239",
+          "code": "def test_mpro_tipos_movimiento(self, auth_headers):"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "240",
+          "code": "\"\"\"Test tipos-movimiento endpoint for MPRO\"\"\""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "241",
+          "code": "server_id = SERVER_IDS[\"MPRO\"]"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Dashboard",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "243",
+          "code": "f\"{BASE_URL}/api/servers/{server_id}/tipos-movimiento\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "250",
+          "code": "print(f\"MPRO Tipos Movimiento count: {len(data)}\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "257",
+          "code": "def test_mpro_categorias(self, auth_headers):"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "258",
+          "code": "\"\"\"Test categorias endpoint for MPRO\"\"\""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "259",
+          "code": "server_id = SERVER_IDS[\"MPRO\"]"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Dashboard",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "261",
+          "code": "f\"{BASE_URL}/api/servers/{server_id}/categorias\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "268",
+          "code": "print(f\"MPRO Categorías count: {len(data)}\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "270",
+          "code": "def test_mpro_departamentos(self, auth_headers):"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "271",
+          "code": "\"\"\"Test departamentos endpoint for MPRO\"\"\""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "272",
+          "code": "server_id = SERVER_IDS[\"MPRO\"]"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Dashboard",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "274",
+          "code": "f\"{BASE_URL}/api/servers/{server_id}/departamentos\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_POSIBLE_LIVE_VISUAL",
+          "module": "Dashboard",
+          "pattern": "remote POS names",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "281",
+          "code": "print(f\"MPRO Departamentos count: {len(data)}\")"
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Dashboard",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "291",
+          "code": "f\"{BASE_URL}/api/servers/{server_id}/tipos-movimiento\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Dashboard",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "304",
+          "code": "f\"{BASE_URL}/api/servers/{server_id}/categorias\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Dashboard",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "317",
+          "code": "f\"{BASE_URL}/api/servers/{server_id}/departamentos\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Dashboard",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "331",
+          "code": "\"\"\"Test GET /api/servers returns all active servers\"\"\""
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Dashboard",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "333",
+          "code": "f\"{BASE_URL}/api/servers\","
+        },
+        {
+          "severity": "ALTA",
+          "classification": "PROHIBIDO_FRONTEND_FILTROS",
+          "module": "Dashboard",
+          "pattern": "frontend api servers",
+          "file": "/app/backend/tests/test_dashboard_servers.py",
+          "line": "353",
+          "code": "f\"{BASE_URL}/api/servers\","
+        }
+      ]
+    }
+  }
+}

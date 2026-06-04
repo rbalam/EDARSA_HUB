@@ -1,0 +1,111 @@
+{
+  "fecha_generacion": "2026-06-04",
+  "total_hallazgos_alta": 619,
+  "excluidos": [
+    "Finanzas",
+    "PropinasTPV"
+  ],
+  "fases": [
+    {
+      "fase": 1,
+      "nombre": "Crítica - Comercial",
+      "prioridad": "P0",
+      "modulo": "Comercial",
+      "hallazgos": 117,
+      "archivos_criticos": [
+        "/app/backend/modules/comercial/routes.py",
+        "/app/backend/modules/comercial/queries/mpro.py",
+        "/app/backend/modules/comercial/queries/softrestaurant.py",
+        "/app/backend/modules/comercial/service.py"
+      ],
+      "acciones": [
+        "Auditar endpoints que llaman get_kpis_* en vivo",
+        "Activar NO_LIVE_DASHBOARD_POLICY",
+        "Migrar KPIs a Comercial_KPIs_Diarios_v2"
+      ],
+      "riesgo": "ALTO",
+      "impacto": "Dashboard comercial consulta servidores remotos en vivo"
+    },
+    {
+      "fase": 2,
+      "nombre": "Alta - Reportes",
+      "prioridad": "P1",
+      "modulo": "Reportes",
+      "hallazgos": 52,
+      "archivos_criticos": [
+        "/app/frontend/src/pages/Reportes.js"
+      ],
+      "acciones": [
+        "Migrar a Corporate Filters para almacenes/sucursales",
+        "Eliminar condicionales system_type de lógica de reportes"
+      ],
+      "riesgo": "ALTO",
+      "impacto": "UI diferencia comportamiento por tipo de sistema origen"
+    },
+    {
+      "fase": 3,
+      "nombre": "Media - Dashboard/Compras/ExploradorBD",
+      "prioridad": "P2",
+      "modulos": [
+        "Dashboard",
+        "Compras",
+        "ExploradorBD"
+      ],
+      "archivos_a_validar": [
+        "/app/frontend/src/portal/pages/DashboardPage.jsx",
+        "/app/frontend/src/pages/Compras.js",
+        "/app/backend/modules/compras/historical_kpis_repository.py",
+        "/app/frontend/src/pages/ExploradorBD.js"
+      ],
+      "acciones": [
+        "Validar que Dashboard usa datos cacheados",
+        "Revisar historical_kpis_repository.py",
+        "Validar migración existente de ExploradorBD"
+      ],
+      "riesgo": "MEDIO",
+      "impacto": "Posibles llamadas live residuales"
+    },
+    {
+      "fase": 4,
+      "nombre": "Baja - Inventarios",
+      "prioridad": "P3",
+      "modulo": "Inventarios",
+      "hallazgos": 5,
+      "archivos_criticos": [],
+      "acciones": [
+        "No requiere acción - Solo tests"
+      ],
+      "riesgo": "BAJO",
+      "impacto": "Ninguno - Ya cumple SQL-First"
+    }
+  ],
+  "archivos_no_modificar": [
+    "/app/frontend/src/pages/Finanzas.js",
+    "/app/frontend/src/components/PropinasTPV.jsx",
+    "/app/backend/modules/finanzas/*",
+    "**/sync_*.py",
+    "**/test_*.py"
+  ],
+  "clasificacion_hallazgos": {
+    "frontend_prohibido": {
+      "descripcion": "Frontend con /api/servers o /api/sucursales",
+      "total": 7,
+      "accion": "MIGRAR a Corporate Filters"
+    },
+    "backend_live_visual": {
+      "descripcion": "Backend que consulta remoto para dashboards/KPIs",
+      "total": 58,
+      "accion": "MIGRAR a tablas EDARSAHUB SQL"
+    },
+    "sync_permitido": {
+      "descripcion": "Jobs, sync, backfill (permitido)",
+      "total": 0,
+      "accion": "NO TOCAR"
+    },
+    "falsos_positivos": {
+      "descripcion": "Comentarios, documentación, tests",
+      "total": 121,
+      "accion": "IGNORAR"
+    }
+  }
+}
