@@ -71,92 +71,6 @@ TIPO_MOVIMIENTO_SR_TO_EDARSAHUB = {
 }
 
 
-
-
-def registrar_concepto_movimiento_no_mapeado(acumulador, concepto, cantidad=None, fecha=None):
-    concepto = str(concepto or "NULL").strip().upper()
-    if concepto not in acumulador:
-        acumulador[concepto] = {
-            "idconcepto": concepto,
-            "registros": 0,
-            "cantidad_total": 0,
-            "ejemplo_fecha": str(fecha) if fecha else None,
-        }
-    acumulador[concepto]["registros"] += 1
-    try:
-        acumulador[concepto]["cantidad_total"] += float(cantidad or 0)
-    except Exception:
-        pass
-    if not acumulador[concepto].get("ejemplo_fecha") and fecha:
-        acumulador[concepto]["ejemplo_fecha"] = str(fecha)
-
-
-def resolver_proveedor_edarsahub(cursor, empresa_id, proveedor_origen_id=None, proveedor_nombre=None, proveedor_rfc=None):
-    """
-    Resuelve ProveedorID canónico EDARSAHUB.
-    Prohibido usar ProveedorID=1 como default.
-
-    Si no existe, crea placeholder trazable por código origen.
-    """
-    proveedor_origen_id = str(proveedor_origen_id or "").strip()
-    proveedor_nombre = str(proveedor_nombre or proveedor_origen_id or "PROVEEDOR ORIGEN SIN NOMBRE").strip()
-    proveedor_rfc = str(proveedor_rfc or "").strip()
-
-    if proveedor_rfc:
-        cursor.execute("""
-            SELECT TOP 1 ProveedorID
-            FROM dbo.Proveedor_Catalogo
-            WHERE EmpresaID = %s AND RFC = %s
-            ORDER BY ProveedorID
-        """, (empresa_id, proveedor_rfc))
-        row = cursor.fetchone()
-        if row:
-            return row[0]
-
-    if proveedor_origen_id:
-        cursor.execute("""
-            SELECT TOP 1 ProveedorID
-            FROM dbo.Proveedor_Catalogo
-            WHERE EmpresaID = %s
-              AND (
-                    CodigoProveedor = %s
-                 OR CodigoOrigen = %s
-                 OR CAST(ProveedorID AS NVARCHAR(50)) = %s
-              )
-            ORDER BY ProveedorID
-        """, (empresa_id, proveedor_origen_id, proveedor_origen_id, proveedor_origen_id))
-        row = cursor.fetchone()
-        if row:
-            return row[0]
-
-    codigo = proveedor_origen_id or f"ORIGEN_SIN_CODIGO_{proveedor_nombre[:20]}"
-
-    cursor.execute("""
-        INSERT INTO dbo.Proveedor_Catalogo
-        (
-            EmpresaID,
-            CodigoProveedor,
-            CodigoOrigen,
-            RazonSocial,
-            NombreComercial,
-            RFC,
-            Activo,
-            FechaCreacion
-        )
-        OUTPUT INSERTED.ProveedorID
-        VALUES (%s, %s, %s, %s, %s, NULLIF(%s, ''), 1, GETDATE())
-    """, (
-        empresa_id,
-        codigo,
-        codigo,
-        proveedor_nombre,
-        proveedor_nombre,
-        proveedor_rfc
-    ))
-
-    return cursor.fetchone()[0]
-
-
 def map_tipo_movimiento_softrestaurant(idconcepto, cantidad=None):
     """
     Mapea idconcepto de SoftRestaurant a Inventario_TipoMovimiento.TipoMovimientoID.
@@ -417,8 +331,7 @@ def sync_inventarios_fisicos_from_server(
                     CAST(INV.folio AS VARCHAR) as folio,
                     INV.fecha as fecha,
                     A.nombre as almacen,
-                    CAST(A.
-) as almacen_id,
+                    CAST(A.idalmacen AS VARCHAR) as almacen_id,
                     '' as sucursal,
                     '' as sucursal_id,
                     'FISICO' as tipo,
@@ -711,8 +624,7 @@ def sync_almacenes_from_server(
         else:
             query_origen = """
                 SELECT 
-                    CAST(
-(50)) AS codigo_almacen,
+                    CAST(idalmacen AS VARCHAR(50)) AS codigo_almacen,
                     nombre AS nombre_almacen,
                     'GENERAL' AS tipo_almacen,
                     1 AS activo
@@ -806,8 +718,7 @@ def sync_existencias_from_server(
             query_origen = """
                 SELECT TOP 5000
                     CAST(E.idinsumo AS INT) AS producto_id,
-                    CAST(E.
-) AS almacen_id,
+                    CAST(E.idalmacen AS INT) AS almacen_id,
                     ISNULL(E.existencia, 0) AS existencia,
                     ISNULL(E.costopromedio, 0) AS costo_promedio
                 FROM existencias E
@@ -870,11 +781,6 @@ def sync_existencias_from_server(
 
 
 # ADVERTENCIA: sync_movimientos_from_server debe usar map_tipo_movimiento_softrestaurant() antes de MERGE.
-
-# sync_movimientos_from_server debe:
-# - usar map_tipo_movimiento_softrestaurant(idconcepto)
-# - saltar registros con TipoMovimientoID None
-# - devolver conceptos_no_mapeados en el resultado
 def sync_movimientos_from_server(
     server_info: Dict,
     unidad_info: Dict,
@@ -920,8 +826,7 @@ def sync_movimientos_from_server(
             query_origen = """
                 SELECT TOP 2000
                     m.fecha AS fecha_movimiento,
-                    CAST(m.
-) AS almacen_id,
+                    CAST(m.idalmacen AS INT) AS almacen_id,
                     m.idconcepto AS concepto_origen,
                     CAST(m.idinsumospresentaciones AS VARCHAR(50)) AS producto_id,
                     ISNULL(m.cantidad, 0) AS cantidad,
@@ -1283,8 +1188,7 @@ def sync_recepciones_from_server(
                     c.fechaaplicacion AS fecha_recepcion,
                     CAST(c.idproveedor AS INT) AS proveedor_id,
                     ISNULL(c.total, 0) AS total,
-                    CAST(
-) AS almacen_id
+                    CAST(c.idalmacen AS INT) AS almacen_id
                 FROM compras c
                 WHERE c.fechaaplicacion >= DATEADD(DAY, -{dias_atras}, GETDATE())
                   AND c.cancelado = 0
