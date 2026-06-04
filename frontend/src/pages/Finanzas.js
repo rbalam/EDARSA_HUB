@@ -22,7 +22,8 @@ import {
 } from 'recharts';
 import TesoreriaCorteZ from '../components/TesoreriaCorteZ';
 import PropinasTPV from '../components/PropinasTPV';
-import { fetchUnidadesNegocio } from '../services/unidadesNegocioService';
+// MIGRACIÓN SQL-FIRST: Removido fetchUnidadesNegocio, ahora usa Corporate Filters
+import { useCorporateFilters, CorporateFiltersProvider } from '../filters/CorporateFiltersProvider';
 import { FinanzasCuentasPorPagar, FinanzasControlIngresos, FinanzasDashboard, FinanzasPresupuestos } from '../components/finanzas';
 import { CuentasBancariasPage } from '../components/finanzas/cuentas-bancarias';
 import { Landmark } from 'lucide-react';
@@ -33,6 +34,37 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 const COLORS = ['#10b981', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
 
 export default function Finanzas() {
+  return (
+    <CorporateFiltersProvider scope="finanzas">
+      <FinanzasContent />
+    </CorporateFiltersProvider>
+  );
+}
+
+function FinanzasContent() {
+  // MIGRACIÓN SQL-FIRST: Obtener unidades desde Corporate Filters en lugar de fetchUnidadesNegocio
+  const { 
+    filters: corporateFilters, 
+    loading: loadingCorporateFilters,
+    selected: corporateSelected,
+    setSelected: setCorporateSelected
+  } = useCorporateFilters();
+  
+  // Mapear unidades de Corporate Filters al formato esperado por componentes legacy
+  const unidadesNegocio = useMemo(() => {
+    const unidades = corporateFilters?.unidades_negocio || [];
+    return unidades.map(u => ({
+      id: u.id || u.unidad_negocio_id,
+      nombre: u.nombre || u.unidad_nombre,
+      codigo: u.codigo,
+      empresa_id: u.empresa_id,
+      sucursales: u.sucursales || [],
+      sucursal_origen_id: u.sucursal_origen_id
+    }));
+  }, [corporateFilters]);
+  
+  const loadingUnidades = loadingCorporateFilters;
+  
   // FASE AUTH-FIX: Usar AuthContext para esperar a que el usuario esté autenticado
   const { user, loading: authLoading } = useAuth();
   
@@ -43,10 +75,8 @@ export default function Finanzas() {
   const [sucursales, setSucursales] = useState([]);
   const [categorias, setCategorias] = useState([]);
   
-  // === FASE 3.2: UNIDADES DE NEGOCIO ===
-  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+  // === FASE 3.2: UNIDADES DE NEGOCIO (ahora gestionado por Corporate Filters) ===
   const [selectedUnidad, setSelectedUnidad] = useState('');
-  const [loadingUnidades, setLoadingUnidades] = useState(true);
   
   // Filtros
   const [filtroAnio, setFiltroAnio] = useState(new Date().getFullYear());
@@ -254,38 +284,15 @@ export default function Finanzas() {
   
   // FASE AUTH-SECURITY-01: Ya no se usa token, la auth viaja en cookie httpOnly
   
-  // === FASE 3.2: CARGAR UNIDADES DE NEGOCIO ===
+  // === MIGRACIÓN SQL-FIRST: Unidades ahora vienen de Corporate Filters ===
+  // Auto-seleccionar si el usuario tiene solo una unidad
   useEffect(() => {
-    // FASE AUTH-FIX: Esperar a que el usuario esté autenticado
-    if (authLoading || !user) {
-      return;
+    if (!loadingUnidades && unidadesNegocio.length === 1 && !selectedUnidad) {
+      const unidad = unidadesNegocio[0];
+      setSelectedUnidad(unidad.id);
+      logger.log(`[Finanzas] Auto-seleccionada unidad única: ${unidad.nombre}`);
     }
-    
-    const loadUnidadesNegocio = async () => {
-      setLoadingUnidades(true);
-      try {
-        logger.log('[Finanzas] Cargando unidades de negocio...');
-        const unidades = await fetchUnidadesNegocio();
-        logger.log('[Finanzas] Unidades cargadas:', unidades.length);
-        setUnidadesNegocio(unidades);
-        
-        // Auto-seleccionar si el usuario tiene solo una unidad
-        if (unidades.length === 1) {
-          const unidad = unidades[0];
-          setSelectedUnidad(unidad.id);
-          logger.log(`[Finanzas] Auto-seleccionada unidad única: ${unidad.nombre}`);
-        }
-      } catch (error) {
-        logger.error('[Finanzas] Error al cargar unidades de negocio:', error);
-        toast.error('Error al cargar unidades de negocio');
-        setUnidadesNegocio([]);
-      } finally {
-        setLoadingUnidades(false);
-      }
-    };
-    
-    loadUnidadesNegocio();
-  }, [user, authLoading]);
+  }, [loadingUnidades, unidadesNegocio, selectedUnidad]);
   
   // Unidad seleccionada (objeto completo)
   const unidadSeleccionada = useMemo(() => {

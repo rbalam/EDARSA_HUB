@@ -327,6 +327,15 @@ bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
 | A Pagar Meseros | $44,485.90 |
 | Fuente | EDARSAHUB_REAL ✅ |
 
+### Migración Finanzas.js a Corporate Filters
+
+| Cambio | Estado |
+|--------|--------|
+| Eliminado `fetchUnidadesNegocio` | ✅ |
+| Agregado `CorporateFiltersProvider` | ✅ |
+| Agregado `useCorporateFilters()` | ✅ |
+| Build exitoso | ✅ |
+
 ---
 
 *Documento actualizado automáticamente - E1 Agent*
