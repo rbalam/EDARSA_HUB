@@ -911,7 +911,122 @@ async def admin_sync_compras_table_counts(
         raise HTTPException(status_code=500, detail=f"Error consultando tablas: {str(e)}")
 
 
-@api_router.get("/admin/sync/compras/logs")
+@api_router.get("/admin/sync/compras/validate-columns")
+async def admin_sync_compras_validate_columns(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Valida que existan las columnas esperadas en las tablas de sincronización.
+    Compara INFORMATION_SCHEMA.COLUMNS con los campos usados por los MERGE.
+    """
+    user_role = current_user.get("role", "")
+    if user_role not in ["SuperAdministrador", "Administrador"]:
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    
+    import pymssql
+    
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
+    }
+    
+    query = """
+    SELECT 
+        TABLE_NAME,
+        COLUMN_NAME,
+        DATA_TYPE,
+        IS_NULLABLE,
+        ORDINAL_POSITION
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = 'dbo'
+    AND TABLE_NAME IN (
+        'Inventario_Movimientos',
+        'Inventario_MovimientosDetalle',
+        'Compras_Pedidos',
+        'Compras_PedidosDetalle',
+        'Compras_Ordenes',
+        'Compras_OrdenesDetalle',
+        'Compras_Recepciones',
+        'Compras_RecepcionesDetalle'
+    )
+    ORDER BY TABLE_NAME, ORDINAL_POSITION
+    """
+    
+    # Campos esperados por cada tabla (usados en MERGE de sync_service.py)
+    expected_columns = {
+        'Inventario_Movimientos': ['ServerID', 'OrigenSistema', 'DocumentoID', 'Folio', 'TipoMovimiento', 'FechaMovimiento', 'AlmacenOrigenID', 'AlmacenDestinoID', 'Observaciones', 'UsuarioID', 'FechaSync'],
+        'Inventario_MovimientosDetalle': ['MovimientoID', 'ServerID', 'OrigenSistema', 'ProductoID', 'CodigoProducto', 'Cantidad', 'CostoUnitario', 'Lote', 'FechaCaducidad', 'FechaSync'],
+        'Compras_Pedidos': ['ServerID', 'OrigenSistema', 'PedidoID', 'Folio', 'FechaPedido', 'ProveedorID', 'SucursalID', 'Estatus', 'Total', 'FechaSync'],
+        'Compras_PedidosDetalle': ['PedidoID', 'ServerID', 'OrigenSistema', 'ProductoID', 'CodigoProducto', 'Cantidad', 'PrecioUnitario', 'Subtotal', 'FechaSync'],
+        'Compras_Ordenes': ['ServerID', 'OrigenSistema', 'OrdenID', 'Folio', 'FechaOrden', 'ProveedorID', 'SucursalID', 'Estatus', 'Total', 'FechaSync'],
+        'Compras_OrdenesDetalle': ['OrdenID', 'ServerID', 'OrigenSistema', 'ProductoID', 'CodigoProducto', 'Cantidad', 'PrecioUnitario', 'Subtotal', 'FechaSync'],
+        'Compras_Recepciones': ['ServerID', 'OrigenSistema', 'RecepcionID', 'Folio', 'FechaRecepcion', 'ProveedorID', 'OrdenCompraID', 'SucursalID', 'Estatus', 'Total', 'FechaSync'],
+        'Compras_RecepcionesDetalle': ['RecepcionID', 'ServerID', 'OrigenSistema', 'ProductoID', 'CodigoProducto', 'CantidadRecibida', 'PrecioUnitario', 'Subtotal', 'Lote', 'FechaCaducidad', 'FechaSync'],
+    }
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute(query)
+        results = cursor.fetchall()
+        conn.close()
+        
+        # Agrupar columnas por tabla
+        actual_columns = {}
+        for row in results:
+            table = row['TABLE_NAME']
+            if table not in actual_columns:
+                actual_columns[table] = []
+            actual_columns[table].append({
+                'column': row['COLUMN_NAME'],
+                'type': row['DATA_TYPE'],
+                'nullable': row['IS_NULLABLE'],
+                'position': row['ORDINAL_POSITION']
+            })
+        
+        # Validar cada tabla
+        validation = {}
+        all_ok = True
+        
+        for table, expected in expected_columns.items():
+            actual_col_names = [c['column'] for c in actual_columns.get(table, [])]
+            missing = [col for col in expected if col not in actual_col_names]
+            extra = [col for col in actual_col_names if col not in expected]
+            
+            table_ok = len(missing) == 0
+            if not table_ok:
+                all_ok = False
+            
+            validation[table] = {
+                'exists': table in actual_columns,
+                'expected_count': len(expected),
+                'actual_count': len(actual_col_names),
+                'missing_columns': missing,
+                'extra_columns': extra,
+                'status': 'OK' if table_ok else 'MISSING_COLUMNS',
+                'actual_columns': actual_columns.get(table, [])
+            }
+        
+        return {
+            'status': 'OK' if all_ok else 'VALIDATION_FAILED',
+            'all_tables_valid': all_ok,
+            'tables_checked': len(expected_columns),
+            'validation': validation,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error validando columnas: {str(e)}")
 async def admin_sync_compras_logs(
     limit: int = 50,
     current_user: dict = Depends(get_current_user)
