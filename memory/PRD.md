@@ -292,9 +292,18 @@ bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
 
 | Unidad | Conexión | Última Sync | Registros |
 |--------|----------|-------------|-----------|
-| CIENFUEGOS | ✅ pytds | 2026-06-05 | 416 desde 17-may |
-| LA ESTELAR | ✅ pytds | 2026-06-05 | 573 desde 17-may |
-| 130° MERIDA | ✅ pytds | 2026-06-05 | 256 desde 17-may |
+| CIENFUEGOS | ✅ pytds | 2026-06-05 | 405 |
+| LA ESTELAR | ✅ pytds | 2026-06-05 | 550 |
+| 130° MERIDA | ✅ pytds | 2026-06-05 | 231 |
+
+### Correcciones API Propinas v2
+
+| Cambio | Archivo | Estado |
+|--------|---------|--------|
+| Filtro system_type | `sync_propinas_softrestaurant.py` | ✅ |
+| Filtro system_type | `sync_cortes_softrestaurant.py` | ✅ |
+| Filtro system_type | `sync_propinas_mpro.py` | ✅ |
+| Filtro UUID/nombre | `repository_edarsahub.py` | ✅ |
 
 ---
 

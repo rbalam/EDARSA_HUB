@@ -139,8 +139,16 @@ class PropinasTPVRepositoryEdarsahub:
                 params.append(fecha_fin + ' 23:59:59')
             
             if unidad_negocio_id and unidad_negocio_id.upper() != 'TODAS':
-                where_clauses.append("UnidadNegocioID = %s")
-                params.append(unidad_negocio_id)
+                # CORRECCIÓN 2026-06-05: Soportar tanto UUID como nombre de unidad
+                import re
+                uuid_pattern = re.compile(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+                if uuid_pattern.match(unidad_negocio_id):
+                    where_clauses.append("UnidadNegocioID = %s")
+                    params.append(unidad_negocio_id)
+                else:
+                    where_clauses.append("(UPPER(UnidadNegocioNombre) = UPPER(%s) OR UPPER(sucursal_nombre) = UPPER(%s))")
+                    params.append(unidad_negocio_id)
+                    params.append(unidad_negocio_id)
             
             if sistema_origen:
                 where_clauses.append("SistemaOrigen = %s")
@@ -272,8 +280,16 @@ class PropinasTPVRepositoryEdarsahub:
             params.append(fecha_fin + ' 23:59:59')
             
             if unidad_negocio_id and unidad_negocio_id.upper() != 'TODAS':
-                where_clauses.append("UnidadNegocioID = %s")
-                params.append(unidad_negocio_id)
+                # CORRECCIÓN 2026-06-05: Soportar tanto UUID como nombre de unidad
+                import re
+                uuid_pattern = re.compile(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+                if uuid_pattern.match(unidad_negocio_id):
+                    where_clauses.append("UnidadNegocioID = %s")
+                    params.append(unidad_negocio_id)
+                else:
+                    where_clauses.append("(UPPER(UnidadNegocioNombre) = UPPER(%s) OR UPPER(sucursal_nombre) = UPPER(%s))")
+                    params.append(unidad_negocio_id)
+                    params.append(unidad_negocio_id)
             
             if sistema_origen:
                 where_clauses.append("SistemaOrigen = %s")
@@ -415,8 +431,16 @@ class PropinasTPVRepositoryEdarsahub:
             params.append(fecha_fin + ' 23:59:59')
             
             if unidad_negocio_id and unidad_negocio_id.upper() != 'TODAS':
-                where_clauses.append("UnidadNegocioID = %s")
-                params.append(unidad_negocio_id)
+                # CORRECCIÓN 2026-06-05: Soportar tanto UUID como nombre de unidad
+                import re
+                uuid_pattern = re.compile(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+                if uuid_pattern.match(unidad_negocio_id):
+                    where_clauses.append("UnidadNegocioID = %s")
+                    params.append(unidad_negocio_id)
+                else:
+                    where_clauses.append("(UPPER(UnidadNegocioNombre) = UPPER(%s) OR UPPER(sucursal_nombre) = UPPER(%s))")
+                    params.append(unidad_negocio_id)
+                    params.append(unidad_negocio_id)
             
             if sistema_origen:
                 where_clauses.append("SistemaOrigen = %s")
