@@ -709,12 +709,12 @@ def sync_almacenes_from_server(
                 FROM Almacen
             """
         else:
+            # SoftRestaurant Pro - usar nombres de tabla correctos
             query_origen = """
                 SELECT 
-                    CAST(
-(50)) AS codigo_almacen,
+                    CAST(idalmacen AS VARCHAR(50)) AS codigo_almacen,
                     nombre AS nombre_almacen,
-                    'GENERAL' AS tipo_almacen,
+                    ISNULL(tipo, 'GENERAL') AS tipo_almacen,
                     1 AS activo
                 FROM almacen
             """
@@ -803,16 +803,17 @@ def sync_existencias_from_server(
                 WHERE E.Ex_Existencia <> 0
             """
         else:
+            # SoftRestaurant Pro - NO tiene tabla "existencias"
+            # Las existencias se calculan de movtosalmacen
+            # Por ahora retornamos vacío hasta tener el cálculo correcto
             query_origen = """
-                SELECT TOP 5000
-                    CAST(E.idinsumo AS INT) AS producto_id,
-                    CAST(E.
-) AS almacen_id,
-                    ISNULL(E.existencia, 0) AS existencia,
-                    ISNULL(E.costopromedio, 0) AS costo_promedio
-                FROM existencias E
-                WHERE E.existencia <> 0
+                SELECT TOP 0 
+                    0 AS producto_id,
+                    0 AS almacen_id,
+                    0 AS existencia,
+                    0 AS costo_promedio
             """
+            logger.warning(f"[SYNC] SoftRestaurant no tiene tabla 'existencias' directa - se requiere calcular de movtosalmacen")
         
         result_origen = execute_sql_fn(
             server_info['host'], server_info['port'], server_info['database'],
@@ -920,10 +921,9 @@ def sync_movimientos_from_server(
             query_origen = """
                 SELECT TOP 2000
                     m.fecha AS fecha_movimiento,
-                    CAST(m.
-) AS almacen_id,
+                    CAST(m.idalmacen AS INT) AS almacen_id,
                     m.idconcepto AS concepto_origen,
-                    CAST(m.idinsumospresentaciones AS VARCHAR(50)) AS producto_id,
+                    CAST(m.idinsumo AS VARCHAR(50)) AS producto_id,
                     ISNULL(m.cantidad, 0) AS cantidad,
                     ISNULL(m.costo, 0) AS costo,
                     m.idcompra AS compra_id,
@@ -931,6 +931,7 @@ def sync_movimientos_from_server(
                     m.invfisico AS invfisico_id
                 FROM movtosalmacen m
                 WHERE m.fecha >= DATEADD(DAY, -30, GETDATE())
+                  AND m.cancelado = 0
                 ORDER BY m.fecha DESC
             """
         
@@ -1277,17 +1278,18 @@ def sync_recepciones_from_server(
                 WHERE Re_Fecha >= DATEADD(DAY, -{dias_atras}, GETDATE())
             """
         else:
+            # SoftRestaurant - tabla 'compras' (recepciones de mercancía)
+            # NOTA: 'compras' no tiene idalmacen directamente, se debe obtener del movimiento
             query_encabezado = f"""
                 SELECT TOP 500
-                    CAST(c.folio AS VARCHAR(50)) AS folio_recepcion,
+                    CAST(c.idcompra AS VARCHAR(50)) AS folio_recepcion,
                     c.fechaaplicacion AS fecha_recepcion,
                     CAST(c.idproveedor AS INT) AS proveedor_id,
                     ISNULL(c.total, 0) AS total,
-                    CAST(
-) AS almacen_id
+                    1 AS almacen_id
                 FROM compras c
                 WHERE c.fechaaplicacion >= DATEADD(DAY, -{dias_atras}, GETDATE())
-                  AND c.cancelado = 0
+                  AND ISNULL(c.cancelado, 0) = 0
             """
         
         result_enc = execute_sql_fn(
