@@ -71,3 +71,36 @@ def build_system_type_sql_filter(column_name: str, target_type: str) -> str:
 2. **Mantenimiento simplificado**: Agregar una nueva variante solo requiere modificar `SYSTEM_TYPE_MAP`
 3. **Consistencia**: No hay riesgo de olvidar una variante en algún archivo
 4. **Trazabilidad**: Fácil auditar qué valores se usan en cada filtro
+
+---
+
+## Validación Final (2026-06-05)
+
+### Estado del Refactor
+
+| Archivo | Estado | Método |
+|---------|--------|--------|
+| `sync_propinas_softrestaurant.py` | ✅ Refactorizado | `.format(sr_filter=build_system_type_sql_filter(...))` |
+| `sync_cortes_softrestaurant.py` | ✅ Refactorizado | `.format(sr_filter=build_system_type_sql_filter(...))` |
+| `sync_propinas_mpro.py` | ✅ Refactorizado | `.format(mpro_filter=build_system_type_sql_filter(...))` |
+
+### Validación API
+
+| Unidad | Registros | Propinas TPV | Fuente |
+|--------|-----------|--------------|--------|
+| CIENFUEGOS | 405 | $241,766.84 | EDARSAHUB_REAL |
+| LA ESTELAR | 550 | $101,627.24 | EDARSAHUB_REAL |
+
+### Archivos Audit-Only (No Modificados)
+
+| Archivo | Razón |
+|---------|-------|
+| `server.py` | Solo comentarios y imports, no filtros SQL |
+| `api/catalogos_sistemas.py` | CASE WHEN para display, no filtros de query |
+| `sync_compras_job.py` | Ya tiene filtro completo |
+| `detect_nuevos_compras_job.py` | Ya tiene filtro completo |
+
+### Conclusión
+
+El refactor está **COMPLETO** para los archivos de sincronización de propinas/cortes.
+No hay placeholders `{softrestaurant_filter}` sin interpolar.
