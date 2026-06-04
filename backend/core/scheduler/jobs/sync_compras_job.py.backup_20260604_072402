@@ -36,12 +36,6 @@ from core.db import execute_sql_query as _base_execute_sql_query
 from modules.compras.sync_service import (
     sync_inventarios_fisicos_from_server,
     sync_requisiciones_from_server,
-    sync_almacenes_from_server,
-    sync_existencias_from_server,
-    sync_movimientos_from_server,
-    sync_pedidos_from_server,
-    sync_ordenes_from_server,
-    sync_recepciones_from_server,
     log_sync_operation,
     get_edarsahub_connection,
 )
@@ -284,13 +278,7 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
     total_errors = 0
     results = {
         "inventarios": [],
-        "requisiciones": [],
-        "almacenes": [],
-        "existencias": [],
-        "movimientos": [],
-        "pedidos": [],
-        "ordenes": [],
-        "recepciones": []
+        "requisiciones": []
     }
     error_messages = []
     
@@ -428,68 +416,6 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
                 logger.error(f"[SYNC-COMPRAS] Error sincronizando requisiciones {server_name}: {e}")
                 total_errors += 1
                 error_messages.append(f"{server_name} REQ: {str(e)[:100]}")
-            
-            # =================================================================
-            # SQL-FIRST FASE 2: Sincronizaciones adicionales Compras/Inventarios
-            # =================================================================
-            sync_steps = [
-                ("almacenes", sync_almacenes_from_server, "ALMACENES"),
-                ("existencias", sync_existencias_from_server, "EXISTENCIAS"),
-                ("movimientos", sync_movimientos_from_server, "MOVIMIENTOS"),
-                ("pedidos", sync_pedidos_from_server, "PEDIDOS"),
-                ("ordenes", sync_ordenes_from_server, "ORDENES"),
-                ("recepciones", sync_recepciones_from_server, "RECEPCIONES"),
-            ]
-            
-            for step_name, step_func, sync_type_label in sync_steps:
-                try:
-                    sync_start = datetime.now(ZoneInfo("America/Mexico_City"))
-                    logger.info(f"[SYNC-COMPRAS] Ejecutando {step_name} para {server_name}")
-                    
-                    if not dry_run:
-                        step_result = step_func(
-                            server_info, unidad_info, _execute_sql_with_timeout
-                        )
-                    else:
-                        step_result = {"status": "DRY_RUN", "records_synced": 0, "error": None}
-                    
-                    sync_end = datetime.now(ZoneInfo("America/Mexico_City"))
-                    
-                    results[step_name].append({
-                        "server": server_name,
-                        "unidad": unidad_codigo,
-                        "status": step_result.get("status"),
-                        "records": step_result.get("records_synced", 0),
-                        "encabezados": step_result.get("encabezados_synced", 0),
-                        "detalles": step_result.get("detalles_synced", 0),
-                        "error": step_result.get("error")
-                    })
-                    
-                    if step_result.get("status") in ("OK", "DRY_RUN"):
-                        synced = step_result.get("records_synced", 0) + step_result.get("encabezados_synced", 0)
-                        total_processed += synced
-                        logger.info(f"[SYNC-COMPRAS] ✅ {step_name} {server_name}: {synced} registros")
-                    else:
-                        total_errors += 1
-                        error_messages.append(f"{server_name} {step_name.upper()}: {step_result.get('error', 'Error desconocido')}")
-                        logger.warning(f"[SYNC-COMPRAS] ❌ {step_name} {server_name}: {step_result.get('error')}")
-                    
-                    if not dry_run:
-                        log_sync_operation(
-                            unidad_negocio_id=unidad_info['id'],
-                            server_id=server_info['id'],
-                            sync_type=sync_type_label,
-                            sync_start=sync_start,
-                            sync_end=sync_end,
-                            records_synced=step_result.get("records_synced", 0) + step_result.get("encabezados_synced", 0),
-                            status=step_result.get("status", "ERROR"),
-                            error_message=step_result.get("error")
-                        )
-                        
-                except Exception as e:
-                    logger.error(f"[SYNC-COMPRAS] Error en {step_name} {server_name}: {e}")
-                    total_errors += 1
-                    error_messages.append(f"{server_name} {step_name.upper()}: {str(e)[:100]}")
         
         # Determinar status final
         if total_errors == 0:
