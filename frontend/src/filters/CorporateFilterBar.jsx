@@ -7,6 +7,7 @@ export function CorporateFilterBar({ filters = [], title = "Filtros" }) {
     status,
     loading,
     error,
+    transport,
     clearFilters,
     reload
   } = useCorporateFilters();
@@ -58,6 +59,7 @@ export function CorporateFilterBar({ filters = [], title = "Filtros" }) {
           <span>
             Estado: {status?.status || "OK"}
             {status?.remote_connections_required === false ? " | Fuente: EDARSAHUB SQL" : ""}
+            {transport?.used_base_url ? ` | URL: ${transport.used_base_url}` : ""}
           </span>
         )}
 

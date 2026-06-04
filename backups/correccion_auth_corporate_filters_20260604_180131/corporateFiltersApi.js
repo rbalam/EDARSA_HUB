@@ -1,31 +1,18 @@
 const RAW_BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
 /**
- * Corporate Filters API
- *
- * Objetivo:
- * - Usar REACT_APP_BACKEND_URL cuando esté configurado.
- * - Si falla con 502/503/504 o error de red, intentar same-origin.
- * - Enviar Authorization Bearer si hay token.
- * - Enviar cookies httpOnly con credentials: "include".
- * - No usar /api/servers ni /api/sucursales.
+ * En preview/deploy, si REACT_APP_BACKEND_URL causa 502, se intenta fallback same-origin.
+ * Orden:
+ * 1. REACT_APP_BACKEND_URL si existe.
+ * 2. Same-origin relativo "".
  */
-
-function normalizeBaseUrl(url) {
-  if (!url) return "";
-  return String(url).replace(/\/$/, "");
-}
-
 function getCandidateBaseUrls() {
   const urls = [];
 
-  const normalizedEnv = normalizeBaseUrl(RAW_BACKEND_URL);
-
-  if (normalizedEnv) {
-    urls.push(normalizedEnv);
+  if (RAW_BACKEND_URL && RAW_BACKEND_URL.trim()) {
+    urls.push(RAW_BACKEND_URL.replace(/\/$/, ""));
   }
 
-  // fallback same-origin
   urls.push("");
 
   return Array.from(new Set(urls));
@@ -42,28 +29,8 @@ export function getEdarsaToken() {
   );
 }
 
-async function parseResponse(response) {
-  const contentType = response.headers.get("content-type") || "";
-
-  if (contentType.includes("application/json")) {
-    return response.json();
-  }
-
-  const text = await response.text();
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return {
-      success: false,
-      message: text || `HTTP ${response.status}`
-    };
-  }
-}
-
 async function fetchWithFallback(path, options = {}) {
   const token = getEdarsaToken();
-
   const headers = {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -79,38 +46,22 @@ async function fetchWithFallback(path, options = {}) {
       const response = await fetch(url, {
         ...options,
         headers,
-        credentials: "include"
+        credentials: "include"  // Incluir cookies httpOnly para autenticación
       });
 
-      const data = await parseResponse(response);
-
       if (response.ok) {
-        return {
-          ...data,
-          _transport: {
-            url,
-            status: response.status,
-            used_base_url: baseUrl || "same-origin"
-          }
-        };
+        return response.json();
       }
 
-      lastError = new Error(
-        data?.message || data?.detail || `HTTP ${response.status} al llamar ${url}`
-      );
+      lastError = new Error(`HTTP ${response.status} al llamar ${url}`);
 
-      // Si es auth real, no probar más bases. Hay que mostrar el error.
-      if ([401, 403].includes(response.status)) {
-        throw lastError;
-      }
-
-      // Si es 502/503/504, probar siguiente baseUrl.
+      // Si REACT_APP_BACKEND_URL dio 502/503/504, probar same-origin.
       if (![502, 503, 504].includes(response.status)) {
         throw lastError;
       }
     } catch (error) {
       lastError = error;
-      // Probar siguiente baseUrl si existe.
+      // intenta siguiente baseUrl
     }
   }
 
@@ -120,9 +71,7 @@ async function fetchWithFallback(path, options = {}) {
 export async function fetchCorporateFiltersBootstrap(scope) {
   return fetchWithFallback(
     `/api/corporate-filters/bootstrap?scope=${encodeURIComponent(scope)}`,
-    {
-      method: "GET"
-    }
+    { method: "GET" }
   );
 }
 

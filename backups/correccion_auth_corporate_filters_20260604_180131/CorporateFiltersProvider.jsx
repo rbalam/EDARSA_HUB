@@ -23,7 +23,6 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
   const [status, setStatus] = useState({ status: "LOADING" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [transport, setTransport] = useState(null);
 
   const storageKey = `edarsa_filter_state_v1_${scope}`;
 
@@ -52,12 +51,11 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
 
     try {
       const data = await fetchCorporateFiltersBootstrap(scope);
-      const loadedFilters = data.filters || {};
 
+      const loadedFilters = data.filters || {};
       setFilters(loadedFilters);
       setDependencies(data.dependencies || {});
       setStatus(data.status || { status: "OK" });
-      setTransport(data._transport || null);
 
       setSelected(prev => {
         const next = { ...(prev || {}) };
@@ -72,7 +70,7 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
       });
 
       if (!data.success) {
-        setError(data?.status?.message || data?.message || "Error cargando filtros corporativos");
+        setError(data?.status?.message || "Error cargando filtros corporativos");
       }
     } catch (err) {
       setError(err.message);
@@ -81,7 +79,6 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
         remote_connections_required: false,
         message: err.message
       });
-      setTransport(null);
     } finally {
       setLoading(false);
     }
