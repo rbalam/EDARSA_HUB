@@ -7831,6 +7831,119 @@ WHERE OCD.Oc_Folio = '{folio}'
     
     return {"detail": "Sistema no soportado"}
 
+
+@api_router.get("/compras/pedidos-vigentes-sql-first/{server_id}")
+async def obtener_pedidos_vigentes_sql_first(
+    server_id: str, 
+    sucursal: str = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    [SQL-FIRST] Obtiene pedidos/requisiciones vigentes SOLO desde EDARSAHUB SQL.
+    
+    Este endpoint lee EXCLUSIVAMENTE de dbo.Compras_Pedidos y dbo.Compras_PedidosDetalle.
+    NO conecta a SoftRestaurant/MPRO directamente.
+    NO tiene fallback LIVE.
+    
+    Feature flag: COMPRAS_SQL_FIRST_ENABLED
+    """
+    import os
+    import pymssql
+    
+    await get_current_user(credentials)
+    
+    # Verificar feature flag
+    if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
+        return {
+            'status': 'DISABLED',
+            'message': 'Endpoint SQL-First deshabilitado. Use /compras/pedidos-vigentes/{server_id}',
+            'pedidos': []
+        }
+    
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
+    }
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        # Construir filtros
+        filtros = ["p.ServerID = %s", "p.Estatus IN ('PXA', 'PENDIENTE', 'AC', 'RCT')"]
+        params = [server_id]
+        
+        if sucursal:
+            filtros.append("p.SucursalID = %s")
+            params.append(sucursal)
+        
+        where_clause = " AND ".join(filtros)
+        
+        query = f"""
+        SELECT TOP 500
+            p.PedidoID,
+            p.TipoPedido AS tipo,
+            p.FolioPedido AS folio,
+            p.FechaPedido AS fecha,
+            p.Estatus AS estado,
+            p.ProveedorNombre AS proveedor,
+            p.Comentario AS comentario,
+            p.ImporteTotal AS importe,
+            p.OrigenSistema AS origen_sistema,
+            p.SyncStatus AS sync_status,
+            (SELECT COUNT(*) FROM dbo.Compras_PedidosDetalle d WHERE d.PedidoID = p.PedidoID) AS total_productos
+        FROM dbo.Compras_Pedidos p
+        WHERE {where_clause}
+          AND p.FechaPedido >= DATEADD(day, -30, GETDATE())
+        ORDER BY p.FechaPedido DESC
+        """
+        
+        cursor.execute(query, tuple(params))
+        result = cursor.fetchall()
+        conn.close()
+        
+        pedidos = []
+        for r in result:
+            pedidos.append({
+                'tipo': r['tipo'] or 'OC',
+                'folio': str(r['folio'] or ''),
+                'fecha': r['fecha'].isoformat() if hasattr(r['fecha'], 'isoformat') else str(r['fecha'] or ''),
+                'estado': r['estado'] or 'PENDIENTE',
+                'comprador': r['proveedor'] or '',
+                'comentario': r['comentario'] or '',
+                'productos': int(r['total_productos'] or 0),
+                'importe': float(r['importe'] or 0),
+                'source': 'EDARSAHUB_SQL_FIRST',
+                'sync_status': r['sync_status'] or 'SYNCED',
+                'origen_sistema': r['origen_sistema'] or ''
+            })
+        
+        return {
+            'status': 'SQL_FIRST',
+            'source': 'EDARSAHUB',
+            'total': len(pedidos),
+            'pedidos': pedidos
+        }
+        
+    except Exception as e:
+        logging.error(f"[SQL-FIRST] Error obteniendo pedidos vigentes: {str(e)}")
+        return {
+            'status': 'ERROR',
+            'pedidos': [],
+            'error': f"Error SQL-First: {str(e)}"
+        }
+
+
 @api_router.get("/compras/detalle-movimientos/{server_id}")
 async def obtener_detalle_movimientos(server_id: str, codigo_producto: str, almacenes: str, fecha_ini: str, fecha_fin: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Obtiene el detalle de movimientos de un producto para mostrar en popup"""
