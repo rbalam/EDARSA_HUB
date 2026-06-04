@@ -789,11 +789,11 @@ async def admin_sync_compras_force_unlock(
     from zoneinfo import ZoneInfo
     
     EDARSAHUB_CONFIG = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
         'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
     }
     
     try:
@@ -859,11 +859,11 @@ async def admin_sync_compras_table_counts(
     import pymssql
     
     EDARSAHUB_CONFIG = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
         'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
     }
     
     query = """
@@ -926,11 +926,11 @@ async def admin_sync_compras_validate_columns(
     import pymssql
     
     EDARSAHUB_CONFIG = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
         'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
     }
     
     query = """
@@ -1041,11 +1041,11 @@ async def admin_sync_compras_logs(
     import pymssql
     
     EDARSAHUB_CONFIG = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
         'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
     }
     
     try:
@@ -7676,11 +7676,11 @@ async def obtener_inventarios_fisicos_sql_first(
         }
     
     EDARSAHUB_CONFIG = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
         'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
     }
     
     try:
@@ -7976,11 +7976,11 @@ async def obtener_pedidos_vigentes_sql_first(
         }
     
     EDARSAHUB_CONFIG = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
         'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
     }
     
     try:
@@ -8916,11 +8916,11 @@ async def obtener_productos_para_captura_sql_first(
         }
     
     EDARSAHUB_CONFIG = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
         'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
     }
     
     productos = {}
@@ -10205,11 +10205,11 @@ async def obtener_detalle_movimientos_sql_first(
         }
     
     EDARSAHUB_CONFIG = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
         'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
     }
     
     movimientos = []
@@ -11043,11 +11043,11 @@ async def obtener_facturas_proveedor_sql_first(
         }
     
     EDARSAHUB_CONFIG = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
         'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
     }
     
     try:
@@ -11130,11 +11130,11 @@ async def obtener_detalle_factura_sql_first(
         }
     
     EDARSAHUB_CONFIG = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
         'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
     }
     
     try:
@@ -11201,11 +11201,11 @@ async def obtener_detalle_consumos_sql_first(
         }
     
     EDARSAHUB_CONFIG = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
         'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
     }
     
     try:
@@ -11294,11 +11294,11 @@ async def obtener_dashboard_compras_sql_first(
         }
     
     EDARSAHUB_CONFIG = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
         'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
     }
     
     # Fechas por defecto: últimos 30 días
