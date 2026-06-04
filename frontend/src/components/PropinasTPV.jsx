@@ -22,7 +22,7 @@ import { Label } from '../components/ui/label';
 import { Settings, Calculator, RefreshCw, Plus, AlertCircle, Building2, Database } from 'lucide-react';
 
 // Corporate Filters - SQL-FIRST
-import { CorporateFiltersProvider, useCorporateFilters } from '../filters';
+import { CorporateFiltersProvider, CorporateFilterBar, useCorporateFilters } from '../filters';
 
 // Subcomponentes refactorizados
 import {
@@ -476,6 +476,14 @@ function PropinasTPVContent() {
 export default function PropinasTPV() {
   return (
     <CorporateFiltersProvider scope="finanzas.propinas_tpv">
+      <CorporateFilterBar
+        title="Filtros Corporativos"
+        filters={[
+          { key: "empresas", label: "Empresa" },
+          { key: "unidades_negocio", label: "Unidad de Negocio" },
+          { key: "sucursales", label: "Sucursal" }
+        ]}
+      />
       <PropinasTPVContent />
     </CorporateFiltersProvider>
   );
