@@ -10899,6 +10899,367 @@ ORDER BY P.Pr_Descripcion
 
 
 # ============================================================================
+# ENDPOINTS SQL-FIRST - Compras (Sin fallback LIVE)
+# ============================================================================
+
+@api_router.get("/compras/facturas-proveedor-sql-first/{server_id}")
+async def obtener_facturas_proveedor_sql_first(
+    server_id: str,
+    proveedor_id: str = None,
+    fecha_inicio: str = None,
+    fecha_fin: str = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    [SQL-FIRST] Obtiene facturas de proveedor SOLO desde EDARSAHUB SQL.
+    Lee de dbo.Compras_Recepciones (facturas recibidas).
+    Sin fallback LIVE.
+    """
+    import os
+    import pymssql
+    
+    await get_current_user(credentials)
+    
+    if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
+        return {
+            'status': 'DISABLED',
+            'message': 'Endpoint SQL-First deshabilitado. Use /compras/facturas-proveedor/{server_id}',
+            'facturas': []
+        }
+    
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
+    }
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        filtros = ["ServerID = %s"]
+        params = [server_id]
+        
+        if proveedor_id:
+            filtros.append("ProveedorID = %s")
+            params.append(proveedor_id)
+        if fecha_inicio:
+            filtros.append("FechaRecepcion >= %s")
+            params.append(fecha_inicio)
+        if fecha_fin:
+            filtros.append("FechaRecepcion <= %s")
+            params.append(fecha_fin)
+        
+        query = f"""
+        SELECT TOP 500
+            RecepcionID, FolioFactura AS folio, FechaRecepcion AS fecha,
+            ProveedorID, ProveedorNombre AS proveedor,
+            ImporteTotal AS importe, Estatus AS estado,
+            OrigenSistema, SyncStatus
+        FROM dbo.Compras_Recepciones
+        WHERE {" AND ".join(filtros)}
+        ORDER BY FechaRecepcion DESC
+        """
+        
+        cursor.execute(query, tuple(params))
+        result = cursor.fetchall()
+        conn.close()
+        
+        facturas = [{
+            'folio': str(r['folio'] or ''),
+            'fecha': r['fecha'].isoformat() if hasattr(r['fecha'], 'isoformat') else str(r['fecha'] or ''),
+            'proveedor': r['proveedor'] or '',
+            'proveedor_id': str(r['ProveedorID'] or ''),
+            'importe': float(r['importe'] or 0),
+            'estado': r['estado'] or '',
+            'source': 'EDARSAHUB_SQL_FIRST'
+        } for r in result]
+        
+        return {'status': 'SQL_FIRST', 'source': 'EDARSAHUB', 'total': len(facturas), 'facturas': facturas}
+        
+    except Exception as e:
+        logging.error(f"[SQL-FIRST] Error facturas-proveedor: {str(e)}")
+        return {'status': 'ERROR', 'facturas': [], 'error': str(e)}
+
+
+@api_router.get("/compras/detalle-factura-sql-first/{server_id}/{folio}")
+async def obtener_detalle_factura_sql_first(
+    server_id: str,
+    folio: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    [SQL-FIRST] Obtiene detalle de factura SOLO desde EDARSAHUB SQL.
+    Lee de dbo.Compras_RecepcionesDetalle.
+    Sin fallback LIVE.
+    """
+    import os
+    import pymssql
+    
+    await get_current_user(credentials)
+    
+    if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
+        return {
+            'status': 'DISABLED',
+            'message': 'Endpoint SQL-First deshabilitado. Use /compras/detalle-factura/{server_id}/{folio}',
+            'detalle': []
+        }
+    
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
+    }
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        query = """
+        SELECT 
+            d.CodigoProducto AS codigo, d.NombreProducto AS producto,
+            d.Cantidad AS cantidad, d.Unidad AS unidad,
+            d.PrecioUnitario AS precio, d.Importe AS importe
+        FROM dbo.Compras_RecepcionesDetalle d
+        INNER JOIN dbo.Compras_Recepciones r ON r.RecepcionID = d.RecepcionID
+        WHERE r.ServerID = %s AND r.FolioFactura = %s
+        ORDER BY d.NombreProducto
+        """
+        
+        cursor.execute(query, (server_id, folio))
+        result = cursor.fetchall()
+        conn.close()
+        
+        detalle = [{
+            'codigo': str(r['codigo'] or ''),
+            'producto': r['producto'] or '',
+            'cantidad': float(r['cantidad'] or 0),
+            'unidad': r['unidad'] or '',
+            'precio': float(r['precio'] or 0),
+            'importe': float(r['importe'] or 0)
+        } for r in result]
+        
+        return {'status': 'SQL_FIRST', 'source': 'EDARSAHUB', 'folio': folio, 'total': len(detalle), 'detalle': detalle}
+        
+    except Exception as e:
+        logging.error(f"[SQL-FIRST] Error detalle-factura: {str(e)}")
+        return {'status': 'ERROR', 'detalle': [], 'error': str(e)}
+
+
+@api_router.post("/compras/detalle-consumos-sql-first")
+async def obtener_detalle_consumos_sql_first(
+    request: DetalleConsumosRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    [SQL-FIRST] Obtiene detalle de consumos SOLO desde EDARSAHUB SQL.
+    Lee de tablas de consumos sincronizadas.
+    Sin fallback LIVE.
+    """
+    import os
+    import pymssql
+    
+    if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
+        return {
+            'status': 'DISABLED',
+            'message': 'Endpoint SQL-First deshabilitado. Use /compras/detalle-consumos',
+            'consumos': [],
+            'totales': {'total': 0}
+        }
+    
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
+    }
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        codigo_limpio = request.codigo.strip()
+        
+        query = """
+        SELECT TOP 500
+            m.FechaMovimiento AS fecha,
+            m.Folio AS documento,
+            d.Cantidad AS cantidad,
+            'CONSUMO' AS tipo,
+            a.NombreAlmacen AS almacen
+        FROM dbo.Inventario_MovimientosDetalle d
+        INNER JOIN dbo.Inventario_Movimientos m ON m.MovimientoID = d.MovimientoID
+        LEFT JOIN dbo.Inventario_Almacenes a ON a.AlmacenID = m.AlmacenID
+        WHERE m.ServerID = %s
+          AND d.CodigoProducto = %s
+          AND m.TipoMovimiento IN ('VENTA', 'CONSUMO', 'SALIDA')
+          AND m.FechaMovimiento >= %s
+          AND m.FechaMovimiento < DATEADD(DAY, 1, CAST(%s AS DATE))
+        ORDER BY m.FechaMovimiento DESC
+        """
+        
+        cursor.execute(query, (request.server_id, codigo_limpio, request.fecha_inicio, request.fecha_fin))
+        result = cursor.fetchall()
+        conn.close()
+        
+        total_consumo = 0
+        consumos = []
+        for r in result:
+            cantidad = float(r['cantidad'] or 0)
+            total_consumo += cantidad
+            consumos.append({
+                'fecha': r['fecha'].isoformat() if hasattr(r['fecha'], 'isoformat') else str(r['fecha'] or ''),
+                'documento': r['documento'] or '',
+                'cantidad': cantidad,
+                'tipo': r['tipo'] or 'CONSUMO',
+                'almacen': r['almacen'] or ''
+            })
+        
+        return {
+            'status': 'SQL_FIRST',
+            'source': 'EDARSAHUB',
+            'consumos': consumos,
+            'totales': {'total': total_consumo}
+        }
+        
+    except Exception as e:
+        logging.error(f"[SQL-FIRST] Error detalle-consumos: {str(e)}")
+        return {'status': 'ERROR', 'consumos': [], 'totales': {'total': 0}, 'error': str(e)}
+
+
+@api_router.get("/compras/dashboard-sql-first/{server_id}")
+async def obtener_dashboard_compras_sql_first(
+    server_id: str,
+    fecha_inicio: str = None,
+    fecha_fin: str = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    [SQL-FIRST] Obtiene dashboard de compras SOLO desde EDARSAHUB SQL.
+    Agrega datos de Compras_Pedidos, Compras_Recepciones, Inventario_Movimientos.
+    Sin fallback LIVE.
+    """
+    import os
+    import pymssql
+    from datetime import datetime, timedelta
+    
+    await get_current_user(credentials)
+    
+    if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
+        return {
+            'status': 'DISABLED',
+            'message': 'Endpoint SQL-First deshabilitado. Use /compras/dashboard/{server_id}',
+            'dashboard': {}
+        }
+    
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
+    }
+    
+    # Fechas por defecto: últimos 30 días
+    if not fecha_fin:
+        fecha_fin = datetime.now().strftime('%Y-%m-%d')
+    if not fecha_inicio:
+        fecha_inicio = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        # Pedidos pendientes
+        cursor.execute("""
+            SELECT COUNT(*) AS total, ISNULL(SUM(ImporteTotal), 0) AS importe
+            FROM dbo.Compras_Pedidos
+            WHERE ServerID = %s AND Estatus IN ('PXA', 'PENDIENTE')
+              AND FechaPedido >= %s AND FechaPedido <= %s
+        """, (server_id, fecha_inicio, fecha_fin))
+        pedidos = cursor.fetchone()
+        
+        # Recepciones/Facturas
+        cursor.execute("""
+            SELECT COUNT(*) AS total, ISNULL(SUM(ImporteTotal), 0) AS importe
+            FROM dbo.Compras_Recepciones
+            WHERE ServerID = %s
+              AND FechaRecepcion >= %s AND FechaRecepcion <= %s
+        """, (server_id, fecha_inicio, fecha_fin))
+        recepciones = cursor.fetchone()
+        
+        # Movimientos de inventario
+        cursor.execute("""
+            SELECT 
+                SUM(CASE WHEN EsEntrada = 1 THEN 1 ELSE 0 END) AS entradas,
+                SUM(CASE WHEN EsEntrada = 0 THEN 1 ELSE 0 END) AS salidas
+            FROM dbo.Inventario_Movimientos
+            WHERE ServerID = %s
+              AND FechaMovimiento >= %s AND FechaMovimiento <= %s
+        """, (server_id, fecha_inicio, fecha_fin))
+        movimientos = cursor.fetchone()
+        
+        conn.close()
+        
+        return {
+            'status': 'SQL_FIRST',
+            'source': 'EDARSAHUB',
+            'periodo': {'inicio': fecha_inicio, 'fin': fecha_fin},
+            'dashboard': {
+                'pedidos_pendientes': {
+                    'total': int(pedidos['total'] or 0),
+                    'importe': float(pedidos['importe'] or 0)
+                },
+                'recepciones': {
+                    'total': int(recepciones['total'] or 0),
+                    'importe': float(recepciones['importe'] or 0)
+                },
+                'movimientos': {
+                    'entradas': int(movimientos['entradas'] or 0),
+                    'salidas': int(movimientos['salidas'] or 0)
+                }
+            }
+        }
+        
+    except Exception as e:
+        logging.error(f"[SQL-FIRST] Error dashboard-compras: {str(e)}")
+        return {'status': 'ERROR', 'dashboard': {}, 'error': str(e)}
+
+
+# ============================================================================
 # MÓDULO COMERCIAL - Endpoints de Ventas
 # ============================================================================
 
