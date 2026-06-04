@@ -1,8 +1,8 @@
-# EDARSAHUB - PRD (Product Requirements Document)
+# EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-02 (Sesión 4 - Dry-Run Sync_Sales Exitoso)
-**Estado:** En desarrollo activo - Dry-run Sync_Sales completado ✅
+**Última actualización:** 2026-06-04 (Sesión 5 - Integración Sync Job Compras/Inventarios)
+**Estado:** En desarrollo activo - Job Sync integrado con 8 funciones ✅
 
 ---
 
@@ -238,6 +238,41 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 ```bash
 bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
 ```
+
+---
+
+## 11. PENDIENTES BLOQUEANTES
+
+### VALIDAR_COLUMNAS_DESTINO_SYNC_COMPRAS (P0)
+
+**Documento:** `/app/docs/PENDIENTE_VALIDAR_COLUMNAS_DESTINO_SYNC_COMPRAS.md`  
+**Estado:** ⏳ PENDIENTE - Requiere acceso SSMS/Producción
+
+**Tablas a validar:**
+- `Inventario_Movimientos` / `Inventario_MovimientosDetalle`
+- `Compras_Pedidos` / `Compras_PedidosDetalle`
+- `Compras_Ordenes` / `Compras_OrdenesDetalle`
+- `Compras_Recepciones` / `Compras_RecepcionesDetalle`
+
+**Restricciones activas:**
+| Acción | Estado |
+|--------|--------|
+| `dry_run=false` | ❌ BLOQUEADO |
+| `COMPRAS_SQL_FIRST_ENABLED=true` | ❌ BLOQUEADO |
+| Refactor Frontend SQL-First | ❌ BLOQUEADO |
+
+**Criterio de desbloqueo:** Usuario valida columnas en SSMS → Agente verifica compatibilidad → Autoriza ejecución.
+
+---
+
+## 12. SESIÓN 5 - Cambios (2026-06-04)
+
+| Hora | Cambio |
+|------|--------|
+| 07:20 | Auditoría de integración `sync_compras_job.py` |
+| 07:24 | Integración de 6 funciones adicionales al job (almacenes, existencias, movimientos, pedidos, ordenes, recepciones) |
+| 07:27 | Corrección import `Callable` en `sync_service.py` |
+| 07:30 | Documentación pendiente `VALIDAR_COLUMNAS_DESTINO_SYNC_COMPRAS` |
 
 ---
 
