@@ -52,22 +52,9 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
     try {
       const data = await fetchCorporateFiltersBootstrap(scope);
 
-      const loadedFilters = data.filters || {};
-      setFilters(loadedFilters);
+      setFilters(data.filters || {});
       setDependencies(data.dependencies || {});
       setStatus(data.status || { status: "OK" });
-
-      setSelected(prev => {
-        const next = { ...(prev || {}) };
-
-        Object.entries(loadedFilters).forEach(([key, values]) => {
-          if (Array.isArray(values) && values.length === 1 && !next[key]) {
-            next[key] = values[0].id;
-          }
-        });
-
-        return next;
-      });
 
       if (!data.success) {
         setError(data?.status?.message || "Error cargando filtros corporativos");

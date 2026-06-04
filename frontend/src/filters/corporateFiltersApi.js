@@ -18,6 +18,7 @@ export async function fetchCorporateFiltersBootstrap(scope) {
     `${BACKEND_URL}/api/corporate-filters/bootstrap?scope=${encodeURIComponent(scope)}`,
     {
       method: "GET",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -39,6 +40,7 @@ export async function resolveCorporateFilters(scope, selected, requestedFilters)
     `${BACKEND_URL}/api/corporate-filters/resolve`,
     {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {})

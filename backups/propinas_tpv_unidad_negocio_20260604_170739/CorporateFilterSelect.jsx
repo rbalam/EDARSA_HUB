@@ -5,9 +5,7 @@ export function CorporateFilterSelect({
   filterKey,
   label,
   placeholder = "Todos",
-  disabled = false,
-  hideIfSingle = false,
-  lockIfSingle = true
+  disabled = false
 }) {
   const {
     filters,
@@ -17,12 +15,7 @@ export function CorporateFilterSelect({
   } = useCorporateFilters();
 
   const options = filters?.[filterKey] || [];
-  const hasSingleOption = options.length === 1;
-  const value = selected?.[filterKey] || (hasSingleOption ? options[0]?.id : "");
-
-  if (hideIfSingle && hasSingleOption) {
-    return null;
-  }
+  const value = selected?.[filterKey] || "";
 
   return (
     <div className="space-y-1">
@@ -33,12 +26,12 @@ export function CorporateFilterSelect({
       )}
 
       <select
-        className="w-full border rounded px-3 py-2 text-sm bg-white disabled:bg-gray-100 disabled:text-gray-600 disabled:cursor-not-allowed"
+        className="w-full border rounded px-3 py-2 text-sm bg-white"
         value={value}
-        disabled={disabled || loading || (lockIfSingle && hasSingleOption)}
+        disabled={disabled || loading}
         onChange={(event) => setFilterValue(filterKey, event.target.value)}
       >
-        {!hasSingleOption && <option value="">{placeholder}</option>}
+        <option value="">{placeholder}</option>
 
         {options.map((option) => (
           <option key={option.id} value={option.id}>
@@ -46,12 +39,6 @@ export function CorporateFilterSelect({
           </option>
         ))}
       </select>
-
-      {lockIfSingle && hasSingleOption && (
-        <div className="text-[11px] text-gray-500">
-          Única unidad autorizada. Filtro bloqueado.
-        </div>
-      )}
     </div>
   );
 }

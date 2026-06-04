@@ -45,6 +45,8 @@ export function CorporateFilterBar({ filters = [], title = "Filtros" }) {
             label={filter.label}
             placeholder={filter.placeholder || "Todos"}
             disabled={filter.disabled}
+            hideIfSingle={filter.hideIfSingle}
+            lockIfSingle={filter.lockIfSingle !== false}
           />
         ))}
       </div>

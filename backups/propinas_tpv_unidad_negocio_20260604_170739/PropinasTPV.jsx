@@ -479,12 +479,9 @@ export default function PropinasTPV() {
       <CorporateFilterBar
         title="Filtros Corporativos"
         filters={[
-          {
-            key: "unidades_negocio",
-            label: "Unidad de Negocio",
-            placeholder: "Seleccione unidad",
-            lockIfSingle: true
-          }
+          { key: "empresas", label: "Empresa" },
+          { key: "unidades_negocio", label: "Unidad de Negocio" },
+          { key: "sucursales", label: "Sucursal" }
         ]}
       />
       <PropinasTPVContent />
