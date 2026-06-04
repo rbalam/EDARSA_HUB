@@ -401,4 +401,60 @@ __all__ = [
     'log_system_type_check',
     # Cache
     'build_cache_key_with_system_type',
+    # SQL Filters
+    'get_system_type_sql_values',
+    'build_system_type_sql_filter',
 ]
+
+
+# ============================================================================
+# FUNCIONES SQL PARA FILTROS
+# ============================================================================
+
+def get_system_type_sql_values(target_type: str) -> list:
+    """
+    Obtiene lista de valores SQL para filtrar por un tipo de sistema.
+    
+    Args:
+        target_type: Tipo objetivo ('SOFTRESTAURANT' o 'MANAGEMENTPRO')
+        
+    Returns:
+        Lista de strings con todas las variantes conocidas
+        
+    Ejemplo:
+        get_system_type_sql_values('SOFTRESTAURANT')
+        → ['SOFTRESTAURANT', 'SOFTRESTAURANT_PRO', 'SR', 'SOFT', ...]
+    """
+    target_enum = None
+    if target_type.upper() in ['SOFTRESTAURANT', 'SR', 'SOFT']:
+        target_enum = SystemType.SOFTRESTAURANT
+    elif target_type.upper() in ['MANAGEMENTPRO', 'MPRO']:
+        target_enum = SystemType.MANAGEMENTPRO
+    elif target_type.upper() == 'API':
+        target_enum = SystemType.API
+    else:
+        return [target_type]
+    
+    # Obtener todas las variantes que mapean a este tipo
+    values = [k for k, v in SYSTEM_TYPE_MAP.items() if v == target_enum]
+    return sorted(set(values))
+
+
+def build_system_type_sql_filter(column_name: str, target_type: str) -> str:
+    """
+    Construye filtro SQL IN() para system_type usando variantes centralizadas.
+    
+    Args:
+        column_name: Nombre de la columna SQL (ej: 's.system_type')
+        target_type: Tipo objetivo ('SOFTRESTAURANT' o 'MANAGEMENTPRO')
+        
+    Returns:
+        String SQL con filtro IN()
+        
+    Ejemplo:
+        build_system_type_sql_filter('s.system_type', 'SOFTRESTAURANT')
+        → "s.system_type IN ('SOFTRESTAURANT', 'SOFTRESTAURANT_PRO', 'SR', ...)"
+    """
+    values = get_system_type_sql_values(target_type)
+    quoted = ", ".join(f"'{v}'" for v in values)
+    return f"{column_name} IN ({quoted})"

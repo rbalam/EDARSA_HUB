@@ -36,6 +36,8 @@ from pathlib import Path
 
 import pymssql
 
+from core.system_type_utils import build_system_type_sql_filter
+
 # ============================================================================
 # CARGAR VARIABLES DE ENTORNO
 # ============================================================================
@@ -122,8 +124,8 @@ def get_unidad_mpro_connection_info(unidad_nombre: str) -> Optional[Dict]:
                 ON CAST(u.server_id AS NVARCHAR(100)) = CAST(s.id AS NVARCHAR(100))
             WHERE u.nombre = %s
               AND u.activo = 1
-              AND s.system_type IN ('MPRO', 'ManagementPro', 'MANAGEMENTPRO')
-        """, (unidad_nombre,))
+              AND {mpro_filter}
+        """.format(mpro_filter=build_system_type_sql_filter('s.system_type', 'MANAGEMENTPRO')), (unidad_nombre,))
         
         unidad = cursor.fetchone()
         
