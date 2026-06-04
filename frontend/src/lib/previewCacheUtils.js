@@ -80,12 +80,12 @@ export function getEnvironmentInfo() {
 // =============================================================================
 
 const EDARSA_CACHE_KEYS = [
-  // Auth y Token
-  'edarsa_memory_token',
-  'auth_token',
-  'token',
-  'user',
-  'currentUser',
+  // Auth y Token - EXCLUIDOS del cache reset para mantener sesión
+  // 'edarsa_memory_token', // EXCLUIDO: Necesario para API calls
+  // 'auth_token', // EXCLUIDO: Necesario para API calls
+  // 'token', // EXCLUIDO: Necesario para API calls
+  // 'user', // EXCLUIDO: Estado de sesión
+  // 'currentUser', // EXCLUIDO: Estado de sesión
   
   // Selecciones
   'selectedServer',

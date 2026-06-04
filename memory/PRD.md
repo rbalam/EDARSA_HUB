@@ -304,6 +304,28 @@ bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
 | Filtro system_type | `sync_cortes_softrestaurant.py` | ✅ |
 | Filtro system_type | `sync_propinas_mpro.py` | ✅ |
 | Filtro UUID/nombre | `repository_edarsahub.py` | ✅ |
+| Helper SQL centralizado | `core/system_type_utils.py` | ✅ |
+
+---
+
+## 14. SESIÓN 7 - Cambios (2026-06-05)
+
+| Hora | Cambio |
+|------|--------|
+| -- | **P1 VALIDACIÓN VISUAL PROPINAS TPV: COMPLETADA** |
+| -- | **Frontend corregido:** `CorporateFiltersProvider.jsx` - control de montaje con useRef |
+| -- | **Frontend corregido:** `previewCacheUtils.js` - excluir tokens de cache reset |
+| -- | **Resultado:** KPIs muestran datos reales desde EDARSAHUB SQL |
+| -- | **Reporte:** `/app/docs/reports/VALIDACION_VISUAL_PROPINAS_TPV_COMPLETADA.md` |
+
+### Validación Visual Propinas TPV
+
+| KPI | Valor Observado |
+|-----|-----------------|
+| Propinas TPV | $45,393.78 |
+| Comisión (2%) | $907.88 |
+| A Pagar Meseros | $44,485.90 |
+| Fuente | EDARSAHUB_REAL ✅ |
 
 ---
 

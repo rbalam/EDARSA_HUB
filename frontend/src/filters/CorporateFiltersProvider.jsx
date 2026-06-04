@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState
 } from "react";
 
@@ -24,6 +25,17 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [transport, setTransport] = useState(null);
+  
+  // Ref para saber si el componente está montado
+  const isMountedRef = useRef(true);
+  
+  // Cleanup en unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const storageKey = `edarsa_filter_state_v1_${scope}`;
 
@@ -52,6 +64,12 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
 
     try {
       const data = await fetchCorporateFiltersBootstrap(scope);
+      
+      // Verificar si el componente sigue montado antes de actualizar estado
+      if (!isMountedRef.current) {
+        return;
+      }
+      
       const loadedFilters = data.filters || {};
 
       setFilters(loadedFilters);
@@ -75,6 +93,11 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
         setError(data?.status?.message || data?.message || "Error cargando filtros corporativos");
       }
     } catch (err) {
+      // Ignorar errores si el componente se desmontó
+      if (!isMountedRef.current) {
+        return;
+      }
+      
       setError(err.message);
       setStatus({
         status: "SYNC_ERROR",
@@ -83,7 +106,10 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
       });
       setTransport(null);
     } finally {
-      setLoading(false);
+      // Solo cambiar loading si sigue montado
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [scope]);
 
