@@ -7530,6 +7530,120 @@ ORDER BY INV.folio DESC, INV.fecha DESC
     log_compras_error("inventarios-fisicos", server_id, "UNSUPPORTED_SYSTEM_TYPE", f"system_type={system_type}", system_type)
     raise HTTPException(status_code=400, detail=f"Sistema '{system_type}' (normalizado: {normalized}) no soportado")
 
+
+@api_router.get("/compras/inventarios-fisicos-sql-first/{server_id}")
+async def obtener_inventarios_fisicos_sql_first(
+    server_id: str, 
+    sucursal: str = None, 
+    almacen: str = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    [SQL-FIRST] Obtiene inventarios físicos SOLO desde EDARSAHUB SQL.
+    
+    Este endpoint lee EXCLUSIVAMENTE de dbo.Compras_Inventarios_Fisicos_Sync.
+    NO conecta a SoftRestaurant/MPRO directamente.
+    NO tiene fallback LIVE.
+    
+    Feature flag: COMPRAS_SQL_FIRST_ENABLED
+    """
+    import os
+    import pymssql
+    
+    await get_current_user(credentials)
+    
+    # Verificar feature flag
+    if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
+        return {
+            'status': 'DISABLED',
+            'message': 'Endpoint SQL-First deshabilitado. Use /compras/inventarios-fisicos/{server_id}',
+            'inventarios': []
+        }
+    
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
+    }
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        # Construir filtros opcionales
+        filtros = ["ServerID = %s"]
+        params = [server_id]
+        
+        if sucursal:
+            filtros.append("SucursalID = %s")
+            params.append(sucursal)
+        
+        if almacen:
+            filtros.append("AlmacenID = %s")
+            params.append(almacen)
+        
+        where_clause = " AND ".join(filtros)
+        
+        query = f"""
+        SELECT TOP 500
+            FolioInventario AS folio,
+            FechaInventario AS fecha,
+            AlmacenID AS almacen_id,
+            NombreAlmacen AS almacen,
+            SucursalID AS sucursal_id,
+            NombreSucursal AS sucursal,
+            TotalProductos AS productos,
+            SyncStatus AS sync_status,
+            OrigenSistema AS origen_sistema
+        FROM dbo.Compras_Inventarios_Fisicos_Sync
+        WHERE {where_clause}
+        ORDER BY FechaInventario DESC
+        """
+        
+        cursor.execute(query, tuple(params))
+        result = cursor.fetchall()
+        conn.close()
+        
+        inventarios = []
+        for r in result:
+            inventarios.append({
+                'folio': str(r['folio'] or ''),
+                'fecha': r['fecha'].isoformat() if hasattr(r['fecha'], 'isoformat') else str(r['fecha'] or ''),
+                'almacen': r['almacen'] or 'Sin almacén',
+                'almacen_id': str(r['almacen_id'] or ''),
+                'sucursal': r['sucursal'] or '',
+                'sucursal_id': str(r['sucursal_id'] or ''),
+                'productos': int(r['productos'] or 0),
+                'source': 'EDARSAHUB_SQL_FIRST',
+                'sync_status': r['sync_status'] or 'SYNCED',
+                'origen_sistema': r['origen_sistema'] or ''
+            })
+        
+        return {
+            'status': 'SQL_FIRST',
+            'source': 'EDARSAHUB',
+            'total': len(inventarios),
+            'inventarios': inventarios
+        }
+        
+    except Exception as e:
+        logging.error(f"[SQL-FIRST] Error obteniendo inventarios físicos: {str(e)}")
+        return {
+            'status': 'ERROR',
+            'inventarios': [],
+            'error': f"Error SQL-First: {str(e)}"
+        }
+
+
 @api_router.get("/compras/pedidos-vigentes/{server_id}")
 async def obtener_pedidos_vigentes(server_id: str, sucursal: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
