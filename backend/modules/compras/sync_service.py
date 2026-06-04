@@ -653,19 +653,21 @@ def sync_movimientos_from_server(
     unidad_info: Dict,
     execute_sql_fn: Callable,
     fecha_inicio: str = None,
-    fecha_fin: str = None
+    fecha_fin: str = None,
+    dry_run: bool = False
 ) -> Dict[str, Any]:
     """
     Sincroniza movimientos de inventario desde servidor físico a EDARSAHUB.
-    Destino: Inventario_Movimientos, Inventario_MovimientosDetalle
+    Destino: Inventario_Movimientos (encabezado), Inventario_MovimientosDetalle (detalle)
+    Llave MERGE: ServerID + OrigenSistema + Folio (encabezado), + CodigoProducto (detalle)
     """
     server_id = server_info.get('id')
     system_type = server_info.get('system_type', '').upper()
     unidad_codigo = unidad_info.get('codigo', '')
+    unidad_id = unidad_info.get('id', '')
     
-    logger.info(f"[SYNC] Iniciando sync movimientos: {unidad_codigo} ({system_type})")
+    logger.info(f"[SYNC] Iniciando sync movimientos: {unidad_codigo} ({system_type}) dry_run={dry_run}")
     
-    # Por defecto últimos 7 días
     if not fecha_inicio:
         from datetime import datetime, timedelta
         fecha_inicio = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
@@ -674,366 +676,567 @@ def sync_movimientos_from_server(
         fecha_fin = datetime.now().strftime('%Y-%m-%d')
     
     try:
+        # Query encabezados
         if 'MPRO' in system_type or 'MANAGEMENT' in system_type:
-            query_origen = f"""
-                SELECT TOP 2000
+            query_encabezado = f"""
+                SELECT DISTINCT
                     M.Mv_Folio AS folio,
                     M.Mv_Fecha AS fecha,
                     M.Mv_Tipo AS tipo_movimiento,
                     M.Al_Cve_Almacen AS almacen_id,
                     CASE WHEN M.Mv_Tipo IN ('EN', 'CO', 'AJ+') THEN 1 ELSE 0 END AS es_entrada,
+                    M.Mv_Observaciones AS observaciones
+                FROM Movimiento M
+                WHERE M.Mv_Fecha >= '{fecha_inicio}' AND M.Mv_Fecha <= '{fecha_fin}'
+            """
+            query_detalle = f"""
+                SELECT 
+                    M.Mv_Folio AS folio,
+                    D.Md_Renglon AS renglon,
                     D.Ar_Cve_Articulo AS producto_id,
                     A.Ar_Descripcion AS producto_nombre,
                     D.Md_Cantidad AS cantidad,
-                    D.Md_Costo AS costo_unitario
+                    D.Md_Costo AS costo_unitario,
+                    D.Md_Cantidad * D.Md_Costo AS importe
                 FROM Movimiento M
                 INNER JOIN Movimiento_Detalle D ON D.Mv_Folio = M.Mv_Folio
                 INNER JOIN Articulo A ON A.Ar_Cve_Articulo = D.Ar_Cve_Articulo
                 WHERE M.Mv_Fecha >= '{fecha_inicio}' AND M.Mv_Fecha <= '{fecha_fin}'
-                ORDER BY M.Mv_Fecha DESC
             """
         else:
-            query_origen = f"""
-                SELECT TOP 2000
+            query_encabezado = f"""
+                SELECT DISTINCT
                     M.folio,
                     M.fecha,
                     M.concepto AS tipo_movimiento,
                     CAST(M.idalmacen AS VARCHAR) AS almacen_id,
                     M.esentrada AS es_entrada,
+                    M.observaciones
+                FROM movimientos M
+                WHERE M.fecha >= '{fecha_inicio}' AND M.fecha <= '{fecha_fin}'
+            """
+            query_detalle = f"""
+                SELECT 
+                    M.folio,
+                    D.renglon,
                     CAST(D.idinsumo AS VARCHAR) AS producto_id,
                     I.nombre AS producto_nombre,
                     D.cantidad,
-                    D.costo AS costo_unitario
+                    D.costo AS costo_unitario,
+                    D.cantidad * D.costo AS importe
                 FROM movimientos M
                 INNER JOIN movimientosmov D ON D.idmovimiento = M.idmovimiento
                 INNER JOIN insumos I ON I.idinsumo = D.idinsumo
                 WHERE M.fecha >= '{fecha_inicio}' AND M.fecha <= '{fecha_fin}'
-                ORDER BY M.fecha DESC
             """
         
-        result_origen = execute_sql_fn(
+        # Leer encabezados
+        encabezados = execute_sql_fn(
             server_info['host'], server_info['port'], server_info['database'],
-            server_info['username'], server_info['password'], query_origen
+            server_info['username'], server_info['password'], query_encabezado
         )
+        if encabezados is None:
+            return {"success": False, "error": "Timeout encabezados", "encabezados_synced": 0, "detalles_synced": 0}
         
-        if result_origen is None:
-            return {"success": False, "error": "Timeout o error de conexión", "records_synced": 0}
+        # Leer detalles
+        detalles = execute_sql_fn(
+            server_info['host'], server_info['port'], server_info['database'],
+            server_info['username'], server_info['password'], query_detalle
+        )
+        if detalles is None:
+            return {"success": False, "error": "Timeout detalles", "encabezados_synced": 0, "detalles_synced": 0}
+        
+        if dry_run:
+            return {
+                "success": True, "dry_run": True,
+                "encabezados_encontrados": len(encabezados),
+                "detalles_encontrados": len(detalles)
+            }
         
         conn = get_edarsahub_connection()
         cursor = conn.cursor()
         
-        records_synced = 0
-        for row in result_origen:
+        enc_synced = 0
+        for row in encabezados:
             try:
                 cursor.execute("""
-                    INSERT INTO Inventario_MovimientosDetalle
-                    (ServerID, Folio, FechaMovimiento, TipoMovimiento, AlmacenID, EsEntrada,
-                     CodigoProducto, NombreProducto, Cantidad, CostoUnitario, OrigenSistema, FechaSync)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE())
+                    MERGE INTO dbo.Inventario_Movimientos AS target
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS Folio) AS source
+                    ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema AND target.Folio = source.Folio
+                    WHEN MATCHED THEN UPDATE SET
+                        FechaMovimiento = %s, TipoMovimiento = %s, AlmacenID = %s, EsEntrada = %s,
+                        Observaciones = %s, FechaModificacion = GETDATE()
+                    WHEN NOT MATCHED THEN INSERT
+                        (ServerID, UnidadNegocioID, OrigenSistema, Folio, FechaMovimiento, TipoMovimiento, AlmacenID, EsEntrada, Observaciones, SyncStatus, FechaCreacion)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'SYNCED', GETDATE());
                 """, (
-                    server_id, str(row.get('folio') or ''), row.get('fecha'),
-                    row.get('tipo_movimiento', ''), row.get('almacen_id', ''),
-                    1 if row.get('es_entrada') in (1, '1', True) else 0,
-                    row.get('producto_id'), row.get('producto_nombre', ''),
-                    float(row.get('cantidad') or 0), float(row.get('costo_unitario') or 0),
-                    system_type
+                    server_id, system_type, str(row.get('folio') or ''),
+                    row.get('fecha'), row.get('tipo_movimiento', ''), row.get('almacen_id', ''),
+                    1 if row.get('es_entrada') in (1, '1', True) else 0, row.get('observaciones', ''),
+                    server_id, unidad_id, system_type, str(row.get('folio') or ''),
+                    row.get('fecha'), row.get('tipo_movimiento', ''), row.get('almacen_id', ''),
+                    1 if row.get('es_entrada') in (1, '1', True) else 0, row.get('observaciones', '')
                 ))
-                records_synced += 1
+                enc_synced += 1
             except Exception as e:
-                logger.warning(f"[SYNC] Error insertando movimiento {row.get('folio')}: {e}")
+                logger.warning(f"[SYNC] Error MERGE encabezado mov {row.get('folio')}: {e}")
+        
+        det_synced = 0
+        for row in detalles:
+            try:
+                cursor.execute("""
+                    MERGE INTO dbo.Inventario_MovimientosDetalle AS target
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS Folio, %s AS CodigoProducto) AS source
+                    ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema 
+                       AND target.Folio = source.Folio AND target.CodigoProducto = source.CodigoProducto
+                    WHEN MATCHED THEN UPDATE SET
+                        NombreProducto = %s, Cantidad = %s, CostoUnitario = %s, Importe = %s, FechaModificacion = GETDATE()
+                    WHEN NOT MATCHED THEN INSERT
+                        (ServerID, OrigenSistema, Folio, Renglon, CodigoProducto, NombreProducto, Cantidad, CostoUnitario, Importe, FechaSync)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE());
+                """, (
+                    server_id, system_type, str(row.get('folio') or ''), row.get('producto_id'),
+                    row.get('producto_nombre', ''), float(row.get('cantidad') or 0),
+                    float(row.get('costo_unitario') or 0), float(row.get('importe') or 0),
+                    server_id, system_type, str(row.get('folio') or ''), row.get('renglon', 0),
+                    row.get('producto_id'), row.get('producto_nombre', ''),
+                    float(row.get('cantidad') or 0), float(row.get('costo_unitario') or 0), float(row.get('importe') or 0)
+                ))
+                det_synced += 1
+            except Exception as e:
+                logger.warning(f"[SYNC] Error MERGE detalle mov {row.get('folio')}/{row.get('producto_id')}: {e}")
         
         conn.commit()
         conn.close()
         
-        return {"success": True, "records_synced": records_synced}
+        return {"success": True, "encabezados_synced": enc_synced, "detalles_synced": det_synced}
         
     except Exception as e:
         logger.error(f"[SYNC] Error sync movimientos {unidad_codigo}: {e}")
-        return {"success": False, "error": str(e), "records_synced": 0}
+        return {"success": False, "error": str(e), "encabezados_synced": 0, "detalles_synced": 0}
 
 
 def sync_pedidos_from_server(
     server_info: Dict,
     unidad_info: Dict,
     execute_sql_fn: Callable,
-    dias_atras: int = 30
+    dias_atras: int = 30,
+    dry_run: bool = False
 ) -> Dict[str, Any]:
     """
     Sincroniza pedidos de compra desde servidor físico a EDARSAHUB.
-    Destino: Compras_Pedidos, Compras_PedidosDetalle
+    Destino: Compras_Pedidos (encabezado), Compras_PedidosDetalle (detalle)
+    Llave MERGE: ServerID + OrigenSistema + FolioPedido (enc), + CodigoProducto (det)
     """
     server_id = server_info.get('id')
     system_type = server_info.get('system_type', '').upper()
     unidad_codigo = unidad_info.get('codigo', '')
     unidad_id = unidad_info.get('id', '')
     
-    logger.info(f"[SYNC] Iniciando sync pedidos: {unidad_codigo} ({system_type})")
+    logger.info(f"[SYNC] Iniciando sync pedidos: {unidad_codigo} ({system_type}) dry_run={dry_run}")
     
     try:
         if 'MPRO' in system_type or 'MANAGEMENT' in system_type:
-            query_cabecera = f"""
+            query_encabezado = f"""
                 SELECT TOP 500
-                    Pc_Folio AS folio,
-                    Pc_Fecha AS fecha,
-                    Pc_Estatus AS estatus,
-                    Pv_Cve_Proveedor AS proveedor_id,
-                    P.Pv_Nombre AS proveedor_nombre,
-                    Pc_Importe_Total AS importe_total,
-                    Pc_Comentario AS comentario
+                    Pc_Folio AS folio, Pc_Fecha AS fecha, Pc_Estatus AS estatus,
+                    Pv_Cve_Proveedor AS proveedor_id, P.Pv_Nombre AS proveedor_nombre,
+                    Pc_Importe_Total AS importe_total, Pc_Comentario AS comentario
                 FROM Pedido_Compra PC
                 LEFT JOIN Proveedor P ON P.Pv_Cve_Proveedor = PC.Pv_Cve_Proveedor
                 WHERE Pc_Fecha >= DATEADD(day, -{dias_atras}, GETDATE())
-                ORDER BY Pc_Fecha DESC
+            """
+            query_detalle = f"""
+                SELECT 
+                    PC.Pc_Folio AS folio, D.Pd_Renglon AS renglon,
+                    D.Ar_Cve_Articulo AS producto_id, A.Ar_Descripcion AS producto_nombre,
+                    D.Pd_Cantidad AS cantidad, D.Pd_Unidad AS unidad,
+                    D.Pd_Precio AS precio_unitario, D.Pd_Cantidad * D.Pd_Precio AS importe
+                FROM Pedido_Compra PC
+                INNER JOIN Pedido_Compra_Detalle D ON D.Pc_Folio = PC.Pc_Folio
+                INNER JOIN Articulo A ON A.Ar_Cve_Articulo = D.Ar_Cve_Articulo
+                WHERE PC.Pc_Fecha >= DATEADD(day, -{dias_atras}, GETDATE())
             """
         else:
-            query_cabecera = f"""
+            query_encabezado = f"""
                 SELECT TOP 500
-                    idPedidoCompra AS folio,
-                    fecha,
-                    estatus,
-                    CAST(idProveedor AS VARCHAR) AS proveedor_id,
-                    P.razonSocial AS proveedor_nombre,
-                    importe AS importe_total,
-                    comentarios AS comentario
+                    idPedidoCompra AS folio, fecha, estatus,
+                    CAST(idProveedor AS VARCHAR) AS proveedor_id, P.razonSocial AS proveedor_nombre,
+                    importe AS importe_total, comentarios AS comentario
                 FROM pedidoscompra PC
                 LEFT JOIN proveedores P ON P.idProveedor = PC.idProveedor
                 WHERE fecha >= DATEADD(day, -{dias_atras}, GETDATE())
-                ORDER BY fecha DESC
+            """
+            query_detalle = f"""
+                SELECT 
+                    PC.idPedidoCompra AS folio, D.renglon,
+                    CAST(D.idinsumo AS VARCHAR) AS producto_id, I.nombre AS producto_nombre,
+                    D.cantidad, D.unidad, D.precio AS precio_unitario, D.cantidad * D.precio AS importe
+                FROM pedidoscompra PC
+                INNER JOIN pedidoscompramov D ON D.idPedidoCompra = PC.idPedidoCompra
+                INNER JOIN insumos I ON I.idinsumo = D.idinsumo
+                WHERE PC.fecha >= DATEADD(day, -{dias_atras}, GETDATE())
             """
         
-        result_cabecera = execute_sql_fn(
+        encabezados = execute_sql_fn(
             server_info['host'], server_info['port'], server_info['database'],
-            server_info['username'], server_info['password'], query_cabecera
+            server_info['username'], server_info['password'], query_encabezado
         )
+        if encabezados is None:
+            return {"success": False, "error": "Timeout encabezados", "encabezados_synced": 0, "detalles_synced": 0}
         
-        if result_cabecera is None:
-            return {"success": False, "error": "Timeout o error de conexión", "records_synced": 0}
+        detalles = execute_sql_fn(
+            server_info['host'], server_info['port'], server_info['database'],
+            server_info['username'], server_info['password'], query_detalle
+        )
+        if detalles is None:
+            return {"success": False, "error": "Timeout detalles", "encabezados_synced": 0, "detalles_synced": 0}
+        
+        if dry_run:
+            return {"success": True, "dry_run": True, "encabezados_encontrados": len(encabezados), "detalles_encontrados": len(detalles)}
         
         conn = get_edarsahub_connection()
         cursor = conn.cursor()
         
-        records_synced = 0
-        for row in result_cabecera:
+        enc_synced = 0
+        for row in encabezados:
             try:
                 cursor.execute("""
-                    MERGE INTO Compras_Pedidos AS target
-                    USING (SELECT %s AS FolioPedido, %s AS ServerID) AS source 
-                    ON target.FolioPedido = source.FolioPedido AND target.ServerID = source.ServerID
-                    WHEN MATCHED THEN UPDATE SET 
+                    MERGE INTO dbo.Compras_Pedidos AS target
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS FolioPedido) AS source
+                    ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema AND target.FolioPedido = source.FolioPedido
+                    WHEN MATCHED THEN UPDATE SET
                         FechaPedido = %s, Estatus = %s, ProveedorID = %s, ProveedorNombre = %s,
                         ImporteTotal = %s, Comentario = %s, FechaModificacion = GETDATE()
-                    WHEN NOT MATCHED THEN INSERT 
-                        (FolioPedido, ServerID, UnidadNegocioID, FechaPedido, Estatus, ProveedorID, ProveedorNombre,
-                         ImporteTotal, Comentario, OrigenSistema, SyncStatus, FechaCreacion)
+                    WHEN NOT MATCHED THEN INSERT
+                        (ServerID, UnidadNegocioID, OrigenSistema, FolioPedido, FechaPedido, Estatus, ProveedorID, ProveedorNombre, ImporteTotal, Comentario, SyncStatus, FechaCreacion)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'SYNCED', GETDATE());
                 """, (
-                    str(row.get('folio')), server_id,
+                    server_id, system_type, str(row.get('folio')),
                     row.get('fecha'), row.get('estatus', ''), row.get('proveedor_id', ''),
                     row.get('proveedor_nombre', ''), float(row.get('importe_total') or 0), row.get('comentario', ''),
-                    str(row.get('folio')), server_id, unidad_id, row.get('fecha'), row.get('estatus', ''),
-                    row.get('proveedor_id', ''), row.get('proveedor_nombre', ''),
-                    float(row.get('importe_total') or 0), row.get('comentario', ''), system_type
+                    server_id, unidad_id, system_type, str(row.get('folio')),
+                    row.get('fecha'), row.get('estatus', ''), row.get('proveedor_id', ''),
+                    row.get('proveedor_nombre', ''), float(row.get('importe_total') or 0), row.get('comentario', '')
                 ))
-                records_synced += 1
+                enc_synced += 1
             except Exception as e:
-                logger.warning(f"[SYNC] Error insertando pedido {row.get('folio')}: {e}")
+                logger.warning(f"[SYNC] Error MERGE pedido {row.get('folio')}: {e}")
+        
+        det_synced = 0
+        for row in detalles:
+            try:
+                cursor.execute("""
+                    MERGE INTO dbo.Compras_PedidosDetalle AS target
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS FolioPedido, %s AS CodigoProducto) AS source
+                    ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema 
+                       AND target.FolioPedido = source.FolioPedido AND target.CodigoProducto = source.CodigoProducto
+                    WHEN MATCHED THEN UPDATE SET
+                        NombreProducto = %s, Cantidad = %s, Unidad = %s, PrecioUnitario = %s, Importe = %s, FechaModificacion = GETDATE()
+                    WHEN NOT MATCHED THEN INSERT
+                        (ServerID, OrigenSistema, FolioPedido, Renglon, CodigoProducto, NombreProducto, Cantidad, Unidad, PrecioUnitario, Importe, FechaCreacion)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE());
+                """, (
+                    server_id, system_type, str(row.get('folio')), row.get('producto_id'),
+                    row.get('producto_nombre', ''), float(row.get('cantidad') or 0), row.get('unidad', ''),
+                    float(row.get('precio_unitario') or 0), float(row.get('importe') or 0),
+                    server_id, system_type, str(row.get('folio')), row.get('renglon', 0),
+                    row.get('producto_id'), row.get('producto_nombre', ''), float(row.get('cantidad') or 0),
+                    row.get('unidad', ''), float(row.get('precio_unitario') or 0), float(row.get('importe') or 0)
+                ))
+                det_synced += 1
+            except Exception as e:
+                logger.warning(f"[SYNC] Error MERGE detalle pedido {row.get('folio')}/{row.get('producto_id')}: {e}")
         
         conn.commit()
         conn.close()
         
-        return {"success": True, "records_synced": records_synced}
+        return {"success": True, "encabezados_synced": enc_synced, "detalles_synced": det_synced}
         
     except Exception as e:
         logger.error(f"[SYNC] Error sync pedidos {unidad_codigo}: {e}")
-        return {"success": False, "error": str(e), "records_synced": 0}
+        return {"success": False, "error": str(e), "encabezados_synced": 0, "detalles_synced": 0}
 
 
 def sync_ordenes_from_server(
     server_info: Dict,
     unidad_info: Dict,
     execute_sql_fn: Callable,
-    dias_atras: int = 30
+    dias_atras: int = 30,
+    dry_run: bool = False
 ) -> Dict[str, Any]:
     """
     Sincroniza órdenes de compra desde servidor físico a EDARSAHUB.
-    Destino: Compras_Ordenes, Compras_OrdenesDetalle
+    Destino: Compras_Ordenes (encabezado), Compras_OrdenesDetalle (detalle)
+    Llave MERGE: ServerID + OrigenSistema + FolioOrden (enc), + CodigoProducto (det)
     """
     server_id = server_info.get('id')
     system_type = server_info.get('system_type', '').upper()
     unidad_codigo = unidad_info.get('codigo', '')
     unidad_id = unidad_info.get('id', '')
     
-    logger.info(f"[SYNC] Iniciando sync ordenes: {unidad_codigo} ({system_type})")
+    logger.info(f"[SYNC] Iniciando sync ordenes: {unidad_codigo} ({system_type}) dry_run={dry_run}")
     
     try:
         if 'MPRO' in system_type or 'MANAGEMENT' in system_type:
-            query_cabecera = f"""
+            query_encabezado = f"""
                 SELECT TOP 500
-                    Oc_Folio AS folio,
-                    Oc_Fecha AS fecha,
-                    Oc_Estatus AS estatus,
-                    Pv_Cve_Proveedor AS proveedor_id,
-                    P.Pv_Nombre AS proveedor_nombre,
+                    Oc_Folio AS folio, Oc_Fecha AS fecha, Oc_Estatus AS estatus,
+                    Pv_Cve_Proveedor AS proveedor_id, P.Pv_Nombre AS proveedor_nombre,
                     Oc_Importe_Total AS importe_total
                 FROM Orden_Compra OC
                 LEFT JOIN Proveedor P ON P.Pv_Cve_Proveedor = OC.Pv_Cve_Proveedor
                 WHERE Oc_Fecha >= DATEADD(day, -{dias_atras}, GETDATE())
-                ORDER BY Oc_Fecha DESC
+            """
+            query_detalle = f"""
+                SELECT 
+                    OC.Oc_Folio AS folio, D.Od_Renglon AS renglon,
+                    D.Ar_Cve_Articulo AS producto_id, A.Ar_Descripcion AS producto_nombre,
+                    D.Od_Cantidad AS cantidad, D.Od_Unidad AS unidad,
+                    D.Od_Precio AS precio_unitario, D.Od_Cantidad * D.Od_Precio AS importe
+                FROM Orden_Compra OC
+                INNER JOIN Orden_Compra_Detalle D ON D.Oc_Folio = OC.Oc_Folio
+                INNER JOIN Articulo A ON A.Ar_Cve_Articulo = D.Ar_Cve_Articulo
+                WHERE OC.Oc_Fecha >= DATEADD(day, -{dias_atras}, GETDATE())
             """
         else:
-            query_cabecera = f"""
+            query_encabezado = f"""
                 SELECT TOP 500
-                    idOrdenCompra AS folio,
-                    fecha,
-                    estatus,
-                    CAST(idProveedor AS VARCHAR) AS proveedor_id,
-                    P.razonSocial AS proveedor_nombre,
+                    idOrdenCompra AS folio, fecha, estatus,
+                    CAST(idProveedor AS VARCHAR) AS proveedor_id, P.razonSocial AS proveedor_nombre,
                     importe AS importe_total
                 FROM ordenescompra OC
                 LEFT JOIN proveedores P ON P.idProveedor = OC.idProveedor
                 WHERE fecha >= DATEADD(day, -{dias_atras}, GETDATE())
-                ORDER BY fecha DESC
+            """
+            query_detalle = f"""
+                SELECT 
+                    OC.idOrdenCompra AS folio, D.renglon,
+                    CAST(D.idinsumo AS VARCHAR) AS producto_id, I.nombre AS producto_nombre,
+                    D.cantidad, D.unidad, D.precio AS precio_unitario, D.cantidad * D.precio AS importe
+                FROM ordenescompra OC
+                INNER JOIN ordenescompramov D ON D.idOrdenCompra = OC.idOrdenCompra
+                INNER JOIN insumos I ON I.idinsumo = D.idinsumo
+                WHERE OC.fecha >= DATEADD(day, -{dias_atras}, GETDATE())
             """
         
-        result_cabecera = execute_sql_fn(
+        encabezados = execute_sql_fn(
             server_info['host'], server_info['port'], server_info['database'],
-            server_info['username'], server_info['password'], query_cabecera
+            server_info['username'], server_info['password'], query_encabezado
         )
+        if encabezados is None:
+            return {"success": False, "error": "Timeout encabezados", "encabezados_synced": 0, "detalles_synced": 0}
         
-        if result_cabecera is None:
-            return {"success": False, "error": "Timeout o error de conexión", "records_synced": 0}
+        detalles = execute_sql_fn(
+            server_info['host'], server_info['port'], server_info['database'],
+            server_info['username'], server_info['password'], query_detalle
+        )
+        if detalles is None:
+            return {"success": False, "error": "Timeout detalles", "encabezados_synced": 0, "detalles_synced": 0}
+        
+        if dry_run:
+            return {"success": True, "dry_run": True, "encabezados_encontrados": len(encabezados), "detalles_encontrados": len(detalles)}
         
         conn = get_edarsahub_connection()
         cursor = conn.cursor()
         
-        records_synced = 0
-        for row in result_cabecera:
+        enc_synced = 0
+        for row in encabezados:
             try:
                 cursor.execute("""
-                    MERGE INTO Compras_Ordenes AS target
-                    USING (SELECT %s AS FolioOrden, %s AS ServerID) AS source 
-                    ON target.FolioOrden = source.FolioOrden AND target.ServerID = source.ServerID
-                    WHEN MATCHED THEN UPDATE SET 
+                    MERGE INTO dbo.Compras_Ordenes AS target
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS FolioOrden) AS source
+                    ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema AND target.FolioOrden = source.FolioOrden
+                    WHEN MATCHED THEN UPDATE SET
                         FechaOrden = %s, Estatus = %s, ProveedorID = %s, ProveedorNombre = %s,
                         ImporteTotal = %s, FechaModificacion = GETDATE()
-                    WHEN NOT MATCHED THEN INSERT 
-                        (FolioOrden, ServerID, UnidadNegocioID, FechaOrden, Estatus, ProveedorID, ProveedorNombre,
-                         ImporteTotal, OrigenSistema, SyncStatus, FechaCreacion)
+                    WHEN NOT MATCHED THEN INSERT
+                        (ServerID, UnidadNegocioID, OrigenSistema, FolioOrden, FechaOrden, Estatus, ProveedorID, ProveedorNombre, ImporteTotal, SyncStatus, FechaCreacion)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'SYNCED', GETDATE());
                 """, (
-                    str(row.get('folio')), server_id,
+                    server_id, system_type, str(row.get('folio')),
                     row.get('fecha'), row.get('estatus', ''), row.get('proveedor_id', ''),
                     row.get('proveedor_nombre', ''), float(row.get('importe_total') or 0),
-                    str(row.get('folio')), server_id, unidad_id, row.get('fecha'), row.get('estatus', ''),
-                    row.get('proveedor_id', ''), row.get('proveedor_nombre', ''),
-                    float(row.get('importe_total') or 0), system_type
+                    server_id, unidad_id, system_type, str(row.get('folio')),
+                    row.get('fecha'), row.get('estatus', ''), row.get('proveedor_id', ''),
+                    row.get('proveedor_nombre', ''), float(row.get('importe_total') or 0)
                 ))
-                records_synced += 1
+                enc_synced += 1
             except Exception as e:
-                logger.warning(f"[SYNC] Error insertando orden {row.get('folio')}: {e}")
+                logger.warning(f"[SYNC] Error MERGE orden {row.get('folio')}: {e}")
+        
+        det_synced = 0
+        for row in detalles:
+            try:
+                cursor.execute("""
+                    MERGE INTO dbo.Compras_OrdenesDetalle AS target
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS FolioOrden, %s AS CodigoProducto) AS source
+                    ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema 
+                       AND target.FolioOrden = source.FolioOrden AND target.CodigoProducto = source.CodigoProducto
+                    WHEN MATCHED THEN UPDATE SET
+                        NombreProducto = %s, Cantidad = %s, Unidad = %s, PrecioUnitario = %s, Importe = %s, FechaModificacion = GETDATE()
+                    WHEN NOT MATCHED THEN INSERT
+                        (ServerID, OrigenSistema, FolioOrden, Renglon, CodigoProducto, NombreProducto, Cantidad, Unidad, PrecioUnitario, Importe, FechaCreacion)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE());
+                """, (
+                    server_id, system_type, str(row.get('folio')), row.get('producto_id'),
+                    row.get('producto_nombre', ''), float(row.get('cantidad') or 0), row.get('unidad', ''),
+                    float(row.get('precio_unitario') or 0), float(row.get('importe') or 0),
+                    server_id, system_type, str(row.get('folio')), row.get('renglon', 0),
+                    row.get('producto_id'), row.get('producto_nombre', ''), float(row.get('cantidad') or 0),
+                    row.get('unidad', ''), float(row.get('precio_unitario') or 0), float(row.get('importe') or 0)
+                ))
+                det_synced += 1
+            except Exception as e:
+                logger.warning(f"[SYNC] Error MERGE detalle orden {row.get('folio')}/{row.get('producto_id')}: {e}")
         
         conn.commit()
         conn.close()
         
-        return {"success": True, "records_synced": records_synced}
+        return {"success": True, "encabezados_synced": enc_synced, "detalles_synced": det_synced}
         
     except Exception as e:
         logger.error(f"[SYNC] Error sync ordenes {unidad_codigo}: {e}")
-        return {"success": False, "error": str(e), "records_synced": 0}
+        return {"success": False, "error": str(e), "encabezados_synced": 0, "detalles_synced": 0}
 
 
 def sync_recepciones_from_server(
     server_info: Dict,
     unidad_info: Dict,
     execute_sql_fn: Callable,
-    dias_atras: int = 30
+    dias_atras: int = 30,
+    dry_run: bool = False
 ) -> Dict[str, Any]:
     """
     Sincroniza recepciones/facturas de compra desde servidor físico a EDARSAHUB.
-    Destino: Compras_Recepciones, Compras_RecepcionesDetalle
+    Destino: Compras_Recepciones (encabezado), Compras_RecepcionesDetalle (detalle)
+    Llave MERGE: ServerID + OrigenSistema + FolioRecepcion (enc), + CodigoProducto (det)
     """
     server_id = server_info.get('id')
     system_type = server_info.get('system_type', '').upper()
     unidad_codigo = unidad_info.get('codigo', '')
     unidad_id = unidad_info.get('id', '')
     
-    logger.info(f"[SYNC] Iniciando sync recepciones: {unidad_codigo} ({system_type})")
+    logger.info(f"[SYNC] Iniciando sync recepciones: {unidad_codigo} ({system_type}) dry_run={dry_run}")
     
     try:
         if 'MPRO' in system_type or 'MANAGEMENT' in system_type:
-            query_cabecera = f"""
+            query_encabezado = f"""
                 SELECT TOP 500
-                    Re_Folio AS folio,
-                    Re_Factura AS folio_factura,
-                    Re_Fecha AS fecha,
-                    Re_Estatus AS estatus,
-                    Pv_Cve_Proveedor AS proveedor_id,
-                    P.Pv_Nombre AS proveedor_nombre,
-                    Re_Importe_Total AS importe_total
+                    Re_Folio AS folio, Re_Factura AS folio_factura, Re_Fecha AS fecha,
+                    Re_Estatus AS estatus, Pv_Cve_Proveedor AS proveedor_id,
+                    P.Pv_Nombre AS proveedor_nombre, Re_Importe_Total AS importe_total
                 FROM Recepcion R
                 LEFT JOIN Proveedor P ON P.Pv_Cve_Proveedor = R.Pv_Cve_Proveedor
                 WHERE Re_Fecha >= DATEADD(day, -{dias_atras}, GETDATE())
-                ORDER BY Re_Fecha DESC
+            """
+            query_detalle = f"""
+                SELECT 
+                    R.Re_Folio AS folio, D.Rd_Renglon AS renglon,
+                    D.Ar_Cve_Articulo AS producto_id, A.Ar_Descripcion AS producto_nombre,
+                    D.Rd_Cantidad AS cantidad, D.Rd_Unidad AS unidad,
+                    D.Rd_Precio AS precio_unitario, D.Rd_Cantidad * D.Rd_Precio AS importe
+                FROM Recepcion R
+                INNER JOIN Recepcion_Detalle D ON D.Re_Folio = R.Re_Folio
+                INNER JOIN Articulo A ON A.Ar_Cve_Articulo = D.Ar_Cve_Articulo
+                WHERE R.Re_Fecha >= DATEADD(day, -{dias_atras}, GETDATE())
             """
         else:
-            query_cabecera = f"""
+            query_encabezado = f"""
                 SELECT TOP 500
-                    idRecepcion AS folio,
-                    factura AS folio_factura,
-                    fecha,
-                    estatus,
-                    CAST(idProveedor AS VARCHAR) AS proveedor_id,
-                    P.razonSocial AS proveedor_nombre,
-                    importe AS importe_total
+                    idRecepcion AS folio, factura AS folio_factura, fecha,
+                    estatus, CAST(idProveedor AS VARCHAR) AS proveedor_id,
+                    P.razonSocial AS proveedor_nombre, importe AS importe_total
                 FROM recepciones R
                 LEFT JOIN proveedores P ON P.idProveedor = R.idProveedor
                 WHERE fecha >= DATEADD(day, -{dias_atras}, GETDATE())
-                ORDER BY fecha DESC
+            """
+            query_detalle = f"""
+                SELECT 
+                    R.idRecepcion AS folio, D.renglon,
+                    CAST(D.idinsumo AS VARCHAR) AS producto_id, I.nombre AS producto_nombre,
+                    D.cantidad, D.unidad, D.precio AS precio_unitario, D.cantidad * D.precio AS importe
+                FROM recepciones R
+                INNER JOIN recepcionesmov D ON D.idRecepcion = R.idRecepcion
+                INNER JOIN insumos I ON I.idinsumo = D.idinsumo
+                WHERE R.fecha >= DATEADD(day, -{dias_atras}, GETDATE())
             """
         
-        result_cabecera = execute_sql_fn(
+        encabezados = execute_sql_fn(
             server_info['host'], server_info['port'], server_info['database'],
-            server_info['username'], server_info['password'], query_cabecera
+            server_info['username'], server_info['password'], query_encabezado
         )
+        if encabezados is None:
+            return {"success": False, "error": "Timeout encabezados", "encabezados_synced": 0, "detalles_synced": 0}
         
-        if result_cabecera is None:
-            return {"success": False, "error": "Timeout o error de conexión", "records_synced": 0}
+        detalles = execute_sql_fn(
+            server_info['host'], server_info['port'], server_info['database'],
+            server_info['username'], server_info['password'], query_detalle
+        )
+        if detalles is None:
+            return {"success": False, "error": "Timeout detalles", "encabezados_synced": 0, "detalles_synced": 0}
+        
+        if dry_run:
+            return {"success": True, "dry_run": True, "encabezados_encontrados": len(encabezados), "detalles_encontrados": len(detalles)}
         
         conn = get_edarsahub_connection()
         cursor = conn.cursor()
         
-        records_synced = 0
-        for row in result_cabecera:
+        enc_synced = 0
+        for row in encabezados:
             try:
                 cursor.execute("""
-                    MERGE INTO Compras_Recepciones AS target
-                    USING (SELECT %s AS FolioRecepcion, %s AS ServerID) AS source 
-                    ON target.FolioRecepcion = source.FolioRecepcion AND target.ServerID = source.ServerID
-                    WHEN MATCHED THEN UPDATE SET 
+                    MERGE INTO dbo.Compras_Recepciones AS target
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS FolioRecepcion) AS source
+                    ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema AND target.FolioRecepcion = source.FolioRecepcion
+                    WHEN MATCHED THEN UPDATE SET
                         FolioFactura = %s, FechaRecepcion = %s, Estatus = %s, ProveedorID = %s, ProveedorNombre = %s,
                         ImporteTotal = %s, FechaModificacion = GETDATE()
-                    WHEN NOT MATCHED THEN INSERT 
-                        (FolioRecepcion, FolioFactura, ServerID, UnidadNegocioID, FechaRecepcion, Estatus, 
-                         ProveedorID, ProveedorNombre, ImporteTotal, OrigenSistema, SyncStatus, FechaCreacion)
+                    WHEN NOT MATCHED THEN INSERT
+                        (ServerID, UnidadNegocioID, OrigenSistema, FolioRecepcion, FolioFactura, FechaRecepcion, Estatus, ProveedorID, ProveedorNombre, ImporteTotal, SyncStatus, FechaCreacion)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'SYNCED', GETDATE());
                 """, (
-                    str(row.get('folio')), server_id,
+                    server_id, system_type, str(row.get('folio')),
                     row.get('folio_factura', ''), row.get('fecha'), row.get('estatus', ''),
-                    row.get('proveedor_id', ''), row.get('proveedor_nombre', ''),
-                    float(row.get('importe_total') or 0),
-                    str(row.get('folio')), row.get('folio_factura', ''), server_id, unidad_id,
-                    row.get('fecha'), row.get('estatus', ''), row.get('proveedor_id', ''),
-                    row.get('proveedor_nombre', ''), float(row.get('importe_total') or 0), system_type
+                    row.get('proveedor_id', ''), row.get('proveedor_nombre', ''), float(row.get('importe_total') or 0),
+                    server_id, unidad_id, system_type, str(row.get('folio')),
+                    row.get('folio_factura', ''), row.get('fecha'), row.get('estatus', ''),
+                    row.get('proveedor_id', ''), row.get('proveedor_nombre', ''), float(row.get('importe_total') or 0)
                 ))
-                records_synced += 1
+                enc_synced += 1
             except Exception as e:
-                logger.warning(f"[SYNC] Error insertando recepcion {row.get('folio')}: {e}")
+                logger.warning(f"[SYNC] Error MERGE recepcion {row.get('folio')}: {e}")
+        
+        det_synced = 0
+        for row in detalles:
+            try:
+                cursor.execute("""
+                    MERGE INTO dbo.Compras_RecepcionesDetalle AS target
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS FolioRecepcion, %s AS CodigoProducto) AS source
+                    ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema 
+                       AND target.FolioRecepcion = source.FolioRecepcion AND target.CodigoProducto = source.CodigoProducto
+                    WHEN MATCHED THEN UPDATE SET
+                        NombreProducto = %s, Cantidad = %s, Unidad = %s, PrecioUnitario = %s, Importe = %s, FechaModificacion = GETDATE()
+                    WHEN NOT MATCHED THEN INSERT
+                        (ServerID, OrigenSistema, FolioRecepcion, Renglon, CodigoProducto, NombreProducto, Cantidad, Unidad, PrecioUnitario, Importe, FechaCreacion)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE());
+                """, (
+                    server_id, system_type, str(row.get('folio')), row.get('producto_id'),
+                    row.get('producto_nombre', ''), float(row.get('cantidad') or 0), row.get('unidad', ''),
+                    float(row.get('precio_unitario') or 0), float(row.get('importe') or 0),
+                    server_id, system_type, str(row.get('folio')), row.get('renglon', 0),
+                    row.get('producto_id'), row.get('producto_nombre', ''), float(row.get('cantidad') or 0),
+                    row.get('unidad', ''), float(row.get('precio_unitario') or 0), float(row.get('importe') or 0)
+                ))
+                det_synced += 1
+            except Exception as e:
+                logger.warning(f"[SYNC] Error MERGE detalle recepcion {row.get('folio')}/{row.get('producto_id')}: {e}")
         
         conn.commit()
         conn.close()
         
-        return {"success": True, "records_synced": records_synced}
+        return {"success": True, "encabezados_synced": enc_synced, "detalles_synced": det_synced}
         
     except Exception as e:
         logger.error(f"[SYNC] Error sync recepciones {unidad_codigo}: {e}")
-        return {"success": False, "error": str(e), "records_synced": 0}
+        return {"success": False, "error": str(e), "encabezados_synced": 0, "detalles_synced": 0}
