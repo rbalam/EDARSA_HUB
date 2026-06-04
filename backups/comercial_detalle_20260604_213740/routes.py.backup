@@ -64,7 +64,7 @@ ENDPOINTS PENDIENTES (0 en server.py):
 """
 
 from fastapi import APIRouter, Query, Depends, HTTPException
-from typing import Optional, Dict, List
+from typing import Dict, List
 import logging
 import calendar
 from datetime import datetime, timedelta, timezone
@@ -3244,8 +3244,6 @@ async def comercial_detalle_movimientos(
     sucursal: str = Query(default=""),
     tipo: str = Query(default="ventas"),  # ventas, pax, cheques
     periodo: str = Query(default="mes"),  # dia, semana, mes
-    meses: str = Query(default=""),  # FIX 2026-06-04: Soporte para filtro de meses
-    anios: str = Query(default=""),  # FIX 2026-06-04: Soporte para filtro de años
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=50, le=200),
     current_user: Dict = Depends(get_current_user)
@@ -3253,12 +3251,8 @@ async def comercial_detalle_movimientos(
     """
     Detalle de movimientos para drill-down en KPIs.
     
-    FIX 2026-06-04: MIGRADO A SQL-FIRST
-    Este endpoint ahora lee de Comercial_KPIs_Diarios_v2 en EDARSAHUB SQL.
-    Ya no usa conexiones LIVE a SoftRestaurant/MPRO.
-    
-    Columnas reales de la tabla:
-    - fecha_operacion, ventas_total, tickets_total, pax_total, sistema_origen
+    FASE A-P0 (2026-05-26): GUARD RAIL LIVE
+    Este endpoint requiere conexión LIVE. Bloqueado hasta migrar a Sync_Movimientos_Detalle.
     """
     server = await get_server_by_id(server_id)
     if not server:
@@ -3267,153 +3261,236 @@ async def comercial_detalle_movimientos(
     # FASE 6-8: Validación centralizada de acceso
     await validate_server_access_rbac(current_user, server_id)
     
-    # FIX 2026-06-04: MODAL DETALLE DESDE EDARSAHUB SQL, NO LIVE
-    try:
-        from .service import _query_edarsahub_tablero, _obtener_unidad_ids_desde_servidor
-
-        hoy = datetime.now()
-
-        # Parsear meses y años si vienen como parámetros
-        if anios:
-            lista_anios = [int(a.strip()) for a in anios.split(',') if a.strip()]
-        else:
-            lista_anios = [hoy.year]
-
-        if meses:
-            lista_meses = [m.strip() for m in meses.split(',') if m.strip()]
-        else:
-            lista_meses = [str(hoy.month).zfill(2)]
-
-        year = max(lista_anios)
-        mes_min = min(int(m) for m in lista_meses)
-        mes_max = max(int(m) for m in lista_meses)
-
-        fecha_ini = f"{year}-{mes_min:02d}-01"
-
-        es_mes_actual = year == hoy.year and mes_max == hoy.month
-        if es_mes_actual:
-            fecha_fin = (hoy - timedelta(days=1)).strftime("%Y-%m-%d")
-        else:
-            ultimo_dia = calendar.monthrange(year, mes_max)[1]
-            fecha_fin = f"{year}-{mes_max:02d}-{ultimo_dia:02d}"
-
-        offset = (page - 1) * limit
-        sucursal_sql = sucursal or "DEFAULT"
-
-        # Obtener IDs de unidad de negocio asociados al servidor
-        unidad_ids = []
-        if server.get("unidad_negocio_id"):
-            unidad_ids.append(server.get("unidad_negocio_id"))
-        if server.get("codigo_unidad"):
-            unidad_ids.append(server.get("codigo_unidad"))
-        unidad_ids_extra = _obtener_unidad_ids_desde_servidor(server_id) or []
-        unidad_ids.extend(unidad_ids_extra)
-
-        unidad_ids = list(dict.fromkeys([u for u in unidad_ids if u]))
-
-        # Construir filtro principal
-        if unidad_ids:
-            filtro_unidades = ",".join([f"'{u}'" for u in unidad_ids])
-            filtro_principal = f"(unidad_negocio_id IN ({filtro_unidades}) OR server_id = '{server_id}')"
-        else:
-            filtro_principal = f"server_id = '{server_id}'"
-
-        # Query para obtener totales (columnas reales de Comercial_KPIs_Diarios_v2)
-        query_total = f"""
-        SELECT
-            ISNULL(SUM(ventas_total),0) AS venta_total,
-            ISNULL(SUM(tickets_total),0) AS cheques_total,
-            ISNULL(SUM(pax_total),0) AS pax_total,
-            COUNT(*) AS total
-        FROM Comercial_KPIs_Diarios_v2
-        WHERE {filtro_principal}
-          AND fecha_operacion >= '{fecha_ini}'
-          AND fecha_operacion <= '{fecha_fin}'
-          AND ventas_total > 0
-          AND ISNULL(activo,1) = 1
-        """
-
-        resumen_rows = _query_edarsahub_tablero(query_total)
-        resumen = resumen_rows[0] if resumen_rows else {}
-
-        # Query para detalle por día (columnas reales)
-        query_detalle = f"""
-        SELECT
-            fecha_operacion,
-            ventas_total,
-            tickets_total,
-            pax_total,
-            ticket_promedio,
-            sucursal_nombre,
-            unidad_negocio_nombre,
-            sistema_origen
-        FROM Comercial_KPIs_Diarios_v2
-        WHERE {filtro_principal}
-          AND fecha_operacion >= '{fecha_ini}'
-          AND fecha_operacion <= '{fecha_fin}'
-          AND ventas_total > 0
-          AND ISNULL(activo,1) = 1
-        ORDER BY fecha_operacion DESC
-        OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
-        """
-
-        rows = _query_edarsahub_tablero(query_detalle)
-
-        movimientos = []
-        for r in rows or []:
-            fecha = r.get("fecha_operacion")
-            fecha_str = fecha.strftime("%Y-%m-%d") if hasattr(fecha, "strftime") else str(fecha)
-            movimientos.append({
-                "folio": f"DIA-{fecha_str}",
-                "fecha": fecha_str,
-                "importe": float(r.get("ventas_total") or 0),
-                "pax": int(r.get("pax_total") or 0),
-                "descuento": 0,
-                "propina": 0,
-                "tipo_servicio": r.get("sistema_origen") or "EDARSAHUB",
-                "num_productos": int(r.get("tickets_total") or 0)
-            })
-
-        total = int(resumen.get("total") or 0)
-
-        logging.info(
-            "[DETALLE_VENTAS_EDARSAHUB] server_id=%s sucursal=%s fechas=%s/%s rows=%s venta=%s cheques=%s pax=%s",
-            server_id, sucursal_sql, fecha_ini, fecha_fin, len(movimientos),
-            resumen.get("venta_total"), resumen.get("cheques_total"), resumen.get("pax_total")
-        )
-
+    # FASE A-P0: GUARD RAIL LIVE
+    guard_result = check_live_guard_rail('/comercial/detalle-movimientos', server_id)
+    if guard_result:
         return {
-            "source_status": "SUCCESS" if total > 0 else "NO_DATA",
-            "source_message": "Detalle consultado desde EDARSAHUB SQL",
-            "source": "EDARSAHUB_SQL_V2",
-            "movimientos": movimientos,
-            "items": movimientos,  # Compatibilidad con guard rail legacy
-            "total": total,
-            "page": page,
-            "limit": limit,
-            "pages": (total + limit - 1) // limit if total > 0 else 0,
-            "periodo": {"inicio": fecha_ini, "fin": fecha_fin},
-            "servidor": server.get("name"),
-            "resumen": {
-                "venta_total": float(resumen.get("venta_total") or 0),
-                "cheques_total": int(resumen.get("cheques_total") or 0),
-                "pax_total": int(resumen.get("pax_total") or 0)
-            }
-        }
-
-    except Exception as e:
-        logging.error("[DETALLE_VENTAS_EDARSAHUB] Error consultando EDARSAHUB SQL: %s", e)
-        return {
-            "source_status": "ERROR",
-            "source_message": str(e),
-            "source": "EDARSAHUB_SQL_V2",
-            "movimientos": [],
+            "source_status": guard_result['source_status'],
+            "source_message": guard_result['source_message'],
             "items": [],
             "total": 0,
             "page": page,
-            "limit": limit,
-            "pages": 0
+            "limit": limit
         }
+    
+    # CÓDIGO LEGACY (solo se ejecuta si ENABLE_LIVE_GUARD_RAIL = False)
+    try:
+        hoy = datetime.now()
+        
+        # Calcular fechas según período
+        if periodo == "dia":
+            fecha_ini = hoy.strftime('%Y-%m-%d')
+            fecha_fin = hoy.strftime('%Y-%m-%d')
+        elif periodo == "semana":
+            inicio_semana = hoy - timedelta(days=hoy.weekday())
+            fecha_ini = inicio_semana.strftime('%Y-%m-%d')
+            fecha_fin = hoy.strftime('%Y-%m-%d')
+        else:  # mes
+            fecha_ini = hoy.replace(day=1).strftime('%Y-%m-%d')
+            fecha_fin = hoy.strftime('%Y-%m-%d')
+        
+        offset = (page - 1) * limit
+        
+        # FASE 3A.2: Migrado a helper centralizado
+        if is_softrestaurant_system(server.get('system_type')):
+            # Formato de fecha para SoftRestaurant (YYYYMMDD)
+            f_ini = fecha_ini.replace('-', '')
+            f_fin = fecha_fin.replace('-', '')
+            
+            # Verificar si la tabla cheques tiene columna 'propina'
+            has_propina = check_column_exists(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], 'cheques', 'propina'
+            )
+            
+            # Query para obtener detalle de cheques - Sin columnas opcionales que pueden no existir
+            # NOTA: importe excluye propinas SI existe la columna
+            if has_propina:
+                query_detalle = f"""
+SELECT 
+    cheques.folio,
+    turnos.apertura as fecha,
+    cheques.total - ISNULL(cheques.propina, 0) as importe,
+    ISNULL(cheques.nopersonas, 0) as pax,
+    ISNULL(cheques.descuento, 0) as descuento,
+    ISNULL(cheques.propina, 0) as propina,
+    'Comedor' as tipo_servicio
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE CONVERT(varchar, turnos.apertura, 112) >= '{f_ini}'
+  AND CONVERT(varchar, turnos.apertura, 112) <= '{f_fin}'
+  AND cheques.cancelado = 0
+  AND cheques.total > 0
+ORDER BY turnos.apertura DESC
+OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+"""
+            else:
+                # Sin columna propina
+                query_detalle = f"""
+SELECT 
+    cheques.folio,
+    turnos.apertura as fecha,
+    cheques.total as importe,
+    ISNULL(cheques.nopersonas, 0) as pax,
+    ISNULL(cheques.descuento, 0) as descuento,
+    0 as propina,
+    'Comedor' as tipo_servicio
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE CONVERT(varchar, turnos.apertura, 112) >= '{f_ini}'
+  AND CONVERT(varchar, turnos.apertura, 112) <= '{f_fin}'
+  AND cheques.cancelado = 0
+  AND cheques.total > 0
+ORDER BY turnos.apertura DESC
+OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+"""
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_detalle
+            )
+            
+            # Query para contar total
+            query_total = f"""
+SELECT COUNT(*) as total
+FROM cheques
+INNER JOIN turnos ON turnos.idturno = cheques.idturno
+WHERE CONVERT(varchar, turnos.apertura, 112) >= '{f_ini}'
+  AND CONVERT(varchar, turnos.apertura, 112) <= '{f_fin}'
+  AND cheques.cancelado = 0
+  AND cheques.total > 0
+"""
+            result_total = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_total
+            )
+            total = int(result_total[0]['total']) if result_total else 0
+            
+            movimientos = []
+            for row in result or []:
+                fecha_val = row.get('fecha')
+                fecha_str = fecha_val.strftime('%Y-%m-%d %H:%M') if hasattr(fecha_val, 'strftime') else str(fecha_val) if fecha_val else ''
+                movimientos.append({
+                    "folio": str(row.get('folio', '')),
+                    "fecha": fecha_str,
+                    "importe": float(row.get('importe') or 0),
+                    "pax": int(row.get('pax') or 0),
+                    "descuento": float(row.get('descuento') or 0),
+                    "propina": float(row.get('propina') or 0),
+                    "tipo_servicio": row.get('tipo_servicio', 'Comedor'),
+                    "num_productos": 0
+                })
+            
+            return {
+                "movimientos": movimientos,
+                "total": total,
+                "page": page,
+                "limit": limit,
+                "pages": (total + limit - 1) // limit,
+                "periodo": {"inicio": fecha_ini, "fin": fecha_fin},
+                "servidor": server['name']
+            }
+        
+        # FASE 3A.2: Migrado a helper centralizado (eliminada comparación redundante)
+        elif is_mpro_system(server.get('system_type')):
+            # Formato de fecha para MPRO (YYYYMMDD)
+            f_ini = fecha_ini.replace('-', '')
+            f_fin = fecha_fin.replace('-', '')
+            
+            # Filtro de sucursal si viene - no filtrar si es "default" o nombre del servidor
+            sucursal_filter = ""
+            nombre_servidor = server.get('name', '').lower()
+            sucursal_lower = (sucursal or '').lower()
+            skip_sucursal_filter = (
+                not sucursal or 
+                sucursal_lower == 'default' or 
+                sucursal_lower == nombre_servidor or
+                sucursal_lower == 'managmentpro' or
+                sucursal_lower == 'mpro'
+            )
+            
+            if sucursal and not skip_sucursal_filter:
+                # Detectar si es un código de sucursal (4 dígitos como "0021") o un nombre
+                if len(sucursal) == 4 and sucursal.isdigit():
+                    # Es un código de sucursal - buscar por Sc_Cve_Sucursal
+                    sucursal_filter = f"AND VE.Sc_Cve_Sucursal = '{sucursal}'"
+                else:
+                    # Es un nombre - buscar por descripción parcial
+                    sucursal_filter = f"AND S.Sc_Descripcion LIKE '%{sucursal}%'"
+            
+            logging.info(f"Detalle MPRO: f_ini={f_ini}, f_fin={f_fin}, sucursal={sucursal}, skip_filter={skip_sucursal_filter}, sucursal_filter={sucursal_filter}")
+            
+            # Query para MPRO - usa Venta_Encabezado con Comanda para PAX
+            query_detalle = f"""
+SELECT 
+    VE.Vn_Folio as folio,
+    VE.Vn_Fecha as fecha,
+    VE.Vn_Precio_Neto_Importe as importe,
+    ISNULL(C.Co_Personas, 0) as pax,
+    'Comedor' as tipo_servicio
+FROM Venta_Encabezado VE
+LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+WHERE VE.Vn_Fecha >= CONVERT(datetime, '{f_ini} 00:00:00', 120)
+  AND VE.Vn_Fecha <= CONVERT(datetime, '{f_fin} 23:59:59', 120)
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+  AND VE.Vn_Precio_Neto_Importe > 0
+  {sucursal_filter}
+ORDER BY VE.Vn_Fecha DESC
+OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+"""
+            logging.info(f"Query MPRO detalle: {query_detalle[:200]}...")
+            result = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_detalle
+            )
+            
+            # Query para contar total
+            query_total = f"""
+SELECT COUNT(*) as total
+FROM Venta_Encabezado VE
+LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
+WHERE VE.Vn_Fecha >= CONVERT(datetime, '{f_ini} 00:00:00', 120)
+  AND VE.Vn_Fecha <= CONVERT(datetime, '{f_fin} 23:59:59', 120)
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
+  AND VE.Vn_Precio_Neto_Importe > 0
+  {sucursal_filter}
+"""
+            result_total = execute_sql_query(
+                server['host'], server['port'], server['database'],
+                server['username'], server['password'], query_total
+            )
+            total = int(result_total[0]['total']) if result_total else 0
+            
+            movimientos = []
+            for row in result or []:
+                fecha_val = row.get('fecha')
+                fecha_str = fecha_val.strftime('%Y-%m-%dT%H:%M:%S') if hasattr(fecha_val, 'strftime') else str(fecha_val) if fecha_val else ''
+                movimientos.append({
+                    "folio": str(row.get('folio', '')),
+                    "fecha": fecha_str,
+                    "importe": float(row.get('importe') or 0),
+                    "pax": int(row.get('pax') or 0),
+                    "descuento": 0,
+                    "propina": 0,
+                    "tipo_servicio": row.get('tipo_servicio', 'Comedor'),
+                    "num_productos": 0
+                })
+            
+            return {
+                "movimientos": movimientos,
+                "total": total,
+                "page": page,
+                "limit": limit,
+                "pages": (total + limit - 1) // limit if total > 0 else 0,
+                "periodo": {"inicio": fecha_ini, "fin": fecha_fin},
+                "servidor": server['name']
+            }
+        
+        return {"movimientos": [], "total": 0, "page": 1, "limit": limit, "pages": 0}
+        
+    except Exception as e:
+        logging.error(f"Error en detalle movimientos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================================================
