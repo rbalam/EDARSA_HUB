@@ -348,6 +348,7 @@ bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
 | -- | **Build Frontend:** EXITOSO |
 | -- | **Validación Visual:** 8 tabs verificados (Dashboard, Propinas TPV, Tesorería, etc.) |
 | -- | **Reporte:** `/app/docs/reports/VALIDACION_POST_MIGRACION_FINANZAS_CORPORATE_FILTERS.md` |
+| -- | **Hook Adapter:** `useFinanzasCorporateFilters` creado e integrado en `Finanzas.js` |
 
 ### Corporate Filters Bootstrap (scope=finanzas)
 
@@ -380,11 +381,24 @@ bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
 | Presupuestos | ⏳ Pendiente |
 | Reportes | ⏳ Pendiente |
 
+### Integración useFinanzasCorporateFilters
+
+| Cambio | Estado |
+|--------|--------|
+| Hook `useFinanzasCorporateFilters.js` creado | ✅ |
+| Exportado desde `filters/index.js` | ✅ |
+| Integrado en `Finanzas.js` | ✅ |
+| Props a hijos mantenidos | ✅ |
+| Hijos NO modificados | ✅ |
+| Build exitoso | ✅ |
+
 ---
 
 ## 16. Backlog Priorizado
 
 ### P1 - Alta Prioridad
+- [x] Crear hook adapter `useFinanzasCorporateFilters` ✅
+- [x] Integrar hook en `Finanzas.js` ✅
 - [ ] Auditar hallazgos "ALTA" en módulos Reportes, ExploradorBD, Compras, Comercial, Inventarios (ver `/app/docs/reports/AUDITORIA_LIVE_A_SQL_FIRST_POR_MODULO.md`)
 - [ ] Migrar adapters de componentes financieros hijos (`FinanzasDashboard`, `FinanzasPresupuestos`, etc.) para usar Corporate Filters nativamente
 

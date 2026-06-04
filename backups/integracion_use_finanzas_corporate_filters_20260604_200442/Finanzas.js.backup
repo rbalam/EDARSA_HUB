@@ -23,8 +23,7 @@ import {
 import TesoreriaCorteZ from '../components/TesoreriaCorteZ';
 import PropinasTPV from '../components/PropinasTPV';
 // MIGRACIÓN SQL-FIRST: Removido fetchUnidadesNegocio, ahora usa Corporate Filters
-import { CorporateFiltersProvider } from '../filters/CorporateFiltersProvider';
-import { useFinanzasCorporateFilters } from '../filters';
+import { useCorporateFilters, CorporateFiltersProvider } from '../filters/CorporateFiltersProvider';
 import { FinanzasCuentasPorPagar, FinanzasControlIngresos, FinanzasDashboard, FinanzasPresupuestos } from '../components/finanzas';
 import { CuentasBancariasPage } from '../components/finanzas/cuentas-bancarias';
 import { Landmark } from 'lucide-react';
@@ -43,18 +42,28 @@ export default function Finanzas() {
 }
 
 function FinanzasContent() {
-  // MIGRACIÓN SQL-FIRST: Usar adapter useFinanzasCorporateFilters
-  const {
-    unidadesNegocio,
-    selectedUnidad,
-    setSelectedUnidad,
-    loadingUnidades,
-    unidadActual,
-    corporateFilters,
-    corporateSelected,
-    corporateStatus,
-    corporateError
-  } = useFinanzasCorporateFilters();
+  // MIGRACIÓN SQL-FIRST: Obtener unidades desde Corporate Filters en lugar de fetchUnidadesNegocio
+  const { 
+    filters: corporateFilters, 
+    loading: loadingCorporateFilters,
+    selected: corporateSelected,
+    setSelected: setCorporateSelected
+  } = useCorporateFilters();
+  
+  // Mapear unidades de Corporate Filters al formato esperado por componentes legacy
+  const unidadesNegocio = useMemo(() => {
+    const unidades = corporateFilters?.unidades_negocio || [];
+    return unidades.map(u => ({
+      id: u.id || u.unidad_negocio_id,
+      nombre: u.nombre || u.unidad_nombre,
+      codigo: u.codigo,
+      empresa_id: u.empresa_id,
+      sucursales: u.sucursales || [],
+      sucursal_origen_id: u.sucursal_origen_id
+    }));
+  }, [corporateFilters]);
+  
+  const loadingUnidades = loadingCorporateFilters;
   
   // FASE AUTH-FIX: Usar AuthContext para esperar a que el usuario esté autenticado
   const { user, loading: authLoading } = useAuth();
@@ -65,6 +74,9 @@ function FinanzasContent() {
   const [presupuestos, setPresupuestos] = useState([]);
   const [sucursales, setSucursales] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  
+  // === FASE 3.2: UNIDADES DE NEGOCIO (ahora gestionado por Corporate Filters) ===
+  const [selectedUnidad, setSelectedUnidad] = useState('');
   
   // Filtros
   const [filtroAnio, setFiltroAnio] = useState(new Date().getFullYear());
