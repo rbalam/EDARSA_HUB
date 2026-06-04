@@ -844,6 +844,73 @@ async def admin_sync_compras_force_unlock(
         raise HTTPException(status_code=500, detail=f"Error liberando locks: {str(e)}")
 
 
+@api_router.get("/admin/sync/compras/table-counts")
+async def admin_sync_compras_table_counts(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Retorna conteos de tablas de sincronización Compras/Inventarios en EDARSAHUB.
+    Útil para verificar si el sync está llenando las tablas correctamente.
+    """
+    user_role = current_user.get("role", "")
+    if user_role not in ["SuperAdministrador", "Administrador"]:
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    
+    import pymssql
+    
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
+    }
+    
+    query = """
+    SELECT 'Compras_Sync_Log' AS tabla, COUNT(*) AS registros FROM dbo.Compras_Sync_Log
+    UNION ALL SELECT 'Compras_Sync_Checkpoint', COUNT(*) FROM dbo.Compras_Sync_Checkpoint
+    UNION ALL SELECT 'Compras_Inventarios_Fisicos_Sync', COUNT(*) FROM dbo.Compras_Inventarios_Fisicos_Sync
+    UNION ALL SELECT 'Compras_Requisiciones_Sync', COUNT(*) FROM dbo.Compras_Requisiciones_Sync
+    UNION ALL SELECT 'Compras_Pedidos', COUNT(*) FROM dbo.Compras_Pedidos
+    UNION ALL SELECT 'Compras_PedidosDetalle', COUNT(*) FROM dbo.Compras_PedidosDetalle
+    UNION ALL SELECT 'Compras_Ordenes', COUNT(*) FROM dbo.Compras_Ordenes
+    UNION ALL SELECT 'Compras_OrdenesDetalle', COUNT(*) FROM dbo.Compras_OrdenesDetalle
+    UNION ALL SELECT 'Compras_Recepciones', COUNT(*) FROM dbo.Compras_Recepciones
+    UNION ALL SELECT 'Compras_RecepcionesDetalle', COUNT(*) FROM dbo.Compras_RecepcionesDetalle
+    UNION ALL SELECT 'Inventario_Almacenes', COUNT(*) FROM dbo.Inventario_Almacenes
+    UNION ALL SELECT 'Inventario_Existencias', COUNT(*) FROM dbo.Inventario_Existencias
+    UNION ALL SELECT 'Inventario_Movimientos', COUNT(*) FROM dbo.Inventario_Movimientos
+    UNION ALL SELECT 'Inventario_MovimientosDetalle', COUNT(*) FROM dbo.Inventario_MovimientosDetalle
+    """
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute(query)
+        results = cursor.fetchall()
+        conn.close()
+        
+        total_registros = sum(r['registros'] for r in results)
+        tablas_vacias = [r['tabla'] for r in results if r['registros'] == 0]
+        
+        return {
+            "status": "OK",
+            "total_registros": total_registros,
+            "tablas_vacias": len(tablas_vacias),
+            "tablas": results,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error consultando tablas: {str(e)}")
+
+
 @api_router.post("/admin/detect/compras")
 async def admin_detect_nuevos_manual(
     dry_run: bool = False,
