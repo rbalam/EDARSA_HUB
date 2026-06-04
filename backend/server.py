@@ -9331,7 +9331,24 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
     # Si el código empieza con letra (posible prefijo de almacén A/B/C), también probar sin él
     codigo_sin_prefijo = codigo_limpio[1:] if codigo_limpio and codigo_limpio[0].isalpha() else codigo_limpio
     
-    logging.info(f"[DETALLE_MOV] Buscando movimientos para código: '{codigo_limpio}' (sin prefijo: '{codigo_sin_prefijo}'), fechas: {fecha_ini} a {fecha_fin}")
+    # Filtro de almacenes
+    almacenes_limpios = []
+    if request.almacenes:
+        almacenes_limpios = [
+            str(a).replace("'", "''").strip()
+            for a in request.almacenes
+            if str(a).strip()
+        ]
+    
+    filtro_almacenes_movtos = ""
+    filtro_almacenes_movsinv = ""
+    
+    if almacenes_limpios:
+        almacenes_sql = ", ".join([f"'{a}'" for a in almacenes_limpios])
+        filtro_almacenes_movtos = f" AND RTRIM(LTRIM(M.idalmacen)) IN ({almacenes_sql}) "
+        filtro_almacenes_movsinv = f" AND RTRIM(LTRIM(M.idalmacen)) IN ({almacenes_sql}) "
+    
+    logging.info(f"[DETALLE_MOV] Buscando movimientos para código: '{codigo_limpio}' (sin prefijo: '{codigo_sin_prefijo}'), fechas: {fecha_ini} a {fecha_fin}, almacenes: {almacenes_limpios}")
     
     for retry in range(max_retries):
         try:
@@ -9339,7 +9356,7 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
                 # Obtener movimientos de presentaciones (movtosalmacen)
                 # Buscar con código completo Y sin prefijo (por si A/B es prefijo de almacén)
                 query_pres = f"""
-SELECT 
+SELECT TOP 500 
     M.fecha,
     RTRIM(LTRIM(M.idconcepto)) as concepto,
     C.descripcion as descripcion_concepto,
@@ -9354,6 +9371,7 @@ WHERE (RTRIM(LTRIM(M.idinsumospresentaciones)) = '{codigo_limpio}'
     OR RTRIM(LTRIM(M.idinsumospresentaciones)) = '{codigo_sin_prefijo}')
     AND M.fecha >= '{fecha_ini}'
     AND M.fecha <= '{fecha_fin} 23:59:59'
+    {filtro_almacenes_movtos}
 ORDER BY M.fecha DESC
 """
                 logging.info(f"[DETALLE_MOV] Query presentaciones: {query_pres[:200]}...")
@@ -9384,7 +9402,7 @@ ORDER BY M.fecha DESC
                 
                 # También buscar en movsinv (para insumos)
                 query_ins = f"""
-SELECT 
+SELECT TOP 500 
     M.fecha,
     RTRIM(LTRIM(M.idconcepto)) as concepto,
     C.descripcion as descripcion_concepto,
@@ -9399,6 +9417,7 @@ WHERE (RTRIM(LTRIM(M.idinsumo)) = '{codigo_limpio}'
     OR RTRIM(LTRIM(M.idinsumo)) = '{codigo_sin_prefijo}')
     AND M.fecha >= '{fecha_ini}'
     AND M.fecha <= '{fecha_fin} 23:59:59'
+    {filtro_almacenes_movsinv}
 ORDER BY M.fecha DESC
 """
                 logging.info(f"[DETALLE_MOV] Query insumos: {query_ins[:200]}...")
