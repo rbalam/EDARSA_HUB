@@ -2,34 +2,55 @@
 Adapter SOFTRESTAURANT_PRO → EDARSAHUB SQL
 
 Este archivo contiene únicamente queries de extracción del origen SoftRestaurant PRO.
-El destino SIEMPRE debe ser el modelo canónico EDARSAHUB:
+El destino SIEMPRE debe ser el modelo canónico EDARSAHUB.
 
-- Inventario_Almacenes
-- Inventario_Existencias
-- Inventario_Movimientos
-- Inventario_MovimientosDetalle
-- Compras_Pedidos
-- Compras_PedidosDetalle
-- Compras_Ordenes
-- Compras_OrdenesDetalle
-- Compras_Recepciones
-- Compras_RecepcionesDetalle
+MAPEO ORIGEN → DESTINO:
+========================
+| Tabla Origen SR      | Tabla Destino EDARSAHUB              |
+|----------------------|--------------------------------------|
+| almacen              | Inventario_Almacenes                 |
+| invfisico            | Compras_Inventarios_Fisicos_Sync     |
+| invfisicomovtos      | Compras_Inventarios_Fisicos_Sync (detalle) |
+| movtosalmacen        | Inventario_Movimientos + Inventario_MovimientosDetalle |
+| pedidos              | Compras_Pedidos                      |
+| pedidosdetalle       | Compras_PedidosDetalle               |
+| ordenescompra        | Compras_Ordenes                      |
+| ordenescompramov     | Compras_OrdenesDetalle               |
+| compras              | Compras_Recepciones                  |
+| comprasmovtos        | Compras_RecepcionesDetalle           |
+| proveedores          | (catálogo auxiliar)                  |
 """
 
 ORIGEN = "SOFTRESTAURANT_PRO"
 
-TABLES = {
+# Mapeo: clave canónica → tabla origen SoftRestaurant
+TABLES_ORIGEN = {
     "almacenes": "almacen",
-    "compras": "compras",
-    "compras_detalle": "comprasmovtos",
-    "ordenes": "ordenescompra",
-    "ordenes_detalle": "ordenescompramov",
-    "pedidos": "pedidos",
-    "pedidos_detalle": "pedidosdetalle",
     "inventarios_fisicos": "invfisico",
     "inventarios_fisicos_detalle": "invfisicomovtos",
     "movimientos": "movtosalmacen",
+    "pedidos": "pedidos",
+    "pedidos_detalle": "pedidosdetalle",
+    "ordenes": "ordenescompra",
+    "ordenes_detalle": "ordenescompramov",
+    "recepciones": "compras",
+    "recepciones_detalle": "comprasmovtos",
     "proveedores": "proveedores",
+}
+
+# Mapeo: clave canónica → tabla destino EDARSAHUB
+TABLES_DESTINO = {
+    "almacenes": "Inventario_Almacenes",
+    "inventarios_fisicos": "Compras_Inventarios_Fisicos_Sync",
+    "inventarios_fisicos_detalle": "Compras_Inventarios_Fisicos_Sync",
+    "movimientos": "Inventario_Movimientos",
+    "movimientos_detalle": "Inventario_MovimientosDetalle",
+    "pedidos": "Compras_Pedidos",
+    "pedidos_detalle": "Compras_PedidosDetalle",
+    "ordenes": "Compras_Ordenes",
+    "ordenes_detalle": "Compras_OrdenesDetalle",
+    "recepciones": "Compras_Recepciones",
+    "recepciones_detalle": "Compras_RecepcionesDetalle",
 }
 
 
@@ -124,27 +145,65 @@ def query_recepciones_detalle(dias_atras=30):
     """
 
 
-def query_movimientos(dias_atras=30):
-    return f"""
-    SELECT
-        m.idmovtoalmacen AS MovimientoOrigenID,
-        m.fecha AS FechaMovimiento,
-        m.movto AS TipoMovimiento,
-        m.idalmacen AS AlmacenOrigenID,
-        m.idcompra AS DocumentoOrigenID,
-        m.traspaso AS Traspaso
-    FROM movtosalmacen m
-    WHERE m.fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
-    """
-
-
 def query_inventarios_fisicos(dias_atras=30):
+    """
+    Inventarios físicos → Compras_Inventarios_Fisicos_Sync
+    """
     return f"""
     SELECT
         i.folio AS FolioInventario,
         i.fecha AS FechaInventario,
         i.idalmacen1 AS AlmacenOrigenID,
-        i.inventariofisico1 AS EstatusOrigen
+        i.idalmacen2 AS AlmacenDestinoID,
+        i.inventarioteorico1 AS InventarioTeorico,
+        i.inventariofisico1 AS InventarioFisico,
+        i.diferencia1 AS Diferencia,
+        i.cancelado AS Cancelado
     FROM invfisico i
     WHERE i.fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
+    """
+
+
+def query_inventarios_fisicos_detalle(dias_atras=30):
+    """
+    Detalle inventarios físicos → Compras_Inventarios_Fisicos_Sync (según lógica existente)
+    """
+    return f"""
+    SELECT
+        d.folio AS FolioInventario,
+        d.idinsumo AS CodigoProducto,
+        d.idpresentacion AS PresentacionID,
+        d.existenciaalmacen1 AS ExistenciaTeorica,
+        d.fisicoalmacen1 AS ExistenciaFisica,
+        d.costo AS CostoUnitario
+    FROM invfisicomovtos d
+    INNER JOIN invfisico i ON i.folio = d.folio
+    WHERE i.fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
+    """
+
+
+def query_movimientos_almacen(dias_atras=30):
+    """
+    Movimientos de almacén → Inventario_Movimientos + Inventario_MovimientosDetalle
+    
+    Esta tabla contiene todos los movimientos: entradas, salidas, traspasos, etc.
+    """
+    return f"""
+    SELECT
+        m.fecha AS FechaMovimiento,
+        m.movto AS TipoMovimiento,
+        m.idcompra AS CompraOrigenID,
+        m.traspaso AS TraspasoOrigenID,
+        m.invfisico AS InvFisicoOrigenID,
+        m.idconcepto AS ConceptoID,
+        m.idinsumo AS CodigoProducto,
+        m.idpresentacion AS PresentacionID,
+        m.idalmacen AS AlmacenOrigenID,
+        m.cantidad AS Cantidad,
+        m.costo AS CostoUnitario,
+        m.cancelado AS Cancelado,
+        m.usuario AS UsuarioOrigen
+    FROM movtosalmacen m
+    WHERE m.fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
+      AND m.cancelado = 0
     """
