@@ -626,8 +626,8 @@ def sync_almacenes_from_server(
                 SELECT 
                     CAST(idalmacen AS VARCHAR(50)) AS codigo_almacen,
                     nombre AS nombre_almacen,
-                    ISNULL(tipo, 'GENERAL') AS tipo_almacen,
-                    ISNULL(estatus, 1) AS activo
+                    'GENERAL' AS tipo_almacen,
+                    1 AS activo
                 FROM almacen
             """
         
@@ -968,9 +968,9 @@ def sync_pedidos_from_server(
                     CAST(p.folio AS VARCHAR(50)) AS folio_pedido,
                     p.fechacaptura AS fecha_pedido,
                     p.fecharecepcion AS fecha_requerida,
-                    ISNULL(p.total, 0) AS total,
-                    p.estatus,
-                    p.observaciones
+                    0 AS total,
+                    'ACTIVO' AS estatus,
+                    '' AS observaciones
                 FROM pedidos p
                 WHERE p.fechacaptura >= DATEADD(DAY, -{dias_atras}, GETDATE())
             """
@@ -1087,8 +1087,8 @@ def sync_ordenes_from_server(
                     CAST(o.folio AS VARCHAR(50)) AS folio_orden,
                     o.fechacaptura AS fecha_orden,
                     CAST(o.idproveedor AS INT) AS proveedor_id,
-                    ISNULL(o.total, 0) AS total,
-                    o.estatus
+                    0 AS total,
+                    'ACTIVO' AS estatus
                 FROM ordenescompra o
                 WHERE o.fechacaptura >= DATEADD(DAY, -{dias_atras}, GETDATE())
             """
