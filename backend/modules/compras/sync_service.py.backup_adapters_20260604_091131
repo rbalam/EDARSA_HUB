@@ -1,20 +1,9 @@
-
-# NOTA SQL-FIRST:
-# Los nombres de tablas origen SoftRestaurant/MPRO deben vivir en adapters.
-# Destinos EDARSAHUB conservan nombres canónicos:
-# Inventario_*, Compras_*.
-# invfisico/invfisicomovtos NO deben mapearse a Inventario_Movimientos;
-# se mantienen en Compras_Inventarios_Fisicos_Sync hasta migración canónica futura.
-
 """
 COMPRAS SYNC SERVICE - Sincronización de Inventarios y Requisiciones a EDARSAHUB
 ================================================================================
 POLÍTICA: Todo se lee de EDARSAHUB SQL. Los servidores físicos solo se consultan
 durante la sincronización (job background).
 
-
-from modules.compras.adapters import softrestaurant_pro_adapter
-from modules.compras.adapters import mpro_adapter
 Tablas EDARSAHUB:
 - Compras_Inventarios_Fisicos_Sync: Inventarios físicos sincronizados
 - Compras_Requisiciones_Sync: Requisiciones/pedidos sincronizados
@@ -37,24 +26,6 @@ EDARSAHUB_CONFIG = {
     'username': os.environ.get('EDARSAHUB_USERNAME', os.environ.get('EDARSAHUB_SQL_USER', 'HRLectura')),
     'password': os.environ.get('EDARSAHUB_PASSWORD', os.environ.get('EDARSAHUB_SQL_PASSWORD', 'National09$'))
 }
-
-
-
-def get_compras_adapter(system_type: str):
-    """
-    Retorna adapter por sistema origen.
-    Los nombres de tablas origen viven solo en adapters.
-    EDARSAHUB conserva modelo canónico.
-    """
-    st = (system_type or "").upper()
-
-    if "SOFT" in st:
-        return softrestaurant_pro_adapter
-
-    if "MPRO" in st or "MANAGEMENT" in st or "MANAGMENT" in st:
-        return mpro_adapter
-
-    return None
 
 
 def get_edarsahub_connection():
@@ -1177,7 +1148,7 @@ def sync_recepciones_from_server(
                     idRecepcion AS folio, factura AS folio_factura, fecha,
                     estatus, CAST(idProveedor AS VARCHAR) AS proveedor_id,
                     P.razonSocial AS proveedor_nombre, importe AS importe_total
-                FROM comprases R
+                FROM recepciones R
                 LEFT JOIN proveedores P ON P.idProveedor = R.idProveedor
                 WHERE fecha >= DATEADD(day, -{dias_atras}, GETDATE())
             """
@@ -1186,8 +1157,8 @@ def sync_recepciones_from_server(
                     R.idRecepcion AS folio, D.renglon,
                     CAST(D.idinsumo AS VARCHAR) AS producto_id, I.nombre AS producto_nombre,
                     D.cantidad, D.unidad, D.precio AS precio_unitario, D.cantidad * D.precio AS importe
-                FROM comprases R
-                INNER JOIN comprasesmov D ON D.idRecepcion = R.idRecepcion
+                FROM recepciones R
+                INNER JOIN recepcionesmov D ON D.idRecepcion = R.idRecepcion
                 INNER JOIN insumos I ON I.idinsumo = D.idinsumo
                 WHERE R.fecha >= DATEADD(day, -{dias_atras}, GETDATE())
             """
