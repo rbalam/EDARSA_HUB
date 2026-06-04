@@ -116,7 +116,7 @@ def get_unidad_connection_info(unidad_nombre: str) -> Optional[Dict]:
                 ON CAST(u.server_id AS NVARCHAR(100)) = CAST(s.id AS NVARCHAR(100))
             WHERE u.nombre = %s
               AND u.activo = 1
-              AND s.system_type IN ('SoftRestaurant', 'SOFTRESTAURANT', 'SR')
+              AND s.system_type IN ('SoftRestaurant', 'SOFTRESTAURANT', 'SR', 'SOFTRESTAURANT_PRO')
         """, (unidad_nombre,))
         
         unidad = cursor.fetchone()

@@ -109,6 +109,8 @@ def get_unidad_connection_info(unidad_nombre: str) -> Optional[Dict]:
     cursor = conn.cursor(as_dict=True)
     
     try:
+        # CORRECCIÓN 2026-06-05: El system_type en EDARSAHUB es 'SOFTRESTAURANT_PRO'
+        # Se agregan todas las variantes conocidas para evitar fallos de lookup
         cursor.execute("""
             SELECT 
                 u.id as unidad_negocio_id,
@@ -127,7 +129,7 @@ def get_unidad_connection_info(unidad_nombre: str) -> Optional[Dict]:
                 ON CAST(u.server_id AS NVARCHAR(100)) = CAST(s.id AS NVARCHAR(100))
             WHERE u.nombre = %s
               AND u.activo = 1
-              AND s.system_type IN ('SoftRestaurant', 'SOFTRESTAURANT', 'SR')
+              AND s.system_type IN ('SoftRestaurant', 'SOFTRESTAURANT', 'SR', 'SOFTRESTAURANT_PRO')
         """, (unidad_nombre,))
         
         unidad = cursor.fetchone()

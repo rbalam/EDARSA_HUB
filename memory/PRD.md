@@ -276,4 +276,26 @@ bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
 
 ---
 
+## 13. SESIÓN 6 - Cambios (2026-06-05)
+
+| Hora | Cambio |
+|------|--------|
+| -- | **CORRECCIÓN P0: Conexión SoftRestaurant para Sync Propinas TPV** |
+| -- | **Causa raíz identificada:** Filtro `system_type` incompleto en `get_unidad_connection_info()` |
+| -- | **Archivos corregidos:** `sync_propinas_softrestaurant.py`, `sync_cortes_softrestaurant.py` |
+| -- | **Cambio:** Agregado `SOFTRESTAURANT_PRO` al filtro IN() de system_type |
+| -- | **Backfill ejecutado:** 2026-05-17 a 2026-06-05, 1,186 registros, $544,866 en propinas |
+| -- | **Validación:** Conexiones pytds exitosas a CIENFUEGOS, LA ESTELAR, 130° MERIDA |
+| -- | **Reporte:** `/app/docs/reports/CORRECCION_CONEXION_SOFTRESTAURANT_SYNC_PROPINAS.md` |
+
+### Estado Actual Sync Propinas TPV
+
+| Unidad | Conexión | Última Sync | Registros |
+|--------|----------|-------------|-----------|
+| CIENFUEGOS | ✅ pytds | 2026-06-05 | 416 desde 17-may |
+| LA ESTELAR | ✅ pytds | 2026-06-05 | 573 desde 17-may |
+| 130° MERIDA | ✅ pytds | 2026-06-05 | 256 desde 17-may |
+
+---
+
 *Documento actualizado automáticamente - E1 Agent*
