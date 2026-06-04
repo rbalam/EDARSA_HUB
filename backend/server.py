@@ -772,6 +772,78 @@ async def admin_sync_compras_manual(
     return result
 
 
+@api_router.post("/admin/sync/compras/force-unlock")
+async def admin_sync_compras_force_unlock(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Fuerza la liberación de locks de sincronización de compras atascados.
+    Uso: cuando un sync falló y dejó el lock activo.
+    """
+    user_role = current_user.get("role", "")
+    if user_role not in ["SuperAdministrador", "Administrador"]:
+        raise HTTPException(status_code=403, detail="Solo administradores pueden liberar locks")
+    
+    import pymssql
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
+    }
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
+        
+        # Buscar locks activos de COMPRAS_SYNC
+        cursor.execute("""
+            SELECT SyncControlID, SyncRunID, StartedAtMexico
+            FROM Sync_Control_Ejecuciones
+            WHERE SyncType='COMPRAS_SYNC' AND Status='IN_PROGRESS' AND FinishedAtMexico IS NULL
+        """)
+        active_locks = cursor.fetchall()
+        
+        if not active_locks:
+            conn.close()
+            return {"status": "OK", "message": "No hay locks activos", "released": 0}
+        
+        # Liberar todos los locks activos
+        for lock in active_locks:
+            cursor.execute("""
+                UPDATE Sync_Control_Ejecuciones 
+                SET Status='FORCE_RELEASED', FinishedAtMexico=%s, ErrorMessage='Liberado manualmente por admin'
+                WHERE SyncControlID=%s
+            """, (now_mx.replace(tzinfo=None), lock['SyncControlID']))
+        
+        conn.commit()
+        conn.close()
+        
+        logging.info(f"[ADMIN] Usuario {current_user.get('email')} liberó {len(active_locks)} locks de sync compras")
+        
+        return {
+            "status": "OK",
+            "message": f"Liberados {len(active_locks)} locks",
+            "released": len(active_locks),
+            "locks_released": [l['SyncRunID'] for l in active_locks]
+        }
+    except Exception as e:
+        logging.error(f"[ADMIN] Error liberando locks: {e}")
+        raise HTTPException(status_code=500, detail=f"Error liberando locks: {str(e)}")
+
+
 @api_router.post("/admin/detect/compras")
 async def admin_detect_nuevos_manual(
     dry_run: bool = False,

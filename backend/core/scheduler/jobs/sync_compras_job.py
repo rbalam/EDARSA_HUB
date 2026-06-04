@@ -167,34 +167,25 @@ def _release_sync_lock(run_id: str, status: str, processed: int, errors: int, er
 # =============================================================================
 
 def _execute_sql_with_timeout(host, port, database, username, password, query, timeout_seconds=30):
-    """Ejecuta query SQL con timeout estricto."""
-    import signal
-    
-    def timeout_handler(signum, frame):
-        raise TimeoutError(f"Query timeout después de {timeout_seconds}s")
-    
-    # Configurar timeout solo si no estamos en Windows
-    import platform
-    if platform.system() != 'Windows':
-        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(timeout_seconds)
-    
+    """
+    Ejecuta query SQL con timeout usando el parámetro nativo de execute_sql_query.
+    NOTA: Se eliminó signal.alarm() porque no funciona en threads secundarios (FastAPI async).
+    El timeout se maneja directamente en la conexión SQL.
+    """
     try:
-        # Usar timeout_seconds como nombre correcto del parámetro
-        result = _base_execute_sql_query(host, port, database, username, password, query, timeout_seconds=timeout_seconds, context="jobs")
+        result = _base_execute_sql_query(
+            host, port, database, username, password, query, 
+            timeout_seconds=timeout_seconds, 
+            context="jobs"
+        )
         return result
-    except TimeoutError as e:
-        logger.warning(f"[SYNC-COMPRAS] Timeout conectando a {host}: {e}")
-        return None
     except Exception as e:
-        if 'timeout' in str(e).lower() or 'connection' in str(e).lower():
-            logger.warning(f"[SYNC-COMPRAS] Error de conexión a {host}: {str(e)[:100]}")
+        error_str = str(e).lower()
+        if 'timeout' in error_str or 'connection' in error_str or 'timed out' in error_str:
+            logger.warning(f"[SYNC-COMPRAS] Error de conexión/timeout a {host}: {str(e)[:100]}")
             return None
-        raise
-    finally:
-        if platform.system() != 'Windows':
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
+        logger.error(f"[SYNC-COMPRAS] Error inesperado en query a {host}: {str(e)[:200]}")
+        return None
 
 
 def _get_servers_to_sync() -> List[Dict]:
