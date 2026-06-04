@@ -338,4 +338,65 @@ bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
 
 ---
 
+## 15. SESIÓN 8 - Cambios (2026-06-04)
+
+| Hora | Cambio |
+|------|--------|
+| -- | **VALIDACIÓN POST-MIGRACIÓN FINANZAS CORPORATE FILTERS** |
+| -- | **Fix Backend:** `get_unidades_negocio()` prioriza columnas reales (`id`, `nombre`, `codigo`) |
+| -- | **Corporate Filters:** 5 empresas, 5 unidades de negocio cargadas desde SQL |
+| -- | **Build Frontend:** EXITOSO |
+| -- | **Validación Visual:** 8 tabs verificados (Dashboard, Propinas TPV, Tesorería, etc.) |
+| -- | **Reporte:** `/app/docs/reports/VALIDACION_POST_MIGRACION_FINANZAS_CORPORATE_FILTERS.md` |
+
+### Corporate Filters Bootstrap (scope=finanzas)
+
+| Catálogo | Registros | Estado |
+|----------|-----------|--------|
+| Empresas | 5 | ✅ |
+| Unidades de Negocio | 5 | ✅ |
+| Servidores | Variable | ✅ |
+
+### Unidades de Negocio Cargadas
+
+| ID | Nombre | Código |
+|----|--------|--------|
+| 19E076FB... | 130° MERIDA | 130MID |
+| 9BC05CED... | 130° QUERETARO | 130QRO |
+| B06EE652... | CIENFUEGOS | CIENFUEGOS |
+| DFB86008... | LA ESTELAR | ESTELAR |
+| 23CA0B76... | ORIGEN | ORIGEN |
+
+### Tabs Finanzas Validados
+
+| Tab | Estado |
+|-----|--------|
+| Dashboard | ✅ |
+| Control de Ingresos | ✅ |
+| Cuentas por Pagar | ✅ |
+| Propinas TPV | ✅ |
+| Tesorería | ✅ |
+| Cuentas Bancarias | ⏳ Pendiente |
+| Presupuestos | ⏳ Pendiente |
+| Reportes | ⏳ Pendiente |
+
+---
+
+## 16. Backlog Priorizado
+
+### P1 - Alta Prioridad
+- [ ] Auditar hallazgos "ALTA" en módulos Reportes, ExploradorBD, Compras, Comercial, Inventarios (ver `/app/docs/reports/AUDITORIA_LIVE_A_SQL_FIRST_POR_MODULO.md`)
+- [ ] Migrar adapters de componentes financieros hijos (`FinanzasDashboard`, `FinanzasPresupuestos`, etc.) para usar Corporate Filters nativamente
+
+### P2 - Media Prioridad
+- [ ] Validar columnas destino de `sync_compras` en SSMS (bloqueante para dry_run=false)
+- [ ] Centralizar configuración conexión EDARSAHUB (~91 archivos con credenciales hardcodeadas)
+- [ ] Eliminación física de colecciones MongoDB restantes
+
+### P3 - Backlog
+- [ ] Módulo Pricing IA / Competidores Enterprise
+- [ ] Backfill de Ventas Históricas
+
+---
+
 *Documento actualizado automáticamente - E1 Agent*

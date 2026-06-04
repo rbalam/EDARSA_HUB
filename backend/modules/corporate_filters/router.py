@@ -212,11 +212,11 @@ def get_empresas() -> List[Dict[str, Any]]:
 
 def get_unidades_negocio() -> List[Dict[str, Any]]:
     return load_catalog_real(
-        table_candidates=["Sistema_UnidadesNegocio", "Unidades_Negocio"],
-        id_candidates=["UnidadNegocioID", "id_unidad_negocio", "id"],
-        name_candidates=["NombreUnidad", "NombreUnidadNegocio", "nombre", "descripcion"],
-        code_candidates=["CodigoUnidad", "CodigoUnidadNegocio", "codigo"],
-        empresa_candidates=["EmpresaID", "id_empresa", "server_id"],
+        table_candidates=["Unidades_Negocio", "Sistema_UnidadesNegocio"],
+        id_candidates=["id", "UnidadNegocioID", "id_unidad_negocio"],
+        name_candidates=["nombre", "NombreUnidad", "NombreUnidadNegocio", "descripcion"],
+        code_candidates=["codigo", "CodigoUnidad", "CodigoUnidadNegocio"],
+        empresa_candidates=["server_id", "EmpresaID", "id_empresa"],
         max_rows=1000
     )
 
