@@ -156,47 +156,6 @@ def get_unidades_negocio() -> List[Dict[str, Any]]:
 
 
 def get_servidores() -> List[Dict[str, Any]]:
-    """
-    Servidores para filtros corporativos.
-    Prioridad: vw_Servidores_Conexiones_Versiones > Servidores_Conexiones
-    """
-    if table_exists("vw_Servidores_Conexiones_Versiones"):
-        sql = """
-        SELECT
-            servidor_conexion_id,
-            nombre,
-            tipo_sistema,
-            activo,
-            visible_en_operaciones,
-            es_core,
-            sistema_version_id,
-            nombre_sistema,
-            version_sistema,
-            descripcion_version,
-            proveedor,
-            motor_base_datos,
-            version_base_datos,
-            es_version_default,
-            version_activa
-        FROM vw_Servidores_Conexiones_Versiones
-        WHERE ISNULL(activo, 1) = 1
-        ORDER BY tipo_sistema, nombre
-        """
-        servidores = []
-        for r in q(sql):
-            item = option(
-                r, "servidor_conexion_id", "nombre", "tipo_sistema",
-                tipo_field="tipo_sistema",
-                metadata_fields=["tipo_sistema", "es_core", "sistema_version_id",
-                    "nombre_sistema", "version_sistema", "proveedor", "motor_base_datos"]
-            )
-            item["sistema_version_id"] = str(r.get("sistema_version_id")) if r.get("sistema_version_id") else None
-            item["version_sistema"] = r.get("version_sistema")
-            item["nombre_sistema"] = r.get("nombre_sistema")
-            servidores.append(item)
-        return servidores
-
-    # Fallback
     sql = """
     SELECT
         CAST(id AS VARCHAR(36)) AS servidor_conexion_id,
@@ -210,45 +169,17 @@ def get_servidores() -> List[Dict[str, Any]]:
     ORDER BY system_type, nombre
     """
     return [
-        option(r, "servidor_conexion_id", "nombre", "tipo_sistema",
-               tipo_field="tipo_sistema", metadata_fields=["tipo_sistema", "es_core"])
+        option(
+            r,
+            "servidor_conexion_id",
+            "nombre",
+            "tipo_sistema",
+            tipo_field="tipo_sistema",
+            metadata_fields=["tipo_sistema", "es_core"]
+        )
         for r in q(sql)
     ]
 
-
-
-
-
-def get_versiones_sistemas() -> List[Dict[str, Any]]:
-    """Catálogo de versiones de sistemas desde Sistema_VersionesSistemas."""
-    if not table_exists("Sistema_VersionesSistemas"):
-        return []
-    sql = """
-    SELECT sistema_version_id, tipo_sistema, nombre_sistema, version_sistema,
-           descripcion, proveedor, motor_base_datos, version_base_datos,
-           es_version_default, activo
-    FROM Sistema_VersionesSistemas
-    WHERE ISNULL(activo, 1) = 1
-    ORDER BY tipo_sistema, nombre_sistema
-    """
-    versiones = []
-    for r in q(sql):
-        versiones.append({
-            "id": str(r.get("sistema_version_id")),
-            "nombre": f"{r.get('tipo_sistema')} - {r.get('version_sistema')}",
-            "codigo": r.get("tipo_sistema"),
-            "tipo": r.get("tipo_sistema"),
-            "activo": bool(r.get("activo", True)),
-            "visible_en_operaciones": True,
-            "metadata": {
-                "version_sistema": r.get("version_sistema"),
-                "nombre_sistema": r.get("nombre_sistema"),
-                "proveedor": r.get("proveedor"),
-                "motor_base_datos": r.get("motor_base_datos"),
-                "es_version_default": bool(r.get("es_version_default", False))
-            }
-        })
-    return versiones
 
 def get_periodos() -> List[Dict[str, Any]]:
     return [
@@ -367,8 +298,7 @@ async def corporate_filters_bootstrap(scope: str = Query("global")):
         "proveedores": [],
         "centros_costo": [],
         "proyectos": [],
-        "periodos": [],
-        "versiones_sistemas": []
+        "periodos": []
     }
 
     dependencies = {
@@ -387,7 +317,6 @@ async def corporate_filters_bootstrap(scope: str = Query("global")):
         filters["unidades_negocio"] = get_unidades_negocio()
         filters["servidores"] = get_servidores()
         filters["periodos"] = get_periodos()
-        filters["versiones_sistemas"] = get_versiones_sistemas()
 
         filters["sucursales"] = get_optional_catalog(
             ["Sistema_Sucursales", "RH_Cat_Sucursales", "Sucursales", "Sync_Sucursales"],
