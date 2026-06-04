@@ -327,9 +327,9 @@ async def corporate_filters_bootstrap(scope: str = Query("global")):
 
         filters["almacenes"] = get_optional_catalog(
             ["Inventario_Almacenes", "Sistema_Almacenes", "Almacenes", "Sync_Almacenes"],
-            ["id", "id_almacen", "almacen_id", "AlmacenID"],
-            ["nombre", "nombre_almacen", "Almacen", "descripcion"],
-            ["codigo", "clave", "codigo_almacen"]
+            ["AlmacenID", "id", "id_almacen", "almacen_id"],
+            ["NombreAlmacen", "nombre", "nombre_almacen", "Almacen", "descripcion"],
+            ["CodigoAlmacen", "codigo", "clave", "codigo_almacen"]
         )
 
         filters["vendedores"] = get_optional_catalog(
@@ -348,9 +348,9 @@ async def corporate_filters_bootstrap(scope: str = Query("global")):
 
         filters["proveedores"] = get_optional_catalog(
             ["Proveedor_Catalogo", "Compras_Proveedores", "Proveedores"],
-            ["id_proveedor", "proveedor_id", "ProveedorID", "id"],
-            ["nombre", "razon_social", "nombre_comercial", "Proveedor"],
-            ["codigo", "rfc", "clave"]
+            ["ProveedorID", "id_proveedor", "proveedor_id", "id"],
+            ["RazonSocial", "NombreComercial", "nombre", "razon_social", "nombre_comercial", "Proveedor"],
+            ["CodigoProveedor", "RFC", "codigo", "rfc", "clave"]
         )
 
         filters["centros_costo"] = get_optional_catalog(

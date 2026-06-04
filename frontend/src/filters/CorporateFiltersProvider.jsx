@@ -1,5 +1,17 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { fetchCorporateFiltersBootstrap, resolveCorporateFilters } from "./corporateFiltersApi";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState
+} from "react";
+
+import {
+  fetchCorporateFiltersBootstrap,
+  resolveCorporateFilters
+} from "./corporateFiltersApi";
+
 import { resetPreviewFilterCache } from "./previewCacheReset";
 
 const CorporateFiltersContext = createContext(null);
@@ -31,9 +43,9 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
 
   useEffect(() => {
     sessionStorage.setItem(storageKey, JSON.stringify(selected || {}));
-  }, [selected, storageKey]);
+  }, [storageKey, selected]);
 
-  const loadBootstrap = useCallback(async () => {
+  const reload = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -45,7 +57,7 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
       setStatus(data.status || { status: "OK" });
 
       if (!data.success) {
-        setError(data?.status?.message || "No se pudieron cargar filtros corporativos");
+        setError(data?.status?.message || "Error cargando filtros corporativos");
       }
     } catch (err) {
       setError(err.message);
@@ -60,8 +72,8 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
   }, [scope]);
 
   useEffect(() => {
-    loadBootstrap();
-  }, [loadBootstrap]);
+    reload();
+  }, [reload]);
 
   const setFilterValue = useCallback(async (key, value) => {
     const nextSelected = {
@@ -70,7 +82,7 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
     };
 
     const affectedChildren = Object.entries(dependencies || {})
-      .filter(([, parents]) => parents.includes(key))
+      .filter(([, parents]) => Array.isArray(parents) && parents.includes(key))
       .map(([child]) => child);
 
     for (const child of affectedChildren) {
@@ -82,7 +94,7 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
     if (affectedChildren.length > 0) {
       try {
         const resolved = await resolveCorporateFilters(scope, nextSelected, affectedChildren);
-        setFilters((prev) => ({
+        setFilters(prev => ({
           ...prev,
           ...(resolved.filters || {})
         }));
@@ -96,8 +108,8 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
   const clearFilters = useCallback(() => {
     setSelected({});
     sessionStorage.removeItem(storageKey);
-    loadBootstrap();
-  }, [storageKey, loadBootstrap]);
+    reload();
+  }, [storageKey, reload]);
 
   const value = useMemo(() => ({
     scope,
@@ -109,8 +121,19 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
     error,
     setFilterValue,
     clearFilters,
-    reload: loadBootstrap
-  }), [scope, filters, dependencies, selected, status, loading, error, setFilterValue, clearFilters, loadBootstrap]);
+    reload
+  }), [
+    scope,
+    filters,
+    dependencies,
+    selected,
+    status,
+    loading,
+    error,
+    setFilterValue,
+    clearFilters,
+    reload
+  ]);
 
   return (
     <CorporateFiltersContext.Provider value={value}>
@@ -121,8 +144,10 @@ export function CorporateFiltersProvider({ scope = "global", children }) {
 
 export function useCorporateFilters() {
   const context = useContext(CorporateFiltersContext);
+
   if (!context) {
     throw new Error("useCorporateFilters debe usarse dentro de CorporateFiltersProvider");
   }
+
   return context;
 }

@@ -3,10 +3,10 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 export function getEdarsaToken() {
   return (
     sessionStorage.getItem("edarsa_memory_token") ||
-    localStorage.getItem("token") ||
+    sessionStorage.getItem("access_token") ||
     sessionStorage.getItem("token") ||
     localStorage.getItem("access_token") ||
-    sessionStorage.getItem("access_token") ||
+    localStorage.getItem("token") ||
     ""
   );
 }
@@ -26,7 +26,7 @@ export async function fetchCorporateFiltersBootstrap(scope) {
   );
 
   if (!response.ok) {
-    throw new Error(`Error HTTP ${response.status} cargando filtros corporativos`);
+    throw new Error(`HTTP ${response.status} al cargar Corporate Filters`);
   }
 
   return response.json();
@@ -35,21 +35,24 @@ export async function fetchCorporateFiltersBootstrap(scope) {
 export async function resolveCorporateFilters(scope, selected, requestedFilters) {
   const token = getEdarsaToken();
 
-  const response = await fetch(`${BACKEND_URL}/api/corporate-filters/resolve`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    },
-    body: JSON.stringify({
-      scope,
-      selected,
-      requested_filters: requestedFilters || []
-    })
-  });
+  const response = await fetch(
+    `${BACKEND_URL}/api/corporate-filters/resolve`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        scope,
+        selected: selected || {},
+        requested_filters: requestedFilters || []
+      })
+    }
+  );
 
   if (!response.ok) {
-    throw new Error(`Error HTTP ${response.status} resolviendo filtros corporativos`);
+    throw new Error(`HTTP ${response.status} al resolver Corporate Filters`);
   }
 
   return response.json();
