@@ -8541,6 +8541,129 @@ WHERE RCD.Rc_Folio IN ({folios_sql})
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.post("/compras/productos-para-captura-sql-first")
+async def obtener_productos_para_captura_sql_first(
+    request: ProductosParaCapturaRequest, 
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    [SQL-FIRST] Obtiene productos para captura desde EDARSAHUB SQL.
+    
+    Este endpoint lee EXCLUSIVAMENTE de tablas sincronizadas en EDARSAHUB.
+    NO conecta a SoftRestaurant/MPRO directamente.
+    
+    Requiere que el job sync_compras haya llenado las tablas:
+    - Compras_Pedidos
+    - Compras_PedidosDetalle
+    - Compras_Requisiciones_Sync
+    
+    Feature flag: COMPRAS_SQL_FIRST_ENABLED
+    """
+    await get_current_user(credentials)
+    
+    import os
+    import pymssql
+    
+    # Verificar feature flag
+    if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
+        return {
+            'status': 'DISABLED',
+            'message': 'Endpoint SQL-First deshabilitado. Use /compras/productos-para-captura',
+            'productos': [],
+            'total': 0
+        }
+    
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
+    }
+    
+    productos = {}
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        # Obtener productos de pedidos/requisiciones sincronizados
+        if request.folios_requisiciones:
+            placeholders = ",".join([f"'{f}'" for f in request.folios_requisiciones])
+            
+            query = f"""
+            SELECT
+                d.CodigoProducto AS codigo,
+                d.NombreProducto AS producto,
+                ISNULL(d.Rendimiento, 1) AS rendimiento
+            FROM dbo.Compras_PedidosDetalle d
+            INNER JOIN dbo.Compras_Pedidos p
+                ON p.PedidoID = d.PedidoID
+            WHERE p.ServerID = %s
+              AND p.FolioPedido IN ({placeholders})
+            GROUP BY d.CodigoProducto, d.NombreProducto, d.Rendimiento
+            """
+            
+            cursor.execute(query, (request.server_id,))
+            result = cursor.fetchall()
+            
+            for r in result:
+                codigo = str(r['codigo'] or '').strip()
+                if codigo and codigo not in productos:
+                    productos[codigo] = {
+                        'codigo': codigo,
+                        'producto': r['producto'] or f'SKU: {codigo}',
+                        'rendimiento': float(r['rendimiento'] or 1)
+                    }
+        
+        # Obtener productos de inventarios físicos sincronizados
+        if request.folios_inv_inicial:
+            placeholders = ",".join([f"'{f}'" for f in request.folios_inv_inicial])
+            
+            query_inv = f"""
+            SELECT
+                d.CodigoProducto AS codigo,
+                d.NombreProducto AS producto,
+                ISNULL(d.Rendimiento, 1) AS rendimiento
+            FROM dbo.Compras_Inventarios_Fisicos_Sync d
+            WHERE d.ServerID = %s
+              AND d.FolioInventario IN ({placeholders})
+            GROUP BY d.CodigoProducto, d.NombreProducto, d.Rendimiento
+            """
+            
+            cursor.execute(query_inv, (request.server_id,))
+            result = cursor.fetchall()
+            
+            for r in result:
+                codigo = str(r['codigo'] or '').strip()
+                if codigo and codigo not in productos:
+                    productos[codigo] = {
+                        'codigo': codigo,
+                        'producto': r['producto'] or f'SKU: {codigo}',
+                        'rendimiento': float(r['rendimiento'] or 1)
+                    }
+        
+        conn.close()
+        
+        return {
+            'status': 'SQL_FIRST',
+            'source': 'EDARSAHUB',
+            'productos': list(productos.values()),
+            'total': len(productos)
+        }
+        
+    except Exception as e:
+        logging.error(f"[SQL-FIRST] Error obteniendo productos: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error SQL-First: {str(e)}")
+
+
 @api_router.post("/compras/auditoria-operativa")
 async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
