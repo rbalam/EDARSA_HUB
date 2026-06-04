@@ -1,6 +1,6 @@
 # Creación useFinanzasCorporateFilters
 
-Fecha: 2026-06-04
+Fecha: Thu Jun  4 20:02:09 UTC 2026
 
 ## Objetivo
 
@@ -15,79 +15,89 @@ Este hook centraliza Corporate Filters para Finanzas sin migrar de golpe los com
 - No eliminar props actuales.
 - No migrar otros módulos.
 - Mantener compatibilidad con nombres usados por Finanzas.js.
+Backups en: /app/backups/use_finanzas_corporate_filters_20260604_200209
+## Archivos creados/actualizados
+```text
+-rw-r--r-- 1 root root  293 Jun  4 19:58 /app/frontend/src/filters/index.js
+-rw-r--r-- 1 root root 1843 Jun  4 20:02 /app/frontend/src/filters/useFinanzasCorporateFilters.js
+14:export function useFinanzasCorporateFilters() {
+27:  const unidadesNegocio = useMemo(() => {
+31:  const selectedUnidad = selected?.unidades_negocio || "";
+33:  const unidadActual = useMemo(() => {
+34:    if (!selectedUnidad) return null;
+36:    return unidadesNegocio.find((unidad) => String(unidad.id) === String(selectedUnidad)) || null;
+37:  }, [selectedUnidad, unidadesNegocio]);
+39:  const setSelectedUnidad = useCallback(
+46:  const hasSingleUnidad = unidadesNegocio.length === 1;
+48:  const selectedUnidadNombre = unidadActual?.nombre || "";
+49:  const selectedUnidadCodigo = unidadActual?.codigo || "";
+53:    unidadesNegocio,
+54:    selectedUnidad,
+55:    setSelectedUnidad,
+57:    unidadActual,
+58:    selectedUnidadNombre,
+59:    selectedUnidadCodigo,
+63:    corporateFilters: filters,
+64:    corporateSelected: selected,
+75:export default useFinanzasCorporateFilters;
+export { CorporateFiltersProvider, useCorporateFilters } from "./CorporateFiltersProvider";
+export { CorporateFilterBar } from "./CorporateFilterBar";
+export { CorporateFilterSelect } from "./CorporateFilterSelect";
+export { useFinanzasCorporateFilters } from "./useFinanzasCorporateFilters";
+```
+## Validación no tocar hijos
+```text
+OK existe sin tocar en este script: /app/frontend/src/components/finanzas/FinanzasDashboard.jsx
+OK existe sin tocar en este script: /app/frontend/src/components/finanzas/FinanzasPresupuestos.jsx
+OK existe sin tocar en este script: /app/frontend/src/components/finanzas/FinanzasCuentasPorPagar.jsx
+OK existe sin tocar en este script: /app/frontend/src/components/finanzas/FinanzasControlIngresos.jsx
+OK existe sin tocar en este script: /app/frontend/src/components/TesoreriaCorteZ.jsx
+OK existe sin tocar en este script: /app/frontend/src/components/PropinasTPV.jsx
+```
+## Build frontend
+```text
+  20.67 kB   build/static/css/main.2773ac81.css
+  8.73 kB    build/static/js/977.8591a78c.chunk.js
 
-## Hook Creado
+The bundle size is significantly larger than recommended.
+Consider reducing it with code splitting: https://goo.gl/9VhYWB
+You can also analyze the project dependencies: https://goo.gl/LeUzfb
 
-**Archivo:** `/app/frontend/src/filters/useFinanzasCorporateFilters.js`
+The project was built assuming it is hosted at /.
+You can control this with the homepage field in your package.json.
 
-### API del Hook
+The build folder is ready to be deployed.
+You may serve it with a static server:
 
-```javascript
-const {
-  // Compatibilidad con Finanzas.js legacy
-  unidadesNegocio,           // Array de unidades de negocio
-  selectedUnidad,             // ID de unidad seleccionada
-  setSelectedUnidad,          // Función para cambiar unidad
-  loadingUnidades,            // Boolean de carga
-  unidadActual,               // Objeto de la unidad actual
-  selectedUnidadNombre,       // Nombre de la unidad actual
-  selectedUnidadCodigo,       // Código de la unidad actual
-  hasSingleUnidad,            // Boolean si solo hay una unidad
+  yarn global add serve
+  serve -s build
 
-  // Corporate Filters completo
-  corporateFilters,           // Todos los filtros
-  corporateSelected,          // Valores seleccionados
-  corporateStatus,            // Estado de la conexión
-  corporateError,             // Error si existe
-  corporateTransport,         // Método de transporte
+Find out more about deployment here:
 
-  // Utilidades
-  reloadCorporateFilters,     // Recargar filtros
-  clearCorporateFilters       // Limpiar filtros
-} = useFinanzasCorporateFilters();
+  https://cra.link/deployment
+
 ```
 
-## Componentes Hijos Identificados
+## Resultado
 
-| Componente | Ubicación | Estado |
-|------------|-----------|--------|
-| FinanzasDashboard | `/app/frontend/src/components/finanzas/FinanzasDashboard.jsx` | Pendiente migrar |
-| FinanzasPresupuestos | `/app/frontend/src/components/finanzas/FinanzasPresupuestos.jsx` | Pendiente migrar |
-| FinanzasCuentasPorPagar | `/app/frontend/src/components/finanzas/FinanzasCuentasPorPagar.jsx` | Pendiente migrar |
-| FinanzasControlIngresos | `/app/frontend/src/components/finanzas/FinanzasControlIngresos.jsx` | Pendiente migrar |
-| TesoreriaCorteZ | `/app/frontend/src/components/TesoreriaCorteZ.jsx` | Existente |
-| PropinasTPV | `/app/frontend/src/components/PropinasTPV.jsx` | ✅ Ya usa Corporate Filters |
+Hook creado correctamente:
 
-## Build
-
-**Estado:** ✅ EXITOSO
-
-## Siguiente Paso
-
-Opción 1: Usar este hook en `Finanzas.js` para simplificar el código existente.
-Opción 2: Migrar gradualmente cada componente hijo para usar el hook directamente.
-
-## Uso Ejemplo en Finanzas.js
-
-```jsx
-import { useFinanzasCorporateFilters } from '../filters';
-
-function FinanzasContent() {
-  const {
-    unidadesNegocio,
-    selectedUnidad,
-    setSelectedUnidad,
-    loadingUnidades,
-    unidadActual
-  } = useFinanzasCorporateFilters();
-
-  // Pasa props a componentes hijos sin cambios
-  return (
-    <FinanzasDashboard 
-      unidadesNegocio={unidadesNegocio}
-      selectedUnidad={selectedUnidad}
-      // ...otros props
-    />
-  );
-}
+```text
+/app/frontend/src/filters/useFinanzasCorporateFilters.js
 ```
+
+Export actualizado:
+
+```text
+/app/frontend/src/filters/index.js
+```
+
+### Backup
+
+```text
+/app/backups/use_finanzas_corporate_filters_20260604_200209
+```
+
+## Siguiente paso
+
+Usar este hook en Finanzas.js como adapter, sin modificar todavía los componentes hijos.
