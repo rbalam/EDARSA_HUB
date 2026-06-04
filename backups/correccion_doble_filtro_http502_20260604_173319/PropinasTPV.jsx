@@ -43,21 +43,6 @@ function PropinasTPVContent() {
     selected: corporateSelected,
     status: corporateStatus 
   } = useCorporateFilters();
-
-  // Derivar unidad de negocio efectiva desde Corporate Filters
-  const unidadNegocioCorporativaId = corporateSelected?.unidades_negocio || "";
-  const unidadNegocioCorporativa = (corporateFilters?.unidades_negocio || [])
-    .find((item) => item.id === unidadNegocioCorporativaId);
-
-  const unidadNegocioEfectiva = unidadNegocioCorporativa?.codigo
-    || unidadNegocioCorporativa?.nombre
-    || unidadNegocioCorporativaId
-    || "";
-
-  const getUnidadNegocioParaConsulta = () => {
-    return unidadNegocioEfectiva || "";
-  };
-
   
   const [activeTab, setActiveTab] = useState('cuadre');
   
@@ -74,24 +59,9 @@ function PropinasTPVContent() {
   const [loadingPropinas, setLoadingPropinas] = useState(false);
   const [totalesServer, setTotalesServer] = useState(null); // Totales del servidor
   const [fuenteDatos, setFuenteDatos] = useState(null); // Indicador de fuente
-  
-  // Fechas predeterminadas: últimos 7 días terminando en ayer (el día actual puede no tener cortes sincronizados)
-  const getDefaultDates = () => {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const weekAgo = new Date(yesterday);
-    weekAgo.setDate(weekAgo.getDate() - 6);
-    return {
-      fecha_inicio: weekAgo.toISOString().split('T')[0],
-      fecha_fin: yesterday.toISOString().split('T')[0]
-    };
-  };
-  
-  const defaultDates = getDefaultDates();
   const [filtros, setFiltros] = useState({
-    fecha_inicio: defaultDates.fecha_inicio,
-    fecha_fin: defaultDates.fecha_fin,
+    fecha_inicio: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    fecha_fin: new Date().toISOString().split('T')[0],
     estado: '',
     unidad_negocio_id: '' // SUBFASE 3.5: Cambiado de server_id a unidad_negocio_id
   });
@@ -390,7 +360,33 @@ function PropinasTPVContent() {
           <Card>
             <CardContent className="pt-4">
               <div className="flex flex-wrap gap-4 items-end">
-                {/* Unidad de Negocio: Ahora controlada por Corporate Filters (barra superior) */}
+                {/* Selector de Unidad de Negocio - SUBFASE 3.5: Usa unidad_negocio_id */}
+                <div>
+                  <Label className="text-xs text-zinc-500">Unidad de Negocio</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Building2 className="h-4 w-4 text-zinc-400" />
+                    {unidadesNegocio.length === 1 ? (
+                      <div className="px-3 py-2 border rounded-lg text-sm bg-zinc-50 w-48">
+                        {unidadesNegocio[0].nombre}
+                      </div>
+                    ) : (
+                      <select
+                        value={filtros.unidad_negocio_id}
+                        onChange={(e) => setFiltros({...filtros, unidad_negocio_id: e.target.value})}
+                        className="w-48 h-10 px-3 border rounded-md text-sm"
+                        disabled={loadingUnidades}
+                        data-testid="filtro-unidad"
+                      >
+                        <option value="">{loadingUnidades ? "Cargando..." : "Todas las unidades"}</option>
+                        {unidadesNegocio.map(u => (
+                          <option key={u.id} value={u.id}>
+                            {u.nombre} {u.sistema ? `(${u.sistema})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </div>
                 <div>
                   <Label className="text-xs text-zinc-500">Fecha Inicio</Label>
                   <Input

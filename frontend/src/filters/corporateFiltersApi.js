@@ -1,4 +1,22 @@
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
+const RAW_BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
+
+/**
+ * En preview/deploy, si REACT_APP_BACKEND_URL causa 502, se intenta fallback same-origin.
+ * Orden:
+ * 1. REACT_APP_BACKEND_URL si existe.
+ * 2. Same-origin relativo "".
+ */
+function getCandidateBaseUrls() {
+  const urls = [];
+
+  if (RAW_BACKEND_URL && RAW_BACKEND_URL.trim()) {
+    urls.push(RAW_BACKEND_URL.replace(/\/$/, ""));
+  }
+
+  urls.push("");
+
+  return Array.from(new Set(urls));
+}
 
 export function getEdarsaToken() {
   return (
@@ -11,40 +29,57 @@ export function getEdarsaToken() {
   );
 }
 
-export async function fetchCorporateFiltersBootstrap(scope) {
+async function fetchWithFallback(path, options = {}) {
   const token = getEdarsaToken();
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {})
+  };
 
-  const response = await fetch(
-    `${BACKEND_URL}/api/corporate-filters/bootstrap?scope=${encodeURIComponent(scope)}`,
-    {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
+  let lastError = null;
+
+  for (const baseUrl of getCandidateBaseUrls()) {
+    const url = `${baseUrl}${path}`;
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        credentials: "include"  // Incluir cookies httpOnly para autenticación
+      });
+
+      if (response.ok) {
+        return response.json();
       }
-    }
-  );
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} al cargar Corporate Filters`);
+      lastError = new Error(`HTTP ${response.status} al llamar ${url}`);
+
+      // Si REACT_APP_BACKEND_URL dio 502/503/504, probar same-origin.
+      if (![502, 503, 504].includes(response.status)) {
+        throw lastError;
+      }
+    } catch (error) {
+      lastError = error;
+      // intenta siguiente baseUrl
+    }
   }
 
-  return response.json();
+  throw lastError || new Error("No se pudo conectar a Corporate Filters");
+}
+
+export async function fetchCorporateFiltersBootstrap(scope) {
+  return fetchWithFallback(
+    `/api/corporate-filters/bootstrap?scope=${encodeURIComponent(scope)}`,
+    { method: "GET" }
+  );
 }
 
 export async function resolveCorporateFilters(scope, selected, requestedFilters) {
-  const token = getEdarsaToken();
-
-  const response = await fetch(
-    `${BACKEND_URL}/api/corporate-filters/resolve`,
+  return fetchWithFallback(
+    `/api/corporate-filters/resolve`,
     {
       method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
       body: JSON.stringify({
         scope,
         selected: selected || {},
@@ -52,10 +87,4 @@ export async function resolveCorporateFilters(scope, selected, requestedFilters)
       })
     }
   );
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} al resolver Corporate Filters`);
-  }
-
-  return response.json();
 }
