@@ -911,6 +911,75 @@ async def admin_sync_compras_table_counts(
         raise HTTPException(status_code=500, detail=f"Error consultando tablas: {str(e)}")
 
 
+@api_router.get("/admin/sync/compras/logs")
+async def admin_sync_compras_logs(
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Retorna los últimos registros de Compras_Sync_Log y Compras_Sync_Checkpoint.
+    """
+    user_role = current_user.get("role", "")
+    if user_role not in ["SuperAdministrador", "Administrador"]:
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    
+    import pymssql
+    
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
+    }
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        # Obtener logs
+        cursor.execute(f"SELECT TOP {limit} * FROM dbo.Compras_Sync_Log ORDER BY 1 DESC")
+        logs = cursor.fetchall()
+        
+        # Obtener checkpoints
+        cursor.execute(f"SELECT TOP {limit} * FROM dbo.Compras_Sync_Checkpoint ORDER BY 1 DESC")
+        checkpoints = cursor.fetchall()
+        
+        conn.close()
+        
+        # Convertir datetime a string para JSON
+        for log in logs:
+            for k, v in log.items():
+                if hasattr(v, 'isoformat'):
+                    log[k] = v.isoformat()
+        for cp in checkpoints:
+            for k, v in cp.items():
+                if hasattr(v, 'isoformat'):
+                    cp[k] = v.isoformat()
+        
+        return {
+            "status": "OK",
+            "sync_logs": {
+                "total": len(logs),
+                "records": logs
+            },
+            "checkpoints": {
+                "total": len(checkpoints),
+                "records": checkpoints
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error consultando logs: {str(e)}")
+
+
 @api_router.post("/admin/detect/compras")
 async def admin_detect_nuevos_manual(
     dry_run: bool = False,
