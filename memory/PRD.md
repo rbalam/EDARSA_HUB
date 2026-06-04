@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-04 (Sesión 5 - Integración Sync Job Compras/Inventarios)
-**Estado:** En desarrollo activo - Job Sync integrado con 8 funciones ✅
+**Última actualización:** 2026-06-04 (Sesión 6 - Migración SQL-First Modal Detalle Ventas)
+**Estado:** En desarrollo activo - Modal Detalle Ventas migrado a SQL-First ✅
 
 ---
 
@@ -399,7 +399,13 @@ bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
 ### P1 - Alta Prioridad
 - [x] Crear hook adapter `useFinanzasCorporateFilters` ✅
 - [x] Integrar hook en `Finanzas.js` ✅
+- [x] **MIGRACIÓN SQL-FIRST Modal Detalle Ventas Comercial** ✅ (Sesión 6)
+  - Backend: `GET /comercial/detalle-movimientos/{server_id}` ahora lee de `Comercial_KPIs_Diarios_v2`
+  - Frontend: `Comercial.js` actualizado para pasar `selectedMeses` y `selectedAnios` al modal
+  - Validado: 130° MÉRIDA Junio 2026 muestra 18 tickets, 36 PAX correctamente
 - [ ] Auditar hallazgos "ALTA" en módulos Reportes, ExploradorBD, Compras, Comercial, Inventarios (ver `/app/docs/reports/AUDITORIA_LIVE_A_SQL_FIRST_POR_MODULO.md`)
+- [ ] Migrar `/comercial/precios-constantes/{server_id}` a SQL-First (requiere tabla `Sync_Ventas_Precios_Constantes`)
+- [ ] Auditar y corregir `costos_margenes/repository.py` (18 hallazgos de conexiones live prohibidas)
 - [ ] Migrar adapters de componentes financieros hijos (`FinanzasDashboard`, `FinanzasPresupuestos`, etc.) para usar Corporate Filters nativamente
 
 ### P2 - Media Prioridad

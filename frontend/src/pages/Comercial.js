@@ -154,7 +154,7 @@ const formatPercent = (num) => {
 };
 
 // ============ MODAL DE DETALLE DE MOVIMIENTOS (Drill-down) ============
-function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo, tipoKpi }) {
+function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo, tipoKpi, selectedMeses, selectedAnios }) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [page, setPage] = useState(1);
@@ -180,7 +180,15 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
     setLoading(true);
     try {
       const response = await api.get(`/comercial/detalle-movimientos/${serverId}`, {
-        params: { sucursal, tipo: tipoKpi, periodo, page, limit: 50 }
+        params: { 
+          sucursal, 
+          tipo: tipoKpi, 
+          periodo, 
+          page, 
+          limit: 50,
+          meses: selectedMeses?.join(',') || '',
+          anios: selectedAnios?.join(',') || ''
+        }
       });
       setData(response.data);
     } catch (error) {
@@ -955,6 +963,8 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
         sucursal={selectedSucursal}
         periodo={periodo}
         tipoKpi={detalleModal.tipo}
+        selectedMeses={selectedMeses}
+        selectedAnios={selectedAnios}
       />
     </div>
   );
