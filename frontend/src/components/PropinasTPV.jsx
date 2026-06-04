@@ -38,7 +38,11 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 // Componente interno que usa Corporate Filters
 function PropinasTPVContent() {
   // Corporate Filters - SQL-FIRST
-  const { filters: corporateFilters, status: corporateStatus } = useCorporateFilters();
+  const { 
+    filters: corporateFilters, 
+    selected: corporateSelected,
+    status: corporateStatus 
+  } = useCorporateFilters();
   
   const [activeTab, setActiveTab] = useState('cuadre');
   
@@ -75,6 +79,23 @@ function PropinasTPVContent() {
     // cargarDatosAuxiliares eliminado - ahora usa Corporate Filters
     cargarUnidadesNegocio();
   }, []);
+  
+  // SINCRONIZACIÓN: Corporate Filters → filtros internos
+  // Cuando cambia la selección corporativa, actualizar filtro interno y buscar
+  useEffect(() => {
+    const unidadCorporativa = corporateSelected?.unidades_negocio;
+    if (unidadCorporativa && unidadCorporativa !== filtros.unidad_negocio_id) {
+      setFiltros(prev => ({ ...prev, unidad_negocio_id: unidadCorporativa }));
+    }
+  }, [corporateSelected?.unidades_negocio]);
+  
+  // Cargar propinas cuando cambia el filtro de unidad
+  useEffect(() => {
+    if (activeTab === 'cuadre' && filtros.unidad_negocio_id) {
+      cargarPropinas();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtros.unidad_negocio_id]);
   
   useEffect(() => {
     if (activeTab === 'configuracion') cargarConfigs();
