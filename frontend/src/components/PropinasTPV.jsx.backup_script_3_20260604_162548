@@ -21,9 +21,6 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Settings, Calculator, RefreshCw, Plus, AlertCircle, Building2, Database } from 'lucide-react';
 
-// Corporate Filters - SQL-FIRST
-import { CorporateFiltersProvider, useCorporateFilters } from '../filters';
-
 // Subcomponentes refactorizados
 import {
   getDefaultConfig,
@@ -35,11 +32,7 @@ import {
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
-// Componente interno que usa Corporate Filters
-function PropinasTPVContent() {
-  // Corporate Filters - SQL-FIRST
-  const { filters: corporateFilters, status: corporateStatus } = useCorporateFilters();
-  
+export default function PropinasTPV() {
   const [activeTab, setActiveTab] = useState('cuadre');
   
   // Estado de configuración
@@ -62,9 +55,9 @@ function PropinasTPVContent() {
     unidad_negocio_id: '' // SUBFASE 3.5: Cambiado de server_id a unidad_negocio_id
   });
   
-  // Datos auxiliares - Corporate Filters (SQL-FIRST)
-  const sucursales = corporateFilters?.sucursales || [];
-  const empresas = corporateFilters?.empresas || [];
+  // Datos auxiliares - SUBFASE 3.5: Unidades desde EDARSAHUB
+  const [sucursales, setSucursales] = useState([]);
+  const [empresas, setEmpresas] = useState([]);
   const [unidadesNegocio, setUnidadesNegocio] = useState([]);
   const [loadingUnidades, setLoadingUnidades] = useState(false);
   const [userRole, setUserRole] = useState('');
@@ -72,7 +65,7 @@ function PropinasTPVContent() {
   useEffect(() => {
     const user = getSessionUser() || {};
     setUserRole(user.role || '');
-    // cargarDatosAuxiliares eliminado - ahora usa Corporate Filters
+    cargarDatosAuxiliares();
     cargarUnidadesNegocio();
   }, []);
   
@@ -86,7 +79,7 @@ function PropinasTPVContent() {
   const cargarUnidadesNegocio = async () => {
     setLoadingUnidades(true);
     try {
-      // Endpoint v2 EDARSAHUB - único origen
+      // Primero intentar endpoint v2 EDARSAHUB
       const resV2 = await fetch(`${API_URL}/api/finanzas/propinas/v2/unidades`, {
         credentials: 'include'
       });
@@ -110,17 +103,17 @@ function PropinasTPVContent() {
         return;
       }
       
-      // Fallback: usar unidades de Corporate Filters
-      const unidadesCF = corporateFilters?.unidades_negocio || [];
-      if (unidadesCF.length > 0) {
-        const unidades = unidadesCF.map(u => ({
-          id: u.id,
-          nombre: u.nombre,
-          sistema: 'EDARSAHUB',
-          registros: 0,
-          propinas: 0
-        }));
+      // Fallback a endpoint legacy de servers
+      const res = await fetch(`${API_URL}/api/servers`, {
+        credentials: 'include'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const unidades = (data || [])
+          .filter(s => s.active !== false)
+          .map(s => ({ id: s.id, nombre: s.name || s.nombre || s.id }));
         setUnidadesNegocio(unidades);
+        
         if (unidades.length === 1) {
           setFiltros(prev => ({ ...prev, unidad_negocio_id: unidades[0].id }));
         }
@@ -129,6 +122,30 @@ function PropinasTPVContent() {
       logger.error('Error cargando unidades:', error);
     } finally {
       setLoadingUnidades(false);
+    }
+  };
+  
+  const cargarDatosAuxiliares = async () => {
+    try {
+      const resSuc = await fetch(`${API_URL}/api/sucursales`, {
+        credentials: 'include'
+      });
+      if (resSuc.ok) {
+        const data = await resSuc.json();
+        setSucursales(data.sucursales || data || []);
+      }
+      
+      const resServers = await fetch(`${API_URL}/api/servers`, {
+        credentials: 'include'
+      });
+      if (resServers.ok) {
+        const data = await resServers.json();
+        const empresasSet = new Set();
+        (data || []).forEach(s => { if (s.empresa) empresasSet.add(s.empresa); });
+        setEmpresas(Array.from(empresasSet));
+      }
+    } catch (error) {
+      logger.error('Error cargando datos auxiliares:', error);
     }
   };
   
@@ -469,14 +486,5 @@ function PropinasTPVContent() {
         </div>
       )}
     </div>
-  );
-}
-
-// Wrapper con Corporate Filters Provider
-export default function PropinasTPV() {
-  return (
-    <CorporateFiltersProvider scope="finanzas.propinas_tpv">
-      <PropinasTPVContent />
-    </CorporateFiltersProvider>
   );
 }
