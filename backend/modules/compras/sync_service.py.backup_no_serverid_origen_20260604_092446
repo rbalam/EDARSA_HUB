@@ -1,9 +1,4 @@
 
-# REGLA CRÍTICA SYNC ORIGEN → EDARSAHUB:
-# ServerID, OrigenSistema, id_empresa e id_unidad_negocio NO existen ni deben leerse desde SoftRestaurant/MPRO.
-# Esos campos se agregan desde el contexto EDARSAHUB del servidor/unidad antes de hacer MERGE al destino.
-
-
 # NOTA SQL-FIRST:
 # Los nombres de tablas origen SoftRestaurant/MPRO deben vivir en adapters.
 # Destinos EDARSAHUB conservan nombres canónicos:
@@ -574,7 +569,7 @@ def sync_almacenes_from_server(
                     MERGE INTO Inventario_Almacenes AS target
                     USING (SELECT %s AS AlmacenID) AS source ON target.AlmacenID = source.AlmacenID AND target.ServerID = %s
                     WHEN MATCHED THEN UPDATE SET NombreAlmacen = %s, SucursalID = %s, Activo = %s, FechaModificacion = GETDATE()
-                    WHEN NOT MATCHED THEN INSERT (AlmacenID,  NombreAlmacen, SucursalID, Activo,  FechaCreacion)
+                    WHEN NOT MATCHED THEN INSERT (AlmacenID, ServerID, NombreAlmacen, SucursalID, Activo, OrigenSistema, FechaCreacion)
                     VALUES (%s, %s, %s, %s, %s, %s, GETDATE());
                 """, (
                     row.get('almacen_id'), server_id, row.get('nombre', ''), row.get('sucursal_id', ''),
@@ -661,7 +656,7 @@ def sync_existencias_from_server(
             try:
                 cursor.execute("""
                     INSERT INTO Inventario_Existencias
-                    ( ProductoID, ProductoNombre, AlmacenID, Existencia, CostoPromedio, UltimoCosto,  EsActual, FechaSync)
+                    (ServerID, ProductoID, ProductoNombre, AlmacenID, Existencia, CostoPromedio, UltimoCosto, OrigenSistema, EsActual, FechaSync)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1, GETDATE())
                 """, (
                     server_id, row.get('producto_id'), row.get('producto_nombre', ''),
@@ -796,13 +791,13 @@ def sync_movimientos_from_server(
             try:
                 cursor.execute("""
                     MERGE INTO dbo.Inventario_Movimientos AS target
-                    USING (SELECT %s AS  %s AS  %s AS Folio) AS source
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS Folio) AS source
                     ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema AND target.Folio = source.Folio
                     WHEN MATCHED THEN UPDATE SET
                         FechaMovimiento = %s, TipoMovimiento = %s, AlmacenID = %s, EsEntrada = %s,
                         Observaciones = %s, FechaModificacion = GETDATE()
                     WHEN NOT MATCHED THEN INSERT
-                        ( UnidadNegocioID,  Folio, FechaMovimiento, TipoMovimiento, AlmacenID, EsEntrada, Observaciones, SyncStatus, FechaCreacion)
+                        (ServerID, UnidadNegocioID, OrigenSistema, Folio, FechaMovimiento, TipoMovimiento, AlmacenID, EsEntrada, Observaciones, SyncStatus, FechaCreacion)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'SYNCED', GETDATE());
                 """, (
                     server_id, system_type, str(row.get('folio') or ''),
@@ -821,13 +816,13 @@ def sync_movimientos_from_server(
             try:
                 cursor.execute("""
                     MERGE INTO dbo.Inventario_MovimientosDetalle AS target
-                    USING (SELECT %s AS  %s AS  %s AS Folio, %s AS CodigoProducto) AS source
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS Folio, %s AS CodigoProducto) AS source
                     ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema 
                        AND target.Folio = source.Folio AND target.CodigoProducto = source.CodigoProducto
                     WHEN MATCHED THEN UPDATE SET
                         NombreProducto = %s, Cantidad = %s, CostoUnitario = %s, Importe = %s, FechaModificacion = GETDATE()
                     WHEN NOT MATCHED THEN INSERT
-                        (  Folio, Renglon, CodigoProducto, NombreProducto, Cantidad, CostoUnitario, Importe, FechaSync)
+                        (ServerID, OrigenSistema, Folio, Renglon, CodigoProducto, NombreProducto, Cantidad, CostoUnitario, Importe, FechaSync)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE());
                 """, (
                     server_id, system_type, str(row.get('folio') or ''), row.get('producto_id'),
@@ -938,13 +933,13 @@ def sync_pedidos_from_server(
             try:
                 cursor.execute("""
                     MERGE INTO dbo.Compras_Pedidos AS target
-                    USING (SELECT %s AS  %s AS  %s AS FolioPedido) AS source
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS FolioPedido) AS source
                     ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema AND target.FolioPedido = source.FolioPedido
                     WHEN MATCHED THEN UPDATE SET
                         FechaPedido = %s, Estatus = %s, ProveedorID = %s, ProveedorNombre = %s,
                         ImporteTotal = %s, Comentario = %s, FechaModificacion = GETDATE()
                     WHEN NOT MATCHED THEN INSERT
-                        ( UnidadNegocioID,  FolioPedido, FechaPedido, Estatus, ProveedorID, ProveedorNombre, ImporteTotal, Comentario, SyncStatus, FechaCreacion)
+                        (ServerID, UnidadNegocioID, OrigenSistema, FolioPedido, FechaPedido, Estatus, ProveedorID, ProveedorNombre, ImporteTotal, Comentario, SyncStatus, FechaCreacion)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'SYNCED', GETDATE());
                 """, (
                     server_id, system_type, str(row.get('folio')),
@@ -963,13 +958,13 @@ def sync_pedidos_from_server(
             try:
                 cursor.execute("""
                     MERGE INTO dbo.Compras_PedidosDetalle AS target
-                    USING (SELECT %s AS  %s AS  %s AS FolioPedido, %s AS CodigoProducto) AS source
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS FolioPedido, %s AS CodigoProducto) AS source
                     ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema 
                        AND target.FolioPedido = source.FolioPedido AND target.CodigoProducto = source.CodigoProducto
                     WHEN MATCHED THEN UPDATE SET
                         NombreProducto = %s, Cantidad = %s, Unidad = %s, PrecioUnitario = %s, Importe = %s, FechaModificacion = GETDATE()
                     WHEN NOT MATCHED THEN INSERT
-                        (  FolioPedido, Renglon, CodigoProducto, NombreProducto, Cantidad, Unidad, PrecioUnitario, Importe, FechaCreacion)
+                        (ServerID, OrigenSistema, FolioPedido, Renglon, CodigoProducto, NombreProducto, Cantidad, Unidad, PrecioUnitario, Importe, FechaCreacion)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE());
                 """, (
                     server_id, system_type, str(row.get('folio')), row.get('producto_id'),
@@ -1080,13 +1075,13 @@ def sync_ordenes_from_server(
             try:
                 cursor.execute("""
                     MERGE INTO dbo.Compras_Ordenes AS target
-                    USING (SELECT %s AS  %s AS  %s AS FolioOrden) AS source
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS FolioOrden) AS source
                     ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema AND target.FolioOrden = source.FolioOrden
                     WHEN MATCHED THEN UPDATE SET
                         FechaOrden = %s, Estatus = %s, ProveedorID = %s, ProveedorNombre = %s,
                         ImporteTotal = %s, FechaModificacion = GETDATE()
                     WHEN NOT MATCHED THEN INSERT
-                        ( UnidadNegocioID,  FolioOrden, FechaOrden, Estatus, ProveedorID, ProveedorNombre, ImporteTotal, SyncStatus, FechaCreacion)
+                        (ServerID, UnidadNegocioID, OrigenSistema, FolioOrden, FechaOrden, Estatus, ProveedorID, ProveedorNombre, ImporteTotal, SyncStatus, FechaCreacion)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'SYNCED', GETDATE());
                 """, (
                     server_id, system_type, str(row.get('folio')),
@@ -1105,13 +1100,13 @@ def sync_ordenes_from_server(
             try:
                 cursor.execute("""
                     MERGE INTO dbo.Compras_OrdenesDetalle AS target
-                    USING (SELECT %s AS  %s AS  %s AS FolioOrden, %s AS CodigoProducto) AS source
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS FolioOrden, %s AS CodigoProducto) AS source
                     ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema 
                        AND target.FolioOrden = source.FolioOrden AND target.CodigoProducto = source.CodigoProducto
                     WHEN MATCHED THEN UPDATE SET
                         NombreProducto = %s, Cantidad = %s, Unidad = %s, PrecioUnitario = %s, Importe = %s, FechaModificacion = GETDATE()
                     WHEN NOT MATCHED THEN INSERT
-                        (  FolioOrden, Renglon, CodigoProducto, NombreProducto, Cantidad, Unidad, PrecioUnitario, Importe, FechaCreacion)
+                        (ServerID, OrigenSistema, FolioOrden, Renglon, CodigoProducto, NombreProducto, Cantidad, Unidad, PrecioUnitario, Importe, FechaCreacion)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE());
                 """, (
                     server_id, system_type, str(row.get('folio')), row.get('producto_id'),
@@ -1222,13 +1217,13 @@ def sync_recepciones_from_server(
             try:
                 cursor.execute("""
                     MERGE INTO dbo.Compras_Recepciones AS target
-                    USING (SELECT %s AS  %s AS  %s AS FolioRecepcion) AS source
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS FolioRecepcion) AS source
                     ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema AND target.FolioRecepcion = source.FolioRecepcion
                     WHEN MATCHED THEN UPDATE SET
                         FolioFactura = %s, FechaRecepcion = %s, Estatus = %s, ProveedorID = %s, ProveedorNombre = %s,
                         ImporteTotal = %s, FechaModificacion = GETDATE()
                     WHEN NOT MATCHED THEN INSERT
-                        ( UnidadNegocioID,  FolioRecepcion, FolioFactura, FechaRecepcion, Estatus, ProveedorID, ProveedorNombre, ImporteTotal, SyncStatus, FechaCreacion)
+                        (ServerID, UnidadNegocioID, OrigenSistema, FolioRecepcion, FolioFactura, FechaRecepcion, Estatus, ProveedorID, ProveedorNombre, ImporteTotal, SyncStatus, FechaCreacion)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'SYNCED', GETDATE());
                 """, (
                     server_id, system_type, str(row.get('folio')),
@@ -1247,13 +1242,13 @@ def sync_recepciones_from_server(
             try:
                 cursor.execute("""
                     MERGE INTO dbo.Compras_RecepcionesDetalle AS target
-                    USING (SELECT %s AS  %s AS  %s AS FolioRecepcion, %s AS CodigoProducto) AS source
+                    USING (SELECT %s AS ServerID, %s AS OrigenSistema, %s AS FolioRecepcion, %s AS CodigoProducto) AS source
                     ON target.ServerID = source.ServerID AND target.OrigenSistema = source.OrigenSistema 
                        AND target.FolioRecepcion = source.FolioRecepcion AND target.CodigoProducto = source.CodigoProducto
                     WHEN MATCHED THEN UPDATE SET
                         NombreProducto = %s, Cantidad = %s, Unidad = %s, PrecioUnitario = %s, Importe = %s, FechaModificacion = GETDATE()
                     WHEN NOT MATCHED THEN INSERT
-                        (  FolioRecepcion, Renglon, CodigoProducto, NombreProducto, Cantidad, Unidad, PrecioUnitario, Importe, FechaCreacion)
+                        (ServerID, OrigenSistema, FolioRecepcion, Renglon, CodigoProducto, NombreProducto, Cantidad, Unidad, PrecioUnitario, Importe, FechaCreacion)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE());
                 """, (
                     server_id, system_type, str(row.get('folio')), row.get('producto_id'),
