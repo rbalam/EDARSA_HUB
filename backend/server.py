@@ -9832,6 +9832,133 @@ ORDER BY M.fecha DESC
     }
 
 
+@api_router.post("/compras/detalle-movimientos-sql-first")
+async def obtener_detalle_movimientos_sql_first(
+    request: DetalleMovimientosRequest, 
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    [SQL-FIRST] Obtiene detalle de movimientos desde EDARSAHUB SQL.
+    
+    Este endpoint lee EXCLUSIVAMENTE de tablas sincronizadas en EDARSAHUB.
+    NO conecta a SoftRestaurant/MPRO directamente.
+    
+    Requiere que el job sync_compras haya llenado las tablas:
+    - Inventario_Movimientos
+    - Inventario_MovimientosDetalle
+    - Inventario_Almacenes
+    
+    Feature flag: COMPRAS_SQL_FIRST_ENABLED
+    """
+    import os
+    import pymssql
+    
+    # Verificar feature flag
+    if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
+        return {
+            'status': 'DISABLED',
+            'message': 'Endpoint SQL-First deshabilitado. Use /compras/detalle-movimientos',
+            'movimientos': [],
+            'totales': {'entradas': 0, 'salidas': 0, 'neto': 0}
+        }
+    
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '4.255.36.175'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USER', 'eloyk'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'Tijuana2020$')
+    }
+    
+    movimientos = []
+    totales = {'entradas': 0, 'salidas': 0, 'neto': 0}
+    
+    try:
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        codigo_limpio = request.codigo.strip()
+        
+        # Filtro de almacenes
+        filtro_almacenes = ""
+        if request.almacenes:
+            almacenes_limpios = [str(a).strip() for a in request.almacenes if str(a).strip()]
+            if almacenes_limpios:
+                almacenes_sql = ", ".join([f"'{a}'" for a in almacenes_limpios])
+                filtro_almacenes = f" AND a.CodigoAlmacen IN ({almacenes_sql}) "
+        
+        query = f"""
+        SELECT TOP 500
+            m.FechaMovimiento AS fecha,
+            m.TipoMovimiento AS concepto,
+            m.DescripcionConcepto AS descripcion_concepto,
+            d.Cantidad AS cantidad,
+            a.NombreAlmacen AS almacen,
+            m.Folio AS referencia,
+            CASE WHEN m.EsEntrada = 1 THEN 'E' ELSE 'S' END AS tipo
+        FROM dbo.Inventario_MovimientosDetalle d
+        INNER JOIN dbo.Inventario_Movimientos m
+            ON m.MovimientoID = d.MovimientoID
+        LEFT JOIN dbo.Inventario_Almacenes a
+            ON a.AlmacenID = m.AlmacenID
+        WHERE m.ServerID = %s
+          AND d.CodigoProducto = %s
+          AND m.FechaMovimiento >= %s
+          AND m.FechaMovimiento < DATEADD(DAY, 1, CAST(%s AS DATE))
+          {filtro_almacenes}
+        ORDER BY m.FechaMovimiento DESC, m.Folio DESC
+        """
+        
+        cursor.execute(query, (request.server_id, codigo_limpio, request.fecha_inicio, request.fecha_fin))
+        result = cursor.fetchall()
+        
+        for r in result:
+            cantidad = float(r['cantidad'] or 0)
+            tipo = r['tipo'] or 'S'
+            
+            movimientos.append({
+                'fecha': r['fecha'].isoformat() if hasattr(r['fecha'], 'isoformat') else str(r['fecha']),
+                'concepto': r['concepto'] or '',
+                'descripcion': r['descripcion_concepto'] or '',
+                'cantidad': cantidad,
+                'almacen': r['almacen'] or '',
+                'referencia': r['referencia'] or '',
+                'tipo': tipo
+            })
+            
+            if tipo == 'E':
+                totales['entradas'] += cantidad
+            else:
+                totales['salidas'] += cantidad
+        
+        totales['neto'] = totales['entradas'] - totales['salidas']
+        
+        conn.close()
+        
+        return {
+            'status': 'SQL_FIRST',
+            'source': 'EDARSAHUB',
+            'movimientos': movimientos,
+            'totales': totales
+        }
+        
+    except Exception as e:
+        logging.error(f"[SQL-FIRST] Error obteniendo detalle movimientos: {str(e)}")
+        return {
+            'status': 'ERROR',
+            'movimientos': [],
+            'totales': {'entradas': 0, 'salidas': 0, 'neto': 0},
+            'error': f"Error SQL-First: {str(e)}"
+        }
+
+
 class DetalleConsumosRequest(BaseModel):
     server_id: str
     sucursal: str
