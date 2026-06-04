@@ -556,8 +556,7 @@ async def obtener_sync_status(
 
 # ==================== UNIDADES DE NEGOCIO ====================
 
-# DESACTIVADO 2026-06-04: endpoint duplicado. Usar /api/unidades-negocio en server.py
-# @router.get("/unidades-negocio")
+@router.get("/unidades-negocio")
 async def listar_unidades_negocio(
     current_user: dict = Depends(get_current_user)
 ):
