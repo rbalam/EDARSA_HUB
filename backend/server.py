@@ -9305,6 +9305,14 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
     Obtiene el detalle de movimientos de un producto específico en un período.
     Muestra cada movimiento individual que compone el total.
     """
+    # DEBUG: Log de parámetros recibidos
+    print("=== DETALLE MOVIMIENTOS ===")
+    print("Producto:", request.codigo)
+    print("Almacenes:", getattr(request, 'almacenes', None))
+    print("Fecha inicial:", request.fecha_inicio)
+    print("Fecha final:", request.fecha_fin)
+    print("Server ID:", request.server_id)
+    
     # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
     from core.server_registry import get_server_connection_info
     server = await get_server_connection_info(request.server_id, db=db)
@@ -9374,11 +9382,13 @@ WHERE (RTRIM(LTRIM(M.idinsumospresentaciones)) = '{codigo_limpio}'
     {filtro_almacenes_movtos}
 ORDER BY M.fecha DESC
 """
+                print("Ejecutando query_pres...")
                 logging.info(f"[DETALLE_MOV] Query presentaciones: {query_pres[:200]}...")
                 result_pres = execute_sql_query(
                     server['host'], server['port'], server['database'],
                     server['username'], server['password'], query_pres
                 )
+                print(f"Resultados query_pres: {len(result_pres)} registros")
                 logging.info(f"[DETALLE_MOV] Resultados presentaciones: {len(result_pres)}")
                 
                 for m in result_pres:
@@ -9420,11 +9430,13 @@ WHERE (RTRIM(LTRIM(M.idinsumo)) = '{codigo_limpio}'
     {filtro_almacenes_movsinv}
 ORDER BY M.fecha DESC
 """
+                print("Ejecutando query_ins...")
                 logging.info(f"[DETALLE_MOV] Query insumos: {query_ins[:200]}...")
                 result_ins = execute_sql_query(
                     server['host'], server['port'], server['database'],
                     server['username'], server['password'], query_ins
                 )
+                print(f"Resultados query_ins: {len(result_ins)} registros")
                 logging.info(f"[DETALLE_MOV] Resultados insumos: {len(result_ins)}")
                 
                 for m in result_ins:
