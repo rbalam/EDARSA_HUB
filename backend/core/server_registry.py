@@ -2293,13 +2293,22 @@ def validate_registry_integrity() -> Dict:
 # FASE M1: WRAPPERS MÍNIMOS (Opcionales)
 # ============================================================================
 
-def list_operational_servers() -> List[Dict]:
+def list_operational_servers(system_type_filter: str = None) -> List[Dict]:
     """
     Lista servidores operacionales activos desde EDARSAHUB.
     
     Wrapper sobre _get_servers_from_sql.
+    
+    Args:
+        system_type_filter: Opcional. Filtra por system_type (ej: 'SoftRestaurant', 'MPRO')
     """
-    return _get_servers_from_sql(filter_active=True, filter_visible_listado=False, exclude_core=True)
+    servers = _get_servers_from_sql(filter_active=True, filter_visible_listado=False, exclude_core=True)
+    
+    if system_type_filter:
+        filter_upper = system_type_filter.upper()
+        servers = [s for s in servers if filter_upper in (s.get('system_type', '') or '').upper()]
+    
+    return servers
 
 
 def get_visible_servers_for_operaciones() -> List[Dict]:
