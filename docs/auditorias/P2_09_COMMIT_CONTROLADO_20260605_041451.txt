@@ -1,0 +1,24 @@
+P2-09 COMMIT CONTROLADO / RESPALDO
+Fecha: Fri Jun  5 04:14:51 UTC 2026
+
+=== 1) RAMA ACTUAL ===
+Edarsahub_Desarrollo
+
+=== 2) ESTADO GIT ===
+?? docs/auditorias/P2_09_COMMIT_CONTROLADO_20260605_041451.txt
+?? docs/reports/sync_sales_dry_run_backfill_7_dias/
+?? docs/reports/sync_sales_dry_runs/
+
+=== 3) VALIDACIÓN BACKEND ===
+OK compileall backend
+{"status":"operativo","sistema":"EDARSA HUB","version":"1.0"}
+=== 4) VALIDAR SQL-FIRST HEALTH ===
+Status: WARNING
+Counts: {'productive_live_connections': 0, 'productive_mongo_imports': 336, 'productive_hardcoded_credentials': 0}
+
+=== 5) VALIDAR MONGO ELIMINADO ===
+Referencias MongoDB: 3 (mayoría comentarios)
+
+=== 6) VALIDAR CREDENCIALES PRODUCTIVAS ===
+Credenciales hardcodeadas: 0
+
