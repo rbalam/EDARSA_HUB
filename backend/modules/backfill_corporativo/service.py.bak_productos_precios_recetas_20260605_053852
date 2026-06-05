@@ -327,111 +327,6 @@ def _backfill_ventas_hora(cur, server_id: str, fecha_inicio: str, fecha_fin: str
 
 
 # =============================================================================
-# BACKFILL PRODUCTOS
-# =============================================================================
-def _backfill_productos(cur, server_id: str, fecha_inicio: str, fecha_fin: str, dry_run: bool) -> Dict[str, Any]:
-    """Backfill PRODUCTOS (Sync_Productos)."""
-    tabla = "Sync_Productos"
-    server = _get_server(cur, server_id)
-
-    if not server:
-        return {"success": False, "tabla": tabla, "error": "Servidor no encontrado", "server_id": server_id}
-
-    if not _table_exists(cur, tabla):
-        return {"success": True, "tabla": tabla, "server": server, "existe": False, "registros": 0, "message": f"Tabla {tabla} no existe."}
-
-    cols = _get_columns(cur, tabla)
-    server_col = next((c for c in ["server_id", "ServerID", "ServidorID"] if c in cols), None)
-    
-    total = 0
-    if server_col:
-        cur.execute(f"SELECT COUNT(*) AS total FROM {tabla} WHERE CAST({server_col} AS NVARCHAR(100)) = CAST(%s AS NVARCHAR(100))", (server_id,))
-        row = cur.fetchone()
-        total = int(row.get('total', 0) if isinstance(row, dict) else row[0] or 0)
-    else:
-        cur.execute(f"SELECT COUNT(*) AS total FROM {tabla}")
-        row = cur.fetchone()
-        total = int(row.get('total', 0) if isinstance(row, dict) else row[0] or 0)
-
-    if dry_run:
-        return {"success": True, "tabla": tabla, "server": server, "modo": "DRY_RUN", "existe": True, "registros": total, "message": "Dry-run PRODUCTOS completado."}
-
-    status = "SUCCESS" if total > 0 else "PENDING_SOURCE"
-    _log_backfill(cur, server_id, "PRODUCTOS", fecha_inicio, fecha_fin, status, total, f"Backfill PRODUCTOS: {total} registros.")
-    return {"success": True, "tabla": tabla, "server": server, "modo": "COMMIT_CONTROL", "existe": True, "registros": total, "status": status}
-
-
-# =============================================================================
-# BACKFILL PRECIOS
-# =============================================================================
-def _backfill_precios(cur, server_id: str, fecha_inicio: str, fecha_fin: str, dry_run: bool) -> Dict[str, Any]:
-    """Backfill PRECIOS (Sync_Precios_Historicos)."""
-    tabla = "Sync_Precios_Historicos"
-    server = _get_server(cur, server_id)
-
-    if not server:
-        return {"success": False, "tabla": tabla, "error": "Servidor no encontrado", "server_id": server_id}
-
-    if not _table_exists(cur, tabla):
-        return {"success": True, "tabla": tabla, "server": server, "existe": False, "registros": 0, "message": f"Tabla {tabla} no existe."}
-
-    cols = _get_columns(cur, tabla)
-    server_col = next((c for c in ["ServerID", "server_id", "ServidorID"] if c in cols), None)
-    
-    total = 0
-    if server_col:
-        cur.execute(f"SELECT COUNT(*) AS total FROM {tabla} WHERE CAST({server_col} AS NVARCHAR(100)) = CAST(%s AS NVARCHAR(100))", (server_id,))
-        row = cur.fetchone()
-        total = int(row.get('total', 0) if isinstance(row, dict) else row[0] or 0)
-    else:
-        cur.execute(f"SELECT COUNT(*) AS total FROM {tabla}")
-        row = cur.fetchone()
-        total = int(row.get('total', 0) if isinstance(row, dict) else row[0] or 0)
-
-    if dry_run:
-        return {"success": True, "tabla": tabla, "server": server, "modo": "DRY_RUN", "existe": True, "registros": total, "message": "Dry-run PRECIOS completado."}
-
-    status = "SUCCESS" if total > 0 else "PENDING_SOURCE"
-    _log_backfill(cur, server_id, "PRECIOS", fecha_inicio, fecha_fin, status, total, f"Backfill PRECIOS: {total} registros.")
-    return {"success": True, "tabla": tabla, "server": server, "modo": "COMMIT_CONTROL", "existe": True, "registros": total, "status": status}
-
-
-# =============================================================================
-# BACKFILL RECETAS
-# =============================================================================
-def _backfill_recetas(cur, server_id: str, fecha_inicio: str, fecha_fin: str, dry_run: bool) -> Dict[str, Any]:
-    """Backfill RECETAS (Sync_Recetas)."""
-    tabla = "Sync_Recetas"
-    server = _get_server(cur, server_id)
-
-    if not server:
-        return {"success": False, "tabla": tabla, "error": "Servidor no encontrado", "server_id": server_id}
-
-    if not _table_exists(cur, tabla):
-        return {"success": True, "tabla": tabla, "server": server, "existe": False, "registros": 0, "message": f"Tabla {tabla} no existe."}
-
-    cols = _get_columns(cur, tabla)
-    server_col = next((c for c in ["server_id", "ServerID", "ServidorID"] if c in cols), None)
-    
-    total = 0
-    if server_col:
-        cur.execute(f"SELECT COUNT(*) AS total FROM {tabla} WHERE CAST({server_col} AS NVARCHAR(100)) = CAST(%s AS NVARCHAR(100))", (server_id,))
-        row = cur.fetchone()
-        total = int(row.get('total', 0) if isinstance(row, dict) else row[0] or 0)
-    else:
-        cur.execute(f"SELECT COUNT(*) AS total FROM {tabla}")
-        row = cur.fetchone()
-        total = int(row.get('total', 0) if isinstance(row, dict) else row[0] or 0)
-
-    if dry_run:
-        return {"success": True, "tabla": tabla, "server": server, "modo": "DRY_RUN", "existe": True, "registros": total, "message": "Dry-run RECETAS completado."}
-
-    status = "SUCCESS" if total > 0 else "PENDING_SOURCE"
-    _log_backfill(cur, server_id, "RECETAS", fecha_inicio, fecha_fin, status, total, f"Backfill RECETAS: {total} registros.")
-    return {"success": True, "tabla": tabla, "server": server, "modo": "COMMIT_CONTROL", "existe": True, "registros": total, "status": status}
-
-
-# =============================================================================
 # BACKFILL GENÉRICO (para módulos sin implementación específica)
 # =============================================================================
 def _backfill_generico(cur, modulo: str, server_id: str, fecha_inicio: str, fecha_fin: str, dry_run: bool) -> List[Dict[str, Any]]:
@@ -505,12 +400,6 @@ def ejecutar_backfill(
             resultados.append(_backfill_ventas(cur, server_id, fecha_inicio, fecha_fin, dry_run))
         elif modulo == "VENTAS_HORA":
             resultados.append(_backfill_ventas_hora(cur, server_id, fecha_inicio, fecha_fin, dry_run))
-        elif modulo == "PRODUCTOS":
-            resultados.append(_backfill_productos(cur, server_id, fecha_inicio, fecha_fin, dry_run))
-        elif modulo == "PRECIOS":
-            resultados.append(_backfill_precios(cur, server_id, fecha_inicio, fecha_fin, dry_run))
-        elif modulo == "RECETAS":
-            resultados.append(_backfill_recetas(cur, server_id, fecha_inicio, fecha_fin, dry_run))
         else:
             # Módulos sin implementación específica
             resultados = _backfill_generico(cur, modulo, server_id, fecha_inicio, fecha_fin, dry_run)
