@@ -247,7 +247,7 @@ def _get_variaciones_comparativas(
             SUM(ventas_total) as ventas,
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        FROM Comercial_KPIs_Diarios_v2
         WHERE unidad_negocio_id = '{unidad_negocio_id}'
           AND fecha_operacion >= '{fecha_inicio.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_efectiva + timedelta(days=1)).isoformat()}'
@@ -270,7 +270,7 @@ def _get_variaciones_comparativas(
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(*) as dias
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        FROM Comercial_KPIs_Diarios_v2
         WHERE unidad_negocio_id = '{unidad_negocio_id}'
           AND fecha_operacion >= '{fecha_inicio_mes_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_mes_ant + timedelta(days=1)).isoformat()}'
@@ -296,7 +296,7 @@ def _get_variaciones_comparativas(
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(*) as dias
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        FROM Comercial_KPIs_Diarios_v2
         WHERE unidad_negocio_id = '{unidad_negocio_id}'
           AND fecha_operacion >= '{fecha_inicio_año_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_año_ant + timedelta(days=1)).isoformat()}'
@@ -448,7 +448,7 @@ def _calcular_totales_variaciones(
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(DISTINCT fecha_operacion) as dias
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        FROM Comercial_KPIs_Diarios_v2
         WHERE unidad_negocio_id IN ({ids_quoted})
           AND fecha_operacion >= '{fecha_inicio_mes_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_mes_ant + timedelta(days=1)).isoformat()}'
@@ -470,7 +470,7 @@ def _calcular_totales_variaciones(
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(DISTINCT fecha_operacion) as dias
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        FROM Comercial_KPIs_Diarios_v2
         WHERE unidad_negocio_id IN ({ids_quoted})
           AND fecha_operacion >= '{fecha_inicio_año_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_año_ant + timedelta(days=1)).isoformat()}'
@@ -1135,7 +1135,7 @@ async def comercial_v2_kpis_diarios_unidad(
         
         query_ultima_fecha = f"""
         SELECT MAX(fecha_operacion) as ultima_fecha
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        FROM Comercial_KPIs_Diarios_v2
         WHERE unidad_negocio_id = '{unidad_negocio_id}'
           AND activo = 1 AND es_demo = 0
         """

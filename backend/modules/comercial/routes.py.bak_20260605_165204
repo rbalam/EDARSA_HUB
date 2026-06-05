@@ -3326,7 +3326,7 @@ async def comercial_detalle_movimientos(
             ISNULL(SUM(tickets_total),0) AS cheques_total,
             ISNULL(SUM(pax_total),0) AS pax_total,
             COUNT(*) AS total
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        FROM Comercial_KPIs_Diarios_v2
         WHERE {filtro_principal}
           AND fecha_operacion >= '{fecha_ini}'
           AND fecha_operacion <= '{fecha_fin}'
@@ -3348,7 +3348,7 @@ async def comercial_detalle_movimientos(
             sucursal_nombre,
             unidad_negocio_nombre,
             sistema_origen
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        FROM Comercial_KPIs_Diarios_v2
         WHERE {filtro_principal}
           AND fecha_operacion >= '{fecha_ini}'
           AND fecha_operacion <= '{fecha_fin}'

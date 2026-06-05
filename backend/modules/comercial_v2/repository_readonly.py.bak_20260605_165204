@@ -115,7 +115,7 @@ def get_kpis_diarios(
         hash_origen,
         fecha_alta,
         fecha_sincronizacion
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+    FROM Comercial_KPIs_Diarios_v2
     WHERE {' AND '.join(where_clauses)}
     ORDER BY fecha_operacion DESC, unidad_negocio_id
     """
@@ -151,7 +151,7 @@ def get_kpis_diarios_agregados(
         SUM(pax_total) as pax_total,
         MIN(fecha_operacion) as fecha_min,
         MAX(fecha_operacion) as fecha_max
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+    FROM Comercial_KPIs_Diarios_v2
     WHERE {' AND '.join(where_clauses)}
     """
     
@@ -239,7 +239,7 @@ def get_kpis_por_unidad(
                     END
                 ORDER BY id DESC  -- Preferir el ID más reciente
             ) as rn
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        FROM Comercial_KPIs_Diarios_v2
         WHERE {' AND '.join(base_where)}
     ),
     datos_sin_duplicados AS (
@@ -303,7 +303,7 @@ def get_kpis_mensuales(
         pax_promedio,
         dias_con_venta,
         fecha_ultima_actualizacion
-    FROM vw_Comercial_KPIs_Mensuales_v2_Runtime
+    FROM Comercial_KPIs_Mensuales_v2
     WHERE {' AND '.join(where_clauses)}
     ORDER BY anio DESC, mes DESC, unidad_negocio_id
     """
@@ -497,7 +497,7 @@ def get_unidades_disponibles(
         MAX(fecha_operacion) as fecha_max,
         COUNT(*) as total_dias,
         SUM(ventas_total) as ventas_historicas
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+    FROM Comercial_KPIs_Diarios_v2
     WHERE {' AND '.join(where_clauses)}
     GROUP BY unidad_negocio_id, unidad_negocio_nombre, sistema_origen, server_id
     ORDER BY unidad_negocio_id
@@ -528,7 +528,7 @@ def check_v2_health() -> Dict:
                 COUNT(DISTINCT unidad_negocio_id) as total_unidades,
                 MIN(fecha_operacion) as fecha_min,
                 MAX(fecha_operacion) as fecha_max
-            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+            FROM Comercial_KPIs_Diarios_v2
             WHERE activo = 1 AND es_demo = 0
         """)
         
@@ -614,7 +614,7 @@ def get_comparativos_diarios(
         ISNULL(pax_total, 0) as pax_total,
         ISNULL(tickets_total, 0) as cheques,
         anio, mes, dia
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+    FROM Comercial_KPIs_Diarios_v2
     WHERE unidad_negocio_id = '{unidad_negocio_id}'
       AND activo = 1 AND es_demo = 0
       AND (
@@ -649,7 +649,7 @@ def get_comparativos_diarios(
         ISNULL(pax_total, 0) as pax_total,
         ISNULL(tickets_total, 0) as cheques,
         anio, mes, dia
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+    FROM Comercial_KPIs_Diarios_v2
     WHERE unidad_negocio_id = '{unidad_negocio_id}'
       AND activo = 1 AND es_demo = 0
       AND (

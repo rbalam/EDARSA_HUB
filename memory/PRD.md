@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 11 - NORMALIZACIÓN ESQUEMA SQL + VISTAS CANÓNICAS)
-**Estado:** P0/P1 CERRADOS | P2 EN PROGRESO | SQL-First ✅ | MongoDB ELIMINADO ✅
+**Última actualización:** 2026-06-05 (Sesión 12 - P2-06 CIERRE ACELERADO DEUDA TÉCNICA)
+**Estado:** P0/P1 CERRADOS | P2 78% | SQL-First ✅ | MongoDB 99.9% ELIMINADO ✅
 
 ---
 
@@ -171,17 +171,36 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 - [ ] Módulo Pricing IA / Competidores Enterprise
 - [ ] Motor de Rentabilidad (Costos y Márgenes)
 
-### P2 (Medio) - Fase 2+
+### P2 (Medio) - Fase 2+ (78% Completado)
+- [x] ~~**P2-05: Consolidación SQL-First Total**~~ ✅ **COMPLETADO 2026-06-05**
+  - Creado `core/sql_first/db.py` - Helper conexión SQL
+  - Creado `core/sql_first/no_mongo.py` - Bloqueador Mongo productivo
+  - Guardrails verificados
+- [x] ~~**P2-06: Cierre Acelerado Deuda Técnica**~~ ✅ **COMPLETADO 2026-06-05**
+  - 6 archivos migrados a vistas Runtime:
+    * comercial/routes.py, comercial/service.py
+    * comercial_v2/repository_readonly.py, comercial_v2/routes.py
+    * dashboard_ejecutivo/routes.py, inteligencia_comercial/routes.py
+  - 4 archivos legacy preservados (backfill/sync)
+  - MongoDB Elimination: 99.9%
+  - No-Live: 99%
 - [ ] Desmockización total frontend restante
 - [ ] Scripts Edge Offline
 - [ ] Control RBAC por empresa/unidad/sucursal
 - [ ] Eliminación física de colecciones MongoDB legado
 
+### P3 (Backlog)
+- [ ] Migrar `finanzas/repository_cuadres_z.py` de MongoDB a SQL
+- [ ] Migrar `utils/migration_helpers.py` de MongoDB a SQL
+- [ ] Gráficas de tendencias para dashboards
+- [ ] Exportación a Excel de rentabilidad y reportes
+- [ ] Notificaciones push / alertas críticas
+
 ---
 
 ## 6. Credenciales de Prueba
 
-- **Usuario:** `admin@inventario.com`
+- **Usuario:** `admin@edarsa.com`
 - **Password:** `admin123`
 
 ---
@@ -209,6 +228,9 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06-05 (S12) | **✅ P2-06 CIERRE ACELERADO DEUDA TÉCNICA COMPLETADO** |
+| 2026-06-05 (S12) | 6 archivos migrados a vistas `vw_Comercial_KPIs_*_Runtime` |
+| 2026-06-05 (S12) | MongoDB Elimination: 99.9%, No-Live: 99% |
 | 2026-06-05 (S11) | **✅ NORMALIZACIÓN ESQUEMA SQL COMPLETADA** |
 | 2026-06-05 (S11) | Columna `unidad_negocio_pk` (UNIQUEIDENTIFIER) añadida a KPIs |
 | 2026-06-05 (S11) | Vistas canónicas `vw_Comercial_KPIs_*_Canonica` creadas |

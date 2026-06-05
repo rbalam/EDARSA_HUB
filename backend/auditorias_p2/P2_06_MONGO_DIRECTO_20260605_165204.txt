@@ -1,0 +1,3 @@
+/app/backend/core/config.py:11:    # print(settings.MONGO_URL)  # P2-07: MongoDB eliminado
+/app/backend/core/config.py:26:    MONGO_URL: str = ""  # P2-07: MongoDB eliminado
+/app/backend/core/centro_control/recipients_manager.py:28:MONGO_URL = None  # P2-07: MongoDB eliminado
