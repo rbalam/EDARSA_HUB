@@ -717,6 +717,14 @@ from modules.sync_monitor import router as sync_monitor_router
 api_router.include_router(sync_monitor_router)
 
 # ============================================================================
+# P3-03: BACKFILL CORPORATIVO SQL-First - Re-sincronización histórica
+# Endpoint: POST /api/admin/backfill, GET /api/admin/backfill/modulos
+# FUENTE: EDARSAHUB SQL. Modo DRY_RUN por defecto.
+# ============================================================================
+from modules.backfill_corporativo import router as backfill_corporativo_router
+api_router.include_router(backfill_corporativo_router)
+
+# ============================================================================
 # FASE 4E: Cache Management Endpoints (Admin Only)
 # ============================================================================
 from modules.comercial.cache_service import cleanup_expired_cache, get_cache_stats, init_cache_service
