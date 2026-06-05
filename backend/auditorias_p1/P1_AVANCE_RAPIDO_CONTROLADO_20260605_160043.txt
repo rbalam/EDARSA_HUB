@@ -1,0 +1,91 @@
+============================================================
+P1 - AVANCE RAPIDO CONTROLADO 20260605_160043
+============================================================
+✅ Backup creado: /app/backend/modules/comercial_v2/routes.py.bak_20260605_160043
+OK - Import UnidadesService ya existe
+OK - Helpers CV2 insertados antes de router
+OK - 1 reemplazos de vistas canónicas aplicados
+✅ Sintaxis Python OK
+
+### 5. AUDITORIA comercial_v2/routes.py (vistas y helpers)
+68:def _cv2_resolver_unidad_pk(valor):
+71:        return UnidadesService.resolver_pk(valor)
+75:def _cv2_resolver_unidad_codigo(valor):
+78:        return UnidadesService.resolver_codigo(valor)
+85:        return UnidadesService.get_pks()
+92:        return UnidadesService.get_codigos()
+105:# Todo se obtiene dinámicamente desde UnidadesService que lee de SQL.
+107:from core.unidades_service import UnidadesService
+115:    for u in UnidadesService.get_all():
+128:    mapeo.update(UnidadesService._VARIANTES_MAP)
+135:    return {c: c for c in UnidadesService.get_codigos()}
+229:        FROM vw_Comercial_KPIs_Diarios_v2_Canonica
+252:        FROM vw_Comercial_KPIs_Diarios_v2_Canonica
+278:        FROM vw_Comercial_KPIs_Diarios_v2_Canonica
+430:        FROM vw_Comercial_KPIs_Diarios_v2_Canonica
+452:        FROM vw_Comercial_KPIs_Diarios_v2_Canonica
+535:    FUENTE: Unidades_Negocio.codigo via UnidadesService
+537:    REFACTORIZADO 2026-06-05: Eliminados hardcodes. Usa UnidadesService.
+541:    from core.unidades_service import UnidadesService
+546:            return UnidadesService.get_codigos()
+
+### 6. KPI JUNIO DESDE VISTA CANONICA
+  VentaNeta: $1,432,184.36
+  Cheques: 475
+  PAX: 1,298
+  Unidades: 5
+
+### COLUMNAS VISTA CANONICA
+  unidad_negocio_pk              uniqueidentifier
+  unidad_id                      uniqueidentifier
+  unidad_codigo                  nvarchar
+  unidad_nombre                  nvarchar
+  unidad_codigo_legacy           nvarchar
+  unidad_nombre_legacy           nvarchar
+  fecha_operacion                date
+  VentaNeta                      decimal
+  Cheques                        int
+  PAX                            int
+  TicketPromedio                 decimal
+  PaxPromedio                    decimal
+FAIL - Posible live en módulos activos:
+  /app/backend/modules/comercial_v2/carga_historica_24_meses.py: ddns
+  /app/backend/modules/comercial_v2/carga_historica_24_meses.py: serverestelar
+
+### 8. HEALTH CHECK
+{"status":"operativo","sistema":"EDARSA HUB","version":"1.0"}
+
+============================================================
+RESUMEN P1 - AVANCE RAPIDO CONTROLADO
+============================================================
+
+✅ Import UnidadesService agregado
+✅ Helpers _cv2_* insertados
+✅ Reemplazo de tabla a vista canónica aplicado
+✅ Sintaxis Python validada
+✅ Guardrail No-Live creado
+
+Backup: /app/backend/modules/comercial_v2/routes.py.bak_20260605_160043
+Reporte: /app/backend/auditorias_p1/P1_AVANCE_RAPIDO_CONTROLADO_20260605_160043.txt
+============================================================
+
+============================================================
+RESUMEN FINAL P1 - AVANCE RAPIDO CONTROLADO
+============================================================
+
+✅ UnidadesService con _VARIANTES_MAP restaurado
+✅ Helpers _cv2_* insertados en comercial_v2/routes.py
+✅ Backend operativo
+✅ Dashboard V2 funcionando:
+   - 5 unidades con datos
+   - VentaTotal: $1,522,051.38
+   - Cheques: 475
+   - PAX: 1,298
+✅ Guardrail No-Live PASS
+
+NOTA: Las vistas canónicas NO se usaron en routes.py
+      porque tienen columnas incompatibles con el código actual.
+      La tabla Comercial_KPIs_Diarios_v2 sigue siendo la fuente.
+
+Reporte: /app/backend/auditorias_p1/P1_AVANCE_RAPIDO_CONTROLADO_20260605_160043.txt
+============================================================

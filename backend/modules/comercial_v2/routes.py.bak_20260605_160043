@@ -56,34 +56,6 @@ from .schemas_api import (
 logger = logging.getLogger(__name__)
 
 # Router v2 aislado
-
-# ============================================================
-# P1 - Helpers unidad negocio PK real + compatibilidad legacy
-# ============================================================
-
-def _cv2_resolver_unidad_pk(valor):
-    """Resolver PK real desde cualquier valor"""
-    try:
-        return UnidadesService.resolver_pk(valor)
-    except Exception:
-        return None
-
-def _cv2_resolver_unidad_codigo(valor):
-    """Resolver código desde cualquier valor"""
-    try:
-        return UnidadesService.resolver_codigo(valor)
-    except Exception:
-        return None
-
-def _cv2_unidades_codigos_activas():
-    """Lista de códigos activos"""
-    try:
-        return UnidadesService.get_codigos()
-    except Exception:
-        return []
-
-
-
 router = APIRouter(prefix="/comercial", tags=["Comercial V2"])
 
 

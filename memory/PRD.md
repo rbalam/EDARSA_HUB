@@ -1,7 +1,7 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 10 - REFACTOR sync_comercial_edarsahub.py + UnidadesService)
+**Última actualización:** 2026-06-05 (Sesión 11 - NORMALIZACIÓN ESQUEMA SQL + VISTAS CANÓNICAS)
 **Estado:** P0/P1 CERRADOS | P2 EN PROGRESO | SQL-First ✅ | MongoDB ELIMINADO ✅
 
 ---
@@ -209,7 +209,14 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 
 | Fecha | Cambio |
 |-------|--------|
-| 2026-06-05 (S10) | **✅ REFACTOR sync_comercial_edarsahub.py - UnidadesService** |
+| 2026-06-05 (S11) | **✅ NORMALIZACIÓN ESQUEMA SQL COMPLETADA** |
+| 2026-06-05 (S11) | Columna `unidad_negocio_pk` (UNIQUEIDENTIFIER) añadida a KPIs |
+| 2026-06-05 (S11) | Vistas canónicas `vw_Comercial_KPIs_*_Canonica` creadas |
+| 2026-06-05 (S11) | Índices por PK real creados |
+| 2026-06-05 (S11) | UnidadesService actualizado con soporte PK + _VARIANTES_MAP |
+| 2026-06-05 (S11) | Helpers _cv2_* insertados en comercial_v2/routes.py |
+| 2026-06-05 (S11) | Guardrails: test_p1_kpis_unidad_pk_real.py, test_p1_no_live_visual.py |
+| 2026-06-05 (S10) | REFACTOR sync_comercial_edarsahub.py - UnidadesService |
 | 2026-06-05 (S10) | Eliminados hardcodes de listas de unidades en runtime |
 | 2026-06-05 (S10) | Añadido `_sync_codigos_unidades_activas()` → `UnidadesService.get_codigos()` |
 | 2026-06-05 (S9) | Fix Race Condition en TableroEjecutivo.js |
@@ -217,15 +224,6 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 | 2026-06-05 (S9) | Creación `/api/admin-sql/*` endpoints SQL-First |
 | 2026-06-03 (S5) | **✅ SYNC_SALES PILOTO 2026-06-01 COMPLETADO Y VALIDADO** |
 | 2026-06-03 (S5) | Insertados 79 tickets en 5 unidades ($309,092.31 MXN) |
-| 2026-06-03 (S5) | Validación post-insert aprobada (0 duplicados, 100% JSON válido) |
-| 2026-06-03 (S5) | **REGLA PERMANENTE: Sync_Sales SoftRestaurant Legacy** establecida |
-| 2026-06-03 (S5) | Función `calculate_softrestaurant_item_total()` implementada |
-| 2026-06-03 (S5) | Validador `/app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh` creado |
-| 2026-06-02 (S4) | Dry-run Sync_Sales exitoso - CIENFUEGOS, 130QRO, ORIGEN |
-| 2026-06-02 (S4) | Corregido: FOR JSON PATH → JSON en Python (compatibilidad legacy) |
-| 2026-06-02 (S3) | Diagnóstico completo origen Comercial_KPIs_Diarios_v2 |
-| 2026-06-02 (S2) | Registrado módulo INTELIGENCIA_COMERCIAL (ID=59) |
-| 2026-06-02 (S1) | Fase 1 Inteligencia Comercial completada |
 
 ---
 

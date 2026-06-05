@@ -25,6 +25,26 @@ _CACHE = {
 }
 
 class UnidadesService:
+    # Variantes legacy para compatibilidad con datos históricos
+    _VARIANTES_MAP = {
+        # Mérida
+        '130-MER': '130MID', '130-MID': '130MID', '130MER': '130MID',
+        '130 MERIDA': '130MID', '130 MÉRIDA': '130MID',
+        '130° MERIDA': '130MID', '130° MÉRIDA': '130MID',
+        'MERIDA': '130MID', 'MÉRIDA': '130MID', '130MID': '130MID',
+        # Querétaro
+        '130-QRO': '130QRO', '130 QRO': '130QRO',
+        '130 QUERETARO': '130QRO', '130 QUERÉTARO': '130QRO',
+        '130° QUERETARO': '130QRO', '130° QUERÉTARO': '130QRO',
+        'QUERETARO': '130QRO', 'QUERÉTARO': '130QRO', '130QRO': '130QRO',
+        # Cienfuegos
+        'CIENFUEGOS': 'CIENFUEGOS',
+        # Estelar
+        'LA-ESTELAR': 'ESTELAR', 'LA ESTELAR': 'ESTELAR',
+        'ESTELAR': 'ESTELAR',
+        # Origen
+        'ORIGEN': 'ORIGEN',
+    }
     @staticmethod
     def _get_connection():
         """Obtiene conexión usando el pool del backend"""
