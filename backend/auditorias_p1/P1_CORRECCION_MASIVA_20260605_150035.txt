@@ -1,0 +1,132 @@
+============================================================
+P1 - CORRECCION MASIVA CONTROLADA 20260605_150035
+============================================================
+### KPI JUNIO 01-05 POR FECHA / UNIDAD
+
+### TOTAL 01-05
+VentaNeta: $1,432,184.36 | Cheques: 475 | PAX: 1,298 | Unidades: 5
+
+### FECHAS FALTANTES
+OK - Sin gaps
+### KPI JUNIO 01-05 POR FECHA / UNIDAD (CORREGIDO)
+130MID     130° MERIDA          2026-06-01 $   71,007.85     17     52   1
+130MID     130° MERIDA          2026-06-02 $  100,667.94     25     66   1
+130MID     130° MERIDA          2026-06-03 $   46,762.70     18     36   1
+130MID     130° MERIDA          2026-06-04 $   47,394.40     16     35   1
+130QRO     130° QUERETARO       2026-06-01 $   69,731.00     11     25   1
+130QRO     130° QUERETARO       2026-06-02 $  127,978.00     29     73   1
+130QRO     130° QUERETARO       2026-06-03 $  150,216.00     21     75   1
+130QRO     130° QUERETARO       2026-06-04 $  123,645.00     23     61   1
+CIENFUEG   CIENFUEGOS           2026-06-01 $   90,082.70     27     88   1
+CIENFUEG   CIENFUEGOS           2026-06-02 $  136,703.24     41    147   1
+CIENFUEG   CIENFUEGOS           2026-06-03 $  107,495.92     30    106   1
+ESTELAR    LA ESTELAR           2026-06-01 $      495.50      3      3   1
+ESTELAR    LA ESTELAR           2026-06-02 $   47,474.90     38     87   1
+ESTELAR    LA ESTELAR           2026-06-03 $   14,676.24     20     35   1
+ESTELAR    LA ESTELAR           2026-06-04 $   55,535.09     54    124   1
+ESTELAR    LA ESTELAR           2026-06-05 $      248.50      2      2   1
+ORIGEN     ORIGEN               2026-06-01 $   56,232.32     20     58   1
+ORIGEN     ORIGEN               2026-06-02 $   67,646.02     25     79   1
+ORIGEN     ORIGEN               2026-06-03 $   61,383.99     30     88   1
+ORIGEN     ORIGEN               2026-06-04 $   56,807.05     25     58   1
+
+### FECHAS FALTANTES (por unidad en KPIs)
+FALTA: 130° MERIDA          2026-06-05
+FALTA: 130° QUERETARO       2026-06-05
+FALTA: CIENFUEGOS           2026-06-04
+FALTA: CIENFUEGOS           2026-06-05
+FALTA: ORIGEN               2026-06-05
+
+### DRY-RUN PRODUCTIVO
+/app/backend/modules/backfill_corporativo/service.py:129:    En modo DRY_RUN solo valida; en COMMIT registra control.
+/app/backend/modules/backfill_corporativo/service.py:204:            "modo": "DRY_RUN",
+/app/backend/modules/backfill_corporativo/service.py:312:            "modo": "DRY_RUN",
+/app/backend/modules/backfill_corporativo/service.py:370:        return {"success": True, "tabla": tabla, "server": server, "modo": "DRY_RUN", "existe": True, "registros": total, "message": "Dry-run PRODUCTOS completado."}
+/app/backend/modules/backfill_corporativo/service.py:405:        return {"success": True, "tabla": tabla, "server": server, "modo": "DRY_RUN", "existe": True, "registros": total, "message": "Dry-run PRECIOS completado."}
+/app/backend/modules/backfill_corporativo/service.py:440:        return {"success": True, "tabla": tabla, "server": server, "modo": "DRY_RUN", "existe": True, "registros": total, "message": "Dry-run RECETAS completado."}
+/app/backend/modules/backfill_corporativo/service.py:550:            "modo": "DRY_RUN",
+/app/backend/modules/backfill_corporativo/service.py:613:            "modo": "DRY_RUN",
+/app/backend/modules/backfill_corporativo/service.py:682:            # Si dry_run=True solo valida; si dry_run=False ejecuta backfill real para faltantes/cero.
+/app/backend/modules/sync_historicos/service.py:9:- dry_run=True: Solo calcula, no escribe
+/app/backend/modules/sync_historicos/sync_ventas.py:35:    Ejecuta sincronización de ventas en modo DRY-RUN.
+/app/backend/modules/sync_historicos/sync_ventas.py:60:        dry_run=True  # OBLIGATORIO DRY-RUN
+/app/backend/modules/sync_historicos/sync_ventas.py:213:    Ejecuta sincronización de ventas por hora en modo DRY-RUN.
+/app/backend/modules/sync_historicos/sync_ventas.py:226:        dry_run=True
+/app/backend/modules/sync_historicos/sync_ventas.py:274:    Ejecuta sincronización de ventas por día de semana en modo DRY-RUN.
+/app/backend/modules/sync_historicos/sync_ventas.py:287:        dry_run=True
+/app/backend/modules/sync_recetas/sync_recetas.py:49:    Ejecuta sincronización en modo DRY-RUN (sin escribir en BD).
+/app/backend/modules/sync_recetas/sync_recetas.py:59:        dry_run=True
+/app/backend/modules/sync_recetas/sync_recetas.py:288:        if not config.dry_run and productos:
+/app/backend/modules/sync_recetas/sync_recetas.py:545:        if not config.dry_run and productos:
+/app/backend/scripts/p3_01_sync_compras_dryrun.py:34:print("Modo: DRY-RUN, NO INSERTA")
+/app/backend/scripts/validate_encrypted_server_connectivity.py:10:    python validate_encrypted_server_connectivity.py --dry-run    # Solo inventario
+/app/backend/scripts/validate_encrypted_server_connectivity.py:606:    parser.add_argument('--dry-run', action='store_true', help='Solo inventario, no ejecutar pruebas')
+/app/backend/scripts/validate_encrypted_server_connectivity.py:618:        args.dry_run = True  # Default es dry-run
+/app/backend/scripts/validate_encrypted_server_connectivity.py:622:    print(f"Modo: {'DRY-RUN' if args.dry_run else 'EJECUTAR PRUEBAS'}")
+/app/backend/scripts/fase_sync_3a_r2_pordiasemana.py:270:    result_dry = calcular_pordiasemana_desde_historicas(server_ids, dry_run=True)
+/app/backend/scripts/p3_01c_sync_compras_detalle_dryrun.py:34:print("Modo: DRY-RUN, NO INSERTA")
+/app/backend/scripts/rotate_server_secret_key.py:10:    python rotate_server_secret_key.py --dry-run
+/app/backend/scripts/rotate_server_secret_key.py:21:    --dry-run           Solo verificar, no modificar (default)
+/app/backend/scripts/rotate_server_secret_key.py:534:    parser.add_argument('--dry-run', action='store_true', help='Solo verificar, no modificar (default)')
+
+### NO-LIVE VISUAL - ENDPOINTS SOSPECHOSOS (routes.py)
+/app/backend/modules/api_connections/routes.py:43:    tipo: str = Field("MPRO", description="Tipo de sistema (MPRO, SoftRestaurant)")
+/app/backend/modules/auth/routes.py:313:    - El usuario sospecha que su cuenta fue comprometida
+/app/backend/modules/comercial/routes.py:27:- ✅ Adapters (APIs locales MPRO) migrados a adapters.py
+/app/backend/modules/comercial/routes.py:40:   - APIS_MPRO_LOCALES (configuración)
+/app/backend/modules/comercial/routes.py:41:   - query_api_mpro_local()
+/app/backend/modules/comercial/routes.py:46:   - get_kpis_softrestaurant()
+/app/backend/modules/comercial/routes.py:47:   - get_kpis_mpro()
+/app/backend/modules/comercial/routes.py:48:   - get_kpis_mpro_por_sucursal()
+/app/backend/modules/comercial/routes.py:100:    get_kpis_softrestaurant,
+/app/backend/modules/comercial/routes.py:101:    get_kpis_mpro,
+/app/backend/modules/comercial/routes.py:102:    get_kpis_mpro_por_sucursal,
+/app/backend/modules/comercial/routes.py:113:from modules.comercial.queries.softrestaurant import query_ventas_periodo_sr
+/app/backend/modules/comercial/routes.py:114:# BLOQUE 5.2: Import de query MPRO centralizada con filtro flexible
+/app/backend/modules/comercial/routes.py:115:from modules.comercial.queries.mpro import query_ventas_periodo_mpro_con_filtro_flexible
+/app/backend/modules/comercial/routes.py:159:    is_mpro_system,
+/app/backend/modules/comercial/routes.py:160:    is_softrestaurant_system,
+/app/backend/modules/comercial/routes.py:179:# remotos (SoftRestaurant/MPRO) desde la UI. Los endpoints afectados devolverán
+/app/backend/modules/comercial/routes.py:881:            if is_softrestaurant_system(server.get('system_type')):
+/app/backend/modules/comercial/routes.py:991:                            kpis = get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
+/app/backend/modules/comercial/routes.py:994:                        logging.warning(f"[BLINDAJE] Error SoftRestaurant {server['name']}: {sr_error}")
+
+### API ENDPOINTS QUE LEEN DESDE ORIGENES
+
+### CORPORATE FILTERS - FILTROS EN FRONTEND
+/app/frontend/src/pages/Compras.js:80:function DashboardCompras({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
+/app/frontend/src/pages/Compras.js:98:    if (!selectedSucursal || !selectedUnidad) return;
+/app/frontend/src/pages/Compras.js:101:    const unidadKey = generateUnidadKey(selectedUnidad);
+/app/frontend/src/pages/Compras.js:113:      system_type: selectedUnidad?.system_type,
+/app/frontend/src/pages/Compras.js:210:  }, [selectedServer, selectedSucursal, selectedMeses, selectedAnios, selectedUnidad]);
+/app/frontend/src/pages/Compras.js:270:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+/app/frontend/src/pages/Compras.js:526:function AutorizacionComprasTab({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal: parentSucursal, setSelectedSucursal: setParentSucursal, sucursales: parentSucursales }) {
+/app/frontend/src/pages/Compras.js:725:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad}>
+/app/frontend/src/pages/Compras.js:891:function AnalisisCompras({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
+/app/frontend/src/pages/Compras.js:1050:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad}>
+/app/frontend/src/pages/Compras.js:1485:function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal: parentSucursal, setSelectedSucursal: setParentSucursal, sucursales: parentSucursales }) {
+/app/frontend/src/pages/Compras.js:1907:    if (inventarioParaBackend.length > 0 && selectedUnidad) {
+/app/frontend/src/pages/Compras.js:1909:        const unidadInfo = unidadesNegocio.find(u => u.id === selectedUnidad);
+/app/frontend/src/pages/Compras.js:1911:          unidad_negocio_id: selectedUnidad,
+/app/frontend/src/pages/Compras.js:2212:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad}>
+/app/frontend/src/pages/Compras.js:3388:  const [selectedUnidad, setSelectedUnidad] = useState('');
+/app/frontend/src/pages/Compras.js:3396:    return getServerIdFromUnidad(unidadesNegocio, selectedUnidad);
+/app/frontend/src/pages/Compras.js:3397:  }, [unidadesNegocio, selectedUnidad]);
+/app/frontend/src/pages/Compras.js:3440:          setSelectedUnidad(unidades[0].id);
+/app/frontend/src/pages/Compras.js:3456:              setSelectedUnidad(params.unidad);
+
+### VALIDACION API BASE
+{"status":"operativo","sistema":"EDARSA HUB","version":"1.0"}
+
+============================================================
+FIN P1 - CORRECCION MASIVA CONTROLADA
+
+GAPS DETECTADOS (Junio 2026):
+  - 130° MERIDA: Falta 2026-06-05
+  - 130° QUERETARO: Falta 2026-06-05
+  - CIENFUEGOS: Falta 2026-06-04 y 2026-06-05
+  - ORIGEN: Falta 2026-06-05
+  - LA ESTELAR: Completo ✅
+
+Reporte: /app/backend/auditorias_p1/P1_CORRECCION_MASIVA_20260605_150035.txt
+============================================================
