@@ -1,0 +1,24 @@
+/app/backend/modules/sistema/menu_routes.py:82:    if email in ['admin@edarsa.com', 'superadmin@edarsa.com']:
+/app/backend/modules/admin_sql/routes.py:36:        or email in ["admin@edarsa.com", "ricardo@edarsa.com.mx"]
+/app/backend/scripts/validate_catalogo_sistemas_endpoints.py:33:TEST_PASSWORD = "admin123"
+/app/backend/scripts/validate_consultas_sql_endpoints_fase_4b.py:26:    "password": "admin123"
+/app/backend/scripts/paquete_piloto_sync_agent/GUIA_PILOTO.md:72:USER_EMAIL="admin@edarsa.com"
+/app/backend/tests/test_auth_service.py:238:            await update_user("user-123", {"password": "nueva_contraseña"}, admin_user)
+/app/backend/tests/test_sucursales_permissions.py:66:        """Admin login with admin@inventario.com / admin123"""
+/app/backend/tests/test_softrestaurant_inventory.py:16:TEST_PASSWORD = test_config.admin_password
+/app/backend/tests/test_sistema_tareas.py:17:ADMIN_PASSWORD = test_config.admin_password
+/app/backend/tests/test_sistema_tareas.py:369:    def test_aprobar_solicitud_with_correct_password(self, admin_token):
+/app/backend/tests/test_sistema_tareas.py:407:    def test_aprobar_solicitud_with_wrong_password(self, admin_token):
+/app/backend/server.py:14288:    admin_password = body.get('admin_password', '')
+/app/backend/server.py:14290:    if not admin_username or not admin_password:
+/app/backend/server.py:14364:            password=admin_password,
+/app/backend/routes/portal_proveedores.py:1037:@portal_router.post("/admin/reset-password")
+/app/backend/routes/portal_proveedores.py:1038:async def admin_reset_supplier_password(data: dict, current_user: dict = Depends(require_portal_admin)):
+/app/backend/routes/portal_proveedores.py:1090:        "new_password": new_password,  # Devolver para que el admin la comunique
+/app/frontend/src/pages/ExploradorBD.js:40:  const [adminCredentials, setAdminCredentials] = useState({ username: '', password: '' });
+/app/frontend/src/pages/ExploradorBD.js:124:    if (!adminCredentials.username || !adminCredentials.password) {
+/app/frontend/src/pages/ExploradorBD.js:141:          admin_password: adminCredentials.password
+/app/frontend/src/pages/ExploradorBD.js:573:                value={adminCredentials.password}
+/app/frontend/src/pages/ExploradorBD.js:604:              disabled={ejecutando || !adminCredentials.username || !adminCredentials.password}
+/app/frontend/src/pages/Login.js:204:                    <span className="font-mono text-slate-700">admin123</span>
+/app/frontend/src/pages/Proveedores.js:117:      const response = await api.post('/portal/admin/reset-password', {

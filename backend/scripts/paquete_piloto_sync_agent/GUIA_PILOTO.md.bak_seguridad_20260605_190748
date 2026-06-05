@@ -69,7 +69,7 @@ telnet <IP_SQL_SERVER> 1433
 ```bash
 # Variables (reemplazar con valores reales)
 HUB_URL="https://TU_HUB_URL"
-USER_EMAIL="test@example.com"
+USER_EMAIL="admin@edarsa.com"
 USER_PASSWORD="TU_PASSWORD"
 SERVER_ID="UUID_DEL_SERVIDOR"
 

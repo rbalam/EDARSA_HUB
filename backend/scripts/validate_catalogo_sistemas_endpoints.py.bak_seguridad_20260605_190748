@@ -30,7 +30,7 @@ from typing import Tuple, List, Dict, Any
 # Configuración
 API_URL = os.environ.get('API_URL', 'https://g0049-ldnv-u959.preview.emergentagent.com')
 TEST_EMAIL = "admin@inventario.com"
-TEST_PASSWORD = "<TEST_PASSWORD>"
+TEST_PASSWORD = "admin123"
 
 
 def print_header(title: str) -> None:
