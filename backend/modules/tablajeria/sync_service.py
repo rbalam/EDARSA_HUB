@@ -25,8 +25,10 @@ logger = logging.getLogger(__name__)
 
 MEXICO_TZ = ZoneInfo("America/Mexico_City")
 
-# Credenciales desde variables de entorno
-DEFAULT_DB_PASSWORD = os.environ.get('EDARSAHUB_PASSWORD', '')
+# P2-01: Credenciales desde config centralizado
+from core.config.edarsahub_config import get_edarsahub_sql_config
+_edarsa_cfg = get_edarsahub_sql_config()
+DEFAULT_DB_PASSWORD = _edarsa_cfg.password
 
 
 class TablajeriaSyncService:

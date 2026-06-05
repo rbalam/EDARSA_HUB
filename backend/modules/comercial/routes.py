@@ -1933,13 +1933,14 @@ async def obtener_sucursales(
     
     # FASE A-P1: LEER DESDE EDARSAHUB SQL (Sistema_Sucursales + mapeo)
     try:
-        # Configuración EDARSAHUB directa
-        import os
-        edarsahub_host = os.environ.get('EDARSAHUB_HOST', '54.39.104.176')
-        edarsahub_port = int(os.environ.get('EDARSAHUB_PORT', '1433'))
-        edarsahub_database = os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
-        edarsahub_username = os.environ.get('EDARSAHUB_USERNAME', 'HRLectura')
-        edarsahub_password = os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        # P2-01: Configuración EDARSAHUB centralizada
+        from core.config.edarsahub_config import get_edarsahub_sql_config
+        cfg = get_edarsahub_sql_config()
+        edarsahub_host = cfg.host
+        edarsahub_port = cfg.port
+        edarsahub_database = cfg.database
+        edarsahub_username = cfg.user
+        edarsahub_password = cfg.password
         
         # Query para obtener sucursales mapeadas al servidor
         query_sucursales = f'''

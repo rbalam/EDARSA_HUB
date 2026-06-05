@@ -36,16 +36,13 @@ def _rows_to_dicts(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def _get_edarsahub_sql_connection():
-    host = os.environ.get("EDARSA_HUB_SQL_HOST") or _edarsa_cfg.host
-    if not host:
-        raise RuntimeError("Falta EDARSA_HUB_SQL_HOST / EDARSAHUB_SQL_HOST")
-
+    """P2-01: Usa config centralizado."""
     return pytds.connect(
-        server=host,
-        port=int(os.environ.get("EDARSA_HUB_SQL_PORT") or _edarsa_cfg.port or "1433"),
-        database=os.environ.get("EDARSA_HUB_SQL_DB") or _edarsa_cfg.database or os.environ.get("EDARSAHUB_SQL_DB") or "EDARSA_HUB",
-        user=os.environ.get("EDARSA_HUB_SQL_USER") or _edarsa_cfg.user or "sa",
-        password=os.environ.get("EDARSA_HUB_SQL_PASS") or _edarsa_cfg.password or os.environ.get("EDARSAHUB_SQL_PASS") or "",
+        server=_edarsa_cfg.host,
+        port=_edarsa_cfg.port,
+        database=_edarsa_cfg.database,
+        user=_edarsa_cfg.user,
+        password=_edarsa_cfg.password,
         timeout=30,
         login_timeout=30,
         as_dict=True,

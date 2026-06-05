@@ -41,9 +41,8 @@ DB_CONFIG = {
     'password': _edarsa_cfg.password
 }
 
-# Validar que el password esté configurado
-if not DB_CONFIG['password']:
-    logger.warning("[TABLAJERIA] EDARSAHUB_PASSWORD no configurado en variables de entorno")
+# P2-01: Config centralizado - No se requiere validar password aquí
+# (el singleton ya valida que las variables existan)
 
 
 def get_connection():

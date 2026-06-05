@@ -37,13 +37,13 @@ _edarsa_cfg = get_edarsahub_sql_config()
 
 logger = logging.getLogger(__name__)
 
-# Configuración EDARSAHUB - Usa variables de entorno con fallback
+# P2-01: Configuración EDARSAHUB centralizada (sin fallbacks legacy)
 EDARSAHUB_CONFIG = {
-    'host': os.environ.get('EDARSAHUB_HOST', _edarsa_cfg.host),
-    'port': int(os.environ.get('EDARSAHUB_PORT', _edarsa_cfg.port)),
-    'database': os.environ.get('EDARSAHUB_DATABASE', _edarsa_cfg.database),
-    'username': os.environ.get('EDARSAHUB_USERNAME', _edarsa_cfg.user),
-    'password': os.environ.get('EDARSAHUB_PASSWORD', _edarsa_cfg.password)
+    'host': _edarsa_cfg.host,
+    'port': _edarsa_cfg.port,
+    'database': _edarsa_cfg.database,
+    'username': _edarsa_cfg.user,
+    'password': _edarsa_cfg.password
 }
 
 

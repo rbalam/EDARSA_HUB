@@ -102,12 +102,15 @@ MPRO_API_LOCAL_CONFIG = MPRO_API_LOCAL_CONFIG_LEGACY
 SYNC_TYPE_VENTAS_DIA = "VENTAS_DIA_ABIERTAS"
 LOCK_TIMEOUT_MINUTES = 30
 
+# P2-01: Config centralizado
+from core.config.edarsahub_config import get_edarsahub_sql_config
+_edarsa_cfg = get_edarsahub_sql_config()
 EDARSAHUB_LOCK_CONFIG = {
-    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
-    'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
-    'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-    'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-    'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    'host': _edarsa_cfg.host,
+    'port': _edarsa_cfg.port,
+    'database': _edarsa_cfg.database,
+    'username': _edarsa_cfg.user,
+    'password': _edarsa_cfg.password
 }
 
 

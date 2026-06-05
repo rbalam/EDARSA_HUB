@@ -4,6 +4,7 @@ import os
 import logging
 
 from core.db import execute_sql_query
+from core.config.edarsahub_config import get_edarsahub_sql_config
 
 logger = logging.getLogger(__name__)
 
@@ -11,36 +12,13 @@ router = APIRouter(prefix="/corporate-filters", tags=["Corporate Filters"])
 
 
 # ============================================================
-# Configuración SQL EDARSAHUB
+# Configuración SQL EDARSAHUB (P2-01: Centralizado)
 # ============================================================
 
-def env_first(*names, default=None):
-    for name in names:
-        value = os.environ.get(name)
-        if value:
-            return value
-    return default
-
-
 def get_sql_config():
-    host = env_first("EDARSAHUB_SQL_HOST", "SQLSERVER_HOST", "SQL_HOST", "MSSQL_HOST")
-    port = int(env_first("EDARSAHUB_SQL_PORT", "SQLSERVER_PORT", "SQL_PORT", "MSSQL_PORT", default="1433"))
-    database = env_first("EDARSAHUB_SQL_DATABASE", "SQLSERVER_DATABASE", "SQL_DATABASE", "MSSQL_DATABASE", default="EDARSAHUB")
-    username = env_first("EDARSAHUB_SQL_USER", "EDARSAHUB_SQL_USERNAME", "SQLSERVER_USERNAME", "SQL_USER", "MSSQL_USER")
-    password = env_first("EDARSAHUB_SQL_PASSWORD", "SQLSERVER_PASSWORD", "SQL_PASSWORD", "MSSQL_PASSWORD")
-
-    missing = []
-    if not host:
-        missing.append("SQL HOST")
-    if not username:
-        missing.append("SQL USER")
-    if not password:
-        missing.append("SQL PASSWORD")
-
-    if missing:
-        raise RuntimeError("Faltan variables de entorno SQL EDARSAHUB: " + ", ".join(missing))
-
-    return host, port, database, username, password
+    """P2-01: Usa config centralizado."""
+    cfg = get_edarsahub_sql_config()
+    return cfg.host, cfg.port, cfg.database, cfg.user, cfg.password
 
 
 def sql_query(query: str) -> List[Dict[str, Any]]:

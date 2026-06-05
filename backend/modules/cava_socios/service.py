@@ -565,12 +565,14 @@ class CavaSociosService:
 
 
 def get_cava_socios_service() -> CavaSociosService:
-    """Factory para obtener instancia del servicio."""
+    """Factory para obtener instancia del servicio (P2-01: Config centralizado)."""
+    from core.config.edarsahub_config import get_edarsahub_sql_config
+    cfg = get_edarsahub_sql_config()
     db_config = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
-        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
-        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', '')
+        'host': cfg.host,
+        'port': cfg.port,
+        'database': cfg.database,
+        'username': cfg.user,
+        'password': cfg.password
     }
     return CavaSociosService(db_config)

@@ -138,3 +138,44 @@ ESTADO FINAL:
 HEALTH: OK
 
 ================================================================================
+
+================================================================================
+P2-05 MIGRACIÓN FINAL ARCHIVOS PRODUCTIVOS - COMPLETADA
+================================================================================
+Fecha: 2026-06-05 04:15 UTC
+
+ARCHIVOS MIGRADOS EN ESTA FASE:
+1. modules/corporate_filters/router.py
+2. modules/cava_socios/service.py
+3. modules/crm/integration_routes.py
+4. api/admin_data_quality.py
+5. core/scheduler/jobs/sync_compras_job.py
+6. core/scheduler/jobs/detect_nuevos_compras_job.py
+7. core/scheduler/jobs/sync_comercial_abiertas_v2_job.py
+8. modules/comercial/routes.py
+9. modules/compras/sync_service.py
+10. modules/tablajeria/routes.py
+11. modules/tablajeria/sync_service.py
+12. core/scheduler/jobs/inteligencia_comercial_status_job.py
+
+ESTADO FINAL:
+- Referencias PRODUCTIVAS restantes: 0
+- Referencias NO_PRODUCTIVAS (scripts/tools): 125 (documentadas)
+
+VALIDACIÓN:
+- Sintaxis: OK
+- Health endpoint: OK
+- Backend: OPERATIVO
+
+================================================================================
+DICTAMEN FINAL P2-01 a P2-05: CENTRALIZACIÓN COMPLETADA
+================================================================================
+Todos los módulos productivos ahora usan:
+- core.config.edarsahub_config.get_edarsahub_sql_config()
+- Variables legacy eliminadas de código productivo
+- Scripts de auditoría mantienen referencias documentadas
+
+MongoDB: DEPRECADO (Auth/RBAC 100% SQL)
+SQL Server: FUENTE ÚNICA PRODUCTIVA
+
+================================================================================
