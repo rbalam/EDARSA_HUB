@@ -84,37 +84,6 @@ def _cv2_unidades_codigos_activas():
 
 
 
-
-# ============================================================
-# P2-02 - Runtime filters centralizados
-# ============================================================
-
-def _resolver_unidad_pk_runtime(valor):
-    """Resolver PK usando servicios centralizados"""
-    try:
-        from core.corporate_filters.service import CorporateFilterService
-        return CorporateFilterService.resolver_unidad(valor).get("pk")
-    except Exception:
-        try:
-            from core.unidades_service import UnidadesService
-            return UnidadesService.resolver_pk(valor)
-        except Exception:
-            return None
-
-def _resolver_unidad_codigo_runtime(valor):
-    """Resolver código usando servicios centralizados"""
-    try:
-        from core.corporate_filters.service import CorporateFilterService
-        return CorporateFilterService.resolver_unidad(valor).get("codigo")
-    except Exception:
-        try:
-            from core.unidades_service import UnidadesService
-            return UnidadesService.resolver_codigo(valor)
-        except Exception:
-            return None
-
-
-
 router = APIRouter(prefix="/comercial", tags=["Comercial V2"])
 
 
@@ -125,7 +94,6 @@ router = APIRouter(prefix="/comercial", tags=["Comercial V2"])
 # Todo se obtiene dinámicamente desde UnidadesService que lee de SQL.
 
 from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 
 def get_mapeo_kpi_a_canonico() -> dict:
     """

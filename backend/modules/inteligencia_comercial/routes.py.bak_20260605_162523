@@ -25,7 +25,6 @@ import pymssql
 import os
 from core.config.edarsahub_config import get_edarsahub_sql_config
 from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -52,37 +51,6 @@ def _pic_codigo_to_nombre(codigo):
 def _pic_mapeo_codigo_nombre():
     """Obtiene diccionario codigo -> nombre para display."""
     return UnidadesService.get_mapeo_codigo_nombre()
-
-
-
-# ============================================================
-# P2-02 - Runtime filters centralizados
-# ============================================================
-
-def _resolver_unidad_pk_runtime(valor):
-    """Resolver PK usando servicios centralizados"""
-    try:
-        from core.corporate_filters.service import CorporateFilterService
-        return CorporateFilterService.resolver_unidad(valor).get("pk")
-    except Exception:
-        try:
-            from core.unidades_service import UnidadesService
-            return UnidadesService.resolver_pk(valor)
-        except Exception:
-            return None
-
-def _resolver_unidad_codigo_runtime(valor):
-    """Resolver código usando servicios centralizados"""
-    try:
-        from core.corporate_filters.service import CorporateFilterService
-        return CorporateFilterService.resolver_unidad(valor).get("codigo")
-    except Exception:
-        try:
-            from core.unidades_service import UnidadesService
-            return UnidadesService.resolver_codigo(valor)
-        except Exception:
-            return None
-
 
 
 router = APIRouter(prefix="/inteligencia", tags=["Inteligencia Comercial"])

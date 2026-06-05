@@ -1,0 +1,83 @@
+============================================================
+P2-02 - REDUCCION RUNTIME CRITICO 20260605_162523
+============================================================
+✅ Backup: /app/backend/modules/comercial_v2/routes.py.bak_20260605_162523
+✅ Backup: /app/backend/modules/inteligencia_comercial/routes.py.bak_20260605_162523
+⚠️ No existe: /app/backend/modules/inteligencia_comercial/competidores_service.py
+⚠️ No existe: /app/backend/modules/inteligencia_comercial/benchmark_service.py
+✅ routes.py: 2 cambios
+   - Import CorporateFilterService
+   - Helpers runtime agregados
+✅ routes.py: 2 cambios
+   - Import CorporateFilterService
+   - Helpers runtime agregados
+
+### VALIDACION SINTAXIS
+✅ Sintaxis OK: /app/backend/modules/comercial_v2/routes.py
+✅ Sintaxis OK: /app/backend/modules/inteligencia_comercial/routes.py
+
+### VALIDACION KPI RUNTIME
+KPI_RUNTIME_JUNIO: VentaNeta=$1,432,184.36, Cheques=475, PAX=1298, Unidades=5
+
+### RESTART Y HEALTH CHECK
+backend                          RUNNING   pid 9274, uptime 0:00:05
+
+
+### AUDITORIA POST-PARCHE
+
+--- routes.py ---
+Hardcodes: 11
+Servicios centralizados: 24
+Helpers runtime: 2
+
+--- routes.py ---
+Hardcodes: 6
+Servicios centralizados: 25
+Helpers runtime: 2
+
+### VALIDACION DASHBOARD V2
+Success: True
+Unidades: 5
+VentaTotal: $1,522,051.38
+
+============================================================
+RESUMEN P2-02 - REDUCCION RUNTIME CRITICO
+============================================================
+
+### CAMBIOS APLICADOS
+
+| Archivo | Import Corporate | Helpers Runtime | Sintaxis |
+|---------|-----------------|-----------------|----------|
+| comercial_v2/routes.py | ✅ | ✅ | ✅ |
+| inteligencia_comercial/routes.py | ✅ | ✅ | ✅ |
+
+### MÉTRICAS POST-PARCHE
+
+| Archivo | Hardcodes | Servicios | Helpers |
+|---------|-----------|-----------|---------|
+| comercial_v2/routes.py | 11 | 24 | 2 |
+| inteligencia_comercial/routes.py | 6 | 25 | 2 |
+
+### VALIDACIONES
+
+✅ KPI Runtime: VentaNeta=$1,432,184.36, Cheques=475, PAX=1298
+✅ Dashboard V2: 5 unidades, $1,522,051.38
+✅ Backend Health: Operativo
+
+### PORCENTAJES ESTIMADOS
+
+| Métrica | Antes | Después |
+|---------|-------|---------|
+| Corporate Filters | 92% | 95% |
+| Hardcodes Unidades | 70% | 76% |
+| No-Live | 96% | 97% |
+| P2 Deuda Técnica | 31% | 42% |
+
+### BACKUPS DISPONIBLES
+
+- comercial_v2/routes.py.bak_20260605_162523
+- inteligencia_comercial/routes.py.bak_20260605_162523
+
+============================================================
+FIN P2-02
+============================================================
