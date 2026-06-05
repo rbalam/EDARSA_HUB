@@ -624,13 +624,15 @@ def execute_hub_query(query: str, params: tuple = None) -> List[Dict[str, Any]]:
         # Reemplaza: mongo_db.ventas.find({"sucursal_id": id})
         results = execute_hub_query("SELECT * FROM Comercial_Ventas_Sync WHERE SucursalID = %s", (sucursal_id,))
     """
-    # Configuración EDARSAHUB desde variables de entorno
+    # P2-01: Configuración EDARSAHUB centralizada
+    from core.config.edarsahub_config import get_edarsahub_sql_config
+    _cfg = get_edarsahub_sql_config()
     server_config = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
-        'port': int(os.environ.get('EDARSAHUB_PORT', 1433)),
-        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+        'host': _cfg.host,
+        'port': _cfg.port,
+        'database': _cfg.database,
+        'username': _cfg.user,
+        'password': _cfg.password,
     }
     
     try:
@@ -662,12 +664,15 @@ def execute_hub_insert(query: str, params: tuple = None) -> bool:
     Ejecuta INSERT/UPDATE/DELETE en EDARSAHUB.
     Retorna True si fue exitoso.
     """
+    # P2-01: Configuración EDARSAHUB centralizada
+    from core.config.edarsahub_config import get_edarsahub_sql_config
+    _cfg = get_edarsahub_sql_config()
     server_config = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
-        'port': int(os.environ.get('EDARSAHUB_PORT', 1433)),
-        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+        'host': _cfg.host,
+        'port': _cfg.port,
+        'database': _cfg.database,
+        'username': _cfg.user,
+        'password': _cfg.password,
     }
     
     try:

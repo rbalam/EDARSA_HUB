@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 6 - CERRADA - SQL-First Completo + Auditoría MongoDB)
-**Estado:** P0/P1 CERRADOS - Endpoints SQL-First ✅ | Auth/RBAC SQL ✅ | Mongo Core Auditado ✅
+**Última actualización:** 2026-06-05 (Sesión 7 - P2-01 Centralización Config EDARSAHUB EN PROGRESO)
+**Estado:** P0/P1 CERRADOS - Endpoints SQL-First ✅ | Auth/RBAC SQL ✅ | P2-01 Config Central 8/65 archivos ✅
 
 ---
 
@@ -427,7 +427,16 @@ bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
 
 ### P2 - Media Prioridad
 - [ ] Validar columnas destino de `sync_compras` en SSMS (bloqueante para dry_run=false)
-- [ ] Centralizar configuración conexión EDARSAHUB (~91 archivos con credenciales hardcodeadas)
+- [x] **P2-01 Centralizar configuración EDARSAHUB** - EN PROGRESO (Sesión 7, 2026-06-05)
+  - ✅ Singleton creado: `core/config/edarsahub_config.py`
+  - ✅ Helper SQL: `core/config/edarsahub_sql.py`
+  - ✅ `server.py` - 13 bloques migrados
+  - ✅ `comercial/repository.py` - migrado
+  - ✅ `comercial/inteligencia_comercial_routes.py` - migrado
+  - ✅ `core/server_registry.py` - migrado
+  - ✅ `core/pool.py` - migrado  
+  - ✅ `core/rbac_helper_sql.py` - migrado
+  - Pendientes: ~57 archivos con referencias legacy
 - [ ] Eliminación física de colecciones MongoDB restantes
 
 ### P3 - Backlog

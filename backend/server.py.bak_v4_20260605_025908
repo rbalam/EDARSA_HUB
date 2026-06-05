@@ -343,23 +343,16 @@ api_router.include_router(get_auth_router())
 # ============================================================================
 # INICIALIZACIÓN REFRESH TOKENS (SQL Server)
 # ============================================================================
-# P2-01 Config Central EDARSAHUB
-from core.config.edarsahub_config import get_edarsahub_sql_config
-
-def _get_edarsahub_config_dict() -> dict:
-    """P2-01: Convierte dataclass a formato diccionario legacy."""
-    cfg = get_edarsahub_sql_config()
-    return {
-        'host': cfg.host,
-        'port': cfg.port,
-        'database': cfg.database,
-        'username': cfg.user,
-        'password': cfg.password,
-    }
 from core.refresh_tokens import init_refresh_tokens_module
 
 # Configuración EDARSAHUB para refresh tokens (lee desde .env)
-EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+EDARSAHUB_CONFIG = {
+    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+    'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+    'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+    'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+    'password': os.environ.get('EDARSAHUB_PASSWORD', '')
+}
 init_refresh_tokens_module(EDARSAHUB_CONFIG)
 logger.info("Módulo refresh_tokens inicializado con SQL Server")
 
@@ -795,7 +788,13 @@ async def admin_sync_compras_force_unlock(
     from datetime import datetime
     from zoneinfo import ZoneInfo
     
-    EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    }
     
     try:
         conn = pymssql.connect(
@@ -859,7 +858,13 @@ async def admin_sync_compras_table_counts(
     
     import pymssql
     
-    EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    }
     
     query = """
     SELECT 'Compras_Sync_Log' AS tabla, COUNT(*) AS registros FROM dbo.Compras_Sync_Log
@@ -920,7 +925,13 @@ async def admin_sync_compras_validate_columns(
     
     import pymssql
     
-    EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    }
     
     query = """
     SELECT 
@@ -1029,7 +1040,13 @@ async def admin_sync_compras_logs(
     
     import pymssql
     
-    EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    }
     
     try:
         conn = pymssql.connect(
@@ -7658,7 +7675,13 @@ async def obtener_inventarios_fisicos_sql_first(
             'inventarios': []
         }
     
-    EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    }
     
     try:
         conn = pymssql.connect(
@@ -7952,7 +7975,13 @@ async def obtener_pedidos_vigentes_sql_first(
             'pedidos': []
         }
     
-    EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    }
     
     try:
         conn = pymssql.connect(
@@ -8886,7 +8915,13 @@ async def obtener_productos_para_captura_sql_first(
             'total': 0
         }
     
-    EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    }
     
     productos = {}
     
@@ -10169,7 +10204,13 @@ async def obtener_detalle_movimientos_sql_first(
             'totales': {'entradas': 0, 'salidas': 0, 'neto': 0}
         }
     
-    EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    }
     
     movimientos = []
     totales = {'entradas': 0, 'salidas': 0, 'neto': 0}
@@ -11001,7 +11042,13 @@ async def obtener_facturas_proveedor_sql_first(
             'facturas': []
         }
     
-    EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    }
     
     try:
         conn = pymssql.connect(
@@ -11082,7 +11129,13 @@ async def obtener_detalle_factura_sql_first(
             'detalle': []
         }
     
-    EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    }
     
     try:
         conn = pymssql.connect(
@@ -11147,7 +11200,13 @@ async def obtener_detalle_consumos_sql_first(
             'totales': {'total': 0}
         }
     
-    EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    }
     
     try:
         conn = pymssql.connect(
@@ -11234,7 +11293,13 @@ async def obtener_dashboard_compras_sql_first(
             'dashboard': {}
         }
     
-    EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+    EDARSAHUB_CONFIG = {
+        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    }
     
     # Fechas por defecto: últimos 30 días
     if not fecha_fin:

@@ -4176,14 +4176,6 @@ async def comercial_dashboard(
 # ============================================================================
 import math
 import random
-from core.config.edarsahub_config import get_edarsahub_sql_config
-
-# P2-01 Config Central
-def _get_edarsahub_config_dict() -> dict:
-    cfg = get_edarsahub_sql_config()
-    return {'host': cfg.host, 'port': cfg.port, 'database': cfg.database, 'username': cfg.user, 'password': cfg.password}
-
-
 
 @router.get("/comercial/ventas-tiempo/{unit_id}")
 async def ventas_tiempo(unit_id: str, current_user: Dict = Depends(get_current_user)):

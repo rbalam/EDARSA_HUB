@@ -23,27 +23,19 @@ from datetime import datetime, timezone
 
 from core.db import execute_sql_query
 from core.pool import execute_hub_query, execute_hub_query_single, execute_hub_insert
-from core.config.edarsahub_config import get_edarsahub_sql_config
-
-# P2-01 HELPER: Convierte dataclass a formato diccionario legacy
-def _get_edarsahub_config_dict() -> dict:
-    cfg = get_edarsahub_sql_config()
-    return {
-        'host': cfg.host,
-        'port': cfg.port,
-        'database': cfg.database,
-        'username': cfg.user,
-        'password': cfg.password,
-    }
-
-
 
 
 # ============================================================================
 # CONFIGURACIÓN EDARSAHUB SQL - ÚNICA FUENTE DE DATOS
 # ============================================================================
 
-EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
+EDARSAHUB_CONFIG = {
+    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+    'port': int(os.environ.get('EDARSAHUB_PORT', 1433)),
+    'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+    'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+    'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+}
 
 # Flag siempre True - SQL es la única fuente
 USE_SQL_FOR_SERVERS = True

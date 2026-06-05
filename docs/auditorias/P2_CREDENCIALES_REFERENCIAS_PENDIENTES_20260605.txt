@@ -1,0 +1,50 @@
+
+================================================================================
+P2-01B: MIGRACIÓN server.py A CONFIG CENTRAL - COMPLETADA
+================================================================================
+Fecha: 2026-06-05 03:00 UTC
+Ejecutado por: Agente E1
+
+RESULTADO:
+- 13 bloques EDARSAHUB_CONFIG = {...} migrados a _get_edarsahub_config_dict()
+- 0 bloques legacy restantes
+- Helper centralizado añadido en líneas 349-361
+- Import de core.config.edarsahub_config añadido
+- Health endpoint validado: OK
+
+ARCHIVOS AFECTADOS:
+- /app/backend/server.py (19,409 líneas)
+
+BACKUP CONSERVADO:
+- /app/backend/server.py.bak_v4_20260605_025908
+
+VALIDACIÓN:
+- python3 -m py_compile: OK
+- curl /api/health: OK ({"status":"operativo","sistema":"EDARSA HUB","version":"1.0"})
+
+================================================================================
+
+================================================================================
+P2-01C/D: MIGRACIÓN MÓDULOS COMERCIAL Y CORE - COMPLETADA
+================================================================================
+Fecha: 2026-06-05 03:03 UTC
+
+ARCHIVOS MIGRADOS EN ESTA SESIÓN:
+1. server.py - 13 bloques EDARSAHUB_CONFIG migrados
+2. modules/comercial/repository.py - 1 bloque migrado
+3. modules/comercial/inteligencia_comercial_routes.py - función _get_edarsahub_sql_connection()
+4. core/server_registry.py - 1 bloque migrado
+5. core/pool.py - 2 bloques migrados (execute_hub_query, execute_hub_insert)
+6. core/rbac_helper_sql.py - 1 bloque migrado
+
+TOTAL SESIÓN: 8 archivos migrados
+
+ESTADO ACTUAL:
+- Archivos usando config centralizado: 8
+- Archivos con referencias legacy pendientes: ~57
+
+PRÓXIMO PASO RECOMENDADO:
+- Continuar migración de módulos restantes (finanzas, tablajeria, crm, compras)
+- Priorizar archivos con mayor número de referencias (comercial/routes.py ya importa desde repository)
+
+================================================================================

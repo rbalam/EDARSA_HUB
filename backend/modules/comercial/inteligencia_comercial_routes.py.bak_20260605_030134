@@ -24,14 +24,6 @@ import pytds
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.security import get_current_user
-from core.config.edarsahub_config import get_edarsahub_sql_config
-
-# P2-01 Config Central
-def _get_edarsahub_config_dict() -> dict:
-    cfg = get_edarsahub_sql_config()
-    return {'host': cfg.host, 'port': cfg.port, 'database': cfg.database, 'username': cfg.user, 'password': cfg.password}
-
-
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/comercial/inteligencia", tags=["comercial-inteligencia"])
@@ -55,16 +47,24 @@ def _rows_to_dicts(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 def _get_edarsahub_sql_connection():
     """
-    Conexión central a EDARSAHUB SQL usando config centralizado.
-    P2-01: Migrado a core.config.edarsahub_config
+    Conexión central a EDARSAHUB SQL usando variables de entorno.
+    NO conecta a SoftRestaurant, MPRO, MongoDB ni sistemas externos.
     """
-    cfg = get_edarsahub_sql_config()
+    host = os.environ.get("EDARSAHUB_SQL_HOST") or os.environ.get("EDARSA_HUB_SQL_HOST")
+    if not host:
+        raise RuntimeError("Falta EDARSAHUB_SQL_HOST")
+
+    port = int(os.environ.get("EDARSAHUB_SQL_PORT") or os.environ.get("EDARSA_HUB_SQL_PORT") or "1433")
+    database = os.environ.get("EDARSAHUB_SQL_DATABASE") or os.environ.get("EDARSA_HUB_SQL_DB") or "EDARSAHUB"
+    user = os.environ.get("EDARSAHUB_SQL_USER") or os.environ.get("EDARSA_HUB_SQL_USER") or "HRLectura"
+    password = os.environ.get("EDARSAHUB_SQL_PASSWORD") or os.environ.get("EDARSA_HUB_SQL_PASS") or ""
+
     return pytds.connect(
-        server=cfg.host,
-        port=cfg.port,
-        database=cfg.database,
-        user=cfg.user,
-        password=cfg.password,
+        server=host,
+        port=port,
+        database=database,
+        user=user,
+        password=password,
         timeout=30,
         login_timeout=30,
         as_dict=True,
