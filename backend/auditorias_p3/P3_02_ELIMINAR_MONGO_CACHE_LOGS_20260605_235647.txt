@@ -1,0 +1,24 @@
+
+### 3. EJECUTANDO ELIMINACIÓN
+✅ ELIMINADA: almacenes_catalogo (11 docs)
+✅ ELIMINADA: api_connections_cache (4 docs)
+✅ ELIMINADA: auditoria_compras_bitacora (2747 docs)
+✅ ELIMINADA: automatizaciones_bitacora (25 docs)
+✅ ELIMINADA: bitacora_tecnica (1 docs)
+✅ ELIMINADA: catalogos_sql (1 docs)
+✅ ELIMINADA: comercial_cache (65 docs)
+✅ ELIMINADA: compras_historical_load_checkpoints (209 docs)
+✅ ELIMINADA: dashboard_cache (55 docs)
+✅ ELIMINADA: finanzas_historical_load_checkpoints (48 docs)
+✅ ELIMINADA: historical_load_checkpoints (33 docs)
+✅ ELIMINADA: kpis_cache (38 docs)
+✅ ELIMINADA: notificaciones_log (12 docs)
+✅ ELIMINADA: propinas_cache_config (1 docs)
+✅ ELIMINADA: propinas_cache_listado (9 docs)
+✅ ELIMINADA: propinas_cache_resumen (6 docs)
+✅ ELIMINADA: scheduler_job_log (15854 docs)
+✅ ELIMINADA: scheduler_locks (3 docs)
+✅ ELIMINADA: sucursales_catalogo (5 docs)
+
+=== RESULTADO ===
+Eliminadas: 19 colecciones, 19127 documentos

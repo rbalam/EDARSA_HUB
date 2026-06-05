@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 13 - P2-25 unidad_negocio_pk Obligatoria)
-**Estado:** P0/P1/P2 CERRADOS ✅ | SQL-First ✅ | 5/5 Unidades ✅ | PK Obligatoria ✅
+**Última actualización:** 2026-06-05 (Sesión 13 - P3-02 Limpieza MongoDB Cache/Logs)
+**Estado:** P0/P1/P2 CERRADOS ✅ | P3 EN PROGRESO | MongoDB -84% docs ✅
 
 ---
 
@@ -228,16 +228,13 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06-05 (S13) | **✅ P3-02 LIMPIEZA MONGODB CACHE/LOGS** |
+| 2026-06-05 (S13) | 19 colecciones eliminadas, 19,127 documentos |
+| 2026-06-05 (S13) | MongoDB: 71→52 colecciones, 22,636→3,509 docs (-84%) |
 | 2026-06-05 (S13) | **✅ P2-25 unidad_negocio_pk OBLIGATORIA** |
-| 2026-06-05 (S13) | 2 registros CIENFUEGOS corregidos (NULL → PK) |
-| 2026-06-05 (S13) | Triggers SQL creados para bloquear NULL |
-| 2026-06-05 (S13) | Guardrail + funciones helper en sync |
-| 2026-06-05 (S13) | **✅ P2-24 AUDITORÍA HARDCODES** |
-| 2026-06-05 (S13) | **✅ P2-23 VALIDACIÓN 5 UNIDADES COMERCIAL** |
-| 2026-06-05 (S13) | 5/5 unidades conectando OK |
-| 2026-06-05 (S13) | **✅ P2-22 CONECTIVIDAD REAL TODAS UNIDADES** |
-| 2026-06-05 (S13) | **✅ P2-21 CATÁLOGO CENTRAL QUERIES** |
-| 2026-06-05 (S13) | **✅ P2-20/P2-19 BUGS CONEXIÓN + ENV** |
+| 2026-06-05 (S13) | Triggers SQL + Guardrails creados |
+| 2026-06-05 (S13) | **✅ P2-24/23/22/21/20/19 DEUDA TÉCNICA CERRADA** |
+| 2026-06-05 (S13) | 5/5 unidades conectando, catálogo queries, conexiones |
 | 2026-06-05 (S12) | 6 archivos migrados a vistas `vw_Comercial_KPIs_*_Runtime` |
 | 2026-06-05 (S12) | MongoDB Elimination: 99.9%, No-Live: 99% |
 | 2026-06-05 (S11) | **✅ NORMALIZACIÓN ESQUEMA SQL COMPLETADA** |

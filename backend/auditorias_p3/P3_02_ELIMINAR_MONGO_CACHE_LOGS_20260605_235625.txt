@@ -1,0 +1,9 @@
+==================================================
+P3-02 ELIMINAR SOLO CACHE/LOGS MONGODB LEGADO
+Fecha: Fri Jun  5 23:56:25 UTC 2026
+==================================================
+
+### 1. GUARDRAILS
+OK - SQL-First runtime activo sin Mongo directo
+PASS sin admin123
+unidad_negocio_pk: PASS
