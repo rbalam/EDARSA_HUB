@@ -574,11 +574,11 @@ async def tablero_ejecutivo(
                 "var_vs_mes_ant": 1.9, "var_vs_año_ant": 9.6
             },
             "unidades": [
-                {"id": "cienfuegos", "unidad": UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS", "ventas": 4130000, "proyeccion": 4410000, "var_vs_mes_ant": 8.8, "var_vs_año_ant": -14.5, "pax": 3177, "cheques": 1052, "cheque_promedio": 3926, "pax_promedio": 1300, "data_status": "DATA_OK"},
+                {"id": "cienfuegos", "unidad": "CIENFUEGOS", "ventas": 4130000, "proyeccion": 4410000, "var_vs_mes_ant": 8.8, "var_vs_año_ant": -14.5, "pax": 3177, "cheques": 1052, "cheque_promedio": 3926, "pax_promedio": 1300, "data_status": "DATA_OK"},
                 {"id": "merida", "unidad": "130° MERIDA", "ventas": 3570000, "proyeccion": 3820000, "var_vs_mes_ant": -12.7, "var_vs_año_ant": -15.6, "pax": 2314, "cheques": 794, "cheque_promedio": 4496, "pax_promedio": 1543, "data_status": "DATA_OK"},
                 {"id": "queretaro", "unidad": "130° QUERETARO", "ventas": 3460000, "proyeccion": 3700000, "var_vs_mes_ant": 4.5, "var_vs_año_ant": -0.9, "pax": 2067, "cheques": 704, "cheque_promedio": 4915, "pax_promedio": 1674, "data_status": "DATA_OK"},
                 {"id": "estelar", "unidad": "LA ESTELAR", "ventas": 2470000, "proyeccion": 2640000, "var_vs_mes_ant": 2.3, "var_vs_año_ant": 0.0, "pax": 4520, "cheques": 1658, "cheque_promedio": 1490, "pax_promedio": 546, "data_status": "DATA_OK"},
-                {"id": "origen", "unidad": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN", "ventas": 2070000, "proyeccion": 2220000, "var_vs_mes_ant": 15.6, "var_vs_año_ant": 16.6, "pax": 2930, "cheques": 1015, "cheque_promedio": 2039, "pax_promedio": 706, "data_status": "DATA_OK"}
+                {"id": "origen", "unidad": "ORIGEN", "ventas": 2070000, "proyeccion": 2220000, "var_vs_mes_ant": 15.6, "var_vs_año_ant": 16.6, "pax": 2930, "cheques": 1015, "cheque_promedio": 2039, "pax_promedio": 706, "data_status": "DATA_OK"}
             ]
         }
 
@@ -1399,10 +1399,10 @@ async def _tablero_ejecutivo_internal(
                         server_name_upper = (server.get('name', '') or '').upper()
                         
                         # Mapeo canónico servidor → unidad_negocio_pk
-                        if UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN' in server_name_upper:
-                            unidad_codigo_mpro = UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'
+                        if 'ORIGEN' in server_name_upper:
+                            unidad_codigo_mpro = 'ORIGEN'
                         elif 'QRO' in server_name_upper or 'QUERETARO' in server_name_upper:
-                            unidad_codigo_mpro = UnidadesService.resolver_codigo('130QRO') or '130QRO'
+                            unidad_codigo_mpro = '130QRO'
                         else:
                             unidad_codigo_mpro = server.get('unidad_negocio_pk') or server_name_upper.replace(' LOCAL', '').strip()
                         
@@ -2218,7 +2218,7 @@ ORDER BY SUM(cheques.total{propina_expr}) DESC
             
             # Filtro de sucursal para MPRO
             NOMBRE_A_CODIGO_SUCURSAL = {
-                UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN': '0023',
+                'ORIGEN': '0023',
                 'QUERETARO': '0021',
                 '130 QRO': '0021',
                 'QRO': '0021',
@@ -4198,15 +4198,15 @@ async def ventas_tiempo(unit_id: str, current_user: Dict = Depends(get_current_u
     
     # Base de ventas por hora según unidad
     base_hourly = 20000
-    if UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS" in clean_id:
+    if "CIENFUEGOS" in clean_id:
         base_hourly = 24000
-    elif any(x in clean_id for x in ["MERIDA", UnidadesService.resolver_codigo("130MID") or "130MID", "MID"]):
+    elif any(x in clean_id for x in ["MERIDA", "130MID", "MID"]):
         base_hourly = 21000
-    elif any(x in clean_id for x in ["QUERETARO", UnidadesService.resolver_codigo("130QRO") or "130QRO", "QRO"]):
+    elif any(x in clean_id for x in ["QUERETARO", "130QRO", "QRO"]):
         base_hourly = 19000
-    elif UnidadesService.resolver_codigo("ESTELAR") or "ESTELAR" in clean_id:
+    elif "ESTELAR" in clean_id:
         base_hourly = 15000
-    elif UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN" in clean_id:
+    elif "ORIGEN" in clean_id:
         base_hourly = 12000
     
     # Generar serie temporal (08:00 a 22:00)

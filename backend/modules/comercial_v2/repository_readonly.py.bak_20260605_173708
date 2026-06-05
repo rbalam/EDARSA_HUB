@@ -186,11 +186,11 @@ def get_kpis_por_unidad(
         expanded_ids = []
         for uid in unidades_permitidas:
             expanded_ids.append(uid)
-            if uid == UnidadesService.resolver_codigo('130MID') or '130MID':
+            if uid == '130MID':
                 expanded_ids.extend(['130-MER', '130-MID'])
-            elif uid == UnidadesService.resolver_codigo('130QRO') or '130QRO':
+            elif uid == '130QRO':
                 expanded_ids.extend(['130-QRO'])
-            elif uid == UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR':
+            elif uid == 'ESTELAR':
                 expanded_ids.extend(['LA-ESTELAR'])
         ids_quoted = ','.join([f"'{u}'" for u in set(expanded_ids)])
         base_where.append(f"unidad_negocio_pk IN ({ids_quoted})")
@@ -214,12 +214,12 @@ def get_kpis_por_unidad(
             -- ID canónico
             CASE 
                 WHEN UPPER(unidad_negocio_nombre) LIKE '%MERIDA%' 
-                  OR UPPER(unidad_negocio_nombre) LIKE '%MÉRIDA%' THEN UnidadesService.resolver_codigo('130MID') or '130MID'
+                  OR UPPER(unidad_negocio_nombre) LIKE '%MÉRIDA%' THEN '130MID'
                 WHEN UPPER(unidad_negocio_nombre) LIKE '%QUERETARO%' 
-                  OR UPPER(unidad_negocio_nombre) LIKE '%QUERÉTARO%' THEN UnidadesService.resolver_codigo('130QRO') or '130QRO'
-                WHEN UPPER(unidad_negocio_nombre) LIKE '%CIENFUEGOS%' THEN UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS'
-                WHEN UPPER(unidad_negocio_nombre) LIKE '%ESTELAR%' THEN UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR'
-                WHEN UPPER(unidad_negocio_nombre) LIKE '%ORIGEN%' THEN UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'
+                  OR UPPER(unidad_negocio_nombre) LIKE '%QUERÉTARO%' THEN '130QRO'
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%CIENFUEGOS%' THEN 'CIENFUEGOS'
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%ESTELAR%' THEN 'ESTELAR'
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%ORIGEN%' THEN 'ORIGEN'
                 ELSE unidad_negocio_pk
             END as id_normalizado,
             sistema_origen,

@@ -147,7 +147,7 @@ def generar_facturas_demo():
     
     sucursales = [
         {"id": 1, "nombre": "130° QUERETARO"},
-        {"id": 2, "nombre": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN"},
+        {"id": 2, "nombre": "ORIGEN"},
         {"id": 3, "nombre": "130° TULUM"},
         {"id": 4, "nombre": "CIEN FUEGOS"},
         {"id": 5, "nombre": "XCANATUN"},
@@ -259,7 +259,7 @@ async def listar_facturas_pendientes(
         # FASE 1 CxP FIX: NO consultar SoftRestaurant si el filtro es exclusivamente MPRO
         es_filtro_mpro_exclusivo = sucursal_id and any(
             alias.upper() in sucursal_id.upper() or sucursal_id.upper() in alias.upper()
-            for alias in [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('130QRO') or '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', '0021', '0023']
+            for alias in ['ORIGEN', '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', '0021', '0023']
         )
         
         if softrest_repo and not es_filtro_mpro_exclusivo:
@@ -320,8 +320,8 @@ async def listar_facturas_pendientes(
         
         # 2. Obtener datos de MPRO (CENTRAL2020)
         # FINANZAS-CXP-MPRO-COMBINE-01: Consultar MPRO siempre que no sea filtro exclusivo SoftRestaurant
-        softrest_sucursales = [UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR', UnidadesService.resolver_codigo('130MID') or '130MID', 'CF', 'EST', '130M', 'LA ESTELAR', '130 MERIDA', '130° MERIDA', 'CIEN FUEGOS']
-        mpro_sucursales = [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('130QRO') or '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', '0021', '0023']
+        softrest_sucursales = ['CIENFUEGOS', 'ESTELAR', '130MID', 'CF', 'EST', '130M', 'LA ESTELAR', '130 MERIDA', '130° MERIDA', 'CIEN FUEGOS']
+        mpro_sucursales = ['ORIGEN', '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', '0021', '0023']
         
         es_filtro_softrest = sucursal_id and any(
             alias.upper() in sucursal_id.upper() or sucursal_id.upper() in alias.upper()
@@ -338,7 +338,7 @@ async def listar_facturas_pendientes(
                 # Mapear sucursal a código MPRO si aplica
                 mpro_sucursal = None
                 if es_filtro_mpro:
-                    if sucursal_id and (UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN' in sucursal_id.upper() or sucursal_id == '0023'):
+                    if sucursal_id and ('ORIGEN' in sucursal_id.upper() or sucursal_id == '0023'):
                         mpro_sucursal = '0023'
                     elif sucursal_id and ('QRO' in sucursal_id.upper() or sucursal_id == '0021'):
                         mpro_sucursal = '0021'
@@ -354,7 +354,7 @@ async def listar_facturas_pendientes(
                 
                 # Mapeo de códigos MPRO a nombres
                 mpro_nombres = {
-                    '0023': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN',
+                    '0023': 'ORIGEN',
                     '0021': '130° QRO',
                     '0012': '130° TULUM',
                     '0026': 'MECA',
@@ -839,9 +839,9 @@ async def get_resumen_cuentas_por_pagar(
         all_cxp_data = []
         
         # Detectar si filtro es específico de una fuente
-        softrest_sucursales = [UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR', UnidadesService.resolver_codigo('130MID') or '130MID', 'CF', 'EST', '130M', 
+        softrest_sucursales = ['CIENFUEGOS', 'ESTELAR', '130MID', 'CF', 'EST', '130M', 
                                'LA ESTELAR', '130 MERIDA', '130° MERIDA', 'CIEN FUEGOS']
-        mpro_sucursales = [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('130QRO') or '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', 
+        mpro_sucursales = ['ORIGEN', '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', 
                           '0021', '0023']
         
         es_filtro_sr = sucursal_id and any(
@@ -876,7 +876,7 @@ async def get_resumen_cuentas_por_pagar(
                 # Mapear código de sucursal MPRO si aplica
                 mpro_suc = None
                 if es_filtro_mpro:
-                    if sucursal_id and (UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN' in sucursal_id.upper() or sucursal_id == '0023'):
+                    if sucursal_id and ('ORIGEN' in sucursal_id.upper() or sucursal_id == '0023'):
                         mpro_suc = '0023'
                     elif sucursal_id and ('QRO' in sucursal_id.upper() or sucursal_id == '0021'):
                         mpro_suc = '0021'
@@ -1099,7 +1099,7 @@ async def listar_sucursales_cxp(
             if resumen_mpro:
                 # Mapeo de códigos MPRO a nombres legibles
                 mpro_nombres = {
-                    '0023': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN',
+                    '0023': 'ORIGEN',
                     '0021': '130° QRO',
                     '0012': '130° TULUM',
                     '0026': 'MECA',

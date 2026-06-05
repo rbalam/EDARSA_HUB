@@ -277,10 +277,10 @@ def _obtener_codigo_canonico_mpro(server_id: str, sucursal_id: str, sucursal_nom
     # NOTA: Este fallback se mantiene para resiliencia pero debe ser temporal
     # =========================================================================
     fallback_map = {
-        '0021': (UnidadesService.resolver_codigo('130QRO') or '130QRO', '130° QUERETARO'),
-        '0023': (UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'),
-        UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN': (UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'),
-        '130_QRO': (UnidadesService.resolver_codigo('130QRO') or '130QRO', '130° QUERETARO'),
+        '0021': ('130QRO', '130° QUERETARO'),
+        '0023': ('ORIGEN', 'ORIGEN'),
+        'ORIGEN': ('ORIGEN', 'ORIGEN'),
+        '130_QRO': ('130QRO', '130° QUERETARO'),
     }
     
     if sucursal_id in fallback_map:
@@ -331,33 +331,33 @@ def _mapear_codigo_a_unidad_negocio_pk(codigo_empresa: str) -> str:
     # se resuelvan al código canónico correcto
     normalizacion_a_canonico = {
         # Mérida - todas las variantes resuelven a 130MID
-        '130-MER': UnidadesService.resolver_codigo('130MID') or '130MID',
-        '130-MID': UnidadesService.resolver_codigo('130MID') or '130MID',
-        '130MER': UnidadesService.resolver_codigo('130MID') or '130MID',
-        '130 MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
-        '130 MÉRIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
-        '130° MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
-        '130° MÉRIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
-        'MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
-        'MÉRIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+        '130-MER': '130MID',
+        '130-MID': '130MID',
+        '130MER': '130MID',
+        '130 MERIDA': '130MID',
+        '130 MÉRIDA': '130MID',
+        '130° MERIDA': '130MID',
+        '130° MÉRIDA': '130MID',
+        'MERIDA': '130MID',
+        'MÉRIDA': '130MID',
         # Querétaro - todas las variantes resuelven a 130QRO
-        '130-QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
-        '130 QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
-        '130 QUERETARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
-        '130 QUERÉTARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
-        '130° QUERETARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
-        '130° QUERÉTARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
-        'QUERETARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
-        'QUERÉTARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+        '130-QRO': '130QRO',
+        '130 QRO': '130QRO',
+        '130 QUERETARO': '130QRO',
+        '130 QUERÉTARO': '130QRO',
+        '130° QUERETARO': '130QRO',
+        '130° QUERÉTARO': '130QRO',
+        'QUERETARO': '130QRO',
+        'QUERÉTARO': '130QRO',
         # La Estelar
-        'LA-ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
-        'LA ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+        'LA-ESTELAR': 'ESTELAR',
+        'LA ESTELAR': 'ESTELAR',
         # Códigos canónicos (no cambiar)
-        UnidadesService.resolver_codigo('130MID') or '130MID': UnidadesService.resolver_codigo('130MID') or '130MID',
-        UnidadesService.resolver_codigo('130QRO') or '130QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
-        UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
-        UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
-        UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN',
+        '130MID': '130MID',
+        '130QRO': '130QRO',
+        'CIENFUEGOS': 'CIENFUEGOS',
+        'ESTELAR': 'ESTELAR',
+        'ORIGEN': 'ORIGEN',
     }
     
     # Buscar en el mapa de normalización
@@ -455,14 +455,14 @@ def _obtener_sucursales_mpro_desde_resolver() -> List[Dict[str, Any]]:
     logging.warning("[SERVICE] _obtener_sucursales_mpro_desde_resolver: Usando fallback hardcodeado")
     return [
         {
-            "codigo": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN",
+            "codigo": "ORIGEN",
             "sucursal_id": "0023",
             "server_id": "817a0aa8-6170-4738-a8f6-a72ac36ba0df",
             "empresa_id": 1,
             "fuente": "LEGACY_FALLBACK"
         },
         {
-            "codigo": UnidadesService.resolver_codigo("130QRO") or "130QRO",
+            "codigo": "130QRO",
             "sucursal_id": "0021",
             "server_id": "72f6e9a7-8ea2-4eb2-802e-4ee31753435e",
             "empresa_id": 2,
@@ -1040,14 +1040,14 @@ def _obtener_kpis_tablero_desde_edarsahub(
 # ============================================================================
 UNIDADES_EDARSAHUB_MAP = {
     # SoftRestaurant
-    "a5547321-1139-4d2b-9d53-182ca737b6b6": {"unidad_negocio_pk": UnidadesService.resolver_codigo("130MID") or "130MID", "nombre": "130° MÉRIDA", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
-    "6d053c22-523e-48c0-b72b-96081e2d781b": {"unidad_negocio_pk": UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS", "nombre": UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
-    "a5ff0e25-f029-43db-b634-d4ac814c904f": {"unidad_negocio_pk": UnidadesService.resolver_codigo("ESTELAR") or "ESTELAR", "nombre": "LA ESTELAR", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+    "a5547321-1139-4d2b-9d53-182ca737b6b6": {"unidad_negocio_pk": "130MID", "nombre": "130° MÉRIDA", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+    "6d053c22-523e-48c0-b72b-96081e2d781b": {"unidad_negocio_pk": "CIENFUEGOS", "nombre": "CIENFUEGOS", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+    "a5ff0e25-f029-43db-b634-d4ac814c904f": {"unidad_negocio_pk": "ESTELAR", "nombre": "LA ESTELAR", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
     # MPRO (necesitan sucursal específica)
     "1b230a06-ffaf-4c70-bd27-b1be3579dea6": {
         "sucursales": {
-            "0021": {"unidad_negocio_pk": UnidadesService.resolver_codigo("130QRO") or "130QRO", "nombre": "130° QUERÉTARO"},
-            "0023": {"unidad_negocio_pk": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN", "nombre": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN"}
+            "0021": {"unidad_negocio_pk": "130QRO", "nombre": "130° QUERÉTARO"},
+            "0023": {"unidad_negocio_pk": "ORIGEN", "nombre": "ORIGEN"}
         },
         "sistema": "MPRO"
     }
@@ -2599,16 +2599,16 @@ def _obtener_unidad_ids_desde_servidor(server_id: str) -> List[str]:
     Obtiene posibles unidad_negocio_pk a partir del server_id.
     
     Mapeo basado en nombres de servidor:
-    - ORIGEN LOCAL -> [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN']
-    - 130° QRO LOCAL -> [UnidadesService.resolver_codigo('130QRO') or '130QRO', '130-QRO']
+    - ORIGEN LOCAL -> ['ORIGEN']
+    - 130° QRO LOCAL -> ['130QRO', '130-QRO']
     - etc.
     """
     # Mapeo de server_id a posibles unidad_negocio_pk
     mapeo_servidor_unidad = {
         # ORIGEN LOCAL
-        '817a0aa8-6170-4738-a8f6-a72ac36ba0df': [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'],
+        '817a0aa8-6170-4738-a8f6-a72ac36ba0df': ['ORIGEN'],
         # 130° QRO LOCAL
-        '72f6e9a7-8ea2-4eb2-802e-4ee31753435e': [UnidadesService.resolver_codigo('130QRO') or '130QRO', '130-QRO'],
+        '72f6e9a7-8ea2-4eb2-802e-4ee31753435e': ['130QRO', '130-QRO'],
         # ManagmentPro (servidor MPRO principal) - no necesita fallback
         '1b230a06-ffaf-4c70-bd27-b1be3579dea6': [],
     }

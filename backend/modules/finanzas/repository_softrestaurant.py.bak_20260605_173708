@@ -32,7 +32,7 @@ from .sql_subprocess_helper import execute_sql_subprocess
 
 # Configuración de servidores SoftRestaurant (desde menú de servidores)
 SOFTRESTAURANT_SERVERS = {
-    UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS": {
+    "CIENFUEGOS": {
         "id": "CF",
         "name": "CIEN FUEGOS",
         "host": "servercienfuegos.ddns.net",
@@ -42,7 +42,7 @@ SOFTRESTAURANT_SERVERS = {
         "password": "National09",
         "view": "AC_vwSaldoCxp"
     },
-    UnidadesService.resolver_codigo("ESTELAR") or "ESTELAR": {
+    "ESTELAR": {
         "id": "EST",
         "name": "LA ESTELAR",
         "host": "serverestelar.ddns.net",
@@ -52,7 +52,7 @@ SOFTRESTAURANT_SERVERS = {
         "password": "C0ntr4s3ña#2026",
         "view": "AC_vwSaldoCxp"
     },
-    UnidadesService.resolver_codigo("130MID") or "130MID": {
+    "130MID": {
         "id": "130M",
         "name": "130° MERIDA",
         "host": "130mid.ddns.net",
@@ -164,23 +164,23 @@ class FinanzasRepositorySoftRestaurant:
     # Mapeo de aliases a server_keys para matching flexible
     SUCURSAL_ALIASES = {
         # CIENFUEGOS aliases
-        UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
-        'CIEN FUEGOS': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
-        'CF': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
-        'CIENFUEGOS_SR': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
+        'CIENFUEGOS': 'CIENFUEGOS',
+        'CIEN FUEGOS': 'CIENFUEGOS',
+        'CF': 'CIENFUEGOS',
+        'CIENFUEGOS_SR': 'CIENFUEGOS',
         # ESTELAR aliases
-        UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
-        'LA ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
-        'EST': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
-        'LAESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
-        'LA_ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+        'ESTELAR': 'ESTELAR',
+        'LA ESTELAR': 'ESTELAR',
+        'EST': 'ESTELAR',
+        'LAESTELAR': 'ESTELAR',
+        'LA_ESTELAR': 'ESTELAR',
         # 130 MERIDA aliases
-        UnidadesService.resolver_codigo('130MID') or '130MID': UnidadesService.resolver_codigo('130MID') or '130MID',
-        '130 MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
-        '130° MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
-        '130_MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
-        '130M': UnidadesService.resolver_codigo('130MID') or '130MID',
-        'MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+        '130MID': '130MID',
+        '130 MERIDA': '130MID',
+        '130° MERIDA': '130MID',
+        '130_MERIDA': '130MID',
+        '130M': '130MID',
+        'MERIDA': '130MID',
     }
     
     def __init__(self, db=None):

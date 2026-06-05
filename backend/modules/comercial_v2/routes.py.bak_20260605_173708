@@ -1034,18 +1034,18 @@ async def comercial_v2_dashboard(
                 "ventas_totales": 15710000,
                 "totales": {"ventas_total": 15710000, "pax_total": 15008, "tickets_total": 5223},
                 "unidades": [
-                    {"unidad_negocio_pk": "cienfuegos", "unidad_negocio_nombre": UnidadesService.resolver_codigo(UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS') or UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', "ventas_total": 4130000, "tickets_total": 1052, "pax_total": 3177},
+                    {"unidad_negocio_pk": "cienfuegos", "unidad_negocio_nombre": UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', "ventas_total": 4130000, "tickets_total": 1052, "pax_total": 3177},
                     {"unidad_negocio_pk": "merida", "unidad_negocio_nombre": "130° MERIDA", "ventas_total": 3570000, "tickets_total": 794, "pax_total": 2314},
                     {"unidad_negocio_pk": "queretaro", "unidad_negocio_nombre": "130° QUERETARO", "ventas_total": 3460000, "tickets_total": 704, "pax_total": 2067},
                     {"unidad_negocio_pk": "estelar", "unidad_negocio_nombre": "LA ESTELAR", "ventas_total": 2470000, "tickets_total": 1658, "pax_total": 4520},
-                    {"unidad_negocio_pk": "origen", "unidad_negocio_nombre": UnidadesService.resolver_codigo(UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN') or UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', "ventas_total": 2070000, "tickets_total": 1015, "pax_total": 2930}
+                    {"unidad_negocio_pk": "origen", "unidad_negocio_nombre": UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', "ventas_total": 2070000, "tickets_total": 1015, "pax_total": 2930}
                 ],
                 "unidades_negocio": [
-                    {"tag": UnidadesService.resolver_codigo(UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS') or UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', "total": 4130000, "transacciones": 1052},
+                    {"tag": UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', "total": 4130000, "transacciones": 1052},
                     {"tag": "130° MERIDA", "total": 3570000, "transacciones": 794},
                     {"tag": "130° QUERETARO", "total": 3460000, "transacciones": 704},
                     {"tag": "LA ESTELAR", "total": 2470000, "transacciones": 1658},
-                    {"tag": UnidadesService.resolver_codigo(UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN') or UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', "total": 2070000, "transacciones": 1015}
+                    {"tag": UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', "total": 2070000, "transacciones": 1015}
                 ]
             },
             metadata=MetadataV2()

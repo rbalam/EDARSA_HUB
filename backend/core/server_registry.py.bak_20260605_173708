@@ -1804,19 +1804,19 @@ async def reconcile_sql_mongo_servers(db=None, dry_run: bool = True) -> Dict:
 
 # Mapeo de compatibilidad defensiva para códigos legacy
 _LEGACY_TO_CANONICAL = {
-    '130-MER': UnidadesService.resolver_codigo('130MID') or '130MID',
-    '130-QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
-    'LA-ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+    '130-MER': '130MID',
+    '130-QRO': '130QRO',
+    'LA-ESTELAR': 'ESTELAR',
     # Códigos oficiales (identidad)
-    UnidadesService.resolver_codigo('130MID') or '130MID': UnidadesService.resolver_codigo('130MID') or '130MID',
-    UnidadesService.resolver_codigo('130QRO') or '130QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
-    UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
-    UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
-    UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN',
+    '130MID': '130MID',
+    '130QRO': '130QRO',
+    'CIENFUEGOS': 'CIENFUEGOS',
+    'ESTELAR': 'ESTELAR',
+    'ORIGEN': 'ORIGEN',
 }
 
 # Códigos canónicos oficiales
-CODIGOS_CANONICOS_OFICIALES = [UnidadesService.resolver_codigo('130MID') or '130MID', UnidadesService.resolver_codigo('130QRO') or '130QRO', UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR', UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN']
+CODIGOS_CANONICOS_OFICIALES = ['130MID', '130QRO', 'CIENFUEGOS', 'ESTELAR', 'ORIGEN']
 
 
 def normalize_unidad_codigo(codigo: str) -> str:
@@ -1833,9 +1833,9 @@ def normalize_unidad_codigo(codigo: str) -> str:
         Código canónico oficial
     
     Examples:
-        normalize_unidad_codigo('130-MER') -> UnidadesService.resolver_codigo('130MID') or '130MID'
-        normalize_unidad_codigo('LA-ESTELAR') -> UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR'
-        normalize_unidad_codigo(UnidadesService.resolver_codigo('130MID') or '130MID') -> UnidadesService.resolver_codigo('130MID') or '130MID'
+        normalize_unidad_codigo('130-MER') -> '130MID'
+        normalize_unidad_codigo('LA-ESTELAR') -> 'ESTELAR'
+        normalize_unidad_codigo('130MID') -> '130MID'
     """
     if not codigo:
         return codigo
@@ -1936,7 +1936,7 @@ def list_unidades_negocio(active_only: bool = True) -> List[Dict]:
         >>> len(unidades)
         5
         >>> unidades[0]['codigo']
-        UnidadesService.resolver_codigo('130MID') or '130MID'
+        '130MID'
     """
     return _get_unidades_from_sql(active_only=active_only)
 
@@ -1954,9 +1954,9 @@ def get_server_by_unidad_codigo(codigo: str) -> Optional[Dict]:
         Dict con configuración de servidor y unidad, o None si no existe
     
     Example:
-        >>> server = get_server_by_unidad_codigo(UnidadesService.resolver_codigo('130MID') or '130MID')
+        >>> server = get_server_by_unidad_codigo('130MID')
         >>> server['unidad_negocio_codigo']
-        UnidadesService.resolver_codigo('130MID') or '130MID'
+        '130MID'
         >>> server['host']
         '130mid.ddns.net'
     """
@@ -2059,15 +2059,15 @@ def resolve_unidad_by_server_sucursal(server_id: str, sucursal_id: Optional[str]
     Examples:
         # SoftRestaurant (sin sucursal)
         >>> resolve_unidad_by_server_sucursal('a5547321-...')
-        {'codigo': UnidadesService.resolver_codigo('130MID') or '130MID', ...}
+        {'codigo': '130MID', ...}
         
         # MPRO con sucursal 0021
         >>> resolve_unidad_by_server_sucursal('1b230a06-...', '0021')
-        {'codigo': UnidadesService.resolver_codigo('130QRO') or '130QRO', ...}
+        {'codigo': '130QRO', ...}
         
         # MPRO con sucursal 0023
         >>> resolve_unidad_by_server_sucursal('1b230a06-...', '0023')
-        {'codigo': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', ...}
+        {'codigo': 'ORIGEN', ...}
     """
     if not server_id:
         return None
@@ -2244,11 +2244,11 @@ def validate_registry_integrity() -> Dict:
         
         # 4. Verificar sucursales MPRO
         for u in unidades:
-            if u['codigo'] == UnidadesService.resolver_codigo('130QRO') or '130QRO' and u.get('sucursal_origen_id') != '0021':
+            if u['codigo'] == '130QRO' and u.get('sucursal_origen_id') != '0021':
                 result['errors'].append(f"130QRO debe tener sucursal_origen_id='0021', tiene '{u.get('sucursal_origen_id')}'")
                 result['ok'] = False
             
-            if u['codigo'] == UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN' and u.get('sucursal_origen_id') != '0023':
+            if u['codigo'] == 'ORIGEN' and u.get('sucursal_origen_id') != '0023':
                 result['errors'].append(f"ORIGEN debe tener sucursal_origen_id='0023', tiene '{u.get('sucursal_origen_id')}'")
                 result['ok'] = False
         
