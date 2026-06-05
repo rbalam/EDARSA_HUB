@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 12 - P2-06 CIERRE ACELERADO DEUDA TÉCNICA)
-**Estado:** P0/P1 CERRADOS | P2 78% | SQL-First ✅ | MongoDB 99.9% ELIMINADO ✅
+**Última actualización:** 2026-06-05 (Sesión 12 - P2-06 a P2-09 ELIMINACIÓN DEUDA TÉCNICA)
+**Estado:** P0/P1 CERRADOS | P2 85% | SQL-First ✅ | MongoDB 99.9% ELIMINADO ✅ | Hardcodes Centralizados ✅
 
 ---
 
