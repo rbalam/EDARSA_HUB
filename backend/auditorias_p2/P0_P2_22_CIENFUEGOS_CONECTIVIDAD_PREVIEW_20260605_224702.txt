@@ -1,0 +1,7 @@
+==================================================
+P0/P2-22 CIENFUEGOS CONECTIVIDAD PREVIEW
+Fecha: Fri Jun  5 22:47:02 UTC 2026
+==================================================
+
+### 1. RESOLVER CENTRAL
+OK SERVER_CIENFUEGOS_SAFE: {'unidad_negocio_codigo': 'CIENFUEGOS', 'unidad_negocio_nombre': 'CIENFUEGOS', 'unidad_negocio_pk': 'B06EE652-0370-4267-B0A8-DA6FC39B590A', 'server_id': '6d053c22-523e-48c0-b72b-96081e2d781b', 'sucursal_origen_id': None, 'system_type': 'SoftRestaurant', 'orden': 2, 'servidor_nombre': 'CIENFUEGOS', 'host': 'servercienfuegos.ddns.net,6669\\nationalsoft', 'port': 1433, 'database': 'softrestaurant95pro', 'username': 'CFLectura', 'servidor_system_type': 'SOFTRESTAURANT_PRO', 'servidor_activo': True, 'visible_en_operaciones': True, 'empresa_id': None, 'fuente': 'EDARSAHUB', 'config_origin': 'EDARSAHUB_SQL'}

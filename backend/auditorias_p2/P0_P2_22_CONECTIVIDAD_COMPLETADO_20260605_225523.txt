@@ -1,0 +1,40 @@
+==================================================
+P0/P2-22 CONECTIVIDAD REAL TODAS LAS UNIDADES
+==================================================
+Fecha: 2026-06-05
+
+### PROBLEMA IDENTIFICADO Y RESUELTO:
+- pymssql fallaba en conexiones a SQL Server con versiones antiguas
+- Solución: Agregar tds_version="7.0" a todas las conexiones pymssql
+
+### ARCHIVOS MODIFICADOS:
+1. core/pool.py - Pool de conexiones centralizado
+2. api/admin_scheduler_resync.py - Función _ejecutar_dry_run
+
+### QUERIES MPRO CORREGIDOS EN CATÁLOGO:
+- Columnas: Vn_Fecha, Vn_Precio_Neto_Importe, Vn_Folio, Sc_Cve_Sucursal
+- Filtro estado: Es_Cve_Estado NOT IN ('CA', 'AN')
+
+### RESULTADOS DRY-RUN (Junio 1-5, 2026):
+
+| Unidad     | Sistema         | Registros | Total Ventas   | Tickets |
+|------------|-----------------|-----------|----------------|---------|
+| 130MID     | SOFTRESTAURANT  | 4 días    | $301,862       | 76      |
+| 130QRO     | MPRO            | 4 días    | $449,643       | 83      |
+| CIENFUEGOS | SOFTRESTAURANT  | 5 días    | $531,542       | 145     |
+| ORIGEN     | MPRO            | 4 días    | $234,991       | 97      |
+|------------|-----------------|-----------|----------------|---------|
+| TOTAL      |                 |           | $1,518,038     | 401     |
+
+### GAPS IDENTIFICADOS:
+- 130MID: Falta 5 de Junio (sin datos en fuente)
+- 130QRO: Falta 5 de Junio (sin datos en fuente)
+- ORIGEN: Falta 5 de Junio (sin datos en fuente)
+- CIENFUEGOS: COMPLETO (5 días)
+
+### NOTAS:
+- NO se ejecutó backfill real
+- NO se modificaron datos KPI
+- NO se imprimieron credenciales
+- Catálogo de queries funcional y actualizado
+==================================================

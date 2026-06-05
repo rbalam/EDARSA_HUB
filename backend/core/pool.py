@@ -195,7 +195,8 @@ class ConnectionPoolManager:
             timeout=config.query_timeout,
             login_timeout=config.connection_timeout,
             charset='UTF-8',
-            autocommit=True  # CRÍTICO: UPDATEs se commitean automáticamente
+            autocommit=True,  # CRÍTICO: UPDATEs se commitean automáticamente
+            tds_version="7.0"  # P2-22: Compatibilidad con SQL Server antiguos
         )
     
     def _create_pytds_pool(

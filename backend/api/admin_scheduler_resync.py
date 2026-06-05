@@ -830,7 +830,8 @@ async def _ejecutar_dry_run(
             database=config['database_name'],
             user=config['username'],
             password=config['password'],
-            login_timeout=30
+            login_timeout=30,
+            tds_version="7.0"  # P2-22: Compatibilidad con SQL Server antiguos
         )
         cursor = conn.cursor(as_dict=True)
         
