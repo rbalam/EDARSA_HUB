@@ -75,3 +75,27 @@ VALIDACIÓN:
 - Health endpoint: OK
 
 ================================================================================
+
+================================================================================
+P2-03: LIMPIEZA MONGO EN rbac/middleware.py - COMPLETADA
+================================================================================
+Fecha: 2026-06-05 03:45 UTC
+
+ESTADO ANTERIOR:
+- _get_db() conectaba a MongoDB
+- 4 llamadas a _get_db() en el middleware
+
+CAMBIOS:
+- _get_db() ahora retorna None (neutralizado)
+- Imports pymongo eliminados
+
+NOTA IMPORTANTE:
+- RBACService y RBACRepository YA estaban migrados a SQL (FASE 4B-RBAC)
+- El parámetro db que reciben es legacy y no se usa
+- Auth y RBAC productivo = 100% SQL Server
+
+VALIDACIÓN:
+- Login admin@edarsa.com: OK
+- Health endpoint: OK
+
+================================================================================
