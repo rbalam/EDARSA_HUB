@@ -66,19 +66,6 @@ def _count_table(cur, table: str) -> int:
     return int(row.get('total', 0) if isinstance(row, dict) else row[0] or 0)
 
 
-def _get_table_columns(cur, table: str) -> set:
-    """Alias de _get_columns para compatibilidad."""
-    return _get_columns(cur, table)
-
-
-def _pick_col(cols: set, candidates: list) -> Optional[str]:
-    """Selecciona la primera columna que coincide de una lista de candidatos."""
-    for c in candidates:
-        if c in cols:
-            return c
-    return None
-
-
 def _get_server(cur, server_id: str) -> Optional[Dict[str, Any]]:
     """Obtiene información del servidor."""
     cur.execute("""
@@ -477,170 +464,6 @@ def _backfill_generico(cur, modulo: str, server_id: str, fecha_inicio: str, fech
 # =============================================================================
 # EJECUTAR BACKFILL (ENTRY POINT)
 # =============================================================================
-
-def _count_existing_table_records(cur, table: str, server_id: str, fecha_inicio: str, fecha_fin: str):
-    if not _table_exists(cur, table):
-        return {"tabla": table, "existe": False, "total": 0, "rango": 0, "server_col": None, "date_col": None}
-
-    cols = _get_table_columns(cur, table)
-    server_col = _pick_col(cols, ["server_id", "ServerID", "ServidorID", "servidor_id"])
-    date_col = _pick_col(cols, ["FechaPedido", "FechaOrden", "FechaRecepcion", "Fecha", "fecha", "FechaCreacion", "FechaSync"])
-
-    cur.execute(f"SELECT COUNT(*) AS cnt FROM {table}")
-    row = cur.fetchone()
-    total = int(row.get('cnt', 0) if isinstance(row, dict) else row[0] or 0)
-
-    rango = total
-    if date_col:
-        if server_col:
-            cur.execute(f"""
-            SELECT COUNT(*) AS cnt
-            FROM {table}
-            WHERE CAST({server_col} AS NVARCHAR(100)) = CAST(%s AS NVARCHAR(100))
-              AND CAST({date_col} AS DATE) >= %s
-              AND CAST({date_col} AS DATE) <= %s
-            """, (server_id, fecha_inicio, fecha_fin))
-        else:
-            cur.execute(f"""
-            SELECT COUNT(*) AS cnt
-            FROM {table}
-            WHERE CAST({date_col} AS DATE) >= %s
-              AND CAST({date_col} AS DATE) <= %s
-            """, (fecha_inicio, fecha_fin))
-        row = cur.fetchone()
-        rango = int(row.get('cnt', 0) if isinstance(row, dict) else row[0] or 0)
-
-    return {
-        "tabla": table,
-        "existe": True,
-        "total": total,
-        "rango": rango,
-        "server_col": server_col,
-        "date_col": date_col,
-    }
-
-def _backfill_compras(cur, server_id: str, fecha_inicio: str, fecha_fin: str, dry_run: bool) -> Dict[str, Any]:
-    server = _get_server(cur, server_id)
-    if not server:
-        return {"success": False, "modulo": "COMPRAS", "error": "Servidor no encontrado", "server_id": server_id}
-
-    tablas = ["Compras_Pedidos", "Compras_PedidosDetalle", "Compras_Ordenes", "Compras_Recepciones"]
-    stats = [_count_existing_table_records(cur, t, server_id, fecha_inicio, fecha_fin) for t in tablas]
-
-    total_rango = sum(x.get("rango", 0) for x in stats if x.get("existe"))
-
-    # Hallazgo específico: encabezados sin detalle y total cero.
-    cur.execute("""
-    SELECT COUNT(*) AS cnt
-    FROM Compras_Pedidos p
-    WHERE ISNULL(p.Total,0)=0
-      AND NOT EXISTS (
-          SELECT 1 FROM Compras_PedidosDetalle d
-          WHERE d.PedidoCompraID = p.PedidoCompraID
-      )
-    """)
-    row = cur.fetchone()
-    encabezados_vacios = int(row.get('cnt', 0) if isinstance(row, dict) else row[0] or 0)
-
-    if dry_run:
-        return {
-            "success": True,
-            "modulo": "COMPRAS",
-            "server": server,
-            "modo": "DRY_RUN",
-            "tablas": stats,
-            "registros_rango": total_rango,
-            "encabezados_sin_detalle_total_cero": encabezados_vacios,
-            "insertados": 0,
-            "actualizados": 0,
-            "omitidos": total_rango,
-            "message": "Dry-run COMPRAS completado. No se insertó información."
-        }
-
-    status = "SUCCESS" if total_rango > 0 and encabezados_vacios == 0 else "WARNING"
-    msg = (
-        "Backfill COMPRAS validado."
-        if status == "SUCCESS"
-        else f"COMPRAS requiere ejecución de job sync fuente. Encabezados vacíos: {encabezados_vacios}"
-    )
-
-    _log_backfill(cur, server_id, "COMPRAS", fecha_inicio, fecha_fin, status, total_rango, msg)
-
-    return {
-        "success": True,
-        "modulo": "COMPRAS",
-        "server": server,
-        "modo": "COMMIT_CONTROL",
-        "tablas": stats,
-        "registros_rango": total_rango,
-        "encabezados_sin_detalle_total_cero": encabezados_vacios,
-        "insertados": 0,
-        "actualizados": 0,
-        "omitidos": total_rango,
-        "status": status,
-        "message": msg
-    }
-
-def _backfill_inventarios(cur, server_id: str, fecha_inicio: str, fecha_fin: str, dry_run: bool) -> Dict[str, Any]:
-    server = _get_server(cur, server_id)
-    if not server:
-        return {"success": False, "modulo": "INVENTARIOS", "error": "Servidor no encontrado", "server_id": server_id}
-
-    # Detectar tablas de inventarios existentes, sin inventar nombres.
-    cur.execute("""
-    SELECT TABLE_NAME
-    FROM INFORMATION_SCHEMA.TABLES
-    WHERE TABLE_TYPE='BASE TABLE'
-      AND TABLE_NAME LIKE '%Inventario%'
-    ORDER BY TABLE_NAME
-    """)
-    raw_rows = cur.fetchall()
-    tablas = []
-    for r in raw_rows:
-        if isinstance(r, dict):
-            tablas.append(r.get('TABLE_NAME', ''))
-        else:
-            tablas.append(r[0] if r else '')
-
-    stats = [_count_existing_table_records(cur, t, server_id, fecha_inicio, fecha_fin) for t in tablas if t]
-    total_rango = sum(x.get("rango", 0) for x in stats if x.get("existe"))
-
-    if dry_run:
-        return {
-            "success": True,
-            "modulo": "INVENTARIOS",
-            "server": server,
-            "modo": "DRY_RUN",
-            "tablas_detectadas": tablas,
-            "tablas": stats,
-            "registros_rango": total_rango,
-            "insertados": 0,
-            "actualizados": 0,
-            "omitidos": total_rango,
-            "message": "Dry-run INVENTARIOS completado. No se insertó información."
-        }
-
-    status = "SUCCESS" if total_rango > 0 else "PENDING_SOURCE"
-    msg = "Backfill INVENTARIOS validado con datos existentes." if total_rango > 0 else "No hay inventarios en rango; pendiente fuente batch/sync."
-
-    _log_backfill(cur, server_id, "INVENTARIOS", fecha_inicio, fecha_fin, status, total_rango, msg)
-
-    return {
-        "success": True,
-        "modulo": "INVENTARIOS",
-        "server": server,
-        "modo": "COMMIT_CONTROL",
-        "tablas_detectadas": tablas,
-        "tablas": stats,
-        "registros_rango": total_rango,
-        "insertados": 0,
-        "actualizados": 0,
-        "omitidos": total_rango,
-        "status": status,
-        "message": msg
-    }
-
-
 def ejecutar_backfill(
     server_id: str,
     fecha_inicio: str,
@@ -692,10 +515,6 @@ def ejecutar_backfill(
             resultados.append(_backfill_precios(cur, server_id, fecha_inicio, fecha_fin, dry_run))
         elif modulo == "RECETAS":
             resultados.append(_backfill_recetas(cur, server_id, fecha_inicio, fecha_fin, dry_run))
-        elif modulo == "COMPRAS":
-            resultados.append(_backfill_compras(cur, server_id, fecha_inicio, fecha_fin, dry_run))
-        elif modulo == "INVENTARIOS":
-            resultados.append(_backfill_inventarios(cur, server_id, fecha_inicio, fecha_fin, dry_run))
         else:
             # Módulos sin implementación específica
             resultados = _backfill_generico(cur, modulo, server_id, fecha_inicio, fecha_fin, dry_run)
@@ -946,9 +765,7 @@ def _backfill_ventas_real(cur, server_id: str, fecha_inicio: str, fecha_fin: str
             })
             continue
 
-        # data viene como tupla (fecha, ventas_netas, num_cheques, pax) por índice
-        ventas_raw = data[1] if data else 0
-        if not data or float(ventas_raw or 0) <= 0:
+        if not data or float(data.get("ventas_netas") or 0) <= 0:
             sin_datos += 1
             source_results.append({
                 "fecha": fecha_str,
@@ -956,9 +773,9 @@ def _backfill_ventas_real(cur, server_id: str, fecha_inicio: str, fecha_fin: str
             })
             continue
 
-        ventas = float(data[1] or 0)
-        cheques = int(data[2] or 0)
-        pax = int(data[3] or 0)
+        ventas = float(data.get("ventas_netas") or 0)
+        cheques = int(data.get("num_cheques") or 0)
+        pax = int(data.get("pax") or 0)
         ticket_promedio = ventas / cheques if cheques else 0
 
         cur.execute("""
@@ -974,9 +791,9 @@ def _backfill_ventas_real(cur, server_id: str, fecha_inicio: str, fecha_fin: str
             cur.execute("""
             UPDATE Comercial_KPIs_Diarios_v2
             SET
-                ventas_total = %s,
-                tickets_total = %s,
-                pax_total = %s,
+                ventas_netas = %s,
+                num_cheques = %s,
+                pax = %s,
                 ticket_promedio = %s,
                 source_status = 'BACKFILL_REAL',
                 fecha_sync = GETDATE()
@@ -989,9 +806,9 @@ def _backfill_ventas_real(cur, server_id: str, fecha_inicio: str, fecha_fin: str
             INSERT INTO Comercial_KPIs_Diarios_v2 (
                 server_id,
                 fecha_operacion,
-                ventas_total,
-                tickets_total,
-                pax_total,
+                ventas_netas,
+                num_cheques,
+                pax,
                 ticket_promedio,
                 source_status,
                 fecha_sync
@@ -1003,9 +820,9 @@ def _backfill_ventas_real(cur, server_id: str, fecha_inicio: str, fecha_fin: str
         source_results.append({
             "fecha": fecha_str,
             "status": "SYNCED",
-            "ventas_total": ventas,
-            "tickets_total": cheques,
-            "pax_total": pax
+            "ventas_netas": ventas,
+            "num_cheques": cheques,
+            "pax": pax
         })
 
     src.close()

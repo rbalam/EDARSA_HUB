@@ -1,0 +1,134 @@
+=== P3-03D COMPRAS Test Final Fri Jun  5 05:54:46 UTC 2026 ===
+{
+    "success": true,
+    "source": "EDARSAHUB_SQL",
+    "mode": "DRY_RUN",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "fecha_inicio": "2026-06-01",
+    "fecha_fin": "2026-06-05",
+    "modulo": "COMPRAS",
+    "inicio": "2026-06-05T05:54:47.354795",
+    "fin": "2026-06-05T05:54:48.290117",
+    "duracion_segundos": 0.935,
+    "resultados": [
+        {
+            "success": true,
+            "modulo": "COMPRAS",
+            "server": {
+                "id": "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "nombre": "130\u00b0 MERIDA",
+                "system_type": "SOFTRESTAURANT_PRO",
+                "tipo_conexion": "DATA_SOURCE",
+                "EmpresaID": 5
+            },
+            "modo": "DRY_RUN",
+            "tablas": [
+                {
+                    "tabla": "Compras_Pedidos",
+                    "existe": true,
+                    "total": 172,
+                    "rango": 15,
+                    "server_col": null,
+                    "date_col": "FechaPedido"
+                },
+                {
+                    "tabla": "Compras_PedidosDetalle",
+                    "existe": true,
+                    "total": 0,
+                    "rango": 0,
+                    "server_col": null,
+                    "date_col": null
+                },
+                {
+                    "tabla": "Compras_Ordenes",
+                    "existe": true,
+                    "total": 12,
+                    "rango": 2,
+                    "server_col": null,
+                    "date_col": "FechaOrden"
+                },
+                {
+                    "tabla": "Compras_Recepciones",
+                    "existe": true,
+                    "total": 0,
+                    "rango": 0,
+                    "server_col": null,
+                    "date_col": "FechaRecepcion"
+                }
+            ],
+            "registros_rango": 17,
+            "encabezados_sin_detalle_total_cero": 172,
+            "insertados": 0,
+            "actualizados": 0,
+            "omitidos": 17,
+            "message": "Dry-run COMPRAS completado. No se insert\u00f3 informaci\u00f3n."
+        }
+    ]
+}
+{
+    "success": true,
+    "source": "EDARSAHUB_SQL",
+    "mode": "COMMIT",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "fecha_inicio": "2026-06-01",
+    "fecha_fin": "2026-06-05",
+    "modulo": "COMPRAS",
+    "inicio": "2026-06-05T05:54:49.033226",
+    "fin": "2026-06-05T05:54:50.081176",
+    "duracion_segundos": 1.048,
+    "resultados": [
+        {
+            "success": true,
+            "modulo": "COMPRAS",
+            "server": {
+                "id": "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "nombre": "130\u00b0 MERIDA",
+                "system_type": "SOFTRESTAURANT_PRO",
+                "tipo_conexion": "DATA_SOURCE",
+                "EmpresaID": 5
+            },
+            "modo": "COMMIT_CONTROL",
+            "tablas": [
+                {
+                    "tabla": "Compras_Pedidos",
+                    "existe": true,
+                    "total": 172,
+                    "rango": 15,
+                    "server_col": null,
+                    "date_col": "FechaPedido"
+                },
+                {
+                    "tabla": "Compras_PedidosDetalle",
+                    "existe": true,
+                    "total": 0,
+                    "rango": 0,
+                    "server_col": null,
+                    "date_col": null
+                },
+                {
+                    "tabla": "Compras_Ordenes",
+                    "existe": true,
+                    "total": 12,
+                    "rango": 2,
+                    "server_col": null,
+                    "date_col": "FechaOrden"
+                },
+                {
+                    "tabla": "Compras_Recepciones",
+                    "existe": true,
+                    "total": 0,
+                    "rango": 0,
+                    "server_col": null,
+                    "date_col": "FechaRecepcion"
+                }
+            ],
+            "registros_rango": 17,
+            "encabezados_sin_detalle_total_cero": 172,
+            "insertados": 0,
+            "actualizados": 0,
+            "omitidos": 17,
+            "status": "WARNING",
+            "message": "COMPRAS requiere ejecuci\u00f3n de job sync fuente. Encabezados vac\u00edos: 172"
+        }
+    ]
+}

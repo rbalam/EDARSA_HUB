@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 7 - P2 COMPLETO)
-**Estado:** P0/P1/P2 CERRADOS | SQL-First ✅ | MongoDB ELIMINADO ✅ | Config Centralizado ✅ | Backup ✅
+**Última actualización:** 2026-06-05 (Sesión 8 - P3 BACKFILL CORPORATIVO)
+**Estado:** P0/P1/P2 CERRADOS | P3 EN PROGRESO | SQL-First ✅ | MongoDB ELIMINADO ✅
 
 ---
 
@@ -434,11 +434,19 @@ bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
   - ✅ Endpoint `/api/sqlfirst-health` creado
   - ✅ Tipos `AsyncIOMotorDatabase` → `Any`
   - ✅ Dependencias pymongo/motor eliminadas de requirements.txt
-- [ ] Validar columnas destino de `sync_compras` en SSMS (bloqueante para dry_run=false)
+- [x] P2-11 a P2-12: Fix relación canónica `/api/unidades-negocio` ✅
 
-### P3 - Backlog
-- [ ] Módulo Pricing IA / Competidores Enterprise
-- [ ] Backfill de Ventas Históricas
+### P3 - Backfill Corporativo y Sync Monitor (EN PROGRESO)
+- [x] **P3-01 a P3-01F**: Fix `Sync_Compras` para poblar detalles ✅
+- [x] **P3-02**: Módulo "Sync Monitor" - Endpoint y UI `/admin/sync-monitor` ✅
+- [x] **P3-03 a P3-03C**: Backfill Corporativo base (VENTAS, VENTAS_HORA, PRODUCTOS, PRECIOS, RECETAS) ✅
+- [x] **P3-03D**: Backfill COMPRAS e INVENTARIOS ✅ (2026-06-05)
+  - COMPRAS: DRY_RUN ✅, COMMIT ✅ (status WARNING por pendientes sync)
+  - INVENTARIOS: DRY_RUN ✅, COMMIT ✅ (18 tablas detectadas, 82 registros)
+- [x] **P3-04**: Fix columnas VENTAS_REAL (`ventas_total`, `tickets_total`, `pax_total`) ✅
+- [ ] **P3-05**: Módulo Pricing IA / Competidores Enterprise
+- [ ] **P3-06**: Dashboard ejecutivo consolidado SQL-First
+- [ ] **P3-07**: Mejora UX Sync Monitor (nombres servidores truncados)
 
 ---
 
