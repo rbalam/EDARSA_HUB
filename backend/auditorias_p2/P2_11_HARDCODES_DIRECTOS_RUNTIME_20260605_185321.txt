@@ -1,0 +1,51 @@
+modules/comercial/queries/mpro.py:536:        'ORIGEN': '0023',
+modules/comercial/queries/mpro.py:540:        '130QRO': '0021',
+modules/comercial/adapters.py:151:            if empresa.codigo_empresa == 'ORIGEN':
+modules/comercial/adapters.py:153:            elif empresa.codigo_empresa == '130QRO':
+modules/comercial/adapters.py:320:        sucursal_nombre: Nombre o código de la sucursal a buscar (ej: "ORIGEN", "0023", "130-QRO", etc.)
+modules/comercial/adapters.py:419:        "ORIGEN": 1,
+modules/comercial/adapters.py:420:        "130QRO": 2,
+modules/comercial_v2/repository_comercial_edarsahub.py:89:            WHEN nombre LIKE '%MERIDA%' OR nombre LIKE '%MID%' THEN '130MID'
+modules/comercial_v2/repository_comercial_edarsahub.py:90:            WHEN nombre LIKE '%CIENFUEGOS%' AND nombre NOT LIKE '%TABLAJERIA%' THEN 'CIENFUEGOS'
+modules/comercial_v2/repository_comercial_edarsahub.py:91:            WHEN nombre LIKE '%ESTELAR%' THEN 'ESTELAR'
+modules/comercial_v2/repository_comercial_edarsahub.py:138:        {'sucursal_id': '0021', 'nombre': '130° QUERÉTARO', 'unidad_id': '130QRO'},
+modules/comercial_v2/repository_comercial_edarsahub.py:139:        {'sucursal_id': '0023', 'nombre': 'ORIGEN', 'unidad_id': 'ORIGEN'},
+modules/finanzas/tesoreria.py:52:    como 'CIENFUEGOS', 'LA_ESTELAR', etc.
+modules/finanzas/ingresos.py:207:        {"id": 2, "nombre": "ORIGEN"},
+core/empresa_resolver.py:627:    origen_ok = resolve_empresa_by_alias('ORIGEN') is not None
+core/empresa_resolver.py:628:    qro_ok = resolve_empresa_by_alias('130QRO') is not None
+core/empresa_resolver.py:629:    mid_ok = resolve_empresa_by_alias('130MID') is not None
+core/empresa_resolver.py:630:    cienfuegos_ok = resolve_empresa_by_alias('CIENFUEGOS') is not None
+core/empresa_resolver.py:631:    estelar_ok = resolve_empresa_by_alias('ESTELAR') is not None
+core/corporate_filters/service.py:18:    info = CorporateFilterService.resolver_unidad("130MID")
+core/corporate_filters/service.py:19:    # -> {"pk": "uuid...", "codigo": "130MID", "nombre": "130° MERIDA"}
+core/corporate_filters/service.py:22:    where, params = CorporateFilterService.build_where_unidad("k", "ESTELAR")
+core/corporate_filters/service.py:74:            where, params = CorporateFilterService.build_where_unidad("k", "130MID")
+core/unidades_service.py:31:        '130-MER': '130MID', '130-MID': '130MID', '130MER': '130MID',
+core/unidades_service.py:32:        '130 MERIDA': '130MID', '130 MÉRIDA': '130MID',
+core/unidades_service.py:33:        '130° MERIDA': '130MID', '130° MÉRIDA': '130MID',
+core/unidades_service.py:34:        'MERIDA': '130MID', 'MÉRIDA': '130MID', '130MID': '130MID',
+core/unidades_service.py:36:        '130-QRO': '130QRO', '130 QRO': '130QRO',
+core/unidades_service.py:37:        '130 QUERETARO': '130QRO', '130 QUERÉTARO': '130QRO',
+core/unidades_service.py:38:        '130° QUERETARO': '130QRO', '130° QUERÉTARO': '130QRO',
+core/unidades_service.py:39:        'QUERETARO': '130QRO', 'QUERÉTARO': '130QRO', '130QRO': '130QRO',
+core/unidades_service.py:41:        'CIENFUEGOS': 'CIENFUEGOS',
+core/unidades_service.py:43:        'LA-ESTELAR': 'ESTELAR', 'LA ESTELAR': 'ESTELAR',
+core/unidades_service.py:44:        'ESTELAR': 'ESTELAR',
+core/unidades_service.py:46:        'ORIGEN': 'ORIGEN',
+core/utils/operational_window.py:193:        unidad_negocio_pk: ID de la unidad (ej: '130QRO', 'ORIGEN')
+core/corporate_identity_resolver.py:186:            "130MID",
+core/corporate_identity_resolver.py:195:            "130QRO",
+core/corporate_identity_resolver.py:201:    if "ESTELAR" in cleaned:
+core/corporate_identity_resolver.py:203:            "ESTELAR",
+core/corporate_identity_resolver.py:207:    if "CIENFUEGOS" in cleaned:
+core/corporate_identity_resolver.py:209:            "CIENFUEGOS",
+core/corporate_identity_resolver.py:212:    if "ORIGEN" in cleaned:
+core/corporate_identity_resolver.py:214:            "ORIGEN",
+core/text_normalizer.py:104:        - is_same_unidad("Cienfuegos", "CIENFUEGOS") -> True
+core/text_normalizer.py:122:    '130MID': '130° MERIDA',      # Sin acento
+core/text_normalizer.py:123:    '130QRO': '130° QUERETARO',   # Sin acento  
+core/text_normalizer.py:124:    'CIENFUEGOS': 'CIENFUEGOS',
+core/text_normalizer.py:125:    'ESTELAR': 'LA ESTELAR',
+core/text_normalizer.py:126:    'ORIGEN': 'ORIGEN',
+core/text_normalizer.py:135:        unidad_id: Código de la unidad (ej: '130MID')

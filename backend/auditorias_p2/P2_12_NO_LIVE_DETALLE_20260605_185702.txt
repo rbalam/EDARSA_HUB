@@ -1,0 +1,1057 @@
+modules/comercial/service.py:13:- Migrado: get_kpis_softrestaurant() desde server.py
+modules/comercial/service.py:14:- Migrado: get_kpis_mpro() desde server.py  
+modules/comercial/service.py:15:- Migrado: get_kpis_mpro_por_sucursal() desde server.py
+modules/comercial/service.py:19:- query_api_mpro_local() -> modules/comercial/adapters.py
+modules/comercial/service.py:50:from modules.comercial.queries.softrestaurant import query_ventas_periodo_sr
+modules/comercial/service.py:51:from modules.comercial.queries.mpro import query_ventas_periodo_mpro, query_ventas_por_sucursal_mpro
+modules/comercial/service.py:83:    'host': '54.39.104.176',
+modules/comercial/service.py:156:            # Mapeo por server_id (para SoftRestaurant sin sucursal)
+modules/comercial/service.py:160:            # Mapeo por server_id:sucursal (para MPRO con sucursal)
+modules/comercial/service.py:187:        sucursal: ID de sucursal (para MPRO)
+modules/comercial/service.py:214:def _obtener_codigo_canonico_mpro(server_id: str, sucursal_id: str, sucursal_nombre: str) -> tuple:
+modules/comercial/service.py:216:    CAMBIO B HELPER: Obtiene código y nombre canónico para una sucursal MPRO.
+modules/comercial/service.py:224:        server_id: ID del servidor MPRO
+modules/comercial/service.py:238:            logging.debug(f"[SERVICE] _obtener_codigo_canonico_mpro: EmpresaResolver resolvió '{sucursal_nombre}' -> {empresa.codigo_empresa}")
+modules/comercial/service.py:242:        # Los códigos MPRO deben estar en Sistema_EmpresasServidores
+modules/comercial/service.py:260:                    logging.debug(f"[SERVICE] _obtener_codigo_canonico_mpro: Resuelto por CodigoSucursalSistema '{sucursal_id}' -> {codigo}")
+modules/comercial/service.py:373:def _obtener_sucursales_mpro_desde_resolver() -> List[Dict[str, Any]]:
+modules/comercial/service.py:375:    FASE 5B HELPER: Obtiene la lista de sucursales MPRO desde EmpresaResolver.
+modules/comercial/service.py:377:    Lee de Sistema_EmpresasServidores las empresas que tienen conexión MPRO
+modules/comercial/service.py:392:            # Buscar empresas con conexiones MPRO (tienen NumeroSucursalSistema)
+modules/comercial/service.py:447:                logging.info(f"[SERVICE] _obtener_sucursales_mpro_desde_resolver: {len(sucursales)} sucursales obtenidas via EmpresaResolver")
+modules/comercial/service.py:451:            logging.warning(f"[SERVICE] Error obteniendo sucursales MPRO desde EmpresaResolver: {e}")
+modules/comercial/service.py:456:    logging.warning("[SERVICE] _obtener_sucursales_mpro_desde_resolver: Usando fallback hardcodeado")
+modules/comercial/service.py:530:    RAZÓN: Para MPRO, los datos en vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime tienen un server_id
+modules/comercial/service.py:545:        # FIX: Usar unidad_negocio_pk para MPRO
+modules/comercial/service.py:915:    # FIX: Pasar unidad_negocio_pk para filtro más confiable (especialmente para MPRO)
+modules/comercial/service.py:1043:    # SoftRestaurant
+modules/comercial/service.py:1044:    "a5547321-1139-4d2b-9d53-182ca737b6b6": {"unidad_negocio_pk": UnidadesService.resolver_codigo("130MID") or "130MID", "nombre": "130° MÉRIDA", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+modules/comercial/service.py:1045:    "6d053c22-523e-48c0-b72b-96081e2d781b": {"unidad_negocio_pk": UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS", "nombre": UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+modules/comercial/service.py:1046:    "a5ff0e25-f029-43db-b634-d4ac814c904f": {"unidad_negocio_pk": UnidadesService.resolver_codigo("ESTELAR") or "ESTELAR", "nombre": "LA ESTELAR", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+modules/comercial/service.py:1047:    # MPRO (necesitan sucursal específica)
+modules/comercial/service.py:1053:        "sistema": "MPRO"
+modules/comercial/service.py:1213:    if system_type.upper() in ['MPRO', 'MANAGEMENTPRO']:
+modules/comercial/service.py:1215:    elif system_type.upper() in ['SOFTRESTAURANT', 'SR']:
+modules/comercial/service.py:1309:        # Detectar si es ambiente Preview (DDNS no accesible)
+modules/comercial/service.py:1311:        if 'ddns' in host.lower() or any(p in host for p in [',6669', ',6969', ',6668']):
+modules/comercial/service.py:1372:def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia=False):
+modules/comercial/service.py:1374:    TABLERO EJECUTIVO - KPIs SoftRestaurant desde EDARSAHUB
+modules/comercial/service.py:1405:    nombre = unidad_negocio_nombre or server.get('name', 'SoftRestaurant')
+modules/comercial/service.py:1502:def get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes):
+modules/comercial/service.py:1504:    TABLERO EJECUTIVO - KPIs MPRO desde EDARSAHUB
+modules/comercial/service.py:1512:    NOTA: MPRO tiene múltiples sucursales (0021 = 130° QUERETARO, 0023 = ORIGEN).
+modules/comercial/service.py:1514:    Para KPIs por sucursal individual, usar get_kpis_mpro_por_sucursal.
+modules/comercial/service.py:1519:    nombre = server.get('name', 'MPRO')
+modules/comercial/service.py:1521:    # Obtener configuración de unidades MPRO
+modules/comercial/service.py:1522:    mpro_config = UNIDADES_EDARSAHUB_MAP.get(server_id, {})
+modules/comercial/service.py:1524:    if not mpro_config or 'sucursales' not in mpro_config:
+modules/comercial/service.py:1525:        logging.warning(f"[TABLERO-EDARSAHUB] {nombre}: server_id {server_id} no tiene mapeo de unidad MPRO")
+modules/comercial/service.py:1528:    sucursales = mpro_config.get('sucursales', {})
+modules/comercial/service.py:1537:    # Agregar KPIs de todas las sucursales MPRO
+modules/comercial/service.py:1595:    # FIX PROYECCIÓN MENSUAL MPRO: Usar días transcurridos OPERATIVOS
+modules/comercial/service.py:1597:    # REGLA CANÓNICA: Misma que SoftRestaurant
+modules/comercial/service.py:1630:        logging.info(f"[PROYECCION-FIX-MPRO] {nombre}: Mes cerrado, días={dias_transcurridos_calc}")
+modules/comercial/service.py:1633:        logging.info(f"[PROYECCION-FIX-MPRO] {nombre}: Mes actual, FechaOp={fecha_operacion_actual}, días={dias_transcurridos_calc}")
+modules/comercial/service.py:1677:def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia=False):
+modules/comercial/service.py:1679:    Query para MPRO que devuelve KPIs DIVIDIDOS POR SUCURSAL (como en Inventarios).
+modules/comercial/service.py:1694:    logging.debug(f"MPRO {server['name']}: solo_ventas_dia={solo_ventas_dia}, fecha_ini={fecha_ini}, fecha_fin={fecha_fin}")
+modules/comercial/service.py:1703:        logging.info(f"[FIX-P0] MPRO {server['name']}: Modo Ventas del Día - LEYENDO DE EDARSAHUB SQL (NO API local)")
+modules/comercial/service.py:1706:        # FASE 5B: Obtener sucursales MPRO desde EmpresaResolver
+modules/comercial/service.py:1707:        # Reemplaza el hardcoding de sucursales_mpro
+modules/comercial/service.py:1709:        sucursales_mpro = _obtener_sucursales_mpro_desde_resolver()
+modules/comercial/service.py:1713:        for suc in sucursales_mpro:
+modules/comercial/service.py:1740:                    "system_type": "MPRO",
+modules/comercial/service.py:1770:                    f"[FIX-P0] MPRO {nombre_canonico}: EDARSAHUB SQL OK - "
+modules/comercial/service.py:1778:                    "system_type": "MPRO",
+modules/comercial/service.py:1807:                    f"[FIX-P0] MPRO {nombre_canonico}: Sin datos en EDARSAHUB SQL - "
+modules/comercial/service.py:1818:    # - Para modo HUB (Tablero Ejecutivo), MPRO debe leer de EDARSAHUB SQL
+modules/comercial/service.py:1819:    # - NO consultar servidores MPRO directamente (bases QUERETARO, ORIGEN)
+modules/comercial/service.py:1820:    # - Usar la misma fuente que SoftRestaurant: vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial/service.py:1823:    # Las bases MPRO (QUERETARO, ORIGEN) son fuentes de extracción, no de lectura.
+modules/comercial/service.py:1826:    logging.info(f"[FIX-HUB] MPRO {server['name']}: Modo Histórico/Acumulado - LEYENDO DE EDARSAHUB SQL (NO bases MPRO)")
+modules/comercial/service.py:1828:    # Obtener sucursales MPRO desde EmpresaResolver
+modules/comercial/service.py:1829:    sucursales_mpro = _obtener_sucursales_mpro_desde_resolver()
+modules/comercial/service.py:1833:    for suc in sucursales_mpro:
+modules/comercial/service.py:1846:        # Usar la misma función que SoftRestaurant para leer de EDARSAHUB
+modules/comercial/service.py:1864:            kpis['system_type'] = "MPRO"
+modules/comercial/service.py:1872:                f"[FIX-HUB] MPRO {nombre_canonico}: EDARSAHUB SQL OK - "
+modules/comercial/service.py:1882:                "system_type": "MPRO",
+modules/comercial/service.py:1908:                f"[FIX-HUB] MPRO {nombre_canonico}: Sin datos en EDARSAHUB SQL para período {fecha_ini} a {fecha_fin}"
+modules/comercial/service.py:1916:        logging.error(f"MPRO {server['name']}: Rango de fechas inválido ({fecha_ini} > {fecha_fin})")
+modules/comercial/service.py:1919:    # Formato YYYYMMDD para MPRO (SQL Server con configuración regional español)
+modules/comercial/service.py:1923:        logging.error(f"MPRO {server['name']}: Error convirtiendo fechas: {e}")
+modules/comercial/service.py:1926:    logging.info(f"[TABLERO] MPRO {server['name']}: Conexión OK - Fechas: {fecha_ini} a {fecha_fin}")
+modules/comercial/service.py:1960:            logging.debug(f"MPRO por sucursal {server['name']} - Ultimo dia con ventas: {anio_ultimo}-{mes_ultimo:02d}-{dia_con_datos:02d}")
+modules/comercial/service.py:1970:            logging.debug(f"MPRO por sucursal {server['name']} - Período ajustado: {fi} a {ff}, días: {dias_transcurridos}")
+modules/comercial/service.py:1999:            logging.info(f"MPRO por sucursal Períodos ajustados - Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_año_ant} a {fecha_fin_año_ant}")
+modules/comercial/service.py:2001:        logging.warning(f"MPRO por sucursal Error detectando último día: {e}")
+modules/comercial/service.py:2008:    logging.info(f"MPRO {server['name']}: Consultando ventas del {fi} al {ff}")
+modules/comercial/service.py:2010:    # BLOQUE 4: Migrado a query centralizada query_ventas_por_sucursal_mpro()
+modules/comercial/service.py:2011:    # ORIGEN ANTERIOR: SQL directo líneas 862-875 (ahora en queries/mpro.py)
+modules/comercial/service.py:2012:    result_principal = query_ventas_por_sucursal_mpro(server, fecha_ini, fecha_fin)
+modules/comercial/service.py:2018:            f"Error consultando MPRO por sucursal {server['name']}: {result_principal.error} "
+modules/comercial/service.py:2024:        logging.warning(f"MPRO {server['name']}: No se encontraron sucursales con ventas")
+modules/comercial/service.py:2027:    logging.info(f"MPRO {server['name']}: Query retornó {len(result_principal.sucursales)} sucursales")
+modules/comercial/service.py:2042:            logging.info(f"[MPRO] Sucursal no visible omitida: sucursal_origen_id={sucursal_id}, nombre={sucursal_nombre}")
+modules/comercial/service.py:2075:                logging.debug(f"MPRO {sucursal_nombre} - Ultimo dia con ventas: dia {dia_suc}")
+modules/comercial/service.py:2215:        logging.debug(f"MPRO {sucursal_nombre}: Dia={dia_suc}, Actual={ventas:.2f}, MesAnt({fia_suc}-{ffa_suc})={ventas_ant:.2f} -> {var_vs_mes_ant}%, AnoAnt({fiaa_suc}-{ffaa_suc})={ventas_año:.2f} -> {var_vs_año_ant}%")
+modules/comercial/service.py:2222:        # via resolve_unidad_by_server_sucursal() - NO usar _obtener_codigo_canonico_mpro()
+modules/comercial/service.py:2230:            "system_type": "MPRO",
+modules/comercial/service.py:2255:        logging.info(f"MPRO {server['name']} - Sucursal '{nombre_canonico}' (origen_id={sucursal_id}): Ventas={ventas}, Cheques={cheques}")
+modules/comercial/service.py:2264:def get_kpis_mpro_con_estado(
+modules/comercial/service.py:2271:    FASE 4.4: Obtiene KPIs de MPRO con envelope de estado.
+modules/comercial/service.py:2290:        unidades = get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, solo_ventas_dia)
+modules/comercial/service.py:2338:    'get_kpis_softrestaurant',
+modules/comercial/service.py:2339:    'get_kpis_mpro',
+modules/comercial/service.py:2340:    'get_kpis_mpro_por_sucursal',
+modules/comercial/service.py:2342:    'get_kpis_mpro_con_estado',
+modules/comercial/service.py:2355:# SoftRestaurant. Si la conexión fallaba, mostraba "Sin Datos" aunque EDARSAHUB
+modules/comercial/service.py:2381:    NO consulta: Servidores remotos SoftRestaurant
+modules/comercial/service.py:2492:    FIX MPRO: Si no encuentra por server_id, intenta buscar por unidad_negocio_pk
+modules/comercial/service.py:2493:    derivado del nombre del servidor. Esto maneja casos donde los datos MPRO
+modules/comercial/service.py:2539:    # FIX MPRO: Buscar por unidad_negocio_pk si no encontramos por server_id
+modules/comercial/service.py:2541:    # Este fallback maneja el caso donde los datos MPRO en vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial/service.py:2549:        logging.info(f"[DASHBOARD-EDARSAHUB-MPRO-FIX] Intentando búsqueda por unidad_negocio_pk: {unidad_ids}")
+modules/comercial/service.py:2554:        query_mpro = f"""
+modules/comercial/service.py:2567:        result_mpro = _query_edarsahub_tablero(query_mpro)
+modules/comercial/service.py:2569:        if result_mpro and len(result_mpro) > 0:
+modules/comercial/service.py:2570:            row = result_mpro[0]
+modules/comercial/service.py:2578:                    f"[DASHBOARD-EDARSAHUB-MPRO-FIX] Datos MPRO encontrados por unidad_negocio_pk: "
+modules/comercial/service.py:2613:        # ManagmentPro (servidor MPRO principal) - no necesita fallback
+modules/comercial/service.py:2636:            server='54.39.104.176',
+modules/comercial/cache_service.py:16:entre SoftRestaurant y MPRO.
+modules/comercial/cache_service.py:91:    SoftRestaurant y MPRO. Esto garantiza que:
+modules/comercial/cache_service.py:92:    - SoftRestaurant NO comparta caché con MPRO
+modules/comercial/cache_service.py:93:    - MPRO NO comparta caché con SoftRestaurant
+modules/comercial/cache_service.py:94:    - Variantes de system_type (MPRO, ManagmentPro, etc.) se normalicen
+modules/comercial/cache_service.py:96:    Ejemplo: comercial:dashboard:server123:suc001:MANAGEMENTPRO:2026-04-20:periodo=mes
+modules/comercial/__init__.py:15:- adapters.py: Integración con APIs locales MPRO
+modules/comercial/__init__.py:20:- APIS_MPRO_LOCALES (configuración)
+modules/comercial/__init__.py:21:- query_api_mpro_local()
+modules/comercial/__init__.py:40:    APIS_MPRO_LOCALES,
+modules/comercial/__init__.py:41:    query_api_mpro_local,
+modules/comercial/__init__.py:73:    # Adapters (APIs locales MPRO)
+modules/comercial/__init__.py:74:    'APIS_MPRO_LOCALES',
+modules/comercial/__init__.py:75:    'query_api_mpro_local',
+modules/comercial/queries/__init__.py:19:- softrestaurant.py: Queries base para servidores SoftRestaurant
+modules/comercial/queries/__init__.py:20:- mpro.py: Queries base para servidores MPRO
+modules/comercial/queries/__init__.py:24:- VENTAS_TOTAL: query_ventas_periodo_sr/mpro
+modules/comercial/queries/__init__.py:27:- CORTES_TURNOS: query_ventas_sin_corte_sr/mpro
+modules/comercial/queries/__init__.py:46:# Bloque 2: Query base de ventas SoftRestaurant
+modules/comercial/queries/__init__.py:47:from .softrestaurant import (
+modules/comercial/queries/__init__.py:52:# Bloque 3: Query base de ventas MPRO
+modules/comercial/queries/__init__.py:53:from .mpro import (
+modules/comercial/queries/__init__.py:54:    query_ventas_periodo_mpro,
+modules/comercial/queries/__init__.py:55:    VentasPeriodoResult as VentasPeriodoResultMPRO,
+modules/comercial/queries/__init__.py:71:__phase__ = "BLOQUE_3_VENTAS_MPRO"
+modules/comercial/queries/mpro.py:4:EDARSA HUB - Queries Base para MPRO (ManagementPro)
+modules/comercial/queries/mpro.py:8:Centralizar las queries SQL homologadas para servidores MPRO.
+modules/comercial/queries/mpro.py:11:TABLAS PRINCIPALES MPRO:
+modules/comercial/queries/mpro.py:20:- query_ventas_periodo_mpro: Ventas totales, PAX, cheques para un período
+modules/comercial/queries/mpro.py:21:- query_ventas_sin_corte_mpro: Ventas del día sin cierre
+modules/comercial/queries/mpro.py:22:- query_ventas_por_sucursal_mpro: Ventas desglosadas por sucursal
+modules/comercial/queries/mpro.py:32:DIFERENCIAS CON SOFTRESTAURANT:
+modules/comercial/queries/mpro.py:39:- get_kpis_mpro() en service.py
+modules/comercial/queries/mpro.py:58:from core.system_type_utils import is_mpro_system
+modules/comercial/queries/mpro.py:63:# Importar EmpresaResolver para resolución canónica de sucursales MPRO
+modules/comercial/queries/mpro.py:73:    logging.warning(f"[MPRO] EmpresaResolver no disponible: {e}. Usando fallback.")
+modules/comercial/queries/mpro.py:81:# Tablas conocidas de MPRO para validación
+modules/comercial/queries/mpro.py:82:MPRO_KNOWN_TABLES = [
+modules/comercial/queries/mpro.py:94:MODULE_NAME = "COMERCIAL_QUERIES_MPRO"
+modules/comercial/queries/mpro.py:98:# RESULTADO HOMOLOGADO (igual que SoftRestaurant para consistencia)
+modules/comercial/queries/mpro.py:105:    Estructura idéntica a softrestaurant.py para consistencia.
+modules/comercial/queries/mpro.py:119:def query_ventas_periodo_mpro(
+modules/comercial/queries/mpro.py:126:    Query base ÚNICA de ventas para MPRO.
+modules/comercial/queries/mpro.py:128:    ORIGEN: Extraída de service.py líneas 871-884 (get_kpis_mpro_por_sucursal)
+modules/comercial/queries/mpro.py:136:    DIFERENCIAS VS SOFTRESTAURANT:
+modules/comercial/queries/mpro.py:147:    - get_kpis_mpro_por_sucursal() en service.py (migración Bloque 4)
+modules/comercial/queries/mpro.py:148:    - /comercial/tablero-ejecutivo para servidores MPRO
+modules/comercial/queries/mpro.py:162:    if not is_mpro_system(system_type):
+modules/comercial/queries/mpro.py:165:            error=f"Server {server.get('name')} no es MPRO (es {system_type})"
+modules/comercial/queries/mpro.py:178:    fi = _format_fecha_mpro(fecha_ini, es_fin=False)
+modules/comercial/queries/mpro.py:179:    ff = _format_fecha_mpro(fecha_fin, es_fin=True)
+modules/comercial/queries/mpro.py:182:    filtro_suc = _build_sucursal_filter_mpro(sucursal_id, alias="VE")
+modules/comercial/queries/mpro.py:239:        logging.warning(f"[{MODULE_NAME}] Error en query_ventas_periodo_mpro para {server.get('name')}: {e}")
+modules/comercial/queries/mpro.py:247:# FUNCIÓN PARA DASHBOARD MPRO CON FILTRO FLEXIBLE
+modules/comercial/queries/mpro.py:250:def query_ventas_periodo_mpro_con_filtro_flexible(
+modules/comercial/queries/mpro.py:258:    Query de ventas MPRO con filtro flexible de sucursal.
+modules/comercial/queries/mpro.py:263:    A diferencia de query_ventas_periodo_mpro():
+modules/comercial/queries/mpro.py:267:    - Usa la misma lógica que el endpoint dashboard MPRO
+modules/comercial/queries/mpro.py:280:    - /comercial/dashboard/{server_id} (sección MPRO)
+modules/comercial/queries/mpro.py:295:    if not is_mpro_system(system_type):
+modules/comercial/queries/mpro.py:298:            error=f"Server {server.get('name')} no es MPRO (es {system_type})"
+modules/comercial/queries/mpro.py:311:    fi = _format_fecha_mpro(fecha_ini, es_fin=False)
+modules/comercial/queries/mpro.py:312:    ff = _format_fecha_mpro(fecha_fin, es_fin=True)
+modules/comercial/queries/mpro.py:334:        codigo_sucursal_resuelto = _resolver_codigo_sucursal_mpro(sucursal)
+modules/comercial/queries/mpro.py:340:            logging.info(f"[MPRO] Filtro resuelto por EmpresaResolver: '{sucursal}' -> '{codigo_sucursal_resuelto}'")
+modules/comercial/queries/mpro.py:354:                logging.warning(f"[MPRO] Filtro LIKE legacy para '{sucursal}' - considerar agregar alias a EmpresaResolver")
+modules/comercial/queries/mpro.py:364:    # QUERY SQL - Basada en routes.py dashboard MPRO
+modules/comercial/queries/mpro.py:381:        print(f"*** [MPRO Query] Ejecutando query para {server.get('name')} sucursal={sucursal} ***")
+modules/comercial/queries/mpro.py:391:        print(f"*** [MPRO Query] Resultado: {result[:1] if result else 'None/Empty'} ***")
+modules/comercial/queries/mpro.py:398:            print(f"*** [MPRO Query] Ventas={ventas:,.2f}, PAX={pax}, Cheques={cheques} ***")
+modules/comercial/queries/mpro.py:400:            # Lógica de estimación PAX (igual que query_ventas_periodo_mpro)
+modules/comercial/queries/mpro.py:405:            logging.info(f"[{MODULE_NAME}] query_ventas_periodo_mpro_con_filtro_flexible: "
+modules/comercial/queries/mpro.py:418:            logging.info(f"[{MODULE_NAME}] query_ventas_periodo_mpro_con_filtro_flexible: "
+modules/comercial/queries/mpro.py:429:        logging.warning(f"[{MODULE_NAME}] Error en query_ventas_periodo_mpro_con_filtro_flexible "
+modules/comercial/queries/mpro.py:441:def _format_fecha_mpro(fecha_iso: str, es_fin: bool = False) -> str:
+modules/comercial/queries/mpro.py:443:    Convierte fecha ISO (YYYY-MM-DD) a formato SQL con hora para MPRO.
+modules/comercial/queries/mpro.py:459:def _build_sucursal_filter_mpro(sucursal_id: Optional[str], alias: str = "VE") -> str:
+modules/comercial/queries/mpro.py:461:    Construye filtro SQL para sucursal en MPRO.
+modules/comercial/queries/mpro.py:475:def _resolver_codigo_sucursal_mpro(sucursal: str) -> Optional[str]:
+modules/comercial/queries/mpro.py:477:    FASE 5C HELPER: Resuelve un alias/nombre de sucursal a CodigoSucursalSistema MPRO.
+modules/comercial/queries/mpro.py:514:                logging.debug(f"[MPRO] _resolver_codigo_sucursal_mpro: '{sucursal}' -> EmpresaID={empresa.empresa_id}")
+modules/comercial/queries/mpro.py:520:                    logging.info(f"[MPRO] _resolver_codigo_sucursal_mpro: EmpresaID={empresa.empresa_id} -> CodigoSucursal={connection.codigo_sucursal_sistema}")
+modules/comercial/queries/mpro.py:526:                    logging.info(f"[MPRO] _resolver_codigo_sucursal_mpro: EmpresaID={empresa.empresa_id} -> CodigoSucursal={connection_api.codigo_sucursal_sistema} (via API_LOCAL)")
+modules/comercial/queries/mpro.py:530:            logging.warning(f"[MPRO] Error en _resolver_codigo_sucursal_mpro para '{sucursal}': {e}")
+modules/comercial/queries/mpro.py:549:        logging.warning(f"[MPRO] _resolver_codigo_sucursal_mpro: Usando fallback hardcodeado para '{sucursal}' -> '{codigo}'")
+modules/comercial/queries/mpro.py:555:def _build_sucursal_filter_mpro_flexible(
+modules/comercial/queries/mpro.py:561:    Construye filtro SQL flexible para sucursal en MPRO.
+modules/comercial/queries/mpro.py:563:    FASE 5C: Usa _resolver_codigo_sucursal_mpro() para resolución canónica.
+modules/comercial/queries/mpro.py:578:    codigo_resuelto = _resolver_codigo_sucursal_mpro(sucursal)
+modules/comercial/queries/mpro.py:611:def query_ventas_por_sucursal_mpro(
+modules/comercial/queries/mpro.py:617:    Query base de ventas AGRUPADAS POR SUCURSAL para MPRO.
+modules/comercial/queries/mpro.py:619:    ORIGEN: Extraída de service.py líneas 862-884 (get_kpis_mpro_por_sucursal)
+modules/comercial/queries/mpro.py:622:    DIFERENCIA CON query_ventas_periodo_mpro():
+modules/comercial/queries/mpro.py:640:    - get_kpis_mpro_por_sucursal() en service.py (migración Bloque 4)
+modules/comercial/queries/mpro.py:653:    if not is_mpro_system(system_type):
+modules/comercial/queries/mpro.py:656:            error=f"Server {server.get('name')} no es MPRO (es {system_type})"
+modules/comercial/queries/mpro.py:669:    fi = _format_fecha_mpro(fecha_ini, es_fin=False)
+modules/comercial/queries/mpro.py:670:    ff = _format_fecha_mpro(fecha_fin, es_fin=True)
+modules/comercial/queries/mpro.py:712:            logging.info(f"[{MODULE_NAME}] query_ventas_por_sucursal_mpro: {len(sucursales)} sucursales para {server.get('name')}")
+modules/comercial/queries/mpro.py:720:            logging.info(f"[{MODULE_NAME}] query_ventas_por_sucursal_mpro: Sin sucursales con ventas para {server.get('name')}")
+modules/comercial/queries/mpro.py:728:        logging.warning(f"[{MODULE_NAME}] Error en query_ventas_por_sucursal_mpro para {server.get('name')}: {e}")
+modules/comercial/queries/softrestaurant.py:4:EDARSA HUB - Queries Base para SoftRestaurant
+modules/comercial/queries/softrestaurant.py:8:Centralizar las queries SQL homologadas para servidores SoftRestaurant.
+modules/comercial/queries/softrestaurant.py:11:TABLAS PRINCIPALES SOFTRESTAURANT:
+modules/comercial/queries/softrestaurant.py:35:- get_kpis_softrestaurant() en service.py
+modules/comercial/queries/softrestaurant.py:52:from core.system_type_utils import is_softrestaurant_system
+modules/comercial/queries/softrestaurant.py:58:# Tablas conocidas de SoftRestaurant para validación
+modules/comercial/queries/softrestaurant.py:106:    Query base ÚNICA de ventas para SoftRestaurant.
+modules/comercial/queries/softrestaurant.py:108:    ORIGEN: Extraída de service.py líneas 341-363 (get_kpis_softrestaurant)
+modules/comercial/queries/softrestaurant.py:123:    - get_kpis_softrestaurant() en service.py (migración Bloque 4)
+modules/comercial/queries/softrestaurant.py:138:    if not is_softrestaurant_system(system_type):
+modules/comercial/queries/softrestaurant.py:141:            error=f"Server {server.get('name')} no es SoftRestaurant (es {system_type})"
+modules/comercial/queries/softrestaurant.py:224:    Convierte fecha ISO (YYYY-MM-DD) a formato SoftRestaurant (YYYYMMDD).
+modules/comercial/queries/softrestaurant.py:237:    Construye filtro SQL para sucursal en SoftRestaurant.
+modules/comercial/queries/softrestaurant.py:241:    - La columna idestacion puede no existir en algunas versiones de SoftRestaurant.
+modules/comercial/queries/softrestaurant.py:265:    # La columna idestacion en SoftRestaurant tiene IDs como '130GRADOSCAJA', no nombres
+modules/comercial/adapters.py:27:Adaptadores para integración con APIs locales MPRO.
+modules/comercial/adapters.py:59:# CONFIGURACIÓN APIs LOCALES MPRO (FALLBACK LEGACY - SOLO SI EmpresaResolver FALLA)
+modules/comercial/adapters.py:64:APIS_MPRO_LOCALES_LEGACY = {
+modules/comercial/adapters.py:67:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query"),
+modules/comercial/adapters.py:68:        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
+modules/comercial/adapters.py:75:        "url": os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query"),
+modules/comercial/adapters.py:76:        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
+modules/comercial/adapters.py:84:APIS_MPRO_LOCALES = APIS_MPRO_LOCALES_LEGACY
+modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")
+modules/comercial/adapters.py:154:                api_config["url"] = os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query")
+modules/comercial/adapters.py:159:            api_config["api_key"] = os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY")
+modules/comercial/adapters.py:170:def query_api_mpro_local(api_config: dict, sql_query: str, timeout: int = 3) -> dict:
+modules/comercial/adapters.py:172:    Consulta una API MPRO local y retorna los resultados.
+modules/comercial/adapters.py:182:    print(f"*** query_api_mpro_local: Iniciando query a {api_config.get('nombre', 'N/A')} ***")
+modules/comercial/adapters.py:183:    print(f"*** query_api_mpro_local: URL = {api_config.get('url', 'N/A')} ***")
+modules/comercial/adapters.py:184:    print(f"*** query_api_mpro_local: activo = {api_config.get('activo', 'N/A')} ***")
+modules/comercial/adapters.py:187:        print("*** query_api_mpro_local: API desactivada, omitiendo ***")
+modules/comercial/adapters.py:191:        print("*** query_api_mpro_local: URL no configurada, omitiendo ***")
+modules/comercial/adapters.py:198:        print("*** query_api_mpro_local: Enviando request... ***")
+modules/comercial/adapters.py:206:        print(f"*** query_api_mpro_local: Response status = {response.status_code} ***")
+modules/comercial/adapters.py:214:            print(f"*** query_api_mpro_local: Response body = {response.text[:200]} ***")
+modules/comercial/adapters.py:230:    Obtiene las ventas del día actual desde una API MPRO local.
+modules/comercial/adapters.py:269:    result = query_api_mpro_local(api_config, sql_ventas_hoy)
+modules/comercial/adapters.py:319:        server_host: Host del servidor padre (ej: "54.39.104.176") - LEGACY, se mantiene por compatibilidad
+modules/comercial/adapters.py:408:    # ========== FALLBACK LEGACY: Buscar en APIS_MPRO_LOCALES_LEGACY ==========
+modules/comercial/adapters.py:410:    print("*** API Local: Intentando fallback legacy (APIS_MPRO_LOCALES_LEGACY) ***")
+modules/comercial/adapters.py:439:        for api_id, api_cfg in APIS_MPRO_LOCALES_LEGACY.items():
+modules/comercial/adapters.py:477:    'APIS_MPRO_LOCALES',
+modules/comercial/adapters.py:478:    'query_api_mpro_local',
+modules/comercial/inteligencia_comercial_routes.py:10:- No consulta SoftRestaurant/MPRO en vivo desde dashboard.
+modules/comercial/repository.py:302:        # Construir condición para sucursal_origen_id (puede ser NULL para SoftRestaurant)
+modules/comercial/repository.py:306:            # Para SoftRestaurant sin código, buscar por server_id con sucursal_origen_id NULL
+modules/comercial/repository.py:371:# QUERIES SQL - VENTAS MPRO
+modules/comercial/repository.py:374:def query_ventas_mpro(server: Dict, mes: int, anio: int, sucursal_id: str = None) -> List[Dict]:
+modules/comercial/repository.py:376:    Obtiene ventas de MPRO para un mes/año específico.
+modules/comercial/repository.py:400:def query_ventas_softrestaurant(server: Dict, mes: int, anio: int) -> List[Dict]:
+modules/comercial/repository.py:402:    Obtiene ventas de SoftRestaurant para un mes/año específico.
+modules/comercial/repository.py:433:def query_ticket_perfecto_mpro(server: Dict, mes: int, anio: int, sucursal_id: str = None) -> List[Dict]:
+modules/comercial/repository.py:435:    Obtiene datos de ticket perfecto para MPRO.
+modules/comercial/repository.py:762:    'query_ventas_mpro',
+modules/comercial/repository.py:763:    'query_ventas_softrestaurant',
+modules/comercial/repository.py:765:    'query_ticket_perfecto_mpro',
+modules/comercial/routes.py:29:- ✅ Adapters (APIs locales MPRO) migrados a adapters.py
+modules/comercial/routes.py:42:   - APIS_MPRO_LOCALES (configuración)
+modules/comercial/routes.py:43:   - query_api_mpro_local()
+modules/comercial/routes.py:48:   - get_kpis_softrestaurant()
+modules/comercial/routes.py:49:   - get_kpis_mpro()
+modules/comercial/routes.py:50:   - get_kpis_mpro_por_sucursal()
+modules/comercial/routes.py:102:    get_kpis_softrestaurant,
+modules/comercial/routes.py:103:    get_kpis_mpro,
+modules/comercial/routes.py:104:    get_kpis_mpro_por_sucursal,
+modules/comercial/routes.py:115:from modules.comercial.queries.softrestaurant import query_ventas_periodo_sr
+modules/comercial/routes.py:116:# BLOQUE 5.2: Import de query MPRO centralizada con filtro flexible
+modules/comercial/routes.py:117:from modules.comercial.queries.mpro import query_ventas_periodo_mpro_con_filtro_flexible
+modules/comercial/routes.py:161:    is_mpro_system,
+modules/comercial/routes.py:162:    is_softrestaurant_system,
+modules/comercial/routes.py:181:# remotos (SoftRestaurant/MPRO) desde la UI. Los endpoints afectados devolverán
+modules/comercial/routes.py:883:            if is_softrestaurant_system(server.get('system_type')):
+modules/comercial/routes.py:993:                            kpis = get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
+modules/comercial/routes.py:996:                        logging.warning(f"[BLINDAJE] Error SoftRestaurant {server['name']}: {sr_error}")
+modules/comercial/routes.py:1388:            elif is_mpro_system(server.get('system_type')):
+modules/comercial/routes.py:1390:                # FASE P0.5 MPRO: Ventas del Día lee EDARSAHUB SQL (NO API_LOCAL)
+modules/comercial/routes.py:1392:                logging.info(f"Procesando servidor MPRO: {server['name']}")
+modules/comercial/routes.py:1395:                    # MPRO Ventas del Día: Leer de EDARSAHUB SQL (NO API_LOCAL)
+modules/comercial/routes.py:1403:                            unidad_codigo_mpro = UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'
+modules/comercial/routes.py:1405:                            unidad_codigo_mpro = UnidadesService.resolver_codigo('130QRO') or '130QRO'
+modules/comercial/routes.py:1407:                            unidad_codigo_mpro = server.get('unidad_negocio_pk') or server_name_upper.replace(' LOCAL', '').strip()
+modules/comercial/routes.py:1410:                            fecha_op = get_fecha_operacion(unidad_codigo_mpro)
+modules/comercial/routes.py:1416:                        ventas_dia_snapshot = get_ventas_dia_abiertas(fecha_op, [unidad_codigo_mpro])
+modules/comercial/routes.py:1426:                            if vd_id == unidad_codigo_mpro:
+modules/comercial/routes.py:1445:                            kpis_mpro = {
+modules/comercial/routes.py:1450:                                'unidad': unidad_codigo_mpro, 'fuente': 'EDARSAHUB_SQL',
+modules/comercial/routes.py:1453:                            logging.info(f"[P0.5-MPRO] {server['name']}: EDARSAHUB SQL = ${total_estimado:,.2f}")
+modules/comercial/routes.py:1456:                                server=server, kpis=kpis_mpro,
+modules/comercial/routes.py:1465:                                sucursal=unidad_codigo_mpro,
+modules/comercial/routes.py:1471:                                totales[k] += kpis_mpro.get(k, 0)
+modules/comercial/routes.py:1472:                            totales["pendiente_cerrar"] += kpis_mpro.get("pendiente_cerrar", 0)
+modules/comercial/routes.py:1474:                            logging.warning(f"[P0.5-MPRO] {server['name']}: Sin datos en EDARSAHUB")
+modules/comercial/routes.py:1485:                                sucursal=unidad_codigo_mpro,
+modules/comercial/routes.py:1489:                    except Exception as mpro_error:
+modules/comercial/routes.py:1490:                        logging.error(f"[P0.5-MPRO] Error: {mpro_error}")
+modules/comercial/routes.py:1501:                            error_code="MPRO_EDARSAHUB_ERROR",
+modules/comercial/routes.py:1502:                            error_message=str(mpro_error)[:100],
+modules/comercial/routes.py:1506:                    # MPRO modo HUB (NO ventas del día)
+modules/comercial/routes.py:1508:                        unidades_mpro = get_kpis_mpro_por_sucursal(
+modules/comercial/routes.py:1512:                        logging.info(f"MPRO {server['name']}: {len(unidades_mpro)} unidades")
+modules/comercial/routes.py:1513:                        unidades_mpro = await filtrar_unidades_por_visibilidad(unidades_mpro, server['id'])
+modules/comercial/routes.py:1516:                        for unidad in unidades_mpro:
+modules/comercial/routes.py:1536:                                    source_period_mpro, source_live_mpro = "MPRO_API_LOCAL", "LOCAL_API"
+modules/comercial/routes.py:1537:                                    live_status_mpro = LiveStatus.LIVE_CONNECTED
+modules/comercial/routes.py:1539:                                    source_period_mpro, source_live_mpro = "EDARSAHUB_SQL", "EDARSAHUB_SQL"
+modules/comercial/routes.py:1540:                                    live_status_mpro = LiveStatus.LIVE_NOT_APPLICABLE
+modules/comercial/routes.py:1542:                                    source_period_mpro, source_live_mpro = "MPRO_SQL_DIRECT", "SQL_DIRECT"
+modules/comercial/routes.py:1543:                                    live_status_mpro = LiveStatus.LIVE_CONNECTED
+modules/comercial/routes.py:1548:                                    live_status=live_status_mpro,
+modules/comercial/routes.py:1553:                                    source_period=source_period_mpro,
+modules/comercial/routes.py:1554:                                    source_live=source_live_mpro,
+modules/comercial/routes.py:1568:                    except Exception as mpro_error:
+modules/comercial/routes.py:1569:                        logging.error(f"[P0-LOG] MPRO error: {server['name']}: {mpro_error}")
+modules/comercial/routes.py:1572:                        live_status, source_real_status = classify_connection_error(mpro_error, server)
+modules/comercial/routes.py:1585:                                error_code="MPRO_ERROR",
+modules/comercial/routes.py:1586:                                error_message=f"MPRO no disponible: {str(mpro_error)[:100]}",
+modules/comercial/routes.py:1592:                                logging.info(f"[P0-LOG] MPRO caché: {len(cached_list)} unidades")
+modules/comercial/routes.py:1606:                                        cache_warning="MPRO caída, usando caché",
+modules/comercial/routes.py:1624:                                    error_message="Sin datos MPRO",
+modules/comercial/routes.py:1688:            # Para SoftRestaurant: 1 unidad por servidor (sucursal_origen_id es NULL)
+modules/comercial/routes.py:1689:            # Para MPRO: usar server_id + sucursal_origen_id (ya corregido en P0)
+modules/comercial/routes.py:1690:            if sid and not suc:  # SoftRestaurant
+modules/comercial/routes.py:1702:        2. Resolver desde EDARSAHUB por server_id (SoftRestaurant)
+modules/comercial/routes.py:1811:                    'system_type': snapshot.get('sistema_origen', 'MPRO'),
+modules/comercial/routes.py:2048:            server='54.39.104.176', port=1433, database='EDARSAHUB',
+modules/comercial/routes.py:2112:    # FASE 3A.3: Incluir system_type para evitar colisiones MPRO/SoftRestaurant
+modules/comercial/routes.py:2136:        if is_softrestaurant_system(server.get('system_type')):
+modules/comercial/routes.py:2213:        elif is_mpro_system(server.get('system_type')):
+modules/comercial/routes.py:2214:            # IMPLEMENTACIÓN MPRO (Abril 2026)
+modules/comercial/routes.py:2219:            # Filtro de sucursal para MPRO
+modules/comercial/routes.py:2232:            # NOTA: En MPRO, la tabla Venta tiene Vn_Cantidad_1 y Vn_Precio_Neto_Importe
+modules/comercial/routes.py:2266:            # Ventas por vendedor (top 10) - En MPRO usar tabla Vendedor
+modules/comercial/routes.py:2385:            server='54.39.104.176', port=1433, database='EDARSAHUB',
+modules/comercial/routes.py:2458:    # FASE 3A.3: Incluir system_type para evitar colisiones MPRO/SoftRestaurant
+modules/comercial/routes.py:2484:        if is_softrestaurant_system(server.get('system_type')):
+modules/comercial/routes.py:2491:            # clasificacionventa puede no existir en algunas versiones de SoftRestaurant
+modules/comercial/routes.py:2671:        # PROHIBIDO: Abrir conexión a SoftRestaurant/MPRO/Enterprise
+modules/comercial/routes.py:2687:                server='54.39.104.176',
+modules/comercial/routes.py:2795:                    server='54.39.104.176',
+modules/comercial/routes.py:2904:            server='54.39.104.176', port=1433, database='EDARSAHUB',
+modules/comercial/routes.py:2998:        if is_softrestaurant_system(server.get('system_type')):
+modules/comercial/routes.py:3106:        elif is_mpro_system(server.get('system_type')):
+modules/comercial/routes.py:3107:            # BLINDAJE: Definir f_fin para MPRO
+modules/comercial/routes.py:3110:            # Filtro de sucursal para MPRO - no filtrar si es "default" o nombre del servidor
+modules/comercial/routes.py:3123:            # KPIs generales de mesas para MPRO
+modules/comercial/routes.py:3162:            # BLINDAJE MPRO: Usar nombre de MongoDB (ya obtenido arriba), con fallback a SQL si no se encontró
+modules/comercial/routes.py:3163:            nombre_final_mpro = nombre_unidad_mostrar
+modules/comercial/routes.py:3165:            if nombre_final_mpro == server['name'] and sucursal:
+modules/comercial/routes.py:3177:                            nombre_final_mpro = result_nombre[0]['nombre']
+modules/comercial/routes.py:3182:                "nombre": nombre_final_mpro,
+modules/comercial/routes.py:3195:            # Rotación por hora para MPRO
+modules/comercial/routes.py:3261:    Ya no usa conexiones LIVE a SoftRestaurant/MPRO.
+modules/comercial/routes.py:3442:    Prohibido conexión LIVE a SoftRestaurant/MPRO.
+modules/comercial/routes.py:3599:            server='54.39.104.176', port=1433, database='EDARSAHUB',
+modules/comercial/routes.py:3705:    Soporta SoftRestaurant y MPRO.
+modules/comercial/routes.py:3907:        if is_softrestaurant_system(server.get('system_type')):
+modules/comercial/routes.py:3919:            # PROHIBIDO: Abrir conexión remota a SoftRestaurant para obtener "último día"
+modules/comercial/routes.py:3929:            logging.info(f"[NO-LIVE] SoftRestaurant Query - Período: {f_ini} a {f_fin} (EDARSAHUB-ONLY)")
+modules/comercial/routes.py:3994:            # PROHIBIDO: Abrir conexión remota a SoftRestaurant/MPRO/Enterprise
+modules/comercial/routes.py:4045:        elif is_mpro_system(server.get('system_type')):
+modules/comercial/routes.py:4047:            # FASE 7-FIX: EDARSAHUB COMO FUENTE PRINCIPAL PARA MPRO
+modules/comercial/routes.py:4049:            # MISMO FIX que SoftRestaurant: Usar EDARSAHUB primero.
+modules/comercial/routes.py:4056:            edarsahub_kpis_mpro = get_dashboard_kpis_from_edarsahub(
+modules/comercial/routes.py:4067:            if edarsahub_kpis_mpro:
+modules/comercial/routes.py:4068:                # EDARSAHUB tiene datos MPRO - usar estos como fuente principal
+modules/comercial/routes.py:4069:                logging.info(f"[DASHBOARD-FIX-MPRO] {server['name']}: Usando datos de EDARSAHUB (ventas=${edarsahub_kpis_mpro['ventas_periodo']:,.2f})")
+modules/comercial/routes.py:4073:                    "source_message": f"Datos consolidados de EDARSAHUB ({edarsahub_kpis_mpro['registros_consultados']} días)",
+modules/comercial/routes.py:4074:                    "source_type": edarsahub_kpis_mpro['source'],
+modules/comercial/routes.py:4080:                        "ventas_periodo": edarsahub_kpis_mpro['ventas_periodo'],
+modules/comercial/routes.py:4081:                        "ticket_promedio": edarsahub_kpis_mpro['ticket_promedio'],
+modules/comercial/routes.py:4082:                        "cheques_total": edarsahub_kpis_mpro['cheques_total'],
+modules/comercial/routes.py:4083:                        "pax_total": edarsahub_kpis_mpro['pax_total'],
+modules/comercial/routes.py:4084:                        "pax_promedio": edarsahub_kpis_mpro['pax_promedio'],
+modules/comercial/routes.py:4085:                        "consumo_persona": edarsahub_kpis_mpro['consumo_persona'],
+modules/comercial/routes.py:4086:                        "mesas_atendidas": edarsahub_kpis_mpro['mesas_atendidas'],
+modules/comercial/routes.py:4087:                        "rotacion_mesas": edarsahub_kpis_mpro['rotacion_mesas'],
+modules/comercial/routes.py:4088:                        "venta_por_hora": edarsahub_kpis_mpro['venta_por_hora']
+modules/comercial/routes.py:4091:                        "vs_periodo_anterior": edarsahub_kpis_mpro['vs_periodo_anterior'],
+modules/comercial/routes.py:4092:                        "vs_ano_anterior": edarsahub_kpis_mpro['vs_ano_anterior'],
+modules/comercial/routes.py:4093:                        "vs_presupuesto": edarsahub_kpis_mpro['vs_presupuesto'],
+modules/comercial/routes.py:4095:                        "ventas_anterior": edarsahub_kpis_mpro['ventas_anterior'],
+modules/comercial/routes.py:4096:                        "ventas_ano_anterior": edarsahub_kpis_mpro['ventas_ano_anterior']
+modules/comercial/routes.py:4103:            # FASE 1B-R1: CORRECCIÓN NO-LIVE DASHBOARD MPRO
+modules/comercial/routes.py:4105:            # PROHIBIDO: Abrir conexión remota a MPRO/Enterprise
+modules/comercial/routes.py:4108:            logging.warning(f"[DASHBOARD-NO-LIVE-MPRO] {server['name']}: EDARSAHUB sin datos vigentes, verificando snapshot histórico")
+modules/comercial/routes.py:4113:            stale_snapshot_mpro = get_last_valid_snapshot_edarsahub(server_id)
+modules/comercial/routes.py:4115:            if stale_snapshot_mpro:
+modules/comercial/routes.py:4117:                logging.info(f"[DASHBOARD-NO-LIVE-MPRO] {server['name']}: Retornando datos STALE de {stale_snapshot_mpro['fecha_snapshot']}")
+modules/comercial/routes.py:4121:                    "source_message": f"Datos históricos de EDARSAHUB. Última sincronización: {stale_snapshot_mpro['fecha_snapshot']}. Datos pueden estar desactualizados.",
+modules/comercial/routes.py:4127:                    "kpis": stale_snapshot_mpro.get('kpis'),
+modules/comercial/routes.py:4128:                    "comparativo": stale_snapshot_mpro.get('comparativo'),
+modules/comercial/routes.py:4131:                        "mensaje": f"Datos históricos. Última sincronización: {stale_snapshot_mpro['fecha_snapshot']}"
+modules/comercial/routes.py:4137:            logging.warning(f"[DASHBOARD-NO-LIVE-MPRO] {server['name']}: Sin datos en EDARSAHUB, retornando SIN_DATOS_EDARSAHUB")
+modules/comercial_v2/repository_readonly.py:11:- SQL vivo a SoftRestaurant/MPRO
+modules/comercial_v2/repository_readonly.py:38:    'host': '54.39.104.176',
+modules/comercial_v2/repository_comercial_edarsahub.py:45:    'host': '54.39.104.176',
+modules/comercial_v2/repository_comercial_edarsahub.py:92:            WHEN nombre = 'ManagmentPro' THEN 'MPRO-MULTI'
+modules/comercial_v2/repository_comercial_edarsahub.py:110:            sistema = SistemaOrigen.SOFTRESTAURANT
+modules/comercial_v2/repository_comercial_edarsahub.py:111:        elif 'MPRO' in system_type or 'MANAG' in system_type:
+modules/comercial_v2/repository_comercial_edarsahub.py:112:            sistema = SistemaOrigen.MPRO
+modules/comercial_v2/repository_comercial_edarsahub.py:129:def get_sucursales_mpro(server_id: str) -> List[Dict[str, str]]:
+modules/comercial_v2/repository_comercial_edarsahub.py:131:    Para MPRO, obtiene las sucursales específicas (QRO=0021, ORIGEN=0023).
+modules/comercial_v2/repository_comercial_edarsahub.py:132:    MPRO tiene múltiples sucursales en un solo server_id.
+modules/comercial_v2/repository_comercial_edarsahub.py:136:    # Mapeo conocido de sucursales MPRO con códigos CANÓNICOS
+modules/comercial_v2/mappers.py:7:Funciones de mapeo para transformar datos desde SoftRestaurant y MPRO
+modules/comercial_v2/mappers.py:68:# MAPEO SOFTRESTAURANT → EDARSAHUB V2
+modules/comercial_v2/mappers.py:71:def map_softrestaurant_ventas_cerradas(
+modules/comercial_v2/mappers.py:77:    Mapea un registro de SoftRestaurant (cheques + turnos) a KPIs Diarios v2.
+modules/comercial_v2/mappers.py:79:    Campos esperados del query SoftRestaurant:
+modules/comercial_v2/mappers.py:117:        sistema_origen=SistemaOrigen.SOFTRESTAURANT,
+modules/comercial_v2/mappers.py:148:def map_softrestaurant_ventas_abiertas(
+modules/comercial_v2/mappers.py:159:    Campos esperados del query SoftRestaurant (tempcheques):
+modules/comercial_v2/mappers.py:179:        sistema_origen=SistemaOrigen.SOFTRESTAURANT,
+modules/comercial_v2/mappers.py:200:# MAPEO MPRO → EDARSAHUB V2
+modules/comercial_v2/mappers.py:203:def map_mpro_ventas_cerradas(
+modules/comercial_v2/mappers.py:209:    Mapea un registro de MPRO (Venta_Encabezado) a KPIs Diarios v2.
+modules/comercial_v2/mappers.py:211:    Campos esperados del query MPRO:
+modules/comercial_v2/mappers.py:221:    # MPRO no maneja propinas en la venta directa
+modules/comercial_v2/mappers.py:223:    ventas_sin_propina = ventas_total  # MPRO: ventas ya son netas
+modules/comercial_v2/mappers.py:224:    propinas = Decimal("0")  # Propinas se manejan aparte en MPRO
+modules/comercial_v2/mappers.py:248:        sistema_origen=SistemaOrigen.MPRO,
+modules/comercial_v2/mappers.py:279:def map_mpro_ventas_abiertas(
+modules/comercial_v2/mappers.py:288:    Mapea datos de API local MPRO (ventas abiertas) a snapshot v2.
+modules/comercial_v2/mappers.py:310:        sistema_origen=SistemaOrigen.MPRO,
+modules/comercial_v2/routes.py:9:- SQL vivo a SoftRestaurant/MPRO
+modules/comercial_v2/schemas.py:20:    SOFTRESTAURANT = "SOFTRESTAURANT"
+modules/comercial_v2/schemas.py:21:    MPRO = "MPRO"
+modules/comercial_v2/schemas.py:30:    CHEQUES = "CHEQUES"  # Tabla definitiva de SoftRestaurant (turno cerrado)
+modules/comercial_v2/schemas.py:61:    """Datos de KPIs diarios desde el origen (SoftRestaurant/MPRO)"""
+modules/finanzas/sql_subprocess_helper.py:11:DICIEMBRE 2026 - FINANZAS-CXP-MPRO-CREDENTIALS-SECURITY-01:
+modules/finanzas/tesoreria.py:754:    - system_type in ['SOFTRESTAURANT', 'SR', 'MANAGEMENTPRO', 'MPRO']
+modules/finanzas/tesoreria.py:799:                # Solo incluir sistemas de Tesorería (SoftRestaurant y MPRO)
+modules/finanzas/tesoreria.py:800:                if system_type not in ['SOFTRESTAURANT', 'SR', 'MANAGEMENTPRO', 'MPRO']:
+modules/finanzas/tesoreria.py:804:                if system_type in ['SOFTRESTAURANT', 'SR']:
+modules/finanzas/tesoreria.py:805:                    fuente = 'SOFTRESTAURANT'
+modules/finanzas/tesoreria.py:806:                elif system_type in ['MANAGEMENTPRO', 'MPRO']:
+modules/finanzas/tesoreria.py:807:                    fuente = 'MPRO'
+modules/finanzas/tesoreria.py:845:            # Solo incluir sistemas de Tesorería (SoftRestaurant y MPRO)
+modules/finanzas/tesoreria.py:846:            if system_type not in ['SOFTRESTAURANT', 'SR', 'MANAGEMENTPRO', 'MPRO']:
+modules/finanzas/tesoreria.py:849:            if system_type in ['SOFTRESTAURANT', 'SR']:
+modules/finanzas/tesoreria.py:850:                fuente = 'SOFTRESTAURANT'
+modules/finanzas/tesoreria.py:851:            elif system_type in ['MANAGEMENTPRO', 'MPRO']:
+modules/finanzas/tesoreria.py:852:                fuente = 'MPRO'
+modules/finanzas/repository_ingresos_edarsahub.py:10:NO depende de conexiones en vivo a SoftRestaurant/MPRO.
+modules/finanzas/repository_ingresos_edarsahub.py:133:    Fuente: Finanzas_CortesCaja (datos sincronizados de SoftRestaurant y MPRO)
+modules/finanzas/repository_ingresos_edarsahub.py:161:            sistema_origen: 'SoftRestaurant', 'MPRO', None = todos
+modules/finanzas/health.py:8:1. Conectividad a servidores SQL (SoftRestaurant, MPRO)
+modules/finanzas/health.py:32:    "Tesorería": [],  # Usa datos de SoftRestaurant/MPRO directamente
+modules/finanzas/health.py:40:    "SOFTRESTAURANT": "SELECT TOP 1 idcheque FROM cheques",
+modules/finanzas/health.py:41:    "MANAGEMENTPRO": "SELECT TOP 1 id_venta FROM Venta_Encabezado"
+modules/finanzas/health.py:195:    - Conectividad a servidores de datos (SoftRestaurant, MPRO)
+modules/finanzas/health.py:272:                and s.get('system_type_normalized', s.get('system_type', '')).upper() in ['SOFTRESTAURANT', 'SR', 'MANAGEMENTPRO', 'MPRO']
+modules/finanzas/cuentas_por_pagar.py:93:_mpro_repo = None      # Repositorio MPRO (datos reales CxP)
+modules/finanzas/cuentas_por_pagar.py:94:_softrest_repo = None  # Repositorio SoftRestaurant (CF, Estelar, 130 Mid)
+modules/finanzas/cuentas_por_pagar.py:101:def set_mpro_repository(repo):
+modules/finanzas/cuentas_por_pagar.py:102:    """Configura el repositorio MPRO para CxP reales (llamado desde server.py)"""
+modules/finanzas/cuentas_por_pagar.py:103:    global _mpro_repo
+modules/finanzas/cuentas_por_pagar.py:104:    _mpro_repo = repo
+modules/finanzas/cuentas_por_pagar.py:106:def set_softrestaurant_repository(repo):
+modules/finanzas/cuentas_por_pagar.py:107:    """Configura el repositorio SoftRestaurant para CxP (llamado desde server.py)"""
+modules/finanzas/cuentas_por_pagar.py:112:    """Obtiene el repositorio de finanzas (prefiere SoftRestaurant > MPRO > EDARSA HUB)"""
+modules/finanzas/cuentas_por_pagar.py:113:    # Primero SoftRestaurant (CF, Estelar, 130 Mid)
+modules/finanzas/cuentas_por_pagar.py:116:    # Luego MPRO
+modules/finanzas/cuentas_por_pagar.py:117:    if _mpro_repo:
+modules/finanzas/cuentas_por_pagar.py:118:        return _mpro_repo
+modules/finanzas/cuentas_por_pagar.py:125:    """Obtiene específicamente el repositorio MPRO"""
+modules/finanzas/cuentas_por_pagar.py:126:    return _mpro_repo
+modules/finanzas/cuentas_por_pagar.py:129:    """Obtiene específicamente el repositorio SoftRestaurant"""
+modules/finanzas/cuentas_por_pagar.py:220:    facturas_ids: List[str]  # Cambiado de int a str para soportar IDs compuestos de SoftRestaurant
+modules/finanzas/cuentas_por_pagar.py:229:    sucursal_id: Optional[str] = None,  # CIENFUEGOS, ESTELAR, 130MID o código MPRO
+modules/finanzas/cuentas_por_pagar.py:241:    CONECTADO A SOFTRESTAURANT (CF, Estelar, 130 Mid) + MPRO (CENTRAL2020)
+modules/finanzas/cuentas_por_pagar.py:252:        # Combinar datos de SoftRestaurant + MPRO
+modules/finanzas/cuentas_por_pagar.py:257:        mpro_repo = await get_mpro_repo()
+modules/finanzas/cuentas_por_pagar.py:259:        # 1. Obtener datos de SoftRestaurant (CF, Estelar, 130 Mid)
+modules/finanzas/cuentas_por_pagar.py:260:        # FASE 1 CxP FIX: NO consultar SoftRestaurant si el filtro es exclusivamente MPRO
+modules/finanzas/cuentas_por_pagar.py:261:        es_filtro_mpro_exclusivo = sucursal_id and any(
+modules/finanzas/cuentas_por_pagar.py:266:        if softrest_repo and not es_filtro_mpro_exclusivo:
+modules/finanzas/cuentas_por_pagar.py:282:                    # ABRIL 2026: Ahora la query de SoftRestaurant incluye campos detallados:
+modules/finanzas/cuentas_por_pagar.py:294:                        # Campos detallados desde tabla compras (SoftRestaurant)
+modules/finanzas/cuentas_por_pagar.py:312:                        "fuente": "SOFTRESTAURANT"
+modules/finanzas/cuentas_por_pagar.py:317:                    fuentes_activas.append("SOFTRESTAURANT")
+modules/finanzas/cuentas_por_pagar.py:318:                    logging.info(f"[CxP] SoftRestaurant: {len(cxp_softrest)} registros")
+modules/finanzas/cuentas_por_pagar.py:320:                logging.error(f"[CxP] Error SoftRestaurant: {e}")
+modules/finanzas/cuentas_por_pagar.py:322:        # 2. Obtener datos de MPRO (CENTRAL2020)
+modules/finanzas/cuentas_por_pagar.py:323:        # FINANZAS-CXP-MPRO-COMBINE-01: Consultar MPRO siempre que no sea filtro exclusivo SoftRestaurant
+modules/finanzas/cuentas_por_pagar.py:325:        mpro_sucursales = [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('130QRO') or '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', '0021', '0023']
+modules/finanzas/cuentas_por_pagar.py:331:        es_filtro_mpro = sucursal_id and any(
+modules/finanzas/cuentas_por_pagar.py:333:            for alias in mpro_sucursales
+modules/finanzas/cuentas_por_pagar.py:336:        # Consultar MPRO si: no hay filtro, o hay filtro MPRO, o no es filtro exclusivo SR
+modules/finanzas/cuentas_por_pagar.py:337:        if mpro_repo and not es_filtro_softrest:
+modules/finanzas/cuentas_por_pagar.py:339:                # Mapear sucursal a código MPRO si aplica
+modules/finanzas/cuentas_por_pagar.py:340:                mpro_sucursal = None
+modules/finanzas/cuentas_por_pagar.py:341:                if es_filtro_mpro:
+modules/finanzas/cuentas_por_pagar.py:343:                        mpro_sucursal = '0023'
+modules/finanzas/cuentas_por_pagar.py:345:                        mpro_sucursal = '0021'
+modules/finanzas/cuentas_por_pagar.py:347:                        mpro_sucursal = sucursal_id
+modules/finanzas/cuentas_por_pagar.py:349:                cxp_mpro = await mpro_repo.get_cuentas_por_pagar(
+modules/finanzas/cuentas_por_pagar.py:350:                    sucursal_id=mpro_sucursal,
+modules/finanzas/cuentas_por_pagar.py:356:                # Mapeo de códigos MPRO a nombres
+modules/finanzas/cuentas_por_pagar.py:357:                mpro_nombres = {
+modules/finanzas/cuentas_por_pagar.py:362:                    '0027': 'CIEN FUEGOS MPRO'
+modules/finanzas/cuentas_por_pagar.py:365:                for c in cxp_mpro:
+modules/finanzas/cuentas_por_pagar.py:372:                    suc_nombre = mpro_nombres.get(suc_id, c.get('SucursalNombre', f"MPRO {suc_id}"))
+modules/finanzas/cuentas_por_pagar.py:374:                    # ABRIL 2026 - CLASIFICACIÓN MPRO por Grupo_Proveedor:
+modules/finanzas/cuentas_por_pagar.py:389:                    # CORRECCIÓN MAPEO CAMPOS MPRO:
+modules/finanzas/cuentas_por_pagar.py:398:                        "factura_id": f"MPRO_{c.get('CuentaPorPagarID')}",
+modules/finanzas/cuentas_por_pagar.py:421:                        "fuente": "MANAGEMENTPRO"
+modules/finanzas/cuentas_por_pagar.py:425:                if cxp_mpro:
+modules/finanzas/cuentas_por_pagar.py:426:                    fuentes_activas.append("MANAGEMENTPRO")
+modules/finanzas/cuentas_por_pagar.py:427:                    logging.info(f"[CxP] MPRO: {len(cxp_mpro)} registros")
+modules/finanzas/cuentas_por_pagar.py:429:                logging.error(f"[CxP] Error MPRO: {e}")
+modules/finanzas/cuentas_por_pagar.py:444:            # - SoftRestaurant: Según clave del proveedor (A = ALIMENTOS, B = BEBIDAS, X = OTROS)
+modules/finanzas/cuentas_por_pagar.py:445:            # - MPRO: Según Grupo_Proveedor (0001 = ALIMENTOS, 0002 = BEBIDAS, otros = OTROS)
+modules/finanzas/cuentas_por_pagar.py:495:    # Fallback a MPRO solo (si no se ejecutó el bloque combinado)
+modules/finanzas/cuentas_por_pagar.py:496:    mpro_repo = await get_mpro_repo()
+modules/finanzas/cuentas_por_pagar.py:498:    # Usar MPRO como fuente principal de CxP
+modules/finanzas/cuentas_por_pagar.py:499:    if mpro_repo and not use_demo:
+modules/finanzas/cuentas_por_pagar.py:501:            cxp_sql = await mpro_repo.get_cuentas_por_pagar(
+modules/finanzas/cuentas_por_pagar.py:821:    FINANZAS-CXP-MPRO-COMBINE-01 (Dic 2025):
+modules/finanzas/cuentas_por_pagar.py:822:    COMBINA SoftRestaurant + ManagementPro (no usa fallback).
+modules/finanzas/cuentas_por_pagar.py:825:    - SoftRestaurant: CIENFUEGOS, LA ESTELAR, 130° MERIDA
+modules/finanzas/cuentas_por_pagar.py:826:    - ManagementPro: ORIGEN (0023), 130° QRO (0021)
+modules/finanzas/cuentas_por_pagar.py:834:        # COMBINAR SR + MPRO (no fallback)
+modules/finanzas/cuentas_por_pagar.py:836:        mpro_repo = await get_mpro_repo()
+modules/finanzas/cuentas_por_pagar.py:845:        mpro_sucursales = [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('130QRO') or '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', 
+modules/finanzas/cuentas_por_pagar.py:852:        es_filtro_mpro = sucursal_id and any(
+modules/finanzas/cuentas_por_pagar.py:854:            for alias in mpro_sucursales
+modules/finanzas/cuentas_por_pagar.py:857:        # 1. Consultar SoftRestaurant (si no es filtro exclusivo MPRO)
+modules/finanzas/cuentas_por_pagar.py:858:        if softrest_repo and not es_filtro_mpro:
+modules/finanzas/cuentas_por_pagar.py:866:                        c['_fuente'] = 'SOFTRESTAURANT'
+modules/finanzas/cuentas_por_pagar.py:868:                    fuentes_activas.append("SOFTRESTAURANT")
+modules/finanzas/cuentas_por_pagar.py:869:                    logging.info(f"[CxP Resumen] SoftRestaurant: {len(cxp_sr)} registros")
+modules/finanzas/cuentas_por_pagar.py:871:                logging.error(f"[CxP Resumen] Error SoftRestaurant: {e}")
+modules/finanzas/cuentas_por_pagar.py:872:                fuentes_fallidas.append(f"SOFTRESTAURANT: {str(e)[:50]}")
+modules/finanzas/cuentas_por_pagar.py:874:        # 2. Consultar MPRO (si no es filtro exclusivo SoftRestaurant)
+modules/finanzas/cuentas_por_pagar.py:875:        if mpro_repo and not es_filtro_sr:
+modules/finanzas/cuentas_por_pagar.py:877:                # Mapear código de sucursal MPRO si aplica
+modules/finanzas/cuentas_por_pagar.py:878:                mpro_suc = None
+modules/finanzas/cuentas_por_pagar.py:879:                if es_filtro_mpro:
+modules/finanzas/cuentas_por_pagar.py:881:                        mpro_suc = '0023'
+modules/finanzas/cuentas_por_pagar.py:883:                        mpro_suc = '0021'
+modules/finanzas/cuentas_por_pagar.py:885:                        mpro_suc = sucursal_id
+modules/finanzas/cuentas_por_pagar.py:887:                cxp_mpro = await mpro_repo.get_cuentas_por_pagar(sucursal_id=mpro_suc)
+modules/finanzas/cuentas_por_pagar.py:888:                if cxp_mpro:
+modules/finanzas/cuentas_por_pagar.py:889:                    for c in cxp_mpro:
+modules/finanzas/cuentas_por_pagar.py:890:                        c['_fuente'] = 'MANAGEMENTPRO'
+modules/finanzas/cuentas_por_pagar.py:891:                    all_cxp_data.extend(cxp_mpro)
+modules/finanzas/cuentas_por_pagar.py:892:                    fuentes_activas.append("MANAGEMENTPRO")
+modules/finanzas/cuentas_por_pagar.py:893:                    logging.info(f"[CxP Resumen] MPRO: {len(cxp_mpro)} registros")
+modules/finanzas/cuentas_por_pagar.py:895:                logging.error(f"[CxP Resumen] Error MPRO: {e}")
+modules/finanzas/cuentas_por_pagar.py:896:                fuentes_fallidas.append(f"MANAGEMENTPRO: {str(e)[:50]}")
+modules/finanzas/cuentas_por_pagar.py:1000:    """Lista proveedores que tienen facturas pendientes - CONECTADO A MPRO"""
+modules/finanzas/cuentas_por_pagar.py:1001:    mpro_repo = await get_mpro_repo()
+modules/finanzas/cuentas_por_pagar.py:1003:    # Usar MPRO como fuente principal
+modules/finanzas/cuentas_por_pagar.py:1004:    if mpro_repo and not use_demo:
+modules/finanzas/cuentas_por_pagar.py:1006:            proveedores = await mpro_repo.get_resumen_por_proveedor(sucursal_id=sucursal_id)
+modules/finanzas/cuentas_por_pagar.py:1010:                    "fuente": "MPRO_REAL",
+modules/finanzas/cuentas_por_pagar.py:1023:            logging.error(f"Error obteniendo proveedores CxP de MPRO: {e}")
+modules/finanzas/cuentas_por_pagar.py:1063:    FINANZAS-CXP-MPRO-COMBINE-01 (Dic 2025):
+modules/finanzas/cuentas_por_pagar.py:1064:    COMBINA SoftRestaurant + ManagementPro (no usa fallback).
+modules/finanzas/cuentas_por_pagar.py:1067:    - SoftRestaurant: CIENFUEGOS, LA ESTELAR, 130° MERIDA
+modules/finanzas/cuentas_por_pagar.py:1068:    - ManagementPro: ORIGEN (0023), 130° QRO (0021)
+modules/finanzas/cuentas_por_pagar.py:1071:    mpro_repo = await get_mpro_repo()
+modules/finanzas/cuentas_por_pagar.py:1077:    # 1. Obtener sucursales de SoftRestaurant
+modules/finanzas/cuentas_por_pagar.py:1088:                        "Sistema": "SOFTRESTAURANT"
+modules/finanzas/cuentas_por_pagar.py:1090:                fuentes_activas.append("SOFTRESTAURANT")
+modules/finanzas/cuentas_por_pagar.py:1091:                logging.info(f"[CxP Sucursales] SoftRestaurant: {len(resumen_sr)} sucursales")
+modules/finanzas/cuentas_por_pagar.py:1093:            logging.error(f"[CxP Sucursales] Error SoftRestaurant: {e}")
+modules/finanzas/cuentas_por_pagar.py:1094:            fuentes_fallidas.append(f"SOFTRESTAURANT: {str(e)[:50]}")
+modules/finanzas/cuentas_por_pagar.py:1096:    # 2. Obtener sucursales de MPRO
+modules/finanzas/cuentas_por_pagar.py:1097:    if mpro_repo:
+modules/finanzas/cuentas_por_pagar.py:1099:            resumen_mpro = await mpro_repo.get_resumen_por_sucursal()
+modules/finanzas/cuentas_por_pagar.py:1100:            if resumen_mpro:
+modules/finanzas/cuentas_por_pagar.py:1101:                # Mapeo de códigos MPRO a nombres legibles
+modules/finanzas/cuentas_por_pagar.py:1102:                mpro_nombres = {
+modules/finanzas/cuentas_por_pagar.py:1107:                    '0027': 'CIEN FUEGOS MPRO'
+modules/finanzas/cuentas_por_pagar.py:1110:                for s in resumen_mpro:
+modules/finanzas/cuentas_por_pagar.py:1112:                    nombre = mpro_nombres.get(str(suc_id), s.get('SucursalNombre') or f"MPRO {suc_id}")
+modules/finanzas/cuentas_por_pagar.py:1119:                        "Sistema": "MANAGEMENTPRO"
+modules/finanzas/cuentas_por_pagar.py:1121:                fuentes_activas.append("MANAGEMENTPRO")
+modules/finanzas/cuentas_por_pagar.py:1122:                logging.info(f"[CxP Sucursales] MPRO: {len(resumen_mpro)} sucursales")
+modules/finanzas/cuentas_por_pagar.py:1124:            logging.error(f"[CxP Sucursales] Error MPRO: {e}")
+modules/finanzas/cuentas_por_pagar.py:1125:            fuentes_fallidas.append(f"MANAGEMENTPRO: {str(e)[:50]}")
+modules/finanzas/cuentas_por_pagar.py:1130:            from modules.finanzas.repository_mpro import MPRO_SERVER_ID
+modules/finanzas/cuentas_por_pagar.py:1131:            config = await get_sucursales_visibles_config(MPRO_SERVER_ID)
+modules/finanzas/cuentas_por_pagar.py:1166:    factura_id: str,  # Cambiado a str para soportar IDs compuestos (ej: "MPRO_12345", "CIENFUEGOS_xxx")
+modules/finanzas/cuentas_por_pagar.py:1172:    Soporta IDs numéricos (legacy), MPRO_xxx, y SUCURSAL_xxx (SoftRestaurant).
+modules/finanzas/cuentas_por_pagar.py:1184:    if factura_id_decoded.startswith("MPRO_"):
+modules/finanzas/cuentas_por_pagar.py:1185:        # ID compuesto de MPRO
+modules/finanzas/cuentas_por_pagar.py:1186:        logging.info(f"[CxP] Factura MPRO {factura_id_decoded} - Decisión: {data.decision_pago}")
+modules/finanzas/cuentas_por_pagar.py:1202:            "fuente": "MPRO",
+modules/finanzas/cuentas_por_pagar.py:1203:            "mensaje": "Decisión registrada (persistencia MPRO pendiente)"
+modules/finanzas/cuentas_por_pagar.py:1206:    # ID compuesto de SoftRestaurant (CIENFUEGOS_xxx, ESTELAR_xxx, 130MID_xxx)
+modules/finanzas/cuentas_por_pagar.py:1211:        logging.info(f"[CxP] Factura SoftRestaurant {factura_id_decoded} - Decisión: {data.decision_pago}")
+modules/finanzas/cuentas_por_pagar.py:1220:            motivo='Marcar/desmarcar factura SoftRestaurant para pago'
+modules/finanzas/cuentas_por_pagar.py:1227:            "fuente": "SOFTRESTAURANT",
+modules/finanzas/cuentas_por_pagar.py:1228:            "mensaje": "Decisión registrada (persistencia SoftRestaurant pendiente)"
+modules/finanzas/cuentas_por_pagar.py:1281:        # Comparar como string para soportar IDs compuestos de SoftRestaurant
+modules/finanzas/sql_query_worker_secure.py:10:FINANZAS-CXP-MPRO-CREDENTIALS-SECURITY-01:
+modules/finanzas/repository_cortes_z.py:4:Repositorio para obtener Cortes Z de SoftRestaurant y MPRO
+modules/finanzas/repository_cortes_z.py:159:        Detecta automáticamente si es SoftRestaurant o MPRO.
+modules/finanzas/repository_cortes_z.py:184:        if system_type in ['SOFTRESTAURANT', 'SR']:
+modules/finanzas/repository_cortes_z.py:188:        elif system_type in ['MANAGEMENTPRO', 'MPRO']:
+modules/finanzas/repository_cortes_z.py:189:            return await self._get_cortes_mpro_by_server(
+modules/finanzas/repository_cortes_z.py:208:        """Obtiene Cortes Z de un servidor SoftRestaurant."""
+modules/finanzas/repository_cortes_z.py:278:                    'fuente': 'SOFTRESTAURANT',
+modules/finanzas/repository_cortes_z.py:297:                    source_type="SOFTRESTAURANT",
+modules/finanzas/repository_cortes_z.py:303:                    source_type="SOFTRESTAURANT",
+modules/finanzas/repository_cortes_z.py:320:        Obtiene Cortes Z de un servidor MPRO.
+modules/finanzas/repository_cortes_z.py:376:                    'fuente': 'MPRO',
+modules/finanzas/repository_cortes_z.py:395:                    source_type="MPRO",
+modules/finanzas/repository_cortes_z.py:401:                    source_type="MPRO",
+modules/finanzas/repository_cortes_z.py:498:        self.logger.warning(f"Uso de método legacy get_cortes_z_softrestaurant con nombre '{server_name}'. Migrar a get_cortes_z_by_server_id.")
+modules/finanzas/repository_cortes_z.py:520:        LEGACY: Obtiene Cortes Z de MPRO usando nombre de servidor.
+modules/finanzas/repository_cortes_z.py:523:        self.logger.warning(f"Uso de método legacy get_cortes_z_mpro con nombre '{server_name}'. Migrar a get_cortes_z_by_server_id.")
+modules/finanzas/repository_cortes_z.py:528:            self.logger.error(f"No se encontró servidor MPRO con nombre '{server_name}'")
+modules/finanzas/repository_cortes_z.py:619:                # Solo incluir SoftRestaurant y MPRO
+modules/finanzas/repository_cortes_z.py:620:                if tipo != 'CORE' and system_type in ['SOFTRESTAURANT', 'SR', 'MANAGEMENTPRO', 'MPRO']:
+modules/finanzas/ingresos.py:12:- NO depende de conexiones en vivo a SoftRestaurant/MPRO
+modules/finanzas/ingresos.py:328:    sistema_origen: Optional[str] = Query(None, description="SoftRestaurant, MPRO, o None para todos"),
+modules/finanzas/ingresos.py:338:    - NO depende de conexiones en vivo a SoftRestaurant/MPRO
+modules/finanzas/ingresos.py:380:                "mensaje": "Sin cortes sincronizados para el rango seleccionado. Verifique que los datos estén sincronizados desde SoftRestaurant/MPRO.",
+modules/finanzas/tesoreria_models.py:90:    fuente: str  # SOFTRESTAURANT o MPRO
+modules/finanzas/propinas_tpv/service.py:5:FASE 1 MVP - Solo SoftRestaurant
+modules/finanzas/propinas_tpv/service.py:37:    FASE 1 MVP - Solo SoftRestaurant:
+modules/finanzas/propinas_tpv/service.py:43:    - MPRO
+modules/finanzas/propinas_tpv/service.py:58:        Sincroniza propinas desde servidores SoftRestaurant.
+modules/finanzas/propinas_tpv/service.py:61:        1. Obtener servidores SoftRestaurant activos
+modules/finanzas/propinas_tpv/service.py:79:        servers = list_operational_servers(system_type_filter='SoftRestaurant')
+modules/finanzas/propinas_tpv/service.py:86:            logger.warning("No se encontraron servidores SoftRestaurant")
+modules/finanzas/propinas_tpv/service.py:128:                        'system_type': 'SoftRestaurant',
+modules/finanzas/propinas_tpv/service.py:145:                    # En SoftRestaurant FASE 1: asumimos que todas las propinas
+modules/finanzas/propinas_tpv/service.py:160:                        'sucursal_id': server_name,  # En SoftRestaurant, servidor = sucursal
+modules/finanzas/propinas_tpv/service.py:164:                        'system_type': 'SoftRestaurant',
+modules/finanzas/propinas_tpv/service.py:200:                    'system_type': 'SoftRestaurant',
+modules/finanzas/propinas_tpv/service.py:219:                    'system_type': 'SoftRestaurant',
+modules/finanzas/propinas_tpv/service.py:440:                'formas_pago_tpv_softrestaurant': {
+modules/finanzas/propinas_tpv/sql_scripts.py:12:- NO ejecutar en SoftRestaurant ni MPRO
+modules/finanzas/propinas_tpv/sql_scripts.py:48:        system_type             VARCHAR(20)         NOT NULL DEFAULT 'SoftRestaurant',
+modules/finanzas/propinas_tpv/sql_scripts.py:54:        -- DATOS OPERATIVOS (Lectura de SoftRestaurant)
+modules/finanzas/propinas_tpv/sql_scripts.py:66:        -- TRAZABILIDAD AL ORIGEN (SoftRestaurant)
+modules/finanzas/propinas_tpv/sql_scripts.py:68:        corte_id_origen         VARCHAR(50)         NULL,  -- idmovtocaja de SoftRestaurant
+modules/finanzas/propinas_tpv/sql_scripts.py:69:        turno_id_origen         VARCHAR(50)         NULL,  -- idturno de SoftRestaurant
+modules/finanzas/propinas_tpv/sql_scripts.py:193:        -- MAPEO DE CONCEPTOS SOFTRESTAURANT
+modules/finanzas/propinas_tpv/schema_detector_subprocess.py:4:Detector de esquema para SoftRestaurant usando subprocess.
+modules/finanzas/propinas_tpv/schema_detector_subprocess.py:14:- Compatible con versiones 10, 12, 95 Pro de SoftRestaurant
+modules/finanzas/propinas_tpv/schema_detector_subprocess.py:30:class SoftRestaurantSchemaDetectorSubprocess:
+modules/finanzas/propinas_tpv/schema_detector_subprocess.py:32:    Detecta y mapea el esquema de SoftRestaurant usando subprocess.
+modules/finanzas/propinas_tpv/schema_detector_subprocess.py:45:        Detecta el esquema de un servidor SoftRestaurant usando subprocess.
+modules/finanzas/propinas_tpv/__init__.py:4:# FASE 1 MVP - Solo SoftRestaurant
+modules/finanzas/propinas_tpv/__init__.py:15:# - La Estelar (SoftRestaurant)
+modules/finanzas/propinas_tpv/__init__.py:16:# - Cienfuegos (SoftRestaurant)
+modules/finanzas/propinas_tpv/__init__.py:17:# - 130 Mérida (SoftRestaurant)
+modules/finanzas/propinas_tpv/__init__.py:20:# - MPRO (pendiente para fase posterior)
+modules/finanzas/propinas_tpv/routes_sql.py:79:def _list_softrestaurant_servers() -> List[Dict]:
+modules/finanzas/propinas_tpv/routes_sql.py:81:    Lista servidores SoftRestaurant desde server_registry (EDARSAHUB).
+modules/finanzas/propinas_tpv/routes_sql.py:83:    FASE T2.3: Reemplaza db.servers.find({system_type: 'SoftRestaurant'})
+modules/finanzas/propinas_tpv/routes_sql.py:90:        if system_type in ['SOFTRESTAURANT', 'SR']:
+modules/finanzas/propinas_tpv/routes_sql.py:99:                'system_type': 'SoftRestaurant',
+modules/finanzas/propinas_tpv/routes_sql.py:104:    logger.info(f"[PROPINAS_SQL][T2.3] Obtenidos {len(sr_servers)} servidores SoftRestaurant desde EDARSAHUB")
+modules/finanzas/propinas_tpv/routes_sql.py:146:            "fase": "MVP FASE 1 - Solo SoftRestaurant",
+modules/finanzas/propinas_tpv/routes_sql.py:214:    Sincroniza propinas desde SoftRestaurant a SQL Server EDARSA HUB.
+modules/finanzas/propinas_tpv/routes_sql.py:217:    1. Lee de SoftRestaurant (query defensiva)
+modules/finanzas/propinas_tpv/routes_sql.py:457:# DIAGNÓSTICO (Usa el servicio original para leer de SoftRestaurant)
+modules/finanzas/propinas_tpv/routes_sql.py:469:    """Detecta el esquema de tablas de un servidor SoftRestaurant."""
+modules/finanzas/propinas_tpv/routes_sql.py:476:        if server.get('system_type') != 'SoftRestaurant':
+modules/finanzas/propinas_tpv/routes_sql.py:477:            raise HTTPException(status_code=400, detail="Solo servidores SoftRestaurant soportados")
+modules/finanzas/propinas_tpv/routes_sql.py:502:    """Detecta esquema en todos los servidores SoftRestaurant."""
+modules/finanzas/propinas_tpv/routes_sql.py:505:        servers = _list_softrestaurant_servers()
+modules/finanzas/propinas_tpv/routes_sql.py:510:                "message": "No hay servidores SoftRestaurant configurados",
+modules/finanzas/propinas_tpv/routes_sql.py:572:    """Consulta propinas de SoftRestaurant sin guardar."""
+modules/finanzas/propinas_tpv/routes_sql.py:577:            servers = [server] if server and server.get('system_type') == 'SoftRestaurant' else []
+modules/finanzas/propinas_tpv/routes_sql.py:579:            servers = _list_softrestaurant_servers()
+modules/finanzas/propinas_tpv/routes_sql.py:584:                "message": "No hay servidores SoftRestaurant",
+modules/finanzas/propinas_tpv/sql_repository.py:213:                system_type = {self._escape_sql(propina_data.get('system_type', 'SoftRestaurant'))},
+modules/finanzas/propinas_tpv/sql_repository.py:253:                {self._escape_sql(propina_data.get('system_type', 'SoftRestaurant'))},
+modules/finanzas/propinas_tpv/sql_repository.py:633:            'formas_pago_tpv_softrestaurant': {
+modules/finanzas/propinas_tpv/sql_repository.py:659:            'formas_pago_tpv_softrestaurant': {
+modules/finanzas/propinas_tpv/repository_edarsahub.py:121:            sistema_origen: Filtrar por SistemaOrigen (SoftRestaurant, MPRO)
+modules/finanzas/propinas_tpv/schema_detector.py:4:Detector de esquema para SoftRestaurant.
+modules/finanzas/propinas_tpv/schema_detector.py:14:- Compatible con versiones 10, 12, 95 Pro de SoftRestaurant
+modules/finanzas/propinas_tpv/schema_detector.py:26:class SoftRestaurantSchemaDetector:
+modules/finanzas/propinas_tpv/schema_detector.py:28:    Detecta y mapea el esquema de SoftRestaurant para queries adaptativas.
+modules/finanzas/propinas_tpv/schema_detector.py:40:        Detecta el esquema de un servidor SoftRestaurant.
+modules/finanzas/propinas_tpv/routes_edarsahub.py:136:    sistema_origen: Optional[str] = Query(None, description="Filtrar por SistemaOrigen (SoftRestaurant, MPRO)"),
+modules/finanzas/propinas_tpv/repository.py:5:FASE 1 MVP - Solo SoftRestaurant
+modules/finanzas/propinas_tpv/repository.py:10:- Consultas SQL a SoftRestaurant (SOLO LECTURA)
+modules/finanzas/propinas_tpv/repository.py:24:from .schema_detector import SoftRestaurantSchemaDetector, get_schema_summary
+modules/finanzas/propinas_tpv/repository.py:25:from .schema_detector_subprocess import SoftRestaurantSchemaDetectorSubprocess
+modules/finanzas/propinas_tpv/repository.py:47:    # QUERIES SQL SERVER - SOFTRESTAURANT (SOLO LECTURA)
+modules/finanzas/propinas_tpv/repository.py:57:        Obtiene propinas agregadas por corte desde SoftRestaurant.
+modules/finanzas/propinas_tpv/repository.py:70:        # Formatear fechas para SoftRestaurant (YYYYMMDD)
+modules/finanzas/propinas_tpv/repository.py:117:            logger.info(f"Consultando propinas SoftRestaurant: {server['name']} [{fecha_inicio} - {fecha_fin}]")
+modules/finanzas/propinas_tpv/repository.py:144:            logger.info(f"SoftRestaurant {server['name']}: {len(cortes)} cortes encontrados")
+modules/finanzas/propinas_tpv/repository.py:185:            schema = SoftRestaurantSchemaDetector.detect_schema(server)
+modules/finanzas/propinas_tpv/repository.py:195:            query = SoftRestaurantSchemaDetector.build_propinas_query(
+modules/finanzas/propinas_tpv/repository.py:280:            schema = await SoftRestaurantSchemaDetectorSubprocess.detect_schema(server)
+modules/finanzas/propinas_tpv/repository.py:382:        schema = SoftRestaurantSchemaDetector.detect_schema(server)
+modules/finanzas/propinas_tpv/repository.py:695:            'formas_pago_tpv_softrestaurant': {
+modules/finanzas/propinas_tpv/service_sql.py:13:- Sincronización desde SoftRestaurant
+modules/finanzas/propinas_tpv/service_sql.py:33:from .repository import PropinasTPVRepository  # Para lectura de SoftRestaurant
+modules/finanzas/propinas_tpv/service_sql.py:52:    SoftRestaurant (Lectura) → SQL Server (Persistencia) → MongoDB (Cache)
+modules/finanzas/propinas_tpv/service_sql.py:57:    - Sincronizar: Lee SoftRestaurant → Escribe SQL → Invalida Cache
+modules/finanzas/propinas_tpv/service_sql.py:66:        self.soft_repo = PropinasTPVRepository(db)  # Solo para leer de SoftRestaurant
+modules/finanzas/propinas_tpv/service_sql.py:127:    # SINCRONIZACIÓN (SoftRestaurant → SQL Server)
+modules/finanzas/propinas_tpv/service_sql.py:138:        Sincroniza propinas desde SoftRestaurant a SQL Server.
+modules/finanzas/propinas_tpv/service_sql.py:141:        1. Obtener servidores SoftRestaurant activos
+modules/finanzas/propinas_tpv/service_sql.py:160:        servers = list_operational_servers(system_type_filter='SoftRestaurant')
+modules/finanzas/propinas_tpv/service_sql.py:167:            logger.warning("No se encontraron servidores SoftRestaurant")
+modules/finanzas/propinas_tpv/service_sql.py:207:                        'system_type': 'SoftRestaurant',
+modules/finanzas/propinas_tpv/service_sql.py:242:                        # Trazabilidad al origen SoftRestaurant
+modules/finanzas/propinas_tpv/service_sql.py:246:                        'system_type': 'SoftRestaurant',
+modules/finanzas/propinas_tpv/service_sql.py:286:                    'system_type': 'SoftRestaurant',
+modules/finanzas/propinas_tpv/service_sql.py:303:                    'system_type': 'SoftRestaurant',
+modules/finanzas/propinas_tpv/routes.py:5:FASE 1 MVP - Solo SoftRestaurant
+modules/finanzas/propinas_tpv/routes.py:84:def _list_softrestaurant_servers() -> List[Dict]:
+modules/finanzas/propinas_tpv/routes.py:86:    Lista servidores SoftRestaurant desde server_registry (EDARSAHUB).
+modules/finanzas/propinas_tpv/routes.py:88:    FASE T2.3: Reemplaza db.servers.find({system_type: 'SoftRestaurant'})
+modules/finanzas/propinas_tpv/routes.py:95:        if system_type in ['SOFTRESTAURANT', 'SR']:
+modules/finanzas/propinas_tpv/routes.py:104:                'system_type': 'SoftRestaurant',
+modules/finanzas/propinas_tpv/routes.py:109:    logger.info(f"[PROPINAS][T2.3] Obtenidos {len(sr_servers)} servidores SoftRestaurant desde EDARSAHUB")
+modules/finanzas/propinas_tpv/routes.py:179:            "fase": "MVP FASE 1 - Solo SoftRestaurant",
+modules/finanzas/propinas_tpv/routes.py:198:    summary="Sincronizar propinas desde SoftRestaurant",
+modules/finanzas/propinas_tpv/routes.py:200:    Sincroniza propinas de cortes Z desde servidores SoftRestaurant.
+modules/finanzas/propinas_tpv/routes.py:202:    FASE 1 MVP - Solo SoftRestaurant:
+modules/finanzas/propinas_tpv/routes.py:272:    FASE 1B: Detecta el esquema de tablas de un servidor SoftRestaurant.
+modules/finanzas/propinas_tpv/routes.py:291:        if server.get('system_type') != 'SoftRestaurant':
+modules/finanzas/propinas_tpv/routes.py:292:            raise HTTPException(status_code=400, detail="Solo servidores SoftRestaurant soportados en FASE 1")
+modules/finanzas/propinas_tpv/routes.py:311:    summary="Detectar esquema de todos los servidores SoftRestaurant",
+modules/finanzas/propinas_tpv/routes.py:313:    FASE 1B: Ejecuta detección de esquema en todos los servidores SoftRestaurant.
+modules/finanzas/propinas_tpv/routes.py:327:        servers = _list_softrestaurant_servers()
+modules/finanzas/propinas_tpv/routes.py:332:                "message": "No hay servidores SoftRestaurant configurados",
+modules/finanzas/propinas_tpv/routes.py:418:            servers = [server] if server and server.get('system_type') == 'SoftRestaurant' else []
+modules/finanzas/propinas_tpv/routes.py:420:            servers = _list_softrestaurant_servers()
+modules/finanzas/propinas_tpv/routes.py:425:                "message": "No hay servidores SoftRestaurant" + (f" con id {server_id}" if server_id else ""),
+modules/finanzas/propinas_tpv/models.py:5:FASE 1 MVP - Solo SoftRestaurant
+modules/finanzas/propinas_tpv/models.py:121:    system_type: str = Field("SoftRestaurant", description="Tipo de sistema origen")
+modules/finanzas/propinas_tpv/models.py:190:    formas_pago_tpv_softrestaurant: FormasPagoTPV = Field(default_factory=FormasPagoTPV)
+modules/finanzas/repository_softrestaurant.py:4:EDARSA HUB - Finanzas Repository (SoftRestaurant Multi-Sucursal)
+modules/finanzas/repository_softrestaurant.py:7:servidores SoftRestaurant de cada sucursal.
+modules/finanzas/repository_softrestaurant.py:10:- CIENFUEGOS: servercienfuegos.ddns.net:6669 / softrestaurant95pro (Vista: AC_vwSaldoCxp)
+modules/finanzas/repository_softrestaurant.py:11:- LA ESTELAR: serverestelar.ddns.net:6969 / softrestaurant12 (Vista: AC_vwSaldoCxp)
+modules/finanzas/repository_softrestaurant.py:12:- 130° MERIDA: 130mid.ddns.net:1433 / softrestaurant10 (Vista: vwSaldoCxp)
+modules/finanzas/repository_softrestaurant.py:21:ABRIL 2026: Conexión directa a SoftRestaurant de cada sucursal
+modules/finanzas/repository_softrestaurant.py:34:# Configuración de servidores SoftRestaurant (desde menú de servidores)
+modules/finanzas/repository_softrestaurant.py:35:SOFTRESTAURANT_SERVERS = {
+modules/finanzas/repository_softrestaurant.py:39:        "host": "servercienfuegos.ddns.net",
+modules/finanzas/repository_softrestaurant.py:41:        "database": "softrestaurant95pro",
+modules/finanzas/repository_softrestaurant.py:49:        "host": "serverestelar.ddns.net",
+modules/finanzas/repository_softrestaurant.py:51:        "database": "softrestaurant12",
+modules/finanzas/repository_softrestaurant.py:59:        "host": "130mid.ddns.net",
+modules/finanzas/repository_softrestaurant.py:61:        "database": "softrestaurant10",
+modules/finanzas/repository_softrestaurant.py:159:class FinanzasRepositorySoftRestaurant:
+modules/finanzas/repository_softrestaurant.py:161:    Repositorio para acceso a datos REALES de CxP desde SoftRestaurant.
+modules/finanzas/repository_softrestaurant.py:208:            return list(SOFTRESTAURANT_SERVERS.keys())
+modules/finanzas/repository_softrestaurant.py:213:        if sucursal_upper in SOFTRESTAURANT_SERVERS:
+modules/finanzas/repository_softrestaurant.py:221:        for key, srv in SOFTRESTAURANT_SERVERS.items():
+modules/finanzas/repository_softrestaurant.py:232:        for key, srv in SOFTRESTAURANT_SERVERS.items():
+modules/finanzas/repository_softrestaurant.py:240:        # 5. Si parece un UUID, no matchea ninguna sucursal SoftRestaurant
+modules/finanzas/repository_softrestaurant.py:242:            logging.warning(f"[SoftRestaurant] sucursal_id parece UUID, no es sucursal SR: {sucursal_id}")
+modules/finanzas/repository_softrestaurant.py:243:            return []  # Retornar vacío, no es una sucursal SoftRestaurant
+modules/finanzas/repository_softrestaurant.py:246:        logging.warning(f"[SoftRestaurant] sucursal_id no reconocido: {sucursal_id}, consultando todas")
+modules/finanzas/repository_softrestaurant.py:247:        return list(SOFTRESTAURANT_SERVERS.keys())
+modules/finanzas/repository_softrestaurant.py:254:        if server_key not in SOFTRESTAURANT_SERVERS:
+modules/finanzas/repository_softrestaurant.py:255:            logging.error(f"[SoftRestaurant] Servidor desconocido: {server_key}")
+modules/finanzas/repository_softrestaurant.py:258:        srv = SOFTRESTAURANT_SERVERS[server_key]
+modules/finanzas/repository_softrestaurant.py:260:        logging.info(f"[SoftRestaurant] Ejecutando query en {server_key} via subprocess...")
+modules/finanzas/repository_softrestaurant.py:272:        logging.warning(f"[SoftRestaurant] *** FIN SUBPROCESS para {server_key}: success={result.get('success')}, count={result.get('count', 0)} ***")
+modules/finanzas/repository_softrestaurant.py:275:            logging.info(f"[SoftRestaurant] Query exitosa en {server_key}: {result.get('count', 0)} registros")
+modules/finanzas/repository_softrestaurant.py:278:            logging.error(f"[SoftRestaurant] Error en query {server_key}: {result.get('error')}")
+modules/finanzas/repository_softrestaurant.py:286:        logging.warning(f"[SoftRestaurant] _get_connection está deprecado, usar _execute_query_subprocess")
+modules/finanzas/repository_softrestaurant.py:294:        logging.warning(f"[SoftRestaurant] _execute_query síncrono está deprecado")
+modules/finanzas/repository_softrestaurant.py:300:        for key, srv in SOFTRESTAURANT_SERVERS.items():
+modules/finanzas/repository_softrestaurant.py:315:        Obtiene cuentas por pagar desde SoftRestaurant.
+modules/finanzas/repository_softrestaurant.py:335:        logging.info(f"[SoftRestaurant] get_cuentas_por_pagar: sucursal_id={sucursal_id}, target_servers={target_servers}")
+modules/finanzas/repository_softrestaurant.py:338:            logging.info(f"[SoftRestaurant] No hay target servers, retornando vacío")
+modules/finanzas/repository_softrestaurant.py:342:            srv = SOFTRESTAURANT_SERVERS.get(server_key)
+modules/finanzas/repository_softrestaurant.py:346:            logging.warning(f"[SoftRestaurant] *** INICIO SUBPROCESS para {server_key} ***")
+modules/finanzas/repository_softrestaurant.py:353:            # SoftRestaurant marca compras como cancelado=1 cuando están cerradas/históricas
+modules/finanzas/repository_softrestaurant.py:382:                logging.warning(f"[SoftRestaurant] Sin compras con saldo para {server_key}")
+modules/finanzas/repository_softrestaurant.py:385:            logging.info(f"[SoftRestaurant] {server_key}: {len(results_compras)} documentos con saldo > 0")
+modules/finanzas/repository_softrestaurant.py:549:        for server_key, srv in SOFTRESTAURANT_SERVERS.items():
+modules/finanzas/repository_mpro.py:4:EDARSA HUB - Finanzas Repository (MPRO - CENTRAL2020)
+modules/finanzas/repository_mpro.py:6:Repositorio para acceso a datos REALES de Cuentas por Pagar desde MPRO.
+modules/finanzas/repository_mpro.py:13:ABRIL 2026: Conexión a datos reales de MPRO CENTRAL2020
+modules/finanzas/repository_mpro.py:14:DICIEMBRE 2026: FINANZAS-CXP-MPRO-COMBINE-01 - Migrado a subprocess para evitar encoding issues
+modules/finanzas/repository_mpro.py:15:DICIEMBRE 2026: FINANZAS-CXP-MPRO-CREDENTIALS-SECURITY-01:
+modules/finanzas/repository_mpro.py:27:# ID del servidor MPRO
+modules/finanzas/repository_mpro.py:28:MPRO_SERVER_ID = "1b230a06-ffaf-4c70-bd27-b1be3579dea6"
+modules/finanzas/repository_mpro.py:31:class FinanzasRepositoryMPRO:
+modules/finanzas/repository_mpro.py:33:    Repositorio para acceso a datos REALES de Cuentas por Pagar desde MPRO.
+modules/finanzas/repository_mpro.py:49:        Obtiene credenciales del servidor MPRO desde server_registry.py.
+modules/finanzas/repository_mpro.py:62:                server_id=MPRO_SERVER_ID,
+modules/finanzas/repository_mpro.py:70:                logging.error("[FinanzasRepoMPRO] Servidor MPRO no encontrado en registry")
+modules/finanzas/repository_mpro.py:80:            logging.info(f"[FinanzasRepoMPRO] Credenciales obtenidas desde {credentials['config_origin']}")
+modules/finanzas/repository_mpro.py:85:            logging.error(f"[FinanzasRepoMPRO] Error obteniendo credenciales: {type(e).__name__}")
+modules/finanzas/repository_mpro.py:90:        Ejecuta una query en MPRO usando subprocess seguro.
+modules/finanzas/repository_mpro.py:113:                logging.error(f"[FinanzasRepoMPRO] Error subprocess: {result.get('error_type', 'UNKNOWN')}")
+modules/finanzas/repository_mpro.py:116:            logging.error(f"[FinanzasRepoMPRO] Error ejecutando query: {type(e).__name__}")
+modules/finanzas/repository_mpro.py:120:        """Obtiene las sucursales de MPRO"""
+modules/finanzas/repository_mpro.py:139:        Obtiene cuentas por pagar desde MPRO.
+modules/finanzas/repository_mpro.py:166:        # ABRIL 2026 CORRECCIÓN DEFINITIVA - MAPEO CAMPOS MPRO (según usuario):
+modules/finanzas/repository_mpro.py:175:        # CLASIFICACIÓN MPRO por Grupo_Proveedor:
+core/sql_host_parser.py:10:4. host con puerto e instancia: servercienfuegos.ddns.net,6669\\nationalsoft
+core/sql_host_parser.py:15:    config = parse_sql_server_host("servercienfuegos.ddns.net,6669\\nationalsoft", 1433)
+core/sql_host_parser.py:18:    #   "host": "servercienfuegos.ddns.net",
+core/sql_host_parser.py:21:    #   "server_for_pyodbc": "servercienfuegos.ddns.net,6669",
+core/sql_host_parser.py:22:    #   "server_for_pymssql": "servercienfuegos.ddns.net"
+core/sql_host_parser.py:237:        ("servercienfuegos.ddns.net,6669\\nationalsoft", None),
+core/sql_host_parser.py:238:        ("servercienfuegos.ddns.net,6669\\nationalsoft", 1433),  # puerto del host debe ganar
+core/sql_host_parser.py:239:        ("130mid.ddns.net", 1433),
+core/sql_host_parser.py:240:        ("serverestelar.ddns.net,6969", None),
+core/server_registry.py:69:        if st_upper in ['MPRO', 'MANAGMENTPRO', 'MANAGEMENTPRO', 'MANAGEMENT_PRO']:
+core/server_registry.py:70:            return "MANAGEMENTPRO"
+core/server_registry.py:71:        elif st_upper in ['SOFTRESTAURANT', 'SR', 'SOFT']:
+core/server_registry.py:72:            return "SOFTRESTAURANT"
+core/server_registry.py:73:        elif st_upper in ['API', 'API_LOCAL', 'API_MPRO']:
+core/server_registry.py:1929:        - sucursal_origen_id: Sucursal para MPRO (0021, 0023)
+core/server_registry.py:1930:        - system_type: SoftRestaurant o MPRO
+core/server_registry.py:1962:        '130mid.ddns.net'
+core/server_registry.py:2051:    FASE M1: Crítico para MPRO donde múltiples unidades comparten servidor.
+core/server_registry.py:2055:        sucursal_id: ID de sucursal (requerido para MPRO)
+core/server_registry.py:2061:        # SoftRestaurant (sin sucursal)
+core/server_registry.py:2065:        # MPRO con sucursal 0021
+core/server_registry.py:2069:        # MPRO con sucursal 0023
+core/server_registry.py:2102:            # Sin sucursal, buscar por server_id donde sucursal sea null (SoftRestaurant)
+core/server_registry.py:2193:    - MPRO tiene sucursal_origen_id correcta (130QRO=0021, ORIGEN=0023)
+core/server_registry.py:2246:        # 4. Verificar sucursales MPRO
+core/server_registry.py:2309:        system_type_filter: Opcional. Filtra por system_type (ej: 'SoftRestaurant', 'MPRO')
+core/connection_resolver.py:17:- MPRO (ORIGEN/130 QRO) → Acumulados: SQL MPRO | Ventas del día: API local
+core/connection_resolver.py:39:    SOFT_RESTAURANT = "SoftRestaurant"
+core/connection_resolver.py:40:    MPRO = "MPRO"
+core/connection_resolver.py:63:    MPRO_SQL = "mpro_sql"                         # SQL del servidor MPRO
+core/connection_resolver.py:135:    # SoftRestaurant (CIENFUEGOS, LA ESTELAR, 130 MID)
+core/connection_resolver.py:181:    # MPRO (ORIGEN, 130 QUERETARO)
+core/connection_resolver.py:182:    SystemType.MPRO: {
+core/connection_resolver.py:185:            "connection_origin": ConnectionOrigin.MPRO_SQL,
+core/connection_resolver.py:187:            "description": "SQL MPRO nube - Venta_Encabezado"
+core/connection_resolver.py:203:            "connection_origin": ConnectionOrigin.MPRO_SQL,
+core/connection_resolver.py:205:            "description": "SQL MPRO nube comparativo"
+core/connection_resolver.py:209:            "connection_origin": ConnectionOrigin.MPRO_SQL,
+core/connection_resolver.py:211:            "description": "Proyección basada en SQL MPRO"
+core/connection_resolver.py:215:            "connection_origin": ConnectionOrigin.MPRO_SQL,
+core/connection_resolver.py:221:            "connection_origin": ConnectionOrigin.MPRO_SQL,
+core/connection_resolver.py:223:            "description": "Inventarios desde MPRO SQL"
+core/connection_resolver.py:358:                "tipo": "api_mpro",
+core/connection_resolver.py:378:            sucursal_nombre: Nombre de sucursal (para MPRO API local)
+core/connection_resolver.py:494:                        connection_origin=ConnectionOrigin.MPRO_SQL,
+core/system_capability_integration.py:49:        system_type: Código o variante del sistema (ej: "MPRO", "ManagmentPro", "SOFRESATAURANT_ENTER")
+core/system_capability_integration.py:92:        Set de códigos de sistema explorables (ej: {'SOFTRESTAURANT', 'MPRO', 'API_LOCAL'})
+core/system_capability_integration.py:170:    - Si el sistema no está en catálogo, usa lógica legacy (SOFT/MPRO = True)
+core/system_capability_integration.py:191:            legacy_result = 'SOFT' in upper or 'MPRO' in upper or 'MANAGEMENT' in upper
+core/system_capability_integration.py:228:        return 'SOFT' in upper or 'MPRO' in upper or 'MANAGEMENT' in upper
+core/system_capability_integration.py:236:        Set de códigos (ej: {'SOFTRESTAURANT', 'MPRO'})
+core/system_capability_integration.py:253:        return {'SOFTRESTAURANT', 'MPRO'}
+core/system_capability_integration.py:286:                if 'SOFT' in upper or 'MPRO' in upper or 'MANAGEMENT' in upper:
+core/system_capability_integration.py:316:            or 'MPRO' in (s.get('system_type', '') or '').upper()
+core/system_capability_integration.py:357:            if 'SOFT' in upper or 'MPRO' in upper:
+core/system_capability_integration.py:383:        if 'SOFT' in system_type or 'MPRO' in system_type:
+core/pool.py:127:        │   │ 54.39...:CENTRAL   │       │ 54.39...:CENTRAL   │       │
+core/providers.py:76:# SQL CLASSIC PROVIDER (SoftRestaurant: CIENFUEGOS, LA ESTELAR, 130 MID)
+core/providers.py:81:    Provider para SoftRestaurant (SQL clásico).
+core/providers.py:102:        Obtiene ventas acumuladas de SoftRestaurant.
+core/providers.py:196:        Obtiene ventas del día de SoftRestaurant.
+core/providers.py:309:# MPRO SQL PROVIDER (ORIGEN, 130 QUERETARO - Acumulados)
+core/providers.py:312:class MPROSQLProvider(BaseProvider):
+core/providers.py:314:    Provider para MPRO SQL (acumulados).
+core/providers.py:320:    Conexión: SQL MPRO
+core/providers.py:324:        super().__init__("mpro_sql")
+core/providers.py:335:        Obtiene ventas acumuladas de MPRO.
+core/providers.py:340:            sucursal_id: Código de sucursal MPRO (Sc_Cve_Sucursal)
+core/providers.py:415:                    connection_origin="mpro_sql"
+core/providers.py:426:                    connection_origin="mpro_sql"
+core/providers.py:440:                connection_origin="mpro_sql",
+core/providers.py:447:# LOCAL API PROVIDER (MPRO - Ventas del día)
+core/providers.py:452:    Provider para API local MPRO (ventas del día).
+core/providers.py:469:        Obtiene ventas del día de MPRO via API local.
+core/providers.py:484:            # Endpoint típico de ventas del día en API local MPRO
+core/providers.py:560:_mpro_sql_provider = None
+core/providers.py:572:def get_mpro_sql_provider() -> MPROSQLProvider:
+core/providers.py:573:    """Obtiene instancia de MPROSQLProvider"""
+core/providers.py:574:    global _mpro_sql_provider
+core/providers.py:575:    if _mpro_sql_provider is None:
+core/providers.py:576:        _mpro_sql_provider = MPROSQLProvider()
+core/providers.py:577:    return _mpro_sql_provider
+core/__init__.py:22:# - Providers: sql_classic, mpro_sql, local_api
+core/__init__.py:82:    MPROSQLProvider,
+core/__init__.py:85:    get_mpro_sql_provider,
+core/source_resolver.py:98:        source_type: Tipo de fuente (MPRO, SoftRestaurant, MongoDB, API)
+core/policies/no_live_dashboard_policy.py:5:Los dashboards y reportes ejecutivos no deben consultar SoftRestaurant, MPRO,
+core/auditoria.py:84:    MPRO = "MPRO"
+core/empresa_resolver.py:43:    'host': '54.39.104.176',
+core/auditoria_helpers.py:78:        if factura_id.startswith('MPRO_'):
+core/auditoria_helpers.py:79:            return audit_module['OrigenSistema'].MPRO
+core/unidades_registry.py:46:    sistema: str                    # SoftRestaurant, MPRO
+core/unidades_registry.py:54:        server='54.39.104.176',
+core/unidades_registry.py:186:    Obtiene unidades filtradas por sistema (SoftRestaurant, MPRO).
+core/unidades_registry.py:189:        sistema: "SoftRestaurant" o "MPRO"
+core/security.py:495:            server='54.39.104.176', port=1433,
+core/security.py:542:        server='54.39.104.176', port=1433,
+core/cache_key_builder.py:14:- Datos pegados entre sistemas origen (SoftRestaurant vs MPRO)
+core/cache_key_builder.py:180:        system_type: Tipo de sistema (MPRO, SoftRestaurant, etc.)
+core/cache_key_builder.py:202:            system_type_normalized="MANAGEMENTPRO",
+core/cache_key_builder.py:205:        # Resultado: "comercial:dashboard:abc123:suc001:MANAGEMENTPRO:2026-04-25"
+core/cache_key_builder.py:224:    # Sistema origen (crítico para no mezclar SR y MPRO)
+core/config.py:36:    # APIs MPRO Locales (configuración base)
+core/config.py:37:    API_MPRO_KEY: str = os.environ.get("API_MPRO_KEY", "")
+core/config.py:38:    API_MPRO_QRO_URL: str = os.environ.get("API_MPRO_QRO_URL", "")
+core/config.py:39:    API_MPRO_ORIGEN_URL: str = os.environ.get("API_MPRO_ORIGEN_URL", "")
+core/system_type_utils.py:14:- Normalizar system_type a valores estándar (MANAGEMENTPRO, SOFTRESTAURANT, API, UNKNOWN)
+core/system_type_utils.py:16:- Evitar comparaciones directas frágiles como `== "MPRO"` o `== "SR"`
+core/system_type_utils.py:21:        is_mpro_system,
+core/system_type_utils.py:22:        is_softrestaurant_system,
+core/system_type_utils.py:29:    normalized = normalize_system_type("MPRO")  # → "MANAGEMENTPRO"
+core/system_type_utils.py:32:    if is_mpro_system(server.get('system_type')):
+core/system_type_utils.py:33:        # Lógica MPRO
+core/system_type_utils.py:34:    elif is_softrestaurant_system(server.get('system_type')):
+core/system_type_utils.py:35:        # Lógica SoftRestaurant
+core/system_type_utils.py:50:    SOFTRESTAURANT = "SOFTRESTAURANT"
+core/system_type_utils.py:51:    MANAGEMENTPRO = "MANAGEMENTPRO"
+core/system_type_utils.py:58:    # ManagementPro variantes
+core/system_type_utils.py:59:    "MPRO": SystemType.MANAGEMENTPRO,
+core/system_type_utils.py:60:    "MANAGEMENTPRO": SystemType.MANAGEMENTPRO,
+core/system_type_utils.py:61:    "MANAGEMENT_PRO": SystemType.MANAGEMENTPRO,
+core/system_type_utils.py:62:    "MANAGEMENT PRO": SystemType.MANAGEMENTPRO,
+core/system_type_utils.py:63:    "MANAGMENTPRO": SystemType.MANAGEMENTPRO,   # Typo común
+core/system_type_utils.py:64:    "MANAGMENT_PRO": SystemType.MANAGEMENTPRO,  # Typo común
+core/system_type_utils.py:65:    "MANAGMENT PRO": SystemType.MANAGEMENTPRO,  # Typo común
+core/system_type_utils.py:66:    "MANAG": SystemType.MANAGEMENTPRO,
+core/system_type_utils.py:68:    # SoftRestaurant variantes
+core/system_type_utils.py:69:    "SOFTRESTAURANT": SystemType.SOFTRESTAURANT,
+core/system_type_utils.py:70:    "SOFTRESTAURANT_PRO": SystemType.SOFTRESTAURANT,  # SR Pro variant
+core/system_type_utils.py:71:    "SOFTRESTAURANTPRO": SystemType.SOFTRESTAURANT,   # SR Pro variant
+core/system_type_utils.py:72:    "SR": SystemType.SOFTRESTAURANT,
+core/system_type_utils.py:73:    "SR_PRO": SystemType.SOFTRESTAURANT,
+core/system_type_utils.py:74:    "SOFT_RESTAURANT": SystemType.SOFTRESTAURANT,
+core/system_type_utils.py:75:    "SOFT RESTAURANT": SystemType.SOFTRESTAURANT,
+core/system_type_utils.py:76:    "SOFT": SystemType.SOFTRESTAURANT,
+core/system_type_utils.py:77:    "SOFTREST": SystemType.SOFTRESTAURANT,
+core/system_type_utils.py:88:    SystemType.SOFTRESTAURANT: "SoftRestaurant",
+core/system_type_utils.py:89:    SystemType.MANAGEMENTPRO: "ManagementPro",
+core/system_type_utils.py:104:    - MPRO, MANAGEMENTPRO, MANAGEMENT_PRO, etc. → "MANAGEMENTPRO"
+core/system_type_utils.py:105:    - SOFT, SR, SOFTRESTAURANT, etc. → "SOFTRESTAURANT"
+core/system_type_utils.py:113:        str: Uno de SOFTRESTAURANT, MANAGEMENTPRO, API, UNKNOWN
+core/system_type_utils.py:115:    IMPORTANTE: NUNCA asume SoftRestaurant por default.
+core/system_type_utils.py:130:def is_mpro_system(system_type: Optional[str]) -> bool:
+core/system_type_utils.py:132:    Verifica si el sistema es ManagementPro/MPRO.
+core/system_type_utils.py:134:    Acepta cualquier variante: MPRO, ManagementPro, MANAGEMENT_PRO, etc.
+core/system_type_utils.py:140:        bool: True si es ManagementPro/MPRO
+core/system_type_utils.py:142:    return normalize_system_type(system_type) == SystemType.MANAGEMENTPRO.value
+core/system_type_utils.py:145:def is_softrestaurant_system(system_type: Optional[str]) -> bool:
+core/system_type_utils.py:147:    Verifica si el sistema es SoftRestaurant.
+core/system_type_utils.py:149:    Acepta cualquier variante: SR, SOFT, SoftRestaurant, etc.
+core/system_type_utils.py:155:        bool: True si es SoftRestaurant
+core/system_type_utils.py:157:    return normalize_system_type(system_type) == SystemType.SOFTRESTAURANT.value
+core/system_type_utils.py:207:        str: Label legible (ej: "ManagementPro", "SoftRestaurant")
+core/system_type_utils.py:263:        available_for: Lista de sistemas donde está disponible (ej: ["MPRO"])
+core/system_type_utils.py:320:    Formato: [SYSTEM_TYPE][CHECK] check=is_mpro result=True endpoint=X
+core/system_type_utils.py:345:    Garantiza que MPRO y SoftRestaurant NUNCA compartan caché.
+core/system_type_utils.py:359:            "compras", "inventarios", "server-123", "MPRO",
+core/system_type_utils.py:362:        → "compras:inventarios:server-123:MANAGEMENTPRO:sucursal_id=0021:fecha_inicio=2025-01-01"
+core/system_type_utils.py:392:    'is_mpro_system',
+core/system_type_utils.py:393:    'is_softrestaurant_system',
+core/system_type_utils.py:421:        target_type: Tipo objetivo ('SOFTRESTAURANT' o 'MANAGEMENTPRO')
+core/system_type_utils.py:427:        get_system_type_sql_values('SOFTRESTAURANT')
+core/system_type_utils.py:428:        → ['SOFTRESTAURANT', 'SOFTRESTAURANT_PRO', 'SR', 'SOFT', ...]
+core/system_type_utils.py:431:    if target_type.upper() in ['SOFTRESTAURANT', 'SR', 'SOFT']:
+core/system_type_utils.py:432:        target_enum = SystemType.SOFTRESTAURANT
+core/system_type_utils.py:433:    elif target_type.upper() in ['MANAGEMENTPRO', 'MPRO']:
+core/system_type_utils.py:434:        target_enum = SystemType.MANAGEMENTPRO
+core/system_type_utils.py:451:        target_type: Tipo objetivo ('SOFTRESTAURANT' o 'MANAGEMENTPRO')
+core/system_type_utils.py:457:        build_system_type_sql_filter('s.system_type', 'SOFTRESTAURANT')
+core/system_type_utils.py:458:        → "s.system_type IN ('SOFTRESTAURANT', 'SOFTRESTAURANT_PRO', 'SR', ...)"
+core/regression_checker.py:174:            from modules.comercial.service import get_kpis_softrestaurant
+core/regression_checker.py:227:            expected_systems = ["SoftRestaurant", "MPRO"]
+core/regression_checker.py:283:            from modules.comercial.service import get_kpis_softrestaurant, get_kpis_mpro
+core/regression_checker.py:293:                evidence={"functions_available": ["get_kpis_softrestaurant", "get_kpis_mpro"]},
+core/context_resolver.py:11:- system_type (MPRO/SoftRestaurant)
+core/context_resolver.py:12:- sucursal_origen_id (para MPRO)
+core/context_resolver.py:61:        server='54.39.104.176',
+core/context_resolver.py:390:        - system_type: Tipo de sistema (MPRO/SoftRestaurant)
+core/context_resolver.py:391:        - sucursal_origen_id: ID de sucursal en sistema externo (MPRO)
+core/context_resolver.py:618:    Para MPRO: usa sucursal_origen_id (código como "0025")
+core/context_resolver.py:619:    Para SoftRestaurant: usa "default" o nombre de sucursal
+core/context_resolver.py:629:    if system_type == 'MPRO':
+core/context_resolver.py:630:        # MPRO usa sucursal_origen_id (código numérico)
+core/context_resolver.py:633:        # SoftRestaurant usa default o nombre
+core/user_access_context.py:72:        server='54.39.104.176',
+core/centro_control/routes.py:430:    - APIs locales MPRO
+core/centro_control/routes.py:563:    - Por tipo de sistema (SoftRestaurant, MPRO)
+core/centro_control/routes.py:576:                "MPRO usa SQL para acumulados, API local para diarios",
+core/centro_control/routes.py:577:                "SoftRestaurant usa SQL para todo"
+core/cerebro.py:30:    MPRO = "MPRO"
+core/cerebro.py:31:    SOFTRESTAURANT = "SoftRestaurant"
+core/auth/user_repository_sql.py:38:        self.sql_host = '54.39.104.176'
+core/utils/operational_window.py:46:    'host': '54.39.104.176',
+core/rbac/repository_sql.py:39:        self.sql_host = '54.39.104.176'
+core/corporate_identity_resolver.py:87:    "SOFTRESTAURANT_PRO": [
+core/corporate_identity_resolver.py:88:        "SOFTRESTAURANT_PRO",
+core/corporate_identity_resolver.py:89:        "SOFTRESTAURANT",
+core/corporate_identity_resolver.py:91:        "SOFTRESTAURANT PRO",
+core/corporate_identity_resolver.py:96:        "SOFTRESTAURANT95PRO",
+core/corporate_identity_resolver.py:97:        "SOFTRESTAURANT 95 PRO",
+core/corporate_identity_resolver.py:100:    "MPRO": [
+core/corporate_identity_resolver.py:101:        "MPRO",
+core/corporate_identity_resolver.py:105:        "MANAGEMENTPRO",
+core/corporate_identity_resolver.py:110:    "MANAGEMENTPRO": [
+core/corporate_identity_resolver.py:111:        "MANAGEMENTPRO",
+core/corporate_identity_resolver.py:115:        "MPRO",
+core/corporate_identity_resolver.py:120:        "SOFTRESTAURANT ENTERPRISE",
+core/corporate_identity_resolver.py:121:        "SOFTRESTAURANT_ENTERPRISE",
+core/corporate_identity_resolver.py:189:            "130 MERIDA SOFTRESTAURANT",
+core/corporate_identity_resolver.py:198:            "130 QUERETARO MPRO",
+core/alcance_helper.py:76:            server='54.39.104.176', port=1433,
+core/alcance_helper.py:121:            server='54.39.104.176', port=1433,
+core/system_capability_resolver.py:31:    # {'codigo_sistema': 'MPRO', 'nombre_sistema': 'ManagementPro', ...}
+core/system_capability_resolver.py:90:    # Exclusivas MPRO
+core/system_capability_resolver.py:113:    'host': '54.39.104.176',
+core/system_capability_resolver.py:370:            codigo_sistema: Código del sistema (ej: "SOFTRESTAURANT", "MPRO")
+core/config/edarsahub_config.py:91:        host=os.environ.get('EDARSAHUB_SQL_HOST', '54.39.104.176'),
+core/db.py:189:    # Caso 1: hostname,port\instance (ej: server.ddns.net,6669\nationalsoft)
+core/db.py:197:        logging.info(f"Parsed DDNS format: hostname={hostname}, port={port}, instance={instance}")
+core/db.py:235:# RESOLUCIÓN DINÁMICA DE HOSTNAMES DDNS
+core/db.py:237:# Los servidores con DDNS (como servercienfuegos.ddns.net) tienen IPs dinámicas.
+core/db.py:246:    IMPORTANTE: Para DDNS, siempre resolver la IP actual, no cachear.
+core/db.py:249:        hostname: Nombre de host o dominio DDNS
+core/db.py:365:    igual que el reporte de SoftRestaurant.
+core/db.py:374:    # AHORA: No restar propinas para cuadrar con reporte SoftRestaurant
+core/db.py:383:    igual que el reporte de SoftRestaurant.
+core/db.py:392:    # AHORA: No restar propinas para cuadrar con reporte SoftRestaurant
+core/db.py:1333:    'SoftRestaurant': [
+core/db.py:1337:    'MPRO': [
+core/db.py:1350:        expected_types: Lista de tipos de sistema permitidos (ej: ['SoftRestaurant', 'MPRO'])
+core/db.py:1391:        expected_system_types: Lista de system_types válidos (ej: ['SoftRestaurant'])

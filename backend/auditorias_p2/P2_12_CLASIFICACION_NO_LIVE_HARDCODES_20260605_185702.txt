@@ -1,0 +1,81 @@
+====================================
+P2-12 CLASIFICACION NO-LIVE/HARDCODES
+====================================
+
+NO-LIVE TOTAL: 1057
+  REFERENCIA_SISTEMA: 639
+  COMENTARIO: 194
+  LOGICA_RUNTIME: 121
+  CONFIG_REGISTRY: 39
+  LOG_MENSAJE: 34
+  SIN_CLASIFICAR: 30
+
+HARDCODES TOTAL: 51
+  SIN_CLASIFICAR: 41
+  LOGICA_RUNTIME: 5
+  COMENTARIO: 3
+  REFERENCIA_SISTEMA: 2
+
+TOP 15 NO-LIVE ARCHIVOS
+  146 modules/finanzas/cuentas_por_pagar.py
+  137 modules/comercial/routes.py
+  121 modules/comercial/service.py
+  76 modules/comercial/queries/mpro.py
+  64 core/system_type_utils.py
+  44 modules/finanzas/repository_softrestaurant.py
+  29 modules/comercial/adapters.py
+  25 core/providers.py
+  21 modules/finanzas/propinas_tpv/routes.py
+  21 modules/finanzas/repository_mpro.py
+  20 modules/comercial_v2/mappers.py
+  20 modules/finanzas/propinas_tpv/routes_sql.py
+  19 modules/finanzas/repository_cortes_z.py
+  19 core/connection_resolver.py
+  17 core/server_registry.py
+
+TOP 15 HARDCODES ARCHIVOS
+  12 core/unidades_service.py
+  8 core/corporate_identity_resolver.py
+  7 core/text_normalizer.py
+  5 modules/comercial/adapters.py
+  5 modules/comercial_v2/repository_comercial_edarsahub.py
+  5 core/empresa_resolver.py
+  4 core/corporate_filters/service.py
+  2 modules/comercial/queries/mpro.py
+  1 modules/finanzas/tesoreria.py
+  1 modules/finanzas/ingresos.py
+  1 core/utils/operational_window.py
+
+====================================
+P2-12 RESULTADO
+====================================
+No-Live Hits Detectados: 1057
+
+Clasificación No-Live:
+  REFERENCIA_SISTEMA: 639 (nombres de sistemas en strings/enums)
+  COMENTARIO: 194 (documentación)
+  LOGICA_RUNTIME: 121 (condiciones/mapeos)
+  CONFIG_REGISTRY: 39 (configuración servidores)
+  LOG_MENSAJE: 34 (logs)
+  SIN_CLASIFICAR: 30
+
+Hardcodes Directos Detectados: 51
+
+Clasificación Hardcodes:
+  SIN_CLASIFICAR: 41 (mapeos internos)
+  LOGICA_RUNTIME: 5
+  COMENTARIO: 3
+  REFERENCIA_SISTEMA: 2
+
+Principales archivos con hardcodes:
+  12 core/unidades_service.py (esperado - es el servicio central)
+  8 core/corporate_identity_resolver.py
+  7 core/text_normalizer.py
+  5 modules/comercial/adapters.py
+  5 modules/comercial_v2/repository_comercial_edarsahub.py
+
+Reportes:
+auditorias_p2/P2_12_NO_LIVE_DETALLE_20260605_185702.txt
+auditorias_p2/P2_12_HARDCODES_DETALLE_20260605_185702.txt
+auditorias_p2/P2_12_CLASIFICACION_NO_LIVE_HARDCODES_20260605_185702.txt
+====================================
