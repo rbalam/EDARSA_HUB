@@ -1,0 +1,247 @@
+==================================================
+P2-17 SYNC CONEXIONES CENTRALIZADAS
+==================================================
+
+### ENDPOINTS DE SERVIDORES/CONEXIONES
+Endpoints servidores:
+  /api/admin-sql/catalogos-disponibles
+  /api/admin-sql/permisos-catalogos
+  /api/admin-sql/servers
+  /api/admin/core-connections/{server_id}
+  /api/admin/core-connections/{server_id}/test
+  /api/admin/sync-monitor/servidor/{server_id}
+  /api/catalogo/consulta-personalizada
+  /api/catalogo/consultas
+  /api/catalogo/consultas-custom
+  /api/catalogo/consultas-custom/{consulta_id}
+  /api/catalogo/consultas-rich
+  /api/catalogo/consultas/{consulta_id}
+  /api/catalogo/ejecutar-consulta
+  /api/catalogo/ejecutar-custom/{consulta_id}
+  /api/catalogo/ejecutar-rich/{consulta_id}
+  /api/catalogo/estructura-tablas
+  /api/catalogos/admin/crear-tablas
+  /api/catalogos/admin/script-ddl
+  /api/catalogos/admin/verificar-tablas
+  /api/catalogos/dominios
+
+### SERVIDORES REGISTRADOS
+[
+  {
+    "id": "A5547321-1139-4D2B-9D53-182CA737B6B6",
+    "name": "130° MERIDA",
+    "nombre": "130° MERIDA",
+    "system_type": "SOFTRESTAURANT_PRO",
+    "tipo_conexion": "DATA_SOURCE",
+    "host": "130mid.ddns.net",
+    "port": 1433,
+    "database_name": "softrestaurant10",
+    "EmpresaID": 5,
+    "activo": true
+  },
+  {
+    "id": "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+    "name": "130° QRO LOCAL",
+    "nombre": "130° QRO LOCAL",
+    "system_type": "MPRO",
+    "tipo_conexion": "API_LOCAL",
+    "host": "54.39.104.176",
+    "port": 4,
+    "database_name": "QUERETARO",
+    "EmpresaID": 2,
+    "activo": true
+  },
+  {
+    "id": "B597D88A-AB37-4B4E-897B-EFE68C9B3732",
+    "name": "API ManagmentPro",
+    "nombre": "API ManagmentPro",
+    "system_type": "MPRO",
+    "tipo_conexion": "API_LOCAL",
+    "host": "ManagmentPro",
+    "port": 4,
+    "database_name": "CLOUD",
+    "EmpresaID": null,
+    "activo": true
+  },
+  {
+    "id": "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+    "name": "CHAPUR BACKOFFICE",
+    "nombre": "CHAPUR BACKOFFICE",
+    "system_type": "ENTERPRISE",
+    "tipo_conexion": "API_LOCAL",
+    "host": "",
+    "port": 4,
+    "database_name": "CHAPUR",
+    "EmpresaID": null,
+    "activo": true
+  },
+  {
+    "id": "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+    "name": "CHAPUR NORTE",
+    "nombre": "CHAPUR NORTE",
+    "system_type": "ENTERPRISE",
+    "tipo_conexion": "API_LOCAL",
+    "host": "",
+    "port": 4,
+    "database_name": "CHAPUR",
+    "EmpresaID": null,
+    "activo": true
+  },
+  {
+    "id": "6D053C22-523E-48C0-B72B-96081E2D781B",
+    "name": "CIENFUEGOS",
+    "nombre": "CIENFUEGOS",
+    "system_type": "SOFTRESTAURANT_PRO",
+    "tipo_conexion": "DATA_SOURCE",
+    "host": "servercienfuegos.ddns.net,6669\\nationalsoft",
+    "port": 1433,
+    "database_name": "softrestaurant95pro",
+    "EmpresaID": 3,
+    "activo": true
+  },
+  {
+    "id": "6D859026-710A-4920-9A44-6DA98FABC690",
+    "name": "CIENFUEGOS TABLAJERIA",
+    "nombre": "CIENFUEGOS TABLAJERIA",
+    "syste
+
+### CORE CONNECTIONS OPTIONS
+UNIDADES REGISTRADAS:
+  CIENFUEGOS: CIENFUEGOS - Sistema: SOFTRESTAURANT
+  130MID: 130° MÉRIDA - Sistema: SOFTRESTAURANT
+  ESTELAR: LA ESTELAR - Sistema: SOFTRESTAURANT
+  130QRO: 130° QUERETARO - Sistema: MPRO
+  ORIGEN: ORIGEN - Sistema: MPRO
+
+### ANALISIS DE ASOCIACION UNIDAD -> SERVIDOR
+modules/comercial_v2/sync_comercial_edarsahub.py:62:def get_server_connection_config(server_id: str) -> Optional[Dict[str, Any]]:
+modules/comercial_v2/sync_comercial_edarsahub.py:65:    NO hardcodea credenciales - las lee de la tabla Servidores_Conexiones.
+modules/comercial_v2/sync_comercial_edarsahub.py:90:    FROM Servidores_Conexiones
+modules/comercial_v2/sync_comercial_edarsahub.py:135:        logger.error(f"Error obteniendo config de servidor {server_id}: {e}")
+modules/comercial_v2/sync_comercial_edarsahub.py:287:        server_config = get_server_connection_config(config.server_id)
+modules/comercial_v2/sync_comercial_edarsahub.py:289:            result.error_message = f"No se encontró configuración para server_id {config.server_id}"
+modules/comercial_v2/sync_comercial_edarsahub.py:306:                server_id=config.server_id,
+modules/comercial_v2/sync_comercial_edarsahub.py:352:            server_id=config.server_id,
+modules/comercial_v2/sync_comercial_edarsahub.py:394:        server_config = get_server_connection_config(config.server_id)
+modules/comercial_v2/sync_comercial_edarsahub.py:396:            result.error_message = f"No se encontró configuración para server_id {config.server_id}"
+modules/comercial_v2/sync_comercial_edarsahub.py:414:                server_id=config.server_id,
+modules/comercial_v2/sync_comercial_edarsahub.py:430:            server_id=config.server_id,
+modules/comercial_v2/sync_comercial_edarsahub.py:472:            server_id=config.server_id,
+modules/comercial_v2/sync_comercial_edarsahub.py:547:            sucursales = get_sucursales_mpro(config.server_id)
+modules/comercial_v2/sync_comercial_edarsahub.py:552:                    server_id=config.server_id,
+modules/comercial_v2/sync_comercial_edarsahub.py:589:        server_id='a5ff0e25-f029-43db-b634-d4ac814c904f',
+modules/comercial_v2/sync_comercial_edarsahub.py:617:        server_id='1b230a06-ffaf-4c70-bd27-b1be3579dea6',
+core/server_registry.py:219:    Convierte una fila de Servidores_Conexiones (SQL) al formato del sistema.
+core/server_registry.py:274:def _get_servers_from_sql(
+core/server_registry.py:307:        SELECT * FROM Servidores_Conexiones
+core/server_registry.py:330:def _get_server_by_id_from_sql(server_id: str) -> Optional[Dict]:
+core/server_registry.py:339:        safe_id = server_id.replace("'", "''")
+core/server_registry.py:342:        SELECT * FROM Servidores_Conexiones
+core/server_registry.py:357:            logger.info(f"[SERVER_REGISTRY][SQL_HIT] Servidor {server_id} obtenido desde SQL")
+core/server_registry.py:360:        logger.debug(f"[SERVER_REGISTRY][SQL_MISS] Servidor {server_id} no encontrado en SQL")
+core/server_registry.py:364:        logger.warning(f"[SERVER_REGISTRY][SQL_ERROR] Error buscando servidor {server_id}: {e}")
+core/server_registry.py:392:async def _get_servers_from_mongo(
+core/server_registry.py:434:async def _get_server_by_id_from_mongo(db, server_id: str) -> Optional[Dict]:
+core/server_registry.py:440:            {'id': server_id, 'active': True},
+core/server_registry.py:445:            logger.warning(f"[SERVER_REGISTRY][MONGODB_FALLBACK_USED] Servidor {server_id} obtenido desde MongoDB legacy")
+core/server_registry.py:451:        logger.error(f"[SERVER_REGISTRY][MONGODB_ERROR] Error buscando servidor {server_id}: {e}")
+core/server_registry.py:459:async def get_server_by_id(
+core/server_registry.py:460:    server_id: str,
+core/server_registry.py:474:        server_id: ID del servidor (UUID)
+core/server_registry.py:487:        server = _get_server_by_id_from_sql(server_id)
+core/server_registry.py:491:        server = await _get_server_by_id_from_mongo(db, server_id)
+core/server_registry.py:534:        servers = _get_servers_from_sql(
+core/server_registry.py:542:        servers = await _get_servers_from_mongo(
+core/server_registry.py:595:    server_id: Optional[str] = None,
+core/server_registry.py:617:    if not server_id:
+core/server_registry.py:618:        context['errors'].append('server_id es requerido')
+core/server_registry.py:622:    server = await get_server_by_id(server_id, db=db, mask_secrets=False)
+core/server_registry.py:625:        context['errors'].append(f'Servidor {server_id} no encontrado')
+core/server_registry.py:700:async def get_server_connection_info(
+core/server_registry.py:701:    server_id: str,
+core/server_registry.py:714:        server_id: ID del servidor
+core/server_registry.py:723:    server = await get_server_by_id(server_id, db=db, mask_secrets=False)
+core/server_registry.py:734:                logger.warning(f"[SERVER_REGISTRY][ACCESS_DENIED] Usuario sin permisos para servidor {server_id}")
+core/server_registry.py:755:async def get_server_sucursales(
+core/server_registry.py:756:    server_id: str,
+
+### ESTRUCTURA Unidades_Negocio.server_id
+UNIDADES:
+
+### RESOLUCION UNIDAD -> SERVER_ID EN RESYNC
+
+### BUSCAR MAPEO UNIDAD -> SERVIDOR
+core/server_registry.py:605:        Dict con server, sucursal, unidad_negocio y metadata
+core/server_registry.py:1945:def get_server_by_unidad_codigo(codigo: str) -> Optional[Dict]:
+core/server_registry.py:1958:        >>> server = get_server_by_unidad_codigo(UnidadesService.resolver_codigo('130MID') or '130MID')
+core/server_registry.py:1959:        >>> server['unidad_negocio_codigo']
+core/server_registry.py:2047:def resolve_unidad_by_server_sucursal(server_id: str, sucursal_id: Optional[str] = None) -> Optional[Dict]:
+core/server_registry.py:2049:    Resuelve la unidad de negocio por server_id y sucursal_id.
+core/server_registry.py:2062:        >>> resolve_unidad_by_server_sucursal('a5547321-...')
+core/server_registry.py:2066:        >>> resolve_unidad_by_server_sucursal('1b230a06-...', '0021')
+core/server_registry.py:2070:        >>> resolve_unidad_by_server_sucursal('1b230a06-...', '0023')
+core/server_registry.py:2158:            logger.warning(f"[SERVER_REGISTRY][RESOLVE] No se encontró unidad para server={server_id}, sucursal={sucursal_id}")
+core/server_registry.py:2175:        logger.info(f"[SERVER_REGISTRY][RESOLVE][SQL_HIT] Unidad {unidad['codigo']} resuelta para server={server_id}, sucursal={sucursal_id}")
+core/server_registry.py:2192:    - Cada unidad tiene server_id
+core/server_registry.py:2240:        # 3. Verificar que cada unidad tiene server_id
+core/server_registry.py:2268:        server_ids = set(u['server_id'] for u in unidades if u.get('server_id'))
+core/server_registry.py:2286:            logger.info(f"[SERVER_REGISTRY][INTEGRITY] Validación exitosa: {len(unidades)} unidades, {len(server_ids)} servidores")
+core/server_registry.py:2425:    'get_server_by_unidad_codigo',
+core/server_registry.py:2426:    'resolve_unidad_by_server_sucursal',
+core/unidades_registry.py:20:- NO usar server_id como unidad_negocio_pk
+core/unidades_registry.py:138:def get_unidad_by_server_sucursal(server_id: str, sucursal_id: Optional[str] = None) -> Optional[UnidadNegocioConfig]:
+core/unidades_registry.py:140:    Obtiene la configuración de unidad dado server_id y sucursal_id.
+core/scheduler/jobs/sync_comercial_v2_job.py:172:                server_id=unidad["server_id"],
+core/scheduler/jobs/sync_comercial_v2_job.py:251:                server_id=unidad["server_id"],
+core/scheduler/jobs/sync_compras_job.py:316:            unidad_codigo = server.get('unidad_codigo', '')
+core/scheduler/jobs/sync_compras_job.py:318:            logger.info(f"[SYNC-COMPRAS] Procesando: {server_name} ({unidad_codigo})")
+core/scheduler/jobs/sync_compras_job.py:336:                'id': server['unidad_id'],
+core/scheduler/jobs/sync_compras_job.py:338:                'nombre': server['unidad_nombre'],
+core/scheduler/jobs/sync_compras_job.py:347:                        server_info, unidad_info, _execute_sql_with_timeout
+core/scheduler/jobs/sync_compras_job.py:394:                        server_info, unidad_info, _execute_sql_with_timeout
+core/scheduler/jobs/sync_compras_job.py:454:                            server_info, unidad_info, _execute_sql_with_timeout
+core/scheduler/jobs/detect_nuevos_compras_job.py:297:                'id': server['unidad_id'],
+
+### RESOLVER CREADO: core/sync/server_resolver.py
+
+==========================================
+P2-17 RESULTADO
+==========================================
+
+HALLAZGOS:
+
+1. Servidores registrados en Servidores_Conexiones:
+   - 130° MERIDA (SoftRestaurant) - host: 130mid.ddns.net
+   - 130° QRO LOCAL (MPRO) - host: 54.39.104.176
+   - CIENFUEGOS (SoftRestaurant) - host: servercienfuegos.ddns.net
+   - ORIGEN (MPRO) - via API ManagmentPro
+
+2. Unidades registradas para sync:
+   - CIENFUEGOS -> SOFTRESTAURANT
+   - 130MID -> SOFTRESTAURANT
+   - ESTELAR -> SOFTRESTAURANT
+   - 130QRO -> MPRO
+   - ORIGEN -> MPRO
+
+3. Función existente: get_server_by_unidad_codigo()
+   - Resuelve unidad -> servidor via JOIN SQL
+   - Ya implementada en core/server_registry.py
+
+4. Resolver canónico creado:
+   core/sync/server_resolver.py
+   - get_server_for_unidad(codigo)
+   - assert_server_available(codigo)
+
+CAUSA DEL ERROR "Servidor no encontrado":
+El error ocurre en scheduler_resync_routes.py cuando
+busca en una tabla diferente (no usa el JOIN correcto).
+
+ACCION REQUERIDA:
+Verificar que scheduler_resync_routes.py use
+get_server_by_unidad_codigo() en vez de buscar
+directamente en Servidores_Conexiones por nombre.
+
+NO SE INSERTARON CREDENCIALES
+NO SE IMPRIMIERON SECRETOS
+NO SE EJECUTO BACKFILL REAL
+==========================================
