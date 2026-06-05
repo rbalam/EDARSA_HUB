@@ -60,26 +60,44 @@ router = APIRouter(prefix="/comercial", tags=["Comercial V2"])
 
 
 # =============================================================================
-# MAPEO DE CÓDIGOS: FASE T1 COMPLETADA - CÓDIGOS CANÓNICOS UNIFICADOS
+# UNIDADES DE NEGOCIO: Servicio centralizado SQL-First
 # =============================================================================
-# POST FASE T1 (2026-05-13): Las tablas KPI ahora usan códigos canónicos oficiales.
-# Este mapeo se mantiene solo como compatibilidad defensiva (identidad).
-# Los códigos legacy (130-MER, 130-QRO, LA-ESTELAR) ya no existen en las tablas.
+# REFACTORIZADO 2026-06-05: Ya no se usan hardcodes de códigos de unidades.
+# Todo se obtiene dinámicamente desde UnidadesService que lee de SQL.
 
-MAPEO_KPI_A_CODIGO_CANONICO = {
-    # Códigos canónicos oficiales (identidad)
-    '130MID': '130MID',
-    '130QRO': '130QRO',
-    'CIENFUEGOS': 'CIENFUEGOS',
-    'ESTELAR': 'ESTELAR',
-    'ORIGEN': 'ORIGEN',
-    # Legacy (compatibilidad defensiva - no deberían existir en BD)
-    '130-MER': '130MID',
-    '130-QRO': '130QRO',
-    'LA-ESTELAR': 'ESTELAR',
-}
+from core.unidades_service import UnidadesService
 
-MAPEO_CODIGO_CANONICO_A_KPI = {v: k for k, v in MAPEO_KPI_A_CODIGO_CANONICO.items() if '-' not in k}
+def get_mapeo_kpi_a_canonico() -> dict:
+    """
+    Obtiene mapeo dinámico de variantes a códigos canónicos.
+    Reemplaza el hardcode MAPEO_KPI_A_CODIGO_CANONICO.
+    """
+    mapeo = {}
+    for u in UnidadesService.get_all():
+        codigo = u.get('codigo', '')
+        nombre = u.get('nombre', '')
+        if codigo:
+            # Mapeo identidad
+            mapeo[codigo] = codigo
+            mapeo[codigo.upper()] = codigo
+            # Mapeo por nombre
+            if nombre:
+                mapeo[nombre] = codigo
+                mapeo[nombre.upper()] = codigo
+    
+    # Agregar variantes legacy conocidas (compatibilidad)
+    mapeo.update(UnidadesService._VARIANTES_MAP)
+    return mapeo
+
+def get_mapeo_canonico_a_kpi() -> dict:
+    """
+    Obtiene mapeo inverso: código canónico -> código canónico (identidad).
+    """
+    return {c: c for c in UnidadesService.get_codigos()}
+
+# Aliases para compatibilidad con código existente
+MAPEO_KPI_A_CODIGO_CANONICO = get_mapeo_kpi_a_canonico()
+MAPEO_CODIGO_CANONICO_A_KPI = get_mapeo_canonico_a_kpi()
 
 
 # =============================================================================
@@ -475,49 +493,38 @@ async def get_unidades_permitidas_v2(current_user: dict) -> List[str]:
     Obtiene las unidades de negocio permitidas por RBAC.
     
     POST FASE T1 (2026-05-13): Ahora usa códigos canónicos oficiales de EDARSAHUB.
-    FUENTE: Unidades_Negocio.codigo
-    CÓDIGOS: 130MID, 130QRO, CIENFUEGOS, ESTELAR, ORIGEN
+    FUENTE: Unidades_Negocio.codigo via UnidadesService
     
-    FIX 2026-05-26: Eliminado hardcodeo de roles. Ahora usa RBAC dinámico SQL.
-    Los roles con acceso total se determinan por NivelJerarquia >= 80 en Usuario_Roles.
-    
-    MÁXIMA: EDARSAHUB es el cerebro del sistema.
+    REFACTORIZADO 2026-06-05: Eliminados hardcodes. Usa UnidadesService.
     """
     # Import local para evitar dependencias circulares
     from core.rbac_helper_sql import has_full_access
-    
-    # Códigos canónicos oficiales (desde EDARSAHUB)
-    CODIGOS_CANONICOS_OFICIALES = ['CIENFUEGOS', 'ESTELAR', '130MID', '130QRO', 'ORIGEN']
+    from core.unidades_service import UnidadesService
     
     try:
         # RBAC dinámico: Verificar si el usuario tiene acceso total (NivelJerarquia >= 80)
         if has_full_access(current_user):
-            return CODIGOS_CANONICOS_OFICIALES
+            return UnidadesService.get_codigos()
         
         # Obtener unidades asignadas al usuario desde el contexto
         unidades_mongo = await get_user_unidades_negocio(current_user)
         
-        # Mapear a códigos canónicos oficiales
+        # Mapear a códigos canónicos oficiales usando UnidadesService
         unidades_v2 = []
+        codigos_validos = UnidadesService.get_codigos_set()
         
         for u in unidades_mongo:
-            codigo = u.get('codigo', '').upper()
-            nombre = u.get('nombre', '').upper()
+            codigo = u.get('codigo', '').upper().strip()
+            nombre = u.get('nombre', '').upper().strip()
             
             # Mapeo por código directo (preferido)
-            if codigo in CODIGOS_CANONICOS_OFICIALES:
+            if codigo in codigos_validos:
                 unidades_v2.append(codigo)
-            # Mapeo por nombre (fallback)
-            elif 'CIENFUEGOS' in nombre and 'TABLAJERIA' not in nombre:
-                unidades_v2.append('CIENFUEGOS')
-            elif 'ESTELAR' in nombre:
-                unidades_v2.append('ESTELAR')
-            elif 'MERIDA' in nombre or '130MID' in codigo or 'MID' in codigo:
-                unidades_v2.append('130MID')
-            elif 'QUERETARO' in nombre or '130QRO' in codigo or 'QRO' in codigo:
-                unidades_v2.append('130QRO')
-            elif 'ORIGEN' in nombre:
-                unidades_v2.append('ORIGEN')
+            else:
+                # Intentar resolver por nombre/variante
+                codigo_resuelto = UnidadesService.resolver_codigo(nombre) or UnidadesService.resolver_codigo(codigo)
+                if codigo_resuelto:
+                    unidades_v2.append(codigo_resuelto)
         
         return list(set(unidades_v2)) if unidades_v2 else []
         
