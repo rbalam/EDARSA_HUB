@@ -19134,6 +19134,7 @@ from core.rbac.routes import router as rbac_router
 from core.rbac.service import RBACService
 from modules.pricing_ai.routes import router as pricing_ai_router
 from modules.dashboard_ejecutivo.routes import router as dashboard_ejecutivo_router
+from modules.rentabilidad.routes import router as rentabilidad_router
 # Inicializar RBAC (sembrar permisos y roles si no existen)
 try:
     rbac_service = RBACService(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
@@ -19372,6 +19373,14 @@ try:
     logger.info("✓ Dashboard Ejecutivo router registrado")
 except Exception as e:
     logger.warning(f"Error registrando Dashboard Ejecutivo router: {e}")
+
+# RENTABILIDAD (P3-07)
+# =============================================================================
+try:
+    app.include_router(rentabilidad_router)
+    logger.info("✓ Rentabilidad router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Rentabilidad router: {e}")
 
 
 # Startup: Iniciar scheduler
