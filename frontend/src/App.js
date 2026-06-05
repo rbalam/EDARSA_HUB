@@ -68,6 +68,9 @@ import CostosMargenes from '@/pages/comercial/CostosMargenes';
 // Motor de Precios IA y Benchmark (FASE 1C-3I-D)
 import PricingIA from '@/pages/comercial/PricingIA';
 
+// P3-02: Sync Monitor SQL-First
+import SyncMonitor from '@/pages/SyncMonitor';
+
 import { isAuthenticated } from '@/lib/auth';
 
 // Portal de Proveedores (Subproyecto separado)
@@ -163,6 +166,7 @@ function App() {
               <Route path="configuracion/asignaciones" element={<ConfigAsignaciones />} />
               <Route path="admin/dba-credential" element={<DBACredentialManager />} />
               <Route path="admin/configuracion-operativa" element={<ConfiguracionOperativaUnidades />} />
+              <Route path="admin/sync-monitor" element={<SyncMonitor />} />
               {/* Módulos Satélites */}
               <Route path="super-caja" element={<SuperCajaPage />} />
               <Route path="comandero" element={<ComanderoPage />} />

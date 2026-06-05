@@ -708,6 +708,15 @@ from modules.consultas_sql import get_consultas_sql_router
 api_router.include_router(get_consultas_sql_router())
 
 # ============================================================================
+# P3-02: SYNC MONITOR SQL-First - Monitor de Sincronizaciones
+# Endpoint: GET /api/admin/sync-monitor
+# FUENTE: EDARSAHUB (Compras_Sync_Log, Comercial_SyncLog_v2, Servidores_Conexiones)
+# NO usa MongoDB. NO usa conexiones LIVE.
+# ============================================================================
+from modules.sync_monitor import router as sync_monitor_router
+api_router.include_router(sync_monitor_router)
+
+# ============================================================================
 # FASE 4E: Cache Management Endpoints (Admin Only)
 # ============================================================================
 from modules.comercial.cache_service import cleanup_expired_cache, get_cache_stats, init_cache_service

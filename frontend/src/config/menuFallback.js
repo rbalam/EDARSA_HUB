@@ -4,6 +4,7 @@
 export const menuFallback = [
   { id: 'crm', label: 'CRM', path: '/crm', isSatelite: false },
   { id: 'comercial', label: 'Comercial', path: '/comercial', isSatelite: false },
+  { id: 'admin', label: 'Administración', path: '/admin', isSatelite: false },
   { id: 'comandero', label: 'Comandero', path: '/comandero', isSatelite: true },
   { id: 'super-caja', label: 'Super Caja', path: '/super-caja', isSatelite: true }
 ];
@@ -29,6 +30,11 @@ export const subMenusFallback = {
     { id: 'comercial-clientes', label: 'Clientes', path: '/comercial/clientes' },
     { id: 'comercial-costos', label: 'Costos y Márgenes', path: '/comercial/costos-margenes' },
     { id: 'comercial-pricing', label: 'Pricing IA', path: '/comercial/pricing-ia' }
+  ],
+  admin: [
+    { id: 'admin-sync-monitor', label: 'Monitor de Sincronización', path: '/admin/sync-monitor' },
+    { id: 'admin-dba', label: 'Credenciales DBA', path: '/admin/dba-credential' },
+    { id: 'admin-config', label: 'Configuración Operativa', path: '/admin/configuracion-operativa' }
   ]
 };
 
