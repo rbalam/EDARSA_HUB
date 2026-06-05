@@ -1,0 +1,38 @@
+==================================================
+P3-01 AUDITORÍA MONGODB LEGADO
+==================================================
+
+### RESUMEN DE COLECCIONES
+
+| Categoría   | Colecciones | Documentos | Acción          |
+|-------------|-------------|------------|-----------------|
+| PROTEGIDAS  | 22          | 972        | NO ELIMINAR     |
+| CACHE/LOGS  | 20          | 19,200     | ELIMINAR        |
+| DATOS       | 29          | 2,464      | REVISAR/MIGRAR  |
+|-------------|-------------|------------|-----------------|
+| TOTAL       | 71          | 22,636     |                 |
+
+### CATEGORÍA: PROTEGIDAS (NO ELIMINAR)
+- users, roles, rbac_*, sec_*, audit_password_reset
+- Razón: Autenticación, permisos, auditoría de seguridad
+
+### CATEGORÍA: CACHE/LOGS (ELIMINAR)
+- *_cache, *_checkpoint, *_log, *_bitacora, scheduler_*
+- scheduler_job_log: 15,854 documentos (el más grande)
+- Razón: Datos temporales/transitorios, se regeneran
+
+### CATEGORÍA: DATOS (REVISAR)
+- servers, empresas, configuraciones, inventarios, alertas
+- Algunos ya migrados a SQL (verificar antes de eliminar)
+- kpis_comercial: 188 docs (ya migrado a SQL)
+- detalle_diferencias: 1,960 docs (revisar uso)
+
+### GUARDRAILS VALIDADOS ✅
+- SQL-First runtime: PASS
+- No admin123: PASS  
+- unidad_negocio_pk: PASS
+
+### NOTA
+- La eliminación real requiere doble confirmación
+- CONFIRM_DELETE_MONGO=YES CONFIRM_DELETE_MONGO_2=YES
+==================================================
