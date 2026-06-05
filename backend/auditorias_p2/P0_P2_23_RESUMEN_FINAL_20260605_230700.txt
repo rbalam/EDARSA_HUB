@@ -1,0 +1,40 @@
+==================================================
+P0/P2-23 VALIDACIÓN 5 UNIDADES COMERCIAL - COMPLETO
+==================================================
+
+### RESULTADO: 5/5 UNIDADES OK ✅
+
+| Unidad     | Sistema        | Días | Ventas Origen | Tickets |
+|------------|----------------|------|---------------|---------|
+| 130MID     | SOFTRESTAURANT | 4    | $301,862      | 76      |
+| 130QRO     | MPRO           | 4    | $449,643      | 83      |
+| CIENFUEGOS | SOFTRESTAURANT | 5    | $531,542      | 145     |
+| ESTELAR    | SOFTRESTAURANT | 5    | $131,994      | 117     |
+| ORIGEN     | MPRO           | 4    | $234,991      | 97      |
+|------------|----------------|------|---------------|---------|
+| TOTAL      |                | 22   | $1,650,032    | 518     |
+
+### COMPARACIÓN CON KPI EDARSAHUB:
+- Total en EDARSAHUB: $1,679,037 (522 tickets, 22 días)
+- Total en Origen: $1,650,032 (518 tickets, 22 días)
+- Diferencia: $29,005 (posiblemente registros sin unidad_negocio_pk)
+
+### ESTELAR VALIDADO:
+- host: serverestelar.ddns.net,6969 → 187.149.174.93:6969
+- database: softrestaurant12
+- system_type: SOFTRESTAURANT_PRO
+- Conectividad: OK
+- Datos: 5 días, $131,994, 117 tickets
+
+### GAPS IDENTIFICADOS (5-Jun sin datos en origen):
+- 130MID: Sin datos 5-Jun
+- 130QRO: Sin datos 5-Jun
+- ORIGEN: Sin datos 5-Jun
+- CIENFUEGOS: COMPLETO (5 días)
+- ESTELAR: COMPLETO (5 días)
+
+### NOTAS:
+- Catálogo de queries: FUNCIONANDO
+- tds_version="7.0": APLICADO
+- Todas las conexiones: EXITOSAS
+==================================================

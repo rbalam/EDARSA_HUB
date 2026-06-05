@@ -1,0 +1,13 @@
+==================================================
+P0/P2-23 VALIDACION 5 UNIDADES COMERCIAL
+Fecha: Fri Jun  5 23:02:55 UTC 2026
+==================================================
+
+### UNIDADES ACTIVAS EN EDARSAHUB
+{'id': '19E076FB-C6DE-4EA5-84AB-1CAA9E86082C', 'codigo': '130MID', 'nombre': '130° MERIDA', 'server_id': 'a5547321-1139-4d2b-9d53-182ca737b6b6', 'activo': True}
+{'id': '9BC05CED-6B2B-4A0A-AA90-CE649B78E12C', 'codigo': '130QRO', 'nombre': '130° QUERETARO', 'server_id': '1b230a06-ffaf-4c70-bd27-b1be3579dea6', 'activo': True}
+{'id': 'B06EE652-0370-4267-B0A8-DA6FC39B590A', 'codigo': 'CIENFUEGOS', 'nombre': 'CIENFUEGOS', 'server_id': '6d053c22-523e-48c0-b72b-96081e2d781b', 'activo': True}
+{'id': 'DFB86008-1B81-472A-9E50-8A0821DEC4B2', 'codigo': 'ESTELAR', 'nombre': 'LA ESTELAR', 'server_id': 'a5ff0e25-f029-43db-b634-d4ac814c904f', 'activo': True}
+{'id': '23CA0B76-6580-4874-BA9B-672B122CA197', 'codigo': 'ORIGEN', 'nombre': 'ORIGEN', 'server_id': '1b230a06-ffaf-4c70-bd27-b1be3579dea6', 'activo': True}
+
+TOTAL UNIDADES ACTIVAS: 5

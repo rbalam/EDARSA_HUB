@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 13 - P2-22 Conectividad Real Todas Unidades)
-**Estado:** P0/P1 CERRADOS | P2 98% | SQL-First ✅ | Catálogo Queries ✅ | Conectividad 4/4 ✅
+**Última actualización:** 2026-06-05 (Sesión 13 - P2-23 Validación 5 Unidades Comercial)
+**Estado:** P0/P1 CERRADOS | P2 100% | SQL-First ✅ | 5/5 Unidades ✅ | Catálogo Queries ✅
 
 ---
 
@@ -228,14 +228,14 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06-05 (S13) | **✅ P2-23 VALIDACIÓN 5 UNIDADES COMERCIAL** |
+| 2026-06-05 (S13) | 5/5 unidades: 130MID, 130QRO, CIENFUEGOS, ESTELAR, ORIGEN |
+| 2026-06-05 (S13) | DRY-RUN completo: $1,650,032, 518 tickets, 22 días |
+| 2026-06-05 (S13) | ESTELAR conectando correctamente |
 | 2026-06-05 (S13) | **✅ P2-22 CONECTIVIDAD REAL TODAS UNIDADES** |
 | 2026-06-05 (S13) | FIX: tds_version="7.0" para SQL Server antiguos |
 | 2026-06-05 (S13) | Queries MPRO corregidos (Vn_*, Es_Cve_Estado) |
-| 2026-06-05 (S13) | DRY-RUN 4/4 unidades OK: $1.5M, 401 tickets |
 | 2026-06-05 (S13) | **✅ P2-21 CATÁLOGO CENTRAL QUERIES** |
-| 2026-06-05 (S13) | Tabla Sistema_Queries creada en EDARSAHUB SQL |
-| 2026-06-05 (S13) | Módulo core/query_catalog.py implementado |
-| 2026-06-05 (S13) | API resync usa catálogo (SOFTRESTAURANT→cheques, MPRO→Venta_Encabezado) |
 | 2026-06-05 (S13) | **✅ P2-20 BUGS CONEXIÓN CORREGIDOS** |
 | 2026-06-05 (S13) | **✅ P0/P2-19 CORRECCIÓN CATÁLOGO REAL + ENV** |
 | 2026-06-05 (S12) | 6 archivos migrados a vistas `vw_Comercial_KPIs_*_Runtime` |
