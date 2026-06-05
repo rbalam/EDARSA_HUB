@@ -1,0 +1,42 @@
+==================================================
+P0/P2-24 HARDCODES UNIDADES + NULL PK KPI
+Fecha: Fri Jun  5 23:12:22 UTC 2026
+==================================================
+
+### 1. HARDCODES DE UNIDADES EN CÓDIGO
+Total líneas con hardcodes: 458
+
+Archivos con hardcodes:
+/app/backend/api/admin_data_quality.py
+/app/backend/api/admin_scheduler_resync.py
+/app/backend/core/auth/user_repository_sql.py
+/app/backend/core/config.py
+/app/backend/core/connection_resolver.py
+/app/backend/core/corporate_filters/service.py
+/app/backend/core/corporate_identity_resolver.py
+/app/backend/core/empresa_resolver.py
+/app/backend/core/providers.py
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py
+/app/backend/core/scheduler/jobs/sync_ingresos_job.py
+/app/backend/core/scheduler/jobs/sync_propinas_tpv_job.py
+/app/backend/core/scheduler/scheduler_manager.py
+/app/backend/core/server_registry.py
+/app/backend/core/text_normalizer.py
+/app/backend/core/unidades_registry.py
+/app/backend/core/unidades_service.py
+/app/backend/core/utils/operational_window.py
+/app/backend/modules/comercial/adapters.py
+/app/backend/modules/comercial/queries/mpro.py
+/app/backend/modules/comercial/queries/softrestaurant.py
+/app/backend/modules/comercial/routes.py
+/app/backend/modules/comercial/service.py
+/app/backend/modules/comercial_v2/carga_historica_24_meses.py
+/app/backend/modules/comercial_v2/carga_historica_abril_2026.py
+/app/backend/modules/comercial_v2/mappers.py
+/app/backend/modules/comercial_v2/repository_comercial_edarsahub.py
+/app/backend/modules/comercial_v2/repository_readonly.py
+/app/backend/modules/comercial_v2/routes.py
+
+### 2. SYSTEM_TYPE ALIASES EN CORE
+Total líneas con system_type aliases: 318

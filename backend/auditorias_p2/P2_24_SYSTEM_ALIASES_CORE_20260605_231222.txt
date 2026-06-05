@@ -1,0 +1,318 @@
+/app/backend/core/server_registry.py:54:def normalize_system_type(system_type: str) -> str:
+/app/backend/core/server_registry.py:60:        from core.system_type_utils import normalize_system_type as _normalize
+/app/backend/core/server_registry.py:67:        if st_upper in ['MPRO', 'MANAGMENTPRO', 'MANAGEMENTPRO', 'MANAGEMENT_PRO']:
+/app/backend/core/server_registry.py:68:            return "MANAGEMENTPRO"
+/app/backend/core/server_registry.py:69:        elif st_upper in ['SOFTRESTAURANT', 'SR', 'SOFT']:
+/app/backend/core/server_registry.py:70:            return "SOFTRESTAURANT"
+/app/backend/core/server_registry.py:71:        elif st_upper in ['API', 'API_LOCAL', 'API_MPRO']:
+/app/backend/core/server_registry.py:239:        'system_type_normalized': normalize_system_type(system_type_raw),
+/app/backend/core/server_registry.py:379:        'system_type_normalized': normalize_system_type(system_type_raw),
+/app/backend/core/server_registry.py:861:        'system_type_normalized': normalize_system_type(system_type_raw),
+/app/backend/core/server_registry.py:922:    'normalize_system_type',
+/app/backend/core/server_registry.py:967:        normalized = normalize_system_type(system_type)
+/app/backend/core/server_registry.py:1071:    system_type_normalized = payload.get('system_type_normalized', normalize_system_type(system_type))
+/app/backend/core/server_registry.py:1629:        'system_type_normalized': normalize_system_type(system_type),
+/app/backend/core/server_registry.py:1928:        - sucursal_origen_id: Sucursal para MPRO (0021, 0023)
+/app/backend/core/server_registry.py:1929:        - system_type: SoftRestaurant o MPRO
+/app/backend/core/server_registry.py:2050:    FASE M1: Crítico para MPRO donde múltiples unidades comparten servidor.
+/app/backend/core/server_registry.py:2054:        sucursal_id: ID de sucursal (requerido para MPRO)
+/app/backend/core/server_registry.py:2064:        # MPRO con sucursal 0021
+/app/backend/core/server_registry.py:2068:        # MPRO con sucursal 0023
+/app/backend/core/server_registry.py:2192:    - MPRO tiene sucursal_origen_id correcta (130QRO=0021, ORIGEN=0023)
+/app/backend/core/server_registry.py:2245:        # 4. Verificar sucursales MPRO
+/app/backend/core/server_registry.py:2308:        system_type_filter: Opcional. Filtra por system_type (ej: 'SoftRestaurant', 'MPRO')
+/app/backend/core/server_registry.py:2411:    'normalize_system_type',
+/app/backend/core/connection_resolver.py:17:- MPRO (ORIGEN/130 QRO) → Acumulados: SQL MPRO | Ventas del día: API local
+/app/backend/core/connection_resolver.py:40:    MPRO = "MPRO"
+/app/backend/core/connection_resolver.py:63:    MPRO_SQL = "mpro_sql"                         # SQL del servidor MPRO
+/app/backend/core/connection_resolver.py:181:    # MPRO (ORIGEN, 130 QUERETARO)
+/app/backend/core/connection_resolver.py:182:    SystemType.MPRO: {
+/app/backend/core/connection_resolver.py:185:            "connection_origin": ConnectionOrigin.MPRO_SQL,
+/app/backend/core/connection_resolver.py:187:            "description": "SQL MPRO nube - Venta_Encabezado"
+/app/backend/core/connection_resolver.py:203:            "connection_origin": ConnectionOrigin.MPRO_SQL,
+/app/backend/core/connection_resolver.py:205:            "description": "SQL MPRO nube comparativo"
+/app/backend/core/connection_resolver.py:209:            "connection_origin": ConnectionOrigin.MPRO_SQL,
+/app/backend/core/connection_resolver.py:211:            "description": "Proyección basada en SQL MPRO"
+/app/backend/core/connection_resolver.py:215:            "connection_origin": ConnectionOrigin.MPRO_SQL,
+/app/backend/core/connection_resolver.py:221:            "connection_origin": ConnectionOrigin.MPRO_SQL,
+/app/backend/core/connection_resolver.py:223:            "description": "Inventarios desde MPRO SQL"
+/app/backend/core/connection_resolver.py:378:            sucursal_nombre: Nombre de sucursal (para MPRO API local)
+/app/backend/core/connection_resolver.py:494:                        connection_origin=ConnectionOrigin.MPRO_SQL,
+/app/backend/core/system_capability_integration.py:49:        system_type: Código o variante del sistema (ej: "MPRO", "ManagmentPro", "SOFRESATAURANT_ENTER")
+/app/backend/core/system_capability_integration.py:58:        normalized = resolver.normalize_system_type(system_type)
+/app/backend/core/system_capability_integration.py:92:        Set de códigos de sistema explorables (ej: {'SOFTRESTAURANT', 'MPRO', 'API_LOCAL'})
+/app/backend/core/system_capability_integration.py:134:            normalized = resolver.normalize_system_type(system_type)
+/app/backend/core/system_capability_integration.py:170:    - Si el sistema no está en catálogo, usa lógica legacy (SOFT/MPRO = True)
+/app/backend/core/system_capability_integration.py:186:        normalized = resolver.normalize_system_type(system_type)
+/app/backend/core/system_capability_integration.py:191:            legacy_result = 'SOFT' in upper or 'MPRO' in upper or 'MANAGEMENT' in upper
+/app/backend/core/system_capability_integration.py:228:        return 'SOFT' in upper or 'MPRO' in upper or 'MANAGEMENT' in upper
+/app/backend/core/system_capability_integration.py:236:        Set de códigos (ej: {'SOFTRESTAURANT', 'MPRO'})
+/app/backend/core/system_capability_integration.py:253:        return {'SOFTRESTAURANT', 'MPRO'}
+/app/backend/core/system_capability_integration.py:281:            normalized = resolver.normalize_system_type(system_type)
+/app/backend/core/system_capability_integration.py:286:                if 'SOFT' in upper or 'MPRO' in upper or 'MANAGEMENT' in upper:
+/app/backend/core/system_capability_integration.py:316:            or 'MPRO' in (s.get('system_type', '') or '').upper()
+/app/backend/core/system_capability_integration.py:352:        normalized = resolver.normalize_system_type(system_type)
+/app/backend/core/system_capability_integration.py:357:            if 'SOFT' in upper or 'MPRO' in upper:
+/app/backend/core/system_capability_integration.py:383:        if 'SOFT' in system_type or 'MPRO' in system_type:
+/app/backend/core/providers.py:309:# MPRO SQL PROVIDER (ORIGEN, 130 QUERETARO - Acumulados)
+/app/backend/core/providers.py:312:class MPROSQLProvider(BaseProvider):
+/app/backend/core/providers.py:314:    Provider para MPRO SQL (acumulados).
+/app/backend/core/providers.py:320:    Conexión: SQL MPRO
+/app/backend/core/providers.py:335:        Obtiene ventas acumuladas de MPRO.
+/app/backend/core/providers.py:340:            sucursal_id: Código de sucursal MPRO (Sc_Cve_Sucursal)
+/app/backend/core/providers.py:447:# LOCAL API PROVIDER (MPRO - Ventas del día)
+/app/backend/core/providers.py:452:    Provider para API local MPRO (ventas del día).
+/app/backend/core/providers.py:469:        Obtiene ventas del día de MPRO via API local.
+/app/backend/core/providers.py:484:            # Endpoint típico de ventas del día en API local MPRO
+/app/backend/core/providers.py:572:def get_mpro_sql_provider() -> MPROSQLProvider:
+/app/backend/core/providers.py:573:    """Obtiene instancia de MPROSQLProvider"""
+/app/backend/core/providers.py:576:        _mpro_sql_provider = MPROSQLProvider()
+/app/backend/core/query_catalog.py:14:    query = get_query('SOFTRESTAURANT_PRO', 'comercial_ventas_cerradas')
+/app/backend/core/query_catalog.py:35:        sistema_codigo: Código del sistema (SOFTRESTAURANT_PRO, MPRO, MANAGEMENTPRO, etc.)
+/app/backend/core/query_catalog.py:99:        'SOFTRESTAURANT': 'SOFTRESTAURANT_PRO',
+/app/backend/core/query_catalog.py:100:        'SOFTRESTAURANT_PRO': 'SOFTRESTAURANT_PRO',
+/app/backend/core/query_catalog.py:101:        'SR': 'SOFTRESTAURANT_PRO',
+/app/backend/core/query_catalog.py:102:        'SOFT': 'SOFTRESTAURANT_PRO',
+/app/backend/core/query_catalog.py:103:        'MPRO': 'MPRO',
+/app/backend/core/query_catalog.py:104:        'MANAGEMENTPRO': 'MPRO',
+/app/backend/core/query_catalog.py:105:        'MANAGEMENT_PRO': 'MPRO',
+/app/backend/core/query_catalog.py:106:        'MANAGMENTPRO': 'MPRO',  # Typo común
+/app/backend/core/__init__.py:82:    MPROSQLProvider,
+/app/backend/core/source_resolver.py:98:        source_type: Tipo de fuente (MPRO, SoftRestaurant, MongoDB, API)
+/app/backend/core/policies/no_live_dashboard_policy.py:5:Los dashboards y reportes ejecutivos no deben consultar SoftRestaurant, MPRO,
+/app/backend/core/auditoria.py:84:    MPRO = "MPRO"
+/app/backend/core/auditoria_helpers.py:78:        if factura_id.startswith('MPRO_'):
+/app/backend/core/auditoria_helpers.py:79:            return audit_module['OrigenSistema'].MPRO
+/app/backend/core/unidades_registry.py:46:    sistema: str                    # SoftRestaurant, MPRO
+/app/backend/core/unidades_registry.py:186:    Obtiene unidades filtradas por sistema (SoftRestaurant, MPRO).
+/app/backend/core/unidades_registry.py:189:        sistema: "SoftRestaurant" o "MPRO"
+/app/backend/core/scheduler/scheduler_manager.py:313:        - MPRO: 130° QRO, ORIGEN
+/app/backend/core/scheduler/scheduler_manager.py:371:        - MPRO: 130° QRO, ORIGEN
+/app/backend/core/scheduler/scheduler_manager.py:432:        - MPRO: 130° QRO, ORIGEN
+/app/backend/core/scheduler/scheduler_manager.py:493:        - MPRO: 130° QRO, ORIGEN
+/app/backend/core/scheduler/scheduler_manager.py:777:        Extrae ventas de SoftRestaurant/MPRO y las consolida en EDARSAHUB.
+/app/backend/core/scheduler/config.py:185:                description="Sincronización incremental de cortes de caja desde SoftRestaurant y MPRO hacia EDARSAHUB",
+/app/backend/core/scheduler/config.py:195:                description="Sincronización incremental de propinas TPV desde SoftRestaurant y MPRO hacia EDARSAHUB",
+/app/backend/core/scheduler/config.py:205:                description="Sincronización incremental de KPIs comerciales V2 desde SoftRestaurant y MPRO hacia EDARSAHUB",
+/app/backend/core/scheduler/config.py:215:                description="Sincronización de ventas del día en curso (abiertas) desde SoftRestaurant y MPRO hacia EDARSAHUB cada 5 minutos",
+/app/backend/core/scheduler/config.py:276:                description="Extrae ventas de SoftRestaurant/MPRO y las consolida en Sync_Sales y KPIs diarios (cada hora)",
+/app/backend/core/scheduler/jobs/pedidos_detector_job.py:280:                            origen = pedido.get("origen", server.get("system_type", "MPRO"))
+/app/backend/core/scheduler/jobs/pedidos_detector_job.py:466:            if st in ['MPRO', 'SOFTRESTAURANT', 'SR']:
+/app/backend/core/scheduler/jobs/pedidos_detector_job.py:487:        source_type = server.get("system_type", "MPRO")
+/app/backend/core/scheduler/jobs/pedidos_detector_job.py:644:        origen = pedido.get("origen", server.get("system_type", "MPRO"))
+/app/backend/core/scheduler/jobs/pedidos_detector_job.py:753:            if server.get("system_type") == "MPRO":
+/app/backend/core/scheduler/jobs/pedidos_detector_job.py:889:        origen = pedido.get("origen", server.get("system_type", "MPRO"))
+/app/backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:15:- Este job consulta servidores remotos (SoftRestaurant/MPRO)
+/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:7:Este job sincroniza KPIs de ventas comerciales desde SoftRestaurant y MPRO 
+/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:81:            if 'SOFTRESTAURANT' in sistema:
+/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:83:            elif 'MPRO' in sistema:
+/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:86:        logger.info(f"[SYNC_V2] Cargadas {len(unidades_sr)} unidades SoftRestaurant, {len(unidades_mpro)} unidades MPRO desde EDARSAHUB")
+/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:154:    logger.info(f"[SYNC_COMERCIAL_V2] FASE P0: Procesando {len(unidades_sr)} SoftRestaurant + {len(unidades_mpro)} MPRO con códigos canónicos")
+/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:157:    # SINCRONIZAR SOFTRESTAURANT
+/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:175:                sistema_origen=SistemaOrigen.SOFTRESTAURANT,
+/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:235:    # SINCRONIZAR MPRO
+/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:245:            logger.info(f"[SYNC_COMERCIAL_V2] Sincronizando {nombre} (MPRO sucursal={sucursal_id})...")
+/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:254:                sistema_origen=SistemaOrigen.MPRO,
+/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:270:                "sistema": "MPRO",
+/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:310:                "sistema": "MPRO",
+/app/backend/core/scheduler/jobs/sync_short_comercial_job.py:223:        elif system_type == "MPRO":
+/app/backend/core/scheduler/jobs/sync_propinas_tpv_job.py:7:Este job sincroniza propinas TPV desde SoftRestaurant y MPRO hacia EDARSAHUB
+/app/backend/core/scheduler/jobs/sync_propinas_tpv_job.py:26:- MPRO: Comanda_Pago.Cp_Propina WHERE Forma_Pago.Fp_Tipo = '04'
+/app/backend/core/scheduler/jobs/sync_propinas_tpv_job.py:102:    # MPRO (Subfase 3.3)
+/app/backend/core/scheduler/jobs/sync_propinas_tpv_job.py:104:        {"nombre": "130° QUERETARO", "sistema": "MPRO"},
+/app/backend/core/scheduler/jobs/sync_propinas_tpv_job.py:105:        {"nombre": "ORIGEN", "sistema": "MPRO"}
+/app/backend/core/scheduler/jobs/sync_propinas_tpv_job.py:109:    # SINCRONIZAR SOFTRESTAURANT
+/app/backend/core/scheduler/jobs/sync_propinas_tpv_job.py:167:    # SINCRONIZAR MPRO
+/app/backend/core/scheduler/jobs/sync_propinas_tpv_job.py:175:            logger.info(f"[SYNC_PROPINAS_TPV] Sincronizando {nombre} (MPRO)...")
+/app/backend/core/scheduler/jobs/sync_propinas_tpv_job.py:187:                "sistema": "MPRO",
+/app/backend/core/scheduler/jobs/sync_propinas_tpv_job.py:219:                "sistema": "MPRO",
+/app/backend/core/scheduler/jobs/sync_compras_job.py:7:físicos (SoftRestaurant, MPRO) hacia las tablas intermedias en EDARSAHUB SQL.
+/app/backend/core/scheduler/jobs/sync_compras_job.py:221:              AND s.system_type IN ('SOFTRESTAURANT', 'MPRO', 'MANAGEMENTPRO', 'SOFTRESTAURANT_PRO')
+/app/backend/core/scheduler/jobs/sync_nightly_comercial_job.py:278:            elif system_type == "MPRO":
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:8:- MPRO: 130QRO, ORIGEN
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:66:        "system_type": "MPRO",
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:74:        "system_type": "MPRO",
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:156:    """Query para extraer ventas de MPRO (ManagmentPro)."""
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:211:        else:  # MPRO
+/app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py:181:              AND s.system_type IN ('SOFTRESTAURANT', 'MPRO', 'MANAGEMENTPRO', 'SOFTRESTAURANT_PRO')
+/app/backend/core/scheduler/jobs/inventarios_detector_job.py:4:Detecta nuevos inventarios físicos en sistemas origen (SoftRestaurant/MPRO),
+/app/backend/core/scheduler/jobs/inventarios_detector_job.py:83:    "MPRO": []  # MPRO no tiene estructura de inventarios compatible
+/app/backend/core/scheduler/jobs/inventarios_detector_job.py:431:            elif system_type == 'MPRO':
+/app/backend/core/scheduler/jobs/inventarios_detector_job.py:531:                    sistema_origen='SOFTRESTAURANT',
+/app/backend/core/scheduler/jobs/inventarios_detector_job.py:560:        """Detecta inventarios en MPRO.
+/app/backend/core/scheduler/jobs/inventarios_detector_job.py:562:        NOTA BLINDAJE (Abril 2026): MPRO no tiene la tabla 'invfisico'.
+/app/backend/core/scheduler/jobs/inventarios_detector_job.py:565:        # BLINDAJE: MPRO usa una estructura diferente de inventarios
+/app/backend/core/scheduler/jobs/inventarios_detector_job.py:566:        # La tabla invfisico NO existe en MPRO - retornar vacío para evitar contaminar el pool SQL
+/app/backend/core/scheduler/jobs/inventarios_detector_job.py:567:        logger.info(f"[INVENTARIOS_DETECTOR] MPRO {servidor.get('name')}: Saltando detección (tabla invfisico no existe en MPRO)")
+/app/backend/core/scheduler/jobs/inventarios_detector_job.py:633:        Calcula el folio inicial para MPRO.
+/app/backend/core/scheduler/jobs/inventarios_detector_job.py:635:        BLINDAJE (Abril 2026): MPRO no tiene tabla invfisico.
+/app/backend/core/scheduler/jobs/inventarios_detector_job.py:638:        # BLINDAJE: MPRO no tiene estructura de inventarios compatible
+/app/backend/core/scheduler/jobs/inventarios_detector_job.py:640:        logger.debug("[INVENTARIOS_DETECTOR] _calcular_folio_inicial_mpro no implementado para MPRO (tabla invfisico no existe)")
+/app/backend/core/scheduler/jobs/sync_ingresos_job.py:7:Este job sincroniza cortes de caja desde SoftRestaurant y MPRO hacia EDARSAHUB
+/app/backend/core/scheduler/jobs/sync_ingresos_job.py:82:    # MPRO
+/app/backend/core/scheduler/jobs/sync_ingresos_job.py:84:        {"nombre": "130° QUERETARO", "sistema": "MPRO"},
+/app/backend/core/scheduler/jobs/sync_ingresos_job.py:85:        {"nombre": "ORIGEN", "sistema": "MPRO"}
+/app/backend/core/scheduler/jobs/sync_ingresos_job.py:89:    # SINCRONIZAR SOFTRESTAURANT
+/app/backend/core/scheduler/jobs/sync_ingresos_job.py:145:    # SINCRONIZAR MPRO
+/app/backend/core/scheduler/jobs/sync_ingresos_job.py:153:            logger.info(f"[SYNC_INGRESOS] Sincronizando {nombre} (MPRO)...")
+/app/backend/core/scheduler/jobs/sync_ingresos_job.py:164:                "sistema": "MPRO",
+/app/backend/core/scheduler/jobs/sync_ingresos_job.py:195:                "sistema": "MPRO",
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:6:- ORIGEN y QRO usan APIs locales (NO SQL Server MPRO central)
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:14:- Eliminado hardcoding de MPRO_API_LOCAL_CONFIG
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:24:5. MPRO ORIGEN/QRO: API local (NO SQL Server central)
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:77:# CONFIGURACIÓN DE APIs LOCALES MPRO - FALLBACK LEGACY
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:84:# 2. El sistema MPRO tiene esquemas SQL diferentes por sucursal
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:85:# 3. No se puede generalizar porque cada unidad MPRO tiene queries específicas
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:88:# 1. Migrar la configuración completa a una tabla SQL (Sistema_UnidadConfigMPRO)
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:94:MPRO_API_LOCAL_CONFIG_LEGACY = {
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:110:MPRO_API_LOCAL_CONFIG = MPRO_API_LOCAL_CONFIG_LEGACY
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:230:    Obtiene la configuración de API local para una unidad MPRO desde EDARSAHUB.
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:238:    config = MPRO_API_LOCAL_CONFIG.get(unidad_codigo)
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:240:        logger.warning(f"[SYNC_ABIERTAS_V2] Unidad {unidad_codigo} no tiene config en MPRO_API_LOCAL_CONFIG")
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:288:    Ejecuta una query SQL via API local MPRO.
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:394:        # Obtener unidades MPRO - Usarán API local
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:395:        for u in get_unidades_by_sistema('MPRO'):
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:401:                "sistema": "MPRO"
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:404:        logger.info(f"[SYNC_ABIERTAS_V2] Cargadas {len(unidades_sr)} SoftRestaurant, {len(unidades_mpro)} MPRO desde EDARSAHUB")
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:419:# QUERIES SOFTRESTAURANT
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:434:QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS = """
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:450:QUERY_SOFTRESTAURANT_CERRADAS_HOY = """
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:462:# QUERIES MPRO - ORIGEN (FIX 15-May-2026: Usar Comanda como QRO)
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:471:# MPRO ORIGEN: Ventas abiertas (Comanda + Comanda_Detalle)
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:472:QUERY_MPRO_VENTAS_ABIERTAS_ORIGEN = """
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:487:# MPRO ORIGEN: Ventas cerradas del día
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:488:QUERY_MPRO_CERRADAS_HOY_ORIGEN = """
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:503:# QUERIES MPRO - QRO (usa Comanda + Comanda_Detalle directamente)
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:512:# MPRO QRO: Ventas abiertas (Comanda + Comanda_Detalle, estado 'AC', sin baja)
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:514:QUERY_MPRO_VENTAS_ABIERTAS_QRO = """
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:529:# MPRO QRO: Ventas cerradas del día (Comanda con cierre)
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:532:QUERY_MPRO_CERRADAS_HOY_QRO = """
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:558:    - ORIGEN y QRO usan API local (NO SQL Server MPRO)
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:628:        # SINCRONIZAR SOFTRESTAURANT
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:669:                query_abiertas = QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS.format(
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:687:                query_cerradas = QUERY_SOFTRESTAURANT_CERRADAS_HOY.format(
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:710:                # PROTECCIÓN ANTI-$0 PARA SOFTRESTAURANT
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:770:                    sistema_origen=SistemaOrigen.SOFTRESTAURANT,
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:850:        # SINCRONIZAR MPRO VIA API LOCAL
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:859:                logger.info(f"[SYNC_ABIERTAS_V2] Procesando {nombre} (MPRO API Local)...")
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:891:                    f"[SYNC_ABIERTAS_V2] MPRO {unidad_id}: FechaOp={fecha_operacion_str}, "
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:899:                # ORIGEN: Usa Venta_Encabezado (estructura estándar MPRO)
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:905:                    query_template_abiertas = QUERY_MPRO_VENTAS_ABIERTAS_QRO
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:906:                    query_template_cerradas = QUERY_MPRO_CERRADAS_HOY_QRO
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:909:                    # ORIGEN y otras unidades MPRO usan Venta_Encabezado estándar
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:910:                    query_template_abiertas = QUERY_MPRO_VENTAS_ABIERTAS_ORIGEN
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:911:                    query_template_cerradas = QUERY_MPRO_CERRADAS_HOY_ORIGEN
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:943:                # FIX P0 2026-05-15: PROTECCIÓN ANTI-$0 PARA TODAS LAS UNIDADES MPRO
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:1071:                        f"[SYNC_ABIERTAS_V2] ⛔ GUARD RAIL BLOQUEÓ ESCRITURA MPRO: "
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:1086:                    sistema_origen=SistemaOrigen.MPRO,
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:1109:                    "sistema": "MPRO",
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:1146:                    "sistema": "MPRO",
+/app/backend/core/cache_key_builder.py:14:- Datos pegados entre sistemas origen (SoftRestaurant vs MPRO)
+/app/backend/core/cache_key_builder.py:180:        system_type: Tipo de sistema (MPRO, SoftRestaurant, etc.)
+/app/backend/core/cache_key_builder.py:202:            system_type_normalized="MANAGEMENTPRO",
+/app/backend/core/cache_key_builder.py:205:        # Resultado: "comercial:dashboard:abc123:suc001:MANAGEMENTPRO:2026-04-25"
+/app/backend/core/cache_key_builder.py:224:    # Sistema origen (crítico para no mezclar SR y MPRO)
+/app/backend/core/cache_key_builder.py:230:            from core.system_type_utils import normalize_system_type
+/app/backend/core/cache_key_builder.py:231:            normalized = normalize_system_type(system_type)
+/app/backend/core/config.py:36:    # APIs MPRO Locales (configuración base)
+/app/backend/core/config.py:37:    API_MPRO_KEY: str = os.environ.get("API_MPRO_KEY", "")
+/app/backend/core/config.py:38:    API_MPRO_QRO_URL: str = os.environ.get("API_MPRO_QRO_URL", "")
+/app/backend/core/config.py:39:    API_MPRO_ORIGEN_URL: str = os.environ.get("API_MPRO_ORIGEN_URL", "")
+/app/backend/core/system_type_utils.py:14:- Normalizar system_type a valores estándar (MANAGEMENTPRO, SOFTRESTAURANT, API, UNKNOWN)
+/app/backend/core/system_type_utils.py:16:- Evitar comparaciones directas frágiles como `== "MPRO"` o `== "SR"`
+/app/backend/core/system_type_utils.py:20:        normalize_system_type,
+/app/backend/core/system_type_utils.py:29:    normalized = normalize_system_type("MPRO")  # → "MANAGEMENTPRO"
+/app/backend/core/system_type_utils.py:33:        # Lógica MPRO
+/app/backend/core/system_type_utils.py:50:    SOFTRESTAURANT = "SOFTRESTAURANT"
+/app/backend/core/system_type_utils.py:51:    MANAGEMENTPRO = "MANAGEMENTPRO"
+/app/backend/core/system_type_utils.py:59:    "MPRO": SystemType.MANAGEMENTPRO,
+/app/backend/core/system_type_utils.py:60:    "MANAGEMENTPRO": SystemType.MANAGEMENTPRO,
+/app/backend/core/system_type_utils.py:61:    "MANAGEMENT_PRO": SystemType.MANAGEMENTPRO,
+/app/backend/core/system_type_utils.py:62:    "MANAGEMENT PRO": SystemType.MANAGEMENTPRO,
+/app/backend/core/system_type_utils.py:63:    "MANAGMENTPRO": SystemType.MANAGEMENTPRO,   # Typo común
+/app/backend/core/system_type_utils.py:64:    "MANAGMENT_PRO": SystemType.MANAGEMENTPRO,  # Typo común
+/app/backend/core/system_type_utils.py:65:    "MANAGMENT PRO": SystemType.MANAGEMENTPRO,  # Typo común
+/app/backend/core/system_type_utils.py:66:    "MANAG": SystemType.MANAGEMENTPRO,
+/app/backend/core/system_type_utils.py:69:    "SOFTRESTAURANT": SystemType.SOFTRESTAURANT,
+/app/backend/core/system_type_utils.py:70:    "SOFTRESTAURANT_PRO": SystemType.SOFTRESTAURANT,  # SR Pro variant
+/app/backend/core/system_type_utils.py:71:    "SOFTRESTAURANTPRO": SystemType.SOFTRESTAURANT,   # SR Pro variant
+/app/backend/core/system_type_utils.py:72:    "SR": SystemType.SOFTRESTAURANT,
+/app/backend/core/system_type_utils.py:73:    "SR_PRO": SystemType.SOFTRESTAURANT,
+/app/backend/core/system_type_utils.py:74:    "SOFT_RESTAURANT": SystemType.SOFTRESTAURANT,
+/app/backend/core/system_type_utils.py:75:    "SOFT RESTAURANT": SystemType.SOFTRESTAURANT,
+/app/backend/core/system_type_utils.py:76:    "SOFT": SystemType.SOFTRESTAURANT,
+/app/backend/core/system_type_utils.py:77:    "SOFTREST": SystemType.SOFTRESTAURANT,
+/app/backend/core/system_type_utils.py:88:    SystemType.SOFTRESTAURANT: "SoftRestaurant",
+/app/backend/core/system_type_utils.py:89:    SystemType.MANAGEMENTPRO: "ManagementPro",
+/app/backend/core/system_type_utils.py:99:def normalize_system_type(system_type: Optional[str]) -> str:
+/app/backend/core/system_type_utils.py:104:    - MPRO, MANAGEMENTPRO, MANAGEMENT_PRO, etc. → "MANAGEMENTPRO"
+/app/backend/core/system_type_utils.py:105:    - SOFT, SR, SOFTRESTAURANT, etc. → "SOFTRESTAURANT"
+/app/backend/core/system_type_utils.py:113:        str: Uno de SOFTRESTAURANT, MANAGEMENTPRO, API, UNKNOWN
+/app/backend/core/system_type_utils.py:132:    Verifica si el sistema es ManagementPro/MPRO.
+/app/backend/core/system_type_utils.py:134:    Acepta cualquier variante: MPRO, ManagementPro, MANAGEMENT_PRO, etc.
+/app/backend/core/system_type_utils.py:140:        bool: True si es ManagementPro/MPRO
+/app/backend/core/system_type_utils.py:142:    return normalize_system_type(system_type) == SystemType.MANAGEMENTPRO.value
+/app/backend/core/system_type_utils.py:157:    return normalize_system_type(system_type) == SystemType.SOFTRESTAURANT.value
+/app/backend/core/system_type_utils.py:170:    return normalize_system_type(system_type) == SystemType.API.value
+/app/backend/core/system_type_utils.py:183:    return normalize_system_type(system_type) != SystemType.UNKNOWN.value
+/app/backend/core/system_type_utils.py:196:    return normalize_system_type(system_type) == SystemType.UNKNOWN.value
+/app/backend/core/system_type_utils.py:209:    normalized = normalize_system_type(system_type)
+/app/backend/core/system_type_utils.py:233:    normalized = normalize_system_type(system_type)
+/app/backend/core/system_type_utils.py:263:        available_for: Lista de sistemas donde está disponible (ej: ["MPRO"])
+/app/backend/core/system_type_utils.py:268:    normalized = normalize_system_type(system_type)
+/app/backend/core/system_type_utils.py:345:    Garantiza que MPRO y SoftRestaurant NUNCA compartan caché.
+/app/backend/core/system_type_utils.py:359:            "compras", "inventarios", "server-123", "MPRO",
+/app/backend/core/system_type_utils.py:362:        → "compras:inventarios:server-123:MANAGEMENTPRO:sucursal_id=0021:fecha_inicio=2025-01-01"
+/app/backend/core/system_type_utils.py:364:    normalized = normalize_system_type(system_type)
+/app/backend/core/system_type_utils.py:391:    'normalize_system_type',
+/app/backend/core/system_type_utils.py:421:        target_type: Tipo objetivo ('SOFTRESTAURANT' o 'MANAGEMENTPRO')
+/app/backend/core/system_type_utils.py:427:        get_system_type_sql_values('SOFTRESTAURANT')
+/app/backend/core/system_type_utils.py:428:        → ['SOFTRESTAURANT', 'SOFTRESTAURANT_PRO', 'SR', 'SOFT', ...]
+/app/backend/core/system_type_utils.py:431:    if target_type.upper() in ['SOFTRESTAURANT', 'SR', 'SOFT']:
+/app/backend/core/system_type_utils.py:432:        target_enum = SystemType.SOFTRESTAURANT
+/app/backend/core/system_type_utils.py:433:    elif target_type.upper() in ['MANAGEMENTPRO', 'MPRO']:
+/app/backend/core/system_type_utils.py:434:        target_enum = SystemType.MANAGEMENTPRO
+/app/backend/core/system_type_utils.py:451:        target_type: Tipo objetivo ('SOFTRESTAURANT' o 'MANAGEMENTPRO')
+/app/backend/core/system_type_utils.py:457:        build_system_type_sql_filter('s.system_type', 'SOFTRESTAURANT')
+/app/backend/core/system_type_utils.py:458:        → "s.system_type IN ('SOFTRESTAURANT', 'SOFTRESTAURANT_PRO', 'SR', ...)"
+/app/backend/core/regression_checker.py:227:            expected_systems = ["SoftRestaurant", "MPRO"]
+/app/backend/core/context_resolver.py:11:- system_type (MPRO/SoftRestaurant)
+/app/backend/core/context_resolver.py:12:- sucursal_origen_id (para MPRO)
+/app/backend/core/context_resolver.py:390:        - system_type: Tipo de sistema (MPRO/SoftRestaurant)
+/app/backend/core/context_resolver.py:391:        - sucursal_origen_id: ID de sucursal en sistema externo (MPRO)
+/app/backend/core/context_resolver.py:618:    Para MPRO: usa sucursal_origen_id (código como "0025")
+/app/backend/core/context_resolver.py:629:    if system_type == 'MPRO':
+/app/backend/core/context_resolver.py:630:        # MPRO usa sucursal_origen_id (código numérico)
+/app/backend/core/centro_control/routes.py:430:    - APIs locales MPRO
+/app/backend/core/centro_control/routes.py:563:    - Por tipo de sistema (SoftRestaurant, MPRO)
+/app/backend/core/centro_control/routes.py:576:                "MPRO usa SQL para acumulados, API local para diarios",
+/app/backend/core/cerebro.py:30:    MPRO = "MPRO"
+/app/backend/core/cerebro.py:31:    SOFTRESTAURANT = "SoftRestaurant"
+/app/backend/core/corporate_identity_resolver.py:87:    "SOFTRESTAURANT_PRO": [
+/app/backend/core/corporate_identity_resolver.py:88:        "SOFTRESTAURANT_PRO",
+/app/backend/core/corporate_identity_resolver.py:89:        "SOFTRESTAURANT",
+/app/backend/core/corporate_identity_resolver.py:91:        "SOFTRESTAURANT PRO",
+/app/backend/core/corporate_identity_resolver.py:96:        "SOFTRESTAURANT95PRO",
+/app/backend/core/corporate_identity_resolver.py:97:        "SOFTRESTAURANT 95 PRO",
+/app/backend/core/corporate_identity_resolver.py:100:    "MPRO": [
+/app/backend/core/corporate_identity_resolver.py:101:        "MPRO",
+/app/backend/core/corporate_identity_resolver.py:105:        "MANAGEMENTPRO",
+/app/backend/core/corporate_identity_resolver.py:110:    "MANAGEMENTPRO": [
+/app/backend/core/corporate_identity_resolver.py:111:        "MANAGEMENTPRO",
+/app/backend/core/corporate_identity_resolver.py:115:        "MPRO",
+/app/backend/core/corporate_identity_resolver.py:120:        "SOFTRESTAURANT ENTERPRISE",
+/app/backend/core/corporate_identity_resolver.py:121:        "SOFTRESTAURANT_ENTERPRISE",
+/app/backend/core/corporate_identity_resolver.py:141:def normalize_system_type(value: Any) -> str:
+/app/backend/core/corporate_identity_resolver.py:153:    canonical = normalize_system_type(canonical_type)
+/app/backend/core/corporate_identity_resolver.py:189:            "130 MERIDA SOFTRESTAURANT",
+/app/backend/core/corporate_identity_resolver.py:198:            "130 QUERETARO MPRO",
+/app/backend/core/system_capability_resolver.py:30:    result = resolver.normalize_system_type("ManagmentPro")
+/app/backend/core/system_capability_resolver.py:31:    # {'codigo_sistema': 'MPRO', 'nombre_sistema': 'ManagementPro', ...}
+/app/backend/core/system_capability_resolver.py:34:    if resolver.system_supports("SOFTRESTAURANT", Capability.SYNC_VENTAS_HISTORICAS):
+/app/backend/core/system_capability_resolver.py:90:    # Exclusivas MPRO
+/app/backend/core/system_capability_resolver.py:230:    def normalize_system_type(self, system_type: str) -> Dict[str, Any]:
+/app/backend/core/system_capability_resolver.py:331:            from core.system_type_utils import normalize_system_type as legacy_normalize
+/app/backend/core/system_capability_resolver.py:370:            codigo_sistema: Código del sistema (ej: "SOFTRESTAURANT", "MPRO")
+/app/backend/core/system_capability_resolver.py:747:        normalized = self.normalize_system_type(system_type)
+/app/backend/core/db.py:1337:    'MPRO': [
+/app/backend/core/db.py:1350:        expected_types: Lista de tipos de sistema permitidos (ej: ['SoftRestaurant', 'MPRO'])
