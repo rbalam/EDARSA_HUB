@@ -1,0 +1,59 @@
+/app/backend/modules/comercial/historical_kpis_repository.py:57:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+/app/backend/modules/comercial/historical_kpis_repository.py:492:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+/app/backend/modules/comercial/historical_kpis_repository.py:524:                'run_id': source.get('run_id', 'MONGO_MIGRATION'),
+/app/backend/modules/comercial/historical_kpis_repository.py:538:                'source_type': 'MONGO_MIGRATION'
+/app/backend/modules/comercial/routes.py:2987:    if nombre_source == 'MONGO_LEGACY_FALLBACK':
+/app/backend/modules/fase2_operativo/repositories/workflow_repository.py:20:# Constante para ordenamiento descendente (reemplaza pymongo.DESCENDING)
+/app/backend/modules/fase2_operativo/repositories/tarea_repository.py:20:# Constantes para ordenamiento (reemplazan pymongo.ASCENDING/DESCENDING)
+/app/backend/modules/finanzas/repository_cuadres_z.py:18:        pass  # P2-07: MongoDB eliminado (MongoClient)
+/app/backend/modules/manuales_operativos/triggers.py:169:        db_sync: Conexión pymongo (síncrona)
+/app/backend/scripts/rotate_server_secret_key.py:374:                        logger.info(f"[SECRET_ROTATION][MONGO_SYNC_SUCCESS] {server_name}")
+/app/backend/utils/migration_helpers.py:14:MONGO_TO_SQL_MAPPING = {
+/app/backend/utils/migration_helpers.py:160:    tabla = MONGO_TO_SQL_MAPPING.get(f"mongo_db.{coleccion}", coleccion)
+/app/backend/utils/migration_helpers.py:183:    tabla = MONGO_TO_SQL_MAPPING.get(f"mongo_db.{coleccion}", coleccion)
+/app/backend/utils/migration_helpers.py:212:    for mongo, sql in MONGO_TO_SQL_MAPPING.items():
+/app/backend/core/server_registry.py:1154:            logger.info(f"[SERVER_REGISTRY][SYNC_MONGO_SUCCESS] Servidor sincronizado a MongoDB: {server_id}")
+/app/backend/core/server_registry.py:1158:            logger.warning(f"[SERVER_REGISTRY][SYNC_MONGO_ERROR] {e}")
+/app/backend/core/server_registry.py:1353:            logger.info(f"[SERVER_REGISTRY][SYNC_MONGO_SUCCESS] Servidor sincronizado a MongoDB: {server_id}")
+/app/backend/core/server_registry.py:1357:            logger.warning(f"[SERVER_REGISTRY][SYNC_MONGO_ERROR] {e}")
+/app/backend/core/server_registry.py:1453:            logger.info(f"[SERVER_REGISTRY][SYNC_MONGO_SUCCESS] Servidor sincronizado a MongoDB: {server_id}")
+/app/backend/core/server_registry.py:1457:            logger.warning(f"[SERVER_REGISTRY][SYNC_MONGO_ERROR] {e}")
+/app/backend/core/server_registry.py:1499:    logger.info(f"[SERVER_REGISTRY][SYNC_MONGO_START] Sincronizando servidor: {sql_server_id}")
+/app/backend/core/server_registry.py:1529:        logger.info(f"[SERVER_REGISTRY][SYNC_MONGO_SUCCESS] Servidor sincronizado: {sql_server_id}")
+/app/backend/core/server_registry.py:1539:        logger.error(f"[SERVER_REGISTRY][SYNC_MONGO_ERROR] {e}")
+/app/backend/core/auditoria.py:225:                pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+/app/backend/core/config.py:11:    # print(settings.MONGO_URL)  # P2-07: MongoDB eliminado
+/app/backend/core/config.py:26:    MONGO_URL: str = ""  # P2-07: MongoDB eliminado
+/app/backend/core/centro_control/recipients_manager.py:28:MONGO_URL = None  # P2-07: MongoDB eliminado
+/app/backend/core/mongo_stub.py:32:            logger.debug(f"[MONGO_STUB] Acceso a colección '{self.name}' - MongoDB eliminado")
+/app/backend/core/mongo_stub.py:184:            logger.info("[MONGO_STUB] Base de datos stub activa - MongoDB ELIMINADO")
+/app/backend/core/auth/user_repository_sql.py:354:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+/app/backend/core/auth/user_repository_sql.py:389:            'status': 'MONGO_ONLY'
+/app/backend/core/auth/user_repository_sql.py:586:    ROL_MONGO_TO_SQL = {
+/app/backend/core/auth/user_repository_sql.py:597:    rol_codigo = ROL_MONGO_TO_SQL.get(role, 'USUARIO')
+/app/backend/core/auth/user_repository_sql.py:748:            ROL_MONGO_TO_SQL = {
+/app/backend/core/auth/user_repository_sql.py:759:            rol_codigo = ROL_MONGO_TO_SQL.get(update_data['role'], 'USUARIO')
+/app/backend/core/mongo_compat.py:36:        logger.warning("[MONGO_COMPAT] Inicializado SIN MongoDB - Operaciones retornarán datos vacíos")
+/app/backend/core/mongo_compat.py:38:        logger.info("[MONGO_COMPAT] Inicializado con conexión MongoDB")
+/app/backend/core/mongo_compat.py:66:        logger.debug(f"[MONGO_COMPAT] find_one({collection_name}) - MongoDB no disponible")
+/app/backend/core/mongo_compat.py:75:        logger.error(f"[MONGO_COMPAT] Error en find_one({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:93:        logger.debug(f"[MONGO_COMPAT] find({collection_name}) - MongoDB no disponible")
+/app/backend/core/mongo_compat.py:111:        logger.error(f"[MONGO_COMPAT] Error en find({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:131:        logger.error(f"[MONGO_COMPAT] Error en count({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:149:        logger.warning(f"[MONGO_COMPAT] insert_one({collection_name}) - MongoDB no disponible, documento NO persistido")
+/app/backend/core/mongo_compat.py:157:        logger.error(f"[MONGO_COMPAT] Error en insert_one({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:171:        logger.warning(f"[MONGO_COMPAT] insert_many({collection_name}) - MongoDB no disponible, {len(documents)} documentos NO persistidos")
+/app/backend/core/mongo_compat.py:179:        logger.error(f"[MONGO_COMPAT] Error en insert_many({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:199:        logger.warning(f"[MONGO_COMPAT] update_one({collection_name}) - MongoDB no disponible")
+/app/backend/core/mongo_compat.py:207:        logger.error(f"[MONGO_COMPAT] Error en update_one({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:222:        logger.warning(f"[MONGO_COMPAT] update_many({collection_name}) - MongoDB no disponible")
+/app/backend/core/mongo_compat.py:230:        logger.error(f"[MONGO_COMPAT] Error en update_many({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:248:        logger.warning(f"[MONGO_COMPAT] delete_one({collection_name}) - MongoDB no disponible")
+/app/backend/core/mongo_compat.py:256:        logger.error(f"[MONGO_COMPAT] Error en delete_one({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:270:        logger.warning(f"[MONGO_COMPAT] delete_many({collection_name}) - MongoDB no disponible")
+/app/backend/core/mongo_compat.py:278:        logger.error(f"[MONGO_COMPAT] Error en delete_many({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:296:        logger.debug(f"[MONGO_COMPAT] aggregate({collection_name}) - MongoDB no disponible")
+/app/backend/core/mongo_compat.py:304:        logger.error(f"[MONGO_COMPAT] Error en aggregate({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:345:                logger.info(f"[MONGO_COMPAT] {func.__name__} - Retornando valor por defecto (MongoDB no disponible)")
+/app/backend/core/health_checker.py:151:            pass  # P2-07: MongoDB eliminado (MongoClient)
+/app/backend/core/health_checker.py:179:            pass  # P2-07: MongoDB eliminado (MongoClient)
