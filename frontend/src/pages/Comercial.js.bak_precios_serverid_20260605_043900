@@ -59,13 +59,6 @@ import {
   canShowData
 } from '../utils/comercialStatusUtils';
 
-// P2-13: Helper para resolver server_id desde unidad (evita enviar nombre en vez de UUID)
-const resolveServerIdForPrecios = (unidadOrServer) => {
-  if (!unidadOrServer) return '';
-  if (typeof unidadOrServer === 'string') return unidadOrServer;
-  return unidadOrServer.server_id || unidadOrServer.servidor_id || unidadOrServer.id || unidadOrServer.value || '';
-};
-
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 // ============ FASE 3A.4: COMPONENTE DE ESTADO ESTRUCTURADO ============
@@ -2117,7 +2110,7 @@ function VentasPreciosConstantes({ servers, unidadesNegocio, selectedUnidad, set
         pBase = mesesBase.map(m => `${anioBase}-${String(m).padStart(2, '0')}`).join(',');
       }
       
-      const response = await api.get(`/comercial/precios-constantes/${resolveServerIdForPrecios(selectedServer)}`, {
+      const response = await api.get(`/comercial/precios-constantes/${selectedServer}`, {
         params: {
           periodo_actual: pActual,
           periodo_base: pBase,
@@ -2140,7 +2133,7 @@ function VentasPreciosConstantes({ servers, unidadesNegocio, selectedUnidad, set
       const pBaseAnterior = mesesActual.map(m => `${anioActual - 2}-${String(m).padStart(2, '0')}`).join(',');
       
       try {
-        const responseAnterior = await api.get(`/comercial/precios-constantes/${resolveServerIdForPrecios(selectedServer)}`, {
+        const responseAnterior = await api.get(`/comercial/precios-constantes/${selectedServer}`, {
           params: {
             periodo_actual: pAnioAnterior,
             periodo_base: pBaseAnterior,
@@ -2181,7 +2174,7 @@ function VentasPreciosConstantes({ servers, unidadesNegocio, selectedUnidad, set
         const pRef = mesesActual.map(m => `${anioBase}-${String(m).padStart(2, '0')}`).join(',');
         
         try {
-          const res = await api.get(`/comercial/precios-constantes/${resolveServerIdForPrecios(selectedServer)}`, {
+          const res = await api.get(`/comercial/precios-constantes/${selectedServer}`, {
             params: {
               periodo_actual: pPeriodo,
               periodo_base: pRef,
