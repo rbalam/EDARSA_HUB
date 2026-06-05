@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 6 - Migración SQL-First Completa + Auditoría MongoDB)
-**Estado:** En desarrollo activo - Endpoints Comerciales SQL-First ✅ | Auditoría MongoDB ✅
+**Última actualización:** 2026-06-05 (Sesión 6 - CERRADA - SQL-First Completo + Auditoría MongoDB)
+**Estado:** P0/P1 CERRADOS - Endpoints SQL-First ✅ | Auth/RBAC SQL ✅ | Mongo Core Auditado ✅
 
 ---
 
