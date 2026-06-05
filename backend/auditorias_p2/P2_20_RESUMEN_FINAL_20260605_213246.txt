@@ -1,0 +1,50 @@
+==================================================
+P2-20 RESUMEN FINAL
+==================================================
+
+### CORREGIDO EN ESTA SESIÓN:
+
+1. core/sql_first/db.py
+   - Soporte pymssql como fallback (preview no tiene pyodbc)
+   - load_dotenv agregado para variables de entorno
+
+2. core/config/edarsahub_config.py
+   - Eliminado import circular de UnidadesService
+
+3. core/server_registry.py
+   - Eliminado import circular de UnidadesService y CorporateFilterService
+   - _LEGACY_TO_CANONICAL y CODIGOS_CANONICOS_OFICIALES ahora usan valores directos
+
+4. modules/comercial_v2/sync_comercial_edarsahub.py
+   - Corregido BUG CRÍTICO: WHERE id = '{id}' → WHERE CAST(id AS VARCHAR(50)) = '{server_id}'
+   - La variable Python nunca se interpolaba correctamente
+
+5. api/admin_scheduler_resync.py
+   - Corregido tipo_sistema → servidor_system_type
+   - Corregido unidad_nombre → unidad_negocio_nombre
+
+### VALIDACIÓN DE CONECTIVIDAD:
+- get_server_by_unidad_codigo(): OK para 5 unidades
+- get_server_connection_config(): OK (después del fix)
+- API /api/admin/scheduler/resync/validate: OK
+- API /api/admin/scheduler/resync/execute (dry-run): Conectividad=True
+
+### BLOQUEADOR PARA BACKFILL REAL:
+El sync handler para comercial_ventas_cerradas intenta acceder a tabla
+'Venta_Encabezado' pero SoftRestaurant usa 'cheques'.
+Esto requiere revisar el handler específico o los queries configurados
+para cada sistema origen.
+
+### GAPS PENDIENTES (Junio 2026):
+- 130MID: 2026-06-05
+- 130QRO: 2026-06-05
+- CIENFUEGOS: 2026-06-04, 2026-06-05
+- ORIGEN: 2026-06-05
+
+### RBAC AUDITADO:
+- Tablas base RBAC presentes (Usuario_Usuarios, Usuario_Roles, Unidades_Negocio)
+- Roles con NivelJerarquia >= 80 existen
+
+### MONGO LEGADO:
+- NO eliminado (falta doble confirmación CONFIRM_DELETE_MONGO)
+==================================================

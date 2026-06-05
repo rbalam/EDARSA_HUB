@@ -1,0 +1,28 @@
+==================================================
+P2-20 BACKFILL REAL CONTROLADO
+Fecha: Fri Jun  5 21:29:39 UTC 2026
+==================================================
+
+=== TARGET: 130MID 2026-06-05 ===
+Status: N/A
+Resultado: null
+
+=== TARGET: 130QRO 2026-06-05 ===
+Status: N/A
+Resultado: null
+
+=== TARGET: CIENFUEGOS 2026-06-04 ===
+Status: N/A
+Resultado: null
+
+=== TARGET: CIENFUEGOS 2026-06-05 ===
+Status: N/A
+Resultado: null
+
+=== TARGET: ORIGEN 2026-06-05 ===
+Status: N/A
+Resultado: null
+
+==================================================
+BACKFILL COMPLETADO
+Archivos: auditorias_p2/P2_20_BACKFILL_*_20260605_212938.txt

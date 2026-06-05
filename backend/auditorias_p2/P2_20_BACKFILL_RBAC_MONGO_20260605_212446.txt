@@ -1,0 +1,7 @@
+==================================================
+P2-20 BACKFILL REAL + RBAC + MONGO LEGADO
+Fecha: Fri Jun  5 21:24:46 UTC 2026
+==================================================
+TOKEN obtenido OK
+
+=== KPI ANTES BACKFILL ===

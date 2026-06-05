@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 13 - P0/P2-19 Corrección Catálogo Real + ENV)
-**Estado:** P0/P1 CERRADOS | P2 90% | SQL-First ✅ | MongoDB 99.9% ELIMINADO ✅ | Hardcodes Centralizados ✅
+**Última actualización:** 2026-06-05 (Sesión 13 - P0/P2-19/P2-20 Corrección Bugs Conexión)
+**Estado:** P0/P1 CERRADOS | P2 92% | SQL-First ✅ | MongoDB 99.9% ELIMINADO ✅ | Conexiones Centralizadas ✅
 
 ---
 
@@ -228,6 +228,10 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06-05 (S13) | **✅ P2-20 BUGS CONEXIÓN CORREGIDOS** |
+| 2026-06-05 (S13) | BUG FIX: sync_comercial_edarsahub.py WHERE id='{id}' → server_id |
+| 2026-06-05 (S13) | BUG FIX: Eliminados imports circulares UnidadesService |
+| 2026-06-05 (S13) | API resync: Validación y conectividad funcionando |
 | 2026-06-05 (S13) | **✅ P0/P2-19 CORRECCIÓN CATÁLOGO REAL + ENV** |
 | 2026-06-05 (S13) | core/sql_first/db.py: Soporte pymssql fallback para preview |
 | 2026-06-05 (S13) | api/admin_scheduler_resync.py: Corregido tipo_sistema→system_type |

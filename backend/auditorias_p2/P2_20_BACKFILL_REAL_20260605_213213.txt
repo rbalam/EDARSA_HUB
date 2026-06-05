@@ -1,0 +1,10 @@
+==================================================
+P2-20 BACKFILL REAL CONTROLADO
+==================================================
+
+=== DRY-RUN: 130MID 2026-06-05 ===
+Status: N/A
+Modo: DRY_RUN
+Conectividad: True
+Registros extraidos: 0
+Registros afectados: 0

@@ -1,5 +1,3 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 """
 EDARSA HUB - Server Registry Central
 ====================================
@@ -1804,20 +1802,21 @@ async def reconcile_sql_mongo_servers(db=None, dry_run: bool = True) -> Dict:
 # ============================================================================
 
 # Mapeo de compatibilidad defensiva para códigos legacy
+# NOTA: Usar valores directos para evitar ciclo de dependencia con UnidadesService
 _LEGACY_TO_CANONICAL = {
-    '130-MER': UnidadesService.resolver_codigo('130MID') or '130MID',
-    '130-QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
-    'LA-ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+    '130-MER': '130MID',
+    '130-QRO': '130QRO',
+    'LA-ESTELAR': 'ESTELAR',
     # Códigos oficiales (identidad)
-    UnidadesService.resolver_codigo('130MID') or '130MID': UnidadesService.resolver_codigo('130MID') or '130MID',
-    UnidadesService.resolver_codigo('130QRO') or '130QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
-    UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
-    UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
-    UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN',
+    '130MID': '130MID',
+    '130QRO': '130QRO',
+    'CIENFUEGOS': 'CIENFUEGOS',
+    'ESTELAR': 'ESTELAR',
+    'ORIGEN': 'ORIGEN',
 }
 
 # Códigos canónicos oficiales
-CODIGOS_CANONICOS_OFICIALES = [UnidadesService.resolver_codigo('130MID') or '130MID', UnidadesService.resolver_codigo('130QRO') or '130QRO', UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR', UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN']
+CODIGOS_CANONICOS_OFICIALES = ['130MID', '130QRO', 'CIENFUEGOS', 'ESTELAR', 'ORIGEN']
 
 
 def normalize_unidad_codigo(codigo: str) -> str:
@@ -2245,11 +2244,11 @@ def validate_registry_integrity() -> Dict:
         
         # 4. Verificar sucursales MPRO
         for u in unidades:
-            if u['codigo'] == UnidadesService.resolver_codigo('130QRO') or '130QRO' and u.get('sucursal_origen_id') != '0021':
+            if u['codigo'] == '130QRO' and u.get('sucursal_origen_id') != '0021':
                 result['errors'].append(f"130QRO debe tener sucursal_origen_id='0021', tiene '{u.get('sucursal_origen_id')}'")
                 result['ok'] = False
             
-            if u['codigo'] == UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN' and u.get('sucursal_origen_id') != '0023':
+            if u['codigo'] == 'ORIGEN' and u.get('sucursal_origen_id') != '0023':
                 result['errors'].append(f"ORIGEN debe tener sucursal_origen_id='0023', tiene '{u.get('sucursal_origen_id')}'")
                 result['ok'] = False
         
