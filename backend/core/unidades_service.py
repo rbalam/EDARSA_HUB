@@ -113,6 +113,11 @@ class UnidadesService:
         return [u.get("codigo") for u in cls.get_all() if u.get("codigo")]
 
     @classmethod
+    def get_codigos_set(cls):
+        """Retorna set de códigos en mayúsculas para búsqueda rápida"""
+        return {u.get("codigo", "").upper().strip() for u in cls.get_all() if u.get("codigo")}
+
+    @classmethod
     def get_by_pk(cls, unidad_negocio_pk):
         """Buscar unidad por PK real"""
         if not unidad_negocio_pk:
