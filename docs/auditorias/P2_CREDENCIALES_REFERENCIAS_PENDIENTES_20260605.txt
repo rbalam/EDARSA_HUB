@@ -48,3 +48,30 @@ PRÓXIMO PASO RECOMENDADO:
 - Priorizar archivos con mayor número de referencias (comercial/routes.py ya importa desde repository)
 
 ================================================================================
+
+================================================================================
+P2-02: MIGRACIÓN connection_resolver.py A SQL-ONLY - COMPLETADA
+================================================================================
+Fecha: 2026-06-05 03:42 UTC
+
+CAMBIOS REALIZADOS:
+1. _get_db() - Ahora retorna None con warning (MongoDB deprecado)
+2. _get_server_config() - Migrado a consultar Servidores_Conexiones en SQL
+3. _get_api_config() - Migrado a consultar Servidores_Conexiones con tipo_conexion='API_LOCAL'
+
+IMPORT AÑADIDO:
+- from core.config.edarsahub_sql import get_edarsahub_connection
+
+REFERENCIAS MONGO ELIMINADAS:
+- MongoClient: 0
+- db.servers.find_one: 0
+- db.apis_locales.find_one: 0
+
+BACKUP:
+- /app/backend/core/connection_resolver.py.bak_sql_only_20260605_033829
+
+VALIDACIÓN:
+- Sintaxis: OK
+- Health endpoint: OK
+
+================================================================================

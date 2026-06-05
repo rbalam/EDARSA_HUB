@@ -23,7 +23,6 @@ from typing import Dict, Optional, Any, List, Literal
 from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime, timezone
-from core.config.edarsahub_sql import get_edarsahub_connection
 
 logger = logging.getLogger(__name__)
 
@@ -272,93 +271,48 @@ class ConnectionResolver:
         logger.info("[ConnectionResolver] Inicializado - EDARSA HUB es el cerebro")
     
     def _get_db(self):
-        """MongoDB DEPRECADO - SQL Server es fuente única (P2-02)"""
-        logger.warning("[ConnectionResolver] _get_db() llamado pero MongoDB está deprecado")
-        return None
+        """Obtiene conexión a MongoDB"""
+        if self._db is None:
+            try:
+                from pymongo import MongoClient
+                import os
+                mongo_url = os.environ.get('MONGO_URL')
+                client = MongoClient(mongo_url)
+                self._db = client['edarsa_hub']
+            except Exception as e:
+                logger.error(f"[ConnectionResolver] Error conectando a MongoDB: {e}")
+                raise
+        return self._db
     
     def _get_server_config(self, server_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Obtiene configuración de servidor desde EDARSAHUB SQL.
-        P2-02: Migrado de MongoDB a SQL Server (Servidores_Conexiones).
-        """
+        """Obtiene configuración de servidor desde MongoDB (menú Servidores SQL)"""
         try:
-            cn = get_edarsahub_connection(timeout=20)
-            cur = cn.cursor(as_dict=True)
-            
-            # Buscar por id (UUID) o nombre
-            cur.execute("""
-                SELECT TOP 1 *
-                FROM Servidores_Conexiones
-                WHERE CAST(id AS NVARCHAR(100)) = %s
-                   OR nombre = %s
-                   AND activo = 1
-            """, (server_id, server_id))
-            
-            row = cur.fetchone()
-            cn.close()
-            
-            if not row:
-                logger.warning(f"[ConnectionResolver] Servidor no encontrado en SQL: {server_id}")
-                return None
-            
-            # Mapear a formato esperado por el código existente
-            return {
-                "id": str(row.get("id", "")),
-                "nombre": row.get("nombre"),
-                "system_type": row.get("system_type"),
-                "host": row.get("host"),
-                "port": row.get("port"),
-                "database": row.get("database_name"),
-                "username": row.get("username"),
-                "password": row.get("password_encrypted"),  # Cifrado
-                "api_url": row.get("api_url"),
-                "api_key": row.get("api_key_encrypted"),  # Cifrado
-                "active": row.get("activo", False),
-                "sucursales": row.get("sucursales"),
-                "categorias": row.get("categorias"),
-            }
-            
+            db = self._get_db()
+            server = db.servers.find_one(
+                {"id": server_id, "active": True},
+                {"_id": 0}
+            )
+            return server
         except Exception as e:
-            logger.error(f"[ConnectionResolver] Error SQL obteniendo servidor {server_id}: {e}")
+            logger.error(f"[ConnectionResolver] Error obteniendo servidor {server_id}: {e}")
             return None
     
     def _get_api_config(self, server_host: str, sucursal: str) -> Optional[Dict[str, Any]]:
-        """
-        Obtiene configuración de API local desde EDARSAHUB SQL.
-        P2-02: Migrado de MongoDB a SQL Server (Servidores_Conexiones con tipo_conexion='API_LOCAL').
-        """
+        """Obtiene configuración de API local desde MongoDB"""
         try:
-            cn = get_edarsahub_connection(timeout=20)
-            cur = cn.cursor(as_dict=True)
-            
-            # Buscar API_LOCAL que coincida con host y tenga la sucursal
-            cur.execute("""
-                SELECT TOP 1 *
-                FROM Servidores_Conexiones
-                WHERE tipo_conexion = 'API_LOCAL'
-                  AND activo = 1
-                  AND (host = %s OR api_url LIKE %s)
-            """, (server_host, f"%{server_host}%"))
-            
-            row = cur.fetchone()
-            cn.close()
-            
-            if not row:
-                logger.warning(f"[ConnectionResolver] API config no encontrada en SQL: host={server_host}, sucursal={sucursal}")
-                return None
-            
-            return {
-                "id": str(row.get("id", "")),
-                "server_host": row.get("host"),
-                "api_url": row.get("api_url"),
-                "api_key": row.get("api_key_encrypted"),
-                "sucursal": sucursal,
-                "tipo": "api_mpro",
-                "activo": row.get("activo", False),
-            }
-            
+            db = self._get_db()
+            api_config = db.apis_locales.find_one(
+                {
+                    "server_host": server_host,
+                    "sucursal": {"$regex": sucursal, "$options": "i"},
+                    "tipo": "api_mpro",
+                    "activo": True
+                },
+                {"_id": 0}
+            )
+            return api_config
         except Exception as e:
-            logger.error(f"[ConnectionResolver] Error SQL obteniendo API config: {e}")
+            logger.error(f"[ConnectionResolver] Error obteniendo API config: {e}")
             return None
     
     def resolve_source(
