@@ -29,7 +29,6 @@ import json
 
 from core.security import get_current_user
 from core.rbac.middleware import require_permission
-from core.server_registry import get_server_by_unidad_codigo
 
 logger = logging.getLogger(__name__)
 
@@ -37,39 +36,29 @@ router = APIRouter(prefix="/api/admin/scheduler", tags=["Admin - Scheduler Resyn
 
 
 # =============================================================================
-# CONFIGURACIÓN EDARSAHUB - USA VARIABLES DE ENTORNO
+# CONFIGURACIÓN EDARSAHUB
 # =============================================================================
 
-import os
-
-def _get_edarsahub_config():
-    """Obtiene config EDARSAHUB desde variables de entorno."""
-    return {
-        'host': os.getenv('EDARSAHUB_SQL_HOST'),
-        'port': int(os.getenv('EDARSAHUB_SQL_PORT', '1433')),
-        'database': os.getenv('EDARSAHUB_SQL_DATABASE'),
-        'username': os.getenv('EDARSAHUB_SQL_USER'),
-        'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
-    }
+EDARSAHUB_CONFIG = {
+    'host': '54.39.104.176',
+    'port': 1433,
+    'database': 'EDARSAHUB',
+    'username': 'HRLectura',
+    'password': 'National09$'
+}
 
 
 def _execute_edarsahub_query(query: str, params: tuple = None, fetch: bool = True) -> List[Dict]:
     """Ejecuta query contra EDARSAHUB SQL Server."""
     import pymssql
     
-    config = _get_edarsahub_config()
-    
-    if not config.get('host') or not config.get('password'):
-        logger.error("[RESYNC] Faltan variables de entorno EDARSAHUB_SQL_*")
-        raise RuntimeError("Configuración EDARSAHUB incompleta - verificar variables de entorno")
-    
     try:
         conn = pymssql.connect(
-            server=config['host'],
-            port=config['port'],
-            database=config['database'],
-            user=config['username'],
-            password=config['password'],
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
             timeout=60,
             login_timeout=30
         )
@@ -162,9 +151,39 @@ TIPOS_SYNC = {
     }
 }
 
-# Unidades de negocio - RESUELTAS DINAMICAMENTE desde catalogo central
-# NO USAR HARDCODES - usar get_server_by_unidad_codigo()
-UNIDADES_CONFIG = {}  # Deprecated - usar _get_unidad_config() que consulta BD
+# Unidades de negocio con sus configuraciones
+UNIDADES_CONFIG = {
+    'CIENFUEGOS': {
+        'server_id': '6d053c22-523e-48c0-b72b-96081e2d781b',
+        'sistema': 'SOFTRESTAURANT',
+        'sucursal_id': 'DEFAULT',
+        'nombre': 'CIENFUEGOS'
+    },
+    '130MID': {
+        'server_id': 'a5547321-1139-4d2b-9d53-182ca737b6b6',
+        'sistema': 'SOFTRESTAURANT',
+        'sucursal_id': 'DEFAULT',
+        'nombre': '130° MÉRIDA'
+    },
+    'ESTELAR': {
+        'server_id': 'a5ff0e25-f029-43db-b634-d4ac814c904f',
+        'sistema': 'SOFTRESTAURANT',
+        'sucursal_id': 'DEFAULT',
+        'nombre': 'LA ESTELAR'
+    },
+    '130QRO': {
+        'server_id': '1b230a06-ffaf-4c70-bd27-b1be3579dea6',
+        'sistema': 'MPRO',
+        'sucursal_id': '0021',
+        'nombre': '130° QUERETARO'
+    },
+    'ORIGEN': {
+        'server_id': '1b230a06-ffaf-4c70-bd27-b1be3579dea6',
+        'sistema': 'MPRO',
+        'sucursal_id': '0023',
+        'nombre': 'ORIGEN'
+    }
+}
 
 
 def _get_tipo_sync_config(codigo: str) -> Optional[Dict[str, Any]]:
@@ -173,27 +192,8 @@ def _get_tipo_sync_config(codigo: str) -> Optional[Dict[str, Any]]:
 
 
 def _get_unidad_config(unidad_negocio_id: str) -> Optional[Dict[str, Any]]:
-    """
-    Obtiene configuración de la unidad desde catálogo central.
-    USA get_server_by_unidad_codigo() - NO hardcodes.
-    """
-    try:
-        server_data = get_server_by_unidad_codigo(unidad_negocio_id)
-        if not server_data:
-            logger.warning(f"[RESYNC] Unidad {unidad_negocio_id} no encontrada en catálogo central")
-            return None
-        
-        return {
-            'server_id': str(server_data.get('server_id', '')),
-            'sistema': server_data.get('servidor_system_type', server_data.get('tipo_sistema', 'UNKNOWN')),
-            'sucursal_id': server_data.get('sucursal_id', 'DEFAULT'),
-            'nombre': server_data.get('unidad_nombre', unidad_negocio_id),
-            'host': server_data.get('host'),
-            'activo': server_data.get('servidor_activo', True)
-        }
-    except Exception as e:
-        logger.error(f"[RESYNC] Error obteniendo config unidad {unidad_negocio_id}: {e}")
-        return None
+    """Obtiene configuración de la unidad."""
+    return UNIDADES_CONFIG.get(unidad_negocio_id)
 
 
 # =============================================================================
@@ -711,30 +711,6 @@ async def obtener_opciones_resync(
     
     Permisos: SCHEDULER_VER
     """
-    # Obtener unidades desde catálogo central
-    unidades_list = []
-    try:
-        query = """
-        SELECT 
-            u.codigo,
-            u.nombre,
-            s.system_type AS sistema
-        FROM Unidades_Negocio u
-        INNER JOIN Servidores_Conexiones s ON s.id = u.server_id
-        WHERE ISNULL(u.activo, 1) = 1
-          AND ISNULL(s.activo, 1) = 1
-        ORDER BY u.codigo
-        """
-        resultado = _execute_edarsahub_query(query)
-        for r in resultado:
-            unidades_list.append({
-                'id': r['codigo'],
-                'nombre': r['nombre'],
-                'sistema': r['sistema'] or 'UNKNOWN'
-            })
-    except Exception as e:
-        logger.error(f"[RESYNC] Error obteniendo unidades: {e}")
-    
     return {
         'success': True,
         'source': 'EDARSAHUB_SQL',
@@ -751,7 +727,14 @@ async def obtener_opciones_resync(
             }
             for k, v in TIPOS_SYNC.items()
         ],
-        'unidades': unidades_list
+        'unidades': [
+            {
+                'id': k,
+                'nombre': v['nombre'],
+                'sistema': v['sistema']
+            }
+            for k, v in UNIDADES_CONFIG.items()
+        ]
     }
 
 
