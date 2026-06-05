@@ -1,0 +1,424 @@
+VALIDACIÓN SYNC_COMPRAS
+Fecha: 2026-06-05 04:22:04.327253
+DB: EDARSAHUB
+
+=== TABLAS CANDIDATAS ===
+  dbo.Compras_Inventarios_Fisicos_Sync
+  dbo.Compras_Pedidos
+  dbo.Compras_PedidosDetalle
+  dbo.Compras_PedidosEstatus
+  dbo.Compras_Recepciones
+  dbo.Compras_RecepcionesDetalle
+  dbo.Compras_RecepcionesEstatus
+  dbo.Compras_Requisiciones_Sync
+  dbo.Compras_Sync_Checkpoint
+  dbo.Compras_Sync_Log
+  dbo.Operativo_PedidosProcesados
+  dbo.Scheduler_PedidosProcesados
+  dbo.Venta_Pedidos
+  dbo.Venta_PedidosDetalle
+  dbo.Venta_PedidosEstatus
+
+=== COLUMNAS POR TABLA ===
+
+--- dbo.Compras_Inventarios_Fisicos_Sync ---
+  id                             | int             | null=NO  | len=
+  unidad_negocio_id              | varchar         | null=NO  | len=50
+  unidad_negocio_codigo          | varchar         | null=YES | len=20
+  server_id                      | varchar         | null=NO  | len=50
+  system_type                    | varchar         | null=YES | len=50
+  folio                          | varchar         | null=NO  | len=50
+  fecha                          | datetime        | null=YES | len=
+  almacen                        | varchar         | null=YES | len=100
+  almacen_id                     | varchar         | null=YES | len=50
+  sucursal                       | varchar         | null=YES | len=100
+  sucursal_id                    | varchar         | null=YES | len=50
+  tipo                           | varchar         | null=YES | len=50
+  estatus                        | varchar         | null=YES | len=50
+  total_productos                | int             | null=YES | len=
+  sync_source                    | varchar         | null=YES | len=20
+  sync_timestamp                 | datetime        | null=YES | len=
+  sync_status                    | varchar         | null=YES | len=20
+  REGISTROS: 748
+
+--- dbo.Compras_Pedidos ---
+  PedidoCompraID                 | bigint          | null=NO  | len=
+  Serie                          | varchar         | null=YES | len=10
+  FolioPedido                    | varchar         | null=NO  | len=30
+  EmpresaID                      | int             | null=YES | len=
+  SucursalID                     | int             | null=NO  | len=
+  AlmacenID                      | int             | null=YES | len=
+  FechaPedido                    | datetime2       | null=NO  | len=
+  FechaRequerida                 | date            | null=YES | len=
+  SolicitanteUsuarioID           | int             | null=NO  | len=
+  CompradorUsuarioID             | int             | null=YES | len=
+  ProveedorSugeridoID            | int             | null=YES | len=
+  MonedaID                       | smallint        | null=YES | len=
+  TipoCambio                     | decimal         | null=NO  | len=
+  Prioridad                      | varchar         | null=NO  | len=15
+  CentroCosto                    | varchar         | null=YES | len=50
+  Proyecto                       | varchar         | null=YES | len=100
+  MotivoCompra                   | varchar         | null=NO  | len=1000
+  RequiereAutorizacion           | bit             | null=NO  | len=
+  AutorizacionID                 | bigint          | null=YES | len=
+  EstatusPedidoCompraID          | tinyint         | null=NO  | len=
+  Subtotal                       | decimal         | null=NO  | len=
+  DescuentoTotal                 | decimal         | null=NO  | len=
+  ImpuestoTotal                  | decimal         | null=NO  | len=
+  Total                          | decimal         | null=NO  | len=
+  Observaciones                  | varchar         | null=YES | len=1000
+  ReferenciaExterna              | varchar         | null=YES | len=100
+  Activo                         | bit             | null=NO  | len=
+  CreatedAt                      | datetime2       | null=NO  | len=
+  CreatedBy                      | varchar         | null=YES | len=100
+  ModifiedAt                     | datetime2       | null=YES | len=
+  ModifiedBy                     | varchar         | null=YES | len=100
+  RowVer                         | timestamp       | null=NO  | len=
+  REGISTROS: 172
+
+--- dbo.Compras_PedidosDetalle ---
+  DetallePedidoCompraID          | bigint          | null=NO  | len=
+  PedidoCompraID                 | bigint          | null=NO  | len=
+  Renglon                        | int             | null=NO  | len=
+  ProductoID                     | int             | null=NO  | len=
+  PresentacionProductoID         | bigint          | null=YES | len=
+  Cantidad                       | decimal         | null=NO  | len=
+  CantidadAtendida               | decimal         | null=NO  | len=
+  CantidadCancelada              | decimal         | null=NO  | len=
+  CantidadPendiente              | decimal         | null=YES | len=
+  PrecioEstimado                 | decimal         | null=NO  | len=
+  DescuentoPorcentaje            | decimal         | null=NO  | len=
+  DescuentoImporte               | numeric         | null=YES | len=
+  TasaImpuesto                   | decimal         | null=NO  | len=
+  SubtotalLinea                  | numeric         | null=YES | len=
+  ImpuestoImporte                | numeric         | null=YES | len=
+  TotalLinea                     | numeric         | null=YES | len=
+  FechaNecesaria                 | date            | null=YES | len=
+  Observaciones                  | varchar         | null=YES | len=500
+  Activo                         | bit             | null=NO  | len=
+  CreatedAt                      | datetime2       | null=NO  | len=
+  CreatedBy                      | varchar         | null=YES | len=100
+  RowVer                         | timestamp       | null=NO  | len=
+  REGISTROS: 0
+
+--- dbo.Compras_PedidosEstatus ---
+  EstatusPedidoCompraID          | tinyint         | null=NO  | len=
+  Descripcion                    | varchar         | null=NO  | len=30
+  Activo                         | bit             | null=NO  | len=
+  REGISTROS: 8
+
+--- dbo.Compras_Recepciones ---
+  RecepcionCompraID              | bigint          | null=NO  | len=
+  FolioRecepcion                 | varchar         | null=NO  | len=30
+  CompraID                       | bigint          | null=YES | len=
+  OrdenCompraID                  | bigint          | null=YES | len=
+  EmpresaID                      | int             | null=YES | len=
+  SucursalID                     | int             | null=NO  | len=
+  AlmacenID                      | int             | null=NO  | len=
+  ProveedorID                    | int             | null=NO  | len=
+  FechaRecepcion                 | datetime2       | null=NO  | len=
+  FechaDocumentoProveedor        | date            | null=YES | len=
+  DocumentoProveedor             | varchar         | null=YES | len=50
+  EstatusRecepcionID             | tinyint         | null=NO  | len=
+  RecibioUsuarioID               | int             | null=YES | len=
+  RevisoUsuarioID                | int             | null=YES | len=
+  MovimientoInventarioID         | bigint          | null=YES | len=
+  Subtotal                       | decimal         | null=NO  | len=
+  ImpuestoTotal                  | decimal         | null=NO  | len=
+  Total                          | decimal         | null=NO  | len=
+  Observaciones                  | varchar         | null=YES | len=1000
+  TieneIncidencias               | bit             | null=NO  | len=
+  Activo                         | bit             | null=NO  | len=
+  CreatedAt                      | datetime2       | null=NO  | len=
+  ModifiedAt                     | datetime2       | null=YES | len=
+  REGISTROS: 0
+
+--- dbo.Compras_RecepcionesDetalle ---
+  RecepcionDetalleID             | bigint          | null=NO  | len=
+  RecepcionCompraID              | bigint          | null=NO  | len=
+  CompraDetalleID                | bigint          | null=YES | len=
+  OrdenDetalleID                 | bigint          | null=YES | len=
+  ProductoID                     | int             | null=NO  | len=
+  PresentacionProductoID         | bigint          | null=YES | len=
+  Renglon                        | int             | null=NO  | len=
+  CantidadEsperada               | decimal         | null=NO  | len=
+  CantidadRecibida               | decimal         | null=NO  | len=
+  CantidadRechazada              | decimal         | null=NO  | len=
+  CantidadAceptada               | decimal         | null=YES | len=
+  CostoUnitario                  | decimal         | null=NO  | len=
+  SubtotalLinea                  | decimal         | null=YES | len=
+  Lote                           | varchar         | null=YES | len=50
+  FechaCaducidad                 | date            | null=YES | len=
+  TieneIncidencia                | bit             | null=NO  | len=
+  Observaciones                  | varchar         | null=YES | len=500
+  MovimientoDetalleID            | bigint          | null=YES | len=
+  CreatedAt                      | datetime2       | null=NO  | len=
+  REGISTROS: 0
+
+--- dbo.Compras_RecepcionesEstatus ---
+  EstatusRecepcionID             | tinyint         | null=NO  | len=
+  Descripcion                    | varchar         | null=NO  | len=30
+  Activo                         | bit             | null=NO  | len=
+  REGISTROS: 6
+
+--- dbo.Compras_Requisiciones_Sync ---
+  id                             | int             | null=NO  | len=
+  unidad_negocio_id              | varchar         | null=NO  | len=50
+  unidad_negocio_codigo          | varchar         | null=YES | len=20
+  server_id                      | varchar         | null=NO  | len=50
+  system_type                    | varchar         | null=YES | len=50
+  tipo                           | varchar         | null=YES | len=20
+  folio                          | varchar         | null=NO  | len=50
+  fecha                          | datetime        | null=YES | len=
+  fecha_entrega                  | datetime        | null=YES | len=
+  proveedor                      | varchar         | null=YES | len=200
+  proveedor_id                   | varchar         | null=YES | len=50
+  sucursal                       | varchar         | null=YES | len=100
+  sucursal_id                    | varchar         | null=YES | len=50
+  total_productos                | int             | null=YES | len=
+  importe                        | decimal         | null=YES | len=
+  estatus                        | varchar         | null=YES | len=50
+  sync_source                    | varchar         | null=YES | len=20
+  sync_timestamp                 | datetime        | null=YES | len=
+  sync_status                    | varchar         | null=YES | len=20
+  REGISTROS: 0
+
+--- dbo.Compras_Sync_Checkpoint ---
+  CheckpointID                   | int             | null=NO  | len=
+  ServerID                       | nvarchar        | null=NO  | len=36
+  ServerName                     | nvarchar        | null=YES | len=100
+  SyncType                       | nvarchar        | null=NO  | len=50
+  LastFolio                      | nvarchar        | null=YES | len=50
+  LastFecha                      | datetime        | null=YES | len=
+  LastSyncAt                     | datetime        | null=YES | len=
+  RecordsFoundLastSync           | int             | null=YES | len=
+  CreatedAt                      | datetime        | null=YES | len=
+  UpdatedAt                      | datetime        | null=YES | len=
+  REGISTROS: 0
+
+--- dbo.Compras_Sync_Log ---
+  id                             | int             | null=NO  | len=
+  unidad_negocio_id              | varchar         | null=YES | len=50
+  server_id                      | varchar         | null=YES | len=50
+  sync_type                      | varchar         | null=YES | len=50
+  sync_start                     | datetime        | null=YES | len=
+  sync_end                       | datetime        | null=YES | len=
+  records_synced                 | int             | null=YES | len=
+  status                         | varchar         | null=YES | len=20
+  error_message                  | text            | null=YES | len=2147483647
+  created_at                     | datetime        | null=YES | len=
+  REGISTROS: 383
+
+--- dbo.Operativo_PedidosProcesados ---
+  ID                             | int             | null=NO  | len=
+  PedidoID                       | varchar         | null=NO  | len=50
+  AutomatizacionID               | varchar         | null=NO  | len=50
+  ServerID                       | varchar         | null=YES | len=50
+  SucursalID                     | varchar         | null=YES | len=100
+  FolioInventario                | varchar         | null=YES | len=100
+  Estado                         | varchar         | null=YES | len=50
+  CantidadItems                  | int             | null=YES | len=
+  MontoTotal                     | decimal         | null=YES | len=
+  FechaProcesamiento             | datetime2       | null=YES | len=
+  DetalleJSON                    | nvarchar        | null=YES | len=-1
+  REGISTROS: 0
+
+--- dbo.Scheduler_PedidosProcesados ---
+  ID                             | int             | null=NO  | len=
+  SistemaOrigen                  | varchar         | null=NO  | len=50
+  ServerID                       | varchar         | null=NO  | len=50
+  EmpresaID                      | varchar         | null=NO  | len=50
+  SucursalID                     | varchar         | null=YES | len=50
+  FolioPedido                    | varchar         | null=NO  | len=100
+  Estado                         | varchar         | null=YES | len=20
+  FechaDeteccion                 | datetime        | null=YES | len=
+  FechaProcesamiento             | datetime        | null=YES | len=
+  TipoDocumento                  | varchar         | null=YES | len=50
+  DetallesJSON                   | nvarchar        | null=YES | len=-1
+  REGISTROS: 0
+
+--- dbo.Venta_Pedidos ---
+  PedidoID                       | bigint          | null=NO  | len=
+  Serie                          | varchar         | null=YES | len=10
+  FolioPedido                    | varchar         | null=NO  | len=30
+  FechaPedido                    | datetime2       | null=NO  | len=
+  FechaCompromiso                | date            | null=YES | len=
+  ClienteID                      | int             | null=NO  | len=
+  ClienteDireccionID             | int             | null=YES | len=
+  ListaPrecioID                  | int             | null=YES | len=
+  CondicionPagoID                | smallint        | null=YES | len=
+  MonedaID                       | smallint        | null=NO  | len=
+  TipoCambio                     | decimal         | null=NO  | len=
+  EstatusPedidoID                | tinyint         | null=NO  | len=
+  Subtotal                       | decimal         | null=NO  | len=
+  DescuentoTotal                 | decimal         | null=NO  | len=
+  ImpuestoTotal                  | decimal         | null=NO  | len=
+  Total                          | decimal         | null=NO  | len=
+  CotizacionID                   | bigint          | null=YES | len=
+  VentaID                        | bigint          | null=YES | len=
+  AtencionA                      | varchar         | null=YES | len=150
+  Observaciones                  | varchar         | null=YES | len=1000
+  InstruccionesEntrega           | varchar         | null=YES | len=1000
+  ReferenciaExterna              | varchar         | null=YES | len=100
+  Activo                         | bit             | null=NO  | len=
+  CreatedAt                      | datetime2       | null=NO  | len=
+  CreatedBy                      | varchar         | null=YES | len=100
+  ModifiedAt                     | datetime2       | null=YES | len=
+  ModifiedBy                     | varchar         | null=YES | len=100
+  CRM_OportunidadID              | uniqueidentifier | null=YES | len=
+  CRM_CuentaID                   | uniqueidentifier | null=YES | len=
+  CreatedByUserID                | uniqueidentifier | null=YES | len=
+  UpdatedByUserID                | uniqueidentifier | null=YES | len=
+  EstatusComercial               | nvarchar        | null=YES | len=20
+  REGISTROS: 0
+
+--- dbo.Venta_PedidosDetalle ---
+  DetallePedidoID                | bigint          | null=NO  | len=
+  PedidoID                       | bigint          | null=NO  | len=
+  Renglon                        | int             | null=NO  | len=
+  ProductoID                     | int             | null=NO  | len=
+  PresentacionProductoID         | bigint          | null=YES | len=
+  Cantidad                       | decimal         | null=NO  | len=
+  CantidadSurtida                | decimal         | null=NO  | len=
+  PrecioUnitario                 | decimal         | null=NO  | len=
+  DescuentoPorcentaje            | decimal         | null=NO  | len=
+  DescuentoImporte               | decimal         | null=NO  | len=
+  TasaImpuesto                   | decimal         | null=NO  | len=
+  ImpuestoImporte                | decimal         | null=NO  | len=
+  SubtotalLinea                  | decimal         | null=YES | len=
+  TotalLinea                     | decimal         | null=YES | len=
+  Observaciones                  | varchar         | null=YES | len=500
+  Activo                         | bit             | null=NO  | len=
+  CreatedAt                      | datetime2       | null=NO  | len=
+  CreatedBy                      | varchar         | null=YES | len=100
+  REGISTROS: 0
+
+--- dbo.Venta_PedidosEstatus ---
+  EstatusPedidoID                | tinyint         | null=NO  | len=
+  Descripcion                    | varchar         | null=NO  | len=30
+  Activo                         | bit             | null=NO  | len=
+  REGISTROS: 6
+
+=== REVISIÓN CAMPOS ESPERADOS ===
+
+--- dbo.Compras_Inventarios_Fisicos_Sync ---
+  ✓ identidad: ['id', 'unidad_negocio_id', 'unidad_negocio_codigo', 'server_id', 'folio', 'almacen_id', 'sucursal_id']
+  ✓ empresa_unidad: ['unidad_negocio_id', 'unidad_negocio_codigo', 'server_id', 'sucursal', 'sucursal_id']
+  ✗ proveedor: NO_DETECTADO
+  ✓ fechas: ['fecha', 'sync_source', 'sync_timestamp', 'sync_status']
+  ✓ importes: ['total_productos']
+  ✓ estatus: ['estatus']
+
+--- dbo.Compras_Pedidos ---
+  ✓ identidad: ['pedidocompraid', 'foliopedido', 'empresaid', 'sucursalid', 'almacenid', 'fechapedido', 'fecharequerida', 'solicitanteusuarioid', 'compradorusuarioid', 'proveedorsugeridoid', 'monedaid', 'prioridad', 'autorizacionid', 'estatuspedidocompraid']
+  ✓ empresa_unidad: ['empresaid', 'sucursalid']
+  ✓ proveedor: ['proveedorsugeridoid']
+  ✓ fechas: ['fechapedido', 'fecharequerida']
+  ✓ importes: ['subtotal', 'descuentototal', 'impuestototal', 'total']
+  ✓ estatus: ['estatuspedidocompraid', 'activo']
+
+--- dbo.Compras_PedidosDetalle ---
+  ✓ identidad: ['detallepedidocompraid', 'pedidocompraid', 'productoid', 'presentacionproductoid', 'cantidad', 'cantidadatendida', 'cantidadcancelada', 'cantidadpendiente']
+  ✗ empresa_unidad: NO_DETECTADO
+  ✗ proveedor: NO_DETECTADO
+  ✓ fechas: ['fechanecesaria']
+  ✓ importes: ['descuentoimporte', 'tasaimpuesto', 'subtotallinea', 'impuestoimporte', 'totallinea']
+  ✓ estatus: ['activo']
+
+--- dbo.Compras_PedidosEstatus ---
+  ✓ identidad: ['estatuspedidocompraid']
+  ✗ empresa_unidad: NO_DETECTADO
+  ✗ proveedor: NO_DETECTADO
+  ✗ fechas: NO_DETECTADO
+  ✗ importes: NO_DETECTADO
+  ✓ estatus: ['estatuspedidocompraid', 'activo']
+
+--- dbo.Compras_Recepciones ---
+  ✓ identidad: ['recepcioncompraid', 'foliorecepcion', 'compraid', 'ordencompraid', 'empresaid', 'sucursalid', 'almacenid', 'proveedorid', 'fechadocumentoproveedor', 'documentoproveedor', 'estatusrecepcionid', 'recibiousuarioid', 'revisousuarioid', 'movimientoinventarioid', 'tieneincidencias']
+  ✓ empresa_unidad: ['empresaid', 'sucursalid']
+  ✓ proveedor: ['proveedorid', 'fechadocumentoproveedor', 'documentoproveedor']
+  ✓ fechas: ['recepcioncompraid', 'foliorecepcion', 'fecharecepcion', 'fechadocumentoproveedor', 'estatusrecepcionid']
+  ✓ importes: ['subtotal', 'impuestototal', 'total']
+  ✓ estatus: ['estatusrecepcionid', 'activo']
+
+--- dbo.Compras_RecepcionesDetalle ---
+  ✓ identidad: ['recepciondetalleid', 'recepcioncompraid', 'compradetalleid', 'ordendetalleid', 'productoid', 'presentacionproductoid', 'cantidadesperada', 'cantidadrecibida', 'cantidadrechazada', 'cantidadaceptada', 'fechacaducidad', 'tieneincidencia', 'movimientodetalleid']
+  ✗ empresa_unidad: NO_DETECTADO
+  ✗ proveedor: NO_DETECTADO
+  ✓ fechas: ['recepciondetalleid', 'recepcioncompraid', 'fechacaducidad']
+  ✓ importes: ['subtotallinea']
+  ✗ estatus: NO_DETECTADO
+
+--- dbo.Compras_RecepcionesEstatus ---
+  ✓ identidad: ['estatusrecepcionid']
+  ✗ empresa_unidad: NO_DETECTADO
+  ✗ proveedor: NO_DETECTADO
+  ✓ fechas: ['estatusrecepcionid']
+  ✗ importes: NO_DETECTADO
+  ✓ estatus: ['estatusrecepcionid', 'activo']
+
+--- dbo.Compras_Requisiciones_Sync ---
+  ✓ identidad: ['id', 'unidad_negocio_id', 'unidad_negocio_codigo', 'server_id', 'folio', 'proveedor_id', 'sucursal_id']
+  ✓ empresa_unidad: ['unidad_negocio_id', 'unidad_negocio_codigo', 'server_id', 'sucursal', 'sucursal_id']
+  ✓ proveedor: ['proveedor', 'proveedor_id']
+  ✓ fechas: ['fecha', 'fecha_entrega', 'sync_source', 'sync_timestamp', 'sync_status']
+  ✓ importes: ['total_productos', 'importe']
+  ✓ estatus: ['estatus']
+
+--- dbo.Compras_Sync_Checkpoint ---
+  ✓ identidad: ['checkpointid', 'serverid', 'lastfolio']
+  ✓ empresa_unidad: ['serverid', 'servername']
+  ✗ proveedor: NO_DETECTADO
+  ✓ fechas: ['synctype', 'lastfecha', 'lastsyncat', 'recordsfoundlastsync']
+  ✗ importes: NO_DETECTADO
+  ✗ estatus: NO_DETECTADO
+
+--- dbo.Compras_Sync_Log ---
+  ✓ identidad: ['id', 'unidad_negocio_id', 'server_id']
+  ✓ empresa_unidad: ['unidad_negocio_id', 'server_id']
+  ✗ proveedor: NO_DETECTADO
+  ✓ fechas: ['sync_type', 'sync_start', 'sync_end', 'records_synced']
+  ✗ importes: NO_DETECTADO
+  ✗ estatus: NO_DETECTADO
+
+--- dbo.Operativo_PedidosProcesados ---
+  ✓ identidad: ['id', 'pedidoid', 'automatizacionid', 'serverid', 'sucursalid', 'folioinventario', 'cantidaditems']
+  ✓ empresa_unidad: ['serverid', 'sucursalid']
+  ✗ proveedor: NO_DETECTADO
+  ✓ fechas: ['fechaprocesamiento']
+  ✓ importes: ['montototal']
+  ✓ estatus: ['estado']
+
+--- dbo.Scheduler_PedidosProcesados ---
+  ✓ identidad: ['id', 'serverid', 'empresaid', 'sucursalid', 'foliopedido', 'tipodocumento']
+  ✓ empresa_unidad: ['serverid', 'empresaid', 'sucursalid']
+  ✗ proveedor: NO_DETECTADO
+  ✓ fechas: ['fechadeteccion', 'fechaprocesamiento']
+  ✗ importes: NO_DETECTADO
+  ✓ estatus: ['estado']
+
+--- dbo.Venta_Pedidos ---
+  ✓ identidad: ['pedidoid', 'foliopedido', 'fechapedido', 'clienteid', 'clientedireccionid', 'listaprecioid', 'condicionpagoid', 'monedaid', 'estatuspedidoid', 'cotizacionid', 'ventaid', 'crm_oportunidadid', 'crm_cuentaid', 'createdbyuserid', 'updatedbyuserid']
+  ✓ empresa_unidad: ['crm_oportunidadid']
+  ✗ proveedor: NO_DETECTADO
+  ✓ fechas: ['fechapedido', 'fechacompromiso']
+  ✓ importes: ['subtotal', 'descuentototal', 'impuestototal', 'total']
+  ✓ estatus: ['estatuspedidoid', 'activo', 'estatuscomercial']
+
+--- dbo.Venta_PedidosDetalle ---
+  ✓ identidad: ['detallepedidoid', 'pedidoid', 'productoid', 'presentacionproductoid', 'cantidad', 'cantidadsurtida']
+  ✗ empresa_unidad: NO_DETECTADO
+  ✗ proveedor: NO_DETECTADO
+  ✗ fechas: NO_DETECTADO
+  ✓ importes: ['descuentoimporte', 'tasaimpuesto', 'impuestoimporte', 'subtotallinea', 'totallinea']
+  ✓ estatus: ['activo']
+
+--- dbo.Venta_PedidosEstatus ---
+  ✓ identidad: ['estatuspedidoid']
+  ✗ empresa_unidad: NO_DETECTADO
+  ✗ proveedor: NO_DETECTADO
+  ✗ fechas: NO_DETECTADO
+  ✗ importes: NO_DETECTADO
+  ✓ estatus: ['estatuspedidoid', 'activo']
+
+=== FIN VALIDACIÓN ===
