@@ -1,0 +1,48 @@
+"""
+SQL-First Database Helper
+=========================
+P2-05: Centraliza conexiones a EDARSAHUB SQL Server.
+Usar en lugar de pyodbc.connect() directo.
+"""
+import os
+import pymssql
+import logging
+
+logger = logging.getLogger(__name__)
+
+def get_sql_connection():
+    """
+    Obtiene conexión a EDARSAHUB SQL Server.
+    Usar pymssql en lugar de pyodbc para compatibilidad.
+    """
+    server = os.getenv("EDARSAHUB_SQL_HOST")
+    database = os.getenv("EDARSAHUB_SQL_DATABASE")
+    user = os.getenv("EDARSAHUB_SQL_USER")
+    password = os.getenv("EDARSAHUB_SQL_PASSWORD")
+    port = int(os.getenv("EDARSAHUB_SQL_PORT", "1433"))
+
+    if not all([server, database, user, password]):
+        raise RuntimeError("Faltan variables SQL EDARSAHUB en .env")
+
+    return pymssql.connect(
+        server=server,
+        port=port,
+        user=user,
+        password=password,
+        database=database,
+        autocommit=False
+    )
+
+def execute_query(sql, params=None):
+    """Ejecuta query y retorna resultados como lista de dicts."""
+    conn = get_sql_connection()
+    try:
+        cur = conn.cursor(as_dict=True)
+        if params:
+            cur.execute(sql, params)
+        else:
+            cur.execute(sql)
+        results = cur.fetchall()
+        return results
+    finally:
+        conn.close()

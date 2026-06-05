@@ -1,0 +1,21 @@
+"""
+Mongo Blocker
+=============
+P2-05: Bloquea uso de MongoDB en runtime productivo.
+Importar en lugar de pymongo para forzar migración a SQL.
+"""
+
+class MongoDisabledError(RuntimeError):
+    """Excepción cuando se intenta usar MongoDB en runtime SQL-First."""
+    pass
+
+def mongo_disabled(*args, **kwargs):
+    """Función que lanza error cuando se intenta usar MongoDB."""
+    raise MongoDisabledError(
+        "MongoDB está deshabilitado en runtime productivo EDARSAHUB. "
+        "Usar SQL Server como fuente única de datos."
+    )
+
+# Stubs para reemplazar imports de pymongo
+MongoClient = mongo_disabled
+AsyncIOMotorClient = mongo_disabled

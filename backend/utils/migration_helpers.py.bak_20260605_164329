@@ -45,7 +45,6 @@ ARQUITECTURA OBLIGATORIA:
 
 FUNCIÓN PRINCIPAL:
 from core.pool import execute_hub_query, execute_hub_query_single, execute_hub_insert
-from core.unidades_service import UnidadesService
 
 # SELECT múltiples registros
 results = execute_hub_query("SELECT * FROM Tabla WHERE col = %s", (param,))

@@ -6,7 +6,6 @@ from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 from bson import ObjectId
 import os
-from core.unidades_service import UnidadesService
 
 logger = logging.getLogger(__name__)
 
