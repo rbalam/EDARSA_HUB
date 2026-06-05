@@ -1,0 +1,30 @@
+============================================================
+EDARSAHUB - REPORTE CIERRE P1 20260605_144415
+============================================================
+
+### 1. SQL-FIRST - CONEXION
+
+================================================================================
+AUDITORIA KPIS JUNIO 2026 - EDARSA HUB
+================================================================================
+
+--- 1. RESUMEN 01-05 JUNIO ---
+
+Unidad               | Primera      | Última       | Días |      VentaNeta | Cheques |   PAX
+------------------------------------------------------------------------------------------
+130° MERIDA          | 2026-06-01   | 2026-06-04   |    4 | $   301,862.00 |      76 |   189
+130° QUERETARO       | 2026-06-01   | 2026-06-04   |    4 | $   471,570.00 |      84 |   234
+CIENFUEGOS           | 2026-06-01   | 2026-06-03   |    3 | $   374,556.00 |      98 |   341
+LA ESTELAR           | 2026-06-01   | 2026-06-05   |    5 | $   131,994.00 |     117 |   251
+ORIGEN               | 2026-06-01   | 2026-06-04   |    4 | $   242,069.38 |     100 |   283
+------------------------------------------------------------------------------------------
+TOTAL                |              |              |      | $ 1,522,051.38 |     475 |  1298
+
+--- 2. FECHAS FALTANTES 01-05 JUNIO ---
+
+Unidad               | Fecha        | Estado |    VentaNeta | Cheques |   PAX
+
+### 2. RBAC - ROLES CON ACCESO TOTAL
+Códigos: {'CRM_ADMIN', 'ADMIN_COMERCIAL', 'DIRECCION', 'SUPERADMIN', 'ADMIN'}
+Nombres: {'CRM_Administrador', 'Administrador', 'Dirección', 'Administrador Comercial', 'SuperAdministrador'}
+OK - Sin emails hardcodeados en RBAC
