@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 7 - P2-01 Centralización Config EDARSAHUB EN PROGRESO)
-**Estado:** P0/P1 CERRADOS - Endpoints SQL-First ✅ | Auth/RBAC SQL ✅ | P2-01 Config Central 8/65 archivos ✅
+**Última actualización:** 2026-06-05 (Sesión 7 - P2-01 a P2-05 CENTRALIZACIÓN CREDENCIALES COMPLETADA)
+**Estado:** P0/P1/P2 CERRADOS - SQL-First ✅ | Auth/RBAC SQL ✅ | Config Centralizado ✅
 
 ---
 
@@ -426,17 +426,15 @@ bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
 - [ ] Motor de Rentabilidad (Costos y Márgenes)
 
 ### P2 - Media Prioridad
-- [ ] Validar columnas destino de `sync_compras` en SSMS (bloqueante para dry_run=false)
-- [x] **P2-01 Centralizar configuración EDARSAHUB** - EN PROGRESO (Sesión 7, 2026-06-05)
-  - ✅ Singleton creado: `core/config/edarsahub_config.py`
+- [x] **P2-01 a P2-05 Centralizar configuración EDARSAHUB** - COMPLETADO (2026-06-05)
+  - ✅ Singleton: `core/config/edarsahub_config.py`
   - ✅ Helper SQL: `core/config/edarsahub_sql.py`
-  - ✅ `server.py` - 13 bloques migrados
-  - ✅ `comercial/repository.py` - migrado
-  - ✅ `comercial/inteligencia_comercial_routes.py` - migrado
-  - ✅ `core/server_registry.py` - migrado
-  - ✅ `core/pool.py` - migrado  
-  - ✅ `core/rbac_helper_sql.py` - migrado
-  - Pendientes: ~57 archivos con referencias legacy
+  - ✅ ~45 archivos migrados a config centralizado
+  - ✅ Referencias productivas hardcodeadas: **0**
+  - ✅ `connection_resolver.py` migrado a SQL-only
+  - ✅ `rbac/middleware.py` limpiado de MongoDB
+  - Scripts legacy: 125 referencias documentadas (no productivas)
+- [ ] Validar columnas destino de `sync_compras` en SSMS (bloqueante para dry_run=false)
 - [ ] Eliminación física de colecciones MongoDB restantes
 
 ### P3 - Backlog
