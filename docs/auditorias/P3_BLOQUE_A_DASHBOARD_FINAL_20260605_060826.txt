@@ -1,0 +1,174 @@
+{
+    "success": true,
+    "source": "EDARSAHUB_SQL",
+    "periodo": {
+        "inicio": "2026-06-01",
+        "fin": "2026-06-30"
+    },
+    "kpis": {
+        "ventas": 1224212.33,
+        "tickets": 355,
+        "pax": 1018,
+        "ticket_promedio": 3448.4854366197187,
+        "consumo_promedio_pax": 1202.5661394891945
+    },
+    "ventas_por_unidad": [
+        {
+            "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+            "unidad": "ManagmentPro",
+            "dias": 6,
+            "ventas": 533187.33,
+            "tickets": 136,
+            "pax": 398
+        },
+        {
+            "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+            "unidad": "CIENFUEGOS",
+            "dias": 3,
+            "ventas": 374556.0,
+            "tickets": 98,
+            "pax": 341
+        },
+        {
+            "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+            "unidad": "130\u00b0 MERIDA",
+            "dias": 3,
+            "ventas": 247024.0,
+            "tickets": 60,
+            "pax": 154
+        },
+        {
+            "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+            "unidad": "LA ESTELAR",
+            "dias": 3,
+            "ventas": 69445.0,
+            "tickets": 61,
+            "pax": 125
+        }
+    ],
+    "precios": {
+        "productos_con_precio": 5642,
+        "servidores_precio": 4,
+        "precio_promedio": 2580.514570311946
+    },
+    "productos": {
+        "productos": 9905,
+        "servidores_producto": 4
+    },
+    "compras": {
+        "pedidos": 172,
+        "detalles": 0,
+        "ordenes": 12,
+        "recepciones": 0
+    },
+    "sync_24h": [
+        {
+            "sync_type": "REQUISICIONES",
+            "status": "OK",
+            "eventos": 35,
+            "registros": 0
+        },
+        {
+            "sync_type": "INVENTARIOS",
+            "status": "OK",
+            "eventos": 35,
+            "registros": 0
+        },
+        {
+            "sync_type": "EXISTENCIAS",
+            "status": "OK",
+            "eventos": 26,
+            "registros": 0
+        },
+        {
+            "sync_type": "ALMACENES",
+            "status": "OK",
+            "eventos": 26,
+            "registros": 0
+        },
+        {
+            "sync_type": "RECEPCIONES",
+            "status": "OK",
+            "eventos": 25,
+            "registros": 0
+        },
+        {
+            "sync_type": "PEDIDOS",
+            "status": "OK",
+            "eventos": 25,
+            "registros": 0
+        },
+        {
+            "sync_type": "ORDENES",
+            "status": "OK",
+            "eventos": 25,
+            "registros": 0
+        },
+        {
+            "sync_type": "MOVIMIENTOS",
+            "status": "OK",
+            "eventos": 25,
+            "registros": 0
+        },
+        {
+            "sync_type": "RECEPCIONES",
+            "status": "ERROR",
+            "eventos": 9,
+            "registros": 0
+        },
+        {
+            "sync_type": "PEDIDOS",
+            "status": "ERROR",
+            "eventos": 9,
+            "registros": 0
+        },
+        {
+            "sync_type": "ORDENES",
+            "status": "ERROR",
+            "eventos": 9,
+            "registros": 0
+        },
+        {
+            "sync_type": "MOVIMIENTOS",
+            "status": "ERROR",
+            "eventos": 9,
+            "registros": 0
+        },
+        {
+            "sync_type": "EXISTENCIAS",
+            "status": "ERROR",
+            "eventos": 9,
+            "registros": 0
+        },
+        {
+            "sync_type": "ALMACENES",
+            "status": "ERROR",
+            "eventos": 9,
+            "registros": 0
+        },
+        {
+            "sync_type": "BACKFILL_COMPRAS",
+            "status": "WARNING",
+            "eventos": 1,
+            "registros": 17
+        },
+        {
+            "sync_type": "BACKFILL_VENTAS",
+            "status": "SUCCESS",
+            "eventos": 1,
+            "registros": 3
+        },
+        {
+            "sync_type": "BACKFILL_INVENTARIOS",
+            "status": "SUCCESS",
+            "eventos": 1,
+            "registros": 82
+        },
+        {
+            "sync_type": "BACKFILL_VENTAS_REAL",
+            "status": "ERROR",
+            "eventos": 1,
+            "registros": 0
+        }
+    ]
+}

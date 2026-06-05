@@ -19133,6 +19133,7 @@ logger.info("Módulo Configuración registrado")
 from core.rbac.routes import router as rbac_router
 from core.rbac.service import RBACService
 from modules.pricing_ai.routes import router as pricing_ai_router
+from modules.dashboard_ejecutivo.routes import router as dashboard_ejecutivo_router
 # Inicializar RBAC (sembrar permisos y roles si no existen)
 try:
     rbac_service = RBACService(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
@@ -19363,6 +19364,14 @@ try:
     logger.info("✓ Pricing IA router registrado")
 except Exception as e:
     logger.warning(f"Error registrando Pricing IA router: {e}")
+
+# DASHBOARD EJECUTIVO (P3-06)
+# =============================================================================
+try:
+    app.include_router(dashboard_ejecutivo_router)
+    logger.info("✓ Dashboard Ejecutivo router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Dashboard Ejecutivo router: {e}")
 
 
 # Startup: Iniciar scheduler
