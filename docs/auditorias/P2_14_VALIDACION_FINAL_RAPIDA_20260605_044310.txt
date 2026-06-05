@@ -1,0 +1,105 @@
+P2-14 VALIDACIÓN FINAL RÁPIDA
+Fecha: Fri Jun  5 04:43:10 UTC 2026
+
+=== 1) BACKEND HEALTH ===
+{"status":"operativo","sistema":"EDARSA HUB","version":"1.0"}
+=== 2) COMPILE BACKEND ===
+OK compileall
+
+=== 3) FRONTEND PRECIOS USA HELPER UUID ===
+63:const resolveServerIdForPrecios = (unidadOrServer) => {
+2120:      const response = await api.get(`/comercial/precios-constantes/${resolveServerIdForPrecios(selectedServer)}`, {
+2143:        const responseAnterior = await api.get(`/comercial/precios-constantes/${resolveServerIdForPrecios(selectedServer)}`, {
+2184:          const res = await api.get(`/comercial/precios-constantes/${resolveServerIdForPrecios(selectedServer)}`, {
+2120:      const response = await api.get(`/comercial/precios-constantes/${resolveServerIdForPrecios(selectedServer)}`, {
+2143:        const responseAnterior = await api.get(`/comercial/precios-constantes/${resolveServerIdForPrecios(selectedServer)}`, {
+2184:          const res = await api.get(`/comercial/precios-constantes/${resolveServerIdForPrecios(selectedServer)}`, {
+2224:    <div className="space-y-4" data-testid="precios-constantes">
+
+=== 4) SQL-FIRST HEALTH ===
+{
+    "status": "WARNING",
+    "message": "Referencias MongoDB en c\u00f3digo productivo (revisar si son legacy)",
+    "generated_at": "2026-06-05T03:58:27.040893",
+    "counts": {
+        "productive_live_connections": 0,
+        "productive_mongo_imports": 336,
+        "productive_hardcoded_credentials": 0
+    },
+    "architecture": {
+        "sql_server": "FUENTE_UNICA_PRODUCTIVA",
+        "mongodb": "LEGACY_CACHE_ONLY",
+        "credentials": "CENTRALIZED_CONFIG"
+    }
+}
+
+=== 5) VALIDAR MONGO Y CREDENCIALES ===
+/app/backend/modules/comercial/cache_service.py:25:# Importar db desde server.py (motor async client)
+/app/backend/modules/comercial/queries/hub.py:60:# from core.db import get_mongo_db
+/app/backend/modules/comercial/crm_router.py:202:    # Nota: Se asume que el sistema genera el folio secuencial o via el motor SQL.
+/app/backend/modules/comercial/alertas_margen_service.py:402:    NOTA: Este es un endpoint de prueba. El motor de evaluación masiva
+/app/backend/modules/comercial/routes_pricing_ia.py:610:    Tipos de motor disponibles:
+/app/backend/modules/comercial/routes_pricing_ia.py:622:    Para vinos, use tipo_motor=VINOS_RANGOS.
+/app/backend/modules/comercial/routes_pricing_ia.py:629:        f"motor={request.tipo_motor.value} estado={resultado.estado.value}"
+/app/backend/modules/comercial/routes_alertas_margen.py:281:    NOTA: Este es un endpoint de prueba. El motor de evaluación masiva
+/app/backend/modules/comercial/repository.py:9:- execute_hub_query como motor central
+/app/backend/modules/comercial/historical_kpis_repository.py:57:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+/app/backend/modules/comercial/historical_kpis_repository.py:492:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+/app/backend/modules/comercial/services/pricing_ai_service.py:672:        tipo_motor=TipoMotorPrecio.COSTO_MARGEN,
+/app/backend/modules/comercial/services/perfil_unidad_service.py:5:que sirven como contexto para el motor de precios con IA y benchmark.
+/app/backend/modules/comercial/services/pricing_sugerido_service.py:4:Este módulo orquesta el cálculo de precios sugeridos usando diferentes motores:
+/app/backend/modules/comercial/services/pricing_sugerido_service.py:248:        tipo_motor=request.tipo_motor,
+/app/backend/modules/comercial/services/pricing_sugerido_service.py:259:        if request.tipo_motor == TipoMotorPrecio.VINOS_RANGOS:
+/app/backend/modules/comercial/services/pricing_sugerido_service.py:263:                response.mensaje = "El producto no es vino. Use motor COSTO_MARGEN para productos generales."
+/app/backend/modules/comercial/services/pricing_sugerido_service.py:300:        if request.tipo_motor == TipoMotorPrecio.COSTO_MARGEN:
+/app/backend/modules/comercial/services/pricing_sugerido_service.py:371:        if request.tipo_motor == TipoMotorPrecio.BENCHMARK_COMPETENCIA:
+/app/backend/modules/comercial/services/pricing_sugerido_service.py:410:        if request.tipo_motor == TipoMotorPrecio.MIXTO_COSTO_COMPETENCIA:
+/app/backend/modules/comercial/services/pricing_sugerido_service.py:487:        response.mensaje = f"Tipo de motor no reconocido: {request.tipo_motor}"
+/app/backend/modules/comercial/services/pricing_sugerido_service.py:499:    tipo_motor: TipoMotorPrecio,
+/app/backend/modules/comercial/services/pricing_sugerido_service.py:510:        tipo_motor: Motor a usar para todos los productos
+/app/backend/modules/comercial/services/pricing_sugerido_service.py:551:            tipo_motor=tipo_motor,
+/app/backend/modules/comercial/services/pricing_sugerido_service.py:561:def obtener_estadisticas_calculo(server_id: str, tipo_motor: TipoMotorPrecio = TipoMotorPrecio.COSTO_MARGEN) -> Dict[str, Any]:
+/app/backend/modules/comercial/services/pricing_sugerido_service.py:571:        tipo_motor=tipo_motor,
+/app/backend/modules/comercial/services/pricing_schemas.py:79:    """Tipos de motor de cálculo de precio."""
+/app/backend/modules/comercial/services/pricing_schemas.py:413:    tipo_motor: TipoMotorPrecio = Field(
+/app/backend/modules/comercial/services/pricing_schemas.py:415:        description="Tipo de motor de cálculo"
+/app/backend/modules/comercial/services/pricing_schemas.py:432:        tipo = values.get('tipo_motor')
+/app/backend/modules/comercial/services/pricing_schemas.py:447:    tipo_motor: TipoMotorPrecio
+/app/backend/modules/fase2_operativo/repositories/workflow_repository.py:20:# Constante para ordenamiento descendente (reemplaza pymongo.DESCENDING)
+/app/backend/modules/fase2_operativo/repositories/tarea_repository.py:20:# Constantes para ordenamiento (reemplazan pymongo.ASCENDING/DESCENDING)
+/app/backend/modules/api_connections/repository.py:45:def get_mongo_db():
+/app/backend/modules/api_connections/repository.py:468:        db = get_mongo_db()
+/app/backend/modules/api_connections/repository.py:487:        db = get_mongo_db()
+/app/backend/modules/api_connections/repository.py:602:        db = get_mongo_db()
+/app/backend/modules/corporate_filters/router.py:402:    sql = "SELECT sistema_version_id, tipo_sistema, nombre_sistema, version_sistema, descripcion, proveedor, motor_base_datos, es_version_default, activo, created_at FROM Sistema_VersionesSistemas ORDER BY tipo_sistema, version_sistema"
+/app/backend/modules/corporate_filters/router.py:431:    allowed = ["nombre_sistema", "version_sistema", "descripcion", "proveedor", "motor_base_datos", "es_version_default", "activo", "observaciones"]
+/app/backend/modules/edge/motor_inventario_parametrico.py:1:# backend/modules/edge/motor_inventario_parametrico.py
+/app/backend/modules/finanzas/repository_cuadres_z.py:18:        pass  # P2-07: MongoDB eliminado (MongoClient)
+/app/backend/modules/manuales_operativos/triggers.py:169:        db_sync: Conexión pymongo (síncrona)
+/app/backend/scripts/rotate_server_secret_key.py:399:    from core.db import get_mongo_db
+/app/backend/scripts/rotate_server_secret_key.py:401:    db = get_mongo_db()
+/app/backend/api/admin_core_connections.py:32:from core.db import execute_sql_query, get_mongo_db
+/app/backend/api/admin_core_connections.py:113:        db = get_mongo_db()
+/app/backend/api/admin_core_connections.py:248:            db = get_mongo_db()
+/app/backend/core/auditoria.py:221:    async def _get_mongo_db(self):
+/app/backend/core/auditoria.py:225:                pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+/app/backend/core/auditoria.py:404:        db = await self._get_mongo_db()
+/app/backend/core/auditoria.py:487:            db = await self._get_mongo_db()
+/app/backend/core/auditoria.py:507:            db = await self._get_mongo_db()
+/app/backend/core/scheduler/__init__.py:7:- Procesamiento de motor SLA
+/app/backend/core/scheduler/jobs/rentabilidad_scheduler_job.py:10:    utilizando el motor determinista local.
+/app/backend/core/scheduler/jobs/rentabilidad_scheduler_job.py:26:    # 2. Iterar y procesar cada pedido a través del motor blindado de rentabilidad
+/app/backend/core/scheduler/jobs/rentabilidad_scheduler_job.py:36:            # 3. Si el motor determina que requiere aprobación por bajo margen, disparar alerta
+/app/backend/core/scheduler/jobs/sla_job.py:4:Job para procesamiento automático del motor SLA.
+/app/backend/core/config.py:11:    # print(settings.MONGO_URL)  # P2-07: MongoDB eliminado
+/app/backend/core/config.py:26:    MONGO_URL: str = ""  # P2-07: MongoDB eliminado
+/app/backend/core/centro_control/recipients_manager.py:28:MONGO_URL = None  # P2-07: MongoDB eliminado
+/app/backend/core/auth/user_repository_sql.py:354:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+/app/backend/core/mongo_compat.py:41:def get_mongo_db():
+/app/backend/core/mongo_compat.py:358:    'get_mongo_db',
+/app/backend/core/health_checker.py:151:            pass  # P2-07: MongoDB eliminado (MongoClient)
+/app/backend/core/health_checker.py:179:            pass  # P2-07: MongoDB eliminado (MongoClient)
+/app/backend/core/db.py:1129:async def get_mongo_client() -> Any:
+/app/backend/core/db.py:1134:async def get_mongo_db() -> Any:
+/app/backend/core/db.py:1536:    'get_mongo_client',
+/app/backend/core/db.py:1537:    'get_mongo_db',
