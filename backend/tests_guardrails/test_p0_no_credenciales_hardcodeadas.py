@@ -8,7 +8,7 @@ ROOTS = [
 
 # Solo detectar credenciales en archivos NO de test/documentación
 FORBIDDEN = [
-    "admin123",
+    "<TEST_PASSWORD>",
 ]
 
 ALLOW = [

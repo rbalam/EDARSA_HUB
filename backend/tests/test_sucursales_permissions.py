@@ -63,7 +63,7 @@ class TestLoginFunctionality:
     """Test login works correctly for both users"""
     
     def test_admin_login_success(self):
-        """Admin login with admin@inventario.com / admin123"""
+        """Admin login with admin@inventario.com / <TEST_PASSWORD>"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": ADMIN_EMAIL,
             "password": ADMIN_PASSWORD

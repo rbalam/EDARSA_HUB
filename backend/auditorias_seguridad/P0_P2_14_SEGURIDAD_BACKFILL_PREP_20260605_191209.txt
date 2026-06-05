@@ -1,0 +1,8 @@
+==========================================
+P0/P2-14 SEGURIDAD FINAL + BACKFILL PREP
+==========================================
+BACKUP /app/frontend/src/pages/Login.js
+BACKUP /app/backend/server.py
+FAIL admin123 encontrado:
+/app/backend/tests_guardrails/test_p0_no_credenciales_hardcodeadas.py
+/app/backend/tests/test_sucursales_permissions.py

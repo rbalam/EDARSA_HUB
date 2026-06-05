@@ -1,0 +1,4 @@
+/app/backend/tests_guardrails/test_p0_no_admin123.py:17:    "test_p0_no_admin123.py",
+/app/backend/tests_guardrails/test_p0_no_admin123.py:41:        if "admin123" in txt:
+/app/backend/tests_guardrails/test_p0_no_admin123.py:45:    print("FAIL admin123 encontrado:")
+/app/backend/tests_guardrails/test_p0_no_admin123.py:50:print("PASS sin admin123")
