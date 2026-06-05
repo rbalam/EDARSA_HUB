@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-04 (Sesión 6 - Migración SQL-First Modal Detalle Ventas)
-**Estado:** En desarrollo activo - Modal Detalle Ventas migrado a SQL-First ✅
+**Última actualización:** 2026-06-05 (Sesión 6 - Migración SQL-First Completa + Auditoría MongoDB)
+**Estado:** En desarrollo activo - Endpoints Comerciales SQL-First ✅ | Auditoría MongoDB ✅
 
 ---
 
@@ -403,10 +403,27 @@ bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
   - Backend: `GET /comercial/detalle-movimientos/{server_id}` ahora lee de `Comercial_KPIs_Diarios_v2`
   - Frontend: `Comercial.js` actualizado para pasar `selectedMeses` y `selectedAnios` al modal
   - Validado: 130° MÉRIDA Junio 2026 muestra 18 tickets, 36 PAX correctamente
+- [x] **MIGRACIÓN SQL-FIRST Precios Constantes** ✅ (Sesión 6)
+  - Endpoint: `GET /comercial/precios-constantes/{server_id}` migrado a `Sync_Precios_Historicos`
+  - Backfill completado: **5,642 productos** poblados
+  - Scripts: `audit_sync_precios_historicos_dryrun.py`, `backfill_sync_precios_historicos_from_productos.py`
+- [x] **AUDITORÍA MongoDB Legacy P0** ✅ (Sesión 6)
+  - Auth productivo = SQL ✅
+  - RBAC productivo = SQL ✅  
+  - Endpoints visuales = SQL ✅
+  - Comercial = SQL ✅
+  - Costos/Márgenes = SQL ✅
+  - Dictamen: `/app/docs/auditorias/DICTAMEN_FINAL_MONGO_CORE_20260604.md`
 - [ ] Auditar hallazgos "ALTA" en módulos Reportes, ExploradorBD, Compras, Comercial, Inventarios (ver `/app/docs/reports/AUDITORIA_LIVE_A_SQL_FIRST_POR_MODULO.md`)
-- [ ] Migrar `/comercial/precios-constantes/{server_id}` a SQL-First (requiere tabla `Sync_Ventas_Precios_Constantes`)
 - [ ] Auditar y corregir `costos_margenes/repository.py` (18 hallazgos de conexiones live prohibidas)
 - [ ] Migrar adapters de componentes financieros hijos (`FinanzasDashboard`, `FinanzasPresupuestos`, etc.) para usar Corporate Filters nativamente
+
+### P1 (Alto) - AWAITING USER APPROVAL
+- [ ] **Ejecutar inserción real Sync_Sales** - Dry-run exitoso, pendiente aprobación
+- [ ] Activar poblado de `Sync_PAX_Detalle` - Siguiente tabla de granularidad
+- [ ] Migrar usuarios MongoDB → SQL (`Usuario_Catalogo`) - Dry-run pendiente
+- [ ] Módulo Pricing IA / Competidores Enterprise
+- [ ] Motor de Rentabilidad (Costos y Márgenes)
 
 ### P2 - Media Prioridad
 - [ ] Validar columnas destino de `sync_compras` en SSMS (bloqueante para dry_run=false)
