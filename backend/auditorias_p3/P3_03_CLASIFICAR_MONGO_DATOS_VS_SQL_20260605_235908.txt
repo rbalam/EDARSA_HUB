@@ -1,0 +1,70 @@
+
+### CLASIFICACIÓN MONGO VS SQL
+
+========================================================================================================================
+COLECCIÓN MONGO                          |   DOCS | CLASIFICACIÓN        | SQL POSIBLE MATCH
+========================================================================================================================
+alert_recipients                         |      2 | 📊 DATO               | ActivoFijo_Alertas, Alertas_Sistema, Comercial_AlertasMargenDestinatarios, Comercial_AlertasMargenEnvios, Comercial_AlertasMargenEventos
+alertas_sistema                          |      9 | 📊 DATO               | ActivoFijo_Alertas, Alertas_Sistema, Comercial_AlertasMargenDestinatarios, Comercial_AlertasMargenEnvios, Comercial_AlertasMargenEventos
+api_connections                          |      0 | 📊 DATO               | ❌ SIN MATCH
+audit_password_reset                     |      3 | 📊 DATO               | Auditoria_Inventario_Provisional, Operaciones_Tablaje_Auditoria, Operativo_AuditoriasProgramadas, RH_Auditoria_Fiscal, Workflow_DecisionesAuditoria
+auditoria_financiera                     |     73 | 📊 DATO               | Auditoria_Inventario_Provisional, Operaciones_Tablaje_Auditoria, Operativo_AuditoriasProgramadas, RH_Auditoria_Fiscal, Workflow_DecisionesAuditoria
+automatizaciones_operativas_compras      |      8 | 📊 DATO               | Compras, Compras_ConciliacionSAT, Compras_ConciliacionSATDetalle, Compras_ConciliacionSATEstatus, Compras_Detalle
+config_asignaciones                      |      2 | 📊 DATO               | ActivoFijo_HistorialAsignaciones, CRM_Config_PipelineEtapas, CRM_Config_Pipelines, CavaSocios_Configuracion, Compras_Informes_Config
+configuracion_operativo                  |      1 | 📊 DATO               | CavaSocios_Configuracion, Configuracion_Operativa, Finanzas_ConfiguracionTPV_Sucursal, Operativo_AuditoriasProgramadas, Operativo_BitacoraCompras
+consultas_custom                         |      6 | 📊 DATO               | ConsultasSQL_Catalogo, ConsultasSQL_EjecucionesLog, ConsultasSQL_Parametros, ConsultasSQL_Permisos, ConsultasSQL_Servidores
+detalle_diferencias                      |   1960 | 📊 DATO               | Comercial_CompetidoresListasDetalle, Comercial_Inteligencia_VentasDetalleProducto, Comercial_RecetasSnapshotDetalle, Compras_ConciliacionSATDetalle, Compras_Detalle
+empresas                                 |      5 | 📊 DATO               | Sistema_Empresas, Sistema_EmpresasAlias, Sistema_EmpresasMongoMap, Sistema_EmpresasServidores, Usuario_EmpresasAsignacion
+inventario_diferencias_detalle           |     24 | 📊 DATO               | Auditoria_Inventario_Provisional, Comercial_CompetidoresListasDetalle, Comercial_Inteligencia_VentasDetalleProducto, Comercial_RecetasSnapshotDetalle, Compras_ConciliacionSATDetalle
+inventarios_fisicos_procesados           |      1 | 📊 DATO               | Compras_Inventarios_Fisicos_Sync, Inventarios_SinAsignar, Operativo_PedidosProcesados, Scheduler_InventariosProcesados, Scheduler_PedidosProcesados
+inventarios_procesados_auto              |    158 | 📊 DATO               | Compras_Inventarios_Fisicos_Sync, Inventarios_SinAsignar, Operativo_PedidosProcesados, Scheduler_InventariosProcesados, Scheduler_PedidosProcesados
+inventarios_sin_asignar                  |      9 | 📊 DATO               | Compras_Inventarios_Fisicos_Sync, Inventarios_SinAsignar, Scheduler_InventariosProcesados, Workflow_Inventarios, automatizacion_inventarios_config
+kpis_comercial                           |    188 | 📊 DATO               | Comercial_AlertasMargenDestinatarios, Comercial_AlertasMargenEnvios, Comercial_AlertasMargenEventos, Comercial_AlertasMargenReglas, Comercial_AlertasUmbralesSeveridad
+manuales_operativos                      |      1 | 📊 DATO               | Sistema_TurnosOperativosUnidad
+notification_config                      |      6 | 📊 DATO               | CRM_Config_PipelineEtapas, CRM_Config_Pipelines, CavaSocios_Configuracion, Compras_Informes_Config, Config_Asignaciones
+password_reset_tokens                    |      0 | 🔒 PROTEGIDA          | Usuario_TokensRecuperacion
+pedidos_procesados_automatizacion        |      2 | 📊 DATO               | Compras_Pedidos, Compras_PedidosDetalle, Compras_PedidosEstatus, Operativo_PedidosProcesados, Scheduler_InventariosProcesados
+permisos_catalogos                       |      8 | 🔒 PROTEGIDA          | ConsultasSQL_Permisos, Sistema_ModulosPermisos, Sistema_RBAC_Permisos, Sistema_RBAC_RolesPermisos, Usuario_PermisosRolModulo
+portal_suppliers                         |      3 | 📊 DATO               | Cliente_RolUsuarioPortal, Cliente_UsuariosPortal, Proveedor_RolUsuarioPortal, Proveedor_UsuariosPortal, Usuario_PortalConfiguracion
+propinas_config                          |      1 | 📊 DATO               | CRM_Config_PipelineEtapas, CRM_Config_Pipelines, CavaSocios_Configuracion, Compras_Informes_Config, Config_Asignaciones
+propinas_control                         |      0 | 🔒 PROTEGIDA          | Finanzas_PropinasTPV_SyncLog, Sync_Control_Ejecuciones, propinas_tpv_config, propinas_tpv_control, propinas_tpv_historial
+rate_limit_password_reset                |      0 | 📊 DATO               | Usuario_RateLimitRecuperacion
+rbac_audit_log                           |    598 | 🔒 PROTEGIDA          | Auditoria_Inventario_Provisional, Operaciones_Tablaje_Auditoria, Operativo_AuditoriasProgramadas, RH_Auditoria_Fiscal, Workflow_DecisionesAuditoria
+rbac_permisos                            |     43 | 🔒 PROTEGIDA          | ConsultasSQL_Permisos, Sistema_ModulosPermisos, Sistema_RBAC_Permisos, Sistema_RBAC_RolesPermisos, Usuario_PermisosRolModulo
+rbac_roles                               |      6 | 🔒 PROTEGIDA          | Sistema_RBAC_Roles, Sistema_RBAC_RolesPermisos, Sys_Roles, Usuario_Roles, Usuario_RolesAsignacion
+rbac_usuarios_roles                      |     72 | 🔒 PROTEGIDA          | Cliente_UsuariosPortal, Proveedor_UsuariosPortal, Sistema_RBAC_Roles, Sistema_RBAC_RolesPermisos, Sys_Roles
+responsabilidad_historial                |      0 | 📊 DATO               | ActivoFijo_HistorialAsignaciones, CRM_ActividadesHistorial, CRM_ClientesSolicitudesAltaHistorial, CRM_OportunidadesHistorial, CRM_Oportunidades_HistorialEtapas
+roles                                    |      4 | 🔒 PROTEGIDA          | Sistema_RBAC_Roles, Sistema_RBAC_RolesPermisos, Sys_Roles, Usuario_Roles, Usuario_RolesAsignacion
+sec_bitacora_acceso                      |     27 | 🔒 PROTEGIDA          | Operativo_BitacoraCompras, RH_Importacion_Bitacora, Scheduler_BitacoraJobs, Usuario_LogAccesos
+sec_bitacora_admin                       |     61 | 🔒 PROTEGIDA          | Operativo_BitacoraCompras, RH_Importacion_Bitacora, Scheduler_BitacoraJobs
+sec_empresas                             |      1 | 🔒 PROTEGIDA          | Sistema_Empresas, Sistema_EmpresasAlias, Sistema_EmpresasMongoMap, Sistema_EmpresasServidores, Usuario_EmpresasAsignacion
+sec_mapeo_servidor_sucursal              |      7 | 🔒 PROTEGIDA          | CRM_Integracion_MapeoEtapas, Comercial_ImpuestosMapeo, Compras_Parametros_Sucursal, ConsultasSQL_Servidores, Finanzas_ConfiguracionTPV_Sucursal
+sec_metadata                             |      1 | 🔒 PROTEGIDA          | ❌ SIN MATCH
+sec_modulos_sistema                      |     10 | 🔒 PROTEGIDA          | Alertas_Sistema, Proveedor_SistemasIntegracion, Sistema_Capacidades, Sistema_Catalogo, Sistema_Empresas
+sec_perfiles                             |      5 | 🔒 PROTEGIDA          | ❌ SIN MATCH
+sec_permisos_catalogo                    |     90 | 🔒 PROTEGIDA          | Cliente_Catalogo, Comercial_CompetidoresCatalogo, Comercial_ImpuestosCatalogo, ConsultasSQL_Catalogo, ConsultasSQL_Permisos
+sec_roles                                |      5 | 🔒 PROTEGIDA          | Sistema_RBAC_Roles, Sistema_RBAC_RolesPermisos, Sys_Roles, Usuario_Roles, Usuario_RolesAsignacion
+sec_sucursales                           |      7 | 🔒 PROTEGIDA          | RH_Cat_Sucursales, RH_Cat_SucursalesFiscal, Sistema_ServidorSucursalesConfig, Sistema_Sucursales, Usuario_SucursalesAsignacion
+sec_unidades_negocio                     |      7 | 🔒 PROTEGIDA          | CRM_Oportunidades, CRM_OportunidadesHistorial, CRM_Oportunidades_HistorialEtapas, CRM_Staging_Oportunidades, Sistema_UnidadesNegocioPerfilDigital
+server_connection_status                 |      1 | 📊 DATO               | ActivoFijo_EstatusActivo, ActivoFijo_EstatusOT, CRM_Cat_EstatusActividad, CRM_Cat_EstatusContrato, CRM_Cat_EstatusLead
+server_status                            |     13 | 📊 DATO               | ActivoFijo_EstatusActivo, ActivoFijo_EstatusOT, CRM_Cat_EstatusActividad, CRM_Cat_EstatusContrato, CRM_Cat_EstatusLead
+server_sucursales_config                 |      7 | 📊 DATO               | CRM_Config_PipelineEtapas, CRM_Config_Pipelines, CavaSocios_Configuracion, Compras_Informes_Config, Config_Asignaciones
+servers                                  |     14 | 📊 DATO               | ❌ SIN MATCH
+sql_servers                              |      1 | 📊 DATO               | ❌ SIN MATCH
+sucursal_servidor_map                    |      5 | 📊 DATO               | Compras_Parametros_Sucursal, ConsultasSQL_Servidores, Finanzas_ConfiguracionTPV_Sucursal, RH_Cat_Sucursales, RH_Cat_SucursalesFiscal
+sync_agent_registry                      |      1 | 📊 DATO               | ❌ SIN MATCH
+tareas_inventario                        |     18 | 📊 DATO               | Auditoria_Inventario_Provisional, CRM_Tareas, Compras_Inventarios_Fisicos_Sync, Inventario_Almacenes, Inventario_Existencias
+users                                    |     17 | 🔒 PROTEGIDA          | ❌ SIN MATCH
+workflow_inventarios                     |     18 | 📊 DATO               | Compras_Inventarios_Fisicos_Sync, Inventarios_SinAsignar, Scheduler_InventariosProcesados, Workflow_DecisionesAuditoria, Workflow_DetalleDiferencias
+========================================================================================================================
+
+📊 RESUMEN:
+   Protegidas (auth/rbac): 20 colecciones, 969 docs
+   Con match SQL posible:  28 colecciones, 2524 docs
+   Sin match SQL (huérfanas): 4 colecciones, 16 docs
+
+🔍 COLECCIONES HUÉRFANAS (candidatas a eliminar):
+   api_connections: 0 docs
+   servers: 14 docs
+   sql_servers: 1 docs
+   sync_agent_registry: 1 docs

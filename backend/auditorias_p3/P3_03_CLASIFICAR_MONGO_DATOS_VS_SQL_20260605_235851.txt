@@ -1,0 +1,8 @@
+==================================================
+P3-03 CLASIFICAR MONGO DATOS RESTANTES VS SQL
+Fecha: Fri Jun  5 23:58:51 UTC 2026
+==================================================
+
+### GUARDRAILS
+OK - SQL-First runtime activo sin Mongo directo
+unidad_negocio_pk: PASS
